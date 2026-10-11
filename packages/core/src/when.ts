@@ -6,23 +6,26 @@
  *
  * Avoids regex lookbehind so it runs on every JavaScript engine the app targets.
  */
+
+import { defaultWorkweek } from './countries';
 import { asciiDigits } from './digits';
 import { latinScores } from './latin-language';
-import {
-  addDays,
-  daysInMonth,
-  defaultWorkweek,
-  weekStart,
-  zonedParts,
-  zonedTimeToUtc,
-} from './time';
+import { addDays, daysInMonth, firstWorkday, zonedParts, zonedTimeToUtc } from './time';
 
 export interface WhenOptions {
   now: Date;
   timeZone: string;
   /** BCP 47 locale; decides whether 10/11 means October 11th (en-US) or 10 November. */
   locale?: string;
+  /** The days worked where the writer lives (`countryFacts`); their locale's country's when left out. */
   workweek?: number[];
+}
+
+/** The country in a locale tag ("ar-EG" → "EG"), or null. */
+function regionOf(locale: string | undefined): string | null {
+  if (!locale?.includes('-')) return null;
+  const region = locale.split('-').pop() ?? '';
+  return /^[A-Za-z]{2}$/.test(region) ? region.toUpperCase() : null;
 }
 
 export interface WhenMatch {
@@ -300,8 +303,10 @@ export function parseWhen(input: string, options: WhenOptions): WhenMatch[] {
   const tz = options.timeZone;
   const nowParts = zonedParts(options.now, tz);
   const today: LocalDate = { year: nowParts.year, month: nowParts.month, day: nowParts.day };
-  const workweek = options.workweek ?? defaultWorkweek(options.locale);
-  const firstDay = weekStart(workweek);
+  // The days worked where the writer lives, or their language's country's: "next week" starts
+  // on the first of them.
+  const workweek = options.workweek ?? defaultWorkweek(regionOf(options.locale));
+  const firstDay = firstWorkday(workweek);
   const monthFirst = MONTH_FIRST.test(options.locale ?? '');
   const pieces: Piece[] = [];
 

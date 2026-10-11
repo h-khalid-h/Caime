@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { zonedParts, zonedTimeToUtc } from './time';
+import { firstWorkday, weekOrder, zonedParts, zonedTimeToUtc } from './time';
 
 const at = (iso: string) => new Date(iso).toISOString();
 
@@ -55,5 +55,21 @@ describe('a local time, as an instant where it happens', () => {
         'America/New_York',
       ).toISOString(),
     ).toBe(at('2027-11-07T07:30:00Z'));
+  });
+});
+
+describe('a week (R76)', () => {
+  it('runs from its first day, and work starts on the first day worked', () => {
+    expect(weekOrder(6)).toEqual([6, 0, 1, 2, 3, 4, 5]);
+    expect(weekOrder(1)).toEqual([1, 2, 3, 4, 5, 6, 0]);
+    expect(weekOrder(0)).toEqual([0, 1, 2, 3, 4, 5, 6]);
+    // Egypt works Sunday to Thursday, France Monday to Friday, Afghanistan Saturday to Wednesday.
+    expect(firstWorkday([0, 1, 2, 3, 4])).toBe(0);
+    expect(firstWorkday([1, 2, 3, 4, 5])).toBe(1);
+    expect(firstWorkday([6, 0, 1, 2, 3])).toBe(6);
+    // Nepal works Sunday to Friday; a six-day week with Sunday off starts on Monday.
+    expect(firstWorkday([0, 1, 2, 3, 4, 5])).toBe(0);
+    expect(firstWorkday([1, 2, 3, 4, 5, 6])).toBe(1);
+    expect(firstWorkday([])).toBe(1);
   });
 });

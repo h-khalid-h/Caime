@@ -119,44 +119,20 @@ export function daysInMonth(year: number, month: number): number {
 }
 
 // ---------------------------------------------------------------------------------------------
-// Workweeks (PRODUCT-REVIEW R31). Work-hour defaults follow the local workweek.
+// Workweeks (PRODUCT-REVIEW R31, R76).
 
-const SUN_THU = [0, 1, 2, 3, 4];
-const SAT_WED = [6, 0, 1, 2, 3];
-const MON_FRI = [1, 2, 3, 4, 5];
-const SUN_FRI = [0, 1, 2, 3, 4, 5];
-
-const WORKWEEK_BY_REGION: Record<string, number[]> = {
-  EG: SUN_THU,
-  SA: SUN_THU,
-  KW: SUN_THU,
-  QA: SUN_THU,
-  BH: SUN_THU,
-  OM: SUN_THU,
-  JO: SUN_THU,
-  IQ: SUN_THU,
-  IL: SUN_THU,
-  DZ: SUN_THU,
-  LY: SUN_THU,
-  SY: SUN_THU,
-  YE: SUN_THU,
-  SD: SUN_THU,
-  AF: SAT_WED,
-  IR: SAT_WED,
-  NP: SUN_FRI,
-};
-
-/** Workdays for a region (ISO 3166-1 alpha-2) or a locale such as `ar-EG`. Default Mon–Fri. */
-export function defaultWorkweek(regionOrLocale?: string | null): number[] {
-  if (!regionOrLocale) return [...MON_FRI];
-  const region = regionOrLocale.includes('-')
-    ? regionOrLocale.split('-').pop()!.toUpperCase()
-    : regionOrLocale.toUpperCase();
-  return [...(WORKWEEK_BY_REGION[region] ?? MON_FRI)];
+/** The order of a week that starts on `weekStart`: Saturday first in Egypt, Monday in France. */
+export function weekOrder(weekStart: number): number[] {
+  return [0, 1, 2, 3, 4, 5, 6].map((i) => (weekStart + i) % 7);
 }
 
-/** First day of the local week: the first workday of the workweek (Sunday in Egypt, Monday in France). */
-export function weekStart(workweek: number[]): number {
+/**
+ * The first workday of a week worked: Sunday in Egypt, Monday in France, Saturday in
+ * Afghanistan. "Next week" starts there; the calendar's own first day is the country's
+ * (`countryFacts(…).weekStart` in `countries.ts`, kept apart), and what a country works is
+ * `defaultWorkweek` there.
+ */
+export function firstWorkday(workweek: number[]): number {
   if (workweek.includes(1) && workweek.includes(5) && !workweek.includes(0)) return 1;
   return workweek[0] ?? 1;
 }

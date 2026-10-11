@@ -205,6 +205,7 @@ export async function agentRoutes(app: FastifyInstance, ctx: AppContext) {
     const reply = await askAgent(ctx, 'agent_try', auth.userId, {
       orgName: org.name,
       agentName: body.name,
+      country: org.country,
       knowledge: body.knowledge,
       conversation: `[1] Customer: ${body.question.replace(/\s+/g, ' ')}`,
       introduced: false,

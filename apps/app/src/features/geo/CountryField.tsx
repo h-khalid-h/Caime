@@ -26,6 +26,8 @@ export interface CountryFieldProps {
    * request for both.
    */
   timeZone?: string;
+  /** The device's region setting (R76), the surest sign before they say. */
+  region?: string;
   hint?: string;
   error?: string | null;
   testID?: string;
@@ -40,6 +42,7 @@ export function CountryField({
   onChange,
   locale,
   timeZone,
+  region,
   hint,
   error,
   testID,
@@ -47,7 +50,7 @@ export function CountryField({
   const [open, setOpen] = useState(false);
   // Mounted from the first time it's opened, so it can slide away as it closes.
   const [opened, setOpened] = useState(false);
-  const countries = useCountries(locale, timeZone);
+  const countries = useCountries(locale, timeZone, region);
   const items = useMemo(
     () =>
       (countries.data?.countries ?? []).map((c) => ({

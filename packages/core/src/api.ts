@@ -14,6 +14,7 @@ import type { AppointmentBooking, BookingHours, BookingItem, OrderingSettings } 
 import type { BusinessView, ThreadState } from './business';
 import type { CallKind, CallOutcome, CallResult, CallState, GroupCallMemberState } from './calls';
 import type { CatalogCollection } from './catalog';
+import type { PayKindHint } from './countries';
 import type { CustomKitDef, CustomKitIcon } from './custom-kits';
 import type { PublicJwk, SealedMessage } from './e2ee';
 import type { SuggestionKind } from './intelligence';
@@ -50,7 +51,8 @@ export interface QuietHours {
 
 /** Every country, named in the asker's language, and the one their device suggests. */
 export interface CountriesView {
-  countries: Array<{ code: string; name: string }>;
+  /** Each with its main time zone (R76): what a country change offers. */
+  countries: Array<{ code: string; name: string; zone: string }>;
   suggested: string | null;
 }
 
@@ -89,6 +91,11 @@ export interface MeView {
   /** Their country's currency (ISO 4217), the default for an amount they write. */
   currency: string | null;
   workweek: number[];
+  /** What their country sets (R76): the calendar's first day, the weekend, the clock, the ways people are paid there. */
+  weekStart: number;
+  weekend: number[];
+  hour12: boolean;
+  payKinds: PayKindHint[];
   quietHours: QuietHours | null;
   plan: Plan;
   avatarUrl: string | null;
@@ -1006,6 +1013,14 @@ export interface OrgSummaryView {
   /** Where it's based (ISO 3166-1), and its currency, the default for its cards' amounts. */
   country: string | null;
   currency: string | null;
+  /** Its own time zone and days worked (R76): its country's unless its owner or admins set them. */
+  timeZone: string;
+  workweek: number[];
+  /** What its country sets (R76): the calendar's first day, the weekend, the clock, the ways people are paid there. */
+  weekStart: number;
+  weekend: number[];
+  hour12: boolean;
+  payKinds: PayKindHint[];
   /** The year it began, if it says. */
   foundedYear: number | null;
   /** Its logo, if it has one. */

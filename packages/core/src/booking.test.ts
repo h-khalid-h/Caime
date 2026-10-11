@@ -106,6 +106,18 @@ describe('open slots (R51)', () => {
 
   it('says the hours as a page does', () => {
     expect(describeHours(cairo)).toBe('Sun–Thu 9:00–12:00, Sat 9:00–10:00 · 30 min');
+    // In the host's own week (R76): Saturday first in Egypt, so Saturday leads and a week worked
+    // across the Sunday boundary reads as one run.
+    expect(describeHours(cairo, 6)).toBe('Sat 9:00–10:00, Sun–Thu 9:00–12:00 · 30 min');
+    expect(
+      describeHours(
+        {
+          ...cairo,
+          days: [6, 0, 1, 2, 3].map((weekday) => ({ weekday, start: '09:00', end: '17:00' })),
+        },
+        6,
+      ),
+    ).toBe('Sat–Wed 9:00–17:00 · 30 min');
     expect(
       describeHours({
         ...cairo,

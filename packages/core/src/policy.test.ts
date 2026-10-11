@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'vitest';
+import { defaultWorkweek } from './countries';
 import {
   currentPriority,
   daysText,
@@ -9,7 +10,6 @@ import {
   type RelationshipPolicy,
   resolvePolicy,
 } from './policy';
-import { defaultWorkweek } from './time';
 
 const policies: RelationshipPolicy[] = defaultPolicies(defaultWorkweek('US')).map((p, i) => ({
   ...p,

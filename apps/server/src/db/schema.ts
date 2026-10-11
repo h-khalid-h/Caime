@@ -744,8 +744,11 @@ export interface OrganizationsTable {
   archived_at: NullableTimestamp;
   plan: Defaulted<OrgPlan>;
   plan_source: Defaulted<PlanSource>;
-  /** Where it's based (ISO 3166-1), for its defaults (lib/geo.ts). */
+  /** Where it's based (ISO 3166-1), for its defaults (core countries.ts). */
   country: string | null;
+  /** Its own time zone and days worked (R76), or null for its country's. */
+  time_zone: string | null;
+  workweek: number[] | null;
   /** The year it began, shown on its page if it says. */
   founded_year: number | null;
   /** Its logo: an image its owner or an admin uploaded. */
@@ -1253,6 +1256,8 @@ export const ORG_COLUMNS = [
   'plan',
   'plan_source',
   'country',
+  'time_zone',
+  'workweek',
   'founded_year',
   'avatar_file_id',
   'retention_days',

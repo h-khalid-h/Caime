@@ -6,6 +6,7 @@
  * for an organization, who on the team does it. One component for both, so a clinic and a
  * consultant set up the same thing the same way.
  */
+
 import type { BookingResponse } from '@caime/core/api';
 import type {
   BookingAudience,
@@ -31,6 +32,7 @@ import {
   slugError,
   slugify,
 } from '@caime/core/catalog';
+import type { PayKindHint } from '@caime/core/countries';
 import { formatAmount } from '@caime/core/format';
 import { msg, tr, trn } from '@caime/core/i18n';
 import {
@@ -42,6 +44,7 @@ import {
   paymentUrlError,
 } from '@caime/core/payments';
 import type { Sphere } from '@caime/core/taxonomy';
+import { weekOrder } from '@caime/core/time';
 import CalendarCheck from 'lucide-react-native/icons/calendar-check';
 import HandCoins from 'lucide-react-native/icons/hand-coins';
 import ImageIcon from 'lucide-react-native/icons/image';
@@ -91,6 +94,13 @@ export interface BookingHostInfo {
   name: string;
   /** The default currency of a price. */
   currency: string | null;
+  /** The host's own time zone and days worked (R76): where its hours start from. */
+  timeZone: string;
+  workweek: number[];
+  /** The first day of its week, for the days as listed. */
+  weekStart: number;
+  /** The ways people are paid where it is (R76), offered when a way is added. */
+  payKinds: PayKindHint[];
   /** The team, for an organization: who may be named as doing an item. */
   team?: Array<{ id: string; name: string }>;
   /** Whose catalog, for its items' photos (R63). */
@@ -173,7 +183,9 @@ export function BookingSetup({
   testID?: string;
 }) {
   const { booking: hours, items, ordering, collections } = offer;
-  const { timeZone, locale } = useUserClock();
+  const { locale } = useUserClock();
+  // Hours are the host's: an organization's own zone, else the person's (R76).
+  const timeZone = host.timeZone;
   const [open, setOpen] = useState(false);
   const [days, setDays] = useState<number[]>([]);
   const [start, setStart] = useState('09:00');
@@ -211,7 +223,8 @@ export function BookingSetup({
   const edit = () => {
     const b = hours;
     const first = b?.days[0];
-    setDays(b ? b.days.map((d) => d.weekday) : [1, 2, 3, 4, 5]);
+    // Fresh hours start on the days the host works (R76), nine to five.
+    setDays(b ? b.days.map((d) => d.weekday) : [...host.workweek]);
     setStart(first?.start ?? '09:00');
     setEnd(first?.end ?? '17:00');
     setSlot(b?.slotMinutes ?? 30);
@@ -245,7 +258,7 @@ export function BookingSetup({
     return saveHours({
       timeZone: hours?.timeZone ?? timeZone,
       slotMinutes: slot,
-      days: [...days].sort().map((weekday) => ({ weekday, start, end })),
+      days: [...days].sort((a, b) => a - b).map((weekday) => ({ weekday, start, end })),
       leadMinutes: lead,
       horizonDays: horizon,
     });
@@ -280,7 +293,7 @@ export function BookingSetup({
       <SectionTitle>{tr('Bookings')}</SectionTitle>
       <ListRow
         icon={CalendarCheck}
-        title={hours ? describeHours(hours) : tr('Bookings are off')}
+        title={hours ? describeHours(hours, host.weekStart) : tr('Bookings are off')}
         subtitle={
           hours
             ? host.kind === 'org'
@@ -477,10 +490,10 @@ export function BookingSetup({
           <View style={{ gap: 6 }}>
             <Text variant="label">{tr('Days')}</Text>
             <View style={{ flexDirection: 'row', gap: 8, flexWrap: 'wrap' }}>
-              {DAY_SHORT.map((d, i) => (
+              {weekOrder(host.weekStart).map((i) => (
                 <Chip
-                  key={d}
-                  label={tr(d)}
+                  key={i}
+                  label={tr(DAY_SHORT[i] ?? 'Sun')}
                   selected={days.includes(i)}
                   onPress={() =>
                     setDays((all) => (all.includes(i) ? all.filter((x) => x !== i) : [...all, i]))
@@ -882,6 +895,25 @@ function WayEditor({
       }
     >
       <View style={{ gap: 16 }}>
+        {isNew && host.payKinds.length ? (
+          <View style={{ gap: 6 }}>
+            <Text variant="label">{tr('Common where you are')}</Text>
+            <View style={{ flexDirection: 'row', gap: 8, flexWrap: 'wrap' }}>
+              {host.payKinds.map((hint) => (
+                <Chip
+                  key={hint.label}
+                  label={tr(hint.label)}
+                  selected={kind === hint.kind && label === tr(hint.label)}
+                  onPress={() => {
+                    setKind(hint.kind);
+                    setLabel(tr(hint.label));
+                  }}
+                  testID={`${testID}-hint-${hint.label}`}
+                />
+              ))}
+            </View>
+          </View>
+        ) : null}
         <View style={{ flexDirection: 'row', gap: 8, flexWrap: 'wrap' }}>
           {PAYMENT_KINDS.map((k) => (
             <Chip
@@ -1273,7 +1305,7 @@ function ItemEditor({
                 <TextField
                   value={currency ?? ''}
                   onChangeText={(v) => setCurrency(v.toUpperCase())}
-                  placeholder="EGP"
+                  placeholder={host.currency ?? 'EGP'}
                   autoCapitalize="characters"
                   maxLength={3}
                   accessibilityLabel={tr('Currency')}

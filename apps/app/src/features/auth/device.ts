@@ -16,3 +16,9 @@ export function deviceInfo() {
         : tr('Android device');
   return { client: clientKind, locale, timeZone: timeZone ?? undefined, deviceName };
 }
+
+/** The device's own region setting (R76): the surest sign of where someone is, before they say. */
+export function deviceRegion(): string | undefined {
+  const region = getLocales()[0]?.regionCode;
+  return region && /^[A-Za-z]{2}$/.test(region) ? region.toUpperCase() : undefined;
+}

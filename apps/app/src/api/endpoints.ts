@@ -246,8 +246,8 @@ export const endpoints = {
   updateMe: (patch: Record<string, unknown>) => api.patch<UserResponse>('/me', patch),
   updatePrivacy: (body: Record<string, unknown>) => api.put<PrivacyResponse>('/me/privacy', body),
   /** Every country named in `locale`'s language, and the one the device suggests (lib/geo.ts). */
-  countries: (locale: string, timeZone?: string) =>
-    api.get<CountriesView>(`/countries${q({ locale, timeZone })}`),
+  countries: (locale: string, timeZone?: string, region?: string) =>
+    api.get<CountriesView>(`/countries${q({ locale, timeZone, region })}`),
   /** Every time zone, its city, country and offset now, and the device's by its current name. */
   timeZones: (locale: string, timeZone?: string) =>
     api.get<TimeZonesView>(`/time-zones${q({ locale, timeZone })}`),

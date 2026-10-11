@@ -279,6 +279,31 @@ describe('Arabic', () => {
       expect(extractAmounts('100 ليرة')[0]).toMatchObject({ value: 100, currency: null });
     });
 
+    it('the writer’s own currency settles a word or sign several currencies share (R76)', () => {
+      const own = (text: string, currency: string) =>
+        extractAmounts(text, { currency })[0]?.currency;
+      // "$" is whichever dollar they count in; "£" whichever pound; a word, the same.
+      expect(own('$500 for the deposit', 'CAD')).toBe('CAD');
+      expect(own('$500 for the deposit', 'EGP')).toBe('USD');
+      expect(own('500 dollars', 'AUD')).toBe('AUD');
+      expect(own('£40', 'EGP')).toBe('EGP');
+      expect(own('40 pounds', 'LBP')).toBe('LBP');
+      expect(own('£40', 'USD')).toBe('GBP');
+      // "ريال" is Qatar's for someone in Qatar, Saudi otherwise; "دينار" alone is theirs if a dinar.
+      expect(own('500 ريال', 'QAR')).toBe('QAR');
+      expect(own('500 ريال', 'EGP')).toBe('SAR');
+      expect(own('50 دينار', 'KWD')).toBe('KWD');
+      expect(own('50 دينار', 'EGP')).toBeNull();
+      expect(own('100 ليرة', 'TRY')).toBe('TRY');
+      expect(own('200 درهم', 'MAD')).toBe('MAD');
+      expect(own('200 dirhams', 'MAD')).toBe('MAD');
+      // A code or a qualified word stays what it says, whatever they count in.
+      expect(own('EGP 200', 'USD')).toBe('EGP');
+      expect(own('500 ريال قطري', 'SAR')).toBe('QAR');
+      expect(own('200 dirhams marocains', 'AED')).toBe('MAD');
+      expect(own('€20', 'USD')).toBe('EUR');
+    });
+
     it('two currencies in one message', () => {
       expect(extractAmounts('$40 و 300 ريال').map((a) => a.currency)).toEqual(['USD', 'SAR']);
     });

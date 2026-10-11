@@ -88,6 +88,24 @@ describe('choosing where, and in what (the pickers’ lists)', () => {
     }
   });
 
+  it('suggests the device’s own region first (R76), and names each country’s main zone', async () => {
+    // A phone set to Qatar on a Dubai clock: Qatar.
+    const res = (await get('/v1/countries?locale=en&timeZone=Asia/Dubai&region=qa')).json();
+    expect(res.suggested).toBe('QA');
+    expect(res.countries.find((c: { code: string }) => c.code === 'EG')).toEqual({
+      code: 'EG',
+      name: 'Egypt',
+      zone: 'Africa/Cairo',
+    });
+    expect(res.countries.find((c: { code: string }) => c.code === 'US').zone).toBe(
+      'America/New_York',
+    );
+    // A region that isn't a country falls back to the zone.
+    expect(
+      (await get('/v1/countries?locale=en&timeZone=Asia/Dubai&region=zz')).json().suggested,
+    ).toBe('AE');
+  });
+
   it('suggests nothing for a time zone that is a key every object has', async () => {
     for (const timeZone of ['__proto__', 'constructor', 'toString']) {
       expect(

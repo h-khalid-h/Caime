@@ -5,7 +5,9 @@
  * asker's language, so the app downloads none of it until someone opens the list.
  */
 import { safeLocale } from '@caime/core';
-import { COUNTRIES, COUNTRY_CURRENCY, ZONE_COUNTRY, ZONE_LINKS, ZONES } from './geo-data';
+import { currencyOfCountry } from '@caime/core/countries';
+import { COUNTRY_DATA } from '@caime/core/countries-data';
+import { COUNTRIES, COUNTRY_ZONES, ZONE_COUNTRY, ZONE_LINKS, ZONES } from './geo-data';
 
 export function isCountry(code: unknown): code is string {
   return typeof code === 'string' && Object.hasOwn(COUNTRIES, code);
@@ -18,7 +20,10 @@ export function isCountry(code: unknown): code is string {
 export function suggestCountry(
   timeZone: string | null | undefined,
   locale: string | null | undefined,
+  /** The device's own region setting (R76), the surest sign when it has one. */
+  region?: string | null,
 ): string | null {
+  if (isCountry(region?.toUpperCase())) return region.toUpperCase();
   if (timeZone && Object.hasOwn(ZONE_COUNTRY, timeZone)) return ZONE_COUNTRY[timeZone] ?? null;
   try {
     const region = locale ? new Intl.Locale(locale).region : undefined;
@@ -28,22 +33,31 @@ export function suggestCountry(
   }
 }
 
-/** A country's currency (ISO 4217), when it has one of its own (Antarctica doesn't). */
+/** A country's currency (ISO 4217), when it has one of its own (Antarctica doesn't): core's (R76). */
 export function currencyOf(country: string | null | undefined): string | null {
-  return country ? (COUNTRY_CURRENCY[country] ?? null) : null;
+  return currencyOfCountry(country);
+}
+
+/** A country's main time zone (zone.tab's first: Africa/Cairo for Egypt), or UTC for none. */
+export function defaultZoneOf(country: string | null | undefined): string {
+  return (country && COUNTRY_ZONES[country]?.[0]) || 'UTC';
 }
 
 export interface CountryName {
   code: string;
   name: string;
 }
+export interface CountryEntry extends CountryName {
+  /** Its main time zone (R76). */
+  zone: string;
+}
 
 /** Lists kept, one per language as asked for (zh-TW, pt-PT), the oldest let go past `KEPT`. */
-const lists = new Map<string, CountryName[]>();
+const lists = new Map<string, CountryEntry[]>();
 const KEPT = 64;
 
 /** Every country, named and ordered in `locale`'s language (English names where ICU has none). */
-export function countriesIn(locale: string | null | undefined): CountryName[] {
+export function countriesIn(locale: string | null | undefined): CountryEntry[] {
   // As the tag says, region too: zh-TW's names are Traditional Chinese, pt-PT's European.
   const lang = new Intl.Locale(safeLocale(locale ?? 'en')).baseName;
   const cached = lists.get(lang);
@@ -56,7 +70,11 @@ export function countriesIn(locale: string | null | undefined): CountryName[] {
   }
   const collator = new Intl.Collator(lang);
   const list = Object.entries(COUNTRIES)
-    .map(([code, english]) => ({ code, name: names?.of(code) ?? english }))
+    .map(([code, english]) => ({
+      code,
+      name: names?.of(code) ?? english,
+      zone: defaultZoneOf(code),
+    }))
     .sort((a, b) => collator.compare(a.name, b.name));
   // Any language can be asked for: the oldest list goes first once enough are kept.
   if (lists.size >= KEPT) lists.delete(lists.keys().next().value as string);
@@ -65,7 +83,9 @@ export function countriesIn(locale: string | null | undefined): CountryName[] {
 }
 
 /** The currencies countries use (ISO 4217), for choosing one an amount is in. */
-const CURRENCIES = [...new Set(Object.values(COUNTRY_CURRENCY))].sort();
+const CURRENCIES = [
+  ...new Set(Object.values(COUNTRY_DATA).flatMap((d) => (d.c ? [d.c] : []))),
+].sort();
 const currencyLists = new Map<string, CountryName[]>();
 
 /**

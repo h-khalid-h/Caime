@@ -16,7 +16,7 @@ import { type TextInput, View } from 'react-native';
 import { ApiError } from '@/api/client';
 import { endpoints } from '@/api/endpoints';
 import { AuthLayout } from '@/features/auth/AuthLayout';
-import { deviceInfo } from '@/features/auth/device';
+import { deviceInfo, deviceRegion } from '@/features/auth/device';
 import { CountryField } from '@/features/geo/CountryField';
 import { useCountries } from '@/features/geo/countries';
 import { WEB_URL } from '@/lib/config';
@@ -49,7 +49,8 @@ export default function SignUp() {
   const [device] = useState(deviceInfo);
   const [errors, setErrors] = useState<Partial<Record<Field | 'form', string>>>({});
   // One request for the list and the suggestion (CountryField asks with the same time zone).
-  const countries = useCountries(device.locale, device.timeZone);
+  const [region] = useState(deviceRegion);
+  const countries = useCountries(device.locale, device.timeZone, region);
   const chooseCountry = (code: string) => {
     setCountry(code);
     setErrors((e) => (e.country ? { ...e, country: undefined } : e));
@@ -292,6 +293,7 @@ export default function SignUp() {
           onChange={chooseCountry}
           locale={device.locale}
           timeZone={device.timeZone}
+          region={region}
           error={errors.country}
           hint={tr(
             'Sets your defaults, like your work week and the currency of amounts. Never shown to anyone.',

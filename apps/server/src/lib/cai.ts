@@ -220,8 +220,16 @@ export async function sendFollowUp(
   return { conversationId: f.conversationId, messageId: message.id };
 }
 
-/** The next time the clock where they are reads `at` ("08:00"), a minute or more from now. */
-export function nextBriefAt(now: Date, at: string, timeZone: string): Date {
+/**
+ * The next time the clock where they are reads `at` ("08:00"), a minute or more from now, on a
+ * day they work (R76: no brief on their weekend; every day when the week is empty).
+ */
+export function nextBriefAt(
+  now: Date,
+  at: string,
+  timeZone: string,
+  workweek: number[] = [],
+): Date {
   const [hour = 8, minute = 0] = at.split(':').map(Number);
   let zone = timeZone;
   let today: ReturnType<typeof zonedParts>;
@@ -231,8 +239,9 @@ export function nextBriefAt(now: Date, at: string, timeZone: string): Date {
     zone = 'UTC';
     today = zonedParts(now, zone);
   }
-  for (const days of [0, 1, 2]) {
+  for (const days of [0, 1, 2, 3, 4, 5, 6, 7]) {
     const d = addDays(today, days);
+    if (workweek.length && !workweek.includes(d.weekday)) continue;
     const when = zonedTimeToUtc({ ...d, hour, minute }, zone);
     if (when.getTime() > now.getTime() + 60_000) return when;
   }
@@ -251,7 +260,7 @@ export function briefJitterMs(userId: string): number {
 export async function scheduleBrief(ctx: AppContext, userId: string): Promise<void> {
   const me = await ctx.db
     .selectFrom('users')
-    .select(['preferences', 'time_zone'])
+    .select(['preferences', 'time_zone', 'workweek'])
     .where('id', '=', userId)
     .where('deleted_at', 'is', null)
     .executeTakeFirst();
@@ -260,7 +269,7 @@ export async function scheduleBrief(ctx: AppContext, userId: string): Promise<vo
   // Within five minutes of the hour, the same minutes for the same person (M25): a city's
   // briefs at 08:00 were one burst on one queue.
   const runAt = new Date(
-    nextBriefAt(ctx.now(), at, me.time_zone).getTime() + briefJitterMs(userId),
+    nextBriefAt(ctx.now(), at, me.time_zone, me.workweek ?? []).getTime() + briefJitterMs(userId),
   );
   await enqueue(
     ctx,

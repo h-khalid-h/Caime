@@ -98,6 +98,10 @@ export default defineConfig({
           url: `${BASE}/v1/readyz`,
           reuseExistingServer: !process.env.CI,
           timeout: 120_000,
+          // The server's warnings (a job that failed, AI assist that didn't answer) in the run's
+          // output, so a failure late in a long suite can be read, not guessed at.
+          stdout: 'pipe',
+          stderr: 'pipe',
           env: {
             NODE_ENV: 'production',
             PORT: String(PORT),

@@ -2,7 +2,6 @@
  * The account owner's profile, preferences, privacy and identities (PRD §34, §35).
  */
 import {
-  defaultWorkweek,
   Handle,
   IdentityBody,
   type PlanUsageView,
@@ -21,6 +20,7 @@ import type {
   PrivacyResponse,
   UserResponse,
 } from '@caime/core/api';
+import { defaultWorkweek } from '@caime/core/countries';
 import { tr } from '@caime/core/i18n';
 import type { FastifyInstance } from 'fastify';
 import { z } from 'zod';

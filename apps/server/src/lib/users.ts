@@ -6,7 +6,6 @@ import {
   canSee,
   defaultPolicies,
   defaultPrivacy,
-  defaultWorkweek,
   isMinor,
   type MeView,
   type PersonView,
@@ -16,6 +15,7 @@ import {
   type UserPreferences,
   uuidv7,
 } from '@caime/core';
+import { countryFacts, defaultWorkweek } from '@caime/core/countries';
 import type { Kysely, Transaction } from 'kysely';
 import type { AppContext } from '../context';
 import type { Database, User, UserRow } from '../db/schema';
@@ -67,6 +67,7 @@ export function meView(user: UserRow, now: Date): MeView {
     country: user.country,
     currency: currencyOf(user.country),
     workweek: user.workweek,
+    ...countryDerived(user.country),
     quietHours: user.quiet_hours ?? null,
     plan: user.plan,
     avatarUrl: avatarUrl(user),
@@ -169,6 +170,15 @@ export async function seedDefaults(
 /** The work week where someone lives (R31): Sunday to Thursday in Egypt, Monday to Friday here. */
 export function workweekFor(country: string | null): number[] {
   return defaultWorkweek(country);
+}
+
+/**
+ * What a country sets for a person or an organization (R76), as their views carry it: the
+ * calendar's first day, the weekend, the clock and the ways people are paid there.
+ */
+export function countryDerived(country: string | null) {
+  const f = countryFacts(country);
+  return { weekStart: f.weekStart, weekend: f.weekend, hour12: f.hour12, payKinds: f.payKinds };
 }
 
 /**

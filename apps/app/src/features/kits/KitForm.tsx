@@ -141,7 +141,11 @@ function readField(
       // Typed on the number keypad in the person's own way, in the currency beside it; or
       // written with its currency ("EGP 1,200"), which says which.
       const typed = parseNumber(raw, clock.locale);
-      const found = typed === null ? readers?.extractAmounts(raw)[0] : undefined;
+      // A sign several currencies share ("$", "£", "ريال") is read as the writer's own (R76).
+      const found =
+        typed === null
+          ? readers?.extractAmounts(raw, { currency: extra.currency ?? null })[0]
+          : undefined;
       const value = typed ?? found?.value;
       if (!value || !Number.isFinite(value))
         return {

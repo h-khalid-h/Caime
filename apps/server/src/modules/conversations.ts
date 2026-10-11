@@ -775,7 +775,7 @@ export async function conversationRoutes(app: FastifyInstance, ctx: AppContext) 
       .select(['id', 'title', 'is_general', 'last_message_at'])
       .where('direct_key', '=', key)
       .orderBy('is_general', 'desc')
-      .orderBy('last_message_at', sql`desc nulls last`)
+      .orderBy('last_message_at', (ob) => ob.desc().nullsLast())
       .execute();
     return {
       conversations: rows.map((r) => ({

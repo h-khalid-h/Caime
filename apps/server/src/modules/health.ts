@@ -19,12 +19,20 @@ export async function healthRoutes(app: FastifyInstance, ctx: AppContext) {
   // for choosing where someone lives or an organization is based, before signing up too.
   app.get('/countries', async (req, reply): Promise<CountriesView> => {
     lists(req);
-    const { locale, timeZone } = parse(
-      z.object({ locale: z.string().max(35).optional(), timeZone: z.string().max(64).optional() }),
+    const { locale, timeZone, region } = parse(
+      z.object({
+        locale: z.string().max(35).optional(),
+        timeZone: z.string().max(64).optional(),
+        /** The device's region setting (R76). */
+        region: z.string().max(2).optional(),
+      }),
       req.query,
     );
     reply.header('cache-control', 'public, max-age=86400');
-    return { countries: countriesIn(locale), suggested: suggestCountry(timeZone, locale) };
+    return {
+      countries: countriesIn(locale),
+      suggested: suggestCountry(timeZone, locale, region),
+    };
   });
   // Every currency a country uses, named in the asker's language, for the one an amount is in.
   app.get('/currencies', async (req, reply): Promise<CurrenciesView> => {

@@ -5,6 +5,7 @@
 
 import type { Rhythm } from './api';
 import { type CallKind, type CallOutcome, callText } from './calls';
+import { CURRENCY_DECIMALS } from './currency-data';
 import { msg, tr, trn } from './i18n';
 import { dateFormat, numberFormat, safeLocale } from './locale';
 import { zonedParts } from './time';
@@ -268,34 +269,11 @@ export function formatBytes(bytes: number): string {
  * How many places after the point a currency's amounts have (ISO 4217): 3 for the Kuwaiti dinar,
  * 0 for the yen, 2 for most, and for an amount in no currency.
  */
-const EXPONENTS: Readonly<Record<string, number>> = {
-  BHD: 3,
-  IQD: 3,
-  JOD: 3,
-  KWD: 3,
-  LYD: 3,
-  OMR: 3,
-  TND: 3,
-  BIF: 0,
-  CLP: 0,
-  DJF: 0,
-  GNF: 0,
-  ISK: 0,
-  JPY: 0,
-  KMF: 0,
-  KRW: 0,
-  PYG: 0,
-  RWF: 0,
-  UGX: 0,
-  VND: 0,
-  VUV: 0,
-  XAF: 0,
-  XOF: 0,
-  XPF: 0,
-};
-
+/** A currency's minor units (CLDR, `currency-data.ts`): the dinars' three, the yen's none, most two. */
 export function minorUnits(currency: string | null): number {
-  return currency && Object.hasOwn(EXPONENTS, currency) ? (EXPONENTS[currency] as number) : 2;
+  return currency && Object.hasOwn(CURRENCY_DECIMALS, currency)
+    ? (CURRENCY_DECIMALS[currency] as number)
+    : 2;
 }
 
 /** An amount as its currency keeps it: to the dinar's thousandth, the yen, most to the cent. */

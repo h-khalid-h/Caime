@@ -407,7 +407,10 @@ describe('their Arabic (R72)', () => {
     expect(system).toContain(
       "When you write Arabic, write Egyptian Arabic as it's spoken day to day",
     );
-    expect(system).toContain('They live in Egypt.');
+    // Where she lives, and what follows from it (R76), in the one place line.
+    expect(system).toContain(
+      'They live in Egypt: amounts with no currency are in EGP, the week worked runs Sunday to Thursday, and the clock counts to 12.',
+    );
     // Written in another variety, that's what it mirrors; chosen, it's that one.
     await mona.patch('/v1/me', { preferences: { arabicVariety: 'gulf' } });
     replies.push('أبشر!');

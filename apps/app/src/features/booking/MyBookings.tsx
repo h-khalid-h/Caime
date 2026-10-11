@@ -34,6 +34,10 @@ export function MyBookings() {
               kind: 'person',
               name: me.displayName,
               currency: me.currency,
+              timeZone: me.timeZone,
+              workweek: me.workweek,
+              weekStart: me.weekStart,
+              payKinds: me.payKinds,
               ref: { kind: 'person', id: me.id },
             }}
             offer={q.data}

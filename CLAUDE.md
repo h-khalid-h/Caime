@@ -826,6 +826,32 @@ These are rules, not preferences.
   `security` to `AuthLayout`, so the brand panel beside it carries no characters (B2).
   `e2e/a11y.spec.ts` runs axe over the phone screens in all four interface languages (Arabic on
   every one), and a new primary screen joins its list.
+- What a country sets is one module, `@caime/core/countries` (R76): `countryFacts(code)` gives the
+  currency, the calendar's first day (`weekStart`), the weekend, the week worked (the week less
+  its weekend, in week order, with `WORKWEEK_OVERRIDES` where a country works otherwise), whether
+  the clock counts to 12, the Arabic variety and the ways people are paid there (`PAY_KINDS`,
+  brands as `msg` keys). Its data is CLDR's, written by `scripts/geo.mjs` (`countries-data.ts`,
+  deviations from the world's defaults only; `currency-data.ts`, the one decimals table
+  `minorUnits` reads; `calling-codes.ts` from the ITU list kept in the script; the server's
+  `geo-data.ts` with each country's zones): run it again from a fresh `cldr-core` when a source
+  changes, never edit the generated files. Nothing else names a country's facts: `defaultWorkweek`
+  and `varietyOfCountry` live there, `time.firstWorkday(workweek)` is the first day worked ("next
+  week" starts there) and is not the calendar's week start, and `time.weekOrder(weekStart)` is the
+  week's days from its first (pure, in `time.ts`: `booking.ts` and the day pickers sit in the
+  startup chunk, and the country table must not: 2.5 KB gzip). The server derives `weekStart`,
+  `weekend`, `hour12` and `payKinds` onto `MeView` and `OrgSummaryView` (`countryDerived` in
+  `lib/users.ts`); an organization's `timeZone` and `workweek` are its own columns (migration
+  0068), null for its country's (`defaultZoneOf` from zone.tab's first zone), and a country change
+  moves one that was the old country's own. Readers take the facts from the views, never the
+  module: the amounts reader settles a shared sign or word by the writer's currency
+  (`extractAmounts(text, { currency })`; `analyseText` passes the sender's); a booking host's
+  hours start on `host.workweek` in `host.timeZone`; `describeHours(hours, weekStart)` runs the
+  days in the host's week; `DayPicker` orders the week by `useUserClock().weekStart` and names
+  days with Intl; `useUserClock().locale` carries the country when the locale has no region
+  (`withRegion`), so Intl writes the clock and digits as the country does; the agent's and Cai's
+  system prompts get `placeLines`; `nextBriefAt` skips days not worked; sign-up's country
+  suggestion takes the device's `regionCode` first (`/countries?region=`), and each country in
+  that list names its main `zone`, which Language and region offers after a country change.
 - A `Segmented` control scrolls sideways when its segments don't fit (a 390-px phone with five):
   never shorten its words to fit, and never give it more than a screen's worth of segments. A
   setting in a panel is one row that opens its choice in a `Sheet` (disappearing messages,

@@ -13,12 +13,12 @@ const DAY = 86_400_000;
  * The list, named in the language on screen (an Arabic screen says «مصر», whatever the account's
  * formatting locale), else `locale`'s; it changes rarely, so it's asked for once a day.
  */
-export function useCountries(locale: string, timeZone?: string) {
+export function useCountries(locale: string, timeZone?: string, region?: string) {
   const shown = useLanguage((s) => s.language);
   const naming = shown && shown !== 'en' ? shown : locale;
   return useQuery({
-    queryKey: qk.countries(naming, timeZone ?? ''),
-    queryFn: () => endpoints.countries(naming, timeZone),
+    queryKey: qk.countries(naming, timeZone ?? '', region ?? ''),
+    queryFn: () => endpoints.countries(naming, timeZone, region),
     staleTime: DAY,
     gcTime: 7 * DAY,
   });

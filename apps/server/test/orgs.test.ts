@@ -152,6 +152,46 @@ describe('organizations (PRD §36, R15)', () => {
     expect(edit.statusCode).toBe(404);
   });
 
+  it('has its country’s zone, week and clock until its owner or admins set their own (R76)', async () => {
+    // Egypt: Cairo's clock, Saturday first, Friday and Saturday off, Sunday to Thursday worked.
+    let { org } = await noor.get(`/v1/orgs/${orgId}`);
+    expect(org).toMatchObject({
+      timeZone: 'Africa/Cairo',
+      workweek: [0, 1, 2, 3, 4],
+      weekStart: 6,
+      weekend: [5, 6],
+      hour12: true,
+      currency: 'EGP',
+    });
+    expect(org.payKinds[0]).toEqual({ kind: 'wallet', label: 'InstaPay' });
+    // Its own, by the zone's current name; a week set is kept in order.
+    ({ org } = await noor.patch(`/v1/orgs/${orgId}`, {
+      timeZone: 'Asia/Calcutta',
+      workweek: [3, 1, 2],
+    }));
+    expect(org).toMatchObject({ timeZone: 'Asia/Kolkata', workweek: [1, 2, 3] });
+    expect(
+      (await noor.req('PATCH', `/v1/orgs/${orgId}`, { timeZone: 'Mars/Olympus' })).statusCode,
+    ).toBe(400);
+    // Null takes the country's again.
+    ({ org } = await noor.patch(`/v1/orgs/${orgId}`, { timeZone: null, workweek: null }));
+    expect(org).toMatchObject({ timeZone: 'Africa/Cairo', workweek: [0, 1, 2, 3, 4] });
+    // A person carries the same facts for where they live (the sign-up's default is the US).
+    expect((await noor.get('/v1/me')).user).toMatchObject({
+      country: 'US',
+      currency: 'USD',
+      weekStart: 0,
+      weekend: [6, 0],
+      hour12: true,
+      payKinds: [
+        { kind: 'wallet', label: 'Zelle' },
+        { kind: 'wallet', label: 'Venmo' },
+        { kind: 'bank', label: 'Bank transfer' },
+        { kind: 'cash', label: 'Cash' },
+      ],
+    });
+  });
+
   it('its owner says where it moved, and that it doesn’t say when it began', async () => {
     const { org } = await noor.patch(`/v1/orgs/${orgId}`, { country: 'AE', foundedYear: null });
     expect(org).toMatchObject({ country: 'AE', currency: 'AED', foundedYear: null });

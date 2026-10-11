@@ -208,7 +208,7 @@ export async function peopleRoutes(app: FastifyInstance, ctx: AppContext) {
       .select(['cv.id', 'cv.title', 'cv.is_general', 'cv.last_message_at', 'cv.context_id'])
       .where('cv.direct_key', '=', key)
       .orderBy('cv.is_general', 'desc')
-      .orderBy('cv.last_message_at', sql`desc nulls last`)
+      .orderBy('cv.last_message_at', (ob) => ob.desc().nullsLast())
       .execute();
     const conversationIds = conversations.map((c) => c.id);
     const privacySettings = privacyOf(user, now);

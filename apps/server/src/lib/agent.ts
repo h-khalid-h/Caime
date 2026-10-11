@@ -323,6 +323,7 @@ export async function agentReply(ctx: AppContext, payload: Record<string, unknow
       't.agent_seq',
       'c.privacy_class',
       'o.name as org_name',
+      'o.country as org_country',
       'o.plan',
       'o.archived_at',
       'o.booking',
@@ -451,6 +452,7 @@ export async function agentReply(ctx: AppContext, payload: Record<string, unknow
     {
       orgName: thread.org_name,
       agentName: agent.name,
+      country: thread.org_country,
       knowledge: agent.knowledge,
       conversation: transcript.text,
       introduced: transcript.introduced,

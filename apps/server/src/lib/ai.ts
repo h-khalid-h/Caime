@@ -7,6 +7,7 @@
  * taps to use what it wrote. Only the text a feature needs reaches the model — a draft, one
  * message, or a transcript with display names — and none of it is logged.
  */
+
 import Anthropic from '@anthropic-ai/sdk';
 import { betaZodOutputFormat } from '@anthropic-ai/sdk/helpers/beta/zod';
 import {
@@ -17,6 +18,7 @@ import {
   type RewriteStyle,
   VARIETY_NAMES,
 } from '@caime/core';
+import { countryFacts } from '@caime/core/countries';
 import { FILE_KINDS, SEARCH_SCOPES, type SearchUnderstanding } from '@caime/core/search';
 import { SPHERES } from '@caime/core/taxonomy';
 import { z } from 'zod';
@@ -86,6 +88,8 @@ export interface AgentReply {
 export interface AgentInput {
   orgName: string;
   agentName: string;
+  /** Where the organization is (ISO 3166-1): its currency, its week and its clock follow (R76). */
+  country: string | null;
   /** What the organization told it: the only thing it answers from. */
   knowledge: string;
   /** One message per line, oldest first: "[n] Customer: text", "You", "Team" or "Automated". */
@@ -178,8 +182,22 @@ function voiceLines(arabic: SpokenArabic, country: string | null): string {
     : arabic.variety === 'standard'
       ? `When you write Arabic, write ${name}, unless they write a dialect: then write theirs.`
       : `When you write Arabic, write ${name} as it's spoken day to day, not Modern Standard Arabic, unless they write another variety: then write theirs.`;
+  return `${line}${placeLines(country, null)}`;
+}
+
+const DAY_NAMES = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
+/**
+ * Where someone (`name` null) or an organization is, and what follows from it (R76), for a
+ * model: the country, its currency (what a bare amount is in), the days worked and the clock.
+ * Nothing when the country is unknown.
+ */
+function placeLines(country: string | null, name: string | null): string {
   const place = country ? regionName(country) : null;
-  return place ? `${line} They live in ${place}.` : line;
+  if (!place) return '';
+  const f = countryFacts(country);
+  const days = f.workweek.map((d) => DAY_NAMES[d]);
+  const week = days.length > 2 ? `${days[0]} to ${days[days.length - 1]}` : days.join(' and ');
+  return ` ${name ? `${name} is` : 'They live'} in ${place}: amounts with no currency are in ${f.currency ?? 'the local currency'}, the week worked runs ${week}, and the clock counts to ${f.hour12 ? 12 : 24}.`;
 }
 
 function regionName(code: string): string | null {
@@ -252,8 +270,9 @@ const AGENT_SYSTEM = (
   today: string,
   slots: boolean,
   catalog: boolean,
+  place: string,
 ) =>
-  `You are ${agent}, the AI agent that answers customers of ${org} in Caime, a messaging app, before a person on its team does. You are an AI, not a person: never say or suggest otherwise, and if you're asked, say you're ${org}'s AI agent. Today is ${today}.
+  `You are ${agent}, the AI agent that answers customers of ${org} in Caime, a messaging app, before a person on its team does. You are an AI, not a person: never say or suggest otherwise, and if you're asked, say you're ${org}'s AI agent. Today is ${today}.${place}
 Answer only from what ${org} told you, in <knowledge>. The conversation is in <conversation>, one message per line as "[n] who: text": "Customer" is the customer, "You" is you, "Team" is a person on ${org}'s team, "Automated" is another of its apps.
 Decide what to do with the customer's latest messages, and write "message" in the language they wrote in (in Arabic, in the variety they wrote: Egyptian, Gulf, Levantine or another dialect, or Modern Standard Arabic when that's what they wrote):
 - "answer": the knowledge answers it. Reply briefly and warmly, in two to four short sentences, with no headings or markdown, and only what the knowledge says.
@@ -514,6 +533,7 @@ export function createAiAssist(config: Config): AiAssist | null {
     async supportAgent({
       orgName,
       agentName,
+      country,
       knowledge,
       conversation,
       introduced,
@@ -532,7 +552,14 @@ export function createAiAssist(config: Config): AiAssist | null {
           system: [
             {
               type: 'text',
-              text: AGENT_SYSTEM(orgName, agentName, today, slots !== null, catalog !== null),
+              text: AGENT_SYSTEM(
+                orgName,
+                agentName,
+                today,
+                slots !== null,
+                catalog !== null,
+                placeLines(country, orgName),
+              ),
             },
             {
               type: 'text',

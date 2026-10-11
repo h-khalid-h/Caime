@@ -262,7 +262,7 @@ export async function memoryRoutes(app: FastifyInstance, ctx: AppContext) {
             eb.and([eb('assignee_id', '=', auth.userId), eb('shared', '=', true)]),
           ]),
         )
-        .orderBy(sql`due_at`, sql`asc nulls last`)
+        .orderBy(sql`due_at`, (ob) => ob.asc().nullsLast())
         .execute(),
       // Nothing from a message they deleted for themselves (it's gone from their sight).
       ctx.db

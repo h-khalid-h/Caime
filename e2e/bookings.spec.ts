@@ -28,10 +28,11 @@ test.describe
       orgId = ((await made.json()) as { org: { id: string } }).org.id;
       const { page, errors } = await newPerson(owner);
       await page.goto(`/o/${handle}/setup`);
-      // Hours: the defaults (Monday to Friday, 9 to 5, every half hour) are a shop's.
+      // Hours: the defaults are the country's week (R76): a shop in Egypt works Sunday to
+      // Thursday, 9 to 5, every half hour.
       await page.getByTestId('org-booking-hours').click();
       await page.getByTestId('org-booking-save').click();
-      await expect(visible(page, /Mon–Fri 9:00–17:00/)).toBeVisible();
+      await expect(visible(page, /Sun–Thu 9:00–17:00/)).toBeVisible();
       // An item: a 45-minute haircut, 200 EGP, two chairs, for everyone.
       await page.getByTestId('org-booking-add-item').click();
       await page.getByTestId('org-booking-item-name').fill('Haircut');
@@ -111,11 +112,12 @@ test.describe
         storageState: ownerState,
       });
       const { page, errors } = await newPerson(owner);
-      // The person's own bookings, in Settings: a free public chat, with a topic.
+      // The person's own bookings, in Settings: a free public chat, with a topic, on their own
+      // country's week (Noor is in Egypt too).
       await page.goto('/settings/bookings');
       await page.getByTestId('my-booking-hours').click();
       await page.getByTestId('my-booking-save').click();
-      await expect(visible(page, /Mon–Fri 9:00–17:00/)).toBeVisible();
+      await expect(visible(page, /Sun–Thu 9:00–17:00/)).toBeVisible();
       await page.getByTestId('my-booking-add-item').click();
       await page.getByTestId('my-booking-item-name').fill('A quick chat');
       await page.getByTestId('my-booking-item-public').click();

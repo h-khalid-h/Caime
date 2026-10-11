@@ -131,9 +131,78 @@ function currencyCode(raw: string | undefined): string | null {
   return CURRENCY_ALIASES[raw.toLowerCase()] ?? raw.toUpperCase();
 }
 
+/**
+ * What the writer may mean by a word that names several currencies (R76): "$" is a dollar, but
+ * whose; "ريال" is Saudi unless they live in Qatar; "دينار" alone says nothing unless their own
+ * is a dinar. The writer's currency settles it when it's in the family; else the family's usual
+ * one, or none, as before.
+ */
+const FAMILIES: Readonly<Record<string, readonly string[]>> = {
+  dollar: [
+    'USD',
+    'CAD',
+    'AUD',
+    'NZD',
+    'SGD',
+    'HKD',
+    'TWD',
+    'MXN',
+    'JMD',
+    'BBD',
+    'BSD',
+    'BZD',
+    'BMD',
+    'BND',
+    'KYD',
+    'XCD',
+    'FJD',
+    'GYD',
+    'LRD',
+    'NAD',
+    'SBD',
+    'SRD',
+    'TTD',
+    'ZWL',
+  ],
+  pound: ['GBP', 'EGP', 'LBP', 'SDG', 'SYP', 'SSP', 'GIP', 'FKP', 'SHP'],
+  riyal: ['SAR', 'QAR', 'OMR', 'YER', 'IRR'],
+  dirham: ['AED', 'MAD'],
+  dinar: ['KWD', 'JOD', 'BHD', 'IQD', 'DZD', 'TND', 'LYD', 'RSD', 'MKD'],
+  lira: ['LBP', 'SYP', 'TRY'],
+  franc: ['CHF', 'XOF', 'XAF', 'XPF', 'DJF', 'GNF', 'KMF', 'BIF', 'RWF', 'CDF'],
+};
+/** The family a bare word or sign belongs to; none for an explicit code or a qualified word. */
+const FAMILY_OF: Array<[RegExp, keyof typeof FAMILIES]> = [
+  [/^(?:\$|dollars?|bucks|dolar|دولار)$/iu, 'dollar'],
+  [/^(?:£|pounds?|livres?|جنيه|جنية)$/iu, 'pound'],
+  [/^ريال$/u, 'riyal'],
+  [/^(?:درهم|dirhams?|dh|dhs?)$/iu, 'dirham'],
+  [/^(?:دينار|dinars?)$/iu, 'dinar'],
+  [/^(?:ليرة|liras?|lirası|liralık)$/iu, 'lira'],
+  [/^francs?$/iu, 'franc'],
+];
+
+export interface AmountOptions {
+  /** The writer's own currency (ISO 4217): what a sign or a word several currencies share means to them. */
+  currency?: string | null;
+}
+
+function settle(
+  currency: string | null,
+  raw: string,
+  opts: AmountOptions | undefined,
+): string | null {
+  const own = opts?.currency;
+  if (!own) return currency;
+  const word = raw.replace(/\s+/g, ' ').trim();
+  const family = FAMILY_OF.find(([re]) => re.test(word))?.[1];
+  if (!family) return currency;
+  return FAMILIES[family]?.includes(own) ? own : currency;
+}
+
 // ---------------------------------------------------------------------------------------------
 
-export function extractAmounts(input: string): Amount[] {
+export function extractAmounts(input: string, opts?: AmountOptions): Amount[] {
   const out: Amount[] = [];
   // Arabic-Indic digits read as digits; the matched text is still the writer's own.
   const text = asciiDigits(input);
@@ -147,7 +216,7 @@ export function extractAmounts(input: string): Amount[] {
       text: input.slice(m.index ?? 0, (m.index ?? 0) + m[0].length).trim(),
       index: m.index ?? 0,
       value: parseNumber(m[2]!, m[3]),
-      currency: currencyCode(m[1]),
+      currency: settle(currencyCode(m[1]), m[1]!, opts),
     });
   }
   const after = new RegExp(
@@ -162,7 +231,7 @@ export function extractAmounts(input: string): Amount[] {
       text: input.slice(index, index + m[0].length).trim(),
       index,
       value: parseNumber(m[1]!, m[2]),
-      currency: /pounds?/i.test(cur) ? 'GBP' : currencyCode(cur),
+      currency: settle(/pounds?/i.test(cur) ? 'GBP' : currencyCode(cur), cur, opts),
     });
   }
   // "٥ آلاف ريال", "250 ر.س", "2 مليون دينار كويتي": a number, maybe a multiplier, then the
@@ -180,7 +249,7 @@ export function extractAmounts(input: string): Amount[] {
       text: matched.trim(),
       index,
       value: parseNumber(m[1]!, m[2]) * times,
-      currency: arabicCurrency(m[4]!),
+      currency: settle(arabicCurrency(m[4]!), m[4]!, opts),
     });
   }
   // French and Turkish: "3 mille euros", "1,5 million d'euros", "250 TL", "₺250", "5 bin
@@ -214,6 +283,8 @@ export function extractAmounts(input: string): Amount[] {
       })();
       currency = turkish ? 'TRY' : null;
     }
+    // A bare word ("dinars", "livres", "dirhams"): the writer's own, when it's one of those.
+    if (!m[4] && !m[6]) currency = settle(currency, m[5]!, opts);
     out.push({
       text: input.slice(index, index + m[0].length).trim(),
       index,

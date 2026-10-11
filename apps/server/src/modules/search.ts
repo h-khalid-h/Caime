@@ -454,7 +454,10 @@ export async function runSearch(
     }
     if (text && scope === 'all')
       q = q.where(sql<boolean>`search @@ websearch_to_tsquery('simple', ${text})`);
-    const rows = await q.orderBy(sql`due_at`, sql`asc nulls last`).limit(limit).execute();
+    const rows = await q
+      .orderBy(sql`due_at`, (ob) => ob.asc().nullsLast())
+      .limit(limit)
+      .execute();
     results.tasks = await taskViews(ctx, rows, me);
   }
 
@@ -511,7 +514,7 @@ export async function runSearch(
       .where((eb) =>
         eb.or([eb('c.title', 'ilike', like(text)), eb('x.title', 'ilike', like(text))]),
       )
-      .orderBy('c.last_message_at', sql`desc nulls last`)
+      .orderBy('c.last_message_at', (ob) => ob.desc().nullsLast())
       .limit(limit)
       .execute();
     results.contexts = rows.map((r) => ({

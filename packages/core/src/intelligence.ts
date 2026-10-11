@@ -474,10 +474,16 @@ export function extractLinks(text: string): LinkEntity[] {
   return out;
 }
 
-export function analyzeMessage(input: string, options: WhenOptions): Analysis {
+/** What the rules read a message with: when the writer is (dates) and what they count in (amounts). */
+export interface AnalyzeOptions extends WhenOptions {
+  /** The writer's own currency (R76): what "$" or "ريال" means to them. */
+  currency?: string | null;
+}
+
+export function analyzeMessage(input: string, options: AnalyzeOptions): Analysis {
   const text = input.trim();
   const dates = parseWhen(text, options);
-  const amounts = extractAmounts(text);
+  const amounts = extractAmounts(text, { currency: options.currency });
   const links = extractLinks(text);
   const emails = [...text.matchAll(/\b[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}\b/gi)].map((m) => m[0]);
   const phones = [...text.matchAll(/(?:\+|\b00)\d[\d\s().-]{7,}\d/g)]

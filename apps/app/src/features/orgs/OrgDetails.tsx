@@ -13,7 +13,10 @@ import { View } from 'react-native';
 import { ApiError } from '@/api/client';
 import { endpoints } from '@/api/endpoints';
 import { uploadFile } from '@/api/upload';
+import { deviceInfo } from '@/features/auth/device';
 import { CountryField } from '@/features/geo/CountryField';
+import { TimeZoneField } from '@/features/geo/TimeZoneField';
+import { DayPicker } from '@/features/settings/DayPicker';
 import { AVATAR_MAX_EDGE } from '@/lib/photoSize';
 import { photoToUpload, pickFromLibrary } from '@/lib/photos';
 import { useMe } from '@/state/session';
@@ -44,6 +47,9 @@ export function OrgDetailsSheet({
   const [name, setName] = useState(org.name);
   const [kind, setKind] = useState<OrgKind>(org.kind);
   const [country, setCountry] = useState<string | null>(org.country);
+  // Its own time zone and days worked (R76): its country's until set here.
+  const [timeZone, setTimeZone] = useState(org.timeZone);
+  const [workweek, setWorkweek] = useState<number[]>(org.workweek);
   const [founded, setFounded] = useState<number | null>(org.foundedYear);
   const [logo, setLogo] = useState(org.avatarUrl);
   const [logoBusy, setLogoBusy] = useState(false);
@@ -65,6 +71,8 @@ export function OrgDetailsSheet({
         name: name.trim(),
         kind,
         country,
+        ...(timeZone !== org.timeZone ? { timeZone } : {}),
+        ...(workweek.join() !== org.workweek.join() ? { workweek } : {}),
         foundedYear: founded,
         about: about.trim() || null,
         website: website.trim() || null,
@@ -188,6 +196,23 @@ export function OrgDetailsSheet({
           hint={tr('Sets its defaults, like the currency of its cards.')}
           testID="org-details-country"
         />
+        <TimeZoneField
+          label={tr('Its time zone')}
+          value={timeZone}
+          onChange={setTimeZone}
+          locale={me.locale}
+          deviceZone={deviceInfo().timeZone}
+          testID="org-details-zone"
+        />
+        <View style={{ gap: 6 }}>
+          <Text variant="label">{tr('Days worked')}</Text>
+          <DayPicker
+            label={tr('Days worked')}
+            days={workweek}
+            onChange={setWorkweek}
+            weekStart={org.weekStart}
+          />
+        </View>
         <YearField
           label={tr('Year it began (optional)')}
           value={founded}

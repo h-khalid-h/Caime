@@ -34,6 +34,7 @@ import {
   systemAccountOf,
   uuidv7,
 } from '@caime/core';
+import { currencyOfCountry } from '@caime/core/countries';
 import { tr } from '@caime/core/i18n';
 import { cardAsks } from '@caime/core/kit-states';
 import type { Kysely, SqlBool, Transaction } from 'kysely';
@@ -576,7 +577,7 @@ export async function retentionFor(
  */
 export function analyseText(
   text: string,
-  sender: { time_zone: string; locale: string; workweek: number[] },
+  sender: { time_zone: string; locale: string; workweek: number[]; country: string | null },
   now: Date,
 ): { analysis: Analysis | null; entities: Record<string, unknown> } {
   const analysis = text
@@ -585,6 +586,8 @@ export function analyseText(
         timeZone: sender.time_zone,
         locale: sender.locale,
         workweek: sender.workweek,
+        // What "$" or "ريال" means to the writer (R76): their own currency when it's one of those.
+        currency: currencyOfCountry(sender.country),
       })
     : null;
   const entities = analysis
@@ -788,6 +791,7 @@ export async function sendMessage(
       'time_zone',
       'locale',
       'workweek',
+      'country',
       'birth_date',
       'booking',
       'booking_items',

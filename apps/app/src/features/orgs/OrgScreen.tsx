@@ -301,7 +301,11 @@ export function OrgScreen({
                 ? { label: tr('since'), value: String(org.foundedYear), testID: 'org-place' }
                 : null,
               org.booking
-                ? { label: tr('bookings'), value: describeHours(org.booking), testID: 'org-hours' }
+                ? {
+                    label: tr('bookings'),
+                    value: describeHours(org.booking, org.weekStart),
+                    testID: 'org-hours',
+                  }
                 : null,
               org.website
                 ? {

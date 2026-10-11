@@ -23,6 +23,10 @@ export function OrgBooking({ org }: { org: OrgView }) {
         kind: 'org',
         name: org.name,
         currency: org.currency,
+        timeZone: org.timeZone,
+        workweek: org.workweek,
+        weekStart: org.weekStart,
+        payKinds: org.payKinds,
         team: (org.members ?? []).map((m) => ({ id: m.userId, name: m.person.displayName })),
         ref: { kind: 'org', id: org.id },
       }}

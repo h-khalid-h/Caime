@@ -1471,6 +1471,9 @@ export const UpdateOrgBody = z
     about: OrgAbout.optional(),
     website: OrgWebsite.optional(),
     country: Country.optional(),
+    /** Its own time zone and days worked (R76); null takes its country's again. */
+    timeZone: TimeZone.nullable().optional(),
+    workweek: z.array(z.number().int().min(0).max(6)).min(1).max(7).nullable().optional(),
     foundedYear: FoundedYear.nullable().optional(),
     /** Its logo: an image file the person uploaded, or null to take it away. */
     avatarFileId: z.string().uuid().nullable().optional(),

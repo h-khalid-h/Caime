@@ -136,6 +136,15 @@ describe('the morning brief (R68)', () => {
       '2026-09-23T15:30:00.000Z',
     );
     expect(nextBriefAt(now, '08:00', 'Not/AZone').toISOString()).toBe('2026-09-24T08:00:00.000Z');
+    // Never on their weekend (R76): Thursday evening in Cairo, the next brief is Sunday's.
+    const thursday = new Date('2026-09-24T18:00:00Z');
+    expect(nextBriefAt(thursday, '08:00', 'Africa/Cairo', [0, 1, 2, 3, 4]).toISOString()).toBe(
+      '2026-09-27T05:00:00.000Z',
+    );
+    // A week with every day in it, or none given: tomorrow.
+    expect(nextBriefAt(thursday, '08:00', 'Africa/Cairo', []).toISOString()).toBe(
+      '2026-09-25T05:00:00.000Z',
+    );
   });
 
   it('says what’s on and what’s open in Cai’s chat, and stops when turned off', async () => {

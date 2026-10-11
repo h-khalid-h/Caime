@@ -4,7 +4,7 @@
  */
 
 import { tr } from '@caime/core/i18n';
-import { addDays, weekStart, zonedParts, zonedTimeToUtc } from '@caime/core/time';
+import { addDays, firstWorkday, zonedParts, zonedTimeToUtc } from '@caime/core/time';
 
 export interface Chosen {
   /** YYYY-MM-DD, where the person is. */
@@ -52,7 +52,7 @@ export function quickPicks(timeZone: string, workweek: number[], now = new Date(
     { label: tr('Today'), chosen: { date: dayText(today), time: null } },
     { label: tr('Tomorrow'), chosen: { date: dayText(addDays(today, 1)), time: null } },
   ];
-  const ahead = (weekStart(workweek) - today.weekday + 7) % 7 || 7;
+  const ahead = (firstWorkday(workweek) - today.weekday + 7) % 7 || 7;
   if (ahead > 1)
     picks.push({
       label: tr('Next week'),

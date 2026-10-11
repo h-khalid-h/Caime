@@ -7,7 +7,7 @@
  */
 import { msg, tr } from './i18n';
 import type { Sphere } from './taxonomy';
-import { addDays, zonedParts, zonedTimeToUtc } from './time';
+import { addDays, weekOrder, zonedParts, zonedTimeToUtc } from './time';
 
 export const SLOT_MINUTES = [15, 20, 30, 45, 60, 90, 120] as const;
 export type SlotMinutes = (typeof SLOT_MINUTES)[number];
@@ -377,10 +377,15 @@ export const DAY_SHORT = [
 ];
 const day = (n: number | undefined) => tr(DAY_SHORT[n ?? 0] ?? 'Sun');
 
-/** "Sun–Thu 9:00–17:00, Sat 9:00–13:00 · 30 min": how a page says the hours. */
-export function describeHours(hours: BookingHours): string {
+/**
+ * "Sun–Thu 9:00–17:00, Sat 9:00–13:00 · 30 min": how a page says the hours, the days in the
+ * order the host's week runs (R76: Saturday first in Egypt, so "Sat–Wed" reads as one run).
+ */
+export function describeHours(hours: BookingHours, weekStart = 0): string {
+  const order = weekOrder(weekStart);
+  const rank = (day: number) => order.indexOf(day);
   const byRange = new Map<string, number[]>();
-  for (const d of [...hours.days].sort((a, b) => a.weekday - b.weekday)) {
+  for (const d of [...hours.days].sort((a, b) => rank(a.weekday) - rank(b.weekday))) {
     const key = `${d.start}–${d.end}`;
     byRange.set(key, [...(byRange.get(key) ?? []), d.weekday]);
   }
@@ -389,7 +394,7 @@ export function describeHours(hours: BookingHours): string {
     let i = 0;
     while (i < days.length) {
       let j = i;
-      while (j + 1 < days.length && days[j + 1] === (days[j] ?? 0) + 1) j++;
+      while (j + 1 < days.length && rank(days[j + 1] ?? 0) === rank(days[j] ?? 0) + 1) j++;
       parts.push(
         j - i >= 2
           ? `${day(days[i])}–${day(days[j])}`

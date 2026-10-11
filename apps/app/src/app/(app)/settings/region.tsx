@@ -5,13 +5,14 @@
  */
 import type { MeView } from '@caime/core/api';
 import { INTERFACE_LANGUAGES, type LanguageChoice, tr } from '@caime/core/i18n';
-import { useQueryClient } from '@tanstack/react-query';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { useState } from 'react';
 import { View } from 'react-native';
 import { endpoints } from '@/api/endpoints';
 import { qk } from '@/api/keys';
 import { deviceInfo } from '@/features/auth/device';
 import { CountryField } from '@/features/geo/CountryField';
+import { useCountries } from '@/features/geo/countries';
 import { LanguageField } from '@/features/geo/LanguageField';
 import { TimeZoneField } from '@/features/geo/TimeZoneField';
 import { Choice, Group, SettingsPage } from '@/features/settings/SettingsPage';
@@ -19,6 +20,8 @@ import { savePrefs } from '@/features/settings/savePrefs';
 import { LANGUAGE_NAMES } from '@/lib/i18n';
 import { useMe, useSession } from '@/state/session';
 import { usePrefs } from '@/theme/prefs';
+import { Button } from '@/ui/Button';
+import { Text } from '@/ui/Text';
 import { toast } from '@/ui/Toast';
 
 export default function Region() {
@@ -29,6 +32,14 @@ export default function Region() {
   // Saving the preference is enough: the language follows it (lib/i18n.ts), and the app
   // remounts in it.
   const chooseLanguage = (choice: LanguageChoice) => savePrefs({ language: choice });
+  // A country change offers the zone that goes with it (R76), when the one kept is elsewhere.
+  const countries = useCountries(me.locale, device.timeZone);
+  const zones = useQuery({
+    queryKey: qk.timeZones(me.locale, device.timeZone ?? ''),
+    queryFn: () => endpoints.timeZones(me.locale, device.timeZone),
+    staleTime: 3_600_000,
+  });
+  const [offeredZone, setOfferedZone] = useState<string | null>(null);
   const save = async (patch: Partial<Pick<MeView, 'country' | 'timeZone' | 'locale'>>) => {
     try {
       const { user } = await endpoints.updateMe(patch);
@@ -37,6 +48,12 @@ export default function Region() {
       // Times and "needs you" follow the zone and the work week: what's listed may change.
       void qc.invalidateQueries({ queryKey: qk.inbox });
       toast(week ? tr('Saved. Your work week follows your country now.') : tr('Saved'));
+      if (patch.country) {
+        const main = countries.data?.countries.find((c) => c.code === patch.country)?.zone;
+        const kept = zones.data?.zones.find((z) => z.zone === user.timeZone)?.country;
+        setOfferedZone(main && main !== user.timeZone && kept !== patch.country ? main : null);
+      }
+      if (patch.timeZone) setOfferedZone(null);
     } catch (e) {
       toast((e as Error).message, { tone: 'danger' });
     }
@@ -65,6 +82,22 @@ export default function Region() {
             deviceZone={device.timeZone}
             testID="region-zone"
           />
+          {offeredZone ? (
+            <View style={{ gap: 8 }} testID="region-zone-offer">
+              <Text variant="caption" color="textSecondary">
+                {tr('Your time zone is still {zone}. Your new country keeps {offered}.', {
+                  zone: me.timeZone,
+                  offered: offeredZone,
+                })}
+              </Text>
+              <Button
+                label={tr('Use {zone}', { zone: offeredZone })}
+                variant="secondary"
+                onPress={() => void save({ timeZone: offeredZone })}
+                testID="region-zone-offer-use"
+              />
+            </View>
+          ) : null}
         </View>
       </Group>
       <Group

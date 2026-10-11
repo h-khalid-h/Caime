@@ -3,13 +3,14 @@
  * customers?" for notifications, inbox priority, privacy, tone and follow-up.
  */
 
-import { defaultWorkweek, describePolicy, PolicyBody, resolvePolicy, uuidv7 } from '@caime/core';
+import { describePolicy, PolicyBody, resolvePolicy, uuidv7 } from '@caime/core';
 import type {
   EffectivePolicyResponse,
   OkResponse,
   PoliciesResponse,
   PolicyCreatedResponse,
 } from '@caime/core/api';
+import { defaultWorkweek } from '@caime/core/countries';
 import { tr } from '@caime/core/i18n';
 import type { FastifyInstance } from 'fastify';
 import { sql, type Transaction } from 'kysely';

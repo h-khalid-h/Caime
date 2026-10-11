@@ -40,6 +40,7 @@ import type {
   OrgSpacesResponse,
   OrgsResponse,
 } from '@caime/core/api';
+import { defaultWorkweek } from '@caime/core/countries';
 import { tr } from '@caime/core/i18n';
 import type { FastifyInstance } from 'fastify';
 import { sql } from 'kysely';
@@ -66,7 +67,7 @@ import { joinThreads, leaveThreads, orgAvatarUrl } from '../lib/business';
 import { disconnect } from '../lib/checkout';
 import { qrPath } from '../lib/door';
 import { AppError, badRequest, conflict, forbidden, notFound } from '../lib/errors';
-import { currencyOf, isCountry } from '../lib/geo';
+import { currencyOf, currentZone, defaultZoneOf, isCountry } from '../lib/geo';
 import { assertHandleAvailable } from '../lib/handles';
 import { orgInsights } from '../lib/insights';
 import { applyOrgRetention, buildOrgExport, eraseBusinessConversation } from '../lib/org-data';
@@ -87,7 +88,7 @@ import { addToSpace, orgSpaceViews, removeFromSpace } from '../lib/space-members
 import { suggestFromPlace, withdrawPlaceOffers } from '../lib/suggest';
 import { escapeLike } from '../lib/text';
 import { endFollowsOf } from '../lib/updates';
-import { minorOf, personView } from '../lib/users';
+import { countryDerived, minorOf, personView } from '../lib/users';
 import { parse } from '../lib/validate';
 import { requireAuth } from '../plugins/auth';
 
@@ -131,6 +132,10 @@ async function summaryOf(
     myRole,
     country: org.country,
     currency: currencyOf(org.country),
+    // Its own zone and days worked (R76), else its country's; and what its country sets.
+    timeZone: org.time_zone ?? defaultZoneOf(org.country),
+    workweek: org.workweek ?? defaultWorkweek(org.country),
+    ...countryDerived(org.country),
     foundedYear: org.founded_year,
     avatarUrl: orgAvatarUrl(org),
   };
@@ -418,10 +423,28 @@ export async function orgRoutes(app: FastifyInstance, ctx: AppContext) {
     const auth = requireAuth(req);
     const { id } = parse(idParam, req.params);
     const body = parse(UpdateOrgBody, req.body);
-    await orgById(ctx.db, id);
+    const current = await orgById(ctx.db, id);
     await managerSeat(ctx, auth.userId, id);
     if (body.country !== undefined && !isCountry(body.country))
       throw badRequest(tr('Choose where it’s based.'));
+    // Its own time zone (R76), by the name it has now; null takes its country's again.
+    let timeZone: string | null | undefined = body.timeZone;
+    if (body.timeZone) {
+      timeZone = currentZone(body.timeZone);
+      if (!timeZone) throw badRequest(tr('Choose a time zone from the list.'));
+    }
+    // Moved: a zone or a week that was the old country's own follows it to the new one; one
+    // set on purpose stays (as a person's work week does, modules/me.ts).
+    let workweek = body.workweek;
+    if (body.country !== undefined && body.country !== current.country) {
+      if (timeZone === undefined && current.time_zone === defaultZoneOf(current.country))
+        timeZone = null;
+      if (
+        workweek === undefined &&
+        (current.workweek ?? []).join() === defaultWorkweek(current.country).join()
+      )
+        workweek = null;
+    }
     // How long its customers' conversations are kept is its owner's to set (R54), and takes
     // what's already there with it: the shorter time wins for every message.
     if (body.retentionDays !== undefined) {
@@ -456,6 +479,10 @@ export async function orgRoutes(app: FastifyInstance, ctx: AppContext) {
         ...(body.about !== undefined ? { about: body.about } : {}),
         ...(body.website !== undefined ? { website: body.website } : {}),
         ...(body.country !== undefined ? { country: body.country } : {}),
+        ...(timeZone !== undefined ? { time_zone: timeZone } : {}),
+        ...(workweek !== undefined
+          ? { workweek: workweek ? [...new Set(workweek)].sort((a, b) => a - b) : null }
+          : {}),
         ...(body.foundedYear !== undefined ? { founded_year: body.foundedYear } : {}),
         ...(body.avatarFileId !== undefined ? { avatar_file_id: body.avatarFileId } : {}),
         updated_at: ctx.now(),

@@ -1001,7 +1001,9 @@ function itemLd(host: PublicPerson | PublicOrg, item: PublicItem, url: string, p
       '@type': 'Offer',
       url,
       price: String(item.price?.value ?? 0),
-      priceCurrency: item.price?.currency ?? 'USD',
+      // A free item still names a currency: the seller's own (R76), else the schema's usual.
+      priceCurrency:
+        item.price?.currency ?? (host.kind === 'org' ? host.org.currency : null) ?? 'USD',
       availability: 'https://schema.org/InStock',
       seller,
     },

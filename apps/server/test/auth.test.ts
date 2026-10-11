@@ -176,13 +176,26 @@ describe('where someone lives', () => {
     const cairo = await get('locale=ar&timeZone=Africa%2FCairo');
     expect(cairo.suggested).toBe('EG');
     expect(cairo.countries).toHaveLength(250);
-    expect(cairo.countries).toContainEqual({ code: 'EG', name: 'مصر' });
+    // Each with its main zone (R76): zone.tab's first for the country, UTC for one it doesn't list.
+    expect(cairo.countries).toContainEqual({ code: 'EG', name: 'مصر', zone: 'Africa/Cairo' });
     // Kosovo, which ISO's own list leaves out, is there to choose; and names are as the whole tag
     // writes them (Traditional Chinese in Taiwan, European Portuguese in Portugal).
-    expect((await get('locale=en')).countries).toContainEqual({ code: 'XK', name: 'Kosovo' });
-    expect((await get('locale=zh-TW')).countries).toContainEqual({ code: 'US', name: '美國' });
-    expect((await get('locale=zh-CN')).countries).toContainEqual({ code: 'US', name: '美国' });
-    expect((await get('locale=pt-PT')).countries).toContainEqual({ code: 'IR', name: 'Irão' });
+    expect((await get('locale=en')).countries).toContainEqual({
+      code: 'XK',
+      name: 'Kosovo',
+      zone: 'UTC',
+    });
+    expect((await get('locale=zh-TW')).countries).toContainEqual({
+      code: 'US',
+      name: '美國',
+      zone: 'America/New_York',
+    });
+    expect((await get('locale=zh-CN')).countries).toContainEqual(
+      expect.objectContaining({ code: 'US', name: '美国' }),
+    );
+    expect((await get('locale=pt-PT')).countries).toContainEqual(
+      expect.objectContaining({ code: 'IR', name: 'Irão' }),
+    );
     // An English phone in Cairo is still in Cairo; an older name for a zone still counts.
     expect((await get('locale=en-US&timeZone=Africa%2FCairo')).suggested).toBe('EG');
     expect((await get('locale=en&timeZone=Asia%2FCalcutta')).suggested).toBe('IN');

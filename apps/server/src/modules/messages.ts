@@ -215,7 +215,7 @@ export async function messageRoutes(app: FastifyInstance, ctx: AppContext) {
             body.body.trim(),
             await ctx.db
               .selectFrom('users')
-              .select(['time_zone', 'locale', 'workweek'])
+              .select(['time_zone', 'locale', 'workweek', 'country'])
               .where('id', '=', auth.userId)
               .executeTakeFirstOrThrow(),
             ctx.now(),
