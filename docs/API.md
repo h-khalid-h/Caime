@@ -335,7 +335,13 @@ People find apps under **You → Apps → Discover**. To list yours, open it und
 Developer → Your apps** and fill in the listing: a tagline (80 characters), a description, a
 category, an icon (an image you upload), what it gives Caime (**Gives Caime**: calendar sync,
 mail; a closed list, so a calendar sync or a mail connector is found by what it does for Caime,
-not by its name), and **where Connect goes**: your app's own sign-in, an
+not by its name), how it's paid for (free; free and paid plans; paid, with a free trial; paid,
+with no free plan; included with a subscription: Caime never takes the money), which of Caime's
+languages it works in, **where to get help** (a page, or `mailto:` and an address) and its
+**privacy policy** (https), both required, up to five screenshots (8:5, at least 1280 pixels
+wide, images you upload), what it does with a model if it puts people's words through one
+(which model, what it keeps, for how many days, where it runs: shown as Caime shows its own
+processors), and **where Connect goes**: your app's own sign-in, an
 https address at a site among your return addresses or your website, which starts step 1 above.
 Optionally the organization it's published under, if you're its owner or admin: a verified one
 shows as such. Turn on **Listed in Discover** and save. Caime looks at it once, then it shows,
@@ -346,7 +352,31 @@ now, never who. Whoever is asked to let it in sees the same publisher and icon D
 the organization it's published under (its owner and admins see it on their setup screen, with
 where the listing stands), else you, with a tap to that page. Signed in as yourself,
 `PATCH /v1/me/oauth-apps/:id` takes the same fields (`tagline`, `description`, `category`,
-`provides`, `loginUrl`, `iconFileId`, `orgId`, `listed`); no token reaches it.
+`provides`, `pricing`, `languages`, `supportUrl`, `privacyUrl`, `aiUse` as
+`{ model, keeps, days, where }` or null, `screenshotIds`, `loginUrl`, `iconFileId`, `orgId`,
+`listed`); no token reaches it.
+
+### The marketplace
+
+Every listed app also has a page on the web, `/marketplace/<slug>`, which anyone can open and
+search engines index: its address is its name's (`weekly-digest`), given the first time it's
+listed and kept for good, even if the app is removed, so a link to it never comes to mean another
+app. `/marketplace` lists Caime's own and the bridges first, then the listed apps by how many
+connected them and then the newest, a category at `/marketplace/<category>`; each page reads in
+every language Caime does, and its **Connect in Caime** opens your app's sheet in Discover
+(through sign-in for a visitor). A listed app's icon and screenshots are public with its page;
+before it's let through, they're yours and the operator's alone.
+
+**The bar.** Caime looks at every listing against the same points before it shows, written on
+`/developers#bar` and checked by the operator one by one: a permission is asked for because the
+app uses it today (never for a feature to come; reading everything is looked at closer); Connect
+works to the end; the support address and privacy policy open (one that stops working takes the
+app out); and none of exporting or backing up conversations wholesale, deleting in bulk,
+copying Caime's own app, taking payments through Caime, training a model on what it reads, or one
+account shared by several people. Apps act for people over 18. A change to what's shown asks
+again; an app taken out (left broken, or no longer keeping to the bar) says why in a notification
+to you, keeps its address, and comes back when you change it and Caime lets it through. There
+are no ratings and no paid placement.
 
 ## Your own cards
 

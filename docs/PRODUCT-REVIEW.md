@@ -1248,7 +1248,17 @@ with its reason, so it isn't proposed again without new facts.
   and its certificate exist. *Cost*: a site page cached ten minutes like the others, app pages
   the same, screenshots through the file pipeline; the operator's time per listing is the
   checklist, no new process. *What isn't done*: a billing marketplace (no), and nothing of
-  layers 2 and 3 of R79 changes: the page only shows what connects today.
+  layers 2 and 3 of R79 changes: the page only shows what connects today. *Built (2026-10-12)*: `/marketplace`, a category's page and an app's page
+  (`lib/marketplace-pages.ts`), pages with no script in every interface language, from the same
+  listed rows Discover reads (Caime's own and the bridges first, 48 a page by keyset), with
+  `SoftwareApplication` and breadcrumb JSON-LD and a sitemap line each; an app's address given
+  when it's first listed and held for good (`giveSlug`, migration 0073, never a category's or
+  Caime's own); a listing's pricing model (five, Caime never taking the money), languages, help
+  and privacy addresses (both required), a model disclosure and up to five 8:5 screenshots
+  through the preview rendition; Discover's sheet showing them with a link to the page; the
+  bar on `/developers#bar` and in API.md, `LISTING_CHECKS` sent back by the operator to list,
+  `delist` with a note the developer reads; "Reviewed by Caime", "Verified", "Built by Caime".
+  Still ⛔: cai.me, the owner's to acquire.
 - **R81 — Said, never guessed: gender as a declared fact (owner, 2026-10-11, from the Arabic
   conversation panel reading “شريك أو شريكة” of a man).** R27 stands: Caime infers nothing from a
   name, a photo or pronouns. What it adds is a place to *say* it. A person's profile holds

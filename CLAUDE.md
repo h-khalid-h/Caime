@@ -749,6 +749,22 @@ These are rules, not preferences.
   saved by the listing route (a change asks the operator again) and picked with `ChoiceChips
   multiple` in `AppListing.tsx`; a new kind of thing an app provides joins the list, and whatever
   finds such apps (R75 phase 3) reads it, never a category.
+- The marketplace (R80) is `lib/marketplace-pages.ts`: `/marketplace` is in `MARKETING_PAGES`
+  (reserved, in the nav and the sitemap) but routed by `publicPageFor` before the site's pages
+  and rendered from rows (`marketplacePageFor`, `renderMarketplace`), never by `renderSite`
+  (whose pages are `SiteOnlyPage`). What it lists is `listed(directoryQuery({ db }, NO_VIEWER))`
+  and `OWN_APPS` (the built-ins and bridges), the same as Discover; a new thing a listing says
+  joins `AppListingView`, `DirectoryAppView`, the listing route's `next`, the export and the
+  app's page there. An app's address is `slug`, given only by `giveSlug` when the operator first
+  lets it through and never changed or freed (`isReservedSlug` keeps the categories and Caime's
+  own ids out); a new category or built-in is a reserved address at once. Its words are the
+  developer's, shown as theirs ("It says…"); its links are only https or mailto and drawn
+  `noopener nofollow`. Screenshots are checked by `assertScreenshots` (`modules/oauth.ts`: own,
+  re-encoded, 8:5 within core's slack, `SCREENSHOT_MIN_WIDTH`) and addressed only by core's
+  `appScreenshotPath`. Listing needs `LISTING_CHECKS` from the operator; `delist` needs a
+  reason and no revision. Anything that changes what the marketplace shows calls
+  `forgetSitemaps()`. Links to the site's pages, the marketplace's included, open as pages in
+  the app: `appPath` treats `SITE_PAGES` and `MARKETING_PAGES` as not its screens.
 - Who made an app is one shape, `AppPublisher` (`publisherOf` in `lib/app-directory.ts`: the
   organization it's published under, else its developer, or Caime; `CAIME_PUBLISHER` for the
   built-ins): consent (`OAuthConsentView.app`), Connected, Discover and an organization's

@@ -103,12 +103,13 @@ export async function registerWeb(app: FastifyInstance, ctx: AppContext): Promis
   const hashes = new Map<string, string>();
   const serve = async (req: FastifyRequest, reply: FastifyReply) => {
     const path = req.url.split(/[?#]/)[0] ?? '/';
+    const search = new URLSearchParams(req.url.split('?')[1]?.split('#')[0] ?? '');
     // Signed in (a session cookie, whatever it's worth): the app, not a page about Caime.
     const signedIn = Boolean(req.cookies?.[SESSION_COOKIE]);
     const found =
       path === '/' && signedIn
         ? { kind: 'app' as const }
-        : await publicPageFor(ctx.db, path, ctx.now());
+        : await publicPageFor(ctx.db, path, ctx.now(), search);
     // The way in is painted before the app only for a visitor: signed in, these screens send
     // the person on at once, and the paint would only flash.
     const page = found.kind === 'entry' && signedIn ? { kind: 'app' as const } : found;
@@ -120,8 +121,12 @@ export async function registerWeb(app: FastifyInstance, ctx: AppContext): Promis
         ? null
         : siteLanguage((req.query as Record<string, unknown>).lang, req.headers['accept-language']);
     const language = chosen?.language ?? null;
+    // The site's own pages, the marketplace's among them (R80): everyone's, signed in or not,
+    // never the app, cached ten minutes.
+    const sitePage =
+      page.kind === 'site' || page.kind === 'marketplace' || page.kind === 'market-app';
     const facts =
-      page.kind === 'landing' || page.kind === 'site'
+      page.kind === 'landing' || sitePage
         ? {
             legalName: ctx.config.LEGAL_NAME,
             contactEmail: ctx.config.CONTACT_EMAIL,
@@ -156,7 +161,7 @@ export async function registerWeb(app: FastifyInstance, ctx: AppContext): Promis
     // are links: sign-up and sign-in open the app. A page of the site about Caime is everyone's,
     // signed in or not: the app has no screen for it, so it never boots there.
     const visitor =
-      page.kind === 'site' ||
+      sitePage ||
       ((page.kind === 'person' ||
         page.kind === 'org' ||
         page.kind === 'item' ||
@@ -169,7 +174,7 @@ export async function registerWeb(app: FastifyInstance, ctx: AppContext): Promis
     if (page.kind !== 'app') reply.header('vary', 'accept-language');
     return reply
       .status(rendered.status)
-      .header('cache-control', page.kind === 'site' ? 'public, max-age=600' : 'no-cache')
+      .header('cache-control', sitePage ? 'public, max-age=600' : 'no-cache')
       .header('content-security-policy', pageCsp)
       .header('permissions-policy', PERMISSIONS_POLICY)
       .type('text/html; charset=utf-8')

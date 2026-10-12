@@ -32,11 +32,18 @@ import type {
   ReportsResponse,
 } from '@caime/core/api';
 import { tr } from '@caime/core/i18n';
+import { LISTING_CHECKS } from '@caime/core/marketplace';
 import type { FastifyInstance, FastifyRequest } from 'fastify';
 import { sql } from 'kysely';
 import { z } from 'zod';
 import type { AppContext } from '../context';
-import { listingById, listingReviewView, waitingListings } from '../lib/app-directory';
+import {
+  giveSlug,
+  listingById,
+  listingReviewView,
+  listingState,
+  waitingListings,
+} from '../lib/app-directory';
 import { AUDIT_VERIFY_ROWS, audit, verifyAuditChain } from '../lib/audit';
 import { backupDir, lastBackup, listBackups, runBackup } from '../lib/backup';
 import { endBillingOf, paysThroughBilling } from '../lib/billing';
@@ -57,6 +64,7 @@ import { orgPlanView, planUsage } from '../lib/plans';
 import { productMetrics } from '../lib/product-metrics';
 import { checkProviders, providersView } from '../lib/provider-health';
 import { sendResetLink } from '../lib/reset';
+import { forgetSitemaps } from '../lib/sitemap-cache';
 import { parse } from '../lib/validate';
 
 const PAYING = (plan: string) =>
@@ -603,30 +611,45 @@ export async function adminRoutes(app: FastifyInstance, ctx: AppContext) {
     const body = parse(AppListingReviewBody, req.body);
     const before = await listingById(ctx, id);
     if (!before?.listed_at || before.revoked_at) throw notFound(tr('That app'));
-    if (body.decision === 'decline' && !body.reason?.trim())
+    if (body.decision !== 'list' && !body.reason?.trim())
       throw badRequest(tr('Say why, so the developer can change it and ask again.'));
-    // Only the version looked at is let through: a change since asks again.
-    if (before.listing_rev !== body.revision)
+    // Taken out only once it's in (R80); a waiting one is declined.
+    if (body.decision === 'delist' && listingState(before) !== 'listed')
+      throw badRequest(tr('Only a listed app can be taken out.'));
+    // Let through only with every point of the bar checked (R80).
+    if (body.decision === 'list' && LISTING_CHECKS.some((c) => !body.checks?.includes(c)))
+      throw badRequest(tr('Check every point of the bar before listing it.'));
+    // Only the version looked at is let through or turned down: a change since asks again.
+    // Taking a listed app out applies to whatever is live, so it asks for no version.
+    if (body.decision !== 'delist' && before.listing_rev !== body.revision)
       throw new AppError(
         409,
         'listing_changed',
         tr('The listing changed since it was looked at: look at it again.'),
       );
-    await ctx.db
-      .updateTable('oauth_clients')
-      .set({
-        reviewed_at: ctx.now(),
-        declined_reason: body.decision === 'decline' ? (body.reason?.trim() ?? null) : null,
-      })
-      .where('id', '=', id)
-      .execute();
-    await audit(ctx.db, {
-      actorId: null,
-      action: 'oauth.listing_reviewed',
-      target: id,
-      ip: req.ip,
-      metadata: { decision: body.decision, operator: by },
+    await ctx.db.transaction().execute(async (trx) => {
+      // Its address in the marketplace, the first time it's let through, held from then on.
+      const slug =
+        body.decision === 'list' && !before.slug ? await giveSlug(trx, before) : before.slug;
+      await trx
+        .updateTable('oauth_clients')
+        .set({
+          reviewed_at: ctx.now(),
+          declined_reason: body.decision === 'list' ? null : (body.reason?.trim() ?? null),
+          slug,
+        })
+        .where('id', '=', id)
+        .execute();
+      await audit(trx, {
+        actorId: null,
+        action: 'oauth.listing_reviewed',
+        target: id,
+        ip: req.ip,
+        metadata: { decision: body.decision, checks: body.checks ?? [], operator: by },
+      });
     });
+    // The marketplace's pages and the sitemap follow at once.
+    forgetSitemaps();
     // The developer hears the decision (M9), in their language, with the reason when declined.
     const reason = body.reason?.trim() || null;
     await notify(ctx, {
@@ -636,7 +659,9 @@ export async function adminRoutes(app: FastifyInstance, ctx: AppContext) {
       title: () =>
         body.decision === 'list'
           ? tr('{name} is listed in Discover', { name: before.name })
-          : tr('{name} wasn’t listed', { name: before.name }),
+          : body.decision === 'delist'
+            ? tr('{name} was taken out of Discover', { name: before.name })
+            : tr('{name} wasn’t listed', { name: before.name }),
       body: () =>
         body.decision === 'list' ? tr('Anyone on Caime can find and connect it now.') : reason,
       data: { appId: id },

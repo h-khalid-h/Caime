@@ -28,6 +28,13 @@ import { parse } from '../lib/validate';
 import { requireAuth } from '../plugins/auth';
 
 const MAX_BYTES = 100 * 1024 * 1024;
+
+/** Asked for, and let through: what the marketplace and Discover show (R74, R80). */
+const isListed = (c: {
+  listed_at: Date | null;
+  reviewed_at: Date | null;
+  declined_reason: string | null;
+}) => Boolean(c.listed_at && c.reviewed_at && !c.declined_reason);
 /** The file to send for an image drawn large: its preview, else the cleaned original. */
 async function largeOf(
   storage: Storage,
@@ -573,25 +580,69 @@ export async function fileRoutes(app: FastifyInstance, ctx: AppContext) {
     );
   };
   app.get('/directory/:id/icon', async (req, reply) => {
-    const auth = requireAuth(req);
     const { id } = parse(z.object({ id: z.string().uuid() }), req.params);
-    // Listed, the owner's own, or one the viewer let in (Connected shows it either way, M8).
-    const granted = await ctx.db
-      .selectFrom('oauth_grants')
-      .select('id')
-      .where('client_id', '=', id)
-      .where('user_id', '=', auth.userId)
-      .where('revoked_at', 'is', null)
-      .executeTakeFirst();
+    // Listed, to anyone (the marketplace shows it to visitors, R80); else the owner's own, or
+    // one the viewer let in (Connected shows it either way, M8).
+    const userId = req.auth?.userId ?? null;
+    const granted = userId
+      ? await ctx.db
+          .selectFrom('oauth_grants')
+          .select('id')
+          .where('client_id', '=', id)
+          .where('user_id', '=', userId)
+          .where('revoked_at', 'is', null)
+          .executeTakeFirst()
+      : undefined;
     return appIcon(
       req,
       reply,
       id,
-      (c) =>
-        Boolean(c.listed_at && c.reviewed_at && !c.declined_reason) ||
-        c.owner_id === auth.userId ||
-        granted !== undefined,
+      (c) => isListed(c) || c.owner_id === userId || granted !== undefined,
     );
+  });
+
+  /**
+   * A listing's screenshot (R80), by its place, from its preview rendition (R70): a listed app's
+   * to anyone, as its marketplace page is; else its owner's, who sees it before it's let through.
+   */
+  const appScreenshot = async (
+    req: FastifyRequest,
+    reply: FastifyReply,
+    allowed: (c: Parameters<typeof isListed>[0] & { owner_id: string }) => boolean,
+  ) => {
+    const { id, n } = parse(
+      z.object({ id: z.string().uuid(), n: z.coerce.number().int().min(0).max(9) }),
+      req.params,
+    );
+    const missing = () => notFound(tr('That screenshot'));
+    const c = await ctx.db
+      .selectFrom('oauth_clients')
+      .select(['owner_id', 'screenshot_ids', 'listed_at', 'reviewed_at', 'declined_reason'])
+      .where('id', '=', id)
+      .where('revoked_at', 'is', null)
+      .executeTakeFirst();
+    const fileId = c?.screenshot_ids[n];
+    if (!c || !fileId || !allowed(c)) throw missing();
+    const f = await ctx.db
+      .selectFrom('files')
+      .selectAll()
+      .where('id', '=', fileId)
+      .executeTakeFirst();
+    if (f?.kind !== 'image' || !f.thumb_key) throw missing();
+    return streamFile(
+      req,
+      reply,
+      storage,
+      { ...(await largeOf(storage, f)), name: `screenshot-${n + 1}.webp` },
+      true,
+    );
+  };
+  app.get('/directory/:id/screenshots/:n', (req, reply) =>
+    appScreenshot(req, reply, (c) => isListed(c) || c.owner_id === req.auth?.userId),
+  );
+  app.get('/admin/listings/:id/screenshots/:n', (req, reply) => {
+    requireOperator(ctx, req, ctx.config.ADMIN_TOKEN, ctx.config.OPERATOR_TOKENS);
+    return appScreenshot(req, reply, (c) => c.listed_at !== null);
   });
   /** The operator sees what they're asked to let through, before it's listed. */
   app.get('/admin/listings/:id/icon', async (req, reply) => {

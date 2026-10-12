@@ -44,7 +44,6 @@ export const frServer: Catalog = {
   'security and privacy': 'sécurité et confidentialité',
   Developers: 'Développeurs',
   developers: 'développeurs',
-  Help: 'Aide',
   Example: 'Exemple',
   'Who someone is to you comes first.': 'D’abord, qui est chaque personne pour vous.',
   'A connection is two people and how they know each other, said by each side, private to each. Everything else in Caime hangs off it.':
@@ -297,7 +296,6 @@ export const frServer: Catalog = {
   'the server': 'le serveur',
   'A content security policy on every page, no third-party scripts, no ads, no tracking across sites, and a backup checked after every dump.':
     'Une politique de sécurité du contenu sur chaque page, aucun script tiers, aucune publicité, aucun suivi entre sites, et chaque sauvegarde vérifiée dès sa création.',
-  AI: 'IA',
   'Off until an adult turns it on, never on a private conversation, and everything it infers is a suggestion you accept or don’t.':
     'Désactivée tant qu’un adulte ne l’active pas, jamais sur une conversation privée, et tout ce qu’elle déduit est une suggestion que vous acceptez ou non.',
   'Read the privacy policy': 'Lire la politique de confidentialité',
@@ -1135,8 +1133,6 @@ export const frServer: Catalog = {
     'Seuls le propriétaire ou les admins d’une organisation publient des applications sous son nom.',
   'Connect must send people to the app’s own address: one it returns to, or its website.':
     'Connecter doit envoyer les gens à l’adresse de l’application elle-même : une où elle revient, ou son site web.',
-  'A listing needs a tagline, a category and where Connect goes.':
-    'Une fiche a besoin d’une accroche, d’une catégorie et d’où mène Connecter.',
   'Who does it is for the team to say.': 'Qui s’en charge, c’est à l’équipe de le dire.',
   'This card has been paid already.': 'Cette carte a déjà été payée.',
   'The listing changed since it was looked at: look at it again.':
@@ -1151,4 +1147,71 @@ export const frServer: Catalog = {
   'A text message carries no payload.': 'Un message texte ne porte pas de charge utile.',
   'That isn’t from the mail provider.': 'Ceci ne vient pas du fournisseur de messagerie.',
   'That isn’t a mail.': 'Ce n’est pas un e-mail.',
+  'Built by {site}': 'Faite par {site}',
+  Categories: 'Catégories',
+  Marketplace: 'Marketplace',
+  marketplace: 'marketplace',
+  '{category} apps for {site}': 'Apps pour {site} : {category}',
+  'Apps for {site}: the marketplace': 'Apps pour {site} : la marketplace',
+  'Apps that work with {site}: its own, the automation platforms, and apps developers listed after {site} looked at each one. Each asks you before it does anything, and you can end it any time.':
+    'Des apps qui fonctionnent avec {site} : les siennes, les plateformes d’automatisation, et des apps que leurs développeurs ont listées après que {site} a regardé chacune. Chacune vous demande avant de faire quoi que ce soit, et vous pouvez y mettre fin à tout moment.',
+  'More apps': 'Plus d’apps',
+  '{category} apps': 'Apps : {category}',
+  'Apps that work with {site}.': 'Des apps qui fonctionnent avec {site}.',
+  'Nothing here yet.': 'Rien ici pour l’instant.',
+  'List your app': 'Lister votre app',
+  how: 'comment',
+  'Register it under Settings → Developer, fill in its listing and ask. {site} looks at every one against the bar on {developers}, once, and again whenever what it shows changes.':
+    'Enregistrez-la dans Réglages → Développeur, remplissez sa fiche et demandez. {site} regarde chacune selon les règles de {developers}, une fois, puis à chaque changement de ce qu’elle affiche.',
+  'the developers’ page': 'la page des développeurs',
+  order: 'ordre',
+  'By how many people connected it, then the newest. Nothing is paid for: no placement, no ratings.':
+    'Selon le nombre de personnes qui l’ont connectée, puis les plus récentes. Rien ne s’achète : ni placement, ni notes.',
+  by: 'par',
+  reviewed: 'vérification',
+  'Reviewed by {site}': 'Vérifiée par {site}',
+  category: 'catégorie',
+  'gives Caime': 'apporte à Caime',
+  connected: 'connectée',
+  'where it goes': 'où il va',
+  help: 'aide',
+  '{site}’s help': 'L’aide de {site}',
+  '{site}’s privacy policy': 'La politique de confidentialité de {site}',
+  '{name} for {site} · Marketplace': '{name} pour {site} · Marketplace',
+  'Turn it on in {site}': 'L’activer dans {site}',
+  'Connect in {site}': 'Connecter dans {site}',
+  'More {category} apps': 'Plus d’apps : {category}',
+  'The bar for the marketplace': 'Les règles de la marketplace',
+  'Each one is asked for because the app uses it today, never for a feature to come. Reading everything is looked at closer.':
+    'Chacune est demandée parce que l’app s’en sert aujourd’hui, jamais pour une fonction à venir. Tout lire est examiné de plus près.',
+  connect: 'connecter',
+  'Caime follows Connect to the end, as a person would, before it lists the app.':
+    'Caime suit Connecter jusqu’au bout, comme le ferait une personne, avant de lister l’app.',
+  'help and privacy': 'aide et confidentialité',
+  'A support address and a privacy policy that open, both on the listing. One that stops working takes the app out.':
+    'Une adresse d’aide et une politique de confidentialité qui s’ouvrent, toutes deux sur la fiche. Si l’une cesse de fonctionner, l’app est retirée.',
+  never: 'jamais',
+  'Exporting or backing up conversations wholesale, deleting in bulk, copying Caime’s own app, taking payments through Caime, training a model on what it reads, or one account shared by several people.':
+    'Exporter ou sauvegarder les conversations en bloc, supprimer en masse, copier l’app de Caime, encaisser des paiements via Caime, entraîner un modèle sur ce qu’elle lit, ou un compte partagé entre plusieurs personnes.',
+  'a model': 'un modèle',
+  'An app that puts people’s words through a model says which, what it keeps, for how long and where. The listing shows it as Caime shows its own processors.':
+    'Une app qui fait passer les mots des gens par un modèle dit lequel, ce qu’elle conserve, combien de temps et où. La fiche l’affiche comme Caime affiche ses propres sous-traitants.',
+  age: 'âge',
+  'the listing': 'la fiche',
+  'A tagline, a category, how it’s paid for, its languages, up to {n} screenshots at 8:5, where to get help and its privacy policy.':
+    'Une accroche, une catégorie, comment elle est payée, ses langues, jusqu’à {n} captures d’écran au format 8:5, où trouver de l’aide et sa politique de confidentialité.',
+  changes: 'changements',
+  'A change to what the listing shows asks again. An app left broken is taken out, with a note to its developer.':
+    'Un changement de ce qu’affiche la fiche redemande une vérification. Une app laissée en panne est retirée, avec une note pour son développeur.',
+  'the order': 'l’ordre',
+  'By how many people connected it, then the newest. No paid placement, no ratings.':
+    'Selon le nombre de personnes qui l’ont connectée, puis les plus récentes. Pas de placement payant, pas de notes.',
+  'The marketplace': 'La marketplace',
+  'Only a listed app can be taken out.': 'Seule une app listée peut être retirée.',
+  'Check every point of the bar before listing it.':
+    'Vérifiez chaque point des règles avant de la lister.',
+  '{name} was taken out of Discover': '{name} a été retirée de Découvrir',
+  'That screenshot': 'Cette capture d’écran',
+  'A listing needs a tagline, a category, how it’s paid for, where to get help, a privacy policy and where Connect goes.':
+    'Une fiche a besoin d’une accroche, d’une catégorie, de comment elle est payée, d’où trouver de l’aide, d’une politique de confidentialité et d’où mène Connecter.',
 };

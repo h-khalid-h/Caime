@@ -3,6 +3,7 @@
  * added there is added here in the same commit.
  */
 import type {
+  AiUse,
   BookingHours,
   BookingItem,
   CatalogCollection,
@@ -1064,6 +1065,14 @@ export interface OAuthClientsTable {
   listing_rev: Generated<number>;
   /** What it gives Caime (R78): `APP_PROVIDES` entries. */
   provides: Generated<string[]>;
+  /** The marketplace (R80, migration 0073): its address, held once given, and what it says. */
+  slug: Generated<string | null>;
+  pricing: Generated<string | null>;
+  languages: Generated<string[]>;
+  support_url: Generated<string | null>;
+  privacy_url: Generated<string | null>;
+  ai_use: ColumnType<AiUse | null, AiUse | string | null | undefined, AiUse | string | null>;
+  screenshot_ids: Generated<string[]>;
 }
 
 export interface OAuthGrantsTable {

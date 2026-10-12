@@ -33,6 +33,15 @@ import { isPublicKey, isSealed, isSignature, type PublicJwk, type SealedMessage 
 import { isEmoji } from './emoji';
 import { msg } from './i18n';
 import { IMPORT_MAX_MESSAGES, IMPORT_MAX_TEXT } from './imports';
+import {
+  AI_USE_DAYS_MAX,
+  AI_USE_TEXT_MAX,
+  APP_LANGUAGES,
+  APP_PRICING,
+  APP_SCREENSHOTS_MAX,
+  isSupportAddress,
+  LISTING_CHECKS,
+} from './marketplace';
 import { latestFoundedYear, ORG_KINDS, UPDATE_MAX } from './orgs';
 import { PAYMENT_KINDS, PAYMENT_METHODS_MAX, paymentUrlError } from './payments';
 import { AI_TONES, NOTIFY_MODES, PRIORITIES, PRIVACY_PRESETS } from './policy';
@@ -322,6 +331,46 @@ export const ListOAuthAppBody = z
     category: z.enum(APP_CATEGORIES).nullable().optional(),
     /** What it gives Caime (R78): any of `APP_PROVIDES`, each once. */
     provides: z.array(z.enum(APP_PROVIDES)).max(APP_PROVIDES.length).optional(),
+    /** How it's paid for (R80), declared: Caime never takes the money. */
+    pricing: z.enum(APP_PRICING).nullable().optional(),
+    /** Which of Caime's languages it works in. */
+    languages: z
+      .array(z.enum(APP_LANGUAGES as [string, ...string[]]))
+      .max(APP_LANGUAGES.length)
+      .optional(),
+    /** Where people get help: a page or a mail address; required to list. */
+    supportUrl: z
+      .string()
+      .trim()
+      .max(300)
+      .refine(isSupportAddress, msg('Support must be a page (https) or a mail address (mailto:).'))
+      .nullable()
+      .optional(),
+    /** Its privacy policy, at an https address; required to list. */
+    privacyUrl: z
+      .string()
+      .trim()
+      .url()
+      .max(300)
+      .refine(
+        (u) => u.startsWith('https://'),
+        msg('The privacy policy must be at an https address.'),
+      )
+      .nullable()
+      .optional(),
+    /** When it puts people's words through a model: which, what it keeps, how long, where. */
+    aiUse: z
+      .object({
+        model: z.string().trim().min(1).max(80),
+        keeps: z.string().trim().min(1).max(AI_USE_TEXT_MAX),
+        days: z.number().int().min(0).max(AI_USE_DAYS_MAX),
+        where: z.string().trim().min(1).max(80),
+      })
+      .strict()
+      .nullable()
+      .optional(),
+    /** Up to five screenshots, 8:5: images the developer uploaded, in the order shown. */
+    screenshotIds: z.array(z.string().uuid()).max(APP_SCREENSHOTS_MAX).optional(),
     loginUrl: z
       .string()
       .trim()
@@ -416,8 +465,11 @@ export const KitFieldsBody = z.object({ fields: z.record(z.string(), z.unknown()
 
 export const AppListingReviewBody = z
   .object({
-    decision: z.enum(['list', 'decline']),
+    /** List it, decline it, or take a listed one out (R80), each with the developer told. */
+    decision: z.enum(['list', 'decline', 'delist']),
     reason: z.string().trim().max(300).optional(),
+    /** What the operator checked (R80): listing needs every one of `LISTING_CHECKS`. */
+    checks: z.array(z.enum(LISTING_CHECKS)).max(LISTING_CHECKS.length).optional(),
     /** The `revision` the operator looked at: a listing changed since isn't let through. */
     revision: z.number().int().min(0),
   })

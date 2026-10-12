@@ -19,7 +19,6 @@ export const arServer: Catalog = {
   Developers: 'المطوّرون',
   developers: 'المطوّرون',
   about: 'عن Caime',
-  Help: 'المساعدة',
   Example: 'مثال',
   'Who someone is to you comes first.': 'أولًا: من يكون الشخص بالنسبة لك.',
   'A connection is two people and how they know each other, said by each side, private to each. Everything else in Caime hangs off it.':
@@ -268,7 +267,6 @@ export const arServer: Catalog = {
   'the server': 'الخادم',
   'A content security policy on every page, no third-party scripts, no ads, no tracking across sites, and a backup checked after every dump.':
     'سياسة أمان محتوى على كل صفحة، ولا نصوص برمجية من طرف ثالث، ولا إعلانات، ولا تتبع عبر المواقع، ونسخة احتياطية تُفحص بعد كل تفريغ.',
-  AI: 'الذكاء الاصطناعي',
   'Off until an adult turns it on, never on a private conversation, and everything it infers is a suggestion you accept or don’t.':
     'معطّل حتى يفعّله شخص بالغ، ولا يعمل على محادثة خاصة أبدًا، وكل ما يستنتجه اقتراح لك أن تقبله أو ترفضه.',
   'Read the privacy policy': 'اقرأ سياسة الخصوصية',
@@ -1113,8 +1111,6 @@ export const arServer: Catalog = {
     'لا ينشر التطبيقات باسم المنظمة إلا مالكها أو مشرفوها.',
   'Connect must send people to the app’s own address: one it returns to, or its website.':
     'يجب أن يرسل «اتصال» الأشخاص إلى عنوان التطبيق نفسه: عنوان يعود إليه، أو موقعه.',
-  'A listing needs a tagline, a category and where Connect goes.':
-    'يحتاج الإدراج إلى سطر تعريفي وفئة ووجهة لزر «اتصال».',
   'Who does it is for the team to say.': 'من يقوم بذلك أمر يقرره الفريق.',
   'This card has been paid already.': 'دُفعت هذه البطاقة بالفعل.',
   'The listing changed since it was looked at: look at it again.':
@@ -1128,4 +1124,70 @@ export const arServer: Catalog = {
   'A text message carries no payload.': 'الرسالة النصية لا تحمل حمولة.',
   'That isn’t from the mail provider.': 'هذا ليس من مزوّد البريد.',
   'That isn’t a mail.': 'هذه ليست رسالة بريد.',
+  'Built by {site}': 'من صنع {site}',
+  Categories: 'الفئات',
+  Marketplace: 'سوق التطبيقات',
+  marketplace: 'سوق التطبيقات',
+  '{category} apps for {site}': 'تطبيقات {category} لـ{site}',
+  'Apps for {site}: the marketplace': 'تطبيقات لـ{site}: سوق التطبيقات',
+  'Apps that work with {site}: its own, the automation platforms, and apps developers listed after {site} looked at each one. Each asks you before it does anything, and you can end it any time.':
+    'تطبيقات تعمل مع {site}: تطبيقاتها، ومنصات الأتمتة، وتطبيقات أدرجها مطوّروها بعد أن نظرت {site} في كل واحد منها. كلٌّ منها يستأذنك قبل أن يفعل شيئًا، ويمكن إيقافه في أي وقت.',
+  'More apps': 'المزيد من التطبيقات',
+  '{category} apps': 'تطبيقات {category}',
+  'Apps that work with {site}.': 'تطبيقات تعمل مع {site}.',
+  'Nothing here yet.': 'لا شيء هنا بعد.',
+  'List your app': 'إدراج تطبيقك',
+  how: 'الطريقة',
+  'Register it under Settings → Developer, fill in its listing and ask. {site} looks at every one against the bar on {developers}, once, and again whenever what it shows changes.':
+    'سجّله من الإعدادات ← المطوّر، واملأ إدراجه واطلب نشره. تنظر {site} في كل تطبيق وفق المعايير في {developers}، مرة واحدة، ومرة أخرى كلما تغيّر ما يعرضه.',
+  'the developers’ page': 'صفحة المطوّرين',
+  order: 'الترتيب',
+  'By how many people connected it, then the newest. Nothing is paid for: no placement, no ratings.':
+    'بعدد من ربطوه، ثم الأحدث. لا شيء مدفوع: لا مواضع مشتراة ولا تقييمات.',
+  by: 'من',
+  reviewed: 'المراجعة',
+  'Reviewed by {site}': 'راجعته {site}',
+  category: 'الفئة',
+  'gives Caime': 'يقدّم لـ Caime',
+  connected: 'الربط',
+  'where it goes': 'إلى أين يذهب',
+  help: 'المساعدة',
+  '{site}’s help': 'مساعدة {site}',
+  '{site}’s privacy policy': 'سياسة خصوصية {site}',
+  '{name} for {site} · Marketplace': '{name} لـ{site} · سوق التطبيقات',
+  'Turn it on in {site}': 'التشغيل في {site}',
+  'Connect in {site}': 'الربط في {site}',
+  'More {category} apps': 'المزيد من تطبيقات {category}',
+  'The bar for the marketplace': 'معايير سوق التطبيقات',
+  'Each one is asked for because the app uses it today, never for a feature to come. Reading everything is looked at closer.':
+    'يُطلب كل إذن لأن التطبيق يستخدمه اليوم، لا لميزة قادمة. وقراءة كل شيء تُفحص عن قرب.',
+  connect: 'الربط',
+  'Caime follows Connect to the end, as a person would, before it lists the app.':
+    'تتبع Caime زر «اتصال» حتى نهايته، كما يفعل أي شخص، قبل أن تُدرج التطبيق.',
+  'help and privacy': 'المساعدة والخصوصية',
+  'A support address and a privacy policy that open, both on the listing. One that stops working takes the app out.':
+    'عنوان دعم وسياسة خصوصية يُفتحان، وكلاهما في الإدراج. وإن توقّف أحدهما عن العمل خرج التطبيق.',
+  never: 'أبدًا',
+  'Exporting or backing up conversations wholesale, deleting in bulk, copying Caime’s own app, taking payments through Caime, training a model on what it reads, or one account shared by several people.':
+    'تصدير المحادثات أو نسخها احتياطيًا بالجملة، أو الحذف بالجملة، أو تقليد تطبيق Caime نفسه، أو تلقّي المدفوعات عبر Caime، أو تدريب نموذج على ما يقرؤه، أو حساب واحد يتشاركه عدة أشخاص.',
+  'a model': 'نموذج',
+  'An app that puts people’s words through a model says which, what it keeps, for how long and where. The listing shows it as Caime shows its own processors.':
+    'التطبيق الذي يمرّر كلام الناس عبر نموذج يذكر أيّ نموذج، وما يحتفظ به، وإلى متى، وأين. ويعرض الإدراج ذلك كما تعرض Caime معالجيها.',
+  age: 'العمر',
+  'the listing': 'الإدراج',
+  'A tagline, a category, how it’s paid for, its languages, up to {n} screenshots at 8:5, where to get help and its privacy policy.':
+    'سطر تعريفي، وفئة، وطريقة الدفع، ولغاته، وحتى {n} لقطات شاشة بنسبة 8:5، ومكان المساعدة، وسياسة خصوصيته.',
+  changes: 'التغييرات',
+  'A change to what the listing shows asks again. An app left broken is taken out, with a note to its developer.':
+    'أي تغيير فيما يعرضه الإدراج يُعاد طلبه. والتطبيق المتروك معطّلًا يُخرج، مع ملاحظة لمطوّره.',
+  'the order': 'الترتيب',
+  'By how many people connected it, then the newest. No paid placement, no ratings.':
+    'بعدد من ربطوه، ثم الأحدث. لا مواضع مدفوعة ولا تقييمات.',
+  'The marketplace': 'سوق التطبيقات',
+  'Only a listed app can be taken out.': 'لا يُخرج إلا تطبيق مُدرج.',
+  'Check every point of the bar before listing it.': 'يجب التحقق من كل بند في المعايير قبل إدراجه.',
+  '{name} was taken out of Discover': 'أُخرج {name} من «اكتشف»',
+  'That screenshot': 'لقطة الشاشة تلك',
+  'A listing needs a tagline, a category, how it’s paid for, where to get help, a privacy policy and where Connect goes.':
+    'يحتاج الإدراج إلى سطر تعريفي وفئة وطريقة الدفع ومكان المساعدة وسياسة خصوصية ووجهة لزر «اتصال».',
 };

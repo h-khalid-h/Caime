@@ -521,6 +521,25 @@ curl -H "Authorization: Bearer $ADMIN_TOKEN" https://caime.example.com/v1/admin/
 
 `PROVIDER_HEALTH_ENABLED=false` turns the hourly probe off (the operator's check still runs).
 
+**Listings** (R74, R80). `GET /v1/admin/listings` is the queue of apps asking to be listed, each
+with its screenshots (`/v1/admin/listings/:id/screenshots/:n`) and the points to check
+(`checks`: `permissions`, each asked for because the app uses it today; `connect`, followed to
+the end; `pages`, its help and privacy policy open; `conduct`, none of what the bar on
+`/developers#bar` rules out). To list one, send every point back with the revision you looked
+at; to decline, a reason; to take a listed app out, `delist` with a reason (any version):
+
+```sh
+curl -X POST -H "Authorization: Bearer $ADMIN_TOKEN" -H 'content-type: application/json' \
+  -d '{"decision":"list","revision":3,"checks":["permissions","connect","pages","conduct"]}' \
+  https://caime.example.com/v1/admin/listings/<id>
+curl -X POST -H "Authorization: Bearer $ADMIN_TOKEN" -H 'content-type: application/json' \
+  -d '{"decision":"delist","revision":0,"reason":"Its help page no longer opens."}' \
+  https://caime.example.com/v1/admin/listings/<id>
+```
+
+The developer is told either way, in their language; the decision and the points checked are in
+the audit log with the operator's name.
+
 **Restore drill** (do it once now, and after any change to the database's version): from the
 `caime` service's console in EasyPanel, or any host with the dump and `pg_restore` 16,
 

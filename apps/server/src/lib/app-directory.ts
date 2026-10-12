@@ -8,6 +8,7 @@
  * connected through their own routes.
  */
 import {
+  APP_CATEGORIES,
   type AppCategory,
   type AppListingReviewView,
   type AppListingView,
@@ -21,14 +22,21 @@ import {
   type ConnectedAppView,
   type DirectoryAppView,
   directoryCursor,
+  INTERFACE_LANGUAGES,
   type ListingState,
   type OrgListingView,
   parseDirectoryCursor,
   tr,
 } from '@caime/core';
-import { type Selectable, sql } from 'kysely';
+import {
+  type AppPricing,
+  appScreenshotPath,
+  LISTING_CHECKS,
+  slugFromName,
+} from '@caime/core/marketplace';
+import { type Kysely, type Selectable, sql } from 'kysely';
 import type { AppContext } from '../context';
-import type { OAuthClientsTable } from '../db/schema';
+import type { Database, OAuthClientsTable } from '../db/schema';
 import { escapeLike } from './text';
 
 type ClientRow = Selectable<OAuthClientsTable>;
@@ -47,6 +55,13 @@ export function listingView(c: ClientRow): AppListingView {
     description: c.description,
     category: (c.category as AppCategory | null) ?? null,
     provides: c.provides as AppProvides[],
+    pricing: (c.pricing as AppPricing | null) ?? null,
+    languages: c.languages,
+    supportUrl: c.support_url,
+    privacyUrl: c.privacy_url,
+    aiUse: c.ai_use,
+    screenshotIds: c.screenshot_ids,
+    slug: c.slug,
     iconFileId: c.icon_file_id,
     loginUrl: c.login_url,
     orgId: c.org_id,
@@ -99,6 +114,13 @@ export function directoryAppView(r: DirectoryRow): DirectoryAppView {
     description: r.description,
     category: (r.category as AppCategory | null) ?? 'other',
     provides: r.provides as AppProvides[],
+    slug: r.slug,
+    pricing: (r.pricing as AppPricing | null) ?? null,
+    languages: r.languages,
+    supportUrl: r.support_url,
+    privacyUrl: r.privacy_url,
+    aiUse: r.ai_use,
+    screenshots: r.screenshot_ids.map((f, n) => appScreenshotPath(r.id, n, f)),
     iconUrl: appIconPath(r.id, r.icon_file_id),
     website: r.website,
     publisher: publisherOf(r),
@@ -109,7 +131,7 @@ export function directoryAppView(r: DirectoryRow): DirectoryAppView {
 }
 
 /** The listed apps with their publishers, joined to the viewer's own grants. */
-export function directoryQuery(ctx: AppContext, viewerId: string) {
+export function directoryQuery(ctx: { db: Kysely<Database> }, viewerId: string) {
   return (
     ctx.db
       .selectFrom('oauth_clients as c')
@@ -247,7 +269,8 @@ export async function builtinApps(ctx: AppContext, viewerId: string): Promise<Bu
     tagline: tr(b.tagline),
     description: tr(b.description),
     category: b.category,
-    provides: [],
+    ...CAIME_OWN,
+    slug: b.id,
     iconUrl: null,
     website: null,
     publisher: CAIME_PUBLISHER,
@@ -265,7 +288,8 @@ export async function builtinApps(ctx: AppContext, viewerId: string): Promise<Bu
       tagline: tr(b.tagline),
       description: tr(BRIDGE_DESCRIPTION, { name: b.name }),
       category: 'automation' as const,
-      provides: [],
+      ...CAIME_OWN,
+      slug: b.id,
       iconUrl: null,
       website: b.website,
       publisher: CAIME_PUBLISHER,
@@ -314,9 +338,25 @@ export async function countConnected(
     .execute();
 }
 
+/**
+ * What a built-in or a bridge says in the marketplace's terms (R80): Caime's own, free, in every
+ * interface language, no model of anyone else's, no screenshots; its help and policy are Caime's.
+ */
+const CAIME_OWN = {
+  provides: [] as AppProvides[],
+  pricing: 'free' as const,
+  languages: [...INTERFACE_LANGUAGES],
+  supportUrl: null,
+  privacyUrl: null,
+  aiUse: null,
+  screenshots: [] as string[],
+};
+
 /** A listing as the operator reviews it: what it says, who asked, under which organization. */
 export function listingReviewView(r: DirectoryRow): AppListingReviewView {
   return {
+    checks: [...LISTING_CHECKS],
+    screenshots: r.screenshot_ids.map((f, n) => appScreenshotPath(r.id, n, f, true)),
     id: r.id,
     name: r.name,
     website: r.website,
@@ -350,7 +390,7 @@ export async function listingById(ctx: AppContext, id: string): Promise<Director
 }
 
 /** A viewer nobody is, so the join to grants finds none (the operator connected nothing). */
-const NO_VIEWER = '00000000-0000-0000-0000-000000000000';
+export const NO_VIEWER = '00000000-0000-0000-0000-000000000000';
 
 /**
  * How many have each built-in and bridge on, counted once and kept until one is made or ended
@@ -406,4 +446,39 @@ export async function orgListings(ctx: AppContext, orgId: string): Promise<OrgLi
     listing: listingState(r),
     developer: { displayName: r.owner_name, handle: r.owner_handle },
   }));
+}
+
+/**
+ * The marketplace's addresses no app may have (R80): its category pages and Caime's own apps,
+ * which are addressed by their ids.
+ */
+const RESERVED_SLUGS: ReadonlySet<string> = new Set([
+  ...APP_CATEGORIES,
+  ...BUILTIN_APPS.map((b) => b.id),
+  ...BRIDGES.map((b) => b.id),
+]);
+export const isReservedSlug = (slug: string) => RESERVED_SLUGS.has(slug);
+
+/**
+ * An app's address in the marketplace, given the first time it's listed and held for good (a
+ * revoked app keeps its row, and the unique index its address): its name's, else `app-` and its
+ * id's start, with `-2`, `-3`… past one taken. Under the transaction's lock, so two reviews at
+ * once can't reach for the same.
+ */
+export async function giveSlug(
+  trx: Kysely<Database>,
+  app: { id: string; name: string },
+): Promise<string> {
+  await sql`select pg_advisory_xact_lock(hashtext('marketplace-slug'))`.execute(trx);
+  const base = slugFromName(app.name) ?? `app-${app.id.slice(0, 8)}`;
+  const near = await trx
+    .selectFrom('oauth_clients')
+    .select('slug')
+    .where('slug', 'like', `${escapeLike(base)}%`)
+    .execute();
+  const taken = new Set(near.map((r) => r.slug));
+  for (let n = 1; ; n++) {
+    const slug = n === 1 ? base : `${base}-${n}`;
+    if (!taken.has(slug) && !isReservedSlug(slug)) return slug;
+  }
 }

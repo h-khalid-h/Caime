@@ -21,6 +21,7 @@ import type { Gender } from './i18n';
 import type { SuggestionKind } from './intelligence';
 import type { KitField } from './kits';
 import type { Lean } from './learning';
+import type { AiUse, AppPricing, ListingCheck } from './marketplace';
 import type { OrgKind, OrgRole } from './orgs';
 import type { PaymentSettings } from './payments';
 import type { OrgAllowance, OrgPlan, PersonAllowance } from './plans';
@@ -942,7 +943,14 @@ export type SitePage = (typeof SITE_PAGES)[number];
  * shell but without its scripts, `lib/site-pages.ts`), at PUBLIC_URL/<page>. Each is a reserved
  * handle.
  */
-export const MARKETING_PAGES = ['business', 'pricing', 'security', 'developers', 'about'] as const;
+export const MARKETING_PAGES = [
+  'business',
+  'pricing',
+  'security',
+  'developers',
+  'marketplace',
+  'about',
+] as const;
 export type MarketingPage = (typeof MARKETING_PAGES)[number];
 
 /**
@@ -1996,6 +2004,17 @@ export interface AppListingView {
   category: AppCategory | null;
   /** What it gives Caime (R78): `APP_PROVIDES` entries, reviewed with the listing. */
   provides: AppProvides[];
+  /** How it's paid for, its languages, where help and its privacy policy are (R80). */
+  pricing: AppPricing | null;
+  languages: string[];
+  supportUrl: string | null;
+  privacyUrl: string | null;
+  /** What it says of putting people's words through a model; null when it doesn't. */
+  aiUse: AiUse | null;
+  /** Its screenshots' files, in order (R80). */
+  screenshotIds: string[];
+  /** Its address in the marketplace, given when it's first listed and kept (R80). */
+  slug: string | null;
   iconFileId: string | null;
   /** Where Connect sends someone: the app's own sign-in, which asks Caime for a grant. */
   loginUrl: string | null;
@@ -2032,6 +2051,15 @@ export interface DirectoryAppView {
   category: AppCategory;
   /** What it gives Caime (R78); empty for a built-in or a bridge. */
   provides: AppProvides[];
+  /** Its address in the marketplace (R80): a built-in's and a bridge's is its id. */
+  slug: string | null;
+  pricing: AppPricing | null;
+  languages: string[];
+  supportUrl: string | null;
+  privacyUrl: string | null;
+  aiUse: AiUse | null;
+  /** Where its screenshots are served, 8:5, in order. */
+  screenshots: string[];
   iconUrl: string | null;
   website: string | null;
   publisher: AppPublisher;
@@ -2060,6 +2088,10 @@ export interface AppListingReviewView {
   owner: { displayName: string; handle: string };
   org: { name: string; handle: string; verified: boolean } | null;
   askedAt: string;
+  /** What to check before listing it (R80): the operator sends back every one to list. */
+  checks: ListingCheck[];
+  /** Where the operator sees its screenshots, in order. */
+  screenshots: string[];
 }
 export interface AppListingsResponse {
   listings: AppListingReviewView[];

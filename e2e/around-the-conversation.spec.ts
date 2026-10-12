@@ -2327,6 +2327,12 @@ test.describe
       await page.getByTestId('oauth-app-Weekly digest').click();
       await page.getByTestId('listing-tagline').fill('Your week in Caime, every Monday');
       await page.getByTestId('listing-category-tasks').click();
+      // What a listing says since R80: how it's paid for, its languages, help and privacy.
+      await page.getByTestId('listing-pricing-freemium').click();
+      await page.getByTestId('listing-language-en').click();
+      await page.getByTestId('listing-language-ar').click();
+      await page.getByTestId('listing-support').fill('mailto:help@digest.example');
+      await page.getByTestId('listing-privacy').fill('https://digest.example/privacy');
       await page.getByTestId('listing-login').fill('https://digest.example/login');
       await page.getByTestId('listing-listed').click();
       await page.getByTestId('listing-save').click();
@@ -2341,12 +2347,23 @@ test.describe
         state: 'waiting',
         tagline: 'Your week in Caime, every Monday',
         category: 'tasks',
+        pricing: 'freemium',
+        languages: ['en', 'ar'],
+        supportUrl: 'mailto:help@digest.example',
+        privacyUrl: 'https://digest.example/privacy',
       });
+      // The operator lets it through with every point of the bar checked (R80).
       const reviewed = await noorContext.request.post(`/v1/admin/listings/${appId}`, {
         headers: { authorization: `Bearer ${ADMIN_TOKEN}` },
-        data: { decision: 'list', revision: digestApp.listing.revision },
+        data: {
+          decision: 'list',
+          revision: digestApp.listing.revision,
+          checks: ['permissions', 'connect', 'pages', 'conduct'],
+        },
       });
-      expect(reviewed.ok()).toBe(true);
+      expect(reviewed.ok(), await reviewed.text()).toBe(true);
+      const slug: string = (await reviewed.json()).listing.listing.slug;
+      expect(slug).toMatch(/^weekly-digest/);
       // Alex discovers it, already connected: the row says so, the sheet says how many did, and
       // its button opens the app's own sign-in in a tab of its own.
       await app.page.goto('/settings/apps?tab=discover');
@@ -2363,6 +2380,11 @@ test.describe
         '1 person connected it',
       );
       await expect(app.page.getByTestId('discover-connected')).toBeVisible();
+      await expect(app.page.getByTestId('discover-price')).toContainText('Free and paid plans');
+      await expect(app.page.getByTestId('discover-ai')).toContainText(
+        'It says it puts nobody’s words through a model.',
+      );
+      await expect(app.page.getByTestId('discover-page')).toBeVisible();
       await app.page.screenshot({
         path: 'e2e/screenshots/phone-discover.png',
         animations: 'disabled',
@@ -2373,6 +2395,30 @@ test.describe
       expect(popup.url()).toBe('https://digest.example/login');
       await popup.close();
       await app.page.keyboard.press('Escape');
+
+      // Anyone reads its page in the marketplace, no sign-in and no script (R80), and its
+      // Connect opens the app's sheet in Caime.
+      const visitor = await browser.newContext({ viewport: { width: 1280, height: 900 } });
+      const market = await visitor.newPage();
+      await market.goto(`/marketplace/${slug}`);
+      await expect(market.getByRole('heading', { name: 'Weekly digest', level: 1 })).toBeVisible();
+      await expect(market.locator('script[src]')).toHaveCount(0);
+      await expect(market.locator('dd', { hasText: 'Free and paid plans' })).toBeVisible();
+      await expect(market.locator('dd', { hasText: 'Reviewed by Caime' })).toBeVisible();
+      await expect(market.getByRole('link', { name: 'Connect in Caime' })).toHaveAttribute(
+        'href',
+        `/settings/apps?app=${appId}`,
+      );
+      await market.screenshot({
+        path: 'e2e/screenshots/desktop-marketplace-app.png',
+        fullPage: true,
+      });
+      await market.goto('/marketplace');
+      // Earlier runs' apps of the same name may be listed too (the end-to-end database keeps them).
+      await expect(market.getByRole('link', { name: /Weekly digest/ }).first()).toBeVisible();
+      await expect(market.getByRole('link', { name: /Zapier/ })).toBeVisible();
+      await market.screenshot({ path: 'e2e/screenshots/desktop-marketplace.png' });
+      await visitor.close();
 
       // Alex finds it among his connected apps and ends it; its token stops at once.
       await app.page.goto('/settings/apps');

@@ -25,7 +25,7 @@ import {
   type SystemKind,
   systemAccountOf,
 } from '@caime/core';
-import { MARKETING_PAGES, type MarketingPage } from '@caime/core/api';
+import { MARKETING_PAGES } from '@caime/core/api';
 import {
   currentTranslator,
   dirOf,
@@ -39,6 +39,12 @@ import type { Kysely } from 'kysely';
 import type { Database } from '../db/schema';
 import { catalogOf, paymentsOf } from './booking';
 import { orgRef } from './business';
+import {
+  type MarketplacePage,
+  marketplacePageFor,
+  marketplaceUrls,
+  renderMarketplace,
+} from './marketplace-pages';
 import { orgsOf } from './orgs';
 import { FACE, px, THEME_VARS, type } from './page-style';
 import {
@@ -52,6 +58,7 @@ import {
   renderSite,
   SITE_NAME,
   type SiteFacts,
+  type SiteOnlyPage,
 } from './site-pages';
 import { sitemaps } from './sitemap-cache';
 import { clip } from './text';
@@ -187,7 +194,9 @@ export interface PublicInvite {
 export type PublicPage =
   | { kind: 'landing' }
   /** A page of the site about Caime (site-pages.ts): everyone's, signed in or not. */
-  | { kind: 'site'; page: MarketingPage }
+  | { kind: 'site'; page: SiteOnlyPage }
+  /** The marketplace, a category of it, or an app in it (R80, marketplace-pages.ts): everyone's too. */
+  | MarketplacePage
   | PublicPerson
   | PublicOrg
   | PublicItemPage
@@ -306,11 +315,22 @@ export async function publicInvite(db: Q, token: string, now: Date): Promise<Pub
 }
 
 /** The page a path is, for whoever isn't signed in. */
-export async function publicPageFor(db: Q, path: string, now: Date): Promise<PublicPage> {
+export async function publicPageFor(
+  db: Q,
+  path: string,
+  now: Date,
+  search: URLSearchParams = new URLSearchParams(),
+): Promise<PublicPage> {
   if (path === '/') return { kind: 'landing' };
+  // The marketplace and what's under it (R80): its rows, read now.
+  const market = /^\/marketplace(?:\/([^/?#]+))?\/?$/.exec(path);
+  if (market) {
+    const rest = market[1] ? safeDecode(market[1]).toLowerCase() : null;
+    return (await marketplacePageFor(db, rest, search)) ?? { kind: 'missing' };
+  }
   const site = /^\/([a-z]+)$/.exec(path)?.[1];
   if (site && (MARKETING_PAGES as readonly string[]).includes(site))
-    return { kind: 'site', page: site as MarketingPage };
+    return { kind: 'site', page: site as SiteOnlyPage };
   const invite = /^\/i\/([^/?#]+)$/.exec(path);
   if (invite) return (await publicInvite(db, invite[1] ?? '', now)) ?? { kind: 'missing' };
   const at = /^\/@([^/?#]+)(?:\/([^/?#]+))?$/.exec(path);
@@ -510,6 +530,13 @@ interface Rendered {
   lang?: InterfaceLanguage;
 }
 
+/** Who runs this Caime, when the request didn't say (a test's render, a page rendered alone). */
+const siteFallback = (publicUrl: string): SiteFacts => ({
+  legalName: SITE_NAME,
+  contactEmail: `hello@${new URL(publicUrl).hostname}`,
+  prices: null,
+});
+
 /** The head tags and the plain body for a page, and the status it deserves. */
 export function renderPublic(
   page: PublicPage,
@@ -595,14 +622,7 @@ export function renderPublic(
       };
     }
     case 'site': {
-      const site = renderSite(
-        page.page,
-        facts ?? {
-          legalName: SITE_NAME,
-          contactEmail: `hello@${new URL(publicUrl).hostname}`,
-          prices: null,
-        },
-      );
+      const site = renderSite(page.page, facts ?? siteFallback(publicUrl));
       return {
         status: 200,
         lang: currentTranslator().language,
@@ -614,6 +634,23 @@ export function renderPublic(
           alternates: true,
         }),
         body: site.body,
+      };
+    }
+    case 'marketplace':
+    case 'market-app': {
+      const m = renderMarketplace(page, facts ?? siteFallback(publicUrl), publicUrl, url);
+      return {
+        status: 200,
+        lang: currentTranslator().language,
+        head: meta({
+          title: m.title,
+          description: m.description,
+          image: m.image,
+          index: m.index,
+          alternates: true,
+          ld: m.ld,
+        }),
+        body: m.body,
       };
     }
     case 'person': {
@@ -1144,6 +1181,23 @@ ${explorerStyle()}
 @media (min-width:720px){.pub-home .plans{grid-template-columns:1fr 1fr}.pub-home .plans-3{grid-template-columns:1fr 1fr 1fr}.pub-home .plan .spec>div{grid-template-columns:1fr;gap:2px}}
 @media (max-width:560px){.pub-home .sitenav{margin-inline-start:0;width:100%}}
 .pub-home[dir=rtl] h1{letter-spacing:0}
+.pub-market .cats{display:flex;gap:6px;flex-wrap:wrap;margin:0 0 18px}
+.pub-market .cats a{display:inline-flex;align-items:center;min-height:${px.touch};box-sizing:border-box;padding:0 14px;border:1px solid var(--border);border-radius:999px;color:var(--text);text-decoration:none;font-size:.92rem}
+.pub-market .cats a[aria-current]{background:var(--accent-soft);border-color:var(--accent);font-weight:600}
+.pub-market .apps{list-style:none;padding:0;margin:0 0 8px;display:grid;grid-template-columns:1fr;gap:10px}
+.pub-market .apps li{margin:0}
+.pub-market .apps a{display:flex;gap:12px;align-items:flex-start;padding:14px;border:1px solid var(--border);border-radius:${px.radius('lg')};background:var(--surface);color:var(--text);text-decoration:none;height:100%;box-sizing:border-box}
+.pub-market .apps a:hover,.pub-market .apps a:focus-visible{border-color:var(--accent)}
+.pub-market .appmark{flex:none;display:grid;place-items:center;width:48px;height:48px;border-radius:13px;background:var(--accent-soft);color:var(--ink);font-family:${FACE.heading};font-weight:800;font-size:1.25rem}
+.pub-market img.appmark{object-fit:cover;background:var(--surface-muted)}
+.pub-market .app-head{display:flex;gap:16px;align-items:center}.pub-market .app-head .appmark{width:72px;height:72px;border-radius:20px;font-size:1.8rem}.pub-market .app-head h1{margin:0 0 6px}.pub-market .app-head .lead{margin:0}
+.pub-market .apps .name{display:block;font-weight:700;color:var(--ink)}
+.pub-market .apps .line{display:block;color:var(--text-secondary);font-size:.92rem;margin-top:2px}
+.pub-market .apps .mono{display:block;margin-top:6px}
+.pub-market .about{max-width:62ch;margin:0 0 8px;color:var(--text)}
+.pub-market .shots{display:flex;gap:12px;overflow-x:auto;margin:18px 0 8px;padding-bottom:6px;scroll-snap-type:x mandatory}
+.pub-market .shots img{flex:none;width:min(560px,86%);height:auto;aspect-ratio:8/5;object-fit:cover;border-radius:${px.radius('lg')};border:1px solid var(--border);background:var(--surface-muted);scroll-snap-align:start}
+@media (min-width:720px){.pub-market .apps{grid-template-columns:1fr 1fr}}
 </style>`;
 
 /** The shell with a page's head and body in it. Tolerant of a template without the markers. */
@@ -1223,14 +1277,17 @@ export async function sitemapXml(db: Q, publicUrl: string, pagesHere: string[]):
     .orderBy('created_at')
     .limit(50_000)
     .execute();
-  const entry = (loc: string, lastmod?: Date) =>
+  const entry = (loc: string, lastmod?: Date | null) =>
     `  <url><loc>${esc(loc)}</loc>${lastmod ? `<lastmod>${lastmod.toISOString().slice(0, 10)}</lastmod>` : ''}</url>`;
+  // The marketplace's categories and apps (R80): Caime's own, then every listed app.
+  const market = await marketplaceUrls(db, 10_000);
   const xml = [
     '<?xml version="1.0" encoding="UTF-8"?>',
     '<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">',
     entry(`${publicUrl}/`),
     ...MARKETING_PAGES.map((p) => entry(`${publicUrl}/${p}`)),
     ...pagesHere.map((p) => entry(`${publicUrl}/${p}`)),
+    ...market.map((m) => entry(`${publicUrl}${m.path}`, m.lastmod)),
     // Each organization's page, then its public collections and items (R61); a sitemap holds
     // 50,000 addresses at most.
     ...orgs
@@ -1243,7 +1300,7 @@ export async function sitemapXml(db: Q, publicUrl: string, pagesHere: string[]):
           ...shelf.items.map((i) => entry(at(i.slug), o.updated_at)),
         ];
       })
-      .slice(0, 50_000 - MARKETING_PAGES.length - pagesHere.length - 1),
+      .slice(0, 50_000 - MARKETING_PAGES.length - pagesHere.length - market.length - 1),
     '</urlset>',
     '',
   ].join('\n');

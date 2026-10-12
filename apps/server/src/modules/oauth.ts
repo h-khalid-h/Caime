@@ -35,11 +35,16 @@ import type {
   OkResponse,
 } from '@caime/core/api';
 import { tr } from '@caime/core/i18n';
+import {
+  SCREENSHOT_MIN_WIDTH,
+  SCREENSHOT_RATIO,
+  SCREENSHOT_RATIO_SLACK,
+} from '@caime/core/marketplace';
 import type { FastifyInstance, FastifyReply, FastifyRequest } from 'fastify';
-import { type Selectable, sql } from 'kysely';
+import { type Kysely, type Selectable, sql } from 'kysely';
 import { z } from 'zod';
 import type { AppContext } from '../context';
-import type { OAuthClientsTable } from '../db/schema';
+import type { Database, OAuthClientsTable } from '../db/schema';
 import { revokePersonalToken } from '../lib/access';
 import {
   builtinApps,
@@ -65,6 +70,7 @@ import {
   secretMatches,
 } from '../lib/oauth';
 import { orgSeat } from '../lib/orgs';
+import { forgetSitemaps } from '../lib/sitemap-cache';
 import { minorOf } from '../lib/users';
 import { parse } from '../lib/validate';
 import { requireAuth } from '../plugins/auth';
@@ -86,6 +92,56 @@ function appView(c: Selectable<OAuthClientsTable>): OAuthAppView {
 }
 
 /** The origin Connect may send people to: one the app already returns to, or its website. */
+/** A value as compared for "what's shown changed": key order and array identity aside. */
+function canonical(v: unknown): string {
+  if (v === null || v === undefined) return 'null';
+  if (v instanceof Date) return v.toISOString();
+  if (Array.isArray(v)) return `[${v.map(canonical).join(',')}]`;
+  if (typeof v === 'object')
+    return `{${Object.keys(v as object)
+      .sort()
+      .map((k) => `${k}:${canonical((v as Record<string, unknown>)[k])}`)
+      .join(',')}}`;
+  return JSON.stringify(v);
+}
+
+/**
+ * Screenshots set on a save (R80) are images the developer uploaded, re-encoded (never an
+ * original with its metadata), 8:5 and wide enough for the preview rendition to be sharp (R70);
+ * one the listing already had stays as it is.
+ */
+async function assertScreenshots(
+  db: Kysely<Database>,
+  userId: string,
+  next: string[],
+  before: string[],
+): Promise<void> {
+  const fresh = next.filter((f) => !before.includes(f));
+  if (!fresh.length) return;
+  const files = await db
+    .selectFrom('files')
+    .select(['id', 'width', 'height'])
+    .where('id', 'in', fresh)
+    .where('owner_id', '=', userId)
+    .where('kind', '=', 'image')
+    .where('status', '=', 'ready')
+    .where('thumb_key', 'is not', null)
+    .execute();
+  if (files.length !== fresh.length) throw badRequest(tr('Choose an image you uploaded.'));
+  for (const f of files) {
+    const ratio = (f.width ?? 0) / Math.max(1, f.height ?? 0);
+    if (
+      Math.abs(ratio - SCREENSHOT_RATIO) > SCREENSHOT_RATIO * SCREENSHOT_RATIO_SLACK ||
+      (f.width ?? 0) < SCREENSHOT_MIN_WIDTH
+    )
+      throw badRequest(
+        tr('A screenshot is 8:5 and at least {width} pixels wide.', {
+          width: SCREENSHOT_MIN_WIDTH,
+        }),
+      );
+  }
+}
+
 function ownOrigins(c: Pick<Selectable<OAuthClientsTable>, 'redirect_uris' | 'website'>) {
   const origins = new Set<string>();
   for (const u of [...c.redirect_uris, c.website]) {
@@ -211,6 +267,13 @@ export async function oauthRoutes(app: FastifyInstance, ctx: AppContext) {
         icon_file_id: body.iconFileId === undefined ? c.icon_file_id : body.iconFileId,
         org_id: body.orgId === undefined ? c.org_id : body.orgId,
         provides: body.provides === undefined ? c.provides : [...new Set(body.provides)],
+        pricing: body.pricing === undefined ? c.pricing : body.pricing,
+        languages: body.languages === undefined ? c.languages : [...new Set(body.languages)],
+        support_url: body.supportUrl === undefined ? c.support_url : body.supportUrl || null,
+        privacy_url: body.privacyUrl === undefined ? c.privacy_url : body.privacyUrl || null,
+        ai_use: body.aiUse === undefined ? c.ai_use : body.aiUse,
+        screenshot_ids:
+          body.screenshotIds === undefined ? c.screenshot_ids : [...new Set(body.screenshotIds)],
       };
       if (next.icon_file_id && next.icon_file_id !== c.icon_file_id) {
         const mine = await trx
@@ -224,6 +287,7 @@ export async function oauthRoutes(app: FastifyInstance, ctx: AppContext) {
           .executeTakeFirst();
         if (!mine) throw badRequest(tr('Choose an image you uploaded.'));
       }
+      await assertScreenshots(trx, auth.userId, next.screenshot_ids, c.screenshot_ids);
       if (next.org_id && next.org_id !== c.org_id) {
         const seat = await orgSeat(trx, auth.userId, next.org_id);
         if (!canManageOrg(seat?.role))
@@ -236,12 +300,24 @@ export async function oauthRoutes(app: FastifyInstance, ctx: AppContext) {
           ),
         );
       const listed = body.listed ?? listingState(c) !== 'none';
-      if (listed && !(next.tagline && next.category && next.login_url))
-        throw badRequest(tr('A listing needs a tagline, a category and where Connect goes.'));
-      const shownChanged = (Object.keys(next) as Array<keyof typeof next>).some((k) =>
-        Array.isArray(next[k])
-          ? JSON.stringify(next[k]) !== JSON.stringify(c[k])
-          : next[k] !== c[k],
+      if (
+        listed &&
+        !(
+          next.tagline &&
+          next.category &&
+          next.login_url &&
+          next.pricing &&
+          next.support_url &&
+          next.privacy_url
+        )
+      )
+        throw badRequest(
+          tr(
+            'A listing needs a tagline, a category, how it’s paid for, where to get help, a privacy policy and where Connect goes.',
+          ),
+        );
+      const shownChanged = (Object.keys(next) as Array<keyof typeof next>).some(
+        (k) => canonical(next[k]) !== canonical(c[k]),
       );
       const marks = !listed
         ? { listed_at: null, reviewed_at: null, declined_reason: null }
@@ -269,6 +345,8 @@ export async function oauthRoutes(app: FastifyInstance, ctx: AppContext) {
       await audit(trx, { actorId: auth.userId, action, target: id });
       return updated;
     });
+    // A listed app that changed asks again, so it leaves the marketplace's pages until it's back.
+    forgetSitemaps();
     // Developer, Discover and the organization's setup screen show the listing as it stands (M15).
     await ctx.bus.publish(await listingWatchers(ctx, row), {
       type: 'apps.changed',
@@ -297,6 +375,8 @@ export async function oauthRoutes(app: FastifyInstance, ctx: AppContext) {
       .where('revoked_at', 'is', null)
       .execute();
     for (const g of grants) await revokeGrant(ctx, g.id);
+    // Its marketplace page goes with it; its address stays held (R80).
+    forgetSitemaps();
     await audit(ctx.db, { actorId: auth.userId, action: 'oauth.app_removed', target: id });
     return { ok: true };
   });

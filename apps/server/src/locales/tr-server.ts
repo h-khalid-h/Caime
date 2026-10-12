@@ -41,7 +41,6 @@ export const turkishServer: Catalog = {
   'security and privacy': 'güvenlik ve gizlilik',
   Developers: 'Geliştiriciler',
   developers: 'geliştiriciler',
-  Help: 'Yardım',
   Example: 'Örnek',
   'Who someone is to you comes first.': 'Birinin sizin için kim olduğu her şeyden önce gelir.',
   'A connection is two people and how they know each other, said by each side, private to each. Everything else in Caime hangs off it.':
@@ -295,7 +294,6 @@ export const turkishServer: Catalog = {
   'the server': 'sunucu',
   'A content security policy on every page, no third-party scripts, no ads, no tracking across sites, and a backup checked after every dump.':
     'Her sayfada içerik güvenlik politikası; üçüncü taraf betik yok, reklam yok, siteler arası izleme yok; her yedek alındıktan sonra kontrol edilir.',
-  AI: 'AI',
   'Off until an adult turns it on, never on a private conversation, and everything it infers is a suggestion you accept or don’t.':
     'Bir yetişkin açana kadar kapalıdır, özel konuşmalarda asla çalışmaz ve çıkardığı her şey, kabul edip etmemek size kalmış bir öneridir.',
   'Read the privacy policy': 'Gizlilik politikasını okuyun',
@@ -1083,8 +1081,6 @@ export const turkishServer: Catalog = {
     'Bir kuruluş adına uygulamaları yalnızca sahibi veya yöneticileri yayımlar.',
   'Connect must send people to the app’s own address: one it returns to, or its website.':
     'Bağla, insanları uygulamanın kendi adresine göndermeli: döndüğü bir adres ya da web sitesi.',
-  'A listing needs a tagline, a category and where Connect goes.':
-    'Bir listeleme için slogan, kategori ve Bağla’nın gideceği yer gerekir.',
   'Who does it is for the team to say.': 'Kimin yapacağını ekip söyler.',
   'This card has been paid already.': 'Bu kart zaten ödendi.',
   'The listing changed since it was looked at: look at it again.':
@@ -1098,4 +1094,71 @@ export const turkishServer: Catalog = {
   'A text message carries no payload.': 'Bir metin mesajı yük taşımaz.',
   'That isn’t from the mail provider.': 'Bu, posta sağlayıcısından gelmiyor.',
   'That isn’t a mail.': 'Bu bir e-posta değil.',
+  'Built by {site}': '{site} yapımı',
+  Categories: 'Kategoriler',
+  Marketplace: 'Pazar yeri',
+  marketplace: 'pazar yeri',
+  '{category} apps for {site}': '{site} için {category} uygulamaları',
+  'Apps for {site}: the marketplace': '{site} için uygulamalar: pazar yeri',
+  'Apps that work with {site}: its own, the automation platforms, and apps developers listed after {site} looked at each one. Each asks you before it does anything, and you can end it any time.':
+    '{site} ile çalışan uygulamalar: kendi uygulamaları, otomasyon platformları ve {site} her birine baktıktan sonra geliştiricilerinin listelediği uygulamalar. Her biri bir şey yapmadan önce size sorar ve istediğiniz zaman sonlandırabilirsiniz.',
+  'More apps': 'Daha fazla uygulama',
+  '{category} apps': '{category} uygulamaları',
+  'Apps that work with {site}.': '{site} ile çalışan uygulamalar.',
+  'Nothing here yet.': 'Burada henüz bir şey yok.',
+  'List your app': 'Uygulamanızı listeleyin',
+  how: 'nasıl',
+  'Register it under Settings → Developer, fill in its listing and ask. {site} looks at every one against the bar on {developers}, once, and again whenever what it shows changes.':
+    'Ayarlar → Geliştirici altında kaydedin, listelemesini doldurun ve isteyin. {site} her birine {developers} üzerindeki kurallara göre bir kez, gösterdiği şey değiştikçe yeniden bakar.',
+  'the developers’ page': 'geliştiriciler sayfası',
+  order: 'sıra',
+  'By how many people connected it, then the newest. Nothing is paid for: no placement, no ratings.':
+    'Kaç kişinin bağladığına, sonra en yeniye göre. Hiçbir şey satın alınmaz: ne yer ne puan.',
+  by: 'yapan',
+  reviewed: 'inceleme',
+  'Reviewed by {site}': '{site} tarafından incelendi',
+  category: 'kategori',
+  'gives Caime': 'Caime’ye sunduğu',
+  connected: 'bağlayan',
+  'where it goes': 'nereye gittiği',
+  help: 'yardım',
+  '{site}’s help': '{site} yardımı',
+  '{site}’s privacy policy': '{site} gizlilik politikası',
+  '{name} for {site} · Marketplace': '{site} için {name} · Pazar yeri',
+  'Turn it on in {site}': '{site} içinde açın',
+  'Connect in {site}': '{site} içinde bağlayın',
+  'More {category} apps': 'Daha fazla {category} uygulaması',
+  'The bar for the marketplace': 'Pazar yerinin kuralları',
+  'Each one is asked for because the app uses it today, never for a feature to come. Reading everything is looked at closer.':
+    'Her biri, uygulama bugün kullandığı için istenir; gelecekteki bir özellik için asla. Her şeyi okumak daha yakından incelenir.',
+  connect: 'bağla',
+  'Caime follows Connect to the end, as a person would, before it lists the app.':
+    'Caime, uygulamayı listelemeden önce Bağla’yı bir insanın yapacağı gibi sonuna kadar izler.',
+  'help and privacy': 'yardım ve gizlilik',
+  'A support address and a privacy policy that open, both on the listing. One that stops working takes the app out.':
+    'Açılan bir destek adresi ve bir gizlilik politikası, ikisi de listelemede. Biri çalışmayı bırakırsa uygulama çıkarılır.',
+  never: 'asla',
+  'Exporting or backing up conversations wholesale, deleting in bulk, copying Caime’s own app, taking payments through Caime, training a model on what it reads, or one account shared by several people.':
+    'Konuşmaları toptan dışa aktarmak ya da yedeklemek, toplu silmek, Caime’nin kendi uygulamasını kopyalamak, Caime üzerinden ödeme almak, okuduklarıyla bir model eğitmek ya da birkaç kişinin paylaştığı tek bir hesap.',
+  'a model': 'bir model',
+  'An app that puts people’s words through a model says which, what it keeps, for how long and where. The listing shows it as Caime shows its own processors.':
+    'İnsanların sözlerini bir modelden geçiren uygulama hangisi olduğunu, neyi, ne kadar süre ve nerede sakladığını söyler. Listeleme bunu Caime’nin kendi işleyicilerini gösterdiği gibi gösterir.',
+  age: 'yaş',
+  'the listing': 'listeleme',
+  'A tagline, a category, how it’s paid for, its languages, up to {n} screenshots at 8:5, where to get help and its privacy policy.':
+    'Bir slogan, bir kategori, nasıl ücretlendirildiği, dilleri, 8:5 oranında en fazla {n} ekran görüntüsü, yardımın nerede olduğu ve gizlilik politikası.',
+  changes: 'değişiklikler',
+  'A change to what the listing shows asks again. An app left broken is taken out, with a note to its developer.':
+    'Listelemenin gösterdiği şeydeki bir değişiklik yeniden incelemeye gider. Bozuk bırakılan bir uygulama, geliştiricisine bir notla çıkarılır.',
+  'the order': 'sıralama',
+  'By how many people connected it, then the newest. No paid placement, no ratings.':
+    'Kaç kişinin bağladığına, sonra en yeniye göre. Ücretli yer yok, puan yok.',
+  'The marketplace': 'Pazar yeri',
+  'Only a listed app can be taken out.': 'Yalnızca listelenmiş bir uygulama çıkarılabilir.',
+  'Check every point of the bar before listing it.':
+    'Listelemeden önce kuralların her maddesini kontrol edin.',
+  '{name} was taken out of Discover': '{name} Keşfet’ten çıkarıldı',
+  'That screenshot': 'O ekran görüntüsü',
+  'A listing needs a tagline, a category, how it’s paid for, where to get help, a privacy policy and where Connect goes.':
+    'Bir listeleme için slogan, kategori, nasıl ücretlendirildiği, yardımın nerede olduğu, bir gizlilik politikası ve Bağla’nın gideceği yer gerekir.',
 };

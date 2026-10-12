@@ -1240,12 +1240,12 @@ discovers, and mail at their own address.
       ⛔ publishing to npm needs the owner's account); the audit log as a hash chain sealed by
       the database at commit and verified daily; `provides` on listings (calendar sync, mail),
       reviewed as the listing is.
-- [ ] R80, the marketplace page (PRODUCT-REVIEW R80, Slack's marketplace read as the model):
+- [x] R80, the marketplace page (PRODUCT-REVIEW R80, Slack's marketplace read as the model):
       `/marketplace` on the site with a page per listed app (`/marketplace/<slug>`, JSON-LD,
       sitemap, Connect through sign-in), categories, the built-ins and bridges first; a listing
       with screenshots, a declared pricing model, languages, support and privacy addresses and
       an AI disclosure; the written bar on `/developers` and in API.md; "Reviewed by Caime" with
-      the operator's checklist; delisting with a note. After Block 4 (R79 layer 1 is done).
+      the operator's checklist; delisting with a note.
 - [ ] ⛔ R80, cai.me as the public address: parked today (a registrar's lander, 2026-10-10), so
       the owner acquires it; then DNS and the certificate at EasyPanel, `PUBLIC_URL` and
       `WEB_URL` moved, the old host answering 301, one canonical.
@@ -2636,3 +2636,22 @@ The six-slice review's plan, in its order; a block is ticked when its tests and 
   in Discover's sheet and picked with chips in the listing editor; the E2E stand-ins answer the
   probes' reads. Tests: `audit-chain.test.ts`, `provider-health.test.ts`, the directory test's
   provides case, `packages/mcp/src/*.test.ts`.
+- 2026-10-12 — R80, the marketplace: `/marketplace`, `/marketplace/<category>` and
+  `/marketplace/<slug>` (`lib/marketplace-pages.ts`, routed by `publicPageFor` before the site's
+  pages, rendered in the shell with no script, `public, max-age=600`, every interface language
+  with hreflang), listing what Discover lists from the same `listed(directoryQuery(…))`, Caime's
+  own and the bridges first, 48 a page by keyset; each app's page with its screenshots, price,
+  languages, help and privacy links, the model it says it uses, "Reviewed by Caime" or "Built by
+  Caime", `SoftwareApplication` and breadcrumb JSON-LD, and Connect opening the app's sheet in
+  Caime; the sitemap names every category with apps and every app. Migration 0073 gives
+  `oauth_clients` the listing's new fields and its `slug`, given by `giveSlug` on the first look
+  that lets it through and held for good (a unique index over every row, never a category's or
+  Caime's own). Listing now needs a pricing model, a help address and a privacy policy;
+  screenshots are the developer's own re-encoded images, 8:5 and 1280 pixels wide at least,
+  served from the preview rendition; a listed app's icon and screenshots are public. The
+  operator lists only with every point of `LISTING_CHECKS` sent back, and `delist` takes a listed
+  app out with a note the developer reads. The listing editor, Discover's sheet (screenshots, a
+  spec of price, languages and the model line, links to its page, help and privacy) and the bar
+  on `/developers#bar` follow; links to the site's pages open as pages in the app (`appPath`).
+  Tests: `marketplace.test.ts` (10), the directory test's terms, the E2E listing flow's new
+  fields and a visitor's marketplace page, the accessibility pass over four marketplace pages.

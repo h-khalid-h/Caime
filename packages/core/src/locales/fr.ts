@@ -3519,8 +3519,53 @@ export const fr: Catalog = {
   'What your app does for Caime, if anything: a calendar it keeps in step, or mail it carries. Reviewed with the listing.':
     'Ce que votre app apporte à Caime, le cas échéant : un calendrier qu’elle garde à jour, ou du courrier qu’elle achemine. Vérifié avec la fiche.',
   'Listed in Discover': 'Listée dans Découvrir',
-  'Needs a tagline, a category and where Connect goes. Caime looks once.':
-    'Il faut une accroche, une catégorie et où mène Connecter. Caime regarde une fois.',
+  '{name}, screenshot {n}': '{name}, capture d’écran {n}',
+  languages: 'langues',
+  AI: 'IA',
+  Help: 'Aide',
+  'Privacy policy': 'Politique de confidentialité',
+  'Puts people’s words through {model}. Keeps {keeps}, for {days}, in {where}.':
+    'Fait passer les mots des gens par {model}. Conserve {keeps} : {days}. Lieu : {where}.',
+  'no longer than the answer': 'pas au-delà de la réponse',
+  'It says it puts nobody’s words through a model.':
+    'Elle dit ne faire passer les mots de personne par un modèle.',
+  'Free and paid plans': 'Offres gratuites et payantes',
+  'Paid, with a free trial': 'Payant, avec un essai gratuit',
+  'Paid, with no free plan': 'Payant, sans offre gratuite',
+  'Included with a subscription': 'Inclus dans un abonnement',
+  'Its page': 'Sa page',
+  'A screenshot is 8:5 and at least {width} pixels wide.':
+    'Une capture d’écran est au format 8:5 et fait au moins {width} pixels de large.',
+  'How it’s paid for': 'Comment elle est payée',
+  'Caime never takes the money: people pay you, as they would anywhere.':
+    'Caime ne prend jamais l’argent : les gens vous paient, comme ailleurs.',
+  'Works in': 'Fonctionne en',
+  'Where to get help': 'Où trouver de l’aide',
+  'A page, or mailto: and an address. Shown on the listing.':
+    'Une page, ou mailto: et une adresse. Affichée sur la fiche.',
+  'Puts people’s words through an AI model': 'Fait passer les mots des gens par un modèle d’IA',
+  'Then the listing says which, what it keeps, for how long and where.':
+    'La fiche dit alors lequel, ce qu’elle conserve, combien de temps et où.',
+  'Which model': 'Quel modèle',
+  'Its name, and whose it is.': 'Son nom, et à qui il appartient.',
+  'What it keeps': 'Ce qu’elle conserve',
+  'Nothing past the answer': 'Rien au-delà de la réponse',
+  'For how many days': 'Pendant combien de jours',
+  '0 when nothing is kept past the answer.': '0 quand rien n’est conservé au-delà de la réponse.',
+  'The country or region': 'Le pays ou la région',
+  Screenshots: 'Captures d’écran',
+  'Screenshot {n}': 'Capture d’écran {n}',
+  'Remove screenshot {n}': 'Retirer la capture d’écran {n}',
+  'Add a screenshot': 'Ajouter une capture d’écran',
+  'Up to {n}, 8:5, at least {width} pixels wide.':
+    'Jusqu’à {n}, au format 8:5, d’au moins {width} pixels de large.',
+  'Needs a tagline, a category, how it’s paid for, where to get help, a privacy policy and where Connect goes. Caime looks once.':
+    'Il faut une accroche, une catégorie, comment elle est payée, où trouver de l’aide, une politique de confidentialité et où mène Connecter. Caime regarde une fois.',
+  'See its page in the marketplace': 'Voir sa page sur la marketplace',
+  'Support must be a page (https) or a mail address (mailto:).':
+    'L’aide doit être une page (https) ou une adresse e-mail (mailto:).',
+  'The privacy policy must be at an https address.':
+    'La politique de confidentialité doit être à une adresse https.',
   'Save the listing': 'Enregistrer la fiche',
   Calendars: 'Calendriers',
   'Tasks and notes': 'Tâches et notes',

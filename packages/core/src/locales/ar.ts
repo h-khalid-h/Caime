@@ -3865,8 +3865,63 @@ export const ar: Catalog = {
   'What your app does for Caime, if anything: a calendar it keeps in step, or mail it carries. Reviewed with the listing.':
     'ما يقدّمه تطبيقك لـ Caime، إن وُجد: تقويم يبقيه متزامنًا، أو بريد ينقله. يُراجَع مع الإدراج.',
   'Listed in Discover': 'مدرج في «اكتشف»',
-  'Needs a tagline, a category and where Connect goes. Caime looks once.':
-    'يحتاج إلى سطر تعريفي وفئة ووجهة لزر «اتصال». تنظر فيه Caime مرة واحدة.',
+  '{name}, screenshot {n}': '{name}، لقطة الشاشة {n}',
+  languages: 'اللغات',
+  AI: 'الذكاء الاصطناعي',
+  Help: 'المساعدة',
+  'Privacy policy': 'سياسة الخصوصية',
+  'Puts people’s words through {model}. Keeps {keeps}, for {days}, in {where}.':
+    'يمرّر كلام الناس عبر {model}. يحتفظ بـ«{keeps}»: {days}. المكان: {where}.',
+  'no longer than the answer': 'لا أطول من الرد',
+  'It says it puts nobody’s words through a model.': 'يقول إنه لا يمرّر كلام أحد عبر نموذج.',
+  'Free and paid plans': 'خطط مجانية ومدفوعة',
+  'Paid, with a free trial': 'مدفوع، مع تجربة مجانية',
+  'Paid, with no free plan': 'مدفوع، بلا خطة مجانية',
+  'Included with a subscription': 'ضمن اشتراك',
+  'Its page': 'صفحته',
+  'A screenshot is 8:5 and at least {width} pixels wide.':
+    'لقطة الشاشة بنسبة 8:5 وعرضها {width} بكسل على الأقل.',
+  'How it’s paid for': 'طريقة الدفع',
+  'Caime never takes the money: people pay you, as they would anywhere.':
+    'لا تأخذ Caime المال أبدًا: يدفع الناس لك كما يدفعون في أي مكان.',
+  'Works in': 'يعمل بـ',
+  'Where to get help': 'أين تُطلب المساعدة',
+  'A page, or mailto: and an address. Shown on the listing.':
+    'صفحة، أو mailto: وعنوان بريد. يظهر في الإدراج.',
+  'Puts people’s words through an AI model': 'يمرّر كلام الناس عبر نموذج ذكاء اصطناعي',
+  'Then the listing says which, what it keeps, for how long and where.':
+    'عندها يذكر الإدراج أيّ نموذج، وما يحتفظ به، وإلى متى، وأين.',
+  'Which model': 'أيّ نموذج',
+  'Its name, and whose it is.': 'اسمه، ولمن هو.',
+  'What it keeps': 'ما يحتفظ به',
+  'Nothing past the answer': 'لا شيء بعد الرد',
+  'For how many days': 'لكم يومًا',
+  '0 when nothing is kept past the answer.': '0 حين لا يُحفظ شيء بعد الرد.',
+  'The country or region': 'البلد أو المنطقة',
+  Screenshots: 'لقطات الشاشة',
+  'Screenshot {n}': 'لقطة الشاشة {n}',
+  'Remove screenshot {n}': {
+    toWoman: 'احذفي لقطة الشاشة {n}',
+    toMan: 'احذف لقطة الشاشة {n}',
+    other: 'احذف لقطة الشاشة {n}',
+  },
+  'Add a screenshot': {
+    toWoman: 'أضيفي لقطة شاشة',
+    toMan: 'أضف لقطة شاشة',
+    other: 'أضف لقطة شاشة',
+  },
+  'Up to {n}, 8:5, at least {width} pixels wide.':
+    'حتى {n}، بنسبة 8:5، وعرض {width} بكسل على الأقل.',
+  'Needs a tagline, a category, how it’s paid for, where to get help, a privacy policy and where Connect goes. Caime looks once.':
+    'يحتاج إلى سطر تعريفي وفئة وطريقة الدفع ومكان المساعدة وسياسة خصوصية ووجهة لزر «اتصال». تنظر فيه Caime مرة واحدة.',
+  'See its page in the marketplace': {
+    toWoman: 'افتحي صفحته في سوق التطبيقات',
+    toMan: 'افتح صفحته في سوق التطبيقات',
+    other: 'افتح صفحته في سوق التطبيقات',
+  },
+  'Support must be a page (https) or a mail address (mailto:).':
+    'يجب أن يكون الدعم صفحة (https) أو عنوان بريد (mailto:).',
+  'The privacy policy must be at an https address.': 'يجب أن تكون سياسة الخصوصية على عنوان https.',
   'Save the listing': { toWoman: 'احفظي الإدراج', toMan: 'احفظ الإدراج', other: 'احفظ الإدراج' },
   Calendars: 'التقويمات',
   'Tasks and notes': 'المهام والملاحظات',

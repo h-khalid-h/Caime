@@ -30,6 +30,7 @@ export * from './kit-cards';
 export * from './kits';
 export * from './locale';
 export * from './location';
+export * from './marketplace';
 export * from './mentions';
 export * from './orgs';
 export * from './payments';

@@ -28,6 +28,7 @@ import {
   tr,
   trn,
 } from '@caime/core/i18n';
+import { APP_SCREENSHOTS_MAX } from '@caime/core/marketplace';
 import { ORG_ALLOWANCES, PERSON_ALLOWANCES } from '@caime/core/plans';
 import { KEPT_DAYS } from './retention';
 
@@ -93,6 +94,7 @@ const SITE_PATHS: ReadonlySet<string> = new Set([
   '/pricing',
   '/security',
   '/developers',
+  '/marketplace',
   '/about',
   '/sign-up',
   '/sign-in',
@@ -100,7 +102,12 @@ const SITE_PATHS: ReadonlySet<string> = new Set([
 
 /** A link within the site, carrying the chosen language where there is one. */
 export const siteHref = (path: string, facts: Pick<SiteFacts, 'linkLang'> | null): string =>
-  facts?.linkLang && SITE_PATHS.has(path) ? `${path}?lang=${facts.linkLang}` : path;
+  facts?.linkLang &&
+  (SITE_PATHS.has(path.split('#')[0] ?? path) || path.startsWith('/marketplace/'))
+    ? path.includes('#')
+      ? path.replace('#', `?lang=${facts.linkLang}#`)
+      : `${path}?lang=${facts.linkLang}`
+    : path;
 
 /** The site's pages, in the order the nav lists them; `home` is the landing page. */
 export const SITE_NAV: ReadonlyArray<{ path: string; label: string; kicker: string }> = [
@@ -109,6 +116,7 @@ export const SITE_NAV: ReadonlyArray<{ path: string; label: string; kicker: stri
   { path: '/pricing', label: msg('Pricing'), kicker: msg('pricing') },
   { path: '/security', label: msg('Security'), kicker: msg('security and privacy') },
   { path: '/developers', label: msg('Developers'), kicker: msg('developers') },
+  { path: '/marketplace', label: msg('Marketplace'), kicker: msg('marketplace') },
   { path: '/about', label: msg('About'), kicker: msg('about') },
 ];
 
@@ -120,13 +128,18 @@ export function langAttrs(): string {
 
 /**
  * The masthead every page of the site shares: the wordmark, what this page is, the nav, and the
- * other language (named in itself, so whoever needs it can read it).
+ * other language (named in itself, so whoever needs it can read it). A page inside a section
+ * (an app in the marketplace) names the section it's in, and its own path for the languages.
  */
-export function masthead(current: string, facts: Pick<SiteFacts, 'linkLang'> | null): string {
-  const here = SITE_NAV.find((n) => n.path === current);
+export function masthead(
+  current: string,
+  facts: Pick<SiteFacts, 'linkLang'> | null,
+  section: string = current,
+): string {
+  const here = SITE_NAV.find((n) => n.path === section);
   const links = SITE_NAV.map(
     (n) =>
-      `<a href="${siteHref(n.path, facts)}"${n.path === current ? ' aria-current="page"' : ''}>${esc(tr(n.label))}</a>`,
+      `<a href="${siteHref(n.path, facts)}"${n.path === section ? ` aria-current="${section === current ? 'page' : 'true'}"` : ''}>${esc(tr(n.label))}</a>`,
   );
   links.push(`<a href="/sign-in">${esc(tr('Sign in'))}</a>`);
   const here_ = currentTranslator().language;
@@ -559,7 +572,10 @@ export function renderLanding(facts: SiteFacts | null): SitePage {
   };
 }
 
-export function renderSite(page: MarketingPage, facts: SiteFacts): SitePage {
+/** The site's pages written here; the marketplace's are written from its rows (marketplace-pages.ts). */
+export type SiteOnlyPage = Exclude<MarketingPage, 'marketplace'>;
+
+export function renderSite(page: SiteOnlyPage, facts: SiteFacts): SitePage {
   const p = PERSON_ALLOWANCES;
   const o = ORG_ALLOWANCES;
   const main = `<main class="pub pub-home pub-site" ${langAttrs()}>`;
@@ -1079,8 +1095,72 @@ ${main}
       ],
     ])}
   </section>
+  <section class="sheet" id="bar" aria-labelledby="bar-sheet">
+    <h2 id="bar-sheet" class="mono">${esc(tr('The bar for the marketplace'))}</h2>
+    ${spec([
+      [
+        tr('permissions'),
+        esc(
+          tr(
+            'Each one is asked for because the app uses it today, never for a feature to come. Reading everything is looked at closer.',
+          ),
+        ),
+      ],
+      [
+        tr('connect'),
+        esc(tr('Caime follows Connect to the end, as a person would, before it lists the app.')),
+      ],
+      [
+        tr('help and privacy'),
+        esc(
+          tr(
+            'A support address and a privacy policy that open, both on the listing. One that stops working takes the app out.',
+          ),
+        ),
+      ],
+      [
+        tr('never'),
+        esc(
+          tr(
+            'Exporting or backing up conversations wholesale, deleting in bulk, copying Caime’s own app, taking payments through Caime, training a model on what it reads, or one account shared by several people.',
+          ),
+        ),
+      ],
+      [
+        tr('a model'),
+        esc(
+          tr(
+            'An app that puts people’s words through a model says which, what it keeps, for how long and where. The listing shows it as Caime shows its own processors.',
+          ),
+        ),
+      ],
+      [tr('age'), esc(tr('Apps act for people over 18.'))],
+      [
+        tr('the listing'),
+        esc(
+          tr(
+            'A tagline, a category, how it’s paid for, its languages, up to {n} screenshots at 8:5, where to get help and its privacy policy.',
+            { n: APP_SCREENSHOTS_MAX },
+          ),
+        ),
+      ],
+      [
+        tr('changes'),
+        esc(
+          tr(
+            'A change to what the listing shows asks again. An app left broken is taken out, with a note to its developer.',
+          ),
+        ),
+      ],
+      [
+        tr('the order'),
+        esc(tr('By how many people connected it, then the newest. No paid placement, no ratings.')),
+      ],
+    ])}
+  </section>
   <section class="hero">
     ${cta(facts, [
+      ['/marketplace', tr('The marketplace')],
       ['/sign-up', tr('Start free')],
       ['/business', tr('For organizations')],
     ])}

@@ -780,6 +780,14 @@ export async function buildExport(ctx: AppContext, me: string, now: Date) {
         'reviewed_at',
         'declined_reason',
         'connected_count',
+        // What the listing said in the marketplace (R80), and its address there.
+        'slug',
+        'pricing',
+        'languages',
+        'support_url',
+        'privacy_url',
+        'ai_use',
+        'screenshot_ids',
       ])
       .where('owner_id', '=', me)
       .orderBy('created_at')
@@ -1416,6 +1424,13 @@ export async function buildExport(ctx: AppContext, me: string, now: Date) {
         reviewedAt: iso(a.reviewed_at),
         declinedReason: a.declined_reason,
         connectedCount: a.connected_count,
+        slug: a.slug,
+        pricing: a.pricing,
+        languages: a.languages,
+        supportUrl: a.support_url,
+        privacyUrl: a.privacy_url,
+        aiUse: a.ai_use,
+        screenshots: a.screenshot_ids.length,
       },
     })),
     connectedApps: connectedApps.map((g) => ({

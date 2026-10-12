@@ -3,12 +3,18 @@
  * from other people, and a bad one must open nothing rather than somewhere unexpected.
  */
 
-import { SITE_PAGES } from '@caime/core/api';
+import { MARKETING_PAGES, SITE_PAGES } from '@caime/core/api';
 
 /** The way in, never a place to return someone to. */
 const ENTRY = /^\/(?:welcome|sign-in|sign-up|recover|onboarding)?(?:[/?#]|$)/;
-/** Caime's own pages outside the app (the server's): never a screen of it. */
-const SITE_PAGE = new RegExp(`^/(?:${SITE_PAGES.join('|')})/?(?:[?#]|$)`, 'i');
+/**
+ * Caime's own pages outside the app (the server's: its policies, the site, the marketplace and
+ * an app's page in it, R80): never a screen of it, so a link to one opens the page.
+ */
+const SITE_PAGE = new RegExp(
+  `^/(?:${[...SITE_PAGES, ...MARKETING_PAGES].join('|')})(?:/[^?#]*)?/?(?:[?#]|$)`,
+  'i',
+);
 // A query may carry a colon (an app's scope=messages:read, as browsers leave it); a path never.
 const SAFE = /^\/(?!\/)[\w@.~%/=&+-]*(?:\?[\w@.~%/?=&+:-]*)?$/;
 // Long enough for an app's authorization request (/oauth/authorize?…), short of junk.

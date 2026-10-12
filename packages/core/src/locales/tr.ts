@@ -3360,8 +3360,53 @@ export const turkish: Catalog = {
   'What your app does for Caime, if anything: a calendar it keeps in step, or mail it carries. Reviewed with the listing.':
     'Uygulamanızın Caime’ye sunduğu, varsa: güncel tuttuğu bir takvim ya da taşıdığı posta. Listelemeyle birlikte incelenir.',
   'Listed in Discover': 'Keşfet’te listeli',
-  'Needs a tagline, a category and where Connect goes. Caime looks once.':
-    'Bir slogan, bir kategori ve Bağla’nın gideceği yer gerekir. Caime bir kez bakar.',
+  '{name}, screenshot {n}': '{name}, ekran görüntüsü {n}',
+  languages: 'diller',
+  AI: 'AI',
+  Help: 'Yardım',
+  'Privacy policy': 'Gizlilik politikası',
+  'Puts people’s words through {model}. Keeps {keeps}, for {days}, in {where}.':
+    'İnsanların sözlerini {model} üzerinden geçirir. Sakladığı: {keeps}; süre: {days}. Yer: {where}.',
+  'no longer than the answer': 'yanıttan uzun değil',
+  'It says it puts nobody’s words through a model.':
+    'Kimsenin sözlerini bir modelden geçirmediğini söylüyor.',
+  'Free and paid plans': 'Ücretsiz ve ücretli planlar',
+  'Paid, with a free trial': 'Ücretli, ücretsiz denemeyle',
+  'Paid, with no free plan': 'Ücretli, ücretsiz planı yok',
+  'Included with a subscription': 'Bir aboneliğe dahil',
+  'Its page': 'Sayfası',
+  'A screenshot is 8:5 and at least {width} pixels wide.':
+    'Ekran görüntüsü 8:5 oranında ve en az {width} piksel genişliğinde olmalı.',
+  'How it’s paid for': 'Nasıl ücretlendirildiği',
+  'Caime never takes the money: people pay you, as they would anywhere.':
+    'Caime parayı asla almaz: insanlar size, her yerde olduğu gibi öder.',
+  'Works in': 'Çalıştığı diller',
+  'Where to get help': 'Yardım nereden alınır',
+  'A page, or mailto: and an address. Shown on the listing.':
+    'Bir sayfa ya da mailto: ve bir adres. Listelemede gösterilir.',
+  'Puts people’s words through an AI model': 'İnsanların sözlerini bir AI modelinden geçirir',
+  'Then the listing says which, what it keeps, for how long and where.':
+    'O zaman listeleme hangisi olduğunu, neyi, ne kadar süre ve nerede sakladığını söyler.',
+  'Which model': 'Hangi model',
+  'Its name, and whose it is.': 'Adı ve kime ait olduğu.',
+  'What it keeps': 'Sakladıkları',
+  'Nothing past the answer': 'Yanıttan sonra hiçbir şey',
+  'For how many days': 'Kaç gün',
+  '0 when nothing is kept past the answer.': 'Yanıttan sonra hiçbir şey saklanmıyorsa 0.',
+  'The country or region': 'Ülke ya da bölge',
+  Screenshots: 'Ekran görüntüleri',
+  'Screenshot {n}': 'Ekran görüntüsü {n}',
+  'Remove screenshot {n}': 'Ekran görüntüsü {n} kaldır',
+  'Add a screenshot': 'Ekran görüntüsü ekle',
+  'Up to {n}, 8:5, at least {width} pixels wide.':
+    'En fazla {n}, 8:5 oranında, en az {width} piksel genişliğinde.',
+  'Needs a tagline, a category, how it’s paid for, where to get help, a privacy policy and where Connect goes. Caime looks once.':
+    'Bir slogan, bir kategori, nasıl ücretlendirildiği, yardımın nerede olduğu, bir gizlilik politikası ve Bağla’nın gideceği yer gerekir. Caime bir kez bakar.',
+  'See its page in the marketplace': 'Pazar yerindeki sayfasını gör',
+  'Support must be a page (https) or a mail address (mailto:).':
+    'Destek bir sayfa (https) ya da bir e-posta adresi (mailto:) olmalı.',
+  'The privacy policy must be at an https address.':
+    'Gizlilik politikası bir https adresinde olmalı.',
   'Save the listing': 'Listelemeyi kaydet',
   Calendars: 'Takvimler',
   'Tasks and notes': 'Görevler ve notlar',

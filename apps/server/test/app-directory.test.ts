@@ -1,5 +1,5 @@
 import { createHash, randomBytes } from 'node:crypto';
-import { uuidv4 } from '@caime/core';
+import { LISTING_CHECKS, uuidv4 } from '@caime/core';
 import sharp from 'sharp';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { type Client, createTestApp, signup, type TestApp } from './helpers';
@@ -18,6 +18,12 @@ const ADMIN = 'operator-token-0123456789abcdef';
 const SITE = 'https://digest.example';
 const REDIRECT = `${SITE}/callback`;
 const LOGIN = `${SITE}/login`;
+/** What a listing needs beside R74's since R80: how it's paid for, help and a privacy policy. */
+const TERMS = {
+  pricing: 'free',
+  supportUrl: 'mailto:help@digest.example',
+  privacyUrl: 'https://digest.example/privacy',
+};
 
 /** Where a listed app sits on the first page: after the calendar and the five bridges (R79). */
 const FIRST_LISTED = 6;
@@ -31,7 +37,7 @@ const operator = (method: 'GET' | 'POST', url: string, body?: unknown) =>
     ...(body ? { payload: body as object } : {}),
   });
 /** The operator's answer on the listing as it stands (the version they looked at). */
-async function review(id: string, decision: 'list' | 'decline', reason?: string) {
+async function review(id: string, decision: 'list' | 'decline' | 'delist', reason?: string) {
   const queue = (await operator('GET', '/v1/admin/listings')).json() as {
     listings: Array<{ id: string; listing: { revision: number } }>;
   };
@@ -40,6 +46,8 @@ async function review(id: string, decision: 'list' | 'decline', reason?: string)
     decision,
     revision,
     ...(reason ? { reason } : {}),
+    // Every point of the bar checked, to list (R80).
+    ...(decision === 'list' ? { checks: [...LISTING_CHECKS] } : {}),
   });
 }
 
@@ -131,6 +139,13 @@ describe('Discover and Connected (R74)', () => {
       description: null,
       category: null,
       provides: [],
+      pricing: null,
+      languages: [],
+      supportUrl: null,
+      privacyUrl: null,
+      aiUse: null,
+      screenshotIds: [],
+      slug: null,
       iconFileId: null,
       loginUrl: null,
       orgId: null,
@@ -140,7 +155,9 @@ describe('Discover and Connected (R74)', () => {
     });
     const bare = await dev.req('PATCH', `/v1/me/oauth-apps/${app.id}`, { listed: true });
     expect(bare.statusCode).toBe(400);
-    expect(bare.json().error.message).toMatch(/tagline, a category and where Connect goes/);
+    expect(bare.json().error.message).toMatch(
+      /a tagline, a category, how it’s paid for, where to get help, a privacy policy and where Connect goes/,
+    );
     const elsewhere = await dev.req('PATCH', `/v1/me/oauth-apps/${app.id}`, {
       tagline: 'Your week, every Monday',
       category: 'tasks',
@@ -158,6 +175,7 @@ describe('Discover and Connected (R74)', () => {
       description: 'Every Monday, what moved and what waits.',
       category: 'tasks',
       loginUrl: LOGIN,
+      ...TERMS,
       listed: true,
     });
     expect(asked.app.listing).toMatchObject({
@@ -397,6 +415,7 @@ describe('Discover and Connected (R74)', () => {
       tagline: 'Another thing',
       category: 'work',
       loginUrl: LOGIN,
+      ...TERMS,
       listed: true,
     });
     const mute = await review(other.id, 'decline');
@@ -448,6 +467,7 @@ describe('Discover and Connected (R74)', () => {
       tagline: 'First words',
       category: 'work',
       loginUrl: 'https://versioned.example/login',
+      ...TERMS,
       listed: true,
     });
     const seen = asked.app.listing.revision;
@@ -458,6 +478,7 @@ describe('Discover and Connected (R74)', () => {
     const stale = await operator('POST', `/v1/admin/listings/${fresh.id}`, {
       decision: 'list',
       revision: seen,
+      checks: [...LISTING_CHECKS],
     });
     expect(stale.statusCode).toBe(409);
     expect(stale.json().error.code).toBe('listing_changed');
@@ -490,8 +511,8 @@ describe('Discover and Connected (R74)', () => {
     expect(seen.headers['content-type']).toMatch(/^image\//);
     expect((await directory(noor)).apps[FIRST_LISTED]?.iconUrl).toBe(path);
     expect((await noor.get('/v1/me/connected-apps')).apps).toEqual([]);
-    // Anonymous, nothing.
-    expect((await t.app.inject({ method: 'GET', url: path })).statusCode).toBe(401);
+    // Listed, it's anyone's, signed in or not: the marketplace shows it to visitors (R80).
+    expect((await t.app.inject({ method: 'GET', url: path })).statusCode).toBe(200);
   });
 
   it('an organization publishes it, when its owner or admins say so', async () => {
@@ -553,6 +574,7 @@ describe('Discover and Connected (R74)', () => {
           tagline: n % 3 === 0 ? 'Keeps your meetings' : 'Keeps your notes',
           category: n % 2 === 0 ? 'calendars' : 'tasks',
           loginUrl: `${site}/login`,
+          ...TERMS,
           listed: true,
         });
         expect((await review(a.id, 'list')).statusCode).toBe(200);
@@ -736,6 +758,7 @@ describe('Discover and Connected (R74)', () => {
       category: 'calendars',
       provides: ['calendar_sync', 'calendar_sync'],
       loginUrl: 'https://sync.example/login',
+      ...TERMS,
       listed: true,
     });
     expect(asked.app.listing).toMatchObject({

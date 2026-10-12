@@ -140,6 +140,7 @@ import type { RewriteStyle } from '@caime/core/assist';
 import type { AutomationWhen } from '@caime/core/automations';
 import type { BilledPlan, BillingInterval, BillingView } from '@caime/core/billing';
 import type { SuggestionKind } from '@caime/core/intelligence';
+import type { AiUse, AppPricing } from '@caime/core/marketplace';
 
 /** Whose slots: an organization's or a person's (R58). */
 export interface BookingHostRef {
@@ -506,6 +507,12 @@ export const endpoints = {
       description?: string | null;
       category?: AppCategory | null;
       provides?: AppProvides[];
+      pricing?: AppPricing | null;
+      languages?: string[];
+      supportUrl?: string | null;
+      privacyUrl?: string | null;
+      aiUse?: AiUse | null;
+      screenshotIds?: string[];
       loginUrl?: string | null;
       iconFileId?: string | null;
       orgId?: string | null;
