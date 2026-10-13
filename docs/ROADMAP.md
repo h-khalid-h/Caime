@@ -593,7 +593,24 @@ outperforming the alternatives is reach and operations. In the order the review 
       summaries only when asked, a Pro and Business feature with monthly minute allowances. ⛔ A
       speech-to-text provider tested on Egyptian and Gulf Arabic clinic calls, with a data
       processing agreement and no training on customer audio; the consent flow is built first,
-      against the provider that passed
+      against the provider that passed. How it's built is R82 (one browser in the call records
+      every voice as its own track, uploading utterances as they end) and ADR-17 (Cai's voice
+      in a call, through a media unit beside the container), in order:
+      [ ] The consent flow (R52, R82 (4)) ⛔ the lawyer's answer on whether answering is consent
+      [ ] 1:1 calls with a browser in them: the recorder, utterances cut at pauses and uploaded,
+      transcribed in order by speaker on the call's line; summary and actions only when asked
+      [ ] Group calls: late joiners, the recorder handed on when it leaves
+      [ ] Cai asked in the call by name, answering in writing (R82 (7))
+      [ ] Phone-only calls ⛔ a native recorder, and calls tried on a device first
+      [ ] In person on a phone, with the provider's speaker turns
+      [ ] Cai's voice and calls above eight (ADR-17) ⛔ streaming Arabic speech to text passing
+      its own bake-off
+- [ ] Meetings (R83), beside Chats and Calls: the Meetings list (`/meetings`); Join on every agreed meeting and booking (card, Calendar,
+      brief, feed URL), "starting now" at its time; outsiders added by address get an iCalendar
+      invitation with their own link, Accept and Decline coming back by mail; the link proves the
+      address (a code on a second device, a code and the lobby without a link); a guest session
+      scoped to the meeting; consent and the age question on the join page; "Keep it" to claim.
+      ⛔ Caime Mail on in production, and the lawyer's answer on R83 (4)
 - [ ] Candidates from the 2026-09-30 brainstorm review (R46), the owner's call: organizations
       taking WhatsApp Business messages into the Business inbox through Meta's official Cloud
       API ⛔ a Meta business account, verification and fees; contact matching by hashed phone
@@ -2655,3 +2672,16 @@ The six-slice review's plan, in its order; a block is ticked when its tests and 
   on `/developers#bar` follow; links to the site's pages open as pages in the app (`appPath`).
   Tests: `marketplace.test.ts` (10), the directory test's terms, the E2E listing flow's new
   fields and a visitor's marketplace page, the accessibility pass over four marketplace pages.
+- 2026-10-13 — R82 and ADR-17, documents only (R82 supersedes R68's "not adopted: voice calls
+  with Cai", by the owner's decision): how R52's recording is built (one browser in
+  the call records each person's stream as its own track, since the mesh already delivers them
+  apart, so speakers are known without a diarization model and phones in the call are heard;
+  utterances cut at pauses and uploaded as they end, so silence is never paid for and no word
+  timestamps are needed; summaries only when asked; Cai asked by name answers in writing) and
+  where Cai's voice in a call will run (a media unit beside the container). No code; R52 stays
+  ⛔ on the speech bake-off and the lawyer's answer on consent.
+- 2026-10-13 — R83, documents only: Meetings, a surface beside Chats and Calls (planned, online or
+  in person by the kit's own Where; a list, not a menu, R19), and anyone can join one. The invitation is the key: an
+  iCalendar invitation by mail lands in any calendar without a connector, and each invitee's own
+  link proves their address, so a guest joins without a code or an account, in a session scoped
+  to the meeting; consent is a tap on the join page. No code; ⛔ on Caime Mail in production.
