@@ -1230,4 +1230,9 @@ export const frServer: Catalog = {
   'Guests are invited by people 18 or over.':
     'Les invités sont invités par des personnes de 18 ans ou plus.',
   'That’s your own address.': 'C’est votre propre adresse.',
+  'That invitation': 'Cette invitation',
+  'This invitation is for your Caime account: sign in.':
+    'Cette invitation est pour votre compte Caime : connectez-vous.',
+  'Someone else is signed in here. Open the link in another browser, or sign out first.':
+    'Quelqu’un d’autre est connecté ici. Ouvrez le lien dans un autre navigateur, ou déconnectez-vous d’abord.',
 };

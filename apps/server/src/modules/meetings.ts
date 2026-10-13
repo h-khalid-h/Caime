@@ -1,6 +1,7 @@
 /**
  * Meetings (R83, R84): inviting a guest by address. The space and the mail are
- * `lib/meeting-guests.ts`'s; this is the route.
+ * `lib/meeting-guests.ts`'s; this is the route. A guest's way in, which makes a session, is
+ * with the other ways in, in `auth.ts`.
  */
 import type { MeetingGuestResponse } from '@caime/core/api';
 import type { FastifyInstance } from 'fastify';

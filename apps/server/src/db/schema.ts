@@ -1125,6 +1125,8 @@ export interface MeetingGuestsTable {
   token_hash: Buffer;
   created_at: Generated<Date>;
   revoked_at: NullableTimestamp;
+  joined_at: NullableTimestamp;
+  adult: boolean | null;
 }
 
 export interface Database {

@@ -675,9 +675,16 @@ outperforming the alternatives is reach and operations. In the order the review 
       conversation, by someone under 18, or past eight people. The export lists invitations
       (never a link) and the privacy page says what's kept. Tests: `meeting-guests.test.ts`
       (3), `ics.test.ts` (3 more), the route walk still refuses a guest everywhere
-      [ ] Guests, the join page (`/j/<token>`), the guest's session and the routes the space opens
-      to them; the invite field on the card (the app) ⛔ SMTP in production to send (the
-      consent and recorder questions decided in R85)
+      [x] Guests, the way in (server): `GET`/`POST /v1/join/:token` read and take a guest's link
+      (`lib/meeting-join.ts`; migration 0075 keeps when they came and whether they said 18 or
+      over); taking it signs them in as their provisional self until a day after the meeting,
+      never over someone signed in already, and tells an address that is a Caime account to
+      sign in; `GUEST_ROUTES` now holds their name, reading the space and its card, and its call,
+      and a group call takes the space's guests. Tests: `meeting-join.test.ts` (3), the route
+      walk, the export
+      [ ] Guests, the app: the join page at `/j/<token>` and a guest's view of their meeting (the
+      call, the card); the invite field on the card; E2E ⛔ SMTP in production to send. Not
+      built: a code on a second device (R83 (3))
 - [ ] Candidates from the 2026-09-30 brainstorm review (R46), the owner's call: organizations
       taking WhatsApp Business messages into the Business inbox through Meta's official Cloud
       API ⛔ a Meta business account, verification and fees; contact matching by hashed phone
@@ -2775,3 +2782,5 @@ The six-slice review's plan, in its order; a block is ticked when its tests and 
   ⛔ on the lawyer is gone; the speech bake-off's and Caime Mail's stand.
 - 2026-10-13 — R84, the meeting's own space and the invitation: server only, a guest can't do
   anything yet (the guard holds; the join page is next).
+- 2026-10-13 — R84, a guest's way in, server side: their link read and taken, a session for that
+  meeting only, and its space and call opened to them; the app's join page is next.

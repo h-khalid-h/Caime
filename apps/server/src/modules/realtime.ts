@@ -274,8 +274,8 @@ export async function realtimeRoutes(app: FastifyInstance, ctx: AppContext): Pro
         if (msg.type === 'auth') {
           const session = await resolveSession(ctx, msg.token);
           if (!session) return socket.close(4401, 'invalid session');
-          // A guest (R84) has no live updates until a meeting's space gives them some.
-          if (session.guest) return socket.close(4403, 'guest');
+          // A guest (R84) hears what's sent to them, as anyone does: only their meeting's
+          // space and its call, the one conversation they're in.
           clearTimeout(timer);
           await attach(session.userId, session.sessionId);
         }

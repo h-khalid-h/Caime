@@ -864,6 +864,8 @@ export async function buildExport(ctx: AppContext, me: string, now: Date) {
         'u.display_name as guest_name',
         'g.created_at',
         'g.revoked_at',
+        'g.joined_at',
+        'g.adult',
       ])
       .where((eb) => eb.or([eb('g.user_id', '=', me), eb('g.invited_by', '=', me)]))
       .orderBy('g.created_at')
@@ -1322,7 +1324,9 @@ export async function buildExport(ctx: AppContext, me: string, now: Date) {
     meetingInvitations: meetingInvitations.map((g) => ({
       meetingSpaceId: g.conversation_id,
       as: g.user_id === me ? 'guest' : 'inviter',
-      ...(g.user_id === me ? {} : { guest: g.guest_name }),
+      ...(g.user_id === me
+        ? { joinedAt: iso(g.joined_at), saidEighteenOrOver: g.adult }
+        : { guest: g.guest_name }),
       at: g.created_at.toISOString(),
       endedAt: iso(g.revoked_at),
     })),

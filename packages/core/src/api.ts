@@ -2821,3 +2821,19 @@ export interface AdminPersonResponse {
 export interface MeetingGuestResponse {
   space: { conversationId: string; messageId: string };
 }
+
+/** `GET /v1/join/:token` (R84): a guest's link, before they take it. */
+export interface JoinView {
+  meeting: { title: string; at: string; durationMinutes: number; host: string | null };
+  guest: { name: string };
+  /** The address is someone's on Caime: they sign in instead, and find it among their requests. */
+  signIn: boolean;
+}
+
+/** `POST /v1/join/:token`: the meeting's space and card, and a phone's session token. */
+export interface JoinResponse {
+  conversationId: string;
+  messageId: string;
+  seq: number;
+  token?: string;
+}

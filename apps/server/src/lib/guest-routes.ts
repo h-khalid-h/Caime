@@ -5,12 +5,29 @@
  * plugin (plugins/auth.ts), so a route added later is closed to guests until it's added here on
  * purpose. `guest-routes.test.ts` walks every registered route to prove it.
  *
- * For now only what any session needs to end itself: the routes a guest uses in a meeting's
- * space (its messages, its card, its call) are added with that space (R84 (1)).
+ * A guest is in one conversation, their meeting's space, and these are what being in it takes:
+ * their session and their own name, reading the space and its card, and its call (ICE, what's
+ * live, start, join, decline, leave, signal, alive). Each route still checks membership itself,
+ * so none reaches past the space. Writing in the space, people, search, settings: never.
  */
 export const GUEST_ROUTES: ReadonlySet<string> = new Set([
   'GET /v1/auth/session',
   'POST /v1/auth/logout',
+  'GET /v1/me',
+  'GET /v1/join/:token',
+  'POST /v1/join/:token',
+  'GET /v1/conversations/:id',
+  'GET /v1/conversations/:id/messages',
+  'GET /v1/calls/ice',
+  'GET /v1/calls/live',
+  'GET /v1/group-calls/live',
+  'GET /v1/conversations/:id/group-call',
+  'POST /v1/conversations/:id/group-calls',
+  'POST /v1/group-calls/:id/join',
+  'POST /v1/group-calls/:id/decline',
+  'POST /v1/group-calls/:id/leave',
+  'POST /v1/group-calls/:id/signal',
+  'POST /v1/group-calls/:id/alive',
 ]);
 
 /** The key a route is listed under: its method and its pattern (`/v1/messages/:id`). */

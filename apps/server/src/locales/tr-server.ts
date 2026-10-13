@@ -1177,4 +1177,9 @@ export const turkishServer: Catalog = {
   'Guests are invited by people 18 or over.':
     'Misafirleri 18 yaşında ya da daha büyük kişiler davet eder.',
   'That’s your own address.': 'Bu sizin kendi adresiniz.',
+  'That invitation': 'O davet',
+  'This invitation is for your Caime account: sign in.':
+    'Bu davet Caime hesabınız için: giriş yapın.',
+  'Someone else is signed in here. Open the link in another browser, or sign out first.':
+    'Burada başka biri oturum açmış. Bağlantıyı başka bir tarayıcıda açın ya da önce çıkış yapın.',
 };

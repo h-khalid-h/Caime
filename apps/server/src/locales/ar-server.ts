@@ -1204,4 +1204,9 @@ export const arServer: Catalog = {
     'ينضم الضيوف إلى اجتماعات متفق عليها في محادثة أو مجموعة.',
   'Guests are invited by people 18 or over.': 'يدعو الضيوفَ أشخاصٌ في الثامنة عشرة أو أكثر.',
   'That’s your own address.': 'هذا عنوانك أنت.',
+  'That invitation': 'تلك الدعوة',
+  'This invitation is for your Caime account: sign in.':
+    'هذه الدعوة لحسابك على Caime، ويلزم تسجيل الدخول.',
+  'Someone else is signed in here. Open the link in another browser, or sign out first.':
+    'شخص آخر مسجّل الدخول هنا. يمكن فتح الرابط في متصفح آخر، أو تسجيل الخروج أولًا.',
 };

@@ -21,6 +21,8 @@ import {
   uuidv7,
 } from '@caime/core';
 import type {
+  JoinResponse,
+  JoinView,
   OkResponse,
   RecoverResponse,
   RecoveryCodesResponse,
@@ -57,6 +59,7 @@ import {
 import { recordEvent } from '../lib/events';
 import { currentZone, isCountry } from '../lib/geo';
 import { assertHandleAvailable } from '../lib/handles';
+import { guestLink } from '../lib/meeting-join';
 import { endAllAccess } from '../lib/moderation';
 import { sendResetLink } from '../lib/reset';
 import { endSessions } from '../lib/sessions';
@@ -119,6 +122,8 @@ export async function createSession(
   userId: string,
   client: 'web' | 'native',
   deviceName?: string,
+  /** When it ends, if sooner than a session's usual life (a meeting's guest, R84). */
+  endsAt?: Date,
 ): Promise<string | null> {
   const token = newToken('csy');
   const { ip, userAgent } = clientInfo(req);
@@ -133,7 +138,12 @@ export async function createSession(
       platform: platformFrom(userAgent),
       ip,
       user_agent: userAgent?.slice(0, 300) ?? null,
-      expires_at: new Date(ctx.now().getTime() + ctx.config.SESSION_DAYS * 86_400_000),
+      expires_at: new Date(
+        Math.min(
+          ctx.now().getTime() + ctx.config.SESSION_DAYS * 86_400_000,
+          endsAt?.getTime() ?? Number.POSITIVE_INFINITY,
+        ),
+      ),
     })
     .execute();
   if (client === 'web') {
@@ -623,5 +633,72 @@ export async function authRoutes(app: FastifyInstance, ctx: AppContext) {
     const token = await createSession(ctx, req, reply, user.id, body.client);
     await audit(ctx.db, { actorId: user.id, action: 'auth.recovered', ...clientInfo(req) });
     return { user: meView(user, ctx.now(), ctx.config), token, recoveryCodesLeft: remaining.n };
+  });
+
+  // A meeting's guest (R84): their own link is their way in, for that meeting only.
+  const TokenParams = z.object({ token: z.string().min(1).max(200) });
+  const JoinBody = z.object({
+    name: z.string().trim().min(1).max(80).nullish(),
+    /** Whether they said they're 18 or over (R85 (3)); not saying is no. */
+    adult: z.boolean(),
+    client: z.enum(['web', 'native']).default('web'),
+  });
+  /** Tried from one address: enough for a family behind one router, never a guessing machine. */
+  const tries = (ip: string) =>
+    ctx.limiter.hit(`join:${ip}`, ctx.config.isTest ? 1000 : 60, 60 * 60_000);
+
+  /** A guest's link (R84): what the meeting is, who asked, and whether to sign in instead. */
+  app.get('/join/:token', async (req): Promise<JoinView> => {
+    tries(req.ip);
+    const { token } = parse(TokenParams, req.params);
+    const link = await guestLink(ctx, token);
+    return {
+      meeting: {
+        title: link.title,
+        at: link.at.toISOString(),
+        durationMinutes: link.durationMinutes,
+        host: link.host,
+      },
+      guest: { name: link.guestName },
+      // The address is someone's on Caime: they sign in, and find it among their requests.
+      signIn: link.userKind === 'human',
+    };
+  });
+
+  /** Taking the link: signed in as the guest, for that meeting only, until a day after it. */
+  app.post('/join/:token', async (req, reply): Promise<JoinResponse> => {
+    tries(req.ip);
+    const { token } = parse(TokenParams, req.params);
+    const body = parse(JoinBody, req.body);
+    const link = await guestLink(ctx, token);
+    if (link.userKind !== 'provisional')
+      throw new AppError(409, 'sign_in', tr('This invitation is for your Caime account: sign in.'));
+    // Already signed in here as someone else: never signed out by a link.
+    if (req.auth && req.auth.userId !== link.userId)
+      throw new AppError(
+        409,
+        'wrong_account',
+        tr('Someone else is signed in here. Open the link in another browser, or sign out first.'),
+      );
+    if (body.name && body.name !== link.guestName)
+      await ctx.db
+        .updateTable('users')
+        .set({ display_name: body.name })
+        .where('id', '=', link.userId)
+        .execute();
+    await ctx.db
+      .updateTable('meeting_guests')
+      .set({ adult: body.adult, joined_at: ctx.now() })
+      .where('id', '=', link.guestRowId)
+      .execute();
+    const session = req.auth
+      ? null
+      : await createSession(ctx, req, reply, link.userId, body.client, 'Guest', link.endsAt);
+    return {
+      conversationId: link.conversationId,
+      messageId: link.messageId,
+      seq: link.seq,
+      ...(session ? { token: session } : {}),
+    };
   });
 }

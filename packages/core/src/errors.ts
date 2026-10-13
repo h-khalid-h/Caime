@@ -73,6 +73,7 @@ export const ERROR_CODES = [
   'record_not_found',
   'rule_exists',
   'saved_full',
+  'sign_in',
   'slot_taken',
   'suspended',
   'token_route',
