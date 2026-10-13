@@ -1206,4 +1206,9 @@ export const arServer: Catalog = {
   'That’s your own address.': 'هذا عنوانك أنت.',
   'Guests aren’t available in this conversation.': 'دعوة الضيوف غير متاحة في هذه المحادثة.',
   'They can’t join a conversation with guests.': 'لا يمكن الانضمام إلى محادثة فيها ضيوف.',
+  'That invitation': 'تلك الدعوة',
+  'This invitation is for your Caime account: sign in.':
+    'هذه الدعوة لحسابك على Caime، ويلزم تسجيل الدخول.',
+  'Someone else is signed in here. Open the link in another browser, or sign out first.':
+    'شخص آخر مسجّل الدخول هنا. يمكن فتح الرابط في متصفح آخر، أو تسجيل الخروج أولًا.',
 };

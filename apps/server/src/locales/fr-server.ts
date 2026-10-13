@@ -1234,4 +1234,9 @@ export const frServer: Catalog = {
     'Les invités ne sont pas disponibles dans cette conversation.',
   'They can’t join a conversation with guests.':
     'Impossible de les ajouter à une conversation avec des invités.',
+  'That invitation': 'Cette invitation',
+  'This invitation is for your Caime account: sign in.':
+    'Cette invitation est pour votre compte Caime : connectez-vous.',
+  'Someone else is signed in here. Open the link in another browser, or sign out first.':
+    'Quelqu’un d’autre est connecté ici. Ouvrez le lien dans un autre navigateur, ou déconnectez-vous d’abord.',
 };

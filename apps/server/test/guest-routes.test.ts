@@ -64,10 +64,11 @@ describe('a guest can do nothing else (R84)', () => {
     expect(open).toEqual([]);
   });
 
-  it('may see its session and sign out; a person on Caime is untouched', async () => {
+  it('may see its session and its own name, and sign out; a person on Caime is untouched', async () => {
     expect((await guest.req('GET', '/v1/auth/session')).statusCode).toBe(200);
     expect((await person.req('GET', '/v1/me')).statusCode).toBe(200);
-    expect((await guest.req('GET', '/v1/me')).statusCode).toBe(403);
+    expect((await guest.req('GET', '/v1/me')).statusCode).toBe(200);
+    expect((await guest.req('GET', '/v1/inbox')).statusCode).toBe(403);
     expect((await guest.req('POST', '/v1/auth/logout', {})).statusCode).toBe(200);
     expect((await guest.req('GET', '/v1/auth/session')).statusCode).not.toBe(200);
   });

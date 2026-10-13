@@ -50,7 +50,11 @@ export async function groupCallRoutes(app: FastifyInstance, ctx: AppContext) {
   const paced = (userId: string, callId: string) =>
     ctx.limiter.hit(`group-call:${callId}:${userId}`, ctx.config.isTest ? 1000 : 30, 60_000);
 
-  /** Who in a conversation can be in its call: people in it (not a request still open). */
+  /**
+   * Who in a conversation can be in its call: people in it (not a request still open), and in a
+   * meeting's own space its guests (R84), the only conversations a provisional person is in
+   * besides one reached by mail, which is never a group.
+   */
   async function callable(conversationId: string, db: Kysely<Database> | Transaction<Database>) {
     const people = await participantsOf(db, conversationId);
     const ids = people
@@ -61,7 +65,7 @@ export async function groupCallRoutes(app: FastifyInstance, ctx: AppContext) {
       .selectFrom('users')
       .select(['id', 'display_name'])
       .where('id', 'in', ids)
-      .where('kind', '=', 'human')
+      .where('kind', 'in', ['human', 'provisional'])
       .where('deleted_at', 'is', null)
       .execute();
   }

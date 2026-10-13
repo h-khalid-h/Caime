@@ -1179,4 +1179,9 @@ export const turkishServer: Catalog = {
   'That’s your own address.': 'Bu sizin kendi adresiniz.',
   'Guests aren’t available in this conversation.': 'Bu konuşmada misafir davet edilemiyor.',
   'They can’t join a conversation with guests.': 'Misafir olan bir konuşmaya eklenemezler.',
+  'That invitation': 'O davet',
+  'This invitation is for your Caime account: sign in.':
+    'Bu davet Caime hesabınız için: giriş yapın.',
+  'Someone else is signed in here. Open the link in another browser, or sign out first.':
+    'Burada başka biri oturum açmış. Bağlantıyı başka bir tarayıcıda açın ya da önce çıkış yapın.',
 };
