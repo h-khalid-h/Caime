@@ -866,6 +866,7 @@ export async function buildExport(ctx: AppContext, me: string, now: Date) {
         'g.revoked_at',
         'g.joined_at',
         'g.adult',
+        'g.answer',
       ])
       .where((eb) => eb.or([eb('g.user_id', '=', me), eb('g.invited_by', '=', me)]))
       .orderBy('g.created_at')
@@ -1329,6 +1330,7 @@ export async function buildExport(ctx: AppContext, me: string, now: Date) {
         : { guest: g.guest_name }),
       at: g.created_at.toISOString(),
       endedAt: iso(g.revoked_at),
+      answer: g.answer,
     })),
     organizations: orgs.map((o) => ({
       name: o.name,

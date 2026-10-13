@@ -1127,6 +1127,8 @@ export interface MeetingGuestsTable {
   revoked_at: NullableTimestamp;
   joined_at: NullableTimestamp;
   adult: boolean | null;
+  answer: 'accepted' | 'declined' | 'tentative' | null;
+  answered_at: NullableTimestamp;
 }
 
 export interface Database {

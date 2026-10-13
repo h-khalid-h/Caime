@@ -8,6 +8,12 @@
 
 export type MeetingVenue = 'caime' | 'link' | 'place';
 
+/**
+ * Cai's own address at Caime's mail domain (R86): `assistant@cai.me`. It sends a meeting's
+ * invitations for whoever invites, and reads the guests' answers to them; nothing else.
+ */
+export const CAI_MAIL = 'assistant';
+
 /** Join opens this long before a meeting starts. */
 export const JOIN_EARLY_MS = 10 * 60_000;
 /** And stays open this long after its planned end, since meetings run over. */

@@ -130,7 +130,10 @@ Caime keeps the address, who invited them and when, and gives the meeting its ow
 guest sees only that meeting. Their link to join is kept only as a fingerprint, and ends when
 they&rsquo;re invited again. Joining keeps the name they give, when they first came in and whether
 they said they&rsquo;re 18 or over; they&rsquo;re signed in to that meeting only, until a day after
-it. Someone invited who isn&rsquo;t on Caime can do nothing else on it.</li>
+it. The invitation comes from Cai&rsquo;s address (assistant@), for whoever invited them, and
+their calendar&rsquo;s answer to it (coming, not coming, maybe) is kept and shown to whoever
+invited them; nothing else sent to Cai&rsquo;s address is read. Someone invited who isn&rsquo;t on
+Caime can do nothing else on it.</li>
 <li><strong>What Caime works out for you.</strong> In conversations that aren&rsquo;t private,
 Caime notes the dates, amounts, links, email addresses, phone numbers, reference numbers (an order,
 an invoice, a ticket), topics (such as Project Atlas), questions and requests in each message. From these, and from a team, a space or a work email domain you share with someone,

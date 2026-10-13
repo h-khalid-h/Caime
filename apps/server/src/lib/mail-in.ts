@@ -24,9 +24,11 @@
  */
 import { defaultPrivacy, isReservedHandle, SendMessageBody, uuidv4, uuidv7 } from '@caime/core';
 import { bareSubject } from '@caime/core/mail';
+import { CAI_MAIL } from '@caime/core/meetings';
 import type { AppContext } from '../context';
 import { ORG_COLUMNS, USER_COLUMNS, type UserRow } from '../db/schema';
 import { startCustomerConversation } from './business-threads';
+import { caiMail } from './cai-mail';
 import { ensureDirectConversation } from './conversations';
 import { storeBytes } from './files';
 import { alignedDomains, domainOf, handleOf, mailOn, senderName } from './mail-address';
@@ -168,6 +170,8 @@ async function deliverTo(
   if (seen) return 'duplicate';
   const handle = handleOf(toAddress, domain);
   if (!handle) return 'unknown';
+  // Cai's own address (R86): a guest's answer to a meeting's invitation, and nothing else.
+  if (handle === CAI_MAIL) return caiMail(ctx, mail);
   const target = await recipientOf(ctx, handle);
   if (!target) return 'unknown';
   const sender = await senderOf(ctx, mail);

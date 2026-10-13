@@ -12,7 +12,7 @@ Deployed 2026-09-26 on EasyPanel.
 | | |
 | --- | --- |
 | Public URL | https://caime.datac.com (`PUBLIC_URL`, a Cloudflare-proxied record); also served at EasyPanel's default service domain, https://caishy-caishy.0hqwb7.easypanel.host |
-| Domain to come | `cai.me` (R35), once it's bought: point it here (an A or CNAME record to EasyPanel, and the domain added to the `caime` service), then set `PUBLIC_URL=https://cai.me`, and share links read `cai.me/@handle` |
+| Domain | `cai.me` (R35), Caime's: point it here (an A or CNAME record to EasyPanel, and the domain added to the `caime` service), then set `PUBLIC_URL=https://cai.me`, and share links read `cai.me/@handle` |
 | Project | `caishy` |
 | Services | `caime` (app, port 8787, volume `data` at `/data`) and `db` (Postgres 16) |
 | Source | **GitHub** `h-khalid-h/Caime`, branch `production`, which CI advances only after every check passes; built by EasyPanel from the `Dockerfile` (image `easypanel/caime/caime:latest`) |
@@ -202,7 +202,8 @@ forget Caime's access (`/oauth/deauthorize`).
 
 ### Caime Mail (R75) ⛔ not turned on in production
 
-Every handle is an address at `MAIL_DOMAIN` (`noor@cai.me`), received and sent through the
+Every handle is an address at `MAIL_DOMAIN` (`noor@cai.me`), and Cai's is `assistant@cai.me` (R86: it
+sends meetings' invitations and reads only the answers to them), received and sent through the
 provider (`MAIL_PROVIDER=postmark`, `MAIL_PROVIDER_TOKEN`), whose webhooks carry
 `MAIL_WEBHOOK_SECRET` (16 characters at least). Off until the operator sets them all. Before it
 goes on:

@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { buildIcs, buildInvitation, foldLine, icsText } from './ics';
+import { buildIcs, buildInvitation, foldLine, icsText, readReply } from './ics';
 
 const now = new Date('2026-09-27T12:00:00Z');
 const unfold = (ics: string) => ics.replace(/\r\n /g, '');
@@ -176,5 +176,41 @@ describe('a meeting as an invitation by mail (R84)', () => {
       buildInvitation({ ...base, attendee: { name: 'Gus\r\nX-EVIL:1', email: 'gus@example.com' } }),
     );
     expect(l.some((x) => x.startsWith('X-EVIL'))).toBe(false);
+  });
+});
+
+describe('a guest’s answer to an invitation (R86)', () => {
+  const reply = (stat: string, extra = '') =>
+    [
+      'BEGIN:VCALENDAR',
+      'METHOD:REPLY',
+      'BEGIN:VEVENT',
+      'UID:meeting-m1@caime',
+      `ATTENDEE;CN="Gus Guest";PARTSTAT=${stat}:mailto:Gus@Example.com`,
+      extra,
+      'END:VEVENT',
+      'END:VCALENDAR',
+    ]
+      .filter(Boolean)
+      .join('\r\n');
+  it('reads who answered what, for which meeting', () => {
+    expect(readReply(reply('ACCEPTED'))).toEqual({
+      uid: 'meeting-m1@caime',
+      attendee: 'gus@example.com',
+      answer: 'accepted',
+    });
+    expect(readReply(reply('DECLINED'))?.answer).toBe('declined');
+    expect(readReply(reply('TENTATIVE'))?.answer).toBe('tentative');
+  });
+  it('reads a folded line as one', () => {
+    const folded = reply('ACCEPTED').replace('PARTSTAT=ACC', 'PARTSTAT=ACC\r\n ');
+    expect(readReply(folded)?.answer).toBe('accepted');
+  });
+  it('is nothing for a request, an unknown answer, two attendees, or no address', () => {
+    expect(readReply(reply('ACCEPTED').replace('METHOD:REPLY', 'METHOD:REQUEST'))).toBeNull();
+    expect(readReply(reply('DELEGATED'))).toBeNull();
+    expect(readReply(reply('ACCEPTED', 'ATTENDEE;PARTSTAT=ACCEPTED:mailto:x@y.com'))).toBeNull();
+    expect(readReply(reply('ACCEPTED').replace('mailto:Gus@Example.com', 'Gus'))).toBeNull();
+    expect(readReply('')).toBeNull();
   });
 });

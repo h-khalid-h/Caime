@@ -1182,4 +1182,7 @@ export const turkishServer: Catalog = {
     'Bu davet Caime hesabınız için: giriş yapın.',
   'Someone else is signed in here. Open the link in another browser, or sign out first.':
     'Burada başka biri oturum açmış. Bağlantıyı başka bir tarayıcıda açın ya da önce çıkış yapın.',
+  '{name} is coming: {title}': '{name} geliyor: {title}',
+  '{name} can’t come: {title}': '{name} gelemiyor: {title}',
+  '{name} might come: {title}': '{name} gelebilir: {title}',
 };

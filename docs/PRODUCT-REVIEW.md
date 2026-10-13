@@ -1454,3 +1454,22 @@ with its reason, so it isn't proposed again without new facts.
   training on customer audio (R52 already asks it). The privacy page says what is recorded, who
   gets it, how long it's kept, and how to delete one's own words. These replace the ⛔ on the
   lawyer's answer in the roadmap; the speech bake-off's ⛔ stands.
+- **R86 — Cai's own address: `assistant@cai.me` (owner, 2026-10-13; `cai.me` is Caime's).** Cai
+  gets a real address at Caime's mail domain, held for it as a reserved handle nobody can take
+  (`assistant`, already reserved, R35). What it does is narrow on purpose, since mail is the one
+  place anyone in the world can write to Cai. (1) *It sends a meeting's invitations* (R84) for
+  whoever invites: from "Ana via Cai" `<assistant@cai.me>`, with Cai's address as the event's
+  organizer and the reply-to, so the guest's calendar app sends its answer to Cai instead of to
+  an address nobody reads. (2) *It reads one thing that comes back*: a calendar app's answer to
+  one of those invitations (`METHOD:REPLY`), from the very address that was invited, its sender
+  vouched for by its own server (DMARC, or DKIM or SPF aligned, as R75 asks of all mail in). The
+  answer (coming, not coming, maybe) is kept on the invitation and whoever invited is told,
+  once; the same answer again says nothing. (3) *It reads nothing else.* Any other mail to
+  Cai's address is counted and dropped: never a conversation, never shown to a model, never
+  kept, so a stranger's mail can never give Cai instructions (a prompt injection by mail). If
+  Cai is later asked to act on mail people send it (forwarding a booking to it, say), that is its
+  own refinement, with who may and what Cai may do from it. (4) Without a mail domain set,
+  invitations come from `EMAIL_FROM` and answers go unread, as before. *Cost*: one indexed
+  update and one notification an answer. *Needs in production* (the owner's): `MAIL_DOMAIN=cai.me`,
+  the domain's mail records (MX to the inbound provider, SPF and DKIM for the sender, DMARC), and
+  the SMTP account allowed to send as `assistant@cai.me`.
