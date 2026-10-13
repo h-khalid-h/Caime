@@ -106,6 +106,31 @@ docs/           PRD, review, brand, competitive, architecture, roadmap, deploy (
   (`settings.language.title`), which hide the words from the code and make every string a
   lookup to read; and a React hook per string, which the app's components, many of them plain
   functions, would not fit.
+- **ADR-17 — Cai's voice in a call is a media service of its own, beside the container (R82,
+  after its step (7); proposed, for the owner).** R82 needs nothing here to hear a call and to
+  answer in writing when asked: a browser in the call records each voice as its own track and
+  uploads utterances as they end, and the server transcribes them in batch (ADR-12, SPEECH.md).
+  What it can't do is give Cai a voice the others hear, or carry calls of more than eight.
+  For that Cai has to be a participant, and the mesh gives it no place to be one. Two ways were
+  weighed. (a) A server-side WebRTC peer inside the application container (node-datachannel or
+  werift): no new service, but every call's media would then run through an instance ADR-15
+  sized for HTTP, with a UDP port range opened on it, CPU per call beside the API, a call tied to
+  one instance, and one more upload stream for every phone in the mesh. (b) A selective
+  forwarding unit with an agent worker (LiveKit, open source, self-hosted or as a service, which
+  would make it a sub-processor in `processors.ts` and the DPA): Cai joins as a participant,
+  hears each person as their own track, speaks as one track, and the same unit lifts the mesh's
+  limit of eight and the phones' upload of a stream per person. **Decided: (b), when spoken
+  answers or bigger calls are wanted, and not before.** ADR-15 stands for everything else; media
+  is the one thing beside the container, as PostgreSQL is. Before it is built: streaming speech
+  to text passing its own bake-off on Egyptian and Gulf Arabic with English inside (fewer
+  engines do this well than batch); the time from the end of a question to Cai's first sound
+  measured on a real call (convention 13); the cost per call minute (the unit, streaming
+  transcription, speech out, the model) in RESOURCES.md and the allowances; and R52's consent on
+  the unit's side too (Cai joins only a call whose participants all said yes, and leaves when
+  anyone withdraws). Rejected: (a), for the reasons above. Out of scope here: joining other
+  platforms' meetings (Zoom, Teams, Meet) as a bot, which would need its own decision against
+  R19 and R52's consent.
+
 ## Domain model
 
 The primary object is the **connection**, not the chat (PRD §4).

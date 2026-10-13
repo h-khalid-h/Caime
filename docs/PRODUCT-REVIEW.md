@@ -1287,3 +1287,57 @@ with its reason, so it isn't proposed again without new facts.
   per write that returns a label, nothing per row in a list (the person's view already at hand).
   *Later*: the longer Arabic sentences' feminine forms with a native reviewer; a French
   reader-addressed form if one ever appears; the Arabic varieties' voice lines by gender.
+- **R82 — Cai in the conversation: listening first, speaking later (owner, 2026-10-13, building
+  on R52).** R52's rules stand unchanged: every participant consents each time, an indicator
+  everyone sees for the whole recording, anyone's no means it never starts, never in a private
+  conversation, everyone who was in it gets what was made, encrypted at rest, kept as the
+  organization's owner sets, summaries and actions only when someone asks, Pro and Business with
+  monthly minute allowances. R82 decides *how* it is built. Caime's calls are a mesh (PRD §47):
+  the server never holds call audio, but every device in a call already receives each other
+  person's audio as its own stream, keyed by who it is (`group.ts`, `remote` per peer). That
+  decides the design. (1) *One recorder, every voice on its own track.* One consenting
+  participant's device on the web (the caller's when it can) records its own microphone and each
+  remote stream separately. The speaker of every track is known by construction, with no
+  diarization model and no guess; a phone in the call is heard through its remote stream, so a
+  call with at least one browser in it records everyone; one clock, so nothing is lined up
+  across devices; and no echo in the tracks, since a remote stream is the far end's microphone
+  after its own echo cancellation. Rejected: each device recording its own microphone (the
+  first draft), which needs every device to record and upload, clocks lined up across devices,
+  and a native recorder before any phone could take part, and catches the loudspeaker's echo of
+  others in a track that isn't theirs. (2) *Utterances, uploaded as they end.* The recorder cuts
+  each track at its pauses (voice activity measured on the device from the track's level, a few
+  lines of Web Audio, in the calls chunk, never the startup bundle) and uploads each utterance
+  with its track and its start, during the call. Silence is never sent or paid for, so the
+  minutes billed are the speaking time, not participants × length; the transcript is ordered by
+  utterance start; each request is short, inside the speech interface's 60-second deadline and
+  any provider's file cap, and needs no word timestamps (`Transcript` has none, and the OpenAI
+  call asks for plain `json`); a recorder that drops loses at most the utterance under way,
+  and the next consenting browser in the call takes over. Utterances under half a second are
+  dropped, and the bake-off adds short clips, since models invent words in near-silence. (3)
+  *What comes out*: the call's line in its conversation carries the transcript, speaker by
+  speaker, and the tracks for everyone who was in it; "Catch me up" and "Find follow-ups" run on
+  it only when someone asks, and what they find is a suggestion (R12, ADR-11), never written in
+  anyone's name. Nothing is extracted on its own. (4) *Consent, a proposal for the owner and the
+  lawyer*: the ring screen says Cai will take notes and offers "Answer without Cai" beside
+  "Answer"; the caller chose it by starting with Cai; a late joiner in a group call is asked the
+  same at join. Whether an answer tap is consent enough under R52, in the UAE above all, is the
+  lawyer's call; if it isn't, consent is its own tap before the call connects. What happens when
+  a late joiner says no to a recording under way (it stops for everyone; whether what came
+  before is kept) is open for the same review. (5) *Phones*: a call made only of phones waits for
+  a native recorder (react-native-webrtc has no MediaRecorder) and for calls tried on a device
+  (M6); until then such a call offers no recording and says why. (6) *In person*, later: one
+  phone, one mixed track, so it needs the provider's speaker turns (ElevenLabs Scribe has them;
+  OpenAI's needs its separate diarizing model), shown as "Speaker 1", "Speaker 2" until the
+  recorder names them; a name is a suggestion on the recorder's tap, never matched by voice. The
+  recorder confirms each person present agreed, and the indicator stays on screen. (7) *Cai
+  asked during the call*, the step before ADR-17: since utterances reach the server seconds after
+  they end, someone can ask Cai in the call ("Cai, what did we agree on price?") and Cai answers
+  in writing, in the call's conversation, from the transcript so far; it is asked only by name,
+  never interjects, and costs one bounded light-model call per question. Spoken answers, and
+  calls of more than eight, are ADR-17. *Order*: the speech bake-off (⛔, SPEECH.md) and the
+  consent flow first; then 1:1 and group calls with a browser in them, Cai asked in writing,
+  phone-only calls, in person, and ADR-17. *Cost*: one upload and one transcription job per
+  utterance (a job each, through the queue, a few at a time per call so a busy call never floods
+  the provider); file rows per track; a retention sweep row in RESOURCES.md for recordings; AI
+  tokens only when asked. *Not decided here*: the minute allowances' numbers (from the chosen
+  provider's price), the retention default, the lawyer's answer on (4).

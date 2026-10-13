@@ -78,3 +78,8 @@ mixed with English mid-sentence, on a phone's microphone.
   length, sent as `kind: voice`; the bubble plays it and shows the transcript under it labelled
   "Transcript · Suggested by Cai" when it has come.
 - Not yet: the key on production (the bake-off first), speaker turns, R52.
+- Recording calls is designed in R82: one browser in the call records each person's stream as
+  its own track and sends utterances through this same interface, so a call needs no speaker
+  turns and no word timestamps; in person does need turns. The bake-off adds short clips (under
+  two seconds), where models invent words. Cai's voice in a call (ADR-17) needs a second
+  bake-off, for streaming.

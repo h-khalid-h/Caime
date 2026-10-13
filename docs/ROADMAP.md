@@ -593,7 +593,18 @@ outperforming the alternatives is reach and operations. In the order the review 
       summaries only when asked, a Pro and Business feature with monthly minute allowances. ⛔ A
       speech-to-text provider tested on Egyptian and Gulf Arabic clinic calls, with a data
       processing agreement and no training on customer audio; the consent flow is built first,
-      against the provider that passed
+      against the provider that passed. How it's built is R82 (one browser in the call records
+      every voice as its own track, uploading utterances as they end) and ADR-17 (Cai's voice
+      in a call, through a media unit beside the container), in order:
+      [ ] The consent flow (R52, R82 (4)) ⛔ the lawyer's answer on whether answering is consent
+      [ ] 1:1 calls with a browser in them: the recorder, utterances cut at pauses and uploaded,
+      transcribed in order by speaker on the call's line; summary and actions only when asked
+      [ ] Group calls: late joiners, the recorder handed on when it leaves
+      [ ] Cai asked in the call by name, answering in writing (R82 (7))
+      [ ] Phone-only calls ⛔ a native recorder, and calls tried on a device first
+      [ ] In person on a phone, with the provider's speaker turns
+      [ ] Cai's voice and calls above eight (ADR-17) ⛔ streaming Arabic speech to text passing
+      its own bake-off
 - [ ] Candidates from the 2026-09-30 brainstorm review (R46), the owner's call: organizations
       taking WhatsApp Business messages into the Business inbox through Meta's official Cloud
       API ⛔ a Meta business account, verification and fees; contact matching by hashed phone
@@ -2655,3 +2666,10 @@ The six-slice review's plan, in its order; a block is ticked when its tests and 
   on `/developers#bar` follow; links to the site's pages open as pages in the app (`appPath`).
   Tests: `marketplace.test.ts` (10), the directory test's terms, the E2E listing flow's new
   fields and a visitor's marketplace page, the accessibility pass over four marketplace pages.
+- 2026-10-13 — R82 and ADR-17, documents only: how R52's recording is built (one browser in
+  the call records each person's stream as its own track, since the mesh already delivers them
+  apart, so speakers are known without a diarization model and phones in the call are heard;
+  utterances cut at pauses and uploaded as they end, so silence is never paid for and no word
+  timestamps are needed; summaries only when asked; Cai asked by name answers in writing) and
+  where Cai's voice in a call will run (a media unit beside the container). No code; R52 stays
+  ⛔ on the speech bake-off and the lawyer's answer on consent.
