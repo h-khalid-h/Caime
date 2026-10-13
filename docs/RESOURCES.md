@@ -155,6 +155,20 @@ people a domain gathers are rows, swept daily when silent a year (`mail.sweep`, 
 A conversation with someone reached by mail costs its view one more query (the thread's
 subject, `mailSubject`); every other conversation's view is as it was.
 
+What the provider costs (Postmark's prices, read 2026-10-13, postmarkapp.com/pricing): every mail
+sent and every mail received counts once, and each Cc'd or Bcc'd address at the domain once more.
+Free carries 100 a month (the closed beta: sign-up codes, resets, invitations). Pro is $16.50 a
+month for 10,000 and $60.50 for 50,000, then $1.30 per 1,000; Basic ($15) has no inbound, so it
+can't carry Caime Mail. The staff addresses cost nothing while Cloudflare Email Routing holds
+them, and DMARC reports nothing (Postmark's free weekly digest). Google Cloud credits don't pay
+for Postmark (startup credits exclude third-party and Marketplace services); they pay for what
+runs on Google Cloud. Weighed and left: Amazon SES (about $1 for 10,000, but a second adapter,
+raw MIME through S3 and a sandbox to leave, worth it only past a few hundred thousand a month),
+Resend (its inbound webhook carries no content), Mailgun (inbound routing from its $35 plan),
+SendGrid (no free plan since 2025), Cloudflare's own sending (beta, transactional only), and a
+mail server on a Compute Engine machine (outbound port 25 is blocked there, and deliverability
+would be Caime's to earn).
+
 ## The public site
 
 Each page of the site (`/business`, `/pricing`, `/security`, `/developers`, `/about`) is written

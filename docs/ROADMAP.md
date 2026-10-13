@@ -487,10 +487,13 @@ super-app brainstorm the product takes, and what it leaves with the reason, is R
       the heart its dot) and the docs. What keeps its name: the characters, Caishy included,
       and the Caishy Friends; Stripe's price keys and metadata; the repository, image, database
       and EasyPanel names; deployed migrations; and this log
-- [~] `cai.me` is Caime's (the owner, 2026-10-13). Left, the owner's: point it here (DEPLOY.md:
-      an A or CNAME record to EasyPanel, the domain on the `caime` service, `PUBLIC_URL=https://cai.me`),
-      and its mail records (MX to the inbound provider, SPF and DKIM for the sender, DMARC), with
-      `MAIL_DOMAIN=cai.me` and the SMTP account allowed to send as `assistant@cai.me` (R86)
+- [~] `cai.me` is Caime's (the owner, 2026-10-13) and serves it: `https://cai.me/v1/readyz`
+      answered `{"ok":true}` on 2026-10-13 (a proxied A record at Cloudflare, the domain on the
+      `caime` service). Left, the owner's, in DEPLOY.md's "Going live on cai.me": `caime.datac.com`
+      back on the service (it answered EasyPanel's 404 that day, so every link Caime wrote and
+      Stripe's webhook failed), `PUBLIC_URL=https://cai.me`, the wildcard record gone and `www`
+      redirected, Stripe's webhook and Connect redirect, Postmark for sending, the staff
+      addresses and DMARC. The phone builds, Expo Go's image and the SDK default to `cai.me`
 - [ ] `cai.me/@handle` for people and organizations (R35), opening the app where it's installed:
       `apple-app-site-association` and `assetlinks.json` served by the server, the app's
       associated domains. After the domain
@@ -1317,8 +1320,16 @@ discovers, and mail at their own address.
       line) and starts the topic a written subject names. Not in phase 1: unverified mail shown as a notice (dropped and
       counted, `caime_mail_total`), the hourly notification tempo for mail, a card or a sticker
       said by mail, the agent answering by mail, signing in with the address (sign-up claims).
-- [ ] ⛔ R75 in production: the mail domain's MX at the inbound provider, DKIM, SPF and DMARC,
-      the provider's credentials and webhook secret (the owner's).
+- [ ] R75 in production, first the code (review 2026-10-13): Postmark's inbound payload carries
+      no `Authentication-Results` (its documented headers are `Received-SPF` and SpamAssassin's
+      `X-Spam-Tests`, and the sender's own headers come through), so the check must be computed
+      from the raw message ("Include raw email content"): DKIM verified against DNS through
+      `ctx.dns`, SPF for the connecting address of Postmark's own `Received` line, DMARC
+      alignment, and any `Authentication-Results` in the payload ignored; the envelope recipient
+      (`OriginalRecipient`) read, so Bcc and list mail reach their handle; the staff addresses
+      (`postmaster@`, `abuse@`, `hello@`, `support@`, `privacy@`, `security@`) delivered to a
+      configured handle rather than dropped. Then ⛔ the owner's: Postmark Pro, the inbound
+      domain and webhooks, MX from Cloudflare Email Routing to Postmark (docs/DEPLOY.md).
 - [x] R79 layer 1, bridges (PRODUCT-REVIEW R79): Zapier, Make, n8n, Pipedream and IFTTT as
       bridge built-ins in Discover (a sheet that makes a scoped personal token in one tap and
       says what each can do with Caime; on while the token lives); a contacts file into People
@@ -1343,9 +1354,10 @@ discovers, and mail at their own address.
       with screenshots, a declared pricing model, languages, support and privacy addresses and
       an AI disclosure; the written bar on `/developers` and in API.md; "Reviewed by Caime" with
       the operator's checklist; delisting with a note.
-- [ ] R80, cai.me as the public address: the domain is Caime's (owner, 2026-10-13); left, the
-      owner's DNS and the certificate at EasyPanel, `PUBLIC_URL` and `WEB_URL` moved, the old
-      host answering 301, one canonical.
+- [~] R80, cai.me as the public address: the domain is Caime's and serves the app (DNS and the
+      certificate done, 2026-10-13); left, `PUBLIC_URL` moved (one canonical), with the old host
+      kept serving rather than redirected, since webhooks and subscribed feeds post and read
+      there (DEPLOY.md).
 - [x] R81, said, never guessed (PRODUCT-REVIEW R81, owner 2026-10-11): `users.gender` (woman,
       man, another word, or null; migration 0070), `UpdateMeBody.gender`, `MeView.gender`,
       `PersonView.gender` under the new `gender` privacy field (connections by default, hidden by
@@ -2793,3 +2805,16 @@ The six-slice review's plan, in its order; a block is ticked when its tests and 
 - 2026-10-13 — R86: Cai's own address, `assistant@cai.me`. It sends a meeting's invitations for
   whoever invites and reads only the guests' calendar answers to them, from the invited address
   itself; nothing else to it is read. `cai.me` is Caime's: its DNS and mail records are left.
+- 2026-10-13 — Review of the seven stacked contributions (#1–#7, R82–R86), merged in order with
+  the reviewer's fixes named in each: one meeting space however many invite at once, no guest
+  ever in a conversation with anyone under 18 (R29), someone on Caime asked only as a message
+  request could reach them, a guest's link out of the request log, starting now through
+  `eachLimit`, the meetings E2E strict, `/meetings` in the accessibility pass. Measured on the
+  top before merging: check green (server 773), initial JavaScript 448.8 KB, E2E 101 passed.
+- 2026-10-13 — Going live on cai.me, checked: the domain serves Caime, but `PUBLIC_URL` still
+  named `caime.datac.com`, which no longer reached the app; DEPLOY.md now holds the ordered
+  steps, and the code's defaults (SDK, phone builds) moved. The mail provider weighed with
+  current prices (RESOURCES.md): Postmark, free through the beta, Pro ($16.50 for 10,000) once
+  Caime Mail is on. Found on the way: Caime Mail's inbound check believes an
+  `Authentication-Results` header that Postmark never writes, so it stays off until the check
+  is computed from the raw message (next).

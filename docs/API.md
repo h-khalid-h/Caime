@@ -72,7 +72,7 @@ client runs wherever `fetch` is). It's built from the repository for now (⛔ no
 ```ts
 import { Caime, CaimeError, parseWebhook } from '@caime/sdk';
 
-const caime = new Caime({ token: process.env.CAIME_TOKEN!, baseUrl: 'https://caime.datac.com' });
+const caime = new Caime({ token: process.env.CAIME_TOKEN!, baseUrl: 'https://cai.me' });
 
 const inbox = await caime.inbox(orgId, 'customer_waiting');
 for (const thread of inbox.threads) {

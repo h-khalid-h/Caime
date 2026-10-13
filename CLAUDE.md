@@ -581,7 +581,8 @@ These are rules, not preferences.
   stopped midway leaves its server on :8787 and the stubs on theirs, which the next local run
   reuses (`reuseExistingServer`) with the old bundle's shell in memory, so every screen stays
   blank: kill them by port before running again.
-- Links to Caime are built from `WEB_URL` (`lib/config.ts`), never a hardcoded domain. A path
+- Links to Caime are built from `WEB_URL` in the app (`lib/config.ts`, from the API's address) and
+  `PUBLIC_URL` on the server, never a hardcoded domain. A path
   from outside the app goes through `appPath` (`lib/paths.ts`) before anything navigates to it.
 - The first screen is Attention (R66, `features/attention/AttentionHome.tsx`, the `/` route;
   Chats is `/chats`): the greeting and summary (core `home.ts`: `greetingKey`, `homeSummary`,
@@ -1389,8 +1390,9 @@ webhooks), personal access tokens, OAuth for third-party apps, plan entitlements
 CI are built and verified, and so are an organization's AI support agent, web calls (1:1 and in
 groups of up to eight; phones built, not yet tried on one) with their history, private conversations (end to end encrypted, web; phones built, not yet tried on one),
 billing with Stripe, possible duplicates in People, and organizations' updates.
-It runs on EasyPanel at https://caime.datac.com (also its default domain,
-https://caishy-caishy.0hqwb7.easypanel.host; `docs/DEPLOY.md`), billing included, on the live
+It runs on EasyPanel at https://cai.me (the old address, https://caime.datac.com, kept on the
+service for webhooks and feeds, and its default domain, https://caishy-caishy.0hqwb7.easypanel.host;
+`docs/DEPLOY.md`, "Going live on cai.me"), billing included, on the live
 Stripe account (tell its owner before changing anything there: it's live). Caime has not
 launched: that instance is the owner's own, with no public users yet, so a release is judged by
 the code's rules (CI green, migrations expand first), never by a launch's stakes; sessions in this

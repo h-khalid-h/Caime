@@ -11,8 +11,8 @@ Deployed 2026-09-26 on EasyPanel.
 
 | | |
 | --- | --- |
-| Public URL | https://caime.datac.com (`PUBLIC_URL`, a Cloudflare-proxied record); also served at EasyPanel's default service domain, https://caishy-caishy.0hqwb7.easypanel.host |
-| Domain | `cai.me` (R35), Caime's: point it here (an A or CNAME record to EasyPanel, and the domain added to the `caime` service), then set `PUBLIC_URL=https://cai.me`, and share links read `cai.me/@handle` |
+| Public URL | https://cai.me (`PUBLIC_URL`; Cloudflare-proxied A record to the server); also served at EasyPanel's default service domain, https://caishy-caishy.0hqwb7.easypanel.host |
+| Old address | https://caime.datac.com, kept on the `caime` service as a second domain: Stripe's and Postmark's webhooks, calendar feeds already subscribed, and phone builds made before the move all reach it. It answers as `cai.me` does (the canonical address is `PUBLIC_URL`) and is never redirected for the API (a redirect turns a webhook's POST into a GET) |
 | Project | `caishy` |
 | Services | `caime` (app, port 8787, volume `data` at `/data`) and `db` (Postgres 16) |
 | Source | **GitHub** `h-khalid-h/Caime`, branch `production`, which CI advances only after every check passes; built by EasyPanel from the `Dockerfile` (image `easypanel/caime/caime:latest`) |
@@ -30,7 +30,8 @@ back as branch `production` with auto deploy on, `/v1/readyz` answers 200, and a
 account's `GET /v1/ai` answered `"available": true` before it deleted itself.
 
 Billing went live on 2026-09-27 on the live Stripe account, with the webhook at
-`https://caime.datac.com/v1/billing/webhook` and a portal configuration of its own. On both
+`https://caime.datac.com/v1/billing/webhook` (moved to `https://cai.me/v1/billing/webhook` with
+the domain, by editing the endpoint so its signing secret stays) and a portal configuration of its own. On both
 domains an unsigned delivery is refused as `bad_signature` (the secret is loaded), and a
 throwaway account's `GET /v1/billing` offered Pro at €6.00 a month and €60.00 a year before it
 deleted itself. Business is priced per organization and shows on an organization's plan page.
@@ -43,6 +44,53 @@ of a green run fast-forwards `production` to that commit (`.github/workflows/ci.
 production"), and EasyPanel builds from `production`. A red run moves nothing, so production keeps
 the last commit that passed. `EASYPANEL_DEPLOY_WEBHOOK` stays unset for this service: with it,
 CI's deploy step would only trigger a second, redundant rebuild.
+
+## Going live on cai.me (checked 2026-10-13)
+
+The order matters: every step leaves Caime working. What each costs is in `docs/RESOURCES.md`.
+
+1. **Both addresses serve the app.** EasyPanel, service `caime`, Domains: `cai.me` (there since
+   2026-10-13) and `caime.datac.com` added back (the old address, above). Until it's back, every
+   link Caime writes (resets, invites, Stripe's returns, calendar feeds) and Stripe's live
+   webhook land on EasyPanel's 404.
+2. **DNS at Cloudflare (zone `cai.me`).** `A @ <server IP>` proxied (there). Delete the wildcard
+   `A *`: nothing is served under a subdomain, and a wildcard lets any name (`login.cai.me`) look
+   like Caime's. Keep `CNAME www → cai.me` proxied and add a Redirect Rule: hostname equals
+   `www.cai.me` → 301 to `https://cai.me${path}` with the query string kept. SSL/TLS mode **Full
+   (strict)** (EasyPanel holds a real certificate), Always Use HTTPS on.
+3. **The service's environment**, then redeploy: `PUBLIC_URL=https://cai.me`,
+   `EMAIL_FROM=Caime <noreply@cai.me>`, `CONTACT_EMAIL=hello@cai.me`,
+   `VAPID_SUBJECT=mailto:hello@cai.me`, and `SMTP_URL` from step 5. Leave `MAIL_DOMAIN` and
+   `MAIL_PROVIDER` unset: Caime Mail stays off (below). Check: `https://cai.me/` names
+   `https://cai.me/` as its canonical address, and `/.well-known/oauth-authorization-server`
+   says `"issuer":"https://cai.me"`.
+4. **Stripe (live: the owner's).** Webhooks: *edit* the existing endpoint's URL to
+   `https://cai.me/v1/billing/webhook` (a new endpoint would get a new signing secret). Connect,
+   Settings, OAuth: add the redirect `https://cai.me/v1/checkout/stripe/return` beside the old one
+   (an organization's checkout, R65, returns there). Then send a test event: 200.
+5. **Postmark, sending only for now.** One account and one server, "Caime". Sender signatures,
+   add the domain `cai.me`: a DKIM `TXT` at the host Postmark names (`…pm._domainkey`) and the
+   Return-Path `CNAME pm-bounces → pm.mtasv.net`, both **DNS only** (grey cloud) at Cloudflare,
+   or Postmark can't verify them. No SPF include is needed for Postmark (the Return-Path does
+   it). Ask for account approval (until then it sends only to its own domains). `SMTP_URL=
+   smtp://<server token>:<server token>@smtp.postmarkapp.com:587` (the token is the username and
+   the password). The free plan (100 a month) carries the closed beta; at launch, Pro (Basic has
+   no inbound, which Caime Mail needs).
+6. **Staff addresses, free, until Caime Mail is on.** Cloudflare Email Routing on `cai.me`
+   (it adds its own MX and SPF records): `hello@`, `support@`, `privacy@`, `security@`,
+   `abuse@` and `postmaster@` forwarded to the owner's mailbox, catch-all off. Mail providers
+   expect `postmaster@` and `abuse@` to take mail.
+7. **DMARC**: `TXT _dmarc` = `v=DMARC1; p=none; adkim=r; aspf=r; rua=mailto:<the address
+   Postmark's free DMARC digest gives, dmarc.postmarkapp.com>`; move to `p=quarantine` once a
+   few weekly digests show only Postmark and Cloudflare sending for `cai.me`.
+8. **Check**: `https://cai.me/v1/readyz` is `{"ok":true}`; signing up mails a code from
+   `noreply@cai.me` that arrives in the inbox with DKIM passing (`d=cai.me`); a reset link opens
+   on `cai.me`; `https://www.cai.me/x?y=1` lands on `https://cai.me/x?y=1`; mail to
+   `postmaster@cai.me` reaches the owner; Stripe's test event answers 200.
+
+Caime Mail (below) is the next step, not part of this one: its inbound check must be rebuilt
+first (ROADMAP, R75 in production), and turning it on moves `cai.me`'s MX from Cloudflare to
+Postmark, so the staff addresses are routed by Caime itself from then on.
 
 ## EasyPanel
 
@@ -202,24 +250,27 @@ forget Caime's access (`/oauth/deauthorize`).
 
 ### Caime Mail (R75) ⛔ not turned on in production
 
-Every handle is an address at `MAIL_DOMAIN` (`noor@cai.me`), and Cai's is `assistant@cai.me` (R86: it
-sends meetings' invitations and reads only the answers to them), received and sent through the
-provider (`MAIL_PROVIDER=postmark`, `MAIL_PROVIDER_TOKEN`), whose webhooks carry
-`MAIL_WEBHOOK_SECRET` (16 characters at least). Off until the operator sets them all. Before it
-goes on:
+Every handle is an address at `MAIL_DOMAIN` (`noor@cai.me`), and Cai's is `assistant@cai.me`
+(R86: it sends meetings' invitations and reads only the answers to them), received and sent
+through the provider (`MAIL_PROVIDER=postmark`, `MAIL_PROVIDER_TOKEN`), whose webhooks carry `MAIL_WEBHOOK_SECRET` (16 characters at least, `openssl rand -hex 24`). Off
+until the operator sets them all, and **not before the inbound check is rebuilt** (ROADMAP, R75
+in production): Postmark writes no `Authentication-Results` header into the inbound payload, so
+every such header there is the sender's own, and today's check would believe it. When that's
+done:
 
-1. **Receiving.** At Postmark, an inbound server for the domain: the domain's MX record points at
-   Postmark's inbound host, and the server's webhook is
-   `https://caime:<MAIL_WEBHOOK_SECRET>@<host>/v1/mail/in/postmark` (basic auth carries the
-   secret; `?secret=` does too). A sender is attributed by the `Authentication-Results` and
-   `Received-SPF` headers the inbound server writes: check on a test mail that they're there, or
-   nothing is attributed to anyone.
-2. **Sending.** The domain verified at Postmark (DKIM and the return-path CNAME), SPF including
-   Postmark, and a DMARC record for the domain, so replies from `<handle>@<MAIL_DOMAIN>` arrive
-   rather than land in spam.
-3. **Delivery events.** A webhook on the outbound stream for Delivery and Bounce at
-   `https://caime:<MAIL_WEBHOOK_SECRET>@<host>/v1/mail/events/postmark`.
-4. Set the four variables on the service and redeploy; the privacy page then names the provider.
+1. **The plan**: Postmark Pro (inbound isn't on Basic). Each mail in counts as one, and each
+   Cc'd or Bcc'd address at the domain as one more.
+2. **Receiving.** On the server's inbound stream: the inbound domain `cai.me`, "Include raw email
+   content" on, and the webhook `https://caime:<MAIL_WEBHOOK_SECRET>@cai.me/v1/mail/in/postmark`
+   (basic auth carries the secret; `?secret=` does too). Then, in one change at Cloudflare,
+   Email Routing off and `MX @ 10 inbound.postmarkapp.com`: from that moment every address at
+   `cai.me` is Caime's, the staff ones included.
+3. **Sending** is already set up (going live, step 5): the same domain, DKIM and Return-Path.
+4. **Delivery events.** A webhook on the outbound stream for Delivery and Bounce at
+   `https://caime:<MAIL_WEBHOOK_SECRET>@cai.me/v1/mail/events/postmark`.
+5. Set `MAIL_DOMAIN=cai.me`, `MAIL_PROVIDER=postmark`, `MAIL_PROVIDER_TOKEN` and
+   `MAIL_WEBHOOK_SECRET` on the service and redeploy; the privacy page then names the provider.
+   A test mail to your own handle arrives in Caime as yours.
 
 ### 4. Continuous deployment
 
@@ -241,7 +292,7 @@ Until the store builds exist (⛔), the phone app runs in Expo Go, from either o
   production JavaScript, built from `Dockerfile.expo-go` on `production` like `caime`, so it
   moves only with a green CI run. `EXPO_PACKAGER_PROXY_URL` on the service is its own https
   address (`https://caishy-caime-go.0hqwb7.easypanel.host`), which the manifest hands the
-  phone; the app talks to `https://caime.datac.com`. On an iPhone, open
+  phone; the app talks to `https://cai.me`. On an iPhone, open
   `exps://caishy-caime-go.0hqwb7.easypanel.host` (the Camera app reads it from a QR code, or
   type it into Safari) and Expo Go opens it. Expo Go opens a project it doesn't reach on the
   same Wi-Fi only when Expo's server signs it as an Expo account ("You need to be signed in to
@@ -262,7 +313,7 @@ them, and nothing of them loads. Everything else is there, private conversations
 
 ## Development and store builds (EAS)
 
-`apps/app/eas.json` has three profiles, each pointing the app at `https://caime.datac.com`
+`apps/app/eas.json` has three profiles, each pointing the app at `https://cai.me`
 (`EXPO_PUBLIC_API_URL`): **development** (a development client for the owner's own phone, with
 calls and private conversations, which Expo Go can't run), **preview** (TestFlight and an
 Android APK for testers) and **production** (the stores, build numbers counted by EAS). What

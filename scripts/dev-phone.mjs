@@ -1,5 +1,5 @@
 /**
- * The app on a phone with Expo Go, against the live Caime (https://caime.datac.com, or
+ * The app on a phone with Expo Go, against the live Caime (https://cai.me, or
  * CAIME_API_URL): the Expo dev server, whose QR code the phone's camera opens in Expo Go. The
  * phone and this computer on the same Wi-Fi; add --tunnel when they can't be.
  *
@@ -12,7 +12,7 @@ import { spawn } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
 
 const app = fileURLToPath(new URL('../apps/app', import.meta.url));
-const api = process.env.CAIME_API_URL ?? 'https://caime.datac.com';
+const api = process.env.CAIME_API_URL ?? 'https://cai.me';
 const child = spawn('npx', ['expo', 'start', '--go', ...process.argv.slice(2)], {
   cwd: app,
   stdio: 'inherit',

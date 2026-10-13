@@ -40,7 +40,7 @@ export class CaimeError extends Error {
 export interface CaimeOptions {
   /** The app's token (`cai_…`), or a personal token (`cap_…`) or an OAuth access token (`cao_…`). */
   token: string;
-  /** Where Caime is: `https://caime.datac.com` by default. `/v1` is added here. */
+  /** Where Caime is: `https://cai.me` by default. `/v1` is added here. */
   baseUrl?: string;
   /** Another `fetch` (a test's, or one with a proxy); the global one by default. */
   fetch?: typeof fetch;
@@ -48,7 +48,7 @@ export interface CaimeOptions {
   userAgent?: string;
 }
 
-export const DEFAULT_BASE_URL = 'https://caime.datac.com';
+export const DEFAULT_BASE_URL = 'https://cai.me';
 
 /** One of the app's own kinds of card, as `PUT /v1/kits/:key` takes it. */
 export interface KitDefinition extends CustomKitShape {
