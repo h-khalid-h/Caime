@@ -1163,4 +1163,5 @@ export const turkishServer: Catalog = {
     'Bir listeleme için slogan, kategori, nasıl ücretlendirildiği, yardımın nerede olduğu, bir gizlilik politikası ve Bağla’nın gideceği yer gerekir.',
   'Starting now: {title}': 'Şimdi başlıyor: {title}',
   'It’s time to join.': 'Katılma zamanı.',
+  'A guest can’t do this.': 'Bir misafir bunu yapamaz.',
 };

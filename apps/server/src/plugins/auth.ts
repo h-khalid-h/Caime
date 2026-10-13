@@ -11,6 +11,7 @@ import { PERSON_ROUTES, type PersonGrant, resolvePersonalToken } from '../lib/ac
 import { API_ROUTES, resolveApiToken } from '../lib/apps';
 import { hashToken } from '../lib/crypto';
 import { AppError, unauthorized } from '../lib/errors';
+import { GUEST_ROUTES, routeKey } from '../lib/guest-routes';
 import { adoptReader } from '../lib/i18n';
 import { resolveOAuthAccess } from '../lib/oauth';
 
@@ -36,7 +37,7 @@ export const suspended = () =>
 export async function resolveSession(
   ctx: AppContext,
   token: string,
-): Promise<Omit<Auth, 'via'> | null> {
+): Promise<(Omit<Auth, 'via'> & { guest: boolean }) | null> {
   const row = await ctx.db
     .selectFrom('sessions')
     .innerJoin('users', 'users.id', 'sessions.user_id')
@@ -46,6 +47,7 @@ export async function resolveSession(
       'sessions.kind',
       'sessions.last_seen_at',
       'users.suspended_at',
+      'users.kind as person',
     ])
     .where('sessions.token_hash', '=', hashToken(token))
     .where('sessions.revoked_at', 'is', null)
@@ -62,13 +64,28 @@ export async function resolveSession(
       .where('id', '=', row.id)
       .execute();
   }
-  return { userId: row.user_id, sessionId: row.id, kind: row.kind };
+  // A provisional person with a session is a meeting's guest (R84): the caller limits them.
+  return {
+    userId: row.user_id,
+    sessionId: row.id,
+    kind: row.kind,
+    guest: row.person === 'provisional',
+  };
 }
 
 /** The web build's files (`plugins/static.ts`): nothing on them is anyone's. */
 const STATIC_PREFIX = /^\/(?:_expo\/|fonts\/|assets\/)/;
 
+/** Every route registered after the auth plugin, for the test that walks them (R84). */
+const routesOf = new WeakMap<FastifyInstance, Array<{ method: string; url: string }>>();
+export const registeredRoutes = (app: FastifyInstance) => routesOf.get(app) ?? [];
+
 export function registerAuth(app: FastifyInstance, ctx: AppContext): void {
+  const seen: Array<{ method: string; url: string }> = [];
+  routesOf.set(app, seen);
+  app.addHook('onRoute', (r) => {
+    for (const method of [r.method].flat()) seen.push({ method, url: r.url });
+  });
   app.decorateRequest('auth', null);
   app.addHook('onRequest', async (req: FastifyRequest) => {
     req.auth = null;
@@ -85,8 +102,14 @@ export function registerAuth(app: FastifyInstance, ctx: AppContext): void {
       await authenticatePerson(ctx, req, found.token);
       return;
     }
-    const session = await resolveSession(ctx, found.token);
-    if (!session) return;
+    const resolved = await resolveSession(ctx, found.token);
+    if (!resolved) return;
+    const { guest, ...session } = resolved;
+    // A guest (R84) does only what a guest does: every other route of the API is refused before
+    // it runs. The app's own pages aren't the API, and load for anyone.
+    const route = req.routeOptions.url;
+    if (guest && route?.startsWith('/v1/') && !GUEST_ROUTES.has(routeKey(req.method, route)))
+      throw new AppError(403, 'guest_route', tr('A guest can’t do this.'));
     if (found.via === 'cookie' && UNSAFE.has(req.method) && !req.headers['x-caime-client']) {
       throw new AppError(403, 'csrf', tr('Missing X-Caime-Client header.'));
     }
