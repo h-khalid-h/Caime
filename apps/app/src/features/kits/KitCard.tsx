@@ -26,7 +26,7 @@ import { qk } from '@/api/keys';
 import {
   callsSupported,
   groupCallsSupported,
-  startCall,
+  joinDirect,
   startGroupCall,
 } from '@/features/calls/calls';
 import { useCardAction } from '@/features/conversation/cardActions';
@@ -287,7 +287,7 @@ export function KitCard({ m, mine }: { m: MessageView; mine: boolean }) {
           onPress: () =>
             void (call === 'group'
               ? startGroupCall(m.conversationId, 'video')
-              : startCall(m.conversationId, 'video')),
+              : joinDirect(m.conversationId)),
         }
       : held === 'open' && place
         ? { label: tr('Open'), testID: 'kit-open', onPress: () => openLink(meetingLink(place)) }

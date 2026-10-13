@@ -1214,4 +1214,6 @@ export const frServer: Catalog = {
   'That screenshot': 'Cette capture d’écran',
   'A listing needs a tagline, a category, how it’s paid for, where to get help, a privacy policy and where Connect goes.':
     'Une fiche a besoin d’une accroche, d’une catégorie, de comment elle est payée, d’où trouver de l’aide, d’une politique de confidentialité et d’où mène Connecter.',
+  'Starting now: {title}': 'Commence maintenant : {title}',
+  'It’s time to join.': 'C’est l’heure de rejoindre la réunion.',
 };

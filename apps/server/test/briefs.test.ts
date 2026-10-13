@@ -110,7 +110,8 @@ describe('the brief before a meeting (R58)', () => {
     await sarah.post(`/v1/messages/${card.id}/kit`, { to: 'accepted' });
     await hassan.post(`/v1/messages/${card.id}/kit`, { to: 'cancelled' });
     t.clock.set('2026-10-05T13:00:00Z');
-    expect(await runDueJobs(t.ctx)).toBe(1);
+    // Its brief's job, which finds it cancelled, and the first meeting's "starting now" (R83).
+    expect(await runDueJobs(t.ctx)).toBe(2);
     expect(
       (await hassan.get('/v1/notifications')).notifications.filter(
         (n: { kind: string }) => n.kind === 'brief',

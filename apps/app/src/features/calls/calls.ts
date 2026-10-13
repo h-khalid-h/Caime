@@ -8,6 +8,7 @@
 import type { GroupCallView, RealtimeEvent } from '@caime/core/api';
 import type { CallKind } from '@caime/core/calls';
 import { tr } from '@caime/core/i18n';
+import { useCall } from '@/state/calls';
 import { toast } from '@/ui/Toast';
 import { loadCallStack, callStackOr as loadedOr } from './load';
 import { callsAvailable, onPhone } from './rtc';
@@ -52,6 +53,20 @@ async function asked(): Promise<Stack | null> {
 
 export async function startCall(conversationId: string, kind: CallKind): Promise<void> {
   await (await asked())?.startCall(conversationId, kind);
+}
+/**
+ * A meeting's Join (R83) in a direct conversation. Both people often press it at once, so the
+ * call ringing here from this conversation is answered rather than met with a second one; a
+ * call already on this device is left as it is (its screen is up); otherwise it's started.
+ */
+export async function joinDirect(conversationId: string): Promise<void> {
+  const { phase, call } = useCall.getState();
+  if (phase === 'incoming' && call?.conversationId === conversationId) {
+    await (await asked())?.answer();
+    return;
+  }
+  if (phase) return;
+  await startCall(conversationId, 'video');
 }
 export async function startGroupCall(conversationId: string, kind: CallKind): Promise<void> {
   await (await asked())?.startGroupCall(conversationId, kind);

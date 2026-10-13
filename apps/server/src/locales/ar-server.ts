@@ -1190,4 +1190,6 @@ export const arServer: Catalog = {
   'That screenshot': 'لقطة الشاشة تلك',
   'A listing needs a tagline, a category, how it’s paid for, where to get help, a privacy policy and where Connect goes.':
     'يحتاج الإدراج إلى سطر تعريفي وفئة وطريقة الدفع ومكان المساعدة وسياسة خصوصية ووجهة لزر «اتصال».',
+  'Starting now: {title}': 'يبدأ الآن: {title}',
+  'It’s time to join.': 'حان وقت الانضمام.',
 };

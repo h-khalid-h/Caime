@@ -35,6 +35,7 @@ import { ThreadBar } from '@/features/business/ThreadBar';
 import {
   callsSupported,
   groupCallsSupported,
+  joinDirect,
   startCall,
   startGroupCall,
 } from '@/features/calls/calls';
@@ -212,7 +213,7 @@ export function ConversationScreen({
       new Date(),
     );
     if (which === 'group') void startGroupCall(id, 'video');
-    else if (which === 'direct') void startCall(id, 'video');
+    else if (which === 'direct') void joinDirect(id);
   }, [join, conversation, messages, id]);
   // A message arriving while the conversation is open is said to a screen reader (a list growing
   // says nothing by itself): who, and the preview, in a live region nobody sees. Only what came

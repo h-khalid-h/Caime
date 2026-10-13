@@ -638,7 +638,20 @@ outperforming the alternatives is reach and operations. In the order the review 
       on `main`), lint and typecheck clean; the web's initial JavaScript 448.7 KB (448.1 before: the People
       bar's button and the card's rule). Not run: E2E (no browsers in this session). Before
       deploying: whether anyone already holds the handle `meetings`
-      [ ] "Starting now" at a meeting's time; Join in the brief
+      [x] "Starting now" (`lib/meeting-start.ts`): accepting a meeting held on Caime queues one
+      job for its start (per card and start, as the brief's), which tells everyone still in the
+      conversation, "Starting now: <title>", at attention, its data carrying the join address,
+      so the tap opens the call through the same check as the calendar's (the notifications
+      screen, and web push: `sw.js` follows `path` only when it's a conversation's address with
+      a query, never another site's or another screen's). Nothing for a meeting elsewhere, in
+      person, cancelled, moved, all day, in a private conversation, to someone who left, or from
+      a job run more than half an hour after the start. Its two strings in the server's
+      catalogs. Tests: `meeting-start.test.ts` (3), `sw.test.ts` (four more cases), the brief
+      test's job count (the first meeting's start now runs too). Both people pressing Join at
+      once: the one whose call rings here answers it rather than placing a second
+      (`joinDirect`, `joinDirect.test.ts`). Not built: Join inside the
+      brief, which opens from the card that has it already; a ring for the meeting rather than
+      a notification (the call rings when the first person joins, as any call does)
 - [ ] Candidates from the 2026-09-30 brainstorm review (R46), the owner's call: organizations
       taking WhatsApp Business messages into the Business inbox through Meta's official Cloud
       API ⛔ a Meta business account, verification and fees; contact matching by hashed phone
@@ -2720,3 +2733,6 @@ The six-slice review's plan, in its order; a block is ticked when its tests and 
   calendar, and a meeting held on Caime joined from Google, Outlook or Apple Calendar through
   the feed's URL, checked against the card before anything is called. Calendar items carry
   `seq`; `meetings` is a reserved handle.
+- 2026-10-13 — R83, "Starting now": at an agreed meeting's time everyone in it is told, and the
+  tap joins through the card's check. What's left of R83 is blocked: guests (Caime Mail) and
+  recording (R82, the bake-off and the lawyer).
