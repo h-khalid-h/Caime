@@ -636,8 +636,11 @@ outperforming the alternatives is reach and operations. In the order the review 
       the place, `seq` on the item; a link and a place unchanged); core 638, app 196 and server
       749 pass (the six backup tests need `pg_dump`, which this session lacks, and fail the same
       on `main`), lint and typecheck clean; the web's initial JavaScript 448.7 KB (448.1 before: the People
-      bar's button and the card's rule). Not run: E2E (no browsers in this session). Before
-      deploying: whether anyone already holds the handle `meetings`
+      bar's button and the card's rule). E2E `meetings.spec.ts`: Meetings lists it with its
+      Join, Join on the card rings the other side, and their Join from the meeting's address
+      answers that ring (it caught the page asking before it had heard the ring, and placing a
+      second call: `joinDirect` now asks what's live first). Before deploying: whether anyone
+      already holds the handle `meetings`
       [x] "Starting now" (`lib/meeting-start.ts`): accepting a meeting held on Caime queues one
       job for its start (per card and start, as the brief's), which tells everyone still in the
       conversation, "Starting now: <title>", at attention, its data carrying the join address,

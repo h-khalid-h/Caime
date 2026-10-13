@@ -60,12 +60,18 @@ export async function startCall(conversationId: string, kind: CallKind): Promise
  * call already on this device is left as it is (its screen is up); otherwise it's started.
  */
 export async function joinDirect(conversationId: string): Promise<void> {
-  const { phase, call } = useCall.getState();
-  if (phase === 'incoming' && call?.conversationId === conversationId) {
+  const ringingHere = () => {
+    const { phase, call } = useCall.getState();
+    return phase === 'incoming' && call?.conversationId === conversationId;
+  };
+  // Opened from the meeting's address, this page may not have heard the ring yet: ask what's
+  // live first, so a call already ringing is answered rather than met with a second.
+  if (!useCall.getState().phase) await checkLiveCalls();
+  if (ringingHere()) {
     await (await asked())?.answer();
     return;
   }
-  if (phase) return;
+  if (useCall.getState().phase) return;
   await startCall(conversationId, 'video');
 }
 export async function startGroupCall(conversationId: string, kind: CallKind): Promise<void> {
