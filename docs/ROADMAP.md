@@ -596,7 +596,8 @@ outperforming the alternatives is reach and operations. In the order the review 
       against the provider that passed. How it's built is R82 (one browser in the call records
       every voice as its own track, uploading utterances as they end) and ADR-17 (Cai's voice
       in a call, through a media unit beside the container), in order:
-      [ ] The consent flow (R52, R82 (4)) ⛔ the lawyer's answer on whether answering is consent
+      [ ] The consent flow (R52, R82 (4), decided in R85: a labelled choice, anyone's no at any
+      time, nothing with anyone under 18)
       [ ] 1:1 calls with a browser in them: the recorder, utterances cut at pauses and uploaded,
       transcribed in order by speaker on the call's line; summary and actions only when asked
       [ ] Group calls: late joiners, the recorder handed on when it leaves
@@ -610,7 +611,7 @@ outperforming the alternatives is reach and operations. In the order the review 
       invitation with their own link, Accept and Decline coming back by mail; the link proves the
       address (a code on a second device, a code and the lobby without a link); a guest session
       scoped to the meeting; consent and the age question on the join page; "Keep it" to claim.
-      ⛔ Caime Mail on in production, and the lawyer's answer on R83 (4)
+      ⛔ Caime Mail on in production (R83 (4) decided in R85)
       [x] Join and Open on the meeting card: where it's held from the kit's own Where (core
       `meetingVenue`: empty or "Caime" here, a web address on another service, anything else
       in person); Join from ten minutes before to half an hour after its planned end (`joinOpen`,
@@ -664,8 +665,8 @@ outperforming the alternatives is reach and operations. In the order the review 
       with a guest's session: none open but the two listed. SECURITY.md row. Its string in the
       server's catalogs. Server 755 pass in one clean run (the six backup tests need `pg_dump`)
       [ ] Guests, the meeting's own space and the routes it opens to guests; then invitations and
-      the join page against the mail stand-in ⛔ Caime Mail on in production to ship, the
-      lawyer's answer on R83 (4) and R84 (4)
+      the join page against the mail stand-in ⛔ Caime Mail on in production to ship (the
+      consent and recorder questions decided in R85)
 - [ ] Candidates from the 2026-09-30 brainstorm review (R46), the owner's call: organizations
       taking WhatsApp Business messages into the Business inbox through Meta's official Cloud
       API ⛔ a Meta business account, verification and fees; contact matching by hashed phone
@@ -2757,3 +2758,7 @@ The six-slice review's plan, in its order; a block is ticked when its tests and 
   six backup tests needing `pg_dump`.
 - 2026-10-13 — R84, the guard first: a provisional session can reach nothing in the API but its
   own session, proven against every registered route, before any guest can exist.
+- 2026-10-13 — R85, documents only: the owner decided what R82–R84 left for a lawyer, taking the
+  stricter choice each time (consent a labelled choice, anyone's no at any time, nothing with
+  anyone under 18, the recorder never a guest, the words kept and the voices not). The roadmap's
+  ⛔ on the lawyer is gone; the speech bake-off's and Caime Mail's stand.

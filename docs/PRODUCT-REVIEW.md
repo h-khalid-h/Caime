@@ -1428,3 +1428,29 @@ with its reason, so it isn't proposed again without new facts.
   first, with a test that a provisional session is refused everywhere today; then the space;
   then invitations and the join page, against the mail stand-in, so it ships the day Caime Mail
   is on (⛔ DEPLOY.md). SECURITY.md gets a row when the guard lands.
+- **R85 — Recording and guests: what R82–R84 left for a lawyer, decided (owner, 2026-10-13).**
+  The owner decided these on Claude's reading, taking the stricter choice wherever the law was
+  unclear, since recording a conversation without everyone's consent is an offence in the UAE
+  and personal data needs a lawful basis under its data protection law and the GDPR alike; a
+  qualified review before recording reaches customers in a new country is still wise, and
+  changes only these lines. (1) *Consent is a labelled choice, never inferred* (R83 (4)). With
+  Cai taking notes, the ring screen has no plain "Answer": it offers "Answer, Cai takes notes"
+  and "Answer without Cai", and the join page "Join, Cai takes notes" and "Join without Cai".
+  One tap either way, and the one that records says so on the button pressed. The caller's
+  consent is starting with Cai. (2) *Anyone's no, at any time.* A late joiner's "without Cai",
+  or anyone tapping Stop Cai during the call, stops the recording for everyone from that moment;
+  what was recorded before stays, since everyone in it then had said yes, and a late joiner gets
+  only what was recorded after they joined. Each person can delete their own words from a
+  transcript afterwards (their track, their lines), and the others keep theirs. (3) *Under 18*:
+  nothing is recorded in a call or meeting with anyone under 18 in it (R29); a guest says they're
+  18 or over on the join page, and one who doesn't joins and the recording doesn't start. (4)
+  *The recorder is a member, never a guest* (R84 (4)): R82 (1)'s recording browser is always a
+  Caime account's, not a guest's; a meeting with guests and no member's browser in it isn't
+  recorded. (5) *Keep the words, not the voices.* The audio of an utterance is deleted once its
+  transcript is made; the transcript is kept as the conversation's messages are. An
+  organization's owner may keep audio for up to 90 days, said on the indicator while it records.
+  (6) *Lawful basis and transfer*: consent, as (1); the speech provider is a sub-processor in
+  `processors.ts` and the DPA before the first minute, under a data processing agreement and no
+  training on customer audio (R52 already asks it). The privacy page says what is recorded, who
+  gets it, how long it's kept, and how to delete one's own words. These replace the ⛔ on the
+  lawyer's answer in the roadmap; the speech bake-off's ⛔ stands.
