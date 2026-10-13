@@ -32,4 +32,12 @@ describe('what a request says of itself in the log', () => {
     expect(requestForLog({ method: 'GET', url: '/v1/invites' }).url).toBe('/v1/invites');
     expect(requestForLog({ method: 'GET', url: '/i/short' }).url).toBe('/i/short');
   });
+
+  it('never a meeting guest’s link, which is their way in (R84)', () => {
+    const token = 'cmg_Qm9vay1hLXRhYmxlLWZvci10d28';
+    expect(requestForLog({ method: 'GET', url: `/j/${token}` }).url).toBe('/j/…');
+    expect(requestForLog({ method: 'GET', url: `/v1/join/${token}` }).url).toBe('/v1/join/…');
+    expect(requestForLog({ method: 'POST', url: `/v1/join/${token}?x=1` }).url).toBe('/v1/join/…');
+    expect(requestForLog({ method: 'GET', url: '/j/short' }).url).toBe('/j/short');
+  });
 });

@@ -6,6 +6,8 @@
 const CALENDAR_FEED = /\/calendar\/cal_[^/]*$/;
 /** An invite's token is the only key to it (R1): `/i/<token>`, `/v1/invites/<token>[/accept]`. */
 const INVITE_TOKEN = /\/(i|invites)\/[^/]{16,}(?=\/|$)/;
+/** A meeting guest's link is their way in (R84): `/j/<token>`, `/v1/join/<token>`. */
+const GUEST_TOKEN = /\/(j|join)\/[^/]{16,}(?=\/|$)/;
 
 export function requestForLog(req: { method: string; url: string; ip?: string }) {
   return {
@@ -13,7 +15,8 @@ export function requestForLog(req: { method: string; url: string; ip?: string })
     url: req.url
       .split('?')[0]
       ?.replace(CALENDAR_FEED, '/calendar/cal_….ics')
-      .replace(INVITE_TOKEN, '/$1/…'),
+      .replace(INVITE_TOKEN, '/$1/…')
+      .replace(GUEST_TOKEN, '/$1/…'),
     remoteAddress: req.ip,
   };
 }
