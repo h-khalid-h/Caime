@@ -160,6 +160,7 @@ export async function calendarItems(
     items.push({
       kind: c.kit,
       id: c.messageId,
+      seq: c.seq,
       title: c.title,
       at: c.at.toISOString(),
       hasTime: c.hasTime,
@@ -179,6 +180,7 @@ export async function calendarItems(
     items.push({
       kind: c.kit,
       id: c.messageId,
+      seq: c.seq,
       title: c.title,
       at: c.at.toISOString(),
       hasTime: false,
@@ -201,6 +203,7 @@ export async function calendarItems(
     items.push({
       kind: 'task',
       id: t.id,
+      seq: null,
       title: waiting ? `Waiting on ${t.assignee.displayName}: ${t.title}` : t.title,
       at: t.dueAt,
       hasTime: t.dueHasTime,

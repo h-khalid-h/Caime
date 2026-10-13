@@ -1160,6 +1160,8 @@ export interface CalendarItemView {
   kind: 'meeting' | 'appointment' | 'payment_request' | 'invoice' | 'task';
   /** The card's message id, or the task's id. */
   id: string;
+  /** A card's place in its conversation (R83: where Join opens it); null for a task. */
+  seq: number | null;
   title: string;
   at: string;
   hasTime: boolean;

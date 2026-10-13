@@ -2,7 +2,7 @@ import type { NotificationView } from '@caime/core/api';
 import { formatListTime } from '@caime/core/format';
 import { tr } from '@caime/core/i18n';
 import { useQueryClient } from '@tanstack/react-query';
-import { router } from 'expo-router';
+import { type Href, router } from 'expo-router';
 import Bell from 'lucide-react-native/icons/bell';
 import Zap from 'lucide-react-native/icons/zap';
 import { useEffect } from 'react';
@@ -46,7 +46,12 @@ export default function Notifications() {
   const open = (n: NotificationView) => {
     const conversationId = typeof n.data.conversationId === 'string' ? n.data.conversationId : null;
     const userId = typeof n.data.userId === 'string' ? n.data.userId : null;
-    if (conversationId) router.navigate({ pathname: '/c/[id]', params: { id: conversationId } });
+    // A meeting starting (R83): its join address, which checks the card before it calls.
+    const path =
+      typeof n.data.path === 'string' && n.data.path.startsWith('/c/') ? n.data.path : null;
+    if (path) router.navigate(path as Href);
+    else if (conversationId)
+      router.navigate({ pathname: '/c/[id]', params: { id: conversationId } });
     else if (n.kind.startsWith('connection') && userId)
       router.navigate({ pathname: '/p/[id]', params: { id: userId } });
     else if (n.kind.includes('task') || n.kind.includes('reminder')) router.navigate('/actions');

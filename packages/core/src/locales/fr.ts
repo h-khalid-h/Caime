@@ -3845,4 +3845,8 @@ export const fr: Catalog = {
   'Another word': 'Un autre mot',
   'How Caime writes to you, and how people who know you see you labelled, in Arabic and French. Never guessed.':
     'Comment Caime vous écrit, et comment les personnes qui vous connaissent voient votre lien, en arabe et en français. Jamais deviné.',
+  Meetings: 'Réunions',
+  'No meetings yet': 'Aucune réunion pour l’instant',
+  'Meetings agreed in your conversations show here, with Join when it’s time.':
+    'Les réunions convenues dans vos conversations s’affichent ici, avec Rejoindre le moment venu.',
 };

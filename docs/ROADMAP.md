@@ -605,12 +605,56 @@ outperforming the alternatives is reach and operations. In the order the review 
       [ ] In person on a phone, with the provider's speaker turns
       [ ] Cai's voice and calls above eight (ADR-17) ⛔ streaming Arabic speech to text passing
       its own bake-off
-- [ ] Meetings (R83), beside Chats and Calls: the Meetings list (`/meetings`); Join on every agreed meeting and booking (card, Calendar,
+- [~] Meetings (R83), beside Chats and Calls: the Meetings list (`/meetings`); Join on every agreed meeting and booking (card, Calendar,
       brief, feed URL), "starting now" at its time; outsiders added by address get an iCalendar
       invitation with their own link, Accept and Decline coming back by mail; the link proves the
       address (a code on a second device, a code and the lobby without a link); a guest session
       scoped to the meeting; consent and the age question on the join page; "Keep it" to claim.
       ⛔ Caime Mail on in production, and the lawyer's answer on R83 (4)
+      [x] Join and Open on the meeting card: where it's held from the kit's own Where (core
+      `meetingVenue`: empty or "Caime" here, a web address on another service, anything else
+      in person); Join from ten minutes before to half an hour after its planned end (`joinOpen`,
+      an hour when its length isn't known, as the calendar takes it; never for a day without a
+      time), opening the conversation's own call by the header's rules (`meetingCall`: not with
+      Cai, a friend, a request or someone reached by mail; a group of up to eight); Open for a
+      link (`meetingAction`). Strings already in every catalog. Tests: `meetings.test.ts` (11),
+      `meetingCall.test.ts` (4); core 635 and app 194 pass, lint and typecheck clean, the web's
+      initial JavaScript 448.1 KB before and after. Not run: the server suites and E2E (no
+      Postgres in this session), and no E2E step for Join yet
+      [x] Meetings (`/meetings`, beside Calls on People, and a row in the Calendar): the
+      calendar's list with only the meetings, the last month's as well as two months ahead,
+      each with Join or Open (core `calendarAction`, the same window as the card's, its end the
+      server's); `meetings` reserved as a handle (R35, `paths.test.ts`). Join from the calendar
+      and from a calendar app: a meeting held on Caime is "Caime" in the feed, and its URL is
+      the card's join address (core `joinPath`: `/c/<id>?seq=<n>&join=<card>`); the
+      conversation opens at the card and calls only when the card itself says it can be
+      joined now (`joinFromLink`: there, not deleted, an accepted meeting held here, inside its
+      window, in a conversation that can call), so an address alone starts nothing. Calendar
+      items carry the card's `seq`. Its three new strings are in every catalog (written in this
+      session, for a native reviewer). Tests: core `meetings.test.ts` (14), the app's
+      `meetingCall.test.ts` (6), the server's calendar test (the feed's join address, Caime as
+      the place, `seq` on the item; a link and a place unchanged); core 638, app 196 and server
+      749 pass (the six backup tests need `pg_dump`, which this session lacks, and fail the same
+      on `main`), lint and typecheck clean; the web's initial JavaScript 448.7 KB (448.1 before: the People
+      bar's button and the card's rule). E2E `meetings.spec.ts`: Meetings lists it with its
+      Join, Join on the card rings the other side, and their Join from the meeting's address
+      answers that ring (it caught the page asking before it had heard the ring, and placing a
+      second call: `joinDirect` now asks what's live first). Before deploying: whether anyone
+      already holds the handle `meetings`
+      [x] "Starting now" (`lib/meeting-start.ts`): accepting a meeting held on Caime queues one
+      job for its start (per card and start, as the brief's), which tells everyone still in the
+      conversation, "Starting now: <title>", at attention, its data carrying the join address,
+      so the tap opens the call through the same check as the calendar's (the notifications
+      screen, and web push: `sw.js` follows `path` only when it's a conversation's address with
+      a query, never another site's or another screen's). Nothing for a meeting elsewhere, in
+      person, cancelled, moved, all day, in a private conversation, to someone who left, or from
+      a job run more than half an hour after the start. Its two strings in the server's
+      catalogs. Tests: `meeting-start.test.ts` (3), `sw.test.ts` (four more cases), the brief
+      test's job count (the first meeting's start now runs too). Both people pressing Join at
+      once: the one whose call rings here answers it rather than placing a second
+      (`joinDirect`, `joinDirect.test.ts`). Not built: Join inside the
+      brief, which opens from the card that has it already; a ring for the meeting rather than
+      a notification (the call rings when the first person joins, as any call does)
 - [ ] Candidates from the 2026-09-30 brainstorm review (R46), the owner's call: organizations
       taking WhatsApp Business messages into the Business inbox through Meta's official Cloud
       API ⛔ a Meta business account, verification and fees; contact matching by hashed phone
@@ -2685,3 +2729,13 @@ The six-slice review's plan, in its order; a block is ticked when its tests and 
   iCalendar invitation by mail lands in any calendar without a connector, and each invitee's own
   link proves their address, so a guest joins without a code or an account, in a session scoped
   to the meeting; consent is a tap on the join page. No code; ⛔ on Caime Mail in production.
+- 2026-10-13 — R83, first code: Join and Open on the meeting card (core `meetings.ts`, the app's
+  `meetingCall`), by the kit's own Where and a join window, through the calls the conversation
+  already makes. No server change; the server suites and E2E not run here (no Postgres).
+- 2026-10-13 — R83, Meetings and Join from anywhere: the Meetings list, Join and Open on the
+  calendar, and a meeting held on Caime joined from Google, Outlook or Apple Calendar through
+  the feed's URL, checked against the card before anything is called. Calendar items carry
+  `seq`; `meetings` is a reserved handle.
+- 2026-10-13 — R83, "Starting now": at an agreed meeting's time everyone in it is told, and the
+  tap joins through the card's check. What's left of R83 is blocked: guests (Caime Mail) and
+  recording (R82, the bake-off and the lawyer).

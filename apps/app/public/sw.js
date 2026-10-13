@@ -140,6 +140,8 @@ self.addEventListener('fetch', (event) => {
 /** Where a notification leads, from what it's about. */
 function pathOf(data) {
   const d = data || {};
+  // A meeting starting (R83): its join address, which the app checks against the card.
+  if (typeof d.path === 'string' && /^\/c\/[^/?#]+\?/.test(d.path)) return d.path;
   if (typeof d.conversationId === 'string') return `/c/${encodeURIComponent(d.conversationId)}`;
   if (typeof d.handle === 'string') return `/o/${encodeURIComponent(d.handle)}`;
   if (typeof d.userId === 'string') return `/p/${encodeURIComponent(d.userId)}`;

@@ -458,6 +458,11 @@ describe('the service worker', () => {
       [{ handle: 'nile.dental' }, '/o/nile.dental'],
       [{ userId: 'u1' }, '/p/u1'],
       [{}, '/notifications'],
+      // A meeting starting (R83): its join address; anything else in `path` is never followed.
+      [{ conversationId: 'c1', path: '/c/c1?seq=4&join=m1' }, '/c/c1?seq=4&join=m1'],
+      [{ conversationId: 'c1', path: 'https://evil.example/c/x?y' }, '/c/c1'],
+      [{ conversationId: 'c1', path: '/settings?x=1' }, '/c/c1'],
+      [{ conversationId: 'c1', path: '//evil.example/c/x?y' }, '/c/c1'],
     ] as const;
     for (const [data] of cases) await fire('notificationclick', { notification: { close, data } });
     expect(opened).toEqual(cases.map(([, path]) => path));

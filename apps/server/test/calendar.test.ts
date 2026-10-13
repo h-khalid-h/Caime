@@ -307,6 +307,34 @@ describe('a calendar feed (PRD §72)', () => {
     expect(event(await lines(url), `meeting-${standup.id}@caime`)).not.toBeNull();
   });
 
+  it('joins a meeting held on Caime from the calendar app (R83), at its card', async () => {
+    const { url } = await ana.post('/v1/calendar/feed');
+    const sync = await card(ana, withBen, 'meeting', {
+      title: 'Weekly sync',
+      start: { at: '2026-10-03T09:00:00Z', hasTime: true },
+      durationMinutes: 30,
+    });
+    await ben.post(`/v1/messages/${sync.id}/kit`, { to: 'accepted' });
+    const join = `http://localhost:8787/c/${withBen}?seq=${sync.seq}&join=${sync.id}`;
+    const ev = event(await lines(url), `meeting-${sync.id}@caime`);
+    expect(ev).toEqual(expect.arrayContaining(['LOCATION:Caime', `URL:${join}`]));
+    expect(ev?.some((l) => l.startsWith('DESCRIPTION:') && l.includes(join))).toBe(true);
+    // In the app's calendar, the card's place in its conversation, for Join to open it at.
+    const window = 'from=2026-10-01T00:00:00Z&to=2026-10-31T00:00:00Z';
+    const mine = (await ana.get(`/v1/calendar?${window}`)).items.find((i: any) => i.id === sync.id);
+    expect(mine).toMatchObject({ kind: 'meeting', state: 'agreed', seq: sync.seq, place: null });
+    // On another service, or in person, it opens the conversation as before.
+    const zoom = await card(ana, withBen, 'meeting', {
+      title: 'With the vendor',
+      start: { at: '2026-10-04T09:00:00Z', hasTime: true },
+      place: 'zoom.us/j/123',
+    });
+    await ben.post(`/v1/messages/${zoom.id}/kit`, { to: 'accepted' });
+    expect(event(await lines(url), `meeting-${zoom.id}@caime`)).toEqual(
+      expect.arrayContaining(['LOCATION:zoom.us/j/123', `URL:http://localhost:8787/c/${withBen}`]),
+    );
+  });
+
   it('in the app (R51): what’s ahead in a window, with whom and what they are to you; an organization’s bookings for its team', async () => {
     const from = '2026-11-01T00:00:00Z';
     const to = '2026-12-01T00:00:00Z';

@@ -3682,4 +3682,8 @@ export const turkish: Catalog = {
   'Another word': 'Başka bir sözcük',
   'How Caime writes to you, and how people who know you see you labelled, in Arabic and French. Never guessed.':
     'Caime’nin size nasıl yazdığı ve sizi tanıyanların sizi nasıl etiketli gördüğü, Arapça ve Fransızcada. Asla tahmin edilmez.',
+  Meetings: 'Toplantılar',
+  'No meetings yet': 'Henüz toplantı yok',
+  'Meetings agreed in your conversations show here, with Join when it’s time.':
+    'Sohbetlerinizde kararlaştırılan toplantılar burada görünür; zamanı gelince Katıl ile.',
 };
