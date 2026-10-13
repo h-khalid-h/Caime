@@ -11,6 +11,7 @@
 import { tr } from '@caime/core/i18n';
 import { JOIN_LATE_MS, joinPath, meetingVenue } from '@caime/core/meetings';
 import type { AppContext } from '../context';
+import { eachLimit } from './batch';
 import { enqueue, registerJob } from './jobs';
 import { notify } from './notify';
 
@@ -90,7 +91,8 @@ async function startJob(ctx: AppContext, payload: Record<string, unknown>): Prom
     )
     .execute();
   const path = joinPath(card.conversationId, card.seq, messageId);
-  for (const { user_id: userId } of people) {
+  // A few at a time (convention 14), each in their own language (`notify` writes inside it).
+  await eachLimit(people, 4, async ({ user_id: userId }) => {
     await notify(ctx, {
       userId,
       kind: 'meeting',
@@ -102,7 +104,7 @@ async function startJob(ctx: AppContext, payload: Record<string, unknown>): Prom
       quotes: [messageId],
       data: { conversationId: card.conversationId, messageId, path },
     });
-  }
+  });
 }
 
 export function registerMeetingStartJob(): void {
