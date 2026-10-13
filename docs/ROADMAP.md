@@ -649,12 +649,16 @@ outperforming the alternatives is reach and operations. In the order the review 
       a query, never another site's or another screen's). Nothing for a meeting elsewhere, in
       person, cancelled, moved, all day, in a private conversation, to someone who left, or from
       a job run more than half an hour after the start. Its two strings in the server's
-      catalogs. Tests: `meeting-start.test.ts` (3), `sw.test.ts` (four more cases), the brief
+      catalogs; server 752 pass in one clean run (the six backup tests need `pg_dump`, absent
+      here). Tests: `meeting-start.test.ts` (3), `sw.test.ts` (four more cases), the brief
       test's job count (the first meeting's start now runs too). Both people pressing Join at
       once: the one whose call rings here answers it rather than placing a second
       (`joinDirect`, `joinDirect.test.ts`). Not built: Join inside the
       brief, which opens from the card that has it already; a ring for the meeting rather than
       a notification (the call rings when the first person joins, as any call does)
+      [ ] Guests (R84): the guard on every request for a provisional session, proven by a walk of
+      every route; the meeting's own space; invitations and the join page against the mail
+      stand-in ⛔ Caime Mail on in production to ship, the lawyer's answer on R83 (4) and R84 (4)
 - [ ] Candidates from the 2026-09-30 brainstorm review (R46), the owner's call: organizations
       taking WhatsApp Business messages into the Business inbox through Meta's official Cloud
       API ⛔ a Meta business account, verification and fees; contact matching by hashed phone
@@ -2739,3 +2743,8 @@ The six-slice review's plan, in its order; a block is ticked when its tests and 
 - 2026-10-13 — R83, "Starting now": at an agreed meeting's time everyone in it is told, and the
   tap joins through the card's check. What's left of R83 is blocked: guests (Caime Mail) and
   recording (R82, the bake-off and the lawyer).
+- 2026-10-13 — R84, documents only: guests join a meeting's own space, never the conversation
+  it was agreed in (R83 would have shown them its history, and a direct call has no room for a
+  third), and a provisional session is refused on every route but a guest's, by one guard
+  proven against every registered route. The full server suite ran clean here: 752 pass, the
+  six backup tests needing `pg_dump`.

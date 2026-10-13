@@ -1396,3 +1396,35 @@ with its reason, so it isn't proposed again without new facts.
   production (⛔ DEPLOY.md: the domain, Postmark and its webhooks). *Not decided here*: whether
   people on Caime are also sent the iCalendar invitation for their own calendars (the feed already
   carries the meeting); the lawyer's answer on (4).
+- **R84 — Guests in a meeting: the meeting's own space, and a guest who can do nothing else
+  (owner, 2026-10-13, refining R83 (2)–(6) before it is built).** R83 let a guest's session reach
+  "its call and its conversation". Checked against the code, that is wrong twice. A meeting's
+  card lives in a conversation with history (Ana and Ben's chat of two years): a guest added to
+  it would read all of it. And a call is its conversation's (PRD §47): a guest in Ana and Ben's
+  direct call would need a direct conversation of three, which there isn't. So: (1) *The meeting
+  space.* Inviting the first guest gives the meeting a group conversation of its own, named by
+  the meeting, holding its people (those of the card's conversation who accepted it, or all of
+  a group's) and its guests, and a copy of the card that keeps the original's state; Join,
+  "starting now", the feed's address and Cai's transcript (R82) all go to the space from then
+  on, and the original card says where the meeting moved. A guest sees the space from the
+  invitation onward and nothing before it; the original conversation is never theirs. Groups
+  are otherwise made of connections only (PRD §55): the space is the one exception, and only
+  for the people its organizer invited by address, who are provisional (R75) and findable by
+  nobody. Up to eight in all, as any group call (ADR-17 for more). (2) *A guest can do nothing
+  else.* A guest's session is a provisional person's, and one guard on every request (the auth
+  plugin), not each route, allows a provisional session only the routes a guest needs: the
+  space's messages and its card, its call and its signals, their own name, signing out, and
+  claiming the account; every other route answers 403 for them, and a test walks every
+  registered route to prove it, so a route added later is closed to guests until someone opens
+  it on purpose. A guest finds nobody (R75 already keeps provisional people out of every
+  lookup), is found by nobody, and is in no conversation but spaces they were invited to. The
+  session ends a day after the meeting. (3) *What stays as R83 has it*: the iCalendar
+  invitation and its replies, the link that proves the address (a code on a second device; a
+  code and the lobby without one), consent and the age question on the join page, the
+  transcript's email that says it's ready without carrying it, and "Keep it" to claim. (4)
+  *Not decided here*: whether a meeting with a guest can still be recorded by a browser that is
+  a guest's (R82 (1) picks the recorder; a guest's device holding everyone's voices for a
+  minute is the lawyer's question as much as consent is). *Order*: the guard and its route walk
+  first, with a test that a provisional session is refused everywhere today; then the space;
+  then invitations and the join page, against the mail stand-in, so it ships the day Caime Mail
+  is on (⛔ DEPLOY.md). SECURITY.md gets a row when the guard lands.
