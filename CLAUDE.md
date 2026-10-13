@@ -582,7 +582,10 @@ These are rules, not preferences.
   reuses (`reuseExistingServer`) with the old bundle's shell in memory, so every screen stays
   blank: kill them by port before running again.
 - Links to Caime are built from `WEB_URL` in the app (`lib/config.ts`, from the API's address) and
-  `PUBLIC_URL` on the server, never a hardcoded domain. A path
+  `PUBLIC_URL` on the server, never a hardcoded domain. Pages answer on `PUBLIC_URL`'s name alone
+  (`lib/canonical-host.ts`, an `onRequest` hook first in `app.ts`): a page on any other name the
+  service has goes there with a 301; `/v1`, `/metrics` and `/.well-known/` answer on every name
+  (a new path machines call joins `MACHINE_PATHS`), and loopback names and addresses are left be. A path
   from outside the app goes through `appPath` (`lib/paths.ts`) before anything navigates to it.
 - The first screen is Attention (R66, `features/attention/AttentionHome.tsx`, the `/` route;
   Chats is `/chats`): the greeting and summary (core `home.ts`: `greetingKey`, `homeSummary`,

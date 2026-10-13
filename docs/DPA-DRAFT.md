@@ -207,8 +207,11 @@ a closed organization nobody continued is deleted only by the operator), and the
 
 ## 13. International transfers
 
-The hosting provider's region is the Operator's choice (`HOSTING_PROVIDER`) **[owner]**: name the
-region. Anthropic and Stripe process in the United States and Europe under their own transfer
+The hosting provider's region is the Operator's choice (`HOSTING_PROVIDER`) **[owner]**: today
+Google Cloud's `me-central1` region in Doha, Qatar (checked 2026-10-13 against Google's published
+address ranges), a country without an adequacy decision, so the transfer rests on the standard
+contractual clauses in Google's Cloud Data Processing Addendum **[lawyer]** confirm against the
+Operator's own Google Cloud agreement and name its contracting entity. Anthropic and Stripe process in the United States and Europe under their own transfer
 mechanisms **[lawyer]** cite them (Stripe Payments Europe is in Ireland; Anthropic, PBC and Expo
 are in the United States, Cloudflare, Inc. too; for the United States, the European Commission's
 standard contractual clauses, or the Data Privacy Framework where the company is certified). An

@@ -49,21 +49,23 @@ CI's deploy step would only trigger a second, redundant rebuild.
 
 The order matters: every step leaves Caime working. What each costs is in `docs/RESOURCES.md`.
 
-1. **Both addresses serve the app.** EasyPanel, service `caime`, Domains: `cai.me` (there since
-   2026-10-13) and `caime.datac.com` added back (the old address, above). Until it's back, every
-   link Caime writes (resets, invites, Stripe's returns, calendar feeds) and Stripe's live
-   webhook land on EasyPanel's 404.
-2. **DNS at Cloudflare (zone `cai.me`).** `A @ <server IP>` proxied (there). Delete the wildcard
-   `A *`: nothing is served under a subdomain, and a wildcard lets any name (`login.cai.me`) look
-   like Caime's. Keep `CNAME www → cai.me` proxied and add a Redirect Rule: hostname equals
-   `www.cai.me` → 301 to `https://cai.me${path}` with the query string kept. SSL/TLS mode **Full
-   (strict)** (EasyPanel holds a real certificate), Always Use HTTPS on.
-3. **The service's environment**, then redeploy: `PUBLIC_URL=https://cai.me`,
-   `EMAIL_FROM=Caime <noreply@cai.me>`, `CONTACT_EMAIL=hello@cai.me`,
-   `VAPID_SUBJECT=mailto:hello@cai.me`, and `SMTP_URL` from step 5. Leave `MAIL_DOMAIN` and
-   `MAIL_PROVIDER` unset: Caime Mail stays off (below). Check: `https://cai.me/` names
-   `https://cai.me/` as its canonical address, and `/.well-known/oauth-authorization-server`
-   says `"issuer":"https://cai.me"`.
+1. **The service's names** (done, checked 2026-10-13): EasyPanel, service `caime`, Domains
+   `cai.me`, `www.cai.me`, `caime.datac.com` and EasyPanel's own default; `caime-go` has
+   `go.cai.me`. Caime answers pages on `PUBLIC_URL`'s name alone and sends a page asked for on
+   any other to the same path there, for good (`lib/canonical-host.ts`): one site, one session
+   cookie, one origin for push. The API (`/v1`, Stripe's webhook among it), `/metrics` and
+   `/.well-known/` answer on every name, so nothing posting to the old address breaks.
+2. **DNS at Cloudflare (zone `cai.me`).** `A @ <server IP>` proxied and `CNAME www → cai.me`
+   proxied (both there; no Redirect Rule is needed, Caime redirects). Give Expo Go's
+   `go.cai.me` its own `CNAME go → cai.me` proxied, then delete the wildcard `A *`: nothing
+   else is served under a subdomain, and a wildcard makes any name (`login.cai.me`) resolve.
+   SSL/TLS mode **Full (strict)** (EasyPanel holds a real certificate), Always Use HTTPS on.
+3. **The service's environment** (`PUBLIC_URL=https://cai.me` is set; checked 2026-10-13: the
+   landing page's canonical is `https://cai.me/`). `SMTP_URL` from step 5, then redeploy. The
+   sender, the contact and the push subject are Caime's own defaults (`Caime <hello@cai.me>`,
+   `hello@cai.me`, `mailto:hello@cai.me`): a reply to a code reaches the staff address, so no
+   `EMAIL_FROM` is set. Leave `MAIL_DOMAIN` and `MAIL_PROVIDER` unset: Caime Mail stays off
+   (below). Check: `/.well-known/oauth-authorization-server` says `"issuer":"https://cai.me"`.
 4. **Stripe (live: the owner's).** Webhooks: *edit* the existing endpoint's URL to
    `https://cai.me/v1/billing/webhook` (a new endpoint would get a new signing secret). Connect,
    Settings, OAuth: add the redirect `https://cai.me/v1/checkout/stripe/return` beside the old one
@@ -84,7 +86,7 @@ The order matters: every step leaves Caime working. What each costs is in `docs/
    Postmark's free DMARC digest gives, dmarc.postmarkapp.com>`; move to `p=quarantine` once a
    few weekly digests show only Postmark and Cloudflare sending for `cai.me`.
 8. **Check**: `https://cai.me/v1/readyz` is `{"ok":true}`; signing up mails a code from
-   `noreply@cai.me` that arrives in the inbox with DKIM passing (`d=cai.me`); a reset link opens
+   `hello@cai.me` that arrives in the inbox with DKIM passing (`d=cai.me`); a reset link opens
    on `cai.me`; `https://www.cai.me/x?y=1` lands on `https://cai.me/x?y=1`; mail to
    `postmaster@cai.me` reaches the owner; Stripe's test event answers 200.
 
@@ -160,7 +162,7 @@ Content-Security-Policy, and links in notifications. Everything below is optiona
 | `DATABASE_POOL_MAX` | `20` | Connections per instance. |
 | `LOG_LEVEL` | `info` | `warn` in quiet production. |
 | `BACKUP_ENABLED`, `BACKUP_DIR`, `BACKUP_EVERY_HOURS`, `BACKUP_KEEP_DAYS` | `true`, `DATA_DIR/backups`, `24`, `30` | Database backups (below). |
-| `HOSTING_PROVIDER` | — | Who hosts this Caime and where, as the privacy page's list of processors names it (R54): "Hetzner Online GmbH, Germany". Unset, the page says "our hosting provider". ⛔ The owner's to set in EasyPanel. |
+| `HOSTING_PROVIDER` | — | Who hosts this Caime and where, as the privacy page's list of processors names it (R54): "Hetzner Online GmbH, Germany". Unset, the page says "our hosting provider". ⛔ The owner's to set in EasyPanel: `Google Cloud, Doha, Qatar` (checked 2026-10-13: the server, 34.18.125.16, is in Google's published range for `me-central1`; the entity on the contract, Google Cloud EMEA Limited or Google LLC, may replace "Google Cloud"), a transfer outside the EEA that the DPA's section 13 names. |
 | `BACKUP_S3_ENDPOINT`, `BACKUP_S3_BUCKET`, `BACKUP_S3_ACCESS_KEY_ID`, `BACKUP_S3_SECRET_ACCESS_KEY` | — | A copy of each backup off the host, to an S3-compatible bucket (Backups, below); all four, or none. `BACKUP_S3_REGION` (`auto`), `BACKUP_S3_PREFIX` (`caime/backups/`) and `BACKUP_S3_PATH_STYLE` (`true`) beside them. |
 | `FILES_S3_ENDPOINT`, `FILES_S3_BUCKET`, `FILES_S3_ACCESS_KEY_ID`, `FILES_S3_SECRET_ACCESS_KEY` | — | Files in an S3-compatible bucket rather than on `DATA_DIR` (Scaling, below); all four, or none. `FILES_S3_REGION` (`auto`), `FILES_S3_PREFIX` (`caime/files/`) and `FILES_S3_PATH_STYLE` (`true`) beside them. The bucket stays private: Caime reads it, nobody else. |
 | `TRUST_PROXY` | `true` | EasyPanel's proxy sets `X-Forwarded-*`; keep it on behind it. |

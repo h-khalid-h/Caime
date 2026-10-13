@@ -27,6 +27,7 @@ import { Bus } from './lib/bus';
 import { businessRealtime } from './lib/business';
 import { registerCaiJobs } from './lib/cai';
 import { registerCallSweep } from './lib/calls';
+import { canonicalLocation } from './lib/canonical-host';
 import { createMailer, type Mailer } from './lib/email';
 import { AppError } from './lib/errors';
 import { registerGroupCallSweep } from './lib/group-calls';
@@ -253,6 +254,15 @@ export async function buildApp(config: Config, options: BuildOptions = {}): Prom
     });
   });
 
+  // Before anything else: a page asked for on another name goes to Caime's one address.
+  app.addHook('onRequest', async (req, reply) => {
+    const location = canonicalLocation(config.PUBLIC_URL, {
+      method: req.method,
+      host: req.host,
+      url: req.url,
+    });
+    if (location) return reply.redirect(location, 301);
+  });
   // Before anything answers: the request's language, for every word written in it (R54).
   registerLanguage(app);
   registerAuth(app, ctx);

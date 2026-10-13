@@ -488,12 +488,13 @@ super-app brainstorm the product takes, and what it leaves with the reason, is R
       and the Caishy Friends; Stripe's price keys and metadata; the repository, image, database
       and EasyPanel names; deployed migrations; and this log
 - [~] `cai.me` is Caime's (the owner, 2026-10-13) and serves it: `https://cai.me/v1/readyz`
-      answered `{"ok":true}` on 2026-10-13 (a proxied A record at Cloudflare, the domain on the
-      `caime` service). Left, the owner's, in DEPLOY.md's "Going live on cai.me": `caime.datac.com`
-      back on the service (it answered EasyPanel's 404 that day, so every link Caime wrote and
-      Stripe's webhook failed), `PUBLIC_URL=https://cai.me`, the wildcard record gone and `www`
-      redirected, Stripe's webhook and Connect redirect, Postmark for sending, the staff
-      addresses and DMARC. The phone builds, Expo Go's image and the SDK default to `cai.me`
+      answered `{"ok":true}` on 2026-10-13, `PUBLIC_URL=https://cai.me`, and the service answers
+      to `cai.me`, `www.cai.me` and `caime.datac.com` (checked through EasyPanel's API); a page
+      on any name but `cai.me` goes there for good (`lib/canonical-host.ts`), the API answering
+      on all of them. Left, the owner's, in DEPLOY.md's "Going live on cai.me": `go.cai.me` its
+      own record and the wildcard gone, Stripe's webhook and Connect redirect, Postmark for
+      sending, the staff addresses and DMARC. The phone builds, Expo Go's image and the SDK
+      default to `cai.me`
 - [ ] `cai.me/@handle` for people and organizations (R35), opening the app where it's installed:
       `apple-app-site-association` and `assetlinks.json` served by the server, the app's
       associated domains. After the domain
@@ -1357,10 +1358,10 @@ discovers, and mail at their own address.
       with screenshots, a declared pricing model, languages, support and privacy addresses and
       an AI disclosure; the written bar on `/developers` and in API.md; "Reviewed by Caime" with
       the operator's checklist; delisting with a note.
-- [~] R80, cai.me as the public address: the domain is Caime's and serves the app (DNS and the
-      certificate done, 2026-10-13); left, `PUBLIC_URL` moved (one canonical), with the old host
-      kept serving rather than redirected, since webhooks and subscribed feeds post and read
-      there (DEPLOY.md).
+- [x] R80, cai.me as the public address: the domain is Caime's and serves the app (DNS and the
+      certificate done, 2026-10-13), `PUBLIC_URL` moved, and Caime's pages answer on that one
+      name (every other sends them there; the API answers on all, so webhooks and feeds posting
+      to the old address keep working).
 - [x] R81, said, never guessed (PRODUCT-REVIEW R81, owner 2026-10-11): `users.gender` (woman,
       man, another word, or null; migration 0070), `UpdateMeBody.gender`, `MeView.gender`,
       `PersonView.gender` under the new `gender` privacy field (connections by default, hidden by
@@ -2828,3 +2829,17 @@ The six-slice review's plan, in its order; a block is ticked when its tests and 
   Bcc and list mail reach their handle, the staff addresses reach `MAIL_STAFF_HANDLE`, a mail
   lands once per place, and a retry can't post twice. Caime Mail now waits only on the owner's
   Postmark and DNS steps.
+- 2026-10-13 — One address. Read through EasyPanel's API (names only): the service answers to
+  `cai.me`, `www.cai.me`, `caime.datac.com` and its default, `PUBLIC_URL` is `https://cai.me`,
+  and `production` runs 7e9544f. `www` and the old address served the whole site as copies
+  (cookies, push and storage are per name, so a sign-in there met a signed-out `cai.me` at the
+  first link Caime mailed); now a page on any name but `PUBLIC_URL`'s goes there for good, path
+  and query kept, and the API, `/metrics` and `/.well-known/` answer on every name
+  (`lib/canonical-host.ts`, `canonical-host.test.ts`). The runbook loses its Cloudflare redirect
+  rule, keeps `go.cai.me` before the wildcard goes, and keeps the sender at `hello@`.
+- 2026-10-13 — Where Caime runs, checked: the EasyPanel server (34.18.125.16, the panel's own
+  address too) is in Google Cloud's `me-central1` range (Doha, Qatar), per Google's published
+  ranges of the day. ⛔ The owner sets `HOSTING_PROVIDER=Google Cloud, Doha, Qatar` in EasyPanel
+  (this session's write to the service was refused by its permission check), and the lawyer
+  covers the transfer outside the EEA in the DPA's section 13. The origin also answers on its
+  own address past Cloudflare: a firewall rule admitting only Cloudflare's ranges closes that.
