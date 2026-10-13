@@ -73,8 +73,9 @@ test('a meeting held on Caime is joined from its card, its address and Meetings'
   await expect(ana.page.getByTestId('call-status')).toHaveText(/^0:\d\d$/, { timeout: 20_000 });
   await expect(ben.page.getByTestId('call-status')).toHaveText(/^0:\d\d$/, { timeout: 20_000 });
 
-  const unexpected = [...ana.errors, ...ben.errors].filter((e) => !e.includes('409'));
-  expect(unexpected).toEqual([]);
+  // Nothing refused on either side: the second Join answered the ring rather than placing a
+  // call that would be refused as already on.
+  expect([...ana.errors, ...ben.errors]).toEqual([]);
   await anaCtx.close();
   await benCtx.close();
 });
