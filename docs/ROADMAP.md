@@ -2672,15 +2672,16 @@ The six-slice review's plan, in its order; a block is ticked when its tests and 
   on `/developers#bar` follow; links to the site's pages open as pages in the app (`appPath`).
   Tests: `marketplace.test.ts` (10), the directory test's terms, the E2E listing flow's new
   fields and a visitor's marketplace page, the accessibility pass over four marketplace pages.
-- 2026-10-13 — R82 and ADR-17, documents only: how R52's recording is built (one browser in
+- 2026-10-13 — R82 and ADR-17, documents only (R82 supersedes R68's "not adopted: voice calls
+  with Cai", by the owner's decision): how R52's recording is built (one browser in
   the call records each person's stream as its own track, since the mesh already delivers them
   apart, so speakers are known without a diarization model and phones in the call are heard;
   utterances cut at pauses and uploaded as they end, so silence is never paid for and no word
   timestamps are needed; summaries only when asked; Cai asked by name answers in writing) and
   where Cai's voice in a call will run (a media unit beside the container). No code; R52 stays
   ⛔ on the speech bake-off and the lawyer's answer on consent.
-- 2026-10-13 — R83, documents only: Meetings, a surface beside Chats and Calls, with Cai taking
-  part as in either, and anyone can join one. The invitation is the key: an
+- 2026-10-13 — R83, documents only: Meetings, a surface beside Chats and Calls (planned, online or
+  in person by the kit's own Where; a list, not a menu, R19), and anyone can join one. The invitation is the key: an
   iCalendar invitation by mail lands in any calendar without a connector, and each invitee's own
   link proves their address, so a guest joins without a code or an account, in a session scoped
   to the meeting; consent is a tap on the join page. No code; ⛔ on Caime Mail in production.
