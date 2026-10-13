@@ -1287,8 +1287,9 @@ with its reason, so it isn't proposed again without new facts.
   per write that returns a label, nothing per row in a list (the person's view already at hand).
   *Later*: the longer Arabic sentences' feminine forms with a native reviewer; a French
   reader-addressed form if one ever appears; the Arabic varieties' voice lines by gender.
-- **R82 — Cai in the conversation: listening first, speaking later (owner, 2026-10-13, building
-  on R52).** R52's rules stand unchanged: every participant consents each time, an indicator
+- **R82 — Cai in calls and meetings: listening first, speaking later (owner, 2026-10-13,
+  building on R52).** Cai is a participant wherever people talk on Caime: chats, calls and
+  meetings, each named as the others are. R82 is about the two that are spoken. R52's rules stand unchanged: every participant consents each time, an indicator
   everyone sees for the whole recording, anyone's no means it never starts, never in a private
   conversation, everyone who was in it gets what was made, encrypted at rest, kept as the
   organization's owner sets, summaries and actions only when someone asks, Pro and Business with
@@ -1341,3 +1342,50 @@ with its reason, so it isn't proposed again without new facts.
   the provider); file rows per track; a retention sweep row in RESOURCES.md for recordings; AI
   tokens only when asked. *Not decided here*: the minute allowances' numbers (from the chosen
   provider's price), the retention default, the lawyer's answer on (4).
+- **R83 — Meetings, beside chats and calls (owner, 2026-10-13, with R82).** Meetings is a
+  surface of its own, named as Chats and Calls are: a list (`/meetings`, reached as Calls is,
+  and from the Calendar) of what's coming and what's been, each with its people, its Join, and
+  after it, its transcript and what Cai was asked; Cai takes part in a meeting as it does in a
+  chat or a call. Anyone can join one: the invitation is the key. A meeting is already a card in
+  a conversation (the Meeting kit: title, when, how long), on
+  Caime's calendar and in the calendar feed (R51); what it lacks is a place to meet and a way in
+  for someone not on Caime. R83 adds both without a new step for anyone. (1) *Every agreed
+  meeting is joinable.* When a meeting card is agreed (or a booking confirmed, R58), it carries a
+  Join button, on the card, in the Calendar, in the brief before it (R58) and as the event's URL
+  in the feed. There is no "start a meeting": at its time, everyone in it is told "starting now",
+  and the first to tap Join opens the call, the rest join it (a group call, PRD §47, up to eight
+  until ADR-17). (2) *Outsiders get a real calendar invitation, not a sync.* Adding someone by
+  email address makes them a provisional person (R75) and sends them an iCalendar invitation
+  (`METHOD:REQUEST`, from the organizer's Caime address, built beside `ics.ts`), which Gmail,
+  Outlook and Apple Mail put in their calendar with Accept and Decline as they do any other;
+  their answer comes back as mail (`METHOD:REPLY`, through mail-in) and shows on the card. A
+  change or a cancellation sends the update. This needs no OAuth and no connector, so it works
+  for every calendar on the day Caime Mail is on; Google and Microsoft sync (R79 layer 2, ⛔ their
+  OAuth clients) later adds the reverse, Caime meetings made from those calendars. (3) *The link
+  is the verification.* Each invitee's link is their own (a random token, kept hashed, for that
+  meeting and that address), and arrived at that address, so opening it proves the address as a
+  code would: no code to type, no account to make. It opens the join page in the browser with
+  the name from the invitation, and joining gives a guest session scoped to that one meeting
+  (its call and its conversation; no inbox, people or search), which ends a day after the
+  meeting. Opened on a second device, the link asks for the six-digit code sent to the address,
+  so a forwarded link alone doesn't let a second person in as the invitee. Someone with no link
+  (a forwarded meeting address, a walk-in) types an email address, gets a code that lasts ten
+  minutes with five tries, and waits in a lobby until someone in the meeting admits them by
+  name and address. (4) *Consent on the join page.* When Cai takes notes (R82), the join page
+  says so before the call, with "Join" and "Join without Cai"; for a guest that is a deliberate
+  tap on a page they read, which is stronger consent than answering a ring, and a no means it
+  doesn't start (R52). A guest who would be recorded is asked, on that page, whether they are
+  18 or over; one who isn't joins a meeting Cai doesn't record (R29), and the lawyer reviews
+  whether that statement is enough. (5) *After*: everyone who was in it gets the transcript
+  (R52); a guest gets an email that it's ready, with their own link, never the transcript itself
+  (a clinic's words don't travel by mail), and "Keep it" claims the account with the history in
+  it (R75's claim: the address is already proven). Unclaimed, a guest's access goes when their
+  provisional row is swept (R75: a year with nothing new), or sooner when the recording's
+  retention ends. (6) *Never*: a guest in a private conversation's meeting (a guest holds no
+  keys, and R52 never records there); a guest finding anyone or anything beyond the meeting; a
+  guest link that outlives its day. *Cost*: one invitation mail per invitee and per change; one
+  token row per invitee; a guest session is an ordinary session row with a scope; nothing per
+  message or per minute beyond the call's own. *Depends on* Caime Mail being on in production
+  (⛔ DEPLOY.md: the domain, Postmark and its webhooks). *Not decided here*: whether people on
+  Caime are also sent the iCalendar invitation for their own calendars (the feed already carries
+  the meeting); the lawyer's answer on (4).

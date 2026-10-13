@@ -605,6 +605,12 @@ outperforming the alternatives is reach and operations. In the order the review 
       [ ] In person on a phone, with the provider's speaker turns
       [ ] Cai's voice and calls above eight (ADR-17) ⛔ streaming Arabic speech to text passing
       its own bake-off
+- [ ] Meetings (R83), beside Chats and Calls: the Meetings list (`/meetings`); Join on every agreed meeting and booking (card, Calendar,
+      brief, feed URL), "starting now" at its time; outsiders added by address get an iCalendar
+      invitation with their own link, Accept and Decline coming back by mail; the link proves the
+      address (a code on a second device, a code and the lobby without a link); a guest session
+      scoped to the meeting; consent and the age question on the join page; "Keep it" to claim.
+      ⛔ Caime Mail on in production, and the lawyer's answer on R83 (4)
 - [ ] Candidates from the 2026-09-30 brainstorm review (R46), the owner's call: organizations
       taking WhatsApp Business messages into the Business inbox through Meta's official Cloud
       API ⛔ a Meta business account, verification and fees; contact matching by hashed phone
@@ -2673,3 +2679,8 @@ The six-slice review's plan, in its order; a block is ticked when its tests and 
   timestamps are needed; summaries only when asked; Cai asked by name answers in writing) and
   where Cai's voice in a call will run (a media unit beside the container). No code; R52 stays
   ⛔ on the speech bake-off and the lawyer's answer on consent.
+- 2026-10-13 — R83, documents only: Meetings, a surface beside Chats and Calls, with Cai taking
+  part as in either, and anyone can join one. The invitation is the key: an
+  iCalendar invitation by mail lands in any calendar without a connector, and each invitee's own
+  link proves their address, so a guest joins without a code or an account, in a session scoped
+  to the meeting; consent is a tap on the join page. No code; ⛔ on Caime Mail in production.
