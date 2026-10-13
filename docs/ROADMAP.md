@@ -605,12 +605,24 @@ outperforming the alternatives is reach and operations. In the order the review 
       [ ] In person on a phone, with the provider's speaker turns
       [ ] Cai's voice and calls above eight (ADR-17) ⛔ streaming Arabic speech to text passing
       its own bake-off
-- [ ] Meetings (R83), beside Chats and Calls: the Meetings list (`/meetings`); Join on every agreed meeting and booking (card, Calendar,
+- [~] Meetings (R83), beside Chats and Calls: the Meetings list (`/meetings`); Join on every agreed meeting and booking (card, Calendar,
       brief, feed URL), "starting now" at its time; outsiders added by address get an iCalendar
       invitation with their own link, Accept and Decline coming back by mail; the link proves the
       address (a code on a second device, a code and the lobby without a link); a guest session
       scoped to the meeting; consent and the age question on the join page; "Keep it" to claim.
       ⛔ Caime Mail on in production, and the lawyer's answer on R83 (4)
+      [x] Join and Open on the meeting card: where it's held from the kit's own Where (core
+      `meetingVenue`: empty or "Caime" here, a web address on another service, anything else
+      in person); Join from ten minutes before to half an hour after its planned end (`joinOpen`,
+      an hour when its length isn't known, as the calendar takes it; never for a day without a
+      time), opening the conversation's own call by the header's rules (`meetingCall`: not with
+      Cai, a friend, a request or someone reached by mail; a group of up to eight); Open for a
+      link (`meetingAction`). Strings already in every catalog. Tests: `meetings.test.ts` (11),
+      `meetingCall.test.ts` (4); core 635 and app 194 pass, lint and typecheck clean, the web's
+      initial JavaScript 448.1 KB before and after. Not run: the server suites and E2E (no
+      Postgres in this session), and no E2E step for Join yet
+      [ ] Join in Meetings, the Calendar, the brief and the feed's URL; "starting now"; the
+      Meetings list
 - [ ] Candidates from the 2026-09-30 brainstorm review (R46), the owner's call: organizations
       taking WhatsApp Business messages into the Business inbox through Meta's official Cloud
       API ⛔ a Meta business account, verification and fees; contact matching by hashed phone
@@ -2685,3 +2697,6 @@ The six-slice review's plan, in its order; a block is ticked when its tests and 
   iCalendar invitation by mail lands in any calendar without a connector, and each invitee's own
   link proves their address, so a guest joins without a code or an account, in a session scoped
   to the meeting; consent is a tap on the join page. No code; ⛔ on Caime Mail in production.
+- 2026-10-13 — R83, first code: Join and Open on the meeting card (core `meetings.ts`, the app's
+  `meetingCall`), by the kit's own Where and a join window, through the calls the conversation
+  already makes. No server change; the server suites and E2E not run here (no Postgres).

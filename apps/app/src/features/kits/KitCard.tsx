@@ -14,6 +14,7 @@ import {
   orderDetails,
 } from '@caime/core/kit-cards';
 import { KITS } from '@caime/core/kits';
+import { meetingAction, meetingLink } from '@caime/core/meetings';
 import { PAYMENT_KIND_LABELS, type PayTo, senderPays } from '@caime/core/payments';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import Copy from 'lucide-react-native/icons/copy';
@@ -22,6 +23,12 @@ import { useState } from 'react';
 import { View } from 'react-native';
 import { endpoints } from '@/api/endpoints';
 import { qk } from '@/api/keys';
+import {
+  callsSupported,
+  groupCallsSupported,
+  startCall,
+  startGroupCall,
+} from '@/features/calls/calls';
 import { useCardAction } from '@/features/conversation/cardActions';
 import { copyText } from '@/lib/clipboard';
 import { leaveFor, openLink } from '@/lib/links';
@@ -38,6 +45,7 @@ import { toast } from '@/ui/Toast';
 import { AlbumCard } from './AlbumCard';
 import { ChecklistCard } from './ChecklistCard';
 import { iconNamed, KIT_ICONS } from './icons';
+import { meetingCall } from './meetingCall';
 import { SplitCard } from './SplitCard';
 
 interface CardPayload {
@@ -177,6 +185,14 @@ export function KitCard({ m, mine }: { m: MessageView; mine: boolean }) {
     enabled: false,
     select: (d: { conversation: ConversationView }) => d.conversation.business?.thread ?? null,
   }).data;
+  // Which call a meeting's Join opens here (R83), from the same cached conversation.
+  const call = useQuery({
+    queryKey: qk.conversation(m.conversationId),
+    queryFn: () => endpoints.conversation(m.conversationId),
+    enabled: false,
+    select: (d: { conversation: ConversationView }) =>
+      meetingCall(d.conversation, { calls: callsSupported, groupCalls: groupCallsSupported }),
+  }).data;
   const { timeZone, locale } = useUserClock();
   const meId = useSession((s) => s.user?.id ?? '');
   const clock = { now, timeZone, locale };
@@ -259,6 +275,23 @@ export function KitCard({ m, mine }: { m: MessageView; mine: boolean }) {
           }),
       }
     : null;
+  // A meeting (R83): Join its call while it can be joined, when held here; Open its link, when
+  // held on another service. A priced card's Pay comes first; meetings carry no price.
+  const held = m.deletedAt ? null : meetingAction(p, now);
+  const place = typeof p.fields?.place === 'string' ? p.fields.place : '';
+  const meeting =
+    held === 'join' && call
+      ? {
+          label: tr('Join'),
+          testID: 'kit-join',
+          onPress: () =>
+            void (call === 'group'
+              ? startGroupCall(m.conversationId, 'video')
+              : startCall(m.conversationId, 'video')),
+        }
+      : held === 'open' && place
+        ? { label: tr('Open'), testID: 'kit-open', onPress: () => openLink(meetingLink(place)) }
+        : null;
   // In a conversation with an organization, the team is one side: anyone on it moves a card
   // the team sent, as the server has it.
   const senderSide = mine || Boolean(thread?.customer && m.senderId !== thread.customer.id);
@@ -286,7 +319,7 @@ export function KitCard({ m, mine }: { m: MessageView; mine: boolean }) {
         ...(kit === 'order_status' ? orderDetails(p.order) : []),
       ]}
       before={ahead ? { messageId: m.id, title: p.title ?? tr(KITS[kit].name) } : null}
-      action={pay}
+      action={pay ?? meeting}
       extra={
         kit === 'payment_request' && p.payTo ? (
           <PayToBlock
