@@ -1,10 +1,13 @@
 -- R84: guests in a meeting. Inviting the first guest gives the meeting a space of its own (a
 -- group conversation), where a copy of its card lives on; the original card says it moved.
 create table meeting_spaces (
-  -- The card the meeting was agreed on, and the copy in its space.
+  -- The card the meeting was agreed on, and the copy in its space. The row is written with the
+  -- space's group, under the card's lock; the copy follows, sent with `copy_client_id` by whoever
+  -- made the space, so an invitation arriving meanwhile finishes it with the same copy.
   message_id uuid primary key references messages(id) on delete cascade,
   conversation_id uuid not null unique references conversations(id) on delete cascade,
-  space_message_id uuid not null unique references messages(id) on delete cascade,
+  space_message_id uuid unique references messages(id) on delete cascade,
+  copy_client_id uuid not null,
   created_by uuid references users(id) on delete set null,
   created_at timestamptz not null default now()
 );

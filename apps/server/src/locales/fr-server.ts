@@ -1230,6 +1230,10 @@ export const frServer: Catalog = {
   'Guests are invited by people 18 or over.':
     'Les invités sont invités par des personnes de 18 ans ou plus.',
   'That’s your own address.': 'C’est votre propre adresse.',
+  'Guests aren’t available in this conversation.':
+    'Les invités ne sont pas disponibles dans cette conversation.',
+  'They can’t join a conversation with guests.':
+    'Impossible de les ajouter à une conversation avec des invités.',
   'That invitation': 'Cette invitation',
   'This invitation is for your Caime account: sign in.':
     'Cette invitation est pour votre compte Caime : connectez-vous.',

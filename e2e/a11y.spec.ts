@@ -93,6 +93,7 @@ test('the signed-in screens, phone and desktop, in every interface language', as
     ['/people', 'phone people'],
     ['/actions', 'phone actions'],
     ['/actions?view=calendar', 'phone calendar'],
+    ['/meetings', 'phone meetings'],
     ['/you', 'phone you'],
     [`/o/nile.a11y.${suffix}`, 'phone organization'],
     [`/o/nile.a11y.${suffix}/setup`, 'phone organization setup'],
