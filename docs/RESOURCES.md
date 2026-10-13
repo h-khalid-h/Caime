@@ -137,6 +137,12 @@ monthly minute allowances for it (Pro and Business; none free), set from the pro
 once a provider has passed the test in R52; until then the line stays unpriced here rather than
 guessed.
 
+## Meetings with guests (R84)
+
+An invitation is one mail (the transactional sender, with its calendar part), one token row and,
+the first time for a meeting, one group, one card and one row joining them; at most eight people a
+meeting, thirty invitations an hour a person. Nothing runs on a timer for it.
+
 ## Mail (R75)
 
 A mail in is a message: parsed by the provider, stored and read by the rules as a sent message

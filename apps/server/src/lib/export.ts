@@ -113,6 +113,7 @@ export async function buildExport(ctx: AppContext, me: string, now: Date) {
     saved,
     visible,
     customers,
+    meetingInvitations,
   ] = await Promise.all([
     // An organization's page is public; whose link a person followed is only counted (R29: it
     // could name someone under 18, or someone who can't be found).
@@ -850,6 +851,23 @@ export async function buildExport(ctx: AppContext, me: string, now: Date) {
       .where('c.user_id', '=', me)
       .orderBy('c.created_at')
       .execute(),
+    // Meetings they were invited to by address, or invited someone to (R84): the meeting's
+    // space and when; the link itself is kept only hashed, and never given back.
+    db
+      .selectFrom('meeting_guests as g')
+      .innerJoin('meeting_spaces as ms', 'ms.space_message_id', 'g.space_message_id')
+      .leftJoin('users as u', 'u.id', 'g.user_id')
+      .select([
+        'ms.conversation_id',
+        'g.user_id',
+        'g.invited_by',
+        'u.display_name as guest_name',
+        'g.created_at',
+        'g.revoked_at',
+      ])
+      .where((eb) => eb.or([eb('g.user_id', '=', me), eb('g.invited_by', '=', me)]))
+      .orderBy('g.created_at')
+      .execute(),
   ]);
   const person = (name: string | null, handle: string | null) =>
     name === null ? null : { displayName: name, handle };
@@ -1300,6 +1318,13 @@ export async function buildExport(ctx: AppContext, me: string, now: Date) {
       role: sp.role,
       joinedAt: sp.joined_at.toISOString(),
       leftAt: iso(sp.left_at),
+    })),
+    meetingInvitations: meetingInvitations.map((g) => ({
+      meetingSpaceId: g.conversation_id,
+      as: g.user_id === me ? 'guest' : 'inviter',
+      ...(g.user_id === me ? {} : { guest: g.guest_name }),
+      at: g.created_at.toISOString(),
+      endedAt: iso(g.revoked_at),
     })),
     organizations: orgs.map((o) => ({
       name: o.name,

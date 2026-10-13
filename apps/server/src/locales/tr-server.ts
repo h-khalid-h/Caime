@@ -1164,4 +1164,17 @@ export const turkishServer: Catalog = {
   'Starting now: {title}': 'Şimdi başlıyor: {title}',
   'It’s time to join.': 'Katılma zamanı.',
   'A guest can’t do this.': 'Bir misafir bunu yapamaz.',
+  'Only a meeting takes guests.': 'Yalnızca bir toplantıya misafir davet edilebilir.',
+  'A meeting takes guests once it’s agreed.':
+    'Toplantıya, üzerinde anlaşıldıktan sonra misafir davet edilebilir.',
+  'Only a meeting held on Caime, at a time, takes guests.':
+    'Yalnızca Caime’de, belirli bir saatte yapılan toplantıya misafir davet edilebilir.',
+  'That meeting is over.': 'O toplantı bitti.',
+  'A meeting holds eight people at most.': 'Bir toplantıya en fazla sekiz kişi katılabilir.',
+  'That isn’t an email address.': 'Bu bir e-posta adresi değil.',
+  'Guests join meetings agreed in a chat or a group.':
+    'Misafirler, bir sohbette ya da grupta kararlaştırılan toplantılara katılır.',
+  'Guests are invited by people 18 or over.':
+    'Misafirleri 18 yaşında ya da daha büyük kişiler davet eder.',
+  'That’s your own address.': 'Bu sizin kendi adresiniz.',
 };

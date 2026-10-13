@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { buildIcs, foldLine, icsText } from './ics';
+import { buildIcs, buildInvitation, foldLine, icsText } from './ics';
 
 const now = new Date('2026-09-27T12:00:00Z');
 const unfold = (ics: string) => ics.replace(/\r\n /g, '');
@@ -126,5 +126,55 @@ describe('calendar feeds (RFC 5545, PRD §72)', () => {
         events: [{ uid: 'x', summary: 'x', date: 'soon', updated: now }],
       }),
     ).toThrow(/Not a date/);
+  });
+});
+
+describe('a meeting as an invitation by mail (R84)', () => {
+  const base = {
+    method: 'REQUEST' as const,
+    uid: 'meeting-m1@caime',
+    sequence: 0,
+    now: new Date('2026-10-13T08:00:00Z'),
+    start: new Date('2026-10-14T09:00:00Z'),
+    end: new Date('2026-10-14T09:30:00Z'),
+    summary: 'Plan the launch',
+    location: 'Caime',
+    url: 'https://caime.example/j/tok',
+    organizer: { name: 'Ana "A" Host', email: 'hello@caime.example' },
+    attendee: { name: 'Gus Guest', email: 'gus@example.com' },
+  };
+  // Long lines are folded at 75 octets (RFC 5545 §3.1): read them unfolded.
+  const lines = (s: string) => s.replace(/\r\n /g, '').split('\r\n');
+
+  it('asks the guest’s calendar to add it, with Accept and Decline', () => {
+    const l = lines(buildInvitation(base));
+    expect(l).toEqual(
+      expect.arrayContaining([
+        'METHOD:REQUEST',
+        'UID:meeting-m1@caime',
+        'SEQUENCE:0',
+        'DTSTART:20261014T090000Z',
+        'DTEND:20261014T093000Z',
+        'SUMMARY:Plan the launch',
+        'LOCATION:Caime',
+        'URL:https://caime.example/j/tok',
+        'ORGANIZER;CN="Ana  A  Host":mailto:hello@caime.example',
+        'ATTENDEE;CN="Gus Guest";ROLE=REQ-PARTICIPANT;PARTSTAT=NEEDS-ACTION;RSVP=TRUE:mailto:gus@example.com',
+        'STATUS:CONFIRMED',
+      ]),
+    );
+  });
+  it('takes it out again with CANCEL and a higher sequence', () => {
+    const l = lines(buildInvitation({ ...base, method: 'CANCEL', sequence: 2 }));
+    expect(l).toEqual(expect.arrayContaining(['METHOD:CANCEL', 'SEQUENCE:2', 'STATUS:CANCELLED']));
+  });
+  it('never writes an address that isn’t one, nor a line break into a name', () => {
+    expect(() =>
+      buildInvitation({ ...base, attendee: { name: 'x', email: 'x@y.com\r\nBCC:z@w.com' } }),
+    ).toThrow();
+    const l = lines(
+      buildInvitation({ ...base, attendee: { name: 'Gus\r\nX-EVIL:1', email: 'gus@example.com' } }),
+    );
+    expect(l.some((x) => x.startsWith('X-EVIL'))).toBe(false);
   });
 });

@@ -1217,4 +1217,17 @@ export const frServer: Catalog = {
   'Starting now: {title}': 'Commence maintenant : {title}',
   'It’s time to join.': 'C’est l’heure de rejoindre la réunion.',
   'A guest can’t do this.': 'Un invité ne peut pas faire cela.',
+  'Only a meeting takes guests.': 'Seule une réunion accueille des invités.',
+  'A meeting takes guests once it’s agreed.':
+    'Une réunion accueille des invités une fois convenue.',
+  'Only a meeting held on Caime, at a time, takes guests.':
+    'Seule une réunion tenue sur Caime, à une heure précise, accueille des invités.',
+  'That meeting is over.': 'Cette réunion est terminée.',
+  'A meeting holds eight people at most.': 'Une réunion réunit huit personnes au plus.',
+  'That isn’t an email address.': 'Ce n’est pas une adresse e-mail.',
+  'Guests join meetings agreed in a chat or a group.':
+    'Les invités rejoignent des réunions convenues dans une discussion ou un groupe.',
+  'Guests are invited by people 18 or over.':
+    'Les invités sont invités par des personnes de 18 ans ou plus.',
+  'That’s your own address.': 'C’est votre propre adresse.',
 };

@@ -65,10 +65,17 @@ export type MeetingAction = 'join' | 'open' | null;
  * the call is the app's to say.
  */
 export function meetingAction(
-  card: { kit?: unknown; state?: unknown; fields?: Record<string, unknown> | null },
+  card: {
+    kit?: unknown;
+    state?: unknown;
+    fields?: Record<string, unknown> | null;
+    movedTo?: unknown;
+  },
   now: Date,
 ): MeetingAction {
   if (card.kit !== 'meeting' || card.state !== 'accepted') return null;
+  // Moved to its own space (R84): joined there, from the card's copy.
+  if (card.movedTo) return null;
   const f = card.fields ?? {};
   const venue = meetingVenue(f.place);
   if (venue === 'link') return 'open';
