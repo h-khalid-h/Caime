@@ -5,8 +5,9 @@
  * asks, searched, kept and erased with the rest). The rules:
  *
  * - Who the sender is comes from the authenticated From alone (DMARC: SPF or DKIM aligned with
- *   the From domain, as the receiving server found), never a Reply-To, a Sender or a display
- *   name. Mail that fails is dropped and counted; the provider's spam verdict drops the rest.
+ *   the From domain, as Caime checks the raw message itself: `mail-auth.ts`), never a header the
+ *   payload carries, a Reply-To, a Sender or a display name. Mail that fails is dropped and
+ *   counted; the provider's spam verdict drops the rest.
  *   (Phase 2's notices will show unverified mail as such; nothing attributes it to a person.)
  * - A sender with an account is that person. Anyone else is a provisional person: a users row
  *   of kind 'provisional' holding the address and the name the mail gave, which the person they
@@ -22,7 +23,8 @@
  * - Under 18, an address takes mail only from people the person is connected with (R29);
  *   anything else is dropped without a bounce, since a bounce says the address exists.
  */
-import { defaultPrivacy, isReservedHandle, SendMessageBody, uuidv4, uuidv7 } from '@caime/core';
+import { createHash } from 'node:crypto';
+import { defaultPrivacy, isReservedHandle, SendMessageBody, uuidv7 } from '@caime/core';
 import { bareSubject } from '@caime/core/mail';
 import { CAI_MAIL } from '@caime/core/meetings';
 import type { AppContext } from '../context';
@@ -32,6 +34,7 @@ import { caiMail } from './cai-mail';
 import { ensureDirectConversation } from './conversations';
 import { storeBytes } from './files';
 import { alignedDomains, domainOf, handleOf, mailOn, senderName } from './mail-address';
+import { authenticateMail } from './mail-auth';
 import type { InboundMail, MailAuth } from './mail-provider';
 import { afterMessage } from './message-effects';
 import { messageViews, participantsOf, sendMessage } from './messages';
@@ -85,11 +88,19 @@ export async function receiveMail(
     return ours.map((to) => ({ to, outcome }));
   };
   if (mail.spam) return all('spam');
-  if (!senderVerified(mail.from.address, mail.auth)) return all('unverified');
+  // Who sent it, as Caime checked the raw message itself (mail-auth.ts), never the payload's say.
+  const auth = await authenticateMail(ctx, mail.raw, ctx.mailProvider.receivingHosts);
+  if (!senderVerified(mail.from.address, auth)) return all('unverified');
   if (!mail.text.trim() && !mail.attachments.length) return all('empty');
   const out: Array<{ to: string; outcome: InboundOutcome }> = [];
+  // Two addresses that land in one place (support@ and hello@, or a staff address and the staff
+  // handle's own) take the mail once.
+  const reached = new Set<string>();
   for (const to of ours) {
-    const outcome = await deliverTo(ctx, mail, to, domain);
+    const lands = landingOf(ctx, handleOf(to, domain));
+    const outcome =
+      lands && reached.has(lands) ? 'duplicate' : await deliverTo(ctx, mail, to, domain);
+    if (lands) reached.add(lands);
     count(outcome);
     out.push({ to, outcome });
   }
@@ -100,9 +111,39 @@ type Target =
   | { kind: 'person'; user: UserRow }
   | { kind: 'org'; org: { id: string; name: string; verified_at: Date | null } };
 
-async function recipientOf(ctx: AppContext, handle: string): Promise<Target | null> {
+/**
+ * The addresses mail providers and people expect a mail domain to answer (RFC 2142's, and the
+ * contact the pages name), delivered to `MAIL_STAFF_HANDLE`. Each is a reserved handle, so no
+ * person or organization can hold one.
+ */
+export const STAFF_ADDRESSES: ReadonlySet<string> = new Set([
+  'postmaster',
+  'abuse',
+  'hello',
+  'support',
+  'help',
+  'contact',
+  'info',
+  'privacy',
+  'security',
+  'legal',
+  'billing',
+]);
+
+/** Whose an address's handle is: its own, or for a staff address the staff handle (or nobody). */
+function landingOf(ctx: AppContext, handle: string | null): string | null {
+  if (!handle) return null;
+  return STAFF_ADDRESSES.has(handle) ? (ctx.config.MAIL_STAFF_HANDLE ?? null) : handle;
+}
+
+async function recipientOf(
+  ctx: AppContext,
+  handle: string,
+  /** The operator's own choice (the staff handle), which may be one of Caime's reserved names. */
+  operators = false,
+): Promise<Target | null> {
   // Caime's own names (cai, the friends, staff words) take no mail.
-  if (isReservedHandle(handle)) return null;
+  if (!operators && isReservedHandle(handle)) return null;
   const user = await ctx.db
     .selectFrom('users')
     .select(USER_COLUMNS)
@@ -172,7 +213,10 @@ async function deliverTo(
   if (!handle) return 'unknown';
   // Cai's own address (R86): a guest's answer to a meeting's invitation, and nothing else.
   if (handle === CAI_MAIL) return caiMail(ctx, mail);
-  const target = await recipientOf(ctx, handle);
+  // The staff addresses reach whoever the operator named; without one, nobody.
+  const lands = landingOf(ctx, handle);
+  if (!lands) return 'unknown';
+  const target = await recipientOf(ctx, lands, lands !== handle);
   if (!target) return 'unknown';
   const sender = await senderOf(ctx, mail);
   if (!sender || sender.id === (target.kind === 'person' ? target.user.id : null)) return 'refused';
@@ -284,7 +328,9 @@ async function deliver(
     sender.id,
     conversationId,
     SendMessageBody.parse({
-      clientId: uuidv4(),
+      // The mail's own id at this address: the provider's retry, even while the first attempt
+      // still runs, is the one message (ADR-8).
+      clientId: `mail:${createHash('sha256').update(`${mail.rfcMessageId}\n${toAddress}`).digest('base64url')}`,
       kind,
       ...(text ? { body: text } : {}),
       ...(fileIds.length ? { fileIds } : {}),

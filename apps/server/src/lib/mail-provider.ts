@@ -1,11 +1,11 @@
 /**
  * The mail provider behind Caime Mail (PRODUCT-REVIEW R75): one interface, a provider chosen by
  * configuration, each a thin call over fetch (as speech and S3 are done). The first is Postmark:
- * its inbound webhook hands over a parsed mail as JSON, its API sends one, and its delivery
- * webhook says how far one got. The server trusts a sender only by what the provider's mail
- * server authenticated (DMARC: SPF or DKIM aligned with the From domain), read from the
- * Authentication-Results and Received-SPF headers it writes; never a display name, a Reply-To
- * or a Sender.
+ * its inbound webhook hands over a parsed mail as JSON with the raw message beside it, its API
+ * sends one, and its delivery webhook says how far one got. Who sent a mail is never the
+ * provider's payload's to say (a sender's own headers come through it): Caime checks the raw
+ * message itself (`mail-auth.ts`: DKIM, SPF for the address the provider's server saw connect,
+ * DMARC); never a display name, a Reply-To or a Sender.
  */
 import { createHash } from 'node:crypto';
 import type { Config } from '../config';
@@ -27,7 +27,7 @@ export const MAIL_ATTACHMENT_MAX = 10 * 1024 * 1024;
 
 export type AuthResult = 'pass' | 'fail' | 'none' | 'other';
 
-/** What the receiving mail server found out about who sent a mail. */
+/** What Caime found out about who sent a mail (`mail-auth.ts`). */
 export interface MailAuth {
   spf: { result: AuthResult; domain: string | null } | null;
   dkim: Array<{ result: AuthResult; domain: string | null }>;
@@ -45,14 +45,15 @@ export interface InboundMail {
   /** The Message-ID header, or one made from the mail when it has none. */
   rfcMessageId: string;
   from: { address: string; name: string | null };
-  /** Every address in To and Cc, lowercased. */
+  /** Every address in To and Cc, and the one it was delivered to (Bcc, a list), lowercased. */
   to: string[];
   subject: string | null;
   /** The reply's own words where the provider strips the quoted history, else the whole text. */
   text: string;
   inReplyTo: string | null;
   references: string[];
-  auth: MailAuth;
+  /** The message as it arrived, for Caime's own check of who sent it; null when not sent. */
+  raw: string | null;
   /** The provider's spam verdict. */
   spam: boolean;
   attachments: MailAttachment[];
@@ -87,6 +88,8 @@ export class MailRefused extends Error {
 
 export interface MailProvider {
   name: MailProviderName;
+  /** The hosts of the provider's receiving servers, which write the topmost Received line. */
+  receivingHosts: RegExp;
   /** The mail an inbound webhook delivered, or null when the body isn't one. */
   inbound(body: unknown): InboundMail | null;
   send(mail: OutboundMail): Promise<{ providerId: string }>;
@@ -100,60 +103,6 @@ export interface MailProvider {
 export function mailProviderFor(config: Config): MailProvider | null {
   if (!config.MAIL_PROVIDER || !config.MAIL_DOMAIN) return null;
   return postmark(config);
-}
-
-// --- Authentication headers ------------------------------------------------------------------
-
-const asResult = (word: string | undefined): AuthResult => {
-  const w = (word ?? '').toLowerCase();
-  return w === 'pass'
-    ? 'pass'
-    : w === 'fail' || w === 'softfail'
-      ? 'fail'
-      : w === 'none'
-        ? 'none'
-        : 'other';
-};
-
-/**
- * An Authentication-Results header (RFC 8601): "authserv-id; method=result props; ...". Several
- * headers (a forwarding hop's among them) are read in turn; the last word on a method wins.
- */
-export function parseAuthenticationResults(headers: string[]): MailAuth {
-  const auth: MailAuth = { spf: null, dkim: [], dmarc: null };
-  for (const header of headers) {
-    const parts = header.split(';').map((p) => p.trim());
-    for (const part of parts.slice(1)) {
-      const m = /^(dkim|spf|dmarc)\s*=\s*([a-z]+)(.*)$/i.exec(part);
-      if (!m) continue;
-      const method = m[1]?.toLowerCase();
-      const result = asResult(m[2]);
-      const props = m[3] ?? '';
-      const prop = (name: string) =>
-        new RegExp(`${name}\\s*=\\s*([^\\s;()]+)`, 'i').exec(props)?.[1]?.toLowerCase() ?? null;
-      if (method === 'dkim')
-        auth.dkim.push({
-          result,
-          domain: prop('header\\.d') ?? prop('header\\.i')?.replace(/^.*@/, '') ?? null,
-        });
-      else if (method === 'spf') {
-        const from = prop('smtp\\.mailfrom') ?? prop('envelope-from');
-        auth.spf = {
-          result,
-          domain: from ? (from.includes('@') ? from.replace(/^.*@/, '') : from) : null,
-        };
-      } else if (method === 'dmarc') auth.dmarc = { result, domain: prop('header\\.from') };
-    }
-  }
-  return auth;
-}
-
-/** A Received-SPF header: "Pass (…) identity=mailfrom; envelope-from=user@domain; …". */
-export function parseReceivedSpf(header: string): MailAuth['spf'] {
-  const m = /^\s*([a-z]+)/i.exec(header);
-  if (!m) return null;
-  const from = /envelope-from\s*=\s*"?<?([^\s;"<>]+)>?"?/i.exec(header)?.[1]?.toLowerCase() ?? null;
-  return { result: asResult(m[1]), domain: from ? from.replace(/^.*@/, '') : null };
 }
 
 // --- Postmark --------------------------------------------------------------------------------
@@ -178,6 +127,10 @@ interface PostmarkInbound {
   StrippedTextReply?: string;
   Headers?: PostmarkHeader[];
   Attachments?: Array<{ Name?: string; Content?: string; ContentType?: string }>;
+  /** The address it was delivered to (a Bcc, a list): the envelope's recipient. */
+  OriginalRecipient?: string;
+  /** The message as it arrived, with "Include raw email content" on (DEPLOY.md). */
+  RawEmail?: string;
 }
 interface PostmarkEvent {
   RecordType?: string;
@@ -220,6 +173,8 @@ function postmark(config: Config): MailProvider {
   const base = (config.MAIL_BASE_URL ?? DEFAULT_BASE.postmark).replace(/\/+$/, '');
   return {
     name: 'postmark',
+    // Postmark's inbound servers (inbound.postmarkapp.com, and its own hosts at mtasv.net).
+    receivingHosts: /(^|\.)(postmarkapp\.com|mtasv\.net)$/i,
     async ping() {
       const res = await fetch(`${base}/server`, {
         headers: {
@@ -229,6 +184,10 @@ function postmark(config: Config): MailProvider {
         signal: AbortSignal.timeout(10_000),
       });
       if (!res.ok) throw new Error(`Postmark answered ${res.status}`);
+      // Without the raw message no sender can be vouched for, and every mail in is dropped.
+      const server = (await res.json().catch(() => ({}))) as { RawEmailEnabled?: boolean };
+      if (server.RawEmailEnabled === false)
+        throw new Error('Postmark sends no raw message: turn on "Include raw email content"');
     },
     inbound(body) {
       const m = body as PostmarkInbound | null;
@@ -237,14 +196,13 @@ function postmark(config: Config): MailProvider {
       const from =
         (m.FromFull?.Email && addressOf(m.FromFull.Email)) || (m.From && addressOf(m.From));
       if (!from) return null;
-      const to = [...(m.ToFull ?? []), ...(m.CcFull ?? [])]
-        .map((x) => (x.Email ? addressOf(x.Email) : null))
-        .filter((x): x is string => Boolean(x));
-      const auth = parseAuthenticationResults(header(headers, 'Authentication-Results'));
-      if (!auth.spf) {
-        const spf = header(headers, 'Received-SPF')[0];
-        if (spf) auth.spf = parseReceivedSpf(spf);
-      }
+      const to = [
+        ...new Set(
+          [...(m.ToFull ?? []), ...(m.CcFull ?? []), { Email: m.OriginalRecipient }]
+            .map((x) => (x.Email ? addressOf(x.Email) : null))
+            .filter((x): x is string => Boolean(x)),
+        ),
+      ];
       const text = (
         m.StrippedTextReply?.trim() ||
         m.TextBody?.trim() ||
@@ -279,7 +237,7 @@ function postmark(config: Config): MailProvider {
         text,
         inReplyTo,
         references,
-        auth,
+        raw: typeof m.RawEmail === 'string' && m.RawEmail ? m.RawEmail : null,
         spam: /^yes/i.test(spamStatus),
         attachments,
       };

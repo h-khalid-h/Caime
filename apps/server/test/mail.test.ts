@@ -7,11 +7,14 @@
  */
 import { createServer, type Server } from 'node:http';
 import type { AddressInfo } from 'node:net';
+import { isReservedHandle } from '@caime/core';
 import type { InjectOptions } from 'fastify';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { runDueJobs } from '../src/lib/jobs';
+import { STAFF_ADDRESSES } from '../src/lib/mail-in';
 import { sweepProvisional } from '../src/lib/mail-out';
 import { type Client, createTestApp, signup, type TestApp } from './helpers';
+import { BULK_DOMAIN, BULK_IP, mailDns, rawMail, SENDER_IP } from './mail-fixtures';
 
 const DOMAIN = 'caime.test';
 const SECRET = 'a-webhook-secret-of-length';
@@ -22,8 +25,15 @@ let sends: Array<Record<string, unknown>> = [];
 let refuseNext = false;
 let counter = 0;
 
-/** A mail as Postmark's inbound webhook posts it, from a sender its server vouched for. */
-function postmark(m: {
+/**
+ * A mail as Postmark's inbound webhook posts it: the parsed fields and the raw message beside
+ * them, which Caime checks itself (mail-auth.ts). `auth` says what the raw message proves: a
+ * valid DKIM signature for the From domain ('pass'), one the published key doesn't verify and a
+ * connection SPF refuses ('fail'), nothing ('none'), an unsigned mail from an address the From
+ * domain's SPF allows ('spf-only'), a bulk sender's own bounce domain ('spf-misaligned'), or a
+ * verdict the sender wrote into their own headers ('forged').
+ */
+async function postmark(m: {
   from: string;
   fromName?: string;
   to: string | string[];
@@ -33,47 +43,55 @@ function postmark(m: {
   messageId?: string;
   inReplyTo?: string;
   references?: string[];
-  auth?: 'pass' | 'fail' | 'none' | 'spf-only' | 'spf-misaligned';
+  auth?: 'pass' | 'fail' | 'none' | 'spf-only' | 'spf-misaligned' | 'forged';
   spam?: boolean;
   attachments?: Array<{ name: string; type: string; content: string }>;
+  /** The address it was delivered to when it's in no To or Cc (a Bcc, a list). */
+  envelopeTo?: string;
 }) {
   counter++;
   const domain = m.from.replace(/^.*@/, '');
   const auth = m.auth ?? 'pass';
+  const messageId = m.messageId ?? `<in-${counter}@${domain}>`;
   const headers: Array<{ Name: string; Value: string }> = [
-    { Name: 'Message-ID', Value: m.messageId ?? `<in-${counter}@${domain}>` },
+    { Name: 'Message-ID', Value: messageId },
   ];
-  if (auth === 'pass')
-    headers.push({
-      Name: 'Authentication-Results',
-      Value: `mx.caime.test; dkim=pass header.d=${domain}; spf=pass smtp.mailfrom=${m.from}; dmarc=pass header.from=${domain}`,
-    });
-  if (auth === 'fail')
-    headers.push({
-      Name: 'Authentication-Results',
-      Value: `mx.caime.test; dkim=fail header.d=${domain}; spf=fail smtp.mailfrom=${m.from}; dmarc=fail header.from=${domain}`,
-    });
-  if (auth === 'spf-only')
-    headers.push({
-      Name: 'Received-SPF',
-      Value: `Pass (sender SPF authorized) identity=mailfrom; envelope-from=${m.from};`,
-    });
-  if (auth === 'spf-misaligned')
-    headers.push({
-      Name: 'Received-SPF',
-      Value:
-        'Pass (sender SPF authorized) identity=mailfrom; envelope-from=bounce@bulk-sender.example;',
-    });
   if (m.inReplyTo) headers.push({ Name: 'In-Reply-To', Value: m.inReplyTo });
   if (m.references?.length) headers.push({ Name: 'References', Value: m.references.join(' ') });
   if (m.spam) headers.push({ Name: 'X-Spam-Status', Value: 'Yes, score=9.1' });
   const to = Array.isArray(m.to) ? m.to : [m.to];
+  const text = m.text ?? 'Could you send me the contract by Friday?';
+  const raw = await rawMail({
+    from: m.from,
+    fromName: m.fromName,
+    to,
+    subject: m.subject === undefined ? 'Hello from outside' : m.subject,
+    text,
+    messageId,
+    inReplyTo: m.inReplyTo,
+    references: m.references,
+    dkim: auth === 'pass' ? 'valid' : auth === 'fail' ? 'wrong-key' : 'none',
+    hop:
+      auth === 'pass' || auth === 'spf-only'
+        ? { ip: SENDER_IP, envelopeFrom: m.from }
+        : auth === 'fail'
+          ? { ip: BULK_IP, envelopeFrom: m.from }
+          : auth === 'spf-misaligned'
+            ? { ip: BULK_IP, envelopeFrom: `bounce@${BULK_DOMAIN}` }
+            : null,
+    senderLines:
+      auth === 'forged'
+        ? [
+            `Authentication-Results: mx.caime.test; dkim=pass header.d=${domain}; spf=pass smtp.mailfrom=${m.from}; dmarc=pass header.from=${domain}`,
+          ]
+        : [],
+  });
   return {
     FromFull: { Email: m.from, Name: m.fromName ?? '' },
     ToFull: to.map((Email) => ({ Email, Name: '' })),
     Subject: m.subject === undefined ? 'Hello from outside' : m.subject,
     MessageID: `pm-in-${counter}`,
-    TextBody: m.text ?? 'Could you send me the contract by Friday?',
+    TextBody: text,
     HtmlBody: m.html ?? '',
     Headers: headers,
     Attachments: (m.attachments ?? []).map((a) => ({
@@ -81,6 +99,8 @@ function postmark(m: {
       ContentType: a.type,
       Content: Buffer.from(a.content).toString('base64'),
     })),
+    RawEmail: raw,
+    ...(m.envelopeTo ? { OriginalRecipient: m.envelopeTo } : {}),
   };
 }
 
@@ -168,7 +188,10 @@ beforeAll(async () => {
     MAIL_PROVIDER_TOKEN: 'test-postmark-token',
     MAIL_WEBHOOK_SECRET: SECRET,
     MAIL_BASE_URL: `http://127.0.0.1:${port}`,
+    MAIL_STAFF_HANDLE: 'noor.mail',
   });
+  // The internet the mail came through: each sender domain's DKIM key, SPF and DMARC.
+  t.ctx.dns = mailDns();
   noor = await signup(t, {
     displayName: 'Noor Mail',
     handle: 'noor.mail',
@@ -210,13 +233,13 @@ describe('the address', () => {
 
   it('takes the provider’s webhooks only with the secret, by the configured provider’s name', async () => {
     expect(
-      (await inbound(postmark({ from: 'x@example.org', to: 'noor.mail@caime.test' }), null))
+      (await inbound(await postmark({ from: 'x@example.org', to: 'noor.mail@caime.test' }), null))
         .statusCode,
     ).toBe(401);
     expect(
       (
         await inbound(
-          postmark({ from: 'x@example.org', to: 'noor.mail@caime.test' }),
+          await postmark({ from: 'x@example.org', to: 'noor.mail@caime.test' }),
           'wrong-secret-of-length',
         )
       ).statusCode,
@@ -224,7 +247,7 @@ describe('the address', () => {
     expect(
       (
         await inbound(
-          postmark({ from: 'x@example.org', to: 'noor.mail@caime.test' }),
+          await postmark({ from: 'x@example.org', to: 'noor.mail@caime.test' }),
           SECRET,
           'sendgrid',
         )
@@ -235,7 +258,7 @@ describe('the address', () => {
       method: 'POST',
       url: '/v1/mail/in/postmark',
       headers: { authorization: `Basic ${Buffer.from(`caime:${SECRET}`).toString('base64')}` },
-      payload: postmark({ from: 'x@example.org', to: 'nobody.here@caime.test' }),
+      payload: await postmark({ from: 'x@example.org', to: 'nobody.here@caime.test' }),
     });
     expect(basic.statusCode).toBe(200);
     expect(basic.json().outcomes).toEqual([{ to: 'nobody.here@caime.test', outcome: 'unknown' }]);
@@ -248,7 +271,7 @@ describe('a stranger writes in', () => {
 
   it('becomes a provisional person, and their mail a message request that keeps every message', async () => {
     const res = await inbound(
-      postmark({
+      await postmark({
         from: 'sara@partner.example',
         fromName: 'Sara Haddad',
         to: 'noor.mail@caime.test',
@@ -292,7 +315,7 @@ describe('a stranger writes in', () => {
     expect(JSON.stringify(found)).not.toContain(sender);
     // More mail while the request waits lands in the same conversation, held, not refused.
     const again = await inbound(
-      postmark({
+      await postmark({
         from: 'sara@partner.example',
         to: 'noor.mail@caime.test',
         subject: 'One more thing',
@@ -311,7 +334,7 @@ describe('a stranger writes in', () => {
   });
 
   it('delivers the same mail once, however often the provider posts it', async () => {
-    const same = postmark({
+    const same = await postmark({
       from: 'sara@partner.example',
       to: 'noor.mail@caime.test',
       messageId: '<twice@partner.example>',
@@ -385,7 +408,7 @@ describe('a stranger writes in', () => {
 
   it('threads are topics: a new subject starts one, a referenced mail lands in it, and the same subject finds it', async () => {
     const first = await inbound(
-      postmark({
+      await postmark({
         from: 'sara@partner.example',
         to: 'noor.mail@caime.test',
         subject: 'Venue for March',
@@ -412,7 +435,7 @@ describe('a stranger writes in', () => {
     const ourId = outHeaders.find((h) => h.Name === 'Message-ID')?.Value ?? '';
     // Their reply references our id: the same topic, whatever its subject reads.
     await inbound(
-      postmark({
+      await postmark({
         from: 'sara@partner.example',
         to: 'noor.mail@caime.test',
         subject: 'RE: Re: Venue for March',
@@ -429,7 +452,7 @@ describe('a stranger writes in', () => {
     ]);
     // A mail with the same subject and no references finds the topic too; one with none at all stays in the general conversation.
     await inbound(
-      postmark({
+      await postmark({
         from: 'sara@partner.example',
         to: 'noor.mail@caime.test',
         subject: 'Fwd: Venue for March',
@@ -437,7 +460,7 @@ describe('a stranger writes in', () => {
       }),
     );
     await inbound(
-      postmark({
+      await postmark({
         from: 'sara@partner.example',
         to: 'noor.mail@caime.test',
         subject: null,
@@ -453,7 +476,7 @@ describe('a stranger writes in', () => {
 
   it('attachments are the sender’s files on the message, and a long mail rides along whole as a file', async () => {
     await inbound(
-      postmark({
+      await postmark({
         from: 'sara@partner.example',
         to: 'noor.mail@caime.test',
         subject: 'The quote',
@@ -463,7 +486,7 @@ describe('a stranger writes in', () => {
     );
     const long = `${'word '.repeat(2_500)}end`;
     await inbound(
-      postmark({
+      await postmark({
         from: 'sara@partner.example',
         to: 'noor.mail@caime.test',
         subject: 'Minutes',
@@ -553,26 +576,77 @@ describe('a stranger writes in', () => {
 });
 
 describe('who may write in, and to whom', () => {
+  it('takes the staff addresses to whoever the operator named, a Bcc to its handle, and nothing else reserved', async () => {
+    const before = (await conversationsOf(noor)).length;
+    const res = await inbound(
+      await postmark({
+        from: 'reports@isp.example',
+        to: 'abuse@caime.test',
+        subject: 'Abuse report',
+        text: 'A message from one of your addresses looks like phishing.',
+      }),
+    );
+    expect(res.json().outcomes).toEqual([{ to: 'abuse@caime.test', outcome: 'delivered' }]);
+    await work();
+    expect((await conversationsOf(noor)).length).toBe(before + 1);
+    // Every staff address is a reserved handle, so nobody else can hold one.
+    for (const address of STAFF_ADDRESSES) expect(isReservedHandle(address)).toBe(true);
+    // Addresses that land in one place take the mail once.
+    const many = await inbound(
+      await postmark({
+        from: 'press@paper.example',
+        to: ['support@caime.test', 'hello@caime.test', 'noor.mail@caime.test'],
+        subject: 'An interview',
+      }),
+    );
+    expect(many.json().outcomes).toEqual([
+      { to: 'support@caime.test', outcome: 'delivered' },
+      { to: 'hello@caime.test', outcome: 'duplicate' },
+      { to: 'noor.mail@caime.test', outcome: 'duplicate' },
+    ]);
+    await work();
+    const kept = await t.ctx.db
+      .selectFrom('mail_messages')
+      .select('to_address')
+      .where('from_address', '=', 'press@paper.example')
+      .execute();
+    expect(kept).toEqual([{ to_address: 'support@caime.test' }]);
+    // A Bcc (or a list) reaches the handle it was delivered to, which no To or Cc names.
+    const bcc = await inbound(
+      await postmark({
+        from: 'friend@partner.example',
+        to: 'everyone@lists.example',
+        envelopeTo: 'noor.mail@caime.test',
+      }),
+    );
+    expect(bcc.json().outcomes).toEqual([{ to: 'noor.mail@caime.test', outcome: 'delivered' }]);
+    // A reserved name that isn't a staff address still reaches nobody.
+    expect(
+      (await inbound(await postmark({ from: 'x@example.org', to: 'admin@caime.test' }))).json()
+        .outcomes[0].outcome,
+    ).toBe('unknown');
+  });
+
   it('drops mail the server didn’t vouch for, spam, and mail to nobody, and counts each', async () => {
     const before = (await conversationsOf(noor)).length;
     expect(
       (
         await inbound(
-          postmark({ from: 'spoof@bank.example', to: 'noor.mail@caime.test', auth: 'fail' }),
+          await postmark({ from: 'spoof@bank.example', to: 'noor.mail@caime.test', auth: 'fail' }),
         )
       ).json().outcomes[0].outcome,
     ).toBe('unverified');
     expect(
       (
         await inbound(
-          postmark({ from: 'anon@bank.example', to: 'noor.mail@caime.test', auth: 'none' }),
+          await postmark({ from: 'anon@bank.example', to: 'noor.mail@caime.test', auth: 'none' }),
         )
       ).json().outcomes[0].outcome,
     ).toBe('unverified');
     expect(
       (
         await inbound(
-          postmark({
+          await postmark({
             from: 'news@bank.example',
             to: 'noor.mail@caime.test',
             auth: 'spf-misaligned',
@@ -580,25 +654,38 @@ describe('who may write in, and to whom', () => {
         )
       ).json().outcomes[0].outcome,
     ).toBe('unverified');
+    // A verdict the sender wrote into their own headers is theirs, not a server's.
     expect(
       (
         await inbound(
-          postmark({ from: 'junk@spam.example', to: 'noor.mail@caime.test', spam: true }),
+          await postmark({ from: 'ceo@bank.example', to: 'noor.mail@caime.test', auth: 'forged' }),
+        )
+      ).json().outcomes[0].outcome,
+    ).toBe('unverified');
+    expect(
+      (
+        await inbound(
+          await postmark({ from: 'junk@spam.example', to: 'noor.mail@caime.test', spam: true }),
         )
       ).json().outcomes[0].outcome,
     ).toBe('spam');
     expect(
-      (await inbound(postmark({ from: 'x@example.org', to: 'cai@caime.test' }))).json().outcomes[0]
-        .outcome,
+      (await inbound(await postmark({ from: 'x@example.org', to: 'cai@caime.test' }))).json()
+        .outcomes[0].outcome,
     ).toBe('unknown');
     expect(
-      (await inbound(postmark({ from: 'x@example.org', to: 'x@elsewhere.example' }))).json()
+      (await inbound(await postmark({ from: 'x@example.org', to: 'x@elsewhere.example' }))).json()
         .outcomes,
     ).toEqual([]);
     expect(
       (
         await inbound(
-          postmark({ from: 'x@example.org', to: 'noor.mail@caime.test', text: '', subject: null }),
+          await postmark({
+            from: 'x@example.org',
+            to: 'noor.mail@caime.test',
+            text: '',
+            subject: null,
+          }),
         )
       ).json().outcomes[0].outcome,
     ).toBe('empty');
@@ -608,14 +695,19 @@ describe('who may write in, and to whom', () => {
       await t.ctx.db
         .selectFrom('users')
         .select('id')
-        .where('email', 'in', ['spoof@bank.example', 'anon@bank.example', 'junk@spam.example'])
+        .where('email', 'in', [
+          'spoof@bank.example',
+          'anon@bank.example',
+          'ceo@bank.example',
+          'junk@spam.example',
+        ])
         .execute(),
     ).toHaveLength(0);
-    // SPF aligned with the From domain is enough where no DKIM or DMARC result was written.
+    // SPF for the address Postmark saw connect, aligned with the From domain, is enough unsigned.
     expect(
       (
         await inbound(
-          postmark({
+          await postmark({
             from: 'plain@small-host.example',
             to: 'noor.mail@caime.test',
             auth: 'spf-only',
@@ -629,19 +721,19 @@ describe('who may write in, and to whom', () => {
       headers: { authorization: 'Bearer test-metrics-token' },
     });
     expect(metrics.statusCode).toBe(200);
-    expect(metrics.body).toContain('caime_mail_total{direction="in",outcome="unverified"} 3');
+    expect(metrics.body).toContain('caime_mail_total{direction="in",outcome="unverified"} 4');
     expect(metrics.body).toContain('caime_mail_total{direction="in",outcome="spam"} 1');
   });
 
   it('under 18, an address takes mail from people they’re connected with and nobody else, without a bounce', async () => {
     const stranger = await inbound(
-      postmark({ from: 'anyone@partner.example', to: 'mina.young@caime.test' }),
+      await postmark({ from: 'anyone@partner.example', to: 'mina.young@caime.test' }),
     );
     expect(stranger.json().outcomes[0].outcome).toBe('refused');
     // A minor takes requests from nobody they don't know (R29): Mina asks Omar.
     const withOmar = await connect(mina, omar);
     const known = await inbound(
-      postmark({
+      await postmark({
         from: 'omar.mail@example.com',
         to: 'mina.young@caime.test',
         subject: null,
@@ -660,7 +752,7 @@ describe('who may write in, and to whom', () => {
   it('a person with an account who mails from their own address is that person, and blocks hold', async () => {
     const convo = await connect(noor, omar);
     const res = await inbound(
-      postmark({
+      await postmark({
         from: 'omar.mail@example.com',
         to: 'noor.mail@caime.test',
         subject: null,
@@ -676,7 +768,11 @@ describe('who may write in, and to whom', () => {
     expect(
       (
         await inbound(
-          postmark({ from: 'omar.mail@example.com', to: 'noor.mail@caime.test', text: 'Blocked.' }),
+          await postmark({
+            from: 'omar.mail@example.com',
+            to: 'noor.mail@caime.test',
+            text: 'Blocked.',
+          }),
         )
       ).json().outcomes[0].outcome,
     ).toBe('refused');
@@ -685,7 +781,7 @@ describe('who may write in, and to whom', () => {
 
   it('mail to an organization’s address is a customer thread in its inbox, answered as the organization', async () => {
     const res = await inbound(
-      postmark({
+      await postmark({
         from: 'patient@clinic-customer.example',
         fromName: 'Hana',
         to: 'nile.dental@caime.test',

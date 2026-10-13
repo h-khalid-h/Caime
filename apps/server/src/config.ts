@@ -85,6 +85,19 @@ const Env = z.object({
   MAIL_WEBHOOK_SECRET: z.string().min(16).optional(),
   /** Another endpoint for the provider's API (a gateway, or the local stand-in the tests run). */
   MAIL_BASE_URL: z.string().url().optional(),
+  /**
+   * Who takes the staff addresses at the mail domain (`postmaster@`, `abuse@`, `hello@`,
+   * `support@`, …: `STAFF_ADDRESSES` in lib/mail-in.ts): a person's or an organization's handle,
+   * Caime's own organization's included. Without it, mail to them is dropped like any reserved
+   * name's.
+   */
+  MAIL_STAFF_HANDLE: z
+    .string()
+    .trim()
+    .toLowerCase()
+    .transform((h) => h.replace(/^@/, ''))
+    .pipe(z.string().min(1))
+    .optional(),
   /** Run background workers in this process. */
   WORKERS: bool.default(true),
   /** The hourly probe of each configured provider (R78, lib/provider-health.ts); tests turn it off. */

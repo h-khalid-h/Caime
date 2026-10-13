@@ -1070,7 +1070,14 @@ These are rules, not preferences.
   Postmark first, named in `MAIL_PROVIDER_NAMES` for the processors list), reached through
   `POST /v1/mail/in/:provider` and `/events/:provider` (`modules/mail.ts`, the secret compared
   in constant time). The rules are `lib/mail-in.ts` (`receiveMail`: the sender by the
-  authenticated From alone, `senderVerified`; a provisional person is `users.kind =
+  authenticated From alone, `senderVerified` over what `authenticateMail` (`lib/mail-auth.ts`,
+  mailauth pinned, imported by its DKIM, SPF and DMARC files alone: its root loads BIMI, whose
+  undici replaces the dispatcher every `fetch` in the server uses, and a test holds that) checks in the provider's raw message itself: DKIM through `ctx.dns`, SPF only
+  for the address in the top `Received` lines a host of the provider's `receivingHosts` wrote
+  (past its own private hops), DMARC; never
+  a header the payload carries, and no raw message vouches for nothing. Tests sign real mail
+  with `test/mail-fixtures.ts` (`rawMail`, `mailDns`; the E2E publishes `DKIM_TXT`); the staff
+  addresses (`STAFF_ADDRESSES`, each reserved) land at `MAIL_STAFF_HANDLE`; a provisional person is `users.kind =
   'provisional'` with a `mail:<id>` handle, found by nobody since every lookup of people takes
   `kind = 'human'`, and claimed by signing up with the address; a stranger's mail is a request
   that keeps coming, held; threads are topics by References, else by `bareSubject`; attachments

@@ -6,6 +6,7 @@ import { uuidv4 } from '@caime/core';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { memoryMailer } from '../src/lib/email';
 import { type Client, createTestApp, signup, type TestApp } from './helpers';
+import { mailDns, rawMail } from './mail-fixtures';
 
 const DOMAIN = 'caime.test';
 const SECRET = 'cai-mail-test-secret-0123456789';
@@ -16,8 +17,11 @@ let ben: Client;
 let convo: string;
 let n = 0;
 
-/** A mail as Postmark posts it, from a sender its server vouched for (or not). */
-const inbound = (m: {
+/**
+ * A mail as Postmark posts it, the raw message beside it: DKIM-signed for the sender's domain
+ * when its server vouched for it, unsigned and unvouched otherwise (mail-auth.ts checks it).
+ */
+const inbound = async (m: {
   from: string;
   to: string;
   text?: string;
@@ -26,6 +30,16 @@ const inbound = (m: {
 }) => {
   n++;
   const domain = m.from.replace(/^.*@/, '');
+  const messageId = `<cai-${n}@${domain}>`;
+  const raw = await rawMail({
+    from: m.from,
+    to: [m.to],
+    subject: 'Accepted: Launch review',
+    text: m.text ?? 'Accepted.',
+    messageId,
+    dkim: m.vouched === false ? 'none' : 'valid',
+    hop: m.vouched === false ? null : undefined,
+  });
   return t.app.inject({
     method: 'POST',
     url: `/v1/mail/in/postmark?secret=${SECRET}`,
@@ -36,17 +50,7 @@ const inbound = (m: {
       MessageID: `pm-cai-${n}`,
       TextBody: m.text ?? 'Accepted.',
       HtmlBody: '',
-      Headers: [
-        { Name: 'Message-ID', Value: `<cai-${n}@${domain}>` },
-        ...(m.vouched === false
-          ? []
-          : [
-              {
-                Name: 'Authentication-Results',
-                Value: `mx.caime.test; dkim=pass header.d=${domain}; spf=pass smtp.mailfrom=${m.from}; dmarc=pass header.from=${domain}`,
-              },
-            ]),
-      ],
+      Headers: [{ Name: 'Message-ID', Value: messageId }],
       Attachments: m.ics
         ? [
             {
@@ -56,6 +60,7 @@ const inbound = (m: {
             },
           ]
         : [],
+      RawEmail: raw,
     },
   });
 };
@@ -82,6 +87,8 @@ beforeAll(async () => {
     { mail },
   );
   t.clock.set('2026-10-20T08:00:00Z');
+  // The internet the answers came through: each sender domain's DKIM key and SPF.
+  t.ctx.dns = mailDns();
   ana = await signup(t, { displayName: 'Ana Host' });
   ben = await signup(t, { displayName: 'Ben Host' });
   const r = await ana.post('/v1/connections/requests', {

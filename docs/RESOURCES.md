@@ -155,6 +155,13 @@ people a domain gathers are rows, swept daily when silent a year (`mail.sweep`, 
 A conversation with someone reached by mail costs its view one more query (the thread's
 subject, `mailSubject`); every other conversation's view is as it was.
 
+Checking who sent a mail in (`lib/mail-auth.ts`) costs the server 1.0 to 1.1 ms of CPU a mail
+with DNS answered at once (a 2.8 KB signed mail, two runs of 500 on the dev container,
+2026-10-13: the RSA verification and the parse), plus its lookups: one key per DKIM signature, the From domain's
+DMARC record and SPF's (at most ten, as SPF allows), each at most 4 s twice. The raw message
+travels beside the parsed one, so a mail's webhook is about twice its size (the 60 MB limit
+holds Postmark's 35 MB mail). Nothing is kept of it.
+
 What the provider costs (Postmark's prices, read 2026-10-13, postmarkapp.com/pricing): every mail
 sent and every mail received counts once, and each Cc'd or Bcc'd address at the domain once more.
 Free carries 100 a month (the closed beta: sign-up codes, resets, invitations). Pro is $16.50 a

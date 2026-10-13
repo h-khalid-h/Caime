@@ -81,6 +81,8 @@ export const newVerifyToken = () => randomBytes(18).toString('base64url');
 /** DNS lookups, injectable so tests can stand in for the internet. */
 export interface TxtResolver {
   resolveTxt(hostname: string): Promise<string[][]>;
+  /** Any other record type (SPF's A, AAAA and MX for mail in, R75); a stand-in may leave it out. */
+  resolve?(hostname: string, rrtype: string): Promise<string[] | string[][]>;
 }
 
 /**

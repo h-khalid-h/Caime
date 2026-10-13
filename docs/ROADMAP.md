@@ -1320,16 +1320,19 @@ discovers, and mail at their own address.
       line) and starts the topic a written subject names. Not in phase 1: unverified mail shown as a notice (dropped and
       counted, `caime_mail_total`), the hourly notification tempo for mail, a card or a sticker
       said by mail, the agent answering by mail, signing in with the address (sign-up claims).
-- [ ] R75 in production, first the code (review 2026-10-13): Postmark's inbound payload carries
-      no `Authentication-Results` (its documented headers are `Received-SPF` and SpamAssassin's
-      `X-Spam-Tests`, and the sender's own headers come through), so the check must be computed
-      from the raw message ("Include raw email content"): DKIM verified against DNS through
-      `ctx.dns`, SPF for the connecting address of Postmark's own `Received` line, DMARC
-      alignment, and any `Authentication-Results` in the payload ignored; the envelope recipient
-      (`OriginalRecipient`) read, so Bcc and list mail reach their handle; the staff addresses
-      (`postmaster@`, `abuse@`, `hello@`, `support@`, `privacy@`, `security@`) delivered to a
-      configured handle rather than dropped. Then ⛔ the owner's: Postmark Pro, the inbound
-      domain and webhooks, MX from Cloudflare Email Routing to Postmark (docs/DEPLOY.md).
+- [x] R75 in production, the code (review 2026-10-13): who sent a mail in is checked by Caime
+      from the raw message Postmark forwards ("Include raw email content"; `lib/mail-auth.ts`,
+      mailauth pinned): DKIM verified against DNS through `ctx.dns`, SPF for the address
+      Postmark's own `Received` lines at the top saw connect, DMARC from both; any verdict in the
+      payload or the sender's headers ignored, no raw message no vouching, and provider health
+      shows `mail` down when Postmark sends none. The envelope recipient (`OriginalRecipient`) is
+      read, so Bcc and list mail reach their handle; the staff addresses (`postmaster@`,
+      `abuse@`, `hello@`, `support@`, `help@`, `contact@`, `info@`, `privacy@`, `security@`,
+      `legal@`, `billing@`) reach `MAIL_STAFF_HANDLE`; a mail lands once wherever its addresses
+      meet, and a provider's retry is the one message (a client id from the mail's own).
+- [ ] ⛔ R75 in production, the owner's: Postmark Pro, the inbound domain with raw content and
+      both webhooks, `MAIL_*` with `MAIL_STAFF_HANDLE`, then the MX from Cloudflare Email
+      Routing to Postmark (docs/DEPLOY.md, Caime Mail).
 - [x] R79 layer 1, bridges (PRODUCT-REVIEW R79): Zapier, Make, n8n, Pipedream and IFTTT as
       bridge built-ins in Discover (a sheet that makes a scoped personal token in one tap and
       says what each can do with Caime; on while the token lives); a contacts file into People
@@ -2818,3 +2821,10 @@ The six-slice review's plan, in its order; a block is ticked when its tests and 
   Caime Mail is on. Found on the way: Caime Mail's inbound check believes an
   `Authentication-Results` header that Postmark never writes, so it stays off until the check
   is computed from the raw message (next).
+- 2026-10-13 — R75's inbound check rebuilt: Caime verifies who sent a mail from the raw message
+  itself (DKIM against DNS, SPF for the address Postmark's own server saw connect, DMARC), never
+  a header the payload or the sender wrote (a forged `Authentication-Results` is now refused, in
+  `mail-auth.test.ts`, `mail.test.ts` and the E2E, which signs its mail with a published key);
+  Bcc and list mail reach their handle, the staff addresses reach `MAIL_STAFF_HANDLE`, a mail
+  lands once per place, and a retry can't post twice. Caime Mail now waits only on the owner's
+  Postmark and DNS steps.

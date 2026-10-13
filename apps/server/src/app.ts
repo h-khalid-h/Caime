@@ -169,6 +169,11 @@ export async function buildApp(config: Config, options: BuildOptions = {}): Prom
         if (dnsServers) resolver.setServers(dnsServers);
         return resolver.resolveTxt(hostname);
       },
+      resolve: (hostname, rrtype) => {
+        const resolver = new Resolver({ timeout: 4000, tries: 2 });
+        if (dnsServers) resolver.setServers(dnsServers);
+        return resolver.resolve(hostname, rrtype) as Promise<string[] | string[][]>;
+      },
     },
     log: app.log,
     now: options.now ?? (() => new Date()),

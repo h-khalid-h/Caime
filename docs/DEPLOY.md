@@ -88,9 +88,9 @@ The order matters: every step leaves Caime working. What each costs is in `docs/
    on `cai.me`; `https://www.cai.me/x?y=1` lands on `https://cai.me/x?y=1`; mail to
    `postmaster@cai.me` reaches the owner; Stripe's test event answers 200.
 
-Caime Mail (below) is the next step, not part of this one: its inbound check must be rebuilt
-first (ROADMAP, R75 in production), and turning it on moves `cai.me`'s MX from Cloudflare to
-Postmark, so the staff addresses are routed by Caime itself from then on.
+Caime Mail (below) is the next step, not part of this one: turning it on takes Postmark Pro and
+moves `cai.me`'s MX from Cloudflare to Postmark, so the staff addresses are routed by Caime
+itself from then on (`MAIL_STAFF_HANDLE`).
 
 ## EasyPanel
 
@@ -252,11 +252,12 @@ forget Caime's access (`/oauth/deauthorize`).
 
 Every handle is an address at `MAIL_DOMAIN` (`noor@cai.me`), and Cai's is `assistant@cai.me`
 (R86: it sends meetings' invitations and reads only the answers to them), received and sent
-through the provider (`MAIL_PROVIDER=postmark`, `MAIL_PROVIDER_TOKEN`), whose webhooks carry `MAIL_WEBHOOK_SECRET` (16 characters at least, `openssl rand -hex 24`). Off
-until the operator sets them all, and **not before the inbound check is rebuilt** (ROADMAP, R75
-in production): Postmark writes no `Authentication-Results` header into the inbound payload, so
-every such header there is the sender's own, and today's check would believe it. When that's
-done:
+through the provider (`MAIL_PROVIDER=postmark`, `MAIL_PROVIDER_TOKEN`), whose webhooks carry
+`MAIL_WEBHOOK_SECRET` (16 characters at least, `openssl rand -hex 24`). Off until the operator
+sets them all. Who sent a mail in is Caime's own check of the raw message (`lib/mail-auth.ts`:
+DKIM against DNS, SPF for the address Postmark's server saw connect, DMARC), never a header in
+the payload, which is the sender's to write; so the raw message must come with it, or every
+mail in is dropped as unverified (provider health then shows `mail` down, naming the setting).
 
 1. **The plan**: Postmark Pro (inbound isn't on Basic). Each mail in counts as one, and each
    Cc'd or Bcc'd address at the domain as one more.
@@ -264,13 +265,18 @@ done:
    content" on, and the webhook `https://caime:<MAIL_WEBHOOK_SECRET>@cai.me/v1/mail/in/postmark`
    (basic auth carries the secret; `?secret=` does too). Then, in one change at Cloudflare,
    Email Routing off and `MX @ 10 inbound.postmarkapp.com`: from that moment every address at
-   `cai.me` is Caime's, the staff ones included.
+   `cai.me` is Caime's, the staff ones included: `postmaster@`, `abuse@`, `hello@`, `support@`,
+   `help@`, `contact@`, `info@`, `privacy@`, `security@`, `legal@` and `billing@` reach the
+   handle `MAIL_STAFF_HANDLE` names (Caime's own organization's, or the owner's), and without
+   it nobody. Set it before the MX moves.
 3. **Sending** is already set up (going live, step 5): the same domain, DKIM and Return-Path.
 4. **Delivery events.** A webhook on the outbound stream for Delivery and Bounce at
    `https://caime:<MAIL_WEBHOOK_SECRET>@cai.me/v1/mail/events/postmark`.
-5. Set `MAIL_DOMAIN=cai.me`, `MAIL_PROVIDER=postmark`, `MAIL_PROVIDER_TOKEN` and
-   `MAIL_WEBHOOK_SECRET` on the service and redeploy; the privacy page then names the provider.
-   A test mail to your own handle arrives in Caime as yours.
+5. Set `MAIL_DOMAIN=cai.me`, `MAIL_PROVIDER=postmark`, `MAIL_PROVIDER_TOKEN`,
+   `MAIL_WEBHOOK_SECRET` and `MAIL_STAFF_HANDLE` on the service and redeploy; the privacy page
+   then names the provider. Check: `POST /v1/admin/providers/check` shows `mail` up; a mail
+   from an outside mailbox to your own handle arrives in Caime as from that address; one to
+   `postmaster@cai.me` arrives for the staff handle.
 
 ### 4. Continuous deployment
 

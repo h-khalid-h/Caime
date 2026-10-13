@@ -6,30 +6,48 @@
  * as it would post them.
  */
 import { type BrowserContext, expect, type Page, test } from '@playwright/test';
-import { apiSignUp, MAIL_STUB, MAIL_WEBHOOK_SECRET, newPerson, visible } from './helpers';
+import { DKIM_TXT, rawMail } from '../apps/server/test/mail-fixtures';
+import {
+  apiSignUp,
+  MAIL_STUB,
+  MAIL_WEBHOOK_SECRET,
+  newPerson,
+  publishTxt,
+  visible,
+} from './helpers';
 
 const suffix = Math.random().toString(36).slice(2, 7);
 const DOMAIN = 'caime.test';
 const SARA = 'sara@partner.example';
 let counter = 0;
 
-/** A mail as the provider's inbound webhook posts it, from a sender its server vouched for. */
-function inbound(m: { subject: string | null; text: string; inReplyTo?: string }) {
+/**
+ * A mail as the provider's inbound webhook posts it: the parsed fields, and the raw message
+ * DKIM-signed for Sara's domain, whose key the DNS stand-in publishes (Caime checks it itself).
+ */
+async function inbound(m: { subject: string | null; text: string; inReplyTo?: string }) {
   counter++;
   const domain = SARA.replace(/^.*@/, '');
+  const messageId = `<e2e-${suffix}-${counter}@${domain}>`;
+  const to = `noor.post.${suffix}@${DOMAIN}`;
+  const raw = await rawMail({
+    from: SARA,
+    fromName: 'Sara Haddad',
+    to: [to],
+    subject: m.subject,
+    text: m.text,
+    messageId,
+    ...(m.inReplyTo ? { inReplyTo: m.inReplyTo, references: [m.inReplyTo] } : {}),
+  });
   return {
     FromFull: { Email: SARA, Name: 'Sara Haddad' },
-    ToFull: [{ Email: `noor.post.${suffix}@${DOMAIN}`, Name: '' }],
+    ToFull: [{ Email: to, Name: '' }],
     Subject: m.subject,
     MessageID: `pm-in-${suffix}-${counter}`,
     TextBody: m.text,
     HtmlBody: '',
     Headers: [
-      { Name: 'Message-ID', Value: `<e2e-${suffix}-${counter}@${domain}>` },
-      {
-        Name: 'Authentication-Results',
-        Value: `mx.${DOMAIN}; dkim=pass header.d=${domain}; spf=pass smtp.mailfrom=${SARA}; dmarc=pass header.from=${domain}`,
-      },
+      { Name: 'Message-ID', Value: messageId },
       ...(m.inReplyTo
         ? [
             { Name: 'In-Reply-To', Value: m.inReplyTo },
@@ -38,6 +56,7 @@ function inbound(m: { subject: string | null; text: string; inReplyTo?: string }
         : []),
     ],
     Attachments: [],
+    RawEmail: raw,
   };
 }
 
@@ -69,6 +88,8 @@ test.describe
       await apiSignUp(desktop, 'Noor Post', handle);
       ({ page, errors } = await newPerson(desktop));
       await fetch(`${MAIL_STUB}/sent`, { method: 'DELETE' });
+      // Sara's domain publishes the key her mail is signed with.
+      await publishTxt(`test._domainkey.${SARA.replace(/^.*@/, '')}`, [DKIM_TXT]);
     });
 
     test.afterAll(async () => {
@@ -97,7 +118,10 @@ test.describe
     test('a stranger’s mail is a request from a person reached by email, said as mail', async () => {
       const got = await post(
         '/v1/mail/in/postmark',
-        inbound({ subject: 'The March venue', text: 'Could you send me the contract by Friday?' }),
+        await inbound({
+          subject: 'The March venue',
+          text: 'Could you send me the contract by Friday?',
+        }),
       );
       expect(got.outcomes?.[0]?.outcome).toBe('delivered');
       await page.goto('/chats');
@@ -176,11 +200,14 @@ test.describe
       expect(ourId).toMatch(new RegExp(`^<[0-9a-f-]+@${DOMAIN}>$`));
       await post(
         '/v1/mail/in/postmark',
-        inbound({ subject: 'RE: Venue', text: 'Booked.', inReplyTo: ourId }),
+        await inbound({ subject: 'RE: Venue', text: 'Booked.', inReplyTo: ourId }),
       );
       await expect(visible(page, 'Booked.')).toBeVisible();
       // A mail on a new subject is a topic of its own in Chats.
-      await post('/v1/mail/in/postmark', inbound({ subject: 'The invoice', text: 'Attached.' }));
+      await post(
+        '/v1/mail/in/postmark',
+        await inbound({ subject: 'The invoice', text: 'Attached.' }),
+      );
       await page.goto('/chats');
       await expect(visible(page, 'Sara Haddad · The invoice')).toBeVisible();
       expect(errors).toEqual([]);

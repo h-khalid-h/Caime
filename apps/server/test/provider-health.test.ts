@@ -26,6 +26,9 @@ const listen = (server: Server) =>
 const admin = (method: 'GET' | 'POST', url: string) =>
   t.app.inject({ method, url, headers: { authorization: `Bearer ${ADMIN}` } });
 
+/** What Postmark's server settings say of "Include raw email content" (R75). */
+let rawEmail = true;
+
 beforeAll(async () => {
   well = createServer((req, res) => {
     seen.push(`${req.method} ${req.url}`);
@@ -35,7 +38,7 @@ beforeAll(async () => {
     if (req.method === 'GET' && req.url === '/v1/models/gpt-4o-transcribe')
       return res.end(JSON.stringify({ id: 'gpt-4o-transcribe', object: 'model' }));
     if (req.method === 'GET' && req.url === '/server')
-      return res.end(JSON.stringify({ ID: 1, Name: 'caime' }));
+      return res.end(JSON.stringify({ ID: 1, Name: 'caime', RawEmailEnabled: rawEmail }));
     res.statusCode = 404;
     res.end('{}');
   });
@@ -141,6 +144,21 @@ describe('provider health (R78)', () => {
       'speech',
       'stripe',
     ]);
+  });
+
+  it('says mail in is down while Postmark sends no raw message (nothing could be vouched for)', async () => {
+    rawEmail = false;
+    try {
+      const res = await admin('POST', '/v1/admin/providers/check');
+      const mailIn = res.json().providers.find((p: { id: string }) => p.id === 'mail-in') as {
+        up: boolean;
+        error: string;
+      };
+      expect(mailIn.up).toBe(false);
+      expect(mailIn.error).toMatch(/Include raw email content/);
+    } finally {
+      rawEmail = true;
+    }
   });
 
   it('a failure’s line never carries a credential in an address', () => {
