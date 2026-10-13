@@ -649,12 +649,23 @@ outperforming the alternatives is reach and operations. In the order the review 
       a query, never another site's or another screen's). Nothing for a meeting elsewhere, in
       person, cancelled, moved, all day, in a private conversation, to someone who left, or from
       a job run more than half an hour after the start. Its two strings in the server's
-      catalogs. Tests: `meeting-start.test.ts` (3), `sw.test.ts` (four more cases), the brief
+      catalogs; server 752 pass in one clean run (the six backup tests need `pg_dump`, absent
+      here). Tests: `meeting-start.test.ts` (3), `sw.test.ts` (four more cases), the brief
       test's job count (the first meeting's start now runs too). Both people pressing Join at
       once: the one whose call rings here answers it rather than placing a second
       (`joinDirect`, `joinDirect.test.ts`). Not built: Join inside the
       brief, which opens from the card that has it already; a ring for the meeting rather than
       a notification (the call rings when the first person joins, as any call does)
+      [x] Guests, the guard (R84 (2)): a provisional session is refused on every API route but
+      `GUEST_ROUTES` (today: read and end the session), in the auth plugin before any route
+      runs (403 `guest_route`, a new code; OAuth's form endpoints answer in RFC 6749's shape
+      with the same words), and the realtime socket closes for it. The app's pages load for
+      anyone. `guest-routes.test.ts` walks every registered route (the plugin now keeps the list)
+      with a guest's session: none open but the two listed. SECURITY.md row. Its string in the
+      server's catalogs. Server 755 pass in one clean run (the six backup tests need `pg_dump`)
+      [ ] Guests, the meeting's own space and the routes it opens to guests; then invitations and
+      the join page against the mail stand-in ⛔ Caime Mail on in production to ship, the
+      lawyer's answer on R83 (4) and R84 (4)
 - [ ] Candidates from the 2026-09-30 brainstorm review (R46), the owner's call: organizations
       taking WhatsApp Business messages into the Business inbox through Meta's official Cloud
       API ⛔ a Meta business account, verification and fees; contact matching by hashed phone
@@ -2739,3 +2750,10 @@ The six-slice review's plan, in its order; a block is ticked when its tests and 
 - 2026-10-13 — R83, "Starting now": at an agreed meeting's time everyone in it is told, and the
   tap joins through the card's check. What's left of R83 is blocked: guests (Caime Mail) and
   recording (R82, the bake-off and the lawyer).
+- 2026-10-13 — R84, documents only: guests join a meeting's own space, never the conversation
+  it was agreed in (R83 would have shown them its history, and a direct call has no room for a
+  third), and a provisional session is refused on every route but a guest's, by one guard
+  proven against every registered route. The full server suite ran clean here: 752 pass, the
+  six backup tests needing `pg_dump`.
+- 2026-10-13 — R84, the guard first: a provisional session can reach nothing in the API but its
+  own session, proven against every registered route, before any guest can exist.

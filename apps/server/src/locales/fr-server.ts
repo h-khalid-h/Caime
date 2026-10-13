@@ -1216,4 +1216,5 @@ export const frServer: Catalog = {
     'Une fiche a besoin d’une accroche, d’une catégorie, de comment elle est payée, d’où trouver de l’aide, d’une politique de confidentialité et d’où mène Connecter.',
   'Starting now: {title}': 'Commence maintenant : {title}',
   'It’s time to join.': 'C’est l’heure de rejoindre la réunion.',
+  'A guest can’t do this.': 'Un invité ne peut pas faire cela.',
 };

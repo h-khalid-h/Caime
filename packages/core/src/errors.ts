@@ -42,6 +42,7 @@ export const ERROR_CODES = [
   'email_unavailable',
   'export_too_large',
   'forbidden',
+  'guest_route',
   'handle_closed_org',
   'handle_taken',
   'in_call',

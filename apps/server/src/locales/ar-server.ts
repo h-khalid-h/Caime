@@ -1192,4 +1192,5 @@ export const arServer: Catalog = {
     'يحتاج الإدراج إلى سطر تعريفي وفئة وطريقة الدفع ومكان المساعدة وسياسة خصوصية ووجهة لزر «اتصال».',
   'Starting now: {title}': 'يبدأ الآن: {title}',
   'It’s time to join.': 'حان وقت الانضمام.',
+  'A guest can’t do this.': 'لا يمكن للضيف فعل ذلك.',
 };
