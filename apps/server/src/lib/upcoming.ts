@@ -123,6 +123,8 @@ export async function cardsAhead(
   const states = (kit: CardKit) => (opts.agreedOnly ? [AGREED[kit]] : [AGREED[kit], ASKED[kit]]);
   const rows = await visibleCards(ctx, userId, opts)
     .where(sql`m.payload->>'kit'`, 'in', ['meeting', 'appointment'])
+    // A meeting moved to its own space (R84) is there now, once.
+    .where(sql`m.payload->'movedTo'`, 'is', null)
     .where((eb) =>
       eb.or(
         (['meeting', 'appointment'] as const).map((kit) =>

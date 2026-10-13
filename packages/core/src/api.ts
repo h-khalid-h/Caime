@@ -2816,3 +2816,8 @@ export interface AdminPersonResponse {
     organizations: Array<{ handle: string; role: string }>;
   };
 }
+
+/** `POST /v1/messages/:id/guests` (R84): the meeting's own space, and its card there. */
+export interface MeetingGuestResponse {
+  space: { conversationId: string; messageId: string };
+}

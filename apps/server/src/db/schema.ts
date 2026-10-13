@@ -1107,7 +1107,33 @@ export interface OAuthTokensTable {
   revoked_at: NullableTimestamp;
 }
 
+/**
+ * A meeting's own space (R84): the card it was agreed on, its group, and the card's copy there
+ * (null for the moment between the space's claim and its copy, sent with `copy_client_id`).
+ */
+export interface MeetingSpacesTable {
+  message_id: string;
+  conversation_id: string;
+  space_message_id: string | null;
+  copy_client_id: string;
+  created_by: string | null;
+  created_at: Generated<Date>;
+}
+
+/** A guest invited to a meeting by address (R84), and their link's hash. */
+export interface MeetingGuestsTable {
+  id: string;
+  space_message_id: string;
+  user_id: string;
+  invited_by: string | null;
+  token_hash: Buffer;
+  created_at: Generated<Date>;
+  revoked_at: NullableTimestamp;
+}
+
 export interface Database {
+  meeting_spaces: MeetingSpacesTable;
+  meeting_guests: MeetingGuestsTable;
   users: UsersTable;
   identities: IdentitiesTable;
   sessions: SessionsTable;

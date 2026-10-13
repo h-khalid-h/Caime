@@ -125,6 +125,10 @@ answers, reactions, and who has read what. Private conversations carry text only
 <li><strong>Your calls.</strong> Who called whom, voice or video, when, for how long, and whether
 it was answered, missed or declined. What&rsquo;s said and shown in a call isn&rsquo;t kept: it
 goes between the devices in it.</li>
+<li><strong>Meetings with guests.</strong> When you invite someone to a meeting by email address,
+Caime keeps the address, who invited them and when, and gives the meeting its own group, where the
+guest sees only that meeting. Their link to join is kept only as a fingerprint, and ends when
+they&rsquo;re invited again. Someone invited who isn&rsquo;t on Caime can do nothing else on it.</li>
 <li><strong>What Caime works out for you.</strong> In conversations that aren&rsquo;t private,
 Caime notes the dates, amounts, links, email addresses, phone numbers, reference numbers (an order,
 an invoice, a ticket), topics (such as Project Atlas), questions and requests in each message. From these, and from a team, a space or a work email domain you share with someone,

@@ -1193,4 +1193,17 @@ export const arServer: Catalog = {
   'Starting now: {title}': 'يبدأ الآن: {title}',
   'It’s time to join.': 'حان وقت الانضمام.',
   'A guest can’t do this.': 'لا يمكن للضيف فعل ذلك.',
+  'Only a meeting takes guests.': 'الاجتماع وحده يستقبل الضيوف.',
+  'A meeting takes guests once it’s agreed.': 'يستقبل الاجتماع الضيوف بعد الاتفاق عليه.',
+  'Only a meeting held on Caime, at a time, takes guests.':
+    'الاجتماع المنعقد على Caime وفي وقت محدد وحده يستقبل الضيوف.',
+  'That meeting is over.': 'انتهى ذلك الاجتماع.',
+  'A meeting holds eight people at most.': 'يتسع الاجتماع لثمانية أشخاص على الأكثر.',
+  'That isn’t an email address.': 'هذا ليس عنوان بريد إلكتروني.',
+  'Guests join meetings agreed in a chat or a group.':
+    'ينضم الضيوف إلى اجتماعات متفق عليها في محادثة أو مجموعة.',
+  'Guests are invited by people 18 or over.': 'يدعو الضيوفَ أشخاصٌ في الثامنة عشرة أو أكثر.',
+  'That’s your own address.': 'هذا عنوانك أنت.',
+  'Guests aren’t available in this conversation.': 'دعوة الضيوف غير متاحة في هذه المحادثة.',
+  'They can’t join a conversation with guests.': 'لا يمكن الانضمام إلى محادثة فيها ضيوف.',
 };

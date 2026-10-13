@@ -72,6 +72,7 @@ import { inviteRoutes } from './modules/invites';
 import { kitRoutes } from './modules/kits';
 import { mailRoutes } from './modules/mail';
 import { meRoutes } from './modules/me';
+import { meetingRoutes } from './modules/meetings';
 import { memoryRoutes } from './modules/memory';
 import { messageRoutes } from './modules/messages';
 import { metricsRoutes } from './modules/metrics';
@@ -295,6 +296,7 @@ export async function buildApp(config: Config, options: BuildOptions = {}): Prom
       await actionRoutes(v1, ctx);
       await caiRoutes(v1, ctx);
       await calendarRoutes(v1, ctx);
+      await meetingRoutes(v1, ctx);
       await memoryRoutes(v1, ctx);
       await aiRoutes(v1, ctx);
       await searchRoutes(v1, ctx);

@@ -134,3 +134,61 @@ export function buildIcs(cal: IcsCalendar): string {
   lines.push('END:VCALENDAR');
   return `${lines.map(foldLine).join('\r\n')}\r\n`;
 }
+
+/** A person in an invitation: a name and an address that is one (no line breaks, no `:`). */
+export interface IcsPerson {
+  name: string;
+  email: string;
+}
+
+const safeEmail = (e: string) => /^[^\s@:;,"<>]+@[^\s@:;,"<>]+\.[^\s@:;,"<>]+$/.test(e);
+/** A parameter value: quoted, without the characters a quoted value can't hold. */
+const param = (v: string) => `"${v.replace(/[\r\n"]/g, ' ').replace(CONTROL, '')}"`;
+
+/**
+ * One meeting as an invitation by mail (R84): `METHOD:REQUEST`, which Gmail, Outlook and Apple
+ * Mail put in the guest's calendar with Accept and Decline, or `CANCEL` to take it out. The
+ * same `uid` and a higher `sequence` update what's there.
+ */
+export function buildInvitation(i: {
+  method: 'REQUEST' | 'CANCEL';
+  uid: string;
+  sequence: number;
+  now: Date;
+  start: Date;
+  end: Date;
+  summary: string;
+  description?: string | null;
+  location?: string | null;
+  url?: string | null;
+  organizer: IcsPerson;
+  attendee: IcsPerson;
+}): string {
+  if (!safeEmail(i.organizer.email) || !safeEmail(i.attendee.email))
+    throw new Error('An invitation needs real addresses');
+  const end = i.end > i.start ? i.end : i.start;
+  const lines = [
+    'BEGIN:VCALENDAR',
+    'VERSION:2.0',
+    'PRODID:-//Caime//Meeting//EN',
+    'CALSCALE:GREGORIAN',
+    `METHOD:${i.method}`,
+    'BEGIN:VEVENT',
+    `UID:${icsText(i.uid)}`,
+    `SEQUENCE:${Math.max(0, Math.floor(i.sequence))}`,
+    `DTSTAMP:${utc(i.now)}`,
+    `DTSTART:${utc(i.start)}`,
+    `DTEND:${utc(end)}`,
+    `SUMMARY:${icsText(i.summary)}`,
+    ...(i.description ? [`DESCRIPTION:${icsText(i.description)}`] : []),
+    ...(i.location ? [`LOCATION:${icsText(i.location)}`] : []),
+    ...(i.url && safeUrl(i.url) ? [`URL:${i.url}`] : []),
+    `ORGANIZER;CN=${param(i.organizer.name)}:mailto:${i.organizer.email}`,
+    `ATTENDEE;CN=${param(i.attendee.name)};ROLE=REQ-PARTICIPANT;PARTSTAT=NEEDS-ACTION;RSVP=TRUE:mailto:${i.attendee.email}`,
+    `STATUS:${i.method === 'CANCEL' ? 'CANCELLED' : 'CONFIRMED'}`,
+    'TRANSP:OPAQUE',
+    'END:VEVENT',
+    'END:VCALENDAR',
+  ];
+  return `${lines.map(foldLine).join('\r\n')}\r\n`;
+}

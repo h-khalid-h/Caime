@@ -664,8 +664,25 @@ outperforming the alternatives is reach and operations. In the order the review 
       anyone. `guest-routes.test.ts` walks every registered route (the plugin now keeps the list)
       with a guest's session: none open but the two listed. SECURITY.md row. Its string in the
       server's catalogs. Server 755 pass in one clean run (the six backup tests need `pg_dump`)
-      [ ] Guests, the meeting's own space and the routes it opens to guests; then invitations and
-      the join page against the mail stand-in ⛔ Caime Mail on in production to ship (the
+      [x] Guests, the meeting's own space and the invitation (server; `lib/meeting-guests.ts`,
+      `POST /v1/messages/:id/guests`, migration 0074): the first guest gives an accepted
+      meeting held on Caime a group of its own (the conversation's people, a copy of the card,
+      accepted), and the original card says it moved (`movedTo`) and leaves the calendar, Join
+      and "starting now" to the copy; the guest is a provisional person (one already on Caime is
+      asked, as a request, and nothing says which an address is); their own link is kept hashed
+      and a new invitation ends the last one; a calendar invitation (`METHOD:REQUEST`, core
+      `buildInvitation`) goes by the transactional mail. Never from a private or business
+      conversation, by someone under 18, or past eight people. The export lists invitations
+      (never a link) and the privacy page says what's kept. Tests: `meeting-guests.test.ts`
+      (3), `ics.test.ts` (3 more), the route walk still refuses a guest everywhere. In review
+      (2026-10-13): the space claimed under the card's row lock and its copy sent with the
+      claim's own client id, so two invitations at once make one space; nobody under 18 ever
+      in a conversation with a guest (R29: the invitation refused where anyone under 18 is,
+      such an account never asked, the members route refusing one into a conversation that
+      holds a guest); someone on Caime asked only as a message request could reach them; the
+      link's token masked in the request log. `meeting-guests.test.ts` (6), `log.test.ts`
+      [ ] Guests, the join page (`/j/<token>`), the guest's session and the routes the space opens
+      to them; the invite field on the card (the app) ⛔ SMTP in production to send (the
       consent and recorder questions decided in R85)
 - [ ] Candidates from the 2026-09-30 brainstorm review (R46), the owner's call: organizations
       taking WhatsApp Business messages into the Business inbox through Meta's official Cloud
@@ -2762,3 +2779,5 @@ The six-slice review's plan, in its order; a block is ticked when its tests and 
   stricter choice each time (consent a labelled choice, anyone's no at any time, nothing with
   anyone under 18, the recorder never a guest, the words kept and the voices not). The roadmap's
   ⛔ on the lawyer is gone; the speech bake-off's and Caime Mail's stand.
+- 2026-10-13 — R84, the meeting's own space and the invitation: server only, a guest can't do
+  anything yet (the guard holds; the join page is next).

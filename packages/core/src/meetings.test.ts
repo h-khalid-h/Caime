@@ -97,6 +97,10 @@ describe('what an accepted meeting card offers (R83)', () => {
     }
     expect(meetingAction(card('accepted', undefined, 'appointment'), now)).toBeNull();
     expect(meetingAction({ kit: 'meeting', state: 'accepted', fields: null }, now)).toBeNull();
+    // Moved to its own space (R84): its copy there has the Join.
+    expect(
+      meetingAction({ ...card('accepted'), movedTo: { conversationId: 's', messageId: 'c' } }, now),
+    ).toBeNull();
   });
 });
 
