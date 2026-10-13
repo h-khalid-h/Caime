@@ -13,7 +13,7 @@ import { defaultPrivacy, uuidv4, uuidv7 } from '@caime/core';
 import { GROUP_CALL_MAX } from '@caime/core/calls';
 import { tr } from '@caime/core/i18n';
 import { buildInvitation } from '@caime/core/ics';
-import { meetingVenue } from '@caime/core/meetings';
+import { CAI_MAIL, meetingVenue } from '@caime/core/meetings';
 import { type Kysely, sql, type Transaction } from 'kysely';
 import type { AppContext } from '../context';
 import { type Database, MESSAGE_COLUMNS, type Message } from '../db/schema';
@@ -46,10 +46,25 @@ interface MeetingPayload {
 
 const ADDRESS = /^[^\s@:;,"<>]+@[^\s@:;,"<>]+\.[^\s@:;,"<>]+$/;
 
-/** The address an invitation comes from: the one `EMAIL_FROM` names. */
+/** The address `EMAIL_FROM` names. */
 function fromAddress(emailFrom: string): string {
   const m = /<([^>]+)>/.exec(emailFrom);
   return (m?.[1] ?? emailFrom).trim();
+}
+
+/**
+ * Who a meeting's invitation comes from (R86): Cai, at its own address on Caime's mail domain,
+ * for whoever invited ("Ana via Cai"), so the guest's calendar sends its answer back to Cai;
+ * without a mail domain, Caime's usual sender, and answers go unread.
+ */
+function invitationSender(
+  config: AppContext['config'],
+  host: string,
+): { address: string; header: string | undefined } {
+  if (!config.MAIL_DOMAIN) return { address: fromAddress(config.EMAIL_FROM), header: undefined };
+  const address = `${CAI_MAIL}@${config.MAIL_DOMAIN}`;
+  const name = `${host} via Cai`.replace(/[^\p{L}\p{N}\p{M} .,'’-]/gu, ' ').trim();
+  return { address, header: `"${name}" <${address}>` };
 }
 
 /** A meeting that can take guests: accepted, held on Caime, with a time, not yet over. */
@@ -428,6 +443,7 @@ export async function inviteGuest(
   );
   const title = String(p.title || p.fields?.title || 'Meeting').slice(0, 120);
   const link = `${ctx.config.PUBLIC_URL.replace(/\/+$/, '')}/j/${token}`;
+  const sender = invitationSender(ctx.config, actor.display_name);
   const ics = buildInvitation({
     method: 'REQUEST',
     uid: `meeting-${space.messageId}@caime`,
@@ -439,7 +455,7 @@ export async function inviteGuest(
     description: `${actor.display_name} invited you. Join: ${link}`,
     location: 'Caime',
     url: link,
-    organizer: { name: actor.display_name, email: fromAddress(ctx.config.EMAIL_FROM) },
+    organizer: { name: actor.display_name, email: sender.address },
     attendee: { name: person.display_name, email },
   });
   const mail = ctx.mail;
@@ -447,6 +463,7 @@ export async function inviteGuest(
     mail.send({
       to: email,
       kind: 'invitation',
+      ...(sender.header ? { from: sender.header, replyTo: sender.header } : {}),
       subject: `Invitation: ${title}`,
       text: [
         `${actor.display_name} invited you to "${title}" on Caime, ${start.toISOString().replace('T', ' ').slice(0, 16)} UTC.`,

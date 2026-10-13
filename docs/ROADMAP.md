@@ -487,10 +487,10 @@ super-app brainstorm the product takes, and what it leaves with the reason, is R
       the heart its dot) and the docs. What keeps its name: the characters, Caishy included,
       and the Caishy Friends; Stripe's price keys and metadata; the repository, image, database
       and EasyPanel names; deployed migrations; and this log
-- [ ] ⛔ `cai.me`: parked for sale at Afternic on 2026-09-28, for about $400, which the owner has
-      agreed to (still on Afternic's nameservers on 2026-09-29). Once it's bought it's pointed at
-      EasyPanel (docs/DEPLOY.md, "Domain to come"); until then production stays at its current
-      addresses
+- [~] `cai.me` is Caime's (the owner, 2026-10-13). Left, the owner's: point it here (DEPLOY.md:
+      an A or CNAME record to EasyPanel, the domain on the `caime` service, `PUBLIC_URL=https://cai.me`),
+      and its mail records (MX to the inbound provider, SPF and DKIM for the sender, DMARC), with
+      `MAIL_DOMAIN=cai.me` and the SMTP account allowed to send as `assistant@cai.me` (R86)
 - [ ] `cai.me/@handle` for people and organizations (R35), opening the app where it's installed:
       `apple-app-site-association` and `assetlinks.json` served by the server, the app's
       associated domains. After the domain
@@ -1343,9 +1343,9 @@ discovers, and mail at their own address.
       with screenshots, a declared pricing model, languages, support and privacy addresses and
       an AI disclosure; the written bar on `/developers` and in API.md; "Reviewed by Caime" with
       the operator's checklist; delisting with a note.
-- [ ] ⛔ R80, cai.me as the public address: parked today (a registrar's lander, 2026-10-10), so
-      the owner acquires it; then DNS and the certificate at EasyPanel, `PUBLIC_URL` and
-      `WEB_URL` moved, the old host answering 301, one canonical.
+- [ ] R80, cai.me as the public address: the domain is Caime's (owner, 2026-10-13); left, the
+      owner's DNS and the certificate at EasyPanel, `PUBLIC_URL` and `WEB_URL` moved, the old
+      host answering 301, one canonical.
 - [x] R81, said, never guessed (PRODUCT-REVIEW R81, owner 2026-10-11): `users.gender` (woman,
       man, another word, or null; migration 0070), `UpdateMeBody.gender`, `MeView.gender`,
       `PersonView.gender` under the new `gender` privacy field (connections by default, hidden by
@@ -2790,3 +2790,6 @@ The six-slice review's plan, in its order; a block is ticked when its tests and 
   anything yet (the guard holds; the join page is next).
 - 2026-10-13 — R84, a guest's way in, server side: their link read and taken, a session for that
   meeting only, and its space and call opened to them; the app's join page is next.
+- 2026-10-13 — R86: Cai's own address, `assistant@cai.me`. It sends a meeting's invitations for
+  whoever invites and reads only the guests' calendar answers to them, from the invited address
+  itself; nothing else to it is read. `cai.me` is Caime's: its DNS and mail records are left.

@@ -192,3 +192,41 @@ export function buildInvitation(i: {
   ];
   return `${lines.map(foldLine).join('\r\n')}\r\n`;
 }
+
+/** A guest's answer to an invitation, as their calendar app sends it back (`METHOD:REPLY`). */
+export interface IcsReply {
+  uid: string;
+  attendee: string;
+  answer: 'accepted' | 'declined' | 'tentative';
+}
+
+const ANSWERS: Record<string, IcsReply['answer']> = {
+  ACCEPTED: 'accepted',
+  DECLINED: 'declined',
+  TENTATIVE: 'tentative',
+};
+
+/**
+ * Reads a calendar app's reply (R86): its event's UID and the one attendee's PARTSTAT. Null for
+ * anything that isn't a reply with exactly one answer. Never throws on what came by mail.
+ */
+export function readReply(text: string): IcsReply | null {
+  if (text.length > 64 * 1024) return null;
+  const lines = text.replace(/\r?\n[ \t]/g, '').split(/\r?\n/);
+  const value = (name: string) => lines.filter((l) => l.toUpperCase().startsWith(`${name}`));
+  if (!value('METHOD:').some((l) => l.slice(7).trim().toUpperCase() === 'REPLY')) return null;
+  const uid = value('UID:')[0]?.slice(4).trim();
+  const attendees = value('ATTENDEE');
+  if (!uid || attendees.length !== 1) return null;
+  const line = attendees[0] ?? '';
+  const colon = line.toLowerCase().lastIndexOf('mailto:');
+  if (colon < 0) return null;
+  const attendee = line
+    .slice(colon + 7)
+    .trim()
+    .toLowerCase();
+  const stat = /;PARTSTAT=([A-Z-]+)/i.exec(line.slice(0, colon))?.[1]?.toUpperCase();
+  const answer = stat ? ANSWERS[stat] : undefined;
+  if (!answer || !/^[^\s@]+@[^\s@]+$/.test(attendee)) return null;
+  return { uid, attendee, answer };
+}

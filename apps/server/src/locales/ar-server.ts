@@ -1211,4 +1211,7 @@ export const arServer: Catalog = {
     'هذه الدعوة لحسابك على Caime، ويلزم تسجيل الدخول.',
   'Someone else is signed in here. Open the link in another browser, or sign out first.':
     'شخص آخر مسجّل الدخول هنا. يمكن فتح الرابط في متصفح آخر، أو تسجيل الخروج أولًا.',
+  '{name} is coming: {title}': '{name}: حضور مؤكَّد في {title}',
+  '{name} can’t come: {title}': '{name}: اعتذار عن {title}',
+  '{name} might come: {title}': '{name}: حضور محتمل في {title}',
 };

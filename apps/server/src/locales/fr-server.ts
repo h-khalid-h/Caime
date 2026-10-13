@@ -1239,4 +1239,7 @@ export const frServer: Catalog = {
     'Cette invitation est pour votre compte Caime : connectez-vous.',
   'Someone else is signed in here. Open the link in another browser, or sign out first.':
     'Quelqu’un d’autre est connecté ici. Ouvrez le lien dans un autre navigateur, ou déconnectez-vous d’abord.',
+  '{name} is coming: {title}': '{name} vient : {title}',
+  '{name} can’t come: {title}': '{name} ne peut pas venir : {title}',
+  '{name} might come: {title}': '{name} viendra peut-être : {title}',
 };

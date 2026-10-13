@@ -17,6 +17,9 @@ export interface Mail {
   kind?: 'verification' | 'reset' | 'invitation';
   /** A calendar invitation (R84), sent as its own part so mail apps offer Accept and Decline. */
   icalEvent?: { method: 'REQUEST' | 'CANCEL'; content: string };
+  /** Who it's from when not `EMAIL_FROM`: Cai's own address, for a meeting's invitations (R86). */
+  from?: string;
+  replyTo?: string;
 }
 
 export interface Mailer {
@@ -30,7 +33,7 @@ export function createMailer(config: Config, log: FastifyBaseLogger): Mailer | n
   const transport = nodemailer.createTransport(config.SMTP_URL);
   return {
     async send(mail) {
-      await transport.sendMail({ from: config.EMAIL_FROM, ...mail });
+      await transport.sendMail({ ...mail, from: mail.from ?? config.EMAIL_FROM });
       log.info({ kind: mail.kind ?? 'other' }, 'mail sent');
     },
     async verify() {
