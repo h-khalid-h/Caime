@@ -35,6 +35,12 @@ export function meetingLink(place: string): string {
   return /^https?:\/\//i.test(p) ? p : `https://${p}`;
 }
 
+/** Whether a meeting from `at` to `end` (epoch ms) can be joined at `now`. */
+function windowOpen(at: number, end: number, now: Date): boolean {
+  const t = now.getTime();
+  return t >= at - JOIN_EARLY_MS && t <= Math.max(end, at) + JOIN_LATE_MS;
+}
+
 /**
  * Whether a meeting held on Caime can be joined now: from ten minutes before it starts to half
  * an hour after it was planned to end. `start` is the card's field as stored (`{ at, hasTime }`);
@@ -47,8 +53,7 @@ export function joinOpen(start: unknown, durationMinutes: unknown, now: Date): b
   if (!Number.isFinite(at)) return false;
   const asked = Number(durationMinutes);
   const minutes = Number.isFinite(asked) && asked > 0 ? Math.min(asked, 24 * 60) : DEFAULT_MINUTES;
-  const t = now.getTime();
-  return t >= at - JOIN_EARLY_MS && t <= at + minutes * 60_000 + JOIN_LATE_MS;
+  return windowOpen(at, at + minutes * 60_000, now);
 }
 
 /** What a meeting card offers beyond its moves: Join when held here, Open when held elsewhere. */
@@ -69,4 +74,40 @@ export function meetingAction(
   if (venue === 'link') return 'open';
   if (venue === 'caime' && joinOpen(f.start, f.durationMinutes, now)) return 'join';
   return null;
+}
+
+/**
+ * The same for a line of the calendar (`CalendarItemView`): an agreed meeting with a time, held
+ * here while it can be joined, or on another service. Its end is the server's (as booked, as its
+ * field says, else an hour), so the calendar and the card agree.
+ */
+export function calendarAction(
+  item: {
+    kind: string;
+    state: string;
+    hasTime: boolean;
+    at: string;
+    endAt: string | null;
+    place: string | null;
+  },
+  now: Date,
+): MeetingAction {
+  if (item.kind !== 'meeting' || item.state !== 'agreed') return null;
+  const venue = meetingVenue(item.place);
+  if (venue === 'link') return 'open';
+  if (venue !== 'caime' || !item.hasTime) return null;
+  const at = Date.parse(item.at);
+  if (!Number.isFinite(at)) return null;
+  const end = item.endAt ? Date.parse(item.endAt) : at + DEFAULT_MINUTES * 60_000;
+  return windowOpen(at, Number.isFinite(end) ? end : at, now) ? 'join' : null;
+}
+
+/**
+ * Where a meeting held on Caime is joined from outside its card (the calendar, the feed in
+ * someone's calendar app): its conversation, opened at the card (`seq`), told to join it
+ * (`join`, the card's message id). The conversation checks the card before it calls, so the
+ * address alone starts nothing.
+ */
+export function joinPath(conversationId: string, seq: number, messageId: string): string {
+  return `/c/${encodeURIComponent(conversationId)}?seq=${seq}&join=${encodeURIComponent(messageId)}`;
 }

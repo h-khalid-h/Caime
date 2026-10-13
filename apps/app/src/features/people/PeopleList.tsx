@@ -2,6 +2,7 @@ import type { ConnectionView } from '@caime/core/api';
 import { tr, trn } from '@caime/core/i18n';
 import { SPHERE_DEFS, SPHERES, type Sphere } from '@caime/core/taxonomy';
 import { router, usePathname } from 'expo-router';
+import CalendarClock from 'lucide-react-native/icons/calendar-clock';
 import Phone from 'lucide-react-native/icons/phone';
 import Search from 'lucide-react-native/icons/search';
 import UserPlus from 'lucide-react-native/icons/user-plus';
@@ -207,6 +208,13 @@ export function PeopleList({ pane }: { pane?: boolean }) {
               filled
               onPress={() => router.push('/calls')}
               testID="people-calls"
+            />
+            <IconButton
+              icon={CalendarClock}
+              label={tr('Meetings')}
+              filled
+              onPress={() => router.push('/meetings')}
+              testID="people-meetings"
             />
             <IconButton
               icon={UserPlus}

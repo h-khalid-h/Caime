@@ -1,5 +1,6 @@
-import type { ConversationView } from '@caime/core/api';
+import type { ConversationView, MessageView } from '@caime/core/api';
 import { GROUP_CALL_MAX } from '@caime/core/calls';
+import { meetingAction } from '@caime/core/meetings';
 import { isSystemKind } from '@caime/core/system-ids';
 
 /**
@@ -23,4 +24,22 @@ export function meetingCall(
     return can.groupCalls && c.participants.length <= GROUP_CALL_MAX ? 'group' : null;
   }
   return null;
+}
+
+/**
+ * Joining from an address (R83: `?join=` from the calendar or a calendar app): the call to open
+ * only when the card is there, not deleted, an accepted meeting held on Caime that can be joined
+ * now, in a conversation where the call can be made. Anything else opens the conversation at the
+ * card and starts nothing, so an address alone never places a call.
+ */
+export function joinFromLink(
+  card: MessageView | undefined,
+  c: ConversationView | null | undefined,
+  can: { calls: boolean; groupCalls: boolean },
+  now: Date,
+): 'direct' | 'group' | null {
+  if (!card || card.deletedAt || card.kind !== 'kit' || card.conversationId !== c?.id) return null;
+  if (meetingAction((card.payload ?? {}) as Parameters<typeof meetingAction>[0], now) !== 'join')
+    return null;
+  return meetingCall(c, can);
 }

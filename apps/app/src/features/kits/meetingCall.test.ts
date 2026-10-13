@@ -1,6 +1,6 @@
-import type { ConversationView } from '@caime/core/api';
+import type { ConversationView, MessageView } from '@caime/core/api';
 import { describe, expect, it } from 'vitest';
-import { meetingCall } from './meetingCall';
+import { joinFromLink, meetingCall } from './meetingCall';
 
 const can = { calls: true, groupCalls: true };
 const direct = (kind = 'person', extra: Partial<ConversationView> = {}) =>
@@ -37,5 +37,40 @@ describe('the call a meeting’s Join opens (R83)', () => {
   it('is none with Cai or a Caime Friend', () => {
     expect(meetingCall(direct('assistant'), can)).toBeNull();
     expect(meetingCall(direct('character'), can)).toBeNull();
+  });
+});
+
+describe('joining from an address (R83)', () => {
+  const at = '2026-10-13T10:00:00.000Z';
+  const now = new Date(at);
+  const conv = { ...direct(), id: 'c1' } as unknown as ConversationView;
+  const card = (over: Partial<MessageView> = {}, payload: Record<string, unknown> = {}) =>
+    ({
+      id: 'm1',
+      conversationId: 'c1',
+      kind: 'kit',
+      deletedAt: null,
+      payload: {
+        kit: 'meeting',
+        state: 'accepted',
+        fields: { start: { at, hasTime: true }, durationMinutes: 30 },
+        ...payload,
+      },
+      ...over,
+    }) as unknown as MessageView;
+  it('calls only for an accepted meeting held here, now, in a conversation that can call', () => {
+    expect(joinFromLink(card(), conv, can, now)).toBe('direct');
+  });
+  it('starts nothing for a missing, deleted, other or not-yet card, or another conversation', () => {
+    expect(joinFromLink(undefined, conv, can, now)).toBeNull();
+    expect(joinFromLink(card({ deletedAt: at }), conv, can, now)).toBeNull();
+    expect(joinFromLink(card({ kind: 'text' } as never), conv, can, now)).toBeNull();
+    expect(joinFromLink(card({}, { state: 'proposed' }), conv, can, now)).toBeNull();
+    expect(joinFromLink(card({}, { kit: 'appointment' }), conv, can, now)).toBeNull();
+    expect(joinFromLink(card(), conv, can, new Date(Date.parse(at) - 3_600_000))).toBeNull();
+    expect(joinFromLink(card({ conversationId: 'c2' }), conv, can, now)).toBeNull();
+    expect(
+      joinFromLink(card({}, { fields: { start: { at }, place: 'Room 4' } }), conv, can, now),
+    ).toBeNull();
   });
 });

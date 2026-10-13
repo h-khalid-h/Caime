@@ -4302,4 +4302,8 @@ export const ar: Catalog = {
   'Another word': 'كلمة أخرى',
   'How Caime writes to you, and how people who know you see you labelled, in Arabic and French. Never guessed.':
     'كيف يكتب لك Caime، وكيف يرى من يعرفونك وصفك، بالعربية والفرنسية. لا يُخمَّن أبدًا.',
+  Meetings: 'الاجتماعات',
+  'No meetings yet': 'لا اجتماعات بعد',
+  'Meetings agreed in your conversations show here, with Join when it’s time.':
+    'تظهر هنا الاجتماعات المتفق عليها في محادثاتك، مع زر الانضمام حين يحين وقتها.',
 };

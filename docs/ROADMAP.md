@@ -621,8 +621,24 @@ outperforming the alternatives is reach and operations. In the order the review 
       `meetingCall.test.ts` (4); core 635 and app 194 pass, lint and typecheck clean, the web's
       initial JavaScript 448.1 KB before and after. Not run: the server suites and E2E (no
       Postgres in this session), and no E2E step for Join yet
-      [ ] Join in Meetings, the Calendar, the brief and the feed's URL; "starting now"; the
-      Meetings list
+      [x] Meetings (`/meetings`, beside Calls on People, and a row in the Calendar): the
+      calendar's list with only the meetings, the last month's as well as two months ahead,
+      each with Join or Open (core `calendarAction`, the same window as the card's, its end the
+      server's); `meetings` reserved as a handle (R35, `paths.test.ts`). Join from the calendar
+      and from a calendar app: a meeting held on Caime is "Caime" in the feed, and its URL is
+      the card's join address (core `joinPath`: `/c/<id>?seq=<n>&join=<card>`); the
+      conversation opens at the card and calls only when the card itself says it can be
+      joined now (`joinFromLink`: there, not deleted, an accepted meeting held here, inside its
+      window, in a conversation that can call), so an address alone starts nothing. Calendar
+      items carry the card's `seq`. Its three new strings are in every catalog (written in this
+      session, for a native reviewer). Tests: core `meetings.test.ts` (14), the app's
+      `meetingCall.test.ts` (6), the server's calendar test (the feed's join address, Caime as
+      the place, `seq` on the item; a link and a place unchanged); core 638, app 196 and server
+      749 pass (the six backup tests need `pg_dump`, which this session lacks, and fail the same
+      on `main`), lint and typecheck clean; the web's initial JavaScript 448.7 KB (448.1 before: the People
+      bar's button and the card's rule). Not run: E2E (no browsers in this session). Before
+      deploying: whether anyone already holds the handle `meetings`
+      [ ] "Starting now" at a meeting's time; Join in the brief
 - [ ] Candidates from the 2026-09-30 brainstorm review (R46), the owner's call: organizations
       taking WhatsApp Business messages into the Business inbox through Meta's official Cloud
       API ⛔ a Meta business account, verification and fees; contact matching by hashed phone
@@ -2700,3 +2716,7 @@ The six-slice review's plan, in its order; a block is ticked when its tests and 
 - 2026-10-13 — R83, first code: Join and Open on the meeting card (core `meetings.ts`, the app's
   `meetingCall`), by the kit's own Where and a join window, through the calls the conversation
   already makes. No server change; the server suites and E2E not run here (no Postgres).
+- 2026-10-13 — R83, Meetings and Join from anywhere: the Meetings list, Join and Open on the
+  calendar, and a meeting held on Caime joined from Google, Outlook or Apple Calendar through
+  the feed's URL, checked against the card before anything is called. Calendar items carry
+  `seq`; `meetings` is a reserved handle.

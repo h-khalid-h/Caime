@@ -30,6 +30,7 @@ import type {
   OkResponse,
 } from '@caime/core/api';
 import { tr } from '@caime/core/i18n';
+import { joinPath, meetingVenue } from '@caime/core/meetings';
 import type { FastifyInstance, FastifyReply } from 'fastify';
 import { z } from 'zod';
 import type { AppContext } from '../context';
@@ -144,14 +145,21 @@ export async function calendarEvents(
     limit: MAX_EVENTS,
     agreedOnly: true,
   })) {
-    const url = where(card.conversationId);
+    // A meeting held on Caime (R83) is joined from the calendar app: its address opens the
+    // conversation at the card and joins it (the app checks the card first).
+    const here = card.kit === 'meeting' && card.hasTime && meetingVenue(card.place) === 'caime';
+    const url = here
+      ? `${base}${joinPath(card.conversationId, card.seq, card.messageId)}`
+      : where(card.conversationId);
     // As long as the app's calendar says (M16): as booked, as the field says, else an hour.
     const minutes = minutesOf(card);
     events.push({
       uid: `${card.kit}-${card.messageId}@caime`,
       summary: card.title,
-      description: `${KITS[card.kit].name}, agreed in Caime: ${url}`,
-      location: card.place,
+      description: here
+        ? `${KITS[card.kit].name} on Caime. Join: ${url}`
+        : `${KITS[card.kit].name}, agreed in Caime: ${url}`,
+      location: here ? 'Caime' : card.place,
       url,
       ...(card.hasTime
         ? { start: card.at, end: new Date(card.at.getTime() + minutes * 60_000) }

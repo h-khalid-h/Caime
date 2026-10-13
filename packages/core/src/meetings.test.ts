@@ -1,8 +1,10 @@
 import { describe, expect, it } from 'vitest';
 import {
+  calendarAction,
   JOIN_EARLY_MS,
   JOIN_LATE_MS,
   joinOpen,
+  joinPath,
   meetingAction,
   meetingLink,
   meetingVenue,
@@ -95,5 +97,36 @@ describe('what an accepted meeting card offers (R83)', () => {
     }
     expect(meetingAction(card('accepted', undefined, 'appointment'), now)).toBeNull();
     expect(meetingAction({ kit: 'meeting', state: 'accepted', fields: null }, now)).toBeNull();
+  });
+});
+
+describe('a meeting in the calendar (R83)', () => {
+  const at = '2026-10-13T10:00:00.000Z';
+  const ms = Date.parse(at);
+  const item = (over: Record<string, unknown> = {}) => ({
+    kind: 'meeting',
+    state: 'agreed',
+    hasTime: true,
+    at,
+    endAt: '2026-10-13T10:45:00.000Z',
+    place: null,
+    ...over,
+  });
+  it('offers Join from ten minutes before to half an hour after its end', () => {
+    expect(calendarAction(item(), new Date(ms - JOIN_EARLY_MS))).toBe('join');
+    expect(calendarAction(item(), new Date(ms - JOIN_EARLY_MS - 1))).toBeNull();
+    expect(calendarAction(item(), new Date(ms + 45 * 60_000 + JOIN_LATE_MS))).toBe('join');
+    expect(calendarAction(item(), new Date(ms + 45 * 60_000 + JOIN_LATE_MS + 1))).toBeNull();
+  });
+  it('offers Open for a link, nothing in person, asked, all day, or for another kind', () => {
+    const now = new Date(ms);
+    expect(calendarAction(item({ place: 'meet.google.com/x' }), now)).toBe('open');
+    expect(calendarAction(item({ place: 'Room 4' }), now)).toBeNull();
+    expect(calendarAction(item({ state: 'asked' }), now)).toBeNull();
+    expect(calendarAction(item({ hasTime: false }), now)).toBeNull();
+    expect(calendarAction(item({ kind: 'appointment' }), now)).toBeNull();
+  });
+  it('joins at the card, in its conversation', () => {
+    expect(joinPath('c-1', 42, 'm-1')).toBe('/c/c-1?seq=42&join=m-1');
   });
 });

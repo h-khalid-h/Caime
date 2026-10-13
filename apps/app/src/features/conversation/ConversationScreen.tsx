@@ -44,6 +44,7 @@ import { useKnownPrivate } from '@/features/e2ee/hooks';
 import { CodeChangedBanner, Downgraded, PrivateSheet } from '@/features/e2ee/parts';
 import { privateSupported } from '@/features/e2ee/support';
 import type { KitChoice, KitStart } from '@/features/kits/KitForm';
+import { joinFromLink } from '@/features/kits/meetingCall';
 import { OrgMark, VerifiedLine } from '@/features/orgs/kinds';
 import { handleOf } from '@/features/people/handleLine';
 import { useNow, useUserClock } from '@/lib/time';
@@ -102,8 +103,11 @@ export function ConversationScreen({
   kitStart = null,
   checkout = null,
   say = null,
+  join = null,
 }: {
   id: string;
+  /** A meeting's card to join (R83), checked here before anything is called. */
+  join?: string | null;
   focusSeq?: number;
   /** Words to start the composer with, to change before sending (Cai's follow-up, R68). */
   say?: string | null;
@@ -192,6 +196,24 @@ export function ConversationScreen({
   const offerCatchUp = aiReady && unreadAtOpen.current >= CATCH_UP_AFTER && catchUpDone !== id;
 
   const messages = useMemo(() => flatMessages(msgs.data), [msgs.data]);
+  // Joined from the calendar or a calendar app (R83): once the card is here, its call opens if
+  // the card says it can be joined now; otherwise the conversation just opens at the card.
+  const joinedFor = useRef<string | null>(null);
+  useEffect(() => {
+    if (!join || joinedFor.current === join || !conversation) return;
+    const card = messages.find((m) => m.id === join);
+    if (!card) return;
+    joinedFor.current = join;
+    router.setParams({ join: undefined });
+    const which = joinFromLink(
+      card,
+      conversation,
+      { calls: callsSupported, groupCalls: groupCallsSupported },
+      new Date(),
+    );
+    if (which === 'group') void startGroupCall(id, 'video');
+    else if (which === 'direct') void startCall(id, 'video');
+  }, [join, conversation, messages, id]);
   // A message arriving while the conversation is open is said to a screen reader (a list growing
   // says nothing by itself): who, and the preview, in a live region nobody sees. Only what came
   // after the screen opened, never the history.

@@ -187,6 +187,7 @@ export const RESERVED_HANDLES: readonly string[] = [
   'actions',
   'you',
   'calls',
+  'meetings',
   'connect',
   'search',
   // The invite route is /i/<token>: too short to be a handle, so it needs no reserving.
