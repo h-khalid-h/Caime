@@ -1204,4 +1204,6 @@ export const arServer: Catalog = {
     'ينضم الضيوف إلى اجتماعات متفق عليها في محادثة أو مجموعة.',
   'Guests are invited by people 18 or over.': 'يدعو الضيوفَ أشخاصٌ في الثامنة عشرة أو أكثر.',
   'That’s your own address.': 'هذا عنوانك أنت.',
+  'Guests aren’t available in this conversation.': 'دعوة الضيوف غير متاحة في هذه المحادثة.',
+  'They can’t join a conversation with guests.': 'لا يمكن الانضمام إلى محادثة فيها ضيوف.',
 };

@@ -14,16 +14,19 @@ import { GROUP_CALL_MAX } from '@caime/core/calls';
 import { tr } from '@caime/core/i18n';
 import { buildInvitation } from '@caime/core/ics';
 import { meetingVenue } from '@caime/core/meetings';
-import { sql } from 'kysely';
+import { type Kysely, sql, type Transaction } from 'kysely';
 import type { AppContext } from '../context';
-import { MESSAGE_COLUMNS, type Message } from '../db/schema';
+import { type Database, MESSAGE_COLUMNS, type Message } from '../db/schema';
 import { membership } from './conversation-views';
+import { lockConversation } from './conversations';
 import { hashToken, newToken } from './crypto';
-import { badRequest, forbidden, mailUnavailable, notFound } from './errors';
+import { AppError, badRequest, forbidden, mailUnavailable, notFound } from './errors';
 import { queueMeetingStart } from './meeting-start';
-import { messageViews, participantsOf, sendMessage } from './messages';
-import { isBlockedEitherWay } from './relations';
+import { assertCanMessage, messageViews, participantsOf, sendMessage } from './messages';
+import { between, isBlockedEitherWay } from './relations';
 import { minorOf } from './users';
+
+type Q = Kysely<Database> | Transaction<Database>;
 
 /** Everyone in a meeting's space, its people and its guests: as many as a group call takes. */
 export const SPACE_MAX = GROUP_CALL_MAX;
@@ -68,7 +71,15 @@ async function personFor(ctx: AppContext, email: string, name: string) {
   const find = () =>
     ctx.db
       .selectFrom('users')
-      .select(['id', 'kind', 'display_name', 'deleted_at', 'suspended_at'])
+      .select([
+        'id',
+        'kind',
+        'display_name',
+        'deleted_at',
+        'suspended_at',
+        'birth_date',
+        'time_zone',
+      ])
       .where('email', '=', email)
       .executeTakeFirst();
   const known = await find();
@@ -92,40 +103,126 @@ async function personFor(ctx: AppContext, email: string, name: string) {
   return find();
 }
 
-/** The meeting's space, made the first time: its group, its people, the card's copy. */
+/**
+ * Whether the one inviting may ask this person into a meeting (R84): a guest (provisional) unless
+ * either blocks the other; someone on Caime as a message request from them could reach them (their
+ * own setting, R14), or a connection; never anyone under 18 (R29), gone, suspended, or not a
+ * person.
+ */
+async function mayBeAsked(
+  ctx: AppContext,
+  actorId: string,
+  person: {
+    id: string;
+    kind: string;
+    deleted_at: Date | null;
+    suspended_at: Date | null;
+    birth_date: string | null;
+    time_zone: string;
+  },
+): Promise<boolean> {
+  if (person.deleted_at || person.suspended_at) return false;
+  if (person.kind === 'provisional') return !(await isBlockedEitherWay(ctx.db, actorId, person.id));
+  if (person.kind !== 'human' || minorOf(person, ctx.now())) return false;
+  const rel = await between(ctx.db, actorId, person.id);
+  if (rel.blockedByMe || rel.blockedMe) return false;
+  if (rel.connected) return true;
+  return assertCanMessage(ctx, actorId, person.id).then(
+    () => true,
+    (err) => {
+      if (err instanceof AppError) return false;
+      throw err;
+    },
+  );
+}
+
+/** A meeting's space as it's kept: claimed with its group, its card's copy once sent. */
+const spaceRowOf = (db: Q, cardId: string) =>
+  db
+    .selectFrom('meeting_spaces')
+    .select(['message_id', 'conversation_id', 'space_message_id', 'copy_client_id', 'created_by'])
+    .where((eb) => eb.or([eb('message_id', '=', cardId), eb('space_message_id', '=', cardId)]))
+    .executeTakeFirst();
+
+/** Whether anyone among these people is under 18. */
+async function anyMinor(db: Q, userIds: string[], now: Date): Promise<boolean> {
+  if (!userIds.length) return false;
+  const people = await db
+    .selectFrom('users')
+    .select(['birth_date', 'time_zone'])
+    .where('id', 'in', userIds)
+    .execute();
+  return people.some((u) => minorOf(u, now));
+}
+
+/** Whether a conversation holds a meeting's guest: a provisional person (R84). */
+async function holdsGuests(db: Q, conversationId: string): Promise<boolean> {
+  const row = await db
+    .selectFrom('participants as p')
+    .innerJoin('users as u', 'u.id', 'p.user_id')
+    .select('p.user_id')
+    .where('p.conversation_id', '=', conversationId)
+    .where('p.left_at', 'is', null)
+    .where('u.kind', '=', 'provisional')
+    .executeTakeFirst();
+  return Boolean(row);
+}
+
+/**
+ * Under 18 (R29): a guest is a stranger to everyone in their meeting, so nobody under 18 is ever
+ * in a conversation with one. Adding people to a conversation that holds a guest (the members
+ * route, under the conversation's lock) refuses anyone under 18 among them.
+ */
+export async function assertNoMinorWithGuests(
+  db: Q,
+  conversationId: string,
+  joining: string[],
+  now: Date,
+): Promise<void> {
+  if ((await holdsGuests(db, conversationId)) && (await anyMinor(db, joining, now)))
+    throw forbidden(tr('They can’t join a conversation with guests.'));
+}
+
+/** Refused the same way whatever the reason, as a money card is in such a conversation. */
+const noGuestsHere = () => forbidden(tr('Guests aren’t available in this conversation.'));
+
+/**
+ * The meeting's space, made the first time. Its group and its people are claimed under the
+ * card's row lock, so two invitations at once make one space; the card's copy is then sent with
+ * the claim's own client id by whoever claimed it, so an invitation that arrives while the space
+ * is being made (or after a failure part way) finishes it with the very same copy, never a
+ * second one. Nothing waits on a lock while it needs another connection.
+ */
 async function spaceFor(
   ctx: AppContext,
   actorId: string,
   card: Message,
   p: MeetingPayload,
 ): Promise<{ conversationId: string; messageId: string }> {
-  const existing = await ctx.db
-    .selectFrom('meeting_spaces')
-    .select(['conversation_id', 'space_message_id'])
-    .where((eb) => eb.or([eb('message_id', '=', card.id), eb('space_message_id', '=', card.id)]))
-    .executeTakeFirst();
-  if (existing)
-    return { conversationId: existing.conversation_id, messageId: existing.space_message_id };
-  const title = (
-    p.title ||
-    (typeof p.fields?.title === 'string' && p.fields.title) ||
-    tr('Meeting')
-  )
-    .toString()
-    .slice(0, 80);
-  const people = (await participantsOf(ctx.db, card.conversation_id)).map((x) => x.user_id);
-  const humans = await ctx.db
-    .selectFrom('users')
-    .select('id')
-    .where('id', 'in', people)
-    .where('kind', '=', 'human')
-    .where('deleted_at', 'is', null)
-    .execute();
-  const members = humans.map((h) => h.id).filter((id) => id !== actorId);
-  if (members.length + 1 >= SPACE_MAX)
-    throw badRequest(tr('A meeting holds eight people at most.'));
-  const spaceId = uuidv7();
-  await ctx.db.transaction().execute(async (trx) => {
+  const claim = await ctx.db.transaction().execute(async (trx) => {
+    await trx.selectFrom('messages').select('id').where('id', '=', card.id).forUpdate().execute();
+    const held = await spaceRowOf(trx, card.id);
+    if (held) return held;
+    const title = (
+      p.title ||
+      (typeof p.fields?.title === 'string' && p.fields.title) ||
+      tr('Meeting')
+    )
+      .toString()
+      .slice(0, 80);
+    const people = (await participantsOf(trx, card.conversation_id)).map((x) => x.user_id);
+    const humans = await trx
+      .selectFrom('users')
+      .select('id')
+      .where('id', 'in', people)
+      .where('kind', '=', 'human')
+      .where('deleted_at', 'is', null)
+      .execute();
+    const members = humans.map((h) => h.id).filter((id) => id !== actorId);
+    if (members.length + 1 >= SPACE_MAX)
+      throw badRequest(tr('A meeting holds eight people at most.'));
+    if (await anyMinor(trx, [actorId, ...members], ctx.now())) throw noGuestsHere();
+    const spaceId = uuidv7();
     await trx
       .insertInto('conversations')
       .values({
@@ -149,22 +246,49 @@ async function spaceFor(
         })),
       ])
       .execute();
+    const made = {
+      message_id: card.id,
+      conversation_id: spaceId,
+      space_message_id: null,
+      copy_client_id: uuidv4(),
+      created_by: actorId,
+    };
+    await trx.insertInto('meeting_spaces').values(made).execute();
+    return { ...made, told: [actorId, ...members] };
   });
-  // The card's copy, made as any meeting card is (its title, its fields as they are), then
-  // accepted as the original was.
-  const { message: copy } = await sendMessage(ctx, actorId, spaceId, {
-    clientId: uuidv4(),
+  // Everyone in it has it among their conversations, once it's there to be read.
+  if ('told' in claim)
+    await ctx.bus.publish(claim.told, {
+      type: 'conversation.created',
+      data: { conversationId: claim.conversation_id },
+    });
+  if (claim.space_message_id)
+    return { conversationId: claim.conversation_id, messageId: claim.space_message_id };
+  const spaceId = claim.conversation_id;
+  const originalId = claim.message_id;
+  // The card's copy, made as any meeting card is (its title, its fields as they are), by whoever
+  // made the space. Each step below gives the same result done twice. The space knows its copy
+  // before the copy is accepted, and a meeting takes guests only once it's accepted, so nobody
+  // can invite from the copy before the space says it's this one.
+  const { message: copy } = await sendMessage(ctx, claim.created_by ?? actorId, spaceId, {
+    clientId: claim.copy_client_id,
     kind: 'kit',
     payload: { kit: 'meeting', fields: p.fields ?? {} },
   });
   await ctx.db
+    .updateTable('meeting_spaces')
+    .set({ space_message_id: copy.id })
+    .where('message_id', '=', originalId)
+    .execute();
+  const accepted = await ctx.db
     .updateTable('messages')
     .set({
-      payload: sql`payload || ${JSON.stringify({ state: 'accepted', spaceOf: card.id })}::jsonb`,
+      payload: sql`payload || ${JSON.stringify({ state: 'accepted', spaceOf: originalId })}::jsonb`,
       is_request: false,
     })
     .where('id', '=', copy.id)
-    .execute();
+    .returning(MESSAGE_COLUMNS)
+    .executeTakeFirstOrThrow();
   const moved = await ctx.db
     .updateTable('messages')
     .set({
@@ -172,33 +296,26 @@ async function spaceFor(
         movedTo: { conversationId: spaceId, messageId: copy.id },
       })}::jsonb`,
     })
-    .where('id', '=', card.id)
+    .where('id', '=', originalId)
     .returning(MESSAGE_COLUMNS)
     .executeTakeFirstOrThrow();
-  await ctx.db
-    .insertInto('meeting_spaces')
-    .values({
-      message_id: card.id,
-      conversation_id: spaceId,
-      space_message_id: copy.id,
-      created_by: actorId,
-    })
-    .execute();
   await queueMeetingStart(ctx, copy.id);
-  // The original says where it went; everyone in the space has it among their conversations.
-  const everyone = (await participantsOf(ctx.db, card.conversation_id)).map((x) => x.user_id);
-  for (const userId of everyone) {
-    const [view] = await messageViews(ctx.db, [moved], userId);
-    if (view)
-      await ctx.bus.publish([userId], {
-        type: 'message.updated',
-        data: { ...view, clientId: null },
-      });
+  // Each side sees its card as it now is: the copy accepted in the space, and the original
+  // saying where it went.
+  for (const [m, conversationId] of [
+    [accepted, spaceId],
+    [moved, moved.conversation_id],
+  ] as const) {
+    const everyone = (await participantsOf(ctx.db, conversationId)).map((x) => x.user_id);
+    for (const userId of everyone) {
+      const [view] = await messageViews(ctx.db, [m], userId);
+      if (view)
+        await ctx.bus.publish([userId], {
+          type: 'message.updated',
+          data: { ...view, clientId: null },
+        });
+    }
   }
-  await ctx.bus.publish([actorId, ...members], {
-    type: 'conversation.created',
-    data: { conversationId: spaceId },
-  });
   return { conversationId: spaceId, messageId: copy.id };
 }
 
@@ -238,22 +355,41 @@ export async function inviteGuest(
   const p = meetingOk(ctx, card);
 
   const name = (input.name?.trim() || email.split('@')[0] || email).slice(0, 80);
+  // Under 18 (R29): a guest is a stranger to everyone in the meeting, so a meeting with someone
+  // under 18 in it, or in its space, takes none, said without saying who.
+  const held = await spaceRowOf(ctx.db, card.id);
+  const around = await participantsOf(ctx.db, held?.conversation_id ?? card.conversation_id);
+  if (
+    await anyMinor(
+      ctx.db,
+      around.map((x) => x.user_id),
+      ctx.now(),
+    )
+  )
+    throw noGuestsHere();
   const person = await personFor(ctx, email, name);
-  // An address whose account is gone, suspended or blocks either way: nothing is sent, and
-  // nothing says so (an invitation never tells whether an address is on Caime).
-  const reachable =
-    person &&
-    !person.deleted_at &&
-    !person.suspended_at &&
-    (person.kind === 'human' || person.kind === 'provisional') &&
-    !(await isBlockedEitherWay(ctx.db, actorId, person.id));
+  // An address that may not be asked (gone, suspended, blocked either way, or someone on Caime a
+  // message request couldn't reach): nothing is sent, and nothing says so (an invitation never
+  // tells whether an address is on Caime).
+  const reachable = person && (await mayBeAsked(ctx, actorId, person));
   const space = await spaceFor(ctx, actorId, card, p);
   if (!reachable || !person) return space;
 
-  const inSpace = await participantsOf(ctx.db, space.conversationId);
-  if (!inSpace.some((x) => x.user_id === person.id)) {
+  await ctx.db.transaction().execute(async (trx) => {
+    // Under the lock the members route takes, so nobody joins meanwhile past the limit or under 18.
+    await lockConversation(trx, space.conversationId);
+    const inSpace = await participantsOf(trx, space.conversationId);
+    if (inSpace.some((x) => x.user_id === person.id)) return;
     if (inSpace.length >= SPACE_MAX) throw badRequest(tr('A meeting holds eight people at most.'));
-    await ctx.db
+    if (
+      await anyMinor(
+        trx,
+        inSpace.map((x) => x.user_id),
+        ctx.now(),
+      )
+    )
+      throw noGuestsHere();
+    await trx
       .insertInto('participants')
       .values({
         conversation_id: space.conversationId,
@@ -264,7 +400,7 @@ export async function inviteGuest(
         request_state: person.kind === 'human' ? 'pending' : null,
       })
       .execute();
-  }
+  });
   // Their own link: a new one each time they're invited again, the last one ended.
   const token = newToken('cmg');
   await ctx.db

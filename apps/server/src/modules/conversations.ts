@@ -57,6 +57,7 @@ import {
 import { AppError, badRequest, forbidden, notFound } from '../lib/errors';
 import { recordEvent } from '../lib/events';
 import { leaveGroupCallsIn } from '../lib/group-calls';
+import { assertNoMinorWithGuests } from '../lib/meeting-guests';
 import { assertCanMessage, participantsOf } from '../lib/messages';
 import { between, pairKey, readReceiptsVisibleTo } from '../lib/relations';
 import { spaceChanged } from '../lib/spaces';
@@ -416,6 +417,8 @@ export async function conversationRoutes(app: FastifyInstance, ctx: AppContext) 
       if (!canAddToGroup(mine.role)) throw forbidden(tr('Only admins can add people.'));
       const inIt = new Set((await participantsOf(trx, id)).map((p) => p.user_id));
       const fresh = [...new Set(body.userIds)].filter((u) => !inIt.has(u));
+      // A meeting's guests are strangers to everyone in it (R84): nobody under 18 joins them (R29).
+      await assertNoMinorWithGuests(trx, id, fresh, ctx.now());
       // Every message in a private group is sealed for each of its people's devices.
       if (conversation.privacy_class === 'private' && inIt.size + fresh.length > PRIVATE_GROUP_MAX)
         throw privateGroupFull();

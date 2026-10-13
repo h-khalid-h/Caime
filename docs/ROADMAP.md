@@ -674,7 +674,13 @@ outperforming the alternatives is reach and operations. In the order the review 
       `buildInvitation`) goes by the transactional mail. Never from a private or business
       conversation, by someone under 18, or past eight people. The export lists invitations
       (never a link) and the privacy page says what's kept. Tests: `meeting-guests.test.ts`
-      (3), `ics.test.ts` (3 more), the route walk still refuses a guest everywhere
+      (3), `ics.test.ts` (3 more), the route walk still refuses a guest everywhere. In review
+      (2026-10-13): the space claimed under the card's row lock and its copy sent with the
+      claim's own client id, so two invitations at once make one space; nobody under 18 ever
+      in a conversation with a guest (R29: the invitation refused where anyone under 18 is,
+      such an account never asked, the members route refusing one into a conversation that
+      holds a guest); someone on Caime asked only as a message request could reach them; the
+      link's token masked in the request log. `meeting-guests.test.ts` (6), `log.test.ts`
       [ ] Guests, the join page (`/j/<token>`), the guest's session and the routes the space opens
       to them; the invite field on the card (the app) ⛔ SMTP in production to send (the
       consent and recorder questions decided in R85)

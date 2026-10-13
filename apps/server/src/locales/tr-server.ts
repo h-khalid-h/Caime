@@ -1177,4 +1177,6 @@ export const turkishServer: Catalog = {
   'Guests are invited by people 18 or over.':
     'Misafirleri 18 yaşında ya da daha büyük kişiler davet eder.',
   'That’s your own address.': 'Bu sizin kendi adresiniz.',
+  'Guests aren’t available in this conversation.': 'Bu konuşmada misafir davet edilemiyor.',
+  'They can’t join a conversation with guests.': 'Misafir olan bir konuşmaya eklenemezler.',
 };
