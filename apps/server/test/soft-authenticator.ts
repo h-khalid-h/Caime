@@ -2,7 +2,8 @@
  * A software authenticator for the passkey tests (R36): a P-256 key made here, answering a
  * ceremony's options as a browser and a platform authenticator would, so the server's real
  * WebAuthn verification runs on real attestation and assertion bytes ("none" attestation, a
- * synced passkey: BE and BS set). `origin` is where it believes it is, to test a phishing page.
+ * synced passkey: BE and BS set). `origin` is where it believes it is, to test a phishing page;
+ * `counts: false` answers as a synced passkey does, its signature counter always 0.
  */
 import { createHash, generateKeyPairSync, randomBytes, sign } from 'node:crypto';
 import { isoCBOR } from '@simplewebauthn/server/helpers';
@@ -21,7 +22,12 @@ const BE = 0x08;
 const BS = 0x10;
 const AT = 0x40;
 
-export function softAuthenticator(origin: string, rpId = new URL(origin).hostname) {
+export function softAuthenticator(
+  origin: string,
+  rpId = new URL(origin).hostname,
+  /** A synced passkey (iCloud Keychain, Google Password Manager) counts nothing: always 0. */
+  { counts = true }: { counts?: boolean } = {},
+) {
   const { privateKey, publicKey } = generateKeyPairSync('ec', { namedCurve: 'P-256' });
   const jwk = publicKey.export({ format: 'jwk' });
   const credentialId = randomBytes(32);
@@ -79,7 +85,7 @@ export function softAuthenticator(origin: string, rpId = new URL(origin).hostnam
     },
     /** Answers sign-in options (`PublicKeyCredentialRequestOptionsJSON`). */
     get(options: Record<string, unknown>, as = origin, handle = userHandle) {
-      counter += 1;
+      if (counts) counter += 1;
       const authData = Buffer.concat([rpIdHash, Buffer.from([UP | UV | BE | BS]), u32(counter)]);
       const clientData = Buffer.from(
         JSON.stringify({ type: 'webauthn.get', challenge: options.challenge, origin: as }),

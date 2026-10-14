@@ -81,7 +81,7 @@ export async function addPasskey(password: string) {
 /** Signing in with whichever passkey this device holds for Caime: answers as a password's sign-in. */
 export async function signInWithPasskey(device: { client: 'web' | 'native'; deviceName?: string }) {
   if (!passkeysSupported()) throw Object.assign(new Error(), { name: 'NotSupportedError' });
-  const { challengeId, options } = await endpoints.passkeySignInOptions();
+  const { options } = await endpoints.passkeySignInOptions();
   const o = options as Record<string, unknown>;
   const found = (await navigator.credentials.get({
     publicKey: {
@@ -93,7 +93,6 @@ export async function signInWithPasskey(device: { client: 'web' | 'native'; devi
   if (!found) throw Object.assign(new Error(), { name: 'NotAllowedError' });
   const r = found.response as AuthenticatorAssertionResponse;
   return endpoints.passkeySignIn({
-    challengeId,
     credential: {
       id: found.id,
       rawId: toB64(found.rawId),

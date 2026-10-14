@@ -2458,6 +2458,14 @@ export interface PasskeyCeremonyResponse {
   challengeId: string;
   options: Record<string, unknown>;
 }
+
+/**
+ * Signing in with a passkey: WebAuthn's options in their JSON form. Their challenge is signed by
+ * the server and carries its deadline, so the answer needs nothing else to be checked.
+ */
+export interface PasskeySignInOptionsResponse {
+  options: Record<string, unknown>;
+}
 export interface RecoverResponse extends AuthResponse {
   recoveryCodesLeft: number;
 }

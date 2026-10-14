@@ -102,6 +102,7 @@ import type {
   OrgUpdatesView,
   PasskeyCeremonyResponse,
   PasskeyResponse,
+  PasskeySignInOptionsResponse,
   PasskeysResponse,
   PeopleSearchResponse,
   PersonalTokenCreatedResponse,
@@ -233,9 +234,9 @@ export const endpoints = {
   addPasskey: (body: { challengeId: string; credential: Record<string, unknown> }) =>
     api.post<PasskeyResponse>('/auth/passkeys', body),
   removePasskey: (id: string) => api.del<OkResponse>(`/me/passkeys/${encodeURIComponent(id)}`),
-  passkeySignInOptions: () => api.post<PasskeyCeremonyResponse>('/auth/passkeys/signin/options'),
+  passkeySignInOptions: () =>
+    api.post<PasskeySignInOptionsResponse>('/auth/passkeys/signin/options'),
   passkeySignIn: (body: {
-    challengeId: string;
     credential: Record<string, unknown>;
     client: 'web' | 'native';
     deviceName?: string;

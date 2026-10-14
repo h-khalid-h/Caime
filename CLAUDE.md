@@ -255,8 +255,11 @@ These are rules, not preferences.
   `@simplewebauthn/server` (pinned exact; the pnpm override keeps one `@peculiar/asn1-schema`,
   since two copies fail every signature with "Cannot get schema for 'ECDSASigValue'"), for the
   relying party `relyingParty(config)` reads from `PUBLIC_URL` (a new address strands every
-  passkey). A ceremony's challenge is `keepChallenge` then `takeChallenge` (deleted as it's read,
-  five minutes). Every way in makes its session through `createSession` (`lib/sessions.ts`) and
+  passkey). Adding one keeps its challenge (`keepChallenge` then `takeChallenge`, deleted as it's
+  read, five minutes); signing in keeps nothing for asking (`signinChallenge`: a nonce and a
+  deadline signed with `signingKey`, read back from the answer's client data by
+  `readSigninChallenge`) and writes the nonce only once a passkey has answered
+  (`spendSigninChallenge`), so an anonymous route never stores a row per request. Every way in makes its session through `createSession` (`lib/sessions.ts`) and
   its cookie through `lib/session-cookie.ts`, never its own insert; `endAllAccess` removes
   passkeys with the sessions and tokens, so a new way in joins it there. Tests use
   `test/soft-authenticator.ts`, the E2E Chromium's virtual authenticator over CDP; the browser's

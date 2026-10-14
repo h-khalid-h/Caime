@@ -10,6 +10,7 @@ import type {
   OkResponse,
   PasskeyCeremonyResponse,
   PasskeyResponse,
+  PasskeySignInOptionsResponse,
   PasskeysResponse,
 } from '@caime/core/api';
 import { tr } from '@caime/core/i18n';
@@ -30,11 +31,16 @@ import { audit } from '../lib/audit';
 import { verifyPassword } from '../lib/crypto';
 import { AppError, notFound } from '../lib/errors';
 import {
+  answeredChallenge,
   keepChallenge,
   PASSKEYS_MAX,
   passkeyName,
   passkeyView,
+  readSigninChallenge,
   relyingParty,
+  signinChallenge,
+  signingKey,
+  spendSigninChallenge,
   takeChallenge,
 } from '../lib/passkeys';
 import { clientInfo, createSession, passwordTry } from '../lib/sessions';
@@ -49,6 +55,13 @@ const notThisPasskey = () =>
 
 export async function passkeyRoutes(app: FastifyInstance, ctx: AppContext) {
   const rp = relyingParty(ctx.config);
+  // The sign-in challenges' key, read once (made once, for every instance), asked again on failure.
+  let key: Promise<Buffer> | null = null;
+  const signing = () =>
+    (key ??= signingKey(ctx).catch((err) => {
+      key = null;
+      throw err;
+    }));
 
   app.get('/me/passkeys', async (req): Promise<PasskeysResponse> => {
     const auth = requireAuth(req);
@@ -98,7 +111,7 @@ export async function passkeyRoutes(app: FastifyInstance, ctx: AppContext) {
       })),
       authenticatorSelection: { residentKey: 'required', userVerification: 'preferred' },
     });
-    const challengeId = await keepChallenge(ctx, 'register', auth.userId, options.challenge);
+    const challengeId = await keepChallenge(ctx, auth.userId, options.challenge);
     return { challengeId, options: options as unknown as Record<string, unknown> };
   });
 
@@ -106,7 +119,7 @@ export async function passkeyRoutes(app: FastifyInstance, ctx: AppContext) {
   app.post('/auth/passkeys', async (req): Promise<PasskeyResponse> => {
     const auth = requireAuth(req);
     const body = parse(PasskeyAddBody, req.body);
-    const challenge = await takeChallenge(ctx, body.challengeId, 'register', auth.userId);
+    const challenge = await takeChallenge(ctx, body.challengeId, auth.userId);
     if (!challenge) throw tooLate();
     const checked = await verifyRegistrationResponse({
       response: body.credential as unknown as RegistrationResponseJSON,
@@ -169,16 +182,19 @@ export async function passkeyRoutes(app: FastifyInstance, ctx: AppContext) {
     return { ok: true };
   });
 
-  /** Signing in, step one: a challenge for whichever passkey this device holds for Caime. */
-  app.post('/auth/passkeys/signin/options', async (req): Promise<PasskeyCeremonyResponse> => {
+  /**
+   * Signing in, step one: a challenge for whichever passkey this device holds for Caime, signed
+   * and with its own deadline, so asking for one stores nothing.
+   */
+  app.post('/auth/passkeys/signin/options', async (req): Promise<PasskeySignInOptionsResponse> => {
     const { ip } = clientInfo(req);
-    ctx.limiter.hit(`passkey-options:${ip}`, ctx.config.isTest ? 1000 : 30, 600_000);
+    ctx.limiter.hit(`passkey-options:${ip}`, ctx.config.isTest ? 1000 : 60, 600_000);
     const options = await generateAuthenticationOptions({
       rpID: rp.id,
       userVerification: 'preferred',
+      challenge: signinChallenge(await signing(), ctx.now()),
     });
-    const challengeId = await keepChallenge(ctx, 'signin', null, options.challenge);
-    return { challengeId, options: options as unknown as Record<string, unknown> };
+    return { options: options as unknown as Record<string, unknown> };
   });
 
   /** Signing in, step two: the passkey's answer checked against the key it was made with. */
@@ -186,9 +202,11 @@ export async function passkeyRoutes(app: FastifyInstance, ctx: AppContext) {
     const { ip, userAgent } = clientInfo(req);
     ctx.limiter.hit(`login:ip:${ip}`, ctx.config.isTest ? 1000 : 30, 600_000);
     const body = parse(PasskeySignInBody, req.body);
-    const challenge = await takeChallenge(ctx, body.challengeId, 'signin', null);
-    if (!challenge) throw tooLate();
     const response = body.credential as unknown as AuthenticationResponseJSON;
+    // The challenge the passkey signed must be one this server signed, still in its time.
+    const challenge = answeredChallenge(response.response?.clientDataJSON);
+    const issued = challenge ? readSigninChallenge(await signing(), challenge, ctx.now()) : null;
+    if (!challenge || !issued) throw tooLate();
     const found =
       typeof response.id === 'string'
         ? await ctx.db
@@ -236,6 +254,8 @@ export async function passkeyRoutes(app: FastifyInstance, ctx: AppContext) {
       requireUserVerification: false,
     }).catch(() => null);
     if (!checked?.verified) throw await refused();
+    // Once only: the same answer sent again (or twice at once) finds its challenge spent.
+    if (!(await spendSigninChallenge(ctx, challenge, issued))) throw tooLate();
     if (found.suspended_at) throw suspended();
     await ctx.db
       .updateTable('passkeys')

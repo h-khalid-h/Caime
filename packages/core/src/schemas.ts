@@ -620,8 +620,9 @@ export const ResetConfirmBody = z.object({
 });
 
 /**
- * A passkey's ceremony answered (R36): the challenge it answers and the browser's credential in
- * its JSON form (`PublicKeyCredential.toJSON()`), checked by the server's WebAuthn verifier.
+ * A passkey's ceremony answered (R36): the browser's credential in its JSON form
+ * (`PublicKeyCredential.toJSON()`), checked by the server's WebAuthn verifier, with the id of the
+ * challenge it answers when adding one (signing in, the challenge it signed says it all).
  */
 const PasskeyCredential = z.record(z.string(), z.unknown());
 
@@ -634,7 +635,6 @@ export const PasskeyAddBody = z.object({
 });
 
 export const PasskeySignInBody = z.object({
-  challengeId: z.string().uuid(),
   credential: PasskeyCredential,
   client: z.enum(['web', 'native']).default('web'),
   deviceName: z.string().max(80).optional(),

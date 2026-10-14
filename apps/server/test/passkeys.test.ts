@@ -1,8 +1,9 @@
 /**
  * Passkeys (R36): added after the password, listed and removed, and a way in that makes the
  * same session a password does; never for a phishing origin, another account's handle, a
- * suspended account or a challenge used once already; closed with every other way in by a
- * recovery; in the person's export without its key.
+ * suspended account, a challenge the server didn't sign or one used once already; asking to sign
+ * in stores nothing; closed with every other way in by a recovery; in the person's export
+ * without its key.
  */
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { PASSKEYS_MAX } from '../src/lib/passkeys';
@@ -42,13 +43,21 @@ async function addPasskey(who: Client, key: ReturnType<typeof softAuthenticator>
 async function signInWith(key: ReturnType<typeof softAuthenticator>, as?: string, handle?: string) {
   const opts = await post('/v1/auth/passkeys/signin/options', {});
   expect(opts.statusCode).toBe(200);
-  const { challengeId, options } = opts.json();
   return post('/v1/auth/passkeys/signin', {
-    challengeId,
-    credential: key.get(options, as, handle),
+    credential: key.get(opts.json().options, as, handle),
     client: 'native',
   });
 }
+
+const challenges = async () =>
+  Number(
+    (
+      await t.ctx.db
+        .selectFrom('passkey_challenges')
+        .select((eb) => eb.fn.countAll().as('n'))
+        .executeTakeFirstOrThrow()
+    ).n,
+  );
 
 beforeAll(async () => {
   t = await createTestApp();
@@ -122,7 +131,8 @@ describe('passkeys (R36)', () => {
 
   it('never for another origin, another account, a challenge used before or a suspended account', async () => {
     const sami = await signup(t, { displayName: 'Sami Aziz' });
-    const key = softAuthenticator(ORIGIN);
+    // Synced, as most are: its counter says nothing, so only the spent challenge stops a replay.
+    const key = softAuthenticator(ORIGIN, undefined, { counts: false });
     await addPasskey(sami, key);
     // A page elsewhere asking for Caime's passkey gets nothing.
     const phished = await signInWith(key, 'https://caime-login.example');
@@ -131,30 +141,28 @@ describe('passkeys (R36)', () => {
     // The authenticator says it's someone else's account: refused.
     const other = await signInWith(key, ORIGIN, Buffer.from(noor.user.id).toString('base64url'));
     expect(other.statusCode).toBe(401);
-    // An answer replayed with its challenge already spent.
+    // An answer replayed: the challenge it signed was spent by its first use.
     const opts = (await post('/v1/auth/passkeys/signin/options', {})).json();
     const answer = key.get(opts.options);
-    expect(
-      (
-        await post('/v1/auth/passkeys/signin', {
-          challengeId: opts.challengeId,
-          credential: answer,
-        })
-      ).statusCode,
-    ).toBe(200);
-    const again = await post('/v1/auth/passkeys/signin', {
-      challengeId: opts.challengeId,
-      credential: answer,
-    });
+    expect((await post('/v1/auth/passkeys/signin', { credential: answer })).statusCode).toBe(200);
+    const again = await post('/v1/auth/passkeys/signin', { credential: answer });
     expect(again.statusCode).toBe(400);
     expect(again.json().error.code).toBe('passkey_failed');
+    // One that counts is stopped by its counter first.
+    const counting = softAuthenticator(ORIGIN);
+    await addPasskey(await signup(t, { displayName: 'Dana Aziz' }), counting);
+    const twice = counting.get((await post('/v1/auth/passkeys/signin/options', {})).json().options);
+    expect((await post('/v1/auth/passkeys/signin', { credential: twice })).statusCode).toBe(200);
+    expect((await post('/v1/auth/passkeys/signin', { credential: twice })).statusCode).toBe(401);
+    // A challenge this server never signed, even with the passkey's real signature over it.
+    const forged = await post('/v1/auth/passkeys/signin', {
+      credential: key.get({ challenge: Buffer.alloc(56, 7).toString('base64url') }),
+    });
+    expect(forged.json().error.code).toBe('passkey_failed');
     // A challenge older than its few minutes is no use either.
     const stale = (await post('/v1/auth/passkeys/signin/options', {})).json();
     t.clock.advance(6 * 60_000);
-    const late = await post('/v1/auth/passkeys/signin', {
-      challengeId: stale.challengeId,
-      credential: key.get(stale.options),
-    });
+    const late = await post('/v1/auth/passkeys/signin', { credential: key.get(stale.options) });
     expect(late.json().error.code).toBe('passkey_failed');
     // Suspended, the passkey opens nothing.
     await t.ctx.db
@@ -213,7 +221,6 @@ describe('passkeys (R36)', () => {
     });
     expect(full.statusCode).toBe(409);
     expect(full.json().error.code).toBe('limit');
-    await post('/v1/auth/passkeys/signin/options', {});
     t.clock.advance(10 * 60_000);
     await sweepRecords(t.ctx);
     const left = await t.ctx.db
@@ -222,5 +229,23 @@ describe('passkeys (R36)', () => {
       .where('expires_at', '<', t.clock.now)
       .execute();
     expect(left).toEqual([]);
+  });
+
+  it('store nothing for asking: only a sign-in that worked is written down, and swept', async () => {
+    const omar = await signup(t, { displayName: 'Omar Said' });
+    const key = softAuthenticator(ORIGIN);
+    await addPasskey(omar, key);
+    const before = await challenges();
+    for (let i = 0; i < 5; i++)
+      expect((await post('/v1/auth/passkeys/signin/options', {})).statusCode).toBe(200);
+    expect(await challenges()).toBe(before);
+    // Nonsense in the answer's place writes nothing either.
+    await post('/v1/auth/passkeys/signin', { credential: { id: key.id, response: {} } });
+    expect(await challenges()).toBe(before);
+    expect((await signInWith(key)).statusCode).toBe(200);
+    expect(await challenges()).toBe(before + 1);
+    t.clock.advance(10 * 60_000);
+    await sweepRecords(t.ctx);
+    expect(await challenges()).toBe(0);
   });
 });

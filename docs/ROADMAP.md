@@ -2943,3 +2943,10 @@ The six-slice review's plan, in its order; a block is ticked when its tests and 
   kept its words there. Now the app asks once for the set it shows (`POST /notifications/shown`:
   the person's own still unread, with what each says now) and clears the rest, a burst whose
   preview was taken back included (`phone-push.test.ts`, `push.native.test.ts`).
+- 2026-10-14 — Passkey sign-in stores nothing for asking: the anonymous options route wrote a
+  challenge row per request (bounded only by the per-address limit until the daily sweep). Its
+  challenge is now a nonce and a deadline signed with a key made once (`signingKey`,
+  `server_settings`), checked from the answer itself, and the nonce is written only when a
+  passkey has signed in, which is also what stops a synced passkey's replay (its counter is
+  always 0). `passkeys.test.ts` adds a forged challenge, both kinds of replay and the count of
+  rows (none for asking, one per sign-in, swept).
