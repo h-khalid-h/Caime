@@ -95,7 +95,10 @@ The open slots are worked out on request, never kept: one query for the organiza
 appointment cards in the window, then arithmetic (`openSlots`), at most 200 slots an answer. The
 AI agent's prompt grows by at most eight lines of slots over fourteen days, read once per reply
 with the same cached knowledge prefix, so a booking costs the model one short turn more than an
-answer; the card itself is sent by the server, not written by the model.
+answer; the card itself is sent by the server, not written by the model. Where an organization
+takes orders, its menu adds a line per thing a customer may order (50 at most, the catalog's
+ceiling) and one query for the counts, read once per reply; an order the model asks for is
+checked and written by the server as anyone's is.
 
 Stock (R60) costs a view that lists a catalog with something sold by the piece one indexed
 query for the host's counts (`stockFor`; none without such an item), an order three statements

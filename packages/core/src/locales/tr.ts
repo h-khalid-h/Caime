@@ -2332,6 +2332,7 @@ export const turkish: Catalog = {
   'Hands it to your team': 'Ekibinize devreder',
   'Closes the conversation': 'Konuşmayı kapatır',
   'Books an appointment for your team to confirm': 'Ekibinizin onaylayacağı bir randevu alır',
+  'Writes down an order for your team to confirm': 'Ekibinizin onaylayacağı bir siparişi not alır',
   'Post, change and take back the organization’s updates':
     'Kuruluşun güncellemelerini paylaş, değiştir ve geri al',
   'Make its own cards, send them and move them on': 'Kendi kartlarını oluştur, gönder ve ilerlet',

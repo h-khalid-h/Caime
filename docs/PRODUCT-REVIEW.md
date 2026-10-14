@@ -661,8 +661,11 @@ with its reason, so it isn't proposed again without new facts.
   from it as it's placed, a cancelled order (or one taken down or erased before it's on its way)
   puts its share back, and ready or shipped spends it. The host sees every count; a customer
   sees one only once it limits their order (fewer left than one order may take), which is when
-  "Only 2 left" helps them and the rest of a shop's stock stays its own. Later layers: the AI
-  agent taking an order, options on an item (sizes, extras); the team's Orders view is built.
+  "Only 2 left" helps them and the rest of a shop's stock stays its own. The organization's AI
+  agent takes an order too (built 2026-10-14): from a menu of what that customer may order, once
+  they've said exactly what they want, as an Order card the team confirms; anything unclear,
+  off the menu or sold out goes to a person, as a booking does. Later layer: options on an item
+  (sizes, extras); the team's Orders view is built.
 - **R61 — Collections, and a page for each thing offered.** The owner's next idea
   (2026-10-05): an organization keeps several collections (bookings, products, services), and a
   public item or collection has its own address (`/o/<handle>/<item>`) so search and answer

@@ -71,8 +71,8 @@ export const arServer: Catalog = {
   'new · nobody has it · 2 min': 'جديدة · لا أحد يتولاها · منذ دقيقتين',
   'The agent answers': 'الوكيل يرد',
   'From what you wrote down, and it says so.': 'مما كتبته أنت، ويقول ذلك.',
-  'The organization’s AI agent answers only from its knowledge (up to {n} characters you gave it), is marked as an AI, and hands over to a person the moment it isn’t sure. With bookable hours set, it offers the open slots and books the one the customer picks, for the team to confirm.':
-    'لا يجيب وكيل الذكاء الاصطناعي للمؤسسة إلا من المعرفة التي زوّدته بها (حتى {n} حرف)، ويظهر بوضوح أنه ذكاء اصطناعي، ويحيل المحادثة إلى شخص متى لم يكن متأكدًا. وإن حدّدت ساعات الحجز، يعرض المواعيد المتاحة ويحجز ما يختاره العميل، ليؤكده الفريق.',
+  'The organization’s AI agent answers only from its knowledge (up to {n} characters you gave it), is marked as an AI, and hands over to a person the moment it isn’t sure. With bookable hours set, it offers the open slots and books the one the customer picks; with orders on, it writes down what they ask for from the menu. The team confirms each.':
+    'لا يجيب وكيل الذكاء الاصطناعي للمؤسسة إلا من المعرفة التي زوّدته بها (حتى {n} حرف)، ويظهر بوضوح أنه ذكاء اصطناعي، ويحيل المحادثة إلى شخص متى لم يكن متأكدًا. وإن حدّدت ساعات الحجز، يعرض المواعيد المتاحة ويحجز ما يختاره العميل؛ وإن فعّلت الطلبات، يدوّن ما يطلبه من القائمة. ويؤكد الفريق كلًّا منها.',
   'I can offer Thursday 10:00 or 10:30. Which suits you?':
     'المتاح يوم الخميس: 10:00 أو 10:30. أيهما يناسبك؟',
   'Cleaning · Thursday 10:00 · requested': 'تنظيف · الخميس 10:00 · أُرسل الطلب',

@@ -2438,6 +2438,7 @@ export const fr: Catalog = {
   'Closes the conversation': 'Ferme la conversation',
   'Books an appointment for your team to confirm':
     'Réserve un rendez-vous que votre équipe confirme',
+  'Writes down an order for your team to confirm': 'Note une commande que votre équipe confirme',
   'Post, change and take back the organization’s updates':
     'Publier, modifier et retirer les actualités de l’organisation',
   'Make its own cards, send them and move them on':

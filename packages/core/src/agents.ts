@@ -10,8 +10,10 @@ import { msg, tr } from './i18n';
 /**
  * What the agent does with a customer's latest messages. `book` (R51): the customer chose one of
  * the open slots it offered; the server sends an appointment card the customer confirms.
+ * `order` (R60): the customer said what they'd like from the menu; the server sends an Order
+ * card from the organization, checked against its catalog and stock, for the team to confirm.
  */
-export const AGENT_ACTIONS = ['answer', 'hand_over', 'resolve', 'book'] as const;
+export const AGENT_ACTIONS = ['answer', 'hand_over', 'resolve', 'book', 'order'] as const;
 export type AgentAction = (typeof AGENT_ACTIONS)[number];
 
 export const AGENT_ACTION_LABELS: Record<AgentAction, string> = {
@@ -19,6 +21,7 @@ export const AGENT_ACTION_LABELS: Record<AgentAction, string> = {
   hand_over: msg('Hands it to your team'),
   resolve: msg('Closes the conversation'),
   book: msg('Books an appointment for your team to confirm'),
+  order: msg('Writes down an order for your team to confirm'),
 };
 
 /** How long its name can be, and how much the organization can tell it. */

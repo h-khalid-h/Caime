@@ -116,7 +116,16 @@ function answer(body) {
         ?.replace(/^\[\d+\] Customer: /, '') ?? '';
     const say = (action, message, extra = {}) =>
       reply(
-        JSON.stringify({ action, message, bookAt: null, bookFor: null, bookItem: null, ...extra }),
+        JSON.stringify({
+          action,
+          message,
+          bookAt: null,
+          bookFor: null,
+          bookItem: null,
+          orderLines: null,
+          orderWay: null,
+          ...extra,
+        }),
       );
     const handOver = () =>
       say('hand_over', `I’ve passed this to the team at ${org}. Someone will answer here.`);

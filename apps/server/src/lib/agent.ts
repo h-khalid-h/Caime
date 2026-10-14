@@ -17,7 +17,9 @@ import {
   AGENT_CALLS_PER_CONVERSATION,
   AGENT_REPLIES_PER_CONVERSATION,
   isBooked,
+  isOrdered,
   ORG_ALLOWANCES,
+  orderableMax,
   tr,
   uuidv7,
 } from '@caime/core';
@@ -25,7 +27,7 @@ import { sql } from 'kysely';
 import type { AppContext } from '../context';
 import { type AgentReply, AiError, type AiUsage } from './ai';
 import { emitWebhook } from './apps';
-import { catalogLines, itemsFor, openSlotsFor, orgHost, slotLine } from './booking';
+import { catalogLines, itemsFor, menuLines, openSlotsFor, orgHost, slotLine } from './booking';
 import { onCustomerMessage, publishThread, threadViews } from './business';
 import { recordEvent } from './events';
 import { enqueue, registerJob } from './jobs';
@@ -33,6 +35,7 @@ import { messagePreview } from './messages';
 import { notify } from './notify';
 import { agentRepliesToday } from './plans';
 import { postAs } from './post-as';
+import { stockFor, withStock } from './stock';
 import { minorOf } from './users';
 
 /** How long it waits after a customer writes, so a message sent in three parts is read whole. */
@@ -428,6 +431,7 @@ export async function agentReply(ctx: AppContext, payload: Record<string, unknow
     id: thread.org_id,
     booking: thread.booking,
     booking_items: thread.booking_items,
+    ordering: thread.ordering,
     collections: thread.collections,
   });
   const items = itemsFor(host, {
@@ -435,6 +439,14 @@ export async function agentReply(ctx: AppContext, payload: Record<string, unknow
     spheres: [],
     adult: !minorOf(customer, ctx.now()),
   });
+  // What this customer may order (R60), as they'd see it: a count only where it limits them, so
+  // the agent knows no more of the stock than the customer would.
+  const orderable = host.ordering
+    ? withStock(items.filter(isOrdered), await stockFor(ctx.db, host.id, items), false)
+    : [];
+  const menuText = menuLines(orderable);
+  const menu =
+    host.ordering && menuText ? { lines: menuText, ways: host.ordering.fulfilment } : null;
   const open = await openSlotsFor(
     ctx,
     host,
@@ -459,6 +471,7 @@ export async function agentReply(ctx: AppContext, payload: Record<string, unknow
       today: todayForAgent(ctx.now(), customer.time_zone),
       slots: slots || null,
       catalog,
+      menu,
     },
     conversationId,
   );
@@ -511,6 +524,27 @@ export async function agentReply(ctx: AppContext, payload: Record<string, unknow
       // Not a slot it was given, or taken meanwhile: a person books it.
       await handOver(ctx, thread.org_id, conversationId, agent);
     }
+  }
+  // Ordered (R60): what the customer said they want from the menu becomes an Order card from the
+  // organization, checked against its catalog and stock as anyone's is; the team confirms it.
+  // Anything not on the menu, sold out, or a way not chosen where there are two: a person takes it.
+  if (reply.action === 'order') {
+    const onMenu = new Set(orderable.filter((i) => orderableMax(i) > 0).map((i) => i.id));
+    const lines = reply.orderLines ?? [];
+    const way = reply.orderWay ?? (menu?.ways.length === 1 ? (menu.ways[0] ?? null) : null);
+    let ordered = false;
+    if (menu && lines.length && lines.every((l) => onMenu.has(l.itemId)) && way) {
+      ordered = await postAs(ctx, agent.bot_user_id, conversationId, {
+        kind: 'kit',
+        payload: { kit: 'order_status', fields: {}, order: { lines, fulfilment: way } },
+      })
+        .then(() => true)
+        .catch((err) => {
+          ctx.log.warn({ err, conversationId }, 'ai agent could not order');
+          return false;
+        });
+    }
+    if (!ordered) await handOver(ctx, thread.org_id, conversationId, agent);
   }
   if (reply.action === 'hand_over') await handOver(ctx, thread.org_id, conversationId, agent);
   if (reply.action === 'resolve') {

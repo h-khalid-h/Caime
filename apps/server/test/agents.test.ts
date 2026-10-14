@@ -32,6 +32,8 @@ const agentSays = (action: string, message: string, extra: Record<string, unknow
           bookAt: null,
           bookFor: null,
           bookItem: null,
+          orderLines: null,
+          orderWay: null,
           ...extra,
         }),
       },
@@ -724,5 +726,94 @@ describe('an organization’s AI agent (PRD §74–75)', () => {
     expect(dinas.filter((m: any) => m.kind === 'kit')).toHaveLength(0);
     expect((await threadOf(noor, convo3)).agentHandedOverAt).not.toBeNull();
     await noor.req('PUT', `/v1/orgs/${orgId}/booking`, { booking: null });
+  });
+
+  it('takes an order from the menu as a card the team confirms, within the stock (R60)', async () => {
+    t.clock.advance(86_400_000 + 1);
+    const KIT = {
+      id: 'kit',
+      name: 'Whitening kit',
+      price: { value: 250, currency: 'EGP' },
+      unit: 'each',
+      minutes: null,
+      capacity: 1,
+      maxQuantity: 5,
+      audience: 'public',
+      providers: null,
+      askTopic: false,
+    };
+    // Without ordering, an order is a person's: no menu reaches the model.
+    const { c: rami, conversationId: none } = await newCustomer('Rami Orders');
+    await send(rami, 'Can I order a whitening kit?', none);
+    replies.push(agentSays('hand_over', PASSED_ON));
+    let at = requests.length;
+    await agentTurn();
+    expect(systemText(requests[at].system)).toContain('takes no orders here; hand over');
+    expect(requests[at].messages[0].content).not.toContain('<menu>');
+    // Orders on, two kits left: the menu says what this customer may order and how many.
+    const set = await noor.req('PUT', `/v1/orgs/${orgId}/booking`, {
+      booking: null,
+      items: [{ ...KIT, stock: 2 }],
+      ordering: { fulfilment: ['pickup', 'delivery'], note: null },
+    });
+    expect(set.statusCode, set.body).toBe(200);
+    const { c: mona, conversationId } = await newCustomer('Mona Orders');
+    await send(mona, 'Two whitening kits for delivery, please', conversationId);
+    replies.push(
+      agentSays('order', 'I’ve written your order down for the team to confirm.', {
+        orderLines: [{ itemId: 'kit', quantity: 2 }],
+        orderWay: 'delivery',
+      }),
+    );
+    at = requests.length;
+    await agentTurn();
+    expect(systemText(requests[at].system)).toContain('<menu> lists what the customer may order');
+    expect(requests[at].messages[0].content).toContain(
+      '<menu>\nkit · Whitening kit · EGP 250 · up to 2\n</menu>',
+    );
+    // An Order card from the organization follows its message, fixed by the server as any order
+    // is, and the stock is taken.
+    const seen = await messages(mona, conversationId);
+    expect(seen.at(-1)).toMatchObject({
+      kind: 'kit',
+      aiAgent: true,
+      automated: true,
+      payload: {
+        kit: 'order_status',
+        state: 'placed',
+        order: {
+          lines: [{ itemId: 'kit', quantity: 2 }],
+          total: { value: 500, currency: 'EGP' },
+          fulfilment: 'delivery',
+        },
+      },
+    });
+    expect((await noor.get(`/v1/orgs/${orgId}`)).org.bookingItems[0].stock).toBe(0);
+    // Sold out: the menu says so, and an order the model makes anyway goes to a person.
+    const { c: omid, conversationId: soldOut } = await newCustomer('Omid Orders');
+    await send(omid, 'One whitening kit, pickup please', soldOut);
+    replies.push(
+      agentSays('order', 'Done!', {
+        orderLines: [{ itemId: 'kit', quantity: 1 }],
+        orderWay: 'pickup',
+      }),
+    );
+    at = requests.length;
+    await agentTurn();
+    expect(requests[at].messages[0].content).toContain('kit · Whitening kit · EGP 250 · sold out');
+    expect((await messages(omid, soldOut)).filter((m: any) => m.kind === 'kit')).toHaveLength(0);
+    expect((await threadOf(noor, soldOut)).agentHandedOverAt).not.toBeNull();
+    // Back in stock, an order with no way chosen where there are two is a person's too.
+    await noor.req('PUT', `/v1/orgs/${orgId}/booking`, {
+      booking: null,
+      items: [{ ...KIT, stock: 3 }],
+    });
+    const { c: lena, conversationId: noWay } = await newCustomer('Lena Orders');
+    await send(lena, 'One whitening kit please', noWay);
+    replies.push(agentSays('order', 'Done!', { orderLines: [{ itemId: 'kit', quantity: 1 }] }));
+    await agentTurn();
+    expect((await messages(lena, noWay)).filter((m: any) => m.kind === 'kit')).toHaveLength(0);
+    expect((await threadOf(noor, noWay)).agentHandedOverAt).not.toBeNull();
+    await noor.req('PUT', `/v1/orgs/${orgId}/booking`, { booking: null, ordering: null });
   });
 });

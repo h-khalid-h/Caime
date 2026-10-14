@@ -2405,6 +2405,7 @@ export const ar: Catalog = {
   'Hands it to your team': 'يسلّمها إلى فريقك',
   'Closes the conversation': 'يغلق المحادثة',
   'Books an appointment for your team to confirm': 'يحجز موعدًا ليؤكده فريقك',
+  'Writes down an order for your team to confirm': 'يدوّن طلبًا ليؤكده فريقك',
   'Post, change and take back the organization’s updates': 'نشر تحديثات المؤسسة وتغييرها وسحبها',
   'Make its own cards, send them and move them on': 'إنشاء بطاقاته الخاصة وإرسالها ونقلها',
   'Suggested by Cai': 'اقتراح من Cai',

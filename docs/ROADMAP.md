@@ -1197,8 +1197,19 @@ listed there with its owner.
       closed organization's go with its catalog. `stock.test.ts` (eight cases, the race for the
       last one included), core `booking.test.ts`, `e2e/bookings.spec.ts` (the last one ordered,
       sold out on the sheet, the visitor's page and the team's setup).
-- [ ] Later layers of R60: the AI agent taking an order, options on an item (sizes, extras). (The
-      team's Orders view shipped with the Business inbox's views, `OrgOrders.tsx`.)
+- [x] R60, the organization's AI agent takes an order: where the organization takes orders, the
+      agent reads a `<menu>` of what this customer may order (`menuLines`: id, name, price, "up to
+      n" or "sold out", from the items as the customer sees them, so it knows no more of the stock
+      than they would) and the ways it's had; once the customer has said exactly what they want
+      (and pickup or delivery where both are offered) it answers `order` with `orderLines` and
+      `orderWay`, and the server posts an Order card from the organization through `sendMessage`,
+      checked against the catalog and the stock like anyone's, for the team to confirm. Anything
+      not on the menu, sold out, refused, or a way not chosen where there are two goes to a
+      person; it never says an order is confirmed. Without ordering, no menu is sent and orders
+      stay a person's. `agents.test.ts` (an order placed and its stock taken, sold out and no way
+      handed over, no menu without ordering).
+- [ ] Later layers of R60: options on an item (sizes, extras). (The team's Orders view shipped
+      with the Business inbox's views, `OrgOrders.tsx`.)
 - [x] R61: collections and a page for each thing offered. `CatalogCollection` (core
       `catalog.ts`: addresses with `slugify`/`withSlugs`/`bySlug`, `RESERVED_SLUGS`) on
       `users.collections` and `organizations.collections` (migration 0055); an item gains its
@@ -3002,3 +3013,7 @@ The six-slice review's plan, in its order; a block is ticked when its tests and 
   and "Only one left" on the picker, the item's sheet, the public page and its schema.org offer,
   in all four languages. The setup sends a count only where it changed, so an order since it
   was opened isn't undone.
+- 2026-10-14 — R60, the AI agent takes an order: a `<menu>` of what the customer may order (a
+  count only where it limits them), the `order` action with its lines and way, an Order card
+  from the organization checked by the server as anyone's is, and a person for anything off the
+  menu, sold out or unclear.

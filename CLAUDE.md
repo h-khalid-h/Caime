@@ -398,7 +398,11 @@ These are rules, not preferences.
   `lib/paths.ts`), which lands in the conversation on the card's form (`?book=1` →
   `Composer.openKit`); the profile's and the organization's Book buttons do the same. The agent
   gets `<catalog>` lines (`catalogLines`) and its slots are the first item's; `book` carries
-  `bookItem`. The E2E stand-in and `agentSays` answer `bookItem: null`.
+  `bookItem`. Where the organization takes orders it gets a `<menu>` too (`menuLines`, from the
+  items as that customer sees them, `withStock(…, false)`), and `order` carries `orderLines` and
+  `orderWay`, posted as an Order card through `postAs` and `sendMessage` like anyone's order;
+  anything the server refuses, or a way not chosen where there are two, hands over. The E2E
+  stand-in and `agentSays` answer `bookItem`, `orderLines` and `orderWay` as null.
 - Orders (R60) are the same catalog: an item with `unit: 'each'` is ordered by the piece (no
   slots, no providers), and a host's `ordering` (core `OrderingSettings`: `fulfilment`, `note`;
   null is off) is set with the hours through the same body (`ordering` left out keeps it). The

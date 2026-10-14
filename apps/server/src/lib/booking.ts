@@ -22,9 +22,11 @@ import {
   type CollectionInput,
   canBook,
   isBooked,
+  isOrdered,
   type OrderAsk,
   type OrderingSettings,
   openSlots,
+  orderableMax,
   type PaymentSettings,
   type PlacedOrder,
   placeOrder,
@@ -510,6 +512,26 @@ export function slotLine(at: Date, timeZone: string): string {
     'December',
   ][p.month - 1];
   return `${weekday} ${p.day} ${month}, ${String(p.hour).padStart(2, '0')}:${String(p.minute).padStart(2, '0')}`;
+}
+
+/**
+ * "<id> · Kunafa · EGP 60 · up to 5", "… · sold out": what a customer may order (R60), as the
+ * agent reads it, one item per line, from the items as that customer sees them (a count only
+ * where it limits their order).
+ */
+export function menuLines(all: BookingItem[]): string | null {
+  const items = all.filter(isOrdered);
+  if (items.length === 0) return null;
+  return items
+    .map((i) =>
+      [
+        i.id,
+        i.name,
+        i.price ? `${i.price.currency} ${i.price.value}` : 'free',
+        orderableMax(i) === 0 ? 'sold out' : `up to ${orderableMax(i)}`,
+      ].join(' · '),
+    )
+    .join('\n');
 }
 
 /** "<id> · Haircut · 45 min · EGP 200": the catalog as the agent reads it, one item per line. */
