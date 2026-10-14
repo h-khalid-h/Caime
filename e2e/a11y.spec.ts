@@ -189,10 +189,17 @@ test('what a visitor gets: the landing page, the site, entry screens, a person, 
     ['/sign-up', 'sign-up'],
     [`/@tariq.pub.${suffix}`, 'public person'],
     [`/o/nile.pub.${suffix}`, 'public organization'],
+    ['/@cai', 'Cai'],
+    ['/@panda?lang=ar', 'a Caime Friend (ar)'],
     ['/nothing-here', 'not found'],
   ] as const) {
     await page.goto(path);
     await audit(page, name, found);
+    if (path.startsWith('/@cai') || path.startsWith('/@panda'))
+      await page.screenshot({
+        path: `e2e/screenshots/phone-public-${path.slice(2).replace(/\?.*$/, '')}.png`,
+        fullPage: true,
+      });
   }
   await visible(page, /Caime/)
     .first()

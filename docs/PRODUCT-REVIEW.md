@@ -876,8 +876,9 @@ with its reason, so it isn't proposed again without new facts.
     and Turkish (`caiIntent`, held to whole questions so "what to do in Paris today" goes to the
     model) from three queries; its model call is `runAi('cai')` under the person's daily
     allowance, the light model at low effort, at most 1,024 tokens out.
-  - The weekly digest (2026-10-14) arrives in its chat (R68). Later: public pages for `@cai`
-    and each friend for answer engines, with sticker sets. "Cai in a conversation" was built in place (2026-10-14): a
+  - The weekly digest (2026-10-14) arrives in its chat (R68). Their public pages (built 2026-10-14)
+    say what each helps with and knows, from the very lines it says in its chat, in the reader's
+    language; Cai's is a `SoftwareApplication` with its features. Later: sticker sets on them. "Cai in a conversation" was built in place (2026-10-14): a
     question asked in the conversation's assist tools is answered from it, labelled, and kept
     nowhere, as a catch-up is (R17). Opening Cai's chat on a conversation is declined: what Cai
     wrote there would keep a copy of other people's words that no deletion or erasure reaches.

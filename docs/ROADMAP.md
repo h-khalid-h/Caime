@@ -1444,7 +1444,13 @@ listed there with its owner.
       scopes, which Google verifies before more than a hundred people may use them, and a
       Microsoft Entra app (any account) with Contacts.Read and People.Read; until then those two
       rows aren't offered and the phone, the picker and a file are.
-- [ ] Later in R67: public pages for @cai and the friends (answer engines), more of what each friend knows.
+- [x] R67, @cai's and the friends' public pages say what each does: its own help line and what it
+      knows (Cai's five things beyond its chat; a friend's tips, the lines it tells in its chat), the
+      friend drawn, `SoftwareApplication` with a `featureList` for Cai, every line in the reader's
+      language (it was English on an Arabic page: the words were translated before the reader's
+      language was known; now at render) (`public-pages.test.ts`, `e2e/a11y.spec.ts`).
+- [ ] Later in R67: more of what each friend knows than its three tips, each line one it can stand
+      behind in every language.
 - [ ] ⛔ A trademark and store-name clearance for "Caime" before the store builds (the owner's).
 - [x] R62, a split's shares paid with Pay: "Pay your share" on a split opens the Pay card with
       the share (they pay, the split's payer is paid, its amount, answering the split); between
@@ -3211,3 +3217,6 @@ The six-slice review's plan, in its order; a block is ticked when its tests and 
   to suggest, whether and how soon it asks about a quiet wait, and whether it speaks before a
   meeting; Usual is unchanged. The team's Bookings give a repeating appointment's "Every week" a
   line of its own, so a narrow pane no longer cuts it off.
+- 2026-10-14 — R67, Cai's and the friends' pages: what each helps with and knows, from the lines
+  it says in its chat, the friend drawn; fixed on the way: those pages showed a friend's words in
+  English to an Arabic reader.

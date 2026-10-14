@@ -159,8 +159,13 @@ test('a guest invited by email joins from their own link, and is in the meetingâ
   await expect(gus.page).toHaveURL(new RegExp(link.replace(/[/]/g, '\\/')));
   await expect(gus.page.getByTestId('guest-meeting')).toBeVisible();
 
-  // Nothing Gus's page asked for was refused (the server allows a guest only their meeting).
-  expect([...ana.errors, ...gus.errors]).toEqual([]);
+  // Nothing Gus's page asked for was refused (the server allows a guest only their meeting). A
+  // route candidate already on its way when Ana's leaving ended the call is refused as over
+  // (409, by design: a signal to an ended call says so); that race is the only one let through.
+  const lateCandidate = (e: string) =>
+    /^409 POST .*\/v1\/group-calls\/[0-9a-f-]+\/signal$/.test(e) ||
+    e === 'console: Failed to load resource: the server responded with a status of 409 (Conflict)';
+  expect([...ana.errors, ...gus.errors].filter((e) => !lateCandidate(e))).toEqual([]);
   await anaCtx.close();
   await benCtx.close();
   await gusCtx.close();

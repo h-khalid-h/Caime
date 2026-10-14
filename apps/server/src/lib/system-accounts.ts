@@ -531,6 +531,16 @@ const HELP = msg(
 );
 
 /**
+ * What Cai or a friend says it helps with, and a friend's tips, as keys, for its public page
+ * (R67): the very lines it says in its chat. Cai's tips are its page's own (`public-pages.ts`).
+ */
+export function publicFacts(handle: 'cai' | CharacterHandle): { helps: string; tips: string[] } {
+  if (handle === 'cai') return { helps: HELP, tips: [] };
+  const friend = FRIENDS[handle];
+  return { helps: friend.helps, tips: friend.tips };
+}
+
+/**
  * The conversation as the model reads it: "Person" and the account's own name ("Cai", "Panda"),
  * oldest first, never the person's name.
  */

@@ -604,4 +604,30 @@ describe('the readable web (R44)', () => {
     // People are never listed: a page is found by its handle, not in a directory.
     expect(verified.body).not.toContain('/@noor');
   });
+
+  it('Cai’s and each friend’s page says what it does, in the reader’s language (R67)', async () => {
+    const cai = (await visit('/@cai')).body;
+    expect(cai).toContain('<h1>Cai</h1>');
+    expect(cai).toContain('What Cai knows');
+    expect(cai).toContain('<li>Ask Cai in Search answers from your own messages');
+    expect(cai).toContain('"@type":"SoftwareApplication"');
+    expect(cai).toContain('"featureList":[');
+    // A friend: drawn, with what it helps with and the tips it tells in its chat.
+    const panda = (await visit('/@panda')).body;
+    expect(panda).toContain('class="friend"');
+    expect(panda).toContain('I keep an eye on what you’re waiting for from others.');
+    expect(panda).toContain('<li>Ask someone for something, and it waits under');
+    expect(panda).toContain('"@type":"Thing"');
+    const arabic = (await visit('/@cai', { 'accept-language': 'ar' })).body;
+    expect(arabic).toContain('ما في جعبة Cai');
+    expect(arabic).not.toContain('Ask Cai in Search answers');
+    // A friend's own lines too, which the page once showed in English to an Arabic reader.
+    const pandaAr = (await visit('/@panda', { 'accept-language': 'ar' })).body;
+    expect(pandaAr).toContain('الوفاء. الانتظار والمتابعات.');
+    expect(pandaAr).not.toContain('I keep an eye on');
+    expect(pandaAr).not.toContain('The Loyal.');
+    // A person's page has none of it.
+    const noorPage = (await visit(`/@${noor.user.handle}`)).body;
+    expect(noorPage).not.toContain('class="knows"');
+  });
 });

@@ -1249,6 +1249,17 @@ export const turkishServer: Catalog = {
   'That one is over. Stop it from the next one.':
     'Bu toplantı bitti. Tekrarı bir sonrakinden durdurun.',
   '{name}: stopped repeating': 'Tekrar durduruldu: {name}',
+  'What {name} knows': '{name} neler biliyor',
+  'A morning brief in its chat at the hour you choose, worked out by the rules at no cost.':
+    'Seçtiğin saatte sohbetinde bir sabah özeti; kurallarla, ücretsiz hazırlanır.',
+  'A look at your week: who you talked with, who went quiet, what you’ve waited on longest.':
+    'Haftana bir bakış: kiminle konuştun, kim sessizleşti, en uzun neyi bekliyorsun.',
+  'A wait you hand it comes back as a follow-up ready to send; nothing goes until you tap Send.':
+    'Ona bıraktığın bir bekleme, gönderilmeye hazır bir takip mesajı olarak döner; sen Gönder’e dokunmadan hiçbir şey gitmez.',
+  'Ask Cai in Search answers from your own messages and shows the ones it rests on.':
+    'Aramadaki Cai’ye sor, kendi mesajlarından yanıtlar ve dayandığı mesajları gösterir.',
+  'What it learned from your choices is listed in Settings, and forgotten when you say.':
+    'Seçimlerinden öğrendikleri Ayarlar’da listelenir ve sen söyleyince unutulur.',
   '{when} couldn’t be booked': '{when} ayrılamadı',
   'That time was taken. The times after it go on.': 'O saat doluydu. Sonraki saatler devam ediyor.',
   'It stopped repeating': 'Tekrar sona erdi',

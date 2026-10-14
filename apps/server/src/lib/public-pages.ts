@@ -33,9 +33,11 @@ import {
   dirOf,
   INTERFACE_LANGUAGES,
   type InterfaceLanguage,
+  msg,
   sentence,
   tr,
 } from '@caime/core/i18n';
+import type { CharacterHandle } from '@caime/core/system-accounts';
 import { tagged } from '@caime/core/tagged';
 import type { Kysely } from 'kysely';
 import type { Database } from '../db/schema';
@@ -64,6 +66,7 @@ import {
 } from './site-pages';
 import { sitemaps } from './sitemap-cache';
 import { stockFor, withStock } from './stock';
+import { publicFacts } from './system-accounts';
 import { clip } from './text';
 import { avatarUrl, minorOf, privacyOf } from './users';
 
@@ -101,6 +104,8 @@ export interface PublicPerson {
   pays: PaymentKind[];
   /** Cai or a Caime Friend (R67): Caime's own, said so, with what it's for as its bio. */
   system: SystemKind | null;
+  /** Cai's or a friend's own: what it helps with, what it knows, and the friend drawn. */
+  facts: { helps: string; knows: string[]; character: Character | null } | null;
 }
 export interface PublicOrg {
   kind: 'org';
@@ -246,6 +251,25 @@ export async function publicOrg(db: Q, handle: string): Promise<PublicOrg | null
   };
 }
 
+/** What Cai does beyond its chat, each built: its page lists them (R67); never said in its chat, so in Standard Arabic like any page. */
+const CAI_KNOWS = [
+  msg('A morning brief in its chat at the hour you choose, worked out by the rules at no cost.'),
+  msg('A look at your week: who you talked with, who went quiet, what you’ve waited on longest.'),
+  msg(
+    'A wait you hand it comes back as a follow-up ready to send; nothing goes until you tap Send.',
+  ),
+  msg('Ask Cai in Search answers from your own messages and shows the ones it rests on.'),
+  msg('What it learned from your choices is listed in Settings, and forgotten when you say.'),
+];
+
+/** What Cai's or a friend's page says, as keys: what it helps with, what it knows, who's drawn. */
+function factsOf(handle: 'cai' | CharacterHandle): NonNullable<PublicPerson['facts']> {
+  const { helps, tips } = publicFacts(handle);
+  return handle === 'cai'
+    ? { helps, knows: CAI_KNOWS, character: null }
+    : { helps, knows: tips, character: handle };
+}
+
 /**
  * A person's public face, by handle: only while they can be found by handle and are 18 or over,
  * and only the fields whose audience is everyone.
@@ -282,12 +306,14 @@ export async function publicPerson(db: Q, handle: string, now: Date): Promise<Pu
     handle: u.handle,
     displayName: u.display_name,
     avatarUrl: see('profilePhoto') ? avatarUrl(u) : null,
-    bio: own ? tr(own.about) : see('bio') ? u.bio : null,
+    // Cai's and a friend's words are keys, said in the reader's language as the page renders.
+    bio: own ? own.about : see('bio') ? u.bio : null,
     headline: identity?.headline ?? null,
     organizations,
     ...publicCatalog(u, await stockFor(db, u.id, catalogOf(u).items)),
     pays: publicPays(u),
     system: own?.kind ?? null,
+    facts: own ? factsOf(own.handle) : null,
   };
 }
 
@@ -666,37 +692,53 @@ export function renderPublic(
       };
     }
     case 'person': {
-      const line = [page.headline, page.organizations[0]?.name].filter(Boolean).join(' · ');
+      // The fetch ran before the reader's language was known: Cai's and a friend's words are
+      // translated here, inside it (R67).
+      const p = page.system
+        ? {
+            ...page,
+            bio: page.bio ? tr(page.bio) : null,
+            facts: page.facts && {
+              ...page.facts,
+              helps: tr(page.facts.helps),
+              knows: page.facts.knows.map((k) => tr(k)),
+            },
+          }
+        : page;
+      const line = [p.headline, p.organizations[0]?.name].filter(Boolean).join(' · ');
       const description = clip(
-        page.bio ?? line ?? tr('{name} is on {site}.', { name: page.displayName, site: SITE_NAME }),
+        p.bio ?? line ?? tr('{name} is on {site}.', { name: p.displayName, site: SITE_NAME }),
         200,
       );
       return {
         status: 200,
         lang: currentTranslator().language,
         head: meta({
-          title: `${page.displayName} (@${page.handle}) · ${SITE_NAME}`,
+          title: `${p.displayName} (@${p.handle}) · ${SITE_NAME}`,
           description,
-          image: page.avatarUrl ? `${publicUrl}${page.avatarUrl}` : null,
+          image: p.avatarUrl ? `${publicUrl}${p.avatarUrl}` : null,
           index: true,
           ld: {
             '@context': 'https://schema.org',
             // Cai is software; a Caime Friend is a character: neither is a person (R67).
             '@type':
-              page.system === 'assistant'
+              p.system === 'assistant'
                 ? 'SoftwareApplication'
-                : page.system === 'character'
+                : p.system === 'character'
                   ? 'Thing'
                   : 'Person',
-            name: page.displayName,
-            identifier: `@${page.handle}`,
+            name: p.displayName,
+            identifier: `@${p.handle}`,
             url,
-            ...(page.avatarUrl ? { image: `${publicUrl}${page.avatarUrl}` } : {}),
-            ...(page.bio ? { description: page.bio } : {}),
-            ...(page.headline ? { jobTitle: page.headline } : {}),
-            ...(page.organizations.length
+            ...(p.avatarUrl ? { image: `${publicUrl}${p.avatarUrl}` } : {}),
+            ...(p.bio ? { description: p.bio } : {}),
+            ...(p.headline ? { jobTitle: p.headline } : {}),
+            ...(p.system === 'assistant' && p.facts
+              ? { applicationCategory: 'CommunicationApplication', featureList: p.facts.knows }
+              : {}),
+            ...(p.organizations.length
               ? {
-                  memberOf: page.organizations.map((o) => ({
+                  memberOf: p.organizations.map((o) => ({
                     '@type': 'Organization',
                     name: o.name,
                     url: `${publicUrl}/o/${o.handle}`,
@@ -707,18 +749,25 @@ export function renderPublic(
         }),
         body: `
 <main class="pub pub-sheet" ${langAttrs()}>
-  <header class="masthead"><a class="wordmark" href="/">${SITE_NAME}</a><span class="mono">${esc(page.system === 'assistant' ? tr('Caime’s assistant') : page.system === 'character' ? tr('Caime Friend') : tr('a person on {site}', { site: SITE_NAME }))}</span></header>
-  ${page.avatarUrl ? `<img class="face" src="${esc(page.avatarUrl)}" alt="" width="96" height="96">` : ''}
-  <h1>${esc(page.displayName)}</h1>
-  ${page.bio ? `<p class="lead">${esc(page.bio)}</p>` : ''}
+  <header class="masthead"><a class="wordmark" href="/">${SITE_NAME}</a><span class="mono">${esc(p.system === 'assistant' ? tr('Caime’s assistant') : p.system === 'character' ? tr('Caime Friend') : tr('a person on {site}', { site: SITE_NAME }))}</span></header>
+  ${p.facts?.character ? friend(p.facts.character, 96, 'happy') : p.avatarUrl ? `<img class="face" src="${esc(p.avatarUrl)}" alt="" width="96" height="96">` : ''}
+  <h1>${esc(p.displayName)}</h1>
+  ${p.bio ? `<p class="lead">${esc(p.bio)}</p>` : ''}
+  ${
+    p.facts
+      ? `<p>${esc(p.facts.helps)}</p>
+  <h2 class="mono">${esc(tr('What {name} knows', { name: p.displayName }))}</h2>
+  <ul class="knows">${p.facts.knows.map((k) => `<li>${esc(k)}</li>`).join('')}</ul>`
+      : ''
+  }
   <dl class="spec">
-    <div>${label(tr('handle'))}<dd>@${esc(page.handle)}</dd></div>
-    ${page.headline ? `<div>${label(tr('headline'))}<dd>${esc(page.headline)}</dd></div>` : ''}
-    ${page.organizations.length ? `<div>${label(tr('with'))}<dd>${page.organizations.map((o) => `<a href="/o/${esc(o.handle)}">${esc(o.name)}</a>`).join(', ')}</dd></div>` : ''}
+    <div>${label(tr('handle'))}<dd>@${esc(p.handle)}</dd></div>
+    ${p.headline ? `<div>${label(tr('headline'))}<dd>${esc(p.headline)}</dd></div>` : ''}
+    ${p.organizations.length ? `<div>${label(tr('with'))}<dd>${p.organizations.map((o) => `<a href="/o/${esc(o.handle)}">${esc(o.name)}</a>`).join(', ')}</dd></div>` : ''}
     ${itemRows(page)}
     ${payRow(page)}
   </dl>
-  <p class="cta">${bookLink(page.items, `/@${page.handle}`, page.displayName)}${payLink(page, `/@${page.handle}`, page.items.length > 0)}<a href="${wayIn('sign-up', path)}"${page.items.length || page.pays.length ? ' class="quiet"' : ''}>${esc(tr('Message {name} on {site}', { name: page.displayName, site: SITE_NAME }))}</a> <a href="${wayIn('sign-in', path)}" class="quiet">${esc(tr('Sign in'))}</a></p>
+  <p class="cta">${bookLink(p.items, `/@${p.handle}`, p.displayName)}${payLink(page, `/@${p.handle}`, p.items.length > 0)}<a href="${wayIn('sign-up', path)}"${p.items.length || p.pays.length ? ' class="quiet"' : ''}>${esc(tr('Message {name} on {site}', { name: p.displayName, site: SITE_NAME }))}</a> <a href="${wayIn('sign-in', path)}" class="quiet">${esc(tr('Sign in'))}</a></p>
 </main>`,
       };
     }
@@ -1152,7 +1201,7 @@ body{margin:0}
 .pub-entry p,.pub-entry h1,.pub-entry dl{margin:0}
 .pub-entry .mono{${type('mono')};color:var(--text-tertiary)}
 .pub-entry .lead{${type('body')};color:var(--text-secondary)}
-.pub-entry .mark-letters{fill:var(--wordmark)}.pub-entry .mark-heart{fill:var(--accent)}.pub-entry .friend{display:inline-flex}
+.pub-entry .mark-letters{fill:var(--wordmark)}.pub-entry .mark-heart{fill:var(--accent)}.pub-entry .friend{display:inline-flex}.pub-sheet .friend{display:inline-flex}.pub-sheet h2.mono{${type('overline')};margin:24px 0 4px}
 .pub-entry .pane{flex:1;display:flex;flex-direction:column;min-width:0}
 .pub-entry .scroll{flex:1;display:flex;flex-direction:column;padding:8px 20px 20px}.pub-entry .col{width:100%;max-width:420px;margin:0 auto;display:flex;flex-direction:column;gap:20px}
 .pub-entry .bar{display:flex;align-items:center;min-height:48px;margin-inline-start:-8px}

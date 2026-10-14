@@ -1298,6 +1298,17 @@ export const arServer: Catalog = {
   'That one is over. Stop it from the next one.':
     'انتهت هذه المرة، وإيقاف التكرار يكون من المرة التالية.',
   '{name}: stopped repeating': 'أُوقف التكرار: {name}',
+  'What {name} knows': 'ما في جعبة {name}',
+  'A morning brief in its chat at the hour you choose, worked out by the rules at no cost.':
+    'موجز صباحي في محادثته في الساعة التي تختارها، تُعدّه القواعد بلا تكلفة.',
+  'A look at your week: who you talked with, who went quiet, what you’ve waited on longest.':
+    'نظرة على أسبوعك: من تحدثت معهم، ومن انقطع، وما طال انتظارك له.',
+  'A wait you hand it comes back as a follow-up ready to send; nothing goes until you tap Send.':
+    'الانتظار الذي تسلّمه له يعود متابعةً جاهزة للإرسال؛ ولا يُرسل شيء حتى تنقر «إرسال».',
+  'Ask Cai in Search answers from your own messages and shows the ones it rests on.':
+    '«اسأل Cai» في البحث يجيب من رسائلك أنت ويعرض الرسائل التي استند إليها.',
+  'What it learned from your choices is listed in Settings, and forgotten when you say.':
+    'ما تعلّمه من اختياراتك مدرج في الإعدادات، ويُنسى متى طلبت.',
   '{when} couldn’t be booked': 'تعذّر حجز {when}',
   'That time was taken. The times after it go on.':
     'كان هذا الموعد محجوزًا. المواعيد التالية مستمرة.',

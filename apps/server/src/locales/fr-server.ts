@@ -1305,6 +1305,17 @@ export const frServer: Catalog = {
   'That one is over. Stop it from the next one.':
     'Celle-ci est terminée. Arrêtez la répétition depuis la suivante.',
   '{name}: stopped repeating': 'Répétition arrêtée : {name}',
+  'What {name} knows': 'Ce que sait {name}',
+  'A morning brief in its chat at the hour you choose, worked out by the rules at no cost.':
+    'Un point du matin dans sa conversation, à l’heure choisie, établi par les règles sans frais.',
+  'A look at your week: who you talked with, who went quiet, what you’ve waited on longest.':
+    'Un regard sur votre semaine : avec qui vous avez parlé, qui s’est tu, ce que vous attendez depuis le plus longtemps.',
+  'A wait you hand it comes back as a follow-up ready to send; nothing goes until you tap Send.':
+    'Une attente que vous lui confiez revient en relance prête à envoyer ; rien ne part sans votre toucher sur Envoyer.',
+  'Ask Cai in Search answers from your own messages and shows the ones it rests on.':
+    'Demander à Cai, dans la recherche, répond à partir de vos propres messages et montre ceux sur lesquels il s’appuie.',
+  'What it learned from your choices is listed in Settings, and forgotten when you say.':
+    'Ce qu’il a appris de vos choix est listé dans les Réglages, et oublié quand vous le dites.',
   '{when} couldn’t be booked': '{when} n’a pas pu être réservé',
   'That time was taken. The times after it go on.':
     'Ce créneau était pris. Les suivants continuent.',
