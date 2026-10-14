@@ -1445,9 +1445,9 @@ listed there with its owner.
       (`connected-accounts.test.ts`, `e2e/connected-accounts.spec.ts`).
 - [ ] R90 on phones, built and not yet tried on one: the consent in the system's sign-in sheet,
       returning to `caime://settings/apps`.
-- [ ] ⛔ R90 needs the owner's clients updated (docs/DEPLOY.md, "Connected accounts"): the redirect
-      addresses `https://cai.me/v1/accounts/google/back` and `…/microsoft/back`, Google's Calendar
-      API and `calendar.freebusy` scope (Google verifies it), Microsoft's `Calendars.ReadBasic`.
+- [x] R90 on cai.me: the owner's Google client (calendar.freebusy, in Testing with its test
+      users until Google verifies it) and Microsoft client (`common`) carry the new redirect
+      addresses, and both connected a real calendar from Settings · Apps (the owner, 2026-10-14).
 - [ ] R90 next uses: files picked from Drive and OneDrive; mail sent as one's Gmail or Outlook
       address and Outlook mail read in; Gmail read only after the owner decides on Google's CASA.
 - [ ] R89 on phones, built and not yet tried on one: the phone's own address book (expo-contacts,
