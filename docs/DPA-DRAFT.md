@@ -1,16 +1,18 @@
 # Data processing agreement — draft for the lawyer
 
-**Status: a draft, not reviewed by a lawyer, not published.** It is written so the owner's lawyer
-has something to mark up rather than a blank page. Every fact in it about what Caime does is read
+**Status: decided in counsel's chair (2026-10-14, docs/LEGAL-REVIEW-2026-10.md, "Counsel's
+decisions"), not yet signed by anyone, not published.** Every point once marked for the lawyer is
+decided below; what's still open is a fact the owner sets or an engineering step, marked ⛔. Every fact in it about what Caime does is read
 from the code and checked by `apps/server/test/dpa-draft.test.ts`: the sub-processors are the
 ones in `packages/core/src/processors.ts` (the same list the privacy page renders), the
 retention spans are `KEPT_DAYS` and the API's limits, and the organization's controls are the
 routes in `apps/server/src/modules/orgs.ts`. The legal language is the lawyer's to write; the
-facts are ours to keep true. Clauses marked **[lawyer]** need a decision or wording from them.
+facts are ours to keep true.
 
 Parties, below, are **the Organization** (a clinic, a shop, a school, any organization with a
 verified page on Caime: the controller of its customers' conversations) and **the Operator**
-(the company running this Caime, named by `LEGAL_NAME` and `LEGAL_ADDRESS`: the processor). Where
+(the company running this Caime, named by `LEGAL_NAME`, `LEGAL_REGISTRATION` and `LEGAL_ADDRESS`:
+the processor). Where
 an organization's own people use Caime for themselves, their accounts are theirs and the Operator
 is their controller under the privacy policy; this agreement covers only the Organization's
 business conversations.
@@ -38,9 +40,10 @@ Annex III (the sub-processors).
 2. It lasts as long as the Organization has an open page on Caime. When the Organization closes
    (its owner closes it, or its last person leaves), its seats, tokens, apps, agent and billing
    end at once; its customers' conversations stay readable to the customers, and nothing more is
-   written in them by anyone. **[lawyer]** whether closing should also start a deletion clock for
-   the Organization's side, or the customers' right to keep what they were sent prevails (today it
-   does).
+   written in them by anyone. The customers' copies prevail: from closing, a customer's
+   conversation is theirs, held by the Operator as their controller under the privacy policy, as
+   any conversation they are a party to; what was the Organization's alone is deleted as section
+   12 says.
 
 ## 2. Nature and purpose of the processing
 
@@ -73,16 +76,19 @@ The Operator processes the Organization's data only to provide the service as do
 retention, its AI agent on or off and its text, its hours, its apps), and as required by law.
 Caime never reads, scores or sells the Organization's conversations, trains no model on them,
 and sends an AI only what the Organization turned on (the agent) with the customer's name masked.
-The Operator processes only on the Organization's documented instructions, which are the product's
-settings and this agreement, and tells the Organization at once if, in its view, an instruction
-infringes data protection law, unless the law forbids it to. Where the law requires the Operator
-to process otherwise, it tells the Organization first, unless the law forbids that too.
-**[lawyer]** the wording against the GDPR's Article 28(3)(a).
+The Operator processes the personal data only on documented instructions from the Organization,
+which are the product's settings and this agreement, including with regard to transfers to a
+third country (section 13), unless required to do so by Union or Member State law to which the
+Operator is subject; in that case it informs the Organization of that legal requirement before
+processing, unless that law prohibits such information on important grounds of public interest
+(the GDPR's Article 28(3)(a)). It tells the Organization at once if, in its opinion, an instruction
+infringes data protection law (Article 28(3), last paragraph).
 
 ## 5. Confidentiality
 
-Everyone who operates this Caime is bound to confidentiality, by contract or by a statutory
-duty, before they touch any of it. **[lawyer]** the wording. The Operator's own staff reach
+The Operator ensures that everyone it authorises to process the personal data has committed to
+confidentiality or is under an appropriate statutory obligation of confidentiality, before they
+reach any of it (the GDPR's Article 28(3)(b)). The Operator's own staff reach
 conversations only through the operator routes, each use in the audit log; the Operator has no
 routine access to message content and the product has no "support view" of a conversation.
 
@@ -100,11 +106,13 @@ What the product does today, from docs/SECURITY.md, which is checked against the
   changes, closing), kept as a hash chain the database seals at each commit and verifies daily,
   so a record changed or removed after the fact shows.
 - Daily database backups, each checked by reading it back, kept 30 days, copied off the host when
-  a bucket is configured. **[owner]** the bucket is not yet configured on production.
+  a bucket is configured. ⛔ The owner configures the bucket (DEPLOY.md, the environment in full);
+  until then backups stay on the host.
 - Rate limits on sign-up, sign-in, exports and domain checks; abuse reports read by a person.
 - End-to-end encryption is offered to people for private conversations; business conversations
   are not end-to-end encrypted, so that the team, the agent and the apps can read them. Say so.
-- A penetration test by a third party has **not** been done. **[owner]**
+- A penetration test by a third party has **not** been done. ⛔ The owner's, before the first
+  Organization handling health data signs.
 - **Health data.** Business conversations with a clinic, a pharmacy or a practitioner carry
   special categories of data (health). The Organization warrants it has a lawful basis for
   processing them (for a provider of care, the GDPR's Article 9(2)(h) with its duty of secrecy;
@@ -125,11 +133,12 @@ in writing, and if the Operator cannot offer a way round the objection, the Orga
 this agreement and close its page, exporting first (section 12), with any time paid for and not
 used returned. The Operator binds each sub-processor in writing to data protection obligations no
 weaker than this agreement's, and remains fully liable to the Organization for what a
-sub-processor does. **[lawyer]** the wording.
+sub-processor does (the GDPR's Article 28(2) and (4)).
 
 | Sub-processor | What it does | What it receives | When |
 | --- | --- | --- | --- |
-| The hosting provider (named by the Operator, `HOSTING_PROVIDER`) | Runs Caime’s servers, database and file storage. | Everything Caime keeps, encrypted on disk and in transit; nothing is read by it. | Always |
+| The hosting provider (named by the Operator, `HOSTING_PROVIDER`: Google Cloud, Doha, Qatar on 2026-10-14) | Runs Caime’s servers, database and file storage. | Everything Caime keeps, encrypted on disk and in transit; nothing is read by it. | Always |
+| The network in front of the servers (named by the Operator, `EDGE_PROVIDER`: Cloudflare, Inc. on 2026-10-14) | Carries every request between a device and Caime’s servers. | Network addresses and what passes, decrypted at its edge and encrypted again to the servers (a private conversation’s messages stay sealed); it keeps only what it needs to protect the service. | When the domain is proxied |
 | Stripe Payments Europe, Ltd. | Processes payments for paid plans. | The Organization’s name and its owner’s email, its plan and what it paid; card details reach Stripe alone. | When the Organization pays |
 | Anthropic, PBC | Provides the AI behind AI assist and organizations’ AI agents (Claude). | What the Organization told its agent and the latest messages of a customer’s conversation with it, without the customer’s name. Nothing from a private conversation, ever. | When the Organization turns its agent on |
 | Google, Mozilla, Apple or Microsoft (your browser’s push service) | Delivers notifications to a browser when Caime isn’t open. | A notification encrypted for that browser alone. | When a person allows notifications |
@@ -137,7 +146,7 @@ sub-processor does. **[lawyer]** the wording.
 | The speech-to-text provider the operator sets (`SPEECH_PROVIDER`: OpenAI, LLC or ElevenLabs, Inc.; docs/SPEECH.md) | Turns voice notes into words, for search and reading. | The audio of a voice note whose sender has AI assist on, and nothing else about anyone. Nothing from a private conversation, ever. | When configured, and only for a sender with AI assist on |
 | The mail provider the operator sets (`MAIL_PROVIDER`: ActiveCampaign, LLC (Postmark); PRODUCT-REVIEW R75) | Receives mail sent to Caime addresses, and sends as mail the replies written on Caime. | Those messages as mail carries them: the addresses, the subject, the words and any attachment. Nothing from a conversation not reached by mail, and nothing from a private one, ever. | When configured |
 | Cloudflare, Inc. | Relays calls that can’t connect directly between two devices. | Both devices’ network addresses, and the call’s media still encrypted end to end. | When configured, during a call |
-| The email provider the operator sets (SMTP) | Sends Caime’s mail: a confirmation code, a password reset link. | An email address and the message, which carries no conversation. | When configured |
+| The email provider the operator sets (SMTP), on cai.me ActiveCampaign, LLC (Postmark) | Sends Caime’s mail: a confirmation code, a password reset link. | An email address and the message, which carries no conversation. | When configured |
 
 ## 8. Assisting with data subjects' rights
 
@@ -167,14 +176,15 @@ information available to it, with its own duties under the GDPR's Articles 32 to
 security measures above, telling it of a breach (section 10), and, for a data protection impact
 assessment or a prior consultation with an authority, the facts about the processing in this
 agreement and in docs/SECURITY.md, and answers to the Organization's questions through
-`CONTACT_EMAIL` within 10 working days. **[lawyer]** whether that assistance is charged for.
+`CONTACT_EMAIL` within 10 working days. This assistance is free of charge.
 
 ## 9. The Operator's own retention
 
 Beyond the Organization's setting: ended sign-ins are kept 30 days, security records a year, a
 handle someone let go of a year (held from everyone, with nothing of whose it was), backups 30
-days. Deleting an account removes its data at once except what the law requires to keep
-**[lawyer]**.
+days. Deleting an account removes its data at once except what the law requires to keep: billing
+and accounting records for seven years (Estonia's Accounting Act, § 12), and security records for
+their span.
 
 ## 10. Personal data breaches
 
@@ -183,15 +193,19 @@ becoming aware of it, of a breach affecting its data, with what is known then: w
 which data, which customers, what was done and what is advised; and completes it as more is
 learned. It writes to the Organization's owner's email address, and the Organization keeps that
 address current. The Organization answers for telling its authority (the GDPR gives it 72 hours)
-and its customers; the Operator helps with the facts. **[lawyer]** the wording; 48 hours is the
-Operator's proposal, inside the Organization's 72.
+and its customers; the Operator helps with the facts. The 48 hours leave the Organization room
+inside its own 72 (the GDPR's Article 33).
 
 ## 11. Audits
 
 The Operator keeps an audit log of every operator action and every organization action named
-above, and makes it available to the Organization for its own actions **[lawyer]** on request or
-through the product. The code is open to inspection in the repository. **[lawyer]** the audit
-clause and its limits.
+above, and gives the Organization the entries about its own data on request within 10 working
+days. It makes available all information necessary to demonstrate compliance with Article 28 and
+allows for and contributes to audits (Article 28(3)(h)): once a year, on 30 days' written notice,
+by the Organization or an auditor it mandates who is bound to confidentiality, at the
+Organization's cost, first by documents (this agreement, docs/SECURITY.md, a third party's test
+report once there is one) and on site only where the documents don't answer, without access to
+other organizations' data. An authority's audit is not limited by this.
 
 ## 12. End of processing
 
@@ -200,38 +214,48 @@ is written in its conversations and its customers keep what they were sent (thei
 conversation they are a party to, as the privacy policy says). The Operator's proposal: the
 Organization's export stays available to its last owner for 30 days after closing, and after
 those 30 days the Operator deletes what was the Organization's alone (its team's roles, its
-settings, its knowledge text, its tokens and webhooks, its insights) and keeps the conversations
-only as its customers' copies, unless the law requires otherwise. **[lawyer]** whether the
-customers' copies prevail (today they do, and the product has no deletion clock after closing:
-a closed organization nobody continued is deleted only by the operator), and the wording.
+settings, its knowledge text, its catalog, its tokens and webhooks, its insights) and keeps the
+conversations only as its customers' copies (section 1), unless Union or Member State law
+requires storage (Article 28(3)(g)). ⛔ Engineering: the 30-day export window after closing and the
+deletion after it are built before a first Organization signs (ROADMAP); today a closed
+organization nobody continued is removed only by the operator.
 
 ## 13. International transfers
 
-The hosting provider's region is the Operator's choice (`HOSTING_PROVIDER`) **[owner]**: today
+The hosting provider's region is the Operator's choice (`HOSTING_PROVIDER`): today
 Google Cloud's `me-central1` region in Doha, Qatar (checked 2026-10-13 against Google's published
 address ranges), a country without an adequacy decision, so the transfer rests on the standard
-contractual clauses in Google's Cloud Data Processing Addendum **[lawyer]** confirm against the
-Operator's own Google Cloud agreement and name its contracting entity. Anthropic and Stripe process in the United States and Europe under their own transfer
-mechanisms **[lawyer]** cite them (Stripe Payments Europe is in Ireland; Anthropic, PBC and Expo
-are in the United States, Cloudflare, Inc. too; for the United States, the European Commission's
-standard contractual clauses, or the Data Privacy Framework where the company is certified). An
-Organization outside the EU (in Egypt, Saudi Arabia or the UAE) receives its customers' data from
-the Operator in the EU under its own law's rules on transfer **[lawyer]**.
+contractual clauses (Module 3, processor to processor) in Google's Cloud Data Processing
+Addendum, with the Operator's transfer impact assessment; the Operator has decided to move
+hosting to an EU region before launch, which ends this transfer. The other sub-processors outside
+the EEA: Cloudflare, Inc. (United States) under the EU-U.S. Data Privacy Framework, with the
+standard contractual clauses in its DPA as fallback; Anthropic, PBC (United States) under the
+standard contractual clauses incorporated in its Data Processing Addendum; Stripe Payments Europe
+(Ireland) within the EEA, its group's onward transfers under its own; Expo (650 Industries, Inc.,
+United States) and ActiveCampaign, LLC (Postmark, United States) under the Data Privacy Framework
+where certified, else the standard contractual clauses in their terms (⛔ the owner confirms each
+on the Framework's list before the provider is turned on). A copy of each safeguard is available
+from `CONTACT_EMAIL`. An Organization outside the EEA (in Egypt, Saudi Arabia or the UAE) receives
+its customers' data from the Operator under the European Commission's standard contractual
+clauses, Module 4 (processor to controller), incorporated in this agreement by reference; its own
+law's rules on receiving and transferring the data are its own as controller.
 
 ## 14. Liability, term and law
 
 - Each party is liable to the other for the damage its own breach of this agreement causes; the
   Operator's liability to the Organization is capped as the terms cap it (what the Organization
   paid for Caime in the 12 months before the claim), except for what the law does not allow to be
-  capped. **[lawyer]** whether a processor's liability for fines and data subjects' claims under
-  the GDPR's Article 82 should be allocated differently.
+  capped; the cap is the greater of those fees and EUR 5,000, and never applies to intent or gross
+  negligence (Estonia's Law of Obligations Act, § 106). Each party bears its own administrative
+  fines. Liability to data subjects under the GDPR's Article 82 is borne by each party by its
+  share of responsibility, with recourse between them (Article 82(5)).
 - This agreement starts when the Organization verifies its page and ends with section 12. It
   prevails over the terms where the two conflict about personal data.
-- It is under the same law and courts as the terms (`GOVERNING_LAW`, the Operator's; the terms
-  carry the clause) **[owner]** set it; the Organization's own data protection law applies to it
-  as the controller regardless.
+- It is under the law of Estonia, and Harju County Court (Harju Maakohus) settles a dispute about
+  it (`GOVERNING_LAW=Estonia`; ⛔ the owner sets it on the service); the Organization's own data
+  protection law applies to it as the controller regardless.
 
 ---
 
-What this draft is not: legal advice, or an agreement anyone has signed. What it is: the facts a
-lawyer needs, kept true by a test.
+What this is: the agreement as decided, its facts kept true by a test. What it is not yet: signed,
+or published; it's offered to an Organization once section 12's clock is built.

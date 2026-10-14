@@ -605,6 +605,10 @@ export const frServer: Catalog = {
   'A failed delivery of this app by that id':
     'Un envoi échoué de cette application avec cet identifiant',
   'A webhook address for that app': 'Une adresse de webhook pour cette application',
+  'Where you live, Caime is for people {age} and older.':
+    'Là où vous vivez, Caime est réservé aux personnes de {age} ans et plus.',
+  'Your plan starts as soon as you pay. In the EU you may withdraw within 14 days by writing to {email}, and you pay only for the days it was on. Terms: {terms}':
+    'Votre formule démarre dès le paiement. Dans l’UE, vous pouvez vous rétracter dans les 14 jours en écrivant à {email}, et vous ne payez alors que les jours où elle était active. Conditions : {terms}',
   'You need to be at least {MINIMUM_AGE} to use Caime.':
     'Il faut avoir au moins {MINIMUM_AGE} ans pour utiliser Caime.',
   'That email already has an account. Sign in instead?':

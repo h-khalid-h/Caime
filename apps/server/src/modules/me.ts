@@ -41,7 +41,7 @@ import {
 import { forgetLanguageOf } from '../lib/i18n';
 import { personInsights } from '../lib/insights';
 import { assertPersonInsights, planUsage } from '../lib/plans';
-import { avatarUrl, meView, minorOf, privacyOf } from '../lib/users';
+import { avatarUrl, meView, minorOf, oldEnoughIn, privacyOf, tooYoung } from '../lib/users';
 import { parse } from '../lib/validate';
 import { requireAuth } from '../plugins/auth';
 
@@ -133,6 +133,18 @@ export async function meRoutes(app: FastifyInstance, ctx: AppContext) {
     if (body.locale !== undefined) patch.locale = safeLocale(body.locale);
     if (body.country !== undefined && body.country !== current.country) {
       if (!isCountry(body.country)) throw badRequest(tr('Choose where you live.'));
+      // Where the law there asks more than Caime's minimum, a move there asks it too.
+      if (
+        current.birth_date &&
+        !oldEnoughIn(
+          ctx.config.MINIMUM_AGE,
+          body.country,
+          current.birth_date,
+          ctx.now(),
+          current.time_zone,
+        )
+      )
+        throw tooYoung(ctx.config.MINIMUM_AGE, body.country);
       patch.country = body.country;
       // A work week that was where they lived's own follows them to the new one (R31); one they
       // set themselves stays theirs.

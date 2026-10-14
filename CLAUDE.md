@@ -215,7 +215,8 @@ These are rules, not preferences.
   `applyOrgRetention` to what's there and by `retentionFor` (`lib/messages.ts`) to each new
   message as the shorter of it and the conversation's own; nothing else writes `expires_at` for
   a business message. Who processes data is `packages/core/src/processors.ts` plus
-  `processorsFor(config)` on the server (`HOSTING_PROVIDER` names the host): a new provider
+  `processorsFor(config)` on the server (`HOSTING_PROVIDER` names the host, `EDGE_PROVIDER` the
+  network in front of it, `SMTP_HOST_PROVIDERS` the company behind a mail host): a new provider
   joins the list, and the privacy page renders it; never prose about a company anywhere else.
 - An organization's door (R53): its public page's call to action is `doorPath(handle)`
   (`/o/<handle>?write`, `lib/public-pages.ts`), which `appPath` admits, `handleIn` reads as the
@@ -913,8 +914,10 @@ These are rules, not preferences.
 - What a country sets is one module, `@caime/core/countries` (R76): `countryFacts(code)` gives the
   currency, the calendar's first day (`weekStart`), the weekend, the week worked (the week less
   its weekend, in week order, with `WORKWEEK_OVERRIDES` where a country works otherwise), whether
-  the clock counts to 12, the Arabic variety and the ways people are paid there (`PAY_KINDS`,
-  brands as `msg` keys). Its data is CLDR's, written by `scripts/geo.mjs` (`countries-data.ts`,
+  the clock counts to 12, the Arabic variety, the ways people are paid there (`PAY_KINDS`,
+  brands as `msg` keys) and the age its law asks (`MINIMUM_AGE_BY_LAW`, counsel's: 18 in Egypt and
+  Saudi Arabia), which sign-up and a change of country read through `oldEnoughIn` and `tooYoung`
+  (`lib/users.ts`) and the privacy page and the terms name. Its data is CLDR's, written by `scripts/geo.mjs` (`countries-data.ts`,
   deviations from the world's defaults only; `currency-data.ts`, the one decimals table
   `minorUnits` reads; `calling-codes.ts` from the ITU list kept in the script; the server's
   `geo-data.ts` with each country's zones): run it again from a fresh `cldr-core` when a source

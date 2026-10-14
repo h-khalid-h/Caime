@@ -600,6 +600,10 @@ export const arServer: Catalog = {
   'This route is for an app’s token.': 'هذا المسار مخصص لرموز التطبيقات.',
   'A failed delivery of this app by that id': 'عملية تسليم فاشلة لهذا التطبيق بذلك المعرّف',
   'A webhook address for that app': 'عنوان ويب هوك لذلك التطبيق',
+  'Where you live, Caime is for people {age} and older.':
+    'في بلد الإقامة، Caime لمن بلغ {age} عامًا فأكثر.',
+  'Your plan starts as soon as you pay. In the EU you may withdraw within 14 days by writing to {email}, and you pay only for the days it was on. Terms: {terms}':
+    'تبدأ الخطة فور الدفع. في الاتحاد الأوروبي يمكن الانسحاب خلال 14 يومًا بالكتابة إلى {email}، ولا يُدفع إلا عن الأيام التي كانت فيها الخطة مفعّلة. الشروط: {terms}',
   'You need to be at least {MINIMUM_AGE} to use Caime.':
     'يجب أن يكون عمرك {MINIMUM_AGE} عامًا على الأقل لاستخدام Caime.',
   'That email already has an account. Sign in instead?':

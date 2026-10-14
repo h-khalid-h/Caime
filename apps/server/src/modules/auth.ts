@@ -10,7 +10,6 @@ import {
   EmailCodeBody,
   isMinor,
   LoginBody,
-  meetsMinimumAge,
   normalizeHandle,
   plausibleBirthDate,
   RecoverBody,
@@ -63,7 +62,7 @@ import { guestLink } from '../lib/meeting-join';
 import { endAllAccess } from '../lib/moderation';
 import { sendResetLink } from '../lib/reset';
 import { endSessions } from '../lib/sessions';
-import { meView, seedDefaults, workweekFor } from '../lib/users';
+import { meView, oldEnoughIn, seedDefaults, tooYoung, workweekFor } from '../lib/users';
 import { parse } from '../lib/validate';
 import {
   clearSessionCookie,
@@ -193,16 +192,13 @@ export async function authRoutes(app: FastifyInstance, ctx: AppContext) {
       throw badRequest(tr('Enter the day you were born.'), {
         fields: [{ path: 'birthDate', message: 'Enter the day you were born.' }],
       });
-    // Their birthday, where they are.
-    if (!meetsMinimumAge(body.birthDate, now, ctx.config.MINIMUM_AGE, timeZone)) {
-      throw new AppError(
-        400,
-        'too_young',
-        tr('You need to be at least {MINIMUM_AGE} to use Caime.', {
-          MINIMUM_AGE: ctx.config.MINIMUM_AGE,
-        }),
-      );
-    }
+    if (!isCountry(body.country))
+      throw badRequest(tr('Choose where you live.'), {
+        fields: [{ path: 'country', message: 'Choose where you live.' }],
+      });
+    // Their birthday, where they are, against the age where they live.
+    if (!oldEnoughIn(ctx.config.MINIMUM_AGE, body.country, body.birthDate, now, timeZone))
+      throw tooYoung(ctx.config.MINIMUM_AGE, body.country);
     const existing = await ctx.db
       .selectFrom('users')
       .select(['id', 'kind'])
@@ -217,10 +213,6 @@ export async function authRoutes(app: FastifyInstance, ctx: AppContext) {
     await assertHandleAvailable(ctx.db, body.handle, now);
     const id = claiming ?? uuidv7();
     const locale = safeLocale(body.locale);
-    if (!isCountry(body.country))
-      throw badRequest(tr('Choose where you live.'), {
-        fields: [{ path: 'country', message: 'Choose where you live.' }],
-      });
     const workweek = workweekFor(body.country);
     const passwordHash = await hashPassword(body.password);
     // The link that brought them, if it named someone (PRD §82); a handle that names nobody

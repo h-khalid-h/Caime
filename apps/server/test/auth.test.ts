@@ -105,7 +105,15 @@ describe('sign-up', () => {
         t.app.inject({
           method: 'POST',
           url: '/v1/auth/signup',
-          payload: { ...base, email: `${handle}@example.com`, handle, birthDate, timeZone },
+          // Where 13 is the minimum (Japan's own law asks nothing more of Caime).
+          payload: {
+            ...base,
+            email: `${handle}@example.com`,
+            handle,
+            birthDate,
+            timeZone,
+            country: 'JP',
+          },
         });
       const york = await at('America/New_York', 'yorkteen');
       expect(york.statusCode).toBe(400);
@@ -120,6 +128,34 @@ describe('sign-up', () => {
     } finally {
       t.clock.set(was);
     }
+  });
+
+  it('asks 18 of someone living where the law asks a guardian’s consent Caime can’t ask for (counsel, 2026-10-14)', async () => {
+    // The clock reads 23 September 2026: born 2010, 16; born 2008, 18.
+    const as = (country: string, handle: string, birthDate: string) =>
+      t.app.inject({
+        method: 'POST',
+        url: '/v1/auth/signup',
+        payload: { ...base, email: `${handle}@example.com`, handle, birthDate, country },
+      });
+    const cairo = await as('EG', 'cairoteen', '2010-01-01');
+    expect(cairo.statusCode).toBe(400);
+    expect(cairo.json().error).toMatchObject({
+      code: 'too_young',
+      message: 'Where you live, Caime is for people 18 and older.',
+    });
+    expect((await as('SA', 'riyadhteen', '2010-01-01')).json().error.code).toBe('too_young');
+    expect((await as('EG', 'cairoadult', '2008-01-01')).statusCode).toBe(201);
+    expect((await as('AE', 'dubaiteen', '2010-01-01')).statusCode).toBe(201);
+    // A move to such a country asks it too, and changes nothing when refused.
+    const teen = await signup(t, { country: 'AE', birthDate: '2010-01-01' });
+    const move = await teen.req('PATCH', '/v1/me', { country: 'SA' });
+    expect(move.statusCode).toBe(400);
+    expect(move.json().error.code).toBe('too_young');
+    expect((await teen.get('/v1/me')).user.country).toBe('AE');
+    // An adult moves freely.
+    const adult = await signup(t, { country: 'AE' });
+    expect((await adult.patch('/v1/me', { country: 'SA' })).user.country).toBe('SA');
   });
 
   it('asks for a day that has come, and a country that is one', async () => {
@@ -147,7 +183,15 @@ describe('sign-up', () => {
     const res = await t.app.inject({
       method: 'POST',
       url: '/v1/auth/signup',
-      payload: { ...base, email: 'teen@example.com', handle: 'teen', birthDate: '2010-12-31' },
+      // In the UAE, where 13 is the minimum (in Egypt it's 18: counsel, 2026-10-14).
+      payload: {
+        ...base,
+        email: 'teen@example.com',
+        handle: 'teen',
+        birthDate: '2010-12-31',
+        country: 'AE',
+        timeZone: 'Asia/Dubai',
+      },
     });
     expect(res.statusCode).toBe(201);
     const u = res.json().user;

@@ -90,9 +90,95 @@ The order matters: every step leaves Caime working. What each costs is in `docs/
    on `cai.me`; `https://www.cai.me/x?y=1` lands on `https://cai.me/x?y=1`; mail to
    `postmaster@cai.me` reaches the owner; Stripe's test event answers 200.
 
+9. **Watch it** (minutes, on the Google Cloud credits). Cloud Monitoring, Uptime checks: HTTPS
+   GET `https://cai.me/v1/readyz` every minute from three regions, expecting `"ok":true`, with an
+   alert policy that emails the owner after three failed minutes. The bare `/readyz` answers
+   404 on purpose (Metrics, below), so a check on it reads down. The Prometheus scrape and the
+   alerts below come when there's a scraper.
+10. **The origin only through Cloudflare.** The server answers on its own address too
+    (34.18.125.16, checked 2026-10-14), past Cloudflare's protections. In the Google Cloud
+    firewall, allow tcp 80 and 443 only from Cloudflare's published ranges
+    (`cloudflare.com/ips`). The panel (`host.datac.com`) points straight at the same address, so
+    either proxy it through Cloudflare as well or allow it from the owner's own address first,
+    or the panel and its API lock themselves out. SSH stays restricted to the owner. The origin's
+    certificate for `cai.me` verifies (checked 2026-10-14), so SSL Full (strict) works now.
+11. **Hosting in the EU** (counsel's decision, LEGAL-REVIEW-2026-10.md): a VM in a Google Cloud EU
+    region (`europe-west3` Frankfurt or `europe-west1` Belgium, the same machine type), EasyPanel
+    installed, the services recreated from this page, the database restored from the latest
+    backup (Backups, below) and `/data` copied across, then the `A @` record moved and
+    `HOSTING_PROVIDER` set to the new region. Before launch, while there's nothing to migrate
+    but the owner's own test data, it's an afternoon; after, a maintenance window.
+
 Caime Mail (below) is the next step, not part of this one: turning it on takes Postmark Pro and
 moves `cai.me`'s MX from Cloudflare to Postmark, so the staff addresses are routed by Caime
 itself from then on (`MAIL_STAFF_HANDLE`).
+
+### The service's environment, in full (2026-10-14)
+
+What `caime` carries in EasyPanel, in this order, read through EasyPanel's API (names only; the
+values are EasyPanel's alone). A commented line is a setting not yet in use, with what its value
+is: uncomment it once it's real, never with a placeholder, since a variable's presence is what
+turns its feature on.
+
+```
+# --- The service
+DATABASE_URL=…                      # set
+PUBLIC_URL=https://cai.me
+TRUST_PROXY=true
+LOG_LEVEL=info
+
+# --- Who runs Caime (the privacy page, the terms, the DPA)
+# LEGAL_ADDRESS=<DATA C OÜ's registered address, as in the Commercial Register>
+# LEGAL_REGISTRATION=<Estonian Commercial Register code>
+GOVERNING_LAW=Estonia               # counsel's decision, 2026-10-14
+HOSTING_PROVIDER=Google Cloud, Doha, Qatar
+EDGE_PROVIDER=Cloudflare, Inc.
+
+# --- The operator's tokens
+ADMIN_TOKEN=…                       # set
+METRICS_TOKEN=…                     # set
+
+# --- AI assist, Cai and organizations' agents
+ANTHROPIC_API_KEY=…                 # set
+
+# --- Billing (Stripe, live)
+STRIPE_SECRET_KEY=…                 # set
+STRIPE_WEBHOOK_SECRET=…             # set
+STRIPE_PORTAL_CONFIGURATION=…       # set
+# STRIPE_CONNECT_CLIENT_ID=<ca_… from Stripe Connect, when organizations' own checkout is turned on>
+# STRIPE_CONNECT_WEBHOOK_SECRET=<whsec_… of https://cai.me/v1/checkout/stripe/webhook>
+
+# --- Calls (Cloudflare TURN)
+CLOUDFLARE_TURN_KEY_ID=…            # set
+CLOUDFLARE_TURN_API_TOKEN=…         # set
+
+# --- Mail out (Postmark): codes and reset links (step 5)
+# SMTP_URL=smtp://<postmark server token>:<postmark server token>@smtp.postmarkapp.com:587
+
+# --- Caime Mail (R75), after Postmark Pro and the MX move (below)
+# MAIL_DOMAIN=cai.me
+# MAIL_PROVIDER=postmark
+# MAIL_PROVIDER_TOKEN=<postmark server token>
+# MAIL_WEBHOOK_SECRET=<openssl rand -hex 24>
+# MAIL_STAFF_HANDLE=<the handle that takes postmaster@, abuse@, support@, hello@ …>
+
+# --- Backups off this machine (Google Cloud Storage's S3 interface, an HMAC key; Backups, below)
+# BACKUP_S3_ENDPOINT=https://storage.googleapis.com
+# BACKUP_S3_BUCKET=<a bucket in an EU region>
+# BACKUP_S3_ACCESS_KEY_ID=<HMAC access id>
+# BACKUP_S3_SECRET_ACCESS_KEY=<HMAC secret>
+
+# --- Phone push, with the store builds
+# EXPO_ACCESS_TOKEN=<Expo access token>
+
+# --- Voice notes into words, after the owner's bake-off (docs/SPEECH.md)
+# SPEECH_PROVIDER=<openai or elevenlabs>
+# SPEECH_API_KEY=<the provider's key>
+```
+
+On 2026-10-14 the service had every line marked "set" and `HOSTING_PROVIDER`; `GOVERNING_LAW`,
+`EDGE_PROVIDER` and the commented lines are the owner's to add (this session's writes to the
+service were refused by its permission check).
 
 ## EasyPanel
 
@@ -141,6 +227,7 @@ Content-Security-Policy, and links in notifications. Everything below is optiona
 | `CONTACT_EMAIL` | `hello@cai.me` | Where those pages tell people to write (data requests, security reports, help). |
 | `LEGAL_ADDRESS` | — | The operator's postal address, as the privacy page's controller and the terms' contact (docs/LEGAL-REVIEW-2026-10.md). Unset, the pages leave it out. |
 | `GOVERNING_LAW` | — | The law and courts the terms are under ("Estonia"); the terms carry the clause only when it's set. |
+| `LEGAL_REGISTRATION` | — | The register the operator is in and its number ("Estonian Commercial Register 12345678"), as the EU's e-Commerce Directive (Art. 5) asks an online service to show where anyone can find it: in the opening and the contact line of the privacy page and the terms. Unset, they leave it out. ⛔ The owner's to set in EasyPanel, from the Commercial Register. |
 | `PRIVACY_URL`, `TERMS_URL`, `HELP_URL` | Caime's own pages | Caime serves its own privacy policy, terms and help at `/privacy`, `/terms` and `/help` on `PUBLIC_URL`, for anyone, signed in or not (link app store listings there). Set one of these (a full http(s) address) to publish that page somewhere else instead: You → About links there, and Caime's own page redirects there, so there's only ever one of each. The app reads them from the server (`GET /v1/about`), so no domain is built into it. |
 | `STRIPE_SECRET_KEY`, `STRIPE_WEBHOOK_SECRET` | — | Billing (below): Stripe's secret or restricted key, and the signing secret of the webhook endpoint at `/v1/billing/webhook`. With both, Pro and Business are bought in the app through Stripe Checkout and managed in Stripe's customer portal. |
 | `STRIPE_CONNECT_CLIENT_ID`, `STRIPE_CONNECT_WEBHOOK_SECRET` | — | An organization's own checkout (R65, above): Connect's client id and the signing secret of the Connect endpoint at `/v1/checkout/stripe/webhook`. With them and `STRIPE_SECRET_KEY`, an organization's owner can connect its own Stripe account and its Pay cards are paid by card. |
@@ -163,6 +250,7 @@ Content-Security-Policy, and links in notifications. Everything below is optiona
 | `LOG_LEVEL` | `info` | `warn` in quiet production. |
 | `BACKUP_ENABLED`, `BACKUP_DIR`, `BACKUP_EVERY_HOURS`, `BACKUP_KEEP_DAYS` | `true`, `DATA_DIR/backups`, `24`, `30` | Database backups (below). |
 | `HOSTING_PROVIDER` | — | Who hosts this Caime and where, as the privacy page's list of processors names it (R54): "Hetzner Online GmbH, Germany". Unset, the page says "our hosting provider". Set in production to `Google Cloud, Doha, Qatar` (the owner, 2026-10-14; checked 2026-10-13: the server, 34.18.125.16, is in Google's published range for `me-central1`; the entity on the contract, Google Cloud EMEA Limited or Google LLC, may replace "Google Cloud"), a transfer outside the EEA that the DPA's section 13 names. |
+| `EDGE_PROVIDER` | — | Whose network carries every request in front of the servers (a CDN or proxy that ends HTTPS: "Cloudflare, Inc." while `cai.me` is proxied), named on the privacy page's list of processors right after the host. Unset, none is named, so set it whenever the domain is proxied. |
 | `BACKUP_S3_ENDPOINT`, `BACKUP_S3_BUCKET`, `BACKUP_S3_ACCESS_KEY_ID`, `BACKUP_S3_SECRET_ACCESS_KEY` | — | A copy of each backup off the host, to an S3-compatible bucket (Backups, below); all four, or none. `BACKUP_S3_REGION` (`auto`), `BACKUP_S3_PREFIX` (`caime/backups/`) and `BACKUP_S3_PATH_STYLE` (`true`) beside them. |
 | `FILES_S3_ENDPOINT`, `FILES_S3_BUCKET`, `FILES_S3_ACCESS_KEY_ID`, `FILES_S3_SECRET_ACCESS_KEY` | — | Files in an S3-compatible bucket rather than on `DATA_DIR` (Scaling, below); all four, or none. `FILES_S3_REGION` (`auto`), `FILES_S3_PREFIX` (`caime/files/`) and `FILES_S3_PATH_STYLE` (`true`) beside them. The bucket stays private: Caime reads it, nobody else. |
 | `TRUST_PROXY` | `true` | EasyPanel's proxy sets `X-Forwarded-*`; keep it on behind it. |

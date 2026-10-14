@@ -83,6 +83,7 @@ export async function pageRoutes(app: FastifyInstance, ctx: AppContext) {
       legalName: config.LEGAL_NAME,
       legalAddress: config.LEGAL_ADDRESS ?? null,
       governingLaw: config.GOVERNING_LAW ?? null,
+      legalRegistration: config.LEGAL_REGISTRATION ?? null,
       contactEmail: config.CONTACT_EMAIL,
       minimumAge: config.MINIMUM_AGE,
       publicUrl: base,

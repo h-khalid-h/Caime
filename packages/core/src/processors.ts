@@ -32,6 +32,15 @@ export const HOSTING: Omit<SubProcessor, 'name'> = {
   when: 'always',
 };
 
+/** The network in front of the servers, named by the operator (EDGE_PROVIDER), where there is one. */
+export const EDGE: Omit<SubProcessor, 'name'> = {
+  id: 'edge',
+  does: 'Carries every request between your device and Caime’s servers: its network sits in front of them.',
+  receives:
+    'Your network address and what passes between your device and Caime, which it decrypts at its edge and sends on to Caime’s servers encrypted again (a private conversation’s messages stay sealed); it keeps only what it needs to protect the service.',
+  when: 'configured',
+};
+
 export const SUB_PROCESSORS: readonly SubProcessor[] = [
   {
     id: 'stripe',

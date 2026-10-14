@@ -63,7 +63,8 @@ export async function apiSignUp(
   context: BrowserContext,
   displayName: string,
   handle: string,
-  opts: { birthDate?: string } = {},
+  /** Where they live: Egypt, unless a test needs elsewhere (a teen: Egypt's minimum is 18). */
+  opts: { birthDate?: string; country?: string } = {},
 ) {
   const res = await context.request.post('/v1/auth/signup', {
     // Each from a network of its own (a documentation range), as people sign up: the server
@@ -75,7 +76,7 @@ export async function apiSignUp(
       displayName,
       handle,
       birthDate: opts.birthDate ?? '1990-12-31',
-      country: 'EG',
+      country: opts.country ?? 'EG',
       timeZone: 'UTC',
       client: 'web',
     },

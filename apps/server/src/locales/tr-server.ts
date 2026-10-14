@@ -584,6 +584,10 @@ export const turkishServer: Catalog = {
   'This route is for an app’s token.': 'Bu rota uygulama belirteçleri içindir.',
   'A failed delivery of this app by that id': 'Bu uygulamanın bu kimliğe sahip başarısız teslimatı',
   'A webhook address for that app': 'O uygulama için bir webhook adresi',
+  'Where you live, Caime is for people {age} and older.':
+    'Yaşadığınız ülkede Caime {age} yaş ve üzerindekiler içindir.',
+  'Your plan starts as soon as you pay. In the EU you may withdraw within 14 days by writing to {email}, and you pay only for the days it was on. Terms: {terms}':
+    'Planınız ödeme yapar yapmaz başlar. AB’de {email} adresine yazarak 14 gün içinde cayabilirsiniz; yalnızca planın açık olduğu günlerin ücretini ödersiniz. Koşullar: {terms}',
   'You need to be at least {MINIMUM_AGE} to use Caime.':
     'Caime’yi kullanmak için en az {MINIMUM_AGE} yaşında olmalısınız.',
   'That email already has an account. Sign in instead?':

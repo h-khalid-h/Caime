@@ -375,6 +375,19 @@ export async function startCheckout(
       client_reference_id: 'userId' in payer ? payer.userId : payer.orgId,
       subscription_data: { metadata: { caishy_payer: payerKey(payer) } },
       allow_promotion_codes: true,
+      // Paying under this is the consumer's express request that the plan start now (the EU's
+      // Consumer Rights Directive, Arts. 7(3) and 8(8)), which the terms' section 6 relies on.
+      custom_text: {
+        submit: {
+          message: tr(
+            'Your plan starts as soon as you pay. In the EU you may withdraw within 14 days by writing to {email}, and you pay only for the days it was on. Terms: {terms}',
+            {
+              email: ctx.config.CONTACT_EMAIL,
+              terms: `${ctx.config.PUBLIC_URL.replace(/\/+$/, '')}/terms`,
+            },
+          ),
+        },
+      },
     });
     return session.url;
   });

@@ -5,18 +5,24 @@
  */
 import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
-import { HOSTING, SUB_PROCESSORS } from '@caime/core/processors';
+import { EDGE, HOSTING, SUB_PROCESSORS } from '@caime/core/processors';
 import { describe, expect, it } from 'vitest';
 import { KEPT_DAYS } from '../src/lib/retention';
 
 const doc = readFileSync(join(__dirname, '..', '..', '..', 'docs', 'DPA-DRAFT.md'), 'utf8');
 
 describe('the draft data processing agreement', () => {
-  it('says it is a draft, and names every sub-processor the code has', () => {
-    expect(doc).toContain('Status: a draft, not reviewed by a lawyer, not published.');
+  it('says what it is, decides every point, and names every sub-processor the code has', () => {
+    expect(doc).toContain('not yet signed by anyone, not published.');
+    // Counsel decided every point once marked for the lawyer (LEGAL-REVIEW, 2026-10-14).
+    expect(doc).not.toContain('[lawyer]');
+    expect(doc).not.toContain('[owner]');
     for (const p of SUB_PROCESSORS) expect(doc, p.id).toContain(p.name);
     expect(doc).toContain(HOSTING.does);
     expect(doc).toContain(HOSTING.receives);
+    // The network in front of the servers, named by the operator as the host is.
+    expect(EDGE.id).toBe('edge');
+    expect(doc).toContain('`EDGE_PROVIDER`');
   });
 
   it('cites the retention spans and limits in force', () => {

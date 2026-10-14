@@ -19,6 +19,11 @@ export const MAIL_PROVIDER_NAMES: Record<MailProviderName, string> = {
   postmark: 'ActiveCampaign, LLC (Postmark)',
 };
 
+/** Whose SMTP server a host is, so the privacy page names the company, not the machine. */
+export const SMTP_HOST_PROVIDERS: Readonly<Record<string, MailProviderName>> = {
+  'smtp.postmarkapp.com': 'postmark',
+};
+
 const DEFAULT_BASE: Record<MailProviderName, string> = { postmark: 'https://api.postmarkapp.com' };
 /** One deadline for the whole exchange, as webhooks have. */
 const TIMEOUT_MS = 20_000;

@@ -80,6 +80,73 @@ Severity: **must** (a legal requirement, or a gap a first customer's lawyer stop
    **[lawyer]** mark in the draft is a decision or a wording, and every ⛔ above is theirs.
 3. Decide P6 (the minimum age per country) and P7 (a data protection officer) with them.
 
+## Counsel's decisions, 2026-10-14
+
+Made in counsel's chair at the owner's request ("act as Caime's lawyer and proceed"), on the facts
+of the live deployment as read that day (EasyPanel's API, Google's published address ranges, the
+DNS) and the law as researched that day (sources in the session; the Arabic texts of Egypt's and
+Saudi Arabia's regulations were not read). They are made to be acted on; the two items marked
+**local counsel** are the ones no EU lawyer can close.
+
+**The facts that changed.**
+
+- **Hosting is in Qatar.** The server (34.18.125.16, EasyPanel's own address too) is in Google
+  Cloud's `me-central1` region, Doha. Qatar has no EU adequacy decision, so every byte Caime keeps
+  is a transfer under the GDPR's Chapter V, on the standard contractual clauses in Google's Cloud
+  Data Processing Addendum, which needs a transfer impact assessment. **Decision: move hosting to
+  a Google Cloud region in the EU before launch** (Frankfurt or Belgium; the credits apply to any
+  region). The controller is in Estonia, so the GDPR governs all of Caime's processing wherever
+  its people live; Egypt's and Saudi Arabia's laws treat any server outside their borders alike,
+  so Qatar gains nothing there, while the EU removes the Chapter V transfer for hosting and is the
+  destination those laws accept most readily. Latency to Cairo and Riyadh from Frankfurt stays
+  within what messaging needs. Until the move, the privacy page and the DPA say Qatar, as they do
+  now.
+- **Cloudflare carries every request.** `cai.me` is proxied: Cloudflare ends HTTPS at its edge and
+  sees what passes (a private conversation's messages stay sealed). It is a processor for all
+  traffic, not only for call relays. Fixed: `EDGE_PROVIDER` names it on the privacy page and in
+  the DPA. Cloudflare relies on the EU-US Data Privacy Framework, with the standard contractual
+  clauses in its DPA as fallback.
+- **Postmark sends Caime's mail** once `SMTP_URL` is set. Fixed: the privacy page names the
+  company, ActiveCampaign, LLC (Postmark), not its machine. ActiveCampaign states it is certified
+  under the Data Privacy Framework; that the certification covers Postmark is to be confirmed on
+  the DPF list before sending starts.
+- **The e-Commerce Directive (Art. 5) and Estonia's Information Society Services Act** ask an
+  online service to show its geographic address and its register entry where anyone can find
+  them. Fixed: `LEGAL_REGISTRATION` beside `LEGAL_ADDRESS`, in the opening of the privacy page,
+  the terms and both contact lines. ⛔ The owner sets both (EasyPanel), from the Commercial
+  Register.
+
+**The open points, decided.**
+
+| # | Decision |
+| --- | --- |
+| P6 | Minimum age by country, as a rule in code (`MINIMUM_AGE_BY_LAW`, core `countries.ts`; sign-up and a change of country both read it; `auth.test.ts`): **18 for people living in Egypt and Saudi Arabia**, 13 elsewhere. Egypt's Executive Regulations (Decree 816 of 2025, in force with a year's grace to 1 November 2026) ask a guardian's written consent under 15 by methods the Data Protection Center approves, and the Center's mechanisms from 15 to 18; Saudi Arabia's PDPL asks a guardian's verified consent for anyone without full capacity (under 18). Caime asks no guardian's consent, so it admits nobody younger there. The UAE's Child Digital Safety law (Federal Decree-Law No. 26 of 2025, enforceable from January 2027) bars processing the data of children under 13, which the minimum already meets; its age-verification duties wait for its regulations. A guardian's consent in the product would lower the age, country by country. |
+| P7 | No data protection officer under the GDPR at launch: nothing is yet processed "on a large scale" (Art. 37(1)(b)–(c)). Reassess when organizations handling health data serve more than a few thousand customers through Caime, or at the first hospital. `privacy@cai.me` (Cloudflare Email Routing, DEPLOY.md step 6) is the contact meanwhile. Egypt's law asks every licensed controller and processor for one: see "Before Egypt" below. |
+| T3 | The EU right of withdrawal: Checkout now carries the consumer's express request that the plan start at once, beside the pay button, in their language (`lib/billing.ts`, `custom_text.submit`): paying under it is the request the Consumer Rights Directive's Arts. 7(3) and 8(8) ask for, so a withdrawal within 14 days owes only the days used (section 6 of the terms). |
+| T6 | No liability floor for free accounts: the clause keeps every liability the law won't let a company limit and every consumer right, which is what makes it enforceable in the EU; a number would add nothing a court wouldn't already give. |
+| D9 | The Organization's own law applies to it as controller, and section 13 now incorporates the EU's standard contractual clauses, Module 4 (processor to controller), for an Organization outside the EEA, so the Operator's returning its customers' data to it is a lawful transfer under the GDPR. |
+| D10 | The agreement keeps its own shape with the Annex mapping in its preamble; Module 4 is incorporated by reference where it applies. |
+| DPA §1, §12 | At closing, the customers' copies prevail: a customer keeps the conversation they are a party to, held from then by the Operator as their controller under the privacy policy, like any other. What was the Organization's alone (its roles, settings, knowledge text, catalog, insights) is deleted 30 days after closing, its export open to its last owner until then. ⛔ Engineering: the 30-day export window and the deletion after it are not built (a closed organization is today removed only by the operator); built before a first organization signs (ROADMAP). |
+| DPA §4, §5, §7, §10 | Final wording written in (Art. 28(3)(a), (b), 28(2), (4)); 48 hours stands for breach notice. |
+| DPA §8 | Assistance with rights, impact assessments and prior consultation is free. |
+| DPA §9 | "What the law requires to keep" is named: billing and accounting records, seven years (Estonia's Accounting Act, § 12), and security records for their span. |
+| DPA §11 | Audits: the Organization's own audit-log entries on request within 10 working days; an audit once a year on 30 days' notice, by a reviewer bound to confidentiality, at its own cost, by documents first and on site only where documents don't answer. |
+| DPA §14 | Liability between the parties capped at the greater of 12 months' fees and EUR 5,000, never for intent or gross negligence (Estonia's Law of Obligations Act, § 106); each party bears its own fines; liability to people under the GDPR's Art. 82 is shared by responsibility, with recourse (Art. 82(5)). Law: Estonia, Harju County Court; `GOVERNING_LAW=Estonia` (⛔ the owner sets it, EasyPanel). |
+
+**Before Egypt and Saudi Arabia (local counsel).** Caime serves people living there directly,
+so their laws reach DATA C OÜ itself, not only the organizations. Egypt: Law No. 151 of 2020 and
+Decree 816 of 2025 (compliance by **1 November 2026**) ask for a licence from the Personal Data
+Protection Center, a permit for each transfer abroad with the person's consent, and a data
+protection officer. Saudi Arabia: the PDPL and its Transfer Regulation (transfers abroad on
+adequacy, safeguards or the person's consent for services to them) and registration with SDAIA
+where it applies. ⛔ The owner engages Egyptian and Saudi counsel before Caime is offered to people
+there; until then the product admits nobody under 18 there, and nothing else in it depends on it.
+
+**Still the owner's.** `LEGAL_ADDRESS`, `LEGAL_REGISTRATION` and `GOVERNING_LAW` in EasyPanel;
+the move to an EU region; Postmark's DPF coverage confirmed; the privacy page and the terms in
+Arabic, French and Turkish (English prevailing), read by a translator who reads law, before
+launch in those languages' countries.
+
 ## What the code keeps true
 
 `apps/server/test/about.test.ts` renders the pages with and without the address and the law and

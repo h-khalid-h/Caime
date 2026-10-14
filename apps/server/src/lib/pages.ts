@@ -11,6 +11,7 @@
  */
 
 import type { SitePage } from '@caime/core/api';
+import { LAW_MINIMUM_AGES } from '@caime/core/countries';
 import type { SubProcessor } from '@caime/core/processors';
 import { FACE, THEME_VARS, type } from './page-style';
 import { KEPT_DAYS } from './retention';
@@ -25,6 +26,8 @@ export interface PageFacts {
   legalAddress: string | null;
   /** The law and courts the terms are under (GOVERNING_LAW, "Estonia"); null leaves the clause out. */
   governingLaw: string | null;
+  /** The register the operator is in and its number (LEGAL_REGISTRATION); null leaves it out. */
+  legalRegistration: string | null;
   contactEmail: string;
   minimumAge: number;
   /** Where Caime is, as people reach it: PUBLIC_URL. */
@@ -43,12 +46,42 @@ export interface PageFacts {
 }
 
 /** When each page last changed in what it says. */
-const UPDATED = '9 October 2026';
+const UPDATED = '14 October 2026';
 
 const escapeHtml = (s: string) =>
   s.replace(/[&<>"']/g, (c) =>
     c === '&' ? '&amp;' : c === '<' ? '&lt;' : c === '>' ? '&gt;' : c === '"' ? '&quot;' : '&#39;',
   );
+
+/** Who runs Caime, in brackets after its name: its register entry and its address, as set. */
+const identity = (f: PageFacts) => {
+  const parts = [f.legalRegistration, f.legalAddress].filter((p): p is string => Boolean(p));
+  return parts.length ? ` (${parts.join(', ')})` : '';
+};
+
+/** The same, as the contact line writes it. */
+const contactLine = (f: PageFacts, mail: string) =>
+  [f.legalName, f.legalRegistration, f.legalAddress, mail]
+    .filter((p): p is string => Boolean(p))
+    .join(' &middot; ');
+
+/**
+ * Where the law of the country someone lives in asks more than this Caime's own minimum age
+ * (`LAW_MINIMUM_AGES`, core countries), the countries by name and their age.
+ */
+function lawAges(minimumAge: number): string {
+  const names = new Intl.DisplayNames(['en'], { type: 'region' });
+  const higher = LAW_MINIMUM_AGES.filter((l) => l.age > minimumAge);
+  if (!higher.length) return '';
+  const byAge = new Map<number, string[]>();
+  for (const l of higher)
+    byAge.set(l.age, [...(byAge.get(l.age) ?? []), names.of(l.country) ?? l.country]);
+  const list = (xs: string[]) =>
+    xs.length < 2 ? (xs[0] ?? '') : `${xs.slice(0, -1).join(', ')} or ${xs[xs.length - 1]}`;
+  return [...byAge]
+    .map(([age, countries]) => `${age} and older for people who live in ${list(countries)}`)
+    .join('; ');
+}
 
 /** A number of days as the pages say it. */
 const span = (days: number) => (days === 365 ? 'a year' : `${days} days`);
@@ -69,7 +102,7 @@ ${f.relay === 'cloudflare' ? 'a relay Cloudflare runs for Caime' : 'Caime&rsquo;
 <p class="updated mono">last updated ${UPDATED}</p>
 <p>Caime is messaging that understands the difference between the people in your life. This page
 says what Caime keeps about you, why, who else sees it, how long it&rsquo;s kept, and what you
-can do about it. Caime is run by ${f.legalName}${f.legalAddress ? ` (${f.legalAddress})` : ''}, which is responsible for
+can do about it. Caime is run by ${f.legalName}${identity(f)}, which is responsible for
 your data (its controller, in the words of data protection law). Questions about it go to
 ${mail}.</p>
 
@@ -226,10 +259,13 @@ Google Calendar, Outlook or Apple Calendar, that service reads your open actions
 with who asked you or who you&rsquo;re waiting on, and the meetings and appointments you&rsquo;ve
 agreed, with their titles, notes and places, and so can anyone with its address. Apps under You &rarr; Apps &rarr; Discover are listed by their developers and looked at once by Caime; Discover shows how many people connected an app, never who, and an app reaches only what you allow it when its own sign-in asks. Opening a shared place on the map takes you to OpenStreetMap.</li>
 </ul>
-<p>Some of these companies are in the United States. Where your data goes there, it&rsquo;s
-protected as data protection law requires, for example by the European Commission&rsquo;s standard
-contractual clauses. We don&rsquo;t sell personal data, and we don&rsquo;t share it for
-advertising.</p>
+<p>Some of these companies, and Caime&rsquo;s servers where the hosting provider above says so,
+are outside the European Economic Area, in countries the European Commission hasn&rsquo;t found to
+protect personal data as the EU does. Where your data goes there, it goes under the safeguards the
+GDPR asks for (Article 46): the European Commission&rsquo;s standard contractual clauses in each
+company&rsquo;s data processing terms, or, for a company in the United States certified under it,
+the EU&ndash;U.S. Data Privacy Framework. Write to ${mail} for a copy of the safeguards for any of
+them. We don&rsquo;t sell personal data, and we don&rsquo;t share it for advertising.</p>
 
 <h2>How long it&rsquo;s kept</h2>
 <ul>
@@ -331,7 +367,7 @@ and we&rsquo;ll answer within a month.</p>
 
 <h2>Children</h2>
 <p>Caime is for people ${f.minimumAge} and older, from the day they turn ${f.minimumAge} where they
-live, and the rules for people under 18 apply until the day they turn 18. Under 18:</p>
+live${lawAges(f.minimumAge) ? `, and ${lawAges(f.minimumAge)}, whose law asks a guardian&rsquo;s consent for younger people that Caime doesn&rsquo;t yet ask for` : ''}. The rules for people under 18 apply until the day they turn 18. Under 18:</p>
 <ul>
 <li>Adults you&rsquo;re not connected with can&rsquo;t find you, by name, @handle or email, and
 can&rsquo;t send you a connection or message request unless you share a connection.</li>
@@ -376,20 +412,20 @@ web, Caime also keeps its own files (never your messages) so it can open without
 before it applies.</p>
 
 <h2>Contact</h2>
-<p>${f.legalName}${f.legalAddress ? ` &middot; ${f.legalAddress}` : ''} &middot; ${mail}</p>`;
+<p>${contactLine(f, mail)}</p>`;
 }
 
 function terms(f: PageFacts, mail: string): string {
   return `
 <h1>Terms</h1>
 <p class="updated mono">last updated ${UPDATED}</p>
-<p>These terms are the agreement between you and ${f.legalName} (&ldquo;we&rdquo;) about using
+<p>These terms are the agreement between you and ${f.legalName}${identity(f)} (&ldquo;we&rdquo;) about using
 Caime. By creating an account, you agree to them. How Caime handles your data is on the
 <a href="/privacy">privacy</a> page.</p>
 
 <h2>1. Your account</h2>
 <ul>
-<li>You need to be ${f.minimumAge} or older, and to tell Caime the truth about your date of birth
+<li>You need to be ${f.minimumAge} or older${lawAges(f.minimumAge) ? ` (${lawAges(f.minimumAge)})` : ''}, and to tell Caime the truth about your date of birth
 and where you live. What&rsquo;s for people 18 or over is yours from the day you turn 18. Use any
 name you like, as long as it doesn&rsquo;t pretend you&rsquo;re someone you&rsquo;re not.</li>
 <li>Keep your password and recovery codes safe: you&rsquo;re responsible for what&rsquo;s done with
@@ -499,7 +535,7 @@ resolution platform is at ec.europa.eu/consumers/odr.</p>
     : `
 <h2>11. Contact</h2>`
 }
-<p>${f.legalName}${f.legalAddress ? ` &middot; ${f.legalAddress}` : ''} &middot; ${mail}</p>`;
+<p>${contactLine(f, mail)}</p>`;
 }
 
 function help(f: PageFacts, mail: string): string {
@@ -657,6 +693,7 @@ export function renderPage(name: PageName, facts: PageFacts): string {
     legalName: escapeHtml(facts.legalName),
     legalAddress: facts.legalAddress ? escapeHtml(facts.legalAddress) : null,
     governingLaw: facts.governingLaw ? escapeHtml(facts.governingLaw) : null,
+    legalRegistration: facts.legalRegistration ? escapeHtml(facts.legalRegistration) : null,
     contactEmail: escapeHtml(facts.contactEmail),
   };
   const mail = `<a href="mailto:${f.contactEmail}">${f.contactEmail}</a>`;

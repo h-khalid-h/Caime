@@ -84,22 +84,73 @@ describe('About, and Caime’s own privacy, terms and help pages', () => {
     const t = await createTestApp({
       LEGAL_NAME: 'Nile OÜ',
       LEGAL_ADDRESS: 'Sepapaja 6, 15551 Tallinn, Estonia',
+      LEGAL_REGISTRATION: 'Estonian Commercial Register 12345678',
       GOVERNING_LAW: 'Estonia',
     });
     try {
       const privacy = read((await t.app.inject({ method: 'GET', url: '/privacy' })).body);
+      // Who runs it, where anyone can find it (the e-Commerce Directive's Art. 5).
       expect(privacy).toContain(
-        'Caime is run by Nile OÜ (Sepapaja 6, 15551 Tallinn, Estonia), which is responsible',
+        'Caime is run by Nile OÜ (Estonian Commercial Register 12345678, Sepapaja 6, 15551 Tallinn, Estonia), which is responsible',
       );
       expect(privacy).toContain(
-        '<p>Nile OÜ &middot; Sepapaja 6, 15551 Tallinn, Estonia &middot; <a',
+        '<p>Nile OÜ &middot; Estonian Commercial Register 12345678 &middot; Sepapaja 6, 15551 Tallinn, Estonia &middot; <a',
       );
       const terms = read((await t.app.inject({ method: 'GET', url: '/terms' })).body);
+      expect(terms).toContain(
+        'between you and Nile OÜ (Estonian Commercial Register 12345678, Sepapaja 6, 15551 Tallinn, Estonia)',
+      );
       expect(terms).toContain('<h2>11. The law</h2>');
       expect(terms).toContain('under the law of Estonia, and its courts settle a dispute');
       expect(terms).toContain('<h2>12. Contact</h2>');
     } finally {
       await t.close();
+    }
+  });
+
+  it('names everyone data passes through, the safeguards abroad, and the ages the law asks where people live', async () => {
+    const t = await createTestApp({
+      HOSTING_PROVIDER: 'Google Cloud, Doha, Qatar',
+      EDGE_PROVIDER: 'Cloudflare, Inc.',
+      SMTP_URL: 'smtp://token:token@smtp.postmarkapp.com:587',
+    });
+    try {
+      const privacy = read((await t.app.inject({ method: 'GET', url: '/privacy' })).body);
+      expect(privacy).toContain(
+        '<li><strong>Google Cloud, Doha, Qatar</strong> Runs Caime’s servers',
+      );
+      // The network in front of the servers, right after them.
+      expect(privacy).toContain(
+        '<li><strong>Cloudflare, Inc.</strong> Carries every request between your device and Caime’s servers',
+      );
+      // The company that sends the mail, not its machine.
+      expect(privacy).toContain(
+        '<li><strong>ActiveCampaign, LLC (Postmark)</strong> Sends Caime’s mail',
+      );
+      expect(privacy).not.toContain('smtp.postmarkapp.com');
+      // Outside the EEA: which safeguard, and how to get a copy (GDPR Art. 13(1)(f)).
+      expect(privacy).toContain('the European Commission&rsquo;s standard contractual clauses');
+      expect(privacy).toContain('the EU&ndash;U.S. Data Privacy Framework');
+      expect(privacy).toContain('for a copy of the safeguards for any of them');
+      // Where the law asks a guardian's consent Caime can't ask for: 18.
+      expect(privacy).toContain(
+        'and 18 and older for people who live in Egypt or Saudi Arabia, whose law asks a guardian&rsquo;s consent',
+      );
+      const terms = read((await t.app.inject({ method: 'GET', url: '/terms' })).body);
+      expect(terms).toContain(
+        'You need to be 13 or older (18 and older for people who live in Egypt or Saudi Arabia)',
+      );
+    } finally {
+      await t.close();
+    }
+    // A host it doesn't know is named as a host, and nothing in front is named when none is set.
+    const other = await createTestApp({ SMTP_URL: 'smtps://u:p@mail.nile.example:465' });
+    try {
+      const privacy = read((await other.app.inject({ method: 'GET', url: '/privacy' })).body);
+      expect(privacy).toContain('mail.nile.example (the email provider the operator set)');
+      expect(privacy).not.toContain('Carries every request');
+    } finally {
+      await other.close();
     }
   });
 
@@ -110,6 +161,7 @@ describe('About, and Caime’s own privacy, terms and help pages', () => {
       legalName: 'Nile',
       legalAddress: null,
       governingLaw: null,
+      legalRegistration: null,
       contactEmail: 'hi@nile.example',
       minimumAge: 13,
       publicUrl: BASE,

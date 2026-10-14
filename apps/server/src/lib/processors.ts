@@ -3,25 +3,30 @@
  * which of the configurable ones are in use, and who hosts it (HOSTING_PROVIDER).
  */
 
-import { HOSTING, SUB_PROCESSORS, type SubProcessor } from '@caime/core/processors';
+import { EDGE, HOSTING, SUB_PROCESSORS, type SubProcessor } from '@caime/core/processors';
 import type { Config } from '../config';
 import { mailOn } from './mail-address';
-import { MAIL_PROVIDER_NAMES } from './mail-provider';
+import { MAIL_PROVIDER_NAMES, SMTP_HOST_PROVIDERS } from './mail-provider';
 import { SPEECH_PROVIDER_NAMES } from './speech';
 
-/** The SMTP host, as a name for the mail provider ("smtp.postmarkapp.com"). */
-function mailHost(url: string | undefined): string | null {
+/** Who sends Caime's mail: the company behind a known SMTP host, else the host itself. */
+function mailSender(url: string | undefined): string | null {
   if (!url) return null;
+  let host: string;
   try {
-    return new URL(url).hostname || null;
+    host = new URL(url).hostname.toLowerCase();
   } catch {
     return null;
   }
+  if (!host) return null;
+  const provider = SMTP_HOST_PROVIDERS[host];
+  return provider ? MAIL_PROVIDER_NAMES[provider] : `${host} (the email provider the operator set)`;
 }
 
 export function processorsFor(config: Config): SubProcessor[] {
   const list: SubProcessor[] = [
     { ...HOSTING, name: config.HOSTING_PROVIDER ?? 'Our hosting provider' },
+    ...(config.EDGE_PROVIDER ? [{ ...EDGE, name: config.EDGE_PROVIDER }] : []),
   ];
   for (const p of SUB_PROCESSORS) {
     if (p.when !== 'configured') {
@@ -33,8 +38,8 @@ export function processorsFor(config: Config): SubProcessor[] {
       list.push({ ...p, name: SPEECH_PROVIDER_NAMES[config.SPEECH_PROVIDER] });
     // The phone apps push through Expo once they exist, whether or not a token raises the limit.
     if (p.id === 'expo') list.push(p);
-    const mail = p.id === 'mail' ? mailHost(config.SMTP_URL) : null;
-    if (mail) list.push({ ...p, name: `${mail} (the email provider the operator set)` });
+    const mail = p.id === 'mail' ? mailSender(config.SMTP_URL) : null;
+    if (mail) list.push({ ...p, name: mail });
     if (p.id === 'mail-in' && mailOn(config) && config.MAIL_PROVIDER)
       list.push({ ...p, name: MAIL_PROVIDER_NAMES[config.MAIL_PROVIDER] });
   }

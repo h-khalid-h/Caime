@@ -39,7 +39,28 @@ export interface CountryFacts {
   variety: ArabicVariety | null;
   /** The ways people are paid there, most common first. */
   payKinds: PayKindHint[];
+  /**
+   * The age below which nobody living there signs up, where the law asks more than Caime's own
+   * minimum (`MINIMUM_AGE_BY_LAW`); null where Caime's own minimum is the rule.
+   */
+  minimumAge: number | null;
 }
+
+/**
+ * Where the law asks a guardian's verified consent before a minor's data is processed, and Caime
+ * has no such consent to ask for, the age below which nobody living there signs up (counsel's
+ * decision, 2026-10-14, docs/LEGAL-REVIEW-2026-10.md): Egypt (Law No. 151 of 2020 and its
+ * Executive Regulations, Decree 816 of 2025: a guardian's written consent under 15, the Data
+ * Protection Center's mechanisms from 15 to 18) and Saudi Arabia (the PDPL and its Implementing
+ * Regulations: a guardian's verified consent for anyone without full capacity, under 18). A
+ * country joins when its law asks the same; a guardian's consent in the product would lower it.
+ */
+const MINIMUM_AGE_BY_LAW: Readonly<Record<string, number>> = { EG: 18, SA: 18 };
+
+/** The countries whose law sets a higher minimum age, with it, for the pages that say so. */
+export const LAW_MINIMUM_AGES: ReadonlyArray<{ country: string; age: number }> = Object.entries(
+  MINIMUM_AGE_BY_LAW,
+).map(([country, age]) => ({ country, age }));
 
 const MON_FRI = [1, 2, 3, 4, 5];
 
@@ -120,6 +141,7 @@ export function countryFacts(country: string | null | undefined): CountryFacts {
       ...((code ? PAY_KINDS[code] : undefined) ??
         (code && IBAN.has(code) ? [IBAN_HINT, CASH] : [BANK, CASH])),
     ],
+    minimumAge: (code ? MINIMUM_AGE_BY_LAW[code] : undefined) ?? null,
   };
 }
 

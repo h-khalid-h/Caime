@@ -179,10 +179,22 @@ const Env = z.object({
   LEGAL_ADDRESS: z.string().trim().min(1).max(240).optional(),
   GOVERNING_LAW: z.string().trim().min(1).max(80).optional(),
   /**
+   * The register the operator is entered in and its number ("Estonian Commercial Register
+   * 12345678"), as the EU's e-Commerce Directive (Art. 5) asks an online service to say where
+   * anyone can find it. Unset, the pages leave it out.
+   */
+  LEGAL_REGISTRATION: z.string().trim().min(1).max(120).optional(),
+  /**
    * Who hosts this Caime, as the privacy page's list of processors names it (R54): the company
    * and where, "Hetzner Online GmbH, Germany". Unset, the page says "our hosting provider".
    */
   HOSTING_PROVIDER: z.string().trim().min(1).max(160).optional(),
+  /**
+   * Whose network carries every request in front of the servers (a CDN or proxy that ends the
+   * HTTPS connection: "Cloudflare, Inc."), as the privacy page's list of processors names it.
+   * Unset, there is none to name.
+   */
+  EDGE_PROVIDER: z.string().trim().min(1).max(160).optional(),
   /**
    * The privacy policy, the terms and help, when they're published somewhere else (full http(s)
    * addresses): About links there, and Caime's own page for it sends people there too, so there

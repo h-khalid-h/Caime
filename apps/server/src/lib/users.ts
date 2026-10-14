@@ -8,6 +8,7 @@ import {
   defaultPrivacy,
   isMinor,
   type MeView,
+  meetsMinimumAge,
   type PersonView,
   type PrivacySettings,
   type Sphere,
@@ -16,13 +17,47 @@ import {
   uuidv7,
 } from '@caime/core';
 import { countryFacts, defaultWorkweek } from '@caime/core/countries';
+import { tr } from '@caime/core/i18n';
 import type { Kysely, Transaction } from 'kysely';
 import type { AppContext } from '../context';
 import type { Database, User, UserRow } from '../db/schema';
+import { AppError } from './errors';
 import { currencyOf } from './geo';
 import { type MailConfig, mailAddressOf } from './mail-address';
 
 export const ONLINE_WINDOW_MS = 2 * 60_000;
+
+/**
+ * The age below which nobody living in `country` is on Caime: this Caime's own minimum
+ * (MINIMUM_AGE), or the law's there where it asks more (core `countryFacts().minimumAge`:
+ * counsel's decision of 2026-10-14). Sign-up and a change of country both read it.
+ */
+export function minimumAgeIn(minimumAge: number, country: string | null | undefined): number {
+  return Math.max(minimumAge, countryFacts(country).minimumAge ?? 0);
+}
+
+/** Whether someone born on `birthDate` may be on Caime living in `country`, today where they are. */
+export function oldEnoughIn(
+  minimumAge: number,
+  country: string | null | undefined,
+  birthDate: string,
+  now: Date,
+  timeZone: string | null | undefined,
+): boolean {
+  return meetsMinimumAge(birthDate, now, minimumAgeIn(minimumAge, country), timeZone);
+}
+
+/** The refusal for someone too young for Caime where they live, in the request's language. */
+export function tooYoung(minimumAge: number, country: string | null | undefined): AppError {
+  const age = minimumAgeIn(minimumAge, country);
+  return new AppError(
+    400,
+    'too_young',
+    age > minimumAge
+      ? tr('Where you live, Caime is for people {age} and older.', { age })
+      : tr('You need to be at least {MINIMUM_AGE} to use Caime.', { MINIMUM_AGE: age }),
+  );
+}
 
 /** Under 18 (R29), from the date of birth where they are: select `birth_date` and `time_zone`. */
 export function minorOf(user: Pick<User, 'birth_date' | 'time_zone'>, now: Date): boolean {

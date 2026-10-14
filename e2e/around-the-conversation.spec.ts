@@ -1551,7 +1551,11 @@ test.describe
         deviceScaleFactor: 2,
       });
       try {
-        await apiSignUp(teenContext, 'Rami Young', `rami.${stamp}`, { birthDate: '2011-12-31' });
+        // In the UAE, where 13 is the minimum (Egypt's law makes it 18: counsel, 2026-10-14).
+        await apiSignUp(teenContext, 'Rami Young', `rami.${stamp}`, {
+          birthDate: '2011-12-31',
+          country: 'AE',
+        });
         const teen = await newPerson(teenContext);
         await teen.page.goto(`/@${handle}`);
         await expect(visible(teen.page, 'Its team will see you’re under 18.')).toBeVisible();

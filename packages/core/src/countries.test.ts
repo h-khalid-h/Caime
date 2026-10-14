@@ -1,6 +1,12 @@
 import { describe, expect, it } from 'vitest';
 import { CALLING_CODES } from './calling-codes';
-import { countryFacts, currencyOfCountry, defaultWorkweek, varietyOfCountry } from './countries';
+import {
+  countryFacts,
+  currencyOfCountry,
+  defaultWorkweek,
+  LAW_MINIMUM_AGES,
+  varietyOfCountry,
+} from './countries';
 import { COUNTRY_DATA, WORLD } from './countries-data';
 import { CURRENCY_DECIMALS } from './currency-data';
 import { minorUnits, roundAmount } from './format';
@@ -17,6 +23,18 @@ describe('what a country sets (R76)', () => {
       variety: 'egyptian',
     });
     expect(countryFacts('EG').payKinds[0]).toEqual({ kind: 'wallet', label: 'InstaPay' });
+  });
+
+  it('where the law asks a guardian’s consent Caime can’t ask for, nobody under 18 who lives there', () => {
+    expect(countryFacts('EG').minimumAge).toBe(18);
+    expect(countryFacts('sa').minimumAge).toBe(18);
+    // Elsewhere Caime's own minimum is the rule (the UAE's law bars under 13, which it meets).
+    for (const c of ['AE', 'FR', 'EE', 'TR', 'US', null])
+      expect(countryFacts(c).minimumAge).toBeNull();
+    expect(LAW_MINIMUM_AGES).toEqual([
+      { country: 'EG', age: 18 },
+      { country: 'SA', age: 18 },
+    ]);
   });
 
   it('France and the world: euros, Monday first, Saturday and Sunday off, Monday to Friday, a 24-hour clock', () => {

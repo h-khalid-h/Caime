@@ -496,6 +496,21 @@ super-app brainstorm the product takes, and what it leaves with the reason, is R
       wildcard record gone, SSL Full (strict), Postmark for sending, the staff addresses and
       DMARC. The phone builds, Expo Go's image and the SDK
       default to `cai.me`
+- [x] Counsel's pass (2026-10-14, LEGAL-REVIEW "Counsel's decisions"): the privacy page names
+      the network in front (`EDGE_PROVIDER`), the mail sender by company, each transfer's
+      safeguard and how to get a copy, and the register entry (`LEGAL_REGISTRATION`); the
+      minimum age by country (18 in Egypt and Saudi Arabia) in sign-up and a change of country;
+      Checkout carries the consumer's request to start at once; every DPA mark decided.
+- [ ] ⛔ Owner, before launch: `LEGAL_ADDRESS`, `LEGAL_REGISTRATION`, `GOVERNING_LAW=Estonia` and
+      `EDGE_PROVIDER=Cloudflare, Inc.` in EasyPanel (DEPLOY.md, the environment in full); hosting
+      moved to a Google Cloud region in the EU (counsel's decision: removes the Chapter V transfer
+      to Qatar); Postmark's DPF coverage confirmed; Egyptian and Saudi counsel before Caime is
+      offered there (Egypt's licence, transfer permits and DPO by 1 November 2026).
+- [ ] An organization's closing as the DPA's section 12 says, before a first organization signs
+      it: its export open to its last owner for 30 days, then what was its alone deleted (roles,
+      settings, knowledge text, catalog, insights), its customers' copies kept as theirs.
+- [ ] The privacy page and the terms in Arabic, French and Turkish (English prevailing), by a
+      translator who reads law, before launch in those languages' countries.
 - [ ] `cai.me/@handle` for people and organizations (R35), opening the app where it's installed:
       `apple-app-site-association` and `assetlinks.json` served by the server, the app's
       associated domains. After the domain
@@ -2844,3 +2859,12 @@ The six-slice review's plan, in its order; a block is ticked when its tests and 
   (this session's write to the service was refused by its permission check), and the lawyer
   covers the transfer outside the EEA in the DPA's section 13. The origin also answers on its
   own address past Cloudflare: a firewall rule admitting only Cloudflare's ranges closes that.
+- 2026-10-14 — Counsel's pass, at the owner's request. The live deployment read again: Cloudflare
+  proxies every request (now named, `EDGE_PROVIDER`), hosting is in Qatar (a Chapter V transfer:
+  counsel decides to move to an EU region before launch), Postmark will send the mail (named by
+  company). The privacy page says each transfer's safeguard (SCCs, or the DPF) and how to get a
+  copy, and with the terms names the register entry the e-Commerce Directive asks for. Minimum
+  age by country in code (18 in Egypt and Saudi Arabia, whose laws ask a guardian's consent
+  Caime doesn't take; `auth.test.ts`), Checkout's start-now request for the EU withdrawal right,
+  and every DPA mark decided (LEGAL-REVIEW). The environment in full is in DEPLOY.md; this
+  session's writes to EasyPanel were refused by its permission check, so the owner adds it.
