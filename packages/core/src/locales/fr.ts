@@ -3242,6 +3242,19 @@ export const fr: Catalog = {
   '2 weeks': '2 semaines',
   '2 months': '2 mois',
   '{n} items': { one: '{n} élément', other: '{n} éléments' },
+  // Something several items share (R58).
+  '{n} at a time': { one: 'Un à la fois', other: '{n} à la fois' },
+  'Shared by {n} items': { one: 'Partagé par {n} élément', other: 'Partagé par {n} éléments' },
+  'Add something shared': 'Ajouter quelque chose de partagé',
+  'Chairs, rooms or a table that several items use: a time is open only while one is free.':
+    'Des fauteuils, des salles ou une table que plusieurs éléments utilisent : un créneau n’est libre que tant que l’un d’eux l’est.',
+  'Something shared': 'Quelque chose de partagé',
+  'Items take one from their own page.': 'Les éléments en prennent un depuis leur propre page.',
+  Chairs: 'Fauteuils',
+  'How many there are': 'Combien il y en a',
+  'Takes one of': 'En prend un parmi',
+  'Nothing shared': 'Rien de partagé',
+  'Each shared resource once.': 'Chaque ressource partagée une seule fois.',
   'Add a collection': 'Ajouter une collection',
   'Group what you offer: treatments, products, rooms. A public one has a page of its own.':
     'Regroupez ce que vous proposez : soins, produits, chambres. Une collection publique a sa propre page.',

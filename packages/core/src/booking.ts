@@ -19,6 +19,11 @@ export const BOOKING_LEAD_MINUTES_MAX = 7 * 24 * 60;
 /** A catalog holds at most this many items; an item is taken by at most this many at once. */
 export const BOOKING_ITEMS_MAX = 50;
 export const BOOKING_CAPACITY_MAX = 100;
+/**
+ * Shared resources a host keeps (R58): chairs, rooms, a table. Seven, so an item's choice of one,
+ * with "Nothing shared" beside them, stays within a row of eight chips (R77).
+ */
+export const RESOURCES_MAX = 7;
 /** A stay of at most this many days, in one booking. */
 export const BOOKING_DAYS_MAX = 30;
 /** A count of stock (R60) is at most this. */
@@ -42,6 +47,19 @@ export interface BookingHours {
   leadMinutes: number;
   /** Nothing further ahead than this many days may be booked. */
   horizonDays: number;
+  /** What several items share (R58), each with how many there are. */
+  resources?: SharedResource[];
+}
+
+/**
+ * Something several of a host's items share (R58): three chairs for a haircut and a colour, two
+ * rooms for two kinds of stay. A time is open for an item that uses one only while there's room
+ * in it beside every booking of every item that uses it, as well as in the item's own capacity.
+ */
+export interface SharedResource {
+  id: string;
+  name: string;
+  capacity: number;
 }
 
 /**
@@ -288,6 +306,8 @@ export interface BookingItem {
   description: string | null;
   /** The collection it's in (R61), or none. */
   collectionId: string | null;
+  /** The shared resource it takes one of per place (R58), or none. */
+  resourceId?: string | null;
   /** Its photo (R63): an image the host uploaded, shown with it wherever it is. */
   photoFileId?: string | null;
   /** Its options (R60), for something sold by the piece: a size to choose, extras to add. */
@@ -358,6 +378,11 @@ export interface SlotQuery {
    * of them is free for it (a person does one thing at a time, whatever the item's capacity).
    */
   providersBusy?: Busy[][];
+  /**
+   * For an item that uses a shared resource (R58): how many there are, and what every item
+   * using it has booked. A slot is open only while the resource has room as well.
+   */
+  resource?: { capacity: number; busy: Busy[] } | null;
   limit?: number;
 }
 
@@ -410,8 +435,11 @@ export function openSlots(hours: BookingHours, opts: SlotQuery): Date[] {
     const pieces = days
       ? Array.from({ length: want }, (_, i) => [start + i * DAY_MS, start + (i + 1) * DAY_MS])
       : [[start, end]];
-    const fits = pieces.every(([s, e]) =>
-      roomFor(opts.busy, s ?? 0, e ?? 0, days ? 1 : want, capacity),
+    const fits = pieces.every(
+      ([s, e]) =>
+        roomFor(opts.busy, s ?? 0, e ?? 0, days ? 1 : want, capacity) &&
+        (!opts.resource ||
+          roomFor(opts.resource.busy, s ?? 0, e ?? 0, days ? 1 : want, opts.resource.capacity)),
     );
     if (!fits) return false;
     if (!opts.providersBusy || opts.providersBusy.length === 0) return true;

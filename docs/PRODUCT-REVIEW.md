@@ -649,8 +649,14 @@ with its reason, so it isn't proposed again without new facts.
   on the series when it starts so a later change of their own week doesn't move it; "Until",
   asked once a meeting repeats, is the last day a time may fall on, on the series' own clock
   (the last day itself is held), and the calendar, the feed and the slots stop there too. "Stop
-  repeating" clears both. Not done: a recurring appointment (each time's slot must be checked
-  against the host's catalog as it's posted).
+  repeating" clears both. *A resource shared by several items* (built 2026-10-14): three chairs
+  for a haircut and a colour, two rooms for two kinds of stay. The hours keep what's shared (a
+  name and how many, up to seven, so an item's choice stays a row of eight chips), an item
+  takes one of them, and a time is open for it only while the resource has room beside every
+  booking of every item that uses it, as well as in the item's own capacity; something ordered
+  by the piece holds no time and shares nothing. Kept with the hours, so it's saved, exported
+  and erased with them, and a host without hours has nothing to share. Not done: a recurring
+  appointment (each time's slot must be checked against the host's catalog as it's posted).
 - **R59 — The fourth language is Turkish.** By R55's rule (one region, through organizations):
   Arabic, English and French cover the Middle East and North Africa; the market next to it that
   already serves it is Türkiye, whose clinics treat Arabic-speaking patients by the hundred

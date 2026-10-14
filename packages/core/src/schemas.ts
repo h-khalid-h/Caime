@@ -26,6 +26,7 @@ import {
   ITEM_OPTIONS_MAX,
   OPTION_CHOICES_MAX,
   ORDER_LINES_MAX,
+  RESOURCES_MAX,
   STOCK_MAX,
 } from './booking';
 import { BUSINESS_VIEWS } from './business';
@@ -1432,6 +1433,22 @@ export const BookingHoursBody = z
       }),
     leadMinutes: z.number().int().min(0).max(10_080),
     horizonDays: z.number().int().min(1).max(90),
+    /** What several items share (R58): left out, there's none. */
+    resources: z
+      .array(
+        z
+          .object({
+            id: z.string().regex(/^[A-Za-z0-9_-]{1,40}$/, msg('That isn’t an item id.')),
+            name: z.string().trim().min(1, msg('Name it.')).max(60),
+            capacity: z.number().int().min(1).max(BOOKING_CAPACITY_MAX),
+          })
+          .strict(),
+      )
+      .max(RESOURCES_MAX)
+      .refine((rs) => new Set(rs.map((r) => r.id)).size === rs.length, {
+        message: msg('Each shared resource once.'),
+      })
+      .optional(),
   })
   .strict();
 export type BookingHoursInput = z.infer<typeof BookingHoursBody>;
@@ -1511,6 +1528,8 @@ export const BookingItemBody = z
     slug: SlugSchema.optional(),
     description: z.string().trim().max(300).nullable().default(null),
     collectionId: CatalogId.nullable().default(null),
+    // R58: the shared resource it takes one of per place; one the hours keep, else none.
+    resourceId: CatalogId.nullable().default(null),
     // R63: an image the host uploaded; checked as theirs when it's first set.
     photoFileId: z.string().uuid().nullable().default(null),
     // R60: how many are left, for something ordered by the piece; null stops counting, and left

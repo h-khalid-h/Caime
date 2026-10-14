@@ -14,6 +14,7 @@ import type {
   BookingItem,
   BookingUnit,
   OrderingSettings,
+  SharedResource,
 } from '@caime/core/booking';
 import {
   BOOKING_CAPACITY_MAX,
@@ -21,6 +22,7 @@ import {
   BOOKING_ITEMS_MAX,
   describeHours,
   itemPhotoPath,
+  RESOURCES_MAX,
   SLOT_MINUTES,
   STOCK_MAX,
   stockLine,
@@ -47,6 +49,7 @@ import {
   paymentUrlError,
 } from '@caime/core/payments';
 import type { Sphere } from '@caime/core/taxonomy';
+import Boxes from 'lucide-react-native/icons/boxes';
 import CalendarCheck from 'lucide-react-native/icons/calendar-check';
 import HandCoins from 'lucide-react-native/icons/hand-coins';
 import ImageIcon from 'lucide-react-native/icons/image';
@@ -240,6 +243,8 @@ export function BookingSetup({
       days: [...days].sort((a, b) => a - b).map((weekday) => ({ weekday, start, end })),
       leadMinutes: lead,
       horizonDays: horizon,
+      // What items share (R58) stays as it is.
+      ...(hours?.resources?.length ? { resources: hours.resources } : {}),
     });
   };
   const saveItems = async (next: BookingItem[], change?: { id: string; stock: number | null }) => {
@@ -252,6 +257,20 @@ export function BookingSetup({
     await send({
       ...offer,
       payments: next.length ? { methods: next, note: offer.payments?.note ?? null } : null,
+    });
+  };
+  // Shared resources (R58): kept with the hours; one removed leaves its items sharing nothing.
+  const resources = hours?.resources ?? [];
+  const [shared, setShared] = useState<SharedResource | null>(null);
+  const saveResources = async (next: SharedResource[]) => {
+    if (!hours) return;
+    const kept = new Set(next.map((r) => r.id));
+    await send({
+      ...offer,
+      booking: { ...hours, resources: next },
+      items: items.map((i) =>
+        i.resourceId && !kept.has(i.resourceId) ? { ...i, resourceId: null } : i,
+      ),
     });
   };
   // Collections (R61): a shelf removed leaves its items in none.
@@ -286,6 +305,37 @@ export function BookingSetup({
         onPress={edit}
         testID={`${testID}-hours`}
       />
+      {hours
+        ? resources.map((r) => (
+            <ListRow
+              key={r.id}
+              icon={Boxes}
+              title={r.name}
+              subtitle={[
+                trn(r.capacity, 'One at a time', '{n} at a time'),
+                trn(
+                  items.filter((i) => i.resourceId === r.id).length,
+                  'Shared by {n} item',
+                  'Shared by {n} items',
+                ),
+              ].join(' · ')}
+              chevron
+              onPress={() => setShared(r)}
+              testID={`${testID}-resource-${r.id}`}
+            />
+          ))
+        : null}
+      {hours && resources.length < RESOURCES_MAX ? (
+        <ListRow
+          icon={Plus}
+          title={tr('Add something shared')}
+          subtitle={tr(
+            'Chairs, rooms or a table that several items use: a time is open only while one is free.',
+          )}
+          onPress={() => setShared({ id: newId(), name: '', capacity: 1 })}
+          testID={`${testID}-add-resource`}
+        />
+      ) : null}
       <ListRow
         icon={ShoppingBag}
         title={
@@ -599,11 +649,34 @@ export function BookingSetup({
           ) : null}
         </View>
       </Sheet>
+      {shared ? (
+        <ResourceEditor
+          resource={shared}
+          isNew={!resources.some((r) => r.id === shared.id)}
+          onClose={() => setShared(null)}
+          onSave={async (r) => {
+            await saveResources(
+              resources.some((x) => x.id === r.id)
+                ? resources.map((x) => (x.id === r.id ? r : x))
+                : [...resources, r],
+            );
+            setShared(null);
+            toast(tr('Saved'));
+          }}
+          onRemove={async () => {
+            await saveResources(resources.filter((x) => x.id !== shared.id));
+            setShared(null);
+            toast(tr('Removed'));
+          }}
+          testID={`${testID}-resource`}
+        />
+      ) : null}
       {editing ? (
         <ItemEditor
           host={host}
           item={editing}
           collections={collections}
+          resources={resources}
           isNew={!items.some((i) => i.id === editing.id)}
           move={{
             earlier: moveItem(items, collections, editing.id, -1) !== null,
@@ -893,7 +966,10 @@ function WayEditor({
               loading={busy === 'remove'}
               onPress={() => {
                 setBusy('remove');
-                void onRemove().finally(() => setBusy(null));
+                setError(null);
+                void onRemove()
+                  .catch((e: Error) => setError(e.message))
+                  .finally(() => setBusy(null));
               }}
               testID={`${testID}-remove`}
             />
@@ -1031,6 +1107,102 @@ function MoveButtons({ move, testID }: { move: Move; testID: string }) {
   );
 }
 
+/** Something several items share (R58): its name, and how many there are. */
+function ResourceEditor({
+  resource,
+  isNew,
+  onClose,
+  onSave,
+  onRemove,
+  testID,
+}: {
+  resource: SharedResource;
+  isNew: boolean;
+  onClose: () => void;
+  onSave: (r: SharedResource) => Promise<void>;
+  onRemove: () => Promise<void>;
+  testID: string;
+}) {
+  const [name, setName] = useState(resource.name);
+  const [capacity, setCapacity] = useState(resource.capacity);
+  const [error, setError] = useState<string | null>(null);
+  const [busy, setBusy] = useState<'save' | 'remove' | null>(null);
+  const submit = async () => {
+    const trimmed = name.trim();
+    if (!trimmed) return setError(tr('Name it.'));
+    setBusy('save');
+    setError(null);
+    try {
+      await onSave({ ...resource, name: trimmed, capacity });
+    } catch (e) {
+      setError((e as Error).message);
+    } finally {
+      setBusy(null);
+    }
+  };
+  return (
+    <Sheet
+      open
+      onClose={onClose}
+      title={isNew ? tr('Something shared') : resource.name}
+      subtitle={tr('Items take one from their own page.')}
+      footer={
+        <View style={{ gap: 8 }}>
+          <Button
+            label={tr('Save')}
+            block
+            size="lg"
+            onPress={() => void submit()}
+            loading={busy === 'save'}
+            testID={`${testID}-save`}
+          />
+          {!isNew ? (
+            <Button
+              label={tr('Remove')}
+              variant="ghost"
+              block
+              loading={busy === 'remove'}
+              onPress={() => {
+                setBusy('remove');
+                setError(null);
+                void onRemove()
+                  .catch((e: Error) => setError(e.message))
+                  .finally(() => setBusy(null));
+              }}
+              testID={`${testID}-remove`}
+            />
+          ) : null}
+        </View>
+      }
+    >
+      <View style={{ gap: 16 }}>
+        <TextField
+          label={tr('Name')}
+          placeholder={tr('Chairs')}
+          value={name}
+          onChangeText={setName}
+          autoFocus={isNew}
+          maxLength={60}
+          testID={`${testID}-name`}
+        />
+        <Stepper
+          label={tr('How many there are')}
+          value={capacity}
+          min={1}
+          max={BOOKING_CAPACITY_MAX}
+          onChange={setCapacity}
+          testID={`${testID}-capacity`}
+        />
+        {error ? (
+          <Text variant="bodyStrong" color="danger" testID={`${testID}-error`}>
+            {error}
+          </Text>
+        ) : null}
+      </View>
+    </Sheet>
+  );
+}
+
 function CollectionEditor({
   host,
   collection,
@@ -1100,7 +1272,10 @@ function CollectionEditor({
               loading={busy === 'remove'}
               onPress={() => {
                 setBusy('remove');
-                void onRemove().finally(() => setBusy(null));
+                setError(null);
+                void onRemove()
+                  .catch((e: Error) => setError(e.message))
+                  .finally(() => setBusy(null));
               }}
               testID={`${testID}-remove`}
             />
@@ -1148,6 +1323,7 @@ function ItemEditor({
   host,
   item,
   collections,
+  resources,
   isNew,
   move,
   onClose,
@@ -1158,6 +1334,7 @@ function ItemEditor({
   host: BookingHostInfo;
   item: BookingItem;
   collections: CatalogCollection[];
+  resources: SharedResource[];
   isNew: boolean;
   move: Move;
   onClose: () => void;
@@ -1186,6 +1363,8 @@ function ItemEditor({
   const [description, setDescription] = useState(item.description ?? '');
   const [slug, setSlug] = useState(item.slug);
   const [collectionId, setCollectionId] = useState<string | null>(item.collectionId);
+  // What it shares with other items (R58), for something held at a time.
+  const [resourceId, setResourceId] = useState<string | null>(item.resourceId ?? null);
   // Its photo (R63): the one it has, or one just uploaded (shown by the file's own address).
   const [photoFileId, setPhotoFileId] = useState<string | null>(item.photoFileId ?? null);
   const [photoPreview, setPhotoPreview] = useState<string | null>(
@@ -1264,6 +1443,9 @@ function ItemEditor({
           slug: slug.trim() || slugify(trimmed),
           description: description.trim() || null,
           collectionId,
+          // Something ordered by the piece holds no time, so it shares nothing.
+          resourceId:
+            unit !== 'each' && resources.some((r) => r.id === resourceId) ? resourceId : null,
           photoFileId,
           ...(chosen.length ? { options: chosen } : {}),
         },
@@ -1305,7 +1487,10 @@ function ItemEditor({
               loading={busy === 'remove'}
               onPress={() => {
                 setBusy('remove');
-                void onRemove().finally(() => setBusy(null));
+                setError(null);
+                void onRemove()
+                  .catch((e: Error) => setError(e.message))
+                  .finally(() => setBusy(null));
               }}
               testID={`${testID}-remove`}
             />
@@ -1369,6 +1554,27 @@ function ItemEditor({
                 })),
               ]}
               testID={`${testID}-collection-of`}
+            />
+          </View>
+        ) : null}
+        {resources.length && unit !== 'each' ? (
+          <View style={{ gap: 6 }}>
+            <Text variant="label">{tr('Takes one of')}</Text>
+            <ChoiceChips
+              wrap
+              flush
+              label={tr('Takes one of')}
+              value={resourceId ?? 'none'}
+              onChange={(v) => setResourceId(v === 'none' ? null : v)}
+              options={[
+                { value: 'none', label: tr('Nothing shared'), testID: `${testID}-no-resource` },
+                ...resources.map((r) => ({
+                  value: r.id,
+                  label: r.name,
+                  testID: `${testID}-uses-${r.id}`,
+                })),
+              ]}
+              testID={`${testID}-resource-of`}
             />
           </View>
         ) : null}

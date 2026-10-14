@@ -47,6 +47,16 @@ test.describe
       await page.getByTestId('org-booking-item-save').click();
       await expect(visible(page, 'Haircut')).toBeVisible();
       await expect(visible(page, /45 min · .*200.* · Everyone/)).toBeVisible();
+      // Something the items share (R58): two chairs, which the haircut takes one of.
+      await page.getByTestId('org-booking-add-resource').click();
+      await page.getByTestId('org-booking-resource-name').fill('Chairs');
+      await page.getByTestId('org-booking-resource-capacity-more').click();
+      await page.getByTestId('org-booking-resource-save').click();
+      await expect(visible(page, /2 at a time · Shared by 0 items/)).toBeVisible();
+      await visible(page, 'Haircut').click();
+      await page.locator('[data-testid^="org-booking-item-uses-"]').first().click();
+      await page.getByTestId('org-booking-item-save').click();
+      await expect(visible(page, /2 at a time · Shared by 1 item$/)).toBeVisible();
       await page.screenshot({
         path: 'e2e/screenshots/desktop-org-booking-catalog.png',
         animations: 'disabled',

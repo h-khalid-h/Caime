@@ -3092,6 +3092,19 @@ export const turkish: Catalog = {
   '2 weeks': '2 hafta',
   '2 months': '2 ay',
   '{n} items': { one: '{n} öğe', other: '{n} öğe' },
+  // Something several items share (R58).
+  '{n} at a time': { one: 'Aynı anda bir', other: 'Aynı anda {n}' },
+  'Shared by {n} items': { one: '{n} öğe kullanıyor', other: '{n} öğe kullanıyor' },
+  'Add something shared': 'Ortak kullanılan bir şey ekle',
+  'Chairs, rooms or a table that several items use: a time is open only while one is free.':
+    'Birden çok öğenin kullandığı koltuklar, odalar ya da bir masa: biri boş olduğu sürece saat açıktır.',
+  'Something shared': 'Ortak kullanılan bir şey',
+  'Items take one from their own page.': 'Öğeler kendi sayfalarından birini alır.',
+  Chairs: 'Koltuklar',
+  'How many there are': 'Kaç tane var',
+  'Takes one of': 'Şundan birini alır',
+  'Nothing shared': 'Ortak bir şey yok',
+  'Each shared resource once.': 'Her ortak kaynak bir kez.',
   'Add a collection': 'Koleksiyon ekle',
   'Group what you offer: treatments, products, rooms. A public one has a page of its own.':
     'Sunduklarınızı gruplayın: tedaviler, ürünler, odalar. Herkese açık bir koleksiyonun kendi sayfası olur.',

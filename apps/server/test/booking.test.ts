@@ -681,3 +681,89 @@ describe('the last place, asked for twice at once (review 2026-10-09 M20)', () =
     expect(refused.json().error.code).toBe('slot_taken');
   });
 });
+
+describe('a resource shared by several items (R58)', () => {
+  it('two services share the chairs: a slot is open only while one is free', async () => {
+    const salon = (
+      await noor.post('/v1/orgs', {
+        country: 'EG',
+        name: 'Cut and Colour',
+        handle: 'cut.colour',
+        kind: 'business',
+      })
+    ).org.id as string;
+    const item = (id: string, name: string, minutes: number, resourceId: string | null) => ({
+      id,
+      name,
+      price: null,
+      unit: 'minutes',
+      minutes,
+      capacity: 2,
+      maxQuantity: 2,
+      audience: 'public',
+      providers: null,
+      askTopic: false,
+      resourceId,
+    });
+    const set = await noor.req('PUT', `/v1/orgs/${salon}/booking`, {
+      booking: { ...HOURS, resources: [{ id: 'chairs', name: 'Chairs', capacity: 2 }] },
+      items: [
+        item('haircut', 'Haircut', 30, 'chairs'),
+        item('colour', 'Colour', 60, 'chairs'),
+        // A resource the hours don't keep is none.
+        item('beard', 'Beard trim', 30, 'ghost'),
+      ],
+    });
+    expect(set.statusCode, set.body).toBe(200);
+    expect(
+      set.json().items.map((i: { id: string; resourceId: string | null }) => [i.id, i.resourceId]),
+    ).toEqual([
+      ['haircut', 'chairs'],
+      ['colour', 'chairs'],
+      ['beard', null],
+    ]);
+    expect(set.json().booking.resources).toEqual([{ id: 'chairs', name: 'Chairs', capacity: 2 }]);
+
+    // Sunday 4 October: a colour for two takes both chairs from 09:00 to 10:00 Cairo.
+    const sunday = 'from=2026-10-04T00:00:00Z&to=2026-10-05T00:00:00Z';
+    const times = async (itemId: string) =>
+      ((await lina.get(`/v1/orgs/${salon}/slots?${sunday}&item=${itemId}`)).slots as string[]).map(
+        (s) => s.slice(11, 16),
+      );
+    expect(await times('haircut')).toContain('06:00');
+    const chat = (await lina.post(`/v1/orgs/${salon}/conversations`, {})).conversationId;
+    const ask = (itemId: string, at: string, quantity: number) =>
+      lina.req('POST', `/v1/conversations/${chat}/messages`, {
+        clientId: uuidv4(),
+        kind: 'kit',
+        payload: {
+          kit: 'appointment',
+          fields: { title: itemId, start: { at: `2026-10-04T${at}:00.000Z`, hasTime: true } },
+          booking: { itemId, quantity },
+        },
+      });
+    expect((await ask('colour', '06:00', 2)).statusCode).toBe(201);
+    // A haircut has room of its own, but no chair until the colour is done.
+    const haircuts = await times('haircut');
+    expect(haircuts).not.toContain('06:00');
+    expect(haircuts).not.toContain('06:30');
+    expect(haircuts).toContain('07:00');
+    const refused = await ask('haircut', '06:30', 1);
+    expect(refused.statusCode).toBe(409);
+    expect(refused.json().error.code).toBe('slot_taken');
+    // The beard trim shares nothing: it's open at 09:00.
+    expect(await times('beard')).toContain('06:00');
+
+    // Hours saved without it: nothing is shared, and the haircut has its own room again.
+    const again = await noor.req('PUT', `/v1/orgs/${salon}/booking`, {
+      booking: HOURS,
+      items: [item('haircut', 'Haircut', 30, 'chairs'), item('colour', 'Colour', 60, 'chairs')],
+    });
+    expect(again.statusCode, again.body).toBe(200);
+    expect(again.json().items.map((i: { resourceId: string | null }) => i.resourceId)).toEqual([
+      null,
+      null,
+    ]);
+    expect(await times('haircut')).toContain('06:00');
+  });
+});

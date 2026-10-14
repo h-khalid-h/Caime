@@ -278,12 +278,18 @@ const HELD_MAX = 10_000;
 /**
  * What's busy for one item: its own bookings take their quantity of its capacity; a card not
  * booked from the catalog, or a person's own meeting, blocks the time outright. Another item's
- * bookings don't count against this one (another chair, another room); their providers do.
+ * bookings don't count against this one (another chair, another room); their providers do, and
+ * so do they against a resource the two share (R58: one set of chairs for a cut and a colour).
  */
 function busyFor(
   held: Held[],
   item: BookingItem | null,
-): { busy: Busy[]; providersBusy: Busy[][] | undefined } {
+  host: Pick<BookingHost, 'hours' | 'items'>,
+): {
+  busy: Busy[];
+  providersBusy: Busy[][] | undefined;
+  resource: { capacity: number; busy: Busy[] } | null;
+} {
   const busy: Busy[] = [];
   for (const h of held) {
     if (!h.booking) busy.push({ start: h.start, end: h.end, units: Infinity });
@@ -302,7 +308,27 @@ function busyFor(
           .map((h) => ({ start: h.start, end: h.end })),
       )
     : undefined;
-  return { busy, providersBusy };
+  // A shared resource (R58): what every item using it has booked, against how many there are.
+  const shared = item?.resourceId
+    ? host.hours?.resources?.find((r) => r.id === item.resourceId)
+    : undefined;
+  const sharing = shared
+    ? new Set(host.items.filter((i) => i.resourceId === shared.id).map((i) => i.id))
+    : null;
+  const resource =
+    shared && sharing
+      ? {
+          capacity: shared.capacity,
+          busy: held
+            .filter((h) => h.booking && sharing.has(h.booking.itemId))
+            .map((h) => ({
+              start: h.start,
+              end: h.end,
+              units: h.booking?.unit === 'days' ? 1 : (h.booking?.quantity ?? 1),
+            })),
+        }
+      : null;
+  return { busy, providersBusy, resource };
 }
 
 // A booking's window is looked at a little wider than asked, so a card that began before it
@@ -326,7 +352,7 @@ export async function openSlotsFor(
       window.to.getTime() + (item?.unit === 'days' ? (opts.quantity ?? 1) * 86_400_000 : 0),
     ),
   });
-  const { busy, providersBusy } = busyFor(held, item);
+  const { busy, providersBusy, resource } = busyFor(held, item, host);
   return {
     hours,
     slots: openSlots(hours, {
@@ -336,6 +362,7 @@ export async function openSlotsFor(
       item,
       quantity: opts.quantity,
       providersBusy,
+      resource,
       limit: opts.limit ?? 200,
     }),
   };
@@ -452,14 +479,19 @@ export async function pickProvider(
 export function catalogFrom(
   body: { items: BookingItemInput[]; collections?: CollectionInput[] },
   kept: CatalogCollection[],
+  hours: Pick<BookingHours, 'resources'> | null = null,
 ): { items: BookingItem[]; collections: CatalogCollection[] } {
   const collections = body.collections ?? kept;
   const ids = new Set(collections.map((c) => c.id));
+  // A shared resource (R58) is one the hours keep, for something held at a time.
+  const shared = new Set((hours?.resources ?? []).map((r) => r.id));
   return withSlugs(
     // A count isn't the catalog's: it's kept apart (lib/stock.ts).
     body.items.map(({ stock: _stock, ...i }) => ({
       ...i,
       collectionId: i.collectionId && ids.has(i.collectionId) ? i.collectionId : null,
+      resourceId:
+        i.resourceId && i.unit !== 'each' && shared.has(i.resourceId) ? i.resourceId : null,
     })),
     collections,
   ) as { items: BookingItem[]; collections: CatalogCollection[] };

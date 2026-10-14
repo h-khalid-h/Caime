@@ -185,6 +185,30 @@ describe('catalog items (R58)', () => {
     expect(slots).toEqual(['06:00', '08:00']);
   });
 
+  it('a shared resource (R58) is full when every item using it has taken its places', () => {
+    const at = (hhmm: string) => new Date(`2026-10-01T${hhmm}:00Z`);
+    const open = (resourceBusy: Busy[], capacity = 2, quantity = 1) =>
+      openSlots(noLead, {
+        ...window,
+        // The haircut's own bookings: none; the colour, beside it, holds the chairs.
+        busy: [],
+        item: haircut,
+        quantity,
+        resource: { capacity, busy: resourceBusy },
+      }).map((d) => d.toISOString().slice(11, 16));
+    const colour: Busy = { start: at('07:00'), end: at('08:00'), units: 1 };
+    // Two chairs: one taken by a colour leaves one for a haircut at 07:00, not two.
+    expect(open([colour])).toContain('07:00');
+    expect(open([colour], 2, 2)).not.toContain('07:00');
+    // Both taken: no haircut until the colours are done, whatever the haircut's own capacity.
+    expect(open([colour, colour])).not.toContain('07:00');
+    expect(open([colour, colour])).not.toContain('07:30');
+    expect(open([colour, colour])).toContain('08:00');
+    // One chair alone is full with one: a haircut at 06:30 would run into the colour too.
+    expect(open([colour], 1)).not.toContain('06:30');
+    expect(open([colour], 1)).toContain('08:00');
+  });
+
   it('a stay is one slot a day at opening, checked a night at a time', () => {
     const room = { unit: 'days' as const, minutes: null, capacity: 2 };
     const wide = { from: now, to: new Date('2026-10-08T00:00:00Z'), now };

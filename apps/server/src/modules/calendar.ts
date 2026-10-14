@@ -244,7 +244,7 @@ export async function calendarRoutes(app: FastifyInstance, ctx: AppContext) {
     if (!canManageOrg(seat.role))
       throw forbidden(tr('Only the organization’s owner and admins can.'));
     const team = await humanTeam(ctx.db, id);
-    const kept = catalogFrom(body, catalogOf(org).collections);
+    const kept = catalogFrom(body, catalogOf(org).collections, body.booking);
     assertItemsFit(
       orgHost(org),
       kept.items,
@@ -415,7 +415,7 @@ export async function calendarRoutes(app: FastifyInstance, ctx: AppContext) {
       ])
       .where('id', '=', auth.userId)
       .executeTakeFirstOrThrow();
-    const kept = catalogFrom(body, catalogOf(me).collections);
+    const kept = catalogFrom(body, catalogOf(me).collections, body.booking);
     assertItemsFit(personHost(me), kept.items, new Set(), !minorOf(me, ctx.now()));
     assertPaymentsFit(personHost(me), body.payments, !minorOf(me, ctx.now()));
     await assertItemPhotos(ctx, auth.userId, kept.items, catalogOf(me).items);

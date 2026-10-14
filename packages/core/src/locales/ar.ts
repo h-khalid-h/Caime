@@ -3532,6 +3532,37 @@ export const ar: Catalog = {
     many: '{n} عنصرًا',
     other: '{n} عنصر',
   },
+  // Something several items share (R58).
+  '{n} at a time': {
+    zero: '{n} في الوقت نفسه',
+    one: 'واحد في كل مرة',
+    two: 'اثنان في الوقت نفسه',
+    few: '{n} في الوقت نفسه',
+    many: '{n} في الوقت نفسه',
+    other: '{n} في الوقت نفسه',
+  },
+  'Shared by {n} items': {
+    zero: 'لا يستخدمه أي عنصر',
+    one: 'يستخدمه عنصر واحد',
+    two: 'يستخدمه عنصران',
+    few: 'يستخدمه {n} عناصر',
+    many: 'يستخدمه {n} عنصرًا',
+    other: 'يستخدمه {n} عنصر',
+  },
+  'Add something shared': {
+    toWoman: 'أضيفي شيئًا مشتركًا',
+    toMan: 'أضف شيئًا مشتركًا',
+    other: 'أضف شيئًا مشتركًا',
+  },
+  'Chairs, rooms or a table that several items use: a time is open only while one is free.':
+    'كراسٍ أو غرف أو طاولة تستخدمها عدة عناصر: الموعد متاح ما دام أحدها شاغرًا.',
+  'Something shared': 'شيء مشترك',
+  'Items take one from their own page.': 'تأخذ العناصر منه في صفحاتها.',
+  Chairs: 'كراسٍ',
+  'How many there are': 'العدد المتاح',
+  'Takes one of': 'يأخذ واحدًا من',
+  'Nothing shared': 'لا شيء مشترك',
+  'Each shared resource once.': 'كل مورد مشترك مرة واحدة.',
   'Add a collection': { toWoman: 'أضيفي مجموعة', toMan: 'أضف مجموعة', other: 'أضف مجموعة' },
   'Group what you offer: treatments, products, rooms. A public one has a page of its own.':
     'اجمع ما تقدّمه: علاجات، منتجات، غرف. المجموعة العامة لها صفحة خاصة بها.',

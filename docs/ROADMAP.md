@@ -1445,9 +1445,16 @@ listed there with its owner.
       works (the week kept on the series, R76), "Until" asked once it repeats (the last day
       held; the calendar, feed and slots stop there), "Stop repeating" clearing both
       (`series.test.ts`, `meeting-series.test.ts`, `e2e/meetings.spec.ts`).
+- [x] R58, a resource shared by several items: the hours keep what items share
+      (`BookingHours.resources`: a name and how many, up to seven, so an item's choice stays a
+      row of eight chips), an item takes one of them (`resourceId`), and a time is open for it
+      only while the resource has room beside every booking of every item that uses it (core
+      `openSlots`' `resource`, the server's `busyFor`); Settings' and the setup's "Add something
+      shared" and an item's "Takes one of" (`booking.test.ts` core and server,
+      `e2e/bookings.spec.ts`).
 - [ ] Later layers of R58: a recurring appointment (each time's slot checked against the host's
-      catalog as it's posted), a resource shared by several items (one set of chairs for two
-      services), a customer choosing who does it where an organization allows it.
+      catalog as it's posted), a customer choosing who does it where an organization allows it
+      (R15 keeps the team unnamed to a customer: the owner's decision).
 
 ## M14 — Apps and Mail (R74, R75)
 
@@ -3114,3 +3121,5 @@ The six-slice review's plan, in its order; a block is ticked when its tests and 
 - 2026-10-14 — R87, who Cai is and for whom: the agent's introduction written by the rules in the
   customer's language and kept from the model, Cai's invitation mail introducing itself, the
   authority levels written down, and the organizations a person runs in their weekly digest.
+- 2026-10-14 — R58, a resource shared by several items: the hours keep what's shared, an item
+  takes one, and a time is open only while one is free beside every item that uses it.

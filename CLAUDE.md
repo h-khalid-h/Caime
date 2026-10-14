@@ -399,7 +399,10 @@ These are rules, not preferences.
   and one app component (`features/booking/BookingSetup.tsx`, used by `OrgBooking` and
   Settings · Bookings). Slots are never kept: `openSlotsFor(ctx, host, window, { item, quantity })`
   cuts the hours with core `openSlots` (the item's length on the grid, full at its capacity,
-  a stay checked a night at a time, a named provider free) and takes out what holds a slot: an
+  a stay checked a night at a time, a named provider free, a shared resource with room: the
+  hours' `resources` and an item's `resourceId`, read by `busyFor` from every booking of every
+  item that uses it, kept by `catalogFrom` only when the hours keep it) and takes out what
+  holds a slot: an
   organization's appointment cards (`orgBookings`), a person's own cards (`cardsAhead`, less an
   organization's unless they do them): every card overlapping the window (`heldBy`, up to
   `HELD_MAX`, never a page of the earliest; the look-back is a day, 31 for a stay), since a
