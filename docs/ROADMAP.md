@@ -491,9 +491,10 @@ super-app brainstorm the product takes, and what it leaves with the reason, is R
       answered `{"ok":true}` on 2026-10-13, `PUBLIC_URL=https://cai.me`, and the service answers
       to `cai.me`, `www.cai.me` and `caime.datac.com` (checked through EasyPanel's API); a page
       on any name but `cai.me` goes there for good (`lib/canonical-host.ts`), the API answering
-      on all of them. Left, the owner's, in DEPLOY.md's "Going live on cai.me": `go.cai.me` its
-      own record and the wildcard gone, Stripe's webhook and Connect redirect, Postmark for
-      sending, the staff addresses and DMARC. The phone builds, Expo Go's image and the SDK
+      on all of them. `HOSTING_PROVIDER`, `go.cai.me`'s own record and Stripe's webhook on `cai.me` done by the
+      owner on 2026-10-14. Left, the owner's, in DEPLOY.md's "Going live on cai.me": the
+      wildcard record gone, SSL Full (strict), Postmark for sending, the staff addresses and
+      DMARC. The phone builds, Expo Go's image and the SDK
       default to `cai.me`
 - [ ] `cai.me/@handle` for people and organizations (R35), opening the app where it's installed:
       `apple-app-site-association` and `assetlinks.json` served by the server, the app's
