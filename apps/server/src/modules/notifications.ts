@@ -17,7 +17,7 @@ import { onNotification } from '../lib/notify';
 /** How long a push service gets before Caime moves on without it. */
 const PUSH_TIMEOUT_MS = 10_000;
 
-import type { OkResponse, PushKeyResponse } from '@caime/core/api';
+import type { OkResponse, PushKeyResponse, ShownNotificationsResponse } from '@caime/core/api';
 import { parse } from '../lib/validate';
 import { requireAuth } from '../plugins/auth';
 
@@ -240,6 +240,26 @@ export async function notificationRoutes(app: FastifyInstance, ctx: AppContext) 
       data: { ids: body.ids ?? null, all: body.all ?? false },
     });
     return { ok: true };
+  });
+
+  /**
+   * A phone asking what it may go on showing (`push.native.ts`, as Caime comes to the front): a
+   * phone can't be told while the app is closed, so it asks once for the whole set it shows.
+   */
+  app.post('/notifications/shown', async (req): Promise<ShownNotificationsResponse> => {
+    const auth = requireAuth(req);
+    const { ids } = parse(z.object({ ids: z.array(z.string().uuid()).max(100) }), req.body);
+    if (!ids.length) return { unread: [] };
+    const rows = await ctx.db
+      .selectFrom('notifications')
+      .select(['id', 'body'])
+      .where('user_id', '=', auth.userId)
+      .where('id', 'in', ids)
+      .where('read_at', 'is', null)
+      .where('dismissed_at', 'is', null)
+      .orderBy('id')
+      .execute();
+    return { unread: rows.map((r) => ({ id: r.id, body: r.body })) };
   });
 
   app.post('/notifications/:id/dismiss', async (req): Promise<OkResponse> => {

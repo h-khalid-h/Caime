@@ -123,6 +123,7 @@ import type {
   SearchResponse,
   SessionResponse,
   SessionsResponse,
+  ShownNotificationsResponse,
   SlotsView,
   SpaceResponse,
   SpacesResponse,
@@ -777,6 +778,9 @@ export const endpoints = {
   notifications: () => api.get<NotificationsResponse>('/notifications'),
   markNotificationsRead: (body: { ids?: string[]; all?: boolean }) =>
     api.post<OkResponse>('/notifications/read', body),
+  /** Of what a phone shows, what's still unread and what it says now. */
+  shownNotifications: (ids: string[]) =>
+    api.post<ShownNotificationsResponse>('/notifications/shown', { ids }),
   policies: () => api.get<PoliciesResponse>('/policies'),
   /** A rule of one's own (PRD §68): for a kind of relationship, a role in it, or one person. */
   createPolicy: (body: {

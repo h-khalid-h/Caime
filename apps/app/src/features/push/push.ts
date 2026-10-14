@@ -18,3 +18,6 @@ export async function pushOn(): Promise<boolean> {
 export function onOpenFromNotification(_go: (path: string) => void): () => void {
   return () => {};
 }
+export function watchShown(): () => void {
+  return () => {};
+}

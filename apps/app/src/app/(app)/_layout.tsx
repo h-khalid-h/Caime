@@ -47,7 +47,8 @@ export default function AppLayout() {
       .catch(() => {});
   }, [onboarded, user?.id]);
   // Notifications on this device (a browser's web push, a phone's through Expo): a sign-in where
-  // they already said yes gets its pushes too, and a tapped notification opens where it leads.
+  // they already said yes gets its pushes too, a tapped notification opens where it leads, and a
+  // phone clears what it shows that's over.
   // biome-ignore lint/correctness/useExhaustiveDependencies: once per person signed in
   useEffect(() => {
     if (!onboarded) return;
@@ -55,7 +56,12 @@ export default function AppLayout() {
     void import('@/features/push/push')
       .then((m) => {
         void m.resumePush();
-        stop = m.onOpenFromNotification((path) => router.push(path as never));
+        const stopOpening = m.onOpenFromNotification((path) => router.push(path as never));
+        const stopWatching = m.watchShown();
+        stop = () => {
+          stopOpening();
+          stopWatching();
+        };
       })
       .catch(() => {});
     return () => stop();

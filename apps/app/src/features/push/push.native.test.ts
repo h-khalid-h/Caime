@@ -21,6 +21,8 @@ const h = vi.hoisted(() => {
     presented: [] as Array<{ request: { identifier: string; content: { data: unknown } } }>,
     last: null as Response | null,
     tapped: [] as Array<(r: Response) => void>,
+    fronted: [] as Array<(s: string) => void>,
+    unread: [] as Array<{ id: string; body: string | null }>,
   };
   const n = {
     AndroidImportance: { HIGH: 4, LOW: 2 },
@@ -49,6 +51,7 @@ const h = vi.hoisted(() => {
     endpoints: {
       subscribePush: vi.fn(async (_body: unknown) => ({ ok: true })),
       unsubscribePush: vi.fn(async (_endpoint: string) => ({ ok: true })),
+      shownNotifications: vi.fn(async (_ids: string[]) => ({ unread: state.unread })),
     },
   };
 });
@@ -67,6 +70,12 @@ vi.mock('react-native', () => ({
   Platform: {
     get OS() {
       return h.state.os;
+    },
+  },
+  AppState: {
+    addEventListener: (_: string, fn: (s: string) => void) => {
+      h.state.fronted.push(fn);
+      return { remove: () => h.state.fronted.splice(h.state.fronted.indexOf(fn), 1) };
     },
   },
 }));
@@ -100,6 +109,8 @@ beforeEach(() => {
     presented: [],
     last: null,
     tapped: [],
+    fronted: [],
+    unread: [],
   });
 });
 afterEach(() => vi.clearAllMocks());
@@ -196,6 +207,50 @@ describe('notifications on a phone', () => {
     const push = await load();
     await push.closeShownNotifications(['n2']);
     expect(h.n.dismissNotificationAsync.mock.calls.map((c) => c[0])).toEqual(['b']);
+  });
+
+  it('coming to the front clears what is over: read, gone, or its words taken back', async () => {
+    const shown = (identifier: string, id: string, body: string) => ({
+      request: { identifier, content: { data: { id }, body } },
+    });
+    h.state.presented = [
+      shown('a', 'n-kept', 'Are you free?'),
+      shown('b', 'n-read', 'See you then'),
+      shown('c', 'n-erased', 'The code is 4411'),
+      shown('d', 'n-older', 'Lina sent 2 messages'),
+    ];
+    // Still unread: the first as shown; the third without its words; the fourth says more now.
+    h.state.unread = [
+      { id: 'n-kept', body: 'Are you free?' },
+      { id: 'n-erased', body: null },
+      { id: 'n-older', body: 'Lina sent 3 messages' },
+    ];
+    const push = await load();
+    const stop = push.watchShown();
+    await flush();
+    expect(h.endpoints.shownNotifications).toHaveBeenCalledWith([
+      'n-kept',
+      'n-read',
+      'n-erased',
+      'n-older',
+    ]);
+    expect(h.n.dismissNotificationAsync.mock.calls.map((c) => c[0])).toEqual(['b', 'c', 'd']);
+    // Again each time Caime comes to the front; never in the background.
+    h.state.fronted[0]?.('background');
+    await flush();
+    expect(h.endpoints.shownNotifications).toHaveBeenCalledTimes(1);
+    h.state.fronted[0]?.('active');
+    await flush();
+    expect(h.endpoints.shownNotifications).toHaveBeenCalledTimes(2);
+    stop();
+    expect(h.state.fronted).toEqual([]);
+  });
+
+  it('asks nothing when the phone shows nothing of Caime', async () => {
+    const push = await load();
+    push.watchShown();
+    await flush();
+    expect(h.endpoints.shownNotifications).not.toHaveBeenCalled();
   });
 
   it('a tap opens where it leads, the one that started the app once', async () => {

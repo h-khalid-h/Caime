@@ -11,7 +11,7 @@ import { tr } from '@caime/core/i18n';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import Constants from 'expo-constants';
 import type { NotificationResponse } from 'expo-notifications';
-import { Platform } from 'react-native';
+import { AppState, Platform } from 'react-native';
 import { endpoints } from '@/api/endpoints';
 import { appPath } from '@/lib/paths';
 import { notificationPath } from './notificationPath';
@@ -152,6 +152,42 @@ export async function leaveThisDevice({ tellServer }: { tellServer: boolean }): 
 export async function pushOn(): Promise<boolean> {
   if ((await readPushState()) !== 'granted' || (await turnedOff())) return false;
   return Boolean(await AsyncStorage.getItem(TOKEN_KEY).catch(() => null));
+}
+
+/**
+ * What this phone shows, made true again: a notification read, dismissed or gone elsewhere
+ * while Caime was closed, or whose words were since taken back (a message deleted), is cleared.
+ * Asked once for the whole set (at most a hundred), and only when the phone shows any.
+ */
+async function clearStale(): Promise<void> {
+  const n = await notifications();
+  const shown = await n.getPresentedNotificationsAsync().catch(() => []);
+  const ours = shown.flatMap((s) => {
+    const id = (s.request.content.data as { id?: unknown } | null)?.id;
+    return typeof id === 'string'
+      ? [{ key: s.request.identifier, id, body: s.request.content.body ?? '' }]
+      : [];
+  });
+  if (!ours.length) return;
+  const asked = [...new Set(ours.map((o) => o.id))].slice(0, 100);
+  const { unread } = await endpoints.shownNotifications(asked);
+  const says = new Map(unread.map((u) => [u.id, u.body ?? '']));
+  for (const o of ours)
+    if (asked.includes(o.id) && says.get(o.id) !== o.body)
+      await n.dismissNotificationAsync(o.key).catch(() => {});
+}
+
+/**
+ * While signed in: each time Caime comes to the front, what the phone shows is made true again
+ * (`clearStale`), and once now. The server can't reach a closed app to say so.
+ */
+export function watchShown(): () => void {
+  if (!pushSupported) return () => {};
+  void clearStale().catch(() => {});
+  const sub = AppState.addEventListener('change', (s) => {
+    if (s === 'active') void clearStale().catch(() => {});
+  });
+  return () => sub.remove();
 }
 
 /** Taps already followed: the one that opened the app comes by both ways. */

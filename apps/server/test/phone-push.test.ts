@@ -164,6 +164,34 @@ describe('phone push (Expo)', () => {
     expect(sent).toEqual([]);
   });
 
+  it('tells a phone which of what it shows are still unread, and what each says now', async () => {
+    const zara = await signup(t, { displayName: 'Zara Malik' });
+    const kept = await tell(zara.user.id, 'attention');
+    const read = await tell(zara.user.id, 'attention');
+    const erased = await tell(zara.user.id, 'attention');
+    const gone = await tell(zara.user.id, 'attention');
+    const theirs = await tell(noor.user.id, 'attention');
+    await zara.req('POST', '/v1/notifications/read', { ids: [read] });
+    // A burst whose words were taken back with a deleted message: it stays, without them.
+    await t.ctx.db
+      .updateTable('notifications')
+      .set({ body: null })
+      .where('id', '=', erased)
+      .execute();
+    await t.ctx.db.deleteFrom('notifications').where('id', '=', gone).execute();
+    const res = await zara.req('POST', '/v1/notifications/shown', {
+      ids: [kept, read, erased, gone, theirs],
+    });
+    expect(res.statusCode).toBe(200);
+    expect(res.json().unread).toEqual([
+      { id: kept, body: 'Are you free on Thursday?' },
+      { id: erased, body: null },
+    ]);
+    expect((await zara.req('POST', '/v1/notifications/shown', { ids: [] })).json()).toEqual({
+      unread: [],
+    });
+  });
+
   it('is probed hourly with its token, the cheapest read it has', async () => {
     const probe = providerProbes(t.ctx).find((p) => p.id === 'expo');
     expect(probe?.name).toBe('Expo (650 Industries, Inc.)');

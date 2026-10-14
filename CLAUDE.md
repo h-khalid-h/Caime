@@ -1084,7 +1084,9 @@ These are rules, not preferences.
   browser (`caime.push-off`); sign-out drops the subscription and closes what's shown. Phones
   (`features/push/push.native.ts`, the same shape; `support.native.ts`) register an Expo token
   after the phone's own permission, make Android's two channels first (core `PUSH_CHANNELS`, which
-  the server names on each push), show nothing while Caime is in front and clear a read one;
+  the server names on each push), show nothing while Caime is in front, clear a read one, and
+  each time Caime comes to the front clear what's over (`watchShown`: one
+  `POST /notifications/shown` for the set, a shown body that no longer matches is cleared);
   Expo Go on Android offers none (`isRunningInExpoGo`). The server's side is `lib/expo-push.ts`:
   one deadline, a sound and the alerting channel unless the level is activity, each ticket read
   (`DeviceNotRegistered` drops the token), never a `quiet` replacement (Expo can't swap what a

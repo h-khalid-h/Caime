@@ -146,6 +146,11 @@ export async function pushOn(): Promise<boolean> {
   return Boolean(await reg?.pushManager.getSubscription());
 }
 
+/** A browser is told when what it shows is over (the service worker replaces it): nothing to do. */
+export function watchShown(): () => void {
+  return () => {};
+}
+
 /** A tapped notification asks the open tab to go there (no reload: a call or draft stays). */
 export function onOpenFromNotification(go: (path: string) => void): () => void {
   if (!pushSupported) return () => {};

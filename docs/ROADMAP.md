@@ -1130,7 +1130,8 @@ listed there with its owner.
       once (Chats' offer, Settings · Notifications "On this phone"), registers the phone's Expo
       token for the session, makes Android's two channels first, shows nothing over Caime in
       front, opens a tapped one where the browser's would (`notificationPath`), clears what was
-      read and forgets the token on signing out; the server's Expo sender reads each ticket
+      read or deleted elsewhere as it comes to the front (`watchShown`) and forgets the token on
+      signing out; the server's Expo sender reads each ticket
       (`DeviceNotRegistered` drops the token), keeps one deadline, sends no replacement to a phone
       and is probed hourly (`phone-push.test.ts`, `push.native.test.ts`, the native export). ⛔
       Tried on the owner's iPhone in Expo Go (`caime-go`, which carries the Expo project) once
@@ -2937,3 +2938,8 @@ The six-slice review's plan, in its order; a block is ticked when its tests and 
   `quiet` replacement to a phone, and an hourly probe with the token. Tested with an Expo
   stand-in (`phone-push.test.ts`) and mocked natives (`push.native.test.ts`); both native bundles
   export. Not yet tried on a phone (⛔ the owner's iPhone in Expo Go, after this deploys).
+- 2026-10-14 — A phone's lock screen made true as Caime comes to the front: Expo can't replace
+  what a phone shows, so a notification read on another device, or whose message was deleted,
+  kept its words there. Now the app asks once for the set it shows (`POST /notifications/shown`:
+  the person's own still unread, with what each says now) and clears the rest, a burst whose
+  preview was taken back included (`phone-push.test.ts`, `push.native.test.ts`).

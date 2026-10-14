@@ -1733,6 +1733,14 @@ export interface NotificationsResponse {
   unread: number;
 }
 
+/**
+ * Of the notifications a phone shows, those still unread and what each says now: anything else
+ * it shows (read, dismissed or gone elsewhere, or its words since taken back) it clears.
+ */
+export interface ShownNotificationsResponse {
+  unread: Array<{ id: string; body: string | null }>;
+}
+
 export interface PolicyView extends RelationshipPolicy {
   description: string;
 }
