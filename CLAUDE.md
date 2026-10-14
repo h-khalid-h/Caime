@@ -918,7 +918,13 @@ These are rules, not preferences.
   `features/cai/FollowUpOffer.tsx` under it), and sent only by `sendFollowUp` on its owner's tap
   (client id `follow-up:<offer id>`, so twice is once). The morning brief is
   `preferences.caiBrief` (HH:MM or null): `PATCH /me` queues the next `cai.brief` job when it
-  changes, each run queues the next, and a job whose hour no longer matches does nothing. What
+  changes, each run queues the next, and a job whose hour no longer matches does nothing. The
+  weekly digest is `preferences.caiDigest` (`cai.digest`, the same shape: queued by `PATCH /me`
+  when it's turned on or the brief's hour moves, at the first day of the person's week at that
+  hour or nine): `digestText` reads one round of queries, a one-to-one's activity from
+  `conversations.last_message_at` (never a scan of its messages), tasks through
+  `visibleTasksSql`, the week ahead through `cardsAhead`, and says names, counts and titles,
+  never anyone's words. What
   Cai learned is forgotten through `users.learning_reset` (a kind, or '*'), which `leanFor` and
   `caiSettings` both honour: anything new that learns from choices reads it too. Settings · Cai
   (`settings/cai.tsx`) is the one place for what Cai keeps or knows; the learning switch lives

@@ -3774,6 +3774,10 @@ export const ar: Catalog = {
   'Once a day, in Cai’s chat: what’s on today and what’s open. Worked out by the rules, at no cost.':
     'مرة في اليوم، في محادثة Cai: ما في اليوم وما هو مفتوح. بالقواعد، ودون أي تكلفة.',
   'Brief me every morning': 'موجز كل صباح',
+  'Your week': 'أسبوعك',
+  'Look over my week with me': 'نظرة على أسبوعي',
+  'At the start of your week, in Cai’s chat: who you talked with, who has gone quiet, what you’ve waited on longest and what’s ahead. At the brief’s hour, or nine. Worked out by the rules, at no cost.':
+    'في بداية أسبوعك، في محادثة Cai: من تحدثت معهم، ومن هدأ الحديث معه، وأطول انتظار لك، وما هو قادم. في ساعة الموجز، أو التاسعة. بالقواعد، ودون أي تكلفة.',
   At: 'الساعة',
   'Follow-ups Cai keeps': 'متابعات يتولاها Cai',
   'Say “Still waiting” on Attention, and Cai comes back with a follow-up ready to send. It sends nothing until you tap.':

@@ -1118,6 +1118,31 @@ export const frServer: Catalog = {
   'Today:': 'Aujourd’hui :',
   'Nothing is planned for today.': 'Rien de prévu aujourd’hui.',
   'Ask me about any of it.': 'Posez-moi vos questions sur tout cela.',
+  'Here’s your week with your people.': 'Voici votre semaine avec vos proches.',
+  'Last week you talked with {n} people.': {
+    one: 'La semaine dernière, vous avez parlé avec une personne.',
+    other: 'La semaine dernière, vous avez parlé avec {n} personnes.',
+  },
+  'You did {n} things you said you would.': {
+    one: 'Vous avez fait une chose que vous aviez promise.',
+    other: 'Vous avez fait {n} choses que vous aviez promises.',
+  },
+  'Gone quiet:': 'Plus de nouvelles :',
+  '• {name}: nothing for {n} weeks': {
+    one: '• {name} : rien depuis une semaine',
+    other: '• {name} : rien depuis {n} semaines',
+  },
+  'You’ve waited longest on {name}: {title}.':
+    'Ce que vous attendez depuis le plus longtemps, de {name} : {title}.',
+  '{n} meetings and appointments this week.': {
+    one: 'Un rendez-vous cette semaine.',
+    other: '{n} rendez-vous cette semaine.',
+  },
+  'A quiet week: nothing to tell you.': 'Une semaine calme : rien à vous dire.',
+  '{n} people have gone quiet.': {
+    one: 'Plus de nouvelles d’une personne.',
+    other: 'Plus de nouvelles de {n} personnes.',
+  },
   '{n} things are asked of you.': {
     one: 'Une chose vous est demandée.',
     other: '{n} choses vous sont demandées.',

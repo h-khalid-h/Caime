@@ -23,6 +23,7 @@ function snapshot(): Record<string, unknown> {
     language: p.language,
     learnFromChoices: p.learnFromChoices,
     caiBrief: p.caiBrief,
+    caiDigest: p.caiDigest,
     arabicVariety: p.arabicVariety,
   };
   if (p.enterToSend !== null) preferences.enterToSend = p.enterToSend;

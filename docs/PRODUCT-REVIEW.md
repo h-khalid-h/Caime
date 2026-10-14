@@ -850,8 +850,8 @@ with its reason, so it isn't proposed again without new facts.
     and Turkish (`caiIntent`, held to whole questions so "what to do in Paris today" goes to the
     model) from three queries; its model call is `runAi('cai')` under the person's daily
     allowance, the light model at low effort, at most 1,024 tokens out.
-  - Later: Cai's digests arrive in its chat; public pages for `@cai` and each friend for answer
-    engines, with sticker sets. "Cai in a conversation" was built in place (2026-10-14): a
+  - The weekly digest (2026-10-14) arrives in its chat (R68). Later: public pages for `@cai`
+    and each friend for answer engines, with sticker sets. "Cai in a conversation" was built in place (2026-10-14): a
     question asked in the conversation's assist tools is answered from it, labelled, and kept
     nowhere, as a catch-up is (R17). Opening Cai's chat on a conversation is declined: what Cai
     wrote there would keep a copy of other people's words that no deletion or erasure reaches.
@@ -883,6 +883,17 @@ with its reason, so it isn't proposed again without new facts.
     tap), voice calls with Cai, and Cai in Slack or Teams (Caime is the place the conversation
     is). Revisit "Cai in a conversation" ("Catch me up" opening Cai on it) and a weekly
     relationship digest as the next layer.
+  - **The weekly digest (built 2026-10-14).** Off until turned on in Settings · Cai ("Your
+    week"), it comes once a week in Cai's chat, on the first day of the week the person works
+    (R76: Sunday in Cairo, Monday in Paris) at their brief's hour, or nine: who they talked with
+    last week, what they did that they'd said they would, who has gone quiet (a one-to-one with
+    a few messages between two and six weeks ago and none since, three at most, in the order
+    they went quiet), what they've waited on longest, and the week's meetings and appointments;
+    its notification says who went quiet, else the first line. By the rules, at no cost, in the
+    reader's language and in their Arabic (R72); names, counts and titles only, never anyone's
+    words, and never someone either of them blocked, a conversation put away or a request not
+    answered. A relationship app's weekly look is about people, not productivity: it says who
+    has gone quiet rather than scoring anyone, and it offers nothing it would send.
 - **R69 — The 2026 look (owner, 2026-10-06: "looks outdated next to Dots").** Checked against the
   screenshots every E2E run takes. What dated Caime was the system: a typewriter monospace on
   every section label and spec row, rounded Nunito on every title, label and button, a lavender

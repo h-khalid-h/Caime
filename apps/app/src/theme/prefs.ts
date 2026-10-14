@@ -27,6 +27,8 @@ export interface PrefValues {
   learnFromChoices: boolean;
   /** Cai's morning brief (R68): the hour it comes, or null for none. */
   caiBrief: string | null;
+  /** Cai's weekly look at your people (R68). */
+  caiDigest: boolean;
   /** How Cai and the Caime Friends speak Arabic (R72): as you write and live, or one chosen. */
   arabicVariety: ArabicVarietyChoice;
 }
@@ -45,6 +47,7 @@ export const DEFAULT_PREFS: PrefValues = {
   language: 'auto',
   learnFromChoices: true,
   caiBrief: null,
+  caiDigest: false,
   arabicVariety: 'auto',
 };
 

@@ -3297,6 +3297,10 @@ export const turkish: Catalog = {
   'Once a day, in Cai’s chat: what’s on today and what’s open. Worked out by the rules, at no cost.':
     'Günde bir kez, Cai sohbetinde: bugün neler var ve neler açık. Kurallarla hazırlanır, ücretsizdir.',
   'Brief me every morning': 'Her sabah özet ver',
+  'Your week': 'Haftanız',
+  'Look over my week with me': 'Haftamı benimle gözden geçir',
+  'At the start of your week, in Cai’s chat: who you talked with, who has gone quiet, what you’ve waited on longest and what’s ahead. At the brief’s hour, or nine. Worked out by the rules, at no cost.':
+    'Haftanızın başında, Cai sohbetinde: kimlerle konuştuğunuz, kimlerle aranızın sessizleştiği, en uzun süredir ne beklediğiniz ve sırada ne olduğu. Özetin saatinde, yoksa dokuzda. Kurallarla hazırlanır, ücretsizdir.',
   At: 'Saat',
   'Follow-ups Cai keeps': 'Cai’nin takip ettikleri',
   'Say “Still waiting” on Attention, and Cai comes back with a follow-up ready to send. It sends nothing until you tap.':

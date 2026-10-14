@@ -119,6 +119,7 @@ export default function CaiSettings() {
   const now = useNow();
   const { timeZone, locale } = useUserClock();
   const brief = usePrefs((s) => s.caiBrief);
+  const digest = usePrefs((s) => s.caiDigest);
   const learnFromChoices = usePrefs((s) => s.learnFromChoices);
   const q = useQuery({ queryKey: qk.cai, queryFn: endpoints.cai });
   const [busy, setBusy] = useState<string | null>(null);
@@ -196,6 +197,21 @@ export default function CaiSettings() {
             />
           </View>
         ) : null}
+      </Group>
+
+      <Group
+        title={tr('Your week')}
+        footer={tr(
+          'At the start of your week, in Cai’s chat: who you talked with, who has gone quiet, what you’ve waited on longest and what’s ahead. At the brief’s hour, or nine. Worked out by the rules, at no cost.',
+        )}
+      >
+        <SwitchRow
+          inset
+          label={tr('Look over my week with me')}
+          value={digest}
+          onChange={(on) => savePrefs({ caiDigest: on })}
+          testID="cai-digest"
+        />
       </Group>
 
       <Group

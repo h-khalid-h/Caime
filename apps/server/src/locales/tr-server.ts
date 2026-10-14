@@ -1066,6 +1066,30 @@ export const turkishServer: Catalog = {
   'Today:': 'Bugün:',
   'Nothing is planned for today.': 'Bugün için planlanmış bir şey yok.',
   'Ask me about any of it.': 'Bunlardan herhangi birini bana sorabilirsiniz.',
+  'Here’s your week with your people.': 'İşte çevrenizle haftanız.',
+  'Last week you talked with {n} people.': {
+    one: 'Geçen hafta bir kişiyle konuştunuz.',
+    other: 'Geçen hafta {n} kişiyle konuştunuz.',
+  },
+  'You did {n} things you said you would.': {
+    one: 'Yapacağınızı söylediğiniz bir şeyi yaptınız.',
+    other: 'Yapacağınızı söylediğiniz {n} şeyi yaptınız.',
+  },
+  'Gone quiet:': 'Sessizleşenler:',
+  '• {name}: nothing for {n} weeks': {
+    one: '• {name}: bir haftadır ses yok',
+    other: '• {name}: {n} haftadır ses yok',
+  },
+  'You’ve waited longest on {name}: {title}.': 'En uzun süredir beklediğiniz: {title} ({name}).',
+  '{n} meetings and appointments this week.': {
+    one: 'Bu hafta bir toplantı ya da randevu var.',
+    other: 'Bu hafta {n} toplantı ve randevu var.',
+  },
+  'A quiet week: nothing to tell you.': 'Sakin bir hafta: söylenecek bir şey yok.',
+  '{n} people have gone quiet.': {
+    one: 'Bir kişiyle aranız sessiz.',
+    other: '{n} kişiyle aranız sessiz.',
+  },
   '{n} things are asked of you.': {
     one: 'Sizden bir şey isteniyor.',
     other: 'Sizden {n} şey isteniyor.',

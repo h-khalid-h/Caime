@@ -1377,8 +1377,13 @@ listed there with its owner.
       the AI allowance (`ai.test.ts`, the AI assist E2E). Opening Cai's chat on a conversation
       stays declined: a summary kept there would outlive the words it came from, past every
       erasure path
-- [ ] Later in R67: Cai's digests
-      in its chat, public pages for @cai and the friends (answer engines), more of what each friend knows.
+- [x] R68, Cai's weekly digest: `preferences.caiDigest` (Settings · Cai, "Your week"), the
+      `cai.digest` job on the first day of the person's week at the brief's hour or nine, in
+      Cai's chat: who they talked with, what they did that they'd said they would, who has gone
+      quiet, the longest wait, the week ahead; by the rules, in the reader's language and their
+      Arabic, never anyone's words or anyone blocked (`cai-digest.test.ts`, `voices.test.ts`,
+      `e2e/cai.spec.ts`).
+- [ ] Later in R67: public pages for @cai and the friends (answer engines), more of what each friend knows.
 - [ ] ⛔ A trademark and store-name clearance for "Caime" before the store builds (the owner's).
 - [x] R62, a split's shares paid with Pay: "Pay your share" on a split opens the Pay card with
       the share (they pay, the split's payer is paid, its amount, answering the split); between
@@ -3089,3 +3094,6 @@ The six-slice review's plan, in its order; a block is ticked when its tests and 
   label for whoever called it.
 - 2026-10-14 — R61, the host's order: collections, items and ways to be paid moved up or down in
   their sheets; the public page lists each collection with what's on it, in that order.
+- 2026-10-14 — R68, Cai's weekly digest: off until turned on, once a week on the first day the
+  person works, in Cai's chat: who they talked with, what they kept, who has gone quiet, the
+  longest wait and the week ahead, by the rules, in their language and their Arabic.

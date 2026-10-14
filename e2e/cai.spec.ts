@@ -1,7 +1,7 @@
 /**
  * Cai keeps going (R68): a wait handed to Cai comes back in Cai's chat as a follow-up ready to
  * send, which goes only when tapped; Settings · Cai lists what it follows up and has learned, and
- * turns the morning brief on.
+ * turns the morning brief and the weekly look at your people on.
  */
 import { randomUUID } from 'node:crypto';
 import { expect, test } from '@playwright/test';
@@ -53,6 +53,14 @@ test('a wait handed to Cai comes back as a follow-up, sent by a tap', async ({ b
   await expect
     .poll(async () => (await page.request.get('/v1/me').then((r) => r.json())).user.preferences)
     .toMatchObject({ caiBrief: '08:00' });
+  // The weekly look at his people: off until he turns it on, kept on the account.
+  const digest = page.getByTestId('cai-digest').filter({ visible: true }).getByRole('switch');
+  await expect(digest).not.toBeChecked();
+  await digest.click();
+  await expect(digest).toBeChecked();
+  await expect
+    .poll(async () => (await page.request.get('/v1/me').then((r) => r.json())).user.preferences)
+    .toMatchObject({ caiBrief: '08:00', caiDigest: true });
   await page.screenshot({ path: 'e2e/screenshots/phone-settings-cai.png', animations: 'disabled' });
   // How Cai speaks Arabic with him (R72): as he writes it, else as where he lives, Egypt; or
   // the one he picks.

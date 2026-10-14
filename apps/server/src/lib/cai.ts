@@ -11,6 +11,11 @@
  *   hour chosen, where the person is; it says, by the rules, what's on today and what's open,
  *   and queues the next day's. A brief whose hour has changed, or that was turned off, does
  *   nothing: the change queued its own.
+ * - The weekly digest (`preferences.caiDigest`, off by default): one `cai.digest` job a week, at
+ *   the start of the week they work, at the brief's hour or nine; it says, by the rules, who
+ *   they talked with, who has gone quiet, what they've waited on longest and the week ahead,
+ *   and queues the next. Read from their own conversations and tasks: counts, names and
+ *   titles, never anyone's words.
  * - What Cai learned (`caiSettings`, `forgetLearned`): the counts behind every lean (M11) a kind
  *   at a time, and forgetting one kind or all of it (`users.learning_reset`).
  */
@@ -29,8 +34,11 @@ import {
   zonedParts,
   zonedTimeToUtc,
 } from '@caime/core';
+import { formatWhenAt } from '@caime/core/format';
 import { greetingKey } from '@caime/core/home';
 import { LEARN_WINDOW, leanFrom } from '@caime/core/learning';
+import { safeLocale } from '@caime/core/locale';
+import { firstWorkday } from '@caime/core/time';
 import { sql } from 'kysely';
 import type { AppContext } from '../context';
 import { MESSAGE_COLUMNS } from '../db/schema';
@@ -44,9 +52,22 @@ import { notify } from './notify';
 import { postAs } from './post-as';
 import { pairKey } from './relations';
 import { openFor, openSystemConversation, person } from './system-accounts';
+import { visibleTasksSql } from './task-visibility';
+import { cardsAhead } from './upcoming';
 
 const BRIEF_JOB = 'cai.brief';
+const DIGEST_JOB = 'cai.digest';
 const DAY_MS = 86_400_000;
+const WEEK_MS = 7 * DAY_MS;
+/** The digest comes at the brief's hour, or at nine for someone who has no brief. */
+const DIGEST_AT = '09:00';
+/**
+ * Gone quiet: someone a person exchanged at least this many messages with between six weeks
+ * and a fortnight ago, and nothing since; a few at most.
+ */
+const QUIET = { sinceDays: 42, quietDays: 14, atLeast: 4, shown: 3 };
+/** The week ahead's first few, by when. */
+const AHEAD_SHOWN = 3;
 /** After a follow-up is sent, Cai looks again in three days. */
 const WATCH_AGAIN_MS = 3 * DAY_MS;
 
@@ -349,6 +370,221 @@ async function briefJob(ctx: AppContext, payload: Record<string, unknown>): Prom
   }
 }
 
+/**
+ * The start of the next week they work (R76: its first day, `firstWorkday`) at `at`, where they
+ * are, a minute or more from now.
+ */
+export function nextDigestAt(
+  now: Date,
+  at: string,
+  timeZone: string,
+  workweek: number[] = [],
+): Date {
+  const [hour = 9, minute = 0] = at.split(':').map(Number);
+  const first = firstWorkday(workweek);
+  let zone = timeZone;
+  let today: ReturnType<typeof zonedParts>;
+  try {
+    today = zonedParts(now, zone);
+  } catch {
+    zone = 'UTC';
+    today = zonedParts(now, zone);
+  }
+  for (const days of [0, 1, 2, 3, 4, 5, 6, 7]) {
+    const d = addDays(today, days);
+    if (d.weekday !== first) continue;
+    const when = zonedTimeToUtc({ ...d, hour, minute }, zone);
+    if (when.getTime() > now.getTime() + 60_000) return when;
+  }
+  return new Date(now.getTime() + WEEK_MS);
+}
+
+/** The hour someone's digest comes: their brief's, else nine. */
+const digestHour = (preferences: unknown) =>
+  (preferences as { caiBrief?: string | null } | undefined)?.caiBrief ?? DIGEST_AT;
+
+/** Queue someone's next digest, if they asked for one (idempotent: one job per week and hour). */
+export async function scheduleDigest(ctx: AppContext, userId: string): Promise<void> {
+  const me = await ctx.db
+    .selectFrom('users')
+    .select(['preferences', 'time_zone', 'workweek'])
+    .where('id', '=', userId)
+    .where('deleted_at', 'is', null)
+    .executeTakeFirst();
+  if (!me || !(me.preferences as { caiDigest?: boolean }).caiDigest) return;
+  const at = digestHour(me.preferences);
+  const runAt = new Date(
+    nextDigestAt(ctx.now(), at, me.time_zone, me.workweek ?? []).getTime() + briefJitterMs(userId),
+  );
+  await enqueue(
+    ctx,
+    DIGEST_JOB,
+    { userId, at },
+    { runAt, dedupeKey: `cai-digest:${userId}:${runAt.toISOString()}`, maxAttempts: 2 },
+  );
+}
+
+/**
+ * The weekly digest (R68), by the rules, in the reader's language: who they talked with last
+ * week, what they did that they'd said they would, who has gone quiet, what they've waited on
+ * longest, and the week ahead; and the one line its notification says. From their own
+ * one-to-ones and tasks: counts, names and titles, never anyone's words. One round of queries.
+ */
+export async function digestText(
+  ctx: AppContext,
+  userId: string,
+): Promise<{ text: string; summary: string }> {
+  const me = await person(ctx, userId);
+  const now = ctx.now();
+  const weekAgo = new Date(now.getTime() - WEEK_MS);
+  const quietFrom = new Date(now.getTime() - QUIET.sinceDays * DAY_MS);
+  const quietSince = new Date(now.getTime() - QUIET.quietDays * DAY_MS);
+  // Their one-to-ones with people (never Cai, a friend, a bot or a guest), answered on both
+  // sides and nobody blocked. Both read when each last had a message (kept on the
+  // conversation); only one that's gone quiet reads its last few, to know it was busy before.
+  const pairs = sql`participants p1
+    join conversations c on c.id = p1.conversation_id and c.kind = 'direct'
+    join participants p2 on p2.conversation_id = c.id and p2.user_id <> ${userId}
+    join users u on u.id = p2.user_id and u.kind = 'human' and u.deleted_at is null`;
+  const mine = sql`p1.user_id = ${userId} and p1.left_at is null
+    and coalesce(p1.request_state, 'accepted') = 'accepted'
+    and coalesce(p2.request_state, 'accepted') = 'accepted'
+    and not exists (select 1 from blocks b
+      where (b.blocker_id = ${userId} and b.blocked_id = u.id)
+         or (b.blocker_id = u.id and b.blocked_id = ${userId}))`;
+  const [talked, kept, quiet, longest, ahead] = await Promise.all([
+    sql<{ n: number }>`
+      select count(distinct u.id)::int as n from ${pairs}
+      where ${mine} and c.last_message_at >= ${weekAgo}`.execute(ctx.db),
+    // What they said they'd do (their own, as the brief counts it) and did this week.
+    ctx.db
+      .selectFrom('tasks')
+      .select(sql<number>`count(*)::int`.as('n'))
+      .where(visibleTasksSql(userId))
+      .where('owner_id', '=', userId)
+      .where('assignee_id', '=', userId)
+      .where('status', '=', 'done')
+      .where('completed_at', '>=', weekAgo)
+      .executeTakeFirstOrThrow(),
+    // Gone quiet: a one-to-one not put away whose last word was two to six weeks ago, with a
+    // few before it in that time (its last messages, by the conversation's index).
+    sql<{ name: string; last: Date }>`
+      select u.display_name as name, c.last_message_at as last from ${pairs}
+      where ${mine} and p1.archived_at is null and p2.left_at is null
+        and c.last_message_at >= ${quietFrom} and c.last_message_at < ${quietSince}
+        and (select m.created_at from messages m
+          where m.conversation_id = c.id and m.deleted_at is null and m.kind <> 'system'
+          order by m.seq desc offset ${QUIET.atLeast - 1} limit 1) >= ${quietFrom}
+      order by c.last_message_at desc, u.id
+      limit ${QUIET.shown}`.execute(ctx.db),
+    // Their oldest wait, as the Attention home lists waits (R66).
+    ctx.db
+      .selectFrom('tasks as t')
+      .leftJoin('users as a', 'a.id', 't.assignee_id')
+      .select(['t.title', 'a.display_name as who'])
+      .where(visibleTasksSql(userId, 't'))
+      .where('t.owner_id', '=', userId)
+      .where('t.assignee_id', 'is distinct from', userId)
+      .where('t.status', 'in', ['open', 'accepted'])
+      .orderBy('t.created_at', 'asc')
+      .limit(1)
+      .executeTakeFirst(),
+    cardsAhead(ctx, userId, {
+      from: now,
+      until: new Date(now.getTime() + WEEK_MS),
+      limit: 50,
+      agreedOnly: true,
+      series: { now },
+    }),
+  ]);
+  const people = talked.rows[0]?.n ?? 0;
+  const gone = quiet.rows.map((q) =>
+    trn(
+      Math.max(1, Math.floor((now.getTime() - new Date(q.last).getTime()) / WEEK_MS)),
+      '• {name}: nothing for a week',
+      '• {name}: nothing for {n} weeks',
+      { name: q.name },
+    ),
+  );
+  const locale = safeLocale(me.locale);
+  const soon = ahead
+    .slice(0, AHEAD_SHOWN)
+    .map(
+      (c) =>
+        `• ${formatWhenAt(c.at.toISOString(), c.hasTime, now, me.time_zone, locale)} · ${c.title}`,
+    );
+  const lines = [
+    people
+      ? trn(
+          people,
+          'Last week you talked with one person.',
+          'Last week you talked with {n} people.',
+        )
+      : null,
+    kept.n
+      ? trn(
+          kept.n,
+          'You did one thing you said you would.',
+          'You did {n} things you said you would.',
+        )
+      : null,
+    ...(gone.length ? [tr('Gone quiet:'), ...gone] : []),
+    longest
+      ? tr('You’ve waited longest on {name}: {title}.', {
+          name: longest.who ?? tr('Someone'),
+          title: longest.title,
+        })
+      : null,
+    ahead.length
+      ? trn(
+          ahead.length,
+          'One meeting or appointment this week.',
+          '{n} meetings and appointments this week.',
+        )
+      : null,
+    ...soon,
+  ].filter((l): l is string => l !== null);
+  const text = [
+    `${tr(greetingKey(now, me.time_zone), { name: firstName(me.display_name) })}.`,
+    tr('Here’s your week with your people.'),
+    ...(lines.length ? lines : [tr('A quiet week: nothing to tell you.')]),
+    tr('Ask me about any of it.'),
+  ].join('\n');
+  const summary = gone.length
+    ? trn(gone.length, 'One person has gone quiet.', '{n} people have gone quiet.')
+    : (lines[0] ?? tr('A quiet week: nothing to tell you.'));
+  return { text, summary };
+}
+
+async function digestJob(ctx: AppContext, payload: Record<string, unknown>): Promise<void> {
+  const userId = String(payload.userId);
+  const me = await ctx.db
+    .selectFrom('users')
+    .select(['preferences'])
+    .where('id', '=', userId)
+    .where('deleted_at', 'is', null)
+    .where('suspended_at', 'is', null)
+    .executeTakeFirst();
+  // Turned off, or moved to another hour (whose own job is queued): nothing to say now.
+  if (!me || !(me.preferences as { caiDigest?: boolean }).caiDigest) return;
+  if (digestHour(me.preferences) !== payload.at) return;
+  try {
+    const { id: chat } = await openSystemConversation(ctx, userId, cai());
+    const { text, summary } = await asReader(ctx, userId, () => digestText(ctx, userId));
+    await postAs(ctx, CAI_ID, chat, text);
+    await notify(ctx, {
+      userId,
+      kind: 'reminder',
+      level: 'activity',
+      title: () => tr('Cai'),
+      body: summary,
+      data: { conversationId: chat },
+    });
+  } finally {
+    await scheduleDigest(ctx, userId);
+  }
+}
+
 /** Settings · Cai: what it follows up, and what it has learned, a kind at a time. */
 export async function caiSettings(ctx: AppContext, userId: string): Promise<CaiResponse> {
   const [me, followed, decided] = await Promise.all([
@@ -421,4 +657,5 @@ export async function forgetLearned(
 
 export function registerCaiJobs(): void {
   registerJob(BRIEF_JOB, briefJob);
+  registerJob(DIGEST_JOB, digestJob);
 }

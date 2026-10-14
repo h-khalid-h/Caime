@@ -672,6 +672,8 @@ export const Preferences = z
       .regex(/^([01]\d|2[0-3]):[0-5]\d$/)
       .nullable()
       .optional(),
+    /** Cai's weekly look at their people (R68), at the brief's hour or nine; off by default. */
+    caiDigest: z.boolean().optional(),
     /**
      * How Cai and the Caime Friends speak Arabic (R72): as this person writes and where they
      * live (`auto`), or the one chosen. The interface stays in Standard Arabic.

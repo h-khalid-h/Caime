@@ -3452,6 +3452,10 @@ export const fr: Catalog = {
   'Once a day, in Cai’s chat: what’s on today and what’s open. Worked out by the rules, at no cost.':
     'Une fois par jour, dans la discussion avec Cai : ce qui est prévu aujourd’hui et ce qui reste ouvert. Établi par les règles, sans frais.',
   'Brief me every morning': 'Un point chaque matin',
+  'Your week': 'Votre semaine',
+  'Look over my week with me': 'Un point chaque semaine',
+  'At the start of your week, in Cai’s chat: who you talked with, who has gone quiet, what you’ve waited on longest and what’s ahead. At the brief’s hour, or nine. Worked out by the rules, at no cost.':
+    'Au début de votre semaine, dans la discussion avec Cai : avec qui vous avez parlé, qui ne donne plus de nouvelles, ce que vous attendez depuis le plus longtemps et ce qui arrive. À l’heure du point du matin, sinon à neuf heures. Établi par les règles, sans frais.',
   At: 'À',
   'Follow-ups Cai keeps': 'Relances suivies par Cai',
   'Say “Still waiting” on Attention, and Cai comes back with a follow-up ready to send. It sends nothing until you tap.':
