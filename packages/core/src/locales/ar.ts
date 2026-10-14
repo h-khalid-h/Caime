@@ -2005,6 +2005,19 @@ export const ar: Catalog = {
   'Hear calls and messages here when Caime isn’t open.':
     'اسمع المكالمات والرسائل هنا حين لا يكون Caime مفتوحًا.',
   'Turn on': 'تفعيل',
+  'Messages and calls': 'الرسائل والمكالمات',
+  'Other activity': 'نشاط آخر',
+  'This phone couldn’t turn them on.': 'تعذّر على هذا الهاتف تفعيلها.',
+  'On this phone': 'على هذا الهاتف',
+  'Your phone blocks notifications from Caime. Allow them in its settings, then come back.':
+    'يمنع هاتفك الإشعارات من Caime. اسمح بها في إعداداته، ثم عد.',
+  'On: calls and messages reach this phone when Caime isn’t open.':
+    'مفعّل: تصل المكالمات والرسائل إلى هذا الهاتف حين لا يكون Caime مفتوحًا.',
+  'Hear calls and messages on this phone when Caime isn’t open.':
+    'اسمع المكالمات والرسائل على هذا الهاتف حين لا يكون Caime مفتوحًا.',
+  'Notifications are on for this phone': 'الإشعارات مفعّلة على هذا الهاتف',
+  'Notifications are off for this phone': 'الإشعارات معطّلة على هذا الهاتف',
+  'Open settings': 'فتح الإعدادات',
   'Hear calls and messages when Caime isn’t open':
     'اسمع المكالمات والرسائل حين لا يكون Caime مفتوحًا',
   'No subscription': 'لا اشتراك',

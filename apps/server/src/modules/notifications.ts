@@ -1,6 +1,6 @@
 /**
  * Notifications API and device delivery (PRD §31–§33; ADR-14). Web Push uses VAPID keys the
- * server generates and stores on first boot; Expo push needs an Expo access token for production.
+ * server generates and stores on first boot; the phones' pushes go through Expo (`lib/expo-push.ts`).
  */
 
 import type { NotificationLevel, NotificationsResponse, NotificationView } from '@caime/core';
@@ -11,6 +11,7 @@ import webpush from 'web-push';
 import { z } from 'zod';
 import type { AppContext } from '../context';
 import { checkWebhookUrl } from '../lib/apps';
+import { expoPush, type PushOutcome } from '../lib/expo-push';
 import { onNotification } from '../lib/notify';
 
 /** How long a push service gets before Caime moves on without it. */
@@ -100,9 +101,11 @@ export async function notificationRoutes(app: FastifyInstance, ctx: AppContext) 
     return keys;
   };
 
+  const expo = expoPush(ctx.config);
   onNotification(async (c, id, input) => {
+    // A replacement only ever goes to browsers: a phone clears its own once they're read.
     const subs = (await liveSubscriptions(c, input.userId)).filter(
-      (s) => input.pushTo !== 'web' || s.kind === 'webpush',
+      (s) => (input.pushTo !== 'web' && !input.quiet) || s.kind === 'webpush',
     );
     if (subs.length === 0) return;
     const payload = JSON.stringify({
@@ -115,71 +118,64 @@ export async function notificationRoutes(app: FastifyInstance, ctx: AppContext) 
       // Something new alerts, even over an older one with the same key; a replacement doesn't.
       quiet: Boolean(input.quiet),
     });
+    /** A browser's push service, which answers 404 or 410 for a subscription that's gone. */
+    const toBrowser = async (s: (typeof subs)[number]): Promise<PushOutcome> => {
+      try {
+        await ensureKeys();
+        await webpush.sendNotification(
+          { endpoint: s.endpoint, keys: s.keys as { p256dh: string; auth: string } },
+          payload,
+          {
+            // The push service is an address the browser chose: one deadline, so a service
+            // that hangs can't hold whichever request is telling this person.
+            timeout: PUSH_TIMEOUT_MS,
+            TTL: input.ttlSeconds ?? 24 * 3600,
+            urgency: input.quiet
+              ? 'normal'
+              : input.level === 'urgency'
+                ? 'high'
+                : input.level === 'attention'
+                  ? 'normal'
+                  : 'low',
+            topic: (input.groupKey ?? '').replace(/[^A-Za-z0-9_-]/g, '').slice(0, 32) || undefined,
+          },
+        );
+        return 'delivered';
+      } catch (err) {
+        const status = (err as { statusCode?: number }).statusCode;
+        return status === 404 || status === 410 ? 'expired' : 'failed';
+      }
+    };
     let delivered = false;
     for (const s of subs) {
-      try {
-        if (s.kind === 'webpush') {
-          await ensureKeys();
-          await webpush.sendNotification(
-            { endpoint: s.endpoint, keys: s.keys as { p256dh: string; auth: string } },
-            payload,
-            {
-              // The push service is an address the browser chose: one deadline, so a service
-              // that hangs can't hold whichever request is telling this person.
-              timeout: PUSH_TIMEOUT_MS,
-              TTL: input.ttlSeconds ?? 24 * 3600,
-              urgency: input.quiet
-                ? 'normal'
-                : input.level === 'urgency'
-                  ? 'high'
-                  : input.level === 'attention'
-                    ? 'normal'
-                    : 'low',
-              topic:
-                (input.groupKey ?? '').replace(/[^A-Za-z0-9_-]/g, '').slice(0, 32) || undefined,
-            },
-          );
-        } else {
-          const res = await fetch('https://exp.host/--/api/v2/push/send', {
-            method: 'POST',
-            headers: {
-              'content-type': 'application/json',
-              ...(c.config.EXPO_ACCESS_TOKEN
-                ? { authorization: `Bearer ${c.config.EXPO_ACCESS_TOKEN}` }
-                : {}),
-            },
-            body: JSON.stringify({
-              to: s.endpoint,
+      const outcome =
+        s.kind === 'webpush'
+          ? await toBrowser(s)
+          : await expo.send({
+              token: s.endpoint,
+              id,
               title: input.title,
-              body: input.body ?? '',
-              data: { id, ...(input.data ?? {}) },
-              priority: input.level === 'urgency' ? 'high' : 'default',
-              ...(input.ttlSeconds ? { ttl: input.ttlSeconds } : {}),
-            }),
-          });
-          if (!res.ok)
-            throw Object.assign(new Error(`expo push ${res.status}`), { statusCode: res.status });
-        }
+              body: input.body,
+              level: input.level,
+              data: input.data ?? {},
+              ttlSeconds: input.ttlSeconds,
+            });
+      c.metrics.push.inc({ channel: s.kind, outcome });
+      if (outcome === 'delivered') {
         delivered = true;
-        c.metrics.push.inc({ channel: s.kind, outcome: 'delivered' });
         await c.db
           .updateTable('push_subscriptions')
           .set({ last_success_at: c.now(), failures: 0 })
           .where('id', '=', s.id)
           .execute();
-      } catch (err) {
-        const status = (err as { statusCode?: number }).statusCode;
-        const gone = status === 404 || status === 410;
-        c.metrics.push.inc({ channel: s.kind, outcome: gone ? 'expired' : 'failed' });
-        if (gone) {
-          await c.db.deleteFrom('push_subscriptions').where('id', '=', s.id).execute();
-        } else {
-          await c.db
-            .updateTable('push_subscriptions')
-            .set({ failures: sql`failures + 1` })
-            .where('id', '=', s.id)
-            .execute();
-        }
+      } else if (outcome === 'expired') {
+        await c.db.deleteFrom('push_subscriptions').where('id', '=', s.id).execute();
+      } else {
+        await c.db
+          .updateTable('push_subscriptions')
+          .set({ failures: sql`failures + 1` })
+          .where('id', '=', s.id)
+          .execute();
       }
     }
     if (delivered)

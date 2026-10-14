@@ -392,7 +392,7 @@ export function applyEvent(qc: QueryClient, event: RealtimeEvent, me: string): v
         ? event.data.ids.filter((id): id is string => typeof id === 'string')
         : [];
       if (event.data.all === true || ids.length)
-        void import('@/features/push/webPush')
+        void import('@/features/push/push')
           .then((p) => p.closeShownNotifications(event.data.all === true ? null : ids))
           .catch(() => {});
       return;

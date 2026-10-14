@@ -7,9 +7,9 @@
 
 import { tr } from '@caime/core/i18n';
 import { endpoints } from '@/api/endpoints';
-import { type PushState, pushState, webPushSupported } from './support';
+import { type PushState, pushState, pushSupported } from './support';
 
-export { type PushState, pushState, webPushSupported };
+export { type PushState, pushState, pushSupported };
 
 /**
  * Turned off here, it stays off: the browser still allows them (a page can't take that back), so
@@ -78,8 +78,8 @@ async function subscribe(): Promise<void> {
 }
 
 /** Turn them on, from a button: the browser asks the person. */
-export async function enableWebPush(): Promise<PushState> {
-  if (!webPushSupported) return 'unsupported';
+export async function enablePush(): Promise<PushState> {
+  if (!pushSupported) return 'unsupported';
   const answer = (await Notification.requestPermission()) as PushState;
   if (answer === 'granted') {
     setTurnedOff(false);
@@ -92,7 +92,7 @@ export async function enableWebPush(): Promise<PushState> {
  * Signed in where they already said yes: this session gets its pushes too. Never asks, and never
  * while they've turned them off here.
  */
-export async function resumeWebPush(): Promise<void> {
+export async function resumePush(): Promise<void> {
   if (pushState() !== 'granted' || turnedOff()) return;
   await subscribe().catch(() => {});
 }
@@ -107,8 +107,8 @@ async function unsubscribe(tellServer: boolean): Promise<void> {
 }
 
 /** Off in this browser, and kept off: the server forgets it, and so does the browser. */
-export async function disableWebPush(): Promise<void> {
-  if (!webPushSupported) return;
+export async function disablePush(): Promise<void> {
+  if (!pushSupported) return;
   setTurnedOff(true);
   await unsubscribe(true);
 }
@@ -118,7 +118,7 @@ export async function disableWebPush(): Promise<void> {
  * A notification read in the app has nothing more to say on the lock screen.
  */
 export async function closeShownNotifications(ids: string[] | null): Promise<void> {
-  if (!webPushSupported) return;
+  if (!pushSupported) return;
   const reg = await navigator.serviceWorker.getRegistration().catch(() => undefined);
   if (!reg?.getNotifications) return;
   const shown = await reg.getNotifications().catch(() => []);
@@ -133,14 +133,14 @@ export async function closeShownNotifications(ids: string[] | null): Promise<voi
  * drops its subscription), and what's shown goes with it, so the next person to use this browser
  * sees none of it. Signing in again subscribes afresh, unless they'd turned them off.
  */
-export async function leaveThisBrowser({ tellServer }: { tellServer: boolean }): Promise<void> {
-  if (!webPushSupported) return;
+export async function leaveThisDevice({ tellServer }: { tellServer: boolean }): Promise<void> {
+  if (!pushSupported) return;
   await unsubscribe(tellServer).catch(() => {});
   await closeShownNotifications(null);
 }
 
 /** Whether this browser has a subscription now (for Settings). */
-export async function webPushOn(): Promise<boolean> {
+export async function pushOn(): Promise<boolean> {
   if (pushState() !== 'granted') return false;
   const reg = await navigator.serviceWorker.getRegistration();
   return Boolean(await reg?.pushManager.getSubscription());
@@ -148,7 +148,7 @@ export async function webPushOn(): Promise<boolean> {
 
 /** A tapped notification asks the open tab to go there (no reload: a call or draft stays). */
 export function onOpenFromNotification(go: (path: string) => void): () => void {
-  if (!webPushSupported) return () => {};
+  if (!pushSupported) return () => {};
   const heard = (e: MessageEvent) => {
     const m = e.data as { type?: string; path?: unknown } | null;
     if (m?.type === 'caime.open' && typeof m.path === 'string' && m.path.startsWith('/'))

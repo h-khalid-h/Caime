@@ -79,8 +79,11 @@ docs/           PRD, review, brand, competitive, architecture, roadmap, deploy (
   configured. Served only through an authorizing endpoint. Large files use chunked, resumable
   uploads. Images get dimensions and a thumbnail at upload.
 - **ADR-14 — Push.** Web Push with VAPID keys the server generates and persists on first boot (no
-  third party needed). For phones the server sends through Expo when `EXPO_ACCESS_TOKEN` is set,
-  but the app registers no phone yet: that joins the development build (ROADMAP, "Phone push").
+  third party needed). Phones register an Expo push token (`features/push/push.native.ts`, after
+  the phone's own permission) and the server sends through Expo's service (`lib/expo-push.ts`,
+  with `EXPO_ACCESS_TOKEN` when the Expo project asks for one), reading each ticket so a phone the
+  app is gone from loses its token. Both channels share one module shape in the app (`push.web.ts`,
+  `push.native.ts`) and one tap destination (`notificationPath`, the service worker's twin).
   Whether a notification is delivered, silent or held is decided server-side by the policy
   engine.
 - **ADR-15 — One application container.** API, realtime, workers and the web app run in one image

@@ -2,11 +2,12 @@
  * Provider health (R78). Every provider Caime talks to sits behind one interface with a
  * stand-in the tests run against; this is the live side of that contract. Once an hour, each
  * configured provider's cheapest authenticated read is called once (a balance, a model list,
- * a mail server's name, a minute's relay credentials, the head of a key that isn't there, a TXT
- * lookup) within ten seconds, in parallel, and the answer goes on `/metrics` as
- * `caime_provider_up{provider}` and `caime_provider_latency_seconds{provider}`, and to the
- * operator through `GET /v1/admin/providers` (`POST …/check` runs it now). Drift, an answer
- * that no longer parses, is a probe that throws: the gauge goes down before a customer sees it.
+ * a mail server's name, push receipts for no tickets, a minute's relay credentials, the head of
+ * a key that isn't there, a TXT lookup) within ten seconds, in parallel, and the answer goes on
+ * `/metrics` as `caime_provider_up{provider}` and `caime_provider_latency_seconds{provider}`,
+ * and to the operator through `GET /v1/admin/providers` (`POST …/check` runs it now). Drift, an
+ * answer that no longer parses, is a probe that throws: the gauge goes down before a customer
+ * sees it.
  * Labels are the fixed ids below, never a host or a key.
  */
 
@@ -15,6 +16,7 @@ import { SUB_PROCESSORS } from '@caime/core/processors';
 import type { AppContext } from '../context';
 import { backupBucket } from './backup';
 import { cloudflareIceRequest } from './calls';
+import { expoPush } from './expo-push';
 import { registerPeriodic } from './jobs';
 import { MAIL_PROVIDER_NAMES } from './mail-provider';
 import { type ProviderHealth, providerState } from './metrics';
@@ -29,6 +31,7 @@ export const PROVIDERS = [
   'speech',
   'smtp',
   'mail-in',
+  'expo',
   'cloudflare',
   'files-s3',
   'backup-s3',
@@ -92,6 +95,11 @@ export function providerProbes(ctx: AppContext): ProviderProbe[] {
       name: MAIL_PROVIDER_NAMES[mailIn.name],
       check: () => mailIn.ping(),
     });
+  // The phones' pushes: with a token, what it vouches for (receipts for no tickets).
+  if (config.EXPO_ACCESS_TOKEN) {
+    const expo = expoPush(config);
+    probes.push({ id: 'expo', name: processorName('expo'), check: () => expo.ping() });
+  }
   if (config.cloudflareTurn)
     probes.push({
       id: 'cloudflare',

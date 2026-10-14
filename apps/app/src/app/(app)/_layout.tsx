@@ -46,15 +46,15 @@ export default function AppLayout() {
       .then((m) => (m.privateSupported ? m.ensureDevice() : undefined))
       .catch(() => {});
   }, [onboarded, user?.id]);
-  // Notifications in this browser (web push): a sign-in where they already said yes gets its
-  // pushes too, and a tapped notification moves the open tab to it.
+  // Notifications on this device (a browser's web push, a phone's through Expo): a sign-in where
+  // they already said yes gets its pushes too, and a tapped notification opens where it leads.
   // biome-ignore lint/correctness/useExhaustiveDependencies: once per person signed in
   useEffect(() => {
     if (!onboarded) return;
     let stop = () => {};
-    void import('@/features/push/webPush')
+    void import('@/features/push/push')
       .then((m) => {
-        void m.resumeWebPush();
+        void m.resumePush();
         stop = m.onOpenFromNotification((path) => router.push(path as never));
       })
       .catch(() => {});

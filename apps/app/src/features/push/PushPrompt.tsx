@@ -1,35 +1,33 @@
 import { tr } from '@caime/core/i18n';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { View } from 'react-native';
+import { isWeb } from '@/lib/config';
 import { useTheme } from '@/theme/theme';
 import { Button } from '@/ui/Button';
 import { Text } from '@/ui/Text';
 import { toast } from '@/ui/Toast';
-import { pushState } from './support';
-
-const SEEN = 'caime.push-prompt';
-const answered = () => {
-  try {
-    return globalThis.localStorage?.getItem(SEEN) === '1';
-  } catch {
-    return true;
-  }
-};
+import { promptAnswered, promptAtStart, promptLater } from './support';
 
 /**
- * Once, at the top of Chats in a browser that hasn't been asked: calls and messages can reach
- * them when Caime isn't open. The browser asks only when they press Turn on.
+ * Once, at the top of Chats on a device that hasn't been asked (a browser, or a phone): calls and
+ * messages can reach them when Caime isn't open. The device asks only when they press Turn on.
  */
 export function PushPrompt() {
   const t = useTheme();
-  const [shown, setShown] = useState(() => pushState() === 'default' && !answered());
+  // A browser knows at the first frame; a phone looks it up, and shows it a moment later.
+  const [shown, setShown] = useState(promptAtStart);
+  useEffect(() => {
+    let live = true;
+    void promptLater().then((wanted) => {
+      if (live) setShown(wanted);
+    });
+    return () => {
+      live = false;
+    };
+  }, []);
   if (!shown) return null;
   const done = () => {
-    try {
-      globalThis.localStorage?.setItem(SEEN, '1');
-    } catch {
-      // Private browsing: it asks again next time.
-    }
+    promptAnswered();
     setShown(false);
   };
   return (
@@ -52,12 +50,24 @@ export function PushPrompt() {
           label={tr('Turn on')}
           size="sm"
           onPress={() =>
-            void import('./webPush')
-              .then((m) => m.enableWebPush())
+            void import('./push')
+              .then((m) => m.enablePush())
               .then((answer) => {
-                if (answer === 'granted') toast(tr('Notifications are on in this browser'));
+                if (answer === 'granted')
+                  toast(
+                    isWeb
+                      ? tr('Notifications are on in this browser')
+                      : tr('Notifications are on for this phone'),
+                  );
               })
-              .catch(() => toast(tr('This browser couldn’t turn them on.'), { tone: 'danger' }))
+              .catch(() =>
+                toast(
+                  isWeb
+                    ? tr('This browser couldn’t turn them on.')
+                    : tr('This phone couldn’t turn them on.'),
+                  { tone: 'danger' },
+                ),
+              )
               .finally(done)
           }
           testID="push-prompt-on"

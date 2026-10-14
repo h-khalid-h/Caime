@@ -2009,6 +2009,19 @@ export const fr: Catalog = {
   'Hear calls and messages here when Caime isn’t open.':
     'Recevez ici les appels et messages quand Caime n’est pas ouvert.',
   'Turn on': 'Activer',
+  'Messages and calls': 'Messages et appels',
+  'Other activity': 'Autre activité',
+  'This phone couldn’t turn them on.': 'Ce téléphone n’a pas pu les activer.',
+  'On this phone': 'Sur ce téléphone',
+  'Your phone blocks notifications from Caime. Allow them in its settings, then come back.':
+    'Votre téléphone bloque les notifications de Caime. Autorisez-les dans ses réglages, puis revenez.',
+  'On: calls and messages reach this phone when Caime isn’t open.':
+    'Activées : les appels et messages arrivent sur ce téléphone quand Caime n’est pas ouvert.',
+  'Hear calls and messages on this phone when Caime isn’t open.':
+    'Recevez les appels et messages sur ce téléphone quand Caime n’est pas ouvert.',
+  'Notifications are on for this phone': 'Les notifications sont activées sur ce téléphone',
+  'Notifications are off for this phone': 'Les notifications sont désactivées sur ce téléphone',
+  'Open settings': 'Ouvrir les réglages',
   'Hear calls and messages when Caime isn’t open':
     'Recevoir les appels et messages quand Caime n’est pas ouvert',
   'No subscription': 'Aucun abonnement',

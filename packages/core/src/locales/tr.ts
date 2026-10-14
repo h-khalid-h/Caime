@@ -1923,6 +1923,19 @@ export const turkish: Catalog = {
   'Hear calls and messages here when Caime isn’t open.':
     'Caime açık değilken aramaları ve mesajları burada duyun.',
   'Turn on': 'Aç',
+  'Messages and calls': 'Mesajlar ve aramalar',
+  'Other activity': 'Diğer etkinlikler',
+  'This phone couldn’t turn them on.': 'Bu telefonda bildirimler açılamadı.',
+  'On this phone': 'Bu telefonda',
+  'Your phone blocks notifications from Caime. Allow them in its settings, then come back.':
+    'Telefonunuz Caime bildirimlerini engelliyor. Ayarlarından izin verip geri gelin.',
+  'On: calls and messages reach this phone when Caime isn’t open.':
+    'Açık: Caime açık değilken aramalar ve mesajlar bu telefona ulaşır.',
+  'Hear calls and messages on this phone when Caime isn’t open.':
+    'Caime açık değilken aramaları ve mesajları bu telefonda duyun.',
+  'Notifications are on for this phone': 'Bu telefonda bildirimler açık',
+  'Notifications are off for this phone': 'Bu telefonda bildirimler kapalı',
+  'Open settings': 'Ayarları aç',
   'Hear calls and messages when Caime isn’t open':
     'Caime açık değilken aramaları ve mesajları duyun',
   'No subscription': 'Abonelik yok',

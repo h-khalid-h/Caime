@@ -161,10 +161,10 @@ export const useSession = create<SessionState>((set, get) => ({
 
   signOut: async ({ remote = true } = {}) => {
     const was = get().user?.id;
-    // This browser's pushes end with the session even if the server can't be told, and whatever
-    // they put on screen goes too, so the next person here sees none of it (web only).
-    await import('@/features/push/webPush')
-      .then((p) => p.leaveThisBrowser({ tellServer: remote }))
+    // This device's pushes end with the session even if the server can't be told, and whatever
+    // they put on screen goes too, so the next person here sees none of it.
+    await import('@/features/push/push')
+      .then((p) => p.leaveThisDevice({ tellServer: remote }))
       .catch(() => {});
     if (remote) await endpoints.logout().catch(() => {});
     // This browser's keys for private conversations go with the session, whether or not they

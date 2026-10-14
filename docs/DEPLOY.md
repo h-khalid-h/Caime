@@ -256,7 +256,7 @@ Content-Security-Policy, and links in notifications. Everything below is optiona
 | `STRIPE_PORTAL_CONFIGURATION` | the account's default | The customer portal configuration (`bpc_…`) to open. |
 | `VAPID_PUBLIC_KEY`, `VAPID_PRIVATE_KEY` | generated | Web Push keys. Generated and stored in the database on first boot; set them only to reuse existing keys. |
 | `VAPID_SUBJECT` | `mailto:hello@cai.me` | Contact for push services. |
-| `EXPO_ACCESS_TOKEN` | — | Mobile push through Expo (needs the store builds). |
+| `EXPO_ACCESS_TOKEN` | — | Phone push through Expo, signed as the account that owns the Expo project (required once that project turns on Expo's enhanced push security); with it, Expo is probed hourly (`caime_provider_up{provider="expo"}`). |
 | `SMTP_URL` | — | Where mail goes out (`smtps://user:pass@host:465`, or `smtp://` with STARTTLS): the code that confirms an address and the link that resets a password (R48). Without it nothing is sent, and the app says to use a recovery code. |
 | `EMAIL_FROM` | `Caime <hello@cai.me>` | The sender. |
 | `ANTHROPIC_API_KEY` | — | AI assist (rewrite, translate, catch me up, find follow-ups). Without it the AI settings don't appear and Caime uses its heuristics (R17). Each person still turns it on for themselves. |
@@ -428,6 +428,12 @@ Until the store builds exist (⛔), the phone app runs in Expo Go, from either o
 Calls aren't in Expo Go: they need react-native-webrtc's native code, so only a development
 build (`npx expo run:ios`, or an EAS build) or a store build has them. Expo Go doesn't offer
 them, and nothing of them loads. Everything else is there, private conversations included.
+
+Notifications reach an iPhone in Expo Go: Chats offers to turn them on (or Settings ·
+Notifications, "On this phone"), iOS asks once, and the app registers the phone's Expo token for
+the project `caime-go` carries (`EXPO_PROJECT_ID`), so a message written from another device
+then rings while Caime is closed. Expo Go on Android has had no remote notifications since SDK
+53, so there the app offers none; the development build has them on both.
 
 ## Development and store builds (EAS)
 

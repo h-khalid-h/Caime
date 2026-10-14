@@ -1126,9 +1126,16 @@ listed there with its owner.
 - [ ] ⛔ The owner: `TRUST_PROXY` against the live proxy chain; payment in local currencies with
       tax; an npm account for `@caime/sdk`; a development build for calls and private
       conversations on a phone; store builds; a third-party penetration test.
-- [ ] Phone push: the server sends through Expo when `EXPO_ACCESS_TOKEN` is set, but the app
-      registers no phone yet (`expo-notifications` is imported nowhere; the native push module
-      is a stub). It joins the development build, with the store work.
+- [ ] Phone push, tried on a phone: built (2026-10-14) and tested off the phone. The app asks
+      once (Chats' offer, Settings · Notifications "On this phone"), registers the phone's Expo
+      token for the session, makes Android's two channels first, shows nothing over Caime in
+      front, opens a tapped one where the browser's would (`notificationPath`), clears what was
+      read and forgets the token on signing out; the server's Expo sender reads each ticket
+      (`DeviceNotRegistered` drops the token), keeps one deadline, sends no replacement to a phone
+      and is probed hourly (`phone-push.test.ts`, `push.native.test.ts`, the native export). ⛔
+      Tried on the owner's iPhone in Expo Go (`caime-go`, which carries the Expo project) once
+      deployed; Android needs the development build (Expo Go on Android has no remote
+      notifications since SDK 53)
 
 ## M13 — Bookings for everyone (R58), the fourth language (R59)
 
@@ -2919,3 +2926,14 @@ The six-slice review's plan, in its order; a block is ticked when its tests and 
   handle, a replayed and a stale challenge, a suspended account, the limit, the sweep),
   `e2e/passkeys.spec.ts` Chromium's virtual one. Startup chunk 449.1 KB of 450. Phones wait for
   the store builds (⛔), and the password stays required until they have them.
+- 2026-10-14 — Phone push, built: the phones register their Expo token (`push.native.ts`, the
+  web's module shape, so sign-in, sign-out, Settings, the Chats offer and a read elsewhere needed
+  no change), Android's two channels from core `PUSH_CHANNELS`, a tap opening where a browser's
+  does (`notificationPath`, held to the service worker's answers in `sw.test.ts`), nothing shown
+  over Caime in front, and none offered in Expo Go on Android. The server's Expo sender moved to
+  `lib/expo-push.ts`: it had no deadline and took every 200 as delivered, when Expo answers a
+  phone the app is gone from with a `DeviceNotRegistered` ticket inside a 200, so dead tokens
+  were never dropped; now one deadline, the ticket read, a sound and channel by level, no
+  `quiet` replacement to a phone, and an hourly probe with the token. Tested with an Expo
+  stand-in (`phone-push.test.ts`) and mocked natives (`push.native.test.ts`); both native bundles
+  export. Not yet tried on a phone (⛔ the owner's iPhone in Expo Go, after this deploys).

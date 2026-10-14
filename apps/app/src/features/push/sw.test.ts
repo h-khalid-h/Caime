@@ -7,6 +7,7 @@ import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { SITE_PAGES } from '@caime/core/api';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { notificationPath } from './notificationPath';
 
 type Listener = (event: any) => void;
 let listeners: Record<string, Listener>;
@@ -466,5 +467,7 @@ describe('the service worker', () => {
     ] as const;
     for (const [data] of cases) await fire('notificationclick', { notification: { close, data } });
     expect(opened).toEqual(cases.map(([, path]) => path));
+    // A phone's tap goes where a browser's does.
+    expect(cases.map(([data]) => notificationPath(data))).toEqual(opened);
   });
 });

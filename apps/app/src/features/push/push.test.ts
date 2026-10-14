@@ -102,32 +102,32 @@ afterEach(() => {
 
 describe('notifications in this browser', () => {
   it('asks only when turned on, then subscribes with the server’s key and says so', async () => {
-    const push = await import('./webPush.web');
-    await push.resumeWebPush();
+    const push = await import('./push.web');
+    await push.resumePush();
     expect(asked).toBe(0);
     expect(h.endpoints.subscribePush).not.toHaveBeenCalled();
-    expect(await push.enableWebPush()).toBe('granted');
+    expect(await push.enablePush()).toBe('granted');
     expect(asked).toBe(1);
     expect(current?.key).toEqual([1, 2, 3]);
     expect(h.endpoints.subscribePush).toHaveBeenCalledWith({
       kind: 'webpush',
       subscription: { endpoint: current?.endpoint, keys: { p256dh: 'p', auth: 'a' } },
     });
-    expect(await push.webPushOn()).toBe(true);
+    expect(await push.pushOn()).toBe(true);
   });
 
   it('signed in again where they said yes, the same subscription goes to this session; a new key replaces it', async () => {
     permission = 'granted';
     current = new FakeSub('https://push.example/old', [1, 2, 3]);
-    const push = await import('./webPush.web');
-    await push.resumeWebPush();
+    const push = await import('./push.web');
+    await push.resumePush();
     expect(asked).toBe(0);
     expect(h.endpoints.subscribePush.mock.calls[0]?.[0]).toMatchObject({
       subscription: { endpoint: 'https://push.example/old' },
     });
     const old = current;
     h.endpoints.pushKey.mockResolvedValueOnce({ publicKey: 'BAUG' });
-    await push.resumeWebPush();
+    await push.resumePush();
     expect(old?.unsubscribed).toBe(true);
     expect(current?.key).toEqual([4, 5, 6]);
   });
@@ -136,22 +136,22 @@ describe('notifications in this browser', () => {
     permission = 'granted';
     const mine = new FakeSub('https://push.example/mine', [1, 2, 3]);
     current = mine;
-    const push = await import('./webPush.web');
-    await push.disableWebPush();
+    const push = await import('./push.web');
+    await push.disablePush();
     expect(h.endpoints.unsubscribePush).toHaveBeenCalledWith('https://push.example/mine');
     expect(mine.unsubscribed).toBe(true);
     // The browser still allows them, but a reload (or signing in again) doesn't subscribe.
     vi.resetModules();
-    const again = await import('./webPush.web');
-    await again.resumeWebPush();
+    const again = await import('./push.web');
+    await again.resumePush();
     expect(h.endpoints.subscribePush).not.toHaveBeenCalled();
-    expect(await again.webPushOn()).toBe(false);
+    expect(await again.pushOn()).toBe(false);
     // Until they turn them on here themselves.
-    await again.enableWebPush();
+    await again.enablePush();
     expect(h.endpoints.subscribePush).toHaveBeenCalledTimes(1);
     vi.resetModules();
-    const later = await import('./webPush.web');
-    await later.resumeWebPush();
+    const later = await import('./push.web');
+    await later.resumePush();
     expect(h.endpoints.subscribePush).toHaveBeenCalledTimes(2);
   });
 
@@ -159,11 +159,11 @@ describe('notifications in this browser', () => {
     permission = 'granted';
     const mine = new FakeSub('https://push.example/mine', [1, 2, 3]);
     current = mine;
-    const push = await import('./webPush.web');
+    const push = await import('./push.web');
     showing('n1', 'n2', 'n3');
     await push.closeShownNotifications(['n2']);
     expect(onScreen.map((n) => n.closed)).toEqual([false, true, false]);
-    await push.leaveThisBrowser({ tellServer: true });
+    await push.leaveThisDevice({ tellServer: true });
     expect(onScreen.every((n) => n.closed)).toBe(true);
     expect(h.endpoints.unsubscribePush).toHaveBeenCalledWith('https://push.example/mine');
     expect(mine.unsubscribed).toBe(true);
@@ -171,15 +171,15 @@ describe('notifications in this browser', () => {
     // it; and signing in again subscribes afresh (it wasn't turned off).
     current = new FakeSub('https://push.example/next', [1, 2, 3]);
     h.endpoints.unsubscribePush.mockClear();
-    await push.leaveThisBrowser({ tellServer: false });
+    await push.leaveThisDevice({ tellServer: false });
     expect(h.endpoints.unsubscribePush).not.toHaveBeenCalled();
     expect(current).toBeNull();
-    await push.resumeWebPush();
+    await push.resumePush();
     expect(h.endpoints.subscribePush).toHaveBeenCalledTimes(1);
   });
 
   it('a tapped notification moves the app only to a path of its own', async () => {
-    const push = await import('./webPush.web');
+    const push = await import('./push.web');
     const went: string[] = [];
     push.onOpenFromNotification((p) => went.push(p));
     messages?.({ data: { type: 'caime.open', path: '/c/1' } });

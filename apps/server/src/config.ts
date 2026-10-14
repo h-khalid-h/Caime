@@ -47,6 +47,8 @@ const Env = z.object({
   VAPID_SUBJECT: z.string().default('mailto:hello@cai.me'),
   /** Expo push access token (mobile push). */
   EXPO_ACCESS_TOKEN: z.string().optional(),
+  /** Expo's push service (`lib/expo-push.ts`): another only for the local stand-in the tests run. */
+  EXPO_PUSH_URL: z.string().url().default('https://exp.host/--/api/v2/push'),
   /** Where mail goes out (smtps://user:pass@host:465, or smtp:// with STARTTLS). Off if unset. */
   SMTP_URL: z.string().url().optional(),
   EMAIL_FROM: z.string().default('Caime <hello@cai.me>'),

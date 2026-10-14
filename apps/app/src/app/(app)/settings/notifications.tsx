@@ -28,9 +28,9 @@ import { Text } from '@/ui/Text';
 import { TextField } from '@/ui/TextField';
 import { toast } from '@/ui/Toast';
 
-// Loaded here only: everything about this browser's notifications stays out of the first download.
-const BrowserNotifications = lazyPart(() =>
-  import('@/features/push/BrowserNotifications').then((m) => m.BrowserNotifications),
+// Loaded here only: everything about this device's notifications stays out of the first download.
+const DeviceNotifications = lazyPart(() =>
+  import('@/features/push/DeviceNotifications').then((m) => m.DeviceNotifications),
 );
 // The rule editor is shared with a person's page and Automations: its own file, loaded when opened.
 const RuleSheet = lazyPart(() => import('@/features/settings/RuleSheet').then((m) => m.RuleSheet));
@@ -213,7 +213,7 @@ export default function Notifications() {
           'Caime decides who reaches you by how you know them. Family can always get through; work waits for work hours; everyone else stays quiet unless it’s important. Change any of it, or make rules of your own.',
         )}
       </Text>
-      <BrowserNotifications />
+      <DeviceNotifications />
       <Group title={tr('By relationship')}>
         {policies.map((p, i) => (
           <View key={p.id} style={{ borderTopWidth: i ? 1 : 0, borderTopColor: t.c.border }}>

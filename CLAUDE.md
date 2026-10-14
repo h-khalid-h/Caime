@@ -1074,13 +1074,21 @@ These are rules, not preferences.
   app's section is `features/updates/OrgUpdates.tsx` (in the organization page's chunk) and the
   Chats row `UpdatesRow.tsx`.
 - Web push: `apps/app/public/sw.js` (copied to the web root by the export; plain JS, no build)
-  and `features/push/webPush.web.ts`. Every push shows something in Safari (it takes pushes away
+  and `features/push/push.web.ts`. Every push shows something in Safari (it takes pushes away
   from a site whose pushes show nothing), briefly and silently while Caime is in front; other
   browsers show nothing then. A push that replaces one that's over (a ring answered) is sent with
   `replaceShown` (`quiet`), never as a push that shows nothing. The worker opens a tapped one by
   messaging the open tab (`caime.open`), never by reloading it: a call may be on. Anything new
-  pushed with a `data` field it can open belongs in `pathOf` there. Turn off is remembered in the
-  browser (`caime.push-off`); sign-out drops the subscription and closes what's shown.
+  pushed with a `data` field it can open belongs in `pathOf` there and in its phone twin,
+  `notificationPath` (`sw.test.ts` holds them to the same answers). Turn off is remembered in the
+  browser (`caime.push-off`); sign-out drops the subscription and closes what's shown. Phones
+  (`features/push/push.native.ts`, the same shape; `support.native.ts`) register an Expo token
+  after the phone's own permission, make Android's two channels first (core `PUSH_CHANNELS`, which
+  the server names on each push), show nothing while Caime is in front and clear a read one;
+  Expo Go on Android offers none (`isRunningInExpoGo`). The server's side is `lib/expo-push.ts`:
+  one deadline, a sound and the alerting channel unless the level is activity, each ticket read
+  (`DeviceNotRegistered` drops the token), never a `quiet` replacement (Expo can't swap what a
+  phone shows), `EXPO_PUSH_URL` only for the tests' stand-in.
 - Plans: what each includes is in `packages/core/src/plans.ts`, and it's checked only in
   `apps/server/src/lib/plans.ts`, where something is added. Never count the wedge (R23). Pro
   sells its depth (R47): relationship insights (`lib/insights.ts` `personInsights`, the

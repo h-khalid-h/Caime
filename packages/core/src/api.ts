@@ -2617,6 +2617,12 @@ export interface PushKeyResponse {
   publicKey: string;
 }
 
+/**
+ * A phone's notification channels (Android; iOS reads the sound alone): the server names one on
+ * each push, the app makes both. Anything that asks for them rings; an activity line is quiet.
+ */
+export const PUSH_CHANNELS = { alert: 'messages', quiet: 'quiet' } as const;
+
 export interface SpacesResponse {
   spaces: SpaceSummaryView[];
 }

@@ -842,10 +842,15 @@ export const endpoints = {
 
   // Notifications in this browser (web push)
   pushKey: () => api.get<PushKeyResponse>('/push/vapid'),
-  subscribePush: (body: {
-    kind: 'webpush';
-    subscription: { endpoint: string; keys: { p256dh: string; auth: string } };
-  }) => api.post<OkResponse>('/push/subscriptions', body),
+  /** A browser's push subscription, or a phone's Expo token. */
+  subscribePush: (
+    body:
+      | {
+          kind: 'webpush';
+          subscription: { endpoint: string; keys: { p256dh: string; auth: string } };
+        }
+      | { kind: 'expo'; token: string },
+  ) => api.post<OkResponse>('/push/subscriptions', body),
   unsubscribePush: (endpoint: string) => api.del<OkResponse>('/push/subscriptions', { endpoint }),
   report: (body: {
     userId?: string;
