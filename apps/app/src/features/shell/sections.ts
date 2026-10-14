@@ -62,3 +62,12 @@ export function useSection(): Section {
 export function useInboxHandle(): string | null {
   return inboxHandleOf(usePathname(), useInboxParam());
 }
+
+/**
+ * The view an organization's inbox opens on from a link (`/o/<handle>/inbox?view=bookings`, M17):
+ * the desktop's list pane reads it as the route does on a phone.
+ */
+export function useInboxView(): 'bookings' | 'orders' | undefined {
+  const { view } = useGlobalSearchParams<{ view?: string }>();
+  return view === 'bookings' || view === 'orders' ? view : undefined;
+}

@@ -1370,6 +1370,8 @@ export interface OrgExportView {
 }
 
 export interface OrgBookingView {
+  /** The card's id, or `<series>:<n>` for a time of a repeating appointment ahead of it. */
+  id: string;
   messageId: string;
   conversationId: string;
   customer: { id: string; displayName: string } | null;
@@ -1382,6 +1384,13 @@ export interface OrgBookingView {
   state: 'requested' | 'confirmed';
   /** What was booked (R58), when it came from the catalog; who on the team does it. */
   booking: AppointmentBooking | null;
+  /**
+   * A time of a repeating appointment not posted yet (R58): its series' latest card, held for
+   * this time as the series will book it.
+   */
+  ahead: boolean;
+  /** How often it repeats (R58), while it does. */
+  repeat: Repeat | null;
 }
 
 export interface OrgCalendarView {

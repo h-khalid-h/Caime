@@ -626,8 +626,8 @@ with its reason, so it isn't proposed again without new facts.
   nothing written anywhere but the reader's own view, never from a private conversation, and
   the brief opens from the card ("Before"), where it's read on demand too. *A meeting that
   repeats* (built 2026-10-14): the Meeting card's "Repeats" (every week, every two weeks, every
-  month), in a chat or a group only (a business conversation books what repeats as
-  appointments, through its catalog, one at a time). It's agreed once, and each time is a card
+  month), in a chat or a group only (a business conversation books what repeats as an
+  appointment that repeats, below). It's agreed once, and each time is a card
   of its own, so each has its brief, its Join and "starting now", its guests and its own Cancel
   ("Cancel this one"): a minute after a time ends, the next is posted already accepted, by its
   organizer, told to nobody (it's the series going on, not something anyone said). The series is
@@ -655,8 +655,23 @@ with its reason, so it isn't proposed again without new facts.
   takes one of them, and a time is open for it only while the resource has room beside every
   booking of every item that uses it, as well as in the item's own capacity; something ordered
   by the piece holds no time and shares nothing. Kept with the hours, so it's saved, exported
-  and erased with them, and a host without hours has nothing to share. Not done: a recurring
-  appointment (each time's slot must be checked against the host's catalog as it's posted).
+  and erased with them, and a host without hours has nothing to share. *An appointment that
+  repeats* (built 2026-10-14): a weekly physio session, a fortnightly lesson. The Appointment
+  card's "Repeats" is offered in a chat or with an organization (never a group: an appointment
+  is between a host and whoever booked). It's confirmed once, and runs on the host's clock: the
+  organization's or the person's hours' zone (and its open days for "every workday") when it
+  was booked from a catalog, else its proposer's. Each later time is posted already confirmed a
+  minute after the one before ends, and booked as it's posted: the same item and quantity, the
+  slot checked as any booking is (the lead time waived, the horizon stretched to reach it), so
+  a changed catalog is honoured. Until then its times hold their slots: the slots, the team's
+  Bookings and both calendars see each time ahead (a series never holds against itself), so
+  nobody else is offered next Sunday's 09:00. A time taken all the same (an appointment written
+  without the catalog) is skipped, and everyone it's for is told, in their own time and
+  language, while the series goes on with the time after (four in a row at most); an item no
+  longer offered ends it, and says so. Whoever on the team did the time before does the next
+  while they're free (R15 keeps them unnamed to the customer). A time going on is not someone
+  writing: it reopens no resolved thread, wakes no agent and sends no webhook. Not done: a
+  customer choosing who does it where an organization allows it.
 - **R59 — The fourth language is Turkish.** By R55's rule (one region, through organizations):
   Arabic, English and French cover the Middle East and North Africa; the market next to it that
   already serves it is Türkiye, whose clinics treat Arabic-speaking patients by the hundred

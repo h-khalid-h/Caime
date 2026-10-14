@@ -242,14 +242,16 @@ async function heldBy(
   host: BookingHost,
   hours: BookingHours,
   window: { from: Date; to: Date },
+  exceptSeries?: string,
 ): Promise<Held[]> {
-  // Every card in the window, never a page of them: a card left out reads as a free slot.
+  // Every card in the window, never a page of them: a card left out reads as a free slot; and
+  // the times ahead of a repeating appointment (R58), which hold theirs before each is posted.
   if (host.kind === 'org') {
     const booked = await orgBookings(
       ctx,
       host.id,
       { from: window.from, until: window.to },
-      { limit: HELD_MAX },
+      { limit: HELD_MAX, ahead: { now: ctx.now(), exceptSeries } },
     );
     return booked.map((b) => {
       const start = new Date(b.at);
@@ -265,11 +267,13 @@ async function heldBy(
     limit: HELD_MAX,
     series: { now: ctx.now() },
   });
-  return cards.map((c) => ({
-    start: c.at,
-    end: endOf(hours, c.at, c.booking, c.durationMinutes),
-    booking: c.booking,
-  }));
+  return cards
+    .filter((c) => !(exceptSeries && c.projected && c.series?.id === exceptSeries))
+    .map((c) => ({
+      start: c.at,
+      end: endOf(hours, c.at, c.booking, c.durationMinutes),
+      booking: c.booking,
+    }));
 }
 
 /** More cards than any window holds; a bound on the read, never a page. */
@@ -341,17 +345,29 @@ export async function openSlotsFor(
   ctx: AppContext,
   host: BookingHost,
   window: { from: Date; to: Date },
-  opts: { item?: BookingItem | null; quantity?: number; limit?: number } = {},
+  opts: {
+    item?: BookingItem | null;
+    quantity?: number;
+    limit?: number;
+    /** A repeating appointment booking its next time (R58): its own times ahead hold nothing. */
+    exceptSeries?: string;
+  } = {},
 ): Promise<{ hours: BookingHours; slots: Date[] } | null> {
   const hours = host.hours;
   if (!hours) return null;
   const item = opts.item ?? null;
-  const held = await heldBy(ctx, host, hours, {
-    from: new Date(window.from.getTime() - (item?.unit === 'days' ? BEFORE_STAY_MS : BEFORE_MS)),
-    to: new Date(
-      window.to.getTime() + (item?.unit === 'days' ? (opts.quantity ?? 1) * 86_400_000 : 0),
-    ),
-  });
+  const held = await heldBy(
+    ctx,
+    host,
+    hours,
+    {
+      from: new Date(window.from.getTime() - (item?.unit === 'days' ? BEFORE_STAY_MS : BEFORE_MS)),
+      to: new Date(
+        window.to.getTime() + (item?.unit === 'days' ? (opts.quantity ?? 1) * 86_400_000 : 0),
+      ),
+    },
+    opts.exceptSeries,
+  );
   const { busy, providersBusy, resource } = busyFor(held, item, host);
   return {
     hours,
@@ -379,6 +395,11 @@ export async function bookingFor(
   booker: Booker,
   ask: BookingAskInput,
   start: Date,
+  /**
+   * A later time of a repeating appointment (R58): agreed with the series, so the lead time and
+   * the horizon are behind it, and its own times ahead aren't in its way.
+   */
+  opts: { series?: string } = {},
 ): Promise<AppointmentBooking> {
   const hours = host.hours;
   const item = host.items.find((i) => i.id === ask.itemId);
@@ -402,11 +423,19 @@ export async function bookingFor(
   // The host may book their own slot for someone (a consultant filling their diary): the lead
   // time is for the other side.
   const end = bookingSpan(hours, item, quantity, start);
+  const daysOut = Math.ceil((start.getTime() - ctx.now().getTime()) / 86_400_000) + 1;
   const open = await openSlotsFor(
     ctx,
-    booker.isSelf ? { ...host, hours: { ...hours, leadMinutes: 0 } } : host,
+    opts.series
+      ? {
+          ...host,
+          hours: { ...hours, leadMinutes: 0, horizonDays: Math.max(hours.horizonDays, daysOut) },
+        }
+      : booker.isSelf
+        ? { ...host, hours: { ...hours, leadMinutes: 0 } }
+        : host,
     { from: start, to: end },
-    { item, quantity, limit: 1 },
+    { item, quantity, limit: 1, exceptSeries: opts.series },
   );
   if (!open?.slots.some((d) => d.getTime() === start.getTime()))
     throw new AppError(409, 'slot_taken', tr('That time has just been taken. Pick another.'));
@@ -433,6 +462,11 @@ export async function pickProvider(
   org: Pick<Organization, 'id' | 'booking' | 'booking_items'>,
   booking: AppointmentBooking,
   start: Date,
+  /**
+   * A later time of a repeating appointment (R58): whoever did the time before keeps it while
+   * they're free, and the series' own times ahead don't hold them.
+   */
+  opts: { prefer?: string | null; exceptSeries?: string } = {},
 ): Promise<{ id: string; name: string } | null> {
   const host = orgHost(org);
   const item = host.items.find((i) => i.id === booking.itemId);
@@ -441,10 +475,12 @@ export async function pickProvider(
   if (eligible.length === 0) return null;
   const end = new Date(booking.endAt);
   const day = new Date(start.getTime() - 86_400_000);
-  const held = await orgBookings(ctx, org.id, {
-    from: day,
-    until: new Date(end.getTime() + 86_400_000),
-  });
+  const held = await orgBookings(
+    ctx,
+    org.id,
+    { from: day, until: new Date(end.getTime() + 86_400_000) },
+    { ahead: { now: ctx.now(), exceptSeries: opts.exceptSeries } },
+  );
   const zone = host.hours?.timeZone ?? 'UTC';
   const sameDay = (at: string) => {
     const a = zonedParts(new Date(at), zone);
@@ -463,6 +499,8 @@ export async function pickProvider(
   }
   const free = eligible.filter((u) => !busy.has(u.id));
   if (free.length === 0) return null;
+  const preferred = opts.prefer ? free.find((u) => u.id === opts.prefer) : undefined;
+  if (preferred) return { id: preferred.id, name: preferred.display_name };
   free.sort(
     (a, b) =>
       (load.get(a.id) ?? 0) - (load.get(b.id) ?? 0) || a.display_name.localeCompare(b.display_name),

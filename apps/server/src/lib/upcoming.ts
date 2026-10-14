@@ -219,13 +219,13 @@ export async function cardsAhead(
 }
 
 /** A day after a time with nothing posted after it, its series has ended: nothing is ahead. */
-const SERIES_ENDED_MS = 86_400_000;
+export const SERIES_ENDED_MS = 86_400_000;
 
 /**
- * The times of repeating meetings still to be posted, in a window (R58): from each series'
- * latest card (posted within the last day or ahead, agreed at some point, still repeating), the
- * times after it. The same visibility as the cards themselves; a series is never in a business
- * conversation, so a team member's view needs nothing more.
+ * The times of repeating meetings and appointments still to be posted, in a window (R58): from
+ * each series' latest card (posted within the last day or ahead, agreed at some point, still
+ * repeating), the times after it. The same visibility as the cards themselves: a team member
+ * sees an organization's repeating appointment as they see its latest time (theirs to do).
  */
 async function seriesAhead(
   ctx: Pick<AppContext, 'db'>,
@@ -239,7 +239,7 @@ async function seriesAhead(
     limit: opts.limit,
     conversationIds: opts.conversationIds,
   })
-    .where(sql`m.payload->>'kit'`, '=', 'meeting')
+    .where(sql`m.payload->>'kit'`, 'in', ['meeting', 'appointment'])
     .where(sql`m.payload->'series'`, 'is not', null)
     .where(sql`m.payload->'fields'->'repeat'`, 'is not', null)
     .where(sql`m.payload->'movedTo'`, 'is', null)
@@ -268,13 +268,28 @@ async function seriesAhead(
       opts.until,
       timesAYear(repeat, series.days),
       lastDay,
-    ))
+    )) {
+      const kit: CardKit =
+        (payload as { kit?: unknown }).kit === 'appointment' ? 'appointment' : 'meeting';
+      const card = cardAhead(row, payload, kit, time.at);
+      const start = Date.parse(payload.fields?.start?.at ?? '');
       out.push({
-        ...cardAhead(row, payload, 'meeting', time.at),
+        ...card,
+        // A booked time lasts as its series' latest does, from its own start.
+        booking:
+          card.booking && Number.isFinite(start)
+            ? {
+                ...card.booking,
+                endAt: new Date(
+                  time.at.getTime() + Date.parse(card.booking.endAt) - start,
+                ).toISOString(),
+              }
+            : card.booking,
         agreed: true,
         series: { id: series.id, n: time.n },
         projected: true,
       });
+    }
   }
   return out;
 }

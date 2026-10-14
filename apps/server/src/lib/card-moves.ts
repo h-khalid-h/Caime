@@ -50,6 +50,8 @@ export async function afterCardMove(
     await queueMeetingStart(ctx, m.id);
     await queueNextTime(ctx, m.id);
   }
+  // An appointment that repeats (R58) books its next time when this one ends.
+  if (card.kit === 'appointment' && to === 'confirmed') await queueNextTime(ctx, m.id);
   // A card asks until the move that answers it (M14): answered, it no longer needs anyone.
   const asks = cardAsks(m.payload);
   if (asks !== m.is_request)

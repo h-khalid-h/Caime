@@ -164,10 +164,7 @@ export async function calendarEvents(
     // As long as the app's calendar says (M16): as booked, as the field says, else an hour.
     const minutes = minutesOf(card);
     events.push({
-      uid:
-        card.kit === 'meeting'
-          ? meetingUid(card.messageId, card.series)
-          : `${card.kit}-${card.messageId}@caime`,
+      uid: meetingUid(card.messageId, card.series, card.kit),
       summary: card.title,
       description: here
         ? `${KITS[card.kit].name} on Caime. Join: ${url}`
@@ -228,7 +225,7 @@ export async function calendarRoutes(app: FastifyInstance, ctx: AppContext) {
     const window = windowOf(req.query);
     await orgById(ctx.db, id);
     if (!(await orgSeat(ctx.db, auth.userId, id))) throw notFound(tr('That organization'));
-    const items = await orgBookings(ctx, id, window);
+    const items = await orgBookings(ctx, id, window, { ahead: { now: ctx.now() } });
     return { from: window.from.toISOString(), to: window.until.toISOString(), items };
   });
 

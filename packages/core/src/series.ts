@@ -8,6 +8,7 @@
  * works (R76: Sunday to Thursday in Cairo, Monday to Friday in Paris). Pure: the server posts
  * each time from it and the calendar looks ahead with it.
  */
+import { AGREED_STATES } from './kit-states';
 import type { Repeat } from './repeat';
 import { addDays, daysInMonth, zonedParts, zonedTimeToUtc } from './time';
 
@@ -69,22 +70,25 @@ export function seriesOf(payload: unknown): MeetingSeries | null {
 }
 
 /**
- * Whether a series was agreed, read from one of its cards: this time is accepted, or was before
- * it was cancelled (that time alone). A later time and a meeting space's copy are only ever made
- * once it was, so their cancel is never the proposal's.
+ * Whether a series was agreed, read from one of its cards: this time is agreed (a meeting
+ * accepted, an appointment confirmed), or was before it was cancelled (that time alone). A later
+ * time and a meeting space's copy are only ever made once it was, so their cancel is never the
+ * proposal's.
  */
 export function seriesAgreed(payload: unknown): boolean {
   const p = (payload ?? {}) as {
+    kit?: unknown;
     state?: unknown;
     spaceOf?: unknown;
     history?: Array<{ state?: unknown }>;
   };
-  if (p.state === 'accepted') return true;
+  const agreed = p.kit === 'appointment' ? AGREED_STATES.appointment : AGREED_STATES.meeting;
+  if (p.state === agreed) return true;
   if (p.state !== 'cancelled') return false;
   return (
     (seriesOf(payload)?.n ?? 0) > 0 ||
     Boolean(p.spaceOf) ||
-    (p.history ?? []).some((h) => h.state === 'accepted')
+    (p.history ?? []).some((h) => h.state === agreed)
   );
 }
 

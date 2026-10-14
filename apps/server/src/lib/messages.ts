@@ -39,7 +39,7 @@ import {
 } from '@caime/core';
 import { currencyOfCountry } from '@caime/core/countries';
 import { tr } from '@caime/core/i18n';
-import { cardAsks } from '@caime/core/kit-states';
+import { AGREED_STATES, cardAsks } from '@caime/core/kit-states';
 import { isRepeat, repeatsIn } from '@caime/core/repeat';
 import { dayIn, type MeetingSeries } from '@caime/core/series';
 import type { Kysely, SqlBool, Transaction } from 'kysely';
@@ -876,6 +876,8 @@ export async function sendMessage(
   const id = uuidv7();
   let series: MeetingSeries | null = null;
   // A booking from the catalog, checked again under the host's lock as the card is written.
+  // A later time of a repeating appointment (R58) books past its own times ahead.
+  const seriesBooking = opts.occurrence ? { series: opts.occurrence.series.id } : {};
   let slotAsk: { host: BookingHost; booker: Booker; ask: BookingAskInput; start: Date } | null =
     null;
   // An order from the catalog takes its counted items' stock as the card is written (R60).
@@ -961,7 +963,11 @@ export async function sendMessage(
           ? { days: [...sender.workweek].sort((a, b) => a - b) }
           : {}),
       };
-    } else if (card.kit === 'meeting' && card.fields.repeatUntil !== undefined)
+    } else if (
+      (card.kit === 'meeting' || card.kit === 'appointment') &&
+      card.fields.repeatUntil !== undefined &&
+      !isRepeat(card.fields.repeat)
+    )
       throw badRequest(tr('Until is for a meeting that repeats.'));
     if (card.kit === 'split') {
       // Who owes the payer: everyone else here (people, not bots), an equal share each, worked
@@ -1010,6 +1016,7 @@ export async function sendMessage(
           found.booker,
           ask,
           start,
+          seriesBooking,
         )) as unknown as Record<string, unknown>;
         slotAsk = { host: found.host, booker: found.booker, ask, start };
         // A priced booking is a card about money whoever books it (the team for a customer too).
@@ -1026,6 +1033,34 @@ export async function sendMessage(
         if (typeof card.fields.reference !== 'string' || !card.fields.reference)
           card.fields.reference = orderNumber();
       }
+    }
+    // An appointment that repeats (R58), in a chat or with an organization: each time is booked
+    // as it's posted. Its clock is the host's when it's from a catalog (a clinic's 10:00 stays
+    // its 10:00, its week for every workday), else its proposer's.
+    if (card.kit === 'appointment' && isRepeat(card.fields.repeat)) {
+      if (!repeatsIn(conversation.kind, 'appointment'))
+        throw badRequest(tr('An appointment repeats only in a chat or with an organization.'));
+      const start = card.fields.start as { at: string };
+      const zone = (catalogHost?.hours?.timeZone || sender.time_zone) ?? 'UTC';
+      // Every workday is the host's days open, or the proposer's week (R76).
+      const week = catalogHost?.hours
+        ? [...new Set(catalogHost.hours.days.map((d) => d.weekday))]
+        : sender.workweek;
+      if (
+        typeof card.fields.repeatUntil === 'string' &&
+        !opts.occurrence &&
+        card.fields.repeatUntil < dayIn(new Date(start.at), zone)
+      )
+        throw badRequest(tr('An appointment can’t stop repeating before it starts.'));
+      series = opts.occurrence?.series ?? {
+        id,
+        n: 0,
+        firstAt: start.at,
+        zone,
+        ...(card.fields.repeat === 'workday' && week?.length
+          ? { days: [...week].sort((a, b) => a - b) }
+          : {}),
+      };
     }
     // Whom a priced booking or order is paid to (R62): its host, so the payer's card offers Pay.
     const priced = (booking && (booking as { price?: unknown }).price) || order?.total;
@@ -1054,7 +1089,11 @@ export async function sendMessage(
       title: kitHeadline(card.kit, card.fields, sender.locale),
       fields: card.fields,
       state:
-        series && opts.occurrence?.agreed ? 'accepted' : initialKitState(card.kit, card.fields),
+        series && opts.occurrence?.agreed
+          ? card.kit === 'appointment'
+            ? AGREED_STATES.appointment
+            : AGREED_STATES.meeting
+          : initialKitState(card.kit, card.fields),
       history: [],
       ...(series ? { series } : {}),
       ...(booking ? { booking } : {}),
@@ -1144,6 +1183,7 @@ export async function sendMessage(
           slotAsk.booker,
           slotAsk.ask,
           slotAsk.start,
+          seriesBooking,
         );
       }
       // The share once more, under the split's lock: two Pay cards for one share at once leave one.
@@ -1281,7 +1321,9 @@ export async function sendMessage(
   ctx.metrics.messages.inc({ kind: body.kind });
   if (tookStock && orderTake) await tellStockChanged(ctx, [orderTake.host.id]);
   // A business thread moves with each message: whose turn it is, and who has it (PRD §38).
-  if (conversation.kind === 'business')
+  // A repeating appointment's next time is the series going on, not anyone writing (R58): it
+  // reopens no thread, wakes no agent and tells no app.
+  if (conversation.kind === 'business' && !opts.occurrence?.agreed)
     await recordBusinessMessage(ctx, conversationId, senderId, message);
   return { message, created: true, analysis };
 }

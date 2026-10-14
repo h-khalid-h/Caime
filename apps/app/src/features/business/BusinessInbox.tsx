@@ -188,6 +188,10 @@ export function BusinessInbox({
   const org = useOrg(handle);
   const summary = org.data?.org;
   const [view, setView] = useState<InboxView>(initialView ?? 'customer_waiting');
+  // A link to a view while the inbox is already open beside a conversation (the desktop's pane).
+  useEffect(() => {
+    if (initialView) setView(initialView);
+  }, [initialView]);
   const [writing, setWriting] = useState(false);
   const cards = view === 'bookings' || view === 'orders';
   const inbox = useOrgInbox(

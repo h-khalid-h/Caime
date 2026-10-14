@@ -378,6 +378,8 @@ export function KitCard({ m, mine }: { m: MessageView; mine: boolean }) {
               )}
               paidByCard={p.checkout?.status === 'paid'}
             />
+          ) : kit === 'appointment' ? (
+            <MeetingRepeat m={m} card={p} />
           ) : kit === 'meeting' ? (
             <>
               <MeetingRepeat m={m} card={p as MeetingCardPayload} />

@@ -241,6 +241,15 @@ export const KITS: Record<KitId, KitDef> = {
       { key: 'title', label: msg('For'), type: 'text', required: true },
       { key: 'start', label: msg('When'), type: 'datetime', required: true },
       { key: 'place', label: msg('Where'), type: 'text' },
+      // Agreed once, each time its own card and its own slot (R58): in a chat or with an
+      // organization (`repeatsIn`).
+      {
+        key: 'repeat',
+        label: msg('Repeats'),
+        type: 'options',
+        choices: REPEAT_CHOICES,
+      },
+      { key: 'repeatUntil', label: msg('Until'), type: 'date' },
     ],
     states: ['requested', 'confirmed', 'done', 'cancelled'],
   },

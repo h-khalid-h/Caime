@@ -22,9 +22,11 @@ export function isRepeat(value: unknown): value is Repeat {
 }
 
 /**
- * Where a meeting may repeat: a chat or a group (a meeting's own space is one). A business
- * conversation books what repeats as appointments, one by one, through its catalog.
+ * Where a card may repeat: a meeting in a chat or a group (a meeting's own space is one); an
+ * appointment in a chat or with an organization, where each time books its slot as it's posted.
  */
-export function repeatsIn(kind: string): boolean {
-  return kind === 'direct' || kind === 'group';
+export function repeatsIn(kind: string, kit: 'meeting' | 'appointment' = 'meeting'): boolean {
+  return kit === 'meeting'
+    ? kind === 'direct' || kind === 'group'
+    : kind === 'direct' || kind === 'business';
 }

@@ -6,6 +6,7 @@
 import type { OrgBookingView, OrgView } from '@caime/core/api';
 import { formatAmount, formatClock, formatDayHeading } from '@caime/core/format';
 import { tr, trn } from '@caime/core/i18n';
+import { REPEAT_CHOICES } from '@caime/core/repeat';
 import { useQueryClient } from '@tanstack/react-query';
 import { router } from 'expo-router';
 import CalendarCheck from 'lucide-react-native/icons/calendar-check';
@@ -86,7 +87,7 @@ export function OrgBookings({
   return (
     <SectionList
       sections={sections}
-      keyExtractor={(x) => x.messageId}
+      keyExtractor={(x) => x.id}
       renderItem={({ item }) => {
         // Booked for an organization (R64, M17): the organization first, then who wrote.
         const person = item.customer?.displayName ?? tr('Deleted account');
@@ -98,7 +99,7 @@ export function OrgBookings({
             accessibilityLabel={`${name}, ${item.title}, ${when}, ${item.state === 'confirmed' ? tr('Confirmed') : tr('Asked')}`}
             onPress={() => open(item.conversationId)}
             focusRadius={12}
-            testID={`booking-${item.messageId}`}
+            testID={`booking-${item.id}`}
             style={({ hovered, pressed }) => ({
               flexDirection: 'row',
               alignItems: 'center',
@@ -139,11 +140,21 @@ export function OrgBookings({
                     ? formatAmount(item.booking.price.value, item.booking.price.currency, locale)
                     : null,
                   item.place,
+                  item.repeat
+                    ? tr(REPEAT_CHOICES.find((c) => c.value === item.repeat)?.label ?? '')
+                    : null,
                 ]
                   .filter(Boolean)
                   .join(' · ')}
               </Text>
-              {item.booking ? (
+              {item.booking && item.ahead ? (
+                // A time ahead is given to someone as it's posted (whoever did the one before).
+                <Text variant="caption" color="textSecondary" auto>
+                  {item.booking.providerName
+                    ? tr('With {name}', { name: item.booking.providerName })
+                    : tr('Nobody yet')}
+                </Text>
+              ) : item.booking ? (
                 <Pressable
                   accessibilityRole="button"
                   accessibilityLabel={tr('Who does it')}

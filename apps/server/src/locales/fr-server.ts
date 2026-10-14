@@ -1305,6 +1305,16 @@ export const frServer: Catalog = {
   'That one is over. Stop it from the next one.':
     'Celle-ci est terminée. Arrêtez la répétition depuis la suivante.',
   '{name}: stopped repeating': 'Répétition arrêtée : {name}',
+  '{when} couldn’t be booked': '{when} n’a pas pu être réservé',
+  'That time was taken. The times after it go on.':
+    'Ce créneau était pris. Les suivants continuent.',
+  'It stopped repeating': 'La répétition s’est arrêtée',
+  'It can’t be booked any more. Book again to go on.':
+    'Ce n’est plus réservable. Réservez à nouveau pour continuer.',
+  'An appointment repeats only in a chat or with an organization.':
+    'Un rendez-vous ne se répète que dans une discussion ou avec une organisation.',
+  'An appointment can’t stop repeating before it starts.':
+    'Un rendez-vous ne peut pas cesser de se répéter avant de commencer.',
   // An organization's AI agent says who it is, and passes a conversation on (R87).
   'Hi {name}, I’m {agent}, the AI assistant for {org}.':
     'Bonjour {name}, ici {agent}, l’assistant IA qui répond pour {org}.',

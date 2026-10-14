@@ -1500,8 +1500,13 @@ listed there with its owner.
       `openSlots`' `resource`, the server's `busyFor`); Settings' and the setup's "Add something
       shared" and an item's "Takes one of" (`booking.test.ts` core and server,
       `e2e/bookings.spec.ts`).
-- [ ] Later layers of R58: a recurring appointment (each time's slot checked against the host's
-      catalog as it's posted), a customer choosing who does it where an organization allows it
+- [x] R58, an appointment that repeats: "Repeats" on the Appointment card in a chat or with an
+      organization, confirmed once, on the host's clock; each time posted confirmed and booked
+      as it's posted (`bookingFor` with its series), its slots held ahead in the slots, the
+      team's Bookings (`OrgBookingView.ahead`, `id`, `repeat`) and both calendars; a taken
+      time skipped and told, an item no longer offered ends it and says so; the provider kept;
+      no thread reopened (`appointment-series.test.ts`, `e2e/bookings.spec.ts`).
+- [ ] Later layers of R58: a customer choosing who does it where an organization allows it
       (R15 keeps the team unnamed to a customer: the owner's decision).
 
 ## M14 — Apps and Mail (R74, R75)
@@ -3193,3 +3198,8 @@ The six-slice review's plan, in its order; a block is ticked when its tests and 
   access is sealed to the device that asked), or a file; who's here with Connect and Connect with
   all, the rest invited by the person from their own WhatsApp, texts or mail. The match route's
   connection states are one batched read. The accounts wait on the owner's OAuth clients (⛔).
+- 2026-10-14 — R58, an appointment that repeats: a weekly session with a clinic or a tutor is
+  confirmed once and each time is booked as it's posted, its slot held ahead so nobody else
+  takes it; a time taken all the same is skipped and said, a withdrawn item ends it and says so.
+  Found on the way: a link to the Bookings view (`?view=bookings`) opened the default view on a
+  desktop, whose list pane didn't read it; it does now (`useInboxView`).

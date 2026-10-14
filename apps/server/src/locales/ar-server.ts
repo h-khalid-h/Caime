@@ -1298,6 +1298,16 @@ export const arServer: Catalog = {
   'That one is over. Stop it from the next one.':
     'انتهت هذه المرة، وإيقاف التكرار يكون من المرة التالية.',
   '{name}: stopped repeating': 'أُوقف التكرار: {name}',
+  '{when} couldn’t be booked': 'تعذّر حجز {when}',
+  'That time was taken. The times after it go on.':
+    'كان هذا الموعد محجوزًا. المواعيد التالية مستمرة.',
+  'It stopped repeating': 'توقّف التكرار',
+  'It can’t be booked any more. Book again to go on.':
+    'لم يعد الحجز ممكنًا. احجز من جديد للاستمرار.',
+  'An appointment repeats only in a chat or with an organization.':
+    'لا يتكرر الموعد إلا في محادثة ثنائية أو مع مؤسسة.',
+  'An appointment can’t stop repeating before it starts.':
+    'لا يمكن أن ينتهي تكرار الموعد قبل بدايته.',
   // An organization's AI agent says who it is, and passes a conversation on (R87).
   'Hi {name}, I’m {agent}, the AI assistant for {org}.':
     'مرحبًا {name}، أنا {agent}، مساعد الذكاء الاصطناعي لدى {org}.',

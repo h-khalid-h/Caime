@@ -395,7 +395,13 @@ These are rules, not preferences.
   under the card's lock, only before the time ends). `cardsAhead(…, { series: { now } })` looks
   ahead from each series' latest card for the calendar, the feed and the slots (never a list of
   what's next); a time ahead's id is `<series>:<n>`, and a meeting's calendar event is
-  `meetingUid`, the feed's and an invitation's alike. Nothing keeps a row per time: a new reader
+  `meetingUid`, the feed's and an invitation's alike. An appointment repeats too (`repeatsIn(kind,
+  'appointment')`: a chat or a business conversation), on the catalog host's zone and open days
+  when booked from one; each time is booked by `bookingFor(…, { series })` as it's posted (no
+  lead, the horizon stretched, its own series' times not held against it: `exceptSeries`),
+  `slot_taken` skips a time with a notice, any other refusal ends it with one, and
+  `orgBookings(…, { ahead })` and `heldBy` hold the times ahead (`OrgBookingView.id` is
+  `<series>:<n>` for one); an occurrence never runs `recordBusinessMessage`. Nothing keeps a row per time: a new reader
   of what's ahead decides whether it looks ahead.
 - Bookings (R51, R58): a host is an organization or a person (`BookingHost`, `lib/booking.ts`:
   `orgHost`, `personHost`), each with hours (`booking`, core `BookingHours`) and a catalog

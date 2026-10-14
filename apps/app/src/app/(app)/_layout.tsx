@@ -13,7 +13,7 @@ import {
   SettingsMenu,
   SpacesList,
 } from '@/features/shell/panes';
-import { useInboxHandle, useSection } from '@/features/shell/sections';
+import { useInboxHandle, useInboxView, useSection } from '@/features/shell/sections';
 import { TabBar } from '@/features/shell/TabBar';
 import { useLanguage } from '@/lib/languageState';
 import { takeLink } from '@/state/pendingLink';
@@ -117,9 +117,10 @@ function DesktopShell() {
   const t = useTheme();
   const section = useSection();
   const inboxHandle = useInboxHandle();
+  const inboxView = useInboxView();
   const pane =
     section === 'business' && inboxHandle ? (
-      <BusinessInbox pane handle={inboxHandle} key={inboxHandle} />
+      <BusinessInbox pane handle={inboxHandle} initialView={inboxView} key={inboxHandle} />
     ) : section === 'chats' ? (
       <InboxList pane />
     ) : section === 'people' ? (

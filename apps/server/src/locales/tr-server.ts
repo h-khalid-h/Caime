@@ -1249,6 +1249,14 @@ export const turkishServer: Catalog = {
   'That one is over. Stop it from the next one.':
     'Bu toplantı bitti. Tekrarı bir sonrakinden durdurun.',
   '{name}: stopped repeating': 'Tekrar durduruldu: {name}',
+  '{when} couldn’t be booked': '{when} ayrılamadı',
+  'That time was taken. The times after it go on.': 'O saat doluydu. Sonraki saatler devam ediyor.',
+  'It stopped repeating': 'Tekrar sona erdi',
+  'It can’t be booked any more. Book again to go on.':
+    'Artık ayrılamıyor. Devam etmek için yeniden randevu alın.',
+  'An appointment repeats only in a chat or with an organization.':
+    'Randevu yalnızca bire bir sohbette veya bir kuruluşla tekrarlanır.',
+  'An appointment can’t stop repeating before it starts.': 'Randevunun tekrarı başlamadan bitemez.',
   // An organization's AI agent says who it is, and passes a conversation on (R87).
   'Hi {name}, I’m {agent}, the AI assistant for {org}.':
     'Merhaba {name}, ben {agent}, {org} adına yanıt veren yapay zekâ asistanıyım.',

@@ -249,8 +249,12 @@ export function KitForm({
   const payingShare = kit === 'payment_request' ? (start?.share ?? null) : null;
   const catalog = appointment || ordering;
   const direct = conversation.kind === 'direct' && !conversation.business;
-  // A meeting repeats in a chat or a group (R58); an organization's are booked a time at a time.
-  const repeats = repeatsIn(conversation.kind) && !conversation.business;
+  // A meeting repeats in a chat or a group; an appointment in a chat or with an organization,
+  // each time booked as it comes (R58).
+  const repeats =
+    kit === 'appointment'
+      ? repeatsIn(conversation.business ? 'business' : conversation.kind, 'appointment')
+      : repeatsIn(conversation.kind) && !conversation.business;
   // Its last day is asked once it repeats.
   const repeating = repeats && picked.repeat !== undefined;
   // Read afresh when the form opens: a copy of the organization or the profile kept from before

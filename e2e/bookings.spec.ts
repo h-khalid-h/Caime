@@ -161,6 +161,72 @@ test.describe
       void orgId;
     });
 
+    test('an appointment that repeats (R58): booked weekly, confirmed once, each week held ahead', async ({
+      browser,
+    }) => {
+      const phone = await browser.newContext({
+        viewport: { width: 390, height: 844 },
+        storageState: customerState,
+      });
+      const { page: c, errors } = await newPerson(phone);
+      await c.goto(`/o/${handle}?book`);
+      await c.waitForURL(/\/c\/[0-9a-f-]+\?book=1$/);
+      const conversationId = new URL(c.url()).pathname.split('/')[2] ?? '';
+      // The form offers it with the organization; its last day is asked once it repeats.
+      await expect(c.getByTestId('kit-field-repeatUntil')).toHaveCount(0);
+      await c.getByRole('radio', { name: 'Every week', exact: true }).click();
+      await expect(c.getByTestId('kit-field-repeatUntil')).toBeVisible();
+      const picker = c.getByTestId('slot-picker');
+      await picker.locator('[data-testid^="slot-"]').first().click();
+      await c.getByTestId('kit-send').click();
+      const card = c.getByTestId('kit-appointment').filter({ hasText: 'Every week' }).first();
+      await expect(card).toBeVisible();
+      const listed = await phone.request.get(`/v1/conversations/${conversationId}/messages`, {
+        headers: CLIENT,
+      });
+      const { messages } = (await listed.json()) as {
+        messages: Array<{ id: string; payload: { kit?: string; fields?: { repeat?: string } } }>;
+      };
+      const cardId =
+        messages.find((m) => m.payload.kit === 'appointment' && m.payload.fields?.repeat)?.id ?? '';
+      expect(errors).toEqual([]);
+
+      // The team confirms it once; their Bookings hold the weeks ahead, each read as weekly.
+      const owner = await browser.newContext({
+        viewport: { width: 1280, height: 800 },
+        storageState: ownerState,
+      });
+      const confirmed = await owner.request.post(`/v1/messages/${cardId}/kit`, {
+        headers: CLIENT,
+        data: { to: 'confirmed' },
+      });
+      expect(confirmed.ok()).toBe(true);
+      const { page, errors: ownerErrors } = await newPerson(owner);
+      await page.goto(`/o/${handle}/inbox?view=bookings`);
+      const ahead = page.getByTestId(`booking-${cardId}:1`).filter({ visible: true });
+      await expect(ahead).toContainText('Every week');
+      await expect(ahead).toContainText('Confirmed');
+      await expect(page.getByTestId(`booking-${cardId}`).filter({ visible: true })).toBeVisible();
+      await page.screenshot({ path: 'e2e/screenshots/desktop-bookings-repeating.png' });
+      expect(ownerErrors).toEqual([]);
+
+      // The customer sees "Cancel this one" on the card, and stops it from there.
+      await c.goto(`/c/${conversationId}`);
+      // Not the haircut for two booked before it; stopped, it no longer says weekly.
+      const mine = c.getByTestId('kit-appointment').filter({ hasNotText: 'For 2', visible: true });
+      await expect(mine).toContainText('Every week');
+      await expect(
+        mine.getByRole('button', { name: 'Cancel this one', exact: true }),
+      ).toBeVisible();
+      await mine.getByTestId('kit-stop-repeating').click();
+      await expect(mine.getByTestId('kit-repeat-stopped')).toBeVisible();
+      await page.reload();
+      await expect(page.getByTestId(`booking-${cardId}`).filter({ visible: true })).toBeVisible();
+      await expect(page.getByTestId(`booking-${cardId}:1`)).toHaveCount(0);
+      await owner.close();
+      await phone.close();
+    });
+
     test('orders from the catalog (R60): the owner sells by the piece, a customer orders two', async ({
       browser,
     }) => {

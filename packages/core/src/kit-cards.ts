@@ -185,8 +185,12 @@ export function kitMoves(
 ): KitMove[] {
   if (!isCardKit(kit)) return [];
   const creatorPays = fields?.direction === 'send';
-  // An agreed meeting that repeats (R58) is cancelled a time at a time: the rest stay.
-  const oneTime = kit === 'meeting' && state === 'accepted' && isRepeat(fields?.repeat);
+  // An agreed meeting or appointment that repeats (R58) is cancelled a time at a time: the
+  // rest stay.
+  const oneTime =
+    ((kit === 'meeting' && state === 'accepted') ||
+      (kit === 'appointment' && state === 'confirmed')) &&
+    isRepeat(fields?.repeat);
   return (KIT_FLOWS[kit][state] ?? [])
     .filter((move) => {
       if (move.who === 'anyone') return true;

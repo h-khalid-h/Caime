@@ -13,6 +13,8 @@ import type {
   TaskView,
 } from '@caime/core';
 import { HELD_APPOINTMENT_STATES } from '@caime/core/kit-states';
+import { isRepeat } from '@caime/core/repeat';
+import { isDay, occurrencesBetween, seriesAgreed, seriesOf, timesAYear } from '@caime/core/series';
 import { sql } from 'kysely';
 import type { AppContext } from '../context';
 import { ORG_COLUMNS } from '../db/schema';
@@ -20,7 +22,7 @@ import { orgRef } from './business';
 import { overdueAtSql } from './due';
 import { personViewsFor } from './people-batch';
 import { activeRelationships, relationshipView } from './relations';
-import { cardsAhead, dueCards } from './upcoming';
+import { cardsAhead, dueCards, SERIES_ENDED_MS } from './upcoming';
 
 /** A meeting without a length holds an hour. */
 const MEETING_MINUTES = 60;
@@ -276,34 +278,80 @@ export async function orgBookings(
   ctx: AppContext,
   orgId: string,
   window: Window,
-  /** A view takes a page; the slots take every card in the window (nothing read as free). */
-  opts: { limit?: number } = {},
+  /**
+   * A view takes a page; the slots take every card in the window (nothing read as free). With
+   * `ahead`, the times of repeating appointments (R58) not yet posted are there too, as their
+   * series will book them (less one series, booking its own next time).
+   */
+  opts: { limit?: number; ahead?: { now: Date; exceptSeries?: string } } = {},
 ): Promise<OrgBookingView[]> {
-  const rows = await ctx.db
-    .selectFrom('messages as m')
-    .innerJoin('business_threads as t', 't.conversation_id', 'm.conversation_id')
-    .leftJoin('users as c', 'c.id', 't.customer_id')
-    .select([
-      'm.id',
-      'm.conversation_id',
-      'm.payload',
-      'c.id as customer_id',
-      'c.display_name',
-      't.customer_org_id',
-    ])
-    .where('t.org_id', '=', orgId)
-    .where('m.kind', '=', 'kit')
-    .where('m.deleted_at', 'is', null)
-    .where(sql`m.payload->>'kit'`, '=', 'appointment')
+  const base = () =>
+    ctx.db
+      .selectFrom('messages as m')
+      .innerJoin('business_threads as t', 't.conversation_id', 'm.conversation_id')
+      .leftJoin('users as c', 'c.id', 't.customer_id')
+      .select([
+        'm.id',
+        'm.conversation_id',
+        'm.payload',
+        'c.id as customer_id',
+        'c.display_name',
+        't.customer_org_id',
+      ])
+      .where('t.org_id', '=', orgId)
+      .where('m.kind', '=', 'kit')
+      .where('m.deleted_at', 'is', null)
+      .where(sql`m.payload->>'kit'`, '=', 'appointment');
+  const limit = opts.limit ?? MAX_ITEMS;
+  const rows = await base()
     .where(sql`m.payload->>'state'`, 'in', HELD_APPOINTMENT_STATES)
     .where('m.card_start_at', '>=', window.from)
     .where('m.card_start_at', '<=', window.until)
     .orderBy('m.card_start_at', 'asc')
-    .limit(opts.limit ?? MAX_ITEMS)
+    .limit(limit)
     .execute();
+  // Each repeating appointment's latest time (posted within the last day, or ahead): the times
+  // after it hold their slots before each is posted.
+  const ahead: Array<{ row: (typeof rows)[number]; at: Date; n: number }> = [];
+  if (opts.ahead && window.until > opts.ahead.now) {
+    const latest = new Map<string, { row: (typeof rows)[number]; n: number }>();
+    for (const row of await base()
+      .where(sql`m.payload->'series'`, 'is not', null)
+      .where(sql`m.payload->'fields'->'repeat'`, 'is not', null)
+      .where('m.card_start_at', '>=', new Date(opts.ahead.now.getTime() - SERIES_ENDED_MS))
+      .where('m.card_start_at', '<=', window.until)
+      .limit(MAX_ITEMS)
+      .execute()) {
+      const series = seriesOf(row.payload);
+      if (!series || series.id === opts.ahead.exceptSeries) continue;
+      if ((latest.get(series.id)?.n ?? -1) < series.n) latest.set(series.id, { row, n: series.n });
+    }
+    for (const { row } of latest.values()) {
+      const payload = (row.payload ?? {}) as {
+        fields?: { repeat?: unknown; repeatUntil?: unknown };
+      };
+      const series = seriesOf(payload);
+      const repeat = payload.fields?.repeat;
+      if (!series || !isRepeat(repeat) || !seriesAgreed(payload)) continue;
+      const lastDay = isDay(payload.fields?.repeatUntil) ? payload.fields.repeatUntil : null;
+      for (const time of occurrencesBetween(
+        series,
+        repeat,
+        window.from,
+        window.until,
+        timesAYear(repeat, series.days),
+        lastDay,
+      ))
+        ahead.push({ row, at: time.at, n: time.n });
+    }
+  }
   // The organizations customers book for (R64, M17), in one query.
   const forOrgIds = [
-    ...new Set(rows.map((r) => r.customer_org_id).filter((x): x is string => Boolean(x))),
+    ...new Set(
+      [...rows, ...ahead.map((a) => a.row)]
+        .map((r) => r.customer_org_id)
+        .filter((x): x is string => Boolean(x)),
+    ),
   ];
   const forOrgs = forOrgIds.length
     ? await ctx.db
@@ -312,19 +360,38 @@ export async function orgBookings(
         .where('id', 'in', forOrgIds)
         .execute()
     : [];
-  const out: OrgBookingView[] = [];
-  for (const row of rows) {
+  const viewOf = (
+    row: (typeof rows)[number],
+    timeAhead: { at: Date; n: number } | null,
+  ): OrgBookingView | null => {
     const payload = (row.payload ?? {}) as {
       state?: string;
-      fields?: { title?: unknown; start?: { at?: string; hasTime?: boolean }; place?: unknown };
+      series?: unknown;
+      fields?: {
+        title?: unknown;
+        start?: { at?: string; hasTime?: boolean };
+        place?: unknown;
+        repeat?: unknown;
+      };
       booking?: AppointmentBooking | null;
     };
     const at = payload.fields?.start?.at;
-    if (!at) continue;
+    if (!at) return null;
     const forOrg = row.customer_org_id
       ? forOrgs.find((o) => o.id === row.customer_org_id)
       : undefined;
-    out.push({
+    let booking = payload.booking && typeof payload.booking === 'object' ? payload.booking : null;
+    // A time ahead lasts as its series' latest does, from its own start.
+    if (timeAhead && booking)
+      booking = {
+        ...booking,
+        endAt: new Date(
+          timeAhead.at.getTime() + Date.parse(booking.endAt) - Date.parse(at),
+        ).toISOString(),
+      };
+    const series = seriesOf(payload);
+    return {
+      id: timeAhead && series ? `${series.id}:${timeAhead.n}` : row.id,
       messageId: row.id,
       conversationId: row.conversation_id,
       customer: row.customer_id
@@ -332,14 +399,20 @@ export async function orgBookings(
         : null,
       customerOrg: forOrg ? orgRef(forOrg) : null,
       title: typeof payload.fields?.title === 'string' ? payload.fields.title : 'Appointment',
-      at,
+      at: timeAhead ? timeAhead.at.toISOString() : at,
       hasTime: payload.fields?.start?.hasTime !== false,
       place: typeof payload.fields?.place === 'string' ? payload.fields.place : null,
-      state: payload.state === 'confirmed' ? 'confirmed' : 'requested',
-      booking: payload.booking && typeof payload.booking === 'object' ? payload.booking : null,
-    });
-  }
-  return out;
+      state: timeAhead || payload.state === 'confirmed' ? 'confirmed' : 'requested',
+      booking,
+      ahead: Boolean(timeAhead),
+      repeat: series && isRepeat(payload.fields?.repeat) ? payload.fields.repeat : null,
+    };
+  };
+  const out = [...rows.map((r) => viewOf(r, null)), ...ahead.map((a) => viewOf(a.row, a))].filter(
+    (v): v is OrgBookingView => v !== null,
+  );
+  if (!ahead.length) return out;
+  return out.sort((a, b) => Date.parse(a.at) - Date.parse(b.at)).slice(0, limit);
 }
 
 export interface BusyNow {

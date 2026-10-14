@@ -1,5 +1,5 @@
 /**
- * A meeting that repeats (R58): agreed once, each time its own card. The time ahead offers "Stop
+ * A meeting or an appointment that repeats (R58): agreed once, each time its own card. The time ahead offers "Stop
  * repeating", which ends the series with it (the server takes it only before the time ends);
  * a time where it was stopped says so. How often it repeats is the card's own line ("Repeats").
  */
@@ -18,16 +18,21 @@ import { Text } from '@/ui/Text';
 import { toast } from '@/ui/Toast';
 
 interface RepeatPayload {
+  kit?: unknown;
+  booking?: { endAt?: string } | null;
   movedTo?: unknown;
   repeatStopped?: unknown;
   fields?: Record<string, unknown> | null;
 }
 
-/** When a time ends: its start and its length, else an hour; null without a start. */
-function endOf(fields: Record<string, unknown> | null | undefined): number | null {
+/** When a time ends: as booked, else its start and its length, else an hour; null without a start. */
+function endOf(card: RepeatPayload): number | null {
+  const fields = card.fields;
   const start = fields?.start as { at?: unknown } | undefined;
   const at = typeof start?.at === 'string' ? Date.parse(start.at) : Number.NaN;
   if (!Number.isFinite(at)) return null;
+  const booked = card.booking?.endAt ? Date.parse(card.booking.endAt) : Number.NaN;
+  if (Number.isFinite(booked) && booked > at) return booked;
   const minutes = Number(fields?.durationMinutes);
   return at + (Number.isFinite(minutes) && minutes > 0 ? minutes : 60) * 60_000;
 }
@@ -43,7 +48,7 @@ export function MeetingRepeat({ m, card }: { m: MessageView; card: RepeatPayload
         {tr('Doesn’t repeat any more')}
       </Text>
     );
-  const end = endOf(card.fields);
+  const end = endOf(card);
   if (!isRepeat(card.fields?.repeat) || !seriesAgreed(card) || end === null) return null;
   if (end <= now.getTime()) return null;
   const stop = async () => {
