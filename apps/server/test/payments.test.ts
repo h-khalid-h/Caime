@@ -3,7 +3,7 @@
  * of what it offers; a Pay card carries the payee's ways the payer may see, fixed by the server;
  * the payer says it's sent, the payee says it arrived. Nothing is paid through Caime.
  */
-import { uuidv4 } from '@caime/core';
+import { receiptNumber, uuidv4 } from '@caime/core';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { type Client, createTestApp, signup, type TestApp } from './helpers';
 
@@ -344,5 +344,78 @@ describe('a split’s share paid with Pay (R62, R38)', () => {
     const again = await payShare(lina, direct, split.id, { note: 'My half' });
     expect(again.statusCode, again.body).toBe(201);
     expect(again.json().message.payload.fields.note).toBe('My half');
+  });
+});
+
+describe('a receipt from a paid Pay card (R62, R65)', () => {
+  const receipt = (who: Client, id: string) => who.req('GET', `/v1/messages/${id}/receipt`);
+
+  it('between two people: both read it, once it’s paid; nobody else does', async () => {
+    const sent = (
+      await send(lina, direct, {
+        direction: 'send',
+        amount: { value: 75, currency: 'EGP' },
+        note: 'Concert tickets',
+      })
+    ).json().message;
+    // Not paid yet: there's no receipt.
+    expect((await receipt(lina, sent.id)).statusCode).toBe(404);
+    expect((await move(noor, sent.id, 'paid')).statusCode).toBe(200);
+    const mine = await receipt(lina, sent.id);
+    expect(mine.statusCode, mine.body).toBe(200);
+    const r = mine.json().receipt;
+    expect(r).toMatchObject({
+      number: receiptNumber(sent.id),
+      messageId: sent.id,
+      conversationId: direct,
+      amount: { value: 75, currency: 'EGP' },
+      note: 'Concert tickets',
+      payee: { name: 'Noor Haddad', domain: null },
+      payer: { name: 'Lina Farah' },
+      how: 'confirmed',
+    });
+    expect(r.number).toMatch(/^R-[0-9A-Z]{4}-[0-9A-Z]{4}$/);
+    expect(r.payer.handle).toBe(lina.user.handle);
+    // The same receipt for Noor; for someone outside the conversation, none.
+    expect((await receipt(noor, sent.id)).json().receipt).toEqual(r);
+    expect((await receipt(sami, sent.id)).statusCode).toBe(404);
+  });
+
+  it('with an organization: its team is the organization, never a team member', async () => {
+    const asked = (
+      await send(omar, convo, { direction: 'ask', amount: { value: 300, currency: 'EGP' } })
+    ).json().message;
+    await move(lina, asked.id, 'sent');
+    await move(omar, asked.id, 'paid');
+    const forLina = await receipt(lina, asked.id);
+    expect(forLina.statusCode, forLina.body).toBe(200);
+    expect(forLina.json().receipt).toMatchObject({
+      payee: { name: 'Nile Dental', handle: 'nile.dental', domain: null },
+      payer: { name: 'Lina Farah' },
+      how: 'confirmed',
+    });
+    // Nothing of who on the team asked or confirmed it reaches the customer.
+    expect(forLina.body).not.toContain(omar.user.id);
+    expect(forLina.body).not.toContain('Omar');
+    expect((await receipt(noor, asked.id)).json().receipt.payee.name).toBe('Nile Dental');
+  });
+
+  it('in a group, its two sides alone', async () => {
+    const group = (
+      await noor.post('/v1/conversations', {
+        kind: 'group',
+        title: 'Book club',
+        memberIds: [lina.user.id, omar.user.id],
+      })
+    ).conversation.id;
+    const asked = (
+      await send(noor, group, { direction: 'ask', amount: { value: 20, currency: 'EGP' } })
+    ).json().message;
+    await move(lina, asked.id, 'sent');
+    await move(noor, asked.id, 'paid');
+    expect((await receipt(lina, asked.id)).json().receipt.payer.name).toBe('Lina Farah');
+    expect((await receipt(noor, asked.id)).statusCode).toBe(200);
+    // Omar is in the group, and was never part of this payment.
+    expect((await receipt(omar, asked.id)).statusCode).toBe(404);
   });
 });

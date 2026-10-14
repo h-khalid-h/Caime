@@ -119,6 +119,7 @@ import type {
   PolicyCreatedResponse,
   PrivacyResponse,
   PushKeyResponse,
+  ReceiptResponse,
   RecoveryCodesResponse,
   RelationshipHistoryView,
   RelationshipResponse,
@@ -329,6 +330,8 @@ export const endpoints = {
     api.get<InviteOpenResponse>(`/invites/${encodeURIComponent(token)}`),
   acceptInvite: (token: string) =>
     api.post<InviteAcceptView>(`/invites/${encodeURIComponent(token)}/accept`),
+  /** A paid Pay card's receipt (R62), for its two sides. */
+  receipt: (messageId: string) => api.get<ReceiptResponse>(`/messages/${messageId}/receipt`),
   // A meeting's guests (R84): inviting by address, and a guest's own link.
   inviteGuest: (messageId: string, body: { email: string; name?: string | null }) =>
     api.post<MeetingGuestResponse>(`/messages/${messageId}/guests`, body),

@@ -3980,4 +3980,15 @@ export const fr: Catalog = {
   'This browser can’t make calls. Open your link in a recent Chrome, Safari, Edge or Firefox.':
     'Ce navigateur ne peut pas passer d’appels. Ouvrez votre lien dans une version récente de Chrome, Safari, Edge ou Firefox.',
   'Join the call': 'Rejoindre l’appel',
+  // A paid Pay card's receipt (R62, R65).
+  Receipt: 'Reçu',
+  'A record of a payment both sides agreed on. Caime holds no money.':
+    'La trace d’un paiement sur lequel les deux parties sont d’accord. Caime ne détient aucun argent.',
+  Print: 'Imprimer',
+  Number: 'Numéro',
+  'Paid on': 'Payé le',
+  'Paid to': 'Payé à',
+  'Paid by': 'Payé par',
+  'By card': 'Par carte',
+  'Confirmed received by {name}': 'Réception confirmée par {name}',
 };

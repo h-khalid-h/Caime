@@ -453,7 +453,12 @@ These are rules, not preferences.
   asks the composer through `useCardAction` (`features/conversation/cardActions.ts`) with a
   `KitStart` (direction, amount, note, `replyToId`). A public page shows only `pays` (kinds),
   never details. A card's button label, a choice and a field label are keys: show them through
-  `tr`, as `KitCard` and `KitForm` do.
+  `tr`, as `KitCard` and `KitForm` do. Who pays a card and who is paid, as people, is core
+  `paySides` (`kit-cards.ts`); a paid card's receipt is `lib/receipts.ts` behind
+  `GET /messages/:id/receipt`, for those two sides alone (to a customer the team is its
+  organization), its lines and shared words from core `receipts.ts` (`receiptNumber` from the
+  card's id), drawn by the lazy `ReceiptSheet`; anything new a receipt says joins `ReceiptView`
+  and `receiptLines`.
 - The brief before a meeting (R58, `lib/briefs.ts`): an agreed meeting or appointment queues
   `card.brief` (`queueBrief`, from the kit move route; one per card and start, so a moved card
   finds its old job pointless) an hour before, for the people whose own relationship to the
@@ -1283,7 +1288,9 @@ These are rules, not preferences.
 - A picked photo goes through `photoToUpload` (`lib/photos.ts`, `photos.web.ts`) before
   `uploadFile`: shrunk on the device to `PHOTO_MAX_EDGE` (`lib/photoSize.ts`, pure and
   tested), or `AVATAR_MAX_EDGE` for a face or a logo; videos, GIFs and HEIC go as they are, and
-  a shrink that fails sends the original. The server's own cap and metadata strip stay.
+  a shrink that fails sends the original. The shrinking itself (`photoShrink.ts`,
+  `photoShrink.web.ts`) loads when there's a photo to shrink; the picker stays static, since a
+  browser opens a file chooser only inside the tap. The server's own cap and metadata strip stay.
 - The characters' vector builders (`@caime/brand/characters`) load the first time a `Character`
   draws (a dynamic import in `src/brand/Character.tsx`); nothing else imports them as values,
   only their types. Before lazy-loading a module to take it out of the startup chunk, check the

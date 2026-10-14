@@ -9,6 +9,7 @@ import { msg, tr, trn } from './i18n';
 import type { Mode } from './intelligence';
 import { KITS, type KitDef, type KitField, type KitId } from './kits';
 import { dateFormat } from './locale';
+import { type PaysShare, payDirection } from './payments';
 import { zonedParts } from './time';
 
 /** The kits posted as cards. Poll is posted as a poll message, and location as a location. */
@@ -189,6 +190,32 @@ export function kitMoves(
     if (move.who === 'payee') return isCreator !== creatorPays;
     return (move.who === 'creator') === isCreator;
   });
+}
+
+export interface PaySides {
+  payerId: string | null;
+  payeeId: string | null;
+}
+
+/**
+ * Who pays a Pay card and who is paid, as people: a share's are named on it (R62); one that
+ * pays is paid by its sender to the other side; an ask is paid to its sender by the other side,
+ * or in a group by whoever said they'd paid it. Unknown is null (a group's ask marked received
+ * without anyone saying they'd paid). `otherId` is the other person of a one-to-one, else null.
+ */
+export function paySides(
+  card: {
+    fields?: Record<string, unknown>;
+    share?: PaysShare | null;
+    history?: Array<{ state?: string; by?: string }>;
+  },
+  senderId: string | null,
+  otherId: string | null,
+): PaySides {
+  if (card.share) return { payerId: senderId, payeeId: card.share.payeeId };
+  if (payDirection(card.fields) === 'send') return { payerId: senderId, payeeId: otherId };
+  const said = [...(card.history ?? [])].reverse().find((h) => h.state === 'sent')?.by ?? null;
+  return { payerId: otherId ?? said, payeeId: senderId };
 }
 
 /** Where a new card starts: its kit's first state, or "sent" for a Pay card that pays (R62). */

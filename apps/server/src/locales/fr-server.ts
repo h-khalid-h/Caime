@@ -1268,4 +1268,6 @@ export const frServer: Catalog = {
   'You don’t owe a share of this split.': 'Vous ne devez aucune part de ce partage.',
   'Your share of this split is settled.': 'Votre part de ce partage est réglée.',
   'A Pay card for your share is waiting already.': 'Une carte Payer pour votre part attend déjà.',
+  // A paid Pay card's receipt (R62, R65).
+  'That receipt': 'Ce reçu',
 };

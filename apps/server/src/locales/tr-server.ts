@@ -1213,4 +1213,6 @@ export const turkishServer: Catalog = {
   'You don’t owe a share of this split.': 'Bu bölüşmede sana düşen bir pay yok.',
   'Your share of this split is settled.': 'Bu bölüşmedeki payın ödendi.',
   'A Pay card for your share is waiting already.': 'Payın için bir Öde kartı zaten bekliyor.',
+  // A paid Pay card's receipt (R62, R65).
+  'That receipt': 'Bu makbuz',
 };

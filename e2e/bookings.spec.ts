@@ -336,6 +336,17 @@ test.describe
       const card = page.getByTestId('kit-payment_request').filter({ hasText: 'Deposit' });
       await card.getByRole('button', { name: 'Received', exact: true }).click();
       await expect(card).toContainText('Paid');
+      // Paid, it has a receipt (R62): its number, the organization paid, how it was paid.
+      await card.getByTestId('kit-receipt').click();
+      const receipt = page.getByTestId('receipt');
+      await expect(receipt).toBeVisible();
+      await expect(receipt.getByTestId('receipt-number')).toContainText(
+        /R-[0-9A-Z]{4}-[0-9A-Z]{4}/,
+      );
+      await expect(receipt.getByTestId('receipt-amount')).toContainText('150');
+      await expect(receipt.getByTestId('receipt-to')).toContainText(`Swibba ${stamp}`);
+      await expect(receipt.getByTestId('receipt-how')).toContainText('Confirmed received by');
+      await expect(page.getByTestId('receipt-print')).toBeVisible();
       expect(errors).toEqual([]);
       await owner.close();
     });

@@ -12,6 +12,7 @@ import {
   kitStateLabel,
   kitStateTone,
   orderDetails,
+  paySides,
 } from '@caime/core/kit-cards';
 import { KITS } from '@caime/core/kits';
 import { meetingAction, meetingLink } from '@caime/core/meetings';
@@ -170,6 +171,8 @@ function PayToBlock({
 }
 
 /** The brief before a meeting (R58), loaded when asked for. */
+/** A paid Pay card's receipt (R62), loaded when asked for. */
+const ReceiptSheet = lazyPart(() => import('./ReceiptSheet').then((m) => m.ReceiptSheet));
 const BriefSheet = lazyPart(() =>
   import('@/features/calendar/BriefSheet').then((m) => m.BriefSheet),
 );
@@ -214,6 +217,15 @@ export function KitCard({ m, mine }: { m: MessageView; mine: boolean }) {
   }).data;
   const { timeZone, locale } = useUserClock();
   const meId = useSession((s) => s.user?.id ?? '');
+  // In a group a Pay card is between whoever paid and was paid (R62): its receipt is theirs.
+  const inGroup = useQuery({
+    queryKey: qk.conversation(m.conversationId),
+    queryFn: () => endpoints.conversation(m.conversationId),
+    enabled: false,
+    select: (d: { conversation: ConversationView }) => d.conversation.kind === 'group',
+  }).data;
+  // Never opened is null: the sheet loads the first time it's asked for.
+  const [receiptOpen, setReceiptOpen] = useState<boolean | null>(null);
   const clock = { now, timeZone, locale };
   const p = (m.payload ?? {}) as CardPayload;
   const state = p.state ?? '';
@@ -311,6 +323,15 @@ export function KitCard({ m, mine }: { m: MessageView; mine: boolean }) {
       : held === 'open' && place
         ? { label: tr('Open'), testID: 'kit-open', onPress: () => openLink(meetingLink(place)) }
         : null;
+  // Paid (R62, R65): its receipt, for its two sides (the server says the same).
+  const sides = paySides(p as Parameters<typeof paySides>[0], m.senderId, null);
+  const receipt =
+    kit === 'payment_request' &&
+    state === 'paid' &&
+    !m.deletedAt &&
+    (!inGroup || meId === sides.payerId || meId === sides.payeeId)
+      ? { label: tr('Receipt'), testID: 'kit-receipt', onPress: () => setReceiptOpen(true) }
+      : null;
   // In a conversation with an organization, the team is one side: anyone on it moves a card
   // the team sent, as the server has it.
   const senderSide = mine || Boolean(thread?.customer && m.senderId !== thread.customer.id);
@@ -324,56 +345,61 @@ export function KitCard({ m, mine }: { m: MessageView; mine: boolean }) {
     typeof start === 'string' &&
     new Date(start).getTime() > now.getTime() - 3_600_000;
   return (
-    <CardBody
-      m={m}
-      Icon={KIT_ICONS[kit]}
-      // The label kept on the card is the kit's name as a key: shown in the reader's language.
-      label={tr(p.label ?? KITS[kit].name)}
-      state={tr(kitStateLabel(state))}
-      tone={kitStateTone(state)}
-      title={p.title ?? ''}
-      details={[
-        ...kitDetails(kit, p.fields ?? {}, clock),
-        ...(kit === 'appointment' ? bookingDetails(p.booking, clock.locale) : []),
-        ...(kit === 'order_status' ? orderDetails(p.order) : []),
-      ]}
-      before={ahead ? { messageId: m.id, title: p.title ?? tr(KITS[kit].name) } : null}
-      action={pay ?? meeting}
-      extra={
-        kit === 'payment_request' && p.payTo ? (
-          <PayToBlock
-            to={p.payTo}
-            messageId={m.id}
-            byCard={Boolean(
-              p.payTo.checkout &&
-                !m.deletedAt &&
-                // Its payer: the other side of an ask, the sender of a send (as the server has it).
-                (senderPays(p.fields) ? senderSide : !senderSide) &&
-                (state === 'requested' ||
-                  state === 'not_received' ||
-                  (state === 'sent' && senderPays(p.fields) && !p.history?.length)),
-            )}
-            paidByCard={p.checkout?.status === 'paid'}
-          />
-        ) : kit === 'meeting' ? (
-          <MeetingGuests
-            messageId={m.id}
-            card={p as MeetingCardPayload}
-            deleted={Boolean(m.deletedAt)}
-            where={Boolean(guestable)}
-          />
-        ) : null
-      }
-      // In a conversation with an organization, the team is one side: anyone on it moves a card
-      // the team sent, as the server has it.
-      // A share's Pay card in a group (R62) is its two sides' alone: the rest only look on.
-      moves={
-        m.deletedAt || standsAside(p, meId, m.senderId)
-          ? []
-          : kitMoves(kit, state, senderSide, p.fields)
-      }
-      testID={`kit-${kit}`}
-    />
+    <>
+      <CardBody
+        m={m}
+        Icon={KIT_ICONS[kit]}
+        // The label kept on the card is the kit's name as a key: shown in the reader's language.
+        label={tr(p.label ?? KITS[kit].name)}
+        state={tr(kitStateLabel(state))}
+        tone={kitStateTone(state)}
+        title={p.title ?? ''}
+        details={[
+          ...kitDetails(kit, p.fields ?? {}, clock),
+          ...(kit === 'appointment' ? bookingDetails(p.booking, clock.locale) : []),
+          ...(kit === 'order_status' ? orderDetails(p.order) : []),
+        ]}
+        before={ahead ? { messageId: m.id, title: p.title ?? tr(KITS[kit].name) } : null}
+        action={pay ?? meeting ?? receipt}
+        extra={
+          kit === 'payment_request' && p.payTo ? (
+            <PayToBlock
+              to={p.payTo}
+              messageId={m.id}
+              byCard={Boolean(
+                p.payTo.checkout &&
+                  !m.deletedAt &&
+                  // Its payer: the other side of an ask, the sender of a send (as the server has it).
+                  (senderPays(p.fields) ? senderSide : !senderSide) &&
+                  (state === 'requested' ||
+                    state === 'not_received' ||
+                    (state === 'sent' && senderPays(p.fields) && !p.history?.length)),
+              )}
+              paidByCard={p.checkout?.status === 'paid'}
+            />
+          ) : kit === 'meeting' ? (
+            <MeetingGuests
+              messageId={m.id}
+              card={p as MeetingCardPayload}
+              deleted={Boolean(m.deletedAt)}
+              where={Boolean(guestable)}
+            />
+          ) : null
+        }
+        // In a conversation with an organization, the team is one side: anyone on it moves a card
+        // the team sent, as the server has it.
+        // A share's Pay card in a group (R62) is its two sides' alone: the rest only look on.
+        moves={
+          m.deletedAt || standsAside(p, meId, m.senderId)
+            ? []
+            : kitMoves(kit, state, senderSide, p.fields)
+        }
+        testID={`kit-${kit}`}
+      />
+      {receiptOpen !== null ? (
+        <ReceiptSheet messageId={m.id} open={receiptOpen} onClose={() => setReceiptOpen(false)} />
+      ) : null}
+    </>
   );
 }
 

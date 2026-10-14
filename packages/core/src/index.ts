@@ -40,6 +40,7 @@ export * from './plans';
 export * from './policy';
 export * from './privacy';
 export * from './processors';
+export * from './receipts';
 export * from './rules';
 export * from './safety';
 export * from './schemas';

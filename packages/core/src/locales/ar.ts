@@ -4479,4 +4479,15 @@ export const ar: Catalog = {
     toMan: 'انضم إلى المكالمة',
     other: 'انضم إلى المكالمة',
   },
+  // A paid Pay card's receipt (R62, R65).
+  Receipt: 'إيصال',
+  'A record of a payment both sides agreed on. Caime holds no money.':
+    'سجلّ لدفعة اتفق عليها الطرفان. لا يحتفظ Caime بأي أموال.',
+  Print: 'طباعة',
+  Number: 'الرقم',
+  'Paid on': 'تاريخ الدفع',
+  'Paid to': 'الدفع إلى',
+  'Paid by': 'الدفع من',
+  'By card': 'بالبطاقة',
+  'Confirmed received by {name}': 'أكّد {name} الاستلام',
 };

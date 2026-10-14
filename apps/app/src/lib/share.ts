@@ -5,28 +5,29 @@ import { copyText } from './clipboard';
 import { isWeb } from './config';
 
 /**
- * Share a link with a line of text: the system share sheet where there is one, else (desktop
- * browsers) copy the link and say so, rather than a button that does nothing.
+ * Share a link with a line of text, or words alone (a receipt): the system share sheet where
+ * there is one, else (desktop browsers) copy the link, or the words, and say so, rather than a
+ * button that does nothing.
  */
-export async function shareLink(text: string, url: string): Promise<void> {
+export async function shareLink(text: string, url?: string): Promise<void> {
   if (isWeb) {
     const nav = typeof navigator !== 'undefined' ? navigator : undefined;
     if (nav?.share) {
       try {
-        await nav.share({ text, url });
+        await nav.share(url ? { text, url } : { text });
         return;
       } catch (e) {
         if ((e as Error).name === 'AbortError') return;
       }
     }
     try {
-      await copyText(url);
-      toast(tr('Link copied'));
+      await copyText(url ?? text);
+      toast(url ? tr('Link copied') : tr('Copied'));
     } catch {
-      toast(url);
+      toast(url ?? text);
     }
     return;
   }
   // Android shares only the message, so the link goes in it.
-  await Share.share({ message: `${text} ${url}` }).catch(() => {});
+  await Share.share({ message: url ? `${text} ${url}` : text }).catch(() => {});
 }

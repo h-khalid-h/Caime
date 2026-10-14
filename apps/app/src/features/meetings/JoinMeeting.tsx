@@ -223,28 +223,26 @@ function GuestMeeting({ view, space }: { view: JoinView; space: NonNullable<Join
           dense
         />
         {groupCallsSupported ? (
-          <>
-            {inCall ? null : live && on ? (
-              <Button
-                label={tr('Join the call')}
-                onPress={() => void joinGroupCall(on)}
-                testID="guest-join-call"
-              />
-            ) : open ? (
-              <Button
-                label={tr('Start the call')}
-                variant="secondary"
-                onPress={() => void startGroupCall(space.conversationId, 'video')}
-                testID="guest-start-call"
-              />
-            ) : (
-              <Text variant="caption" color="textSecondary" testID="guest-not-yet">
-                {tr(
-                  'The call opens ten minutes before it starts. Keep this page, or come back by your link.',
-                )}
-              </Text>
-            )}
-          </>
+          inCall ? null : live && on ? (
+            <Button
+              label={tr('Join the call')}
+              onPress={() => void joinGroupCall(on)}
+              testID="guest-join-call"
+            />
+          ) : open ? (
+            <Button
+              label={tr('Start the call')}
+              variant="secondary"
+              onPress={() => void startGroupCall(space.conversationId, 'video')}
+              testID="guest-start-call"
+            />
+          ) : (
+            <Text variant="caption" color="textSecondary" testID="guest-not-yet">
+              {tr(
+                'The call opens ten minutes before it starts. Keep this page, or come back by your link.',
+              )}
+            </Text>
+          )
         ) : (
           <Text variant="caption" color="textSecondary">
             {tr(

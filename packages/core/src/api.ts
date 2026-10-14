@@ -2951,6 +2951,38 @@ export interface MeetingGuestResponse {
   space: { conversationId: string; messageId: string };
 }
 
+/** One side of a receipt (R62): a person, or an organization with its verified domain. */
+export interface ReceiptParty {
+  name: string;
+  handle: string | null;
+  /** An organization's domain, once it proved it (R42). */
+  domain: string | null;
+}
+
+/**
+ * A paid Pay card's receipt (R62, R65): what was paid, to whom and by whom, when, and how. A
+ * record both sides agreed on, not a tax invoice; to a customer, the team is its organization.
+ */
+export interface ReceiptView {
+  /** From the card's own id: the same every time (`receiptNumber`). */
+  number: string;
+  messageId: string;
+  conversationId: string;
+  paidAt: string;
+  amount: { value: number; currency: string | null };
+  note: string | null;
+  payee: ReceiptParty;
+  /** Who paid, when it's known (a group's ask marked received unasked isn't). */
+  payer: ReceiptParty | null;
+  /** By card through the organization's own checkout, or confirmed received by the payee. */
+  how: 'card' | 'confirmed';
+}
+
+/** `GET /v1/messages/:id/receipt`. */
+export interface ReceiptResponse {
+  receipt: ReceiptView;
+}
+
 /** `GET /v1/join/:token` (R84): a guest's link, before they take it. */
 export interface JoinView {
   meeting: { title: string; at: string; durationMinutes: number; host: string | null };

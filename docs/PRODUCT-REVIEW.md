@@ -708,8 +708,11 @@ with its reason, so it isn't proposed again without new facts.
   taps Pay on the split, and the card pays what the split says to whoever paid it, as an answer
   to the split; it's between those two even in a group (the rest see it and press nothing, and
   it shows only the payer's ways for everyone, since everyone there sees it), one open card a
-  share, and the share is settled when whoever paid says it arrived. Later layers: a payment
-  provider's checkout for an organization that wants one (R65), receipts from a paid card.
+  share, and the share is settled when whoever paid says it arrived. A paid card has a receipt
+  for its two sides: a number from the card itself, when, how much, what for, paid to and by
+  (to a customer the team is its organization, never a team member), and how (by card through
+  the organization's checkout, or confirmed received), shared as words or printed; a record both
+  sides agreed on, not a tax invoice. Later layers: refunds from a card paid by card (R65).
 - **R63 — A photo for each thing offered.** An item keeps one photo its host uploaded, shown
   wherever the item is: its page (and every link preview and answer engine's picture of it), its
   sheet, a collection's list and the order picker. It's seen by whoever may see the item, and no

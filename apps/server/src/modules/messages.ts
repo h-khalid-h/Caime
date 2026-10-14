@@ -50,6 +50,7 @@ import type {
   MessageResponse,
   MessagesResponse,
   OkResponse,
+  ReceiptResponse,
 } from '@caime/core/api';
 import type { FastifyInstance } from 'fastify';
 import { sql } from 'kysely';
@@ -81,6 +82,7 @@ import {
 } from '../lib/messages';
 import { removeForEveryone } from '../lib/moderation';
 import { notify } from '../lib/notify';
+import { receiptFor } from '../lib/receipts';
 import { shareMoved } from '../lib/splits';
 import { orderMoved, tellStockChanged } from '../lib/stock';
 import { parse } from '../lib/validate';
@@ -706,6 +708,13 @@ export async function messageRoutes(app: FastifyInstance, ctx: AppContext) {
       });
     }
     return { message: view! };
+  });
+
+  // A paid Pay card's receipt (R62, R65): for its two sides alone, the team as its organization.
+  app.get('/messages/:id/receipt', async (req): Promise<ReceiptResponse> => {
+    const auth = requireAuth(req);
+    const { id } = parse(z.object({ id: z.string().uuid() }), req.params);
+    return { receipt: await receiptFor(ctx, id, auth.userId) };
   });
 
   // --- Shared albums (PRD §41): photos people in the conversation add to one card -------------

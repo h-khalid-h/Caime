@@ -1386,7 +1386,14 @@ listed there with its owner.
       only the ways for everyone on it), one open card a share under the split's lock, and the
       share settled in the move's transaction when its payee says it arrived (`lib/splits.ts`,
       `payments.test.ts`, `e2e/around-the-conversation.spec.ts`).
-- [ ] Later layers of R62: a receipt from a paid card, refunds from a card paid by card.
+- [x] R62, a receipt from a paid card: Receipt on a paid Pay card for its two sides (in a group,
+      whoever paid and was paid: `paySides`), `GET /v1/messages/:id/receipt` (`lib/receipts.ts`:
+      the number from the card's id, `receiptNumber`; the organization for its team, never a team
+      member to a customer; the customer's organization when they write for one; by card or
+      confirmed received), the sheet's lines and shared words from core `receipts.ts`, printed on
+      the web with the page left out (`ReceiptSheet`, lazy). `payments.test.ts` (three cases),
+      `receipts.test.ts`, `e2e/bookings.spec.ts`.
+- [ ] Later layers of R62: refunds from a card paid by card (R65's Connect, ⛔ in production).
 - [x] R63: an item's photo: `BookingItem.photoFileId`, set only to an image its saver uploaded
       (`assertItemPhotos`), served by `/v1/{orgs,people}/:id/items/:itemId/photo` to whoever may
       see the item (anyone for a public one), addressed by core `itemPhotoPath`; on the item's
@@ -3055,3 +3062,6 @@ The six-slice review's plan, in its order; a block is ticked when its tests and 
 - 2026-10-14 — R83/R84, guests in the app: a meeting card invites by email; the guest's link
   opens a join page anyone can read, signs them in for that meeting alone, and is then their
   meeting with its call; a guest in a browser is now rung (their socket was refused before).
+- 2026-10-14 — R62, receipts: a paid Pay card has one for its two sides (number, when, how much,
+  for what, to and by whom, how), shared or printed; and the photo shrinker loads when a photo is
+  picked, out of the first download.

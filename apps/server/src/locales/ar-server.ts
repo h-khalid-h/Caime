@@ -1244,4 +1244,6 @@ export const arServer: Catalog = {
   'You don’t owe a share of this split.': 'لا حصة عليك في هذا التقسيم.',
   'Your share of this split is settled.': 'حصتك في هذا التقسيم مسدَّدة.',
   'A Pay card for your share is waiting already.': 'بطاقة دفع لحصتك بانتظار التأكيد بالفعل.',
+  // A paid Pay card's receipt (R62, R65).
+  'That receipt': 'هذا الإيصال',
 };

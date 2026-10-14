@@ -3814,4 +3814,15 @@ export const turkish: Catalog = {
   'This browser can’t make calls. Open your link in a recent Chrome, Safari, Edge or Firefox.':
     'Bu tarayıcı arama yapamıyor. Bağlantını Chrome, Safari, Edge veya Firefox’un güncel bir sürümünde aç.',
   'Join the call': 'Aramaya katıl',
+  // A paid Pay card's receipt (R62, R65).
+  Receipt: 'Makbuz',
+  'A record of a payment both sides agreed on. Caime holds no money.':
+    'İki tarafın da onayladığı bir ödemenin kaydı. Caime para tutmaz.',
+  Print: 'Yazdır',
+  Number: 'Numara',
+  'Paid on': 'Ödeme tarihi',
+  'Paid to': 'Ödenen',
+  'Paid by': 'Ödeyen',
+  'By card': 'Kartla',
+  'Confirmed received by {name}': 'Alındığını onaylayan: {name}',
 };
