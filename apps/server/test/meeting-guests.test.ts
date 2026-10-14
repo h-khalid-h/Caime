@@ -92,6 +92,8 @@ describe('guests in a meeting (R84)', () => {
     const sent = mail.outbox.at(-1)!;
     expect(sent).toMatchObject({ to: 'gus@example.com', kind: 'invitation' });
     expect(sent.subject).toBe('Invitation: Launch review');
+    // Without a mail domain it comes from Caime, not Cai, so Cai doesn't introduce itself (R87).
+    expect(sent.text).not.toContain("I'm Cai");
     expect(sent.icalEvent?.method).toBe('REQUEST');
     const ics = sent.icalEvent!.content.replace(/\r\n /g, '');
     expect(ics).toContain('METHOD:REQUEST');

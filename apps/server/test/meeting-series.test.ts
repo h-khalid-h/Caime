@@ -17,8 +17,8 @@ type Card = {
   senderId: string;
   payload: {
     state: string;
-    series?: { id: string; n: number; firstAt: string; zone: string };
-    fields: { start: { at: string }; repeat?: string };
+    series?: { id: string; n: number; firstAt: string; zone: string; days?: number[] };
+    fields: { start: { at: string }; repeat?: string; repeatUntil?: string };
     repeatStopped?: { by: string };
   };
 };
@@ -298,5 +298,114 @@ describe('a meeting that repeats (R58)', () => {
     expect(again).toHaveLength(2);
     expect(again[1]?.icalEvent?.content).toContain(`UID:meeting-${card.id}-1@caime`);
     expect(again[1]?.text).not.toBe(again[0]?.text);
+  });
+});
+
+describe('a meeting held every workday, until a day (R58)', () => {
+  let cara: Client;
+  let chat: string;
+  const series = async (id: string) =>
+    (await cards(chat)).filter((c) => c.payload.series?.id === id);
+
+  beforeAll(async () => {
+    // Tuesday 1 June 2027. Cara lives in Cairo, where the week is Sunday to Thursday (R76).
+    t.clock.set('2027-06-01T08:00:00Z');
+    cara = await signup(t, { displayName: 'Cara Daily', country: 'EG', timeZone: 'Africa/Cairo' });
+    const r = await cara.post('/v1/connections/requests', {
+      toUserId: ana.user.id,
+      relationship: { sphere: 'work', role: 'colleague' },
+    });
+    await ana.post(`/v1/connections/requests/${r.requestId}/accept`, {});
+    chat = (await cara.post('/v1/conversations', { kind: 'direct', userId: ana.user.id }))
+      .conversation.id;
+    await t.ctx.db
+      .updateTable('sessions')
+      .set({ expires_at: new Date('2030-01-01') })
+      .execute();
+  });
+
+  const proposeAs = async (c: Client, fields: Record<string, unknown>) =>
+    c.req('POST', `/v1/conversations/${chat}/messages`, {
+      clientId: uuidv4(),
+      kind: 'kit',
+      payload: { kit: 'meeting', fields },
+    });
+
+  it('follows its proposer’s week and stops after its last day', async () => {
+    // Thursday 3 June, 09:00 in Cairo (06:00Z), every workday until Tuesday 8 June.
+    const res = await proposeAs(cara, {
+      title: 'Stand-up',
+      start: { at: '2027-06-03T06:00:00.000Z', hasTime: true },
+      durationMinutes: 15,
+      repeat: 'workday',
+      repeatUntil: '2027-06-08',
+    });
+    expect(res.statusCode, res.body).toBe(201);
+    const first = res.json().message as Card;
+    expect(first.payload.series).toMatchObject({
+      n: 0,
+      zone: 'Africa/Cairo',
+      days: [0, 1, 2, 3, 4],
+    });
+    await ana.post(`/v1/messages/${first.id}/kit`, { to: 'accepted' });
+    // Ahead on the calendar: Sunday, Monday and Tuesday; nothing after the last day.
+    const items = (
+      await ana.get('/v1/calendar?from=2027-06-01T00:00:00Z&to=2027-06-30T00:00:00Z')
+    ).items.filter((i: { title: string }) => i.title === 'Stand-up');
+    expect(items.map((i: { at: string; repeat: string }) => [i.at, i.repeat])).toEqual([
+      ['2027-06-03T06:00:00.000Z', 'workday'],
+      ['2027-06-06T06:00:00.000Z', 'workday'],
+      ['2027-06-07T06:00:00.000Z', 'workday'],
+      ['2027-06-08T06:00:00.000Z', 'workday'],
+    ]);
+    // Each ends, and the next workday's is posted: Friday and Saturday are Cairo's weekend.
+    for (const end of ['2027-06-03', '2027-06-06', '2027-06-07', '2027-06-08']) {
+      t.clock.set(`${end}T06:16:00Z`);
+      await runDueJobs(t.ctx);
+    }
+    const held = await series(first.id);
+    expect(held.map(at)).toEqual([
+      '2027-06-03T06:00:00.000Z',
+      '2027-06-06T06:00:00.000Z',
+      '2027-06-07T06:00:00.000Z',
+      '2027-06-08T06:00:00.000Z',
+    ]);
+    expect(held.at(-1)?.payload).toMatchObject({
+      state: 'accepted',
+      series: { n: 3 },
+      fields: { repeat: 'workday', repeatUntil: '2027-06-08' },
+    });
+  });
+
+  it('is told when it ends before it starts, or ends without repeating', async () => {
+    t.clock.set('2027-06-10T08:00:00Z');
+    const before = await proposeAs(cara, {
+      title: 'Backwards',
+      start: { at: '2027-06-14T06:00:00.000Z', hasTime: true },
+      repeat: 'week',
+      repeatUntil: '2027-06-13',
+    });
+    expect(before.statusCode).toBe(400);
+    expect(before.json().error.message).toBe('A meeting can’t stop repeating before it starts.');
+    const once = await proposeAs(cara, {
+      title: 'Once',
+      start: { at: '2027-06-14T06:00:00.000Z', hasTime: true },
+      repeatUntil: '2027-06-30',
+    });
+    expect(once.statusCode).toBe(400);
+    expect(once.json().error.message).toBe('Until is for a meeting that repeats.');
+    // On its first day is fine, and "Stop repeating" ends both.
+    const sameDay = await proposeAs(cara, {
+      title: 'Just today',
+      start: { at: '2027-06-14T06:00:00.000Z', hasTime: true },
+      repeat: 'week',
+      repeatUntil: '2027-06-14',
+    });
+    expect(sameDay.statusCode, sameDay.body).toBe(201);
+    const card = sameDay.json().message as Card;
+    await ana.post(`/v1/messages/${card.id}/kit`, { to: 'accepted' });
+    const stopped = await cara.post(`/v1/messages/${card.id}/repeat/stop`, {});
+    expect(stopped.message.payload.fields).not.toHaveProperty('repeat');
+    expect(stopped.message.payload.fields).not.toHaveProperty('repeatUntil');
   });
 });

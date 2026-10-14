@@ -2535,7 +2535,8 @@ test.describe
       await page.goto(`/o/${handle}`);
       await expect(visible(page, 'AI agent · says so in everything it writes')).toBeVisible();
 
-      // Lina knows before she writes that an AI answers first, and its answer says so.
+      // Lina knows before she writes that an AI answers first, and its first answer opens by
+      // saying who it is and whom it answers for (R87).
       const customer = lina.page;
       await customer.goto(`/@${handle}`);
       await expect(customer.getByTestId('org-agent-line')).toHaveText(
@@ -2548,7 +2549,9 @@ test.describe
       };
       await write('Are you open on Saturday?');
       const answer = customer
-        .getByLabel(/AI agent, Hi, I’m Nile Dental .+’s AI agent\. We are open Sunday/)
+        .getByLabel(
+          /AI agent, Hi \S+, I’m Nile Dental .+ Assistant, the AI assistant for Nile Dental [^.]+\.\s+We are open Sunday/,
+        )
         .filter({ visible: true });
       await expect(answer.getByTestId('message-automated')).toHaveText('AI agent ·');
       await customer.screenshot({ path: 'e2e/screenshots/phone-business-ai-agent.png' });

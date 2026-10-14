@@ -13,7 +13,13 @@
 import type { MessageView } from '@caime/core';
 import { tr } from '@caime/core/i18n';
 import { isRepeat, type Repeat } from '@caime/core/repeat';
-import { type MeetingSeries, nextOccurrence, seriesAgreed, seriesOf } from '@caime/core/series';
+import {
+  isDay,
+  type MeetingSeries,
+  nextOccurrence,
+  seriesAgreed,
+  seriesOf,
+} from '@caime/core/series';
 import type { AppContext } from '../context';
 import { MESSAGE_COLUMNS, type Message } from '../db/schema';
 import { eachLimit } from './batch';
@@ -46,6 +52,7 @@ interface MeetingPayload {
     start?: { at?: string; hasTime?: boolean };
     durationMinutes?: unknown;
     repeat?: unknown;
+    repeatUntil?: unknown;
   } & Record<string, unknown>;
 }
 
@@ -53,6 +60,8 @@ interface MeetingPayload {
 export interface SeriesCard {
   series: MeetingSeries;
   repeat: Repeat;
+  /** The last day a time may fall on, on the series' clock, if its proposer said one. */
+  until: string | null;
 }
 
 export function seriesCard(payload: unknown): SeriesCard | null {
@@ -60,7 +69,8 @@ export function seriesCard(payload: unknown): SeriesCard | null {
   if (p.kit !== 'meeting') return null;
   const series = seriesOf(p);
   const repeat = p.fields?.repeat;
-  return series && isRepeat(repeat) ? { series, repeat } : null;
+  const until = isDay(p.fields?.repeatUntil) ? p.fields.repeatUntil : null;
+  return series && isRepeat(repeat) ? { series, repeat, until } : null;
 }
 
 /** The client id a time of a series is posted with: twice is once. */
@@ -125,7 +135,7 @@ async function nextJob(ctx: AppContext, payload: Record<string, unknown>): Promi
   const card = seriesCard(p);
   // Stopped, moved to its own space (its copy there goes on), or never agreed: nothing follows.
   if (!card || p.movedTo || !seriesAgreed(p)) return;
-  const next = nextOccurrence(card.series, card.repeat, ctx.now());
+  const next = nextOccurrence(card.series, card.repeat, ctx.now(), card.until);
   if (!next) return;
   let posted: { message: Message; created: boolean };
   try {
@@ -204,7 +214,7 @@ export async function stopRepeating(
     const end = endOf(p);
     if (end === null || end <= ctx.now().getTime())
       throw badRequest(tr('That one is over. Stop it from the next one.'));
-    const { repeat: _, ...fields } = p.fields ?? {};
+    const { repeat: _, repeatUntil: __, ...fields } = p.fields ?? {};
     return trx
       .updateTable('messages')
       .set({

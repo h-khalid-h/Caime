@@ -1297,8 +1297,36 @@ export const frServer: Catalog = {
   // A meeting that repeats (R58).
   'A meeting repeats only in a chat or a group.':
     'Une réunion ne se répète que dans une discussion ou un groupe.',
+  'A meeting can’t stop repeating before it starts.':
+    'La réunion ne peut pas cesser de se répéter avant de commencer.',
+  'Until is for a meeting that repeats.': '« Jusqu’à » ne vaut que pour une réunion qui se répète.',
   'That meeting doesn’t repeat.': 'Cette réunion ne se répète pas.',
   'That one is over. Stop it from the next one.':
     'Celle-ci est terminée. Arrêtez la répétition depuis la suivante.',
   '{name}: stopped repeating': 'Répétition arrêtée : {name}',
+  // An organization's AI agent says who it is, and passes a conversation on (R87).
+  'Hi {name}, I’m {agent}, the AI assistant for {org}.':
+    'Bonjour {name}, ici {agent}, l’assistant IA qui répond pour {org}.',
+  'Hello, I’m {agent}, the AI assistant for {org}.':
+    'Bonjour, ici {agent}, l’assistant IA qui répond pour {org}.',
+  'I’ve passed this to the team at {org}. Someone will answer here.':
+    'J’ai transmis votre demande à l’équipe de {org}. Quelqu’un vous répondra ici.',
+  // The organizations someone runs, in the weekly digest (R87).
+  'At {org}:': 'Chez {org} :',
+  '• {n} new conversations this week': {
+    one: '• Une nouvelle conversation cette semaine',
+    other: '• {n} nouvelles conversations cette semaine',
+  },
+  '• {n} customers waiting on the team': {
+    one: '• Une personne attend une réponse de l’équipe',
+    other: '• {n} personnes attendent une réponse de l’équipe',
+  },
+  '• {n} bookings in the week ahead': {
+    one: '• Une réservation dans la semaine à venir',
+    other: '• {n} réservations dans la semaine à venir',
+  },
+  '• {n} orders still open': {
+    one: '• Une commande encore ouverte',
+    other: '• {n} commandes encore ouvertes',
+  },
 };

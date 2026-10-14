@@ -3831,6 +3831,7 @@ export const turkish: Catalog = {
   'Confirmed received by {name}': 'Alındığını onaylayan: {name}',
   // A meeting that repeats (R58).
   Repeats: 'Tekrar',
+  'Every workday': 'Her iş günü',
   'Every week': 'Her hafta',
   'Every two weeks': 'İki haftada bir',
   'Every month': 'Her ay',

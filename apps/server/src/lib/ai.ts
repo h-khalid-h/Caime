@@ -636,7 +636,7 @@ export function createAiAssist(config: Config): AiAssist | null {
               content: `<conversation>\n${conversation}\n</conversation>\n${catalog ? `<catalog>\n${catalog}\n</catalog>\n` : ''}${slots ? `<slots>\n${slots}\n</slots>\n` : ''}${menu ? `<menu>\n${menu.lines}\n</menu>\n` : ''}\n${
                 introduced
                   ? 'You have written in this conversation before.'
-                  : `This is the first time you write in this conversation: begin by saying, in a few words, that you're ${orgName}'s AI agent.`
+                  : `This is the first time you write in this conversation. Caime opens your message with your introduction (your name, that you're an AI, and that you answer for ${orgName}), so don't introduce yourself or greet them: answer.`
               }`,
             },
           ],

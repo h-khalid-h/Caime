@@ -3997,6 +3997,7 @@ export const fr: Catalog = {
   'Confirmed received by {name}': 'Réception confirmée par {name}',
   // A meeting that repeats (R58).
   Repeats: 'Répétition',
+  'Every workday': 'Chaque jour ouvré',
   'Every week': 'Chaque semaine',
   'Every two weeks': 'Toutes les deux semaines',
   'Every month': 'Chaque mois',

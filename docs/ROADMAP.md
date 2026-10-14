@@ -1383,6 +1383,15 @@ listed there with its owner.
       quiet, the longest wait, the week ahead; by the rules, in the reader's language and their
       Arabic, never anyone's words or anyone blocked (`cai-digest.test.ts`, `voices.test.ts`,
       `e2e/cai.spec.ts`).
+- [x] R87, who Cai is and for whom: an organization's agent opens its first message with a
+      rule-written introduction in the customer's language ("Hi Paola, I'm Nour, the AI assistant
+      for Nile Dental."), left out of what the model reads; trying the agent shows it; Cai's
+      invitation mail from its own address says who it is and whom it writes for; the agent's
+      hand-over line through the catalogs; the weekly digest gains the organizations a person
+      runs (new conversations, customers waiting on the team, bookings ahead, orders open). The
+      authority levels and what was declined (titles, slides, a second intelligence table,
+      autonomous sending) are written in PRODUCT-REVIEW R87 (`agents.test.ts`, `cai-mail.test.ts`,
+      `meeting-guests.test.ts`, `cai-digest.test.ts`, `voices.test.ts`, the AI agent E2E).
 - [ ] Later in R67: public pages for @cai and the friends (answer engines), more of what each friend knows.
 - [ ] ⛔ A trademark and store-name clearance for "Caime" before the store builds (the owner's).
 - [x] R62, a split's shares paid with Pay: "Pay your share" on a split opens the Pay card with
@@ -1432,10 +1441,13 @@ listed there with its owner.
       project's to everyone, a family's or a community's to nobody), outside one by each
       person's own label for whoever called it, one query (`groupReaders` in `lib/briefs.ts`).
       `group-briefs.test.ts`.
+- [x] R58, a meeting every workday and until a day: "Every workday" on the days its proposer
+      works (the week kept on the series, R76), "Until" asked once it repeats (the last day
+      held; the calendar, feed and slots stop there), "Stop repeating" clearing both
+      (`series.test.ts`, `meeting-series.test.ts`, `e2e/meetings.spec.ts`).
 - [ ] Later layers of R58: a recurring appointment (each time's slot checked against the host's
-      catalog as it's posted), every weekday and an end date for a meeting that repeats, a
-      resource shared by several items (one set of chairs for two services), a customer
-      choosing who does it where an organization allows it.
+      catalog as it's posted), a resource shared by several items (one set of chairs for two
+      services), a customer choosing who does it where an organization allows it.
 
 ## M14 — Apps and Mail (R74, R75)
 
@@ -3097,3 +3109,8 @@ The six-slice review's plan, in its order; a block is ticked when its tests and 
 - 2026-10-14 — R68, Cai's weekly digest: off until turned on, once a week on the first day the
   person works, in Cai's chat: who they talked with, what they kept, who has gone quiet, the
   longest wait and the week ahead, by the rules, in their language and their Arabic.
+- 2026-10-14 — R58, a meeting every workday and until a day: the proposer's week kept on the
+  series, "Until" asked once it repeats, and the calendar, the feed and the slots stopping there.
+- 2026-10-14 — R87, who Cai is and for whom: the agent's introduction written by the rules in the
+  customer's language and kept from the model, Cai's invitation mail introducing itself, the
+  authority levels written down, and the organizations a person runs in their weekly digest.

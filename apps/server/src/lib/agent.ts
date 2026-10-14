@@ -12,6 +12,10 @@
  * conversation a day and thinks at most AGENT_CALLS_PER_CONVERSATION times (answered or not),
  * and stops for the day at what the plan includes. Whenever it stays out, the team answers as
  * it would without one.
+ *
+ * Its first message in a conversation opens with its introduction (R87), written by the rules
+ * rather than the model so it always says who it is, that it's an AI and whom it answers for, in
+ * the language the customer wrote in: "Hi Paola, I'm Nour, the AI assistant for Nile Dental."
  */
 import {
   AGENT_CALLS_PER_CONVERSATION,
@@ -22,7 +26,10 @@ import {
   orderableMax,
   tr,
   uuidv7,
+  writtenIn,
 } from '@caime/core';
+import { firstName } from '@caime/core/format';
+import type { InterfaceLanguage } from '@caime/core/i18n';
 import { sql } from 'kysely';
 import type { AppContext } from '../context';
 import { type AgentReply, AiError, type AiUsage } from './ai';
@@ -30,6 +37,7 @@ import { emitWebhook } from './apps';
 import { catalogLines, itemsFor, menuLines, openSlotsFor, orgHost, slotLine } from './booking';
 import { onCustomerMessage, publishThread, threadViews } from './business';
 import { recordEvent } from './events';
+import { inLanguage, languageOf } from './i18n';
 import { enqueue, registerJob } from './jobs';
 import { messagePreview } from './messages';
 import { notify } from './notify';
@@ -152,7 +160,10 @@ export async function askAgent(
   }
 }
 
-/** The conversation as the agent reads it: who wrote, never their name, oldest first. */
+/**
+ * The conversation as the agent reads it: who wrote, never their name, oldest first; its own
+ * introduction left out (it names the customer).
+ */
 async function transcriptFor(
   ctx: AppContext,
   conversationId: string,
@@ -177,7 +188,13 @@ async function transcriptFor(
     .orderBy('m.seq', 'desc')
     .limit(TRANSCRIPT_MESSAGES)
     .execute();
-  const lines = rows.reverse().map((m, i) => {
+  // Its introduction, the first line of its first message, names the customer: never shown to
+  // the model (R87).
+  const opens = (m: (typeof rows)[number]) =>
+    m.sender_id === agentId &&
+    (m.payload as { introduction?: unknown } | null)?.introduction === true;
+  const said = rows.reverse();
+  const lines = said.map((m, i) => {
     const who =
       m.sender_id === customerId
         ? 'Customer'
@@ -186,7 +203,8 @@ async function transcriptFor(
           : m.sender_kind === 'human'
             ? 'Team'
             : 'Automated';
-    const text = (m.kind === 'text' ? (m.body ?? '') : messagePreview(m)).replace(/\s+/g, ' ');
+    const body = opens(m) ? (m.body ?? '').split('\n').slice(1).join('\n') : (m.body ?? '');
+    const text = (m.kind === 'text' ? body : messagePreview(m)).replace(/\s+/g, ' ');
     return { who, line: `[${i + 1}] ${who}: ${text.trim()}` };
   });
   return {
@@ -218,14 +236,29 @@ export function todayForAgent(now: Date, timeZone = 'UTC'): string {
   }
 }
 
-/** What it tells the customer when it passes a conversation on without asking the model. */
-function passedOn(orgName: string, language: 'ar' | 'fr' | 'tr' | 'en'): string {
-  if (language === 'ar') return `حوّلت محادثتك إلى فريق ${orgName}، وسيرد عليك أحدهم هنا.`;
-  if (language === 'fr')
-    return `J’ai transmis votre demande à l’équipe de ${orgName}. Quelqu’un vous répondra ici.`;
-  if (language === 'tr')
-    return `Talebinizi ${orgName} ekibine ilettim. Biri size buradan yanıt verecek.`;
-  return `I’ve passed this to the team at ${orgName}. Someone will answer here.`;
+/**
+ * How it opens its first message in a conversation (R87): its name, that it's an AI, and the
+ * organization it answers for, greeting the customer by their first name when it has one. In the
+ * scope's language: the caller picks it (`customerLanguage`).
+ */
+export function introduction(agentName: string, orgName: string, customerName: string | null) {
+  const name = customerName ? firstName(customerName) : '';
+  return name
+    ? tr('Hi {name}, I’m {agent}, the AI assistant for {org}.', {
+        name,
+        agent: agentName,
+        org: orgName,
+      })
+    : tr('Hello, I’m {agent}, the AI assistant for {org}.', { agent: agentName, org: orgName });
+}
+
+/** The language a customer is answered in: the one their message is written in, else theirs. */
+async function customerLanguage(
+  ctx: AppContext,
+  customerId: string,
+  text: string | null | undefined,
+): Promise<InterfaceLanguage> {
+  return writtenIn(text ?? '') ?? (await languageOf(ctx, customerId));
 }
 
 /** The thread moved without a person: the team hears it, and so do the organization's apps. */
@@ -349,7 +382,7 @@ export async function agentReply(ctx: AppContext, payload: Record<string, unknow
   if (!agent) return;
   const customer = await ctx.db
     .selectFrom('users')
-    .select(['birth_date', 'time_zone', 'locale'])
+    .select(['birth_date', 'time_zone', 'locale', 'display_name'])
     .where('id', '=', thread.customer_id)
     .executeTakeFirst();
   // A person answers anyone under 18 (R29).
@@ -375,6 +408,17 @@ export async function agentReply(ctx: AppContext, payload: Record<string, unknow
       .returning('conversation_id')
       .executeTakeFirst();
 
+  // The customer's message it's answering, for the language it answers in.
+  const latestBody = async () =>
+    (
+      await ctx.db
+        .selectFrom('messages')
+        .select('body')
+        .where('conversation_id', '=', conversationId)
+        .where('seq', '=', String(seq))
+        .executeTakeFirst()
+    )?.body;
+
   // A long conversation is a person's to finish: after so many answers, or so many calls to
   // the model however they ended (a customer writing while it thinks throws its answer away).
   const dayAgo = new Date(ctx.now().getTime() - DAY_MS);
@@ -397,23 +441,15 @@ export async function agentReply(ctx: AppContext, payload: Record<string, unknow
   if (answered.n >= AGENT_REPLIES_PER_CONVERSATION || thought.n >= AGENT_CALLS_PER_CONVERSATION) {
     if (!(await claim())) return;
     // Said without the model, so the customer isn't left wondering who answers now: in the
-    // language they write in (Arabic when they write in it, or read Caime in it), else English.
-    const latest = await ctx.db
-      .selectFrom('messages')
-      .select('body')
-      .where('conversation_id', '=', conversationId)
-      .where('seq', '=', String(seq))
-      .executeTakeFirst();
-    const language =
-      /\p{Script=Arabic}/u.test(latest?.body ?? '') || customer.locale.startsWith('ar')
-        ? 'ar'
-        : customer.locale.startsWith('fr')
-          ? 'fr'
-          : customer.locale.startsWith('tr')
-            ? 'tr'
-            : 'en';
-    await postAs(ctx, agent.bot_user_id, conversationId, passedOn(thread.org_name, language)).catch(
-      (err) => ctx.log.warn({ err, conversationId }, 'ai agent could not post'),
+    // language they write in, else theirs.
+    const language = await customerLanguage(ctx, thread.customer_id, await latestBody());
+    const passed = inLanguage(language, () =>
+      tr('I’ve passed this to the team at {org}. Someone will answer here.', {
+        org: thread.org_name,
+      }),
+    );
+    await postAs(ctx, agent.bot_user_id, conversationId, passed).catch((err) =>
+      ctx.log.warn({ err, conversationId }, 'ai agent could not post'),
     );
     await handOver(ctx, thread.org_id, conversationId, agent);
     return;
@@ -483,7 +519,24 @@ export async function agentReply(ctx: AppContext, payload: Record<string, unknow
     return;
   }
   try {
-    await postAs(ctx, agent.bot_user_id, conversationId, reply.message);
+    // Its first message here opens with who it is, by the rules (R87): a line of its own, which
+    // the model never reads back, since it names the customer.
+    await postAs(
+      ctx,
+      agent.bot_user_id,
+      conversationId,
+      transcript.introduced
+        ? reply.message
+        : {
+            kind: 'text',
+            body: `${inLanguage(
+              await customerLanguage(ctx, thread.customer_id, await latestBody()),
+              () => introduction(agent.name, thread.org_name, customer.display_name),
+            )}\n${reply.message}`,
+            payload: { introduction: true },
+          },
+      { serverPayload: !transcript.introduced },
+    );
   } catch (err) {
     // The customer blocked the organization, or it closed: nobody writes there now.
     ctx.log.warn({ err, conversationId }, 'ai agent could not post');

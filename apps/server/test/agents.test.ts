@@ -167,12 +167,7 @@ describe('an organization’s AI agent (PRD §74–75)', () => {
 
   it('answers a customer from what it was told, as the organization, marked as an AI', async () => {
     const asking = (await send(lina, 'Hi! Are you open on Saturday?')).message;
-    replies.push(
-      agentSays(
-        'answer',
-        'Hi, I’m Nile Dental’s AI agent. Yes: on Saturday we’re open from 9am to 1pm.',
-      ),
-    );
+    replies.push(agentSays('answer', 'Yes: on Saturday we’re open from 9am to 1pm.'));
     await agentTurn();
     expect(requests).toHaveLength(1);
     const asked = requests[0];
@@ -185,14 +180,16 @@ describe('an organization’s AI agent (PRD §74–75)', () => {
     const content = asked.messages[0].content as string;
     expect(content).not.toContain(KNOWLEDGE);
     expect(content).toContain('[1] Customer: Hi! Are you open on Saturday?');
-    expect(content).toContain('begin by saying');
+    // Its introduction is Caime's, written by the rules (R87): the model only answers.
+    expect(content).toContain('Caime opens your message with your introduction');
     // Nobody's name or address reaches the model.
     expect(JSON.stringify(asked)).not.toContain('Lina');
     expect(JSON.stringify(asked)).not.toContain('lina.farah@example.com');
 
+    // Who it is, that it's an AI and whom it answers for, then its answer (R87).
     const seen = (await messages(lina)).at(-1);
     expect(seen).toMatchObject({
-      body: 'Hi, I’m Nile Dental’s AI agent. Yes: on Saturday we’re open from 9am to 1pm.',
+      body: 'Hi Lina, I’m Nile Dental Assistant, the AI assistant for Nile Dental.\nYes: on Saturday we’re open from 9am to 1pm.',
       automated: true,
       aiAgent: true,
       // The customer sees the organization (R15).
@@ -226,7 +223,10 @@ describe('an organization’s AI agent (PRD §74–75)', () => {
     await agentTurn();
     expect(requests).toHaveLength(1);
     const content = requests[0].messages[0].content as string;
-    expect(content).toMatch(/\[\d+\] You: Hi, I’m Nile Dental’s AI agent/);
+    expect(content).toMatch(/\[\d+\] You: Yes: on Saturday/);
+    // Its introduction named her: the model never reads it.
+    expect(content).not.toContain('Lina');
+    expect(content).not.toContain('AI assistant for');
     expect(content).toContain('Customer: how much is a check-up?');
     expect(content).toContain('You have written in this conversation before.');
     expect((await messages(lina)).at(-1).body).toBe('A check-up is 400 EGP.');
@@ -581,9 +581,11 @@ describe('an organization’s AI agent (PRD §74–75)', () => {
       ),
     );
     const tried = await noor.post(`/v1/orgs/${orgId}/agent/try`, question);
+    // As a customer would first read it: who it is, then what it said (R87).
     expect(tried).toEqual({
       action: 'hand_over',
-      message: 'I’ve passed this to the team at Nile Dental. Someone will answer here.',
+      message:
+        'Hello, I’m Nile Dental Assistant, the AI assistant for Nile Dental.\nI’ve passed this to the team at Nile Dental. Someone will answer here.',
     });
     expect(requests[0].messages[0].content).toContain('[1] Customer: Do you take walk-ins?');
     expect(systemText(requests[0].system)).toContain('Today is Thursday 24 September 2026.');

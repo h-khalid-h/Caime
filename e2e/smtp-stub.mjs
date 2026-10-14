@@ -27,20 +27,31 @@ function decode(body, encoding) {
   return body;
 }
 
+/** The plain text of an entity (headers, then body), parts within parts read as a client does. */
+function plainOf(folded, body) {
+  // A header folded onto the next line (`boundary=` after `multipart/mixed;`) read as one.
+  const head = folded.replace(/\r?\n[ \t]+/g, ' ');
+  const type = headerIn(head, 'Content-Type');
+  const boundary = /^multipart\//i.test(type) ? /boundary="?([^";\r\n]+)"?/i.exec(head)?.[1] : null;
+  if (!boundary) {
+    if (type && !/^text\/plain/i.test(type)) return null;
+    return decode(body, headerIn(head, 'Content-Transfer-Encoding'));
+  }
+  for (const part of body.split(`--${boundary}`).slice(1)) {
+    if (part.startsWith('--')) break;
+    const [partHead, ...partBody] = part.replace(/^\r?\n/, '').split(/\r?\n\r?\n/);
+    const text = plainOf(partHead, partBody.join('\n\n'));
+    if (text !== null) return text;
+  }
+  return null;
+}
+
 function parse(raw) {
   const [head, ...rest] = raw.split(/\r?\n\r?\n/);
-  const header = (name) => headerIn(head, name);
-  let text = rest.join('\n\n');
-  // A message in parts (a meeting's invitation is its text and its calendar): the plain text,
-  // as a mail client shows it.
-  const boundary = /boundary="?([^";\r\n]+)"?/i.exec(head)?.[1];
-  const plain = boundary
-    ? text.split(`--${boundary}`).find((part) => /Content-Type:\s*text\/plain/i.test(part))
-    : null;
-  if (plain) {
-    const [partHead, ...partBody] = plain.replace(/^\r?\n/, '').split(/\r?\n\r?\n/);
-    text = decode(partBody.join('\n\n'), headerIn(partHead, 'Content-Transfer-Encoding'));
-  } else text = decode(text, header('Content-Transfer-Encoding'));
+  const header = (name) => headerIn(head.replace(/\r?\n[ \t]+/g, ' '), name);
+  // A message in parts (a meeting's invitation is its text and its calendar, alternatives within
+  // a mixed message): the plain text, as a mail client shows it.
+  const text = plainOf(head, rest.join('\n\n')) ?? '';
   return { to: header('To'), subject: header('Subject'), text: text.trim() };
 }
 

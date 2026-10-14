@@ -5,11 +5,13 @@
  */
 import { msg } from './i18n';
 
-export const REPEATS = ['week', 'fortnight', 'month'] as const;
+export const REPEATS = ['workday', 'week', 'fortnight', 'month'] as const;
 export type Repeat = (typeof REPEATS)[number];
 
 /** How often, as the card's field offers it and the calendar says it (keys, shown through `tr`). */
 export const REPEAT_CHOICES: Array<{ value: Repeat; label: string }> = [
+  // The days its proposer works (R76), kept on the series when it starts.
+  { value: 'workday', label: msg('Every workday') },
   { value: 'week', label: msg('Every week') },
   { value: 'fortnight', label: msg('Every two weeks') },
   { value: 'month', label: msg('Every month') },

@@ -7,7 +7,7 @@
  */
 import { CAI_ID, uuidv4 } from '@caime/core';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
-import { nextDigestAt } from '../src/lib/cai';
+import { digestText, nextDigestAt } from '../src/lib/cai';
 import { runDueJobs } from '../src/lib/jobs';
 import { type Client, createTestApp, signup, type TestApp } from './helpers';
 
@@ -90,6 +90,17 @@ beforeAll(async () => {
     shared: false,
     conversationId: chats.dan,
   });
+  // Ana runs a clinic; Ben writes to it, and nobody on the team has answered yet (R87).
+  const clinic = (
+    await ana.post('/v1/orgs', {
+      country: 'EG',
+      name: 'Ana Clinic',
+      handle: 'ana.clinic.digest',
+      kind: 'business',
+    })
+  ).org;
+  const thread = await ben.post(`/v1/orgs/${clinic.id}/conversations`, {});
+  await say(ben, thread.conversationId, 'Do you open on Saturdays?');
   // A meeting with Ben in the week ahead, agreed.
   const card = (
     await ana.post(`/v1/conversations/${chats.ben}/messages`, {
@@ -163,8 +174,15 @@ describe('Cai’s weekly digest (R68)', () => {
     expect(body).not.toContain('Eve');
     expect(lines).toContain('You’ve waited longest on Dan Digest: Contract draft.');
     expect(lines).toContain('One meeting or appointment this week.');
+    // The clinic she runs, from its inbox: never its customers' words (R87).
+    expect(lines).toContain('At Ana Clinic:');
+    expect(lines).toContain('• One new conversation this week');
+    expect(lines).toContain('• One customer waiting on the team');
+    expect(body).not.toContain('Saturdays');
     expect(lines.some((l) => l.startsWith('• ') && l.endsWith(' · Venue walk-through'))).toBe(true);
     expect(lines.at(-1)).toBe('Ask me about any of it.');
+    // Ben, who wrote to it, runs nothing: his own week, never the clinic's.
+    expect((await digestText(t.ctx, ben.user.id)).text).not.toContain('Ana Clinic');
     // Never anyone's words.
     expect(body).not.toMatch(/secret plans|sounds good|lunch next week/);
     // Its notification says who went quiet.

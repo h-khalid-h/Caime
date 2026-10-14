@@ -27,6 +27,7 @@ import {
   type CaiResponse,
   type FollowUpSentResponse,
   firstName,
+  MANAGING_ROLES,
   type SuggestionKind,
   systemAccountOf,
   tr,
@@ -36,6 +37,7 @@ import {
 } from '@caime/core';
 import { formatWhenAt } from '@caime/core/format';
 import { greetingKey } from '@caime/core/home';
+import { HELD_APPOINTMENT_STATES, OPEN_ORDER_STATES } from '@caime/core/kit-states';
 import { LEARN_WINDOW, leanFrom } from '@caime/core/learning';
 import { safeLocale } from '@caime/core/locale';
 import { firstWorkday } from '@caime/core/time';
@@ -68,6 +70,77 @@ const DIGEST_AT = '09:00';
 const QUIET = { sinceDays: 42, quietDays: 14, atLeast: 4, shown: 3 };
 /** The week ahead's first few, by when. */
 const AHEAD_SHOWN = 3;
+/** The organizations someone runs that the digest looks at (R87), by name. */
+const ORGS_SHOWN = 3;
+
+/**
+ * The week at each organization someone runs (R87): from the business inbox they already see as
+ * its owner or an admin (`MANAGING_ROLES`), never a team member's own conversations. Counts only,
+ * in two queries for them all; an organization with nothing to say is left out.
+ */
+async function teamWeeks(ctx: AppContext, userId: string, now: Date): Promise<string[]> {
+  const orgs = await ctx.db
+    .selectFrom('org_members as m')
+    .innerJoin('organizations as o', 'o.id', 'm.org_id')
+    .select(['o.id', 'o.name'])
+    .where('m.user_id', '=', userId)
+    .where('m.left_at', 'is', null)
+    .where('m.role', 'in', [...MANAGING_ROLES])
+    .where('o.archived_at', 'is', null)
+    .orderBy('o.name')
+    .limit(ORGS_SHOWN)
+    .execute();
+  if (!orgs.length) return [];
+  const ids = orgs.map((o) => o.id);
+  const weekAgo = new Date(now.getTime() - WEEK_MS);
+  const weekOn = new Date(now.getTime() + WEEK_MS);
+  const [threads, cards] = await Promise.all([
+    sql<{ org_id: string; started: number; waiting: number }>`
+      select t.org_id,
+        count(*) filter (where t.created_at >= ${weekAgo})::int as started,
+        count(*) filter (where t.resolved_at is null
+          and t.last_customer_seq > t.last_team_seq)::int as waiting
+      from business_threads t
+      where t.org_id in (${sql.join(ids)}) and t.erased_at is null
+      group by t.org_id`.execute(ctx.db),
+    sql<{ org_id: string; bookings: number; orders: number }>`
+      select t.org_id,
+        count(*) filter (where m.payload->>'kit' = 'appointment')::int as bookings,
+        count(*) filter (where m.payload->>'kit' = 'order_status')::int as orders
+      from messages m
+      join business_threads t on t.conversation_id = m.conversation_id
+      where t.org_id in (${sql.join(ids)}) and m.kind = 'kit' and m.deleted_at is null
+        and ((m.payload->>'kit' = 'appointment'
+            and m.payload->>'state' in (${sql.join([...HELD_APPOINTMENT_STATES])})
+            and m.card_start_at >= ${now} and m.card_start_at < ${weekOn})
+          or (m.payload->>'kit' = 'order_status'
+            and m.payload->>'state' in (${sql.join([...OPEN_ORDER_STATES])})))
+      group by t.org_id`.execute(ctx.db),
+  ]);
+  const out: string[] = [];
+  for (const org of orgs) {
+    const t = threads.rows.find((r) => r.org_id === org.id);
+    const c = cards.rows.find((r) => r.org_id === org.id);
+    const lines = [
+      t?.started
+        ? trn(t.started, '• One new conversation this week', '• {n} new conversations this week')
+        : null,
+      t?.waiting
+        ? trn(
+            t.waiting,
+            '• One customer waiting on the team',
+            '• {n} customers waiting on the team',
+          )
+        : null,
+      c?.bookings
+        ? trn(c.bookings, '• One booking in the week ahead', '• {n} bookings in the week ahead')
+        : null,
+      c?.orders ? trn(c.orders, '• One order still open', '• {n} orders still open') : null,
+    ].filter((l): l is string => l !== null);
+    if (lines.length) out.push(tr('At {org}:', { org: org.name }), ...lines);
+  }
+  return out;
+}
 /** After a follow-up is sent, Cai looks again in three days. */
 const WATCH_AGAIN_MS = 3 * DAY_MS;
 
@@ -452,7 +525,7 @@ export async function digestText(
     and not exists (select 1 from blocks b
       where (b.blocker_id = ${userId} and b.blocked_id = u.id)
          or (b.blocker_id = u.id and b.blocked_id = ${userId}))`;
-  const [talked, kept, quiet, longest, ahead] = await Promise.all([
+  const [talked, kept, quiet, longest, ahead, teams] = await Promise.all([
     sql<{ n: number }>`
       select count(distinct u.id)::int as n from ${pairs}
       where ${mine} and c.last_message_at >= ${weekAgo}`.execute(ctx.db),
@@ -496,6 +569,7 @@ export async function digestText(
       agreedOnly: true,
       series: { now },
     }),
+    teamWeeks(ctx, userId, now),
   ]);
   const people = talked.rows[0]?.n ?? 0;
   const gone = quiet.rows.map((q) =>
@@ -543,6 +617,7 @@ export async function digestText(
         )
       : null,
     ...soon,
+    ...teams,
   ].filter((l): l is string => l !== null);
   const text = [
     `${tr(greetingKey(now, me.time_zone), { name: firstName(me.display_name) })}.`,

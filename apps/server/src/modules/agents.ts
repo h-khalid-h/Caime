@@ -13,16 +13,18 @@ import {
   SetOrgAgentBody,
   TryOrgAgentBody,
   uuidv7,
+  writtenIn,
 } from '@caime/core';
 import type { OkResponse, OrgAgentResponse, OrgAgentSetResponse } from '@caime/core/api';
 import { tr } from '@caime/core/i18n';
 import type { FastifyInstance } from 'fastify';
 import { z } from 'zod';
 import type { AppContext } from '../context';
-import { askAgent, todayForAgent } from '../lib/agent';
+import { askAgent, introduction, todayForAgent } from '../lib/agent';
 import { audit } from '../lib/audit';
 import { joinThreads, leaveThreads } from '../lib/business';
 import { AppError, badRequest, forbidden, notFound } from '../lib/errors';
+import { inLanguage } from '../lib/i18n';
 import { orgById, orgSeat } from '../lib/orgs';
 import { agentRepliesToday, assertAiAllowance } from '../lib/plans';
 import { parse } from '../lib/validate';
@@ -215,6 +217,12 @@ export async function agentRoutes(app: FastifyInstance, ctx: AppContext) {
       menu: null,
     });
     if (!reply) throw new AppError(503, 'ai_busy', tr('It didn’t answer this time. Try again.'));
-    return { action: reply.action, message: reply.message };
+    // As a customer would read it first (R87): its introduction, in the question's language.
+    const language = writtenIn(body.question);
+    const intro = () => introduction(body.name, org.name, null);
+    return {
+      action: reply.action,
+      message: `${language ? inLanguage(language, intro) : intro()}\n${reply.message}`,
+    };
   });
 }

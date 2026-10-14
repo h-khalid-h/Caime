@@ -11,6 +11,7 @@
 
 import { defaultPrivacy, uuidv4, uuidv7 } from '@caime/core';
 import { GROUP_CALL_MAX } from '@caime/core/calls';
+import { firstName } from '@caime/core/format';
 import { tr } from '@caime/core/i18n';
 import { buildInvitation } from '@caime/core/ics';
 import { CAI_MAIL, meetingVenue } from '@caime/core/meetings';
@@ -68,6 +69,15 @@ function invitationSender(
   const address = `${CAI_MAIL}@${config.MAIL_DOMAIN}`;
   const name = `${host} via Cai`.replace(/[^\p{L}\p{N}\p{M} .,'’-]/gu, ' ').trim();
   return { address, header: `"${name}" <${address}>` };
+}
+
+/**
+ * How Cai opens mail it sends for someone (R87): who it is, that it's an AI, and whom it writes
+ * for, greeting the guest by their first name. Mail stays English and plain (R48).
+ */
+export function caiIntroduction(guestName: string | null, principal: string): string {
+  const name = guestName ? firstName(guestName) : '';
+  return `${name ? `Hi ${name}` : 'Hello'}, I'm Cai, the AI assistant for ${principal}.`;
 }
 
 /** A meeting that can take guests: accepted, held on Caime, with a time, not yet over. */
@@ -427,6 +437,8 @@ async function sendInvitation(
       ...(sender.header ? { from: sender.header, replyTo: sender.header } : {}),
       subject: `Invitation: ${title}`,
       text: [
+        // From Cai's own address, Cai says who it is and whom it writes for first (R87).
+        ...(sender.header ? [caiIntroduction(guest.name, inviter.name), ''] : []),
         `${inviter.name} invited you to "${title}" on Caime, ${start.toISOString().replace('T', ' ').slice(0, 16)} UTC.`,
         '',
         `Join from this link (it's yours, keep it to yourself): ${link}`,

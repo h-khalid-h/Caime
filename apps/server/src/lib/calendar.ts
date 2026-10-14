@@ -12,6 +12,7 @@ import type {
   Sphere,
   TaskView,
 } from '@caime/core';
+import { HELD_APPOINTMENT_STATES } from '@caime/core/kit-states';
 import { sql } from 'kysely';
 import type { AppContext } from '../context';
 import { ORG_COLUMNS } from '../db/schema';
@@ -294,7 +295,7 @@ export async function orgBookings(
     .where('m.kind', '=', 'kit')
     .where('m.deleted_at', 'is', null)
     .where(sql`m.payload->>'kit'`, '=', 'appointment')
-    .where(sql`m.payload->>'state'`, 'in', ['requested', 'confirmed'])
+    .where(sql`m.payload->>'state'`, 'in', HELD_APPOINTMENT_STATES)
     .where('m.card_start_at', '>=', window.from)
     .where('m.card_start_at', '<=', window.until)
     .orderBy('m.card_start_at', 'asc')

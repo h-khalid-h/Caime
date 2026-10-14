@@ -12,7 +12,7 @@
 import type { AppointmentBooking, UpcomingView } from '@caime/core';
 import { AGREED_STATES as AGREED, DUE_STATES } from '@caime/core/kit-states';
 import { isRepeat, type Repeat } from '@caime/core/repeat';
-import { occurrencesBetween, seriesAgreed, seriesOf } from '@caime/core/series';
+import { isDay, occurrencesBetween, seriesAgreed, seriesOf, timesAYear } from '@caime/core/series';
 import { sql } from 'kysely';
 import type { AppContext } from '../context';
 
@@ -127,6 +127,7 @@ type CardPayload = {
     durationMinutes?: unknown;
     place?: unknown;
     repeat?: unknown;
+    repeatUntil?: unknown;
   };
   history?: Array<{ at?: string; state?: string }>;
   booking?: AppointmentBooking | null;
@@ -219,8 +220,6 @@ export async function cardsAhead(
 
 /** A day after a time with nothing posted after it, its series has ended: nothing is ahead. */
 const SERIES_ENDED_MS = 86_400_000;
-/** At most this many times of one series are looked ahead: a year of a weekly meeting. */
-const SERIES_AHEAD_MAX = 53;
 
 /**
  * The times of repeating meetings still to be posted, in a window (R58): from each series'
@@ -260,7 +259,16 @@ async function seriesAhead(
     if (!series || !isRepeat(repeat)) continue;
     // Agreed (a time cancelled leaves the rest); a proposal not yet taken, nothing ahead.
     if (!seriesAgreed(payload)) continue;
-    for (const time of occurrencesBetween(series, repeat, opts.from, opts.until, SERIES_AHEAD_MAX))
+    // At most a year of its times, and none after its last day.
+    const lastDay = isDay(payload.fields?.repeatUntil) ? payload.fields.repeatUntil : null;
+    for (const time of occurrencesBetween(
+      series,
+      repeat,
+      opts.from,
+      opts.until,
+      timesAYear(repeat, series.days),
+      lastDay,
+    ))
       out.push({
         ...cardAhead(row, payload, 'meeting', time.at),
         agreed: true,

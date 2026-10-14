@@ -1241,8 +1241,36 @@ export const turkishServer: Catalog = {
   // A meeting that repeats (R58).
   'A meeting repeats only in a chat or a group.':
     'Bir toplantı yalnızca bir sohbette ya da grupta tekrarlanır.',
+  'A meeting can’t stop repeating before it starts.': 'Toplantının tekrarı başlamadan bitemez.',
+  'Until is for a meeting that repeats.':
+    '“Şu zamana kadar” yalnızca tekrarlanan bir toplantı içindir.',
   'That meeting doesn’t repeat.': 'Bu toplantı tekrarlanmıyor.',
   'That one is over. Stop it from the next one.':
     'Bu toplantı bitti. Tekrarı bir sonrakinden durdurun.',
   '{name}: stopped repeating': 'Tekrar durduruldu: {name}',
+  // An organization's AI agent says who it is, and passes a conversation on (R87).
+  'Hi {name}, I’m {agent}, the AI assistant for {org}.':
+    'Merhaba {name}, ben {agent}, {org} adına yanıt veren yapay zekâ asistanıyım.',
+  'Hello, I’m {agent}, the AI assistant for {org}.':
+    'Merhaba, ben {agent}, {org} adına yanıt veren yapay zekâ asistanıyım.',
+  'I’ve passed this to the team at {org}. Someone will answer here.':
+    'Talebinizi {org} ekibine ilettim. Biri size buradan yanıt verecek.',
+  // The organizations someone runs, in the weekly digest (R87).
+  'At {org}:': '{org}:',
+  '• {n} new conversations this week': {
+    one: '• Bu hafta bir yeni konuşma',
+    other: '• Bu hafta {n} yeni konuşma',
+  },
+  '• {n} customers waiting on the team': {
+    one: '• Ekipten yanıt bekleyen bir müşteri',
+    other: '• Ekipten yanıt bekleyen {n} müşteri',
+  },
+  '• {n} bookings in the week ahead': {
+    one: '• Önümüzdeki hafta bir rezervasyon',
+    other: '• Önümüzdeki hafta {n} rezervasyon',
+  },
+  '• {n} orders still open': {
+    one: '• Hâlâ açık bir sipariş',
+    other: '• Hâlâ açık {n} sipariş',
+  },
 };

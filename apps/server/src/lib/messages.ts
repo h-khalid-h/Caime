@@ -41,7 +41,7 @@ import { currencyOfCountry } from '@caime/core/countries';
 import { tr } from '@caime/core/i18n';
 import { cardAsks } from '@caime/core/kit-states';
 import { isRepeat, repeatsIn } from '@caime/core/repeat';
-import type { MeetingSeries } from '@caime/core/series';
+import { dayIn, type MeetingSeries } from '@caime/core/series';
 import type { Kysely, SqlBool, Transaction } from 'kysely';
 import { sql } from 'kysely';
 import type { AppContext } from '../context';
@@ -944,13 +944,25 @@ export async function sendMessage(
       if (!repeatsIn(conversation.kind))
         throw badRequest(tr('A meeting repeats only in a chat or a group.'));
       const start = card.fields.start as { at: string };
+      const zone = sender.time_zone || 'UTC';
+      if (
+        typeof card.fields.repeatUntil === 'string' &&
+        !opts.occurrence &&
+        card.fields.repeatUntil < dayIn(new Date(start.at), zone)
+      )
+        throw badRequest(tr('A meeting can’t stop repeating before it starts.'));
       series = opts.occurrence?.series ?? {
         id,
         n: 0,
         firstAt: start.at,
-        zone: sender.time_zone || 'UTC',
+        zone,
+        // Every workday (R76): the days its proposer works, kept with it.
+        ...(card.fields.repeat === 'workday' && sender.workweek?.length
+          ? { days: [...sender.workweek].sort((a, b) => a - b) }
+          : {}),
       };
-    }
+    } else if (card.kit === 'meeting' && card.fields.repeatUntil !== undefined)
+      throw badRequest(tr('Until is for a meeting that repeats.'));
     if (card.kit === 'split') {
       // Who owes the payer: everyone else here (people, not bots), an equal share each, worked
       // out once and kept on the card (R38: a record, never a transfer).

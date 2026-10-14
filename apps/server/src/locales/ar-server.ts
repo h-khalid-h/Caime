@@ -1291,8 +1291,51 @@ export const arServer: Catalog = {
   'That receipt': 'هذا الإيصال',
   // A meeting that repeats (R58).
   'A meeting repeats only in a chat or a group.': 'لا يتكرر الاجتماع إلا في محادثة أو مجموعة.',
+  'A meeting can’t stop repeating before it starts.': 'لا يمكن أن ينتهي تكرار الاجتماع قبل بدايته.',
+  'Until is for a meeting that repeats.': '«حتى» لاجتماع يتكرر فقط.',
   'That meeting doesn’t repeat.': 'هذا الاجتماع لا يتكرر.',
   'That one is over. Stop it from the next one.':
     'انتهت هذه المرة، وإيقاف التكرار يكون من المرة التالية.',
   '{name}: stopped repeating': 'أُوقف التكرار: {name}',
+  // An organization's AI agent says who it is, and passes a conversation on (R87).
+  'Hi {name}, I’m {agent}, the AI assistant for {org}.':
+    'مرحبًا {name}، أنا {agent}، مساعد الذكاء الاصطناعي لدى {org}.',
+  'Hello, I’m {agent}, the AI assistant for {org}.':
+    'مرحبًا، أنا {agent}، مساعد الذكاء الاصطناعي لدى {org}.',
+  'I’ve passed this to the team at {org}. Someone will answer here.':
+    'حوّلت محادثتك إلى فريق {org}، وسيرد عليك أحدهم هنا.',
+  // The organizations someone runs, in the weekly digest (R87).
+  'At {org}:': 'في {org}:',
+  '• {n} new conversations this week': {
+    zero: '• لا محادثات جديدة هذا الأسبوع',
+    one: '• محادثة جديدة واحدة هذا الأسبوع',
+    two: '• محادثتان جديدتان هذا الأسبوع',
+    few: '• {n} محادثات جديدة هذا الأسبوع',
+    many: '• {n} محادثة جديدة هذا الأسبوع',
+    other: '• {n} محادثة جديدة هذا الأسبوع',
+  },
+  '• {n} customers waiting on the team': {
+    zero: '• لا أحد ينتظر الفريق',
+    one: '• عميل واحد ينتظر الفريق',
+    two: '• عميلان ينتظران الفريق',
+    few: '• {n} عملاء ينتظرون الفريق',
+    many: '• {n} عميل ينتظرون الفريق',
+    other: '• {n} عميل ينتظرون الفريق',
+  },
+  '• {n} bookings in the week ahead': {
+    zero: '• لا حجوزات في الأسبوع القادم',
+    one: '• حجز واحد في الأسبوع القادم',
+    two: '• حجزان في الأسبوع القادم',
+    few: '• {n} حجوزات في الأسبوع القادم',
+    many: '• {n} حجز في الأسبوع القادم',
+    other: '• {n} حجز في الأسبوع القادم',
+  },
+  '• {n} orders still open': {
+    zero: '• لا طلبات مفتوحة',
+    one: '• طلب واحد ما زال مفتوحًا',
+    two: '• طلبان ما زالا مفتوحين',
+    few: '• {n} طلبات ما زالت مفتوحة',
+    many: '• {n} طلب ما زال مفتوحًا',
+    other: '• {n} طلب ما زال مفتوحًا',
+  },
 };

@@ -80,6 +80,15 @@ export const AGREED_STATES: Record<'meeting' | 'appointment', string> = {
 };
 
 /**
+ * An appointment that holds its time: asked for, or confirmed (R51). The team's Bookings and the
+ * weekly digest's count of what's ahead (R87) read the same.
+ */
+export const HELD_APPOINTMENT_STATES: readonly string[] = ['requested', 'confirmed'];
+
+/** An order that is still the team's to do: neither delivered nor cancelled (R60, R87). */
+export const OPEN_ORDER_STATES: readonly string[] = ['placed', 'confirmed', 'ready', 'shipped'];
+
+/**
  * The states in which a card asks something of whoever received it (review 2026-10-09 M14): a
  * yes or no, a time, a review, a confirmation, an invoice or a request to be paid. A card in one
  * of them is a request, as a message that asks is (`is_request`): the inbox says "Asked you to do

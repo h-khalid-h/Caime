@@ -1,6 +1,13 @@
 import { describe, expect, it } from 'vitest';
 import { isRepeat } from './repeat';
-import { nextOccurrence, occurrenceAt, occurrencesBetween, seriesOf } from './series';
+import {
+  dayIn,
+  nextOccurrence,
+  occurrenceAt,
+  occurrencesBetween,
+  seriesOf,
+  timesAYear,
+} from './series';
 
 describe('a meeting that repeats (R58)', () => {
   // Thursday 22 October 2026, 10:00 in Berlin (summer time, UTC+2).
@@ -64,5 +71,70 @@ describe('a meeting that repeats (R58)', () => {
     expect(seriesOf(null)).toBeNull();
     expect(isRepeat('week')).toBe(true);
     expect(isRepeat('daily')).toBe(false);
+    expect(isRepeat('workday')).toBe(true);
+    // A workday series keeps its proposer's week; a week that isn't one is left out.
+    const week = { ...berlin, days: [1, 2, 3, 4, 5] };
+    expect(seriesOf({ series: week })).toEqual(week);
+    expect(seriesOf({ series: { ...berlin, days: [9] } })).toEqual(berlin);
+    expect(seriesOf({ series: { ...berlin, days: [1, 1] } })).toEqual(berlin);
+  });
+
+  it('holds a workday one on the days its proposer works', () => {
+    // From Thursday 22 October in Berlin, Monday to Friday: Friday, Monday (after the clocks
+    // change, still at 10:00), a week on, and two.
+    const week = { ...berlin, days: [1, 2, 3, 4, 5] };
+    expect(occurrenceAt(week, 'workday', 1).toISOString()).toBe('2026-10-23T08:00:00.000Z');
+    expect(occurrenceAt(week, 'workday', 2).toISOString()).toBe('2026-10-26T09:00:00.000Z');
+    expect(occurrenceAt(week, 'workday', 5).toISOString()).toBe('2026-10-29T09:00:00.000Z');
+    expect(occurrenceAt(week, 'workday', 10).toISOString()).toBe('2026-11-05T09:00:00.000Z');
+    // A series without its days: Monday to Friday.
+    expect(occurrenceAt(berlin, 'workday', 2).toISOString()).toBe('2026-10-26T09:00:00.000Z');
+    // Cairo works Sunday to Thursday (R76): after Thursday comes Sunday, and after a first time
+    // on a Friday, the Sunday too.
+    const cairo = {
+      firstAt: '2026-10-22T07:00:00.000Z',
+      zone: 'Africa/Cairo',
+      days: [0, 1, 2, 3, 4],
+    };
+    expect(occurrenceAt(cairo, 'workday', 1).toISOString()).toBe('2026-10-25T07:00:00.000Z');
+    const friday = { ...cairo, firstAt: '2026-10-23T07:00:00.000Z' };
+    expect(occurrenceAt(friday, 'workday', 1).toISOString()).toBe('2026-10-25T07:00:00.000Z');
+    // The next one after a Thursday's has ended is Sunday's.
+    expect(
+      nextOccurrence({ ...cairo, id: 'c', n: 0 }, 'workday', new Date('2026-10-22T08:01:00Z'))?.at,
+    ).toEqual(new Date('2026-10-25T07:00:00.000Z'));
+  });
+
+  it('ends on its last day, read on its own clock', () => {
+    // Weekly from 22 October: 29 October, 5, 12 and 19 November.
+    expect(nextOccurrence(berlin, 'week', new Date('2026-11-01T00:00:00Z'), '2026-11-06')?.n).toBe(
+      2,
+    );
+    expect(
+      nextOccurrence(berlin, 'week', new Date('2026-11-06T00:00:00Z'), '2026-11-06'),
+    ).toBeNull();
+    // The last day itself is held.
+    expect(nextOccurrence(berlin, 'week', new Date('2026-11-01T00:00:00Z'), '2026-11-05')?.n).toBe(
+      2,
+    );
+    const ahead = occurrencesBetween(
+      berlin,
+      'week',
+      new Date('2026-10-22T00:00:00Z'),
+      new Date('2027-01-01T00:00:00Z'),
+      53,
+      '2026-11-12',
+    );
+    expect(ahead.map((a) => a.n)).toEqual([1, 2, 3]);
+    // 23:30 in Cairo on the 5th is already the 6th in Dubai, and still the 5th there.
+    expect(dayIn(new Date('2026-11-05T21:30:00Z'), 'Africa/Cairo')).toBe('2026-11-05');
+    expect(dayIn(new Date('2026-11-05T21:30:00Z'), 'Asia/Dubai')).toBe('2026-11-06');
+  });
+
+  it('looks a year ahead at most, by how often it holds', () => {
+    expect(timesAYear('week')).toBe(53);
+    expect(timesAYear('month')).toBe(13);
+    expect(timesAYear('workday')).toBe(265);
+    expect(timesAYear('workday', [0, 1, 2, 3, 4, 6])).toBe(318);
   });
 });

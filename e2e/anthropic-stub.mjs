@@ -164,8 +164,8 @@ function answer(body) {
       .map((sentence) => ({ sentence, n: words(sentence).filter((w) => wanted.has(w)).length }))
       .sort((a, b) => b.n - a.n)[0];
     if (!best?.n) return handOver();
-    const intro = content.includes('begin by saying') ? `Hi, I’m ${org}’s AI agent. ` : '';
-    return say('answer', `${intro}${best.sentence}`);
+    // Its introduction is Caime's, written by the rules (R87): the model only answers.
+    return say('answer', best.sentence);
   }
   if (system.includes('search someone typed')) {
     calls.push('search');

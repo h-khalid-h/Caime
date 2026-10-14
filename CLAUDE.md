@@ -377,7 +377,10 @@ These are rules, not preferences.
   the series' arithmetic, which the calendar would share with the conversation, stays out of
   `__common`) and `payload.series`
   (core `series.ts`: `seriesOf`, `occurrenceAt` on the proposer's wall clock, `nextOccurrence`,
-  `seriesAgreed`). `sendMessage` starts a series on the first card
+  `seriesAgreed`; a workday series keeps its proposer's week as `series.days`, and
+  `fields.repeatUntil`, the last day on the series' clock, bounds `nextOccurrence` and
+  `occurrencesBetween`, read by every caller; `timesAYear` caps what's looked ahead).
+  `sendMessage` starts a series on the first card
   and takes `occurrence` for a later time; `lib/meeting-series.ts` queues `meeting.next`
   (`queueNextTime`: from `afterCardMove`, each time posted and a space's copy) a minute after a
   time ends, posts the next through `sendMessage` with no effects (nobody is told), queues its
@@ -921,7 +924,8 @@ These are rules, not preferences.
   changes, each run queues the next, and a job whose hour no longer matches does nothing. The
   weekly digest is `preferences.caiDigest` (`cai.digest`, the same shape: queued by `PATCH /me`
   when it's turned on or the brief's hour moves, at the first day of the person's week at that
-  hour or nine): `digestText` reads one round of queries, a one-to-one's activity from
+  hour or nine, with the organizations they run through `teamWeeks`, R87): `digestText` reads one
+  round of queries, a one-to-one's activity from
   `conversations.last_message_at` (never a scan of its messages), tasks through
   `visibleTasksSql`, the week ahead through `cardsAhead`, and says names, counts and titles,
   never anyone's words. What
@@ -933,7 +937,12 @@ These are rules, not preferences.
   `onCustomerMessage` (registered by `registerAgentJob`, so `lib/business.ts` never imports it),
   which queues the `agent.reply` job three seconds out. The job checks the thread is still its
   to answer, asks `ctx.ai.supportAgent`, and claims the message (`agent_seq`) before posting, so
-  it answers once. Its user is kind `agent`: `automated` and `aiAgent` on its messages. The E2E
+  it answers once. Its user is kind `agent`: `automated` and `aiAgent` on its messages. Its first
+  message in a conversation opens with `introduction` (R87: its name, that it's an AI, the
+  organization, the customer's first name), written by the rules in the language the customer
+  wrote in (`writtenIn`, else theirs) and flagged `payload.introduction`, and `transcriptFor`
+  drops that line so no customer's name reaches the model; anything new where an AI speaks for
+  someone to someone else opens the same way (Cai's invitation mail: `caiIntroduction`). The E2E
   Messages stand-in answers as it from the sentence of its knowledge nearest the question.
 - Calls: `apps/server/src/lib/calls.ts` and `modules/calls.ts` ring, relay and record;
   `apps/app/src/features/calls/engine.ts` holds the RTCPeerConnection and `CallScreens.tsx`

@@ -251,6 +251,8 @@ export function KitForm({
   const direct = conversation.kind === 'direct' && !conversation.business;
   // A meeting repeats in a chat or a group (R58); an organization's are booked a time at a time.
   const repeats = repeatsIn(conversation.kind) && !conversation.business;
+  // Its last day is asked once it repeats.
+  const repeating = repeats && picked.repeat !== undefined;
   // Read afresh when the form opens: a copy of the organization or the profile kept from before
   // the hours were set would say there's nothing to book.
   const orgHandle = catalog && conversation.business ? conversation.business.org.handle : '';
@@ -516,8 +518,9 @@ export function KitForm({
         if (picking && ['reference', 'summary', 'amount'].includes(field.key)) continue;
         // A share's Pay card (R62) pays what the split says, now.
         if (payingShare && SHARE_FIXED.includes(field.key)) continue;
-        // A meeting repeats only in a chat or a group (R58).
+        // A meeting repeats only in a chat or a group (R58), and ends on a day only if it does.
         if (field.key === 'repeat' && !repeats) continue;
+        if (field.key === 'repeatUntil' && !repeating) continue;
         if (field.type === 'items') {
           const lines = options.map((o) => o.trim()).filter(Boolean);
           if (lines.length) fields[field.key] = lines;
@@ -930,7 +933,8 @@ export function KitForm({
               host?.items.length &&
               ['reference', 'summary', 'amount'].includes(field.key)) ||
             (payingShare && SHARE_FIXED.includes(field.key)) ||
-            (field.key === 'repeat' && !repeats) ? null : field.type === 'items' ? (
+            (field.key === 'repeat' && !repeats) ||
+            (field.key === 'repeatUntil' && !repeating) ? null : field.type === 'items' ? (
               <View key={field.key} style={{ gap: 8 }}>
                 <Text variant="label">{tr(field.label)}</Text>
                 {options.map((o, j) => (

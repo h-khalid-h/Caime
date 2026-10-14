@@ -4496,6 +4496,7 @@ export const ar: Catalog = {
   'Confirmed received by {name}': 'أكّد {name} الاستلام',
   // A meeting that repeats (R58).
   Repeats: 'التكرار',
+  'Every workday': 'كل يوم عمل',
   'Every week': 'كل أسبوع',
   'Every two weeks': 'كل أسبوعين',
   'Every month': 'كل شهر',

@@ -3,7 +3,8 @@
  * the address the calendar and calendar apps use, answers the call already ringing rather than
  * placing a second; Meetings lists it with its Join. A guest (R84) invited by address from the
  * card joins from their own link, without an account, and is in the meeting's call. A meeting
- * that repeats (R58) is agreed once; the calendar has each time ahead until it's stopped.
+ * that repeats (R58) is agreed once, until a day if it's given one; the calendar has each time
+ * ahead until it's stopped.
  */
 import { randomUUID } from 'node:crypto';
 import { type Browser, expect, test } from '@playwright/test';
@@ -178,10 +179,15 @@ test('a meeting that repeats is agreed once, and the calendar has each week unti
   await ana.page.getByTestId('kit-option-meeting').click();
   await ana.page.getByLabel('Title').fill('Weekly sync');
   await ana.page.getByLabel('When', { exact: true }).fill('Friday 3pm');
+  // Its last day is asked once it repeats (every workday is offered too, R76).
+  await expect(ana.page.getByTestId('kit-field-repeatUntil')).toHaveCount(0);
+  await expect(ana.page.getByRole('radio', { name: 'Every workday', exact: true })).toBeVisible();
   await ana.page.getByRole('radio', { name: 'Every week', exact: true }).click();
+  await ana.page.getByLabel('Until (optional)').fill('in two months');
   await ana.page.getByTestId('kit-send').click();
   const mine = ana.page.getByTestId('kit-meeting').filter({ hasText: 'Weekly sync' });
   await expect(mine).toContainText('Every week');
+  await expect(mine).toContainText('Until');
   const listed = await anaCtx.request.get(`/v1/conversations/${conversationId}/messages`, {
     headers: CLIENT,
   });

@@ -644,8 +644,13 @@ with its reason, so it isn't proposed again without new facts.
   kind (a team's or a project's to everyone in it, a family's, friends', community's or
   school's to nobody); outside one, by each person's own label for whoever called it, and to
   whoever called it when anyone in it is work to them (one read of both directions); a guest
-  never. Not done: a recurring appointment (each time's slot must be checked against the host's catalog
-  as it's posted), every weekday, and an end date.
+  never. *Every workday, until a day* (built 2026-10-14): "Every workday" is held on the days
+  its proposer works (R76: Sunday to Thursday in Cairo, Monday to Friday in Paris), the week kept
+  on the series when it starts so a later change of their own week doesn't move it; "Until",
+  asked once a meeting repeats, is the last day a time may fall on, on the series' own clock
+  (the last day itself is held), and the calendar, the feed and the slots stop there too. "Stop
+  repeating" clears both. Not done: a recurring appointment (each time's slot must be checked
+  against the host's catalog as it's posted).
 - **R59 — The fourth language is Turkish.** By R55's rule (one region, through organizations):
   Arabic, English and French cover the Middle East and North Africa; the market next to it that
   already serves it is Türkiye, whose clinics treat Arabic-speaking patients by the hundred
@@ -1532,3 +1537,37 @@ with its reason, so it isn't proposed again without new facts.
   update and one notification an answer. *Needs in production* (the owner's): `MAIL_DOMAIN=cai.me`,
   the domain's mail records (MX to the inbound provider, SPF and DKIM for the sender, DMARC), and
   the SMTP account allowed to send as `assistant@cai.me`.
+- **R87 — Who Cai is, for whom, and what it may do (owner's brainstorm, 2026-10-14: Cai's
+  introduction, its authority, open loops, the weekly digest, an intelligence record).** Checked
+  against what Caime already is, so nothing is built twice. (1) *The introduction, written by the
+  rules.* Where an AI speaks for someone to someone else, it says who it is, that it's an AI and
+  whom it speaks for, before anything else: an organization's agent opens its first message in a
+  conversation with "Hi Paola, I'm Nour, the AI assistant for Nile Dental." in the language the
+  customer wrote in (`introduction` in `lib/agent.ts`; the model is told not to introduce itself,
+  so the line never depends on it, and the transcript leaves that line out, since it names the
+  customer and no customer's name reaches the model); trying the agent shows it the same way; and
+  a meeting's invitation from Cai's own address (R86) opens with "Hi Gus, I'm Cai, the AI
+  assistant for Ana." Cai's follow-ups (R68) carry no introduction: they're the person's own
+  words, sent by their tap, and Cai's own chat is with its own person. (2) *Titles are declined.*
+  A person is named as they name themselves (their display name, which may already say "Dr."), an
+  organization by its name; a separate honorific field would make "Mr." or "Ms." a guess at
+  gender wherever it wasn't said (R27, R81). (3) *Authority, in three levels, as the code already
+  holds it.* Prepare: summaries, briefs, the digest, drafts and suggestions, always, labelled as
+  Cai's (R12). Communicate: for a person, only on their tap, every time (no standing permission
+  to send in anyone's name: R68's "Not adopted" stands); for an organization, its agent answers
+  customers as itself, an AI, from what the organization told it, and hands over the rest.
+  Commit: never Cai's. A booking, an order or a price is the team's to confirm, a card's move is
+  a person's tap, and Caime never moves money (R62). (4) *Open loops are already the model*:
+  promises and requests are suggestions with their message and a confidence said in words
+  (R12, `surenessLine`), accepted into tasks that keep their conversation; waits gone quiet are
+  asked about (R66) and handed to Cai for a follow-up (R68); a done task stays done and a new
+  message that says otherwise is read as a new request, never a silent reopening. Nothing new is
+  needed, and no second "intelligence record" table: suggestions, tasks, decisions and cards are
+  the one model, read by every surface. (5) *The weekly digest* (built the same day, R68) gains
+  the organizations a person runs: for each one they own or administer (`MANAGING_ROLES`, three
+  at most), the week from the business inbox they already see, as counts: new conversations,
+  customers waiting on the team, bookings in the week ahead, orders still open. Never a team
+  member's own conversations, never a customer's words; two queries for all of them. Declined:
+  slides (Caime's digest is a message in Cai's chat, where it can be asked about), a separate
+  manager digest (one digest, the person's, with what they run in it), connected Gmail or Slack
+  as sources (R79 layer 2, ⛔ on the owner's OAuth clients), and autonomous sending.

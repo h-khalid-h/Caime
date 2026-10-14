@@ -112,6 +112,8 @@ export const KITS: Record<KitId, KitDef> = {
         type: 'options',
         choices: REPEAT_CHOICES,
       },
+      // The last day a time may fall on, where its proposer is; offered once it repeats.
+      { key: 'repeatUntil', label: msg('Until'), type: 'date' },
     ],
     states: ['proposed', 'accepted', 'declined', 'cancelled'],
   },

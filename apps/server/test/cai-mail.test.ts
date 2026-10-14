@@ -126,6 +126,10 @@ describe('Cai’s address, assistant@ (R86)', () => {
     const sent = mail.outbox.at(-1)!;
     expect(sent.from).toBe(`"Ana Host via Cai" <assistant@${DOMAIN}>`);
     expect(sent.replyTo).toBe(sent.from);
+    // Cai says who it is and whom it writes for first (R87).
+    expect(sent.text.split('\n')[0]).toMatch(
+      /^(Hi \S+|Hello), I'm Cai, the AI assistant for Ana Host\.$/,
+    );
     expect(sent.icalEvent!.content.replace(/\r\n /g, '')).toContain(
       `ORGANIZER;CN="Ana Host":mailto:assistant@${DOMAIN}`,
     );
