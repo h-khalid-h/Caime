@@ -3225,3 +3225,9 @@ The six-slice review's plan, in its order; a block is ticked when its tests and 
   an address), so each new container exits and the old one keeps answering while EasyPanel
   reports the deployment done. ⛔ The owner corrects the environment. `check-env` names what fails
   (never a value) before a deploy; the runbook says to verify a page the release changed.
+- 2026-10-14 — From the owner: Postmark Pro is not active, so Caime Mail stays off (no inbound on
+  Postmark's lower plans) and `cai.me`'s MX, which points at Postmark's inbound, reaches nobody
+  until it goes back to Cloudflare Email Routing (DEPLOY step 6) or Pro is on. The Apple Developer
+  and Google Play accounts are ready: the store builds (DEPLOY "Phone builds"), `APPLE_TEAM_ID` and
+  `ANDROID_CERT_SHA256` for app links and passkeys, wait on the owner's Expo account and first
+  `eas build` (it asks for the store credentials once).
