@@ -7,6 +7,7 @@ import { isSystemKind } from '@caime/core/system-ids';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import * as DocumentPicker from 'expo-document-picker';
 import { router } from 'expo-router';
+import Camera from 'lucide-react-native/icons/camera';
 import FileText from 'lucide-react-native/icons/file-text';
 import ImageIcon from 'lucide-react-native/icons/image';
 import Mic from 'lucide-react-native/icons/mic';
@@ -23,11 +24,12 @@ import {
   useCallback,
   useEffect,
   useImperativeHandle,
+  useLayoutEffect,
   useMemo,
   useRef,
   useState,
 } from 'react';
-import { AccessibilityInfo, Platform, TextInput, View } from 'react-native';
+import { AccessibilityInfo, Platform, TextInput, useWindowDimensions, View } from 'react-native';
 import { endpoints } from '@/api/endpoints';
 import { qk } from '@/api/keys';
 import { type LocalFile, uploadFile } from '@/api/upload';
@@ -41,7 +43,7 @@ import { type KitChoice, KitForm, type KitStart, kitsOffered } from '@/features/
 import { STICKER_PACK } from '@/features/stickers/pack';
 import { StickerPicker } from '@/features/stickers/StickerPicker';
 import type { Recorded } from '@/features/voice/Recorder';
-import { photoToUpload, pickFromLibrary } from '@/lib/photos';
+import { canTakePhoto, photoToUpload, pickFromLibrary, takePhoto } from '@/lib/photos';
 import { realtime } from '@/realtime/client';
 import { applyEditToInbox, upsertMessage } from '@/state/cache';
 import { useDrafts } from '@/state/drafts';
@@ -55,8 +57,9 @@ import { Button } from '@/ui/Button';
 import { Reply, Send } from '@/ui/directional';
 import { IconButton } from '@/ui/IconButton';
 import { ListRow } from '@/ui/ListRow';
+import { useLayout } from '@/ui/layout';
 import { Pressable } from '@/ui/Pressable';
-import { Sheet } from '@/ui/Sheet';
+import { afterSheet, Sheet } from '@/ui/Sheet';
 import { Text } from '@/ui/Text';
 import { TextField } from '@/ui/TextField';
 import { toast } from '@/ui/Toast';
@@ -96,8 +99,17 @@ export interface ComposerProps {
   kitStart?: KitStart | null;
 }
 
-const MIN_H = 44;
-const MAX_H = 150;
+/**
+ * The box's height (R88): one line in a 40-point pill, growing as it's written to five lines on
+ * a phone (a quarter of the screen at most, so a phone on its side keeps the conversation) and
+ * eight on a desktop, then scrolling inside.
+ */
+const MIN_H = 40;
+const LINE = 22;
+const PAD = (MIN_H - LINE) / 2;
+const MAX_LINES = { phone: 5, desktop: 8 };
+/** The round buttons beside the box: as tall as it, with a finger's reach around them. */
+const SIDE = 40;
 
 export const Composer = forwardRef<ComposerHandle, ComposerProps>(function Composer(
   {
@@ -129,6 +141,15 @@ export const Composer = forwardRef<ComposerHandle, ComposerProps>(function Compo
     () => stored ?? (privately ? '' : (conversation.me.draft ?? '')),
   );
   const [height, setHeight] = useState(MIN_H);
+  const { desktop } = useLayout();
+  const window = useWindowDimensions();
+  const maxH = Math.max(
+    MIN_H,
+    Math.min(
+      LINE * (desktop ? MAX_LINES.desktop : MAX_LINES.phone) + PAD * 2,
+      Math.round(window.height / 4),
+    ),
+  );
   // Reached by mail (R75): the composer shows the subject a mail from here carries (the thread's,
   // else the first line) and a subject written over it names the topic the mail starts; a reply,
   // and a topic, carry the thread's.
@@ -186,6 +207,21 @@ export const Composer = forwardRef<ComposerHandle, ComposerProps>(function Compo
 
   // Entering edit mode loads the message's text; leaving restores the draft.
   const value = editing ? (editText ?? editingText ?? '') : text;
+
+  // On the web the box is as tall as its words (R88), measured each time they change: a
+  // browser's own measure only ever grows, so words taken out left it tall until the message
+  // went. A phone's box grows and shrinks by itself, up to its most.
+  // biome-ignore lint/correctness/useExhaustiveDependencies: measured again as the words change
+  useLayoutEffect(() => {
+    if (Platform.OS !== 'web') return;
+    const box = input.current as unknown as HTMLTextAreaElement | null;
+    if (!box?.style) return;
+    const was = box.style.height;
+    box.style.height = '0px';
+    const words = box.scrollHeight;
+    box.style.height = was;
+    setHeight(Math.min(maxH, Math.max(MIN_H, words)));
+  }, [value, maxH]);
 
   // Mentions (PRD §20), where there are more than two: "@" offers who's in it. Never in a
   // private conversation, whose server can't read who a message is for, nor with an
@@ -406,7 +442,6 @@ export const Composer = forwardRef<ComposerHandle, ComposerProps>(function Compo
   };
 
   const pickPhotos = async () => {
-    setAttach(false);
     const res = await pickFromLibrary({
       mediaTypes: ['images'],
       allowsMultipleSelection: true,
@@ -421,8 +456,17 @@ export const Composer = forwardRef<ComposerHandle, ComposerProps>(function Compo
     );
   };
 
+  /** A photo taken now (R88), sent as one picked from the library is. */
+  const shootPhoto = async () => {
+    const res = await takePhoto();
+    if (res.canceled) return;
+    await sendFiles(
+      await Promise.all(res.assets.map((a) => photoToUpload(a, 'photo.jpg'))),
+      'media',
+    );
+  };
+
   const pickFiles = async () => {
-    setAttach(false);
     const res = await DocumentPicker.getDocumentAsync({
       multiple: true,
       copyToCacheDirectory: true,
@@ -483,7 +527,17 @@ export const Composer = forwardRef<ComposerHandle, ComposerProps>(function Compo
     );
   }
 
+  // The share sheet closes, then what was chosen opens (on iOS once it has gone: Sheet's
+  // `afterSheet`).
+  const fromSheet = (next: () => void) => () => {
+    setAttach(false);
+    afterSheet(next);
+  };
   const canSend = value.trim().length > 0;
+  // Stickers sit inside the box, as in every messenger (R88): not while editing, and not in a
+  // private conversation, which takes only sealed text.
+  const stickersHere = !privately && !editing;
+  const side = { width: SIDE, height: SIDE, borderRadius: SIDE / 2 };
   const banner = editing ? (
     <Banner
       icon={Pencil}
@@ -497,7 +551,7 @@ export const Composer = forwardRef<ComposerHandle, ComposerProps>(function Compo
   ) : replyTo ? (
     <Banner
       icon={Reply}
-      title={tr('Replying to {replyName}', { replyName: replyName ?? 'message' })}
+      title={replyName ? tr('Replying to {replyName}', { replyName }) : tr('Replying to a message')}
       body={replyingText ?? replyTo.kind}
       onClose={onClearReply}
     />
@@ -591,9 +645,10 @@ export const Composer = forwardRef<ComposerHandle, ComposerProps>(function Compo
             flexDirection: 'row',
             alignItems: 'flex-end',
             gap: 4,
-            paddingHorizontal: 6,
+            paddingHorizontal: 4,
             paddingVertical: 6,
           }}
+          testID="composer-row"
         >
           {privately || caimes ? null : (
             // Photos, files and cards aren't sealed yet: a private conversation is text for now.
@@ -601,19 +656,24 @@ export const Composer = forwardRef<ComposerHandle, ComposerProps>(function Compo
             <IconButton
               icon={Plus}
               label={tr('Share a photo, a file or a card')}
-              filled
+              size={24}
               onPress={() => setAttach(true)}
               disabled={Boolean(editing)}
+              style={side}
+              hitSlop={2}
+              testID="composer-attach"
             />
           )}
           <View
             style={{
               flex: 1,
+              flexDirection: 'row',
+              alignItems: 'flex-end',
               minHeight: MIN_H,
-              borderRadius: 22,
+              borderRadius: MIN_H / 2,
               backgroundColor: t.c.surfaceMuted,
-              paddingHorizontal: 14,
-              justifyContent: 'center',
+              paddingStart: 14,
+              paddingEnd: stickersHere ? 2 : 14,
             }}
           >
             <TextInput
@@ -642,9 +702,15 @@ export const Composer = forwardRef<ComposerHandle, ComposerProps>(function Compo
                 if (placeCaret) setPlaceCaret(undefined);
               }}
               multiline
-              onContentSizeChange={(e) =>
-                setHeight(Math.min(MAX_H, Math.max(MIN_H - 12, e.nativeEvent.contentSize.height)))
-              }
+              // On a phone or a tablet with Enter to send on (Appearance), Return sends too; the
+              // web reads the key itself below, where Shift+Enter keeps a new line.
+              {...(Platform.OS !== 'web' && enterSends
+                ? {
+                    submitBehavior: 'submit' as const,
+                    returnKeyType: 'send' as const,
+                    onSubmitEditing: () => void send(),
+                  }
+                : {})}
               onKeyPress={(e) => {
                 if (Platform.OS !== 'web') return;
                 const ne = e.nativeEvent as unknown as {
@@ -693,24 +759,39 @@ export const Composer = forwardRef<ComposerHandle, ComposerProps>(function Compo
               }}
               style={[
                 {
+                  flex: 1,
                   color: t.c.text,
                   ...fontFace('body', 400),
                   fontSize: 16,
-                  lineHeight: 22,
-                  paddingTop: 10,
-                  paddingBottom: 10,
-                  height: Platform.OS === 'web' ? Math.max(MIN_H - 12, height) : undefined,
-                  maxHeight: MAX_H,
+                  lineHeight: LINE,
+                  paddingTop: PAD,
+                  paddingBottom: PAD,
+                  minHeight: MIN_H,
+                  height: Platform.OS === 'web' ? Math.max(MIN_H, height) : undefined,
+                  maxHeight: maxH,
                 },
                 { outlineStyle: 'none' } as object,
               ]}
             />
+            {stickersHere ? (
+              <IconButton
+                icon={Sticker}
+                label={tr('Stickers')}
+                size={20}
+                onPress={() => setStickers(true)}
+                style={{ width: 36, height: 36, borderRadius: 18, marginBottom: 2 }}
+                hitSlop={4}
+                testID="composer-stickers"
+              />
+            ) : null}
           </View>
           {canSend && aiReady ? (
             <IconButton
               icon={WandSparkles}
               label={tr('Rewrite with Cai')}
               onPress={() => setRewrite(true)}
+              style={side}
+              hitSlop={2}
               testID="composer-rewrite"
             />
           ) : null}
@@ -719,29 +800,23 @@ export const Composer = forwardRef<ComposerHandle, ComposerProps>(function Compo
               icon={Send}
               label={editing ? tr('Save') : tr('Send')}
               tone="primary"
+              size={20}
               onPress={() => void send()}
+              style={side}
+              hitSlop={2}
               testID="composer-send"
             />
-          ) : privately ? null : (
-            <>
-              {caimes ? null : (
-                <IconButton
-                  icon={Mic}
-                  label={tr('Record a voice note')}
-                  filled
-                  onPress={() => setRecording(true)}
-                  disabled={Boolean(editing)}
-                  testID="composer-voice"
-                />
-              )}
-              <IconButton
-                icon={Sticker}
-                label={tr('Stickers')}
-                filled
-                onPress={() => setStickers(true)}
-                disabled={Boolean(editing)}
-              />
-            </>
+          ) : privately || caimes ? null : (
+            <IconButton
+              icon={Mic}
+              label={tr('Record a voice note')}
+              size={24}
+              onPress={() => setRecording(true)}
+              disabled={Boolean(editing)}
+              style={side}
+              hitSlop={2}
+              testID="composer-voice"
+            />
           )}
         </View>
       )}
@@ -756,17 +831,28 @@ export const Composer = forwardRef<ComposerHandle, ComposerProps>(function Compo
       />
       <Sheet open={attach} onClose={() => setAttach(false)} title={tr('Share')}>
         <View style={{ marginHorizontal: -20 }}>
+          {canTakePhoto() ? (
+            <ListRow
+              icon={Camera}
+              title={tr('Camera')}
+              subtitle={tr('Take a photo and send it')}
+              onPress={fromSheet(() => void shootPhoto())}
+              testID="attach-camera"
+            />
+          ) : null}
           <ListRow
             icon={ImageIcon}
             title={tr('Photos')}
             subtitle={tr('Location data is removed before anyone sees them')}
-            onPress={() => void pickPhotos()}
+            onPress={fromSheet(() => void pickPhotos())}
+            testID="attach-photos"
           />
           <ListRow
             icon={FileText}
             title={tr('A file')}
             subtitle={tr('Documents, PDFs, anything up to 100 MB')}
-            onPress={() => void pickFiles()}
+            onPress={fromSheet(() => void pickFiles())}
+            testID="attach-file"
           />
           {kits.length || own?.length ? (
             <>
@@ -785,10 +871,7 @@ export const Composer = forwardRef<ComposerHandle, ComposerProps>(function Compo
                   title={tr(k.name)}
                   subtitle={tr(k.description)}
                   testID={`kit-option-${k.id}`}
-                  onPress={() => {
-                    setAttach(false);
-                    setKit(k.id as KitChoice);
-                  }}
+                  onPress={fromSheet(() => setKit(k.id as KitChoice))}
                 />
               ))}
               {own?.map((k) => (
@@ -798,10 +881,7 @@ export const Composer = forwardRef<ComposerHandle, ComposerProps>(function Compo
                   title={k.name}
                   subtitle={k.description || tr('From {name}', { name: k.app.name })}
                   testID={`kit-option-custom-${k.key}`}
-                  onPress={() => {
-                    setAttach(false);
-                    setCustom(k);
-                  }}
+                  onPress={fromSheet(() => setCustom(k))}
                 />
               ))}
             </>

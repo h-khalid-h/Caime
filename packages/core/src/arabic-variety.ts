@@ -6,6 +6,10 @@
  * reads it by subpath to say what "Where you live" comes to.
  */
 
+import { foldArabic } from './fold';
+
+export { foldArabic };
+
 export const ARABIC_VARIETIES = [
   'standard',
   'egyptian',
@@ -168,15 +172,6 @@ const MARKERS: Record<'egyptian' | 'gulf' | 'levantine' | 'iraqi' | 'maghrebi', 
       'والو',
     ],
   };
-
-/** Arabic as the markers are written: one alef, "ي" for "ى", "ه" for "ة", no marks or tatweel. */
-export function foldArabic(text: string): string {
-  return text
-    .replace(/[ً-ٰٟـ]/g, '')
-    .replace(/[أإآٱ]/g, 'ا')
-    .replace(/ى/g, 'ي')
-    .replace(/ة/g, 'ه');
-}
 
 const SINGLE = new Map<string, keyof typeof MARKERS>();
 const DOUBLE = new Map<string, keyof typeof MARKERS>();

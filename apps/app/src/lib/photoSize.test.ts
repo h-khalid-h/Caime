@@ -1,5 +1,12 @@
 import { describe, expect, it } from 'vitest';
-import { PHOTO_MAX_EDGE, shrinkTo, shrunkFormat, shrunkName } from './photoSize';
+import {
+  needsJpeg,
+  PHOTO_MAX_EDGE,
+  photoMimeOf,
+  shrinkTo,
+  shrunkFormat,
+  shrunkName,
+} from './photoSize';
 
 describe('photos shrunk on the device before upload', () => {
   it('shrinks a big photo to the longest edge, keeping its shape', () => {
@@ -34,5 +41,17 @@ describe('photos shrunk on the device before upload', () => {
     expect(shrunkName('IMG_0042.HEIC', 'jpeg')).toBe('IMG_0042.jpg');
     expect(shrunkName('shot.png', 'png')).toBe('shot.png');
     expect(shrunkName('', 'jpeg')).toBe('photo.jpg');
+  });
+
+  it('turns a HEIC into a JPEG wherever the device can read it, and knows one by its name (R88)', () => {
+    expect(needsJpeg('image/heic')).toBe(true);
+    expect(needsJpeg('IMAGE/HEIF')).toBe(true);
+    expect(needsJpeg('image/jpeg')).toBe(false);
+    expect(needsJpeg(null)).toBe(false);
+    expect(shrunkName('IMG_0042.HEIC', 'jpeg')).toBe('IMG_0042.jpg');
+    expect(photoMimeOf('IMG_0042.HEIC', '')).toBe('image/heic');
+    expect(photoMimeOf('scan.heif', '')).toBe('image/heif');
+    expect(photoMimeOf('scan.png', 'image/png')).toBe('image/png');
+    expect(photoMimeOf('notes.txt', '')).toBe('');
   });
 });

@@ -5,9 +5,30 @@ import { PHOTO_MAX_EDGE } from './photoSize';
 export type PickOptions = ImagePicker.ImagePickerOptions;
 export type PickResult = ImagePicker.ImagePickerResult;
 
-/** Photos (and videos) from the device's library. On the web it's photos.web.ts. */
+/**
+ * Photos (and videos) from the device's library. On the web it's photos.web.ts. An iPhone hands
+ * over a JPEG rather than its HEIC (R88): every screen draws one, and the server can take every
+ * hidden detail out of it.
+ */
 export function pickFromLibrary(options: PickOptions): Promise<PickResult> {
-  return ImagePicker.launchImageLibraryAsync(options);
+  return ImagePicker.launchImageLibraryAsync({
+    preferredAssetRepresentationMode:
+      ImagePicker.UIImagePickerPreferredAssetRepresentationMode.Compatible,
+    ...options,
+  });
+}
+
+/** Whether this device has a camera to take a photo with here: every phone does. */
+export const canTakePhoto = (): boolean => true;
+
+/**
+ * A photo taken now with the camera (R88), asking for the camera first: what NSCameraUsageDescription
+ * promises ("when you take a photo to send"). Refused, it's as if nothing was taken.
+ */
+export async function takePhoto(): Promise<PickResult> {
+  const allowed = await ImagePicker.requestCameraPermissionsAsync();
+  if (!allowed.granted) return { canceled: true, assets: null };
+  return ImagePicker.launchCameraAsync({ mediaTypes: ['images'], quality: 0.9 });
 }
 
 /**

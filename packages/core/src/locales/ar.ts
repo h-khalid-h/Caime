@@ -1963,7 +1963,11 @@ export const ar: Catalog = {
     many: '{n} تواصلًا',
     other: '{n} تواصل',
   },
-  '{incoming} people want to connect': 'طلبات تواصل: {incoming}',
+  '{n} people want to connect': {
+    one: 'طلب تواصل واحد',
+    two: 'طلبا تواصل',
+    other: 'طلبات تواصل: {n}',
+  },
   'Show people': 'إظهار الأشخاص',
   'Find your people': {
     toWoman: 'ابحثي عن أشخاصك',
@@ -2337,7 +2341,10 @@ export const ar: Catalog = {
   'Following {name}: its updates are in Updates': 'تتابع {name}: تحديثاتها في التحديثات',
   'Share news with everyone who follows {name}': 'شارك الأخبار مع كل من يتابع {name}',
   'A new update': 'تحديث جديد',
-  '{followers} people follow it. Nobody sees who.': 'عدد المتابعين: {followers}. لا يرى أحد من هم.',
+  '{n} people follow it. Nobody sees who.': {
+    zero: 'لا أحد يتابعها بعد.',
+    other: 'عدد المتابعين: {n}. لا يرى أحد من يتابع.',
+  },
   Post: 'نشر',
   'Older updates': 'تحديثات أقدم',
   'Nothing posted yet. What you post here reaches everyone who follows it, as the organization.':
@@ -4538,4 +4545,18 @@ export const ar: Catalog = {
   // Where something sits in a host's order (R61).
   'Move up': 'نقل للأعلى',
   'Move down': 'نقل للأسفل',
+  // A place's own search (R88).
+  'Search chats': 'البحث في الدردشات',
+  'Search spaces': 'البحث في المساحات',
+  'Search actions': 'البحث في الإجراءات',
+  'Search everything': 'البحث في كل شيء',
+  'No conversation here matches.': 'لا محادثة هنا مطابقة.',
+  'No space here matches.': 'لا مساحة هنا مطابقة.',
+  'No action here matches.': 'لا إجراء هنا مطابق.',
+  'Replying to a message': 'ردًا على رسالة',
+  'Open this link?': 'فتح هذا الرابط؟',
+  Download: 'تنزيل',
+  Previous: 'السابق',
+  Camera: 'الكاميرا',
+  'Take a photo and send it': 'التقاط صورة وإرسالها',
 };

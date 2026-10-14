@@ -81,6 +81,9 @@ export default function Recorder({
     return () => {
       cancelled = true;
       if (limit) clearTimeout(limit);
+      // Done recording: a phone plays again as it did, headphones at their full quality (R88).
+      if (Platform.OS !== 'web')
+        void setAudioModeAsync({ allowsRecording: false, playsInSilentMode: true }).catch(() => {});
     };
   }, [recorder]);
 

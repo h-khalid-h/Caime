@@ -1,16 +1,17 @@
 import type { ConnectionView } from '@caime/core/api';
+import { finds } from '@caime/core/fold';
 import { tr, trn } from '@caime/core/i18n';
 import { SPHERE_DEFS, SPHERES, type Sphere } from '@caime/core/taxonomy';
 import { router, usePathname } from 'expo-router';
 import CalendarClock from 'lucide-react-native/icons/calendar-clock';
 import Phone from 'lucide-react-native/icons/phone';
-import Search from 'lucide-react-native/icons/search';
 import UserPlus from 'lucide-react-native/icons/user-plus';
 import { useEffect, useMemo, useState } from 'react';
 import { RefreshControl, ScrollView, SectionList, View } from 'react-native';
 import { useConnections, useRequests } from '@/api/hooks';
 import { DuplicateOffers } from '@/features/duplicates';
 import { RelationshipOffers } from '@/features/relationships/offers';
+import { PlaceSearch } from '@/features/shell/PlaceSearch';
 import { YouButton } from '@/features/shell/YouButton';
 import { useLive } from '@/state/live';
 import { useTheme } from '@/theme/theme';
@@ -22,10 +23,9 @@ import { EmptyState } from '@/ui/EmptyState';
 import { IconButton } from '@/ui/IconButton';
 import { useLayout } from '@/ui/layout';
 import { Pressable } from '@/ui/Pressable';
-import { PageHeader, Screen } from '@/ui/Screen';
+import { PageHeader, Screen, useScrolled } from '@/ui/Screen';
 import { SkeletonRows } from '@/ui/Skeleton';
 import { Text } from '@/ui/Text';
-import { TextField } from '@/ui/TextField';
 
 type Filter = Sphere | 'all' | 'unlabelled';
 
@@ -108,6 +108,9 @@ export function PeopleList({ pane }: { pane?: boolean }) {
   const requests = useRequests('incoming');
   const [filter, setFilter] = useState<Filter>('all');
   const [term, setTerm] = useState('');
+  // What's typed finds among everyone, whatever the chips say (R88).
+  const searching = term.trim().length > 0;
+  const [scrolled, onScroll] = useScrolled();
   const all = q.data?.connections ?? [];
   // One row a person: accounts merged into another (PRD §51) show under it, and count with it.
   const { people, accountsOf } = useMemo(() => {
@@ -155,27 +158,22 @@ export function PeopleList({ pane }: { pane?: boolean }) {
   useEffect(() => {
     if (gone && q.data) setFilter('all');
   }, [gone, q.data]);
-  const shown: Filter = gone ? 'all' : filter;
+  const shown: Filter = gone || searching ? 'all' : filter;
 
   const sections = useMemo(() => {
-    const needle = term.trim().toLowerCase().replace(/^@/, '');
     const matches = people.filter((c) => {
       const accounts = accountsOf(c);
       const rels = accounts.flatMap((a) => a.relationships);
       if (shown === 'unlabelled' && rels.length) return false;
       if (shown !== 'all' && shown !== 'unlabelled' && !rels.some((r) => r.sphere === shown))
         return false;
-      if (!needle) return true;
+      if (!searching) return true;
       return (
-        accounts.some(
-          (a) =>
-            a.person.displayName.toLowerCase().includes(needle) ||
-            (a.nickname ?? '').toLowerCase().includes(needle) ||
-            a.person.handle.includes(needle),
-        ) || rels.some((r) => r.label.toLowerCase().includes(needle))
+        accounts.some((a) => finds(term, a.person.displayName, a.nickname, a.person.handle)) ||
+        rels.some((r) => finds(term, r.label))
       );
     });
-    if (shown !== 'all' || needle) return matches.length ? [{ title: '', data: matches }] : [];
+    if (shown !== 'all' || searching) return matches.length ? [{ title: '', data: matches }] : [];
     // Grouped by how you know them, in the taxonomy's order.
     const bySphere = new Map<string, ConnectionView[]>();
     for (const c of matches) {
@@ -190,44 +188,56 @@ export function PeopleList({ pane }: { pane?: boolean }) {
         title: s === 'unlabelled' ? tr('Not labelled yet') : tr(SPHERE_DEFS[s as Sphere].plural),
         data: bySphere.get(s) ?? [],
       }));
-  }, [people, accountsOf, shown, term]);
+  }, [people, accountsOf, shown, term, searching]);
 
   const incoming = requests.data?.requests.length ?? 0;
 
+  const head = (
+    <PageHeader
+      title={tr('People')}
+      subtitle={people.length ? trn(people.length, '{n} connection', '{n} connections') : null}
+      left={desktop ? undefined : <YouButton />}
+      right={
+        <View style={{ flexDirection: 'row', gap: 6 }}>
+          <IconButton
+            icon={Phone}
+            label={tr('Calls')}
+            filled
+            onPress={() => router.push('/calls')}
+            testID="people-calls"
+          />
+          <IconButton
+            icon={CalendarClock}
+            label={tr('Meetings')}
+            filled
+            onPress={() => router.push('/meetings')}
+            testID="people-meetings"
+          />
+          <IconButton
+            icon={UserPlus}
+            label={tr('Connect with someone')}
+            tone="primary"
+            size={20}
+            onPress={() => router.push('/connect')}
+            testID="people-connect"
+          />
+        </View>
+      }
+      scrolled={scrolled}
+    />
+  );
+
   const header = (
     <View>
-      <PageHeader
-        title={tr('People')}
-        subtitle={people.length ? trn(people.length, '{n} connection', '{n} connections') : null}
-        left={desktop ? undefined : <YouButton />}
-        right={
-          <View style={{ flexDirection: 'row', gap: 6 }}>
-            <IconButton
-              icon={Phone}
-              label={tr('Calls')}
-              filled
-              onPress={() => router.push('/calls')}
-              testID="people-calls"
-            />
-            <IconButton
-              icon={CalendarClock}
-              label={tr('Meetings')}
-              filled
-              onPress={() => router.push('/meetings')}
-              testID="people-meetings"
-            />
-            <IconButton
-              icon={UserPlus}
-              label={tr('Connect with someone')}
-              tone="primary"
-              size={20}
-              onPress={() => router.push('/connect')}
-              testID="people-connect"
-            />
-          </View>
-        }
-      />
-      {incoming ? (
+      {people.length ? (
+        <PlaceSearch
+          value={term}
+          onChange={setTerm}
+          placeholder={tr('Search your people')}
+          testID="people-search"
+        />
+      ) : null}
+      {incoming && !searching ? (
         <Pressable
           accessibilityRole="button"
           onPress={() => router.push('/requests')}
@@ -247,27 +257,18 @@ export function PeopleList({ pane }: { pane?: boolean }) {
             color={t.scheme === 'dark' ? 'text' : 'accentStrong'}
             style={{ flex: 1 }}
           >
-            {incoming === 1
-              ? '1 person wants to connect'
-              : tr('{incoming} people want to connect', { incoming })}
+            {trn(incoming, '{n} person wants to connect', '{n} people want to connect')}
           </Text>
           <Chevron size={18} color={t.c.accentStrong} />
         </Pressable>
       ) : null}
-      <DuplicateOffers all={all} />
-      <RelationshipOffers all={all} />
-      {people.length > 6 ? (
-        <View style={{ paddingHorizontal: 16, paddingBottom: 8 }}>
-          <TextField
-            icon={Search}
-            placeholder={tr('Search your people')}
-            value={term}
-            onChangeText={setTerm}
-            accessibilityLabel={tr('Search your people')}
-          />
-        </View>
-      ) : null}
-      {all.length ? (
+      {searching ? null : (
+        <>
+          <DuplicateOffers all={all} />
+          <RelationshipOffers all={all} />
+        </>
+      )}
+      {all.length && !searching ? (
         <ChoiceChips<Filter>
           label={tr('Show people')}
           value={shown}
@@ -289,7 +290,7 @@ export function PeopleList({ pane }: { pane?: boolean }) {
         <SkeletonRows />
       </>
     ) : all.length === 0 ? (
-      <ScrollView>
+      <ScrollView onScroll={onScroll} scrollEventThrottle={32}>
         {header}
         <EmptyState
           character="niko"
@@ -314,6 +315,10 @@ export function PeopleList({ pane }: { pane?: boolean }) {
         keyExtractor={(c) => c.connectionId}
         ListHeaderComponent={header}
         stickySectionHeadersEnabled={false}
+        onScroll={onScroll}
+        scrollEventThrottle={32}
+        keyboardShouldPersistTaps="handled"
+        keyboardDismissMode="on-drag"
         refreshControl={
           <RefreshControl refreshing={q.isRefetching} onRefresh={() => void q.refetch()} />
         }
@@ -346,6 +351,17 @@ export function PeopleList({ pane }: { pane?: boolean }) {
         }
       />
     );
-  if (pane) return <View style={{ flex: 1 }}>{content}</View>;
-  return <Screen>{content}</Screen>;
+  if (pane)
+    return (
+      <View style={{ flex: 1 }}>
+        {head}
+        {content}
+      </View>
+    );
+  return (
+    <Screen>
+      {head}
+      {content}
+    </Screen>
+  );
 }

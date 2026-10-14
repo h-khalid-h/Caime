@@ -151,8 +151,9 @@ export const useDirectoryApp = (id: string | null) =>
   });
 
 /** Whether this server offers AI assist, and whether this person turned it on. */
-export const useAiStatus = () =>
-  useQuery({ queryKey: qk.ai, queryFn: endpoints.ai, staleTime: 10 * 60_000 });
+/** Whether the server has AI assist; asked only once something needs to know (`enabled`). */
+export const useAiStatus = (enabled = true) =>
+  useQuery({ queryKey: qk.ai, queryFn: endpoints.ai, staleTime: 10 * 60_000, enabled });
 
 export const useSpaces = () => useQuery({ queryKey: qk.spaces, queryFn: endpoints.spaces });
 

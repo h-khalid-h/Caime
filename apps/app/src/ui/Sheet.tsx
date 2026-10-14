@@ -30,6 +30,22 @@ export interface SheetProps {
   scroll?: boolean;
 }
 
+/**
+ * What a closing sheet hands on to (another sheet, a picker, the camera): on iOS it runs once
+ * the sheet has gone, since UIKit presents nothing from a screen still taking a sheet down (the
+ * second never showed); elsewhere at once, inside the tap that asked, which a browser needs to
+ * open a file chooser at all. A sheet that hands on closes by `open` turning false, never by
+ * being unmounted: unmounted, it never says it has gone.
+ */
+const handOns: Array<() => void> = [];
+export function afterSheet(fn: () => void): void {
+  if (Platform.OS === 'ios') handOns.push(fn);
+  else fn();
+}
+function handOn() {
+  for (const fn of handOns.splice(0)) fn();
+}
+
 /** A bottom sheet on phones, a centred dialog on larger screens. */
 export function Sheet({
   open,
@@ -73,6 +89,7 @@ export function Sheet({
       transparent
       animationType={reduceMotion ? 'none' : phone ? 'slide' : 'fade'}
       onRequestClose={onClose}
+      onDismiss={Platform.OS === 'ios' ? handOn : undefined}
       statusBarTranslucent
     >
       <Direction>

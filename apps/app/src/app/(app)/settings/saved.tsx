@@ -19,12 +19,14 @@ import Trash from 'lucide-react-native/icons/trash';
 import Zap from 'lucide-react-native/icons/zap';
 import { useState } from 'react';
 import { View } from 'react-native';
-import { mediaUrl } from '@/api/client';
 import { endpoints } from '@/api/endpoints';
 import { useSaved, useSavedItems } from '@/api/hooks';
 import { qk } from '@/api/keys';
+import { PhotoViewerHost } from '@/features/media/PhotoViewerHost';
+import { drawable, showPhotos } from '@/features/media/viewer';
 import { Group, SettingsPage } from '@/features/settings/SettingsPage';
-import { openCheckedLink, openLink } from '@/lib/links';
+import { openCheckedLink } from '@/lib/links';
+import { openFile } from '@/lib/openFile';
 import { useNow, useUserClock } from '@/lib/time';
 import { useSession } from '@/state/session';
 import { useTheme } from '@/theme/theme';
@@ -104,9 +106,12 @@ function SavedItem({ item, onRemoved }: { item: SavedItemView; onRemoved: () => 
           }
           title={f.name}
           subtitle={formatBytes(f.size)}
+          // A photo full screen in Caime, anything else opened with the session (R88).
           onPress={() => {
-            const url = mediaUrl(f.url);
-            if (url) openLink(url);
+            const photos = item.files.filter(drawable);
+            const at = photos.indexOf(f);
+            if (at >= 0) showPhotos(photos, at, 'saved');
+            else void openFile(f).catch((e: Error) => toast(e.message, { tone: 'danger' }));
           }}
           testID="saved-file"
         />
@@ -175,6 +180,7 @@ export default function Saved() {
 
   return (
     <SettingsPage title={tr('Saved')}>
+      <PhotoViewerHost host="saved" />
       <Text variant="body" color="textSecondary">
         {tr(
           'What you save from a message, and what your automations keep, stays here for as long as the message does.',

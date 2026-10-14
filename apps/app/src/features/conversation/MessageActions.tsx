@@ -29,7 +29,7 @@ import { Forward, ReplyArrow } from '@/ui/directional';
 import { MORE_REACTIONS, QUICK_REACTIONS } from '@/ui/emoji';
 import { ListRow } from '@/ui/ListRow';
 import { Pressable } from '@/ui/Pressable';
-import { Sheet } from '@/ui/Sheet';
+import { afterSheet, Sheet } from '@/ui/Sheet';
 import { Text } from '@/ui/Text';
 import { TextField } from '@/ui/TextField';
 import { toast } from '@/ui/Toast';
@@ -79,7 +79,7 @@ export async function toggleReaction(
 }
 
 export function MessageActions({
-  m,
+  m: current,
   me,
   onClose,
   onReply,
@@ -111,6 +111,11 @@ export function MessageActions({
 }) {
   const t = useTheme();
   const qc = useQueryClient();
+  // The message stays while the sheet closes: its words don't vanish as it fades, and on iOS a
+  // sheet that closes (rather than unmounts) says when it's gone, for what it hands on to.
+  const [last, setLast] = useState<MessageView | null>(current);
+  if (current && current !== last) setLast(current);
+  const m = current ?? last;
   // A private message's words, as opened here: to copy, never to send anywhere (R18).
   const opened = useOpened(m, where);
   // Saving it as a decision (PRD §30): its words to start from, for this message only.
@@ -139,6 +144,11 @@ export function MessageActions({
   const close = (fn: () => void | Promise<void>) => () => {
     dismiss();
     void fn();
+  };
+  // What opens a sheet of its own (forward, save, report) opens once this one has gone.
+  const handOff = (fn: () => void) => () => {
+    dismiss();
+    afterSheet(fn);
   };
   const saveDecision = async (title: string) => {
     setSaving(true);
@@ -216,7 +226,7 @@ export function MessageActions({
   };
   return (
     <Sheet
-      open
+      open={Boolean(current)}
       onClose={dismiss}
       title={mine ? tr('Your message') : tr('Message')}
       subtitle={shown ? previewText(shown, 80) : undefined}
@@ -270,7 +280,7 @@ export function MessageActions({
           <ListRow
             icon={Forward}
             title={tr('Forward')}
-            onPress={close(() => onForward(m))}
+            onPress={handOff(() => onForward(m))}
             testID="message-forward"
           />
         ) : null}
@@ -280,7 +290,7 @@ export function MessageActions({
             icon={Bookmark}
             title={tr('Save')}
             subtitle={tr('Keep it in a collection of yours')}
-            onPress={() => setKeeping(m.id)}
+            onPress={handOff(() => setKeeping(m.id))}
             testID="message-save"
           />
         ) : null}
@@ -384,7 +394,7 @@ export function MessageActions({
             title={tr('Report')}
             subtitle={tr('Sends this message to Caime’s safety team')}
             destructive
-            onPress={close(() =>
+            onPress={handOff(() =>
               report(
                 {
                   messageId: m.id,

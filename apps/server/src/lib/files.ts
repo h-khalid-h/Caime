@@ -13,6 +13,7 @@ import sharp from 'sharp';
 import type { AppContext } from '../context';
 import type { Database, FilesTable } from '../db/schema';
 import { badRequest } from './errors';
+import { stripHeifDetails } from './heif';
 import { makeRenditions } from './renditions';
 import { sniffFile } from './sniff';
 import type { Storage } from './storage';
@@ -46,6 +47,15 @@ export async function finalizeFile(
   let thumbKey: string | null = null;
   let previewKey: string | null = null;
   let cleaned = false;
+  // A HEIC can't be re-encoded here (no HEVC), so its details are cleared where they sit (R88);
+  // one whose details can't be found for certain is never kept as it came.
+  if (sniffed.mime === 'image/heic') {
+    const { unsure } = await stripHeifDetails(storage.path(tempKey));
+    if (unsure) {
+      await storage.remove(tempKey);
+      throw badRequest(tr('That photo couldn’t be read, so it wasn’t sent. Try another.'));
+    }
+  }
   if (sniffed.kind === 'image' && sniffed.mime !== 'image/gif' && sniffed.mime !== 'image/heic') {
     try {
       const input = storage.path(tempKey);

@@ -3,6 +3,7 @@ import sharp from 'sharp';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { runDueJobs } from '../src/lib/jobs';
 import { startPreviewBackfill } from '../src/lib/renditions';
+import { HEIF_PICTURE, heif } from './heif-fixture';
 import { type Client, createTestApp, signup, type TestApp } from './helpers';
 
 let t: TestApp;
@@ -153,6 +154,21 @@ describe('uploads', () => {
       .where('owner_id', '=', hassan.user.id)
       .execute();
     expect(after).toEqual(before);
+  });
+
+  it('keeps a HEIC with where it was taken cleared, and refuses one it can’t read (R88)', async () => {
+    const h = heif();
+    const f = await upload(hassan, 'IMG_0042.HEIC', 'image/heic', h.file);
+    // Kept as a HEIC (nothing here decodes one), with no renditions: the app shows it as a file.
+    expect(f).toMatchObject({ kind: 'image', mime: 'image/heic', thumbUrl: null });
+    const kept = (await download(hassan, f.url)).rawPayload;
+    expect(kept.length).toBe(h.file.length);
+    expect(kept.includes('GPSLatitude')).toBe(false);
+    expect(kept.includes(HEIF_PICTURE)).toBe(true);
+    const lost = heif({ dropExifLocation: true });
+    await expect(upload(hassan, 'IMG_0043.HEIC', 'image/heic', lost.file)).rejects.toThrow(
+      /^400 .*couldn’t be read/,
+    );
   });
 
   it('refuses it the same way when it comes in pieces, and counts none of it', async () => {

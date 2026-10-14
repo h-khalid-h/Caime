@@ -3,7 +3,7 @@ import { formatListTime, snippetParts } from '@caime/core/format';
 import { msg, tr, trn } from '@caime/core/i18n';
 import { looksLikeSentence, parseSearchQuery } from '@caime/core/search';
 import { onlineManager, useQuery, useQueryClient } from '@tanstack/react-query';
-import { router } from 'expo-router';
+import { router, useLocalSearchParams } from 'expo-router';
 import Building from 'lucide-react-native/icons/building';
 import FileText from 'lucide-react-native/icons/file-text';
 import Hash from 'lucide-react-native/icons/hash';
@@ -47,8 +47,13 @@ export default function Search() {
   const { desktop } = useLayout();
   const now = useNow();
   const { timeZone, locale } = useUserClock();
-  const [term, setTerm] = useState('');
-  const [debounced, setDebounced] = useState('');
+  // Opened from a place's own search (R88): with its words, and asked of Cai when that's what
+  // was pressed (`ask=1`), for those words alone.
+  const params = useLocalSearchParams<{ q?: string; ask?: string }>();
+  const given = (typeof params.q === 'string' ? params.q : '').trim();
+  const askedFor = params.ask === '1' && given ? given : null;
+  const [term, setTerm] = useState(given);
+  const [debounced, setDebounced] = useState(given);
   // How long finding something takes (PRD §83): from the first letter to opening a result, or
   // leaving with nothing opened. Only that is sent, never what was searched for.
   const started = useRef<number | null>(null);
@@ -101,13 +106,14 @@ export default function Search() {
   // A sentence can be asked of Cai (R66) where AI assist is on: the server has a provider, and
   // they're an adult who turned it on (as features/assist's useAiReady, with no conversation).
   const ai = useAiStatus();
+  const asked = askedFor !== null && debounced === askedFor;
   const askable =
     !offline &&
     Boolean(ai.data?.available) &&
     me.aiEnabled &&
     !me.minor &&
     debounced.length >= 2 &&
-    looksLikeSentence(debounced);
+    (asked || looksLikeSentence(debounced));
   const local = useMemo(
     () => (offline ? searchOnDevice(qc, debounced, me.id) : null),
     [offline, qc, debounced, me.id],
@@ -153,7 +159,7 @@ export default function Search() {
             placeholder={tr('People, messages, files, decisions…')}
             value={term}
             onChangeText={setTerm}
-            autoFocus
+            autoFocus={!given}
             returnKeyType="search"
             onSubmitEditing={() => setSettled(term.trim())}
             accessibilityLabel={tr('Search')}
@@ -203,7 +209,7 @@ export default function Search() {
             </View>
           </View>
         ) : null}
-        {askable ? <CaiAnswer question={debounced} open={open} /> : null}
+        {askable ? <CaiAnswer question={debounced} open={open} auto={asked} /> : null}
         {r?.people?.length ? (
           <>
             <SectionTitle>{tr('People')}</SectionTitle>

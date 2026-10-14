@@ -38,11 +38,14 @@ export function LocationBody({
   mine,
   fg,
   meta,
+  onHold,
 }: {
   m: MessageView;
   mine: boolean;
   fg: string;
   meta: string;
+  /** A long press on the map link is the message's, as on the rest of the bubble (R88). */
+  onHold?: () => void;
 }) {
   const qc = useQueryClient();
   const now = useNow(15_000);
@@ -95,6 +98,8 @@ export function LocationBody({
           label: p.label ?? (live ? tr('A live location') : tr('A location')),
         })}
         onPress={() => openLink(url)}
+        onLongPress={onHold}
+        delayLongPress={300}
         style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}
         testID="message-location"
       >

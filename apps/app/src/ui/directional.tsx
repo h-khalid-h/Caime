@@ -1,4 +1,5 @@
 import ArrowLeft from 'lucide-react-native/icons/arrow-left';
+import ChevronLeft from 'lucide-react-native/icons/chevron-left';
 import ChevronRight from 'lucide-react-native/icons/chevron-right';
 import CornerUpLeft from 'lucide-react-native/icons/corner-up-left';
 import ForwardIcon from 'lucide-react-native/icons/forward';
@@ -26,6 +27,9 @@ function mirrored(rtl: boolean, icon: React.ReactElement) {
 export const Back: IconComponent = (props) => mirrored(useRtl(), <ArrowLeft {...props} />);
 
 export const Chevron: IconComponent = (props) => mirrored(useRtl(), <ChevronRight {...props} />);
+
+/** The chevron the other way: the previous one of several (a photo, a page). */
+export const ChevronBack: IconComponent = (props) => mirrored(useRtl(), <ChevronLeft {...props} />);
 
 // The rest that point (review 2026-10-09): sending goes the way the words run, a reply or a
 // forward curves back or on, the details panel sits at the end, and leaving walks out that way.

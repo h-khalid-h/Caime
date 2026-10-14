@@ -4,7 +4,14 @@
  */
 import type { ImagePickerAsset } from 'expo-image-picker';
 import type { LocalFile } from '@/api/upload';
-import { PHOTO_MAX_EDGE, PHOTO_QUALITY, shrinkTo, shrunkFormat, shrunkName } from './photoSize';
+import {
+  needsJpeg,
+  PHOTO_MAX_EDGE,
+  PHOTO_QUALITY,
+  shrinkTo,
+  shrunkFormat,
+  shrunkName,
+} from './photoSize';
 
 /**
  * A picked photo as the file to upload, shrunk in the browser when it's bigger than a
@@ -21,10 +28,17 @@ export async function shrinkPhoto(
   const file = (a as { file?: Blob }).file;
   const asIs: LocalFile = { uri: a.uri, name, mime, file };
   if (a.type === 'video' || !file) return asIs;
-  const size = shrinkTo({ mime, width: a.width, height: a.height }, maxEdge);
-  if (!size) return asIs;
+  // A HEIC becomes a JPEG where the browser can read one (Safari, R88); elsewhere it goes as it
+  // is and the server takes its hidden details out. Anything else only when it's bigger than shown.
+  const convert = needsJpeg(mime);
+  const smaller = shrinkTo(
+    { mime: convert ? 'image/jpeg' : mime, width: a.width, height: a.height },
+    maxEdge,
+  );
+  if (!smaller && !convert) return asIs;
   try {
     const bitmap = await createImageBitmap(file);
+    const size = smaller ?? { width: bitmap.width, height: bitmap.height };
     const canvas = document.createElement('canvas');
     canvas.width = size.width;
     canvas.height = size.height;
@@ -32,7 +46,7 @@ export async function shrinkPhoto(
     if (!ctx) return asIs;
     ctx.drawImage(bitmap, 0, 0, size.width, size.height);
     bitmap.close();
-    const format = shrunkFormat(mime);
+    const format = convert ? 'jpeg' : shrunkFormat(mime);
     const type = `image/${format}`;
     const blob = await new Promise<Blob | null>((resolve) =>
       canvas.toBlob(resolve, type, format === 'jpeg' ? PHOTO_QUALITY : undefined),

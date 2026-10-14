@@ -88,8 +88,8 @@ export function openLink(url: string, suspicious = false): void {
     if (window.confirm(message)) go();
     return;
   }
-  Alert.alert('Open this link?', message, [
-    { text: 'Cancel', style: 'cancel' },
-    { text: 'Open', style: 'destructive', onPress: go },
+  Alert.alert(tr('Open this link?'), message, [
+    { text: tr('Cancel'), style: 'cancel' },
+    { text: tr('Open'), style: 'destructive', onPress: go },
   ]);
 }

@@ -46,6 +46,7 @@ import { CodeChangedBanner, Downgraded, PrivateSheet } from '@/features/e2ee/par
 import { privateSupported } from '@/features/e2ee/support';
 import type { KitChoice, KitStart } from '@/features/kits/KitForm';
 import { joinFromLink } from '@/features/kits/meetingCall';
+import { PhotoViewerHost } from '@/features/media/PhotoViewerHost';
 import { OrgMark, VerifiedLine } from '@/features/orgs/kinds';
 import { handleOf } from '@/features/people/handleLine';
 import { useNow, useUserClock } from '@/lib/time';
@@ -980,6 +981,7 @@ export function ConversationScreen({
         }}
       />
       {forwarding ? <ForwardSheet m={forwarding} onClose={() => setForwarding(null)} /> : null}
+      <PhotoViewerHost />
       {labelled && other ? (
         <RelationshipPicker
           open={labelling}

@@ -1,4 +1,6 @@
 import type { InboxItemView, InboxSectionView } from '@caime/core/api';
+import { finds } from '@caime/core/fold';
+import { listTitle } from '@caime/core/format';
 import { tr, trn } from '@caime/core/i18n';
 import { SPHERE_DEFS, SPHERES, type Sphere } from '@caime/core/taxonomy';
 import { router, usePathname } from 'expo-router';
@@ -16,6 +18,7 @@ import { useMyDevices } from '@/features/e2ee/codes';
 import { WaitingDevices } from '@/features/e2ee/parts';
 import { privateSupported } from '@/features/e2ee/support';
 import { PushPrompt } from '@/features/push/PushPrompt';
+import { PlaceSearch } from '@/features/shell/PlaceSearch';
 import { useBadges } from '@/features/shell/useBadges';
 import { YouButton } from '@/features/shell/YouButton';
 import { UpdatesRow } from '@/features/updates/UpdatesRow';
@@ -30,7 +33,7 @@ import { IconButton } from '@/ui/IconButton';
 import { lazyPart, useOpened } from '@/ui/Lazy';
 import { useLayout } from '@/ui/layout';
 import { Pressable } from '@/ui/Pressable';
-import { PageHeader, Screen } from '@/ui/Screen';
+import { PageHeader, Screen, useScrolled } from '@/ui/Screen';
 import { SkeletonRows } from '@/ui/Skeleton';
 import { sphereIcon } from '@/ui/SphereIcon';
 import { Text } from '@/ui/Text';
@@ -80,8 +83,27 @@ export function InboxList({ pane }: { pane?: boolean }) {
   const [newChat, setNewChat] = useState(false);
   const chatOpened = useOpened(newChat);
   const playful = usePrefs((p) => p.personality === 'playful');
+  const [scrolled, onScroll] = useScrolled();
+  // What's typed finds among every conversation here, whatever the chips say (R88).
+  const [term, setTerm] = useState('');
+  const searching = term.trim().length > 0;
 
   const sections = useMemo(() => {
+    if (searching) {
+      const items = (all.data?.conversations ?? []).filter((c) =>
+        finds(
+          term,
+          listTitle(c),
+          c.other?.displayName,
+          c.other?.handle,
+          c.org?.name,
+          c.space?.name,
+          c.topic,
+          c.relationship?.label,
+        ),
+      );
+      return items.length ? [{ section: 'found', label: '', items, data: items }] : [];
+    }
     if (view === 'all') {
       const items = (all.data?.conversations ?? []).filter(
         (c) => !sphere || c.relationship?.sphere === sphere,
@@ -92,7 +114,7 @@ export function InboxList({ pane }: { pane?: boolean }) {
       ...s,
       data: FOLDED.has(s.section) && !open[s.section] ? [] : s.items,
     }));
-  }, [view, sphere, all.data, attention.data, open]);
+  }, [searching, term, view, sphere, all.data, attention.data, open]);
 
   const onPress = useCallback((item: InboxItemView) => {
     router.navigate({ pathname: '/c/[id]', params: { id: item.id } });
@@ -104,90 +126,111 @@ export function InboxList({ pane }: { pane?: boolean }) {
   const empty = !q.isPending && total === 0;
   const caughtUp =
     !empty &&
+    !searching &&
     view === 'attention' &&
     !attention.data?.counts.needs_you &&
     !attention.data?.counts.important;
 
+  const head = (
+    <PageHeader
+      title={tr('Chats')}
+      subtitle={caughtUp ? null : headline}
+      left={desktop ? undefined : <YouButton />}
+      right={
+        <>
+          {!desktop ? (
+            <IconButton
+              icon={Bell}
+              label={tr('Notifications')}
+              filled
+              badge={badges.notifications > 0}
+              onPress={() => router.push('/notifications')}
+            />
+          ) : null}
+          <IconButton
+            icon={SquarePen}
+            label={tr('New conversation')}
+            tone="primary"
+            size={20}
+            onPress={() => setNewChat(true)}
+            testID="new-chat"
+          />
+        </>
+      }
+      scrolled={scrolled}
+    />
+  );
+
   const header = (
     <View>
-      <PageHeader
-        title={tr('Chats')}
-        subtitle={caughtUp ? null : headline}
-        left={desktop ? undefined : <YouButton />}
-        right={
-          <>
-            {!desktop ? (
-              <IconButton
-                icon={Bell}
-                label={tr('Notifications')}
-                filled
-                badge={badges.notifications > 0}
-                onPress={() => router.push('/notifications')}
-              />
-            ) : null}
-            <IconButton
-              icon={SquarePen}
-              label={tr('New conversation')}
-              tone="primary"
-              size={20}
-              onPress={() => setNewChat(true)}
-              testID="new-chat"
-            />
-          </>
-        }
-      />
-      <ChoiceChips<Show>
-        label={tr('Show conversations')}
-        value={show}
-        onChange={setShow}
-        wrap={desktop}
-        options={[
-          {
-            value: 'attention',
-            label: needsYou ? tr('Attention · {needsYou}', { needsYou }) : tr('Attention'),
-            accessibilityLabel: needsYou
-              ? trn(needsYou, 'Attention, {n} needs you', 'Attention, {n} need you')
-              : tr('Attention'),
-            testID: 'inbox-attention',
-          },
-          { value: 'all', label: tr('All'), testID: 'inbox-all' },
-          ...spheres.map((s) => ({
-            value: s,
-            label: tr(SPHERE_DEFS[s].plural),
-            icon: sphereIcon(t.sphere(s).icon),
-            testID: `inbox-${s}`,
-          })),
-        ]}
-      />
+      {empty ? null : (
+        <PlaceSearch
+          value={term}
+          onChange={setTerm}
+          placeholder={tr('Search chats')}
+          testID="chats-search"
+        />
+      )}
+      {searching ? null : (
+        <ChoiceChips<Show>
+          label={tr('Show conversations')}
+          value={show}
+          onChange={setShow}
+          wrap={desktop}
+          options={[
+            {
+              value: 'attention',
+              label: needsYou ? tr('Attention · {needsYou}', { needsYou }) : tr('Attention'),
+              accessibilityLabel: needsYou
+                ? trn(needsYou, 'Attention, {n} needs you', 'Attention, {n} need you')
+                : tr('Attention'),
+              testID: 'inbox-attention',
+            },
+            { value: 'all', label: tr('All'), testID: 'inbox-all' },
+            ...spheres.map((s) => ({
+              value: s,
+              label: tr(SPHERE_DEFS[s].plural),
+              icon: sphereIcon(t.sphere(s).icon),
+              testID: `inbox-${s}`,
+            })),
+          ]}
+        />
+      )}
       <ConnectionBanner />
-      {waiting ? (
-        <View style={{ paddingHorizontal: 16, paddingBottom: 8 }}>
-          <WaitingDevices on />
-        </View>
-      ) : null}
-      <PushPrompt />
-      <TeamInboxes />
-      <UpdatesRow />
-      {caughtUp ? (
-        <View
-          style={{
-            flexDirection: 'row',
-            alignItems: 'center',
-            gap: 10,
-            marginHorizontal: 16,
-            marginBottom: 4,
-            paddingHorizontal: 12,
-            paddingVertical: playful ? 6 : 10,
-            borderRadius: t.radii.lg,
-            backgroundColor: t.c.successSoft,
-          }}
-        >
-          {playful ? <Character name="momo" expression="happy" size={40} accents={false} /> : null}
-          <Text variant="bodyStrong" color="success" style={{ flex: 1 }}>
-            {tr('Nothing needs you right now. Enjoy it.')}
-          </Text>
-        </View>
-      ) : null}
+      {searching ? null : (
+        <>
+          {waiting ? (
+            <View style={{ paddingHorizontal: 16, paddingBottom: 8 }}>
+              <WaitingDevices on />
+            </View>
+          ) : null}
+          <PushPrompt />
+          <TeamInboxes />
+          <UpdatesRow />
+          {caughtUp ? (
+            <View
+              style={{
+                flexDirection: 'row',
+                alignItems: 'center',
+                gap: 10,
+                marginHorizontal: 16,
+                marginBottom: 4,
+                paddingHorizontal: 12,
+                paddingVertical: playful ? 6 : 10,
+                borderRadius: t.radii.lg,
+                backgroundColor: t.c.successSoft,
+              }}
+            >
+              {playful ? (
+                <Character name="momo" expression="happy" size={40} accents={false} />
+              ) : null}
+              <Text variant="bodyStrong" color="success" style={{ flex: 1 }}>
+                {tr('Nothing needs you right now. Enjoy it.')}
+              </Text>
+            </View>
+          ) : null}
+        </>
+      )}
     </View>
   );
 
@@ -222,7 +265,24 @@ export function InboxList({ pane }: { pane?: boolean }) {
         sections={sections}
         keyExtractor={(i) => i.id}
         ListHeaderComponent={header}
+        ListEmptyComponent={
+          searching ? (
+            <Text
+              variant="body"
+              color="textSecondary"
+              align="center"
+              style={{ padding: 24 }}
+              testID="chats-search-none"
+            >
+              {tr('No conversation here matches.')}
+            </Text>
+          ) : null
+        }
         stickySectionHeadersEnabled={false}
+        onScroll={onScroll}
+        scrollEventThrottle={32}
+        keyboardShouldPersistTaps="handled"
+        keyboardDismissMode="on-drag"
         contentContainerStyle={{ paddingBottom: 24 }}
         refreshControl={
           <RefreshControl
@@ -289,6 +349,7 @@ export function InboxList({ pane }: { pane?: boolean }) {
 
   const content = (
     <>
+      {head}
       {body}
       <RowActions item={actionsFor} onClose={() => setActionsFor(null)} />
       {chatOpened ? <NewChatSheet open={newChat} onClose={() => setNewChat(false)} /> : null}

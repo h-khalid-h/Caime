@@ -5,7 +5,14 @@
 import { ImageManipulator, SaveFormat } from 'expo-image-manipulator';
 import type * as ImagePicker from 'expo-image-picker';
 import type { LocalFile } from '@/api/upload';
-import { PHOTO_MAX_EDGE, PHOTO_QUALITY, shrinkTo, shrunkFormat, shrunkName } from './photoSize';
+import {
+  needsJpeg,
+  PHOTO_MAX_EDGE,
+  PHOTO_QUALITY,
+  shrinkTo,
+  shrunkFormat,
+  shrunkName,
+} from './photoSize';
 
 /**
  * A picked photo as the file to upload, shrunk on the device when it's bigger than a
@@ -21,11 +28,17 @@ export async function shrinkPhoto(
   const mime = a.mimeType ?? (a.type === 'video' ? 'video/mp4' : 'image/jpeg');
   const asIs: LocalFile = { uri: a.uri, name, mime };
   if (a.type === 'video') return asIs;
-  const size = shrinkTo({ mime, width: a.width, height: a.height }, maxEdge);
-  if (!size) return asIs;
+  // A HEIC becomes a JPEG at any size (R88); anything else only when it's bigger than shown.
+  const convert = needsJpeg(mime);
+  const size = shrinkTo(
+    { mime: convert ? 'image/jpeg' : mime, width: a.width, height: a.height },
+    maxEdge,
+  );
+  if (!size && !convert) return asIs;
   try {
-    const format = shrunkFormat(mime);
-    const image = await ImageManipulator.manipulate(a.uri).resize(size).renderAsync();
+    const format = convert ? 'jpeg' : shrunkFormat(mime);
+    const context = ImageManipulator.manipulate(a.uri);
+    const image = await (size ? context.resize(size) : context).renderAsync();
     try {
       const saved = await image.saveAsync({
         format: format === 'png' ? SaveFormat.PNG : SaveFormat.JPEG,

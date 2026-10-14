@@ -12,6 +12,22 @@ export const PHOTO_QUALITY = 0.9;
 export const AVATAR_MAX_EDGE = 1024;
 /** Formats that go as they are: animation, vectors, and what a browser can't re-encode. */
 const AS_IS = new Set(['image/gif', 'image/svg+xml', 'image/heic', 'image/heif', 'image/avif']);
+/**
+ * What a phone takes that not every screen draws, nor the server can clean (R88): a HEIC is
+ * turned into a JPEG on the device whatever its size, where the device can read it.
+ */
+const AS_JPEG = new Set(['image/heic', 'image/heif']);
+
+export function needsJpeg(mime?: string | null): boolean {
+  return AS_JPEG.has((mime ?? '').toLowerCase());
+}
+
+/** A file's type from its name, where the browser didn't say (a HEIC on Windows, say). */
+export function photoMimeOf(name: string, said: string): string {
+  if (said) return said;
+  const ext = name.toLowerCase().split('.').pop() ?? '';
+  return ext === 'heic' ? 'image/heic' : ext === 'heif' ? 'image/heif' : '';
+}
 
 /** The size to shrink to, or null when the photo goes as it came. */
 export function shrinkTo(

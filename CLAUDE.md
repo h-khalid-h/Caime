@@ -322,6 +322,12 @@ These are rules, not preferences.
   to the inbox opened last (`state/business.ts`, in memory), else the first. On a phone the
   Chats list's `TeamInboxes` rows are the same step. Nothing about an organization's inbox is
   ever reached only through one organization's page.
+- A place (Chats, People, Spaces, Actions) keeps its `PageHeader` above its list, outside it,
+  with `scrolled` from `useScrolled` for the hairline (R88); the list starts with the place's
+  `PlaceSearch` (`features/shell/PlaceSearch.tsx`), which filters what the place already holds
+  with core `finds` (`fold.ts`: no case, no accents, Arabic folded) and hands the words to Search
+  or to Cai (`/search?q=…&ask=1`). A new list of places joins the same way, never a search of its
+  own or a request per keystroke.
 - The interface is Inter, set tight at size (R69: `typeScale` in `@caime/brand/tokens`);
   Nunito is for brand moments only (`display`: welcome, empty states, the auth screens' heading)
   and the wordmark. The `mono` text variant keeps its name but is Inter now: a spec sheet's
@@ -1086,7 +1092,13 @@ These are rules, not preferences.
   web: the bar did once, and the press on the button under the field that lost the focus was lost.
 - A `Sheet` is a modal: a layer above the app on the web, its own window on phones. Toasts show in
   the topmost open sheet (`ToastHost layer`), since one drawn on the screen beneath it is hidden
-  and its Undo can't be pressed. Anything else that must show over a sheet goes inside it. Toasts
+  and its Undo can't be pressed. Anything else that must show over a sheet goes inside it (a
+  photo opened from a sheet: its own `PhotoViewerHost host="…"` inside it). What a sheet hands on
+  to (a picker, the camera, a card's form, another sheet) runs through `afterSheet` (R88): on iOS
+  once the sheet has gone, since UIKit presents nothing from a screen still dismissing one,
+  elsewhere at once inside the tap (a browser opens a file chooser only for a tap); such a sheet
+  closes by `open` turning false, never by unmounting, or it never says it has gone
+  (`MessageActions` keeps its last message while it closes). Toasts
   sit at the bottom, where a thumb reaches Undo: the screen's host is `ScreenToasts`, which
   stands them off the phone's bar (`tabBarRoom` while it's shown); nothing draws a toast at the
   top.
@@ -1327,10 +1339,20 @@ These are rules, not preferences.
   once at start when any is missing (`files_preview_missing`, a partial index). `/files/:id/preview`
   and an item's photo route send the preview, else the cleaned original. A new rendition joins
   `RENDITION_EDGES` in core and the backfill.
+- A photo in a message, an album, the shared panel or Saved opens with `showPhotos(files, i,
+  host)` (`features/media/viewer.ts`; the viewer loads on first use), only what `drawable` says a
+  screen can draw (renditions, or a kind every browser draws: a HEIC that stayed one is a file);
+  any other file opens with `openFile` (`lib/openFile.ts`: on a phone fetched with the session
+  into the cache, once, and handed to the system's sheet; a tab on the web), never `openLink` on a
+  `/v1/` address, which a phone's browser opens without a session (R88). A long press on anything
+  pressable inside a bubble passes the bubble's (`onHold`), so a phone reaches the actions.
 - A picked photo goes through `photoToUpload` (`lib/photos.ts`, `photos.web.ts`) before
   `uploadFile`: shrunk on the device to `PHOTO_MAX_EDGE` (`lib/photoSize.ts`, pure and
-  tested), or `AVATAR_MAX_EDGE` for a face or a logo; videos, GIFs and HEIC go as they are, and
-  a shrink that fails sends the original. The shrinking itself (`photoShrink.ts`,
+  tested), or `AVATAR_MAX_EDGE` for a face or a logo; videos and GIFs go as they are, a HEIC
+  becomes a JPEG where the device reads one (`needsJpeg`; an iPhone's picker hands over JPEG,
+  `Compatible`), and a shrink that fails sends the original. A HEIC that reaches the server has
+  its Exif and XMP items zeroed in place (`stripHeifDetails`, `lib/heif.ts`: the server reads no
+  HEVC; an unreadable container is refused), so no photo keeps where it was taken. The shrinking itself (`photoShrink.ts`,
   `photoShrink.web.ts`) loads when there's a photo to shrink; the picker stays static, since a
   browser opens a file chooser only inside the tap. The server's own cap and metadata strip stay.
 - The characters' vector builders (`@caime/brand/characters`) load the first time a `Character`
@@ -1411,7 +1433,7 @@ These are rules, not preferences.
   out of a route's own chunk (a sheet inside the conversation screen) makes it worse: whatever
   it shares with that route moves into `__common`, which loads first (it cost 4.5 KB once). The
   desktop panes and the tabs that show them take them lazily from `features/shell/panes.ts`, so
-  none is in the first download (`panes.test.ts` fails on a static import of one). Measure with
+  none is in the first download (Chats too since R88: a visit starts on Attention) (`panes.test.ts` fails on a static import of one). Measure with
   `node scripts/bundle-budget.mjs <dist>` after an `expo export --source-maps`, which also lists
   the largest chunks loaded later and fails for any over 100 KB gzip (a language's catalog, the
   conversation screen), and look at what's in `__common` before splitting anything.

@@ -1860,7 +1860,10 @@ export const turkish: Catalog = {
   '{length} accounts': '{length} hesap',
   'Not labelled yet': 'Henüz etiketlenmedi',
   '{n} connections': { one: '{n} bağlantı', other: '{n} bağlantı' },
-  '{incoming} people want to connect': '{incoming} kişi bağlanmak istiyor',
+  '{n} people want to connect': {
+    one: '{n} kişi bağlanmak istiyor',
+    other: '{n} kişi bağlanmak istiyor',
+  },
   'Show people': 'Kişileri göster',
   'Not labelled': 'Etiketlenmemiş',
   'Find your people': 'Kişilerinizi bulun',
@@ -2250,8 +2253,10 @@ export const turkish: Catalog = {
   'Share news with everyone who follows {name}':
     '{name} kuruluşunu takip eden herkesle haber paylaşın',
   'A new update': 'Yeni bir güncelleme',
-  '{followers} people follow it. Nobody sees who.':
-    '{followers} kişi takip ediyor. Kimin takip ettiğini kimse görmez.',
+  '{n} people follow it. Nobody sees who.': {
+    one: '{n} kişi takip ediyor. Kimin takip ettiğini kimse görmez.',
+    other: '{n} kişi takip ediyor. Kimin takip ettiğini kimse görmez.',
+  },
   Post: 'Paylaş',
   'Older updates': 'Eski güncellemeler',
   'Nothing posted yet. What you post here reaches everyone who follows it, as the organization.':
@@ -3855,4 +3860,18 @@ export const turkish: Catalog = {
   // Where something sits in a host's order (R61).
   'Move up': 'Yukarı taşı',
   'Move down': 'Aşağı taşı',
+  // A place's own search (R88).
+  'Search chats': 'Sohbetlerde ara',
+  'Search spaces': 'Alanlarda ara',
+  'Search actions': 'Eylemlerde ara',
+  'Search everything': 'Her yerde ara',
+  'No conversation here matches.': 'Burada eşleşen konuşma yok.',
+  'No space here matches.': 'Burada eşleşen alan yok.',
+  'No action here matches.': 'Burada eşleşen eylem yok.',
+  'Replying to a message': 'Bir mesaja yanıt',
+  'Open this link?': 'Bu bağlantı açılsın mı?',
+  Download: 'İndir',
+  Previous: 'Önceki',
+  Camera: 'Kamera',
+  'Take a photo and send it': 'Fotoğraf çek ve gönder',
 };

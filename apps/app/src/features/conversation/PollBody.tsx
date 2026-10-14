@@ -20,11 +20,14 @@ export function PollBody({
   fg,
   meta,
   mine,
+  onHold,
 }: {
   m: MessageView;
   fg: string;
   meta: string;
   mine: boolean;
+  /** A long press on an option is the message's, as on the rest of the bubble (R88). */
+  onHold?: () => void;
 }) {
   const qc = useQueryClient();
   const p = m.payload as unknown as PollPayload;
@@ -63,6 +66,8 @@ export function PollBody({
               text: o.text,
             })}
             onPress={() => void vote(o.id)}
+            onLongPress={onHold}
+            delayLongPress={300}
             style={{
               borderRadius: 10,
               overflow: 'hidden',

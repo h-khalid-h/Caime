@@ -19,8 +19,11 @@ import { useState } from 'react';
 import { View } from 'react-native';
 import { mediaHeaders, mediaUrl } from '@/api/client';
 import { useAssets } from '@/api/hooks';
+import { PhotoViewerHost } from '@/features/media/PhotoViewerHost';
+import { drawable, showPhotos } from '@/features/media/viewer';
 import { SaveSheet } from '@/features/saved/SaveSheet';
-import { openCheckedLink, openLink } from '@/lib/links';
+import { openCheckedLink } from '@/lib/links';
+import { openFile } from '@/lib/openFile';
 import { useNow, useUserClock } from '@/lib/time';
 import { useSession } from '@/state/session';
 import { useTheme } from '@/theme/theme';
@@ -29,8 +32,9 @@ import { IconButton } from '@/ui/IconButton';
 import { ListRow } from '@/ui/ListRow';
 import { Pressable } from '@/ui/Pressable';
 import { Segmented } from '@/ui/Segmented';
-import { Sheet } from '@/ui/Sheet';
+import { afterSheet, Sheet } from '@/ui/Sheet';
 import { Text } from '@/ui/Text';
+import { toast } from '@/ui/Toast';
 
 type Tab = 'media' | 'files' | 'links';
 
@@ -71,8 +75,14 @@ export function SharedFiles({
   const { timeZone, locale } = useUserClock();
   // Chosen by them; until then, the first kind there's anything of.
   const [chosen, setChosen] = useState<Tab | null>(null);
-  // The one being saved, in place of this sheet while it is.
+  // The one being saved, in place of this sheet while it is: this sheet closes, and the saving
+  // one opens once it has gone (Sheet's `afterSheet`).
+  const [toKeep, setToKeep] = useState<AssetView | null>(null);
   const [keeping, setKeeping] = useState<AssetView | null>(null);
+  const keep = (a: AssetView) => {
+    setToKeep(a);
+    afterSheet(() => setKeeping(a));
+  };
   const [first, setFirst] = useState<Tab>('media');
   const tab = chosen ?? first;
   const shown = TABS.find((x) => x.value === tab) ?? TABS[0]!;
@@ -107,9 +117,16 @@ export function SharedFiles({
       onClose();
       onJump(a.messageSeq);
     });
-  const openFile = (a: AssetView) => {
-    const url = mediaUrl(a.file?.url);
-    if (url) openLink(url);
+  // Photos open full screen in Caime, a swipe from the others shown (R88); anything else opens
+  // with the session (a phone's system sheet, a browser's tab).
+  const photos = assets.flatMap((a) =>
+    a.kind === 'photo' && a.file && drawable(a.file) ? [a.file] : [],
+  );
+  const openAsset = (a: AssetView) => {
+    if (!a.file) return;
+    const at = photos.findIndex((f) => f.id === a.file?.id);
+    if (at >= 0) showPhotos(photos, at, 'shared');
+    else void openFile(a.file).catch((e: Error) => toast(e.message, { tone: 'danger' }));
   };
   const mayKeep = mayKeepFrom(conversation);
   const keepIt = (a: AssetView) =>
@@ -118,7 +135,7 @@ export function SharedFiles({
         icon={Bookmark}
         label={tr('Save it')}
         size={18}
-        onPress={() => setKeeping(a)}
+        onPress={() => keep(a)}
         testID="shared-save"
       />
     ) : null;
@@ -133,198 +150,206 @@ export function SharedFiles({
       />
     ) : null;
 
-  if (keeping?.messageId)
-    return (
-      <SaveSheet
-        messageId={keeping.messageId}
-        assetId={keeping.id}
-        onClose={() => setKeeping(null)}
-      />
-    );
   return (
-    <Sheet open onClose={onClose} title={tr('Shared here')}>
-      <View style={{ gap: 12 }}>
-        <Segmented
-          label={tr('What’s shown')}
-          value={tab}
-          options={TABS.map((x) => ({ value: x.value, label: tr(x.label), count: count(x) }))}
-          onChange={setChosen}
+    <>
+      {keeping?.messageId ? (
+        <SaveSheet
+          messageId={keeping.messageId}
+          assetId={keeping.id}
+          onClose={() => {
+            setKeeping(null);
+            setToKeep(null);
+          }}
         />
-        {q.isError ? (
-          <Text variant="body" color="danger">
-            {(q.error as Error).message}
-          </Text>
-        ) : loading ? (
-          <Text variant="body" color="textSecondary">
-            {tr('Loading what’s been shared…')}
-          </Text>
-        ) : !assets.length ? (
-          <Text variant="body" color="textSecondary" testID="shared-empty">
-            {tr(EMPTY[tab])}
-          </Text>
-        ) : tab === 'media' ? (
-          <View style={{ flexDirection: 'row', flexWrap: 'wrap', margin: -2 }}>
-            {assets.map((a) => {
-              const thumb = mediaUrl(a.file?.thumbUrl ?? (a.kind === 'photo' ? a.file?.url : null));
-              const video = a.kind === 'video';
-              const what = video ? tr('Video') : tr('Photo');
-              const duration =
-                video && a.file?.durationMs ? formatDuration(a.file.durationMs) : null;
-              return (
-                <View key={a.id} style={{ width: '33.333%', aspectRatio: 1, padding: 2 }}>
-                  <Pressable
-                    accessibilityRole="imagebutton"
-                    accessibilityLabel={[what, a.file?.name, duration, line(a)]
-                      .filter(Boolean)
-                      .join(', ')}
-                    onPress={() => openFile(a)}
-                    style={{
-                      flex: 1,
-                      borderRadius: 8,
-                      overflow: 'hidden',
-                      backgroundColor: t.c.surfaceMuted,
-                      alignItems: 'center',
-                      justifyContent: 'center',
-                    }}
-                    testID="shared-photo"
-                  >
-                    {thumb ? (
-                      <Image
-                        source={{ uri: thumb, headers: mediaHeaders() }}
-                        style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0 }}
-                        contentFit="cover"
-                        transition={150}
-                      />
-                    ) : (
-                      <Video size={24} color={t.c.textTertiary} />
-                    )}
-                    {video && (thumb || duration) ? (
-                      <View
+      ) : null}
+      <Sheet open={!toKeep} onClose={onClose} title={tr('Shared here')}>
+        {/* Opened from this sheet, a photo shows over it (R88). */}
+        <PhotoViewerHost host="shared" />
+        <View style={{ gap: 12 }}>
+          <Segmented
+            label={tr('What’s shown')}
+            value={tab}
+            options={TABS.map((x) => ({ value: x.value, label: tr(x.label), count: count(x) }))}
+            onChange={setChosen}
+          />
+          {q.isError ? (
+            <Text variant="body" color="danger">
+              {(q.error as Error).message}
+            </Text>
+          ) : loading ? (
+            <Text variant="body" color="textSecondary">
+              {tr('Loading what’s been shared…')}
+            </Text>
+          ) : !assets.length ? (
+            <Text variant="body" color="textSecondary" testID="shared-empty">
+              {tr(EMPTY[tab])}
+            </Text>
+          ) : tab === 'media' ? (
+            <View style={{ flexDirection: 'row', flexWrap: 'wrap', margin: -2 }}>
+              {assets.map((a) => {
+                const thumb = mediaUrl(
+                  a.file?.thumbUrl ?? (a.kind === 'photo' ? a.file?.url : null),
+                );
+                const video = a.kind === 'video';
+                const what = video ? tr('Video') : tr('Photo');
+                const duration =
+                  video && a.file?.durationMs ? formatDuration(a.file.durationMs) : null;
+                return (
+                  <View key={a.id} style={{ width: '33.333%', aspectRatio: 1, padding: 2 }}>
+                    <Pressable
+                      accessibilityRole="imagebutton"
+                      accessibilityLabel={[what, a.file?.name, duration, line(a)]
+                        .filter(Boolean)
+                        .join(', ')}
+                      onPress={() => openAsset(a)}
+                      style={{
+                        flex: 1,
+                        borderRadius: 8,
+                        overflow: 'hidden',
+                        backgroundColor: t.c.surfaceMuted,
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                      }}
+                      testID="shared-photo"
+                    >
+                      {thumb ? (
+                        <Image
+                          source={{ uri: thumb, headers: mediaHeaders() }}
+                          style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0 }}
+                          contentFit="cover"
+                          transition={150}
+                        />
+                      ) : (
+                        <Video size={24} color={t.c.textTertiary} />
+                      )}
+                      {video && (thumb || duration) ? (
+                        <View
+                          style={{
+                            position: 'absolute',
+                            start: 6,
+                            bottom: 6,
+                            flexDirection: 'row',
+                            alignItems: 'center',
+                            gap: 4,
+                            paddingHorizontal: 6,
+                            paddingVertical: 2,
+                            borderRadius: 8,
+                            backgroundColor: 'rgba(0,0,0,0.55)',
+                          }}
+                        >
+                          {thumb ? <Video size={12} color="#fff" /> : null}
+                          {duration ? (
+                            <Text variant="caption" style={{ color: '#fff' }}>
+                              {duration}
+                            </Text>
+                          ) : null}
+                        </View>
+                      ) : null}
+                    </Pressable>
+                    {jump && a.messageSeq !== null ? (
+                      <Pressable
+                        accessibilityRole="button"
+                        accessibilityLabel={tr('Show this {toLowerCase} in the conversation', {
+                          toLowerCase: what.toLowerCase(),
+                        })}
+                        onPress={() => jump(a)}
+                        hitSlop={8}
+                        focusRadius={14}
                         style={{
                           position: 'absolute',
-                          start: 6,
-                          bottom: 6,
-                          flexDirection: 'row',
+                          top: 8,
+                          end: 8,
+                          width: 28,
+                          height: 28,
+                          borderRadius: t.radii.md,
+                          backgroundColor: 'rgba(0,0,0,0.5)',
                           alignItems: 'center',
-                          gap: 4,
-                          paddingHorizontal: 6,
-                          paddingVertical: 2,
-                          borderRadius: 8,
-                          backgroundColor: 'rgba(0,0,0,0.55)',
+                          justifyContent: 'center',
                         }}
+                        testID="shared-jump"
                       >
-                        {thumb ? <Video size={12} color="#fff" /> : null}
-                        {duration ? (
-                          <Text variant="caption" style={{ color: '#fff' }}>
-                            {duration}
-                          </Text>
-                        ) : null}
-                      </View>
+                        <MessageCircle size={15} color="#fff" />
+                      </Pressable>
                     ) : null}
-                  </Pressable>
-                  {jump && a.messageSeq !== null ? (
-                    <Pressable
-                      accessibilityRole="button"
-                      accessibilityLabel={tr('Show this {toLowerCase} in the conversation', {
-                        toLowerCase: what.toLowerCase(),
-                      })}
-                      onPress={() => jump(a)}
-                      hitSlop={8}
-                      focusRadius={14}
-                      style={{
-                        position: 'absolute',
-                        top: 8,
-                        end: 8,
-                        width: 28,
-                        height: 28,
-                        borderRadius: t.radii.md,
-                        backgroundColor: 'rgba(0,0,0,0.5)',
-                        alignItems: 'center',
-                        justifyContent: 'center',
-                      }}
-                      testID="shared-jump"
-                    >
-                      <MessageCircle size={15} color="#fff" />
-                    </Pressable>
-                  ) : null}
-                  {mayKeep && a.messageId ? (
-                    <Pressable
-                      accessibilityRole="button"
-                      accessibilityLabel={tr('Save this {toLowerCase}', {
-                        toLowerCase: what.toLowerCase(),
-                      })}
-                      onPress={() => setKeeping(a)}
-                      hitSlop={8}
-                      focusRadius={14}
-                      style={{
-                        position: 'absolute',
-                        top: 8,
-                        start: 8,
-                        width: 28,
-                        height: 28,
-                        borderRadius: t.radii.md,
-                        backgroundColor: 'rgba(0,0,0,0.5)',
-                        alignItems: 'center',
-                        justifyContent: 'center',
-                      }}
-                      testID="shared-save"
-                    >
-                      <Bookmark size={15} color="#fff" />
-                    </Pressable>
-                  ) : null}
+                    {mayKeep && a.messageId ? (
+                      <Pressable
+                        accessibilityRole="button"
+                        accessibilityLabel={tr('Save this {toLowerCase}', {
+                          toLowerCase: what.toLowerCase(),
+                        })}
+                        onPress={() => setKeeping(a)}
+                        hitSlop={8}
+                        focusRadius={14}
+                        style={{
+                          position: 'absolute',
+                          top: 8,
+                          start: 8,
+                          width: 28,
+                          height: 28,
+                          borderRadius: t.radii.md,
+                          backgroundColor: 'rgba(0,0,0,0.5)',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                        }}
+                        testID="shared-save"
+                      >
+                        <Bookmark size={15} color="#fff" />
+                      </Pressable>
+                    ) : null}
+                  </View>
+                );
+              })}
+            </View>
+          ) : (
+            <View style={{ marginHorizontal: -20 }}>
+              {assets.map((a) => (
+                // Opening it and showing it in the conversation sit side by side, not one in the
+                // other, so each is its own control.
+                <View
+                  key={a.id}
+                  style={{ flexDirection: 'row', alignItems: 'center', paddingEnd: 8 }}
+                  testID={tab === 'files' ? 'shared-file' : 'shared-link'}
+                >
+                  <View style={{ flex: 1, minWidth: 0 }}>
+                    {tab === 'files' ? (
+                      <ListRow
+                        icon={a.kind === 'audio' ? Mic : FileText}
+                        title={
+                          a.file?.name ??
+                          a.title ??
+                          (a.kind === 'audio' ? tr('Voice note') : tr('File'))
+                        }
+                        subtitle={line(a, a.file ? formatBytes(a.file.size) : null)}
+                        onPress={() => openAsset(a)}
+                      />
+                    ) : (
+                      <ListRow
+                        icon={Link}
+                        title={a.host ?? a.url ?? tr('Link')}
+                        subtitle={line(a, a.url)}
+                        onPress={() => {
+                          if (a.url) void openCheckedLink(a.url);
+                        }}
+                      />
+                    )}
+                  </View>
+                  {keepIt(a)}
+                  {showIt(a)}
                 </View>
-              );
-            })}
-          </View>
-        ) : (
-          <View style={{ marginHorizontal: -20 }}>
-            {assets.map((a) => (
-              // Opening it and showing it in the conversation sit side by side, not one in the
-              // other, so each is its own control.
-              <View
-                key={a.id}
-                style={{ flexDirection: 'row', alignItems: 'center', paddingEnd: 8 }}
-                testID={tab === 'files' ? 'shared-file' : 'shared-link'}
-              >
-                <View style={{ flex: 1, minWidth: 0 }}>
-                  {tab === 'files' ? (
-                    <ListRow
-                      icon={a.kind === 'audio' ? Mic : FileText}
-                      title={
-                        a.file?.name ??
-                        a.title ??
-                        (a.kind === 'audio' ? tr('Voice note') : tr('File'))
-                      }
-                      subtitle={line(a, a.file ? formatBytes(a.file.size) : null)}
-                      onPress={() => openFile(a)}
-                    />
-                  ) : (
-                    <ListRow
-                      icon={Link}
-                      title={a.host ?? a.url ?? tr('Link')}
-                      subtitle={line(a, a.url)}
-                      onPress={() => {
-                        if (a.url) void openCheckedLink(a.url);
-                      }}
-                    />
-                  )}
-                </View>
-                {keepIt(a)}
-                {showIt(a)}
-              </View>
-            ))}
-          </View>
-        )}
-        {q.hasNextPage ? (
-          <Button
-            label={tr('Show more')}
-            variant="secondary"
-            loading={q.isFetchingNextPage}
-            onPress={() => void q.fetchNextPage()}
-            testID="shared-more"
-          />
-        ) : null}
-      </View>
-    </Sheet>
+              ))}
+            </View>
+          )}
+          {q.hasNextPage ? (
+            <Button
+              label={tr('Show more')}
+              variant="secondary"
+              loading={q.isFetchingNextPage}
+              onPress={() => void q.fetchNextPage()}
+              testID="shared-more"
+            />
+          ) : null}
+        </View>
+      </Sheet>
+    </>
   );
 }

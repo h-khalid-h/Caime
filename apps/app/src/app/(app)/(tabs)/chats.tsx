@@ -1,6 +1,6 @@
 import { tr } from '@caime/core/i18n';
-import { InboxList } from '@/features/inbox/InboxList';
 import { DetailPlaceholder } from '@/features/shell/DetailPlaceholder';
+import { InboxList } from '@/features/shell/panes';
 import { useLayout } from '@/ui/layout';
 
 export default function Chats() {

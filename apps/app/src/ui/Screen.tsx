@@ -1,5 +1,11 @@
-import type { ReactNode } from 'react';
-import { View, type ViewStyle } from 'react-native';
+import { type ReactNode, useCallback, useState } from 'react';
+import {
+  type NativeScrollEvent,
+  type NativeSyntheticEvent,
+  StyleSheet,
+  View,
+  type ViewStyle,
+} from 'react-native';
 import { type Edge, SafeAreaView } from 'react-native-safe-area-context';
 import { usePhoneBar } from '@/state/phoneBar';
 import { useTheme } from '@/theme/theme';
@@ -30,18 +36,39 @@ export function Screen({
   );
 }
 
-/** A large, left-aligned page title with actions on the right (the Chats/People/You headers). */
+/**
+ * Whether a place's list has moved off its top (R88): its head stays where it is and draws a
+ * hairline under it once there's something beneath to tell it from. Changes state only when the
+ * answer does, never per frame.
+ */
+export function useScrolled(): [boolean, (e: NativeSyntheticEvent<NativeScrollEvent>) => void] {
+  const [scrolled, setScrolled] = useState(false);
+  const onScroll = useCallback((e: NativeSyntheticEvent<NativeScrollEvent>) => {
+    const past = e.nativeEvent.contentOffset.y > 2;
+    setScrolled((was) => (was === past ? was : past));
+  }, []);
+  return [scrolled, onScroll];
+}
+
+/**
+ * A place's head (the Chats, People, Spaces, Actions headers): a large title at the start with
+ * its actions at the end. It stays above the place's list rather than scrolling with it (R88),
+ * so what the place offers is always a tap away; `scrolled` draws the hairline under it.
+ */
 export function PageHeader({
   title,
   subtitle,
   left,
   right,
+  scrolled,
 }: {
   title: string;
   subtitle?: string | null;
   left?: ReactNode;
   right?: ReactNode;
+  scrolled?: boolean;
 }) {
+  const t = useTheme();
   return (
     <View
       style={{
@@ -52,7 +79,10 @@ export function PageHeader({
         paddingBottom: 8,
         gap: 8,
         minHeight: 60,
+        borderBottomWidth: StyleSheet.hairlineWidth,
+        borderBottomColor: scrolled ? t.c.border : 'transparent',
       }}
+      testID="page-head"
     >
       {left}
       <View style={{ flex: 1 }}>

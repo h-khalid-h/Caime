@@ -16,7 +16,6 @@ import Star from 'lucide-react-native/icons/star';
 import X from 'lucide-react-native/icons/x';
 import { useState } from 'react';
 import { ScrollView, View } from 'react-native';
-import { mediaUrl } from '@/api/client';
 import { endpoints } from '@/api/endpoints';
 import { useMemory } from '@/api/hooks';
 import { qk } from '@/api/keys';
@@ -27,7 +26,8 @@ import { ComingUpList } from '@/features/common/comingUpLazy';
 import { WhatsAppImport } from '@/features/import/WhatsAppImport';
 import { OrgMark, VerifiedLine } from '@/features/orgs/kinds';
 import { handleLine } from '@/features/people/handleLine';
-import { openCheckedLink, openLink } from '@/lib/links';
+import { openCheckedLink } from '@/lib/links';
+import { openFile } from '@/lib/openFile';
 import { useNow, useUserClock } from '@/lib/time';
 import { usePendingTasks, useTaskOutbox } from '@/state/taskOutbox';
 import { useTheme } from '@/theme/theme';
@@ -386,8 +386,14 @@ export function ContextPanel({
                     accessibilityLabel={d.title ?? tr('Document')}
                     disabled={!d.url}
                     onPress={() => {
-                      const url = mediaUrl(d.url);
-                      if (url) openLink(url);
+                      // Opened with the session (R88): a phone's browser has none.
+                      if (d.url)
+                        void openFile({
+                          id: d.fileId ?? d.id,
+                          url: d.url,
+                          name: d.title ?? tr('Document'),
+                          mime: '',
+                        }).catch((e: Error) => toast(e.message, { tone: 'danger' }));
                     }}
                     style={{ flexDirection: 'row', gap: 8, alignItems: 'center' }}
                   >

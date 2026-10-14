@@ -18,7 +18,7 @@ import LayoutGrid from 'lucide-react-native/icons/layout-grid';
 import Sparkles from 'lucide-react-native/icons/sparkles';
 import UserPlus from 'lucide-react-native/icons/user-plus';
 import { useCallback, useMemo, useState } from 'react';
-import { RefreshControl, ScrollView, View } from 'react-native';
+import { RefreshControl, ScrollView, StyleSheet, View } from 'react-native';
 import { endpoints } from '@/api/endpoints';
 import { useAttentionHome, useInbox } from '@/api/hooks';
 import { qk } from '@/api/keys';
@@ -39,7 +39,7 @@ import { IconButton } from '@/ui/IconButton';
 import { SectionTitle } from '@/ui/ListRow';
 import { useLayout } from '@/ui/layout';
 import { Pressable } from '@/ui/Pressable';
-import { Screen } from '@/ui/Screen';
+import { Screen, useScrolled } from '@/ui/Screen';
 import { SkeletonRows } from '@/ui/Skeleton';
 import { Text } from '@/ui/Text';
 import { toast } from '@/ui/Toast';
@@ -308,11 +308,53 @@ export function AttentionHome() {
   };
 
   const greeting = me ? tr(greetingKey(now, timeZone), { name: firstName(me.displayName) }) : '';
+  // The bar stays above the day as it scrolls (R88): a hairline once something's under it.
+  const [scrolled, onScroll] = useScrolled();
   const loading = inbox.isPending && !inbox.data;
 
   return (
     <Screen>
+      {/* A bar for who you are and what's around (R69), then the day, on its own lines. */}
+      <View
+        style={{
+          flexDirection: 'row',
+          alignItems: 'center',
+          gap: 8,
+          paddingHorizontal: 16,
+          paddingTop: desktop ? 24 : 8,
+          paddingBottom: 4,
+          width: '100%',
+          maxWidth: 720,
+          alignSelf: 'center',
+          borderBottomWidth: StyleSheet.hairlineWidth,
+          borderBottomColor: scrolled ? t.c.border : 'transparent',
+        }}
+        testID="page-head"
+      >
+        {desktop ? null : <YouButton />}
+        <View style={{ flex: 1 }} />
+        <Pressable
+          accessibilityRole="button"
+          accessibilityLabel={tr('Ask Cai')}
+          onPress={() => void openDirectWith(CAI_ID)}
+          hitSlop={6}
+          testID="ask-cai"
+        >
+          <Avatar id={CAI_ID} name="Cai" size={36} />
+        </Pressable>
+        {desktop ? null : (
+          <IconButton
+            icon={Bell}
+            label={tr('Notifications')}
+            filled
+            badge={badges.notifications > 0}
+            onPress={() => router.push('/notifications')}
+          />
+        )}
+      </View>
       <ScrollView
+        onScroll={onScroll}
+        scrollEventThrottle={32}
         contentContainerStyle={{
           paddingBottom: 32,
           maxWidth: 720,
@@ -331,37 +373,6 @@ export function AttentionHome() {
         }
         testID="attention-home"
       >
-        {/* A bar for who you are and what's around (R69), then the day, on its own lines. */}
-        <View
-          style={{
-            flexDirection: 'row',
-            alignItems: 'center',
-            gap: 8,
-            paddingHorizontal: 16,
-            paddingTop: desktop ? 24 : 8,
-          }}
-        >
-          {desktop ? null : <YouButton />}
-          <View style={{ flex: 1 }} />
-          <Pressable
-            accessibilityRole="button"
-            accessibilityLabel={tr('Ask Cai')}
-            onPress={() => void openDirectWith(CAI_ID)}
-            hitSlop={6}
-            testID="ask-cai"
-          >
-            <Avatar id={CAI_ID} name="Cai" size={36} />
-          </Pressable>
-          {desktop ? null : (
-            <IconButton
-              icon={Bell}
-              label={tr('Notifications')}
-              filled
-              badge={badges.notifications > 0}
-              onPress={() => router.push('/notifications')}
-            />
-          )}
-        </View>
         <View style={{ paddingHorizontal: 20, paddingTop: 12, paddingBottom: 12, gap: 6 }}>
           <Text
             variant="title"

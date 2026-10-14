@@ -1,6 +1,6 @@
 import type { ImagePickerAsset, ImagePickerOptions, ImagePickerResult } from 'expo-image-picker';
 import type { LocalFile } from '@/api/upload';
-import { PHOTO_MAX_EDGE } from './photoSize';
+import { PHOTO_MAX_EDGE, photoMimeOf } from './photoSize';
 
 export type PickOptions = ImagePickerOptions;
 export type PickResult = ImagePickerResult;
@@ -30,7 +30,7 @@ async function asset(file: File): Promise<ImagePickerAsset> {
     uri,
     ...(await sizeOf(uri, video)),
     type: video ? 'video' : 'image',
-    mimeType: file.type,
+    mimeType: photoMimeOf(file.name, file.type),
     fileName: file.name,
     fileSize: file.size,
     file,
@@ -43,13 +43,31 @@ async function asset(file: File): Promise<ImagePickerAsset> {
  * expo-image-picker does on the web, without carrying its module in every screen that can pick.
  */
 export function pickFromLibrary(options: PickOptions): Promise<PickResult> {
+  return choose(options);
+}
+
+/**
+ * Whether this browser takes a photo with a camera when asked: a phone's or a tablet's (a
+ * coarse pointer). A desktop's would open the file chooser, which "Photos" already is.
+ */
+export function canTakePhoto(): boolean {
+  return typeof window !== 'undefined' && window.matchMedia?.('(pointer: coarse)').matches === true;
+}
+
+/** A photo taken now with the camera (R88): the browser's own, through `capture`. */
+export function takePhoto(): Promise<PickResult> {
+  return choose({ mediaTypes: ['images'] }, 'environment');
+}
+
+function choose(options: PickOptions, capture?: 'environment'): Promise<PickResult> {
   const kinds = [options.mediaTypes ?? 'images'].flat();
   const input = document.createElement('input');
+  if (capture) input.setAttribute('capture', capture);
   input.type = 'file';
   input.style.display = 'none';
   input.accept =
     [
-      ...(kinds.includes('images') ? ['image/*'] : []),
+      ...(kinds.includes('images') ? ['image/*,.heic,.heif'] : []),
       ...(kinds.includes('videos') ? ['video/mp4,video/quicktime,video/x-m4v,video/*'] : []),
     ].join(',') || 'image/*';
   input.multiple = Boolean(options.allowsMultipleSelection);
@@ -60,8 +78,9 @@ export function pickFromLibrary(options: PickOptions): Promise<PickResult> {
       if (over) return;
       over = true;
       input.remove();
-      const files = [...(input.files ?? [])].filter(
-        (f) => f.type.startsWith('image/') || f.type.startsWith('video/'),
+      // A HEIC whose type the browser doesn't know (Windows) is still a photo, by its name.
+      const files = [...(input.files ?? [])].filter((f) =>
+        /^(image|video)\//.test(photoMimeOf(f.name, f.type)),
       );
       const chosen = options.allowsMultipleSelection
         ? files.slice(0, options.selectionLimit || undefined)

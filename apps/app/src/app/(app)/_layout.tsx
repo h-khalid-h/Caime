@@ -2,12 +2,17 @@ import { Redirect, router, Slot, Stack, usePathname } from 'expo-router';
 import { useEffect, useState } from 'react';
 import { View } from 'react-native';
 import { ScreenError } from '@/features/common/ScreenError';
-import { InboxList } from '@/features/inbox/InboxList';
 import { LiveLocationSharer } from '@/features/location/LiveLocationSharer';
 import { useReport } from '@/features/safety/report';
 import { savePrefs } from '@/features/settings/savePrefs';
 import { NavRail } from '@/features/shell/NavRail';
-import { BusinessInbox, PeopleList, SettingsMenu, SpacesList } from '@/features/shell/panes';
+import {
+  BusinessInbox,
+  InboxList,
+  PeopleList,
+  SettingsMenu,
+  SpacesList,
+} from '@/features/shell/panes';
 import { useInboxHandle, useSection } from '@/features/shell/sections';
 import { TabBar } from '@/features/shell/TabBar';
 import { useLanguage } from '@/lib/languageState';

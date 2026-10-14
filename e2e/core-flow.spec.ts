@@ -103,7 +103,7 @@ test('two people connect with private labels and talk in real time', async ({ br
   await a.page.goto('/chats');
   await a.page.getByTestId('new-chat').filter({ visible: true }).click();
   await expect(a.page.getByText('New conversation', { exact: true })).toBeVisible();
-  await a.page.getByPlaceholder('Search your people').fill('sarah');
+  await a.page.getByRole('dialog').getByPlaceholder('Search your people').fill('sarah');
   await a.page
     .getByRole('dialog')
     .getByRole('button', { name: /^Sarah Ahmed, @/ })

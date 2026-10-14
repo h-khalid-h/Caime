@@ -1586,3 +1586,53 @@ with its reason, so it isn't proposed again without new facts.
   slides (Caime's digest is a message in Cai's chat, where it can be asked about), a separate
   manager digest (one digest, the person's, with what they run in it), connected Gmail or Slack
   as sources (R79 layer 2, ⛔ on the owner's OAuth clients), and autonomous sending.
+- **R88 — A place's head stays, its own search, a lighter composer, and every chat feature on a
+  phone (owner's brainstorm with WhatsApp's screens, 2026-10-14).** Checked against Caime rather
+  than copied. (1) *The head stays, what's under it scrolls.* Chats, People, Spaces and Actions
+  keep their head (the place's title, its count or headline, its actions) above the list rather
+  than scrolling it away, with a hairline once the list has moved under it (`PageHeader`'s
+  `scrolled`, from `useScrolled`); the search and the chips scroll with the list, and Attention's
+  bar (You, Cai, the bell) stays above the day the same way. A head that shrinks from a large
+  title is declined: Caime's is already one line at 60 points, and a moving title costs a phone
+  frames for nothing it shows. (2) *Each place searches itself, and hands the words on.* A field
+  at the top of each list (`PlaceSearch`) finds what's typed among that place's own list at once,
+  on the device, with no request: conversations by name, handle, organization, space, topic or
+  label; people by name, nickname, handle or label; spaces by name, purpose or organization;
+  actions by their words, whose they are and where they came from (core `finds`: no case, no
+  accents, Arabic folded as search folds it, "@" aside). While words are typed the chips step
+  aside and everything is searched. Under the field, "Search everything" opens Search with the
+  words and "Ask Cai" (where Cai can answer: assist on, an adult) opens it asked, the answer
+  coming at once and once (R66's Ask Cai, a model call on their allowance only on that tap).
+  Attention gets no field: its Cai is a tap away in its bar, and the floating search button
+  stays on every place. (3) *The composer is lighter and bounded.* The box is 40 points, one
+  line; the "+" and the microphone are bare icons beside it, the stickers inside it, Send the
+  only filled button; it grows to five lines on a phone (a quarter of the screen at most, so a
+  phone on its side keeps the conversation) and eight on a desktop, then scrolls inside.
+  (4) *Every chat feature, gone over for a phone* (an audit of the conversation's code for what
+  breaks or hides away from a browser; built and verified on the web at a phone's size, not yet
+  tried on a phone). A photo opens full screen in Caime
+  (`PhotoViewer`: the preview at once, the cleaned original as it arrives, swipe or arrow keys
+  between a message's photos, a pinch on an iPhone, save through the browser or the system's
+  sheet), where it used to open a browser that had no session on a phone, and did nothing on the
+  web's production build. A file opens with the session (`openFile`: a tab of its own on the web;
+  on a phone fetched once into the cache and handed to the system's sheet, Quick Look or a
+  viewer app), from a message, the shared panel, the conversation's details and Saved. "+" offers
+  Camera on a phone and a phone's browser (what the camera permission always promised). A HEIC
+  becomes a JPEG on the device where the device reads one (an iPhone hands its library over as
+  JPEG; a phone and Safari re-encode it), and one that reaches the server anyway has its Exif and
+  XMP items zeroed where they sit (`stripHeifDetails`: the server reads no HEVC; a container it
+  can't read for certain is refused), so "Location data is removed" holds for every photo; an
+  image no screen can draw shows as a file, never a broken picture. On iOS a sheet hands on to a
+  picker, the camera, a card's form, Forward, Save or Report only once it has gone (`afterSheet`:
+  UIKit presents nothing from a screen still taking a sheet down), and a photo opened from a
+  sheet shows over it. A long press on a photo, a file, a link, a poll's option or a place is the
+  message's (its actions), as on the rest of the bubble; voice notes play with the ringer
+  switched off; and "Enter sends" works with a phone's or a tablet's keyboard. *Not done, with
+  why:* a WhatsApp export from an iPhone comes as a .zip (to be unzipped on the device), a Pay
+  card's checkout returns to the browser rather than the app on a phone (an auth session with a
+  `caime://` return), a receipt prints only on the web, and the keyboard over the composer on
+  Android 15's edge to edge: each needs a phone to be checked on, and is on the roadmap. What R88
+  did for phones themselves (the system's sheet for a file, the camera, the pinch, a HEIC made a
+  JPEG, a sheet handing on after it has gone on iOS, voice notes with the ringer off, a long press)
+  is built to each platform's documented behaviour and stays unticked until it's tried on an
+  iPhone and an Android phone.

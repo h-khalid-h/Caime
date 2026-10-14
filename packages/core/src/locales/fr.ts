@@ -1933,7 +1933,10 @@ export const fr: Catalog = {
     one: '{n} contact',
     other: '{n} contacts',
   },
-  '{incoming} people want to connect': '{incoming} personnes veulent entrer en contact',
+  '{n} people want to connect': {
+    one: '{n} personne veut entrer en contact',
+    other: '{n} personnes veulent entrer en contact',
+  },
   'Show people': 'Afficher les personnes',
   'Not labelled': 'Sans étiquette',
   'Find your people': 'Retrouvez votre entourage',
@@ -2348,8 +2351,10 @@ export const fr: Catalog = {
   'Share news with everyone who follows {name}':
     'Partagez des nouvelles avec toutes les personnes qui suivent {name}',
   'A new update': 'Une nouvelle actualité',
-  '{followers} people follow it. Nobody sees who.':
-    '{followers} personnes la suivent. Personne ne voit qui.',
+  '{n} people follow it. Nobody sees who.': {
+    one: '{n} personne la suit. Personne ne voit qui.',
+    other: '{n} personnes la suivent. Personne ne voit qui.',
+  },
   Post: 'Publier',
   'Older updates': 'Actualités plus anciennes',
   'Nothing posted yet. What you post here reaches everyone who follows it, as the organization.':
@@ -4021,4 +4026,18 @@ export const fr: Catalog = {
   // Where something sits in a host's order (R61).
   'Move up': 'Monter',
   'Move down': 'Descendre',
+  // A place's own search (R88).
+  'Search chats': 'Rechercher dans les discussions',
+  'Search spaces': 'Rechercher dans les espaces',
+  'Search actions': 'Rechercher dans les actions',
+  'Search everything': 'Rechercher partout',
+  'No conversation here matches.': 'Aucune conversation ici ne correspond.',
+  'No space here matches.': 'Aucun espace ici ne correspond.',
+  'No action here matches.': 'Aucune action ici ne correspond.',
+  'Replying to a message': 'En réponse à un message',
+  'Open this link?': 'Ouvrir ce lien ?',
+  Download: 'Télécharger',
+  Previous: 'Précédent',
+  Camera: 'Appareil photo',
+  'Take a photo and send it': 'Prendre une photo et l’envoyer',
 };

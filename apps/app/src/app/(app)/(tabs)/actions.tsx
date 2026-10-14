@@ -1,16 +1,18 @@
 import type { TaskView } from '@caime/core/api';
+import { finds } from '@caime/core/fold';
 import { msg, tr } from '@caime/core/i18n';
 import { useLocalSearchParams } from 'expo-router';
 import CircleCheck from 'lucide-react-native/icons/circle-check';
 import Plus from 'lucide-react-native/icons/plus';
 import { useEffect, useMemo, useState } from 'react';
-import { FlatList, RefreshControl, View } from 'react-native';
+import { FlatList, RefreshControl, StyleSheet, View } from 'react-native';
 import type { TaskViewFilter } from '@/api/endpoints';
 import { endpoints } from '@/api/endpoints';
 import { useTasks } from '@/api/hooks';
 import { AddTaskSheet } from '@/features/actions/AddTaskSheet';
 import { TaskRow } from '@/features/actions/TaskRow';
 import { ConnectionBanner } from '@/features/common/ConnectionBanner';
+import { PlaceSearch } from '@/features/shell/PlaceSearch';
 import { YouButton } from '@/features/shell/YouButton';
 import { chosenOf, instantOf } from '@/features/when/when';
 import { useNow, useUserClock } from '@/lib/time';
@@ -23,9 +25,10 @@ import { EmptyState } from '@/ui/EmptyState';
 import { IconButton } from '@/ui/IconButton';
 import { lazyPart } from '@/ui/Lazy';
 import { useLayout } from '@/ui/layout';
-import { PageHeader, Screen } from '@/ui/Screen';
+import { PageHeader, Screen, useScrolled } from '@/ui/Screen';
 import { Segmented } from '@/ui/Segmented';
 import { SkeletonRows } from '@/ui/Skeleton';
+import { Text } from '@/ui/Text';
 import { toast } from '@/ui/Toast';
 
 const EMPTY: Record<string, { title: string; body: string; character: 'momo' | 'panda' | 'zuzu' }> =
@@ -112,7 +115,24 @@ export default function Actions() {
   const retry = (id: string) => useTaskOutbox.getState().retry(id);
   const discard = (id: string) => useTaskOutbox.getState().discard(id);
 
-  const tasks = [...unsent, ...(q.data?.tasks ?? [])];
+  // What's typed finds among the list shown (R88): its words, whose it is, where it came from.
+  const [term, setTerm] = useState('');
+  const searching = term.trim().length > 0;
+  const [scrolled, onScroll] = useScrolled();
+  const listed = [...unsent, ...(q.data?.tasks ?? [])];
+  const tasks = searching
+    ? listed.filter((x) =>
+        finds(
+          term,
+          x.title,
+          x.notes,
+          x.owner.displayName,
+          x.assignee.displayName,
+          x.relationship,
+          x.source?.preview,
+        ),
+      )
+    : listed;
   const empty = EMPTY[view] ?? EMPTY.todo!;
   return (
     <Screen edges={desktop ? [] : ['top']}>
@@ -132,7 +152,15 @@ export default function Actions() {
             />
           }
         />
-        <View style={{ paddingHorizontal: 16, paddingBottom: 8 }}>
+        <View
+          style={{
+            paddingHorizontal: 16,
+            paddingBottom: 8,
+            // The head and its lists stay (R88); a hairline once the list has moved under them.
+            borderBottomWidth: StyleSheet.hairlineWidth,
+            borderBottomColor: scrolled && view !== 'calendar' ? t.c.border : 'transparent',
+          }}
+        >
           <Segmented<TaskViewFilter | 'calendar'>
             label={tr('Which actions')}
             value={view}
@@ -170,26 +198,48 @@ export default function Actions() {
               />
             )}
             ItemSeparatorComponent={() => <Divider inset={52} />}
+            ListHeaderComponent={
+              listed.length ? (
+                <View style={{ paddingTop: 8, backgroundColor: t.c.canvas }}>
+                  <PlaceSearch
+                    value={term}
+                    onChange={setTerm}
+                    placeholder={tr('Search actions')}
+                    testID="actions-search"
+                  />
+                </View>
+              ) : null
+            }
+            onScroll={onScroll}
+            scrollEventThrottle={32}
+            keyboardShouldPersistTaps="handled"
+            keyboardDismissMode="on-drag"
             refreshControl={
               <RefreshControl refreshing={q.isRefetching} onRefresh={() => void q.refetch()} />
             }
             ListEmptyComponent={
-              <EmptyState
-                character={empty.character}
-                icon={CircleCheck}
-                title={tr(empty.title)}
-                body={tr(empty.body)}
-                action={
-                  view === 'todo' ? (
-                    <Button
-                      label={tr('Add an action')}
-                      variant="secondary"
-                      onPress={() => setAdding(true)}
-                      testID="add-task-empty"
-                    />
-                  ) : undefined
-                }
-              />
+              searching ? (
+                <Text variant="body" color="textSecondary" align="center" style={{ padding: 24 }}>
+                  {tr('No action here matches.')}
+                </Text>
+              ) : (
+                <EmptyState
+                  character={empty.character}
+                  icon={CircleCheck}
+                  title={tr(empty.title)}
+                  body={tr(empty.body)}
+                  action={
+                    view === 'todo' ? (
+                      <Button
+                        label={tr('Add an action')}
+                        variant="secondary"
+                        onPress={() => setAdding(true)}
+                        testID="add-task-empty"
+                      />
+                    ) : undefined
+                  }
+                />
+              )
             }
             contentContainerStyle={{
               paddingBottom: 32,

@@ -1395,6 +1395,29 @@ listed there with its owner.
       authority levels and what was declined (titles, slides, a second intelligence table,
       autonomous sending) are written in PRODUCT-REVIEW R87 (`agents.test.ts`, `cai-mail.test.ts`,
       `meeting-guests.test.ts`, `cai-digest.test.ts`, `voices.test.ts`, the AI agent E2E).
+- [x] R88, a place's head stays and searches itself: Chats, People, Spaces and Actions keep
+      their head above the list (a hairline once it scrolls) and Attention its bar; a field at
+      the top of each list finds among it at once, on the device (core `finds`: no case, no
+      accents, Arabic folded), with "Search everything" and "Ask Cai" (Search opened with the
+      words, asked at once and once). The composer is a 40-point line, bare "+" and microphone,
+      stickers inside the box, five lines at most on a phone, shrinking again on the web when
+      words are taken out. Photos open full screen in Caime (`PhotoViewer`, paged, saved), files
+      with the session (`openFile`: a tab of its own on the web), and a phone's browser offers
+      Camera in "+"; a HEIC that reaches the server has where it was taken zeroed
+      (`stripHeifDetails`), and one no screen can draw shows as a file. Verified on the web at a
+      phone's size and on the server; Chats loads like the other panes, so the first download is
+      445.5 KB of 450 (`fold.test.ts`, `heif.test.ts`, `files.test.ts`, `photoSize.test.ts`,
+      `e2e/chat-features.spec.ts`).
+- [ ] R88 on phones, built and not yet tried on one: a file fetched with the session and handed
+      to the system's sheet (expo-file-system, expo-sharing), the camera, the pinch in the photo
+      viewer (iOS), a HEIC made a JPEG on the device (an iPhone's picker, a phone's re-encoding,
+      Safari's canvas), a sheet handing on to a picker, a form or another sheet once it has gone
+      (`afterSheet`, iOS), a long press anywhere in a bubble, voice notes with the ringer off,
+      and Return sending with "Enter sends" on; each to try on an iPhone and an Android phone.
+- [ ] On a phone (needs one to check): a WhatsApp export from an iPhone, which comes as a .zip
+      (unzip it on the device); a Pay card's checkout returning to the app rather than the
+      browser (an auth session with a `caime://` return); printing a receipt (expo-print); the
+      keyboard over the composer and sheets on Android 15's edge to edge.
 - [ ] Later in R67: public pages for @cai and the friends (answer engines), more of what each friend knows.
 - [ ] ⛔ A trademark and store-name clearance for "Caime" before the store builds (the owner's).
 - [x] R62, a split's shares paid with Pay: "Pay your share" on a split opens the Pay card with
@@ -3136,3 +3159,10 @@ The six-slice review's plan, in its order; a block is ticked when its tests and 
   a goodbye on each connection, before the leaver's connections close, so a device still in the
   call no longer restarts its connection against a call that has ended (an E2E caught three
   refused signals once in a run; `group.test.ts` fails on the old order).
+- 2026-10-14 — R88, the places and the conversation: each place's head stays as its list
+  scrolls and the list searches itself, handing the words to Search or Cai; the composer is one
+  line and five at most; photos open in Caime and files with the session (they opened a browser
+  without one on a phone, and nothing on the web's production build); a HEIC's location cleared
+  on the server. For phones, built and not yet tried on one: the file sheet, the camera, HEIC to
+  JPEG, iOS sheets handing on once gone, long press, voice notes with the ringer off. Chats left
+  the first download.

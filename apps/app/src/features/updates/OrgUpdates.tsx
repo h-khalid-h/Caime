@@ -6,7 +6,7 @@
  */
 import type { OrgUpdateView, OrgView } from '@caime/core/api';
 import { formatListTime } from '@caime/core/format';
-import { tr } from '@caime/core/i18n';
+import { tr, trn } from '@caime/core/i18n';
 import { uuidv4 } from '@caime/core/ids';
 import { UPDATE_MAX } from '@caime/core/orgs';
 import { useQueryClient } from '@tanstack/react-query';
@@ -344,11 +344,11 @@ export function OrgUpdates({ org }: { org: OrgView }) {
                 <Text variant="caption" color="textTertiary" style={{ flex: 1 }}>
                   {first.followers === null
                     ? ''
-                    : first.followers === 1
-                      ? '1 person follows it. Nobody sees who.'
-                      : tr('{followers} people follow it. Nobody sees who.', {
-                          followers: first.followers,
-                        })}
+                    : trn(
+                        first.followers,
+                        '{n} person follows it. Nobody sees who.',
+                        '{n} people follow it. Nobody sees who.',
+                      )}
                 </Text>
                 <Button
                   label={tr('Post')}

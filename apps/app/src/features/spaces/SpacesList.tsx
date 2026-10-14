@@ -1,4 +1,5 @@
 import type { SpaceSummaryView } from '@caime/core/api';
+import { finds } from '@caime/core/fold';
 import { formatListTime } from '@caime/core/format';
 import { tr, trn } from '@caime/core/i18n';
 import { SPACE_KIND_DEFS } from '@caime/core/spaces';
@@ -8,6 +9,7 @@ import Plus from 'lucide-react-native/icons/plus';
 import { useState } from 'react';
 import { FlatList, RefreshControl, ScrollView, View } from 'react-native';
 import { useSpaces } from '@/api/hooks';
+import { PlaceSearch } from '@/features/shell/PlaceSearch';
 import { YouButton } from '@/features/shell/YouButton';
 import { useNow, useUserClock } from '@/lib/time';
 import { useTheme } from '@/theme/theme';
@@ -18,7 +20,7 @@ import { EmptyState } from '@/ui/EmptyState';
 import { IconButton } from '@/ui/IconButton';
 import { useLayout } from '@/ui/layout';
 import { Pressable } from '@/ui/Pressable';
-import { PageHeader, Screen } from '@/ui/Screen';
+import { PageHeader, Screen, useScrolled } from '@/ui/Screen';
 import { SkeletonRows } from '@/ui/Skeleton';
 import { Text } from '@/ui/Text';
 import { SPACE_ICONS } from './kinds';
@@ -105,24 +107,32 @@ export function SpacesList({ pane }: { pane?: boolean }) {
   const mine = spaces.some((s) => !s.org);
   const owners = orgs.length ? [...(mine ? (['me'] as const) : []), ...orgs.map((o) => o.id)] : [];
   const chosen = owner === 'all' || owners.includes(owner) ? owner : 'all';
-  const shown =
-    chosen === 'all'
+  // What's typed finds among every space, whoever's it is (R88).
+  const [term, setTerm] = useState('');
+  const searching = term.trim().length > 0;
+  const [scrolled, onScroll] = useScrolled();
+  const shown = searching
+    ? spaces.filter((s) =>
+        finds(term, s.name, s.purpose, s.org?.name, tr(SPACE_KIND_DEFS[s.kind].label)),
+      )
+    : chosen === 'all'
       ? spaces
       : spaces.filter((s) => (chosen === 'me' ? !s.org : s.org?.id === chosen));
-  const ownerRow = owners.length ? (
-    <ChoiceChips
-      label={tr('Whose spaces')}
-      value={chosen}
-      onChange={setOwner}
-      options={[
-        { value: 'all', label: tr('All'), testID: 'spaces-owner-all' },
-        ...(mine ? [{ value: 'me', label: tr('Mine'), testID: 'spaces-owner-me' }] : []),
-        ...orgs.map((o) => ({ value: o.id, label: o.name, testID: `spaces-owner-${o.handle}` })),
-      ]}
-      testID="spaces-owner"
-    />
-  ) : null;
-  const header = (
+  const ownerRow =
+    owners.length && !searching ? (
+      <ChoiceChips
+        label={tr('Whose spaces')}
+        value={chosen}
+        onChange={setOwner}
+        options={[
+          { value: 'all', label: tr('All'), testID: 'spaces-owner-all' },
+          ...(mine ? [{ value: 'me', label: tr('Mine'), testID: 'spaces-owner-me' }] : []),
+          ...orgs.map((o) => ({ value: o.id, label: o.name, testID: `spaces-owner-${o.handle}` })),
+        ]}
+        testID="spaces-owner"
+      />
+    ) : null;
+  const head = (
     <PageHeader
       title={tr('Spaces')}
       subtitle={spaces.length ? trn(spaces.length, '{n} space', '{n} spaces') : null}
@@ -137,17 +147,14 @@ export function SpacesList({ pane }: { pane?: boolean }) {
           testID="spaces-new"
         />
       }
+      scrolled={scrolled}
     />
   );
   const content =
     q.isPending && !q.data ? (
-      <>
-        {header}
-        <SkeletonRows />
-      </>
+      <SkeletonRows />
     ) : spaces.length === 0 ? (
       <ScrollView>
-        {header}
         <EmptyState
           character="lumi"
           expression="happy"
@@ -171,10 +178,24 @@ export function SpacesList({ pane }: { pane?: boolean }) {
         keyExtractor={(s) => s.id}
         ListHeaderComponent={
           <>
-            {header}
+            <PlaceSearch
+              value={term}
+              onChange={setTerm}
+              placeholder={tr('Search spaces')}
+              testID="spaces-search"
+            />
             {ownerRow}
           </>
         }
+        ListEmptyComponent={
+          <Text variant="body" color="textSecondary" align="center" style={{ padding: 24 }}>
+            {tr('No space here matches.')}
+          </Text>
+        }
+        onScroll={onScroll}
+        scrollEventThrottle={32}
+        keyboardShouldPersistTaps="handled"
+        keyboardDismissMode="on-drag"
         renderItem={({ item }) => (
           <SpaceRow s={item} selected={Boolean(pane && selectedId === item.id)} />
         )}
@@ -184,6 +205,17 @@ export function SpacesList({ pane }: { pane?: boolean }) {
         contentContainerStyle={{ paddingBottom: 24 }}
       />
     );
-  if (pane) return <View style={{ flex: 1 }}>{content}</View>;
-  return <Screen>{content}</Screen>;
+  if (pane)
+    return (
+      <View style={{ flex: 1 }}>
+        {head}
+        {content}
+      </View>
+    );
+  return (
+    <Screen>
+      {head}
+      {content}
+    </Screen>
+  );
 }

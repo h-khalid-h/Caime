@@ -120,9 +120,27 @@ export function bareLiterals() {
     const ast = parser.parse(src, { sourceType: 'module', plugins: ['typescript', 'jsx'] });
     const add = (node, kind, text) =>
       out.push({ file: rel, line: node.loc.start.line, kind, text: text.replace(/\s+/g, ' ') });
-    // Where a string is shown: a JSX child, or a field a person reads.
-    const shownIn = (path) => {
+    // Where a string is shown: a JSX child, a field a person reads, or what an alert or a
+    // toast says; through either side of a condition (`n === 1 ? 'one thing' : …`).
+    const shownIn = (from) => {
+      let path = from;
+      while (
+        (path.parentPath.isConditionalExpression() && path.parentPath.node.test !== path.node) ||
+        path.parentPath.isLogicalExpression()
+      )
+        path = path.parentPath;
       const parent = path.parentPath;
+      if (parent.isCallExpression() && parent.node.arguments.includes(path.node)) {
+        const callee = parent.node.callee;
+        if (callee.type === 'Identifier' && callee.name === 'toast') return 'toast';
+        if (
+          callee.type === 'MemberExpression' &&
+          callee.object.type === 'Identifier' &&
+          callee.object.name === 'Alert'
+        )
+          return 'alert';
+        return null;
+      }
       if (parent.isJSXExpressionContainer()) {
         if (parent.parentPath.isJSXElement()) return 'child';
         if (parent.parentPath.isJSXAttribute()) return parent.parentPath.node.name.name;
@@ -150,7 +168,8 @@ export function bareLiterals() {
         // An argument of tr/trn/msg, or a key written in a table it reads later.
         if (i18nCall(path.parent)) return;
         const where = shownIn(path);
-        if (where === 'child' || (where && TEXT_FIELDS.has(where))) add(path.node, where, v);
+        if (where === 'child' || where === 'toast' || where === 'alert' || TEXT_FIELDS.has(where))
+          add(path.node, where, v);
       },
       JSXText(path) {
         const v = path.node.value.trim();

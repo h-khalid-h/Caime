@@ -1,5 +1,5 @@
 import { palette } from '@caime/brand/tokens';
-import type { MessageMailView, MessageView } from '@caime/core/api';
+import type { FileView, MessageMailView, MessageView } from '@caime/core/api';
 import { AI_LABEL } from '@caime/core/assist';
 import { formatBytes, formatClock, formatDuration, systemText } from '@caime/core/format';
 import { tr } from '@caime/core/i18n';
@@ -32,14 +32,17 @@ import {
 } from '@/features/e2ee/hooks';
 import { KitCard } from '@/features/kits/KitCard';
 import { LocationBody } from '@/features/location/LocationBody';
+import { drawable, showPhotos } from '@/features/media/viewer';
 import { stickerById } from '@/features/stickers/pack';
 import { durationOf, transcriptOf } from '@/features/voice/transcript';
 import { linkify, openLink, opensWithEnter } from '@/lib/links';
+import { openFile } from '@/lib/openFile';
 import { useSession } from '@/state/session';
 import { useTheme } from '@/theme/theme';
 import { Forward, ReplyArrow } from '@/ui/directional';
 import { Pressable } from '@/ui/Pressable';
 import { Text } from '@/ui/Text';
+import { toast } from '@/ui/Toast';
 import { PollBody } from './PollBody';
 
 /** The player loads with the first voice note shown, never before (the audio module). */
@@ -148,7 +151,7 @@ function TranslationBlock({
               {value.language} · {value.label}
             </Text>
           </View>
-          <Text variant="message" color={fg} selectable auto={value.text}>
+          <Text variant="message" color={fg} selectable={Platform.OS === 'web'} auto={value.text}>
             {value.text}
           </Text>
         </>
@@ -168,6 +171,58 @@ function TranslationBlock({
  * What a message that came or went as mail says of itself (R75): that it came by email, or how
  * far one sent got as the mail servers said (sent, delivered, bounced); never a read.
  */
+/**
+ * A file in a message: its name and size, opened with the session (R88: on a phone, fetched and
+ * handed to the system's sheet; in a browser, a tab of its own).
+ */
+function FileRow({
+  f,
+  fg,
+  meta,
+  mine,
+  onHold,
+}: {
+  f: FileView;
+  fg: string;
+  meta: string;
+  mine: boolean;
+  onHold?: () => void;
+}) {
+  const t = useTheme();
+  return (
+    <Pressable
+      accessibilityRole="link"
+      accessibilityLabel={`${f.name}, ${formatBytes(f.size)}`}
+      onPress={() => void openFile(f).catch((e: Error) => toast(e.message, { tone: 'danger' }))}
+      onLongPress={onHold}
+      delayLongPress={300}
+      style={{ flexDirection: 'row', alignItems: 'center', gap: 10, minWidth: 180 }}
+      testID="message-file"
+    >
+      <View
+        style={{
+          width: 40,
+          height: 40,
+          borderRadius: 10,
+          backgroundColor: mine ? 'rgba(255,255,255,0.18)' : t.c.surface,
+          alignItems: 'center',
+          justifyContent: 'center',
+        }}
+      >
+        <FileText size={20} color={fg} />
+      </View>
+      <View style={{ flexShrink: 1 }}>
+        <Text variant="bodyStrong" color={fg} numberOfLines={1}>
+          {f.name}
+        </Text>
+        <Text variant="caption" color={meta}>
+          {formatBytes(f.size)}
+        </Text>
+      </View>
+    </Pressable>
+  );
+}
+
 function mailLine(mail: MessageMailView, spoken: boolean): string {
   if (mail.direction === 'in') return spoken ? tr('by email') : tr('by email ·');
   switch (mail.delivery) {
@@ -310,13 +365,16 @@ export const MessageBubble = memo(function MessageBubble({
     </View>
   ) : null;
 
+  // A long press on anything inside the bubble (a photo, a file, a link) is the message's, as on
+  // the bubble itself (R88): a phone has no hover, and the inner press would take the touch.
+  const hold = () => onLongPress?.(m);
   // A private message's links are checked here, from its words: the server never had them.
   const open = (url: string) =>
     void suspiciousLink(m, url)
       .then((unusual) => openLink(url, unusual))
       .catch(() => openLink(url, true));
   const bodyText = text ? (
-    <Text variant="message" color={fg} selectable auto={text}>
+    <Text variant="message" color={fg} selectable={Platform.OS === 'web'} auto={text}>
       {linkify(text).map((part) =>
         part.url && !inertLinks ? (
           <Text
@@ -325,6 +383,7 @@ export const MessageBubble = memo(function MessageBubble({
             color={mine ? fg : t.c.link}
             style={{ textDecorationLine: 'underline' }}
             onPress={() => open(part.url ?? '')}
+            onLongPress={hold}
             accessibilityRole="link"
             {...opensWithEnter(() => open(part.url ?? ''))}
           >
@@ -358,19 +417,26 @@ export const MessageBubble = memo(function MessageBubble({
       </Text>
     );
   } else if (m.kind === 'media' && m.files.length) {
+    // Photos open full screen in Caime (R88); anything no screen can draw (a HEIC from a
+    // browser that couldn't turn it into a JPEG) is a file to open, never a broken picture.
+    const photos = m.files.filter(drawable);
+    const others = m.files.filter((f) => !drawable(f));
     content = (
       <View style={{ gap: 6 }}>
         <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 4 }}>
-          {m.files.map((f) => {
+          {photos.map((f, i) => {
             const ratio = f.width && f.height ? f.width / f.height : 4 / 3;
-            const single = m.files.length === 1;
+            const single = photos.length === 1;
             const w = single ? 240 : 118;
             return (
               <Pressable
                 key={f.id}
                 accessibilityRole="imagebutton"
                 accessibilityLabel={f.name}
-                onPress={() => openLink(mediaUrl(f.url) ?? '')}
+                onPress={() => showPhotos(photos, i)}
+                onLongPress={hold}
+                delayLongPress={300}
+                testID="message-photo"
               >
                 <Image
                   source={{
@@ -392,6 +458,9 @@ export const MessageBubble = memo(function MessageBubble({
             );
           })}
         </View>
+        {others.map((f) => (
+          <FileRow key={f.id} f={f} fg={fg} meta={meta} mine={mine} onHold={hold} />
+        ))}
         {bodyText}
       </View>
     );
@@ -431,42 +500,15 @@ export const MessageBubble = memo(function MessageBubble({
     content = (
       <View style={{ gap: 6 }}>
         {m.files.map((f) => (
-          <Pressable
-            key={f.id}
-            accessibilityRole="link"
-            accessibilityLabel={`${f.name}, ${formatBytes(f.size)}`}
-            onPress={() => openLink(mediaUrl(f.url) ?? '')}
-            style={{ flexDirection: 'row', alignItems: 'center', gap: 10, minWidth: 180 }}
-          >
-            <View
-              style={{
-                width: 40,
-                height: 40,
-                borderRadius: 10,
-                backgroundColor: mine ? 'rgba(255,255,255,0.18)' : t.c.surface,
-                alignItems: 'center',
-                justifyContent: 'center',
-              }}
-            >
-              <FileText size={20} color={fg} />
-            </View>
-            <View style={{ flexShrink: 1 }}>
-              <Text variant="bodyStrong" color={fg} numberOfLines={1}>
-                {f.name}
-              </Text>
-              <Text variant="caption" color={meta}>
-                {formatBytes(f.size)}
-              </Text>
-            </View>
-          </Pressable>
+          <FileRow key={f.id} f={f} fg={fg} meta={meta} mine={mine} onHold={hold} />
         ))}
         {bodyText}
       </View>
     );
   } else if (m.kind === 'poll' && m.poll) {
-    content = <PollBody m={m} fg={fg} meta={meta} mine={mine} />;
+    content = <PollBody m={m} fg={fg} meta={meta} mine={mine} onHold={hold} />;
   } else if (m.kind === 'location') {
-    content = <LocationBody m={m} mine={mine} fg={fg} meta={meta} />;
+    content = <LocationBody m={m} mine={mine} fg={fg} meta={meta} onHold={hold} />;
   } else if (m.kind === 'contact') {
     const p = m.payload as { name?: string };
     content = (

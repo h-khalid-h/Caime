@@ -9,6 +9,7 @@ import ListChecks from 'lucide-react-native/icons/list-checks';
 import MessageCircle from 'lucide-react-native/icons/message-circle';
 import Sparkles from 'lucide-react-native/icons/sparkles';
 import Star from 'lucide-react-native/icons/star';
+import { useEffect, useRef } from 'react';
 import { ActivityIndicator, View } from 'react-native';
 import { endpoints } from '@/api/endpoints';
 import { useNow, useUserClock } from '@/lib/time';
@@ -20,15 +21,18 @@ import { Text } from '@/ui/Text';
 /**
  * "Ask Cai" in Search (R66): a question typed as a sentence, answered from what search finds in
  * the person's own messages, decisions and to-dos, with what the answer rests on. Asked only on
- * a tap (each answer is a model call on their allowance), shown for the question it answered,
- * and kept nowhere.
+ * a tap, here or on a place's "Ask Cai" (each answer is a model call on their allowance), shown
+ * for the question it answered, and kept nowhere.
  */
 export function CaiAnswer({
   question,
   open,
+  auto,
 }: {
   question: string;
   open: (go: () => void) => void;
+  /** Asked already (a place's "Ask Cai", R88): answered once as it's shown, without a tap. */
+  auto?: boolean;
 }) {
   const t = useTheme();
   const now = useNow();
@@ -38,6 +42,12 @@ export function CaiAnswer({
       endpoints.searchAnswer(q).then((r): { q: string; r: SearchAnswerResponse } => ({ q, r })),
   });
   const shown = ask.data?.q === question ? ask.data.r : null;
+  const askedOnce = useRef<string | null>(null);
+  useEffect(() => {
+    if (!auto || askedOnce.current === question) return;
+    askedOnce.current = question;
+    ask.mutate(question);
+  }, [auto, question, ask.mutate]);
   const pending = ask.isPending && ask.variables === question;
   if (!shown)
     return (

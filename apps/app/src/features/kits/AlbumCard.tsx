@@ -13,7 +13,8 @@ import { mediaHeaders, mediaUrl } from '@/api/client';
 import { endpoints } from '@/api/endpoints';
 import { qk } from '@/api/keys';
 import { uploadFile } from '@/api/upload';
-import { openLink } from '@/lib/links';
+import { PhotoViewerHost } from '@/features/media/PhotoViewerHost';
+import { showPhotos } from '@/features/media/viewer';
 import { photoToUpload, pickFromLibrary } from '@/lib/photos';
 import { upsertMessage } from '@/state/cache';
 import { useMe } from '@/state/session';
@@ -34,14 +35,20 @@ interface AlbumPayload {
 
 const TILE = 72;
 
-function Photo({ f, size, label }: { f: FileView; size: number; label: string }) {
+function Photo({
+  f,
+  size,
+  label,
+  onOpen,
+}: {
+  f: FileView;
+  size: number;
+  label: string;
+  onOpen: () => void;
+}) {
   const t = useTheme();
   return (
-    <Pressable
-      accessibilityRole="imagebutton"
-      accessibilityLabel={label}
-      onPress={() => openLink(mediaUrl(f.url) ?? '')}
-    >
+    <Pressable accessibilityRole="imagebutton" accessibilityLabel={label} onPress={onOpen}>
       <Image
         source={{ uri: mediaUrl(imageFor(f, size)) ?? undefined, headers: mediaHeaders() }}
         style={{ width: size, height: size, borderRadius: 10, backgroundColor: t.c.surfaceMuted }}
@@ -106,6 +113,8 @@ function AlbumSheet({
       title={p.title ?? tr('Album')}
       subtitle={trn(m.album?.count ?? photos.length, '{n} photo', '{n} photos')}
     >
+      {/* Opened from this sheet, a photo shows over it (R88). */}
+      <PhotoViewerHost host="album" />
       <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 6 }} testID="album-sheet-photos">
         {photos.map((ph, i) => (
           <View key={ph.file.id}>
@@ -113,6 +122,14 @@ function AlbumSheet({
               f={ph.file}
               size={104}
               label={tr('Photo {i} of {length}', { i: i + 1, length: photos.length })}
+              // Full screen in Caime (R88), the album's others a swipe away.
+              onOpen={() =>
+                showPhotos(
+                  photos.map((x) => x.file),
+                  i,
+                  'album',
+                )
+              }
             />
             {mine || ph.addedBy === me.id ? (
               <View style={{ position: 'absolute', top: 6, end: 6 }}>

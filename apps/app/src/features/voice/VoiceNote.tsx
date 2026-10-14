@@ -1,7 +1,18 @@
-import { useAudioPlayer, useAudioPlayerStatus } from 'expo-audio';
+import { setAudioModeAsync, useAudioPlayer, useAudioPlayerStatus } from 'expo-audio';
 import { useEffect } from 'react';
 import { mediaHeaders, mediaUrl } from '@/api/client';
 import { VoiceNoteView } from './VoiceNoteView';
+
+/**
+ * How a note plays on a phone (R88): out loud with the ringer switched off, as anything someone
+ * pressed play on does, and with recording off, so headphones play it at their full quality.
+ * Set once, before the first note plays (the recorder sets it back when it's done).
+ */
+let playable: Promise<void> | null = null;
+const readyToPlay = () =>
+  (playable ??= setAudioModeAsync({ playsInSilentMode: true, allowsRecording: false }).catch(
+    () => {},
+  ));
 
 /**
  * A voice note in a bubble on a phone (PRD §46), played through expo-audio; the web has its own
@@ -37,7 +48,9 @@ export default function VoiceNote({
       playing={status.playing}
       atMs={at}
       totalMs={total}
-      onToggle={() => (status.playing ? player.pause() : player.play())}
+      onToggle={() =>
+        status.playing ? player.pause() : void readyToPlay().then(() => player.play())
+      }
       fg={fg}
       meta={meta}
       mine={mine}
