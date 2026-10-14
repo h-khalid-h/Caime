@@ -979,7 +979,11 @@ These are rules, not preferences.
   out (blocks, removals, disconnects) run under `whileNoneEnter`. On the web, whether a call
   rings is the server's to say (the person's own member state), never the device's clock; an
   engine that lets go of a call or a ring looks for both engines' rings (`lookForRings`); and
-  media that arrives applies what was pressed meanwhile (`asPressed`).
+  media that arrives applies what was pressed meanwhile (`asPressed`). Leaving says goodbye on
+  each connection (`BYE` on its control channel), stops what it sends at once and closes its
+  connections only once the leave has landed (`LEAVE_MS` at most), so the others hear it from the
+  server before their connection fails; a goodbye heard lets that device go, never retried
+  (closed first, a device still in it restarted ICE against a call that had ended: 409s).
 - A meeting's guests (R83, R84): invited by address from an accepted meeting card held here
   (`features/kits/MeetingGuests.tsx`: Invite by email, the sheet lazy; the card that moved says
   so and opens the space), they arrive at `/j/<token>` (`features/meetings/JoinMeeting.tsx`, a
@@ -1456,7 +1460,11 @@ These are rules, not preferences.
   AI assist on and allowance left; `fromUnderstanding` (core) checks every value the model
   returns against the taxonomy and the lists, the reading is kept ten minutes per person and
   query, and any failure falls back to the rules without an error. The response says who read it
-  (`understoodBy`, `label`). Every model call anywhere goes through `runAi` (`lib/ai-run.ts`),
+  (`understoodBy`, `label`). Ask Cai in Search is `POST /search/answer` (`answerFromSearch`):
+  the same reading, `runSearch`'s own rows (so whatever search leaves out, the model never
+  sees), numbered passages to `ai.answerFromFound`, the cited rows back as `sources`; no rows,
+  no model. Who may use AI assist is `aiGate` (`lib/ai-gate.ts`), for every route that asks a
+  model for a person. Every model call anywhere goes through `runAi` (`lib/ai-run.ts`),
   which records the `ai_runs` row and the metrics: a new AI feature uses it, never its own
   bookkeeping. A new field the model may fill joins `SearchUnderstanding`, `fromUnderstanding`'s
   checks, the prompt in `lib/ai.ts` and both stand-ins (`test/ai.test.ts` queues a reply;

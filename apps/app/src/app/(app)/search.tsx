@@ -16,7 +16,9 @@ import { useEffect, useMemo, useRef, useState, useSyncExternalStore } from 'reac
 import { ScrollView, View } from 'react-native';
 import { NetworkError } from '@/api/client';
 import { endpoints } from '@/api/endpoints';
+import { useAiStatus } from '@/api/hooks';
 import { qk } from '@/api/keys';
+import { CaiAnswer } from '@/features/search/CaiAnswer';
 import { searchOnDevice } from '@/features/search/onDevice';
 import { useNow, useUserClock } from '@/lib/time';
 import { useMe } from '@/state/session';
@@ -96,6 +98,16 @@ export default function Search() {
     onlineManager.isOnline(),
   );
   const offline = debounced.length >= 2 && (!online || q.error instanceof NetworkError);
+  // A sentence can be asked of Cai (R66) where AI assist is on: the server has a provider, and
+  // they're an adult who turned it on (as features/assist's useAiReady, with no conversation).
+  const ai = useAiStatus();
+  const askable =
+    !offline &&
+    Boolean(ai.data?.available) &&
+    me.aiEnabled &&
+    !me.minor &&
+    debounced.length >= 2 &&
+    looksLikeSentence(debounced);
   const local = useMemo(
     () => (offline ? searchOnDevice(qc, debounced, me.id) : null),
     [offline, qc, debounced, me.id],
@@ -191,6 +203,7 @@ export default function Search() {
             </View>
           </View>
         ) : null}
+        {askable ? <CaiAnswer question={debounced} open={open} /> : null}
         {r?.people?.length ? (
           <>
             <SectionTitle>{tr('People')}</SectionTitle>

@@ -34,6 +34,9 @@ const linesOf = (content) =>
     .filter(Boolean)
     .map((m) => ({ n: Number(m[1]), speaker: m[2], text: m[3] }));
 
+/** A question's own words, which a reading of it leaves out of what it searches for. */
+const QUESTION_WORDS = new Set(['where', 'when', 'who', 'which', 'how', 'is', 'are', 'was', 'did']);
+
 /** The system prompt as text: a string, or blocks (a cached prefix is one). */
 const systemText = (system) =>
   Array.isArray(system) ? system.map((b) => b.text ?? '').join('\n') : String(system ?? '');
@@ -167,16 +170,38 @@ function answer(body) {
     // Its introduction is Caime's, written by the rules (R87): the model only answers.
     return say('answer', best.sentence);
   }
+  if (system.includes('what search found in their own messages')) {
+    // "Ask Cai" in Search (R66): the first passage found, cited.
+    calls.push('search-answer');
+    const [first] = between(content, '<found>', '</found>')
+      .split('\n')
+      .map((l) => /^\[(\d+)\] .*?: (.*)$/.exec(l))
+      .filter(Boolean);
+    return reply(
+      JSON.stringify(
+        first
+          ? { answer: `It says: ${first[2]}`, sources: [Number(first[1])] }
+          : { answer: 'I didn’t find that in your messages.', sources: [] },
+      ),
+    );
+  }
   if (system.includes('search someone typed')) {
     calls.push('search');
     const typed = between(content, '<search>', '</search>');
-    // "anything Alex promised me" → what Alex owes; otherwise a message search for the words.
+    // "anything Alex promised me" → what Alex owes; otherwise a message search for the words, a
+    // question's own words ("where is the…") left out, as a reader would.
     const who = /\b([A-Z][a-z]+)\b/.exec(typed)?.[1] ?? null;
     const promised = /promis|owe|waiting/i.test(typed);
+    const words = typed
+      .replace(/^(what|anything|everything)\s+/i, '')
+      .replace(/[?]/g, '')
+      .split(/\s+/)
+      .filter((w) => !QUESTION_WORDS.has(w.toLowerCase()))
+      .join(' ');
     return reply(
       JSON.stringify({
         scope: promised ? 'waiting' : 'messages',
-        text: promised ? '' : typed.replace(/^(what|anything|everything)\s+/i, ''),
+        text: promised ? '' : words,
         person: who,
         sphere: null,
         role: null,

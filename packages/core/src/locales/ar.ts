@@ -853,6 +853,7 @@ export const ar: Catalog = {
   'What did we decide about the date?': 'ماذا قررنا بشأن الموعد؟',
   Ask: { toWoman: 'اسألي', toMan: 'اسأل', other: 'اسأل' },
   'Nothing to answer from yet.': 'لا رسائل يُجاب منها بعد.',
+  'Nothing in your messages answers that yet.': 'لا شيء في رسائلك يجيب عن هذا بعد.',
   'Not now': 'ليس الآن',
   Rewrite: 'إعادة صياغة',
   'Nothing changes until you choose.': 'لا يتغير شيء حتى تختار.',

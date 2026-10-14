@@ -771,6 +771,7 @@ export const fr: Catalog = {
   'What did we decide about the date?': 'Qu’avons-nous décidé pour la date ?',
   Ask: 'Demander',
   'Nothing to answer from yet.': 'Pas encore de messages pour répondre.',
+  'Nothing in your messages answers that yet.': 'Rien dans vos messages n’y répond encore.',
   'Not now': 'Pas maintenant',
   Rewrite: 'Reformuler',
   'Nothing changes until you choose.': 'Rien ne change tant que vous ne choisissez pas.',

@@ -626,6 +626,59 @@ describe('the web group call engine', () => {
     expect(pc.offers).toHaveLength(5);
   });
 
+  it('leaving says goodbye on each connection, and closes them once the server has the leave', async () => {
+    await inCall([
+      { id: 'noor', joinedAt: at(0) },
+      { id: 'sam', joinedAt: at(10) },
+    ]);
+    const [noorPc, samPc] = pcs as [FakePC, FakePC];
+    for (const pc of [noorPc, samPc]) pc.channel?.open();
+    let land: (v: { call: null }) => void = () => {};
+    h.endpoints.leaveGroupCall.mockReturnValue(
+      new Promise<{ call: null }>((r) => {
+        land = r;
+      }),
+    );
+    const leaving = engine.leaveGroupCall();
+    await settle();
+    // Each other device hears it from this one; what this one sends stops at once.
+    expect(noorPc.channel?.sent).toContainEqual({ bye: true });
+    expect(samPc.channel?.sent).toContainEqual({ bye: true });
+    expect(stopped.some((id) => id.startsWith('mic-'))).toBe(true);
+    expect(phase()).toBe('ended');
+    // The connections stay until the server has told the others, and nothing is tried again on
+    // them meanwhile: a restart would be signalled to a call that's ending.
+    expect([noorPc.closed, samPc.closed]).toEqual([false, false]);
+    const signalled = h.endpoints.signalGroupCall.mock.calls.length;
+    noorPc.become('failed');
+    await settle();
+    expect(h.endpoints.signalGroupCall.mock.calls.length).toBe(signalled);
+    land({ call: null });
+    await leaving;
+    await settle();
+    expect([noorPc.closed, samPc.closed, samPc.channel?.readyState]).toEqual([
+      true,
+      true,
+      'closed',
+    ]);
+  });
+
+  it('a device that says goodbye is let go of here, not tried again', async () => {
+    await inCall([
+      { id: 'noor', joinedAt: at(0) },
+      { id: 'sam', joinedAt: at(10) },
+    ]);
+    const [noorPc, samPc] = pcs as [FakePC, FakePC];
+    noorPc.channel?.onmessage?.({ data: JSON.stringify({ bye: true }) });
+    expect(noorPc.closed).toBe(true);
+    expect(Object.keys(useGroupCall.getState().peers)).toEqual(['sam|dev-sam-0000']);
+    const signalled = h.endpoints.signalGroupCall.mock.calls.length;
+    noorPc.become('failed');
+    await settle();
+    expect(h.endpoints.signalGroupCall.mock.calls.length).toBe(signalled);
+    expect(samPc.closed).toBe(false);
+  });
+
   it('a screen shown goes to everyone in it, and back to the camera after', async () => {
     await inCall(
       [

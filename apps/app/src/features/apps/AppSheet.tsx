@@ -9,7 +9,7 @@ import type { DirectoryAppView } from '@caime/core/api';
 import { APP_PROVIDES_LABELS } from '@caime/core/app-directory';
 import { joinNames } from '@caime/core/format';
 import { type InterfaceLanguage, tr, trn } from '@caime/core/i18n';
-import { APP_PRICING_LABELS, marketplacePath } from '@caime/core/marketplace';
+import { APP_PRICING_LABELS, marketplacePath } from '@caime/core/marketplace-labels';
 import { Image } from 'expo-image';
 import Workflow from 'lucide-react-native/icons/workflow';
 import { useRef } from 'react';

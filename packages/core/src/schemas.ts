@@ -1333,6 +1333,8 @@ export const AiTranslateBody = z
 
 /** A question about a conversation (R67). */
 export const AiAskBody = z.object({ question: z.string().trim().min(1).max(ASK_MAX) }).strict();
+/** "Ask Cai" in Search (R66): the question, as typed in the search box. */
+export const SearchAnswerBody = z.object({ q: z.string().trim().min(2).max(ASK_MAX) }).strict();
 
 /** Spaces (PRD §40). */
 const SpaceName = z.string().trim().min(1, msg('Give the space a name.')).max(80);

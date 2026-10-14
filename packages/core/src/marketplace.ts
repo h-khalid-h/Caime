@@ -1,21 +1,19 @@
 /**
  * The marketplace (R80): what a listing says beyond R74's tagline and category, and the words
- * the marketplace and Discover's sheet show of it. Pure and light: the Apps and Developer screens
- * take it by subpath (`@caime/core/marketplace`), never the startup chunk, and the server renders
+ * the marketplace and Discover's sheet show of it. Pure and light: the Developer screen takes it by
+ * subpath (`@caime/core/marketplace`), Discover's sheet only its labels and path
+ * (`marketplace-labels.ts`), so neither carries it into the startup chunk, and the server renders
  * the public pages from it.
  */
-import { INTERFACE_LANGUAGES, type InterfaceLanguage, msg } from './i18n';
+import { INTERFACE_LANGUAGES, type InterfaceLanguage } from './i18n';
 
-/** How an app is paid for, declared by its developer: Caime never takes the money (R62). */
-export const APP_PRICING = ['free', 'freemium', 'trial', 'paid', 'subscription'] as const;
-export type AppPricing = (typeof APP_PRICING)[number];
-export const APP_PRICING_LABELS: Record<AppPricing, string> = {
-  free: msg('Free'),
-  freemium: msg('Free and paid plans'),
-  trial: msg('Paid, with a free trial'),
-  paid: msg('Paid, with no free plan'),
-  subscription: msg('Included with a subscription'),
-};
+export {
+  APP_PRICING,
+  APP_PRICING_LABELS,
+  type AppPricing,
+  MARKETPLACE_PATH,
+  marketplacePath,
+} from './marketplace-labels';
 
 /** The languages an app says it works in: Caime's own, so a reader knows it speaks theirs. */
 export const APP_LANGUAGES: readonly InterfaceLanguage[] = INTERFACE_LANGUAGES;
@@ -54,10 +52,6 @@ export type ListingCheck = (typeof LISTING_CHECKS)[number];
  */
 export const appScreenshotPath = (appId: string, n: number, fileId: string, admin = false) =>
   `/v1/${admin ? 'admin/listings' : 'directory'}/${appId}/screenshots/${n}?v=${fileId.slice(-8)}`;
-
-/** The marketplace on the web: its page, and each app's (a built-in's and a bridge's by id). */
-export const MARKETPLACE_PATH = '/marketplace';
-export const marketplacePath = (slug: string) => `${MARKETPLACE_PATH}/${encodeURIComponent(slug)}`;
 
 /**
  * An app's address in the marketplace, from its name: Latin letters and digits, the rest a

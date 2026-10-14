@@ -1283,8 +1283,11 @@ listed there with its owner.
       for, Coming up, Done), and "What this changes" on a person's page (`policyEffects`, from
       their effective rule). `attention-home.test.ts`, `home.test.ts`, `policy.test.ts`,
       `e2e/attention.spec.ts`, the Arabic tour; the whole E2E suite on the new home.
-- [ ] Later in R66: "Catch me up" and "Ask Cai" as Cai's explicit moments in a conversation and
-      in Search, Cai's settings (how proactive, ask when unsure), digests.
+- [x] R66, Cai's explicit moments: "Catch me up" and "Ask about this conversation" in a
+      conversation's assist tools, the weekly digest (R68), and Ask Cai in Search
+      (2026-10-14: `POST /v1/search/answer`, the search's own rows to the model and the ones
+      the answer rests on back, kept nowhere; `ai.test.ts`, `e2e/around-the-conversation.spec.ts`).
+- [ ] Later in R66: how proactive Cai is, and when it asks before it guesses, in Settings · Cai.
 - [x] R67: Caime's own accounts. @cai (kind `assistant`) and the seven Caime Friends (kind
       `character`) are users with fixed ids (migration 0059), opened through the ordinary direct
       route, greeted once in the reader's language, words and stickers only. Cai answers what you
@@ -3123,3 +3126,13 @@ The six-slice review's plan, in its order; a block is ticked when its tests and 
   authority levels written down, and the organizations a person runs in their weekly digest.
 - 2026-10-14 — R58, a resource shared by several items: the hours keep what's shared, an item
   takes one, and a time is open only while one is free beside every item that uses it.
+- 2026-10-14 — Search leaves out a message, and its files, that someone deleted for themselves,
+  as every other reader does (`notHiddenFor`): it still found them. Found reading the search
+  for Ask Cai; `files.test.ts` fails without it.
+- 2026-10-14 — R66, Ask Cai in Search: a question typed there is answered from what search finds
+  in the person's own messages, decisions and to-dos, with what it rests on; one model call a
+  tap, none when nothing is found, nothing kept. The AI gate is one function (`lib/ai-gate.ts`).
+- 2026-10-14 — Leaving a group call in the right order: the others are told by the server, and by
+  a goodbye on each connection, before the leaver's connections close, so a device still in the
+  call no longer restarts its connection against a call that has ended (an E2E caught three
+  refused signals once in a run; `group.test.ts` fails on the old order).

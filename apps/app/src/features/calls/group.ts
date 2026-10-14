@@ -44,6 +44,10 @@ const DROP_MS = 10_000;
 const TRIES = 3;
 /** Signals kept for devices this one doesn't know of yet, at most. */
 const EARLY_MAX = 200;
+/** A device leaving keeps its connections open this long at most for the server to say so. */
+const LEAVE_MS = 3_000;
+/** What a device leaving says on each connection, so the other lets it go rather than retry. */
+const BYE = JSON.stringify({ bye: true });
 
 interface Peer {
   /** Whose device, and which: a device is in the call for one person, and signals say whose. */
@@ -126,18 +130,32 @@ function watchSignOut(): void {
   });
 }
 
-function closePeer(key: string): void {
+/**
+ * Let go of a device: out of the call here at once, nothing more sent to it, and its connection
+ * closed now or once `until` settles (a device leaving keeps its connections until the server
+ * has told the others, R84).
+ */
+function closePeer(key: string, until?: Promise<unknown>): void {
   const peer = peers.get(key);
   if (!peer) return;
   peers.delete(key);
   if (peer.timer) clearTimeout(peer.timer);
-  peer.control.close();
-  peer.pc.close();
+  peer.pc.onicecandidate = null;
+  peer.pc.onconnectionstatechange = null;
   store().peer(key, null);
+  const close = () => {
+    peer.control.close();
+    peer.pc.close();
+  };
+  if (until) void until.finally(close);
+  else close();
 }
 
-/** Everything this device holds for the call, let go of. */
-function release(): void {
+/**
+ * Everything this device holds for the call, let go of; its connections closed now, or once
+ * `until` settles.
+ */
+function release(until?: Promise<unknown>): void {
   if (beat) clearInterval(beat);
   if (ringTimer) clearTimeout(ringTimer);
   beat = null;
@@ -147,7 +165,7 @@ function release(): void {
     screen.stop();
   }
   screen = null;
-  for (const key of [...peers.keys()]) closePeer(key);
+  for (const key of [...peers.keys()]) closePeer(key, until);
   early = [];
   lastRefresh = 0;
   for (const t of store().local?.getTracks() ?? []) t.stop();
@@ -163,9 +181,9 @@ function lookForRings(): void {
 }
 
 /** Show that it ended for a moment, then clear the screen, and look for a call ringing now. */
-function finish(note: string | null): void {
+function finish(note: string | null, until?: Promise<unknown>): void {
   const call = current();
-  release();
+  release(until);
   store().patch({ phase: 'ended', note, local: null, peers: {}, sharing: false });
   setTimeout(() => {
     if (current()?.id !== call?.id || store().phase !== 'ended') return;
@@ -342,6 +360,11 @@ function openPeer(
   control.onmessage = (e) => {
     try {
       const m = JSON.parse(String(e.data)) as Record<string, unknown>;
+      // It's leaving: let it go here, rather than see its connection fail and try it again.
+      if (m.bye === true) {
+        if (peers.get(key) === peer) closePeer(key);
+        return;
+      }
       store().peer(key, {
         theirs: {
           camera: m.camera !== false,
@@ -632,15 +655,24 @@ export async function leaveGroupCall(): Promise<void> {
   // on their other devices, so it's turned down too. (Declining changes only a ring, so a join
   // that landed meanwhile is simply left.)
   const rung = phase === 'joining' && mine(call)?.state === 'ringing';
-  finish(null);
-  if (phase === 'in' || phase === 'joining')
-    await Promise.all([
-      rung ? endpoints.declineGroupCall(call.id).catch(() => {}) : null,
-      endpoints
-        .leaveGroupCall(call.id, DEVICE_ID)
-        .then(({ call: now }) => heard(now))
-        .catch(() => {}),
-    ]);
+  if (phase !== 'in' && phase !== 'joining') {
+    finish(null);
+    return;
+  }
+  // The others hear it from the server, and from this device on each connection, before its
+  // connections close: closed first, a device still in the call saw its connection fail and
+  // tried to restore it against a call that had ended meanwhile. What this device sends stops at
+  // once (its tracks end in release), and each connection closes once the leave has landed.
+  for (const p of peers.values()) if (p.control.readyState === 'open') p.control.send(BYE);
+  const leaving = Promise.all([
+    rung ? endpoints.declineGroupCall(call.id).catch(() => {}) : null,
+    endpoints
+      .leaveGroupCall(call.id, DEVICE_ID)
+      .then(({ call: now }) => heard(now))
+      .catch(() => {}),
+  ]);
+  finish(null, Promise.race([leaving, new Promise((r) => setTimeout(r, LEAVE_MS))]));
+  await leaving;
 }
 
 export function toggleGroupMute(): void {

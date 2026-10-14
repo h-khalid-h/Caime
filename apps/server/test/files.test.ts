@@ -276,8 +276,19 @@ describe('who can read a file', () => {
     const sent = await hassan.post(`/v1/conversations/${convo}/messages`, {
       clientId: uuidv4(),
       kind: 'media',
+      body: 'The Lisbon receipt',
       fileIds: [f.id],
     });
+    // What search finds of it: the message by its words, the photo among photos.
+    const found = async (c: Client) => ({
+      message: ((await c.get('/v1/search?q=Lisbon')).results.messages ?? []).some(
+        (m: any) => m.id === sent.message.id,
+      ),
+      photo: ((await c.get('/v1/search?q=photos')).results.files ?? []).some(
+        (a: any) => a.file?.id === f.id,
+      ),
+    });
+    expect(await found(sarah)).toEqual({ message: true, photo: true });
     const seen = async (c: Client) => {
       const shared = await c.get(`/v1/conversations/${convo}/assets?kind=photo,video`);
       const memory = await c.get(`/v1/conversations/${convo}/memory`);
@@ -295,6 +306,9 @@ describe('who can read a file', () => {
     expect(after.counted).toBe(before.counted - 1);
     expect(after.files).toBe(before.files - 1);
     expect(await seen(hassan)).toEqual(before);
+    // Search forgets it for her as well, and not for him.
+    expect(await found(sarah)).toEqual({ message: false, photo: false });
+    expect(await found(hassan)).toEqual({ message: true, photo: true });
   });
 
   it('serves byte ranges for media players', async () => {

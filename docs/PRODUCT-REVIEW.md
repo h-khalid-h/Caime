@@ -866,6 +866,15 @@ with its reason, so it isn't proposed again without new facts.
     question asked in the conversation's assist tools is answered from it, labelled, and kept
     nowhere, as a catch-up is (R17). Opening Cai's chat on a conversation is declined: what Cai
     wrote there would keep a copy of other people's words that no deletion or erasure reaches.
+    *Ask Cai in Search* (built 2026-10-14): a sentence typed in Search offers "Ask Cai" under
+    the box, for an adult with AI assist on; a tap answers it from what search finds for it in
+    their own messages, decisions and to-dos (the search's own rows: never a private
+    conversation, a message they deleted for themselves, or who on an organization's team
+    wrote; at most twelve of each, a message's first 400 characters), labelled, in the
+    language it was asked in, with the rows it rests on, which open where they were said. One
+    model call a tap on the light model (the reading of the sentence is search's own, kept ten
+    minutes), none when nothing is found, and nothing kept. Still to come in R66: how
+    proactive Cai is, and when it asks before it guesses, in Settings · Cai.
 - **R68 — Cai keeps going: OpenAI's dots, evaluated for Caime (2026-10-06).** Dots (DevDay,
   2026-09-29) are always-on agents, one per person on ChatGPT's Pro and Business Premium plans: a
   cloud computer and browser each, 4,000 app plugins, reachable in ChatGPT, Slack and Teams,

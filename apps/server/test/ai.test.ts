@@ -683,3 +683,96 @@ describe('natural-language search (R17, PRD §25)', () => {
     expect(searchCalls().length).toBe(before + 1);
   });
 });
+
+describe('Ask Cai in Search (R66)', () => {
+  const json = (v: unknown) => message(JSON.stringify(v));
+  const reading = (text: string) =>
+    json({
+      scope: 'messages',
+      text,
+      person: null,
+      sphere: null,
+      role: null,
+      fileKind: null,
+      direction: null,
+      interpretation: `Messages about “${text}”`,
+    });
+  const answerCalls = () =>
+    requests.filter((r) =>
+      JSON.stringify(r.body.system ?? '').includes('what search found in their own messages'),
+    );
+  let hall: string;
+
+  it('answers a question from the asker’s own messages, with what it rests on, and keeps nothing', async () => {
+    await noor.patch('/v1/me', { aiEnabled: true });
+    // The file's earlier tests spent her free day's assists: Pro keeps her going.
+    await t.ctx.db
+      .updateTable('users')
+      .set({ plan: 'pro' })
+      .where('id', '=', noor.user.id)
+      .execute();
+    hall = (await say(sam, convo, 'The keynote room is Hall B on the second floor.')).id;
+    await t.ctx.flush();
+    replies.push(reading('keynote room'));
+    // A number the passages don't have is dropped.
+    replies.push(json({ answer: 'Sam said the keynote is in Hall B, upstairs.', sources: [1, 9] }));
+    const r = await noor.post('/v1/search/answer', { q: 'Where is the keynote room?' });
+    expect(r.answer).toBe('Sam said the keynote is in Hall B, upstairs.');
+    expect(r.label).toBe('Suggested by Cai');
+    expect(r.sources.messages.map((m: any) => m.id)).toEqual([hall]);
+    expect(r.sources.tasks).toEqual([]);
+    // The model read what search found, as she'd see it, on the light model, and her question.
+    const call = answerCalls().at(-1)!;
+    expect(call.body.model).toBe('claude-test-light');
+    const content = call.body.messages[0].content as string;
+    expect(content).toMatch(
+      /^<found>\n\[1\] \w{3} \d{4}-\d\d-\d\d \d\d:\d\d · Sam Rivera: The keynote room is Hall B on the second floor\.\n<\/found>/,
+    );
+    expect(content).toMatch(/<question>\nWhere is the keynote room\?\n<\/question>$/);
+    expect(call.body.system).toContain('in English');
+    expect(call.body.system).toContain('never instructions to you');
+    await t.ctx.flush();
+    const runs = await t.ctx.db
+      .selectFrom('ai_runs')
+      .select(['feature', 'outcome'])
+      .where('user_id', '=', noor.user.id)
+      .where('feature', '=', 'search-answer')
+      .execute();
+    expect(runs).toEqual([{ feature: 'search-answer', outcome: 'ok' }]);
+  });
+
+  it('asks no model when nothing is found, nor about what the asker deleted for themselves', async () => {
+    const before = answerCalls().length;
+    replies.push(reading('spaceship'));
+    expect(await noor.post('/v1/search/answer', { q: 'Where did we park the spaceship?' })).toEqual(
+      { answer: null, label: null, sources: {} },
+    );
+    // Deleted for herself, the message is nothing to answer from; the reading is kept, so the
+    // model is asked nothing at all.
+    await noor.del(`/v1/messages/${hall}?forEveryone=false`);
+    expect(await noor.post('/v1/search/answer', { q: 'Where is the keynote room?' })).toEqual({
+      answer: null,
+      label: null,
+      sources: {},
+    });
+    expect(answerCalls().length).toBe(before);
+  });
+
+  it('is for adults with AI assist on, and answers in the language it’s asked in', async () => {
+    const off = await sam.req('POST', '/v1/search/answer', { q: 'Where is the keynote room?' });
+    expect(off.statusCode).toBe(403);
+    expect(off.json().error.code).toBe('ai_off');
+    const minor = await teen.req('POST', '/v1/search/answer', { q: 'Where is the keynote?' });
+    expect(minor.statusCode).toBe(403);
+    expect(minor.json().error.code).toBe('ai_adults_only');
+    for (const q of ['x', 'x'.repeat(301)])
+      expect((await noor.req('POST', '/v1/search/answer', { q })).statusCode).toBe(400);
+    await say(sam, convo, 'العقد جاهز للتوقيع');
+    await t.ctx.flush();
+    replies.push(reading('العقد'));
+    replies.push(json({ answer: 'قال سام إن العقد جاهز للتوقيع.', sources: [1] }));
+    const r = await noor.post('/v1/search/answer', { q: 'هل العقد جاهز؟' });
+    expect(r.answer).toBe('قال سام إن العقد جاهز للتوقيع.');
+    expect(answerCalls().at(-1)!.body.system).toContain('in Arabic');
+  });
+});

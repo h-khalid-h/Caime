@@ -37,12 +37,12 @@ import { z } from 'zod';
 import type { AppContext } from '../context';
 import type { Conversation, Message } from '../db/schema';
 import { MESSAGE_COLUMNS } from '../db/schema';
-import { type AiResult, languageName, type Transcript } from '../lib/ai';
+import { type AiResult, baseLanguage, languageName, type Transcript } from '../lib/ai';
+import { aiGate } from '../lib/ai-gate';
 import { runAi } from '../lib/ai-run';
 import { maskFor, maskId, maskPayload } from '../lib/business';
 import { membership } from '../lib/conversation-views';
 import { AppError, notFound } from '../lib/errors';
-import { assertAiAllowance } from '../lib/plans';
 import { activeRelationships, loadPolicies, policyTargetFor } from '../lib/relations';
 import { createSuggestion, suggestionView } from '../lib/suggest';
 import { minorOf } from '../lib/users';
@@ -99,15 +99,6 @@ function clock(timeZone: string) {
   };
 }
 
-/** The base language of a locale: "ar-EG" → "ar". */
-function baseLanguage(locale: string): string {
-  try {
-    return new Intl.Locale(locale).language;
-  } catch {
-    return locale.split('-')[0] || 'en';
-  }
-}
-
 export async function aiRoutes(app: FastifyInstance, ctx: AppContext) {
   const person = (userId: string) =>
     ctx.db
@@ -116,20 +107,8 @@ export async function aiRoutes(app: FastifyInstance, ctx: AppContext) {
       .where('id', '=', userId)
       .executeTakeFirstOrThrow();
 
-  /** Who may use AI assist, checked on every call. */
-  async function gate(userId: string) {
-    const ai = ctx.ai;
-    if (!ai)
-      throw new AppError(503, 'ai_unavailable', tr('AI assist isn’t set up on this server.'));
-    const me = await person(userId);
-    if (minorOf(me, ctx.now()))
-      throw new AppError(403, 'ai_adults_only', tr('AI assist is for adults for now.'));
-    if (!me.ai_enabled)
-      throw new AppError(403, 'ai_off', tr('Turn on AI assist in Settings to use it.'));
-    ctx.limiter.hit(`ai:${userId}`, ctx.config.isTest ? 1000 : 60, 3_600_000);
-    await assertAiAllowance(ctx, userId);
-    return { ai, me };
-  }
+  /** Who may use AI assist, checked on every call (lib/ai-gate.ts). */
+  const gate = (userId: string) => aiGate(ctx, userId);
 
   /** A conversation the person is in, and that a server model may read (R18). */
   async function readable(userId: string, conversationId: string) {

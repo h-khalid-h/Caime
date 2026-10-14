@@ -2046,6 +2046,32 @@ test.describe
       ).toEqual(['search']);
     });
 
+    test('Ask Cai answers a question from what search finds, and opens what it rests on (R66)', async () => {
+      const { page, errors } = noor;
+      const calls = async () =>
+        ((await (await page.request.get(AI_STUB_REQUESTS)).json()) as { calls: string[] }).calls;
+      await page.request.delete(AI_STUB_REQUESTS);
+      await page.goto('/search');
+      await page.getByTestId('search-input').fill('where is the venue contract?');
+      const ask = page.getByTestId('search-ask-cai').filter({ visible: true });
+      await expect(ask).toBeVisible();
+      // Nothing is answered until it's asked for: each answer is a model call.
+      expect(await calls()).not.toContain('search-answer');
+      await ask.click();
+      const answer = page.getByTestId('search-cai-answer').filter({ visible: true });
+      await expect(answer).toContainText('Suggested by Cai');
+      await expect(answer).toContainText('It says: The venue contract is signed');
+      expect((await calls()).filter((c) => c === 'search-answer')).toHaveLength(1);
+      await page.screenshot({ path: 'e2e/screenshots/desktop-search-ask-cai.png' });
+      // What it rests on opens where it was said.
+      await answer.getByTestId('search-cai-source').first().click();
+      await page.waitForURL(`**/c/${convo}?seq=*`);
+      await expect(page.getByTestId('message-highlighted')).toContainText(
+        'The venue contract is signed',
+      );
+      expect(errors).toEqual([]);
+    });
+
     test('a checklist both of them tick, and a place shared where it fits', async () => {
       const { page, errors } = noor;
       await page.goto(`/c/${convo}`);

@@ -1884,6 +1884,17 @@ export interface SearchResults {
   }>;
 }
 
+/**
+ * "Ask Cai" in Search (R66, R17): a question answered from what search finds in the asker's own
+ * messages, decisions and to-dos, with the ones the answer rests on, as search lists them. Both
+ * null when nothing was found to answer from: no model was asked.
+ */
+export interface SearchAnswerResponse {
+  answer: string | null;
+  label: string | null;
+  sources: Pick<SearchResults, 'messages' | 'tasks' | 'decisions'>;
+}
+
 export interface SearchResponse {
   query: ParsedQuery;
   interpretation: ParsedQuery['interpretation'];

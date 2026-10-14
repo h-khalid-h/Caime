@@ -3,7 +3,7 @@
  * messages, meaning-shaped questions, assets, actions and contexts, from one box.
  */
 
-import type { SearchResponse, SearchResults } from '@caime/core';
+import type { SearchAnswerResponse, SearchResponse, SearchResults } from '@caime/core';
 import {
   AI_LABEL,
   fromUnderstanding,
@@ -13,24 +13,31 @@ import {
   MATCH_START,
   type ParsedQuery,
   parseSearchQuery,
+  SearchAnswerBody,
   SearchOutcomeBody,
   SearchQuery,
+  writtenIn,
 } from '@caime/core';
 import type { OkResponse } from '@caime/core/api';
 import { tr } from '@caime/core/i18n';
+import { zonedParts } from '@caime/core/time';
 import type { FastifyInstance } from 'fastify';
 import { sql } from 'kysely';
 import type { AppContext } from '../context';
+import { baseLanguage, languageName } from '../lib/ai';
+import { aiGate } from '../lib/ai-gate';
 import { runAi } from '../lib/ai-run';
 import { maskId, masksFor } from '../lib/business';
 import { titleWithGroup } from '../lib/conversations';
 import { AppError } from '../lib/errors';
 import { recordEvent } from '../lib/events';
-import { fileView } from '../lib/messages';
+import { fileView, notHiddenFor } from '../lib/messages';
 import { personViewsFor } from '../lib/people-batch';
 import { assertAiAllowance } from '../lib/plans';
 import { relationshipView } from '../lib/relations';
 import { taskViews } from '../lib/tasks';
+import { clip } from '../lib/text';
+import { TtlCache } from '../lib/ttl-cache';
 import { minorOf } from '../lib/users';
 import { parse } from '../lib/validate';
 import { requireAuth } from '../plugins/auth';
@@ -254,6 +261,8 @@ export async function runSearch(
         ])
         .where('p.left_at', 'is', null)
         .where('m.deleted_at', 'is', null)
+        // A message deleted for oneself is gone from one's own search too.
+        .where(notHiddenFor(me, 'm.id'))
         .where('c.privacy_class', '=', 'standard')
         .where('m.kind', '<>', 'system')
         // Words as prefixes against the GIN index ("contr" finds "contract"); only a query too
@@ -350,6 +359,7 @@ export async function runSearch(
         ])
         .where('a.kind', 'in', kinds as never)
         .where('p.left_at', 'is', null)
+        .where(notHiddenFor(me, 'a.message_id'))
         .$if(parsed.fileKind === 'pdf', (qb) => qb.where('f.mime', '=', 'application/pdf'))
         .$if(Boolean(personIds?.length), (qb) =>
           qb
@@ -537,7 +547,7 @@ export async function runSearch(
 /** How long a model's reading of one person's query is kept: retyping it costs nothing more. */
 const UNDERSTOOD_MS = 10 * 60_000;
 const UNDERSTOOD_MAX = 5_000;
-const understood = new Map<string, { parsed: ParsedQuery; until: number }>();
+const understood = new TtlCache<string, ParsedQuery>(UNDERSTOOD_MAX, UNDERSTOOD_MS);
 
 /**
  * Natural-language search (R17, PRD §25): when the rules understood nothing of a query that
@@ -556,7 +566,7 @@ async function understandWithAi(
   if (!ai || !isPlainText(parsed) || !looksLikeSentence(parsed.raw)) return null;
   const key = `${userId}:${parsed.raw.trim().toLocaleLowerCase()}`;
   const hit = understood.get(key);
-  if (hit && hit.until > Date.now()) return hit.parsed;
+  if (hit) return hit;
   const me = await ctx.db
     .selectFrom('users')
     .select(['ai_enabled', 'birth_date', 'time_zone'])
@@ -569,15 +579,121 @@ async function understandWithAi(
       ai.understandSearch({ query: parsed.raw }),
     );
     const result = fromUnderstanding(parsed.raw, reading);
-    if (understood.size >= UNDERSTOOD_MAX)
-      understood.delete(understood.keys().next().value as string);
-    understood.set(key, { parsed: result, until: Date.now() + UNDERSTOOD_MS });
+    understood.set(key, result);
     return result;
   } catch (err) {
     // Out of allowance, or the model couldn't: the rules' reading stands.
     if (err instanceof AppError) return null;
     throw err;
   }
+}
+
+/** How many of each kind a question is answered from: enough to find it, bounded for the model. */
+const ANSWER_FROM = 12;
+/** How much of one message the model reads. */
+const PASSAGE_CHARS = 400;
+const DAYS = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+const two = (n: number) => String(n).padStart(2, '0');
+
+/** "Sat 2026-10-03 14:05" on the asker's clock: the same on every ICU version. */
+function when(iso: string, timeZone: string, withTime = true): string {
+  const p = zonedParts(new Date(iso), timeZone);
+  const day = `${DAYS[p.weekday]} ${p.year}-${two(p.month)}-${two(p.day)}`;
+  return withTime ? `${day} ${two(p.hour)}:${two(p.minute)}` : day;
+}
+
+/** On one line, cut at `max`. */
+const oneLine = (s: string, max: number) => clip(s.replace(/\s+/g, ' ').trim(), max);
+
+/**
+ * "Ask Cai" in Search (R66, R17): a question answered from what search finds in the asker's own
+ * messages, decisions and to-dos, exactly as they'd see them listed (never a private
+ * conversation, a message they deleted for themselves, or who on an organization's team wrote),
+ * in the language it's asked in, with the ones the answer rests on. Kept nowhere; when nothing
+ * is found, no model is asked.
+ */
+async function answerFromSearch(
+  ctx: AppContext,
+  me: string,
+  question: string,
+): Promise<SearchAnswerResponse> {
+  const { ai, me: person } = await aiGate(ctx, me);
+  const rules = parseSearchQuery(question, { now: ctx.now() });
+  const parsed = (await understandWithAi(ctx, me, rules)) ?? rules;
+  const { results } = await runSearch(ctx, me, parsed, ANSWER_FROM);
+  const messages = results.messages ?? [];
+  const tasks = results.tasks ?? [];
+  const decisions = results.decisions ?? [];
+  if (!messages.length && !tasks.length && !decisions.length)
+    return { answer: null, label: null, sources: {} };
+  // The words themselves, not the highlighted snippet: what search found is already theirs to read.
+  const words = new Map(
+    messages.length
+      ? (
+          await ctx.db
+            .selectFrom('messages')
+            .select([
+              'id',
+              sql<string>`coalesce(body, concat_ws(' · ', payload->>'title', payload->'fields'->>'reference', payload->'fields'->>'summary'), '')`.as(
+                'text',
+              ),
+            ])
+            .where(
+              'id',
+              'in',
+              messages.map((m) => m.id),
+            )
+            .execute()
+        ).map((r) => [r.id, r.text])
+      : [],
+  );
+  const zone = person.time_zone || 'UTC';
+  type Source =
+    | { kind: 'message'; item: (typeof messages)[number] }
+    | { kind: 'task'; item: (typeof tasks)[number] }
+    | { kind: 'decision'; item: (typeof decisions)[number] };
+  const sources: Source[] = [
+    ...messages.map((item) => ({ kind: 'message' as const, item })),
+    ...decisions.map((item) => ({ kind: 'decision' as const, item })),
+    ...tasks.map((item) => ({ kind: 'task' as const, item })),
+  ];
+  const name = (id: string | null, shown: string) => (id === me ? 'You' : shown);
+  const lines = sources.map((s, i) => {
+    const n = `[${i + 1}]`;
+    if (s.kind === 'message') {
+      const m = s.item;
+      const where = m.conversationTitle ? ` · ${oneLine(m.conversationTitle, 60)}` : '';
+      const who = name(m.senderId, m.senderName ?? 'Someone');
+      return `${n} ${when(m.createdAt, zone)} · ${who}${where}: ${oneLine(words.get(m.id) ?? '', PASSAGE_CHARS)}`;
+    }
+    if (s.kind === 'decision')
+      return `${n} ${when(s.item.decidedAt, zone)} · Decision: ${oneLine(s.item.title, 200)}`;
+    const t = s.item;
+    const due = t.dueAt ? `, due ${when(t.dueAt, zone, t.dueHasTime)}` : '';
+    const done = t.status === 'done' ? ', done' : '';
+    return `${n} ${when(t.createdAt, zone)} · To do: ${name(t.assignee.id, t.assignee.displayName)}, for ${name(t.owner.id, t.owner.displayName)}: ${oneLine(t.title, 200)}${due}${done}`;
+  });
+  const answered = await runAi(ctx, 'search-answer', me, () =>
+    ai.answerFromFound({
+      found: lines.join('\n'),
+      question,
+      language: languageName(writtenIn(question) ?? baseLanguage(person.locale)),
+      today: when(ctx.now().toISOString(), zone, false),
+    }),
+  );
+  const cited = answered.sources
+    .filter((n) => n >= 1 && n <= sources.length)
+    .map((n) => sources[n - 1]!)
+    .slice(0, 6);
+  return {
+    answer: answered.answer,
+    label: tr(AI_LABEL),
+    sources: {
+      messages: cited.flatMap((s) => (s.kind === 'message' ? [s.item] : [])),
+      decisions: cited.flatMap((s) => (s.kind === 'decision' ? [s.item] : [])),
+      tasks: cited.flatMap((s) => (s.kind === 'task' ? [s.item] : [])),
+    },
+  };
 }
 
 export async function searchRoutes(app: FastifyInstance, ctx: AppContext) {
@@ -601,5 +717,11 @@ export async function searchRoutes(app: FastifyInstance, ctx: AppContext) {
     const read = understand === '1' ? await understandWithAi(ctx, auth.userId, rules) : null;
     const response = await runSearch(ctx, auth.userId, read ?? rules, limit);
     return read ? { ...response, understoodBy: 'ai', label: tr(AI_LABEL) } : response;
+  });
+
+  app.post('/search/answer', async (req): Promise<SearchAnswerResponse> => {
+    const auth = requireAuth(req);
+    const { q } = parse(SearchAnswerBody, req.body);
+    return answerFromSearch(ctx, auth.userId, q);
   });
 }

@@ -734,6 +734,7 @@ export const turkish: Catalog = {
   'What did we decide about the date?': 'Tarih konusunda ne karar verdik?',
   Ask: 'Sor',
   'Nothing to answer from yet.': 'Henüz yanıt verilecek mesaj yok.',
+  'Nothing in your messages answers that yet.': 'Mesajlarınızda henüz bunu yanıtlayan bir şey yok.',
   'Not now': 'Şimdi değil',
   Rewrite: 'Yeniden yaz',
   'Nothing changes until you choose.': 'Siz seçene kadar hiçbir şey değişmez.',

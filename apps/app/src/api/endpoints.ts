@@ -127,6 +127,7 @@ import type {
   SavedCollectionsResponse,
   SavedItemsResponse,
   SavedResponse,
+  SearchAnswerResponse,
   SearchResponse,
   SessionResponse,
   SessionsResponse,
@@ -794,6 +795,8 @@ export const endpoints = {
   /** `understand`: the person has finished typing (a pause, Enter), so a sentence may go to the model. */
   search: (term: string, understand = false) =>
     api.get<SearchResponse>(`/search${q({ q: term, understand: understand ? '1' : undefined })}`),
+  /** "Ask Cai" in Search (R66): a question answered from what search finds. */
+  searchAnswer: (q: string) => api.post<SearchAnswerResponse>('/search/answer', { q }),
   /** How a search ended: found or not, and how long it took. Never what was searched for. */
   searchOutcome: (outcome: { found: boolean; ms: number }) =>
     api.post<OkResponse>('/search/outcome', outcome),
