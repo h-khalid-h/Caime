@@ -3257,3 +3257,8 @@ The six-slice review's plan, in its order; a block is ticked when its tests and 
   person's and an organization's providers' slots. Found on the way: a job's dedupe key is kept
   for good, so a "read again" keyed by the account alone would have run once ever; it's keyed by
   the minute. Postmark Pro is on (the owner): Caime Mail can now receive.
+- 2026-10-14 — Caime Mail live test: Postmark Pro on, MX at Postmark, both test mails "Processed"
+  by Postmark, yet neither reached a conversation. Caime answered 200 and dropped them at one of
+  its own checks, which said so to nobody. Each mail in now writes one log line ("mail in": its
+  outcomes and the DKIM, SPF and DMARC results, never an address or a word), so the operator sees
+  why in the service's log; the cause is found with Postmark's Retry once that's deployed.

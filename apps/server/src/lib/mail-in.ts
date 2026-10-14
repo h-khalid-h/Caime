@@ -79,17 +79,30 @@ export async function receiveMail(
   if (!domain || !mailOn(ctx.config) || !ctx.mailProvider) return [];
   const ours = [...new Set(mail.to.filter((a) => handleOf(a, domain)))];
   const count = (outcome: InboundOutcome) => ctx.metrics.mail.inc({ direction: 'in', outcome });
+  // What became of it, for the operator's log: outcomes and checks, never an address or a word.
+  let checks: Record<string, unknown> = { raw: Boolean(mail.raw) };
+  const said = (outcomes: InboundOutcome[]) => {
+    ctx.log.info({ outcomes, ...checks }, 'mail in');
+  };
   if (!ours.length) {
     count('unknown');
+    said(['unknown']);
     return [];
   }
   const all = (outcome: InboundOutcome) => {
     count(outcome);
+    said([outcome]);
     return ours.map((to) => ({ to, outcome }));
   };
   if (mail.spam) return all('spam');
   // Who sent it, as Caime checked the raw message itself (mail-auth.ts), never the payload's say.
   const auth = await authenticateMail(ctx, mail.raw, ctx.mailProvider.receivingHosts);
+  checks = {
+    ...checks,
+    dkim: auth.dkim.map((d) => d.result),
+    spf: auth.spf?.result ?? null,
+    dmarc: auth.dmarc?.result ?? null,
+  };
   if (!senderVerified(mail.from.address, auth)) return all('unverified');
   if (!mail.text.trim() && !mail.attachments.length) return all('empty');
   const out: Array<{ to: string; outcome: InboundOutcome }> = [];
@@ -104,6 +117,7 @@ export async function receiveMail(
     count(outcome);
     out.push({ to, outcome });
   }
+  said(out.map((o) => o.outcome));
   return out;
 }
 
