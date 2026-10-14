@@ -1239,9 +1239,5 @@ export const arServer: Catalog = {
   },
   '{name} is sold out.': '{name}: نفدت الكمية.',
   // Options on an item (R60).
-  'Choose from “{option}” for {name}.': {
-    toWoman: 'اختاري من «{option}» لـ{name}.',
-    toMan: 'اختر من «{option}» لـ{name}.',
-    other: 'اختر من «{option}» لـ{name}.',
-  },
+  'Choose from “{option}” for {name}.': 'اختر من «{option}» لـ{name}.',
 };

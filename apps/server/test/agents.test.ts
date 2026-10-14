@@ -761,7 +761,7 @@ describe('an organization’s AI agent (PRD §74–75)', () => {
     await send(mona, 'Two whitening kits for delivery, please', conversationId);
     replies.push(
       agentSays('order', 'I’ve written your order down for the team to confirm.', {
-        orderLines: [{ itemId: 'kit', quantity: 2 }],
+        orderLines: [{ itemId: 'kit', quantity: 2, choices: [] }],
         orderWay: 'delivery',
       }),
     );
@@ -794,7 +794,7 @@ describe('an organization’s AI agent (PRD §74–75)', () => {
     await send(omid, 'One whitening kit, pickup please', soldOut);
     replies.push(
       agentSays('order', 'Done!', {
-        orderLines: [{ itemId: 'kit', quantity: 1 }],
+        orderLines: [{ itemId: 'kit', quantity: 1, choices: [] }],
         orderWay: 'pickup',
       }),
     );
@@ -810,7 +810,9 @@ describe('an organization’s AI agent (PRD §74–75)', () => {
     });
     const { c: lena, conversationId: noWay } = await newCustomer('Lena Orders');
     await send(lena, 'One whitening kit please', noWay);
-    replies.push(agentSays('order', 'Done!', { orderLines: [{ itemId: 'kit', quantity: 1 }] }));
+    replies.push(
+      agentSays('order', 'Done!', { orderLines: [{ itemId: 'kit', quantity: 1, choices: [] }] }),
+    );
     await agentTurn();
     expect((await messages(lena, noWay)).filter((m: any) => m.kind === 'kit')).toHaveLength(0);
     expect((await threadOf(noor, noWay)).agentHandedOverAt).not.toBeNull();
