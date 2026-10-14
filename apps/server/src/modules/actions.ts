@@ -21,6 +21,7 @@ import type {
   OkResponse,
   TaskResponse,
 } from '@caime/core/api';
+import { initiativeOf, quietWaitAfterMs } from '@caime/core/initiative';
 import type { FastifyInstance } from 'fastify';
 import { sql } from 'kysely';
 import { z } from 'zod';
@@ -50,7 +51,6 @@ export type { TaskDirection };
 const WAITING_SHOWN = 5;
 const COMING_UP_SHOWN = 5;
 const COMING_UP_MS = 3 * 86_400_000;
-const QUIET_AFTER_MS = 3 * 86_400_000;
 
 export /** Who hears about a change: the owner, and the assignee when it was shared with them. */
 function audienceOf(t: Pick<Task, 'owner_id' | 'assignee_id' | 'shared'>): string[] {
@@ -210,18 +210,22 @@ export async function actionRoutes(app: FastifyInstance, ctx: AppContext) {
       .where('owner_id', '=', me)
       .where('assignee_id', 'is distinct from', me)
       .where('status', 'in', ['open', 'accepted']);
-    const [rows, count, items] = await Promise.all([
+    const [rows, count, items, mine] = await Promise.all([
       waitingWhere.selectAll().orderBy('created_at', 'asc').limit(WAITING_SHOWN).execute(),
       waitingWhere.select(sql<number>`count(*)::int`.as('n')).executeTakeFirstOrThrow(),
       calendarItems(ctx, me, { from: now, until: new Date(now.getTime() + COMING_UP_MS) }, (r) =>
         taskViews(ctx, r, me),
       ),
+      ctx.db.selectFrom('users').select('preferences').where('id', '=', me).executeTakeFirst(),
     ]);
     const waiting = await taskViews(ctx, rows, me);
-    // A wait gone quiet: three days or more, and not asked about since (asking sets a reminder).
+    // A wait gone quiet: three days or more (a day with "More", never with "Less": R66), and not
+    // asked about since (asking sets a reminder).
+    const quietAfter = quietWaitAfterMs(initiativeOf(mine?.preferences));
     const quiet = rows.find(
       (t) =>
-        now.getTime() - t.created_at.getTime() >= QUIET_AFTER_MS &&
+        quietAfter !== null &&
+        now.getTime() - t.created_at.getTime() >= quietAfter &&
         (!t.remind_at || t.remind_at.getTime() <= now.getTime()),
     );
     return {

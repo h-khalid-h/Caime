@@ -3479,6 +3479,19 @@ export const fr: Catalog = {
   'Hi {name}, any news on “{title}”?': 'Bonjour {name}, des nouvelles pour « {title} » ?',
   'I’ll check in three days, with a follow-up ready to send.':
     'Je reviens dans trois jours, avec une relance prête à envoyer.',
+  Less: 'Moins',
+  'Only suggestions it’s quite sure of. It doesn’t ask about a wait or tell you before a meeting; the brief still opens from the card.':
+    'Seulement les suggestions dont il est assez sûr. Il ne demande rien sur une attente et ne prévient pas avant une réunion ; le point s’ouvre toujours depuis la carte.',
+  Usual: 'Habituel',
+  'Suggests what it reads in your conversations, says how sure it is, and asks about a wait after three quiet days.':
+    'Suggère ce qu’il lit dans vos conversations, dit à quel point il en est sûr, et demande des nouvelles d’une attente après trois jours de silence.',
+  'As usual, and asks about a wait after one quiet day.':
+    'Comme d’habitude, et demande des nouvelles d’une attente après un jour de silence.',
+  'What Cai does unasked': 'Ce que Cai fait sans qu’on le demande',
+  'What you ask Cai for is never held back.': 'Ce que vous demandez à Cai n’est jamais retenu.',
+  'Cai on its own': 'Cai de lui-même',
+  'I’ll check tomorrow, with a follow-up ready to send.':
+    'Je reviens demain, avec une relance prête à envoyer.',
   'Your morning brief, follow-ups, what it has learned':
     'Votre point du matin, les relances, ce qu’il a appris',
   'Things to do': 'Choses à faire',

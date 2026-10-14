@@ -888,8 +888,16 @@ with its reason, so it isn't proposed again without new facts.
     wrote; at most twelve of each, a message's first 400 characters), labelled, in the
     language it was asked in, with the rows it rests on, which open where they were said. One
     model call a tap on the light model (the reading of the sentence is search's own, kept ten
-    minutes), none when nothing is found, and nothing kept. Still to come in R66: how
-    proactive Cai is, and when it asks before it guesses, in Settings · Cai.
+    minutes), none when nothing is found, and nothing kept. *What Cai does unasked*
+    (built 2026-10-14): one choice in Settings · Cai, Less, Usual or More, and Usual is what Cai
+    always did, so nobody who never chooses sees a change. Less offers only the suggestions it
+    reads "Quite sure" (the same 0.85 the card's words use, so a guess is never shown to someone
+    who asked for less), asks about no quiet wait and sends no notice an hour before a meeting
+    (the brief still opens from the card). More asks about a wait after one quiet day rather than
+    three, and "Still waiting" then checks again the next day. What a person asks for (Find
+    actions, a catch-up, Ask Cai, a wait handed to Cai) is never held back by it. Declined: a
+    "Cai acts on its own" level. Cai never sends, books or moves anything without a tap (R68), so
+    there is nothing more to turn up than how soon and how sure.
 - **R68 — Cai keeps going: OpenAI's dots, evaluated for Caime (2026-10-06).** Dots (DevDay,
   2026-09-29) are always-on agents, one per person on ChatGPT's Pro and Business Premium plans: a
   cloud computer and browser each, 4,000 app plugins, reachable in ChatGPT, Slack and Teams,

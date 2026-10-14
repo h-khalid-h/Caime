@@ -8,6 +8,7 @@
  * conversation; nothing written anywhere but the reader's own notification, in their language.
  */
 import { type BriefView, KITS, type Sphere, tr, trn } from '@caime/core';
+import { initiativeOf, tellsBeforeMeetings } from '@caime/core/initiative';
 import { AGREED_STATES as AGREED } from '@caime/core/kit-states';
 import { SPACE_KIND_DEFS, type SpaceKind } from '@caime/core/spaces';
 import { sql } from 'kysely';
@@ -195,7 +196,19 @@ async function briefJob(ctx: AppContext, payload: Record<string, unknown>): Prom
   if (!card || !start || !isAgreed(card) || start.toISOString() !== String(payload.at)) return;
   if (start.getTime() <= ctx.now().getTime() - BRIEF_LEAD_MS) return;
   const readers = await readersOf(ctx, card);
+  // Told only those who let Cai say things unasked (R66: not with "Less"); one read for them all.
+  const told = readers.length
+    ? await ctx.db
+        .selectFrom('users')
+        .select(['id', 'preferences'])
+        .where('id', 'in', readers)
+        .execute()
+    : [];
+  const quiet = new Set(
+    told.filter((u) => !tellsBeforeMeetings(initiativeOf(u.preferences))).map((u) => u.id),
+  );
   for (const userId of readers) {
+    if (quiet.has(userId)) continue;
     const brief = await briefFor(ctx, userId, messageId, { withModel: false }).catch(() => null);
     if (!brief) continue;
     await notify(ctx, {

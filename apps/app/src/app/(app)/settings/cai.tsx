@@ -12,6 +12,7 @@ import {
 } from '@caime/core/arabic-variety';
 import { formatWhen } from '@caime/core/format';
 import { msg, tr, trn } from '@caime/core/i18n';
+import { INITIATIVE_CHOICES, type Initiative } from '@caime/core/initiative';
 import type { SuggestionKind } from '@caime/core/intelligence';
 import { CAI_ID } from '@caime/core/system-ids';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
@@ -61,6 +62,33 @@ const VARIETY_LABELS: Record<ArabicVariety, string> = {
   sudanese: msg('Sudanese Arabic'),
   yemeni: msg('Yemeni Arabic'),
 };
+
+/**
+ * How much Cai does unasked (R66): what it suggests on its own, whether it asks about a quiet
+ * wait and how soon, and whether it tells you before a meeting. What you ask of it is never
+ * held back.
+ */
+function CaiInitiative() {
+  const choice = usePrefs((s) => s.caiInitiative);
+  return (
+    <Group
+      title={tr('What Cai does unasked')}
+      footer={tr('What you ask Cai for is never held back.')}
+    >
+      <ChoiceSheet
+        label={tr('Cai on its own')}
+        value={choice}
+        onChange={(next: Initiative) => savePrefs({ caiInitiative: next })}
+        options={INITIATIVE_CHOICES.map((c) => ({
+          value: c.value,
+          label: tr(c.label),
+          detail: tr(c.detail),
+        }))}
+        testID="cai-initiative"
+      />
+    </Group>
+  );
+}
 
 /**
  * How Cai and the Caime Friends speak Arabic with you (R72): as you write it, else as where you
@@ -173,6 +201,8 @@ export default function CaiSettings() {
       </View>
 
       <CaiArabic />
+
+      <CaiInitiative />
 
       <Group
         title={tr('Morning brief')}

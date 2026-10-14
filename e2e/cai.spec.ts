@@ -78,6 +78,18 @@ test('a wait handed to Cai comes back as a follow-up, sent by a tap', async ({ b
   await arabic.click();
   await page.getByRole('radio', { name: /^As you write it/ }).click();
   await expect(arabic).toContainText('As you write it, else Egyptian Arabic');
+  // How much Cai does unasked (R66): usual until chosen; "Less" is kept on the account.
+  const initiative = page.getByTestId('cai-initiative').filter({ visible: true });
+  await expect(initiative).toContainText('Usual');
+  await initiative.click();
+  const less = page.getByTestId('cai-initiative-less');
+  await expect(less).toBeInViewport({ ratio: 1 });
+  await expect(less).toContainText('Only suggestions it’s quite sure of');
+  await less.click();
+  await expect(initiative).toContainText('Less');
+  await expect
+    .poll(async () => (await page.request.get('/v1/me').then((r) => r.json())).user.preferences)
+    .toMatchObject({ caiInitiative: 'less' });
 
   // The offer, in Cai's chat once the sweep has run.
   await page.getByTestId('cai-chat').filter({ visible: true }).click();

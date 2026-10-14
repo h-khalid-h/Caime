@@ -6,13 +6,14 @@
  */
 
 import { tr } from './i18n';
+import { QUITE_SURE } from './initiative';
 
 export type Sureness = 'sure' | 'fairly' | 'guess';
 
 /** Dated promises and verified teams are sure; a shared space is a guess. */
 export function surenessOf(confidence: number): Sureness {
   if (!Number.isFinite(confidence)) return 'guess';
-  if (confidence >= 0.85) return 'sure';
+  if (confidence >= QUITE_SURE) return 'sure';
   if (confidence >= 0.7) return 'fairly';
   return 'guess';
 }

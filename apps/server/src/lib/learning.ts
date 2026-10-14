@@ -11,12 +11,16 @@ export async function leanFor(
   userId: string,
   kind: string,
   subjectUserId: string | null | undefined,
+  /** The person's row, when the caller has read it already. */
+  known?: { preferences: unknown; learning_reset: Record<string, string> | null },
 ): Promise<Learned | null> {
-  const user = await ctx.db
-    .selectFrom('users')
-    .select(['preferences', 'learning_reset'])
-    .where('id', '=', userId)
-    .executeTakeFirst();
+  const user =
+    known ??
+    (await ctx.db
+      .selectFrom('users')
+      .select(['preferences', 'learning_reset'])
+      .where('id', '=', userId)
+      .executeTakeFirst());
   const prefs = (user?.preferences ?? {}) as { learnFromChoices?: boolean };
   if (prefs.learnFromChoices === false) return null;
   // What was forgotten (R68) teaches nothing.

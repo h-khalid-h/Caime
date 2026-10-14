@@ -5,6 +5,7 @@
 import type { BubbleTheme } from '@caime/brand/tokens';
 import type { ArabicVarietyChoice } from '@caime/core/arabic-variety';
 import type { LanguageChoice } from '@caime/core/i18n';
+import type { Initiative } from '@caime/core/initiative';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { create } from 'zustand';
 import { createJSONStorage, persist } from 'zustand/middleware';
@@ -29,6 +30,8 @@ export interface PrefValues {
   caiBrief: string | null;
   /** Cai's weekly look at your people (R68). */
   caiDigest: boolean;
+  /** How much Cai does unasked (R66). */
+  caiInitiative: Initiative;
   /** How Cai and the Caime Friends speak Arabic (R72): as you write and live, or one chosen. */
   arabicVariety: ArabicVarietyChoice;
 }
@@ -48,6 +51,7 @@ export const DEFAULT_PREFS: PrefValues = {
   learnFromChoices: true,
   caiBrief: null,
   caiDigest: false,
+  caiInitiative: 'usual',
   arabicVariety: 'auto',
 };
 

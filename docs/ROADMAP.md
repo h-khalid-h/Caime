@@ -1287,7 +1287,11 @@ listed there with its owner.
       conversation's assist tools, the weekly digest (R68), and Ask Cai in Search
       (2026-10-14: `POST /v1/search/answer`, the search's own rows to the model and the ones
       the answer rests on back, kept nowhere; `ai.test.ts`, `e2e/around-the-conversation.spec.ts`).
-- [ ] Later in R66: how proactive Cai is, and when it asks before it guesses, in Settings · Cai.
+- [x] R66, what Cai does unasked: Settings · Cai's "Cai on its own" (Less, Usual, More;
+      `preferences.caiInitiative`, core `initiative.ts`). Less offers only "Quite sure"
+      suggestions (`createSuggestion` and the bulk place offers), asks about no quiet wait and sends
+      no notice before a meeting; More asks about a wait after a day; what's asked for is never held
+      back (`initiative.test.ts`, `cai-initiative.test.ts`, `e2e/cai.spec.ts`).
 - [x] R67: Caime's own accounts. @cai (kind `assistant`) and the seven Caime Friends (kind
       `character`) are users with fixed ids (migration 0059), opened through the ordinary direct
       route, greeted once in the reader's language, words and stickers only. Cai answers what you
@@ -3203,3 +3207,7 @@ The six-slice review's plan, in its order; a block is ticked when its tests and 
   takes it; a time taken all the same is skipped and said, a withdrawn item ends it and says so.
   Found on the way: a link to the Bookings view (`?view=bookings`) opened the default view on a
   desktop, whose list pane didn't read it; it does now (`useInboxView`).
+- 2026-10-14 — R66, what Cai does unasked: one choice (Less, Usual, More) for how sure Cai must be
+  to suggest, whether and how soon it asks about a quiet wait, and whether it speaks before a
+  meeting; Usual is unchanged. The team's Bookings give a repeating appointment's "Every week" a
+  line of its own, so a narrow pane no longer cuts it off.

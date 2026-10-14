@@ -448,6 +448,7 @@ export async function aiRoutes(app: FastifyInstance, ctx: AppContext) {
         title: item.title,
         rationale: tr('{speaker} wrote {quote}', { speaker, quote: quoted(line.text) }),
         confidence: 0.8,
+        asked: true,
         payload: {
           source: 'ai',
           dueHasTime: Boolean(when?.time),

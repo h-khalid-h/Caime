@@ -24,6 +24,7 @@ function snapshot(): Record<string, unknown> {
     learnFromChoices: p.learnFromChoices,
     caiBrief: p.caiBrief,
     caiDigest: p.caiDigest,
+    caiInitiative: p.caiInitiative,
     arabicVariety: p.arabicVariety,
   };
   if (p.enterToSend !== null) preferences.enterToSend = p.enterToSend;

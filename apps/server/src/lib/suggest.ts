@@ -8,6 +8,7 @@
 import type { SuggestionView } from '@caime/core';
 import { SPACE_KIND_DEFS, SPHERE_DEFS, type SpaceKind, type Sphere, uuidv7 } from '@caime/core';
 import { tr } from '@caime/core/i18n';
+import { initiativeOf, offersSuggestion } from '@caime/core/initiative';
 import { type Insertable, sql } from 'kysely';
 import type { AppContext } from '../context';
 import type { Suggestion, SuggestionsTable } from '../db/schema';
@@ -81,8 +82,17 @@ export async function createSuggestion(
     dueAt?: string | null;
     dueText?: string | null;
     fingerprint: string;
+    /** Made because the person asked (Find actions): offered however little Cai does unasked. */
+    asked?: boolean;
   },
 ): Promise<string | null> {
+  const user = await ctx.db
+    .selectFrom('users')
+    .select(['preferences', 'learning_reset'])
+    .where('id', '=', s.userId)
+    .executeTakeFirst();
+  // How much Cai does unasked (R66): with "Less", only what it's quite sure of.
+  if (!s.asked && !offersSuggestion(initiativeOf(user?.preferences), s.confidence)) return null;
   const id = uuidv7();
   // A string was written in the reader's language already (its caller ran in it); a function
   // is run in it here, once, and the row keeps the words the reader reads.
@@ -94,7 +104,13 @@ export async function createSuggestion(
           typeof s.rationale === 'string' ? s.rationale : s.rationale(),
         ]);
   // What their own choices on this kind have taught (M11): kept on the row, said in the app.
-  const learned = await leanFor(ctx, s.userId, s.kind, s.subjectUserId);
+  const learned = await leanFor(
+    ctx,
+    s.userId,
+    s.kind,
+    s.subjectUserId,
+    user ? { preferences: user.preferences, learning_reset: user.learning_reset } : undefined,
+  );
   const row = await ctx.db
     .insertInto('suggestions')
     .values({
@@ -276,6 +292,7 @@ export async function suggestFromPlace(
     .selectFrom('connection_sides as s')
     .innerJoin('connections as c', 'c.id', 's.connection_id')
     .innerJoin('users as u', 'u.id', 's.other_id')
+    .innerJoin('users as ow', 'ow.id', 's.owner_id')
     .leftJoin('connection_sides as t', (j) =>
       j.onRef('t.connection_id', '=', 's.connection_id').onRef('t.owner_id', '=', 's.other_id'),
     )
@@ -287,6 +304,7 @@ export async function suggestFromPlace(
       's.owner_id',
       's.other_id',
       sql<string>`coalesce(ti.display_name, di.display_name, u.display_name)`.as('shown'),
+      'ow.preferences as owner_preferences',
     ])
     .where('c.status', '=', 'active')
     // The connections a newcomer has with someone there, found from the newcomers' own sides
@@ -342,7 +360,8 @@ export async function suggestFromPlace(
     const o = inLanguage(languages.get(p.owner_id) ?? 'en', () =>
       offerOf(place, p.shown || tr('them')),
     );
-    if (!o) continue;
+    // How much Cai does unasked (R66), as `createSuggestion` checks it.
+    if (!o || !offersSuggestion(initiativeOf(p.owner_preferences), o.confidence)) continue;
     rows.push({
       id: uuidv7(),
       user_id: p.owner_id,

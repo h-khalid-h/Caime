@@ -30,6 +30,7 @@ import { useBadges } from '@/features/shell/useBadges';
 import { YouButton } from '@/features/shell/YouButton';
 import { useNow, useUserClock } from '@/lib/time';
 import { useSession } from '@/state/session';
+import { usePrefs } from '@/theme/prefs';
 import { useTheme } from '@/theme/theme';
 import { Avatar } from '@/ui/Avatar';
 import { Button } from '@/ui/Button';
@@ -120,6 +121,8 @@ function CaiAsk({ task, since }: { task: TaskView; since: string }) {
   const now = useNow();
   const { timeZone, locale } = useUserClock();
   const [busy, setBusy] = useState<string | null>(null);
+  // "More" (R66, core `quietWaitAfterMs`): Cai asks again after a day.
+  const sooner = usePrefs((s) => s.caiInitiative === 'more');
   const answer = async (key: string, patch: Record<string, unknown>, done: string) => {
     setBusy(key);
     try {
@@ -182,14 +185,17 @@ function CaiAsk({ task, since }: { task: TaskView; since: string }) {
           variant={task.conversationId ? 'secondary' : 'primary'}
           loading={busy === 'wait'}
           onPress={() =>
-            // Cai keeps it (R68): in three days, a follow-up ready to send, in its chat.
+            // Cai keeps it (R68): when it would ask again (three days, a day with "More", R66),
+            // a follow-up ready to send, in its chat.
             void answer(
               'wait',
               {
-                remindAt: new Date(now.getTime() + 3 * DAY_MS).toISOString(),
+                remindAt: new Date(now.getTime() + (sooner ? DAY_MS : 3 * DAY_MS)).toISOString(),
                 caiFollowUp: true,
               },
-              tr('I’ll check in three days, with a follow-up ready to send.'),
+              sooner
+                ? tr('I’ll check tomorrow, with a follow-up ready to send.')
+                : tr('I’ll check in three days, with a follow-up ready to send.'),
             )
           }
           testID="cai-ask-waiting"

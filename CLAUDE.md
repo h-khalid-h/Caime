@@ -1528,6 +1528,12 @@ These are rules, not preferences.
   a relationship word matches its label in the reader's language too (`relationshipFromWord`:
   "عملائي", "mes clients", "müşterilerim"), and every interpretation is a key through `tr`. A new
   shape gets its line in each language, with cases in `search-languages.test.ts`.
+- What Cai does unasked (R66) is `preferences.caiInitiative` (core `initiative.ts`: `less`,
+  `usual` by default, `more`), read through `initiativeOf`: `createSuggestion` (and the bulk
+  place offers) offers a suggestion only when `offersSuggestion` allows (pass `asked: true` for
+  one the person asked for), the Attention ask waits `quietWaitAfterMs`, and the meeting brief's
+  notice needs `tellsBeforeMeetings`. Anything new Cai does without being asked reads it there,
+  and nothing the person asked for does.
 - What a person's choices teach (M11, core `learning.ts`): `createSuggestion` reads their last
   decisions on the kind (`leanFor`, the same person's first, the kind at large with more) and
   keeps the lean with its counts on `payload.learned`; the app places by it (`placeByLean`:

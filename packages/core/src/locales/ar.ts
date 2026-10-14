@@ -3817,6 +3817,18 @@ export const ar: Catalog = {
   'Hi {name}, any news on “{title}”?': 'مرحبًا {name}، هل من جديد بخصوص «{title}»؟',
   'I’ll check in three days, with a follow-up ready to send.':
     'سأعود بعد ثلاثة أيام، ومعي متابعة جاهزة للإرسال.',
+  Less: 'أقل',
+  'Only suggestions it’s quite sure of. It doesn’t ask about a wait or tell you before a meeting; the brief still opens from the card.':
+    'اقتراحات واثق منها فقط. لا يسأل عن انتظار ولا ينبّهك قبل اجتماع؛ ويبقى الموجز متاحًا من البطاقة.',
+  Usual: 'المعتاد',
+  'Suggests what it reads in your conversations, says how sure it is, and asks about a wait after three quiet days.':
+    'يقترح ما يقرؤه في محادثاتك، ويذكر مدى ثقته، ويسأل عن انتظار بعد ثلاثة أيام من الهدوء.',
+  'As usual, and asks about a wait after one quiet day.':
+    'كالمعتاد، ويسأل عن انتظار بعد يوم واحد من الهدوء.',
+  'What Cai does unasked': 'ما يفعله Cai دون طلب',
+  'What you ask Cai for is never held back.': 'ما تطلبه من Cai لا يُحجب أبدًا.',
+  'Cai on its own': 'مبادرة Cai',
+  'I’ll check tomorrow, with a follow-up ready to send.': 'سأعود غدًا، ومعي متابعة جاهزة للإرسال.',
   'Your morning brief, follow-ups, what it has learned': 'موجزك الصباحي، والمتابعات، وما تعلّمه',
   'Things to do': 'أمور للقيام بها',
   Reminders: 'التذكيرات',

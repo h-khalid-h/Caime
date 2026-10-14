@@ -3323,6 +3323,19 @@ export const turkish: Catalog = {
   'Hi {name}, any news on “{title}”?': 'Merhaba {name}, “{title}” hakkında bir gelişme var mı?',
   'I’ll check in three days, with a follow-up ready to send.':
     'Üç gün sonra, gönderilmeye hazır bir takip mesajıyla tekrar bakacağım.',
+  Less: 'Daha az',
+  'Only suggestions it’s quite sure of. It doesn’t ask about a wait or tell you before a meeting; the brief still opens from the card.':
+    'Yalnızca epey emin olduğu öneriler. Bir beklemeyi sormaz, toplantıdan önce haber vermez; özet karttan yine açılır.',
+  Usual: 'Olağan',
+  'Suggests what it reads in your conversations, says how sure it is, and asks about a wait after three quiet days.':
+    'Sohbetlerinde okuduklarını önerir, ne kadar emin olduğunu söyler ve üç sessiz günden sonra bir beklemeyi sorar.',
+  'As usual, and asks about a wait after one quiet day.':
+    'Olağan gibi, ve bir sessiz günden sonra bir beklemeyi sorar.',
+  'What Cai does unasked': 'Cai’nin sorulmadan yaptıkları',
+  'What you ask Cai for is never held back.': 'Cai’den istediğin hiçbir zaman geri tutulmaz.',
+  'Cai on its own': 'Cai kendiliğinden',
+  'I’ll check tomorrow, with a follow-up ready to send.':
+    'Yarın, gönderilmeye hazır bir takip mesajıyla tekrar bakacağım.',
   'Your morning brief, follow-ups, what it has learned': 'Sabah özetiniz, takipler, öğrendikleri',
   'Things to do': 'Yapılacaklar',
   Reminders: 'Hatırlatıcılar',

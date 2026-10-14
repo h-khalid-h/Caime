@@ -63,6 +63,7 @@ function adoptPreferences(user: MeView): void {
     learnFromChoices: p.learnFromChoices ?? usePrefs.getState().learnFromChoices,
     caiBrief: p.caiBrief !== undefined ? p.caiBrief : usePrefs.getState().caiBrief,
     caiDigest: p.caiDigest ?? usePrefs.getState().caiDigest,
+    caiInitiative: p.caiInitiative ?? usePrefs.getState().caiInitiative,
     arabicVariety: p.arabicVariety ?? usePrefs.getState().arabicVariety,
   });
 }

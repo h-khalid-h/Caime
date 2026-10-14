@@ -140,13 +140,16 @@ export function OrgBookings({
                     ? formatAmount(item.booking.price.value, item.booking.price.currency, locale)
                     : null,
                   item.place,
-                  item.repeat
-                    ? tr(REPEAT_CHOICES.find((c) => c.value === item.repeat)?.label ?? '')
-                    : null,
                 ]
                   .filter(Boolean)
                   .join(' · ')}
               </Text>
+              {item.repeat ? (
+                // Its own line: a narrow pane cuts the caption above at its end.
+                <Text variant="caption" color="textSecondary" numberOfLines={1}>
+                  {tr(REPEAT_CHOICES.find((c) => c.value === item.repeat)?.label ?? '')}
+                </Text>
+              ) : null}
               {item.booking && item.ahead ? (
                 // A time ahead is given to someone as it's posted (whoever did the one before).
                 <Text variant="caption" color="textSecondary" auto>

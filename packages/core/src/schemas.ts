@@ -37,6 +37,7 @@ import { isPublicKey, isSealed, isSignature, type PublicJwk, type SealedMessage 
 import { isEmoji } from './emoji';
 import { msg } from './i18n';
 import { IMPORT_MAX_MESSAGES, IMPORT_MAX_TEXT } from './imports';
+import { INITIATIVES } from './initiative';
 import {
   AI_USE_DAYS_MAX,
   AI_USE_TEXT_MAX,
@@ -686,6 +687,8 @@ export const Preferences = z
       .optional(),
     /** Cai's weekly look at their people (R68), at the brief's hour or nine; off by default. */
     caiDigest: z.boolean().optional(),
+    /** How much Cai does unasked (R66, core `initiative.ts`); `usual` when never chosen. */
+    caiInitiative: z.enum(INITIATIVES).optional(),
     /**
      * How Cai and the Caime Friends speak Arabic (R72): as this person writes and where they
      * live (`auto`), or the one chosen. The interface stays in Standard Arabic.
