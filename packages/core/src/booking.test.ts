@@ -10,9 +10,11 @@ import {
   describeHours,
   isBooked,
   isOrdered,
+  lineKey,
   openSlots,
   orderableMax,
   orderSummary,
+  piecePrice,
   placeOrder,
   stockLine,
 } from './booking';
@@ -325,6 +327,96 @@ describe('orders from the catalog (R60)', () => {
     expect(stockLine(3)).toBe('Only 3 left');
     expect(stockLine(12, true)).toBe('12 in stock');
     expect(stockLine(0, true)).toBe('Sold out');
+  });
+
+  it('takes options (R60): one of a size, any extras, priced per piece, a line per set', () => {
+    const coffee = item('coffee', {
+      price: { value: 40, currency: 'EGP' },
+      maxQuantity: 5,
+      options: [
+        {
+          id: 'size',
+          name: 'Size',
+          pick: 'one',
+          required: true,
+          choices: [
+            { id: 's', name: 'Small', price: null },
+            { id: 'l', name: 'Large', price: 10 },
+          ],
+        },
+        {
+          id: 'extra',
+          name: 'Extras',
+          pick: 'any',
+          required: false,
+          choices: [
+            { id: 'oat', name: 'Oat milk', price: 5 },
+            { id: 'shot', name: 'Extra shot', price: 8 },
+          ],
+        },
+      ],
+    });
+    const placed = placeOrder(settings, [coffee], {
+      lines: [
+        { itemId: 'coffee', quantity: 2, choices: ['l', 'oat'] },
+        { itemId: 'coffee', quantity: 1, choices: ['s'] },
+        { itemId: 'coffee', quantity: 1, choices: ['oat', 'l'] },
+      ],
+    });
+    if (!placed.ok) throw new Error(placed.reason);
+    expect(placed.order.lines).toEqual([
+      {
+        itemId: 'coffee',
+        name: 'coffee',
+        quantity: 3,
+        price: { value: 165, currency: 'EGP' },
+        choices: [
+          { id: 'l', name: 'Large' },
+          { id: 'oat', name: 'Oat milk' },
+        ],
+      },
+      {
+        itemId: 'coffee',
+        name: 'coffee',
+        quantity: 1,
+        price: { value: 40, currency: 'EGP' },
+        choices: [{ id: 's', name: 'Small' }],
+      },
+    ]);
+    expect(placed.order.total).toEqual({ value: 205, currency: 'EGP' });
+    expect(orderSummary(placed.order)).toBe('3 × coffee (Large, Oat milk), 1 × coffee (Small)');
+    expect(lineKey('coffee', ['oat', 'l'])).toBe(lineKey('coffee', ['l', 'oat']));
+    expect(piecePrice(coffee, ['l', 'oat', 'shot'])).toEqual({ value: 63, currency: 'EGP' });
+    const no = (lines: Array<{ itemId: string; quantity: number; choices?: string[] }>) =>
+      placeOrder(settings, [coffee], { lines });
+    // A size is required, and one only; a choice not on it is refused.
+    expect(no([{ itemId: 'coffee', quantity: 1, choices: ['oat'] }])).toMatchObject({
+      ok: false,
+      reason: 'choice',
+      option: 'Size',
+    });
+    expect(no([{ itemId: 'coffee', quantity: 1, choices: ['s', 'l'] }])).toMatchObject({
+      reason: 'choice',
+      option: 'Size',
+    });
+    expect(no([{ itemId: 'coffee', quantity: 1, choices: ['l', 'nope'] }])).toMatchObject({
+      reason: 'choice',
+    });
+    // How many of it counts over its lines, against its most and what's left.
+    expect(
+      no([
+        { itemId: 'coffee', quantity: 3, choices: ['s'] },
+        { itemId: 'coffee', quantity: 3, choices: ['l'] },
+      ]),
+    ).toMatchObject({ reason: 'quantity', max: 5 });
+    expect(
+      placeOrder(settings, [{ ...coffee, stock: 3 }], {
+        lines: [
+          { itemId: 'coffee', quantity: 2, choices: ['s'] },
+          { itemId: 'coffee', quantity: 2, choices: ['l'] },
+        ],
+      }),
+    ).toMatchObject({ reason: 'stock', max: 3 });
   });
 
   it('refuses what isn’t ordered by the piece, too many, a way not offered, or ordering off', () => {

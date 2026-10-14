@@ -1262,4 +1262,6 @@ export const frServer: Catalog = {
     other: '{name} : plus que {n} en stock.',
   },
   '{name} is sold out.': 'Plus de {name} en stock.',
+  // Options on an item (R60).
+  'Choose from “{option}” for {name}.': 'Choisissez dans « {option} » pour {name}.',
 };

@@ -1208,8 +1208,19 @@ listed there with its owner.
       person; it never says an order is confirmed. Without ordering, no menu is sent and orders
       stay a person's. `agents.test.ts` (an order placed and its stock taken, sold out and no way
       handed over, no menu without ordering).
-- [ ] Later layers of R60: options on an item (sizes, extras). (The team's Orders view shipped
-      with the Business inbox's views, `OrgOrders.tsx`.)
+- [x] R60, options on an item: something sold by the piece may carry options (core `ItemOption`:
+      one of its choices or any, required or not, each choice adding to the price on a paid
+      item), set in the item's editor (`ItemOptionsEditor`), listed on its sheet and its public
+      page, and read by the AI agent on its menu (choice ids and what they add). An order's line
+      is an item and a set of choices (`lineKey`): the same item with other choices is a line of
+      its own, priced per piece (`piecePrice`), named on the card ("2 × Coffee (Large, Oat
+      milk)"), checked by `chosenOf` (an option not chosen as it asks is refused, "Choose from
+      “Size” for Coffee."), and the item's most and its stock count over all its lines. The
+      picker opens an item with options on its choices first and counts each line on its own.
+      Found on the way: an item's sheet stayed open over the conversation its Order opened (a
+      sheet is a layer above every screen); it closes as the conversation opens now.
+      `item-options.test.ts`, core `booking.test.ts`, `e2e/bookings.spec.ts` (a latte's size
+      set, chosen and ordered).
 - [x] R61: collections and a page for each thing offered. `CatalogCollection` (core
       `catalog.ts`: addresses with `slugify`/`withSlugs`/`bySlug`, `RESERVED_SLUGS`) on
       `users.collections` and `organizations.collections` (migration 0055); an item gains its
@@ -3017,3 +3028,8 @@ The six-slice review's plan, in its order; a block is ticked when its tests and 
   count only where it limits them), the `order` action with its lines and way, an Order card
   from the organization checked by the server as anyone's is, and a person for anything off the
   menu, sold out or unclear.
+- 2026-10-14 — R60, options on an item: sizes and extras with what they add to the price, set in
+  the item's editor, chosen per line in the order picker (a line per set of choices, the item's
+  most and stock over all its lines), named and priced on the card, read by the agent on its
+  menu, listed on the item's sheet and page; and an item's sheet no longer stays open over the
+  conversation its Order opens.

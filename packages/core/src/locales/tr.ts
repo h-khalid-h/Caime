@@ -3748,4 +3748,29 @@ export const turkish: Catalog = {
   'Only something ordered by the piece is counted.':
     'Yalnızca adetle sipariş edilen şeyler sayılır.',
   '{n} in stock': { one: 'Stokta 1 tane', other: 'Stokta {n} tane' },
+  // Options on an item (R60).
+  'Name each option and its choices.': 'Her seçeneğe ve seçimlerine bir ad verin.',
+  'Enter what a choice adds as a number, or leave it empty.':
+    'Bir seçimin eklediğini sayı olarak yazın ya da boş bırakın.',
+  'A size to choose or extras to add, each with what it adds to the price.':
+    'Seçilecek bir boy ya da eklenecek ekstralar; her biri fiyata eklediğiyle.',
+  Size: 'Boy',
+  Option: 'Seçenek',
+  'Remove the option': 'Seçeneği kaldır',
+  'They choose': 'Seçim',
+  'One of them': 'Yalnızca biri',
+  'Any of them': 'İstediği kadar',
+  'They must choose': 'Seçim zorunlu',
+  Large: 'Büyük',
+  Choice: 'Seçim',
+  'Added to the price': 'Fiyata eklenir',
+  'Remove the choice': 'Seçimi kaldır',
+  'Add a choice': 'Seçim ekle',
+  'Add to the order': 'Siparişe ekle',
+  'Choose from “{option}”.': '“{option}” içinden seçin.',
+  'Add a choice.': 'Bir seçim ekleyin.',
+  'Only something ordered by the piece has options.':
+    'Yalnızca adetle sipariş edilen şeylerin seçenekleri olur.',
+  'Each option and choice once.': 'Her seçenek ve seçim bir kez.',
+  'Something free adds nothing to its price.': 'Ücretsiz bir şey fiyatına bir şey eklemez.',
 };

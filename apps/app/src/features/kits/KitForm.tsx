@@ -1,11 +1,14 @@
 import type { ConversationView, CustomKitOfferView } from '@caime/core/api';
 import {
   type BookingItem,
+  chosenOf,
   grouped,
   isBooked,
   isOrdered,
   itemPhotoPath,
+  lineKey,
   orderableMax,
+  piecePrice,
   stockLine,
 } from '@caime/core/booking';
 import { prepareCustomFields } from '@caime/core/custom-kits';
@@ -315,19 +318,54 @@ export function KitForm({
     else void otherQ.refetch();
   };
   // What's in the order (R60): an item's id and how many; none to begin with.
+  // Keyed by line (R60: an item and its choices, core `lineKey`).
   const [cart, setCart] = useState<Record<string, number>>({});
-  // How many of an item the order holds: never more than may be ordered now (R60: sold out is 0).
-  const inCart = (i: BookingItem) => Math.min(cart[i.id] ?? 0, orderableMax(i));
+  // An item with options having a new line's choices made (R60): what's picked of each option.
+  const [chooseFor, setChooseFor] = useState<{
+    itemId: string;
+    picked: Record<string, string[]>;
+  } | null>(null);
+  // The order's lines as they'd go: each within what may still be ordered of its item over its
+  // lines, so sold out is none and a few left is at most those (R60).
+  const held = useMemo(() => {
+    const out: Array<{ key: string; item: BookingItem; choices: string[]; quantity: number }> = [];
+    const used = new Map<string, number>();
+    for (const [key, n] of Object.entries(cart)) {
+      const [itemId = '', rest = ''] = key.split('|');
+      const item = host?.items.find((i) => i.id === itemId);
+      if (!item || n <= 0) continue;
+      const quantity = Math.min(n, Math.max(0, orderableMax(item) - (used.get(itemId) ?? 0)));
+      if (quantity <= 0) continue;
+      used.set(itemId, (used.get(itemId) ?? 0) + quantity);
+      out.push({ key, item, choices: rest ? rest.split(',') : [], quantity });
+    }
+    return out;
+  }, [cart, host]);
+  // What more of an item may join the order, over its lines.
+  const roomFor = (i: BookingItem) =>
+    orderableMax(i) - held.filter((l) => l.item.id === i.id).reduce((n, l) => n + l.quantity, 0);
   const [way, setWay] = useState<'pickup' | 'delivery' | null>(null);
   const orderTotal = useMemo(() => {
     if (!host || !ordering) return null;
-    const held = (i: BookingItem) => Math.min(cart[i.id] ?? 0, orderableMax(i));
-    const priced = host.items.filter((i) => held(i) > 0 && i.price);
-    const currencies = new Set(priced.map((i) => i.price?.currency));
+    const priced = held.flatMap((l) => {
+      const each = piecePrice(l.item, l.choices);
+      return each ? [{ value: each.value * l.quantity, currency: each.currency }] : [];
+    });
+    const currencies = new Set(priced.map((p) => p.currency));
     if (!priced.length || currencies.size !== 1) return null;
-    const value = priced.reduce((sum, i) => sum + (i.price?.value ?? 0) * held(i), 0);
-    return formatAmount(Math.round(value * 100) / 100, priced[0]?.price?.currency ?? null, locale);
-  }, [host, ordering, cart, locale]);
+    const value = priced.reduce((sum, p) => sum + p.value, 0);
+    return formatAmount(Math.round(value * 100) / 100, priced[0]?.currency ?? null, locale);
+  }, [host, ordering, held, locale]);
+  // Opened on an item with options (an item's page, R61): its choices are made first.
+  useEffect(() => {
+    if (!host) return;
+    const plain = Object.keys(cart).find(
+      (key) => !key.includes('|') && host.items.find((i) => i.id === key)?.options?.length,
+    );
+    if (!plain) return;
+    setCart(({ [plain]: _, ...rest }) => rest);
+    setChooseFor({ itemId: plain, picked: {} });
+  }, [host, cart]);
   const [itemId, setItemId] = useState<string | null>(null);
   const [findingItem, setFindingItem] = useState(false);
   const findingItemOnce = useOpened(findingItem);
@@ -496,9 +534,11 @@ export function KitForm({
         if (read.value !== undefined) fields[field.key] = read.value;
       }
       if (appointment && host?.items.length && !item) return setError(tr('Pick what it’s for.'));
-      const lines = (host?.items ?? [])
-        .map((i) => ({ itemId: i.id, quantity: inCart(i) }))
-        .filter((l) => l.quantity > 0);
+      const lines = held.map((l) => ({
+        itemId: l.item.id,
+        quantity: l.quantity,
+        ...(l.choices.length ? { choices: l.choices } : {}),
+      }));
       if (picking && !lines.length) return setError(tr('Pick something to order.'));
       if (slots?.slots.length) {
         if (!slot) return setError('Pick a time.');
@@ -668,48 +708,168 @@ export function KitForm({
                   </Text>
                 ) : null,
                 ...g.items.map((i) => {
-                  const n = inCart(i);
+                  const head = (
+                    <>
+                      <ItemPhoto path={itemPhotoPath(host.ref, i)} size={44} />
+                      <View style={{ flex: 1, gap: 2 }}>
+                        <Text variant="bodyStrong" auto>
+                          {i.name}
+                        </Text>
+                        {i.description ? (
+                          <Text variant="caption" color="textSecondary" auto numberOfLines={2}>
+                            {i.description}
+                          </Text>
+                        ) : null}
+                        <Text variant="caption" color="textTertiary">
+                          {[
+                            i.price
+                              ? formatAmount(i.price.value, i.price.currency, locale)
+                              : tr('Free'),
+                            // Sold out, or a few left (R60): at most that many.
+                            stockLine(i.stock),
+                          ]
+                            .filter(Boolean)
+                            .join(' · ')}
+                        </Text>
+                      </View>
+                    </>
+                  );
+                  if (!i.options?.length) {
+                    const n = held.find((l) => l.key === i.id)?.quantity ?? 0;
+                    return (
+                      <View key={i.id} testID={`order-item-${i.id}`}>
+                        <Stepper
+                          label={i.name}
+                          leading={head}
+                          value={n}
+                          min={0}
+                          max={n + roomFor(i)}
+                          onChange={(next) => setCart((c) => ({ ...c, [i.id]: next }))}
+                          testID={`order-count-${i.id}`}
+                        />
+                      </View>
+                    );
+                  }
+                  // With options (R60): a line per set of choices, each counted on its own.
+                  const open = chooseFor?.itemId === i.id ? chooseFor : null;
+                  const priceOf = (c: { price: number | null }) =>
+                    c.price && i.price
+                      ? ` +${formatAmount(c.price, i.price.currency, locale)}`
+                      : '';
                   return (
-                    <View key={i.id} testID={`order-item-${i.id}`}>
-                      <Stepper
-                        label={i.name}
-                        leading={
-                          <>
-                            <ItemPhoto path={itemPhotoPath(host.ref, i)} size={44} />
-                            <View style={{ flex: 1, gap: 2 }}>
-                              <Text variant="bodyStrong" auto>
-                                {i.name}
+                    <View key={i.id} style={{ gap: 8 }} testID={`order-item-${i.id}`}>
+                      <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}>
+                        {head}
+                        <Chip
+                          label={tr('Add')}
+                          icon={Plus}
+                          disabled={roomFor(i) <= 0 || Boolean(open)}
+                          onPress={() => setChooseFor({ itemId: i.id, picked: {} })}
+                          testID={`order-add-${i.id}`}
+                        />
+                      </View>
+                      {held
+                        .filter((l) => l.item.id === i.id)
+                        .map((l, k) => {
+                          const named = chosenOf(i, l.choices);
+                          const each = piecePrice(i, l.choices);
+                          return (
+                            <Stepper
+                              key={l.key}
+                              label={[
+                                named.ok ? named.choices.map((c) => c.name).join(', ') : i.name,
+                                each ? formatAmount(each.value, each.currency, locale) : null,
+                              ]
+                                .filter(Boolean)
+                                .join(' · ')}
+                              value={l.quantity}
+                              min={0}
+                              max={l.quantity + roomFor(i)}
+                              onChange={(next) => setCart((c) => ({ ...c, [l.key]: next }))}
+                              testID={`order-line-${i.id}-${k}`}
+                            />
+                          );
+                        })}
+                      {open ? (
+                        <View style={{ gap: 10 }} testID={`order-choose-${i.id}`}>
+                          {(i.options ?? []).map((o) => (
+                            <View key={o.id} style={{ gap: 4 }}>
+                              <Text variant="label" auto>
+                                {o.name}
                               </Text>
-                              {i.description ? (
-                                <Text
-                                  variant="caption"
-                                  color="textSecondary"
-                                  auto
-                                  numberOfLines={2}
-                                >
-                                  {i.description}
-                                </Text>
-                              ) : null}
-                              <Text variant="caption" color="textTertiary">
-                                {[
-                                  i.price
-                                    ? formatAmount(i.price.value, i.price.currency, locale)
-                                    : tr('Free'),
-                                  // Sold out, or a few left (R60): at most that many.
-                                  stockLine(i.stock),
-                                ]
-                                  .filter(Boolean)
-                                  .join(' · ')}
-                              </Text>
+                              {o.pick === 'one' ? (
+                                <ChoiceChips
+                                  wrap
+                                  flush
+                                  label={o.name}
+                                  value={open.picked[o.id]?.[0] ?? null}
+                                  onChange={(v) =>
+                                    setChooseFor({
+                                      ...open,
+                                      picked: { ...open.picked, [o.id]: [v] },
+                                    })
+                                  }
+                                  onClear={
+                                    o.required
+                                      ? undefined
+                                      : () =>
+                                          setChooseFor({
+                                            ...open,
+                                            picked: { ...open.picked, [o.id]: [] },
+                                          })
+                                  }
+                                  options={o.choices.map((c) => ({
+                                    value: c.id,
+                                    label: `${c.name}${priceOf(c)}`,
+                                  }))}
+                                  testID={`order-option-${o.id}`}
+                                />
+                              ) : (
+                                <ChoiceChips
+                                  multiple
+                                  wrap
+                                  flush
+                                  label={o.name}
+                                  value={open.picked[o.id] ?? []}
+                                  onChange={(v) =>
+                                    setChooseFor({ ...open, picked: { ...open.picked, [o.id]: v } })
+                                  }
+                                  options={o.choices.map((c) => ({
+                                    value: c.id,
+                                    label: `${c.name}${priceOf(c)}`,
+                                  }))}
+                                  testID={`order-option-${o.id}`}
+                                />
+                              )}
                             </View>
-                          </>
-                        }
-                        value={n}
-                        min={0}
-                        max={orderableMax(i)}
-                        onChange={(next) => setCart((c) => ({ ...c, [i.id]: next }))}
-                        testID={`order-count-${i.id}`}
-                      />
+                          ))}
+                          <View style={{ flexDirection: 'row', gap: 8 }}>
+                            <Button
+                              label={tr('Add to the order')}
+                              size="sm"
+                              onPress={() => {
+                                const flat = Object.values(open.picked).flat();
+                                const checked = chosenOf(i, flat);
+                                if (!checked.ok)
+                                  return setError(
+                                    tr('Choose from “{option}”.', { option: checked.option }),
+                                  );
+                                const key = lineKey(i.id, flat);
+                                setCart((c) => ({ ...c, [key]: (c[key] ?? 0) + 1 }));
+                                setChooseFor(null);
+                                setError(null);
+                              }}
+                              testID="order-choose-add"
+                            />
+                            <Button
+                              label={tr('Cancel')}
+                              size="sm"
+                              variant="secondary"
+                              onPress={() => setChooseFor(null)}
+                            />
+                          </View>
+                        </View>
+                      ) : null}
                     </View>
                   );
                 }),

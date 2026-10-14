@@ -1238,4 +1238,10 @@ export const arServer: Catalog = {
     other: '{name}: بقي {n} فقط.',
   },
   '{name} is sold out.': '{name}: نفدت الكمية.',
+  // Options on an item (R60).
+  'Choose from “{option}” for {name}.': {
+    toWoman: 'اختاري من «{option}» لـ{name}.',
+    toMan: 'اختر من «{option}» لـ{name}.',
+    other: 'اختر من «{option}» لـ{name}.',
+  },
 };

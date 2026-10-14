@@ -4395,4 +4395,40 @@ export const ar: Catalog = {
     many: '{n} في المخزون',
     other: '{n} في المخزون',
   },
+  // Options on an item (R60).
+  'Name each option and its choices.': 'يلزم اسم لكل خيار ولكل اختيار فيه.',
+  'Enter what a choice adds as a number, or leave it empty.':
+    'ما يضيفه الاختيار يُكتب رقمًا، أو يُترك فارغًا.',
+  'A size to choose or extras to add, each with what it adds to the price.':
+    'مقاس يُختار أو إضافات تُضاف، ولكلٍّ ما يضيفه إلى السعر.',
+  Size: 'المقاس',
+  Option: 'خيار',
+  'Remove the option': { toWoman: 'احذفي الخيار', toMan: 'احذف الخيار', other: 'احذف الخيار' },
+  'They choose': 'طريقة الاختيار',
+  'One of them': 'واحد منها',
+  'Any of them': 'أيٌّ منها',
+  'They must choose': 'الاختيار إلزامي',
+  Large: 'كبير',
+  Choice: 'اختيار',
+  'Added to the price': 'يُضاف إلى السعر',
+  'Remove the choice': {
+    toWoman: 'احذفي الاختيار',
+    toMan: 'احذف الاختيار',
+    other: 'احذف الاختيار',
+  },
+  'Add a choice': { toWoman: 'أضيفي اختيارًا', toMan: 'أضف اختيارًا', other: 'أضف اختيارًا' },
+  'Add to the order': {
+    toWoman: 'أضيفي إلى الطلب',
+    toMan: 'أضف إلى الطلب',
+    other: 'أضف إلى الطلب',
+  },
+  'Choose from “{option}”.': {
+    toWoman: 'اختاري من «{option}».',
+    toMan: 'اختر من «{option}».',
+    other: 'اختر من «{option}».',
+  },
+  'Add a choice.': { toWoman: 'أضيفي اختيارًا.', toMan: 'أضف اختيارًا.', other: 'أضف اختيارًا.' },
+  'Only something ordered by the piece has options.': 'الخيارات لما يُطلب بالقطعة فقط.',
+  'Each option and choice once.': 'كل خيار واختيار مرة واحدة.',
+  'Something free adds nothing to its price.': 'ما هو مجاني لا يُضاف إلى سعره شيء.',
 };

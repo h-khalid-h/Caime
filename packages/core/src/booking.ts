@@ -56,9 +56,36 @@ export interface OrderingSettings {
   note: string | null;
 }
 
-/** One line of an order as asked: an item of the catalog and how many. */
+/** An item's options (R60): at most this many, each with at most this many choices. */
+export const ITEM_OPTIONS_MAX = 5;
+export const OPTION_CHOICES_MAX = 12;
+
+/** One way an item can be had (R60): a size, a milk, an extra; its price is added to the item's. */
+export interface ItemChoice {
+  id: string;
+  name: string;
+  /** Added to the item's price, each; null adds nothing. Only an item with a price has these. */
+  price: number | null;
+}
+
+/**
+ * An option on something sold by the piece (R60): one of its choices ("Size": Small, Large), or
+ * any of them ("Extras": Cheese, Olives); a required one must be chosen in every order of it.
+ */
+export interface ItemOption {
+  id: string;
+  name: string;
+  pick: 'one' | 'any';
+  required: boolean;
+  choices: ItemChoice[];
+}
+
+/**
+ * One line of an order as asked: an item of the catalog, how many, and its choices by id (R60);
+ * the same item with other choices is a line of its own.
+ */
 export interface OrderAsk {
-  lines: Array<{ itemId: string; quantity: number }>;
+  lines: Array<{ itemId: string; quantity: number; choices?: string[] }>;
   fulfilment?: 'pickup' | 'delivery' | null;
 }
 
@@ -68,8 +95,10 @@ export interface PlacedOrder {
     itemId: string;
     name: string;
     quantity: number;
-    /** The line's price (each times the quantity), as it was then. */
+    /** The line's price (each, choices included, times the quantity), as it was then. */
     price: { value: number; currency: string } | null;
+    /** What was chosen of its options (R60), as they were named then; none without options. */
+    choices?: Array<{ id: string; name: string }>;
   }>;
   /** The whole order's, where every priced line is in one currency; else null. */
   total: { value: number; currency: string } | null;
@@ -117,24 +146,48 @@ export function placeOrder(
   | { ok: true; order: PlacedOrder }
   | {
       ok: false;
-      reason: 'off' | 'item' | 'quantity' | 'stock' | 'fulfilment' | 'empty';
+      reason: 'off' | 'item' | 'quantity' | 'stock' | 'choice' | 'fulfilment' | 'empty';
       max?: number;
       name?: string;
+      /** With `choice`: the option that wasn't chosen as it asks. */
+      option?: string;
     } {
   if (!settings) return { ok: false, reason: 'off' };
-  const merged = new Map<string, number>();
-  for (const l of ask.lines) merged.set(l.itemId, (merged.get(l.itemId) ?? 0) + l.quantity);
+  // One line per item and set of choices; a repeat adds to its line.
+  const merged = new Map<string, { itemId: string; choices: string[]; quantity: number }>();
+  for (const l of ask.lines) {
+    const choices = [...new Set(l.choices ?? [])].sort();
+    const key = lineKey(l.itemId, choices);
+    const at = merged.get(key);
+    merged.set(key, { itemId: l.itemId, choices, quantity: (at?.quantity ?? 0) + l.quantity });
+  }
   if (merged.size === 0) return { ok: false, reason: 'empty' };
   const lines: PlacedOrder['lines'] = [];
-  for (const [itemId, quantity] of merged) {
+  const perItem = new Map<string, number>();
+  for (const { itemId, choices, quantity } of merged.values()) {
     const item = items.find((i) => i.id === itemId);
     if (!item || !isOrdered(item)) return { ok: false, reason: 'item' };
-    if (quantity < 1 || quantity > item.maxQuantity)
+    if (quantity < 1) return { ok: false, reason: 'quantity', max: item.maxQuantity };
+    const chosen = chosenOf(item, choices);
+    if (!chosen.ok) return { ok: false, reason: 'choice', name: item.name, option: chosen.option };
+    perItem.set(itemId, (perItem.get(itemId) ?? 0) + quantity);
+    const each = piecePrice(item, choices);
+    lines.push({
+      itemId,
+      name: item.name,
+      quantity,
+      price: each ? { value: round2(each.value * quantity), currency: each.currency } : null,
+      ...(chosen.choices.length ? { choices: chosen.choices } : {}),
+    });
+  }
+  // How many of an item, over its lines: within its most, and within what's left (R60).
+  for (const [itemId, quantity] of perItem) {
+    const item = items.find((i) => i.id === itemId) as BookingItem;
+    if (quantity > item.maxQuantity)
       return { ok: false, reason: 'quantity', max: item.maxQuantity };
-    // Fewer left than asked (R60): the reader hears how many, as the picker showed them.
+    // Fewer left than asked: the reader hears how many, as the picker showed them.
     if (quantity > orderableMax(item))
       return { ok: false, reason: 'stock', max: orderableMax(item), name: item.name };
-    lines.push({ itemId, name: item.name, quantity, price: bookingPrice(item, quantity) });
   }
   const fulfilment = ask.fulfilment ?? settings.fulfilment[0] ?? null;
   if (fulfilment && !settings.fulfilment.includes(fulfilment))
@@ -151,9 +204,55 @@ export function placeOrder(
   return { ok: true, order: { lines, total, fulfilment } };
 }
 
-/** "2 × Shawarma, 1 × Fries": an order in one line, for the card's summary. */
+/** "2 × Coffee (Large, Oat milk), 1 × Fries": an order in one line, for the card's summary. */
 export function orderSummary(order: Pick<PlacedOrder, 'lines'>): string {
-  return order.lines.map((l) => `${l.quantity} × ${l.name}`).join(', ');
+  return order.lines
+    .map(
+      (l) =>
+        `${l.quantity} × ${l.name}${l.choices?.length ? ` (${l.choices.map((c) => c.name).join(', ')})` : ''}`,
+    )
+    .join(', ');
+}
+
+/** A line's identity in an order (R60): its item and its choices, in one order. */
+export function lineKey(itemId: string, choices: readonly string[] = []): string {
+  return choices.length ? `${itemId}|${[...choices].sort().join(',')}` : itemId;
+}
+
+const round2 = (n: number) => Math.round(n * 100) / 100;
+
+/** One piece's price with these choices: the item's, plus each choice's (R60); null for free. */
+export function piecePrice(
+  item: Pick<BookingItem, 'price' | 'options'>,
+  choices: readonly string[] = [],
+): { value: number; currency: string } | null {
+  if (!item.price) return null;
+  const all = (item.options ?? []).flatMap((o) => o.choices);
+  const extra = choices.reduce((sum, id) => sum + (all.find((c) => c.id === id)?.price ?? 0), 0);
+  return { value: round2(item.price.value + extra), currency: item.price.currency };
+}
+
+/**
+ * The choices as an item's options ask (R60): each a choice of one of them, one at most where an
+ * option picks one, one at least where it's required. What was chosen, named, in option order;
+ * else the first option not chosen as it asks.
+ */
+export function chosenOf(
+  item: Pick<BookingItem, 'options'>,
+  choices: readonly string[],
+): { ok: true; choices: Array<{ id: string; name: string }> } | { ok: false; option: string } {
+  const options = item.options ?? [];
+  const known = new Set(options.flatMap((o) => o.choices.map((c) => c.id)));
+  const stray = choices.find((id) => !known.has(id));
+  if (stray !== undefined) return { ok: false, option: options[0]?.name ?? '' };
+  const named: Array<{ id: string; name: string }> = [];
+  for (const o of options) {
+    const picked = o.choices.filter((c) => choices.includes(c.id));
+    if ((o.pick === 'one' && picked.length > 1) || (o.required && picked.length === 0))
+      return { ok: false, option: o.name };
+    named.push(...picked.map((c) => ({ id: c.id, name: c.name })));
+  }
+  return { ok: true, choices: named };
 }
 
 /**
@@ -191,6 +290,8 @@ export interface BookingItem {
   collectionId: string | null;
   /** Its photo (R63): an image the host uploaded, shown with it wherever it is. */
   photoFileId?: string | null;
+  /** Its options (R60), for something sold by the piece: a size to choose, extras to add. */
+  options?: ItemOption[];
   /**
    * How many are left of something sold by the piece (R60), kept apart from the catalog: its
    * host reads the count, anyone else only once it's fewer than one order may take (0 is sold

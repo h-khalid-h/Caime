@@ -155,6 +155,17 @@ export function ItemSheet({
         <Spec
           rows={[
             { label: ordered ? tr('price') : tr('booking'), value: line(item, locale) },
+            // Its options (R60): each with its choices and what they add.
+            ...(item.options ?? []).map((o) => ({
+              label: o.name,
+              value: o.choices
+                .map((c) =>
+                  c.price && item.price
+                    ? `${c.name} +${formatAmount(c.price, item.price.currency, locale)}`
+                    : c.name,
+                )
+                .join(', '),
+            })),
             shelf
               ? {
                   label: tr('collection'),

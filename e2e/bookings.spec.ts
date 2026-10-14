@@ -403,4 +403,64 @@ test.describe
       expect(errors).toEqual([]);
       await owner.close();
     });
+
+    test('options on an item (R60): a latte’s size, chosen as it’s ordered', async ({
+      browser,
+    }) => {
+      const owner = await browser.newContext({
+        viewport: { width: 1280, height: 800 },
+        storageState: ownerState,
+      });
+      const { page, errors } = await newPerson(owner);
+      await page.goto(`/o/${handle}/setup`);
+      await page.getByTestId('org-booking-add-item').click();
+      await page.getByTestId('org-booking-item-name').fill('Latte');
+      await page.getByTestId('org-booking-item-paid').click();
+      await page.getByTestId('org-booking-item-price').fill('50');
+      await page.getByTestId('org-booking-item-each').click();
+      await page.getByTestId('org-booking-item-public').click();
+      // A size, required, one of Small or Large (ten more).
+      await page.getByTestId('org-booking-item-add-option').click();
+      await page.getByTestId('org-booking-item-option-0-name').fill('Size');
+      await page.getByTestId('org-booking-item-option-0-choice-0').fill('Small');
+      await page.getByTestId('org-booking-item-option-0-add-choice').click();
+      await page.getByTestId('org-booking-item-option-0-choice-1').fill('Large');
+      await page.getByTestId('org-booking-item-option-0-choice-1-price').fill('10');
+      await page.getByTestId('org-booking-item-save').click();
+      await expect(visible(page, 'Latte')).toBeVisible();
+      expect(errors).toEqual([]);
+      await owner.close();
+
+      const phone = await browser.newContext({
+        viewport: { width: 390, height: 844 },
+        storageState: customerState,
+      });
+      const { page: c, errors: customerErrors } = await newPerson(phone);
+      await c.goto(`/o/${handle}/latte`);
+      const sheet = c.getByTestId('item-sheet');
+      await expect(sheet).toBeInViewport({ ratio: 1 });
+      await expect(sheet).toContainText('Size');
+      await expect(sheet).toContainText(/Large \+.*10/);
+      await c.getByTestId('item-take').click();
+      await c.waitForURL(/\/c\/[0-9a-f-]+\?order=1&item=/);
+      // Opened on the latte, its size is chosen first; Large adds ten to the fifty.
+      const choose = c.locator('[data-testid^="order-choose-"]').first();
+      await expect(choose).toBeVisible();
+      await choose.getByRole('radio', { name: /Large/ }).click();
+      await c.getByTestId('order-choose-add').click();
+      await expect(c.locator('[data-testid^="order-line-"]').first()).toBeVisible();
+      await expect(c.getByTestId('order-total')).toContainText('60');
+      await c.getByTestId('kit-send').click();
+      await expect(
+        c.getByTestId('kit-order_status').filter({ hasText: '1 × Latte (Large)' }),
+      ).toBeVisible();
+      // The item's sheet closed as the conversation opened: nothing of it shows over the card.
+      await expect(c.getByTestId('item-sheet').filter({ visible: true })).toHaveCount(0);
+      await c.screenshot({
+        path: 'e2e/screenshots/phone-order-options.png',
+        animations: 'disabled',
+      });
+      expect(customerErrors).toEqual([]);
+      await phone.close();
+    });
   });

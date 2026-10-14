@@ -69,6 +69,7 @@ import { Text } from '@/ui/Text';
 import { TextField } from '@/ui/TextField';
 import { TimeField } from '@/ui/TimeField';
 import { toast } from '@/ui/Toast';
+import { draftsOf, ItemOptionsEditor, type OptionDraft, optionsFrom } from './ItemOptionsEditor';
 import { ItemPhoto } from './ItemPhoto';
 
 const LEADS: Array<{ value: number; label: string }> = [
@@ -1093,6 +1094,8 @@ function ItemEditor({
   const [audience, setAudience] = useState<BookingItem['audience']>(item.audience);
   const [providers, setProviders] = useState<string[] | null>(item.providers);
   const [askTopic, setAskTopic] = useState(item.askTopic);
+  // Its options (R60), for something ordered by the piece: a size, extras.
+  const [options, setOptions] = useState<OptionDraft[]>(() => draftsOf(item.options));
   // How many are left (R60), for something ordered by the piece; counted or not.
   const [counted, setCounted] = useState(item.stock !== undefined);
   const [left, setLeft] = useState(item.stock !== undefined ? String(item.stock) : '');
@@ -1142,6 +1145,8 @@ function ItemEditor({
     const counting = unit === 'each' && counted;
     if (counting && (!/^\d+$/.test(left.trim()) || count > STOCK_MAX))
       return setError(tr('Say how many are left, or stop counting.'));
+    const chosen = unit === 'each' ? optionsFrom(options, paid) : [];
+    if (typeof chosen === 'string') return setError(chosen);
     // Sent only when it changed (an order may have taken one since this was opened).
     const stock = counting
       ? count === item.stock
@@ -1177,6 +1182,7 @@ function ItemEditor({
           description: description.trim() || null,
           collectionId,
           photoFileId,
+          ...(chosen.length ? { options: chosen } : {}),
         },
         stock,
       );
@@ -1417,6 +1423,9 @@ function ItemEditor({
               />
             ) : null}
           </View>
+        ) : null}
+        {unit === 'each' ? (
+          <ItemOptionsEditor options={options} paid={paid} onChange={setOptions} testID={testID} />
         ) : null}
         <AudiencePicker
           host={host}

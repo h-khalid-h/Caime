@@ -158,12 +158,18 @@ export async function takeStock(
     .execute();
   if (!rows.length) return false;
   const left = new Map(rows.map((r) => [r.item_id, r.remaining]));
-  const taken: Array<{ itemId: string; quantity: number }> = [];
+  // An item's lines (its choices apart, R60) take from its one count.
+  const asked = new Map<string, { name: string; quantity: number }>();
   for (const line of order.lines) {
-    const n = left.get(line.itemId);
+    const at = asked.get(line.itemId);
+    asked.set(line.itemId, { name: line.name, quantity: (at?.quantity ?? 0) + line.quantity });
+  }
+  const taken: Array<{ itemId: string; quantity: number }> = [];
+  for (const [itemId, { name, quantity }] of asked) {
+    const n = left.get(itemId);
     if (n === undefined) continue;
-    if (line.quantity > n) throw soldOut(line.name, n);
-    taken.push({ itemId: line.itemId, quantity: line.quantity });
+    if (quantity > n) throw soldOut(name, n);
+    taken.push({ itemId, quantity });
   }
   if (!taken.length) return false;
   const values = sql.join(taken.map((t) => sql`(${t.itemId}, ${t.quantity}::int)`));

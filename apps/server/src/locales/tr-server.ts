@@ -1207,4 +1207,6 @@ export const turkishServer: Catalog = {
     other: '{name}: yalnızca {n} tane kaldı.',
   },
   '{name} is sold out.': '{name} tükendi.',
+  // Options on an item (R60).
+  'Choose from “{option}” for {name}.': '{name} için “{option}” içinden seçin.',
 };

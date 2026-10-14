@@ -126,6 +126,7 @@ export type PublicItem = Pick<
   | 'collectionId'
   | 'photoFileId'
   | 'stock'
+  | 'options'
 >;
 export type PublicCollection = Pick<CatalogCollection, 'id' | 'slug' | 'name' | 'description'>;
 
@@ -164,6 +165,7 @@ function publicCatalog(
       collectionId: i.collectionId,
       photoFileId: i.photoFileId ?? null,
       ...(i.stock !== undefined ? { stock: i.stock } : {}),
+      ...(i.options?.length ? { options: i.options } : {}),
     }));
   const held = new Set(items.map((i) => i.collectionId));
   const collections = catalog.collections
@@ -812,6 +814,7 @@ export function renderPublic(
   <dl class="spec">
     <div>${label(tr('from'))}<dd><a href="${esc(hostPath(host))}">${esc(name)}</a></dd></div>
     <div>${label(item.unit === 'each' ? tr('price') : tr('booking'))}<dd>${esc(itemLine(item))}</dd></div>
+    ${optionRows(item)}
   </dl>
   <p class="cta">${bookLink([item], path, name, true)}<a href="${wayIn('sign-in', item.unit !== 'each' ? bookPath(path) : takeable(item) ? orderPath(path) : path)}" class="quiet">${esc(tr('Sign in'))}</a></p>
 </main>`,
@@ -991,6 +994,24 @@ function itemLine(i: PublicItem): string {
   ]
     .filter(Boolean)
     .join(' · ');
+}
+
+/** An item's options (R60) as spec rows: "Size · Small, Large +EGP 10.00". */
+function optionRows(item: PublicItem): string {
+  return (item.options ?? [])
+    .map(
+      (o) =>
+        `<div><dt class="mono">${esc(o.name)}</dt><dd>${esc(
+          o.choices
+            .map((c) =>
+              c.price && item.price
+                ? `${c.name} +${formatAmount(c.price, item.price.currency, currentTranslator().language)}`
+                : c.name,
+            )
+            .join(', '),
+        )}</dd></div>`,
+    )
+    .join('');
 }
 
 /** Whether an item can be taken now: anything booked, or something ordered not sold out. */

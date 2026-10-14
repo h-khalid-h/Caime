@@ -3913,4 +3913,29 @@ export const fr: Catalog = {
   'Only something ordered by the piece is counted.':
     'Seul ce qui se commande à la pièce est compté.',
   '{n} in stock': { one: '1 en stock', other: '{n} en stock' },
+  // Options on an item (R60).
+  'Name each option and its choices.': 'Nommez chaque option et ses choix.',
+  'Enter what a choice adds as a number, or leave it empty.':
+    'Indiquez ce qu’un choix ajoute par un nombre, ou laissez vide.',
+  'A size to choose or extras to add, each with what it adds to the price.':
+    'Une taille à choisir ou des suppléments à ajouter, chacun avec ce qu’il ajoute au prix.',
+  Size: 'Taille',
+  Option: 'Option',
+  'Remove the option': 'Retirer l’option',
+  'They choose': 'Le choix',
+  'One of them': 'Un seul',
+  'Any of them': 'Plusieurs au choix',
+  'They must choose': 'Choix obligatoire',
+  Large: 'Grand',
+  Choice: 'Choix',
+  'Added to the price': 'Ajouté au prix',
+  'Remove the choice': 'Retirer le choix',
+  'Add a choice': 'Ajouter un choix',
+  'Add to the order': 'Ajouter à la commande',
+  'Choose from “{option}”.': 'Choisissez dans « {option} ».',
+  'Add a choice.': 'Ajoutez un choix.',
+  'Only something ordered by the piece has options.':
+    'Seul ce qui se commande à la pièce a des options.',
+  'Each option and choice once.': 'Chaque option et chaque choix une seule fois.',
+  'Something free adds nothing to its price.': 'Ce qui est gratuit n’ajoute rien à son prix.',
 };

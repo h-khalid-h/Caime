@@ -150,6 +150,16 @@ export function orderFor(host: BookingHost, booker: Booker, ask: OrderAsk): Plac
   if (placed.ok) return placed.order;
   // Fewer left than asked (R60): how many, or none.
   if (placed.reason === 'stock') throw soldOut(placed.name ?? '', placed.max ?? 0);
+  // An option not chosen as it asks (R60): which, for what.
+  if (placed.reason === 'choice')
+    throw new AppError(
+      400,
+      'invalid_request',
+      tr('Choose from “{option}” for {name}.', {
+        option: placed.option ?? '',
+        name: placed.name ?? '',
+      }),
+    );
   const why = {
     off: () => tr('Orders aren’t taken here.'),
     item: () => tr('That isn’t something you can order here.'),
@@ -525,11 +535,21 @@ export function menuLines(all: BookingItem[]): string | null {
   return items
     .map((i) =>
       [
-        i.id,
-        i.name,
-        i.price ? `${i.price.currency} ${i.price.value}` : 'free',
-        orderableMax(i) === 0 ? 'sold out' : `up to ${orderableMax(i)}`,
-      ].join(' · '),
+        [
+          i.id,
+          i.name,
+          i.price ? `${i.price.currency} ${i.price.value}` : 'free',
+          orderableMax(i) === 0 ? 'sold out' : `up to ${orderableMax(i)}`,
+        ].join(' · '),
+        // Its options (R60), one per line under it: "  option Size (one, required): s=Small,
+        // l=Large +10".
+        ...(i.options ?? []).map(
+          (o) =>
+            `  option ${o.name} (${o.pick}${o.required ? ', required' : ''}): ${o.choices
+              .map((c) => `${c.id}=${c.name}${c.price ? ` +${c.price}` : ''}`)
+              .join(', ')}`,
+        ),
+      ].join('\n'),
     )
     .join('\n');
 }

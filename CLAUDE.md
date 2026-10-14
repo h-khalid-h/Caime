@@ -414,7 +414,11 @@ These are rules, not preferences.
   (`KitForm`) finds the host as for appointments and shows `order-picker`; `isBooked` and
   `isOrdered` split the catalog everywhere (setup, profile `booking` vs `ordering`, the agent's
   catalog lines, public pages' Book and Order). `?order` links (`orderIn`) land on the form as
-  `?book` does. Stock (`lib/stock.ts`) is `item_stock`, apart from the catalog: an item's
+  `?book` does. An item's `options` (core `ItemOption`) make an order's line an item and its
+  choices: `lineKey` names a line, `piecePrice` prices one piece, `chosenOf` checks the choices
+  against the options, and `placeOrder` counts the item's most and stock over all its lines, as
+  `takeStock` does; the picker's cart is keyed by `lineKey`, and anything new that reads an
+  order's lines reads `choices` with them. Stock (`lib/stock.ts`) is `item_stock`, apart from the catalog: an item's
   `stock` on a view is `withStock`'s (every count for the host, a count that limits an order for
   anyone else), a save keeps a count it leaves out (the setup's `send` sends only one changed
   there, `BookingSaveBody`), an order takes in `sendMessage`'s transaction (`takeStock`) and

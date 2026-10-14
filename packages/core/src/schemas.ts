@@ -23,6 +23,8 @@ import {
   BOOKING_CAPACITY_MAX,
   BOOKING_DAYS_MAX,
   BOOKING_ITEMS_MAX,
+  ITEM_OPTIONS_MAX,
+  OPTION_CHOICES_MAX,
   ORDER_LINES_MAX,
   STOCK_MAX,
 } from './booking';
@@ -1036,6 +1038,11 @@ export const OrderAskBody = z
           .object({
             itemId: z.string().min(1).max(40),
             quantity: z.number().int().min(1).max(BOOKING_CAPACITY_MAX),
+            // R60: the choices of its options, by id.
+            choices: z
+              .array(z.string().min(1).max(40))
+              .max(ITEM_OPTIONS_MAX * OPTION_CHOICES_MAX)
+              .optional(),
           })
           .strict(),
       )
@@ -1457,6 +1464,26 @@ export const CollectionBody = z
   .strict();
 export type CollectionInput = z.infer<typeof CollectionBody>;
 
+/** One way to have an item (R60): a name, and what it adds to the price, if anything. */
+const ItemChoiceBody = z
+  .object({
+    id: CatalogId,
+    name: z.string().trim().min(1, msg('Name it.')).max(40),
+    price: z.number().min(0).max(1_000_000_000).nullable(),
+  })
+  .strict();
+
+/** An item's option (R60): one of its choices or any of them, required or not. */
+const ItemOptionBody = z
+  .object({
+    id: CatalogId,
+    name: z.string().trim().min(1, msg('Name it.')).max(40),
+    pick: z.enum(['one', 'any']),
+    required: z.boolean(),
+    choices: z.array(ItemChoiceBody).min(1, msg('Add a choice.')).max(OPTION_CHOICES_MAX),
+  })
+  .strict();
+
 /** One thing a host can be booked for (R58). */
 export const BookingItemBody = z
   .object({
@@ -1485,11 +1512,27 @@ export const BookingItemBody = z
     // R60: how many are left, for something ordered by the piece; null stops counting, and left
     // out the count stays as it is (an order may have taken one since the form was opened).
     stock: z.number().int().min(0).max(STOCK_MAX).nullable().optional(),
+    // R60: a size to choose, extras to add, for something ordered by the piece.
+    options: z.array(ItemOptionBody).max(ITEM_OPTIONS_MAX).optional(),
   })
   .strict()
   .refine((i) => i.unit === 'each' || i.stock == null, {
     message: msg('Only something ordered by the piece is counted.'),
   })
+  .refine((i) => i.unit === 'each' || !i.options?.length, {
+    message: msg('Only something ordered by the piece has options.'),
+  })
+  .refine(
+    (i) => {
+      const ids = (i.options ?? []).flatMap((o) => [o.id, ...o.choices.map((c) => c.id)]);
+      return new Set(ids).size === ids.length;
+    },
+    { message: msg('Each option and choice once.') },
+  )
+  .refine(
+    (i) => i.price !== null || (i.options ?? []).every((o) => o.choices.every((c) => !c.price)),
+    { message: msg('Something free adds nothing to its price.') },
+  )
   .refine((i) => (i.unit === 'minutes' ? i.minutes !== null : i.minutes === null), {
     message: msg('An appointment has a length in minutes; a stay has none.'),
   })

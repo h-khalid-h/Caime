@@ -972,7 +972,12 @@ export function OrgScreen({
           onPick={(next) => router.setParams({ item: next })}
           onTake={
             canWrite
-              ? (i) => void message(org.id, isOrdered(i) ? 'order_status' : 'appointment', i.id)
+              ? (i) => {
+                  // The sheet is a layer above every screen: it closes as the conversation opens,
+                  // or it shows again over it when the card's form is done.
+                  router.setParams({ item: undefined });
+                  void message(org.id, isOrdered(i) ? 'order_status' : 'appointment', i.id);
+                }
               : null
           }
           onClose={() => router.setParams({ item: undefined })}

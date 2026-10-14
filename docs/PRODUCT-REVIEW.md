@@ -664,8 +664,10 @@ with its reason, so it isn't proposed again without new facts.
   "Only 2 left" helps them and the rest of a shop's stock stays its own. The organization's AI
   agent takes an order too (built 2026-10-14): from a menu of what that customer may order, once
   they've said exactly what they want, as an Order card the team confirms; anything unclear,
-  off the menu or sold out goes to a person, as a booking does. Later layer: options on an item
-  (sizes, extras); the team's Orders view is built.
+  off the menu or sold out goes to a person, as a booking does. Options on an item are
+  built too (2026-10-14): a size to choose, extras to add, each choice adding to the price; an
+  order's line is the item with its choices, so "2 × Coffee (Large, Oat milk)" reads on the card
+  and the item's stock counts over every line of it. The team's Orders view is built.
 - **R61 — Collections, and a page for each thing offered.** The owner's next idea
   (2026-10-05): an organization keeps several collections (bookings, products, services), and a
   public item or collection has its own address (`/o/<handle>/<item>`) so search and answer

@@ -664,8 +664,11 @@ function PersonPage({ id, book = null, slug = null }: PersonScreenProps) {
           onTake={
             self
               ? null
-              : (i) =>
-                  void bookWith(p, false, i.unit === 'each' ? 'order_status' : 'appointment', i.id)
+              : (i) => {
+                  // Closed as the conversation opens: a sheet is a layer above every screen.
+                  router.setParams({ item: undefined });
+                  void bookWith(p, false, i.unit === 'each' ? 'order_status' : 'appointment', i.id);
+                }
           }
           onClose={() => router.setParams({ item: undefined })}
         />
