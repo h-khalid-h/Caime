@@ -65,6 +65,28 @@ export function senderPays(fields: Record<string, unknown> | undefined): boolean
   return payDirection(fields) === 'send';
 }
 
+/**
+ * A Pay card that pays a split's share (R62, R38): its sender pays what the split says they owe
+ * to whoever paid it, so the card names both its sides, and in a group it's theirs alone.
+ */
+export interface PaysShare {
+  splitId: string;
+  payeeId: string;
+}
+
+/**
+ * Whether this viewer stands aside on a card between two named people (a share's Pay card in a
+ * group): they see it, and make none of its moves.
+ */
+export function standsAside(
+  payload: { share?: PaysShare | null } | null | undefined,
+  viewerId: string,
+  senderId: string | null,
+): boolean {
+  const share = payload?.share;
+  return Boolean(share && viewerId !== senderId && viewerId !== share.payeeId);
+}
+
 /** The ways this payer may see, in the host's order, without their audiences. */
 export function methodsFor(
   settings: PaymentSettings | null,

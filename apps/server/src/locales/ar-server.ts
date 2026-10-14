@@ -1240,4 +1240,8 @@ export const arServer: Catalog = {
   '{name} is sold out.': '{name}: نفدت الكمية.',
   // Options on an item (R60).
   'Choose from “{option}” for {name}.': 'اختر من «{option}» لـ{name}.',
+  // A split's share paid with Pay (R62).
+  'You don’t owe a share of this split.': 'لا حصة عليك في هذا التقسيم.',
+  'Your share of this split is settled.': 'حصتك في هذا التقسيم مسدَّدة.',
+  'A Pay card for your share is waiting already.': 'بطاقة دفع لحصتك بانتظار التأكيد بالفعل.',
 };

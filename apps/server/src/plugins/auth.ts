@@ -118,7 +118,7 @@ export function registerAuth(app: FastifyInstance, ctx: AppContext): void {
     const expected = req.headers['x-caime-user'];
     if (typeof expected === 'string' && expected !== session.userId)
       throw new AppError(409, 'wrong_account', tr('Someone else is signed in here now.'));
-    req.auth = { ...session, via: found.via };
+    req.auth = { ...session, via: found.via, ...(guest ? { guest: true } : {}) };
     // The words of this request take their own form (R81).
     await adoptReader(ctx, session.userId);
   });

@@ -26,7 +26,8 @@ export function useUserClock(): {
   weekStart: number;
   hour12: boolean;
 } {
-  const user = useSession((s) => s.user);
+  // A meeting's guest (R84) never chose a zone or a locale: the device's, as before signing in.
+  const user = useSession((s) => (s.user?.kind === 'provisional' ? null : s.user));
   const locale = user?.locale ?? safeLocale(getLocales()[0]?.languageTag);
   return {
     timeZone: user?.timeZone ?? Intl.DateTimeFormat().resolvedOptions().timeZone ?? 'UTC',

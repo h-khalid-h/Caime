@@ -1209,4 +1209,8 @@ export const turkishServer: Catalog = {
   '{name} is sold out.': '{name} tükendi.',
   // Options on an item (R60).
   'Choose from “{option}” for {name}.': '{name} için “{option}” içinden seçin.',
+  // A split's share paid with Pay (R62).
+  'You don’t owe a share of this split.': 'Bu bölüşmede sana düşen bir pay yok.',
+  'Your share of this split is settled.': 'Bu bölüşmedeki payın ödendi.',
+  'A Pay card for your share is waiting already.': 'Payın için bir Öde kartı zaten bekliyor.',
 };

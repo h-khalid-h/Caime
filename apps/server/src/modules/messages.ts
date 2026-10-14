@@ -30,6 +30,7 @@ import {
   type LocationPayloadT,
   liveNow,
   MessagesPageQuery,
+  type PaysShare,
   PINNED_MAX,
   PollPayload,
   ReactionBody,
@@ -37,6 +38,7 @@ import {
   SplitOpBody,
   splitShares,
   splitState,
+  standsAside,
   tr,
   trn,
   uuidv7,
@@ -79,6 +81,7 @@ import {
 } from '../lib/messages';
 import { removeForEveryone } from '../lib/moderation';
 import { notify } from '../lib/notify';
+import { shareMoved } from '../lib/splits';
 import { orderMoved, tellStockChanged } from '../lib/stock';
 import { parse } from '../lib/validate';
 import { requireAuth } from '../plugins/auth';
@@ -267,6 +270,7 @@ export async function messageRoutes(app: FastifyInstance, ctx: AppContext) {
       title?: string;
       fields?: Record<string, unknown>;
       history?: Array<{ state: string; by: string; at: string }>;
+      share?: PaysShare;
     };
     const own = isCustomCard(m.payload) ? m.payload : null;
     if (m.kind !== 'kit' || m.deleted_at || !(own || isCardKit(card.kit)))
@@ -285,7 +289,7 @@ export async function messageRoutes(app: FastifyInstance, ctx: AppContext) {
       ? business
         ? customMoves(own, onTeam(auth.userId)).find((x) => x.to === to)
         : undefined
-      : isCardKit(card.kit)
+      : isCardKit(card.kit) && !standsAside(card, auth.userId, m.sender_id)
         ? kitMoves(card.kit, from, senderSide, card.fields).find((x) => x.to === to)
         : undefined;
     if (!move) throw forbidden(tr('You can’t make that change to this card.'));
@@ -311,6 +315,8 @@ export async function messageRoutes(app: FastifyInstance, ctx: AppContext) {
       const history = [...(now.history ?? []), { state: to, by: auth.userId, at: ctx.now() }];
       // An order's stock (R60): given back if it's cancelled, spent once it's on its way.
       const restocked = card.kit === 'order_status' ? await orderMoved(trx, id, to, ctx.now()) : [];
+      // A share's Pay card received (R62): the share it paid is settled with it.
+      const split = await shareMoved(trx, m, to, auth.userId, ctx.now());
       const after = await trx
         .updateTable('messages')
         .set({
@@ -319,11 +325,19 @@ export async function messageRoutes(app: FastifyInstance, ctx: AppContext) {
         .where('id', '=', id)
         .returning(MESSAGE_COLUMNS)
         .executeTakeFirstOrThrow();
-      return { row: after, restocked };
+      return { row: after, restocked, split };
     });
     if (!moved) throw new AppError(409, 'conflict', tr('Someone just changed this card.'));
     const updated = moved.row;
     await tellStockChanged(ctx, moved.restocked);
+    if (moved.split) {
+      const [split] = await messageViews(ctx.db, [moved.split], auth.userId);
+      const members = (await participantsOf(ctx.db, m.conversation_id)).map((p) => p.user_id);
+      await ctx.bus.publish(members, {
+        type: 'message.updated',
+        data: { ...split, clientId: null },
+      });
+    }
     // Confirmed by the team (R58): a booking from the catalog with nobody named yet gets the free
     // member with the fewest that day; the customer never sees who (masked).
     const confirmed = await assignOnConfirm(updated, to, business?.orgId ?? null);

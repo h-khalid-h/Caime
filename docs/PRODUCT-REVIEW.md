@@ -704,9 +704,12 @@ with its reason, so it isn't proposed again without new facts.
   its total and replying to it. Profiles, the organization's page and the public pages offer
   Pay where a way is open to that reader (a public page names only the kinds, never an account).
   Person to person, person to organization and back are all here, and organization to
-  organization since R64. Later layers: a payment
-  provider's checkout for an organization that wants one (R65), receipts from a paid card, a
-  split's shares paid with the Pay card.
+  organization since R64. A split's share is paid with the Pay card too: whoever owes a share
+  taps Pay on the split, and the card pays what the split says to whoever paid it, as an answer
+  to the split; it's between those two even in a group (the rest see it and press nothing, and
+  it shows only the payer's ways for everyone, since everyone there sees it), one open card a
+  share, and the share is settled when whoever paid says it arrived. Later layers: a payment
+  provider's checkout for an organization that wants one (R65), receipts from a paid card.
 - **R63 — A photo for each thing offered.** An item keeps one photo its host uploaded, shown
   wherever the item is: its page (and every link preview and answer engine's picture of it), its
   sheet, a collection's list and the order picker. It's seen by whoever may see the item, and no

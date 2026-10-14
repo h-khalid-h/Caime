@@ -739,9 +739,19 @@ outperforming the alternatives is reach and operations. In the order the review 
       sign in; `GUEST_ROUTES` now holds their name, reading the space and its card, and its call,
       and a group call takes the space's guests. Tests: `meeting-join.test.ts` (3), the route
       walk, the export
-      [ ] Guests, the app: the join page at `/j/<token>` and a guest's view of their meeting (the
-      call, the card); the invite field on the card; E2E ⛔ SMTP in production to send. Not
-      built: a code on a second device (R83 (3))
+      [x] Guests, the app (2026-10-14): Invite by email on an accepted meeting card held here
+      (`MeetingGuests`, the sheet lazy), and the card that moved says so and opens the space;
+      the join page at `/j/<token>` (open to anyone: the meeting, when, who asked, the name, "I'm
+      18 or over", Join, which signs the guest in); the guest's meeting at the same address (who's
+      in it, Join the call while it's on, else Start, rung like anyone), any other address
+      taking them back to it (`(guest)/meeting`), the app itself never mounted for a guest; the
+      guest's socket opens on their cookie (`GET /v1/realtime` in `GUEST_ROUTES`, which it
+      wasn't: a guest in a browser was never rung) and their typing is dropped; times in the
+      device's zone; the call drawn at the root for anyone signed in. `e2e/meetings.spec.ts`
+      (invited from the card, the mailed link opened in a fresh browser, joined, rung and in the
+      call with the organizer, no request refused on the guest's page), `e2e/a11y.spec.ts` (the
+      join page in English and Arabic), `meeting-join.test.ts` (the socket, rung, no typing).
+      ⛔ SMTP in production to send the invitation. Not built: a code on a second device (R83 (3))
 - [ ] Candidates from the 2026-09-30 brainstorm review (R46), the owner's call: organizations
       taking WhatsApp Business messages into the Business inbox through Meta's official Cloud
       API ⛔ a Meta business account, verification and fees; contact matching by hashed phone
@@ -1370,8 +1380,13 @@ listed there with its owner.
 - [ ] Later in R67: Cai's digests
       in its chat, public pages for @cai and the friends (answer engines), more of what each friend knows.
 - [ ] ⛔ A trademark and store-name clearance for "Caime" before the store builds (the owner's).
-- [ ] Later layers of R62: a receipt from a paid card, refunds from a card paid by card, a
-      split's shares paid with Pay.
+- [x] R62, a split's shares paid with Pay: "Pay your share" on a split opens the Pay card with
+      the share (they pay, the split's payer is paid, its amount, answering the split); between
+      the two of them even in a group (`standsAside`: no moves, no notifications for the rest;
+      only the ways for everyone on it), one open card a share under the split's lock, and the
+      share settled in the move's transaction when its payee says it arrived (`lib/splits.ts`,
+      `payments.test.ts`, `e2e/around-the-conversation.spec.ts`).
+- [ ] Later layers of R62: a receipt from a paid card, refunds from a card paid by card.
 - [x] R63: an item's photo: `BookingItem.photoFileId`, set only to an image its saver uploaded
       (`assertItemPhotos`), served by `/v1/{orgs,people}/:id/items/:itemId/photo` to whoever may
       see the item (anyone for a public one), addressed by core `itemPhotoPath`; on the item's
@@ -3033,3 +3048,10 @@ The six-slice review's plan, in its order; a block is ticked when its tests and 
   most and stock over all its lines), named and priced on the card, read by the agent on its
   menu, listed on the item's sheet and page; and an item's sheet no longer stays open over the
   conversation its Order opens.
+- 2026-10-14 — R62, a split's shares paid with Pay: "Pay your share" on a split sends a Pay card
+  for the share to whoever paid, answering the split; between those two even in a group, one open
+  card a share, and the share settled when its payee says it arrived. The Split card's "You"
+  and "Someone" read in the reader's language.
+- 2026-10-14 — R83/R84, guests in the app: a meeting card invites by email; the guest's link
+  opens a join page anyone can read, signs them in for that meeting alone, and is then their
+  meeting with its call; a guest in a browser is now rung (their socket was refused before).

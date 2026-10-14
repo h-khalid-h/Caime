@@ -15,10 +15,12 @@ import SquareCheck from 'lucide-react-native/icons/square-check';
 import { View } from 'react-native';
 import { endpoints } from '@/api/endpoints';
 import { qk } from '@/api/keys';
+import { useCardAction } from '@/features/conversation/cardActions';
 import { useUserClock } from '@/lib/time';
 import { upsertMessage } from '@/state/cache';
 import { useMe } from '@/state/session';
 import { useTheme } from '@/theme/theme';
+import { Button } from '@/ui/Button';
 import { Chip } from '@/ui/Chip';
 import { Pressable } from '@/ui/Pressable';
 import { Text } from '@/ui/Text';
@@ -35,7 +37,8 @@ interface SplitPayload {
  * A split (R38): who owes whom for something one person paid, an equal share each. The person
  * who owes a share, or whoever paid, marks it settled between them; Caime moves nothing. A mark
  * shows at once, by the same rule the server applies (core kit-cards.ts), and the server's card
- * replaces it when it answers.
+ * replaces it when it answers. Whoever owes a share may pay it with the Pay card (R62), which
+ * settles it when whoever paid says it arrived.
  */
 export function SplitCard({ m, mine }: { m: MessageView; mine: boolean }) {
   const t = useTheme();
@@ -56,7 +59,9 @@ export function SplitCard({ m, mine }: { m: MessageView; mine: boolean }) {
   const currency = total?.currency ?? null;
   const settled = shares.filter((s) => s.settledAt).length;
   const open = !m.deletedAt;
-  const nameOf = (id: string) => (id === me.id ? 'You' : (people?.get(id) ?? 'Someone'));
+  const nameOf = (id: string) => (id === me.id ? tr('You') : (people?.get(id) ?? tr('Someone')));
+  // Owed and open (R62): paid with the Pay card, filled with the share and answering the split.
+  const owed = open && !mine ? shares.find((s) => s.userId === me.id && !s.settledAt) : undefined;
 
   const change = async (op: SplitOp) => {
     const local = applySplitOp(shares, op, {
@@ -146,6 +151,29 @@ export function SplitCard({ m, mine }: { m: MessageView; mine: boolean }) {
           );
         })}
       </View>
+      {owed ? (
+        <Button
+          label={tr('Pay your share')}
+          size="sm"
+          variant="secondary"
+          onPress={() =>
+            useCardAction.setState({
+              request: {
+                conversationId: m.conversationId,
+                kit: 'payment_request',
+                start: {
+                  direction: 'send',
+                  amount: { value: owed.amount, currency },
+                  note: (p.title ?? '').slice(0, 200),
+                  replyToId: m.id,
+                  share: { splitId: m.id, to: nameOf(m.senderId ?? '') },
+                },
+              },
+            })
+          }
+          testID="split-pay"
+        />
+      ) : null}
     </View>
   );
 }

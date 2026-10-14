@@ -191,6 +191,8 @@ export const RESERVED_HANDLES: readonly string[] = [
   'you',
   'calls',
   'meetings',
+  // A meeting's guest lands here (R84); their link is /j/<token>, too short to be a handle.
+  'meeting',
   'connect',
   'search',
   // The invite route is /i/<token>: too short to be a handle, so it needs no reserving.
@@ -1757,6 +1759,9 @@ export const SplitOpBody = z.object({
   op: z.enum(['settle', 'unsettle']),
   userId: z.string().uuid(),
 });
+
+/** A Pay card that pays the sender's share of a split here (R62): the split, by its message. */
+export const ShareAskBody = z.object({ splitId: z.string().uuid() }).strict();
 
 // --- Billing ---------------------------------------------------------------------------------
 

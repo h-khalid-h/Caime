@@ -2957,6 +2957,11 @@ export interface JoinView {
   guest: { name: string };
   /** The address is someone's on Caime: they sign in instead, and find it among their requests. */
   signIn: boolean;
+  /**
+   * Where the meeting is, only to the guest it's for once they've taken the link (their own
+   * session): the page opens their meeting rather than asking again.
+   */
+  space: { conversationId: string; messageId: string; seq: number } | null;
 }
 
 /** `POST /v1/join/:token`: the meeting's space and card, and a phone's session token. */

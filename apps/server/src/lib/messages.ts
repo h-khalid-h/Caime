@@ -24,12 +24,14 @@ import {
   OrderAskBody,
   orderSummary,
   type PaymentSettings,
+  type PaysShare,
   type PayTo,
   type PlacedOrder,
   payDirection,
   prepareKitFields,
   type SealedMessage,
   type SendMessageBodyT,
+  ShareAskBody,
   messagePreview as sharedPreview,
   shareOut,
   systemAccountOf,
@@ -60,6 +62,7 @@ import { AppError, badRequest, forbidden, notFound } from './errors';
 import { recordEvent } from './events';
 import { cardStartAt, customCardFor } from './kits';
 import { isBlockedEitherWay, shareAConnection, viewerRelation } from './relations';
+import { type ShareToPay, shareToPay } from './splits';
 import { hostWithStock, takeStock, tellStockChanged } from './stock';
 import { minorOf, privacyOf } from './users';
 import { parse } from './validate';
@@ -375,6 +378,7 @@ async function payToFor(
   members: Array<{ user_id: string }>,
   senderId: string,
   fields: Record<string, unknown>,
+  share: PaysShare | null = null,
 ): Promise<PayTo | null> {
   const asks = payDirection(fields) === 'ask';
   const person = (id: string) =>
@@ -437,6 +441,25 @@ async function payToFor(
       c.display_name,
       settings,
       methodsFor(settings, { isConnected: false, spheres: [] }),
+    );
+  }
+  // A share of a split (R62) pays whoever paid it. Everyone in a group sees the card, so there
+  // it shows only their ways for everyone; between the two of them, what the payer may see.
+  if (share) {
+    const payee = await person(share.payeeId);
+    if (!payee) return null;
+    const relation =
+      conversation.kind === 'direct'
+        ? await viewerRelation(ctx.db, share.payeeId, senderId)
+        : { isConnected: false, ownerSpheresForViewer: [] };
+    const settings = paymentsOf(payee);
+    return shown(
+      payee.display_name,
+      settings,
+      methodsFor(settings, {
+        isConnected: relation.isConnected,
+        spheres: relation.ownerSpheresForViewer,
+      }),
     );
   }
   if (conversation.kind !== 'direct') {
@@ -847,6 +870,8 @@ export async function sendMessage(
     null;
   // An order from the catalog takes its counted items' stock as the card is written (R60).
   let orderTake: { host: BookingHost; order: PlacedOrder } | null = null;
+  // A Pay card paying a share of a split here (R62), checked again under the split's lock.
+  let paying: ShareToPay | null = null;
   if (
     body.kind === 'kit' &&
     !opts.trusted &&
@@ -867,6 +892,7 @@ export async function sendMessage(
       fields?: unknown;
       booking?: unknown;
       order?: unknown;
+      share?: unknown;
     };
     const card = prepareKitFields(raw.kit, raw.fields);
     if (!card.ok) throw badRequest(card.error);
@@ -969,10 +995,20 @@ export async function sendMessage(
     // Whom a priced booking or order is paid to (R62): its host, so the payer's card offers Pay.
     const priced = (booking && (booking as { price?: unknown }).price) || order?.total;
     const payee = priced && catalogHost ? { kind: catalogHost.kind, id: catalogHost.id } : null;
+    // A share of a split paid with Pay (R62): the sender pays what they owe to whoever paid it,
+    // that amount and no other, as an answer to the split; the split's lock is taken below.
+    if (card.kit === 'payment_request' && raw.share) {
+      const { splitId } = parse(ShareAskBody, raw.share);
+      paying = await shareToPay(ctx.db, conversationId, splitId, senderId);
+      card.fields.direction = 'send';
+      card.fields.amount = paying.amount;
+      if (typeof card.fields.note !== 'string' && paying.title)
+        card.fields.note = paying.title.slice(0, 200);
+    }
     // Pay (R62): the payee's ways the payer may see, fixed now; nothing is paid through Caime.
     const payTo =
       card.kit === 'payment_request'
-        ? await payToFor(ctx, conversation, members, senderId, card.fields)
+        ? await payToFor(ctx, conversation, members, senderId, card.fields, paying)
         : null;
     // An order written down by hand says which it is.
     if (card.kit === 'order_status' && !order && !card.fields.reference)
@@ -988,6 +1024,7 @@ export async function sendMessage(
       ...(order ? { order } : {}),
       ...(payee ? { payee } : {}),
       ...(payTo ? { payTo } : {}),
+      ...(paying ? { share: { splitId: paying.splitId, payeeId: paying.payeeId } } : {}),
     };
     kitMode = KIT_MODES[card.kit];
   }
@@ -1073,6 +1110,8 @@ export async function sendMessage(
           slotAsk.start,
         );
       }
+      // The share once more, under the split's lock: two Pay cards for one share at once leave one.
+      if (paying) await shareToPay(trx, conversationId, paying.splitId, senderId, true);
       // A business conversation is kept as its organization says too (R54): the shorter wins.
       const kept =
         conversation.kind === 'business'
@@ -1094,7 +1133,8 @@ export async function sendMessage(
           mode_source: body.mode ? 'user' : 'auto',
           entities: JSON.stringify(entities),
           mentions,
-          reply_to_id: body.replyToId ?? null,
+          // A share's Pay card answers its split, whatever else it was sent as a reply to.
+          reply_to_id: paying?.splitId ?? body.replyToId ?? null,
           forwarded_from_id: opts.forwardedFromId ?? null,
           sent_via: opts.sentVia ?? null,
           channel: opts.channel ?? null,

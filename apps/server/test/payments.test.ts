@@ -249,3 +249,100 @@ describe('the Pay card (R62)', () => {
     expect(ordered.json().message.payload.payee).toEqual({ kind: 'org', id: orgId });
   });
 });
+
+describe('a split’s share paid with Pay (R62, R38)', () => {
+  const splitIn = async (conversationId: string, value: number) =>
+    (
+      await noor.req('POST', `/v1/conversations/${conversationId}/messages`, {
+        clientId: uuidv4(),
+        kind: 'kit',
+        payload: { kit: 'split', fields: { title: 'Dinner', amount: { value, currency: 'EGP' } } },
+      })
+    ).json().message;
+  const payShare = (who: Client, conversationId: string, splitId: string, fields = {}) =>
+    who.req('POST', `/v1/conversations/${conversationId}/messages`, {
+      clientId: uuidv4(),
+      kind: 'kit',
+      payload: {
+        kit: 'payment_request',
+        // Whatever the form said, the share decides the way and the amount.
+        fields: { direction: 'ask', amount: { value: 1, currency: 'USD' }, ...fields },
+        share: { splitId },
+      },
+    });
+
+  it('in a group, between the two of them: what’s owed, to whoever paid, settled on arrival', async () => {
+    await noor.req('PUT', '/v1/me/booking', {
+      booking: null,
+      items: [],
+      payments: { methods: [BANK, CASH], note: null },
+    });
+    const group = (
+      await noor.post('/v1/conversations', {
+        kind: 'group',
+        title: 'Dinner club',
+        memberIds: [lina.user.id, omar.user.id],
+      })
+    ).conversation.id;
+    const split = await splitIn(group, 90);
+
+    const sent = await payShare(lina, group, split.id);
+    expect(sent.statusCode, sent.body).toBe(201);
+    const pay = sent.json().message;
+    expect(pay.replyToId ?? pay.replyTo?.id).toBe(split.id);
+    expect(pay.payload).toMatchObject({
+      state: 'sent',
+      share: { splitId: split.id, payeeId: noor.user.id },
+      fields: { direction: 'send', amount: { value: 30, currency: 'EGP' }, note: 'Dinner' },
+      payTo: { name: 'Noor Haddad' },
+    });
+    // The whole group sees the card: only Noor's ways for everyone are on it.
+    expect(pay.payload.payTo.methods.map((m: { id: string }) => m.id)).toEqual(['cash']);
+    expect(JSON.stringify(pay)).not.toContain('EG38');
+
+    // One open card for a share; none for a share that isn't theirs or isn't there.
+    expect((await payShare(lina, group, split.id)).statusCode).toBe(409);
+    expect((await payShare(noor, group, split.id)).statusCode).toBe(400);
+    expect((await payShare(lina, direct, split.id)).statusCode).toBe(400);
+
+    // Omar is only looking on; Lina doesn't say it arrived; Noor does.
+    expect((await move(omar, pay.id, 'paid')).statusCode).toBe(403);
+    expect((await move(lina, pay.id, 'paid')).statusCode).toBe(403);
+    const arrived = await move(noor, pay.id, 'paid');
+    expect(arrived.statusCode, arrived.body).toBe(200);
+    const after = (await lina.get(`/v1/conversations/${group}/messages`)).messages.find(
+      (m: { id: string }) => m.id === split.id,
+    );
+    const shares = after.payload.fields.shares as Array<Record<string, unknown>>;
+    expect(shares.find((s) => s.userId === lina.user.id)).toMatchObject({
+      settledAt: expect.any(String),
+      settledBy: noor.user.id,
+    });
+    expect(shares.find((s) => s.userId === omar.user.id)).toMatchObject({ settledAt: null });
+    expect(after.payload.state).toBe('open');
+    // Settled, there's nothing more to pay; Lina hears it arrived, Omar hears nothing of it.
+    expect((await payShare(lina, group, split.id)).statusCode).toBe(409);
+    await t.ctx.flush();
+    const titles = async (who: Client) =>
+      ((await who.get('/v1/notifications')).notifications as Array<{ title: string }>).map(
+        (n) => n.title,
+      );
+    expect(await titles(lina)).toContain('Noor Haddad: Paid');
+    expect(await titles(omar)).not.toContain('Noor Haddad: Paid');
+  });
+
+  it('between two people, with the ways the payer may see; a card taken back frees the share', async () => {
+    const split = await splitIn(direct, 50);
+    const first = (await payShare(lina, direct, split.id)).json().message;
+    expect(first.payload.fields.amount).toEqual({ value: 25, currency: 'EGP' });
+    // Lina is Noor's connection: the bank account too.
+    expect(first.payload.payTo.methods.map((m: { id: string }) => m.id)).toEqual(['cib', 'cash']);
+    // Not received yet keeps it open; cancelled, another may be sent.
+    expect((await move(noor, first.id, 'not_received')).statusCode).toBe(200);
+    expect((await payShare(lina, direct, split.id)).statusCode).toBe(409);
+    expect((await move(noor, first.id, 'cancelled')).statusCode).toBe(200);
+    const again = await payShare(lina, direct, split.id, { note: 'My half' });
+    expect(again.statusCode, again.body).toBe(201);
+    expect(again.json().message.payload.fields.note).toBe('My half');
+  });
+});

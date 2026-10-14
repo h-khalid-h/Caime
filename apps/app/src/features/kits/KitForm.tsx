@@ -63,6 +63,9 @@ const WhenSheet = lazyPart(() => import('@/features/when/WhenSheet').then((m) =>
 
 export type KitChoice = CardKitId | 'poll' | 'location';
 
+/** What a share's Pay card doesn't ask (R62): the share says the way and the amount. */
+const SHARE_FIXED = ['direction', 'amount', 'due'];
+
 /**
  * What a card's form opens with when something sent the person to it (R61): the item an
  * address or a sheet chose. Nothing is sent until they send it.
@@ -75,6 +78,11 @@ export interface KitStart {
   note?: string;
   /** The card it answers (Pay on an order): sent as a reply to it. */
   replyToId?: string;
+  /**
+   * A share of a split paid with Pay (R62): the split, and whom it pays. The server fixes the
+   * way and the amount from the share, so the form shows them rather than asking.
+   */
+  share?: { splitId: string; to: string };
 }
 
 /**
@@ -236,6 +244,8 @@ export function KitForm({
   // An order (R60) is taken from the same catalog: the items sold by the piece, by the host
   // that takes orders.
   const ordering = kit === 'order_status';
+  // Paying a share of a split (R62): its way and amount are the share's, shown, not asked.
+  const payingShare = kit === 'payment_request' ? (start?.share ?? null) : null;
   const catalog = appointment || ordering;
   const direct = conversation.kind === 'direct' && !conversation.business;
   // Read afresh when the form opens: a copy of the organization or the profile kept from before
@@ -501,6 +511,8 @@ export function KitForm({
       for (const field of def.fields) {
         // From the catalog (R60), the server writes the number, what was ordered and the total.
         if (picking && ['reference', 'summary', 'amount'].includes(field.key)) continue;
+        // A share's Pay card (R62) pays what the split says, now.
+        if (payingShare && SHARE_FIXED.includes(field.key)) continue;
         if (field.type === 'items') {
           const lines = options.map((o) => o.trim()).filter(Boolean);
           if (lines.length) fields[field.key] = lines;
@@ -544,6 +556,10 @@ export function KitForm({
         if (!slot) return setError('Pick a time.');
         fields.start = { at: slot, hasTime: true };
       }
+      if (payingShare && start?.amount) {
+        fields.direction = 'send';
+        fields.amount = start.amount;
+      }
       const checked = custom ? prepareCustomFields(custom, fields) : prepareKitFields(kit, fields);
       if (!checked.ok) return setError(checked.error);
       body = {
@@ -555,6 +571,7 @@ export function KitForm({
               fields: checked.fields,
               ...(appointment && item ? { booking: { itemId: item.id, quantity } } : {}),
               ...(picking ? { order: { lines, fulfilment: way ?? host?.ways[0] ?? null } } : {}),
+              ...(payingShare ? { share: { splitId: payingShare.splitId } } : {}),
             },
       };
     }
@@ -895,11 +912,19 @@ export function KitForm({
               </Text>
             </View>
           ) : null}
+          {payingShare && start?.amount ? (
+            <Text variant="body" testID="pay-share-line">
+              {tr('Your share, {amount}, paid to {name}.', {
+                amount: formatAmount(start.amount.value, start.amount.currency, locale),
+                name: payingShare.to,
+              })}
+            </Text>
+          ) : null}
           {def.fields.map((field, i) =>
-            ordering &&
-            host?.items.length &&
-            ['reference', 'summary', 'amount'].includes(field.key) ? null : field.type ===
-              'items' ? (
+            (ordering &&
+              host?.items.length &&
+              ['reference', 'summary', 'amount'].includes(field.key)) ||
+            (payingShare && SHARE_FIXED.includes(field.key)) ? null : field.type === 'items' ? (
               <View key={field.key} style={{ gap: 8 }}>
                 <Text variant="label">{tr(field.label)}</Text>
                 {options.map((o, j) => (

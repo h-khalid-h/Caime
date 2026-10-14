@@ -587,6 +587,11 @@ export async function authRoutes(app: FastifyInstance, ctx: AppContext) {
       guest: { name: link.guestName },
       // The address is someone's on Caime: they sign in, and find it among their requests.
       signIn: link.userKind === 'human',
+      // Taken already, by this very guest: their meeting, so the page opens it.
+      space:
+        req.auth?.userId === link.userId
+          ? { conversationId: link.conversationId, messageId: link.messageId, seq: link.seq }
+          : null,
     };
   });
 

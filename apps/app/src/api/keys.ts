@@ -38,6 +38,8 @@ export const qk = {
   /** My invite links (R1). */
   invites: ['invites'] as const,
   invite: (token: string) => ['invite', token] as const,
+  /** A meeting guest's link (R84): the meeting, and theirs once they've taken it. */
+  joinLink: (token: string) => ['join-link', token] as const,
   /** Whether there's a calendar feed (PRD §72), never its address. */
   calendarFeed: ['calendar-feed'] as const,
   space: (id: string) => ['space', id] as const,

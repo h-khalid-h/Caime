@@ -49,6 +49,8 @@ export interface Auth {
   app?: { id: string; orgId: string; scopes: string[] };
   /** Set when a token acting as a person made it: theirs, or an app's they let in (lib/access.ts). */
   grant?: PersonGrant;
+  /** A meeting's guest (R84): a provisional person signed in for that meeting alone. */
+  guest?: boolean;
 }
 
 declare module 'fastify' {

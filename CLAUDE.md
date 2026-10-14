@@ -715,6 +715,13 @@ These are rules, not preferences.
   `sendMessage` from the human participants (rounding stays with the payer), and
   `POST /messages/:id/split` marks a share settled or not by `applySplitOp` under the card's
   row lock. Nothing in Caime holds a balance, and any new card about money is `adultsOnly`.
+  A share is paid with the Pay card (R62, `lib/splits.ts`): `payload.share = { splitId }` makes
+  `sendMessage` fix the card from `shareToPay` (they pay, the split's payer is paid, the share's
+  amount, a reply to the split; one open card a share, checked again under the split's lock),
+  and the kit move route's `shareMoved` settles the share in the move's transaction when its
+  payee says it arrived. Such a card names its sides (`PaysShare`), so in a group everyone else
+  `standsAside` (core `payments.ts`: no moves, not told of them) and its `payTo` shows only the
+  ways for everyone; a new card between two named people in a group uses the same rule.
 - Message requests live on the recipient's `participants.request_state` (pending, accepted,
   declined), for a stranger's direct message and an organization's first message alike.
   `sendMessage` (`apps/server/src/lib/messages.ts`) owns the rules: one message until answered,
@@ -930,6 +937,18 @@ These are rules, not preferences.
   rings is the server's to say (the person's own member state), never the device's clock; an
   engine that lets go of a call or a ring looks for both engines' rings (`lookForRings`); and
   media that arrives applies what was pressed meanwhile (`asPressed`).
+- A meeting's guests (R83, R84): invited by address from an accepted meeting card held here
+  (`features/kits/MeetingGuests.tsx`: Invite by email, the sheet lazy; the card that moved says
+  so and opens the space), they arrive at `/j/<token>` (`features/meetings/JoinMeeting.tsx`, a
+  root route outside the groups, open to anyone): the meeting, the name, "I'm 18 or over",
+  Join, which signs them in as their provisional self. A guest's session never mounts the app
+  (`RootStack`: `(app)` is for a signed-in person who isn't provisional); the same address is
+  their meeting (`JoinView.space`, only to that guest: when, who, Join the call while it's on,
+  else Start), and any other address goes to `(guest)/meeting`, which takes them back to the
+  link this device kept (`state/guestLink.ts`, loaded only by those two). The call is drawn by
+  the root layout for anyone signed in (`CallLayer`), and a guest's socket opens like anyone's
+  (`GET /v1/realtime` is a guest route; their typing is dropped). Anything a guest's page calls
+  must be in `GUEST_ROUTES`; the E2E fails on a refused request.
 - Live location: the server sets `live.until` and refuses moves after it (`liveNow` in
   `packages/core/src/location.ts`, no zod, so the app can import it). The app's
   `LiveLocationSharer` (mounted in the signed-in layout) moves this device's shares from

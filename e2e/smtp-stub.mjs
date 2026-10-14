@@ -11,18 +11,36 @@ const SMTP_PORT = Number(process.env.SMTP_PORT ?? 8825);
 const PORT = Number(process.env.PORT ?? 8795);
 const mails = [];
 
-function parse(raw) {
-  const [head, ...rest] = raw.split(/\r?\n\r?\n/);
-  const header = (name) => {
-    const m = new RegExp(`^${name}:\\s*(.*)$`, 'im').exec(head);
-    return m ? m[1].trim() : '';
-  };
-  let text = rest.join('\n\n');
-  // Plain 7-bit text, as the server sends; quoted-printable soft breaks undone just in case.
-  if (/quoted-printable/i.test(header('Content-Transfer-Encoding')))
-    text = text
+const headerIn = (head, name) => {
+  const m = new RegExp(`^${name}:\\s*(.*)$`, 'im').exec(head);
+  return m ? m[1].trim() : '';
+};
+
+/** A body as its part says it travelled: quoted-printable or base64 undone, 7-bit as it is. */
+function decode(body, encoding) {
+  if (/quoted-printable/i.test(encoding))
+    return body
       .replace(/=\r?\n/g, '')
       .replace(/=([0-9A-F]{2})/g, (_, h) => String.fromCharCode(parseInt(h, 16)));
+  if (/base64/i.test(encoding))
+    return Buffer.from(body.replace(/\s+/g, ''), 'base64').toString('utf8');
+  return body;
+}
+
+function parse(raw) {
+  const [head, ...rest] = raw.split(/\r?\n\r?\n/);
+  const header = (name) => headerIn(head, name);
+  let text = rest.join('\n\n');
+  // A message in parts (a meeting's invitation is its text and its calendar): the plain text,
+  // as a mail client shows it.
+  const boundary = /boundary="?([^";\r\n]+)"?/i.exec(head)?.[1];
+  const plain = boundary
+    ? text.split(`--${boundary}`).find((part) => /Content-Type:\s*text\/plain/i.test(part))
+    : null;
+  if (plain) {
+    const [partHead, ...partBody] = plain.replace(/^\r?\n/, '').split(/\r?\n\r?\n/);
+    text = decode(partBody.join('\n\n'), headerIn(partHead, 'Content-Transfer-Encoding'));
+  } else text = decode(text, header('Content-Transfer-Encoding'));
   return { to: header('To'), subject: header('Subject'), text: text.trim() };
 }
 

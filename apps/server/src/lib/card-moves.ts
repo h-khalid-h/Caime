@@ -13,6 +13,8 @@ import {
   KITS,
   kitStateLabel,
   type MessageView,
+  type PaysShare,
+  standsAside,
 } from '@caime/core';
 import { tr } from '@caime/core/i18n';
 import { cardAsks } from '@caime/core/kit-states';
@@ -32,7 +34,7 @@ export async function afterCardMove(
   input: { from: string; to: string; actorId: string; business: CustomerMask | null },
 ): Promise<MessageView> {
   const { from, to, actorId, business } = input;
-  const card = (m.payload ?? {}) as { kit?: string; title?: string };
+  const card = (m.payload ?? {}) as { kit?: string; title?: string; share?: PaysShare };
   const own = isCustomCard(m.payload) ? m.payload : null;
   const onTeam = (userId: string | null) => Boolean(business && userId !== business.customerId);
   // Agreed (R58): its people get a brief an hour before.
@@ -64,6 +66,8 @@ export async function afterCardMove(
   // In a business conversation, the other side does: the customer hears the organization.
   for (const userId of members) {
     if (userId === actorId) continue;
+    // A share's Pay card (R62) is its two sides' alone: the rest of a group isn't told of it.
+    if (standsAside(card, userId, m.sender_id)) continue;
     if (business && onTeam(userId) === onTeam(actorId)) continue;
     if (business && onTeam(userId) && userId !== m.sender_id) continue;
     await notify(ctx, {

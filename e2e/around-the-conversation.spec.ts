@@ -2092,6 +2092,34 @@ test.describe
       await expect(split).toContainText('Settled');
       await expect(split.getByRole('checkbox', { name: /^Alex Chen · / })).toBeChecked();
 
+      // A taxi after, paid with Pay (R62): Alex pays the share, Noor says it arrived, settled.
+      await page.getByRole('button', { name: 'Share a photo, a file or a card' }).click();
+      await page.getByTestId('kit-option-split').click();
+      await page.getByLabel('What it was for').fill('Taxi');
+      await page.getByLabel('Paid in all').fill('60');
+      await page.getByTestId('kit-send').click();
+      const taxi = page.getByTestId('kit-split').filter({ hasText: 'Taxi' });
+      await expect(taxi).toContainText('0 of 1 settled');
+      const theirTaxi = alex.page
+        .getByTestId('kit-split')
+        .filter({ hasText: 'Taxi', visible: true });
+      await theirTaxi.getByTestId('split-pay').click();
+      const shareLine = alex.page.getByTestId('pay-share-line');
+      await expect(shareLine).toBeInViewport({ ratio: 1 });
+      await expect(shareLine).toContainText('30');
+      await expect(shareLine).toContainText('Noor');
+      // Its way and amount are the share's: the form doesn't ask them.
+      await expect(alex.page.getByTestId('kit-direction')).toHaveCount(0);
+      await alex.page.getByTestId('kit-send').click();
+      const paying = page
+        .getByTestId('kit-payment_request')
+        .filter({ hasText: 'for Taxi', visible: true });
+      await expect(paying).toContainText('Sent');
+      await paying.getByRole('button', { name: 'Received', exact: true }).click();
+      await expect(taxi).toContainText('Settled');
+      await expect(theirTaxi).toContainText('Settled');
+      await expect(theirTaxi.getByTestId('split-pay')).toHaveCount(0);
+
       // They're friends too, now: Noor shares where she is, once.
       const friend = await noorContext.request.post('/v1/relationships', {
         headers: CLIENT,

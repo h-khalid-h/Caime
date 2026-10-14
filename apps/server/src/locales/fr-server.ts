@@ -1264,4 +1264,8 @@ export const frServer: Catalog = {
   '{name} is sold out.': 'Plus de {name} en stock.',
   // Options on an item (R60).
   'Choose from “{option}” for {name}.': 'Choisissez dans « {option} » pour {name}.',
+  // A split's share paid with Pay (R62).
+  'You don’t owe a share of this split.': 'Vous ne devez aucune part de ce partage.',
+  'Your share of this split is settled.': 'Votre part de ce partage est réglée.',
+  'A Pay card for your share is waiting already.': 'Une carte Payer pour votre part attend déjà.',
 };

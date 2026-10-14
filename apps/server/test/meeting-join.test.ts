@@ -1,5 +1,6 @@
 import { uuidv4 } from '@caime/core';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
+import { WebSocket } from 'ws';
 import { memoryMailer } from '../src/lib/email';
 import { type Client, clientFor, createTestApp, signup, type TestApp } from './helpers';
 
@@ -66,6 +67,8 @@ describe('a guest’s way in (R84)', () => {
       meeting: { title: 'Launch review', at: '2026-10-21T09:00:00.000Z', host: 'Ana Host' },
       guest: { name: 'gus' },
       signIn: false,
+      // Where it is stays the guest's to learn, by taking the link.
+      space: null,
     });
     const took = await anon('POST', `/v1/join/${token}`, {
       name: 'Gus Guest',
@@ -81,6 +84,12 @@ describe('a guest’s way in (R84)', () => {
     const guest = clientFor(t, joined.token, { id: '', handle: '', displayName: 'Gus Guest' });
     // Their name, as they gave it; and their session ends a day after the meeting.
     expect((await guest.get('/v1/me')).user.displayName).toBe('Gus Guest');
+    // Their link, read again in their own session, opens their meeting.
+    expect((await guest.get(`/v1/join/${token}`)).space).toEqual({
+      conversationId: space.conversationId,
+      messageId: space.messageId,
+      seq: joined.seq,
+    });
     const session = await t.ctx.db
       .selectFrom('sessions')
       .select('expires_at')
@@ -122,6 +131,49 @@ describe('a guest’s way in (R84)', () => {
       .executeTakeFirstOrThrow();
     expect(said.adult).toBe(true);
     expect(said.joined_at).not.toBeNull();
+  });
+
+  it('hears its meeting live in a browser: rung, and never shown typing', async () => {
+    const { space, token } = await invite('wes@example.com', 'Live review');
+    const took = await anon('POST', `/v1/join/${token}`, { adult: true, client: 'web' });
+    expect(took.statusCode).toBe(200);
+    const cookie = took.cookies.find((c) => c.name === 'caime_session')?.value ?? '';
+    const address = await t.app.listen({ port: 0, host: '127.0.0.1' });
+    const ws = address.replace('http', 'ws');
+    const frames: Array<{ type: string; event?: { type: string; data: unknown } }> = [];
+    // A browser's socket is its session cookie, from the app's own origin.
+    const guestSocket = new WebSocket(`${ws}/v1/realtime`, {
+      headers: {
+        cookie: `caime_session=${cookie}`,
+        origin: new URL(t.ctx.config.PUBLIC_URL).origin,
+      },
+    });
+    guestSocket.on('message', (raw) => frames.push(JSON.parse(String(raw))));
+    const hostFrames: typeof frames = [];
+    const hostSocket = new WebSocket(`${ws}/v1/realtime`);
+    hostSocket.on('open', () =>
+      hostSocket.send(JSON.stringify({ type: 'auth', token: ben.token })),
+    );
+    hostSocket.on('message', (raw) => hostFrames.push(JSON.parse(String(raw))));
+    const until = async (seen: () => boolean) => {
+      const deadline = Date.now() + 3000;
+      while (!seen() && Date.now() < deadline) await new Promise((r) => setTimeout(r, 25));
+      return seen();
+    };
+    expect(await until(() => frames.some((f) => f.type === 'hello'))).toBe(true);
+    expect(await until(() => hostFrames.some((f) => f.type === 'hello'))).toBe(true);
+    // Ben starts the meeting's call: the guest is rung on their socket.
+    await ben.post(`/v1/conversations/${space.conversationId}/group-calls`, {
+      kind: 'video',
+      deviceId: uuidv4(),
+    });
+    expect(await until(() => frames.some((f) => f.event?.type === 'groupcall.ringing'))).toBe(true);
+    // A guest can't write in the space, so nobody sees them typing in it.
+    guestSocket.send(JSON.stringify({ type: 'typing', conversationId: space.conversationId }));
+    await new Promise((r) => setTimeout(r, 200));
+    expect(hostFrames.some((f) => f.event?.type === 'typing')).toBe(false);
+    guestSocket.close();
+    hostSocket.close();
   });
 
   it('is gone once replaced, once the meeting is a day past, and never for a guess', async () => {

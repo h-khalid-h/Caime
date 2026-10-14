@@ -4,9 +4,11 @@
  * Turkish), and over the pages a visitor gets. A serious or critical violation fails; everything
  * found is written to the report, so a regression shows where it is.
  */
+
+import { randomUUID } from 'node:crypto';
 import AxeBuilder from '@axe-core/playwright';
 import { expect, type Page, test } from '@playwright/test';
-import { apiSignUp, CLIENT, newPerson, visible } from './helpers';
+import { apiSignUp, CLIENT, mailsTo, newPerson, visible } from './helpers';
 
 const suffix = Math.random().toString(36).slice(2, 7);
 
@@ -157,7 +159,7 @@ test('the signed-in screens, phone and desktop, in every interface language', as
   expect(report(found)).toEqual([]);
 });
 
-test('what a visitor gets: the landing page, the site, entry screens, a person and an organization', async ({
+test('what a visitor gets: the landing page, the site, entry screens, a person, an organization and a meeting guest’s link', async ({
   browser,
 }) => {
   test.setTimeout(180_000);
@@ -196,5 +198,64 @@ test('what a visitor gets: the landing page, the site, entry screens, a person a
     .first()
     .isVisible()
     .catch(() => false);
+
+  // A meeting guest's link (R84), as the guest opens it: Tariq invites them from a meeting
+  // agreed with a connection.
+  const other = await browser.newContext();
+  const otherUser = await apiSignUp(other, 'Mona Public', `mona.pub.${suffix}`);
+  const asked = await maker.request.post('/v1/connections/requests', {
+    headers: CLIENT,
+    data: { toUserId: otherUser.id, relationship: { sphere: 'work', role: 'colleague' } },
+  });
+  const { requestId } = (await asked.json()) as { requestId: string };
+  await other.request.post(`/v1/connections/requests/${requestId}/accept`, {
+    headers: CLIENT,
+    data: {},
+  });
+  const direct = (await (
+    await maker.request.post('/v1/conversations', {
+      headers: CLIENT,
+      data: { kind: 'direct', userId: otherUser.id },
+    })
+  ).json()) as { conversation: { id: string } };
+  const card = (await (
+    await maker.request.post(`/v1/conversations/${direct.conversation.id}/messages`, {
+      headers: CLIENT,
+      data: {
+        clientId: randomUUID(),
+        kind: 'kit',
+        payload: {
+          kit: 'meeting',
+          fields: {
+            title: 'Treatment plan',
+            start: { at: new Date(Date.now() + 86_400_000).toISOString(), hasTime: true },
+            durationMinutes: 30,
+          },
+        },
+      },
+    })
+  ).json()) as { message: { id: string } };
+  await other.request.post(`/v1/messages/${card.message.id}/kit`, {
+    headers: CLIENT,
+    data: { to: 'accepted' },
+  });
+  const guest = `guest.pub.${suffix}@example.com`;
+  const invited = await maker.request.post(`/v1/messages/${card.message.id}/guests`, {
+    headers: CLIENT,
+    data: { email: guest, name: 'Sam Guest' },
+  });
+  expect(invited.ok(), await invited.text()).toBe(true);
+  await expect.poll(async () => (await mailsTo(guest)).length).toBe(1);
+  const [mail] = await mailsTo(guest);
+  const link = /\/j\/cmg_[A-Za-z0-9_-]+/.exec(mail?.text ?? '')?.[0] ?? '';
+  for (const [path, name] of [
+    [link, 'meeting guest’s link'],
+    [`${link}?lang=ar`, 'meeting guest’s link (ar)'],
+  ] as const) {
+    await page.goto(path);
+    await expect(page.getByTestId('join-form')).toBeVisible();
+    await audit(page, name, found);
+  }
+  await other.close();
   expect(report(found)).toEqual([]);
 });

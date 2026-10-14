@@ -36,6 +36,8 @@ interface Client {
   /** The session this socket was opened with: closed when that session ends. */
   sessionId: string;
   alive: boolean;
+  /** A meeting's guest (R84): hears what's theirs, says nothing (no typing). */
+  guest: boolean;
 }
 
 export class Hub {
@@ -228,8 +230,8 @@ export async function realtimeRoutes(app: FastifyInstance, ctx: AppContext): Pro
       return;
     }
 
-    const attach = async (userId: string, sessionId: string) => {
-      client = { socket, userId, sessionId, alive: true };
+    const attach = async (userId: string, sessionId: string, guest: boolean) => {
+      client = { socket, userId, sessionId, alive: true, guest };
       socket.on('pong', () => {
         if (client) client.alive = true;
       });
@@ -257,7 +259,7 @@ export async function realtimeRoutes(app: FastifyInstance, ctx: AppContext): Pro
 
     if (req.auth) {
       clearTimeout(timer);
-      attach(req.auth.userId, req.auth.sessionId).catch(failed('attach'));
+      attach(req.auth.userId, req.auth.sessionId, Boolean(req.auth.guest)).catch(failed('attach'));
     }
 
     const handle = async (raw: unknown) => {
@@ -277,7 +279,7 @@ export async function realtimeRoutes(app: FastifyInstance, ctx: AppContext): Pro
           // A guest (R84) hears what's sent to them, as anyone does: only their meeting's
           // space and its call, the one conversation they're in.
           clearTimeout(timer);
-          await attach(session.userId, session.sessionId);
+          await attach(session.userId, session.sessionId, session.guest);
         }
         return;
       }
@@ -295,6 +297,8 @@ export async function realtimeRoutes(app: FastifyInstance, ctx: AppContext): Pro
         return;
       }
       if (msg.type === 'typing') {
+        // A guest can't write in their meeting's space, so they're never seen typing in it.
+        if ((client as Client).guest) return;
         try {
           ctx.limiter.hit(`typing:${userId}:${msg.conversationId}`, 30, 60_000);
         } catch {

@@ -16,6 +16,7 @@ import {
   saveCacheWhenLeft,
 } from '@/api/queryClient';
 import { IconMark } from '@/brand/Wordmark';
+import { CallLayer } from '@/features/calls/CallLayer';
 import { ScreenError } from '@/features/common/ScreenError';
 import { ScreenToasts } from '@/features/shell/ScreenToasts';
 import { isWeb } from '@/lib/config';
@@ -59,6 +60,8 @@ export default function RootLayout() {
   // anyone else's doesn't (review 2026-10-09: every splash waited for the seven).
   const [arabicLoaded, arabicError] = useFonts(ARABIC_FONT_FILES);
   const status = useSession((s) => s.status);
+  // A meeting's guest (R84) is signed in for that meeting alone: none of the app is theirs.
+  const guest = useSession((s) => s.status === 'signedIn' && s.user?.kind === 'provisional');
   useRememberLinks(status);
   // A slow font never holds the app hostage: after 2.5 s we render with the system font.
   const [fontTimeout, setFontTimeout] = useState(false);
@@ -107,7 +110,13 @@ export default function RootLayout() {
         >
           <ThemeProvider>
             <Direction>
-              {ready ? <RootStack key={generation} signedIn={status === 'signedIn'} /> : <Boot />}
+              {ready ? (
+                <RootStack key={generation} signedIn={status === 'signedIn'} guest={guest} />
+              ) : (
+                <Boot />
+              )}
+              {/* The call over everything, for whoever is signed in, a meeting's guest too. */}
+              {ready && status === 'signedIn' ? <CallLayer /> : null}
               <ScreenToasts />
             </Direction>
             <ThemedStatusBar />
@@ -118,16 +127,21 @@ export default function RootLayout() {
   );
 }
 
-function RootStack({ signedIn }: { signedIn: boolean }) {
+function RootStack({ signedIn, guest }: { signedIn: boolean; guest: boolean }) {
   const t = useTheme();
   return (
     <Stack screenOptions={{ headerShown: false, contentStyle: { backgroundColor: t.c.canvas } }}>
-      <Stack.Protected guard={signedIn}>
+      <Stack.Protected guard={signedIn && !guest}>
         <Stack.Screen name="(app)" />
       </Stack.Protected>
       <Stack.Protected guard={!signedIn}>
         <Stack.Screen name="(auth)" />
       </Stack.Protected>
+      <Stack.Protected guard={guest}>
+        <Stack.Screen name="(guest)" />
+      </Stack.Protected>
+      {/* A guest's link (R84): how they arrive, signed in or not, and then their meeting. */}
+      <Stack.Screen name="j/[token]" />
     </Stack>
   );
 }

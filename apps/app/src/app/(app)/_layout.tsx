@@ -1,7 +1,6 @@
 import { Redirect, router, Slot, Stack, usePathname } from 'expo-router';
 import { useEffect, useState } from 'react';
 import { View } from 'react-native';
-import { CallLayer } from '@/features/calls/CallLayer';
 import { ScreenError } from '@/features/common/ScreenError';
 import { InboxList } from '@/features/inbox/InboxList';
 import { LiveLocationSharer } from '@/features/location/LiveLocationSharer';
@@ -86,7 +85,6 @@ export default function AppLayout() {
         <DesktopShell />
         <KeyboardShortcuts />
         <LiveLocationSharer />
-        <CallLayer />
         <ReportLayer />
       </>
     );
@@ -105,7 +103,6 @@ export default function AppLayout() {
       </View>
       <KeyboardShortcuts />
       <LiveLocationSharer />
-      <CallLayer />
       <ReportLayer />
     </>
   );

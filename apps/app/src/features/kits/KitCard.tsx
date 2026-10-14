@@ -15,7 +15,13 @@ import {
 } from '@caime/core/kit-cards';
 import { KITS } from '@caime/core/kits';
 import { meetingAction, meetingLink } from '@caime/core/meetings';
-import { PAYMENT_KIND_LABELS, type PayTo, senderPays } from '@caime/core/payments';
+import {
+  PAYMENT_KIND_LABELS,
+  type PaysShare,
+  type PayTo,
+  senderPays,
+  standsAside,
+} from '@caime/core/payments';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import Copy from 'lucide-react-native/icons/copy';
 import ListChecks from 'lucide-react-native/icons/list-checks';
@@ -45,6 +51,7 @@ import { toast } from '@/ui/Toast';
 import { AlbumCard } from './AlbumCard';
 import { ChecklistCard } from './ChecklistCard';
 import { iconNamed, KIT_ICONS } from './icons';
+import { type MeetingCardPayload, MeetingGuests } from './MeetingGuests';
 import { meetingCall } from './meetingCall';
 import { SplitCard } from './SplitCard';
 
@@ -65,6 +72,8 @@ interface CardPayload {
   payTo?: PayTo | null;
   /** Its checkout on the organization's own account (R65), as Stripe last said. */
   checkout?: CardCheckout | null;
+  /** The split's share it pays, and whom (R62). */
+  share?: PaysShare | null;
   history?: unknown[];
 }
 
@@ -192,6 +201,16 @@ export function KitCard({ m, mine }: { m: MessageView; mine: boolean }) {
     enabled: false,
     select: (d: { conversation: ConversationView }) =>
       meetingCall(d.conversation, { calls: callsSupported, groupCalls: groupCallsSupported }),
+  }).data;
+  // Whether a meeting here may have guests (R84): a person's own conversation, not private.
+  const guestable = useQuery({
+    queryKey: qk.conversation(m.conversationId),
+    queryFn: () => endpoints.conversation(m.conversationId),
+    enabled: false,
+    select: (d: { conversation: ConversationView }) =>
+      (d.conversation.kind === 'direct' || d.conversation.kind === 'group') &&
+      d.conversation.privacyClass === 'standard' &&
+      !d.conversation.business,
   }).data;
   const { timeZone, locale } = useUserClock();
   const meId = useSession((s) => s.user?.id ?? '');
@@ -336,11 +355,23 @@ export function KitCard({ m, mine }: { m: MessageView; mine: boolean }) {
             )}
             paidByCard={p.checkout?.status === 'paid'}
           />
+        ) : kit === 'meeting' ? (
+          <MeetingGuests
+            messageId={m.id}
+            card={p as MeetingCardPayload}
+            deleted={Boolean(m.deletedAt)}
+            where={Boolean(guestable)}
+          />
         ) : null
       }
       // In a conversation with an organization, the team is one side: anyone on it moves a card
       // the team sent, as the server has it.
-      moves={m.deletedAt ? [] : kitMoves(kit, state, senderSide, p.fields)}
+      // A share's Pay card in a group (R62) is its two sides' alone: the rest only look on.
+      moves={
+        m.deletedAt || standsAside(p, meId, m.senderId)
+          ? []
+          : kitMoves(kit, state, senderSide, p.fields)
+      }
       testID={`kit-${kit}`}
     />
   );

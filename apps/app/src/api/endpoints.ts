@@ -69,7 +69,10 @@ import type {
   InviteOpenResponse,
   InviteResponse,
   InvitesResponse,
+  JoinResponse,
+  JoinView,
   LiveCallsResponse,
+  MeetingGuestResponse,
   MemoryView,
   MessageIdsResponse,
   MessageResponse,
@@ -326,6 +329,14 @@ export const endpoints = {
     api.get<InviteOpenResponse>(`/invites/${encodeURIComponent(token)}`),
   acceptInvite: (token: string) =>
     api.post<InviteAcceptView>(`/invites/${encodeURIComponent(token)}/accept`),
+  // A meeting's guests (R84): inviting by address, and a guest's own link.
+  inviteGuest: (messageId: string, body: { email: string; name?: string | null }) =>
+    api.post<MeetingGuestResponse>(`/messages/${messageId}/guests`, body),
+  joinLink: (token: string) => api.get<JoinView>(`/join/${encodeURIComponent(token)}`),
+  takeJoin: (
+    token: string,
+    body: { name: string | null; adult: boolean; client: 'web' | 'native' },
+  ) => api.post<JoinResponse>(`/join/${encodeURIComponent(token)}`, body),
   cancelRequest: (id: string) => api.del<OkResponse>(`/connections/requests/${id}`),
   updateConnection: (id: string, patch: Record<string, unknown>) =>
     api.patch<OkResponse>(`/connections/${id}`, patch),

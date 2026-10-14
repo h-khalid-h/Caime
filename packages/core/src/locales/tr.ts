@@ -3773,4 +3773,45 @@ export const turkish: Catalog = {
     'Yalnızca adetle sipariş edilen şeylerin seçenekleri olur.',
   'Each option and choice once.': 'Her seçenek ve seçim bir kez.',
   'Something free adds nothing to its price.': 'Ücretsiz bir şey fiyatına bir şey eklemez.',
+  // A split's share paid with Pay (R62).
+  'Pay your share': 'Payını öde',
+  'Your share, {amount}, paid to {name}.': 'Payın {amount}, {name} kişisine ödenecek.',
+  // A meeting's guests (R83, R84): the join page, their meeting, inviting from the card.
+  'Your meeting': 'Toplantın',
+  'Open the link from your invitation again to get back to your meeting.':
+    'Toplantına dönmek için davetindeki bağlantıyı yeniden aç.',
+  'Invitation sent to {email}': 'Davet {email} adresine gönderildi',
+  'Invite by email': 'E-postayla davet et',
+  'They get a calendar invitation with their own link, and join without an account. The meeting moves to a space of its own, where they see it and nothing else.':
+    'Kendi bağlantılarıyla bir takvim daveti alırlar ve hesap olmadan katılırlar. Toplantı kendi alanına taşınır; orada yalnızca onu görürler.',
+  'Send the invitation': 'Daveti gönder',
+  'Their email': 'E-posta adresi',
+  'Their name': 'Adı',
+  'As the invitation greets them; they can change it.':
+    'Davette böyle seslenilir; kendisi değiştirebilir.',
+  'Moved to its own space, with its guests.': 'Konuklarıyla birlikte kendi alanına taşındı.',
+  'Your invitation': 'Davetin',
+  'This invitation has ended': 'Bu davetin süresi doldu',
+  'It ran out a day after the meeting, or a newer one replaced it. Ask whoever invited you for a new link.':
+    'Toplantıdan bir gün sonra sona erdi ya da yerini daha yeni bir davet aldı. Seni davet edenden yeni bir bağlantı iste.',
+  'This invitation is for your Caime account': 'Bu davet Caime hesabın için',
+  'Sign in, and you’ll find the meeting among your requests.':
+    'Giriş yap; toplantıyı isteklerinin arasında bulacaksın.',
+  'Open requests': 'İstekleri aç',
+  'Someone else is signed in here': 'Burada başka bir hesap açık',
+  'Open the link in another browser, or sign out first.':
+    'Bağlantıyı başka bir tarayıcıda aç ya da önce oturumu kapat.',
+  'Invited by': 'Davet eden',
+  'You’re invited. Join as a guest: no account, nothing to install.':
+    'Davetlisin. Konuk olarak katıl: hesap yok, kurulacak bir şey yok.',
+  'I’m 18 or over': '18 yaşında veya daha büyüğüm',
+  'Caime asks everyone in a meeting, for the rules that protect anyone younger.':
+    'Caime bunu toplantıdaki herkese, daha küçükleri koruyan kurallar için sorar.',
+  With: 'Katılanlar',
+  'Start the call': 'Aramayı başlat',
+  'The call opens ten minutes before it starts. Keep this page, or come back by your link.':
+    'Arama, başlamadan on dakika önce açılır. Bu sayfayı açık tut ya da bağlantınla geri gel.',
+  'This browser can’t make calls. Open your link in a recent Chrome, Safari, Edge or Firefox.':
+    'Bu tarayıcı arama yapamıyor. Bağlantını Chrome, Safari, Edge veya Firefox’un güncel bir sürümünde aç.',
+  'Join the call': 'Aramaya katıl',
 };

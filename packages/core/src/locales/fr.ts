@@ -3938,4 +3938,46 @@ export const fr: Catalog = {
     'Seul ce qui se commande à la pièce a des options.',
   'Each option and choice once.': 'Chaque option et chaque choix une seule fois.',
   'Something free adds nothing to its price.': 'Ce qui est gratuit n’ajoute rien à son prix.',
+  // A split's share paid with Pay (R62).
+  'Pay your share': 'Payer votre part',
+  'Your share, {amount}, paid to {name}.': 'Votre part, {amount}, payée à {name}.',
+  // A meeting's guests (R83, R84): the join page, their meeting, inviting from the card.
+  'Your meeting': 'Votre réunion',
+  'Open the link from your invitation again to get back to your meeting.':
+    'Ouvrez à nouveau le lien de votre invitation pour revenir à votre réunion.',
+  'Invitation sent to {email}': 'Invitation envoyée à {email}',
+  'Invite by email': 'Inviter par e-mail',
+  'They get a calendar invitation with their own link, and join without an account. The meeting moves to a space of its own, where they see it and nothing else.':
+    'La personne invitée reçoit une invitation d’agenda avec son propre lien et rejoint sans compte. La réunion passe dans un espace à part, le seul qu’elle voit.',
+  'Send the invitation': 'Envoyer l’invitation',
+  'Their email': 'Son e-mail',
+  'Their name': 'Son nom',
+  'As the invitation greets them; they can change it.':
+    'Tel que l’invitation l’écrit ; la personne peut le changer.',
+  'Moved to its own space, with its guests.':
+    'Déplacée dans son propre espace, avec les personnes invitées.',
+  'Your invitation': 'Votre invitation',
+  'This invitation has ended': 'Cette invitation a expiré',
+  'It ran out a day after the meeting, or a newer one replaced it. Ask whoever invited you for a new link.':
+    'Elle a expiré un jour après la réunion, ou une plus récente l’a remplacée. Demandez un nouveau lien à la personne qui a envoyé l’invitation.',
+  'This invitation is for your Caime account': 'Cette invitation est pour votre compte Caime',
+  'Sign in, and you’ll find the meeting among your requests.':
+    'Connectez-vous : la réunion vous attend parmi vos demandes.',
+  'Open requests': 'Ouvrir les demandes',
+  'Someone else is signed in here': 'Un autre compte est connecté ici',
+  'Open the link in another browser, or sign out first.':
+    'Ouvrez le lien dans un autre navigateur, ou déconnectez-vous d’abord.',
+  'Invited by': 'Invitation de',
+  'You’re invited. Join as a guest: no account, nothing to install.':
+    'Une invitation pour vous : rejoignez sans compte, sans rien installer.',
+  'I’m 18 or over': 'J’ai 18 ans ou plus',
+  'Caime asks everyone in a meeting, for the rules that protect anyone younger.':
+    'Caime le demande à tout le monde dans une réunion, pour les règles qui protègent les plus jeunes.',
+  With: 'Avec',
+  'Start the call': 'Lancer l’appel',
+  'The call opens ten minutes before it starts. Keep this page, or come back by your link.':
+    'L’appel s’ouvre dix minutes avant le début. Gardez cette page, ou revenez par votre lien.',
+  'This browser can’t make calls. Open your link in a recent Chrome, Safari, Edge or Firefox.':
+    'Ce navigateur ne peut pas passer d’appels. Ouvrez votre lien dans une version récente de Chrome, Safari, Edge ou Firefox.',
+  'Join the call': 'Rejoindre l’appel',
 };

@@ -4431,4 +4431,52 @@ export const ar: Catalog = {
   'Only something ordered by the piece has options.': 'الخيارات لما يُطلب بالقطعة فقط.',
   'Each option and choice once.': 'كل خيار واختيار مرة واحدة.',
   'Something free adds nothing to its price.': 'ما هو مجاني لا يُضاف إلى سعره شيء.',
+  // A split's share paid with Pay (R62).
+  'Pay your share': { toWoman: 'ادفعي حصتك', toMan: 'ادفع حصتك', other: 'ادفع حصتك' },
+  'Your share, {amount}, paid to {name}.': 'حصتك {amount}، تُدفع إلى {name}.',
+  // A meeting's guests (R83, R84): the join page, their meeting, inviting from the card.
+  'Your meeting': 'اجتماعك',
+  'Open the link from your invitation again to get back to your meeting.':
+    'افتح الرابط من دعوتك مرة أخرى للعودة إلى اجتماعك.',
+  'Invitation sent to {email}': 'أُرسلت الدعوة إلى {email}',
+  'Invite by email': {
+    toWoman: 'ادعي بالبريد الإلكتروني',
+    toMan: 'ادعُ بالبريد الإلكتروني',
+    other: 'ادعُ بالبريد الإلكتروني',
+  },
+  'They get a calendar invitation with their own link, and join without an account. The meeting moves to a space of its own, where they see it and nothing else.':
+    'تصلهم دعوة تقويم برابط خاص بهم، وينضمون دون حساب. ينتقل الاجتماع إلى مساحة خاصة به، يرونه فيها ولا يرون شيئًا غيره.',
+  'Send the invitation': { toWoman: 'أرسلي الدعوة', toMan: 'أرسل الدعوة', other: 'أرسل الدعوة' },
+  'Their email': 'بريدهم الإلكتروني',
+  'Their name': 'اسمهم',
+  'As the invitation greets them; they can change it.': 'كما تخاطبهم الدعوة، ويمكنهم تغييره.',
+  'Moved to its own space, with its guests.': 'انتقل إلى مساحة خاصة به مع ضيوفه.',
+  'Your invitation': 'دعوتك',
+  'This invitation has ended': 'انتهت هذه الدعوة',
+  'It ran out a day after the meeting, or a newer one replaced it. Ask whoever invited you for a new link.':
+    'انتهت صلاحيتها بعد يوم من الاجتماع، أو حلّت محلها دعوة أحدث. اطلب رابطًا جديدًا ممن أرسل الدعوة.',
+  'This invitation is for your Caime account': 'هذه الدعوة لحسابك على Caime',
+  'Sign in, and you’ll find the meeting among your requests.':
+    'سجّل الدخول، وستجد الاجتماع بين طلباتك.',
+  'Open requests': { toWoman: 'افتحي الطلبات', toMan: 'افتح الطلبات', other: 'افتح الطلبات' },
+  'Someone else is signed in here': 'حساب آخر مسجَّل الدخول هنا',
+  'Open the link in another browser, or sign out first.':
+    'افتح الرابط في متصفح آخر، أو سجّل الخروج أولًا.',
+  'Invited by': 'الدعوة من',
+  'You’re invited. Join as a guest: no account, nothing to install.':
+    'لديك دعوة. الانضمام كضيف بلا حساب ولا تثبيت.',
+  'I’m 18 or over': 'عمري 18 عامًا أو أكثر',
+  'Caime asks everyone in a meeting, for the rules that protect anyone younger.':
+    'يسأل Caime كل من في الاجتماع، من أجل القواعد التي تحمي من هم أصغر سنًا.',
+  With: 'مع',
+  'Start the call': { toWoman: 'ابدئي المكالمة', toMan: 'ابدأ المكالمة', other: 'ابدأ المكالمة' },
+  'The call opens ten minutes before it starts. Keep this page, or come back by your link.':
+    'تُفتح المكالمة قبل موعدها بعشر دقائق. أبقِ هذه الصفحة مفتوحة، أو عُد عبر رابطك.',
+  'This browser can’t make calls. Open your link in a recent Chrome, Safari, Edge or Firefox.':
+    'هذا المتصفح لا يجري مكالمات. افتح رابطك في إصدار حديث من Chrome أو Safari أو Edge أو Firefox.',
+  'Join the call': {
+    toWoman: 'انضمي إلى المكالمة',
+    toMan: 'انضم إلى المكالمة',
+    other: 'انضم إلى المكالمة',
+  },
 };
