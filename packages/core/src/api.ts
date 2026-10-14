@@ -2420,6 +2420,36 @@ export interface SessionsResponse {
 export interface RecoveryCodesResponse {
   recoveryCodes: string[];
 }
+
+/**
+ * A passkey on the account (R36): the name it was given and when it was made and last used,
+ * never a key. `synced` says the person's password manager keeps it on their other devices too.
+ */
+export interface PasskeyView {
+  id: string;
+  name: string | null;
+  synced: boolean;
+  createdAt: string;
+  lastUsedAt: string | null;
+}
+
+export interface PasskeysResponse {
+  passkeys: PasskeyView[];
+}
+
+export interface PasskeyResponse {
+  passkey: PasskeyView;
+}
+
+/**
+ * A passkey ceremony to run in the browser: WebAuthn's options in their JSON form (binary fields
+ * as base64url, as `PublicKeyCredential.parseCreationOptionsFromJSON` and its `…Request…` twin
+ * take them), and the challenge's id to answer with.
+ */
+export interface PasskeyCeremonyResponse {
+  challengeId: string;
+  options: Record<string, unknown>;
+}
 export interface RecoverResponse extends AuthResponse {
   recoveryCodesLeft: number;
 }

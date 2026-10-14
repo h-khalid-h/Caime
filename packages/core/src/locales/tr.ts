@@ -3696,4 +3696,27 @@ export const turkish: Catalog = {
       other:
         'Kapandıktan sonra {n} gün boyunca dışa aktarımı Ayarlar · Güvenlik bölümünde sizindir. Ardından yalnızca ona ait olanlar silinir; müşterileri konuşmalarını korur.',
     },
+  // Passkeys (R36).
+  'Sign in with a passkey': 'Geçiş anahtarıyla giriş yap',
+  'Passkey added. Next time, sign in with it.':
+    'Geçiş anahtarı eklendi. Bir dahaki sefere onunla giriş yapın.',
+  'Passkey removed': 'Geçiş anahtarı kaldırıldı',
+  'Added {added}, last used {used}': 'Eklendi: {added} · son kullanım: {used}',
+  'Added {added}, not used yet': 'Eklendi: {added} · henüz kullanılmadı',
+  Passkeys: 'Geçiş anahtarları',
+  'A passkey signs you in with your face, your fingerprint or your device’s screen lock, with nothing to type. It stays on your devices; Caime keeps only its public half.':
+    'Geçiş anahtarı, hiçbir şey yazmadan yüzünüz, parmak iziniz veya cihazınızın ekran kilidiyle giriş yapmanızı sağlar. Cihazlarınızda kalır; Caime yalnızca açık yarısını saklar.',
+  Passkey: 'Geçiş anahtarı',
+  'Add a passkey': 'Geçiş anahtarı ekle',
+  'Open Caime on the web to add one': 'Eklemek için Caime’yi web’de açın',
+  'Your password first; then your browser asks where to keep the passkey.':
+    'Önce şifreniz; ardından tarayıcınız geçiş anahtarını nerede saklayacağını sorar.',
+  Continue: 'Devam',
+  'Remove this passkey?': 'Bu geçiş anahtarı kaldırılsın mı?',
+  '{name} stops signing you in. Your password and other passkeys still do.':
+    '{name} artık giriş yapmanızı sağlamaz. Şifreniz ve diğer geçiş anahtarlarınız sağlamaya devam eder.',
+  'This device already has a passkey for your account.':
+    'Bu cihazda hesabınız için zaten bir geçiş anahtarı var.',
+  'This browser can’t use passkeys here.': 'Bu tarayıcı burada geçiş anahtarı kullanamıyor.',
+  'Something went wrong. Try again.': 'Bir şeyler ters gitti. Yeniden deneyin.',
 };

@@ -619,6 +619,27 @@ export const ResetConfirmBody = z.object({
   client: z.enum(['web', 'native']).default('web'),
 });
 
+/**
+ * A passkey's ceremony answered (R36): the challenge it answers and the browser's credential in
+ * its JSON form (`PublicKeyCredential.toJSON()`), checked by the server's WebAuthn verifier.
+ */
+const PasskeyCredential = z.record(z.string(), z.unknown());
+
+/** Adding a passkey begins with the password, as new recovery codes do. */
+export const PasskeyStartBody = z.object({ password: z.string().min(1).max(200) });
+
+export const PasskeyAddBody = z.object({
+  challengeId: z.string().uuid(),
+  credential: PasskeyCredential,
+});
+
+export const PasskeySignInBody = z.object({
+  challengeId: z.string().uuid(),
+  credential: PasskeyCredential,
+  client: z.enum(['web', 'native']).default('web'),
+  deviceName: z.string().max(80).optional(),
+});
+
 export const RecoverBody = z.object({
   identifier: z.string().trim().min(1).max(254),
   code: z.string().trim().min(8).max(20),

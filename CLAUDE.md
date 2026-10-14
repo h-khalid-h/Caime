@@ -251,6 +251,16 @@ These are rules, not preferences.
   uuid is queried) and anything else is dropped; the message handler and `attach` catch, so a
   failure closes that socket alone, and `index.ts` logs an unhandled rejection rather than
   exiting. A new frame type joins the schema.
+- Passkeys (R36, `lib/passkeys.ts`, `modules/passkeys.ts`): WebAuthn through
+  `@simplewebauthn/server` (pinned exact; the pnpm override keeps one `@peculiar/asn1-schema`,
+  since two copies fail every signature with "Cannot get schema for 'ECDSASigValue'"), for the
+  relying party `relyingParty(config)` reads from `PUBLIC_URL` (a new address strands every
+  passkey). A ceremony's challenge is `keepChallenge` then `takeChallenge` (deleted as it's read,
+  five minutes). Every way in makes its session through `createSession` (`lib/sessions.ts`) and
+  its cookie through `lib/session-cookie.ts`, never its own insert; `endAllAccess` removes
+  passkeys with the sessions and tokens, so a new way in joins it there. Tests use
+  `test/soft-authenticator.ts`, the E2E Chromium's virtual authenticator over CDP; the browser's
+  side is `features/auth/passkeys.ts`, loaded on press.
 - Invite links (R1): `lib/invites.ts` makes, opens and accepts them; accepting goes through
   `acceptRequest(…, { viaInvite: true })` on a request the invite stands for (never a second path
   to a connection), so blocks, suggestions and notifications behave as for a request. The token

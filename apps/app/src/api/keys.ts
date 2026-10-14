@@ -92,6 +92,8 @@ export const qk = {
   saved: ['saved'] as const,
   savedItems: (collection?: string) => ['saved', 'items', collection ?? ''] as const,
   sessions: ['sessions'] as const,
+  /** The account's passkeys (R36). */
+  passkeys: ['passkeys'] as const,
   search: (term: string, understand = false) => ['search', term, understand] as const,
   peopleSearch: (term: string) => ['people-search', term] as const,
   orgSearch: (term: string) => ['org-search', term] as const,

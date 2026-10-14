@@ -29,7 +29,7 @@ import type {
   UserResponse,
 } from '@caime/core/api';
 import { tr } from '@caime/core/i18n';
-import type { FastifyInstance, FastifyReply, FastifyRequest } from 'fastify';
+import type { FastifyInstance } from 'fastify';
 import { sql } from 'kysely';
 import { z } from 'zod';
 import type { AppContext } from '../context';
@@ -41,7 +41,6 @@ import {
   hashRecoveryCode,
   hashToken,
   matchRecoveryCode,
-  newToken,
   recoveryCodes,
   recoverySalt,
   verifyPassword,
@@ -61,31 +60,11 @@ import { assertHandleAvailable } from '../lib/handles';
 import { guestLink } from '../lib/meeting-join';
 import { endAllAccess } from '../lib/moderation';
 import { sendResetLink } from '../lib/reset';
-import { endSessions } from '../lib/sessions';
+import { clearSessionCookie } from '../lib/session-cookie';
+import { clientInfo, createSession, endSessions, passwordTry } from '../lib/sessions';
 import { meView, oldEnoughIn, seedDefaults, tooYoung, workweekFor } from '../lib/users';
 import { parse } from '../lib/validate';
-import {
-  clearSessionCookie,
-  requireAuth,
-  setSessionCookie,
-  suspended,
-  tokenFrom,
-} from '../plugins/auth';
-
-function clientInfo(req: FastifyRequest) {
-  return {
-    ip: req.ip ?? null,
-    userAgent: (req.headers['user-agent'] as string | undefined) ?? null,
-  };
-}
-
-function platformFrom(userAgent: string | null): string | null {
-  if (!userAgent) return null;
-  if (/iPhone|iPad|iOS/i.test(userAgent)) return 'ios';
-  if (/Android/i.test(userAgent)) return 'android';
-  if (/Macintosh|Windows|Linux|CrOS/i.test(userAgent)) return 'web';
-  return null;
-}
+import { requireAuth, suspended, tokenFrom } from '../plugins/auth';
 
 const CODE_LIFE_MS = 24 * 3_600_000;
 const CODE_TRIES = 10;
@@ -112,52 +91,6 @@ async function sendEmailCode(ctx: AppContext, userId: string, email: string, nam
     .execute();
   const mail = ctx.mail;
   ctx.defer('email.code', () => mail.send(verificationMail(email, name, code)));
-}
-
-export async function createSession(
-  ctx: AppContext,
-  req: FastifyRequest,
-  reply: FastifyReply,
-  userId: string,
-  client: 'web' | 'native',
-  deviceName?: string,
-  /** When it ends, if sooner than a session's usual life (a meeting's guest, R84). */
-  endsAt?: Date,
-): Promise<string | null> {
-  const token = newToken('csy');
-  const { ip, userAgent } = clientInfo(req);
-  await ctx.db
-    .insertInto('sessions')
-    .values({
-      id: uuidv7(),
-      user_id: userId,
-      token_hash: hashToken(token),
-      kind: client,
-      device_name: deviceName?.slice(0, 80) ?? null,
-      platform: platformFrom(userAgent),
-      ip,
-      user_agent: userAgent?.slice(0, 300) ?? null,
-      expires_at: new Date(
-        Math.min(
-          ctx.now().getTime() + ctx.config.SESSION_DAYS * 86_400_000,
-          endsAt?.getTime() ?? Number.POSITIVE_INFINITY,
-        ),
-      ),
-    })
-    .execute();
-  if (client === 'web') {
-    setSessionCookie(reply, ctx, token);
-    return null;
-  }
-  return token;
-}
-
-/**
- * Confirming the password while signed in: few tries, so a session someone took can't find the
- * password it'd take to keep the account (a new password, new recovery codes).
- */
-function passwordTry(ctx: AppContext, userId: string): void {
-  ctx.limiter.hit(`password-try:${userId}`, ctx.config.isTest ? 1000 : 10, 600_000);
 }
 
 /**

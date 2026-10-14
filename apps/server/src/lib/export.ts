@@ -64,6 +64,7 @@ export async function buildExport(ctx: AppContext, me: string, now: Date) {
     invitedByOrg,
     identities,
     recoveryCodes,
+    passkeys,
     relationships,
     events,
     policies,
@@ -133,6 +134,13 @@ export async function buildExport(ctx: AppContext, me: string, now: Date) {
       ])
       .where('user_id', '=', me)
       .executeTakeFirstOrThrow(),
+    // Their passkeys (R36): what each is called and when it was used, never its key.
+    db
+      .selectFrom('passkeys')
+      .select(['name', 'backed_up', 'created_at', 'last_used_at'])
+      .where('user_id', '=', me)
+      .orderBy('created_at')
+      .execute(),
     db
       .selectFrom('relationships as r')
       .innerJoin('users as u', 'u.id', 'r.subject_id')
@@ -924,6 +932,12 @@ export async function buildExport(ctx: AppContext, me: string, now: Date) {
       isDefault: i.is_default,
     })),
     recoveryCodes: { left: recoveryCodes.left, madeAt: iso(recoveryCodes.made_at) },
+    passkeys: passkeys.map((p) => ({
+      name: p.name,
+      synced: p.backed_up,
+      addedAt: p.created_at.toISOString(),
+      lastUsedAt: iso(p.last_used_at),
+    })),
     relationships: relationships.map((r) => ({
       person: { displayName: r.subject_name, handle: r.subject_handle },
       ...relationshipView(r),

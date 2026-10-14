@@ -246,7 +246,12 @@ with its reason, so it isn't proposed again without new facts.
   fingerprint, a security key) on web, iOS and Android becomes the first way in; a password is
   optional once a passkey exists, and recovery codes stay (R24). It waits for `cai.me` because a
   passkey belongs to the domain it was made on: one made on today's address would stop working
-  after the move. Profiles, contacts and history are not encrypted with a key from a seed phrase
+  after the move. Built on the web once `cai.me` was the address (2026-10-14): added after the
+  password, a discoverable credential so nothing is typed, the relying party read from
+  `PUBLIC_URL`, removed with every other way in by a recovery. Phones follow with the store
+  builds (the associated domain), and only then is the password made optional, so nobody is
+  left with a way in that works on one device alone. Profiles, contacts and history are not
+  encrypted with a key from a seed phrase
   ("self-sovereign identity"): a lost phrase would lose the whole account, and search, requests,
   safety and relationships need the server to read what they work on. End-to-end encryption
   stays R18's choice, made per conversation, with its cost said plainly; making it the only kind

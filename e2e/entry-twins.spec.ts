@@ -19,6 +19,7 @@ const SCREENS: Record<string, string[]> = {
     'Email or handle',
     'Password',
     'Sign in',
+    'Sign in with a passkey',
     'Forgot your password?',
     'New here?',
   ],

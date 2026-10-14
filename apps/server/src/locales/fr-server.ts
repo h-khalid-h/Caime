@@ -1246,4 +1246,14 @@ export const frServer: Catalog = {
   '{name} is coming: {title}': '{name} vient : {title}',
   '{name} can’t come: {title}': '{name} ne peut pas venir : {title}',
   '{name} might come: {title}': '{name} viendra peut-être : {title}',
+  // Passkeys (R36).
+  'That took too long. Try your passkey again.':
+    'Cela a pris trop de temps. Réessayez votre clé d’accès.',
+  'That passkey doesn’t open a Caime account.': 'Cette clé d’accès n’ouvre aucun compte Caime.',
+  'This account has as many passkeys as it can keep. Remove one first.':
+    'Ce compte a autant de clés d’accès qu’il peut en garder. Supprimez-en une d’abord.',
+  'That passkey couldn’t be checked, so it wasn’t added. Try again.':
+    'Cette clé d’accès n’a pas pu être vérifiée, elle n’a donc pas été ajoutée. Réessayez.',
+  'That passkey is already on an account.': 'Cette clé d’accès est déjà sur un compte.',
+  'That passkey': 'Cette clé d’accès',
 };

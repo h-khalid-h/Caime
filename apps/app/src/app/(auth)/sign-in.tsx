@@ -6,6 +6,7 @@ import { ApiError } from '@/api/client';
 import { endpoints } from '@/api/endpoints';
 import { AuthLayout } from '@/features/auth/AuthLayout';
 import { deviceInfo } from '@/features/auth/device';
+import { isWeb } from '@/lib/config';
 import { useSession } from '@/state/session';
 import { Button } from '@/ui/Button';
 import { Pressable } from '@/ui/Pressable';
@@ -41,6 +42,22 @@ export default function SignIn() {
           ? tr('Too many tries. Wait a few minutes and try again.')
           : (err as Error).message,
       );
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  // A passkey (R36), on the web: nothing typed, the browser asks which one. Its code loads on press.
+  const withPasskey = async () => {
+    setBusy(true);
+    setError(null);
+    try {
+      const { signInWithPasskey } = await import('@/features/auth/passkeys');
+      const res = await signInWithPasskey(deviceInfo());
+      await useSession.getState().signedIn(res);
+    } catch (err) {
+      const { passkeyProblem } = await import('@/features/auth/passkeys');
+      setError(passkeyProblem(err));
     } finally {
       setBusy(false);
     }
@@ -97,6 +114,17 @@ export default function SignIn() {
         onPress={submit}
         testID="signin-submit"
       />
+      {isWeb ? (
+        <Button
+          label={tr('Sign in with a passkey')}
+          variant="secondary"
+          size="lg"
+          block
+          disabled={busy}
+          onPress={withPasskey}
+          testID="signin-passkey"
+        />
+      ) : null}
       <View style={{ alignItems: 'center', gap: 4 }}>
         <Pressable
           accessibilityRole="link"

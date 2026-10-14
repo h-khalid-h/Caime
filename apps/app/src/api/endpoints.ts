@@ -100,6 +100,9 @@ import type {
   OrgsResponse,
   OrgUpdateResponse,
   OrgUpdatesView,
+  PasskeyCeremonyResponse,
+  PasskeyResponse,
+  PasskeysResponse,
   PeopleSearchResponse,
   PersonalTokenCreatedResponse,
   PersonalTokensResponse,
@@ -222,6 +225,20 @@ export const endpoints = {
   /** New recovery codes in place of the old, once the password says it's them. */
   newRecoveryCodes: (password: string) =>
     api.post<RecoveryCodesResponse>('/auth/recovery-codes', { password }),
+  /** Passkeys (R36): adding one starts with the password; signing in with one needs nothing typed. */
+  passkeys: () => api.get<PasskeysResponse>('/me/passkeys'),
+  startPasskey: (password: string) =>
+    api.post<PasskeyCeremonyResponse>('/auth/passkeys/start', { password }),
+  addPasskey: (body: { challengeId: string; credential: Record<string, unknown> }) =>
+    api.post<PasskeyResponse>('/auth/passkeys', body),
+  removePasskey: (id: string) => api.del<OkResponse>(`/me/passkeys/${encodeURIComponent(id)}`),
+  passkeySignInOptions: () => api.post<PasskeyCeremonyResponse>('/auth/passkeys/signin/options'),
+  passkeySignIn: (body: {
+    challengeId: string;
+    credential: Record<string, unknown>;
+    client: 'web' | 'native';
+    deviceName?: string;
+  }) => api.post<AuthResponse>('/auth/passkeys/signin', body),
   /** A forgotten password (R48): a link to the address, the same answer either way. */
   requestReset: (email: string) => api.post<OkResponse>('/auth/reset', { email }),
   confirmReset: (body: { token: string; newPassword: string; client: 'web' | 'native' }) =>

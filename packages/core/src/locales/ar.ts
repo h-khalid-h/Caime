@@ -4320,4 +4320,37 @@ export const ar: Catalog = {
       other:
         'يبقى تصديرها متاحًا لك {n} يوم بعد إغلاقها، في الإعدادات · الأمان. ثم يُحذف ما كان لها وحدها، ويحتفظ عملاؤها بمحادثاتهم.',
     },
+  // Passkeys (R36).
+  'Sign in with a passkey': 'تسجيل الدخول بمفتاح مرور',
+  'Passkey added. Next time, sign in with it.': {
+    toWoman: 'أُضيف مفتاح المرور. سجّلي الدخول به في المرة القادمة.',
+    toMan: 'أُضيف مفتاح المرور. سجّل الدخول به في المرة القادمة.',
+    other: 'أُضيف مفتاح المرور. سجّل الدخول به في المرة القادمة.',
+  },
+  'Passkey removed': 'أُزيل مفتاح المرور',
+  'Added {added}, last used {used}': 'أُضيف {added}، وآخر استخدام {used}',
+  'Added {added}, not used yet': 'أُضيف {added}، ولم يُستخدم بعد',
+  Passkeys: 'مفاتيح المرور',
+  'A passkey signs you in with your face, your fingerprint or your device’s screen lock, with nothing to type. It stays on your devices; Caime keeps only its public half.':
+    'يُدخلك مفتاح المرور بوجهك أو ببصمتك أو بقفل شاشة جهازك، دون كتابة شيء. يبقى على أجهزتك، ولا يحتفظ Caime إلا بنصفه العام.',
+  Passkey: 'مفتاح مرور',
+  'Add a passkey': 'إضافة مفتاح مرور',
+  'Open Caime on the web to add one': {
+    toWoman: 'افتحي Caime على الويب لإضافة واحد',
+    toMan: 'افتح Caime على الويب لإضافة واحد',
+    other: 'افتح Caime على الويب لإضافة واحد',
+  },
+  'Your password first; then your browser asks where to keep the passkey.':
+    'كلمة المرور أولًا، ثم يسألك متصفحك أين يحفظ مفتاح المرور.',
+  Continue: 'متابعة',
+  'Remove this passkey?': 'إزالة مفتاح المرور هذا؟',
+  '{name} stops signing you in. Your password and other passkeys still do.':
+    'لن يُدخلك {name} بعد الآن. تبقى كلمة المرور ومفاتيح المرور الأخرى.',
+  'This device already has a passkey for your account.': 'على هذا الجهاز مفتاح مرور لحسابك بالفعل.',
+  'This browser can’t use passkeys here.': 'لا يستطيع هذا المتصفح استخدام مفاتيح المرور هنا.',
+  'Something went wrong. Try again.': {
+    toWoman: 'حدث خطأ ما. حاولي مرة أخرى.',
+    toMan: 'حدث خطأ ما. حاول مرة أخرى.',
+    other: 'حدث خطأ ما. حاول مرة أخرى.',
+  },
 };

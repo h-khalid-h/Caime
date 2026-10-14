@@ -1191,4 +1191,14 @@ export const turkishServer: Catalog = {
   '{name} is coming: {title}': '{name} geliyor: {title}',
   '{name} can’t come: {title}': '{name} gelemiyor: {title}',
   '{name} might come: {title}': '{name} gelebilir: {title}',
+  // Passkeys (R36).
+  'That took too long. Try your passkey again.':
+    'Bu çok uzun sürdü. Geçiş anahtarınızı yeniden deneyin.',
+  'That passkey doesn’t open a Caime account.': 'Bu geçiş anahtarı hiçbir Caime hesabını açmıyor.',
+  'This account has as many passkeys as it can keep. Remove one first.':
+    'Bu hesapta tutabileceği kadar geçiş anahtarı var. Önce birini kaldırın.',
+  'That passkey couldn’t be checked, so it wasn’t added. Try again.':
+    'Bu geçiş anahtarı doğrulanamadı, bu yüzden eklenmedi. Yeniden deneyin.',
+  'That passkey is already on an account.': 'Bu geçiş anahtarı zaten bir hesapta.',
+  'That passkey': 'Bu geçiş anahtarı',
 };

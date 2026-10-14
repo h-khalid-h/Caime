@@ -12,6 +12,7 @@ import { useState } from 'react';
 import { View } from 'react-native';
 import { endpoints } from '@/api/endpoints';
 import { qk } from '@/api/keys';
+import { Passkeys } from '@/features/account/Passkeys';
 import { PrivateDevices, RecoveryKey } from '@/features/e2ee/parts';
 import { saveOrgExport } from '@/features/orgs/orgExport';
 import { Group, SettingsPage } from '@/features/settings/SettingsPage';
@@ -188,6 +189,7 @@ export default function Security() {
           <Button label={tr('Change password')} onPress={changePassword} loading={busy} />
         </View>
       </Group>
+      <Passkeys />
       <Group
         title={tr('Recovery codes')}
         footer={tr(

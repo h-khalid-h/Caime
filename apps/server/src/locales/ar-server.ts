@@ -1218,4 +1218,14 @@ export const arServer: Catalog = {
   '{name} is coming: {title}': '{name}: حضور مؤكَّد في {title}',
   '{name} can’t come: {title}': '{name}: اعتذار عن {title}',
   '{name} might come: {title}': '{name}: حضور محتمل في {title}',
+  // Passkeys (R36).
+  'That took too long. Try your passkey again.':
+    'استغرق ذلك وقتًا طويلًا. جرّب مفتاح المرور مرة أخرى.',
+  'That passkey doesn’t open a Caime account.': 'لا يفتح مفتاح المرور هذا أي حساب في Caime.',
+  'This account has as many passkeys as it can keep. Remove one first.':
+    'في هذا الحساب أقصى عدد من مفاتيح المرور. أزل واحدًا أولًا.',
+  'That passkey couldn’t be checked, so it wasn’t added. Try again.':
+    'تعذّر التحقق من مفتاح المرور، فلم يُضف. حاول مرة أخرى.',
+  'That passkey is already on an account.': 'مفتاح المرور هذا مضاف إلى حساب بالفعل.',
+  'That passkey': 'مفتاح المرور هذا',
 };

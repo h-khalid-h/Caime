@@ -127,6 +127,29 @@ export interface PasswordResetsTable {
   created_at: Generated<Date>;
 }
 
+/** A passkey (R36): a WebAuthn credential's public half, by the id its authenticator gave it. */
+export interface PasskeysTable {
+  id: string;
+  user_id: string;
+  public_key: Buffer;
+  counter: ColumnType<string, string | number | undefined, string | number>;
+  transports: Defaulted<string[]>;
+  /** Synced by the person's password manager to their other devices (WebAuthn's BS flag). */
+  backed_up: Defaulted<boolean>;
+  name: string | null;
+  created_at: Generated<Date>;
+  last_used_at: NullableTimestamp;
+}
+
+/** A passkey ceremony's challenge, for one use within a few minutes. */
+export interface PasskeyChallengesTable {
+  id: string;
+  user_id: string | null;
+  purpose: 'register' | 'signin';
+  challenge: string;
+  expires_at: Date;
+}
+
 export interface RecoveryCodesTable {
   id: string;
   user_id: string;
@@ -1146,6 +1169,8 @@ export interface Database {
   identities: IdentitiesTable;
   sessions: SessionsTable;
   recovery_codes: RecoveryCodesTable;
+  passkeys: PasskeysTable;
+  passkey_challenges: PasskeyChallengesTable;
   email_codes: EmailCodesTable;
   password_resets: PasswordResetsTable;
   connections: ConnectionsTable;

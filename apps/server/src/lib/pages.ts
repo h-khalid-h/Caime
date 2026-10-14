@@ -185,8 +185,13 @@ them on; and, for private conversations, its public keys.</li>
 <li><strong>What you let act for you.</strong> Access tokens and apps you make, apps you let act
 for you, and your calendar&rsquo;s address, with when each was last used. Their tokens and secrets
 are kept only as hashes.</li>
+<li><strong>Passkeys.</strong> For each passkey you add: its public key, the browser it was made in,
+whether your password manager keeps it on your other devices, and when it was last used. Its private
+key, and the face, fingerprint or screen lock that unlocks it, never leave your device. A recovery
+code or a reset link removes your passkeys with every other way in.</li>
 <li><strong>Security records.</strong> When you sign up, sign in, sign out, sign out a device,
-change your password, make new recovery codes or recover your account, Caime records the time,
+change your password, add or remove a passkey, make new recovery codes or recover your account,
+Caime records the time,
 the network address it came from and the browser or device. A sign-in that fails is recorded the
 same way, with the email or @handle that was typed. Other changes, such as approving a device for
 private conversations, making an access token, letting an app in or downloading your data, are
@@ -391,7 +396,8 @@ organization&rsquo;s apps get what you write to it.</li>
 </ul>
 
 <h2>Security</h2>
-<p>Passwords are kept as salted scrypt hashes. Sign-in sessions, recovery codes, access tokens,
+<p>Passwords are kept as salted scrypt hashes, and passkeys as their public keys alone, for
+the domain Caime is on. Sign-in sessions, recovery codes, access tokens,
 your calendar&rsquo;s address, and apps&rsquo; tokens, codes and secrets are kept only as hashes;
 the exception is an organization&rsquo;s webhook secret, which Caime keeps so it can sign what it
 sends. Caime is served over HTTPS, so what passes between your device and Caime is encrypted in
@@ -674,8 +680,8 @@ day you turn 18.</li>
 
 <h2>Your account</h2>
 <ul>
-<li>You &rarr; Security shows where you&rsquo;re signed in, changes your password, makes new
-recovery codes and deletes your account. Download your data there on the web; the phone apps send
+<li>You &rarr; Security shows where you&rsquo;re signed in, changes your password, adds and
+removes passkeys, makes new recovery codes and deletes your account. Download your data there on the web; the phone apps send
 you to the web for it.</li>
 <li>Forgot your password? On the sign-in screen, tap Forgot your password? and use one of your
 recovery codes to set a new one.</li>

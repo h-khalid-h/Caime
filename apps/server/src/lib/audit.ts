@@ -38,6 +38,8 @@ export type AuditAction =
   | 'admin.access_ended'
   | 'admin.reset_sent'
   | 'auth.recovery_codes_regenerated'
+  | 'auth.passkey_added'
+  | 'auth.passkey_removed'
   | 'session.revoked'
   | 'account.exported'
   | 'account.deleted'

@@ -27,11 +27,12 @@ import { releaseHandle } from '../lib/handles';
 import { participantsOf } from '../lib/messages';
 import { revokeGrantsOf } from '../lib/oauth';
 import { handOverOrgs } from '../lib/orgs';
+import { clearSessionCookie } from '../lib/session-cookie';
 import { handOverSpaces } from '../lib/spaces';
 import { storageFor } from '../lib/storage';
 import { endFollowsOf } from '../lib/updates';
 import { parse } from '../lib/validate';
-import { clearSessionCookie, requireAuth } from '../plugins/auth';
+import { requireAuth } from '../plugins/auth';
 
 export async function accountRoutes(app: FastifyInstance, ctx: AppContext) {
   const storage = storageFor(ctx.config);

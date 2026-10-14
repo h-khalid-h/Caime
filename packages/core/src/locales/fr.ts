@@ -3859,4 +3859,28 @@ export const fr: Catalog = {
       other:
         'Son export vous reste ouvert {n} jours après sa fermeture, dans Réglages · Sécurité. Ensuite, ce qui n’appartenait qu’à elle est supprimé, et ses clients gardent leurs conversations.',
     },
+  // Passkeys (R36).
+  'Sign in with a passkey': 'Se connecter avec une clé d’accès',
+  'Passkey added. Next time, sign in with it.':
+    'Clé d’accès ajoutée. La prochaine fois, connectez-vous avec.',
+  'Passkey removed': 'Clé d’accès supprimée',
+  'Added {added}, last used {used}': 'Ajoutée {added}, utilisée pour la dernière fois {used}',
+  'Added {added}, not used yet': 'Ajoutée {added}, pas encore utilisée',
+  Passkeys: 'Clés d’accès',
+  'A passkey signs you in with your face, your fingerprint or your device’s screen lock, with nothing to type. It stays on your devices; Caime keeps only its public half.':
+    'Une clé d’accès vous connecte avec votre visage, votre empreinte ou le verrouillage de l’écran de votre appareil, sans rien taper. Elle reste sur vos appareils ; Caime n’en garde que la moitié publique.',
+  Passkey: 'Clé d’accès',
+  'Add a passkey': 'Ajouter une clé d’accès',
+  'Open Caime on the web to add one': 'Ouvrez Caime sur le web pour en ajouter une',
+  'Your password first; then your browser asks where to keep the passkey.':
+    'D’abord votre mot de passe ; puis votre navigateur vous demande où garder la clé d’accès.',
+  Continue: 'Continuer',
+  'Remove this passkey?': 'Supprimer cette clé d’accès ?',
+  '{name} stops signing you in. Your password and other passkeys still do.':
+    '{name} ne vous connectera plus. Votre mot de passe et vos autres clés d’accès, si.',
+  'This device already has a passkey for your account.':
+    'Cet appareil a déjà une clé d’accès pour votre compte.',
+  'This browser can’t use passkeys here.':
+    'Ce navigateur ne peut pas utiliser de clés d’accès ici.',
+  'Something went wrong. Try again.': 'Une erreur s’est produite. Réessayez.',
 };

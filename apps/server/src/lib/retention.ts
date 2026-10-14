@@ -116,6 +116,12 @@ export async function sweepRecords(ctx: AppContext): Promise<void> {
       where coalesce(revoked_at, expires_at) < ${before(KEPT_DAYS.spentInvites)}
       limit ${LOT} for update skip locked)`,
   );
+  // A passkey ceremony nobody finished (R36): its challenge is no use after its few minutes.
+  await inLots(
+    ctx,
+    sql`delete from passkey_challenges where id in (select id from passkey_challenges
+      where expires_at < ${ctx.now()} limit ${LOT})`,
+  );
   await inLots(
     ctx,
     sql`delete from released_handles where handle in (select handle from released_handles

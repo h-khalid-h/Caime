@@ -535,8 +535,21 @@ super-app brainstorm the product takes, and what it leaves with the reason, is R
       the operator moves someone from is held from everyone for a year, whoever had it included,
       keeping only the handle and the days (`released_handles`, forgotten once it's over); an
       organization keeps its handle for good; the operator can give a held one back
-- [ ] Passkeys (R36): WebAuthn sign-in on web, iOS and Android, password optional once a passkey
-      exists, recovery codes kept. After the domain, since a passkey is bound to it
+- [x] Passkeys on the web (R36): added in Settings · Security after the password, named by the
+      browser that made them, listed with when each was last used and removed after asking; the
+      sign-in screen signs in with one, nothing typed (a discoverable credential), the same
+      session, cookie and audit a password's sign-in makes (its server-painted twin shows the
+      button, waiting for the app as its form does).
+      Bound to `PUBLIC_URL`'s name (`cai.me`), checked by `@simplewebauthn/server` (pinned), the
+      challenge single-use for five minutes in the database; never for another origin, another
+      account's handle, a spent or stale challenge, a suspended, deleted or bot account; a
+      recovery or the operator's "end all access" removes them; in the export without the key
+      (`passkeys.test.ts` with a software authenticator, `e2e/passkeys.spec.ts` with Chromium's
+      virtual one)
+- [ ] Passkeys on phones (R36): the store builds carry Caime's associated domain
+      (`apple-app-site-association`, `assetlinks.json`) and a native passkey module; ⛔ store
+      builds. Then the password optional once a passkey exists (recovery codes kept), and the
+      browser's autofill offering the passkey in the sign-in field (conditional mediation)
 - [x] Several steps, one approval (R37): more than one suggestion in a conversation is offered
       as one card listing each step, done in order on one tap (`POST /suggestions/accept`, each
       step on its own, one that fails not stopping the rest), each task, reminder or waiting item
@@ -1506,7 +1519,7 @@ The six-slice review's plan, in its order; a block is ticked when its tests and 
       group, `pickers.test.ts` failing on a screen's own, the E2E on the rows that now open their
       choice. Not done: `CurrencyField` keeps its chip trigger beside the amount (it already
       opens the finding sheet); `Segmented` for an insights period stays a tablist (a view).
-- [ ] Docs drift (BRAND.md friends, type rows, radii, five places; CLAUDE.md's page sizes, axe
+- [x] Docs drift (BRAND.md friends, type rows, radii, five places; CLAUDE.md's page sizes, axe
       languages, auth kicker, setup list; `previewUrl` in `API_ROUTES` and API.md).
 
 ## Log
@@ -2894,3 +2907,15 @@ The six-slice review's plan, in its order; a block is ticked when its tests and 
   the privacy page and the terms say so, read from `KEPT_DAYS.closedOrgExport`
   (`dpa-draft.test.ts`, `about.test.ts`). Files nothing points at are found by one query with an
   index for each reference (`dropUnusedFiles`; migration 0077 adds the two missing ones).
+- 2026-10-14 — R36, passkeys on the web: Settings · Security adds one after the password (named
+  by the browser that made it, listed with its last use, removed after asking) and the sign-in
+  screen signs in with one, nothing typed. WebAuthn by `@simplewebauthn/server` 13.3.3, pinned (a
+  pnpm override keeps one `@peculiar/asn1-schema`: with two, every signature was refused), the
+  relying party from `PUBLIC_URL`, each challenge one use within five minutes in the database
+  (migration 0078); a recovery, the emailed reset and the operator's "end all access" remove
+  them. Every way in makes its session through the one `createSession`, now in
+  `lib/sessions.ts` with the cookie in `lib/session-cookie.ts`, so the new module imports no
+  other. `passkeys.test.ts` runs a software authenticator (a phishing origin, another account's
+  handle, a replayed and a stale challenge, a suspended account, the limit, the sweep),
+  `e2e/passkeys.spec.ts` Chromium's virtual one. Startup chunk 449.1 KB of 450. Phones wait for
+  the store builds (⛔), and the password stays required until they have them.

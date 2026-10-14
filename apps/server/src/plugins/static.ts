@@ -20,8 +20,8 @@ import {
   robotsTxt,
   sitemapXml,
 } from '../lib/public-pages';
+import { SESSION_COOKIE } from '../lib/session-cookie';
 import { siteLanguage } from '../lib/site-pages';
-import { SESSION_COOKIE } from './auth';
 
 export function webCsp(publicUrl: string, inlineScriptHash: string | null = null): string {
   const ws = publicUrl.replace(/^http/, 'ws');

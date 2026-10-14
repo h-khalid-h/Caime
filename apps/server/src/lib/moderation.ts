@@ -214,9 +214,10 @@ export async function reportViews(
 }
 
 /**
- * Every way into an account closed: sessions, personal tokens, app grants, a calendar's
- * address. What a recovery code or a reset link does before signing the person in afresh, and
- * what a suspension does for good (R49). `who` is the request behind it, or null for the operator.
+ * Every way into an account closed: sessions, passkeys (R36: one someone else added would open it
+ * again), personal tokens, app grants, a calendar's address. What a recovery code or a reset
+ * link does before signing the person in afresh, and what a suspension does for good (R49).
+ * `who` is the request behind it, or null for the operator.
  */
 export async function endAllAccess(
   ctx: AppContext,
@@ -224,6 +225,18 @@ export async function endAllAccess(
   who: { ip: string | null; userAgent: string | null } | null,
 ): Promise<void> {
   await endSessions(ctx, { userId });
+  const passkeys = await ctx.db
+    .deleteFrom('passkeys')
+    .where('user_id', '=', userId)
+    .executeTakeFirst();
+  if (Number(passkeys.numDeletedRows) > 0)
+    await audit(ctx.db, {
+      actorId: who ? userId : null,
+      action: 'auth.passkey_removed',
+      target: userId,
+      ...(who ?? {}),
+      metadata: { all: Number(passkeys.numDeletedRows) },
+    });
   await ctx.db
     .updateTable('personal_tokens')
     .set({ revoked_at: ctx.now() })

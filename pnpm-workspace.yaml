@@ -19,6 +19,10 @@ overrides:
   source-map-js: ^1.2.2
   # GHSA-pqg4-j6r4-53mv: shell-quote < 1.11.0 (react-native's devtools): the fixed minor, same API.
   shell-quote: ^1.11.0
+  # One copy, not an advisory: ASN.1 schemas register in the copy that defines them, so a second
+  # copy can't find them, and @simplewebauthn/server's EC signatures failed to parse (R36). The
+  # 2.8.0 pin is @postalsys/vmc's, in mailauth's BIMI, which the server never loads.
+  '@peculiar/asn1-schema': ^2.11.0
 
 # Advisories without a fixed release yet, both in Expo's command line (the web export and the dev
 # server): neither package is in the server image (`pnpm deploy --prod` of the server alone) or

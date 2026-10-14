@@ -83,6 +83,7 @@ import { oauthDiscovery, oauthRoutes } from './modules/oauth';
 import { openApiRoutes } from './modules/openapi';
 import { orgRoutes } from './modules/orgs';
 import { pageRoutes, sitePageAt } from './modules/pages';
+import { passkeyRoutes } from './modules/passkeys';
 import { peopleRoutes } from './modules/people';
 import { policyRoutes } from './modules/policies';
 import { realtimeRoutes } from './modules/realtime';
@@ -289,6 +290,7 @@ export async function buildApp(config: Config, options: BuildOptions = {}): Prom
     async (v1) => {
       await healthRoutes(v1, ctx);
       await authRoutes(v1, ctx);
+      await passkeyRoutes(v1, ctx);
       await accountRoutes(v1, ctx);
       await meRoutes(v1, ctx);
       await peopleRoutes(v1, ctx);

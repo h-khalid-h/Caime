@@ -5,7 +5,7 @@
  */
 import { isApiToken, isPersonToken, OAUTH_ACCESS_PREFIX } from '@caime/core';
 import { tr } from '@caime/core/i18n';
-import type { FastifyInstance, FastifyReply, FastifyRequest } from 'fastify';
+import type { FastifyInstance, FastifyRequest } from 'fastify';
 import type { AppContext, Auth } from '../context';
 import { PERSON_ROUTES, type PersonGrant, resolvePersonalToken } from '../lib/access';
 import { API_ROUTES, resolveApiToken } from '../lib/apps';
@@ -14,8 +14,8 @@ import { AppError, unauthorized } from '../lib/errors';
 import { GUEST_ROUTES, routeKey } from '../lib/guest-routes';
 import { adoptReader } from '../lib/i18n';
 import { resolveOAuthAccess } from '../lib/oauth';
+import { SESSION_COOKIE } from '../lib/session-cookie';
 
-export const SESSION_COOKIE = 'caime_session';
 const UNSAFE = new Set(['POST', 'PUT', 'PATCH', 'DELETE']);
 const TOUCH_EVERY_MS = 5 * 60_000;
 
@@ -180,26 +180,4 @@ async function authenticatePerson(ctx: AppContext, req: FastifyRequest, token: s
 export function requireAuth(req: FastifyRequest): Auth {
   if (!req.auth) throw unauthorized();
   return req.auth;
-}
-
-export function setSessionCookie(reply: FastifyReply, ctx: AppContext, token: string): void {
-  reply.setCookie(SESSION_COOKIE, token, {
-    httpOnly: true,
-    secure: ctx.config.secureCookies,
-    sameSite: 'lax',
-    path: '/',
-    maxAge: ctx.config.SESSION_DAYS * 86_400,
-  });
-}
-
-export function clearSessionCookie(reply: FastifyReply, ctx: AppContext): void {
-  reply.clearCookie(SESSION_COOKIE, {
-    path: '/',
-    secure: ctx.config.secureCookies,
-    sameSite: 'lax',
-    httpOnly: true,
-  });
-  // However it ended (signed out here or elsewhere, the account deleted), the photos and files
-  // this browser kept go too; the app's own files are the worker's.
-  reply.header('clear-site-data', '"cache"');
 }

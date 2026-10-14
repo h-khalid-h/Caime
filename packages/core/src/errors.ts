@@ -65,6 +65,7 @@ export const ERROR_CODES = [
   'org_blocked',
   'org_closed',
   'org_open',
+  'passkey_failed',
   'paying',
   'plan_included',
   'plan_limit',

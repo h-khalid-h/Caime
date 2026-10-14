@@ -493,6 +493,7 @@ function entryBody(screen: EntryScreen): string {
       <div class="fields">${field(tr('Email or handle'))}${field(tr('Password'), 'password')}</div>
       <button type="button" disabled>${esc(tr('Sign in'))}</button>
     </form>
+    <button type="button" class="quiet" disabled>${esc(tr('Sign in with a passkey'))}</button>
     <div class="links">
       <p class="small"><a href="/forgot">${esc(tr('Forgot your password?'))}</a></p>
       <p class="small">${esc(tr('New here?'))} <a href="/sign-up">${esc(tr('Create an account'))}</a></p>
@@ -1120,7 +1121,7 @@ body{margin:0}
 .pub-entry .field input{box-sizing:border-box;height:${px.height('field')};border:1px solid var(--border);border-radius:${px.radius('md')};background:var(--surface);padding:0 14px;${type('message')};color:var(--text)}
 .pub-entry button,.pub-entry .cta a{display:block;width:100%;box-sizing:border-box;height:${px.height('lg')};text-align:center;border:0;border-radius:${px.radius('pill')};background:var(--primary);color:var(--on-primary);${type('label')};line-height:${px.height('lg')};margin:0;padding:0 20px;text-decoration:none}
 .pub-entry .cta{display:flex;flex-direction:column;gap:12px}
-.pub-entry .cta a.quiet{background:var(--surface-muted);color:var(--text)}
+.pub-entry .cta a.quiet,.pub-entry button.quiet{background:var(--surface-muted);color:var(--text)}
 .pub-entry .note{${type('caption')};color:var(--text-tertiary);text-align:center;margin-top:4px}
 .pub-entry .small{${type('body')};color:var(--text-secondary);text-align:center;padding:8px}.pub-entry .small a{${type('bodyStrong')};color:var(--link);text-decoration:none}
 .pub-entry .terms{${type('caption')};color:var(--text-secondary);text-align:center}.pub-entry .terms a{${type('captionStrong')};color:var(--link);text-decoration:none}
