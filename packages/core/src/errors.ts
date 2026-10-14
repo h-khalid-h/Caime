@@ -76,6 +76,7 @@ export const ERROR_CODES = [
   'saved_full',
   'sign_in',
   'slot_taken',
+  'sold_out',
   'suspended',
   'token_route',
   'token_scope',

@@ -4,7 +4,7 @@
  * opens the card's form with it chosen. A public one shows its link to share. Loaded when
  * opened, by the organization's and the person's screens alike.
  */
-import { type BookingItem, isOrdered, itemPhotoPath } from '@caime/core/booking';
+import { type BookingItem, isOrdered, itemPhotoPath, stockLine } from '@caime/core/booking';
 import type { CatalogCollection } from '@caime/core/catalog';
 import { formatAmount } from '@caime/core/format';
 import { tr } from '@caime/core/i18n';
@@ -29,6 +29,8 @@ function line(item: BookingItem, locale: string): string {
         ? tr('Per day')
         : null,
     item.price ? formatAmount(item.price.value, item.price.currency, locale) : tr('Free'),
+    // Sold out, or a few left (R60).
+    stockLine(item.stock),
   ]
     .filter(Boolean)
     .join(' · ');
@@ -138,9 +140,10 @@ export function ItemSheet({
       footer={
         onTake ? (
           <Button
-            label={ordered ? tr('Order') : tr('Book')}
+            label={ordered ? (item.stock === 0 ? tr('Sold out') : tr('Order')) : tr('Book')}
             icon={ordered ? ShoppingBag : CalendarCheck}
             block
+            disabled={item.stock === 0}
             onPress={() => onTake(item)}
             testID="item-take"
           />

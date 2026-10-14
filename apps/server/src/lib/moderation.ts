@@ -11,6 +11,7 @@ import { participantsOf } from './messages';
 import { forgetNotificationsOf, notify, tellForgotten } from './notify';
 import { revokeGrantsOf } from './oauth';
 import { endSessions } from './sessions';
+import { giveBackStock, tellStockChanged } from './stock';
 import { retellUpdate, tellUpdatesChanged } from './updates';
 
 /**
@@ -28,7 +29,11 @@ export async function removeForEveryone(
   m: Pick<Message, 'id' | 'conversation_id' | 'pinned_at'>,
   actorId: string | null,
 ): Promise<void> {
-  const { savers, forgotten } = await ctx.db.transaction().execute(async (trx) => {
+  const { savers, forgotten, restocked } = await ctx.db.transaction().execute(async (trx) => {
+    // An open order taken down gives back what it took (R60): the card's lock first, as its
+    // cancel takes them, so the two wait on each other in one order and only one gives it back.
+    await trx.selectFrom('messages').select('id').where('id', '=', m.id).forUpdate().execute();
+    const restocked = await giveBackStock(trx, [m.id], ctx.now());
     await trx
       .updateTable('messages')
       .set({
@@ -62,8 +67,9 @@ export async function removeForEveryone(
       .execute();
     await recordEvent(trx, 'message.deleted', actorId, { messageId: m.id });
     // Nobody keeps its words in a notification either.
-    return { savers, forgotten: await forgetNotificationsOf(trx, [m.id]) };
+    return { savers, forgotten: await forgetNotificationsOf(trx, [m.id]), restocked };
   });
+  await tellStockChanged(ctx, restocked);
   // Nor does an organization's app, if the message was in one of its customer conversations.
   const business = await ctx.db
     .selectFrom('business_threads')

@@ -7,7 +7,7 @@
  * consultant set up the same thing the same way.
  */
 
-import type { BookingResponse } from '@caime/core/api';
+import type { BookingResponse, BookingSaveBody } from '@caime/core/api';
 import type {
   BookingAudience,
   BookingHours,
@@ -22,6 +22,8 @@ import {
   describeHours,
   itemPhotoPath,
   SLOT_MINUTES,
+  STOCK_MAX,
+  stockLine,
 } from '@caime/core/booking';
 import {
   type CatalogCollection,
@@ -118,8 +120,12 @@ export function itemLine(item: BookingItem, locale: string, host: BookingHostInf
         ? tr('Per day')
         : tr('By the piece'),
     item.price ? formatAmount(item.price.value, item.price.currency, locale) : tr('Free'),
+    // Its count as its host reads it (R60): "12 in stock".
+    stockLine(item.stock, true),
     audienceLabel(item.audience, host.kind),
-  ].join(' · ');
+  ]
+    .filter(Boolean)
+    .join(' · ');
 }
 
 export function audienceLabel(audience: BookingItem['audience'], kind: 'org' | 'person'): string {
@@ -140,10 +146,19 @@ export function BookingSetup({
   /** What the host offers: hours, catalog, orders (R60) and collections (R61), as saved. */
   offer: BookingResponse;
   /** Saves it whole; throws with a message the person can read. */
-  save: (next: BookingResponse) => Promise<void>;
+  save: (next: BookingSaveBody) => Promise<void>;
   testID?: string;
 }) {
   const { booking: hours, items, ordering, collections } = offer;
+  // The offer as saved, each count left out but one changed here (R60): an order may have taken
+  // one since this was read, and a count sent back as it was read would undo it.
+  const send = (next: BookingResponse, change?: { id: string; stock: number | null }) =>
+    save({
+      ...next,
+      items: next.items.map(({ stock: _read, ...i }) =>
+        change && i.id === change.id ? { ...i, stock: change.stock } : i,
+      ),
+    });
   const { locale } = useUserClock();
   // Hours are the host's: an organization's own zone, else the person's (R76).
   const timeZone = host.timeZone;
@@ -171,7 +186,7 @@ export function BookingSetup({
     setBusy(true);
     setError(null);
     try {
-      await save({ ...offer, ordering: next });
+      await send({ ...offer, ordering: next });
       setOrdersOpen(false);
       toast(next ? tr('Orders are on') : tr('Orders are off'));
     } catch (e) {
@@ -198,7 +213,7 @@ export function BookingSetup({
     setBusy(true);
     setError(null);
     try {
-      await save({ ...offer, booking: next });
+      await send({ ...offer, booking: next });
       setOpen(false);
       toast(
         next
@@ -224,14 +239,14 @@ export function BookingSetup({
       horizonDays: horizon,
     });
   };
-  const saveItems = async (next: BookingItem[]) => {
-    await save({ ...offer, items: next });
+  const saveItems = async (next: BookingItem[], change?: { id: string; stock: number | null }) => {
+    await send({ ...offer, items: next }, change);
   };
   // Ways to be paid (R62): set here with the rest; none left turns them off.
   const [way, setWay] = useState<PaymentMethod | null>(null);
   const methods = offer.payments?.methods ?? [];
   const savePayments = async (next: PaymentMethod[]) => {
-    await save({
+    await send({
       ...offer,
       payments: next.length ? { methods: next, note: offer.payments?.note ?? null } : null,
     });
@@ -240,7 +255,7 @@ export function BookingSetup({
   const [shelf, setShelf] = useState<CatalogCollection | null>(null);
   const saveCollections = async (next: CatalogCollection[]) => {
     const kept = new Set(next.map((c) => c.id));
-    await save({
+    await send({
       ...offer,
       collections: next,
       items: items.map((i) =>
@@ -588,11 +603,11 @@ export function BookingSetup({
           collections={collections}
           isNew={!items.some((i) => i.id === editing.id)}
           onClose={() => setEditing(null)}
-          onSave={async (item) => {
+          onSave={async (item, stock) => {
             const next = items.some((i) => i.id === item.id)
               ? items.map((i) => (i.id === item.id ? item : i))
               : [...items, item];
-            await saveItems(next);
+            await saveItems(next, stock === undefined ? undefined : { id: item.id, stock });
             setEditing(null);
             toast(tr('Saved'));
           }}
@@ -1062,7 +1077,8 @@ function ItemEditor({
   collections: CatalogCollection[];
   isNew: boolean;
   onClose: () => void;
-  onSave: (item: BookingItem) => Promise<void>;
+  /** The item, and its count where it was changed (R60): a number, null for not counted. */
+  onSave: (item: BookingItem, stock?: number | null) => Promise<void>;
   onRemove: () => Promise<void>;
   testID: string;
 }) {
@@ -1077,6 +1093,9 @@ function ItemEditor({
   const [audience, setAudience] = useState<BookingItem['audience']>(item.audience);
   const [providers, setProviders] = useState<string[] | null>(item.providers);
   const [askTopic, setAskTopic] = useState(item.askTopic);
+  // How many are left (R60), for something ordered by the piece; counted or not.
+  const [counted, setCounted] = useState(item.stock !== undefined);
+  const [left, setLeft] = useState(item.stock !== undefined ? String(item.stock) : '');
   // Its page (R61): a line about it, its address, its collection.
   const [description, setDescription] = useState(item.description ?? '');
   const [slug, setSlug] = useState(item.slug);
@@ -1119,29 +1138,48 @@ function ItemEditor({
       return setError(tr('Enter a price, or make it free.'));
     const code = (currency ?? '').trim().toUpperCase();
     if (paid && !/^[A-Z]{3}$/.test(code)) return setError(tr('Use a currency code like EGP.'));
+    const count = Number(left.trim());
+    const counting = unit === 'each' && counted;
+    if (counting && (!/^\d+$/.test(left.trim()) || count > STOCK_MAX))
+      return setError(tr('Say how many are left, or stop counting.'));
+    // Sent only when it changed (an order may have taken one since this was opened).
+    const stock = counting
+      ? count === item.stock
+        ? undefined
+        : count
+      : item.stock !== undefined
+        ? null
+        : undefined;
     setBusy('save');
     setError(null);
     try {
-      await onSave({
-        id: item.id,
-        name: trimmed,
-        price: paid && value !== null ? { value, currency: code } : null,
-        unit,
-        minutes: unit === 'minutes' ? (minutes ?? 30) : null,
-        capacity,
-        maxQuantity: Math.min(
-          maxQuantity,
-          unit === 'minutes' ? capacity : unit === 'days' ? BOOKING_DAYS_MAX : BOOKING_CAPACITY_MAX,
-        ),
-        audience,
-        // Something ordered names nobody to do it.
-        providers: host.kind === 'org' && unit !== 'each' && providers?.length ? providers : null,
-        askTopic,
-        slug: slug.trim() || slugify(trimmed),
-        description: description.trim() || null,
-        collectionId,
-        photoFileId,
-      });
+      await onSave(
+        {
+          id: item.id,
+          name: trimmed,
+          price: paid && value !== null ? { value, currency: code } : null,
+          unit,
+          minutes: unit === 'minutes' ? (minutes ?? 30) : null,
+          capacity,
+          maxQuantity: Math.min(
+            maxQuantity,
+            unit === 'minutes'
+              ? capacity
+              : unit === 'days'
+                ? BOOKING_DAYS_MAX
+                : BOOKING_CAPACITY_MAX,
+          ),
+          audience,
+          // Something ordered names nobody to do it.
+          providers: host.kind === 'org' && unit !== 'each' && providers?.length ? providers : null,
+          askTopic,
+          slug: slug.trim() || slugify(trimmed),
+          description: description.trim() || null,
+          collectionId,
+          photoFileId,
+        },
+        stock,
+      );
     } catch (e) {
       setError((e as Error).message);
     } finally {
@@ -1356,6 +1394,30 @@ function ItemEditor({
           onChange={setMaxQuantity}
           testID={`${testID}-max`}
         />
+        {unit === 'each' ? (
+          <View style={{ gap: 6 }}>
+            <SwitchRow
+              label={tr('Count how many are left')}
+              detail={tr(
+                'Each order takes from it and a cancelled one puts its back; at none, it reads sold out.',
+              )}
+              value={counted}
+              onChange={setCounted}
+              testID={`${testID}-counted`}
+            />
+            {counted ? (
+              <TextField
+                placeholder="20"
+                value={left}
+                onChangeText={(v) => setLeft(v.replace(/[^0-9]/g, ''))}
+                keyboardType="number-pad"
+                inputMode="numeric"
+                accessibilityLabel={tr('How many are left')}
+                testID={`${testID}-stock`}
+              />
+            ) : null}
+          </View>
+        ) : null}
         <AudiencePicker
           host={host}
           audience={audience}

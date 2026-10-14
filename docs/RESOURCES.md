@@ -97,6 +97,13 @@ AI agent's prompt grows by at most eight lines of slots over fourteen days, read
 with the same cached knowledge prefix, so a booking costs the model one short turn more than an
 answer; the card itself is sent by the server, not written by the model.
 
+Stock (R60) costs a view that lists a catalog with something sold by the piece one indexed
+query for the host's counts (`stockFor`; none without such an item), an order three statements
+inside the transaction it already runs (the counts read under their row locks, one update for
+every line, one insert of what it took), and a give-back one statement (a cancel's or a
+removal's, or two more CTEs in the erasure's own). A count that changes tells the host's devices
+once (`booking.changed`, two small queries to find whose), never a poll.
+
 ## Cai and the Caime Friends (R67, R71, R72)
 
 Nothing runs until someone writes to one. A message to one queues one job (deduplicated by

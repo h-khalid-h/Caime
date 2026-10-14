@@ -1179,8 +1179,26 @@ listed there with its owner.
       Public pages list items sold by the piece with "Order from", profiles and the
       organization's page offer Order, `?order` links land on the form. `booking.test.ts` (core
       and server), `e2e/bookings.spec.ts`.
-- [ ] Later layers of R60: stock that runs out, an Orders view for the team, the AI agent taking
-      an order, options on an item (sizes, extras).
+- [x] R60, stock that runs out: an item sold by the piece may be counted (`item_stock`,
+      migration 0079, apart from the catalog so an order takes one row's count under its lock and
+      a save that leaves a count out keeps it: the setup sends a count only when it was changed
+      there, `BookingSaveBody`). An order takes what it asks inside its message's transaction
+      (`takeStock`, rows locked in item order; fewer left refuses it `409 sold_out` with the
+      count, in every language) and keeps what it took in `order_stock` while it's open; a cancel
+      gives it back, ready or shipped spends it, and an open order taken down for everyone or
+      erased (a customer's erasure, the disappearing sweep) gives it back in the same statement
+      (`stockBackCtes`), once, since the ledger row's delete is what gives it. The host reads every
+      count; anyone else only once it limits an order (`withStock`: fewer than one order may
+      take), so the host's setup reads "12 in stock", the picker caps at what limits the customer
+      and reads "Only one left", "Sold out" disables Order on the
+      item's sheet, and the public page says it with schema.org `OutOfStock` or
+      `LimitedAvailability` and no Order link. A count changed by an order or a give-back
+      publishes `booking.changed` to the host's devices (M15); exports carry the counts and a
+      closed organization's go with its catalog. `stock.test.ts` (eight cases, the race for the
+      last one included), core `booking.test.ts`, `e2e/bookings.spec.ts` (the last one ordered,
+      sold out on the sheet, the visitor's page and the team's setup).
+- [ ] Later layers of R60: the AI agent taking an order, options on an item (sizes, extras). (The
+      team's Orders view shipped with the Business inbox's views, `OrgOrders.tsx`.)
 - [x] R61: collections and a page for each thing offered. `CatalogCollection` (core
       `catalog.ts`: addresses with `slugify`/`withSlugs`/`bySlug`, `RESERVED_SLUGS`) on
       `users.collections` and `organizations.collections` (migration 0055); an item gains its
@@ -2977,3 +2995,10 @@ The six-slice review's plan, in its order; a block is ticked when its tests and 
   light `assist` module). Opening Cai's chat on a conversation was weighed and declined: a
   summary kept in Cai's chat would outlive the words it came from. The terms' list of AI
   suggestions names the answer; SECURITY's AI line and RESOURCES' AI table say what it reads.
+- 2026-10-14 — R60, stock that runs out: counts apart from the catalog (`item_stock`), taken
+  under row locks as an order is written and refused with the count when fewer are left, held
+  in `order_stock` while the order is open and given back once on a cancel, a removal or an
+  erasure; the host reads every count, a customer only one that limits their order; "Sold out"
+  and "Only one left" on the picker, the item's sheet, the public page and its schema.org offer,
+  in all four languages. The setup sends a count only where it changed, so an order since it
+  was opened isn't undone.

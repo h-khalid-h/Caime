@@ -1026,6 +1026,27 @@ export interface WebhookDeliveriesTable {
   delivered_at: NullableTimestamp;
 }
 
+/**
+ * How many of an item sold by the piece its host has left (R60): an organization's or a
+ * person's, one of the two; `host_id` is whichever it is. No row, not counted.
+ */
+export interface ItemStockTable {
+  org_id: string | null;
+  user_id: string | null;
+  host_id: ColumnType<string, never, never>;
+  item_id: string;
+  remaining: number;
+  updated_at: Generated<Date>;
+}
+
+/** What an open order took of its host's stock (R60), until it's on its way or given back. */
+export interface OrderStockTable {
+  message_id: string;
+  host_id: string;
+  item_id: string;
+  quantity: number;
+}
+
 /** An organization's own payment provider account (R65). */
 export interface OrgCheckoutTable {
   org_id: string;
@@ -1221,6 +1242,8 @@ export interface Database {
   space_members: SpaceMembersTable;
   organizations: OrganizationsTable;
   org_checkout: OrgCheckoutTable;
+  item_stock: ItemStockTable;
+  order_stock: OrderStockTable;
   checkout_states: CheckoutStatesTable;
   org_members: OrgMembersTable;
   org_reclaims: OrgReclaimsTable;

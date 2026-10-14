@@ -656,8 +656,13 @@ with its reason, so it isn't proposed again without new facts.
   shipped → collected or delivered. A price stays a record, never a payment (R38); the card is
   adults-only as every card about money is (R29). Public items sold by the piece are listed on
   the public pages with "Order from", the profile and the organization's page offer Order, and
-  an `?order` link lands on the card's form. Later layers: stock that runs out, an Orders view
-  for the team beside Bookings, the AI agent taking an order, options on an item (sizes, extras).
+  an `?order` link lands on the card's form. Stock that runs out (built 2026-10-14): a host may
+  count what it sells by the piece; the count is "how many are left to order", so an order takes
+  from it as it's placed, a cancelled order (or one taken down or erased before it's on its way)
+  puts its share back, and ready or shipped spends it. The host sees every count; a customer
+  sees one only once it limits their order (fewer left than one order may take), which is when
+  "Only 2 left" helps them and the rest of a shop's stock stays its own. Later layers: the AI
+  agent taking an order, options on an item (sizes, extras); the team's Orders view is built.
 - **R61 — Collections, and a page for each thing offered.** The owner's next idea
   (2026-10-05): an organization keeps several collections (bookings, products, services), and a
   public item or collection has its own address (`/o/<handle>/<item>`) so search and answer

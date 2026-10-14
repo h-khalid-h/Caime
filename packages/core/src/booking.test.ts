@@ -11,8 +11,10 @@ import {
   isBooked,
   isOrdered,
   openSlots,
+  orderableMax,
   orderSummary,
   placeOrder,
+  stockLine,
 } from './booking';
 import type { Sphere } from './taxonomy';
 
@@ -301,6 +303,28 @@ describe('orders from the catalog (R60)', () => {
     expect(placed.order.total).toEqual({ value: 306.5, currency: 'EGP' });
     expect(placed.order.fulfilment).toBe('pickup');
     expect(orderSummary(placed.order)).toBe('3 × shawarma, 1 × fries, 3 × water');
+  });
+
+  it('takes no more than is left (R60): a count limits an order, none is sold out', () => {
+    const counted = [item('fries', { maxQuantity: 5, stock: 2 }), item('shawarma', { stock: 0 })];
+    expect(orderableMax(counted[0] as BookingItem)).toBe(2);
+    expect(orderableMax(item('fries', { maxQuantity: 5 }))).toBe(5);
+    expect(orderableMax(item('fries', { maxQuantity: 3, stock: 40 }))).toBe(3);
+    expect(placeOrder(settings, counted, { lines: [{ itemId: 'fries', quantity: 2 }] }).ok).toBe(
+      true,
+    );
+    expect(
+      placeOrder(settings, counted, { lines: [{ itemId: 'fries', quantity: 3 }] }),
+    ).toMatchObject({ ok: false, reason: 'stock', max: 2, name: 'fries' });
+    expect(
+      placeOrder(settings, counted, { lines: [{ itemId: 'shawarma', quantity: 1 }] }),
+    ).toMatchObject({ ok: false, reason: 'stock', max: 0 });
+    expect(stockLine(undefined)).toBeNull();
+    expect(stockLine(0)).toBe('Sold out');
+    expect(stockLine(1)).toBe('Only one left');
+    expect(stockLine(3)).toBe('Only 3 left');
+    expect(stockLine(12, true)).toBe('12 in stock');
+    expect(stockLine(0, true)).toBe('Sold out');
   });
 
   it('refuses what isn’t ordered by the piece, too many, a way not offered, or ordering off', () => {

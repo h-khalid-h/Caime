@@ -2728,6 +2728,14 @@ export interface BookingResponse {
   /** How it's paid (R62), or null: its own, never shown to anyone else as it is. */
   payments: PaymentSettings | null;
 }
+/**
+ * What a host saves (`PUT /orgs/:id/booking`, `/me/booking`): the offer, each item's count only
+ * where it was changed (R60): a number sets it, null stops counting, left out keeps it, since an
+ * order may have taken one since the offer was read.
+ */
+export interface BookingSaveBody extends Omit<BookingResponse, 'items'> {
+  items: Array<Omit<BookingItem, 'stock'> & { stock?: number | null }>;
+}
 export interface OrgUpdateResponse {
   update: OrgUpdateView;
 }

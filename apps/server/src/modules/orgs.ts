@@ -93,6 +93,7 @@ import { doorPath } from '../lib/public-pages';
 import { viewerRelation } from '../lib/relations';
 import { forgetSitemaps } from '../lib/sitemap-cache';
 import { addToSpace, orgSpaceViews, removeFromSpace } from '../lib/space-members';
+import { itemsWithStock } from '../lib/stock';
 import { suggestFromPlace, withdrawPlaceOffers } from '../lib/suggest';
 import { escapeLike } from '../lib/text';
 import { endFollowsOf } from '../lib/updates';
@@ -213,16 +214,22 @@ async function orgView(ctx: AppContext, viewerId: string, org: Organization): Pr
     // Everyone sees it answers first, before they write (PRD §75).
     agent: agent && ctx.ai ? { name: agent.name } : null,
     booking: bookingOf(org),
-    // The team sees the whole catalog; anyone else what they may book (R58).
-    bookingItems: seat
-      ? itemsOf(org)
-      : withoutProviders(
-          itemsFor(orgHost(org), {
-            isConnected: true,
-            spheres: [],
-            adult: await adult(ctx, [viewerId]),
-          }),
-        ),
+    // The team sees the whole catalog, every count with it; anyone else what they may book, and
+    // a count only once it limits an order (R58, R60).
+    bookingItems: await itemsWithStock(
+      ctx.db,
+      org.id,
+      seat
+        ? itemsOf(org)
+        : withoutProviders(
+            itemsFor(orgHost(org), {
+              isConnected: true,
+              spheres: [],
+              adult: await adult(ctx, [viewerId]),
+            }),
+          ),
+      Boolean(seat),
+    ),
     ordering: orderingOf(org),
     // Its shelves (R61): every one for the team; for anyone else, those they may see.
     collections: seat

@@ -24,6 +24,7 @@ import {
   BOOKING_DAYS_MAX,
   BOOKING_ITEMS_MAX,
   ORDER_LINES_MAX,
+  STOCK_MAX,
 } from './booking';
 import { BUSINESS_VIEWS } from './business';
 import { CALL_KINDS } from './calls';
@@ -1481,8 +1482,14 @@ export const BookingItemBody = z
     collectionId: CatalogId.nullable().default(null),
     // R63: an image the host uploaded; checked as theirs when it's first set.
     photoFileId: z.string().uuid().nullable().default(null),
+    // R60: how many are left, for something ordered by the piece; null stops counting, and left
+    // out the count stays as it is (an order may have taken one since the form was opened).
+    stock: z.number().int().min(0).max(STOCK_MAX).nullable().optional(),
   })
   .strict()
+  .refine((i) => i.unit === 'each' || i.stock == null, {
+    message: msg('Only something ordered by the piece is counted.'),
+  })
   .refine((i) => (i.unit === 'minutes' ? i.minutes !== null : i.minutes === null), {
     message: msg('An appointment has a length in minutes; a stay has none.'),
   })

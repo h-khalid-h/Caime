@@ -59,6 +59,7 @@ import { badRequest, forbidden, notFound } from '../lib/errors';
 import { orgById, orgSeat } from '../lib/orgs';
 import { viewerRelation } from '../lib/relations';
 import { forgetSitemaps } from '../lib/sitemap-cache';
+import { itemsWithStock, saveStock } from '../lib/stock';
 import { taskViews } from '../lib/tasks';
 import { cardsAhead, dueCards } from '../lib/upcoming';
 import { minorOf } from '../lib/users';
@@ -241,24 +242,29 @@ export async function calendarRoutes(app: FastifyInstance, ctx: AppContext) {
     );
     assertPaymentsFit(orgHost(org), body.payments, true);
     await assertItemPhotos(ctx, auth.userId, kept.items, catalogOf(org).items);
-    await ctx.db
-      .updateTable('organizations')
-      .set({
-        booking: body.booking ? JSON.stringify(body.booking) : null,
-        booking_items: JSON.stringify(kept.items),
-        collections: JSON.stringify(kept.collections),
-        // Left out, ordering stays as it was (R60).
-        ...(body.ordering !== undefined
-          ? { ordering: body.ordering ? JSON.stringify(body.ordering) : null }
-          : {}),
-        // Ways to be paid (R62): left out, they stay as they were.
-        ...(body.payments !== undefined
-          ? { payments: body.payments ? JSON.stringify(body.payments) : null }
-          : {}),
-        updated_at: ctx.now(),
-      })
-      .where('id', '=', id)
-      .execute();
+    // The catalog and its counts (R60) as one save.
+    const items = await ctx.db.transaction().execute(async (trx) => {
+      await trx
+        .updateTable('organizations')
+        .set({
+          booking: body.booking ? JSON.stringify(body.booking) : null,
+          booking_items: JSON.stringify(kept.items),
+          collections: JSON.stringify(kept.collections),
+          // Left out, ordering stays as it was (R60).
+          ...(body.ordering !== undefined
+            ? { ordering: body.ordering ? JSON.stringify(body.ordering) : null }
+            : {}),
+          // Ways to be paid (R62): left out, they stay as they were.
+          ...(body.payments !== undefined
+            ? { payments: body.payments ? JSON.stringify(body.payments) : null }
+            : {}),
+          updated_at: ctx.now(),
+        })
+        .where('id', '=', id)
+        .execute();
+      await saveStock(trx, { kind: 'org', id }, body.items, ctx.now());
+      return itemsWithStock(trx, id, kept.items, true);
+    });
     forgetSitemaps();
     // The team's other devices and screens show the offer as saved (M15).
     await ctx.bus.publish(
@@ -275,6 +281,7 @@ export async function calendarRoutes(app: FastifyInstance, ctx: AppContext) {
     return {
       booking: body.booking,
       ...kept,
+      items,
       ordering: body.ordering !== undefined ? body.ordering : orderingOf(org),
       payments: body.payments !== undefined ? body.payments : paymentsOf(org),
     };
@@ -369,9 +376,11 @@ export async function calendarRoutes(app: FastifyInstance, ctx: AppContext) {
       .select(['booking', 'booking_items', 'ordering', 'collections', 'payments'])
       .where('id', '=', auth.userId)
       .executeTakeFirstOrThrow();
+    const catalog = catalogOf(me);
     return {
       booking: (me.booking as BookingResponse['booking']) ?? null,
-      ...catalogOf(me),
+      ...catalog,
+      items: await itemsWithStock(ctx.db, auth.userId, catalog.items, true),
       ordering: orderingOf(me),
       payments: paymentsOf(me),
     };
@@ -398,23 +407,28 @@ export async function calendarRoutes(app: FastifyInstance, ctx: AppContext) {
     assertItemsFit(personHost(me), kept.items, new Set(), !minorOf(me, ctx.now()));
     assertPaymentsFit(personHost(me), body.payments, !minorOf(me, ctx.now()));
     await assertItemPhotos(ctx, auth.userId, kept.items, catalogOf(me).items);
-    await ctx.db
-      .updateTable('users')
-      .set({
-        booking: body.booking ? JSON.stringify(body.booking) : null,
-        booking_items: JSON.stringify(kept.items),
-        collections: JSON.stringify(kept.collections),
-        ...(body.ordering !== undefined
-          ? { ordering: body.ordering ? JSON.stringify(body.ordering) : null }
-          : {}),
-        // Ways to be paid (R62): left out, they stay as they were.
-        ...(body.payments !== undefined
-          ? { payments: body.payments ? JSON.stringify(body.payments) : null }
-          : {}),
-        updated_at: ctx.now(),
-      })
-      .where('id', '=', auth.userId)
-      .execute();
+    // The catalog and its counts (R60) as one save.
+    const items = await ctx.db.transaction().execute(async (trx) => {
+      await trx
+        .updateTable('users')
+        .set({
+          booking: body.booking ? JSON.stringify(body.booking) : null,
+          booking_items: JSON.stringify(kept.items),
+          collections: JSON.stringify(kept.collections),
+          ...(body.ordering !== undefined
+            ? { ordering: body.ordering ? JSON.stringify(body.ordering) : null }
+            : {}),
+          // Ways to be paid (R62): left out, they stay as they were.
+          ...(body.payments !== undefined
+            ? { payments: body.payments ? JSON.stringify(body.payments) : null }
+            : {}),
+          updated_at: ctx.now(),
+        })
+        .where('id', '=', auth.userId)
+        .execute();
+      await saveStock(trx, { kind: 'person', id: auth.userId }, body.items, ctx.now());
+      return itemsWithStock(trx, auth.userId, kept.items, true);
+    });
     forgetSitemaps();
     await ctx.bus.publish([auth.userId], { type: 'booking.changed', data: { orgId: null } });
     await audit(ctx.db, {
@@ -426,6 +440,7 @@ export async function calendarRoutes(app: FastifyInstance, ctx: AppContext) {
     return {
       booking: body.booking,
       ...kept,
+      items,
       ordering: body.ordering !== undefined ? body.ordering : orderingOf(me),
       payments: body.payments !== undefined ? body.payments : paymentsOf(me),
     };

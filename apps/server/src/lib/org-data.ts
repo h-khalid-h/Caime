@@ -24,12 +24,13 @@ import { dropUnusedFiles, removeStored } from './files';
 import { insertSystemMessage, messageViews, participantsOf } from './messages';
 import { forgetNotificationsOf, tellForgotten } from './notify';
 import { KEPT_DAYS } from './retention';
+import { itemsWithStock, stockBackCtes, tellStockChanged } from './stock';
 import { storageFor } from './storage';
 
 type Q = Kysely<Database> | Transaction<Database>;
 
 export interface Erased {
-  what: 'saved' | 'gone';
+  what: 'saved' | 'gone' | 'stock';
   id: string;
   conversation_id: string | null;
 }
@@ -37,9 +38,10 @@ export interface Erased {
 /**
  * Erase the messages `due` selects (a query of their ids): body, payload, entities, sealed
  * envelope and pin go; so do their assets, files, album photos, what anyone saved of them, and
- * the words of what Caime offered from them. Returns who had saved something ('saved') and each
- * message gone ('gone'); notifications showing their words are forgotten by the caller
- * (`forgetNotificationsOf`), which needs the ids.
+ * the words of what Caime offered from them; an open order among them gives back the stock it
+ * took (R60). Returns who had saved something ('saved'), each message gone ('gone') and each
+ * host given stock back ('stock'); notifications showing their words are forgotten by the
+ * caller (`forgetNotificationsOf`), which needs the ids.
  */
 export async function eraseMessagesWhere(
   trx: Q,
@@ -70,9 +72,12 @@ export async function eraseMessagesWhere(
       update mail_messages set subject = null, from_address = '', in_reply_to = null,
         references_ids = '{}', delivery_detail = null
       where message_id in (select id from gone)
-    )
+    ),
+    ${stockBackCtes(sql`select id from gone`, now)}
     select distinct 'saved' as what, user_id::text as id, null as conversation_id
     from saved_gone
+    union all
+    select distinct 'stock', host_id::text, null from stock_taken
     union all
     select 'gone', id::text, conversation_id::text from gone`.execute(trx);
   return done.rows;
@@ -124,6 +129,10 @@ export async function eraseBusinessConversation(
     rows.filter((r) => r.what === 'saved').map((r) => r.id),
   );
   await tellForgotten(ctx, forgotten);
+  await tellStockChanged(
+    ctx,
+    rows.filter((r) => r.what === 'stock').map((r) => r.id),
+  );
   const gone = rows.filter((r) => r.what === 'gone');
   // The organization's apps drop what they kept of it too.
   await emitWebhook(ctx, orgId, 'conversation.erased', { conversationId, erased: gone.length });
@@ -411,7 +420,8 @@ export async function buildOrgExport(
     })),
     offer: {
       hours: bookingOf(org),
-      items: catalogOf(org).items,
+      // With how many are left of what it counts (R60).
+      items: await itemsWithStock(ctx.db, org.id, catalogOf(org).items, true),
       collections: catalogOf(org).collections,
       ordering: orderingOf(org),
       payments: paymentsOf(org),
@@ -543,6 +553,8 @@ export async function clearClosedOrg(ctx: AppContext, orgId: string): Promise<bo
       })
       .where('id', '=', orgId)
       .execute();
+    // Its counts went with its catalog (R60).
+    await trx.deleteFrom('item_stock').where('org_id', '=', orgId).execute();
     const ids = [org.avatar_file_id, ...photos].filter((id): id is string => Boolean(id));
     return { handle: org.handle, files: await dropUnusedFiles(trx, [...new Set(ids)]) };
   });

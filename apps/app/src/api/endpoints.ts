@@ -20,6 +20,7 @@ import type {
   AuthResponse,
   AutomationsResponse,
   BookingResponse,
+  BookingSaveBody,
   BriefView,
   BusinessInboxView,
   BusinessSummaryView,
@@ -707,11 +708,11 @@ export const endpoints = {
     api.get<OrgCalendarView>(`/orgs/${orgId}/calendar${q({ from, to })}`),
 
   /** What a host offers (R58, R60, R61), saved whole: its hours, catalog, orders, collections. */
-  setOrgBooking: (orgId: string, offer: BookingResponse) =>
+  setOrgBooking: (orgId: string, offer: BookingSaveBody) =>
     api.put<BookingResponse>(`/orgs/${orgId}/booking`, offer),
   // Bookings for people too (R58): my hours and catalog, and anyone's open slots.
   myBooking: () => api.get<BookingResponse>('/me/booking'),
-  setMyBooking: (offer: BookingResponse) => api.put<BookingResponse>('/me/booking', offer),
+  setMyBooking: (offer: BookingSaveBody) => api.put<BookingResponse>('/me/booking', offer),
   slots: (host: BookingHostRef, from: string, to: string, item?: string, quantity?: number) =>
     api.get<SlotsView>(
       `/${host.kind === 'org' ? 'orgs' : 'people'}/${host.id}/slots${q({ from, to, item, quantity })}`,

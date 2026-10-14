@@ -410,7 +410,15 @@ These are rules, not preferences.
   (`KitForm`) finds the host as for appointments and shows `order-picker`; `isBooked` and
   `isOrdered` split the catalog everywhere (setup, profile `booking` vs `ordering`, the agent's
   catalog lines, public pages' Book and Order). `?order` links (`orderIn`) land on the form as
-  `?book` does.
+  `?book` does. Stock (`lib/stock.ts`) is `item_stock`, apart from the catalog: an item's
+  `stock` on a view is `withStock`'s (every count for the host, a count that limits an order for
+  anyone else), a save keeps a count it leaves out (the setup's `send` sends only one changed
+  there, `BookingSaveBody`), an order takes in `sendMessage`'s transaction (`takeStock`) and
+  holds it in `order_stock` while it's open; whatever ends an open order (a cancel in the move
+  route, `removeForEveryone`, `eraseMessagesWhere`) gives it back by deleting those rows
+  (`giveBackStock`, `stockBackCtes`), never by adding to a count by hand, and calls
+  `tellStockChanged` after. Anything new that lists a host's items for someone reads them through
+  `itemsWithStock`; anything new that ends an open order gives its stock back the same way.
 - Collections and item pages (R61): a host's `collections` (core `CatalogCollection`) group its
   one catalog; an item carries `slug`, `description` and `collectionId`, and is seen only where
   both its audience and its collection's allow (`bookableItems` with `collections`). Read a

@@ -1256,4 +1256,10 @@ export const frServer: Catalog = {
     'Cette clé d’accès n’a pas pu être vérifiée, elle n’a donc pas été ajoutée. Réessayez.',
   'That passkey is already on an account.': 'Cette clé d’accès est déjà sur un compte.',
   'That passkey': 'Cette clé d’accès',
+  // Stock that runs out (R60).
+  '{name}: only {n} left.': {
+    one: '{name} : plus qu’un en stock.',
+    other: '{name} : plus que {n} en stock.',
+  },
+  '{name} is sold out.': 'Plus de {name} en stock.',
 };

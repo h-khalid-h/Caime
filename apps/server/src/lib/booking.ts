@@ -38,6 +38,7 @@ import type { Organization, User } from '../db/schema';
 import { humanTeam } from './booking-team';
 import { orgBookings } from './calendar';
 import { AppError, badRequest, forbidden } from './errors';
+import { soldOut } from './stock';
 import { cardsAhead } from './upcoming';
 
 /** Whose hours and catalog: an organization's or a person's. */
@@ -145,6 +146,8 @@ export function orderFor(host: BookingHost, booker: Booker, ask: OrderAsk): Plac
   const allowed = itemsFor(host, booker);
   const placed = placeOrder(host.ordering, allowed, ask);
   if (placed.ok) return placed.order;
+  // Fewer left than asked (R60): how many, or none.
+  if (placed.reason === 'stock') throw soldOut(placed.name ?? '', placed.max ?? 0);
   const why = {
     off: () => tr('Orders aren’t taken here.'),
     item: () => tr('That isn’t something you can order here.'),
@@ -439,7 +442,8 @@ export function catalogFrom(
   const collections = body.collections ?? kept;
   const ids = new Set(collections.map((c) => c.id));
   return withSlugs(
-    body.items.map((i) => ({
+    // A count isn't the catalog's: it's kept apart (lib/stock.ts).
+    body.items.map(({ stock: _stock, ...i }) => ({
       ...i,
       collectionId: i.collectionId && ids.has(i.collectionId) ? i.collectionId : null,
     })),

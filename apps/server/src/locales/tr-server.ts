@@ -1201,4 +1201,10 @@ export const turkishServer: Catalog = {
     'Bu geçiş anahtarı doğrulanamadı, bu yüzden eklenmedi. Yeniden deneyin.',
   'That passkey is already on an account.': 'Bu geçiş anahtarı zaten bir hesapta.',
   'That passkey': 'Bu geçiş anahtarı',
+  // Stock that runs out (R60).
+  '{name}: only {n} left.': {
+    one: '{name}: yalnızca 1 tane kaldı.',
+    other: '{name}: yalnızca {n} tane kaldı.',
+  },
+  '{name} is sold out.': '{name} tükendi.',
 };

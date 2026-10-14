@@ -24,6 +24,7 @@ import {
   policyTargetFor,
 } from '../lib/relations';
 import { sweepRecords } from '../lib/retention';
+import { tellStockChanged } from '../lib/stock';
 
 /** How many due reminders or held notifications one pass of a sweep takes. */
 export const SWEEP_BATCH = 200;
@@ -261,6 +262,11 @@ export function registerWorkers(): void {
           done.filter((r) => r.what === 'saved').map((r) => r.id),
         );
         await tellForgotten(ctx, forgotten);
+        // An open order gone gave back its stock (R60): its host's screens count again.
+        await tellStockChanged(
+          ctx,
+          done.filter((r) => r.what === 'stock').map((r) => r.id),
+        );
         // The open apps in its conversation show it gone (a few hundred at most; more, as they
         // reload).
         const gone = done.filter((r) => r.what === 'gone');

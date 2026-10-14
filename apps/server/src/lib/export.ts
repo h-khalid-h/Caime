@@ -19,6 +19,7 @@ import { automationView, visibleSaved } from './automations';
 import { bookingOf, catalogOf, orderingOf, paymentsOf } from './booking';
 import { type CustomerMask, maskPayload, masksFor } from './business';
 import { relationshipView } from './relations';
+import { itemsWithStock } from './stock';
 import { meView } from './users';
 
 const iso = (d: Date | null | undefined) => (d ? d.toISOString() : null);
@@ -910,7 +911,11 @@ export async function buildExport(ctx: AppContext, me: string, now: Date) {
     account: {
       ...meView(user, now, ctx.config),
       // What they offer (R58–R62), as set: hours, catalog, collections, ordering, ways to be paid.
-      booking: { hours: bookingOf(user), items: catalogOf(user).items },
+      booking: {
+        hours: bookingOf(user),
+        // With how many are left of what they count (R60).
+        items: await itemsWithStock(ctx.db, user.id, catalogOf(user).items, true),
+      },
       collections: catalogOf(user).collections,
       ordering: orderingOf(user),
       payments: paymentsOf(user),

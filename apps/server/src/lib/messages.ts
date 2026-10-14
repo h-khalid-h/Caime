@@ -60,6 +60,7 @@ import { AppError, badRequest, forbidden, notFound } from './errors';
 import { recordEvent } from './events';
 import { cardStartAt, customCardFor } from './kits';
 import { isBlockedEitherWay, shareAConnection, viewerRelation } from './relations';
+import { hostWithStock, takeStock, tellStockChanged } from './stock';
 import { minorOf, privacyOf } from './users';
 import { parse } from './validate';
 
@@ -844,6 +845,8 @@ export async function sendMessage(
   // A booking from the catalog, checked again under the host's lock as the card is written.
   let slotAsk: { host: BookingHost; booker: Booker; ask: BookingAskInput; start: Date } | null =
     null;
+  // An order from the catalog takes its counted items' stock as the card is written (R60).
+  let orderTake: { host: BookingHost; order: PlacedOrder } | null = null;
   if (
     body.kind === 'kit' &&
     !opts.trusted &&
@@ -952,7 +955,9 @@ export async function sendMessage(
         if (booking.price) await assertAllAdults(tr('Paid bookings are for people over 18.'));
       }
       if (orderAsk) {
-        order = orderFor(found.host, found.booker, orderAsk);
+        // Checked against the counts now (a quick refusal), and taken under their locks below.
+        order = orderFor(await hostWithStock(ctx.db, found.host), found.booker, orderAsk);
+        orderTake = { host: found.host, order };
         // The card reads as any order does: its number, what was ordered, the total.
         card.fields.summary = orderSummary(order).slice(0, 200);
         if (order.total) card.fields.amount = order.total;
@@ -1043,6 +1048,7 @@ export async function sendMessage(
 
   const id = uuidv7();
   let message: Message;
+  let tookStock = false;
   try {
     message = await ctx.db.transaction().execute(async (trx) => {
       const bumped = await trx
@@ -1102,6 +1108,9 @@ export async function sendMessage(
         })
         .returning(MESSAGE_COLUMNS)
         .executeTakeFirstOrThrow();
+      // Its stock, under the counts' locks (R60): two orders for the last one leave one refused.
+      if (orderTake)
+        tookStock = await takeStock(trx, orderTake.host, id, orderTake.order, ctx.now());
       if (files.length) {
         await trx
           .insertInto('message_files')
@@ -1194,6 +1203,7 @@ export async function sendMessage(
     throw err;
   }
   ctx.metrics.messages.inc({ kind: body.kind });
+  if (tookStock && orderTake) await tellStockChanged(ctx, [orderTake.host.id]);
   // A business thread moves with each message: whose turn it is, and who has it (PRD §38).
   if (conversation.kind === 'business')
     await recordBusinessMessage(ctx, conversationId, senderId, message);

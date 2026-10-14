@@ -5,7 +5,7 @@
  * here touches a clock or a store. Times are the host's own, in its time zone; a slot is an
  * instant, so a booker anywhere sees it in theirs.
  */
-import { msg, tr } from './i18n';
+import { msg, tr, trn } from './i18n';
 import type { Sphere } from './taxonomy';
 import { addDays, weekOrder, zonedParts, zonedTimeToUtc } from './time';
 
@@ -21,6 +21,8 @@ export const BOOKING_ITEMS_MAX = 50;
 export const BOOKING_CAPACITY_MAX = 100;
 /** A stay of at most this many days, in one booking. */
 export const BOOKING_DAYS_MAX = 30;
+/** A count of stock (R60) is at most this. */
+export const STOCK_MAX = 100_000;
 
 export interface BookingDay {
   /** 0 is Sunday, as JavaScript counts. */
@@ -74,6 +76,27 @@ export interface PlacedOrder {
   fulfilment: 'pickup' | 'delivery' | null;
 }
 
+/**
+ * How many of an item one order may take (R60): its own most, or fewer when fewer are left.
+ * Zero is sold out.
+ */
+export function orderableMax(item: Pick<BookingItem, 'maxQuantity' | 'stock'>): number {
+  return item.stock === undefined ? item.maxQuantity : Math.min(item.maxQuantity, item.stock);
+}
+
+/**
+ * A count as its reader sees it (R60), or nothing where none is shown: "Sold out", and for a
+ * customer "Only 2 left" (they see a count only once it limits their order), for its host
+ * "12 in stock".
+ */
+export function stockLine(stock: number | undefined, forHost = false): string | null {
+  if (stock === undefined) return null;
+  if (stock === 0) return tr('Sold out');
+  return forHost
+    ? trn(stock, 'One in stock', '{n} in stock')
+    : trn(stock, 'Only one left', 'Only {n} left');
+}
+
 /** An order holds at most this many lines. */
 export const ORDER_LINES_MAX = 30;
 
@@ -92,7 +115,12 @@ export function placeOrder(
   ask: OrderAsk,
 ):
   | { ok: true; order: PlacedOrder }
-  | { ok: false; reason: 'off' | 'item' | 'quantity' | 'fulfilment' | 'empty'; max?: number } {
+  | {
+      ok: false;
+      reason: 'off' | 'item' | 'quantity' | 'stock' | 'fulfilment' | 'empty';
+      max?: number;
+      name?: string;
+    } {
   if (!settings) return { ok: false, reason: 'off' };
   const merged = new Map<string, number>();
   for (const l of ask.lines) merged.set(l.itemId, (merged.get(l.itemId) ?? 0) + l.quantity);
@@ -103,6 +131,9 @@ export function placeOrder(
     if (!item || !isOrdered(item)) return { ok: false, reason: 'item' };
     if (quantity < 1 || quantity > item.maxQuantity)
       return { ok: false, reason: 'quantity', max: item.maxQuantity };
+    // Fewer left than asked (R60): the reader hears how many, as the picker showed them.
+    if (quantity > orderableMax(item))
+      return { ok: false, reason: 'stock', max: orderableMax(item), name: item.name };
     lines.push({ itemId, name: item.name, quantity, price: bookingPrice(item, quantity) });
   }
   const fulfilment = ask.fulfilment ?? settings.fulfilment[0] ?? null;
@@ -160,6 +191,12 @@ export interface BookingItem {
   collectionId: string | null;
   /** Its photo (R63): an image the host uploaded, shown with it wherever it is. */
   photoFileId?: string | null;
+  /**
+   * How many are left of something sold by the piece (R60), kept apart from the catalog: its
+   * host reads the count, anyone else only once it's fewer than one order may take (0 is sold
+   * out). Left out when it isn't counted, or doesn't limit this reader.
+   */
+  stock?: number;
 }
 
 /**

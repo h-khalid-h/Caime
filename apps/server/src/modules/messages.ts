@@ -79,6 +79,7 @@ import {
 } from '../lib/messages';
 import { removeForEveryone } from '../lib/moderation';
 import { notify } from '../lib/notify';
+import { orderMoved, tellStockChanged } from '../lib/stock';
 import { parse } from '../lib/validate';
 import { requireAuth } from '../plugins/auth';
 
@@ -298,7 +299,7 @@ export async function messageRoutes(app: FastifyInstance, ctx: AppContext) {
     // Only if nobody moved it first, and only where it stands (merged into the card, so an app's
     // change to its fields at the same moment is kept): its row is locked while its history is
     // added to, from the row as it is, the last 50 moves kept.
-    const updated = await ctx.db.transaction().execute(async (trx) => {
+    const moved = await ctx.db.transaction().execute(async (trx) => {
       const row = await trx
         .selectFrom('messages')
         .select(['deleted_at', 'payload'])
@@ -308,7 +309,9 @@ export async function messageRoutes(app: FastifyInstance, ctx: AppContext) {
       const now = (row?.payload ?? {}) as typeof card;
       if (!row || row.deleted_at || now.state !== from) return null;
       const history = [...(now.history ?? []), { state: to, by: auth.userId, at: ctx.now() }];
-      return trx
+      // An order's stock (R60): given back if it's cancelled, spent once it's on its way.
+      const restocked = card.kit === 'order_status' ? await orderMoved(trx, id, to, ctx.now()) : [];
+      const after = await trx
         .updateTable('messages')
         .set({
           payload: sql`payload || ${JSON.stringify({ state: to, history: history.slice(-50) })}::jsonb`,
@@ -316,8 +319,11 @@ export async function messageRoutes(app: FastifyInstance, ctx: AppContext) {
         .where('id', '=', id)
         .returning(MESSAGE_COLUMNS)
         .executeTakeFirstOrThrow();
+      return { row: after, restocked };
     });
-    if (!updated) throw new AppError(409, 'conflict', tr('Someone just changed this card.'));
+    if (!moved) throw new AppError(409, 'conflict', tr('Someone just changed this card.'));
+    const updated = moved.row;
+    await tellStockChanged(ctx, moved.restocked);
     // Confirmed by the team (R58): a booking from the catalog with nobody named yet gets the free
     // member with the fewest that day; the customer never sees who (masked).
     const confirmed = await assignOnConfirm(updated, to, business?.orgId ?? null);

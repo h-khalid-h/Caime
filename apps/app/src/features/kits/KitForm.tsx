@@ -1,5 +1,13 @@
 import type { ConversationView, CustomKitOfferView } from '@caime/core/api';
-import { type BookingItem, grouped, isBooked, isOrdered, itemPhotoPath } from '@caime/core/booking';
+import {
+  type BookingItem,
+  grouped,
+  isBooked,
+  isOrdered,
+  itemPhotoPath,
+  orderableMax,
+  stockLine,
+} from '@caime/core/booking';
 import { prepareCustomFields } from '@caime/core/custom-kits';
 import { formatAmount, roundAmount } from '@caime/core/format';
 import { msg, tr } from '@caime/core/i18n';
@@ -298,15 +306,26 @@ export function KitForm({
       };
     return null;
   }, [catalog, ordering, conversation, orgQ.data, otherQ.data, mineQ.data, direct, me.id]);
+  // The host's counts read again (R60) after an order, sent or refused, so what's shown here
+  // and on its page is what's left.
+  const recount = () => {
+    if (!ordering || !host?.items.length) return;
+    if (host.ref.kind === 'org') void orgQ.refetch();
+    else if (host.ref.id === me.id) void mineQ.refetch();
+    else void otherQ.refetch();
+  };
   // What's in the order (R60): an item's id and how many; none to begin with.
   const [cart, setCart] = useState<Record<string, number>>({});
+  // How many of an item the order holds: never more than may be ordered now (R60: sold out is 0).
+  const inCart = (i: BookingItem) => Math.min(cart[i.id] ?? 0, orderableMax(i));
   const [way, setWay] = useState<'pickup' | 'delivery' | null>(null);
   const orderTotal = useMemo(() => {
     if (!host || !ordering) return null;
-    const priced = host.items.filter((i) => (cart[i.id] ?? 0) > 0 && i.price);
+    const held = (i: BookingItem) => Math.min(cart[i.id] ?? 0, orderableMax(i));
+    const priced = host.items.filter((i) => held(i) > 0 && i.price);
     const currencies = new Set(priced.map((i) => i.price?.currency));
     if (!priced.length || currencies.size !== 1) return null;
-    const value = priced.reduce((sum, i) => sum + (i.price?.value ?? 0) * (cart[i.id] ?? 0), 0);
+    const value = priced.reduce((sum, i) => sum + (i.price?.value ?? 0) * held(i), 0);
     return formatAmount(Math.round(value * 100) / 100, priced[0]?.price?.currency ?? null, locale);
   }, [host, ordering, cart, locale]);
   const [itemId, setItemId] = useState<string | null>(null);
@@ -477,9 +496,9 @@ export function KitForm({
         if (read.value !== undefined) fields[field.key] = read.value;
       }
       if (appointment && host?.items.length && !item) return setError(tr('Pick what it’s for.'));
-      const lines = Object.entries(cart)
-        .filter(([, n]) => n > 0)
-        .map(([itemId, quantity]) => ({ itemId, quantity }));
+      const lines = (host?.items ?? [])
+        .map((i) => ({ itemId: i.id, quantity: inCart(i) }))
+        .filter((l) => l.quantity > 0);
       if (picking && !lines.length) return setError(tr('Pick something to order.'));
       if (slots?.slots.length) {
         if (!slot) return setError('Pick a time.');
@@ -514,11 +533,14 @@ export function KitForm({
         useLiveShares
           .getState()
           .start(message.id, { conversationId: conversation.id, until: live.until });
+      recount();
       close();
     } catch (e) {
       setError((e as Error).message);
       // Taken meanwhile (R58): the open slots are asked again, so the next pick is a real one.
       if (slots) void slotsQ.refetch();
+      // Sold out meanwhile (R60): the counts are asked again, so the picker says what's left.
+      recount();
     } finally {
       setBusy(false);
     }
@@ -646,7 +668,7 @@ export function KitForm({
                   </Text>
                 ) : null,
                 ...g.items.map((i) => {
-                  const n = cart[i.id] ?? 0;
+                  const n = inCart(i);
                   return (
                     <View key={i.id} testID={`order-item-${i.id}`}>
                       <Stepper
@@ -669,16 +691,22 @@ export function KitForm({
                                 </Text>
                               ) : null}
                               <Text variant="caption" color="textTertiary">
-                                {i.price
-                                  ? formatAmount(i.price.value, i.price.currency, locale)
-                                  : tr('Free')}
+                                {[
+                                  i.price
+                                    ? formatAmount(i.price.value, i.price.currency, locale)
+                                    : tr('Free'),
+                                  // Sold out, or a few left (R60): at most that many.
+                                  stockLine(i.stock),
+                                ]
+                                  .filter(Boolean)
+                                  .join(' · ')}
                               </Text>
                             </View>
                           </>
                         }
                         value={n}
                         min={0}
-                        max={i.maxQuantity}
+                        max={orderableMax(i)}
                         onChange={(next) => setCart((c) => ({ ...c, [i.id]: next }))}
                         testID={`order-count-${i.id}`}
                       />

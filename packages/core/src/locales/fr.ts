@@ -3900,4 +3900,16 @@ export const fr: Catalog = {
   'This browser can’t use passkeys here.':
     'Ce navigateur ne peut pas utiliser de clés d’accès ici.',
   'Something went wrong. Try again.': 'Une erreur s’est produite. Réessayez.',
+  // Stock that runs out (R60).
+  'Sold out': 'Épuisé',
+  'Only {n} left': { one: 'Plus qu’un en stock', other: 'Plus que {n} en stock' },
+  'Count how many are left': 'Compter ce qu’il reste',
+  'Each order takes from it and a cancelled one puts its back; at none, it reads sold out.':
+    'Chaque commande y puise et une commande annulée y remet sa part ; à zéro, l’article est affiché épuisé.',
+  'How many are left': 'Combien il en reste',
+  'Say how many are left, or stop counting.':
+    'Indiquez combien il en reste, ou arrêtez de compter.',
+  'Only something ordered by the piece is counted.':
+    'Seul ce qui se commande à la pièce est compté.',
+  '{n} in stock': { one: '1 en stock', other: '{n} en stock' },
 };

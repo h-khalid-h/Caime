@@ -32,6 +32,7 @@ import {
   relationshipView,
   viewerRelation,
 } from '../lib/relations';
+import { itemsWithStock } from '../lib/stock';
 import { identityShownTo, minorOf, personView, privacyOf } from '../lib/users';
 
 export { identityShownTo };
@@ -496,13 +497,19 @@ export async function peopleRoutes(app: FastifyInstance, ctx: AppContext) {
       .where('id', '=', auth.userId)
       .executeTakeFirstOrThrow();
     const host = personHost(user);
-    // What may be booked (in time) and what ordered (by the piece, R60): one catalog.
-    const allowed = itemsFor(host, {
-      isSelf: relation.isSelf,
-      isConnected: relation.isConnected,
-      spheres: relation.ownerSpheresForViewer,
-      adult: !minorOf(viewer, now),
-    });
+    // What may be booked (in time) and what ordered (by the piece, R60): one catalog, with a
+    // count where it limits this viewer's order (every count for the person themselves).
+    const allowed = await itemsWithStock(
+      ctx.db,
+      user.id,
+      itemsFor(host, {
+        isSelf: relation.isSelf,
+        isConnected: relation.isConnected,
+        spheres: relation.ownerSpheresForViewer,
+        adult: !minorOf(viewer, now),
+      }),
+      relation.isSelf,
+    );
     const booked = allowed.filter(isBooked);
     const ordered = allowed.filter(isOrdered);
     const booking =

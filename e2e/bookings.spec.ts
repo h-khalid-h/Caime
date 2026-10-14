@@ -2,7 +2,8 @@
  * Bookings as a catalog, for organizations and people (R58): a salon sets hours and a paid
  * item, a visitor finds "Book" on its public page, signs up and books two places from the open
  * slots; the owner sets their own bookable item and a connection books it from their profile.
- * Orders (R60): the salon sells by the piece and the customer orders two on an Order card.
+ * Orders (R60): the salon sells by the piece and the customer orders two on an Order card;
+ * counted, the last one ordered reads sold out everywhere.
  */
 import { type BrowserContext, expect, test } from '@playwright/test';
 import { apiSignUp, CLIENT, newPerson, photo, visible } from './helpers';
@@ -335,6 +336,70 @@ test.describe
       const card = page.getByTestId('kit-payment_request').filter({ hasText: 'Deposit' });
       await card.getByRole('button', { name: 'Received', exact: true }).click();
       await expect(card).toContainText('Paid');
+      expect(errors).toEqual([]);
+      await owner.close();
+    });
+
+    test('stock that runs out (R60): the last one ordered, the item reads sold out', async ({
+      browser,
+    }) => {
+      // The owner counts the oil: one left.
+      const owner = await browser.newContext({
+        viewport: { width: 1280, height: 800 },
+        storageState: ownerState,
+      });
+      const { page, errors } = await newPerson(owner);
+      await page.goto(`/o/${handle}/setup`);
+      await visible(page, 'Hair oil').click();
+      await page.getByTestId('org-booking-item-counted').click();
+      await page.getByTestId('org-booking-item-stock').fill('1');
+      await page.getByTestId('org-booking-item-save').click();
+      await expect(visible(page, /By the piece · .*120.* · One in stock · Everyone/)).toBeVisible();
+
+      // A customer sees the one left, orders it, and the picker takes no more than that.
+      const phone = await browser.newContext({
+        viewport: { width: 390, height: 844 },
+        storageState: customerState,
+      });
+      const { page: c, errors: customerErrors } = await newPerson(phone);
+      await c.goto(`/o/${handle}/hair-oil`);
+      const sheet = c.getByTestId('item-sheet');
+      await expect(sheet).toBeInViewport({ ratio: 1 });
+      await expect(sheet).toContainText('Only one left');
+      await c.getByTestId('item-take').click();
+      await c.waitForURL(/\/c\/[0-9a-f-]+\?order=1&item=/);
+      const picker = c.getByTestId('order-picker');
+      await expect(picker).toContainText('Only one left');
+      const more = picker.locator('[data-testid^="order-count-"][data-testid$="-more"]').first();
+      await expect(more).toBeDisabled();
+      await c.getByTestId('kit-send').click();
+      await expect(
+        c.getByTestId('kit-order_status').filter({ hasText: '1 × Hair oil' }),
+      ).toBeVisible();
+      // Back on its page: sold out, nothing to order.
+      await c.goto(`/o/${handle}/hair-oil`);
+      await expect(c.getByTestId('item-sheet')).toContainText('Sold out');
+      await expect(c.getByTestId('item-take')).toBeDisabled();
+      await c.screenshot({
+        path: 'e2e/screenshots/phone-item-sold-out.png',
+        animations: 'disabled',
+      });
+      expect(customerErrors).toEqual([]);
+      await phone.close();
+
+      // A visitor reads it too, and a search engine reads it out of stock.
+      const visitor = await browser.newContext({ viewport: { width: 1280, height: 800 } });
+      const site = await visitor.newPage();
+      await site.goto(`/o/${handle}/hair-oil`);
+      await expect(site.getByText(/Sold out/).first()).toBeVisible();
+      expect(await site.locator('script[type="application/ld+json"]').textContent()).toContain(
+        'https://schema.org/OutOfStock',
+      );
+      await expect(site.getByRole('link', { name: 'Order', exact: true })).toHaveCount(0);
+      await visitor.close();
+
+      // The team's setup says so as well, read again when the order took it.
+      await expect(visible(page, /Sold out/)).toBeVisible();
       expect(errors).toEqual([]);
       await owner.close();
     });

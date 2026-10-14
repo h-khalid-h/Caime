@@ -3736,4 +3736,15 @@ export const turkish: Catalog = {
     'Bu cihazda hesabınız için zaten bir geçiş anahtarı var.',
   'This browser can’t use passkeys here.': 'Bu tarayıcı burada geçiş anahtarı kullanamıyor.',
   'Something went wrong. Try again.': 'Bir şeyler ters gitti. Yeniden deneyin.',
+  // Stock that runs out (R60).
+  'Sold out': 'Tükendi',
+  'Only {n} left': { one: 'Yalnızca 1 tane kaldı', other: 'Yalnızca {n} tane kaldı' },
+  'Count how many are left': 'Kalan adedi say',
+  'Each order takes from it and a cancelled one puts its back; at none, it reads sold out.':
+    'Her sipariş bundan düşer, iptal edilen sipariş aldığını geri koyar; sıfırda tükendi görünür.',
+  'How many are left': 'Kalan adet',
+  'Say how many are left, or stop counting.': 'Kaç tane kaldığını yazın ya da saymayı bırakın.',
+  'Only something ordered by the piece is counted.':
+    'Yalnızca adetle sipariş edilen şeyler sayılır.',
+  '{n} in stock': { one: 'Stokta 1 tane', other: 'Stokta {n} tane' },
 };

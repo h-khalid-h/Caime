@@ -4370,4 +4370,28 @@ export const ar: Catalog = {
     toMan: 'حدث خطأ ما. حاول مرة أخرى.',
     other: 'حدث خطأ ما. حاول مرة أخرى.',
   },
+  // Stock that runs out (R60).
+  'Sold out': 'نفدت الكمية',
+  'Only {n} left': {
+    zero: 'لم يبقَ شيء',
+    one: 'بقي واحد فقط',
+    two: 'بقي اثنان فقط',
+    few: 'بقي {n} فقط',
+    many: 'بقي {n} فقط',
+    other: 'بقي {n} فقط',
+  },
+  'Count how many are left': 'تتبُّع الكمية المتبقية',
+  'Each order takes from it and a cancelled one puts its back; at none, it reads sold out.':
+    'كل طلب يُنقص منها، والطلب الملغى يُعيد ما أخذ؛ وحين لا يبقى شيء تظهر «نفدت الكمية».',
+  'How many are left': 'الكمية المتبقية',
+  'Say how many are left, or stop counting.': 'اكتب الكمية المتبقية، أو أوقف التتبُّع.',
+  'Only something ordered by the piece is counted.': 'لا تُتتبَّع الكمية إلا لما يُطلب بالقطعة.',
+  '{n} in stock': {
+    zero: 'لا شيء في المخزون',
+    one: 'واحد في المخزون',
+    two: 'اثنان في المخزون',
+    few: '{n} في المخزون',
+    many: '{n} في المخزون',
+    other: '{n} في المخزون',
+  },
 };

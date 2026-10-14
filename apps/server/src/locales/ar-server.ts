@@ -1228,4 +1228,14 @@ export const arServer: Catalog = {
     'تعذّر التحقق من مفتاح المرور، فلم يُضف. حاول مرة أخرى.',
   'That passkey is already on an account.': 'مفتاح المرور هذا مضاف إلى حساب بالفعل.',
   'That passkey': 'مفتاح المرور هذا',
+  // Stock that runs out (R60).
+  '{name}: only {n} left.': {
+    zero: '{name}: لم يبقَ شيء.',
+    one: '{name}: بقي واحد فقط.',
+    two: '{name}: بقي اثنان فقط.',
+    few: '{name}: بقي {n} فقط.',
+    many: '{name}: بقي {n} فقط.',
+    other: '{name}: بقي {n} فقط.',
+  },
+  '{name} is sold out.': '{name}: نفدت الكمية.',
 };

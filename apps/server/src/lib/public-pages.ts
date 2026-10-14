@@ -23,6 +23,7 @@ import {
   SPHERE_DEFS,
   type Sphere,
   type SystemKind,
+  stockLine,
   systemAccountOf,
 } from '@caime/core';
 import { MARKETING_PAGES } from '@caime/core/api';
@@ -61,6 +62,7 @@ import {
   type SiteOnlyPage,
 } from './site-pages';
 import { sitemaps } from './sitemap-cache';
+import { stockFor, withStock } from './stock';
 import { clip } from './text';
 import { avatarUrl, minorOf, privacyOf } from './users';
 
@@ -123,23 +125,28 @@ export type PublicItem = Pick<
   | 'description'
   | 'collectionId'
   | 'photoFileId'
+  | 'stock'
 >;
 export type PublicCollection = Pick<CatalogCollection, 'id' | 'slug' | 'name' | 'description'>;
 
 /**
  * What anyone may book or order (R58, R60): the public items in no collection or a public one
- * (R61), the booked ones while the host keeps hours, the ordered ones while it takes orders;
- * and the public collections that hold any of them.
+ * (R61), the booked ones while the host keeps hours, the ordered ones while it takes orders,
+ * with a count where it limits an order (none sold out, a few left); and the public collections
+ * that hold any of them.
  */
-function publicCatalog(row: {
-  booking: unknown;
-  booking_items: unknown;
-  ordering?: unknown;
-  collections?: unknown;
-}): { items: PublicItem[]; collections: PublicCollection[] } {
+function publicCatalog(
+  row: {
+    booking: unknown;
+    booking_items: unknown;
+    ordering?: unknown;
+    collections?: unknown;
+  },
+  stock: Map<string, number> = new Map(),
+): { items: PublicItem[]; collections: PublicCollection[] } {
   const catalog = catalogOf(row);
   const open = new Set(catalog.collections.filter((c) => c.audience === 'public').map((c) => c.id));
-  const items = catalog.items
+  const items = withStock(catalog.items, stock, false)
     .filter(
       (i) =>
         i.audience === 'public' &&
@@ -156,6 +163,7 @@ function publicCatalog(row: {
       description: i.description,
       collectionId: i.collectionId,
       photoFileId: i.photoFileId ?? null,
+      ...(i.stock !== undefined ? { stock: i.stock } : {}),
     }));
   const held = new Set(items.map((i) => i.collectionId));
   const collections = catalog.collections
@@ -230,7 +238,7 @@ export async function publicOrg(db: Q, handle: string): Promise<PublicOrg | null
     country: o.country,
     foundedYear: o.founded_year,
     updatedAt: o.updated_at,
-    ...publicCatalog(o),
+    ...publicCatalog(o, await stockFor(db, o.id, catalogOf(o).items)),
     pays: publicPays(o),
   };
 }
@@ -274,7 +282,7 @@ export async function publicPerson(db: Q, handle: string, now: Date): Promise<Pu
     bio: own ? tr(own.about) : see('bio') ? u.bio : null,
     headline: identity?.headline ?? null,
     organizations,
-    ...publicCatalog(u),
+    ...publicCatalog(u, await stockFor(db, u.id, catalogOf(u).items)),
     pays: publicPays(u),
     system: own?.kind ?? null,
   };
@@ -805,7 +813,7 @@ export function renderPublic(
     <div>${label(tr('from'))}<dd><a href="${esc(hostPath(host))}">${esc(name)}</a></dd></div>
     <div>${label(item.unit === 'each' ? tr('price') : tr('booking'))}<dd>${esc(itemLine(item))}</dd></div>
   </dl>
-  <p class="cta">${bookLink([item], path, name, true)}<a href="${wayIn('sign-in', item.unit === 'each' ? orderPath(path) : bookPath(path))}" class="quiet">${esc(tr('Sign in'))}</a></p>
+  <p class="cta">${bookLink([item], path, name, true)}<a href="${wayIn('sign-in', item.unit !== 'each' ? bookPath(path) : takeable(item) ? orderPath(path) : path)}" class="quiet">${esc(tr('Sign in'))}</a></p>
 </main>`,
       };
     }
@@ -968,7 +976,7 @@ function payLink(host: PublicPerson | PublicOrg, pagePath: string, quiet: boolea
   return `<a href="${wayIn('sign-up', payPath(pagePath))}"${quiet ? ' class="quiet"' : ''}>${esc(tr('Pay {name}', { name: hostName(host) }))}</a> `;
 }
 
-/** "45 min · EGP 200": what an item is, in a line (R58). */
+/** "45 min · EGP 200", "EGP 40 · 2 left": what an item is, in a line (R58, R60). */
 function itemLine(i: PublicItem): string {
   return [
     i.unit === 'minutes' && i.minutes
@@ -979,10 +987,14 @@ function itemLine(i: PublicItem): string {
     i.price
       ? formatAmount(i.price.value, i.price.currency, currentTranslator().language)
       : tr('Free'),
+    stockLine(i.stock),
   ]
     .filter(Boolean)
     .join(' · ');
 }
+
+/** Whether an item can be taken now: anything booked, or something ordered not sold out. */
+const takeable = (i: Pick<PublicItem, 'stock'>) => i.stock !== 0;
 
 /** The host's own path: `/o/<handle>` or `/@<handle>`. */
 export const hostPath = (host: PublicPerson | PublicOrg) =>
@@ -1042,7 +1054,13 @@ function itemLd(host: PublicPerson | PublicOrg, item: PublicItem, url: string, p
       // A free item still names a currency: the seller's own (R76), else the schema's usual.
       priceCurrency:
         item.price?.currency ?? (host.kind === 'org' ? host.org.currency : null) ?? 'USD',
-      availability: 'https://schema.org/InStock',
+      // A count shown is a few left, or none (R60).
+      availability:
+        item.stock === 0
+          ? 'https://schema.org/OutOfStock'
+          : item.stock !== undefined
+            ? 'https://schema.org/LimitedAvailability'
+            : 'https://schema.org/InStock',
       seller,
     },
   };
@@ -1065,7 +1083,9 @@ function breadcrumbLd(trail: Array<{ name: string; url: string }>) {
  * The calls to action, first, for what's public: Book when anything is booked in time, Order
  * when anything is ordered by the piece (R60).
  */
-function bookLink(items: PublicItem[], pagePath: string, name: string, own = false): string {
+function bookLink(all: PublicItem[], pagePath: string, name: string, own = false): string {
+  // Nothing sold out is offered (R60): its page says so instead.
+  const items = all.filter(takeable);
   // One item on its own page (R61): its own verb, without a name to repeat.
   if (own && items.length === 1) {
     const verb = items[0]?.unit === 'each' ? tr('Order') : tr('Book');
