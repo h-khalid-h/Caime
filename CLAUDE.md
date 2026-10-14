@@ -1287,6 +1287,11 @@ These are rules, not preferences.
   screen's own reset link through `sendResetLink` (`lib/reset.ts`): a new way to send one goes
   through it, never a second token or a link to any other address. A route that needs mail
   throws `mailUnavailable()` from `lib/errors.ts`.
+- An environment is checked before it's deployed with `pnpm --filter @caime/server check-env
+  <file>` (`src/check-env.ts`: the server's own `loadConfig`, names only, duplicates said): a
+  container with an invalid configuration exits at start while EasyPanel still reports the
+  deployment done and the old container answers. After a deployment, verify a page the release
+  changed, never the host's status alone.
 - The request log line is `requestForLog` (`lib/log.ts`): the method and path alone, and a
   secret that is part of a path (a calendar feed's address, an invite's token) is masked there;
   a new route with a secret in its path adds its mask with a case in `log.test.ts`. A sign-in

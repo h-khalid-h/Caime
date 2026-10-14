@@ -3220,3 +3220,8 @@ The six-slice review's plan, in its order; a block is ticked when its tests and 
 - 2026-10-14 — R67, Cai's and the friends' pages: what each helps with and knows, from the lines
   it says in its chat, the friend drawn; fixed on the way: those pages showed a friend's words in
   English to an Arabic reader.
+- 2026-10-14 — Production stopped taking new builds after 20:41: the service's environment fails
+  the server's own configuration (`MINIMUM_AGE=10`, below its 13; a second `SMTP_URL` that isn't
+  an address), so each new container exits and the old one keeps answering while EasyPanel
+  reports the deployment done. ⛔ The owner corrects the environment. `check-env` names what fails
+  (never a value) before a deploy; the runbook says to verify a page the release changed.

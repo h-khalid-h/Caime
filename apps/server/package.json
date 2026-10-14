@@ -10,6 +10,7 @@
     "start": "node dist/server.js",
     "build": "node build.mjs",
     "migrate": "tsx --env-file-if-exists=.env src/db/migrate-cli.ts",
+    "check-env": "tsx src/check-env.ts",
     "typecheck": "tsc -p tsconfig.json",
     "test": "vitest run"
   },

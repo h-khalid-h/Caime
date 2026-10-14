@@ -93,6 +93,15 @@ The order matters: every step leaves Caime working. What each costs is in `docs/
    on `cai.me`; `https://www.cai.me/x?y=1` lands on `https://cai.me/x?y=1`; mail to
    `postmaster@cai.me` reaches the owner; Stripe's test event answers 200.
 
+   **A deployment EasyPanel calls done may not be running.** EasyPanel marks a deployment
+   "Success" once the image is built. A container whose configuration is invalid exits at start,
+   and with zero-downtime deploys the old container keeps answering, so nothing new runs and
+   nothing says so (2026-10-14: `MINIMUM_AGE=10`, and a second `SMTP_URL` that wasn't an address,
+   held production on an older build for every deployment after). Before saving the service's
+   environment, paste it into a local file and run `pnpm --filter @caime/server check-env
+   <file>`: it names any variable that fails and any set twice (the last wins), never a value.
+   After a deployment, check a page the release changed.
+
 9. **Watch it** (minutes, on the Google Cloud credits). Cloud Monitoring, Uptime checks: HTTPS
    GET `https://cai.me/v1/readyz` every minute from three regions, expecting `"ok":true`, with an
    alert policy that emails the owner after three failed minutes. The bare `/readyz` answers
