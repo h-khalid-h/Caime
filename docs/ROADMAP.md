@@ -3231,3 +3231,9 @@ The six-slice review's plan, in its order; a block is ticked when its tests and 
   and Google Play accounts are ready: the store builds (DEPLOY "Phone builds"), `APPLE_TEAM_ID` and
   `ANDROID_CERT_SHA256` for app links and passkeys, wait on the owner's Expo account and first
   `eas build` (it asks for the store credentials once).
+- 2026-10-14 — Production back on current code: the owner corrected the environment
+  (`check-env` passes; two identical duplicates left), and 97f1971 deployed and verified live
+  (healthz 200, readyz ok, `/@panda` in Arabic and `/@cai` with R67's words, the site's pages,
+  the API document). Caime Mail is on (its inbound refuses an unsigned request, 401) but receives
+  nothing until Postmark Pro (⛔ the owner: Pro, or the `MAIL_*` variables off and the MX back to
+  Cloudflare Email Routing).
