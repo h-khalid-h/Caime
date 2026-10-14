@@ -1215,4 +1215,11 @@ export const turkishServer: Catalog = {
   'A Pay card for your share is waiting already.': 'Payın için bir Öde kartı zaten bekliyor.',
   // A paid Pay card's receipt (R62, R65).
   'That receipt': 'Bu makbuz',
+  // A meeting that repeats (R58).
+  'A meeting repeats only in a chat or a group.':
+    'Bir toplantı yalnızca bir sohbette ya da grupta tekrarlanır.',
+  'That meeting doesn’t repeat.': 'Bu toplantı tekrarlanmıyor.',
+  'That one is over. Stop it from the next one.':
+    'Bu toplantı bitti. Tekrarı bir sonrakinden durdurun.',
+  '{name}: stopped repeating': 'Tekrar durduruldu: {name}',
 };

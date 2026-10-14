@@ -416,6 +416,8 @@ export const endpoints = {
   /** Where this Caime keeps its policies and help, as its operator set them. */
   about: () => api.get<AboutView>('/about'),
   moveKit: (id: string, to: string) => api.post<MessageResponse>(`/messages/${id}/kit`, { to }),
+  /** A meeting that repeats (R58): it ends with this time. */
+  stopRepeating: (id: string) => api.post<MessageResponse>(`/messages/${id}/repeat/stop`, {}),
   /** The organization's own kinds of card its team may send here (PRD §74). */
   customKits: (conversationId: string) =>
     api.get<CustomKitsResponse>(`/conversations/${conversationId}/kits`),

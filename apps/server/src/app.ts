@@ -36,6 +36,8 @@ import { startWorkers } from './lib/jobs';
 import { requestForLog } from './lib/log';
 import { registerMailJobs } from './lib/mail-out';
 import { mailProviderFor } from './lib/mail-provider';
+import { registerGuestsAgain } from './lib/meeting-guests';
+import { registerSeriesJob } from './lib/meeting-series';
 import { registerMeetingStartJob } from './lib/meeting-start';
 import { createMetrics } from './lib/metrics';
 import { registerProviderHealth } from './lib/provider-health';
@@ -353,6 +355,8 @@ export async function buildApp(config: Config, options: BuildOptions = {}): Prom
   registerCaiJobs();
   registerBriefJob();
   registerMeetingStartJob();
+  registerSeriesJob();
+  registerGuestsAgain();
   registerTranscribeJob();
   registerMailJobs();
   registerCallSweep();

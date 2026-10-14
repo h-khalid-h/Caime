@@ -624,8 +624,24 @@ with its reason, so it isn't proposed again without new facts.
   files shared, actions due, and, with AI assist on and an allowance left, a bounded summary
   of the conversation since then through `runAi`. Rules first, model only with a key (ADR-12),
   nothing written anywhere but the reader's own view, never from a private conversation, and
-  the brief opens from the card ("Before"), where it's read on demand too. A recurring card
-  ("weekly") is a later layer; each occurrence is a card, and each gets its brief.
+  the brief opens from the card ("Before"), where it's read on demand too. *A meeting that
+  repeats* (built 2026-10-14): the Meeting card's "Repeats" (every week, every two weeks, every
+  month), in a chat or a group only (a business conversation books what repeats as
+  appointments, through its catalog, one at a time). It's agreed once, and each time is a card
+  of its own, so each has its brief, its Join and "starting now", its guests and its own Cancel
+  ("Cancel this one"): a minute after a time ends, the next is posted already accepted, by its
+  organizer, told to nobody (it's the series going on, not something anyone said). The series is
+  anchored to the first time on its proposer's wall clock (10:00 stays 10:00 when the clocks
+  change; a monthly one on the 31st is held on a shorter month's last day), and a time missed
+  while nothing could post is skipped, never posted late. Nothing is kept of a series but its
+  cards (`payload.series`: the first card's id, which time, when the first was, the zone), so
+  the calendar, the feed and the slots look ahead from the latest card (each time an event of
+  its own, the same before and after it's posted) without a table or a row a week. "Stop
+  repeating" on the time ahead, by anyone it's for, ends it there; where its organizer can no
+  longer write (they left, a block), it ends quietly. With guests (R84), it goes on in the
+  meeting's space, and each new time asks the guests again with a new link of their own. Not
+  done: a recurring appointment (each time's slot must be checked against the host's catalog
+  as it's posted), every weekday, and an end date.
 - **R59 — The fourth language is Turkish.** By R55's rule (one region, through organizations):
   Arabic, English and French cover the Middle East and North Africa; the market next to it that
   already serves it is Türkiye, whose clinics treat Arabic-speaking patients by the hundred

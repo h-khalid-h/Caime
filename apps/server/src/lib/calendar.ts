@@ -117,7 +117,13 @@ export async function calendarItems(
 ): Promise<CalendarItemView[]> {
   const [tasks, cards, owed] = await Promise.all([
     overdueTasks(ctx, userId, window),
-    cardsAhead(ctx, userId, { ...window, limit: MAX_ITEMS, agreedOnly: false }),
+    // With the times of repeating meetings ahead of the one posted (R58).
+    cardsAhead(ctx, userId, {
+      ...window,
+      limit: MAX_ITEMS,
+      agreedOnly: false,
+      series: { now: ctx.now() },
+    }),
     // A due day is kept as its midnight UTC: a window that starts later in the day still has it.
     dueCards(ctx, userId, { ...window, from: dayOf(window.from), limit: MAX_ITEMS }),
   ]);
@@ -159,13 +165,16 @@ export async function calendarItems(
     const minutes = minutesOf(c);
     items.push({
       kind: c.kit,
-      id: c.messageId,
+      // A time still to be posted is its series' time, not a card (yet).
+      id: c.projected && c.series ? `${c.series.id}:${c.series.n}` : c.messageId,
       seq: c.seq,
       title: c.title,
       at: c.at.toISOString(),
       hasTime: c.hasTime,
       endAt: c.hasTime ? new Date(c.at.getTime() + minutes * 60_000).toISOString() : null,
       place: c.place,
+      repeat: c.repeat,
+      projected: c.projected,
       amount: null,
       conversationId: c.conversationId,
       ...withOf(a?.otherId ?? null),
@@ -186,6 +195,8 @@ export async function calendarItems(
       hasTime: false,
       endAt: null,
       place: null,
+      repeat: null,
+      projected: false,
       amount: c.amount,
       conversationId: c.conversationId,
       ...withOf(a?.otherId ?? null),
@@ -209,6 +220,8 @@ export async function calendarItems(
       hasTime: t.dueHasTime,
       endAt: null,
       place: null,
+      repeat: null,
+      projected: false,
       amount: null,
       conversationId: t.conversationId,
       ...withOf(other && other !== userId ? other : null),

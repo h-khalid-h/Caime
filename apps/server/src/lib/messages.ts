@@ -40,6 +40,8 @@ import {
 import { currencyOfCountry } from '@caime/core/countries';
 import { tr } from '@caime/core/i18n';
 import { cardAsks } from '@caime/core/kit-states';
+import { isRepeat, repeatsIn } from '@caime/core/repeat';
+import type { MeetingSeries } from '@caime/core/series';
 import type { Kysely, SqlBool, Transaction } from 'kysely';
 import { sql } from 'kysely';
 import type { AppContext } from '../context';
@@ -572,6 +574,11 @@ export interface SendOptions {
   app?: { id: string; orgId: string; scopes: string[] } | null;
   /** It came as mail (R75): more of it may come while a request waits, and it says so. */
   channel?: 'mail' | null;
+  /**
+   * A time of a meeting that repeats (R58): the series it continues, and whether it's posted
+   * already agreed (the series going on, `meeting-series.ts`) or asked again (a space's copy).
+   */
+  occurrence?: { series: MeetingSeries; agreed: boolean } | null;
 }
 
 /**
@@ -865,6 +872,9 @@ export async function sendMessage(
   )
     throw badRequest(tr('A text message carries no payload.'));
   let kitMode: Mode | null = null;
+  // Its id, now: a repeating meeting's first time names its series by it (R58).
+  const id = uuidv7();
+  let series: MeetingSeries | null = null;
   // A booking from the catalog, checked again under the host's lock as the card is written.
   let slotAsk: { host: BookingHost; booker: Booker; ask: BookingAskInput; start: Date } | null =
     null;
@@ -928,6 +938,19 @@ export async function sendMessage(
       await assertAllAdults(
         tr('{name} cards aren’t available in this conversation.', { name: card.def.name }),
       );
+    // A meeting that repeats (R58), in a chat or a group: the first time starts its series, read
+    // on the proposer's clock; a later time carries the series it continues.
+    if (card.kit === 'meeting' && isRepeat(card.fields.repeat)) {
+      if (!repeatsIn(conversation.kind))
+        throw badRequest(tr('A meeting repeats only in a chat or a group.'));
+      const start = card.fields.start as { at: string };
+      series = opts.occurrence?.series ?? {
+        id,
+        n: 0,
+        firstAt: start.at,
+        zone: sender.time_zone || 'UTC',
+      };
+    }
     if (card.kit === 'split') {
       // Who owes the payer: everyone else here (people, not bots), an equal share each, worked
       // out once and kept on the card (R38: a record, never a transfer).
@@ -1018,8 +1041,10 @@ export async function sendMessage(
       label: card.def.name,
       title: kitHeadline(card.kit, card.fields, sender.locale),
       fields: card.fields,
-      state: initialKitState(card.kit, card.fields),
+      state:
+        series && opts.occurrence?.agreed ? 'accepted' : initialKitState(card.kit, card.fields),
       history: [],
+      ...(series ? { series } : {}),
       ...(booking ? { booking } : {}),
       ...(order ? { order } : {}),
       ...(payee ? { payee } : {}),
@@ -1083,7 +1108,6 @@ export async function sendMessage(
     analysis?.mode ??
     (body.kind === 'poll' ? 'ask' : body.kind === 'location' || files.length ? 'share' : 'talk');
 
-  const id = uuidv7();
   let message: Message;
   let tookStock = false;
   try {

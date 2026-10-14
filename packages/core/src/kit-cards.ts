@@ -10,6 +10,7 @@ import type { Mode } from './intelligence';
 import { KITS, type KitDef, type KitField, type KitId } from './kits';
 import { dateFormat } from './locale';
 import { type PaysShare, payDirection } from './payments';
+import { isRepeat } from './repeat';
 import { zonedParts } from './time';
 
 /** The kits posted as cards. Poll is posted as a poll message, and location as a location. */
@@ -184,12 +185,18 @@ export function kitMoves(
 ): KitMove[] {
   if (!isCardKit(kit)) return [];
   const creatorPays = fields?.direction === 'send';
-  return (KIT_FLOWS[kit][state] ?? []).filter((move) => {
-    if (move.who === 'anyone') return true;
-    if (move.who === 'payer') return isCreator === creatorPays;
-    if (move.who === 'payee') return isCreator !== creatorPays;
-    return (move.who === 'creator') === isCreator;
-  });
+  // An agreed meeting that repeats (R58) is cancelled a time at a time: the rest stay.
+  const oneTime = kit === 'meeting' && state === 'accepted' && isRepeat(fields?.repeat);
+  return (KIT_FLOWS[kit][state] ?? [])
+    .filter((move) => {
+      if (move.who === 'anyone') return true;
+      if (move.who === 'payer') return isCreator === creatorPays;
+      if (move.who === 'payee') return isCreator !== creatorPays;
+      return (move.who === 'creator') === isCreator;
+    })
+    .map((move) =>
+      oneTime && move.to === 'cancelled' ? { ...move, label: msg('Cancel this one') } : move,
+    );
 }
 
 export interface PaySides {

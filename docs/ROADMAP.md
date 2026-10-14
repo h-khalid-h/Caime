@@ -1412,9 +1412,18 @@ listed there with its owner.
       votes and photos as plurals, "tomorrow at", the mutual description and insights as whole
       sentences, a group call's "the group", countries named in the language on screen. A paid
       professional translator's pass before a market launch is still worth it.
-- [ ] Later layers of R58: a recurring card (each occurrence its own brief), a resource shared
-      by several items (one set of chairs for two services), a customer choosing who does it
-      where an organization allows it, group meetings' briefs.
+- [x] R58, a meeting that repeats: "Repeats" on the Meeting card (every week, every two weeks,
+      every month; a chat or a group), agreed once, each time a card of its own posted a minute
+      after the one before ends, already accepted and told to nobody, with its own brief, Join,
+      "starting now", guests (asked again in the meeting's space) and "Cancel this one"; the
+      proposer's wall clock across clock changes, a month's day held, missed times skipped;
+      "Stop repeating" on the time ahead; the calendar, the feed (one event a time) and the
+      slots look ahead from the latest card (core `series.ts`, `lib/meeting-series.ts`,
+      `upcoming.ts`). `series.test.ts`, `meeting-series.test.ts`, `e2e/meetings.spec.ts`.
+- [ ] Later layers of R58: a recurring appointment (each time's slot checked against the host's
+      catalog as it's posted), every weekday and an end date for a meeting that repeats, a
+      resource shared by several items (one set of chairs for two services), a customer
+      choosing who does it where an organization allows it, group meetings' briefs.
 
 ## M14 — Apps and Mail (R74, R75)
 
@@ -3065,3 +3074,7 @@ The six-slice review's plan, in its order; a block is ticked when its tests and 
 - 2026-10-14 — R62, receipts: a paid Pay card has one for its two sides (number, when, how much,
   for what, to and by whom, how), shared or printed; and the photo shrinker loads when a photo is
   picked, out of the first download.
+- 2026-10-14 — R58, a meeting that repeats: "Repeats" on the Meeting card, agreed once, each time
+  its own card posted a minute after the one before ends (brief, Join, guests asked again,
+  "Cancel this one"), "Stop repeating", and the calendar, the feed and the slots looking ahead.
+  Whole E2E suite 106 passed; initial web JS 449.9 KB gzip.

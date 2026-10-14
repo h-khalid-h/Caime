@@ -372,6 +372,22 @@ These are rules, not preferences.
   the privacy fields `busy` and `busyDetails` (core `privacy.ts`), on the profile
   (`PersonProfileView.busy`, `busyNow` run only when `canSee` allows): never on a `PersonView`
   (every list would pay a query per person) and never anyone's calendar.
+- A meeting that repeats (R58): `fields.repeat` (core `repeat.ts`: `REPEAT_CHOICES`, `isRepeat`,
+  `repeatsIn` (a chat or a group), the light part the form, the card and the calendar read, so
+  the series' arithmetic, which the calendar would share with the conversation, stays out of
+  `__common`) and `payload.series`
+  (core `series.ts`: `seriesOf`, `occurrenceAt` on the proposer's wall clock, `nextOccurrence`,
+  `seriesAgreed`). `sendMessage` starts a series on the first card
+  and takes `occurrence` for a later time; `lib/meeting-series.ts` queues `meeting.next`
+  (`queueNextTime`: from `afterCardMove`, each time posted and a space's copy) a minute after a
+  time ends, posts the next through `sendMessage` with no effects (nobody is told), queues its
+  brief, start and next, and runs the `onOccurrencePosted` hooks (`registerGuestsAgain` asks a
+  space's guests again). "Stop repeating" is `POST /messages/:id/repeat/stop` (`stopRepeating`,
+  under the card's lock, only before the time ends). `cardsAhead(…, { series: { now } })` looks
+  ahead from each series' latest card for the calendar, the feed and the slots (never a list of
+  what's next); a time ahead's id is `<series>:<n>`, and a meeting's calendar event is
+  `meetingUid`, the feed's and an invitation's alike. Nothing keeps a row per time: a new reader
+  of what's ahead decides whether it looks ahead.
 - Bookings (R51, R58): a host is an organization or a person (`BookingHost`, `lib/booking.ts`:
   `orgHost`, `personHost`), each with hours (`booking`, core `BookingHours`) and a catalog
   (`booking_items`, core `BookingItem`: a price or none, minutes or days, capacity, how many in

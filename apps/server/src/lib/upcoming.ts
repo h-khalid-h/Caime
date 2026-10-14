@@ -11,6 +11,8 @@
  */
 import type { AppointmentBooking, UpcomingView } from '@caime/core';
 import { AGREED_STATES as AGREED, DUE_STATES } from '@caime/core/kit-states';
+import { isRepeat, type Repeat } from '@caime/core/repeat';
+import { occurrencesBetween, seriesAgreed, seriesOf } from '@caime/core/series';
 import { sql } from 'kysely';
 import type { AppContext } from '../context';
 
@@ -104,6 +106,65 @@ export interface CardAhead {
   updated: Date;
   /** What it booked from a catalog (R58), if it did. */
   booking: AppointmentBooking | null;
+  /** A meeting that repeats (R58): its series and which time this is. */
+  series: { id: string; n: number } | null;
+  /** How often it repeats, while it still does. */
+  repeat: Repeat | null;
+  /**
+   * A time of a series still to be posted, looked ahead from the one that was: no card of its
+   * own yet, so its message, conversation and place are the series' latest card's.
+   */
+  projected: boolean;
+}
+
+type CardPayload = {
+  kit?: CardKit;
+  title?: string;
+  state?: string;
+  fields?: {
+    title?: unknown;
+    start?: { at?: string; hasTime?: boolean };
+    durationMinutes?: unknown;
+    place?: unknown;
+    repeat?: unknown;
+  };
+  history?: Array<{ at?: string; state?: string }>;
+  booking?: AppointmentBooking | null;
+  series?: unknown;
+};
+
+type CardRow = {
+  id: string;
+  conversation_id: string;
+  seq: string | number;
+  payload: unknown;
+  created_at: Date;
+  edited_at: Date | null;
+};
+
+/** A card read as what's ahead, at the time it's for (another, for a time looked ahead). */
+function cardAhead(row: CardRow, payload: CardPayload, kit: CardKit, at: Date): CardAhead {
+  const booking = payload.booking && typeof payload.booking === 'object' ? payload.booking : null;
+  const minutes = Number(payload.fields?.durationMinutes);
+  const moved = payload.history?.at(-1)?.at;
+  const series = seriesOf(payload);
+  return {
+    messageId: row.id,
+    conversationId: row.conversation_id,
+    seq: Number(row.seq),
+    kit,
+    title: payload.title || (kit === 'meeting' ? 'Meeting' : 'Appointment'),
+    at,
+    hasTime: payload.fields?.start?.hasTime !== false,
+    durationMinutes: Number.isFinite(minutes) && minutes > 0 ? minutes : null,
+    place: typeof payload.fields?.place === 'string' ? payload.fields.place : null,
+    agreed: payload.state === AGREED[kit],
+    updated: moved ? new Date(moved) : (row.edited_at ?? row.created_at),
+    booking,
+    series: series ? { id: series.id, n: series.n } : null,
+    repeat: isRepeat(payload.fields?.repeat) ? payload.fields.repeat : null,
+    projected: false,
+  };
 }
 
 export async function cardsAhead(
@@ -117,6 +178,11 @@ export async function cardsAhead(
     conversationIds?: string[];
     /** Only what's agreed, for a calendar; otherwise what's asked too. */
     agreedOnly?: boolean;
+    /**
+     * The times of repeating meetings not yet posted, as of `now` (R58): for a calendar, the
+     * feed and the slots, which look past the next one; never for a list of what's next.
+     */
+    series?: { now: Date };
   },
 ): Promise<CardAhead[]> {
   if (opts.conversationIds && opts.conversationIds.length === 0) return [];
@@ -138,42 +204,71 @@ export async function cardsAhead(
     .execute();
   const ahead: CardAhead[] = [];
   for (const row of rows) {
-    const payload = (row.payload ?? {}) as {
-      kit?: CardKit;
-      title?: string;
-      state?: string;
-      fields?: {
-        title?: unknown;
-        start?: { at?: string; hasTime?: boolean };
-        durationMinutes?: unknown;
-        place?: unknown;
-      };
-      history?: Array<{ at?: string }>;
-      booking?: AppointmentBooking | null;
-    };
+    const payload = (row.payload ?? {}) as CardPayload;
     const kit = payload.kit;
     const at = payload.fields?.start?.at ? new Date(payload.fields.start.at) : null;
     if (!kit || !at || Number.isNaN(at.getTime()) || at < opts.from || at > opts.until) continue;
-    const booking = payload.booking && typeof payload.booking === 'object' ? payload.booking : null;
-    if (!theirsToDo(row, userId, booking)) continue;
-    const minutes = Number(payload.fields?.durationMinutes);
-    const moved = payload.history?.at(-1)?.at;
-    ahead.push({
-      messageId: row.id,
-      conversationId: row.conversation_id,
-      seq: Number(row.seq),
-      kit,
-      title: payload.title || (kit === 'meeting' ? 'Meeting' : 'Appointment'),
-      at,
-      hasTime: payload.fields?.start?.hasTime !== false,
-      durationMinutes: Number.isFinite(minutes) && minutes > 0 ? minutes : null,
-      place: typeof payload.fields?.place === 'string' ? payload.fields.place : null,
-      agreed: payload.state === AGREED[kit],
-      updated: moved ? new Date(moved) : (row.edited_at ?? row.created_at),
-      booking,
-    });
+    const card = cardAhead(row, payload, kit, at);
+    if (!theirsToDo(row, userId, card.booking)) continue;
+    ahead.push(card);
   }
+  if (opts.series)
+    ahead.push(...(await seriesAhead(ctx, userId, { ...opts, now: opts.series.now })));
   return ahead.sort((a, b) => a.at.getTime() - b.at.getTime()).slice(0, opts.limit);
+}
+
+/** A day after a time with nothing posted after it, its series has ended: nothing is ahead. */
+const SERIES_ENDED_MS = 86_400_000;
+/** At most this many times of one series are looked ahead: a year of a weekly meeting. */
+const SERIES_AHEAD_MAX = 53;
+
+/**
+ * The times of repeating meetings still to be posted, in a window (R58): from each series'
+ * latest card (posted within the last day or ahead, agreed at some point, still repeating), the
+ * times after it. The same visibility as the cards themselves; a series is never in a business
+ * conversation, so a team member's view needs nothing more.
+ */
+async function seriesAhead(
+  ctx: Pick<AppContext, 'db'>,
+  userId: string,
+  opts: { from: Date; until: Date; limit: number; conversationIds?: string[]; now: Date },
+): Promise<CardAhead[]> {
+  if (opts.until <= opts.now) return [];
+  const rows = await visibleCards(ctx, userId, {
+    from: new Date(opts.now.getTime() - SERIES_ENDED_MS),
+    until: opts.until,
+    limit: opts.limit,
+    conversationIds: opts.conversationIds,
+  })
+    .where(sql`m.payload->>'kit'`, '=', 'meeting')
+    .where(sql`m.payload->'series'`, 'is not', null)
+    .where(sql`m.payload->'fields'->'repeat'`, 'is not', null)
+    .where(sql`m.payload->'movedTo'`, 'is', null)
+    .execute();
+  // Each series' latest time: what's ahead of it hasn't been posted.
+  const latest = new Map<string, { row: (typeof rows)[number]; n: number }>();
+  for (const row of rows) {
+    const series = seriesOf(row.payload);
+    if (series && (latest.get(series.id)?.n ?? -1) < series.n)
+      latest.set(series.id, { row, n: series.n });
+  }
+  const out: CardAhead[] = [];
+  for (const { row } of latest.values()) {
+    const payload = (row.payload ?? {}) as CardPayload;
+    const series = seriesOf(payload);
+    const repeat = payload.fields?.repeat;
+    if (!series || !isRepeat(repeat)) continue;
+    // Agreed (a time cancelled leaves the rest); a proposal not yet taken, nothing ahead.
+    if (!seriesAgreed(payload)) continue;
+    for (const time of occurrencesBetween(series, repeat, opts.from, opts.until, SERIES_AHEAD_MAX))
+      out.push({
+        ...cardAhead(row, payload, 'meeting', time.at),
+        agreed: true,
+        series: { id: series.id, n: time.n },
+        projected: true,
+      });
+  }
+  return out;
 }
 
 /** What's owed by a day: a Pay card or an invoice with a due date, still open (M14). */

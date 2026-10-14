@@ -56,6 +56,7 @@ import { briefFor } from '../lib/briefs';
 import { calendarItems, minutesOf, orgBookings, overdueTasks } from '../lib/calendar';
 import { hashToken, newToken } from '../lib/crypto';
 import { badRequest, forbidden, notFound } from '../lib/errors';
+import { meetingUid } from '../lib/meeting-series';
 import { orgById, orgSeat } from '../lib/orgs';
 import { viewerRelation } from '../lib/relations';
 import { forgetSitemaps } from '../lib/sitemap-cache';
@@ -140,22 +141,33 @@ export async function calendarEvents(
     });
   });
   // Meetings and appointments agreed in conversations they're still in, never one taken back.
+  // A meeting that repeats (R58) is there each time ahead, as one event a time before and after
+  // its card is posted (`meetingUid`).
   for (const card of await cardsAhead(ctx, userId, {
     from,
     until,
     limit: MAX_EVENTS,
     agreedOnly: true,
+    series: { now },
   })) {
     // A meeting held on Caime (R83) is joined from the calendar app: its address opens the
-    // conversation at the card and joins it (the app checks the card first).
-    const here = card.kit === 'meeting' && card.hasTime && meetingVenue(card.place) === 'caime';
+    // conversation at the card and joins it (the app checks the card first). A time still to be
+    // posted has no card to join yet: it opens the conversation.
+    const here =
+      card.kit === 'meeting' &&
+      card.hasTime &&
+      !card.projected &&
+      meetingVenue(card.place) === 'caime';
     const url = here
       ? `${base}${joinPath(card.conversationId, card.seq, card.messageId)}`
       : where(card.conversationId);
     // As long as the app's calendar says (M16): as booked, as the field says, else an hour.
     const minutes = minutesOf(card);
     events.push({
-      uid: `${card.kit}-${card.messageId}@caime`,
+      uid:
+        card.kit === 'meeting'
+          ? meetingUid(card.messageId, card.series)
+          : `${card.kit}-${card.messageId}@caime`,
       summary: card.title,
       description: here
         ? `${KITS[card.kit].name} on Caime. Join: ${url}`

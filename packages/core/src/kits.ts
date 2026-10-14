@@ -7,6 +7,7 @@
  */
 
 import { msg } from './i18n';
+import { REPEAT_CHOICES } from './repeat';
 import type { Sphere } from './taxonomy';
 
 export const KIT_IDS = [
@@ -104,6 +105,13 @@ export const KITS: Record<KitId, KitDef> = {
         ],
       },
       { key: 'place', label: msg('Where'), type: 'text', placeholder: msg('Place or link') },
+      // Agreed once, each time its own card (R58): only in a chat or a group (`repeatsIn`).
+      {
+        key: 'repeat',
+        label: msg('Repeats'),
+        type: 'options',
+        choices: REPEAT_CHOICES,
+      },
     ],
     states: ['proposed', 'accepted', 'declined', 'cancelled'],
   },

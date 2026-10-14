@@ -1270,4 +1270,11 @@ export const frServer: Catalog = {
   'A Pay card for your share is waiting already.': 'Une carte Payer pour votre part attend déjà.',
   // A paid Pay card's receipt (R62, R65).
   'That receipt': 'Ce reçu',
+  // A meeting that repeats (R58).
+  'A meeting repeats only in a chat or a group.':
+    'Une réunion ne se répète que dans une discussion ou un groupe.',
+  'That meeting doesn’t repeat.': 'Cette réunion ne se répète pas.',
+  'That one is over. Stop it from the next one.':
+    'Celle-ci est terminée. Arrêtez la répétition depuis la suivante.',
+  '{name}: stopped repeating': 'Répétition arrêtée : {name}',
 };

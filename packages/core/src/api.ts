@@ -27,6 +27,7 @@ import type { PaymentSettings } from './payments';
 import type { OrgAllowance, OrgPlan, PersonAllowance } from './plans';
 import type { EffectivePolicy, NotificationLevel, RelationshipPolicy } from './policy';
 import type { PrivacySettings } from './privacy';
+import type { Repeat } from './repeat';
 import type { Preferences } from './schemas';
 import type { ParsedQuery } from './search';
 import type { SpaceKind, SpaceRole } from './spaces';
@@ -1168,6 +1169,13 @@ export interface CalendarItemView {
   /** A meeting's or an appointment's end, when it has a time. */
   endAt: string | null;
   place: string | null;
+  /** A meeting that repeats (R58): how often, while it still does. */
+  repeat: Repeat | null;
+  /**
+   * A time of a repeating meeting still to be posted: no card yet (its id is the series' and the
+   * time's, `<series>:<n>`; its conversation and `seq` are the series' latest card's).
+   */
+  projected: boolean;
   /** What a Pay card or an invoice is for (review 2026-10-09 M14), on its due day. */
   amount: { value: number; currency: string } | null;
   conversationId: string | null;

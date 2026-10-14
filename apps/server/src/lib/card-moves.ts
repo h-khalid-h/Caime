@@ -24,6 +24,7 @@ import { queueBrief } from './briefs';
 import type { CustomerMask } from './business';
 import { recordEvent } from './events';
 import { tellCardApp } from './kits';
+import { queueNextTime } from './meeting-series';
 import { queueMeetingStart } from './meeting-start';
 import { messageViews, participantsOf } from './messages';
 import { notify } from './notify';
@@ -43,8 +44,12 @@ export async function afterCardMove(
     (card.kit === 'appointment' && to === 'confirmed')
   )
     await queueBrief(ctx, m.id);
-  // Held on Caime (R83): at its time, its people are told it's starting, with its Join.
-  if (card.kit === 'meeting' && to === 'accepted') await queueMeetingStart(ctx, m.id);
+  // Held on Caime (R83): at its time, its people are told it's starting, with its Join; and a
+  // meeting that repeats (R58) posts its next time when this one ends.
+  if (card.kit === 'meeting' && to === 'accepted') {
+    await queueMeetingStart(ctx, m.id);
+    await queueNextTime(ctx, m.id);
+  }
   // A card asks until the move that answers it (M14): answered, it no longer needs anyone.
   const asks = cardAsks(m.payload);
   if (asks !== m.is_request)

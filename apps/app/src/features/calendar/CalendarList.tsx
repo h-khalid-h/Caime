@@ -8,6 +8,7 @@ import type { CalendarItemView } from '@caime/core/api';
 import { formatAmount, formatClock, formatDayHeading } from '@caime/core/format';
 import { tr } from '@caime/core/i18n';
 import { calendarAction, meetingLink } from '@caime/core/meetings';
+import { REPEAT_CHOICES } from '@caime/core/repeat';
 import { router } from 'expo-router';
 import CalendarCheck from 'lucide-react-native/icons/calendar-check';
 import CalendarClock from 'lucide-react-native/icons/calendar-clock';
@@ -73,7 +74,8 @@ function Row({
   const t = useTheme();
   // A meeting (R83): Join while one held here can be joined (its conversation opens at the card
   // and checks it before calling), Open for one on another service.
-  const held = calendarAction(item, now);
+  // A time of a repeating meeting still to be posted (R58) has no card to join or open yet.
+  const held = item.projected ? null : calendarAction(item, now);
   const action =
     held === 'join' && item.conversationId && item.seq !== null
       ? {
@@ -94,7 +96,10 @@ function Row({
         : null;
   const who = item.with?.displayName ?? item.org?.name ?? item.conversationTitle ?? null;
   const amount = item.amount ? formatAmount(item.amount.value, item.amount.currency, locale) : null;
-  const line = [who, item.relationship?.label, item.place, amount].filter(Boolean).join(' · ');
+  const repeat = REPEAT_CHOICES.find((c) => c.value === item.repeat);
+  const line = [who, item.relationship?.label, item.place, amount, repeat ? tr(repeat.label) : null]
+    .filter(Boolean)
+    .join(' · ');
   const when = item.hasTime
     ? `${formatClock(item.at, timeZone, locale)}${item.endAt ? `–${formatClock(item.endAt, timeZone, locale)}` : ''}`
     : owed(item)
@@ -134,7 +139,13 @@ function Row({
         </Text>
         <View style={{ flex: 1, minWidth: 0, gap: 2 }}>
           <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
-            <Text variant="bodyStrong" numberOfLines={1} auto style={{ flexShrink: 1 }}>
+            <Text
+              variant="bodyStrong"
+              color={item.projected ? 'textSecondary' : undefined}
+              numberOfLines={1}
+              auto
+              style={{ flexShrink: 1 }}
+            >
               {item.title}
             </Text>
             {state ? (
@@ -204,7 +215,8 @@ export function CalendarList({ meetings = false }: { meetings?: boolean } = {}) 
   const sections = useMemo(() => {
     const byDay = new Map<string, CalendarItemView[]>();
     for (const item of q.data?.items ?? []) {
-      if (meetings && item.kind !== 'meeting') continue;
+      // Meetings lists the meetings that are cards; the calendar looks further ahead (R58).
+      if (meetings && (item.kind !== 'meeting' || item.projected)) continue;
       const day = formatDayHeading(item.at, now, timeZone, locale);
       byDay.set(day, [...(byDay.get(day) ?? []), item]);
     }

@@ -53,6 +53,7 @@ import { AlbumCard } from './AlbumCard';
 import { ChecklistCard } from './ChecklistCard';
 import { iconNamed, KIT_ICONS } from './icons';
 import { type MeetingCardPayload, MeetingGuests } from './MeetingGuests';
+import { MeetingRepeat } from './MeetingRepeat';
 import { meetingCall } from './meetingCall';
 import { SplitCard } from './SplitCard';
 
@@ -378,12 +379,15 @@ export function KitCard({ m, mine }: { m: MessageView; mine: boolean }) {
               paidByCard={p.checkout?.status === 'paid'}
             />
           ) : kit === 'meeting' ? (
-            <MeetingGuests
-              messageId={m.id}
-              card={p as MeetingCardPayload}
-              deleted={Boolean(m.deletedAt)}
-              where={Boolean(guestable)}
-            />
+            <>
+              <MeetingRepeat m={m} card={p as MeetingCardPayload} />
+              <MeetingGuests
+                messageId={m.id}
+                card={p as MeetingCardPayload}
+                deleted={Boolean(m.deletedAt)}
+                where={Boolean(guestable)}
+              />
+            </>
           ) : null
         }
         // In a conversation with an organization, the team is one side: anyone on it moves a card

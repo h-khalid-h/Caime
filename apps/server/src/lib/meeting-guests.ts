@@ -14,6 +14,7 @@ import { GROUP_CALL_MAX } from '@caime/core/calls';
 import { tr } from '@caime/core/i18n';
 import { buildInvitation } from '@caime/core/ics';
 import { CAI_MAIL, meetingVenue } from '@caime/core/meetings';
+import { seriesOf } from '@caime/core/series';
 import { type Kysely, sql, type Transaction } from 'kysely';
 import type { AppContext } from '../context';
 import { type Database, MESSAGE_COLUMNS, type Message } from '../db/schema';
@@ -21,6 +22,7 @@ import { membership } from './conversation-views';
 import { lockConversation } from './conversations';
 import { hashToken, newToken } from './crypto';
 import { AppError, badRequest, forbidden, mailUnavailable, notFound } from './errors';
+import { meetingUid, onOccurrencePosted, queueNextTime } from './meeting-series';
 import { queueMeetingStart } from './meeting-start';
 import { assertCanMessage, messageViews, participantsOf, sendMessage } from './messages';
 import { between, isBlockedEitherWay } from './relations';
@@ -41,6 +43,7 @@ interface MeetingPayload {
     start?: { at?: string; hasTime?: boolean };
     durationMinutes?: unknown;
     place?: unknown;
+    repeat?: unknown;
   };
 }
 
@@ -214,6 +217,13 @@ async function spaceFor(
   card: Message,
   p: MeetingPayload,
 ): Promise<{ conversationId: string; messageId: string }> {
+  // A time of a repeating meeting posted in its space (R58) is that space's: guests join it there.
+  const inSpace = await ctx.db
+    .selectFrom('meeting_spaces')
+    .select('message_id')
+    .where('conversation_id', '=', card.conversation_id)
+    .executeTakeFirst();
+  if (inSpace) return { conversationId: card.conversation_id, messageId: card.id };
   const claim = await ctx.db.transaction().execute(async (trx) => {
     await trx.selectFrom('messages').select('id').where('id', '=', card.id).forUpdate().execute();
     const held = await spaceRowOf(trx, card.id);
@@ -285,11 +295,23 @@ async function spaceFor(
   // made the space. Each step below gives the same result done twice. The space knows its copy
   // before the copy is accepted, and a meeting takes guests only once it's accepted, so nobody
   // can invite from the copy before the space says it's this one.
-  const { message: copy } = await sendMessage(ctx, claim.created_by ?? actorId, spaceId, {
-    clientId: claim.copy_client_id,
-    kind: 'kit',
-    payload: { kit: 'meeting', fields: p.fields ?? {} },
-  });
+  // A meeting that repeats (R58) goes on in its space from this time: the copy is the same time
+  // of the same series. Once this time is over its next is posted where it was, so the copy
+  // doesn't repeat.
+  const series = seriesOf(p);
+  const goesOn = Boolean(series) && (endOf(p) ?? 0) > ctx.now().getTime();
+  const { repeat: _, ...once } = p.fields ?? {};
+  const { message: copy } = await sendMessage(
+    ctx,
+    claim.created_by ?? actorId,
+    spaceId,
+    {
+      clientId: claim.copy_client_id,
+      kind: 'kit',
+      payload: { kit: 'meeting', fields: goesOn ? (p.fields ?? {}) : once },
+    },
+    series && goesOn ? { occurrence: { series, agreed: false } } : {},
+  );
   await ctx.db
     .updateTable('meeting_spaces')
     .set({ space_message_id: copy.id })
@@ -315,6 +337,7 @@ async function spaceFor(
     .returning(MESSAGE_COLUMNS)
     .executeTakeFirstOrThrow();
   await queueMeetingStart(ctx, copy.id);
+  await queueNextTime(ctx, copy.id);
   // Each side sees its card as it now is: the copy accepted in the space, and the original
   // saying where it went.
   for (const [m, conversationId] of [
@@ -332,6 +355,87 @@ async function spaceFor(
     }
   }
   return { conversationId: spaceId, messageId: copy.id };
+}
+
+/** When a meeting ends: its start and its length, else an hour; null without a start. */
+function endOf(p: MeetingPayload): number | null {
+  const at = p.fields?.start?.at ? Date.parse(p.fields.start.at) : Number.NaN;
+  if (!Number.isFinite(at)) return null;
+  const minutes = Number(p.fields?.durationMinutes);
+  return at + (Number.isFinite(minutes) && minutes > 0 ? minutes : 60) * 60_000;
+}
+
+/**
+ * A guest's own link to one time of a meeting, kept hashed (a new one each time they're asked
+ * again, the last one ended), and the time's calendar invitation by mail.
+ */
+async function sendInvitation(
+  ctx: AppContext,
+  input: {
+    inviter: { id: string | null; name: string };
+    space: { conversationId: string; messageId: string };
+    guest: { id: string; name: string; email: string };
+    p: MeetingPayload;
+  },
+): Promise<void> {
+  const mail = ctx.mail;
+  if (!mail) return;
+  const { inviter, space, guest, p } = input;
+  const token = newToken('cmg');
+  await ctx.db
+    .insertInto('meeting_guests')
+    .values({
+      id: uuidv7(),
+      space_message_id: space.messageId,
+      user_id: guest.id,
+      invited_by: inviter.id,
+      token_hash: hashToken(token),
+    })
+    .onConflict((oc) =>
+      oc.columns(['space_message_id', 'user_id']).doUpdateSet({
+        token_hash: hashToken(token),
+        invited_by: inviter.id,
+        revoked_at: null,
+      }),
+    )
+    .execute();
+
+  const start = new Date(String(p.fields?.start?.at));
+  const end = new Date(endOf(p) ?? start.getTime() + 60 * 60_000);
+  const title = String(p.title || p.fields?.title || 'Meeting').slice(0, 120);
+  const link = `${ctx.config.PUBLIC_URL.replace(/\/+$/, '')}/j/${token}`;
+  const sender = invitationSender(ctx.config, inviter.name);
+  const ics = buildInvitation({
+    method: 'REQUEST',
+    // A time of a series is one event, the same as the feed's (R58).
+    uid: meetingUid(space.messageId, seriesOf(p)),
+    sequence: 0,
+    now: ctx.now(),
+    start,
+    end,
+    summary: title,
+    description: `${inviter.name} invited you. Join: ${link}`,
+    location: 'Caime',
+    url: link,
+    organizer: { name: inviter.name, email: sender.address },
+    attendee: { name: guest.name, email: guest.email },
+  });
+  ctx.defer('email.invitation', () =>
+    mail.send({
+      to: guest.email,
+      kind: 'invitation',
+      ...(sender.header ? { from: sender.header, replyTo: sender.header } : {}),
+      subject: `Invitation: ${title}`,
+      text: [
+        `${inviter.name} invited you to "${title}" on Caime, ${start.toISOString().replace('T', ' ').slice(0, 16)} UTC.`,
+        '',
+        `Join from this link (it's yours, keep it to yourself): ${link}`,
+        '',
+        'No account needed. If you were not expecting this, you can ignore it.',
+      ].join('\n'),
+      icalEvent: { method: 'REQUEST', content: ics },
+    }),
+  );
 }
 
 /**
@@ -416,64 +520,65 @@ export async function inviteGuest(
       })
       .execute();
   });
-  // Their own link: a new one each time they're invited again, the last one ended.
-  const token = newToken('cmg');
-  await ctx.db
-    .insertInto('meeting_guests')
-    .values({
-      id: uuidv7(),
-      space_message_id: space.messageId,
-      user_id: person.id,
-      invited_by: actorId,
-      token_hash: hashToken(token),
-    })
-    .onConflict((oc) =>
-      oc.columns(['space_message_id', 'user_id']).doUpdateSet({
-        token_hash: hashToken(token),
-        invited_by: actorId,
-        revoked_at: null,
-      }),
-    )
-    .execute();
-
-  const start = new Date(String(p.fields?.start?.at));
-  const minutes = Number(p.fields?.durationMinutes);
-  const end = new Date(
-    start.getTime() + (Number.isFinite(minutes) && minutes > 0 ? minutes : 60) * 60_000,
-  );
-  const title = String(p.title || p.fields?.title || 'Meeting').slice(0, 120);
-  const link = `${ctx.config.PUBLIC_URL.replace(/\/+$/, '')}/j/${token}`;
-  const sender = invitationSender(ctx.config, actor.display_name);
-  const ics = buildInvitation({
-    method: 'REQUEST',
-    uid: `meeting-${space.messageId}@caime`,
-    sequence: 0,
-    now: ctx.now(),
-    start,
-    end,
-    summary: title,
-    description: `${actor.display_name} invited you. Join: ${link}`,
-    location: 'Caime',
-    url: link,
-    organizer: { name: actor.display_name, email: sender.address },
-    attendee: { name: person.display_name, email },
+  await sendInvitation(ctx, {
+    inviter: { id: actorId, name: actor.display_name },
+    space,
+    guest: { id: person.id, name: person.display_name, email },
+    p,
   });
-  const mail = ctx.mail;
-  ctx.defer('email.invitation', () =>
-    mail.send({
-      to: email,
-      kind: 'invitation',
-      ...(sender.header ? { from: sender.header, replyTo: sender.header } : {}),
-      subject: `Invitation: ${title}`,
-      text: [
-        `${actor.display_name} invited you to "${title}" on Caime, ${start.toISOString().replace('T', ' ').slice(0, 16)} UTC.`,
-        '',
-        `Join from this link (it's yours, keep it to yourself): ${link}`,
-        '',
-        'No account needed. If you were not expecting this, you can ignore it.',
-      ].join('\n'),
-      icalEvent: { method: 'REQUEST', content: ics },
-    }),
-  );
   return space;
+}
+
+/**
+ * A meeting that repeats in its space (R58): each new time asks the guests of the time before
+ * again, each with a new link of their own and the new time's invitation, from whoever asked
+ * them (else whoever posted it). Those who left the space, are gone or suspended aren't asked.
+ * Without mail, nobody is: their links went with the time before.
+ */
+async function askGuestsAgain(ctx: AppContext, posted: Message, from: Message): Promise<void> {
+  if (!ctx.mail) return;
+  const guests = await ctx.db
+    .selectFrom('meeting_guests as g')
+    .innerJoin('users as u', 'u.id', 'g.user_id')
+    .innerJoin('participants as p', (j) =>
+      j
+        .onRef('p.user_id', '=', 'g.user_id')
+        .on('p.conversation_id', '=', posted.conversation_id)
+        .on('p.left_at', 'is', null),
+    )
+    .leftJoin('users as inviter', 'inviter.id', 'g.invited_by')
+    .select([
+      'g.user_id',
+      'g.invited_by',
+      'u.display_name',
+      'u.email',
+      'inviter.display_name as inviter_name',
+    ])
+    .where('g.space_message_id', '=', from.id)
+    .where('g.revoked_at', 'is', null)
+    .where('u.deleted_at', 'is', null)
+    .where('u.suspended_at', 'is', null)
+    .execute();
+  if (!guests.length) return;
+  const poster = await ctx.db
+    .selectFrom('users')
+    .select('display_name')
+    .where('id', '=', posted.sender_id ?? '')
+    .executeTakeFirst();
+  const p = (posted.payload ?? {}) as MeetingPayload;
+  for (const g of guests) {
+    if (!g.email) continue;
+    await sendInvitation(ctx, {
+      inviter: g.inviter_name
+        ? { id: g.invited_by, name: g.inviter_name }
+        : { id: posted.sender_id, name: poster?.display_name ?? 'Caime' },
+      space: { conversationId: posted.conversation_id, messageId: posted.id },
+      guest: { id: g.user_id, name: g.display_name, email: g.email },
+      p,
+    });
+  }
+}
+
+export function registerGuestsAgain(): void {
+  onOccurrencePosted(askGuestsAgain);
 }

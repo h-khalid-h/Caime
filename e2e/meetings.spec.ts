@@ -2,14 +2,15 @@
  * Meetings (R83): Join on an accepted meeting's card opens its call; the other side's Join, from
  * the address the calendar and calendar apps use, answers the call already ringing rather than
  * placing a second; Meetings lists it with its Join. A guest (R84) invited by address from the
- * card joins from their own link, without an account, and is in the meeting's call.
+ * card joins from their own link, without an account, and is in the meeting's call. A meeting
+ * that repeats (R58) is agreed once; the calendar has each time ahead until it's stopped.
  */
 import { randomUUID } from 'node:crypto';
 import { type Browser, expect, test } from '@playwright/test';
 import { apiSignUp, CLIENT, mailsTo, newPerson } from './helpers';
 
-/** Ana and Ben, connected, and a meeting held here starting in two minutes, accepted by Ben. */
-async function agreedMeeting(browser: Browser, title: string) {
+/** Ana and Ben, connected at work, with their conversation. */
+async function colleagues(browser: Browser) {
   const anaCtx = await browser.newContext();
   const benCtx = await browser.newContext();
   const ana = await newPerson(anaCtx);
@@ -33,6 +34,12 @@ async function agreedMeeting(browser: Browser, title: string) {
     data: { kind: 'direct', userId: benUser.id },
   });
   const conversationId = ((await made.json()) as { conversation: { id: string } }).conversation.id;
+  return { anaCtx, benCtx, ana, ben, conversationId, tag };
+}
+
+/** Ana and Ben, connected, and a meeting held here starting in two minutes, accepted by Ben. */
+async function agreedMeeting(browser: Browser, title: string) {
+  const { anaCtx, benCtx, ana, ben, conversationId, tag } = await colleagues(browser);
   const at = new Date(Date.now() + 2 * 60_000).toISOString();
   const sent = await anaCtx.request.post(`/v1/conversations/${conversationId}/messages`, {
     headers: CLIENT,
@@ -156,4 +163,62 @@ test('a guest invited by email joins from their own link, and is in the meetingâ
   await anaCtx.close();
   await benCtx.close();
   await gusCtx.close();
+});
+
+test('a meeting that repeats is agreed once, and the calendar has each week until it stops', async ({
+  browser,
+}) => {
+  const { anaCtx, benCtx, ana, ben, conversationId } = await colleagues(browser);
+  const seen = (page: typeof ana.page, id: string) =>
+    page.getByTestId(id).filter({ visible: true });
+
+  // Ana proposes a weekly one from the card's form.
+  await ana.page.goto(`/c/${conversationId}`);
+  await ana.page.getByRole('button', { name: 'Share a photo, a file or a card' }).click();
+  await ana.page.getByTestId('kit-option-meeting').click();
+  await ana.page.getByLabel('Title').fill('Weekly sync');
+  await ana.page.getByLabel('When', { exact: true }).fill('Friday 3pm');
+  await ana.page.getByRole('radio', { name: 'Every week', exact: true }).click();
+  await ana.page.getByTestId('kit-send').click();
+  const mine = ana.page.getByTestId('kit-meeting').filter({ hasText: 'Weekly sync' });
+  await expect(mine).toContainText('Every week');
+  const listed = await anaCtx.request.get(`/v1/conversations/${conversationId}/messages`, {
+    headers: CLIENT,
+  });
+  const { messages } = (await listed.json()) as {
+    messages: Array<{ id: string; payload: { kit?: string } }>;
+  };
+  const cardId = messages.find((m) => m.payload.kit === 'meeting')?.id ?? '';
+
+  // Ben accepts it once; a time of it is cancelled on its own.
+  await ben.page.goto(`/c/${conversationId}`);
+  const theirs = ben.page
+    .getByTestId('kit-meeting')
+    .filter({ hasText: 'Weekly sync', visible: true });
+  await theirs.getByRole('button', { name: 'Accept', exact: true }).click();
+  await expect(theirs).toContainText('Accepted');
+  await expect(theirs.getByRole('button', { name: 'Cancel this one', exact: true })).toBeVisible();
+
+  // Ben's calendar has the weeks ahead before each is posted; Meetings lists the card alone.
+  await ben.page.goto('/actions?view=calendar');
+  await expect(seen(ben.page, `calendar-item-${cardId}`)).toBeVisible();
+  await expect(seen(ben.page, `calendar-item-${cardId}:1`)).toContainText('Every week');
+  await expect(seen(ben.page, `calendar-item-${cardId}:2`)).toBeVisible();
+  await ben.page.screenshot({ path: 'e2e/screenshots/desktop-calendar-repeating.png' });
+  await ben.page.goto('/meetings');
+  await expect(seen(ben.page, `calendar-item-${cardId}`)).toBeVisible();
+  await expect(seen(ben.page, `calendar-item-${cardId}:1`)).toHaveCount(0);
+
+  // Ben stops it from the card: both see it, and the calendar no longer looks ahead.
+  await ben.page.goto(`/c/${conversationId}`);
+  await theirs.getByTestId('kit-stop-repeating').click();
+  await expect(theirs.getByTestId('kit-repeat-stopped')).toBeVisible();
+  await expect(mine.getByTestId('kit-repeat-stopped')).toBeVisible();
+  await ben.page.goto('/actions?view=calendar');
+  await expect(seen(ben.page, `calendar-item-${cardId}`)).toBeVisible();
+  await expect(seen(ben.page, `calendar-item-${cardId}:1`)).toHaveCount(0);
+
+  expect([...ana.errors, ...ben.errors]).toEqual([]);
+  await anaCtx.close();
+  await benCtx.close();
 });

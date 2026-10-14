@@ -257,11 +257,13 @@ async function heldBy(
     });
   }
   // A person's own diary: every card in their own conversations and, of an organization's,
-  // only those they do (`cardsAhead` keeps a team member to what's theirs).
+  // only those they do (`cardsAhead` keeps a team member to what's theirs); and the times of a
+  // meeting that repeats (R58) before each is posted, which hold their time as the card will.
   const cards = await cardsAhead(ctx, host.id, {
     from: window.from,
     until: window.to,
     limit: HELD_MAX,
+    series: { now: ctx.now() },
   });
   return cards.map((c) => ({
     start: c.at,

@@ -17,6 +17,7 @@ import { msg, tr } from '@caime/core/i18n';
 import { uuidv4 } from '@caime/core/ids';
 import { CARD_KITS, type CardKitId, isCardKit, prepareKitFields } from '@caime/core/kit-cards';
 import { KITS, type KitDef, type KitField, kitsFor } from '@caime/core/kits';
+import { repeatsIn } from '@caime/core/repeat';
 import { SPACE_KIND_DEFS } from '@caime/core/spaces';
 import { zonedParts } from '@caime/core/time';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
@@ -248,6 +249,8 @@ export function KitForm({
   const payingShare = kit === 'payment_request' ? (start?.share ?? null) : null;
   const catalog = appointment || ordering;
   const direct = conversation.kind === 'direct' && !conversation.business;
+  // A meeting repeats in a chat or a group (R58); an organization's are booked a time at a time.
+  const repeats = repeatsIn(conversation.kind) && !conversation.business;
   // Read afresh when the form opens: a copy of the organization or the profile kept from before
   // the hours were set would say there's nothing to book.
   const orgHandle = catalog && conversation.business ? conversation.business.org.handle : '';
@@ -513,6 +516,8 @@ export function KitForm({
         if (picking && ['reference', 'summary', 'amount'].includes(field.key)) continue;
         // A share's Pay card (R62) pays what the split says, now.
         if (payingShare && SHARE_FIXED.includes(field.key)) continue;
+        // A meeting repeats only in a chat or a group (R58).
+        if (field.key === 'repeat' && !repeats) continue;
         if (field.type === 'items') {
           const lines = options.map((o) => o.trim()).filter(Boolean);
           if (lines.length) fields[field.key] = lines;
@@ -924,7 +929,8 @@ export function KitForm({
             (ordering &&
               host?.items.length &&
               ['reference', 'summary', 'amount'].includes(field.key)) ||
-            (payingShare && SHARE_FIXED.includes(field.key)) ? null : field.type === 'items' ? (
+            (payingShare && SHARE_FIXED.includes(field.key)) ||
+            (field.key === 'repeat' && !repeats) ? null : field.type === 'items' ? (
               <View key={field.key} style={{ gap: 8 }}>
                 <Text variant="label">{tr(field.label)}</Text>
                 {options.map((o, j) => (

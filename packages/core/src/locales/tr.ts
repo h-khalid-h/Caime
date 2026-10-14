@@ -3825,4 +3825,12 @@ export const turkish: Catalog = {
   'Paid by': 'Ödeyen',
   'By card': 'Kartla',
   'Confirmed received by {name}': 'Alındığını onaylayan: {name}',
+  // A meeting that repeats (R58).
+  Repeats: 'Tekrar',
+  'Every week': 'Her hafta',
+  'Every two weeks': 'İki haftada bir',
+  'Every month': 'Her ay',
+  'Cancel this one': 'Yalnızca bunu iptal et',
+  'Stop repeating': 'Tekrarı durdur',
+  'Doesn’t repeat any more': 'Artık tekrarlanmıyor',
 };

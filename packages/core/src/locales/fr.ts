@@ -3991,4 +3991,12 @@ export const fr: Catalog = {
   'Paid by': 'Payé par',
   'By card': 'Par carte',
   'Confirmed received by {name}': 'Réception confirmée par {name}',
+  // A meeting that repeats (R58).
+  Repeats: 'Répétition',
+  'Every week': 'Chaque semaine',
+  'Every two weeks': 'Toutes les deux semaines',
+  'Every month': 'Chaque mois',
+  'Cancel this one': 'Annuler celle-ci',
+  'Stop repeating': 'Ne plus répéter',
+  'Doesn’t repeat any more': 'Ne se répète plus',
 };

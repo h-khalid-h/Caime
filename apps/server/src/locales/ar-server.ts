@@ -1246,4 +1246,10 @@ export const arServer: Catalog = {
   'A Pay card for your share is waiting already.': 'بطاقة دفع لحصتك بانتظار التأكيد بالفعل.',
   // A paid Pay card's receipt (R62, R65).
   'That receipt': 'هذا الإيصال',
+  // A meeting that repeats (R58).
+  'A meeting repeats only in a chat or a group.': 'لا يتكرر الاجتماع إلا في محادثة أو مجموعة.',
+  'That meeting doesn’t repeat.': 'هذا الاجتماع لا يتكرر.',
+  'That one is over. Stop it from the next one.':
+    'انتهت هذه المرة، وإيقاف التكرار يكون من المرة التالية.',
+  '{name}: stopped repeating': 'أُوقف التكرار: {name}',
 };

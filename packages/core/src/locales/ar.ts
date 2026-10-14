@@ -4490,4 +4490,12 @@ export const ar: Catalog = {
   'Paid by': 'الدفع من',
   'By card': 'بالبطاقة',
   'Confirmed received by {name}': 'أكّد {name} الاستلام',
+  // A meeting that repeats (R58).
+  Repeats: 'التكرار',
+  'Every week': 'كل أسبوع',
+  'Every two weeks': 'كل أسبوعين',
+  'Every month': 'كل شهر',
+  'Cancel this one': 'إلغاء هذه المرة',
+  'Stop repeating': 'إيقاف التكرار',
+  'Doesn’t repeat any more': 'لم يعد يتكرر',
 };

@@ -70,6 +70,7 @@ import { assertSealedForEveryone } from '../lib/e2ee';
 import { AppError, badRequest, forbidden, notFound } from '../lib/errors';
 import { recordEvent } from '../lib/events';
 import { tellCardApp } from '../lib/kits';
+import { stopRepeating } from '../lib/meeting-series';
 import { afterEdit, afterMentioning, afterMessage } from '../lib/message-effects';
 import {
   analyseText,
@@ -715,6 +716,13 @@ export async function messageRoutes(app: FastifyInstance, ctx: AppContext) {
     const auth = requireAuth(req);
     const { id } = parse(z.object({ id: z.string().uuid() }), req.params);
     return { receipt: await receiptFor(ctx, id, auth.userId) };
+  });
+
+  // A meeting that repeats (R58): "Stop repeating" on the time ahead ends the series there.
+  app.post('/messages/:id/repeat/stop', async (req): Promise<MessageResponse> => {
+    const auth = requireAuth(req);
+    const { id } = parse(z.object({ id: z.string().uuid() }), req.params);
+    return { message: await stopRepeating(ctx, id, auth.userId) };
   });
 
   // --- Shared albums (PRD §41): photos people in the conversation add to one card -------------
