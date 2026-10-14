@@ -26,7 +26,8 @@
         "foregroundImage": "./assets/brand/adaptive-foreground.png",
         "monochromeImage": "./assets/brand/adaptive-monochrome.png"
       },
-      "predictiveBackGestureEnabled": true
+      "predictiveBackGestureEnabled": true,
+      "blockedPermissions": ["android.permission.WRITE_CONTACTS"]
     },
     "web": {
       "output": "single",
@@ -77,6 +78,13 @@
           "isAndroidBackgroundLocationEnabled": false
         }
       ],
+      [
+        "expo-contacts",
+        {
+          "contactsPermission": "Caime reads your contacts on this phone to show who is already on Caime and to help you invite the rest. Only email addresses are sent, to find people, and nothing is kept."
+        }
+      ],
+      "expo-web-browser",
       [
         "@config-plugins/react-native-webrtc",
         {

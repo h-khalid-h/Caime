@@ -2,7 +2,7 @@
  * The app's claim on its domain (R35, `app.config.ts`) matches what the server answers for it: the
  * same link paths as core's list, the same ids as app.json, and a claim only on https.
  */
-import { APP_IDS, APP_LINK_PREFIXES } from '@caime/core/api';
+import { APP_IDS, APP_LINK_PREFIXES, APP_SCHEME } from '@caime/core/api';
 import { afterEach, describe, expect, it } from 'vitest';
 import makeConfig, { APP_LINK_PATHS, linkedHost } from '../../app.config';
 import appJson from '../../app.json';
@@ -24,6 +24,7 @@ describe('app links', () => {
     expect([...APP_LINK_PATHS]).toEqual([...APP_LINK_PREFIXES]);
     expect(appJson.expo.ios.bundleIdentifier).toBe(APP_IDS.ios);
     expect(appJson.expo.android.package).toBe(APP_IDS.android);
+    expect(appJson.expo.scheme).toBe(APP_SCHEME);
   });
 
   it('claim the https domain the build talks to, links and passkeys', () => {

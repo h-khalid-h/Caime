@@ -14,6 +14,7 @@ import type { AppointmentBooking, BookingHours, BookingItem, OrderingSettings } 
 import type { BusinessView, ThreadState } from './business';
 import type { CallKind, CallOutcome, CallResult, CallState, GroupCallMemberState } from './calls';
 import type { CatalogCollection } from './catalog';
+import type { ContactAccount } from './contact-return';
 import type { PayKindHint } from './countries';
 import type { CustomKitDef, CustomKitIcon } from './custom-kits';
 import type { PublicJwk, SealedMessage } from './e2ee';
@@ -267,6 +268,22 @@ export interface ContactMatchView {
 }
 export interface ContactsMatchResponse {
   matches: ContactMatchView[];
+}
+
+/**
+ * The accounts contacts can be read from here (R89), each with the API the device reads it on:
+ * only those this Caime has a client for.
+ */
+export interface ContactAccountView {
+  id: ContactAccount;
+  api: string;
+}
+export interface ContactAccountsResponse {
+  accounts: ContactAccountView[];
+}
+/** Where to send the person to give an account's consent. */
+export interface ContactAccountStartResponse {
+  url: string;
 }
 
 export interface PersonProfileView {
@@ -2669,6 +2686,8 @@ export const APP_LINK_PREFIXES = ['/@', '/o/', '/c/', '/i/', '/s/', '/p/'] as co
 
 /** The phone apps' ids, as `app.json` names them (held to it by `appLinks.test.ts`). */
 export const APP_IDS = { ios: 'me.cai.app', android: 'me.cai.app' } as const;
+/** The phone apps' own scheme (`caime://`), as `app.json` names it: where an account returns. */
+export const APP_SCHEME = 'caime';
 
 export interface PushKeyResponse {
   publicKey: string;

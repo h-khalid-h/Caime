@@ -514,7 +514,7 @@ These are rules, not preferences.
   lists them), and `i18n-literals.test.ts` fails for English shown outside `tr` (`node
   scripts/i18n-keys.mjs bare`: a template literal with prose in its own text, a template handed
   to `tr` as its key, JSX text, a string of words as a JSX child or in a field a person reads;
-  the seven lines of data it allows, a header, an id, a rule's own French, are listed in the
+  the lines of data it allows, a header, an id, a rule's own French, are listed in the
   test, and nothing joins that list that someone reads as the interface's words). A table of
   labels (`ORG_ROLE_LABELS`, `SECTION_LABELS`, the scopes') is `msg()` on every entry, single
   words included, so the collector sees them. Who an automation is for is named as the person
@@ -808,12 +808,31 @@ These are rules, not preferences.
   (`TasksQuery`, `InboxQuery`, `MessagesPageQuery`, `SearchQuery`, `DeliveriesQuery`,
   `UpdatesPageQuery`, `BusinessInboxQuery`, `CalendarWindowQuery`, `KitMoveBody`,
   `KitFieldsBody`), never inline in the module, and a new token-reachable route adds its `DOCS`
-  entry there (`openapi.test.ts` fails on one left out). A contacts file is read on the device by
-  `@caime/core/contacts` (`parseContacts`: vCard and CSV; `emailsOf`), matched by
-  `POST /people/match` in `modules/people.ts` (signed-in only, `CONTACTS_MATCH_MAX` a call, the
-  search route's own rules, `personViewsFor(…, { sharesConversation: false })` so a stranger
-  reads as one), from `features/people/ContactsImport.tsx` (lazy, from the Connect screen);
-  nothing of the file is kept, and the rest get one invite link the person shares.
+  entry there (`openapi.test.ts` fails on one left out).
+- Contacts (R79, R89) are one sheet, `features/people/ContactsImport.tsx` (lazy, from the Connect
+  screen, first on it and on onboarding's last step through `/connect?contacts=1`), over every
+  source, each read on the device into core's one list (`contact-sources.ts`: `contactListOf`,
+  a mapper per source, `readAccount` for an account's pages): the phone's book
+  (`contacts/local.native.ts`, expo-contacts, READ_CONTACTS alone: `blockedPermissions` drops
+  the plugin's WRITE), the browser's picker (`contacts/local.ts`), a Google or Microsoft account
+  (`contacts/accounts*.ts`) and a file (`@caime/core/contacts`, dropped on a desktop:
+  `contacts/drop.ts`). Only addresses reach `POST /people/match` (`modules/people.ts`: the
+  search route's rules, `personViewsFor(…, { sharesConversation: false })`, one `betweenMany`
+  for every match's state), a page at a time. An account's consent is `lib/contact-accounts.ts`
+  behind `modules/contacts.ts`: the server writes the provider's link with its state sealed by
+  `serverKey(ctx, 'contacts.state')` (`lib/server-keys.ts`, which the passkeys' key is too),
+  trades the code for an access that renews nothing, seals it to the device's key (core
+  `contact-seal.ts`, the account's name bound in) and returns to one of two fixed places
+  (`CONTACT_RETURN_PATH` on `PUBLIC_URL`, or `APP_SCHEME`), the access in the fragment
+  (`contact-return.ts`); nothing is kept and the device reads the provider itself, which the
+  web's `connect-src` allows only for a configured account (`contactApiOrigins`). On the web the
+  return is read once a page load and kept until the sheet is done with it
+  (`contacts/returned.ts`), since the root remounts after the language loads. Whoever isn't here
+  is invited by the person, from their own apps (`contact-invites.ts`: `toInternational` by the
+  inviter's country, `inviteWays`; `contacts/send*.ts`, expo-sms on a phone), with their general
+  invite link (one made only if they have none). A new source is a mapper in core and a row in
+  the sheet; a new provider joins `CONTACT_ACCOUNTS`, its scopes and lists, `contactClient`, the
+  E2E stand-in (`e2e/accounts-stub.mjs`) and the privacy page.
 - Provider health (R78, `lib/provider-health.ts`): every provider Caime talks to has its cheapest
   authenticated read as a `ping` on its own interface (`AiAssist.ping`, `SpeechToText.ping`,
   `MailProvider.ping`, `Mailer.verify`; Stripe's balance through `stripe(ctx)`, Cloudflare

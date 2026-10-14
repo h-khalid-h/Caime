@@ -423,6 +423,17 @@ export const ContactsMatchBody = z
   .strict();
 
 /**
+ * Reading contacts from an account (R89): the key the device seals its access with (32 bytes,
+ * base64url), and whether it returns to the web app or the phone's.
+ */
+export const ContactAccountStartBody = z
+  .object({
+    key: z.string().regex(/^[A-Za-z0-9_-]{43}$/),
+    back: z.enum(['web', 'app']),
+  })
+  .strict();
+
+/**
  * What the token-reachable routes take in their query (PRD §73–74, R79): written here, so the
  * route parses with the very schema the OpenAPI document is written from (`lib/openapi.ts`).
  */

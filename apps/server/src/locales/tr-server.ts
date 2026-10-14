@@ -512,6 +512,7 @@ export const turkishServer: Catalog = {
   'Live location is for people you know, not organizations.':
     'Canlı konum, kuruluşlar için değil, tanıdığınız kişiler içindir.',
   'That organization': 'Bu kuruluş',
+  'That account': 'Bu hesap',
   'You’ve used today’s {aiPerDay} AI assists.{ready}{more}':
     'Bugünkü {aiPerDay} AI yardımı hakkınızı kullandınız.{ready}{more}',
   'The next one is ready {when}.': 'Sıradaki hakkınız {when} hazır olur.',

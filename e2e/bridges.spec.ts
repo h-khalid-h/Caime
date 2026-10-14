@@ -118,15 +118,15 @@ test.describe
       await page.goto('/connect');
       await page.getByTestId('connect-contacts').click();
       const chooser = page.waitForEvent('filechooser');
-      await page.getByTestId('contacts-pick').click();
+      await page.getByTestId('contacts-source-file').click();
       await (await chooser).setFiles({
         name: 'contacts.vcf',
         mimeType: 'text/vcard',
         buffer: Buffer.from(vcard),
       });
+      // Read and looked up at once: nothing more to tap between the file and who's here.
+      await expect(page.getByTestId('contacts-summary')).toContainText('contacts.vcf');
       await expect(page.getByTestId('contacts-summary')).toContainText('2 contacts');
-      await expect(page.getByTestId('contacts-summary')).toContainText('2 with an email address');
-      await page.getByTestId('contacts-find').click();
       await expect(page.getByTestId('contacts-found')).toHaveText('1 person is on Caime');
       const match = page.getByTestId(`contacts-match-${sara.handle}`);
       await expect(match).toContainText('Sara Bridge');
@@ -134,8 +134,12 @@ test.describe
       await expect(visible(page, 'Request sent to Sara')).toBeVisible();
       await expect(match).toContainText('Requested');
       await expect(page.getByTestId('contacts-rest')).toHaveText('1 isn’t on Caime yet');
-      await page.getByTestId('contacts-invite').click();
-      await expect(page.getByTestId('contacts-invite-link')).toContainText('/i/');
+      // Whoever has only an address is invited by mail, from the person's own.
+      await expect(page.getByTestId('contacts-invite-row-0')).toContainText(
+        `nobody.${suffix}@example.com`,
+      );
+      await expect(page.getByTestId('contacts-invite-0-email')).toBeVisible();
+      await expect(page.getByTestId('contacts-invite-0-whatsapp')).toHaveCount(0);
       await page.screenshot({ path: 'e2e/screenshots/desktop-contacts-file.png' });
       await page.getByTestId('contacts-done').click();
       // Sara has the request; the file's other address was never anyone's business.

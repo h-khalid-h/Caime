@@ -1418,6 +1418,28 @@ listed there with its owner.
       (unzip it on the device); a Pay card's checkout returning to the app rather than the
       browser (an auth session with a `caime://` return); printing a receipt (expo-print); the
       keyboard over the composer and sheets on Android 15's edge to edge.
+- [x] R89, your people from wherever you keep them: one "From your contacts" sheet, first on
+      Connect and on onboarding's last step (`/connect?contacts=1`), reads the browser's contact
+      picker, a Google or an Outlook account, or a file (dropped on it on a desktop) on the
+      device, as one cleaned list; only addresses reach the server, whose match now costs the
+      same three queries however many are found. An account is read once: the server trades the
+      provider's code for an hour's access, sealed to a key the device made for that request and
+      handed back in the address's fragment, keeping nothing and asking for nothing that renews
+      (`lib/contact-accounts.ts`, core `contact-seal.ts`). Who's here gets Connect and Connect with
+      all; everyone else an invitation sent by the person, WhatsApp to their number as dialled
+      from anywhere, a text on a phone, mail, with their own link. The privacy page says so, with
+      Google's Limited Use statement. Verified on the web with a stand-in for both providers
+      (`contact-sources.test.ts`, `contact-accounts.test.ts`, `contacts.test.ts`,
+      `e2e/contacts.spec.ts`, `e2e/bridges.spec.ts`).
+- [ ] R89 on phones, built and not yet tried on one: the phone's own address book (expo-contacts,
+      READ_CONTACTS alone on Android), iOS 18's "share more" picker, an account's consent in the
+      system's sign-in sheet returning to `caime://connect`, and a text from the system's
+      composer over Caime (expo-sms).
+- [ ] ⛔ R89's accounts need the owner's OAuth clients (docs/DEPLOY.md, "Contacts from Google and
+      Microsoft"): a Google Cloud web client with the People API and the two read-only contacts
+      scopes, which Google verifies before more than a hundred people may use them, and a
+      Microsoft Entra app (any account) with Contacts.Read and People.Read; until then those two
+      rows aren't offered and the phone, the picker and a file are.
 - [ ] Later in R67: public pages for @cai and the friends (answer engines), more of what each friend knows.
 - [ ] ⛔ A trademark and store-name clearance for "Caime" before the store builds (the owner's).
 - [x] R62, a split's shares paid with Pay: "Pay your share" on a split opens the Pay card with
@@ -3166,3 +3188,8 @@ The six-slice review's plan, in its order; a block is ticked when its tests and 
   on the server. For phones, built and not yet tried on one: the file sheet, the camera, HEIC to
   JPEG, iOS sheets handing on once gone, long press, voice notes with the ringer off. Chats left
   the first download.
+- 2026-10-14 — R89, contacts from wherever they are: the phone's address book, the browser's
+  picker, a Google or Outlook account read once on the device (the server keeps no token: the
+  access is sealed to the device that asked), or a file; who's here with Connect and Connect with
+  all, the rest invited by the person from their own WhatsApp, texts or mail. The match route's
+  connection states are one batched read. The accounts wait on the owner's OAuth clients (⛔).

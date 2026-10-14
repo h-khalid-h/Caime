@@ -528,6 +528,7 @@ export const frServer: Catalog = {
   'Live location is for people you know, not organizations.':
     'La position en direct se partage avec les personnes que vous connaissez, pas avec les organisations.',
   'That organization': 'Cette organisation',
+  'That account': 'Ce compte',
   'You’ve used today’s {aiPerDay} AI assists.{ready}{more}':
     'Vous avez utilisé les {aiPerDay} assistances IA du jour.{ready}{more}',
   'The next one is ready {when}.': ' La prochaine sera prête {when}.',

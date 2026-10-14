@@ -10,6 +10,7 @@ import fastifyStatic from '@fastify/static';
 import type { FastifyInstance, FastifyReply, FastifyRequest } from 'fastify';
 import type { AppContext } from '../context';
 import { publicPrices } from '../lib/billing';
+import { contactApiOrigins } from '../lib/contact-accounts';
 import { inLanguage } from '../lib/i18n';
 import {
   bootstrapScripts,
@@ -23,7 +24,11 @@ import {
 import { SESSION_COOKIE } from '../lib/session-cookie';
 import { siteLanguage } from '../lib/site-pages';
 
-export function webCsp(publicUrl: string, inlineScriptHash: string | null = null): string {
+export function webCsp(
+  publicUrl: string,
+  inlineScriptHash: string | null = null,
+  readsFrom: readonly string[] = [],
+): string {
   const ws = publicUrl.replace(/^http/, 'ws');
   return [
     "default-src 'self'",
@@ -33,8 +38,9 @@ export function webCsp(publicUrl: string, inlineScriptHash: string | null = null
     "style-src 'self' 'unsafe-inline'",
     "img-src 'self' data: blob:",
     "font-src 'self' data:",
-    // blob: so a voice note the browser recorded can be read for upload (its own object URL).
-    `connect-src 'self' blob: ${ws}`,
+    // blob: so a voice note the browser recorded can be read for upload (its own object URL);
+    // and the contacts APIs of the accounts offered (R89), which the browser reads itself.
+    ['connect-src', "'self'", 'blob:', ws, ...readsFrom].join(' '),
     "media-src 'self' blob:",
     "worker-src 'self'",
     "manifest-src 'self'",
@@ -69,7 +75,8 @@ export interface WebApp {
 export async function registerWeb(app: FastifyInstance, ctx: AppContext): Promise<WebApp | null> {
   const dir = ctx.config.WEB_DIR ? resolve(ctx.config.WEB_DIR) : null;
   if (!dir || !existsSync(join(dir, 'index.html'))) return null;
-  const csp = webCsp(ctx.config.PUBLIC_URL);
+  const reads = contactApiOrigins(ctx.config);
+  const csp = webCsp(ctx.config.PUBLIC_URL, null, reads);
   await app.register(fastifyStatic, {
     root: dir,
     prefix: '/',
@@ -153,7 +160,7 @@ export async function registerWeb(app: FastifyInstance, ctx: AppContext): Promis
               .update(booted.inline.replace(/^<script>|<\/script>$/g, ''))
               .digest('base64'),
         );
-        pageCsp = webCsp(ctx.config.PUBLIC_URL, hashes.get(booted.inline) ?? null);
+        pageCsp = webCsp(ctx.config.PUBLIC_URL, hashes.get(booted.inline) ?? null, reads);
       }
     }
     // A visitor on someone's page, or on the landing page (no session here): the page as it is,

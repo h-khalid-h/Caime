@@ -180,8 +180,6 @@ export const fr: Catalog = {
   '{inviter} invited you: open the conversation and you’re connected. Find others by @handle or email any time.':
     'Invitation de {inviter} : ouvrez la conversation et vous serez en contact. Trouvez d’autres personnes par @identifiant ou e-mail à tout moment.',
   Someone: 'Quelqu’un',
-  'Find someone by @handle or email, or share your link: @{handle}':
-    'Trouvez quelqu’un par @identifiant ou e-mail, ou partagez votre lien : @{handle}',
   'See what the app asks': 'Voir ce que l’application demande',
   'Open the conversation with {inviter}': 'Ouvrir la conversation avec {inviter}',
   'Write to {name}': 'Écrire à {name}',
@@ -351,13 +349,7 @@ export const fr: Catalog = {
   'That isn’t a contacts file. Export one from Google Contacts, iCloud or Outlook.':
     'Ce n’est pas un fichier de contacts. Exportez-en un depuis Google Contacts, iCloud ou Outlook.',
   'From your contacts': 'Depuis vos contacts',
-  'Who’s already here, and a link for the rest.': 'Qui est déjà là, et un lien pour les autres.',
-  'Find who’s on Caime': 'Voir qui est sur Caime',
-  'Export your contacts as a vCard or CSV file (Google Contacts: Export; iCloud: Export vCard; Outlook: Export contacts) and pick it here. It’s read on this device: only the addresses are sent, to see who’s on Caime, and nothing of it is kept.':
-    'Exportez vos contacts en fichier vCard ou CSV (Google Contacts : Exporter ; iCloud : Exporter la vCard ; Outlook : Exporter des contacts) et choisissez-le ici. Il est lu sur cet appareil : seules les adresses sont envoyées, pour voir qui est sur Caime, et rien n’en est conservé.',
   '{n} contacts': { one: '{n} contact', other: '{n} contacts' },
-  '{n} with an email address': '{n} avec une adresse e-mail',
-  'none with an email address': 'aucun avec une adresse e-mail',
   '{n} people are on Caime': {
     one: '{n} personne est sur Caime',
     other: '{n} personnes sont sur Caime',
@@ -368,10 +360,6 @@ export const fr: Catalog = {
     one: '{n} n’est pas encore sur Caime',
     other: '{n} ne sont pas encore sur Caime',
   },
-  'Invite link': 'Lien d’invitation',
-  'Send it yourself, to whoever you like: Caime never writes to anyone for you. Whoever opens it lands connected with you.':
-    'Envoyez-le vous-même, à qui vous voulez : Caime n’écrit jamais à personne pour vous. Qui l’ouvre arrive relié à vous.',
-  'Make an invite link': 'Créer un lien d’invitation',
   Automation: 'Automatisation',
   'Connect Caime to the apps on Zapier': 'Reliez Caime aux applications sur Zapier',
   'In a Zap, add Webhooks by Zapier: Retrieve Poll to hear from Caime, Custom Request to act in it, each with a header “Authorization: Bearer” and the token.':
@@ -4040,4 +4028,57 @@ export const fr: Catalog = {
   Previous: 'Précédent',
   Camera: 'Appareil photo',
   'Take a photo and send it': 'Prendre une photo et l’envoyer',
+  'Find them in your contacts, by @handle or email, or share your link: @{handle}':
+    'Trouvez-les dans vos contacts, par @identifiant ou e-mail, ou partagez votre lien : @{handle}',
+  Text: 'SMS',
+  Invited: 'Invitation envoyée',
+  'Invite {name}': 'Inviter {name}',
+  'No contacts were found there.': 'Aucun contact n’a été trouvé.',
+  'Your phone’s contacts': 'Les contacts de votre téléphone',
+  'Your contacts': 'Vos contacts',
+  'Your contacts couldn’t be read.': 'Vos contacts n’ont pas pu être lus.',
+  '{account} didn’t let Caime read your contacts.':
+    '{account} n’a pas permis à Caime de lire vos contacts.',
+  'That didn’t work. Try {account} again.': 'Cela n’a pas fonctionné. Réessayez avec {account}.',
+  '{account} couldn’t be reached. Try again.': '{account} est injoignable. Réessayez.',
+  'Hi {first}, I’m on Caime. Join me there: {url}':
+    'Bonjour {first}, je suis sur Caime. Pour m’y rejoindre : {url}',
+  'Hi, I’m on Caime. Join me there: {url}':
+    'Bonjour, je suis sur Caime. Pour m’y rejoindre : {url}',
+  'Join me on Caime': 'Invitation à rejoindre Caime',
+  'That couldn’t be opened here.': 'Impossible d’ouvrir cela ici.',
+  'Requests sent to {n} people': {
+    one: 'Demande envoyée à {n} personne',
+    other: 'Demandes envoyées à {n} personnes',
+  },
+  'Choose from your contacts': 'Choisir dans vos contacts',
+  'Read on this phone': 'Lus sur ce téléphone',
+  'The people you choose, from this phone': 'Les personnes choisies, depuis ce téléphone',
+  'Gmail and Google Contacts': 'Gmail et Google Contacts',
+  'Outlook.com, Hotmail and Microsoft 365': 'Outlook.com, Hotmail et Microsoft 365',
+  'A contacts file': 'Un fichier de contacts',
+  'vCard or CSV, exported from anywhere': 'vCard ou CSV, exporté de n’importe où',
+  'Who’s already here, and a way to invite the rest.':
+    'Qui est déjà là, et de quoi inviter les autres.',
+  'Drop the file to read it.': 'Déposez le fichier pour le lire.',
+  'Read on this device: only email addresses are sent, to see who’s on Caime, and nothing is kept. Whoever isn’t here, you invite yourself.':
+    'Lus sur cet appareil : seules les adresses e-mail sont envoyées, pour voir qui est sur Caime, et rien n’est conservé. Ceux qui n’y sont pas, c’est vous qui les invitez.',
+  '{n} contacts read…': { one: '{n} contact lu…', other: '{n} contacts lus…' },
+  'Reading your contacts…': 'Lecture de vos contacts…',
+  'Caime can’t see your contacts. Allow it in Settings to find your people, or choose a file instead.':
+    'Caime ne peut pas voir vos contacts. Autorisez-le dans les Réglages pour retrouver votre entourage, ou choisissez plutôt un fichier.',
+  'Open Settings': 'Ouvrir les Réglages',
+  'Look somewhere else': 'Chercher ailleurs',
+  '{n} on Caime': { one: '{n} sur Caime', other: '{n} sur Caime' },
+  'You shared some of your contacts with Caime.':
+    'Vous avez partagé une partie de vos contacts avec Caime.',
+  'Share more': 'En partager plus',
+  'Connect with all': 'Entrer en contact avec tous',
+  'Nobody here yet': 'Personne ici pour l’instant',
+  'Invite them yourself, from your own WhatsApp, messages or mail, with your link in the words. Caime never writes to anyone for you.':
+    'Invitez-les vous-même, depuis votre WhatsApp, vos messages ou votre e-mail, avec votre lien dans le texte. Caime n’écrit jamais à personne à votre place.',
+  'Find in your contacts': 'Chercher dans vos contacts',
+  'Show {n} more': 'Afficher {n} de plus',
+  'People are found on Caime by their email address, and none of these contacts has one. Invite them below.':
+    'Sur Caime, on trouve les gens par leur adresse e-mail, et aucun de ces contacts n’en a une. Invitez-les ci-dessous.',
 };

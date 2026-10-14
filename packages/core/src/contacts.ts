@@ -198,6 +198,17 @@ function parseVCards(body: string): ContactsFile {
   return { format: 'vcard', contacts, read };
 }
 
+/** An address as Caime compares it: trimmed, lower-cased; null when it isn't one. */
+export function cleanEmail(raw: string | null | undefined): string | null {
+  const e = (raw ?? '').trim().toLowerCase();
+  return EMAIL.test(e) ? e : null;
+}
+
+/** A number as Caime keeps one; null under six digits (`phoneOf`). */
+export function cleanPhone(raw: string | null | undefined): string | null {
+  return raw ? phoneOf(raw.replace(/^tel:/i, '')) : null;
+}
+
 /** Digits with a leading plus: "+961 3 123 456" and "(03) 123-456" alike; null under six digits. */
 function phoneOf(raw: string): string | null {
   const trimmed = raw.trim();

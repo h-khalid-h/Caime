@@ -78,6 +78,88 @@ export async function between(db: Q, me: string, other: string): Promise<Between
   };
 }
 
+/**
+ * `between` for one person and many others at once (a contacts list's matches): three queries
+ * for the whole set, each served by its pair's index in either order.
+ */
+export async function betweenMany(
+  db: Q,
+  me: string,
+  others: readonly string[],
+): Promise<Map<string, Between>> {
+  const out = new Map<string, Between>();
+  const ids = [...new Set(others)].filter((id) => id !== me);
+  if (!ids.length) return out;
+  const [conns, requests, blocks] = await Promise.all([
+    db
+      .selectFrom('connections')
+      .select(['id', 'status', 'user_a', 'user_b'])
+      .where((eb) =>
+        eb.or([
+          eb.and([eb('user_a', '=', me), eb('user_b', 'in', ids)]),
+          eb.and([eb('user_b', '=', me), eb('user_a', 'in', ids)]),
+        ]),
+      )
+      .execute(),
+    db
+      .selectFrom('connection_requests')
+      .select(['id', 'from_user', 'to_user'])
+      .where('status', '=', 'pending')
+      .where((eb) =>
+        eb.or([
+          eb.and([eb('from_user', '=', me), eb('to_user', 'in', ids)]),
+          eb.and([eb('to_user', '=', me), eb('from_user', 'in', ids)]),
+        ]),
+      )
+      .execute(),
+    db
+      .selectFrom('blocks')
+      .select(['blocker_id', 'blocked_id'])
+      .where((eb) =>
+        eb.or([
+          eb.and([eb('blocker_id', '=', me), eb('blocked_id', 'in', ids)]),
+          eb.and([eb('blocked_id', '=', me), eb('blocker_id', 'in', ids)]),
+        ]),
+      )
+      .execute(),
+  ]);
+  for (const id of ids)
+    out.set(id, {
+      connectionId: null,
+      connected: false,
+      outgoingRequestId: null,
+      incomingRequestId: null,
+      blockedByMe: false,
+      blockedMe: false,
+    });
+  for (const c of conns) {
+    const b = out.get(c.user_a === me ? c.user_b : c.user_a);
+    if (b && c.status === 'active') {
+      b.connected = true;
+      b.connectionId = c.id;
+    }
+  }
+  for (const r of requests) {
+    if (r.from_user === me) {
+      const b = out.get(r.to_user);
+      if (b) b.outgoingRequestId = r.id;
+    } else {
+      const b = out.get(r.from_user);
+      if (b) b.incomingRequestId = r.id;
+    }
+  }
+  for (const k of blocks) {
+    if (k.blocker_id === me) {
+      const b = out.get(k.blocked_id);
+      if (b) b.blockedByMe = true;
+    } else {
+      const b = out.get(k.blocker_id);
+      if (b) b.blockedMe = true;
+    }
+  }
+  return out;
+}
+
 /** The pair's connection while it's active: what a rule just for one person is scoped by. */
 export async function activeConnectionId(db: Q, a: string, b: string): Promise<string | null> {
   const { low, high } = pairKey(a, b);

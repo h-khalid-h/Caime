@@ -94,4 +94,20 @@ describe('POST /v1/people/match', () => {
     expect(asToken.statusCode).toBe(403);
     expect(asToken.json().error.code).toBe('token_route');
   });
+
+  it('costs the same few queries however many of the addresses are on Caime', async () => {
+    const many = await Promise.all(
+      Array.from({ length: 12 }, (_, i) => signup(t, { email: `many${i}@scale.example` })),
+    );
+    await noor.post('/v1/connections/requests', { toUserId: many[0]?.user.id });
+    const cost = async (emails: string[]) => {
+      const before = t.queries();
+      const { matches } = await noor.post('/v1/people/match', { emails });
+      return { found: matches.length, queries: t.queries() - before };
+    };
+    const two = await cost(['many0@scale.example', 'many1@scale.example']);
+    const twelve = await cost(many.map((_, i) => `many${i}@scale.example`));
+    expect([two.found, twelve.found]).toEqual([2, 12]);
+    expect(twelve.queries).toBe(two.queries);
+  });
 });

@@ -37,6 +37,7 @@ export const qk = {
   allDirectory: ['directory'] as const,
   /** My invite links (R1). */
   invites: ['invites'] as const,
+  contactAccounts: ['contact-accounts'] as const,
   invite: (token: string) => ['invite', token] as const,
   /** A paid Pay card's receipt (R62). */
   receipt: (messageId: string) => ['receipt', messageId] as const,

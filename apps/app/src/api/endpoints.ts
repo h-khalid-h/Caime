@@ -37,6 +37,8 @@ import type {
   ConnectionRequestsResponse,
   ConnectionsResponse,
   ConnectResponse,
+  ContactAccountStartResponse,
+  ContactAccountsResponse,
   ContactsMatchResponse,
   ConversationDevicesView,
   ConversationIdResponse,
@@ -152,6 +154,7 @@ import type { ApiScope, WebhookEvent } from '@caime/core/apps';
 import type { RewriteStyle } from '@caime/core/assist';
 import type { AutomationWhen } from '@caime/core/automations';
 import type { BilledPlan, BillingInterval, BillingView } from '@caime/core/billing';
+import type { ContactAccount } from '@caime/core/contact-return';
 import type { SuggestionKind } from '@caime/core/intelligence';
 import type { AiUse, AppPricing } from '@caime/core/marketplace';
 
@@ -290,6 +293,10 @@ export const endpoints = {
   searchPeople: (term: string) => api.get<PeopleSearchResponse>(`/people/search${q({ q: term })}`),
   /** A contacts file (R79): who, of these addresses, is here; nothing of them is kept. */
   matchContacts: (emails: string[]) => api.post<ContactsMatchResponse>('/people/match', { emails }),
+  /** The accounts contacts can be read from here (R89), and the consent link for one. */
+  contactAccounts: () => api.get<ContactAccountsResponse>('/contacts/accounts'),
+  startContactAccount: (account: ContactAccount, body: { key: string; back: 'web' | 'app' }) =>
+    api.post<ContactAccountStartResponse>(`/contacts/accounts/${account}/start`, body),
   person: (id: string) => api.get<PersonProfileView>(`/people/${id}`),
   relationshipHistory: (id: string) =>
     api.get<RelationshipHistoryView>(`/people/${id}/relationships`),

@@ -6,6 +6,7 @@ import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { defineConfig, devices } from '@playwright/test';
 import {
+  ACCOUNTS_STUB,
   ADMIN_TOKEN,
   DNS_STUB,
   MAIL_STUB,
@@ -106,6 +107,12 @@ export default defineConfig({
           },
         },
         {
+          command: 'node e2e/accounts-stub.mjs',
+          url: `${ACCOUNTS_STUB}/health`,
+          reuseExistingServer: !process.env.CI,
+          env: { PORT: new URL(ACCOUNTS_STUB).port },
+        },
+        {
           command: 'node --enable-source-maps apps/server/dist/server.js',
           url: `${BASE}/v1/readyz`,
           reuseExistingServer: !process.env.CI,
@@ -153,6 +160,16 @@ export default defineConfig({
             STRIPE_CONNECT_CLIENT_ID: 'ca_e2e_0123456789',
             STRIPE_CONNECT_WEBHOOK_SECRET,
             STRIPE_CONNECT_BASE: STRIPE_STUB,
+            // Contacts from a Google or Microsoft account (R89), both through one stand-in.
+            GOOGLE_CLIENT_ID: 'google-e2e-client',
+            GOOGLE_CLIENT_SECRET: 'google-e2e-secret',
+            GOOGLE_AUTH_URL: `${ACCOUNTS_STUB}/google/auth`,
+            GOOGLE_TOKEN_URL: `${ACCOUNTS_STUB}/google/token`,
+            GOOGLE_PEOPLE_API: ACCOUNTS_STUB,
+            MICROSOFT_CLIENT_ID: 'microsoft-e2e-client',
+            MICROSOFT_CLIENT_SECRET: 'microsoft-e2e-secret',
+            MICROSOFT_LOGIN_BASE: ACCOUNTS_STUB,
+            MICROSOFT_GRAPH_API: ACCOUNTS_STUB,
           },
         },
       ],

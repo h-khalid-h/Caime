@@ -171,8 +171,6 @@ export const turkish: Catalog = {
   '{inviter} invited you: open the conversation and you’re connected. Find others by @handle or email any time.':
     '{inviter} sizi davet etti: konuşmayı açtığınızda bağlanmış olursunuz. Başkalarını istediğiniz zaman @kullanıcıadı veya e-postayla bulabilirsiniz.',
   Someone: 'Biri',
-  'Find someone by @handle or email, or share your link: @{handle}':
-    'Birini @kullanıcıadı veya e-postayla bulun ya da bağlantınızı paylaşın: @{handle}',
   'See what the app asks': 'Uygulamanın ne istediğine bak',
   'Open the conversation with {inviter}': '{inviter} ile konuşmayı aç',
   'Write to {name}': '{name} ile yazış',
@@ -327,14 +325,7 @@ export const turkish: Catalog = {
   'That isn’t a contacts file. Export one from Google Contacts, iCloud or Outlook.':
     'Bu bir kişiler dosyası değil. Google Kişiler, iCloud ya da Outlook’tan bir tane dışa aktarın.',
   'From your contacts': 'Kişilerinizden',
-  'Who’s already here, and a link for the rest.':
-    'Kimler zaten burada ve geri kalanlar için bir bağlantı.',
-  'Find who’s on Caime': 'Caime’de kimler var, bul',
-  'Export your contacts as a vCard or CSV file (Google Contacts: Export; iCloud: Export vCard; Outlook: Export contacts) and pick it here. It’s read on this device: only the addresses are sent, to see who’s on Caime, and nothing of it is kept.':
-    'Kişilerinizi vCard ya da CSV dosyası olarak dışa aktarın (Google Kişiler: Dışa aktar; iCloud: vCard’ı dışa aktar; Outlook: Kişileri dışa aktar) ve burada seçin. Bu cihazda okunur: Caime’de kimlerin olduğunu görmek için yalnızca adresler gönderilir, dosyadan hiçbir şey saklanmaz.',
   '{n} contacts': { one: '{n} kişi', other: '{n} kişi' },
-  '{n} with an email address': 'e-posta adresi olan {n}',
-  'none with an email address': 'e-posta adresi olan yok',
   '{n} people are on Caime': { one: '{n} kişi Caime’de', other: '{n} kişi Caime’de' },
   'Nobody with these addresses is on Caime yet, or they keep their address private.':
     'Bu adreslerle henüz kimse Caime’de değil ya da adreslerini gizli tutuyorlar.',
@@ -342,10 +333,6 @@ export const turkish: Catalog = {
     one: '{n} kişi henüz Caime’de değil',
     other: '{n} kişi henüz Caime’de değil',
   },
-  'Invite link': 'Davet bağlantısı',
-  'Send it yourself, to whoever you like: Caime never writes to anyone for you. Whoever opens it lands connected with you.':
-    'Kendiniz gönderin, dilediğinize: Caime sizin adınıza kimseye yazmaz. Açan kişi sizinle bağlantılı olarak gelir.',
-  'Make an invite link': 'Davet bağlantısı oluştur',
   Automation: 'Otomasyon',
   'Connect Caime to the apps on Zapier': 'Caime’i Zapier’daki uygulamalara bağlayın',
   'In a Zap, add Webhooks by Zapier: Retrieve Poll to hear from Caime, Custom Request to act in it, each with a header “Authorization: Bearer” and the token.':
@@ -3874,4 +3861,55 @@ export const turkish: Catalog = {
   Previous: 'Önceki',
   Camera: 'Kamera',
   'Take a photo and send it': 'Fotoğraf çek ve gönder',
+  'Find them in your contacts, by @handle or email, or share your link: @{handle}':
+    'Onları rehberinizde, @kullanıcıadı veya e-postayla bulun ya da bağlantınızı paylaşın: @{handle}',
+  Text: 'SMS',
+  Invited: 'Davet edildi',
+  'Invite {name}': 'Davet et: {name}',
+  'No contacts were found there.': 'Orada kişi bulunamadı.',
+  'Your phone’s contacts': 'Telefon rehberiniz',
+  'Your contacts': 'Rehberiniz',
+  'Your contacts couldn’t be read.': 'Rehberiniz okunamadı.',
+  '{account} didn’t let Caime read your contacts.':
+    '{account}, Caime’in kişilerinizi okumasına izin vermedi.',
+  'That didn’t work. Try {account} again.': 'Olmadı. {account} ile yeniden deneyin.',
+  '{account} couldn’t be reached. Try again.': '{account} ulaşılamadı. Yeniden deneyin.',
+  'Hi {first}, I’m on Caime. Join me there: {url}':
+    'Merhaba {first}, Caime’deyim. Bana katılmak için: {url}',
+  'Hi, I’m on Caime. Join me there: {url}': 'Merhaba, Caime’deyim. Bana katılmak için: {url}',
+  'Join me on Caime': 'Caime’ye davet',
+  'That couldn’t be opened here.': 'Bu burada açılamadı.',
+  'Requests sent to {n} people': {
+    one: '{n} kişiye istek gönderildi',
+    other: '{n} kişiye istek gönderildi',
+  },
+  'Choose from your contacts': 'Rehberden seç',
+  'Read on this phone': 'Bu telefonda okunur',
+  'The people you choose, from this phone': 'Seçtiğiniz kişiler, bu telefondan',
+  'Gmail and Google Contacts': 'Gmail ve Google Kişiler',
+  'Outlook.com, Hotmail and Microsoft 365': 'Outlook.com, Hotmail ve Microsoft 365',
+  'A contacts file': 'Bir rehber dosyası',
+  'vCard or CSV, exported from anywhere': 'vCard veya CSV, her yerden dışa aktarılmış',
+  'Who’s already here, and a way to invite the rest.':
+    'Kimler zaten burada, gerisini davet etmenin bir yolu da.',
+  'Drop the file to read it.': 'Okumak için dosyayı bırakın.',
+  'Read on this device: only email addresses are sent, to see who’s on Caime, and nothing is kept. Whoever isn’t here, you invite yourself.':
+    'Bu cihazda okunur: kimin Caime’de olduğunu görmek için yalnızca e-posta adresleri gönderilir ve hiçbir şey saklanmaz. Burada olmayanları siz davet edersiniz.',
+  '{n} contacts read…': { one: '{n} kişi okundu…', other: '{n} kişi okundu…' },
+  'Reading your contacts…': 'Rehberiniz okunuyor…',
+  'Caime can’t see your contacts. Allow it in Settings to find your people, or choose a file instead.':
+    'Caime rehberinizi göremiyor. Kişilerinizi bulmak için Ayarlar’dan izin verin ya da bunun yerine bir dosya seçin.',
+  'Open Settings': 'Ayarları aç',
+  'Look somewhere else': 'Başka yerde ara',
+  '{n} on Caime': { one: 'Caime’de {n}', other: 'Caime’de {n}' },
+  'You shared some of your contacts with Caime.': 'Rehberinizin bir kısmını Caime ile paylaştınız.',
+  'Share more': 'Daha fazlasını paylaş',
+  'Connect with all': 'Hepsiyle bağlan',
+  'Nobody here yet': 'Henüz burada kimse yok',
+  'Invite them yourself, from your own WhatsApp, messages or mail, with your link in the words. Caime never writes to anyone for you.':
+    'Onları kendiniz davet edin: kendi WhatsApp’ınızdan, mesajlarınızdan veya e-postanızdan, bağlantınız metnin içinde. Caime hiç kimseye sizin yerinize yazmaz.',
+  'Find in your contacts': 'Rehberde bul',
+  'Show {n} more': '{n} tane daha göster',
+  'People are found on Caime by their email address, and none of these contacts has one. Invite them below.':
+    'Caime’de kişiler e-posta adresleriyle bulunur ve bu kişilerin hiçbirinin adresi yok. Onları aşağıdan davet edin.',
 };

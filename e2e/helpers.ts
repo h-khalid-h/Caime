@@ -14,6 +14,8 @@ export const DNS_STUB = `http://127.0.0.1:${Number(process.env.E2E_DNS_STUB_PORT
 export const SMTP_STUB = `http://127.0.0.1:${Number(process.env.E2E_SMTP_STUB_PORT ?? 8795)}`;
 /** The mail provider's stand-in (e2e/mail-stub.mjs): what Caime sent by mail, at `GET /sent`. */
 export const MAIL_STUB = `http://127.0.0.1:${Number(process.env.E2E_MAIL_STUB_PORT ?? 8798)}`;
+/** Google's and Microsoft's stand-in (e2e/accounts-stub.mjs): consent, tokens, contacts (R89). */
+export const ACCOUNTS_STUB = `http://127.0.0.1:${Number(process.env.E2E_ACCOUNTS_STUB_PORT ?? 8794)}`;
 
 /** What the mail stand-in (e2e/smtp-stub.mjs) received for an address, oldest first. */
 export async function mailsTo(

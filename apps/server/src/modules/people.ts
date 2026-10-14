@@ -25,6 +25,7 @@ import { orgsOf } from '../lib/orgs';
 import {
   activeRelationships,
   between,
+  betweenMany,
   loadPolicies,
   mutualFit,
   pairKey,
@@ -125,15 +126,17 @@ export async function peopleRoutes(app: FastifyInstance, ctx: AppContext) {
       found.map((u) => u.id),
       { sharesConversation: false },
     );
+    const pairs = await betweenMany(
+      ctx.db,
+      auth.userId,
+      found.map((u) => u.id),
+    );
     const matches: ContactMatchView[] = [];
     for (const u of found) {
       const person = people.get(u.id);
-      if (!person || !u.email) continue;
-      matches.push({
-        email: u.email,
-        person,
-        connection: connectionState(await between(ctx.db, auth.userId, u.id)),
-      });
+      const pair = pairs.get(u.id);
+      if (!person || !pair || !u.email) continue;
+      matches.push({ email: u.email, person, connection: connectionState(pair) });
     }
     return { matches };
   });

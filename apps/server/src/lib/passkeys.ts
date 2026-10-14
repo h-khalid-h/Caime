@@ -15,6 +15,7 @@ import { uuidv7 } from '@caime/core';
 import type { PasskeyView } from '@caime/core/api';
 import type { Config } from '../config';
 import type { AppContext } from '../context';
+import { serverKey } from './server-keys';
 
 /** How many passkeys one account keeps: a phone, a laptop, a key or two, with room to spare. */
 export const PASSKEYS_MAX = 20;
@@ -67,27 +68,8 @@ const SIGNIN = Buffer.from('caime passkey sign-in v1');
 const NONCE = 16;
 
 /** The key sign-in challenges are signed with: made once, for every instance. */
-export async function signingKey(ctx: AppContext): Promise<Buffer> {
-  const read = () =>
-    ctx.db
-      .selectFrom('server_settings')
-      .select('value')
-      .where('key', '=', 'passkey.signin')
-      .executeTakeFirst();
-  const stored = await read();
-  if (stored) return Buffer.from((stored.value as { key: string }).key, 'base64url');
-  await ctx.db
-    .insertInto('server_settings')
-    .values({
-      key: 'passkey.signin',
-      value: JSON.stringify({ key: randomBytes(32).toString('base64url') }),
-    })
-    .onConflict((oc) => oc.column('key').doNothing())
-    .execute();
-  // Another instance may have made it first: everyone signs with the one that was kept.
-  const kept = await read();
-  if (!kept) throw new Error('passkey sign-in key missing');
-  return Buffer.from((kept.value as { key: string }).key, 'base64url');
+export function signingKey(ctx: AppContext): Promise<Buffer> {
+  return serverKey(ctx, 'passkey.signin');
 }
 
 const mac = (key: Buffer, nonce: Buffer, until: Buffer) =>

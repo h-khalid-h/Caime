@@ -1636,3 +1636,43 @@ with its reason, so it isn't proposed again without new facts.
   JPEG, a sheet handing on after it has gone on iOS, voice notes with the ringer off, a long press)
   is built to each platform's documented behaviour and stays unticked until it's tried on an
   iPhone and an Android phone.
+- **R89 — Your people, from wherever you keep them (owner's request with a screenshot of the
+  contacts sheet on an iPhone, 2026-10-14).** R79's sheet took a file alone, and a file is the
+  last thing anyone has to hand on a phone. Validated against Caime: what grows a messaging app is
+  finding who you already know there, and inviting the rest, without asking anyone to export
+  anything; what Caime keeps is nothing of the list. (1) *One sheet, every source, the likeliest
+  first.* "From your contacts" offers, in order: the phone's own address book in the app
+  (expo-contacts; on iOS 18, a person who shared only some is offered the system's own picker to
+  share more), the browser's contact picker where a browser has one (Chrome on Android: the
+  people the person chooses), a Google account (Gmail and Google Contacts, with the "other
+  contacts" people have written to) and an Outlook account (Outlook.com, Hotmail, Microsoft 365,
+  with the people they work with), and a file (vCard or CSV, dropped on the sheet on a desktop).
+  Each comes out as one list, cleaned, the same person met twice made one (core
+  `contact-sources.ts`). (2) *An account read once, on the device, with nothing kept.* The
+  server holds the providers' clients (a secret can't live in an app) and asks for read-only
+  contacts, online only: no refresh, nothing to read again without the person. It trades the
+  provider's one-time code for an access that lasts the hour, seals it to a key the device made
+  for that one request (AES-256-GCM, core `contact-seal.ts`), and hands it back in the fragment of
+  the address the device returns to: the Connect screen on the web, `caime://connect` in the app's
+  sign-in sheet. Whatever reads that address on the way (another app claiming the scheme, a
+  browser's history) reads nothing it can use; the consent's state is sealed with the server's
+  own key and carries no one's id; no row is written. The device reads the contacts from the
+  provider itself, a thousand at a time, and only their addresses reach Caime. (3) *Who's here,
+  and everyone else.* Who is on Caime and findable by address shows first, with Connect, and
+  Connect with all when there are several (the day's sixty requests still count each one); a
+  numbers-only list says that people are found by address and none of these has one, rather than
+  "nobody is here". Everyone else is listed by name (searchable, thirty at a time) with the ways
+  this device has to invite them itself: WhatsApp to their number as it's dialled from anywhere
+  (the inviter's country for a national number, core `contact-invites.ts`), a text where the
+  device sends texts (the system's own composer over Caime on a phone), and mail, each with the
+  words written and the person's own invite link; Caime sends nothing to anyone. (4) *Where it's
+  offered.* First on the Connect screen, and first on onboarding's "your people" step, which opens
+  the sheet at once (`/connect?contacts=1`). The privacy page says what's read, what's sent and
+  what isn't kept, with Google's Limited Use statement. *Declined:* matching by phone number
+  (Caime accounts have none, and a number would have to be verified first: it stays a later step
+  with a provider), keeping an account connected to find new people later (it would mean keeping
+  a refresh token and the list), and sending invitations for the person. *Not done, with why:* the
+  Google and Microsoft clients are the owner's to make, and Google verifies an app that reads
+  contacts before more than a hundred people may use it (⛔ in ROADMAP); the phone's address book,
+  the iOS picker for more, the sign-in sheet's return and the text composer are built to each
+  platform's documented behaviour and stay unticked until they're tried on a phone.

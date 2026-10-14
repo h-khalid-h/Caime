@@ -11,6 +11,9 @@ import { bareLiterals } from '../../../scripts/i18n-keys.mjs';
 const DATA: ReadonlyArray<[file: string, text: string]> = [
   ['apps/app/src/api/client.ts', 'Bearer {}'],
   ['apps/app/src/features/orgs/OrgCheckout.tsx', 'Stripe {}'],
+  ['packages/core/src/contact-return.ts', 'caime contacts v1 {}'],
+  ['packages/core/src/contact-sources.ts', 'HTTP {}'],
+  ['packages/core/src/contact-sources.ts', 'Bearer {}'],
   ['packages/core/src/e2ee-recovery.ts', '{} recovery'],
   ['packages/core/src/ics.ts', 'Not a date: {}'],
   ['packages/core/src/ics.ts', 'An event needs a date or a start: {}'],

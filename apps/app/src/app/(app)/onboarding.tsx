@@ -80,7 +80,7 @@ export default function Onboarding() {
   });
   const inviter = invite.data?.invite.inviter.displayName ?? null;
 
-  const finish = async (next: '/' | '/connect' | 'link') => {
+  const finish = async (next: '/' | '/connect' | '/connect?contacts=1' | 'link') => {
     setBusy(true);
     try {
       const res = await endpoints.updateMe({ onboarded: true });
@@ -88,7 +88,7 @@ export default function Onboarding() {
       const link = takeLink();
       useSession.getState().setUser(res.user);
       router.replace('/');
-      const then = next === 'link' ? link : next === '/connect' ? '/connect' : null;
+      const then = next === 'link' ? link : next === '/' ? null : next;
       if (then) setTimeout(() => router.push(then), 0);
     } catch (e) {
       toast((e as Error).message, { tone: 'danger' });
@@ -218,9 +218,10 @@ export default function Onboarding() {
                             '{inviter} invited you: open the conversation and you’re connected. Find others by @handle or email any time.',
                             { inviter: inviter ?? tr('Someone') },
                           )
-                        : tr('Find someone by @handle or email, or share your link: @{handle}', {
-                            handle: me.handle,
-                          })}
+                        : tr(
+                            'Find them in your contacts, by @handle or email, or share your link: @{handle}',
+                            { handle: me.handle },
+                          )}
               </Text>
             </View>
             {linked ? (
@@ -241,12 +242,22 @@ export default function Onboarding() {
                 testID="onboarding-link"
               />
             ) : null}
+            {linked ? null : (
+              // Most people's people are already in their contacts (R89): looked for first.
+              <Button
+                label={tr('From your contacts')}
+                size="lg"
+                block
+                loading={busy}
+                onPress={() => void finish('/connect?contacts=1')}
+                testID="onboarding-contacts"
+              />
+            )}
             <Button
               label={tr('Find people')}
-              variant={linked ? 'secondary' : 'primary'}
+              variant="secondary"
               size="lg"
               block
-              loading={busy && !linked}
               onPress={() => void finish('/connect')}
               testID="onboarding-find"
             />

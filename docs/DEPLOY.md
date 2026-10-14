@@ -179,6 +179,12 @@ SMTP_URL=…                          # set: smtp.postmarkapp.com, the server to
 # MAIL_WEBHOOK_SECRET=<openssl rand -hex 24>
 # MAIL_STAFF_HANDLE=<the handle that takes postmaster@, abuse@, support@, hello@ …>
 
+# --- Contacts from Google and Microsoft accounts (R89, below): uncomment each pair once its client is made
+# GOOGLE_CLIENT_ID=<the web client's id, …apps.googleusercontent.com>
+# GOOGLE_CLIENT_SECRET=<its secret>
+# MICROSOFT_CLIENT_ID=<the Entra app's application (client) id>
+# MICROSOFT_CLIENT_SECRET=<a client secret's value>
+
 # --- Backups: a checked dump a day on /data, kept 30 days; a copy off this machine (Backups, below)
 BACKUP_ENABLED=true
 BACKUP_EVERY_HOURS=24
@@ -390,6 +396,35 @@ mail in is dropped as unverified (provider health then shows `mail` down, naming
    then names the provider. Check: `POST /v1/admin/providers/check` shows `mail` up; a mail
    from an outside mailbox to your own handle arrives in Caime as from that address; one to
    `postmaster@cai.me` arrives for the staff handle.
+
+### Contacts from Google and Microsoft (R89) ⛔ not turned on in production
+
+"From your contacts" offers a Google and an Outlook account once their clients are set; the
+phone's address book, the browser's picker and a file need nothing. Neither client ever gives
+Caime anything that renews: the server trades a one-time code for an hour's access and hands it,
+sealed, to the device that asked, which reads the contacts itself (PRODUCT-REVIEW R89). The
+browser reads `people.googleapis.com` and `graph.microsoft.com` only once their client is set
+(the pages' `connect-src` follows the configured accounts).
+
+1. **Google.** In a Google Cloud project: enable the **People API**; on the OAuth consent screen
+   (External), add the scopes `…/auth/contacts.readonly` and `…/auth/contacts.other.readonly`,
+   the privacy policy `https://cai.me/privacy` and the terms `https://cai.me/terms`; create an
+   OAuth client of type **Web application** with the authorised redirect URI
+   `https://cai.me/v1/contacts/accounts/google/back`. Its id and secret are `GOOGLE_CLIENT_ID`
+   and `GOOGLE_CLIENT_SECRET`. Both scopes are sensitive: until Google has verified the app
+   (a demonstration video of the sheet, the privacy page's Limited Use statement, a few days to
+   weeks), it shows "unverified" and lets a hundred people in, which is enough to try it.
+2. **Microsoft.** In Microsoft Entra, App registrations: a new registration for **accounts in
+   any organizational directory and personal Microsoft accounts**, a **Web** redirect URI
+   `https://cai.me/v1/contacts/accounts/microsoft/back`, the delegated Graph permissions
+   `Contacts.Read` and `People.Read` (no admin consent needed), and a client secret (note when it
+   expires: a new one is a new `MICROSOFT_CLIENT_SECRET`). The application (client) id is
+   `MICROSOFT_CLIENT_ID`. Publisher verification (a Microsoft Partner Network id) lets people in
+   organizations that only allow verified publishers say yes. `MICROSOFT_TENANT` stays `common`
+   unless only one organization's people should use it.
+3. Set each pair on the service and redeploy. Check: on the web, Connect, "From your contacts"
+   lists Google and Outlook; reading one lands back on the sheet with who's on Caime, and
+   nothing about it is in the server's log but the method and the path.
 
 ### 4. Continuous deployment
 

@@ -1,7 +1,7 @@
 import type { PeopleSearchResult } from '@caime/core/api';
 import { tr } from '@caime/core/i18n';
 import { useQuery } from '@tanstack/react-query';
-import { router } from 'expo-router';
+import { router, useLocalSearchParams } from 'expo-router';
 import BookUser from 'lucide-react-native/icons/book-user';
 import Search from 'lucide-react-native/icons/search';
 import UserPlus from 'lucide-react-native/icons/user-plus';
@@ -11,6 +11,7 @@ import { endpoints } from '@/api/endpoints';
 import { qk } from '@/api/keys';
 import { openChatWith } from '@/features/inbox/openChat';
 import { OrgMark, VerifiedLine } from '@/features/orgs/kinds';
+import { contactsReturned } from '@/features/people/contacts/returned';
 import { handleLink } from '@/lib/config';
 import { shareLink } from '@/lib/share';
 import { useMe } from '@/state/session';
@@ -45,7 +46,7 @@ const ConnectSheet = lazyPart(() =>
 const InviteSheet = lazyPart(() =>
   import('@/features/people/InviteSheet').then((m) => m.InviteSheet),
 );
-/** A contacts file (R79), in its sheet: loaded the first time one is brought. */
+/** From your contacts (R79, R89), in its sheet: loaded the first time it's opened. */
 const ContactsImport = lazyPart(() =>
   import('@/features/people/ContactsImport').then((m) => m.ContactsImport),
 );
@@ -58,7 +59,10 @@ export default function Connect() {
   const debounced = useDebounced(term.trim());
   const [target, setTarget] = useState<PeopleSearchResult['person'] | null>(null);
   const [inviting, setInviting] = useState(false);
-  const [contacts, setContacts] = useState(false);
+  // Opened from onboarding (`?contacts=1`), or back from an account's consent on the web.
+  const params = useLocalSearchParams<{ contacts?: string }>();
+  const [returned] = useState(contactsReturned);
+  const [contacts, setContacts] = useState(() => returned !== null || params.contacts === '1');
   const results = useQuery({
     queryKey: qk.peopleSearch(debounced),
     queryFn: () => endpoints.searchPeople(debounced),
@@ -248,8 +252,15 @@ export default function Connect() {
                 style={{ flexDirection: 'row', gap: 8, flexWrap: 'wrap', justifyContent: 'center' }}
               >
                 <Button
+                  label={tr('From your contacts')}
+                  icon={BookUser}
+                  onPress={() => setContacts(true)}
+                  testID="connect-contacts"
+                />
+                <Button
                   label={tr('Invite someone')}
                   icon={UserPlus}
+                  variant="secondary"
                   onPress={() => setInviting(true)}
                   testID="connect-invite"
                 />
@@ -258,20 +269,15 @@ export default function Connect() {
                   variant="secondary"
                   onPress={shareHandle}
                 />
-                <Button
-                  label={tr('From your contacts')}
-                  icon={BookUser}
-                  variant="secondary"
-                  onPress={() => setContacts(true)}
-                  testID="connect-contacts"
-                />
               </View>
             </View>
           )
         }
       />
       {inviting ? <InviteSheet open onClose={() => setInviting(false)} /> : null}
-      {contacts ? <ContactsImport open onClose={() => setContacts(false)} /> : null}
+      {contacts ? (
+        <ContactsImport open onClose={() => setContacts(false)} returned={returned} />
+      ) : null}
       {target ? (
         <ConnectSheet
           open

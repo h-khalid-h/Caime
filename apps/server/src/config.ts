@@ -262,6 +262,27 @@ const Env = z.object({
   CLOUDFLARE_TURN_KEY_ID: z.string().min(1).optional(),
   CLOUDFLARE_TURN_API_TOKEN: z.string().min(1).optional(),
   CLOUDFLARE_TURN_API_BASE: z.string().url().default('https://rtc.live.cloudflare.com'),
+  /**
+   * Contacts read from someone's Google or Microsoft account, once, when they ask (R89): each
+   * provider's OAuth client, a web application whose redirect address is
+   * PUBLIC_URL/v1/contacts/accounts/google/back (or /microsoft/back). Without its id and secret
+   * an account isn't offered; the phone's address book, the browser's picker and a file still are.
+   */
+  GOOGLE_CLIENT_ID: z.string().min(1).optional(),
+  GOOGLE_CLIENT_SECRET: z.string().min(1).optional(),
+  MICROSOFT_CLIENT_ID: z.string().min(1).optional(),
+  MICROSOFT_CLIENT_SECRET: z.string().min(1).optional(),
+  /** Whose Microsoft accounts: `common` (work, school and personal), or one tenant's id. */
+  MICROSOFT_TENANT: z
+    .string()
+    .regex(/^[A-Za-z0-9.-]+$/)
+    .default('common'),
+  /** The providers' consent, token and contacts addresses: others only for the tests' stand-in. */
+  GOOGLE_AUTH_URL: z.string().url().default('https://accounts.google.com/o/oauth2/v2/auth'),
+  GOOGLE_TOKEN_URL: z.string().url().default('https://oauth2.googleapis.com/token'),
+  GOOGLE_PEOPLE_API: z.string().url().default('https://people.googleapis.com'),
+  MICROSOFT_LOGIN_BASE: z.string().url().default('https://login.microsoftonline.com'),
+  MICROSOFT_GRAPH_API: z.string().url().default('https://graph.microsoft.com'),
 });
 
 export type Config = z.infer<typeof Env> & {

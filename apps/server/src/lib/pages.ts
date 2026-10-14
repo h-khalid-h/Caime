@@ -259,6 +259,19 @@ ${f.processors
   .join('\n')}
 <li>Calls, group calls too, go directly between the devices in them, encrypted.${calls}${relay}</li>
 </ul></li>
+<li><strong>Your contacts, when you look for your people in them.</strong> Whether they come
+from your phone, your browser&rsquo;s contact picker, a file, or your Google or Microsoft account,
+Caime reads them on your device and sends only their email addresses, to say which of them are on
+Caime and can be found by email; nothing of them is kept, on the server or in your data. Their
+phone numbers never leave your device, except in an invitation you send yourself, by WhatsApp, a
+text or an email. To read a Google or Microsoft account, you sign in to it and allow Caime to read
+your contacts: Caime&rsquo;s server trades that permission for access that lasts an hour, hands
+it to your device without keeping it, and asks for nothing that would let it read them again
+without you. The account remembers your permission until you remove it there (in your Google
+Account&rsquo;s third-party connections, or your Microsoft account&rsquo;s apps and services).
+Caime&rsquo;s use of information received from Google APIs adheres to the
+<a href="https://developers.google.com/terms/api-services-user-data-policy">Google API Services
+User Data Policy</a>, including the Limited Use requirements.</li>
 <li><strong>Services you choose.</strong> If you add Your calendar (You &rarr; Apps) to
 Google Calendar, Outlook or Apple Calendar, that service reads your open actions with a due date,
 with who asked you or who you&rsquo;re waiting on, and the meetings and appointments you&rsquo;ve

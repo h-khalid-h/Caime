@@ -179,8 +179,6 @@ export const ar: Catalog = {
   '{inviter} invited you: open the conversation and you’re connected. Find others by @handle or email any time.':
     'دعوة من {inviter}: افتح المحادثة وتصبحان متواصلين. ابحث عن آخرين بالمعرّف أو البريد في أي وقت.',
   Someone: 'شخص ما',
-  'Find someone by @handle or email, or share your link: @{handle}':
-    'ابحث عن أحد بالمعرّف أو البريد، أو شارك رابطك: @{handle}',
   'See what the app asks': {
     toWoman: 'انظري ماذا يطلب التطبيق',
     toMan: 'انظر ماذا يطلب التطبيق',
@@ -395,14 +393,6 @@ export const ar: Catalog = {
   'That isn’t a contacts file. Export one from Google Contacts, iCloud or Outlook.':
     'هذا ليس ملف جهات اتصال. صدّر واحدًا من جهات اتصال Google أو iCloud أو Outlook.',
   'From your contacts': 'من جهات اتصالك',
-  'Who’s already here, and a link for the rest.': 'من هنا بالفعل، ورابط للبقية.',
-  'Find who’s on Caime': {
-    toWoman: 'اعرفي من على Caime',
-    toMan: 'اعرف من على Caime',
-    other: 'اعرف من على Caime',
-  },
-  'Export your contacts as a vCard or CSV file (Google Contacts: Export; iCloud: Export vCard; Outlook: Export contacts) and pick it here. It’s read on this device: only the addresses are sent, to see who’s on Caime, and nothing of it is kept.':
-    'صدّر جهات اتصالك كملف vCard أو CSV (جهات اتصال Google: تصدير؛ iCloud: تصدير vCard؛ Outlook: تصدير جهات الاتصال) واختره هنا. يُقرأ على هذا الجهاز: لا تُرسل إلا العناوين لمعرفة من على Caime، ولا يُحتفظ بشيء منه.',
   '{n} contacts': {
     zero: 'لا جهات اتصال',
     one: 'جهة اتصال واحدة',
@@ -411,8 +401,6 @@ export const ar: Catalog = {
     many: '{n} جهة اتصال',
     other: '{n} جهة اتصال',
   },
-  '{n} with an email address': '{n} بعنوان بريد',
-  'none with an email address': 'لا أحد بعنوان بريد',
   '{n} people are on Caime': {
     zero: 'لا أحد على Caime',
     one: 'شخص واحد على Caime',
@@ -430,14 +418,6 @@ export const ar: Catalog = {
     few: '{n} ليسوا على Caime بعد',
     many: '{n} ليسوا على Caime بعد',
     other: '{n} ليسوا على Caime بعد',
-  },
-  'Invite link': 'رابط الدعوة',
-  'Send it yourself, to whoever you like: Caime never writes to anyone for you. Whoever opens it lands connected with you.':
-    'أرسله بنفسك لمن تشاء: لا يكتب Caime لأحد نيابةً عنك. من يفتحه يصبح متواصلًا معك.',
-  'Make an invite link': {
-    toWoman: 'أنشئي رابط دعوة',
-    toMan: 'أنشئ رابط دعوة',
-    other: 'أنشئ رابط دعوة',
   },
   Automation: 'الأتمتة',
   'Connect Caime to the apps on Zapier': 'اربط Caime بالتطبيقات على Zapier',
@@ -4559,4 +4539,79 @@ export const ar: Catalog = {
   Previous: 'السابق',
   Camera: 'الكاميرا',
   'Take a photo and send it': 'التقاط صورة وإرسالها',
+  'Find them in your contacts, by @handle or email, or share your link: @{handle}':
+    'ابحث عنهم في جهات اتصالك أو بالمعرّف أو البريد، أو شارك رابطك: @{handle}',
+  Text: 'رسالة نصية',
+  Invited: 'تمت الدعوة',
+  'Invite {name}': 'دعوة {name}',
+  'No contacts were found there.': 'لم يُعثر على جهات اتصال هناك.',
+  'Your phone’s contacts': 'جهات اتصال هاتفك',
+  'Your contacts': 'جهات اتصالك',
+  'Your contacts couldn’t be read.': 'تعذّرت قراءة جهات اتصالك.',
+  '{account} didn’t let Caime read your contacts.': 'لم يسمح {account} لـCaime بقراءة جهات اتصالك.',
+  'That didn’t work. Try {account} again.': 'لم ينجح ذلك. جرّب {account} مرة أخرى.',
+  '{account} couldn’t be reached. Try again.': 'تعذّر الوصول إلى {account}. حاول مرة أخرى.',
+  'Hi {first}, I’m on Caime. Join me there: {url}':
+    'مرحبًا {first}، أنا على Caime. رابط الانضمام إليّ هناك: {url}',
+  'Hi, I’m on Caime. Join me there: {url}': 'مرحبًا، أنا على Caime. رابط الانضمام إليّ هناك: {url}',
+  'Join me on Caime': 'دعوة إلى Caime',
+  'That couldn’t be opened here.': 'تعذّر فتح ذلك هنا.',
+  'Requests sent to {n} people': {
+    zero: 'لم يُرسل أي طلب',
+    one: 'أُرسل طلب إلى شخص واحد',
+    two: 'أُرسل طلبان إلى شخصين',
+    few: 'أُرسلت الطلبات إلى {n} أشخاص',
+    many: 'أُرسلت الطلبات إلى {n} شخصًا',
+    other: 'أُرسلت الطلبات إلى {n} شخص',
+  },
+  'Choose from your contacts': {
+    toWoman: 'اختاري من جهات اتصالك',
+    toMan: 'اختر من جهات اتصالك',
+    other: 'اختر من جهات اتصالك',
+  },
+  'Read on this phone': 'تُقرأ على هذا الهاتف',
+  'The people you choose, from this phone': 'الأشخاص المختارون، من هذا الهاتف',
+  'Gmail and Google Contacts': 'Gmail وجهات اتصال Google',
+  'Outlook.com, Hotmail and Microsoft 365': 'Outlook.com وHotmail وMicrosoft 365',
+  'A contacts file': 'ملف جهات اتصال',
+  'vCard or CSV, exported from anywhere': 'vCard أو CSV، مُصدَّر من أي مكان',
+  'Who’s already here, and a way to invite the rest.': 'من هنا بالفعل، وطريقة لدعوة البقية.',
+  'Drop the file to read it.': {
+    toWoman: 'أفلتي الملف لقراءته.',
+    toMan: 'أفلت الملف لقراءته.',
+    other: 'أفلت الملف لقراءته.',
+  },
+  'Read on this device: only email addresses are sent, to see who’s on Caime, and nothing is kept. Whoever isn’t here, you invite yourself.':
+    'تُقرأ على هذا الجهاز: تُرسل عناوين البريد وحدها لمعرفة من على Caime، ولا يُحفظ شيء. ومن ليس هنا، فدعوته منك أنت.',
+  '{n} contacts read…': {
+    zero: 'لم تُقرأ أي جهة اتصال…',
+    one: 'قُرئت جهة اتصال واحدة…',
+    two: 'قُرئت جهتا اتصال…',
+    few: 'قُرئت {n} جهات اتصال…',
+    many: 'قُرئت {n} جهة اتصال…',
+    other: 'قُرئت {n} جهة اتصال…',
+  },
+  'Reading your contacts…': 'جارٍ قراءة جهات اتصالك…',
+  'Caime can’t see your contacts. Allow it in Settings to find your people, or choose a file instead.':
+    'لا يستطيع Caime رؤية جهات اتصالك. اسمح له بذلك في الإعدادات للعثور على أشخاصك، أو اختر ملفًا بدلًا من ذلك.',
+  'Open Settings': 'فتح الإعدادات',
+  'Look somewhere else': 'البحث في مكان آخر',
+  '{n} on Caime': {
+    zero: 'لا أحد على Caime',
+    one: 'واحد على Caime',
+    two: 'اثنان على Caime',
+    few: '{n} على Caime',
+    many: '{n} على Caime',
+    other: '{n} على Caime',
+  },
+  'You shared some of your contacts with Caime.': 'شاركت بعض جهات اتصالك مع Caime.',
+  'Share more': 'مشاركة المزيد',
+  'Connect with all': 'التواصل مع الجميع',
+  'Nobody here yet': 'لا أحد هنا بعد',
+  'Invite them yourself, from your own WhatsApp, messages or mail, with your link in the words. Caime never writes to anyone for you.':
+    'الدعوة منك أنت، من WhatsApp أو رسائلك أو بريدك، ورابطك في نصها. لا يكتب Caime لأحد نيابةً عنك.',
+  'Find in your contacts': 'البحث في جهات اتصالك',
+  'Show {n} more': 'إظهار {n} أخرى',
+  'People are found on Caime by their email address, and none of these contacts has one. Invite them below.':
+    'يُعثر على الأشخاص في Caime بعنوان بريدهم، وليس لأي من جهات الاتصال هذه عنوان. ادعهم أدناه.',
 };

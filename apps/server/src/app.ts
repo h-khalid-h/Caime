@@ -63,6 +63,7 @@ import { calendarRoutes } from './modules/calendar';
 import { callRoutes } from './modules/calls';
 import { checkoutRoutes } from './modules/checkout';
 import { connectionRoutes } from './modules/connections';
+import { contactRoutes } from './modules/contacts';
 import { conversationRoutes } from './modules/conversations';
 import { directoryRoutes } from './modules/directory';
 import { e2eeRoutes } from './modules/e2ee';
@@ -299,6 +300,7 @@ export async function buildApp(config: Config, options: BuildOptions = {}): Prom
       await meRoutes(v1, ctx);
       await peopleRoutes(v1, ctx);
       await connectionRoutes(v1, ctx);
+      await contactRoutes(v1, ctx);
       await inviteRoutes(v1, ctx);
       await relationshipRoutes(v1, ctx);
       await policyRoutes(v1, ctx);

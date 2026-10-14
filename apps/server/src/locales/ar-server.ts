@@ -532,6 +532,7 @@ export const arServer: Catalog = {
   'Live location is for people you know, not organizations.':
     'الموقع المباشر لمن تعرفهم، لا للمؤسسات.',
   'That organization': 'تلك المؤسسة',
+  'That account': 'ذلك الحساب',
   'You’ve used today’s {aiPerDay} AI assists.{ready}{more}':
     'استنفدت مساعدات الذكاء الاصطناعي لهذا اليوم ({aiPerDay}).{ready}{more}',
   'The next one is ready {when}.': ' تتوفر التالية {when}.',
