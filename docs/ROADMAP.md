@@ -1420,10 +1420,14 @@ listed there with its owner.
       "Stop repeating" on the time ahead; the calendar, the feed (one event a time) and the
       slots look ahead from the latest card (core `series.ts`, `lib/meeting-series.ts`,
       `upcoming.ts`). `series.test.ts`, `meeting-series.test.ts`, `e2e/meetings.spec.ts`.
+- [x] R58, a group's meeting has its brief an hour before: in a space by its kind (a team's or a
+      project's to everyone, a family's or a community's to nobody), outside one by each
+      person's own label for whoever called it, one query (`groupReaders` in `lib/briefs.ts`).
+      `group-briefs.test.ts`.
 - [ ] Later layers of R58: a recurring appointment (each time's slot checked against the host's
       catalog as it's posted), every weekday and an end date for a meeting that repeats, a
       resource shared by several items (one set of chairs for two services), a customer
-      choosing who does it where an organization allows it, group meetings' briefs.
+      choosing who does it where an organization allows it.
 
 ## M14 — Apps and Mail (R74, R75)
 
@@ -3078,3 +3082,5 @@ The six-slice review's plan, in its order; a block is ticked when its tests and 
   its own card posted a minute after the one before ends (brief, Join, guests asked again,
   "Cancel this one"), "Stop repeating", and the calendar, the feed and the slots looking ahead.
   Whole E2E suite 106 passed; initial web JS 449.9 KB gzip.
+- 2026-10-14 — R58, a group's meeting has its brief: by its space's kind, else by each one's own
+  label for whoever called it.

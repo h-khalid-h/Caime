@@ -9,6 +9,7 @@
  */
 import { type BriefView, KITS, type Sphere, tr, trn } from '@caime/core';
 import { AGREED_STATES as AGREED } from '@caime/core/kit-states';
+import { SPACE_KIND_DEFS, type SpaceKind } from '@caime/core/spaces';
 import { sql } from 'kysely';
 import type { AppContext } from '../context';
 import { MESSAGE_COLUMNS, type Message } from '../db/schema';
@@ -53,6 +54,7 @@ export const BRIEF_LABEL = 'AI summary';
 interface CardRow {
   id: string;
   conversation_id: string;
+  sender_id: string | null;
   payload: {
     kit?: string;
     title?: string;
@@ -65,13 +67,13 @@ interface CardRow {
 async function cardOf(ctx: AppContext, messageId: string): Promise<CardRow | null> {
   const row = await ctx.db
     .selectFrom('messages')
-    .select(['id', 'conversation_id', 'payload', 'kind', 'deleted_at'])
+    .select(['id', 'conversation_id', 'sender_id', 'payload', 'kind', 'deleted_at'])
     .where('id', '=', messageId)
     .executeTakeFirst();
   if (row?.kind !== 'kit' || row.deleted_at) return null;
   const payload = (row.payload ?? {}) as CardRow['payload'];
   if (payload.kit !== 'meeting' && payload.kit !== 'appointment') return null;
-  return { id: row.id, conversation_id: row.conversation_id, payload };
+  return { id: row.id, conversation_id: row.conversation_id, sender_id: row.sender_id, payload };
 }
 
 const startOf = (card: CardRow): Date | null => {
@@ -101,15 +103,21 @@ export async function queueBrief(ctx: AppContext, messageId: string): Promise<vo
   );
 }
 
-/** Who in the conversation gets a brief: by their own relationship to the other side. */
+/**
+ * Who in the conversation gets a brief: by their own relationship to the other side. In a
+ * group, what it's for says: a space's kind (a team's or a project's, everyone in it; a
+ * family's or a community's, nobody), else each one's own label for whoever called it, and
+ * whoever called it when anyone in it is work to them.
+ */
 async function readersOf(ctx: AppContext, card: CardRow): Promise<string[]> {
   const conversation = await ctx.db
-    .selectFrom('conversations')
-    .select(['kind', 'privacy_class'])
-    .where('id', '=', card.conversation_id)
+    .selectFrom('conversations as c')
+    .leftJoin('spaces as s', 's.id', 'c.space_id')
+    .select(['c.kind', 'c.privacy_class', 's.kind as space_kind'])
+    .where('c.id', '=', card.conversation_id)
     .executeTakeFirst();
   if (conversation?.privacy_class !== 'standard') return [];
-  if (conversation.kind !== 'direct' && conversation.kind !== 'business') return [];
+  if (!['direct', 'business', 'group'].includes(conversation.kind)) return [];
   const people = await ctx.db
     .selectFrom('participants as p')
     .innerJoin('users as u', 'u.id', 'p.user_id')
@@ -135,6 +143,8 @@ async function readersOf(ctx: AppContext, card: CardRow): Promise<string[]> {
     const doer = card.payload.booking?.providerId ?? thread?.assignee_id ?? null;
     return ids.filter((id) => id === mask.customerId || id === doer);
   }
+  if (conversation.kind === 'group')
+    return groupReaders(ctx, ids, card.sender_id, conversation.space_kind);
   const out: string[] = [];
   for (const id of ids) {
     const other = ids.find((x) => x !== id);
@@ -143,6 +153,38 @@ async function readersOf(ctx: AppContext, card: CardRow): Promise<string[]> {
     if (rels.some((r) => BRIEF_SPHERES.includes(r.sphere as Sphere))) out.push(id);
   }
   return out;
+}
+
+/** A group's readers (R58): by its space's kind, else by each one's tie to its organizer. */
+async function groupReaders(
+  ctx: AppContext,
+  ids: string[],
+  organizer: string | null,
+  spaceKind: SpaceKind | null,
+): Promise<string[]> {
+  if (spaceKind) {
+    const sphere = SPACE_KIND_DEFS[spaceKind]?.sphere;
+    return sphere && BRIEF_SPHERES.includes(sphere) ? ids : [];
+  }
+  if (!organizer || !ids.includes(organizer)) return [];
+  const others = ids.filter((id) => id !== organizer);
+  if (!others.length) return [];
+  // Both ways at once, one query: each one's label for the organizer, and the organizer's.
+  const rels = await ctx.db
+    .selectFrom('relationships')
+    .select(['owner_id', 'subject_id', 'sphere'])
+    .where('status', '=', 'active')
+    .where('sphere', 'in', [...BRIEF_SPHERES])
+    .where((eb) =>
+      eb.or([
+        eb.and([eb('owner_id', 'in', others), eb('subject_id', '=', organizer)]),
+        eb.and([eb('owner_id', '=', organizer), eb('subject_id', 'in', others)]),
+      ]),
+    )
+    .execute();
+  const readers = new Set(rels.filter((r) => r.subject_id === organizer).map((r) => r.owner_id));
+  if (rels.some((r) => r.owner_id === organizer)) readers.add(organizer);
+  return ids.filter((id) => readers.has(id));
 }
 
 async function briefJob(ctx: AppContext, payload: Record<string, unknown>): Promise<void> {

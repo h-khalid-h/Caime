@@ -479,7 +479,8 @@ These are rules, not preferences.
   `card.brief` (`queueBrief`, from the kit move route; one per card and start, so a moved card
   finds its old job pointless) an hour before, for the people whose own relationship to the
   other side is in `BRIEF_SPHERES` (a business conversation: the customer and whoever does or
-  has it); `briefFor(ctx, userId, messageId, { withModel })` is the reader's own view (decisions,
+  has it; a group: by its space's kind, else each one's label for whoever called it,
+  `groupReaders`); `briefFor(ctx, userId, messageId, { withModel })` is the reader's own view (decisions,
   open promises either way, their questions since the reader's last words, files, a count,
   since the previous agreed card or a fortnight), `GET /messages/:id/brief` adds the summary
   through `runAi('brief')` only with assist on, an adult, an allowance and a standard

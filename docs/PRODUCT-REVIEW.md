@@ -639,8 +639,12 @@ with its reason, so it isn't proposed again without new facts.
   its own, the same before and after it's posted) without a table or a row a week. "Stop
   repeating" on the time ahead, by anyone it's for, ends it there; where its organizer can no
   longer write (they left, a block), it ends quietly. With guests (R84), it goes on in the
-  meeting's space, and each new time asks the guests again with a new link of their own. Not
-  done: a recurring appointment (each time's slot must be checked against the host's catalog
+  meeting's space, and each new time asks the guests again with a new link of their own. *A
+  group's meeting* (built 2026-10-14) gets its brief by what the group is for: in a space, its
+  kind (a team's or a project's to everyone in it, a family's, friends', community's or
+  school's to nobody); outside one, by each person's own label for whoever called it, and to
+  whoever called it when anyone in it is work to them (one read of both directions); a guest
+  never. Not done: a recurring appointment (each time's slot must be checked against the host's catalog
   as it's posted), every weekday, and an end date.
 - **R59 — The fourth language is Turkish.** By R55's rule (one region, through organizations):
   Arabic, English and French cover the Middle East and North Africa; the market next to it that
