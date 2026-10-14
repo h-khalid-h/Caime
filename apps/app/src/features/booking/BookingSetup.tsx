@@ -29,6 +29,8 @@ import {
   type CatalogCollection,
   COLLECTIONS_MAX,
   grouped,
+  moveItem,
+  moveOne,
   SLUG_MAX,
   slugError,
   slugify,
@@ -603,6 +605,14 @@ export function BookingSetup({
           item={editing}
           collections={collections}
           isNew={!items.some((i) => i.id === editing.id)}
+          move={{
+            earlier: moveItem(items, collections, editing.id, -1) !== null,
+            later: moveItem(items, collections, editing.id, 1) !== null,
+            onMove: async (by) => {
+              const next = moveItem(items, collections, editing.id, by);
+              if (next) await saveItems(next);
+            },
+          }}
           onClose={() => setEditing(null)}
           onSave={async (item, stock) => {
             const next = items.some((i) => i.id === item.id)
@@ -625,6 +635,14 @@ export function BookingSetup({
           host={host}
           way={way}
           isNew={!methods.some((m) => m.id === way.id)}
+          move={{
+            earlier: moveOne(methods, way.id, -1) !== null,
+            later: moveOne(methods, way.id, 1) !== null,
+            onMove: async (by) => {
+              const next = moveOne(methods, way.id, by);
+              if (next) await savePayments(next);
+            },
+          }}
           onClose={() => setWay(null)}
           onSave={async (w) => {
             await savePayments(
@@ -648,6 +666,14 @@ export function BookingSetup({
           host={host}
           collection={shelf}
           isNew={!collections.some((c) => c.id === shelf.id)}
+          move={{
+            earlier: moveOne(collections, shelf.id, -1) !== null,
+            later: moveOne(collections, shelf.id, 1) !== null,
+            onMove: async (by) => {
+              const next = moveOne(collections, shelf.id, by);
+              if (next) await saveCollections(next);
+            },
+          }}
           onClose={() => setShelf(null)}
           onSave={async (c) => {
             await saveCollections(
@@ -794,6 +820,7 @@ function WayEditor({
   host,
   way,
   isNew,
+  move,
   onClose,
   onSave,
   onRemove,
@@ -802,6 +829,7 @@ function WayEditor({
   host: BookingHostInfo;
   way: PaymentMethod;
   isNew: boolean;
+  move: Move;
   onClose: () => void;
   onSave: (w: PaymentMethod) => Promise<void>;
   onRemove: () => Promise<void>;
@@ -856,6 +884,7 @@ function WayEditor({
             loading={busy === 'save'}
             testID={`${testID}-save`}
           />
+          {!isNew ? <MoveButtons move={move} testID={testID} /> : null}
           {!isNew ? (
             <Button
               label={tr('Remove')}
@@ -953,10 +982,60 @@ function WayEditor({
   );
 }
 
+/** Where something sits in the host's order (R61): one place up or down, and whether it can. */
+interface Move {
+  earlier: boolean;
+  later: boolean;
+  onMove: (by: -1 | 1) => Promise<void>;
+}
+
+/**
+ * One place up or down (R61): where the host's pages, this list and the card's picker show it.
+ * Saved at once; the sheet stays open to move it again.
+ */
+function MoveButtons({ move, testID }: { move: Move; testID: string }) {
+  const [busy, setBusy] = useState<-1 | 1 | null>(null);
+  if (!move.earlier && !move.later) return null;
+  const go = (by: -1 | 1) => {
+    setBusy(by);
+    void move
+      .onMove(by)
+      .catch((e: Error) => toast(e.message, { tone: 'danger' }))
+      .finally(() => setBusy(null));
+  };
+  return (
+    <View style={{ flexDirection: 'row', gap: 8 }}>
+      <View style={{ flex: 1 }}>
+        <Button
+          label={tr('Move up')}
+          variant="secondary"
+          block
+          disabled={!move.earlier || busy !== null}
+          loading={busy === -1}
+          onPress={() => go(-1)}
+          testID={`${testID}-up`}
+        />
+      </View>
+      <View style={{ flex: 1 }}>
+        <Button
+          label={tr('Move down')}
+          variant="secondary"
+          block
+          disabled={!move.later || busy !== null}
+          loading={busy === 1}
+          onPress={() => go(1)}
+          testID={`${testID}-down`}
+        />
+      </View>
+    </View>
+  );
+}
+
 function CollectionEditor({
   host,
   collection,
   isNew,
+  move,
   onClose,
   onSave,
   onRemove,
@@ -965,6 +1044,7 @@ function CollectionEditor({
   host: BookingHostInfo;
   collection: CatalogCollection;
   isNew: boolean;
+  move: Move;
   onClose: () => void;
   onSave: (c: CatalogCollection) => Promise<void>;
   onRemove: () => Promise<void>;
@@ -1011,6 +1091,7 @@ function CollectionEditor({
             loading={busy === 'save'}
             testID={`${testID}-save`}
           />
+          {!isNew ? <MoveButtons move={move} testID={testID} /> : null}
           {!isNew ? (
             <Button
               label={tr('Remove')}
@@ -1068,6 +1149,7 @@ function ItemEditor({
   item,
   collections,
   isNew,
+  move,
   onClose,
   onSave,
   onRemove,
@@ -1077,6 +1159,7 @@ function ItemEditor({
   item: BookingItem;
   collections: CatalogCollection[];
   isNew: boolean;
+  move: Move;
   onClose: () => void;
   /** The item, and its count where it was changed (R60): a number, null for not counted. */
   onSave: (item: BookingItem, stock?: number | null) => Promise<void>;
@@ -1213,6 +1296,7 @@ function ItemEditor({
             loading={busy === 'save'}
             testID={`${testID}-save`}
           />
+          {!isNew ? <MoveButtons move={move} testID={testID} /> : null}
           {!isNew ? (
             <Button
               label={tr('Remove')}

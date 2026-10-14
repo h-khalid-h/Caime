@@ -1400,8 +1400,11 @@ listed there with its owner.
       public page (picture, `og:image`, JSON-LD `image`), its sheet, a collection's list and the
       order picker; added, changed or taken off in the item's editor. `item-photos.test.ts`,
       `e2e/bookings.spec.ts`.
-- [ ] Later layers of R61: a collection's order on the host's page, person pages' items in a
-      sitemap only if a person opts in.
+- [x] R61, the host's order: "Move up" and "Move down" in a collection's, an item's and a way to
+      be paid's sheet (core `moveOne`, `moveItem`: an item moves among its own collection's), and
+      the public page lists each public collection under its own name with what's on it, then
+      the rest. `catalog.test.ts`, `public-pages.test.ts`, `e2e/bookings.spec.ts`.
+- [ ] Later layers of R61: person pages' items in a sitemap only if a person opts in.
 - [x] R59: Turkish as the fourth language (`tr`): core and server catalogs, the setting, the
       site's switch and alternates (`tr_TR`), the catalog tests over four languages, the agent's
       hand-over line, voice-note hints; `e2e/turkish.spec.ts`.
@@ -3084,3 +3087,5 @@ The six-slice review's plan, in its order; a block is ticked when its tests and 
   Whole E2E suite 106 passed; initial web JS 449.9 KB gzip.
 - 2026-10-14 — R58, a group's meeting has its brief: by its space's kind, else by each one's own
   label for whoever called it.
+- 2026-10-14 — R61, the host's order: collections, items and ways to be paid moved up or down in
+  their sheets; the public page lists each collection with what's on it, in that order.

@@ -932,7 +932,6 @@ export const arServer: Catalog = {
   'Up to {n} of that in one order.': 'حتى {n} من هذا في الطلب الواحد.',
   'They don’t offer that way.': 'طريقة الاستلام هذه غير متاحة لديهم.',
   offers: 'يقدّم',
-  collections: 'المجموعات',
   'Ways to be paid are for people over 18.': 'طرق الدفع لك متاحة لمن تجاوزوا 18 عامًا.',
   'In a group, ask to be paid; say you’re paying where it’s two of you.':
     'في المجموعة، اطلب أن يُدفع لك؛ أما في محادثة بين اثنين فقل إنك تدفع.',

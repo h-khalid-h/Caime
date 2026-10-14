@@ -448,7 +448,10 @@ These are rules, not preferences.
   both its audience and its collection's allow (`bookableItems` with `collections`). Read a
   catalog through `catalogOf` (`lib/booking.ts`), which gives every older item its address
   (`withSlugs`), and save through `catalogFrom`; one address space per host, never a
-  `RESERVED_SLUGS` word (a new screen under `/o/<handle>/` adds its name there). Public pages are
+  `RESERVED_SLUGS` word (a new screen under `/o/<handle>/` adds its name there). The order is the
+  host's: collections, the items among each collection's and the ways to be paid are listed as
+  their arrays are, moved one place at a time by core `moveOne` and `moveItem` from each sheet,
+  and every list of them (the setup, the picker through `grouped`, the public page) keeps it. Public pages are
   `kind: 'item' | 'collection'` from `shelfPage` (`lib/public-pages.ts`), with JSON-LD
   (`itemLd`, `OfferCatalog`) and sitemap lines for verified organizations. In the app the
   address routes (`o/[handle]/[slug]`, `[at]/[slug]`) redirect to the host's route with `?item`,

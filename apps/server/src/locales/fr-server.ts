@@ -974,7 +974,6 @@ export const frServer: Catalog = {
   'Up to {n} of that in one order.': 'Jusqu’à {n} par commande.',
   'They don’t offer that way.': 'Ce mode de livraison ou de retrait n’est pas proposé.',
   offers: 'propose',
-  collections: 'collections',
   'Ways to be paid are for people over 18.':
     'Les moyens de paiement sont réservés aux plus de 18 ans.',
   'In a group, ask to be paid; say you’re paying where it’s two of you.':

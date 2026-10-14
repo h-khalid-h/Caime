@@ -511,6 +511,12 @@ describe('the readable web (R44)', () => {
     // The organization's page links its public shelf and items; nothing of the team's.
     const org = await visit('/o/nile.dental');
     expect(org.body).toContain('<a href="/o/nile.dental/care-at-home">Care at home</a>');
+    // In the host's order: the shelf under its own name with what's on it, then the rest.
+    const care = org.body.indexOf(
+      '<dt class="mono"><a href="/o/nile.dental/care-at-home">Care at home</a></dt><dd><a href="/o/nile.dental/soft-toothbrush">',
+    );
+    expect(care).toBeGreaterThan(-1);
+    expect(org.body.indexOf('<dt class="mono">Offers</dt>', care)).toBeGreaterThan(care);
     expect(org.body).not.toContain('Staff floss');
     expect(org.body).not.toContain('For the team');
     // What isn't public is no page: under an organization it's the app's, never a crawler's.

@@ -704,7 +704,11 @@ with its reason, so it isn't proposed again without new facts.
   collection is an `OfferCatalog`), breadcrumbs back to the host, and a line in the sitemap for
   a verified organization (people are never listed, as before). Signed in, the same address is
   the host's page with the item's sheet over it. What isn't public is no page: under an
-  organization it is the app's, never a crawler's.
+  organization it is the app's, never a crawler's. *The host's order* (built 2026-10-14): the
+  collections, the items among each collection's and the ways to be paid are listed in the
+  order the host gives them ("Move up", "Move down" in each one's sheet, saved at once); the
+  public page lists each public collection under its own name, which opens its page, with what's
+  on it, then what's in none, the same order as the setup and the card's picker.
 - **R62 — Pay, in and out, and cards that answer each other.** The owner's next idea
   (2026-10-05): payments in or out, person to person, organization to organization, person to
   organization and back, with payment options in settings, on cards and on public pages, and

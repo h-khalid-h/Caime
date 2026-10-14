@@ -233,6 +233,21 @@ test.describe
       await expect(page.getByTestId('org-booking-item-photo-off')).toBeVisible();
       await page.getByTestId('org-booking-item-save').click();
       await expect(visible(page, /1 item · Everyone/)).toBeVisible();
+      // The order is the host's: a second shelf, moved up, comes first.
+      await page.getByTestId('org-booking-add-collection').click();
+      await page.getByTestId('org-booking-collection-name').fill('Gift sets');
+      await page.getByTestId('org-booking-collection-save').click();
+      await expect(visible(page, /0 items · Everyone/)).toBeVisible();
+      const shelves = page
+        .locator('[data-testid^="org-booking-collection-"]')
+        .filter({ visible: true });
+      await expect(shelves.nth(1)).toContainText('Gift sets');
+      await shelves.nth(1).click();
+      await page.getByTestId('org-booking-collection-up').click();
+      await expect(page.getByTestId('org-booking-collection-up')).toBeDisabled();
+      await page.getByRole('button', { name: 'Close', exact: true }).last().click();
+      await expect(shelves.first()).toContainText('Gift sets');
+      await expect(shelves.nth(1)).toContainText('Hair care');
       expect(errors).toEqual([]);
       await owner.close();
 

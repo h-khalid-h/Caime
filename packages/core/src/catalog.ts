@@ -115,6 +115,48 @@ export function bySlug<I extends Pick<BookingItem, 'slug'>, C extends { slug: st
 
 export { grouped, itemsIn } from './booking';
 
+/**
+ * One of a list one place earlier or later (R61): a collection (the host's pages, its setup and
+ * the card's picker list them in their order) or a way to be paid. Null where it can't go
+ * further that way.
+ */
+export function moveOne<C extends { id: string }>(
+  collections: readonly C[],
+  id: string,
+  by: -1 | 1,
+): C[] | null {
+  const at = collections.findIndex((c) => c.id === id);
+  const to = at + by;
+  if (at < 0 || to < 0 || to >= collections.length) return null;
+  const next = [...collections];
+  [next[at], next[to]] = [next[to] as C, next[at] as C];
+  return next;
+}
+
+/**
+ * An item one place earlier or later among the items of its own collection (or of none), as
+ * `grouped` shows them: it swaps with its neighbour there, and nothing else moves. Null where it
+ * can't go further that way.
+ */
+export function moveItem<I extends Pick<BookingItem, 'id' | 'collectionId'>>(
+  items: readonly I[],
+  collections: readonly { id: string }[],
+  id: string,
+  by: -1 | 1,
+): I[] | null {
+  const known = new Set(collections.map((c) => c.id));
+  const shelfOf = (i: I) => (i.collectionId && known.has(i.collectionId) ? i.collectionId : null);
+  const at = items.findIndex((i) => i.id === id);
+  if (at < 0) return null;
+  const shelf = shelfOf(items[at] as I);
+  let to = at + by;
+  while (to >= 0 && to < items.length && shelfOf(items[to] as I) !== shelf) to += by;
+  if (to < 0 || to >= items.length) return null;
+  const next = [...items];
+  [next[at], next[to]] = [next[to] as I, next[at] as I];
+  return next;
+}
+
 /** The collections this viewer may see, in the host's order (the same standing as `canBook`). */
 export function visibleCollections<C extends { audience: BookingAudience }>(
   collections: readonly C[],

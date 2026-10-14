@@ -4498,4 +4498,7 @@ export const ar: Catalog = {
   'Cancel this one': 'إلغاء هذه المرة',
   'Stop repeating': 'إيقاف التكرار',
   'Doesn’t repeat any more': 'لم يعد يتكرر',
+  // Where something sits in a host's order (R61).
+  'Move up': 'نقل للأعلى',
+  'Move down': 'نقل للأسفل',
 };

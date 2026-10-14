@@ -3833,4 +3833,7 @@ export const turkish: Catalog = {
   'Cancel this one': 'Yalnızca bunu iptal et',
   'Stop repeating': 'Tekrarı durdur',
   'Doesn’t repeat any more': 'Artık tekrarlanmıyor',
+  // Where something sits in a host's order (R61).
+  'Move up': 'Yukarı taşı',
+  'Move down': 'Aşağı taşı',
 };

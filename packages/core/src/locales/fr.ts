@@ -3999,4 +3999,7 @@ export const fr: Catalog = {
   'Cancel this one': 'Annuler celle-ci',
   'Stop repeating': 'Ne plus répéter',
   'Doesn’t repeat any more': 'Ne se répète plus',
+  // Where something sits in a host's order (R61).
+  'Move up': 'Monter',
+  'Move down': 'Descendre',
 };

@@ -927,7 +927,6 @@ export const turkishServer: Catalog = {
   'Up to {n} of that in one order.': 'Bir siparişte bundan en fazla {n} adet.',
   'They don’t offer that way.': 'Bu teslimat yöntemini sunmuyorlar.',
   offers: 'sunulanlar',
-  collections: 'koleksiyonlar',
   'Ways to be paid are for people over 18.': 'Ödeme alma yolları 18 yaş üstü kişiler içindir.',
   'In a group, ask to be paid; say you’re paying where it’s two of you.':
     'Grupta ödeme isteyebilirsiniz; “ödüyorum” demek yalnızca iki kişilik konuşmalarda olur.',

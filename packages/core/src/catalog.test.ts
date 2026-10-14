@@ -3,6 +3,8 @@ import { type BookingItem, bookableItems } from './booking';
 import {
   bySlug,
   grouped,
+  moveItem,
+  moveOne,
   RESERVED_SLUGS,
   slugError,
   slugify,
@@ -99,6 +101,22 @@ describe('collections (R61)', () => {
       ['fam', ['b']],
       [null, ['c', 'd']],
     ]);
+  });
+
+  it('moves a collection, and an item among its own collection’s, one place at a time', () => {
+    expect(moveOne(shelves, 'fam', -1)?.map((c) => c.id)).toEqual(['fam', 'pub']);
+    expect(moveOne(shelves, 'pub', -1)).toBeNull();
+    expect(moveOne(shelves, 'fam', 1)).toBeNull();
+    const more = [...items, item('e', { collectionId: 'pub' })];
+    // "e" goes up past the others to "a", its collection's only other item; nothing else moves.
+    expect(moveItem(more, shelves, 'e', -1)?.map((i) => i.id)).toEqual(['e', 'b', 'c', 'd', 'a']);
+    expect(
+      grouped(moveItem(more, shelves, 'e', -1) ?? [], shelves)[0]?.items.map((i) => i.id),
+    ).toEqual(['e', 'a']);
+    // An item in a collection that's gone is in none, with "c".
+    expect(moveItem(more, shelves, 'd', -1)?.map((i) => i.id)).toEqual(['a', 'b', 'd', 'c', 'e']);
+    expect(moveItem(more, shelves, 'a', -1)).toBeNull();
+    expect(moveItem(more, shelves, 'b', 1)).toBeNull();
   });
 
   it('lets someone see an item only where its collection allows them too', () => {

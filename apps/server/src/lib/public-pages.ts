@@ -15,6 +15,7 @@ import {
   bySlug,
   canSee,
   formatAmount,
+  grouped,
   handleError,
   itemPhotoPath,
   methodsFor,
@@ -1036,22 +1037,25 @@ export const shelfPath = (host: PublicPerson | PublicOrg, slug: string) =>
   `${hostPath(host)}/${encodeURIComponent(slug)}`;
 
 /**
- * The public items as spec rows (R58), each a link to its own page (R61), and the collections
- * they're on, each with its page.
+ * The public items as spec rows (R58), each a link to its own page (R61), in the host's order:
+ * each public collection under its own name, which opens its page, then what's in none.
  */
 function itemRows(host: PublicPerson | PublicOrg, items: PublicItem[] = host.items): string {
   if (items.length === 0) return '';
-  const shelves = host.collections.length
-    ? `<div>${label(tr('collections'))}<dd>${host.collections
-        .map((c) => `<a href="${esc(shelfPath(host, c.slug))}">${esc(c.name)}</a>`)
-        .join(' · ')}</dd></div>`
-    : '';
-  return `${shelves}<div>${label(tr('offers'))}<dd>${items
-    .map(
-      (i) =>
-        `<a href="${esc(shelfPath(host, i.slug))}">${esc(i.name)}</a> <span class="small">${esc(itemLine(i))}</span>`,
+  const lines = (shown: PublicItem[]) =>
+    shown
+      .map(
+        (i) =>
+          `<a href="${esc(shelfPath(host, i.slug))}">${esc(i.name)}</a> <span class="small">${esc(itemLine(i))}</span>`,
+      )
+      .join('<br>');
+  return grouped(items, host.collections)
+    .map((g) =>
+      g.collection
+        ? `<div><dt class="mono"><a href="${esc(shelfPath(host, g.collection.slug))}">${esc(g.collection.name)}</a></dt><dd>${lines(g.items)}</dd></div>`
+        : `<div>${label(tr('offers'))}<dd>${lines(g.items)}</dd></div>`,
     )
-    .join('<br>')}</dd></div>`;
+    .join('');
 }
 
 /** What an item is to an answer engine (R61): a product sold or a service booked, its offer. */
