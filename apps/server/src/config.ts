@@ -283,6 +283,10 @@ const Env = z.object({
   GOOGLE_PEOPLE_API: z.string().url().default('https://people.googleapis.com'),
   MICROSOFT_LOGIN_BASE: z.string().url().default('https://login.microsoftonline.com'),
   MICROSOFT_GRAPH_API: z.string().url().default('https://graph.microsoft.com'),
+  /** Connected accounts (R90): who a Google account is, its calendar, and its revocation. */
+  GOOGLE_USERINFO_URL: z.string().url().default('https://openidconnect.googleapis.com/v1/userinfo'),
+  GOOGLE_CALENDAR_API: z.string().url().default('https://www.googleapis.com/calendar/v3'),
+  GOOGLE_REVOKE_URL: z.string().url().default('https://oauth2.googleapis.com/revoke'),
 });
 
 export type Config = z.infer<typeof Env> & {

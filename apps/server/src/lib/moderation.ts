@@ -6,6 +6,7 @@ import { builtinCountsChanged } from './app-directory';
 import { emitWebhook } from './apps';
 import { audit } from './audit';
 import { dropSaved, tellSaved } from './automations';
+import { disconnectAllAccounts } from './connected-accounts';
 import { recordEvent } from './events';
 import { participantsOf } from './messages';
 import { forgetNotificationsOf, notify, tellForgotten } from './notify';
@@ -250,6 +251,8 @@ export async function endAllAccess(
     .where('revoked_at', 'is', null)
     .execute();
   await revokeGrantsOf(ctx, userId);
+  // Their Google and Microsoft accounts are let go of too (R90), revoked where the provider can.
+  await disconnectAllAccounts(ctx, userId);
   const feed = await ctx.db
     .deleteFrom('calendar_feeds')
     .where('user_id', '=', userId)

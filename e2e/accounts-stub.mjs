@@ -5,6 +5,9 @@
  * real ones answer. What an account holds is set by the test (`POST /people`), and every request
  * is listed at `GET /requests` with whether a browser made it (an Origin header) and the access
  * it carried, so a test can tell the access reached the browser and nothing else.
+ *
+ * Connected accounts (R90) too: a refresh token with every code, renewed accesses, who the
+ * account is, a calendar's busy times (set by the test, `POST /busy`) and Google's revocation.
  */
 import { createServer } from 'node:http';
 
@@ -16,6 +19,9 @@ let people = {
   microsoft: { contacts: [], people: [] },
 };
 const requests = [];
+const REFRESH = { google: 'google-e2e-refresh', microsoft: 'microsoft-e2e-refresh' };
+/** When the account's calendar is busy: `{ start, end }` in UTC. */
+let busy = [];
 
 const cors = {
   'access-control-allow-origin': '*',
@@ -49,6 +55,12 @@ createServer(async (req, res) => {
     requests.length = 0;
     return json(res, 200, { ok: true });
   }
+  if (path === '/busy' && req.method === 'POST') {
+    let raw = '';
+    for await (const chunk of req) raw += chunk;
+    busy = JSON.parse(raw || '[]');
+    return json(res, 200, { ok: true });
+  }
   if (req.method === 'OPTIONS') {
     res.writeHead(204, cors);
     return res.end();
@@ -79,16 +91,49 @@ createServer(async (req, res) => {
     path === '/google/token' ? 'google' : path === '/common/oauth2/v2.0/token' ? 'microsoft' : null;
   if (token && req.method === 'POST') {
     const f = await form(req);
-    if (f.client_secret !== SECRETS[token] || f.code !== `${token}-e2e-code`)
+    const renewing = f.grant_type === 'refresh_token';
+    if (
+      f.client_secret !== SECRETS[token] ||
+      (renewing ? f.refresh_token !== REFRESH[token] : f.code !== `${token}-e2e-code`)
+    )
       return json(res, 400, { error: 'invalid_grant' });
     return json(res, 200, {
       access_token: ACCESS[token],
       token_type: 'Bearer',
       expires_in: 3599,
+      // Google renews with the same refresh token; Microsoft hands one with each access.
+      ...(renewing && token === 'google' ? {} : { refresh_token: REFRESH[token] }),
       scope:
         token === 'google'
-          ? 'https://www.googleapis.com/auth/contacts.readonly https://www.googleapis.com/auth/contacts.other.readonly'
-          : 'https://graph.microsoft.com/Contacts.Read https://graph.microsoft.com/People.Read',
+          ? 'openid https://www.googleapis.com/auth/userinfo.email https://www.googleapis.com/auth/contacts.readonly https://www.googleapis.com/auth/contacts.other.readonly https://www.googleapis.com/auth/calendar.freebusy'
+          : 'https://graph.microsoft.com/Contacts.Read https://graph.microsoft.com/People.Read https://graph.microsoft.com/Calendars.ReadBasic',
+    });
+  }
+  if (path === '/google/revoke' && req.method === 'POST') return json(res, 200, {});
+  // Who the account is, and when its calendar is busy: only Caime's server asks.
+  if (path === '/google/userinfo') {
+    if (bearer !== ACCESS.google) return json(res, 401, {});
+    return json(res, 200, { sub: 'google-e2e-subject', email: 'noor.e2e@gmail.example' });
+  }
+  if (path === '/gcal/freeBusy' && req.method === 'POST') {
+    if (bearer !== ACCESS.google) return json(res, 401, {});
+    return json(res, 200, { calendars: { primary: { busy } } });
+  }
+  if (path === '/v1.0/me') {
+    if (bearer !== ACCESS.microsoft) return json(res, 401, {});
+    return json(res, 200, {
+      id: 'microsoft-e2e-subject',
+      userPrincipalName: 'noor.e2e@outlook.example',
+    });
+  }
+  if (path === '/v1.0/me/calendarView') {
+    if (bearer !== ACCESS.microsoft) return json(res, 401, {});
+    return json(res, 200, {
+      value: busy.map((b) => ({
+        start: { dateTime: b.start.replace(/Z$/, '') },
+        end: { dateTime: b.end.replace(/Z$/, '') },
+        showAs: 'busy',
+      })),
     });
   }
 

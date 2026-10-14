@@ -1293,4 +1293,5 @@ export const turkishServer: Catalog = {
     one: '• Hâlâ açık bir sipariş',
     other: '• Hâlâ açık {n} sipariş',
   },
+  'That connection was started by someone else.': 'Bu bağlantıyı başka biri başlattı.',
 };

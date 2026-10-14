@@ -5,6 +5,7 @@
  * zod schemas in ./schemas; everything here is a response. Types only: nothing here ships code.
  */
 import type { z } from 'zod';
+import type { AccountProvider, AccountState, AccountUse } from './accounts';
 import type { AgentAction } from './agents';
 import type { AppCategory, AppProvides, ListingState } from './app-directory';
 import type { ApiScope, WebhookEvent } from './apps';
@@ -268,6 +269,32 @@ export interface ContactMatchView {
 }
 export interface ContactsMatchResponse {
   matches: ContactMatchView[];
+}
+
+/**
+ * A Google or Microsoft account the person connected (R90), for the uses they turned on. Its
+ * address, never its credentials; whether it works; when its calendar was last read.
+ */
+export interface ConnectedAccountView {
+  id: string;
+  provider: AccountProvider;
+  email: string | null;
+  uses: AccountUse[];
+  state: AccountState;
+  createdAt: string;
+  syncedAt: string | null;
+}
+export interface ConnectedAccountsResponse {
+  accounts: ConnectedAccountView[];
+  /** The providers this Caime can connect (it has their clients); none, and nothing is offered. */
+  offered: AccountProvider[];
+}
+export interface ConnectedAccountResponse {
+  account: ConnectedAccountView;
+}
+/** Where to send the person to give the account's consent. */
+export interface AccountStartResponse {
+  url: string;
 }
 
 /**

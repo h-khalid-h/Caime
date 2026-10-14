@@ -3925,4 +3925,31 @@ export const turkish: Catalog = {
   'Show {n} more': '{n} tane daha göster',
   'People are found on Caime by their email address, and none of these contacts has one. Invite them below.':
     'Caime’de kişiler e-posta adresleriyle bulunur ve bu kişilerin hiçbirinin adresi yok. Onları aşağıdan davet edin.',
+  '{name} wasn’t connected: the permission wasn’t given.': '{name} bağlanmadı: izin verilmedi.',
+  'That connection took too long. Connect again.': 'Bağlantı çok uzun sürdü. Yeniden bağlayın.',
+  'Accounts are connected by people over 18.': 'Hesapları 18 yaşını geçenler bağlar.',
+  '{name} didn’t answer. Try again in a moment.': '{name} yanıt vermedi. Birazdan yeniden deneyin.',
+  'The account': 'Hesap',
+  '{email} is connected. Its calendar is read in a moment.':
+    '{email} bağlandı. Takvimi birazdan okunacak.',
+  'Needs connecting again': 'Yeniden bağlanması gerekiyor',
+  '{name} didn’t answer last time': '{name} son seferde yanıt vermedi',
+  'read {when}': '{when} okundu',
+  'Reading it again': 'Yeniden okunuyor',
+  '{email} is disconnected': '{email} bağlantısı kesildi',
+  'Connect again': 'Yeniden bağla',
+  'Read now': 'Şimdi oku',
+  'Disconnect {email}?': '{email} bağlantısı kesilsin mi?',
+  'Caime deletes the busy times it read and stops reading. Your bookable times no longer leave room for that calendar.':
+    'Caime okuduğu meşgul zamanları siler ve okumayı bırakır. Rezervasyon saatleriniz artık o takvimi gözetmez.',
+  'Microsoft keeps your permission until you remove Caime under your account’s apps and services.':
+    'Microsoft, Caime’i hesabınızın uygulama ve hizmetlerinden kaldırana kadar izninizi saklar.',
+  'Google is told to forget the permission too.': 'Google’dan da izni unutması istenir.',
+  'Your accounts': 'Hesaplarınız',
+  'Connect the calendar you already keep, and nobody books you over a meeting there.':
+    'Zaten kullandığınız takvimi bağlayın; kimse oradaki bir toplantının üstüne randevu almasın.',
+  Calendar: 'Takvim',
+  'When you’re busy there, your bookable times aren’t offered. Caime keeps only when, never what or with whom.':
+    'Orada meşgulken rezervasyon saatleriniz sunulmaz. Caime yalnızca zamanı tutar; ne olduğunu ya da kiminle olduğunu asla.',
+  'No apps are connected yet.': 'Henüz bağlı uygulama yok.',
 };

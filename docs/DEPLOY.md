@@ -435,6 +435,22 @@ browser reads `people.googleapis.com` and `graph.microsoft.com` only once their 
    lists Google and Outlook; reading one lands back on the sheet with who's on Caime, and
    nothing about it is in the server's log but the method and the path.
 
+#### Connected accounts (R90)
+
+The same two clients connect a person's account for their calendar under Settings · Apps. The
+server keeps that connection (a refresh token, sealed with its own key) and reads busy times
+alone (PRODUCT-REVIEW R90). Add to each client:
+
+1. **Google.** Enable the **Google Calendar API**; on the consent screen add the scopes `openid`,
+   `…/auth/userinfo.email` and `…/auth/calendar.freebusy` (sensitive: Google verifies it, with a
+   video of Settings · Apps connecting a calendar); add the redirect URI
+   `https://cai.me/v1/accounts/google/back`.
+2. **Microsoft.** Add the delegated Graph permissions `User.Read`, `offline_access` and
+   `Calendars.ReadBasic`, and the **Web** redirect URI `https://cai.me/v1/accounts/microsoft/back`.
+3. No new variable. Check: Settings · Apps shows "Your accounts" with Connect Google and Connect
+   Microsoft; connecting one comes back to the same screen, the row says "read just now" a moment
+   later, and a bookable slot over a meeting in that calendar is no longer offered.
+
 ### 4. Continuous deployment
 
 Every push to `main` runs CI (lint, typecheck, 230+ tests on real Postgres, the web budget, the

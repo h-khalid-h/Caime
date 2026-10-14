@@ -9,7 +9,6 @@
  * is sealed with the server's own key and carries the device's key, where it returns and a
  * deadline, and the access is never stored, logged or used here.
  */
-import { createCipheriv, createDecipheriv, randomBytes } from 'node:crypto';
 import {
   APP_SCHEME,
   CONTACT_ACCOUNT_SCOPES,
@@ -23,13 +22,12 @@ import type { ContactAccountView } from '@caime/core/api';
 import type { Config } from '../config';
 import type { AppContext } from '../context';
 import { serverKey } from './server-keys';
+import { seal, unseal } from './vault';
 
 /** How long a consent may take, from the device's asking to the provider's return. */
 const STATE_MS = 10 * 60_000;
 /** One deadline for the code's exchange with the provider. */
 const EXCHANGE_MS = 10_000;
-const NONCE = 12;
-const TAG = 16;
 
 interface Client {
   id: string;
@@ -86,29 +84,6 @@ function returnTo(config: Config, back: 'web' | 'app'): string {
   return back === 'app'
     ? `${APP_SCHEME}://${CONTACT_RETURN_PATH}`
     : `${config.PUBLIC_URL.replace(/\/+$/, '')}/${CONTACT_RETURN_PATH}`;
-}
-
-function seal(key: Buffer, plain: Buffer, label: string): Buffer {
-  const nonce = randomBytes(NONCE);
-  const cipher = createCipheriv('aes-256-gcm', key, nonce);
-  cipher.setAAD(Buffer.from(label));
-  const body = Buffer.concat([cipher.update(plain), cipher.final()]);
-  return Buffer.concat([nonce, body, cipher.getAuthTag()]);
-}
-
-function unseal(key: Buffer, sealed: Buffer, label: string): Buffer | null {
-  if (sealed.length <= NONCE + TAG) return null;
-  try {
-    const decipher = createDecipheriv('aes-256-gcm', key, sealed.subarray(0, NONCE));
-    decipher.setAAD(Buffer.from(label));
-    decipher.setAuthTag(sealed.subarray(sealed.length - TAG));
-    return Buffer.concat([
-      decipher.update(sealed.subarray(NONCE, sealed.length - TAG)),
-      decipher.final(),
-    ]);
-  } catch {
-    return null;
-  }
 }
 
 interface ConsentState {

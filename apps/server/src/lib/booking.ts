@@ -40,6 +40,7 @@ import type { Organization, User } from '../db/schema';
 import { humanTeam } from './booking-team';
 import { orgBookings } from './calendar';
 import { AppError, badRequest, forbidden } from './errors';
+import { busyElsewhere } from './external-busy';
 import { soldOut } from './stock';
 import { cardsAhead } from './upcoming';
 
@@ -267,13 +268,18 @@ async function heldBy(
     limit: HELD_MAX,
     series: { now: ctx.now() },
   });
-  return cards
-    .filter((c) => !(exceptSeries && c.projected && c.series?.id === exceptSeries))
-    .map((c) => ({
-      start: c.at,
-      end: endOf(hours, c.at, c.booking, c.durationMinutes),
-      booking: c.booking,
-    }));
+  // And when they're busy in their other calendar (R90): held outright, as their own meeting.
+  const elsewhere = (await busyElsewhere(ctx.db, [host.id], window)).get(host.id) ?? [];
+  return [
+    ...cards
+      .filter((c) => !(exceptSeries && c.projected && c.series?.id === exceptSeries))
+      .map((c) => ({
+        start: c.at,
+        end: endOf(hours, c.at, c.booking, c.durationMinutes),
+        booking: c.booking,
+      })),
+    ...elsewhere.map((b) => ({ start: b.start, end: b.end, booking: null })),
+  ];
 }
 
 /** More cards than any window holds; a bound on the read, never a page. */
@@ -369,6 +375,13 @@ export async function openSlotsFor(
     opts.exceptSeries,
   );
   const { busy, providersBusy, resource } = busyFor(held, item, host);
+  // An organization's providers are busy in their other calendars too (R90).
+  if (host.kind === 'org' && item?.providers?.length && providersBusy) {
+    const elsewhere = await busyElsewhere(ctx.db, item.providers, window);
+    item.providers.forEach((p, i) => {
+      for (const b of elsewhere.get(p) ?? []) providersBusy[i]?.push(b);
+    });
+  }
   return {
     hours,
     slots: openSlots(hours, {
@@ -497,6 +510,13 @@ export async function pickProvider(
     if (s < end.getTime() && e > start.getTime()) busy.add(p);
     if (sameDay(h.at)) load.set(p, (load.get(p) ?? 0) + 1);
   }
+  // Busy in their other calendar at that time (R90) is busy here too.
+  const elsewhere = await busyElsewhere(
+    ctx.db,
+    eligible.map((u) => u.id),
+    { from: start, to: end },
+  );
+  for (const [id, blocks] of elsewhere) if (blocks.length) busy.add(id);
   const free = eligible.filter((u) => !busy.has(u.id));
   if (free.length === 0) return null;
   const preferred = opts.prefer ? free.find((u) => u.id === opts.prefer) : undefined;

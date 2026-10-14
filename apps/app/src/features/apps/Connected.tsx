@@ -27,6 +27,7 @@ import { Sheet } from '@/ui/Sheet';
 import { SkeletonRows } from '@/ui/Skeleton';
 import { Text } from '@/ui/Text';
 import { toast } from '@/ui/Toast';
+import { Accounts } from './Accounts';
 import { AppIcon } from './AppIcon';
 import { BridgeSheet } from './BridgeSheet';
 import { PublisherLine } from './PublisherLine';
@@ -188,53 +189,61 @@ export function Connected({ onDiscover }: { onDiscover: () => void }) {
     enabled: !minor,
   });
   const apps = q.data?.apps ?? [];
+  // The accounts above, from their own query (R90): with one there, "nothing" would read wrong.
+  const accounts = useQuery({ queryKey: qk.accounts, queryFn: endpoints.accounts, enabled: !minor })
+    .data?.accounts.length;
   // The sheet outlives its row (turned off, the built-in leaves the list while the sheet fades).
   const [open, setOpen] = useState<ConnectedAppView | null>(null);
   const last = useRef(open);
   if (open) last.current = open;
   const shown = open ?? last.current;
   return (
-    <Group
-      footer={tr(
-        'An app you let in reaches only what you allowed, never your password, privacy or account, and what it sends says it came through it. Remove one and it stops at once.',
-      )}
-    >
-      {minor ? (
-        <Text variant="body" color="textSecondary" style={{ padding: 16 }}>
-          {tr('Apps act for people over 18.')}
-        </Text>
-      ) : q.isPending ? (
-        <SkeletonRows />
-      ) : apps.length === 0 ? (
-        <View style={{ padding: 16, gap: 12, alignItems: 'flex-start' }}>
-          <Text variant="body" color="textSecondary" testID="connected-none">
-            {tr(
-              'Nothing is connected yet. Discover your calendar and the apps that work with Caime; when one asks to act for you, you see who made it and what it wants before you choose.',
-            )}
+    <>
+      {minor ? null : <Accounts />}
+      <Group
+        footer={tr(
+          'An app you let in reaches only what you allowed, never your password, privacy or account, and what it sends says it came through it. Remove one and it stops at once.',
+        )}
+      >
+        {minor ? (
+          <Text variant="body" color="textSecondary" style={{ padding: 16 }}>
+            {tr('Apps act for people over 18.')}
           </Text>
-          <Button
-            label={tr('Discover apps')}
-            size="sm"
-            variant="secondary"
-            onPress={onDiscover}
-            testID="connected-discover"
-          />
-        </View>
-      ) : (
-        apps.map((a, i) => (
-          <View key={a.grantId ?? a.appId}>
-            {i > 0 ? <Divider /> : null}
-            {a.kind === 'builtin' || a.kind === 'bridge' ? (
-              <BuiltinRow app={a} onPress={() => setOpen(a)} />
-            ) : (
-              <AppRow app={a} />
-            )}
+        ) : q.isPending ? (
+          <SkeletonRows />
+        ) : apps.length === 0 ? (
+          <View style={{ padding: 16, gap: 12, alignItems: 'flex-start' }}>
+            <Text variant="body" color="textSecondary" testID="connected-none">
+              {accounts
+                ? tr('No apps are connected yet.')
+                : tr(
+                    'Nothing is connected yet. Discover your calendar and the apps that work with Caime; when one asks to act for you, you see who made it and what it wants before you choose.',
+                  )}
+            </Text>
+            <Button
+              label={tr('Discover apps')}
+              size="sm"
+              variant="secondary"
+              onPress={onDiscover}
+              testID="connected-discover"
+            />
           </View>
-        ))
-      )}
-      <Sheet open={open !== null} onClose={() => setOpen(null)} title={shown?.name}>
-        {shown ? <BuiltinSheet app={shown} /> : null}
-      </Sheet>
-    </Group>
+        ) : (
+          apps.map((a, i) => (
+            <View key={a.grantId ?? a.appId}>
+              {i > 0 ? <Divider /> : null}
+              {a.kind === 'builtin' || a.kind === 'bridge' ? (
+                <BuiltinRow app={a} onPress={() => setOpen(a)} />
+              ) : (
+                <AppRow app={a} />
+              )}
+            </View>
+          ))
+        )}
+        <Sheet open={open !== null} onClose={() => setOpen(null)} title={shown?.name}>
+          {shown ? <BuiltinSheet app={shown} /> : null}
+        </Sheet>
+      </Group>
+    </>
   );
 }

@@ -565,6 +565,27 @@ export interface CalendarFeedsTable {
   last_read_at: Date | null;
 }
 
+export interface ConnectedAccountsTable {
+  id: string;
+  user_id: string;
+  provider: 'google' | 'microsoft';
+  subject: string;
+  email: string | null;
+  uses: string[];
+  scopes: string[];
+  refresh_sealed: Buffer;
+  state: 'connected' | 'reconnect' | 'failing';
+  created_at: Generated<Date>;
+  synced_at: Date | null;
+}
+
+export interface ExternalBusyTable {
+  account_id: string;
+  user_id: string;
+  start_at: Date;
+  end_at: Date;
+}
+
 export interface DecisionsTable {
   id: string;
   conversation_id: string;
@@ -1217,6 +1238,8 @@ export interface Database {
   released_handles: ReleasedHandlesTable;
   tasks: TasksTable;
   calendar_feeds: CalendarFeedsTable;
+  connected_accounts: ConnectedAccountsTable;
+  external_busy: ExternalBusyTable;
   decisions: DecisionsTable;
   notifications: NotificationsTable;
   push_subscriptions: PushSubscriptionsTable;

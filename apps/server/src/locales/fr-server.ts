@@ -1351,4 +1351,6 @@ export const frServer: Catalog = {
     one: '• Une commande encore ouverte',
     other: '• {n} commandes encore ouvertes',
   },
+  'That connection was started by someone else.':
+    'Cette connexion a été commencée par quelqu’un d’autre.',
 };

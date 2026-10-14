@@ -4,6 +4,7 @@
  */
 import { z } from 'zod';
 import { PERSONAL_SCOPES, redirectUriError } from './access';
+import { ACCOUNT_USES } from './accounts';
 import { AGENT_KNOWLEDGE_MAX, AGENT_NAME_MAX } from './agents';
 import { MARKETING_PAGES, SITE_PAGES } from './api';
 import {
@@ -432,6 +433,19 @@ export const ContactAccountStartBody = z
     key: z.string().regex(/^[A-Za-z0-9_-]{43}$/),
     back: z.enum(['web', 'app']),
   })
+  .strict();
+
+/** Connecting a Google or Microsoft account (R90): what for, and where the person returns. */
+export const AccountStartBody = z
+  .object({
+    uses: z.array(z.enum(ACCOUNT_USES)).min(1).max(ACCOUNT_USES.length),
+    back: z.enum(['web', 'app']),
+  })
+  .strict();
+
+/** The sealed claim the provider's return handed the app, redeemed by whoever started it. */
+export const AccountClaimBody = z
+  .object({ claim: z.string().regex(/^[A-Za-z0-9_-]{40,8000}$/) })
   .strict();
 
 /**

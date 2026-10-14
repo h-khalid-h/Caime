@@ -1700,3 +1700,39 @@ with its reason, so it isn't proposed again without new facts.
   contacts before more than a hundred people may use it (⛔ in ROADMAP); the phone's address book,
   the iOS picker for more, the sign-in sheet's return and the text composer are built to each
   platform's documented behaviour and stay unticked until they're tried on a phone.
+- **R90 — Your Google and Microsoft accounts, connected for what you use them for (owner's
+  request, 2026-10-14: "not only for contacts, for everything: emails, calendars, drives").**
+  Validated against Caime: the connection is a person's, never a global integration menu (R19),
+  so it lives in Settings · Apps beside the apps that act for them; each use is turned on by
+  name and asks the provider for the narrowest permission that does it; and nothing is kept
+  beyond what that use needs. (1) *One connection per account, uses inside it.* A Google or
+  Microsoft account is connected once (`connected_accounts`, one per person, provider and the
+  provider's own id), its refresh token sealed on the server with a key of its own
+  (`serverKey('accounts.vault')`, AES-256-GCM, bound to the row), an hour's access renewed from
+  it in memory only. The consent returns to the screen it was asked from with a claim, sealed
+  and good for ten minutes, that only the signed-in person who asked can redeem: a link caught
+  on the way connects nobody's account to anyone else's. Disconnecting tells Google to forget
+  the permission (Microsoft has no such call: the sheet says where to remove it), deletes what
+  was read, and so do signing out everywhere and deleting the account; the export lists the
+  accounts. (2) *Phase 1, the calendar: when, never what.* Google is asked for busy times alone
+  (`calendar.freebusy`); Microsoft has no busy-only permission, so it's the basic read and Caime
+  keeps only the start and end of what's shown busy, tentative or away. They're read when
+  connected, on "Read now", and every fifteen minutes for ninety days ahead, fifty connections
+  a sweep, four at a time (`lib/external-busy.ts`), and they hold time exactly where Caime's own
+  agreed cards do: a person's bookable slots, an organization's providers in its slots, and who
+  the team's booking goes to. Nobody sees them, not even as "busy" on a profile (that stays
+  Caime's own cards, R51). A provider that refuses (a revoked permission, a changed password)
+  sets the row to "Needs connecting again" and stops its times holding anyone's; one that
+  doesn't answer says so and keeps the last read. (3) *Next, each a use of the same
+  connection.* Files: a file picked from Drive or OneDrive into a conversation, through the
+  provider's own picker and per-file permission (`drive.file`, `Files.Read` on the picked item),
+  never a whole drive. Mail: sending as one's own Gmail or Outlook address from a conversation
+  with someone reached by mail (R75), and reading Outlook mail into Caime; reading Gmail needs
+  Google's restricted-scope security assessment (CASA, yearly, paid), which is the owner's
+  decision before it's built. Contacts stay as R89 has them: read once on the device, nothing
+  kept. *Declined:* writing to anyone's calendar (Caime's own feed already carries Caime's cards
+  to any calendar, R51), and reading event titles or attendees to "understand" a schedule.
+  *Not done, with why:* the owner's Google and Microsoft clients need the new redirect addresses
+  and permissions (docs/DEPLOY.md), and Google verifies `calendar.freebusy` (a sensitive scope)
+  before more than a hundred people may use it (⛔ in ROADMAP); the phone's sign-in sheet return
+  is built and not yet tried on a phone.

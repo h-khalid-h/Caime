@@ -4626,4 +4626,31 @@ export const ar: Catalog = {
   'Show {n} more': 'إظهار {n} أخرى',
   'People are found on Caime by their email address, and none of these contacts has one. Invite them below.':
     'يُعثر على الأشخاص في Caime بعنوان بريدهم، وليس لأي من جهات الاتصال هذه عنوان. ادعهم أدناه.',
+  '{name} wasn’t connected: the permission wasn’t given.': 'لم يُربط {name}: لم يُمنح الإذن.',
+  'That connection took too long. Connect again.': 'استغرق الربط وقتًا طويلًا. اربطه من جديد.',
+  'Accounts are connected by people over 18.': 'ربط الحسابات لمن تجاوز 18 عامًا.',
+  '{name} didn’t answer. Try again in a moment.': 'لم يُجب {name}. حاول بعد قليل.',
+  'The account': 'الحساب',
+  '{email} is connected. Its calendar is read in a moment.':
+    'تم ربط {email}. يُقرأ تقويمه بعد قليل.',
+  'Needs connecting again': 'يحتاج إلى ربط من جديد',
+  '{name} didn’t answer last time': 'لم يُجب {name} في المرة الأخيرة',
+  'read {when}': 'قُرئ {when}',
+  'Reading it again': 'تجري قراءته من جديد',
+  '{email} is disconnected': 'تم فصل {email}',
+  'Connect again': 'اربط من جديد',
+  'Read now': 'اقرأ الآن',
+  'Disconnect {email}?': 'فصل {email}؟',
+  'Caime deletes the busy times it read and stops reading. Your bookable times no longer leave room for that calendar.':
+    'يحذف Caime أوقات الانشغال التي قرأها ويتوقف عن القراءة. ولن تراعي أوقات الحجز لديك ذلك التقويم بعد الآن.',
+  'Microsoft keeps your permission until you remove Caime under your account’s apps and services.':
+    'تحتفظ Microsoft بإذنك إلى أن تزيل Caime من تطبيقات حسابك وخدماته.',
+  'Google is told to forget the permission too.': 'ويُطلب من Google أن تنسى الإذن أيضًا.',
+  'Your accounts': 'حساباتك',
+  'Connect the calendar you already keep, and nobody books you over a meeting there.':
+    'اربط التقويم الذي تستخدمه، فلا يحجز أحد وقتك فوق اجتماع فيه.',
+  Calendar: 'التقويم',
+  'When you’re busy there, your bookable times aren’t offered. Caime keeps only when, never what or with whom.':
+    'حين تكون مشغولًا فيه، لا تُعرض أوقات الحجز لديك. يحتفظ Caime بالتوقيت وحده، لا بالموضوع ولا بمن معك.',
+  'No apps are connected yet.': 'لا تطبيقات مربوطة بعد.',
 };

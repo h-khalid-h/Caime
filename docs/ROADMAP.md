@@ -1435,6 +1435,21 @@ listed there with its owner.
       Google's Limited Use statement. Verified on the web with a stand-in for both providers
       (`contact-sources.test.ts`, `contact-accounts.test.ts`, `contacts.test.ts`,
       `e2e/contacts.spec.ts`, `e2e/bridges.spec.ts`).
+- [x] R90 phase 1, a Google or Microsoft account connected for its calendar: Settings · Apps,
+      "Your accounts", connects one per account (the consent returns a sealed claim only its asker
+      redeems; the refresh token sealed on the server), reads busy times alone, every fifteen
+      minutes for ninety days, and holds them where Caime's own cards hold time (a person's slots,
+      an organization's providers, who the team's booking goes to); "Needs connecting again" when
+      the provider refuses, which stops its times holding; disconnect tells Google and deletes
+      what was read; export and privacy page say so. Verified with a stand-in for both providers
+      (`connected-accounts.test.ts`, `e2e/connected-accounts.spec.ts`).
+- [ ] R90 on phones, built and not yet tried on one: the consent in the system's sign-in sheet,
+      returning to `caime://settings/apps`.
+- [ ] ⛔ R90 needs the owner's clients updated (docs/DEPLOY.md, "Connected accounts"): the redirect
+      addresses `https://cai.me/v1/accounts/google/back` and `…/microsoft/back`, Google's Calendar
+      API and `calendar.freebusy` scope (Google verifies it), Microsoft's `Calendars.ReadBasic`.
+- [ ] R90 next uses: files picked from Drive and OneDrive; mail sent as one's Gmail or Outlook
+      address and Outlook mail read in; Gmail read only after the owner decides on Google's CASA.
 - [ ] R89 on phones, built and not yet tried on one: the phone's own address book (expo-contacts,
       READ_CONTACTS alone on Android), iOS 18's "share more" picker, an account's consent in the
       system's sign-in sheet returning to `caime://connect`, and a text from the system's
@@ -3237,3 +3252,8 @@ The six-slice review's plan, in its order; a block is ticked when its tests and 
   the API document). Caime Mail is on (its inbound refuses an unsigned request, 401) but receives
   nothing until Postmark Pro (⛔ the owner: Pro, or the `MAIL_*` variables off and the MX back to
   Cloudflare Email Routing).
+- 2026-10-14 — R90 phase 1, connected accounts for the calendar: one Google or Microsoft account
+  connection per account in Settings · Apps, busy times read and kept as times alone, holding a
+  person's and an organization's providers' slots. Found on the way: a job's dedupe key is kept
+  for good, so a "read again" keyed by the account alone would have run once ever; it's keyed by
+  the minute. Postmark Pro is on (the owner): Caime Mail can now receive.

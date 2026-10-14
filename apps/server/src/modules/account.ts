@@ -16,6 +16,7 @@ import { builtinCountsChanged } from '../lib/app-directory';
 import { audit } from '../lib/audit';
 import { endBillingOf } from '../lib/billing';
 import { disconnect } from '../lib/checkout';
+import { disconnectAllAccounts } from '../lib/connected-accounts';
 import { sendSystem } from '../lib/conversation-views';
 import { handOverGroups } from '../lib/conversations';
 import { verifyPassword } from '../lib/crypto';
@@ -121,6 +122,8 @@ export async function accountRoutes(app: FastifyInstance, ctx: AppContext) {
     // Every app it let in is let go of, so each counts one fewer connected (R74): the rows
     // would go with the account, but not the counts Discover is ordered by.
     await revokeGrantsOf(ctx, me);
+    // Its Google and Microsoft accounts are let go of, revoked where the provider can (R90).
+    await disconnectAllAccounts(ctx, me);
     // Its devices read nothing more, but their public keys stay (without their names), so those
     // it wrote to privately can still check what it sent them.
     await ctx.db

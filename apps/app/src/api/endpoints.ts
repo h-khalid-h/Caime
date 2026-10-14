@@ -4,8 +4,10 @@
  */
 
 import type { PersonalScope } from '@caime/core/access';
+import type { AccountProvider, AccountUse } from '@caime/core/accounts';
 import type {
   AboutView,
+  AccountStartResponse,
   AgentTryView,
   AiActionsView,
   AiAnswerView,
@@ -33,6 +35,8 @@ import type {
   CheckoutSettledResponse,
   ClosedOrgExportsResponse,
   CollectionRenamedResponse,
+  ConnectedAccountResponse,
+  ConnectedAccountsResponse,
   ConnectedAppsResponse,
   ConnectionRequestsResponse,
   ConnectionsResponse,
@@ -576,6 +580,14 @@ export const endpoints = {
     api.post<PersonalTokenCreatedResponse>(`/me/bridges/${id}`, body),
   disconnectBridge: (id: string) => api.del<OkResponse>(`/me/bridges/${id}`),
   removeConnectedApp: (grantId: string) => api.del<OkResponse>(`/me/connected-apps/${grantId}`),
+  /** Google and Microsoft accounts connected for their uses (R90), and the ones offered here. */
+  accounts: () => api.get<ConnectedAccountsResponse>('/me/accounts'),
+  startAccount: (provider: AccountProvider, body: { uses: AccountUse[]; back: 'web' | 'app' }) =>
+    api.post<AccountStartResponse>(`/me/accounts/${provider}/start`, body),
+  claimAccount: (provider: AccountProvider, claim: string) =>
+    api.post<ConnectedAccountResponse>(`/me/accounts/${provider}/claim`, { claim }),
+  syncAccount: (id: string) => api.post<ConnectedAccountResponse>(`/me/accounts/${id}/sync`, {}),
+  removeAccount: (id: string) => api.del<OkResponse>(`/me/accounts/${id}`),
   // Discover (R74): the apps people can connect, a page at a time
   directory: (params: { before?: string; q?: string; category?: AppCategory | null }) =>
     api.get<DirectoryResponse>(`/directory${q(params)}`),

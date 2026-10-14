@@ -111,6 +111,7 @@ export async function buildExport(ctx: AppContext, me: string, now: Date) {
     apps,
     connectedApps,
     calendarFeed,
+    connectedAccounts,
     automations,
     saved,
     visible,
@@ -823,6 +824,12 @@ export async function buildExport(ctx: AppContext, me: string, now: Date) {
       .where('user_id', '=', me)
       .executeTakeFirst(),
     db
+      .selectFrom('connected_accounts')
+      .select(['provider', 'email', 'uses', 'created_at', 'synced_at'])
+      .where('user_id', '=', me)
+      .orderBy('created_at')
+      .execute(),
+    db
       .selectFrom('automations')
       .selectAll()
       .where('user_id', '=', me)
@@ -1498,6 +1505,15 @@ export async function buildExport(ctx: AppContext, me: string, now: Date) {
           lastReadAt: iso(calendarFeed.last_read_at),
         }
       : null,
+    // The Google and Microsoft accounts you connected (R90): which, for what, since when; never
+    // their credentials, and of a calendar only when you were busy, which isn't kept apart.
+    connectedAccounts: connectedAccounts.map((a) => ({
+      provider: a.provider,
+      email: a.email,
+      uses: a.uses,
+      connectedAt: a.created_at.toISOString(),
+      calendarReadAt: iso(a.synced_at),
+    })),
     // What you set Caime to keep, and what it kept or you saved (PRD §69).
     automations: automations.map((a) => {
       const view = automationView(a);

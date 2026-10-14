@@ -4094,4 +4094,34 @@ export const fr: Catalog = {
   'Show {n} more': 'Afficher {n} de plus',
   'People are found on Caime by their email address, and none of these contacts has one. Invite them below.':
     'Sur Caime, on trouve les gens par leur adresse e-mail, et aucun de ces contacts n’en a une. Invitez-les ci-dessous.',
+  '{name} wasn’t connected: the permission wasn’t given.':
+    '{name} n’a pas été connecté : l’autorisation n’a pas été donnée.',
+  'That connection took too long. Connect again.':
+    'La connexion a pris trop de temps. Connectez-le à nouveau.',
+  'Accounts are connected by people over 18.': 'Les comptes se connectent à partir de 18 ans.',
+  '{name} didn’t answer. Try again in a moment.':
+    '{name} n’a pas répondu. Réessayez dans un instant.',
+  'The account': 'Le compte',
+  '{email} is connected. Its calendar is read in a moment.':
+    '{email} est connecté. Son agenda est lu dans un instant.',
+  'Needs connecting again': 'À connecter à nouveau',
+  '{name} didn’t answer last time': '{name} n’a pas répondu la dernière fois',
+  'read {when}': 'lu {when}',
+  'Reading it again': 'Nouvelle lecture en cours',
+  '{email} is disconnected': '{email} est déconnecté',
+  'Connect again': 'Connecter à nouveau',
+  'Read now': 'Lire maintenant',
+  'Disconnect {email}?': 'Déconnecter {email} ?',
+  'Caime deletes the busy times it read and stops reading. Your bookable times no longer leave room for that calendar.':
+    'Caime supprime les heures occupées qu’il a lues et cesse de lire. Vos créneaux réservables ne tiennent plus compte de cet agenda.',
+  'Microsoft keeps your permission until you remove Caime under your account’s apps and services.':
+    'Microsoft garde votre autorisation jusqu’à ce que vous retiriez Caime des applications et services de votre compte.',
+  'Google is told to forget the permission too.': 'Google est aussi prié d’oublier l’autorisation.',
+  'Your accounts': 'Vos comptes',
+  'Connect the calendar you already keep, and nobody books you over a meeting there.':
+    'Connectez l’agenda que vous tenez déjà : personne ne vous réserve pendant une réunion qui y figure.',
+  Calendar: 'Agenda',
+  'When you’re busy there, your bookable times aren’t offered. Caime keeps only when, never what or with whom.':
+    'Quand vous y êtes occupé, vos créneaux réservables ne sont pas proposés. Caime ne garde que le moment, jamais l’objet ni avec qui.',
+  'No apps are connected yet.': 'Aucune application n’est encore connectée.',
 };

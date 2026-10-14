@@ -10,6 +10,7 @@
  * other (docs/SECURITY.md).
  */
 
+import { ACCOUNT_BUSY_DAYS, ACCOUNT_SYNC_MINUTES } from '@caime/core/accounts';
 import type { SitePage } from '@caime/core/api';
 import { LAW_MINIMUM_AGES } from '@caime/core/countries';
 import type { SubProcessor } from '@caime/core/processors';
@@ -272,6 +273,16 @@ Account&rsquo;s third-party connections, or your Microsoft account&rsquo;s apps 
 Caime&rsquo;s use of information received from Google APIs adheres to the
 <a href="https://developers.google.com/terms/api-services-user-data-policy">Google API Services
 User Data Policy</a>, including the Limited Use requirements.</li>
+<li><strong>A Google or Microsoft account you connect, for your calendar.</strong> When you connect
+one under You &rarr; Apps and turn its calendar on, you allow Caime to read when you&rsquo;re busy
+there, and Caime keeps the account&rsquo;s email address, a permission to read again (encrypted on
+Caime&rsquo;s server with a key of its own), and the start and end of each busy time for the next
+${ACCOUNT_BUSY_DAYS} days, read again every ${ACCOUNT_SYNC_MINUTES} minutes; never an
+event&rsquo;s title, its people or its place. Those times only keep your bookable times from being
+offered while you&rsquo;re busy, and nobody sees them. From Google, Caime asks for busy times alone;
+Microsoft offers no such permission, so Caime asks to read your calendar&rsquo;s basics and keeps
+only the times. Disconnecting it, deleting your account or signing out everywhere deletes what was
+kept and gives the permission back. Your export lists the accounts you connected.</li>
 <li><strong>Services you choose.</strong> If you add Your calendar (You &rarr; Apps) to
 Google Calendar, Outlook or Apple Calendar, that service reads your open actions with a due date,
 with who asked you or who you&rsquo;re waiting on, and the meetings and appointments you&rsquo;ve

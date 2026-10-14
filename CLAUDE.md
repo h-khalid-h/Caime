@@ -839,6 +839,22 @@ These are rules, not preferences.
   invite link (one made only if they have none). A new source is a mapper in core and a row in
   the sheet; a new provider joins `CONTACT_ACCOUNTS`, its scopes and lists, `contactClient`, the
   E2E stand-in (`e2e/accounts-stub.mjs`) and the privacy page.
+- Connected accounts (R90, `lib/connected-accounts.ts`, `modules/accounts.ts`, core
+  `accounts.ts`): one row per person, provider and the provider's own id, used for what
+  `ACCOUNT_USES` lists, asking `accountScopes` (identity plus each use's narrowest). The consent
+  returns a claim sealed with `serverKey('accounts.state')` naming who asked, redeemed signed in
+  (`POST /me/accounts/:provider/claim`, another person's claim is 403); the refresh token is
+  sealed with `serverKey('accounts.vault')` (`lib/vault.ts`) and an access lives in memory only
+  (`accessFor`, which marks `reconnect` on `invalid_grant`). The calendar use keeps
+  `external_busy` (start and end, nothing else), read by `syncAccountCalendar`
+  (`lib/external-busy.ts`: on connect, on "Read now", and the `accounts.calendar` sweep) and read
+  for holding time only through `busyElsewhere`: a person's `heldBy`, an organization's providers
+  in `openSlotsFor`, `pickProvider`. A change that shows (connected, ended, state moved, first
+  read) publishes `apps.changed` through `accountsChanged`; a routine read says nothing.
+  Disconnecting, `endAllAccess` and deleting an account go through `disconnectAccount`. A new
+  use joins `ACCOUNT_USES`, `USE_SCOPES`, `ACCOUNT_USE_LABELS`, the privacy page and DEPLOY's
+  list of scopes; the app's section is `features/apps/Accounts.tsx`, its return `connect.ts`
+  (web: the fragment read once) and `connect.native.ts` (the sign-in sheet).
 - Provider health (R78, `lib/provider-health.ts`): every provider Caime talks to has its cheapest
   authenticated read as a `ping` on its own interface (`AiAssist.ping`, `SpeechToText.ping`,
   `MailProvider.ping`, `Mailer.verify`; Stripe's balance through `stripe(ctx)`, Cloudflare

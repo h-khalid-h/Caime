@@ -338,9 +338,10 @@ export function applyEvent(qc: QueryClient, event: RealtimeEvent, me: string): v
       invalidate(['updates'], 'updates');
       return;
     case 'apps.changed':
-      // An app let in or out, the calendar feed, a listing changed or reviewed (M15): Connected,
+      // An app let in or out, an account connected (R90), the calendar feed, a listing changed or reviewed (M15): Connected,
       // Developer, Discover and an organization's listings read again.
       invalidate(qk.connectedApps);
+      invalidate(qk.accounts);
       invalidate(qk.oauthApps);
       invalidate(qk.calendarFeed);
       invalidate(qk.allDirectory, 'directory');

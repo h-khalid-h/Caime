@@ -1360,4 +1360,5 @@ export const arServer: Catalog = {
     many: '• {n} طلب ما زال مفتوحًا',
     other: '• {n} طلب ما زال مفتوحًا',
   },
+  'That connection was started by someone else.': 'بدأ شخص آخر هذا الربط.',
 };

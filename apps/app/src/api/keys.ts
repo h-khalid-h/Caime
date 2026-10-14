@@ -30,6 +30,8 @@ export const qk = {
   /** The orders in its customer conversations (R60), for the Business inbox's Orders view. */
   orgOrders: (orgId: string) => ['org-orders', orgId] as const,
   connectedApps: ['connected-apps'] as const,
+  /** Connected Google and Microsoft accounts (R90). */
+  accounts: ['accounts'] as const,
   /** Discover (R74): a search and a category each page on their own. */
   directory: (search: string, category: string) => ['directory', search, category] as const,
   directoryApp: (id: string) => ['directory', 'app', id] as const,
