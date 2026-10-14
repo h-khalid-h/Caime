@@ -256,6 +256,7 @@ Content-Security-Policy, and links in notifications. Everything below is optiona
 | `STRIPE_PORTAL_CONFIGURATION` | the account's default | The customer portal configuration (`bpc_…`) to open. |
 | `VAPID_PUBLIC_KEY`, `VAPID_PRIVATE_KEY` | generated | Web Push keys. Generated and stored in the database on first boot; set them only to reuse existing keys. |
 | `VAPID_SUBJECT` | `mailto:hello@cai.me` | Contact for push services. |
+| `APPLE_TEAM_ID`, `ANDROID_CERT_SHA256` | — | The phone apps' claim on the domain (R35): with them, `/.well-known/apple-app-site-association` and `assetlinks.json` say that `cai.me/@handle`, an organization's page, a conversation, an invite, a space and a profile open the installed app, and that the app may use the passkeys made on the web. The team id is Apple Developer → Membership; each fingerprint is Play Console → App integrity → App signing (the upload key's too, for a development build), comma separated. Set them with the first store or development build. |
 | `EXPO_ACCESS_TOKEN` | — | Phone push through Expo, signed as the account that owns the Expo project (required once that project turns on Expo's enhanced push security); with it, Expo is probed hourly (`caime_provider_up{provider="expo"}`). |
 | `SMTP_URL` | — | Where mail goes out (`smtps://user:pass@host:465`, or `smtp://` with STARTTLS): the code that confirms an address and the link that resets a password (R48). Without it nothing is sent, and the app says to use a recovery code. |
 | `EMAIL_FROM` | `Caime <hello@cai.me>` | The sender. |

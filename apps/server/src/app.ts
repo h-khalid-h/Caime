@@ -50,6 +50,7 @@ import { actionRoutes } from './modules/actions';
 import { adminRoutes } from './modules/admin';
 import { agentRoutes } from './modules/agents';
 import { aiRoutes } from './modules/ai';
+import { appLinkRoutes } from './modules/app-links';
 import { appRoutes } from './modules/apps';
 import { authRoutes } from './modules/auth';
 import { automationRoutes } from './modules/automations';
@@ -283,6 +284,7 @@ export async function buildApp(config: Config, options: BuildOptions = {}): Prom
     );
   await metricsRoutes(app, ctx);
   await oauthDiscovery(app, ctx);
+  await appLinkRoutes(app, ctx);
   await pageRoutes(app, ctx);
   await moderationPageRoutes(app, ctx);
 

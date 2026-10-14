@@ -523,9 +523,15 @@ super-app brainstorm the product takes, and what it leaves with the reason, is R
       E2E's closing step downloads it).
 - [ ] The privacy page and the terms in Arabic, French and Turkish (English prevailing), by a
       translator who reads law, before launch in those languages' countries.
-- [ ] `cai.me/@handle` for people and organizations (R35), opening the app where it's installed:
-      `apple-app-site-association` and `assetlinks.json` served by the server, the app's
-      associated domains. After the domain
+- [ ] `cai.me/@handle` for people and organizations (R35), opening the app where it's installed.
+      Built (2026-10-14): the server writes `apple-app-site-association` and `assetlinks.json`
+      from `APPLE_TEAM_ID` and `ANDROID_CERT_SHA256` (core `APP_LINK_PREFIXES`: a person's page,
+      an organization's, a conversation, an invite, a space, a profile; the passkeys' claim too),
+      a 404 without them, and nothing under `/.well-known/` is ever the app's page any more (it
+      was); a build talking to an https Caime claims that domain (`app.config.ts`: associated
+      domains, verified intent filters), held to the server's list (`app-links.test.ts`,
+      `appLinks.test.ts`, `expo config`). ⛔ The team id and signing fingerprints come with the
+      first development or store build; then a link opened on a phone is the test
 - [x] Reserved handles (R35): nobody takes one that reads as Caime (its names, inside other
       handles too), one of its characters, the people who run it, or its pages and screens.
       Refused at sign-up, on a handle change and for a new organization as a taken handle is;
@@ -2950,3 +2956,10 @@ The six-slice review's plan, in its order; a block is ticked when its tests and 
   passkey has signed in, which is also what stops a synced passkey's replay (its counter is
   always 0). `passkeys.test.ts` adds a forged challenge, both kinds of replay and the count of
   rows (none for asking, one per sign-in, swept).
+- 2026-10-14 — App links (R35), built for the store builds: `/.well-known/apple-app-site-association`
+  answered with the web app's page (any extensionless path under `/.well-known/` did), and
+  nothing claimed the domain for the phone apps. Now the server writes both files from the team
+  id and the signing fingerprints (404 until set; JSON on every name the service has), the paths
+  come from one list in core that the app's config is held to, and the app's builds claim the
+  domain they talk to for links and passkeys. Mail DNS checked: one DMARC record now (the
+  owner's fix); MX still at Postmark's inbound with Caime Mail off.

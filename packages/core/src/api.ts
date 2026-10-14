@@ -2629,6 +2629,18 @@ export interface CollectionRenamedResponse {
   ok: true;
   collection: string;
 }
+/**
+ * Links to Caime that open the installed app rather than the browser (R35): a person's page
+ * (`/@handle`), an organization's (its door, items and collections), a conversation, an invite, a
+ * space and a profile. The site's pages, the API and files stay in the browser. The server lists
+ * them in `apple-app-site-association` and the app's Android intent filters carry the same ones
+ * (`app.config.ts`, held to this list by `appLinks.test.ts`).
+ */
+export const APP_LINK_PREFIXES = ['/@', '/o/', '/c/', '/i/', '/s/', '/p/'] as const;
+
+/** The phone apps' ids, as `app.json` names them (held to it by `appLinks.test.ts`). */
+export const APP_IDS = { ios: 'me.cai.app', android: 'me.cai.app' } as const;
+
 export interface PushKeyResponse {
   publicKey: string;
 }

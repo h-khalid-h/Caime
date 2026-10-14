@@ -47,6 +47,22 @@ const Env = z.object({
   VAPID_SUBJECT: z.string().default('mailto:hello@cai.me'),
   /** Expo push access token (mobile push). */
   EXPO_ACCESS_TOKEN: z.string().optional(),
+  /**
+   * The phone apps' link to this domain (R35, `lib/app-links.ts`): Apple's team id, and the
+   * SHA-256 fingerprints of the Android signing certificates (comma separated, as Play Console
+   * shows them). Unset, `/.well-known/apple-app-site-association` and `assetlinks.json` answer
+   * 404 and links open in the browser.
+   */
+  APPLE_TEAM_ID: z
+    .string()
+    .regex(/^[A-Z0-9]{10}$/)
+    .optional(),
+  ANDROID_CERT_SHA256: z
+    .string()
+    .regex(
+      /^\s*[0-9A-Fa-f]{2}(:[0-9A-Fa-f]{2}){31}\s*(,\s*[0-9A-Fa-f]{2}(:[0-9A-Fa-f]{2}){31}\s*)*$/,
+    )
+    .optional(),
   /** Expo's push service (`lib/expo-push.ts`): another only for the local stand-in the tests run. */
   EXPO_PUSH_URL: z.string().url().default('https://exp.host/--/api/v2/push'),
   /** Where mail goes out (smtps://user:pass@host:465, or smtp:// with STARTTLS). Off if unset. */

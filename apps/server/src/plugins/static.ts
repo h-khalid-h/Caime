@@ -209,6 +209,8 @@ export async function registerWeb(app: FastifyInstance, ctx: AppContext): Promis
       if (req.method !== 'GET' && req.method !== 'HEAD') return false;
       const path = req.url.split(/[?#]/)[0] ?? '';
       if (path === '/v1' || path.startsWith('/v1/')) return false;
+      // What machines read about this domain is answered or missing, never the app's page.
+      if (path.startsWith('/.well-known/')) return false;
       // A page load gets the app whatever the path looks like: handles have dots (/o/nile.dental).
       if (/\btext\/html\b/.test(req.headers.accept ?? '')) return true;
       // Anything else shaped like a file is a missing file, never the app as a script or image.

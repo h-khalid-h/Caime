@@ -264,6 +264,13 @@ These are rules, not preferences.
   passkeys with the sessions and tokens, so a new way in joins it there. Tests use
   `test/soft-authenticator.ts`, the E2E Chromium's virtual authenticator over CDP; the browser's
   side is `features/auth/passkeys.ts`, loaded on press.
+- App links (R35): the paths a link opens in the installed app are core `APP_LINK_PREFIXES`,
+  the phone apps' ids `APP_IDS` (held to `app.json`); the server writes Apple's and Android's
+  files from `APPLE_TEAM_ID` and `ANDROID_CERT_SHA256` (`lib/app-links.ts`,
+  `modules/app-links.ts`, 404 without them), and `app.config.ts` claims the https domain a build
+  talks to (`APP_LINK_PATHS`, held equal by `appLinks.test.ts`). Nothing under `/.well-known/`
+  is ever the web app's page (`plugins/static.ts`); a new path that should open the app joins
+  both lists, and a new file there is a route of its own.
 - Invite links (R1): `lib/invites.ts` makes, opens and accepts them; accepting goes through
   `acceptRequest(…, { viaInvite: true })` on a request the invite stands for (never a second path
   to a connection), so blocks, suggestions and notifications behave as for a request. The token
