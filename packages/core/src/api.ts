@@ -1234,6 +1234,30 @@ export interface OrgDoorView {
  * An organization's export of its own conversations (R54): everything it is the controller of,
  * nothing of its people's own. The team by name; a customer named once per conversation.
  */
+/**
+ * How long a closed organization's export stays open to whoever owned it last (DPA §12); then
+ * what was its alone is deleted, and its customers keep their conversations.
+ */
+export const CLOSED_ORG_EXPORT_DAYS = 30;
+
+/** A closed organization whose export is still open to you, its last owner (DPA §12). */
+export interface ClosedOrgExportView {
+  id: string;
+  name: string;
+  handle: string;
+  closedAt: string;
+  exportUntil: string;
+}
+
+export interface ClosedOrgExportsResponse {
+  orgs: ClosedOrgExportView[];
+}
+
+/**
+ * Everything an organization holds on Caime (R54, DPA §8 and §12): what it is and offers, its
+ * team, its agent, its apps, its updates and its conversations. Never a secret: no token, key
+ * or webhook secret.
+ */
 export interface OrgExportView {
   exportedAt: string;
   organization: {
@@ -1241,9 +1265,31 @@ export interface OrgExportView {
     name: string;
     handle: string;
     kind: string;
+    about: string | null;
+    website: string | null;
+    foundedYear: number | null;
+    country: string | null;
+    timeZone: string | null;
+    workweek: number[] | null;
     retentionDays: number | null;
     createdAt: string;
+    /** Closed: when. Its export stays open to its last owner for `CLOSED_ORG_EXPORT_DAYS`. */
+    closedAt: string | null;
   };
+  /** Its AI agent (PRD §74), with the knowledge text it was given. */
+  agent: { knowledge: string; paused: boolean; createdAt: string } | null;
+  /** Its own apps (PRD §74): what each may do and where it was told, and its kinds of card. */
+  apps: Array<{
+    name: string;
+    scopes: ApiScope[];
+    webhookUrl: string | null;
+    events: WebhookEvent[];
+    createdAt: string;
+    revokedAt: string | null;
+    cards: CustomKitDef[];
+  }>;
+  /** Its updates to followers (PRD §59), oldest first; who follows is never kept with them. */
+  updates: Array<{ id: string; body: string; postedAt: string; editedAt: string | null }>;
   /** What it offers (R58–R62), as set: hours, catalog, collections, ordering, ways to be paid. */
   offer: {
     hours: BookingHours | null;
@@ -1271,6 +1317,7 @@ export interface OrgExportView {
     declinedReason: string | null;
     developer: { displayName: string; handle: string };
   }>;
+  /** Its team (as it stood when it closed, for a closed one). */
   team: Array<{ userId: string; displayName: string; role: string; since: string }>;
   conversations: Array<{
     conversationId: string;

@@ -3412,12 +3412,33 @@ test.describe
       await expect(
         visible(page, new RegExp(`Its handle waits for whoever verifies ${domain} again`)),
       ).toBeVisible();
+      await expect(
+        visible(page, /Its export stays yours for 30 days after it closes/),
+      ).toBeVisible();
       await page.getByTestId('org-close-confirm').click();
       await expect(visible(page, `${orgName} closed`)).toBeVisible();
       await page.waitForURL('**/orgs');
       await expect(page.getByTestId(`org-row-${handle}`)).toHaveCount(0);
       await page.goto(`/o/${handle}`);
       await expect(visible(page, 'This organization isn’t here')).toBeVisible();
+      // Its export is still Noor's, the owner who closed it, from Settings · Security (DPA §12).
+      await page.goto('/settings/security');
+      const closedRow = page.getByTestId(`closed-org-export-${handle}`).filter({ visible: true });
+      await expect(closedRow).toContainText(`Export ${orgName}`);
+      await expect(closedRow).toContainText('Its export is yours until');
+      const download = page.waitForEvent('download');
+      await closedRow.click();
+      const file = await download;
+      expect(file.suggestedFilename()).toMatch(
+        new RegExp(`^${handle.replaceAll('.', '\\.')}-caime-\\d{4}-\\d{2}-\\d{2}\\.json$`),
+      );
+      const exported = JSON.parse(
+        await (await file.createReadStream())
+          .toArray()
+          .then((parts) => Buffer.concat(parts).toString()),
+      ) as { organization: { handle: string; closedAt: string | null } };
+      expect(exported.organization.handle).toBe(handle);
+      expect(exported.organization.closedAt).not.toBeNull();
 
       // Lina reads what it sent her, and can write no more.
       await customer.goto(`/c/${conversationId}`);

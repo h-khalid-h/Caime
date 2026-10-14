@@ -8,10 +8,10 @@ import { createHash } from 'node:crypto';
 import { Readable } from 'node:stream';
 import { uuidv7 } from '@caime/core';
 import { tr } from '@caime/core/i18n';
-import type { Selectable } from 'kysely';
+import { type Kysely, type Selectable, sql, type Transaction } from 'kysely';
 import sharp from 'sharp';
 import type { AppContext } from '../context';
-import type { FilesTable } from '../db/schema';
+import type { Database, FilesTable } from '../db/schema';
 import { badRequest } from './errors';
 import { makeRenditions } from './renditions';
 import { sniffFile } from './sniff';
@@ -157,5 +157,60 @@ export async function storeBytes(
   } catch (err) {
     await storage.remove(tempKey).catch(() => undefined);
     throw err;
+  }
+}
+
+/** A file's stored bytes: the original and each rendition (a small image's preview is its thumbnail). */
+export type StoredKeys = Pick<FileRow, 'storage_key' | 'thumb_key' | 'preview_key'>;
+
+/**
+ * Of `ids`, the files nothing points at any more go: no message, album, asset, avatar (a
+ * person's own, a group's, an organization's), catalog photo (an organization's, or its
+ * uploader's own, since a catalog takes only its saver's images) or app icon or screenshot.
+ * Their rows are deleted in `trx`; their bytes are the caller's to remove once it commits
+ * (`removeStored`), since a rolled-back delete must still find them.
+ */
+export async function dropUnusedFiles(
+  trx: Kysely<Database> | Transaction<Database>,
+  ids: string[],
+): Promise<StoredKeys[]> {
+  if (!ids.length) return [];
+  const gone = await sql<StoredKeys>`
+    with cand as (select id, owner_id from files where id = any(${ids}::uuid[])),
+    used as (
+      select file_id as id from message_files where file_id in (select id from cand)
+      union select file_id from album_photos where file_id in (select id from cand)
+      union select file_id from assets where file_id in (select id from cand)
+      union select avatar_file_id from conversations where avatar_file_id in (select id from cand)
+      union select avatar_file_id from organizations where avatar_file_id in (select id from cand)
+      union select icon_file_id from oauth_clients where icon_file_id in (select id from cand)
+      union select s from oauth_clients, unnest(screenshot_ids) s where s in (select id from cand)
+      union select c.id from cand c, users u
+        where u.id = c.owner_id and (u.avatar_file_id = c.id
+          or exists (select 1 from jsonb_array_elements(u.booking_items) i
+            where i->>'photoFileId' = c.id::text))
+      union select c.id from cand c, organizations o, jsonb_array_elements(o.booking_items) i
+        where i->>'photoFileId' = c.id::text
+    )
+    delete from files where id in (select id from cand)
+      and id not in (select id from used where id is not null)
+    returning storage_key, thumb_key, preview_key`.execute(trx);
+  return gone.rows;
+}
+
+/** The bytes of files whose rows are gone: each failure is logged, never silently kept. */
+export async function removeStored(
+  ctx: AppContext,
+  storage: Storage,
+  files: StoredKeys[],
+  why: string,
+): Promise<void> {
+  const dropped = (key: string) => (err: unknown) =>
+    ctx.log.warn({ err, key }, `${why}: a file was not removed`);
+  for (const f of files) {
+    await storage.remove(f.storage_key).catch(dropped(f.storage_key));
+    if (f.thumb_key) await storage.remove(f.thumb_key).catch(dropped(f.thumb_key));
+    if (f.preview_key && f.preview_key !== f.thumb_key)
+      await storage.remove(f.preview_key).catch(dropped(f.preview_key));
   }
 }

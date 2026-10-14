@@ -16,7 +16,7 @@ import {
   runNotificationHooks,
   tellForgotten,
 } from '../lib/notify';
-import { eraseMessagesWhere } from '../lib/org-data';
+import { eraseMessagesWhere, sweepClosedOrgs } from '../lib/org-data';
 import {
   activeRelationships,
   isBlockedEitherWay,
@@ -196,6 +196,13 @@ export function registerWorkers(): void {
 
   // What Caime records of how it's used goes when its time is up (lib/retention.ts).
   registerPeriodic({ name: 'records', everyMs: 86_400_000, background: true, run: sweepRecords });
+  // A closed organization's export window over, what was its alone goes (DPA §12).
+  registerPeriodic({
+    name: 'closed-orgs',
+    everyMs: 86_400_000,
+    background: true,
+    run: sweepClosedOrgs,
+  });
 
   // A browser that isn't open still shows what it was pushed of a message that's gone: the same
   // line, quietly, without the words (lib/notify.ts tellForgotten).

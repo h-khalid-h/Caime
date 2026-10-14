@@ -501,14 +501,26 @@ super-app brainstorm the product takes, and what it leaves with the reason, is R
       safeguard and how to get a copy, and the register entry (`LEGAL_REGISTRATION`); the
       minimum age by country (18 in Egypt and Saudi Arabia) in sign-up and a change of country;
       Checkout carries the consumer's request to start at once; every DPA mark decided.
-- [ ] ⛔ Owner, before launch: `LEGAL_ADDRESS`, `LEGAL_REGISTRATION`, `GOVERNING_LAW=Estonia` and
-      `EDGE_PROVIDER=Cloudflare, Inc.` in EasyPanel (DEPLOY.md, the environment in full); hosting
-      moved to a Google Cloud region in the EU (counsel's decision: removes the Chapter V transfer
-      to Qatar); Postmark's DPF coverage confirmed; Egyptian and Saudi counsel before Caime is
-      offered there (Egypt's licence, transfer permits and DPO by 1 November 2026).
-- [ ] An organization's closing as the DPA's section 12 says, before a first organization signs
-      it: its export open to its last owner for 30 days, then what was its alone deleted (roles,
-      settings, knowledge text, catalog, insights), its customers' copies kept as theirs.
+- [x] The service's legal facts set and live (2026-10-14, checked on `cai.me`): the privacy page
+      names DATA C OÜ with its register code and address, Cloudflare in front, Postmark sending;
+      the terms are under Estonian law. Every provider probe is up (`caime_provider_up`: DNS,
+      Stripe, Cloudflare, Anthropic, SMTP).
+- [ ] ⛔ Owner, before launch: hosting moved to a Google Cloud region in the EU (counsel's
+      decision: removes the Chapter V transfer to Qatar); Postmark's DPF coverage confirmed;
+      `_dmarc.cai.me` one record (two are published, so receivers apply neither) and Postmark's
+      DKIM verified; `cai.me`'s MX points at Postmark inbound while Caime Mail is off, so
+      `hello@` (the privacy contact) reaches nobody: back to Cloudflare Email Routing, or Caime
+      Mail turned on; Egyptian and Saudi counsel before Caime is offered there (Egypt's licence,
+      transfer permits and DPO by 1 November 2026).
+- [x] An organization's closing as the DPA's section 12 says: closing records its last owner and
+      keeps the seats' roles as they stood; its export (now everything it holds: page, settings,
+      catalog, agent and its knowledge text, apps without secrets, updates, conversations) stays
+      open to that owner alone for `KEPT_DAYS.closedOrgExport` (30) days, from Settings ·
+      Security (`GET /me/closed-orgs`); then the daily `closed-orgs` sweep (`clearClosedOrg`)
+      deletes what was its alone (team, page, settings, catalog, agent, apps with tokens, webhooks
+      and deliveries, updates and their notifications, checkout, the team's notes on threads,
+      files nothing else uses) and keeps the customers' copies whole (`org-closing.test.ts`, the
+      E2E's closing step downloads it).
 - [ ] The privacy page and the terms in Arabic, French and Turkish (English prevailing), by a
       translator who reads law, before launch in those languages' countries.
 - [ ] `cai.me/@handle` for people and organizations (R35), opening the app where it's installed:
@@ -2868,3 +2880,17 @@ The six-slice review's plan, in its order; a block is ticked when its tests and 
   Caime doesn't take; `auth.test.ts`), Checkout's start-now request for the EU withdrawal right,
   and every DPA mark decided (LEGAL-REVIEW). The environment in full is in DEPLOY.md; this
   session's writes to EasyPanel were refused by its permission check, so the owner adds it.
+- 2026-10-14 — The environment in full is live, set by the owner: `GOVERNING_LAW`, `EDGE_PROVIDER`,
+  `LEGAL_ADDRESS`, `LEGAL_REGISTRATION`, `SMTP_URL` (Postmark) and `EXPO_ACCESS_TOKEN`, with the
+  code's defaults stated; a first paste left thirteen placeholders uncommented (the new container
+  would have refused `SPEECH_PROVIDER`'s), caught by reading the shapes of the values, never the
+  values, and put back as comments before it deployed. Live: the terms under Estonian law, the
+  register line, every provider probe up. Still the owner's: one DMARC record, Postmark's DKIM,
+  and where `hello@cai.me` lands.
+- 2026-10-14 — DPA §12 built: an organization's export stays open to its last owner for 30 days
+  after it closes (Settings · Security), then a daily sweep deletes what was its alone and keeps
+  its customers' copies. The export now carries everything that will go (page, agent and its
+  knowledge text, apps without secrets, updates); closing keeps the team's roles for it. The DPA,
+  the privacy page and the terms say so, read from `KEPT_DAYS.closedOrgExport`
+  (`dpa-draft.test.ts`, `about.test.ts`). Files nothing points at are found by one query with an
+  index for each reference (`dropUnusedFiles`; migration 0077 adds the two missing ones).

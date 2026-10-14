@@ -79,12 +79,15 @@ The order matters: every step leaves Caime working. What each costs is in `docs/
    the password). The free plan (100 a month) carries the closed beta; at launch, Pro (Basic has
    no inbound, which Caime Mail needs).
 6. **Staff addresses, free, until Caime Mail is on.** Cloudflare Email Routing on `cai.me`
-   (it adds its own MX and SPF records): `hello@`, `support@`, `privacy@`, `security@`,
+   (it adds its own MX and SPF records; on 2026-10-14 the MX pointed at Postmark inbound with
+   Caime Mail off, so these addresses reached nobody): `hello@`, `support@`, `privacy@`, `security@`,
    `abuse@` and `postmaster@` forwarded to the owner's mailbox, catch-all off. Mail providers
    expect `postmaster@` and `abuse@` to take mail.
-7. **DMARC**: `TXT _dmarc` = `v=DMARC1; p=none; adkim=r; aspf=r; rua=mailto:<the address
-   Postmark's free DMARC digest gives, dmarc.postmarkapp.com>`; move to `p=quarantine` once a
-   few weekly digests show only Postmark and Cloudflare sending for `cai.me`.
+7. **DMARC**: one `TXT _dmarc` record, never two (with two, receivers apply neither):
+   `v=DMARC1; p=none; adkim=r; aspf=r; rua=mailto:<the address Postmark's free DMARC digest
+   gives, dmarc.postmarkapp.com>`; move to `p=quarantine` once a few weekly digests show only
+   Postmark and Cloudflare sending for `cai.me`. (2026-10-14: two were published, one with
+   `p=reject` and strict alignment, the other the digest's; merge them into one.)
 8. **Check**: `https://cai.me/v1/readyz` is `{"ok":true}`; signing up mails a code from
    `hello@cai.me` that arrives in the inbox with DKIM passing (`d=cai.me`); a reset link opens
    on `cai.me`; `https://www.cai.me/x?y=1` lands on `https://cai.me/x?y=1`; mail to
@@ -115,45 +118,59 @@ itself from then on (`MAIL_STAFF_HANDLE`).
 
 ### The service's environment, in full (2026-10-14)
 
-What `caime` carries in EasyPanel, in this order, read through EasyPanel's API (names only; the
-values are EasyPanel's alone). A commented line is a setting not yet in use, with what its value
-is: uncomment it once it's real, never with a placeholder, since a variable's presence is what
-turns its feature on.
+What `caime` carries in EasyPanel, in this order, read through EasyPanel's API (names, and
+whether a value is still a placeholder; the values are EasyPanel's alone). A commented line is a
+setting not yet in use, with what its value is: uncomment it once it's real, never with a
+placeholder, since a variable's presence is what turns its feature on (a first paste on
+2026-10-14 left thirteen uncommented, and the new container would have refused
+`SPEECH_PROVIDER`'s). The four `BACKUP_S3_*` lines go in together, or none.
 
 ```
-# --- The service
+# --- The service (NODE_ENV, PORT, HOST, DATA_DIR and WEB_DIR come from the image)
 DATABASE_URL=…                      # set
+DATABASE_POOL_MAX=20
 PUBLIC_URL=https://cai.me
 TRUST_PROXY=true
 LOG_LEVEL=info
+WORKERS=true
+SESSION_DAYS=90
+MINIMUM_AGE=13
 
 # --- Who runs Caime (the privacy page, the terms, the DPA)
-# LEGAL_ADDRESS=<DATA C OÜ's registered address, as in the Commercial Register>
-# LEGAL_REGISTRATION=<Estonian Commercial Register code>
+LEGAL_NAME=DATA C OÜ
+LEGAL_ADDRESS=…                     # set: the registered address
+LEGAL_REGISTRATION=…                # set: the Commercial Register code
 GOVERNING_LAW=Estonia               # counsel's decision, 2026-10-14
+CONTACT_EMAIL=hello@cai.me
 HOSTING_PROVIDER=Google Cloud, Doha, Qatar
 EDGE_PROVIDER=Cloudflare, Inc.
 
 # --- The operator's tokens
 ADMIN_TOKEN=…                       # set
 METRICS_TOKEN=…                     # set
+# OPERATOR_TOKENS=<name:token, one per person who operates Caime>
 
-# --- AI assist, Cai and organizations' agents
+# --- AI assist, Cai and organizations' agents (the model follows the code)
 ANTHROPIC_API_KEY=…                 # set
 
 # --- Billing (Stripe, live)
 STRIPE_SECRET_KEY=…                 # set
 STRIPE_WEBHOOK_SECRET=…             # set
 STRIPE_PORTAL_CONFIGURATION=…       # set
-# STRIPE_CONNECT_CLIENT_ID=<ca_… from Stripe Connect, when organizations' own checkout is turned on>
+# STRIPE_CONNECT_CLIENT_ID=<ca_… when organizations' own checkout is turned on>
 # STRIPE_CONNECT_WEBHOOK_SECRET=<whsec_… of https://cai.me/v1/checkout/stripe/webhook>
 
 # --- Calls (Cloudflare TURN)
 CLOUDFLARE_TURN_KEY_ID=…            # set
 CLOUDFLARE_TURN_API_TOKEN=…         # set
 
+# --- Web push (keys generated in the database on first boot) and phone push
+VAPID_SUBJECT=mailto:hello@cai.me
+EXPO_ACCESS_TOKEN=…                 # set
+
 # --- Mail out (Postmark): codes and reset links (step 5)
-# SMTP_URL=smtp://<postmark server token>:<postmark server token>@smtp.postmarkapp.com:587
+EMAIL_FROM=Caime <hello@cai.me>
+SMTP_URL=…                          # set: smtp.postmarkapp.com, the server token
 
 # --- Caime Mail (R75), after Postmark Pro and the MX move (below)
 # MAIL_DOMAIN=cai.me
@@ -162,23 +179,28 @@ CLOUDFLARE_TURN_API_TOKEN=…         # set
 # MAIL_WEBHOOK_SECRET=<openssl rand -hex 24>
 # MAIL_STAFF_HANDLE=<the handle that takes postmaster@, abuse@, support@, hello@ …>
 
-# --- Backups off this machine (Google Cloud Storage's S3 interface, an HMAC key; Backups, below)
+# --- Backups: a checked dump a day on /data, kept 30 days; a copy off this machine (Backups, below)
+BACKUP_ENABLED=true
+BACKUP_EVERY_HOURS=24
+BACKUP_KEEP_DAYS=30
 # BACKUP_S3_ENDPOINT=https://storage.googleapis.com
 # BACKUP_S3_BUCKET=<a bucket in an EU region>
 # BACKUP_S3_ACCESS_KEY_ID=<HMAC access id>
 # BACKUP_S3_SECRET_ACCESS_KEY=<HMAC secret>
 
-# --- Phone push, with the store builds
-# EXPO_ACCESS_TOKEN=<Expo access token>
+# --- Health of the providers, hourly (R78); webhooks only to public https addresses
+PROVIDER_HEALTH_ENABLED=true
+WEBHOOKS_ALLOW_PRIVATE=false
 
 # --- Voice notes into words, after the owner's bake-off (docs/SPEECH.md)
 # SPEECH_PROVIDER=<openai or elevenlabs>
 # SPEECH_API_KEY=<the provider's key>
 ```
 
-On 2026-10-14 the service had every line marked "set" and `HOSTING_PROVIDER`; `GOVERNING_LAW`,
-`EDGE_PROVIDER` and the commented lines are the owner's to add (this session's writes to the
-service were refused by its permission check).
+Checked live on 2026-10-14 after the 03:03 deploy: no placeholder left, the privacy page names
+the operator with its register entry, Cloudflare in front and Postmark sending, the terms are
+under Estonian law, and every provider probe is up (`caime_provider_up`: dns, stripe,
+cloudflare, anthropic, smtp).
 
 ## EasyPanel
 

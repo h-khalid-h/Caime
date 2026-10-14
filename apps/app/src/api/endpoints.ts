@@ -29,6 +29,7 @@ import type {
   CallHistoryResponse,
   CallResponse,
   CheckoutSettledResponse,
+  ClosedOrgExportsResponse,
   CollectionRenamedResponse,
   ConnectedAppsResponse,
   ConnectionRequestsResponse,
@@ -430,6 +431,7 @@ export const endpoints = {
   orgDoor: (id: string) => api.get<OrgDoorView>(`/orgs/${id}/door`),
   /** The organization's own conversations (R54): its owner's or admins' to take. */
   orgExport: (id: string) => api.get<OrgExportView>(`/orgs/${id}/export`),
+  closedOrgs: () => api.get<ClosedOrgExportsResponse>('/me/closed-orgs'),
   /** Erase a customer's conversation at their request (R54): every message in it goes. */
   eraseThread: (orgId: string, conversationId: string) =>
     api.del<ErasedResponse>(`/orgs/${orgId}/conversations/${conversationId}`),

@@ -1,4 +1,4 @@
-import type { OrgMemberView, OrgView } from '@caime/core/api';
+import { CLOSED_ORG_EXPORT_DAYS, type OrgMemberView, type OrgView } from '@caime/core/api';
 import { describeHours, isOrdered } from '@caime/core/booking';
 import { tr, trn } from '@caime/core/i18n';
 import {
@@ -196,6 +196,8 @@ export function OrgScreen({
     void qc.invalidateQueries({ queryKey: qk.orgs });
     // Following it, and its updates, change with blocking it.
     void qc.invalidateQueries({ queryKey: qk.allUpdates });
+    // Closed by you (or left by you last), its export waits in Settings · Security (DPA §12).
+    void qc.invalidateQueries({ queryKey: qk.closedOrgs });
   };
   const run = async (work: () => Promise<unknown>, done?: string) => {
     setBusy(true);
@@ -212,6 +214,12 @@ export function OrgScreen({
     }
   };
 
+  // What closing leaves its last owner (DPA §12), said where it closes.
+  const exportStays = trn(
+    CLOSED_ORG_EXPORT_DAYS,
+    'Its export stays yours for {n} day after it closes, in Settings · Security. Then what was only its own is deleted, and its customers keep their conversations.',
+    'Its export stays yours for {n} days after it closes, in Settings · Security. Then what was only its own is deleted, and its customers keep their conversations.',
+  );
   const back = (
     <IconButton
       icon={Back}
@@ -900,7 +908,9 @@ export function OrgScreen({
           />
         }
       >
-        <View />
+        <Text variant="caption" color="textSecondary">
+          {exportStays}
+        </Text>
       </Sheet>
 
       <Sheet
@@ -940,7 +950,13 @@ export function OrgScreen({
           />
         }
       >
-        <View />
+        {handsOverOnLeaving(org.myRole) && org.memberCount <= 1 ? (
+          <Text variant="caption" color="textSecondary">
+            {exportStays}
+          </Text>
+        ) : (
+          <View />
+        )}
       </Sheet>
       {/* One of its items or collections, by address (R61). */}
       {slug && !book ? (

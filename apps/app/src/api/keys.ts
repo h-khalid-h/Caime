@@ -12,6 +12,8 @@ export const qk = {
   orgBilling: (orgId: string) => ['org-billing', orgId] as const,
   spaces: ['spaces'] as const,
   orgs: ['orgs'] as const,
+  /** Organizations you closed last whose export is still open to you (DPA §12). */
+  closedOrgs: ['closed-orgs'] as const,
   org: (handle: string) => ['org', handle] as const,
   orgSpaces: (id: string) => ['org-spaces', id] as const,
   orgDoor: (id: string) => ['org-door', id] as const,

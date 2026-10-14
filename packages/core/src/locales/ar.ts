@@ -4306,4 +4306,18 @@ export const ar: Catalog = {
   'No meetings yet': 'لا اجتماعات بعد',
   'Meetings agreed in your conversations show here, with Join when it’s time.':
     'تظهر هنا الاجتماعات المتفق عليها في محادثاتك، مع زر الانضمام حين يحين وقتها.',
+  // An organization's closing (DPA §12): its export, for its last owner.
+  'Export {name}': 'تصدير {name}',
+  'It closed. Its export is yours until {date}, then what was only its own is deleted.':
+    'أُغلقت. تصديرها متاح لك حتى {date}، ثم يُحذف ما كان لها وحدها.',
+  'Its export stays yours for {n} days after it closes, in Settings · Security. Then what was only its own is deleted, and its customers keep their conversations.':
+    {
+      zero: 'لا يبقى تصديرها متاحًا لك بعد إغلاقها. يُحذف ما كان لها وحدها، ويحتفظ عملاؤها بمحادثاتهم.',
+      one: 'يبقى تصديرها متاحًا لك يومًا واحدًا بعد إغلاقها، في الإعدادات · الأمان. ثم يُحذف ما كان لها وحدها، ويحتفظ عملاؤها بمحادثاتهم.',
+      two: 'يبقى تصديرها متاحًا لك يومين بعد إغلاقها، في الإعدادات · الأمان. ثم يُحذف ما كان لها وحدها، ويحتفظ عملاؤها بمحادثاتهم.',
+      few: 'يبقى تصديرها متاحًا لك {n} أيام بعد إغلاقها، في الإعدادات · الأمان. ثم يُحذف ما كان لها وحدها، ويحتفظ عملاؤها بمحادثاتهم.',
+      many: 'يبقى تصديرها متاحًا لك {n} يومًا بعد إغلاقها، في الإعدادات · الأمان. ثم يُحذف ما كان لها وحدها، ويحتفظ عملاؤها بمحادثاتهم.',
+      other:
+        'يبقى تصديرها متاحًا لك {n} يوم بعد إغلاقها، في الإعدادات · الأمان. ثم يُحذف ما كان لها وحدها، ويحتفظ عملاؤها بمحادثاتهم.',
+    },
 };

@@ -3686,4 +3686,14 @@ export const turkish: Catalog = {
   'No meetings yet': 'Henüz toplantı yok',
   'Meetings agreed in your conversations show here, with Join when it’s time.':
     'Sohbetlerinizde kararlaştırılan toplantılar burada görünür; zamanı gelince Katıl ile.',
+  // An organization's closing (DPA §12): its export, for its last owner.
+  'Export {name}': 'Dışa aktar: {name}',
+  'It closed. Its export is yours until {date}, then what was only its own is deleted.':
+    'Kapandı. Dışa aktarımı {date} tarihine kadar sizin; ardından yalnızca ona ait olanlar silinir.',
+  'Its export stays yours for {n} days after it closes, in Settings · Security. Then what was only its own is deleted, and its customers keep their conversations.':
+    {
+      one: 'Kapandıktan sonra {n} gün boyunca dışa aktarımı Ayarlar · Güvenlik bölümünde sizindir. Ardından yalnızca ona ait olanlar silinir; müşterileri konuşmalarını korur.',
+      other:
+        'Kapandıktan sonra {n} gün boyunca dışa aktarımı Ayarlar · Güvenlik bölümünde sizindir. Ardından yalnızca ona ait olanlar silinir; müşterileri konuşmalarını korur.',
+    },
 };

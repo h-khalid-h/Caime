@@ -1,23 +1,30 @@
 /**
  * What a clinic's lawyer needs (R54): an organization is the controller of its customers'
  * conversations and Caime its processor, so the organization exports its own conversations,
- * erases a customer's at that customer's request, and sets how long they're kept.
+ * erases a customer's at that customer's request, and sets how long they're kept. When it closes,
+ * its export stays open to its last owner for a while, and then what was its alone is deleted
+ * (DPA §12, `clearClosedOrg`).
  *
  * Erasing is what disappearing does (PRD §60): the words and envelope go, and with them
  * everything kept of the message elsewhere, in one statement, so the daily sweep and an
  * erasure can never differ in what they take.
  */
 import type { OrgExportView } from '@caime/core/api';
+import type { ApiScope, WebhookEvent } from '@caime/core/apps';
 import type { Kysely, RawBuilder, Transaction } from 'kysely';
 import { sql } from 'kysely';
 import type { AppContext } from '../context';
 import type { Database } from '../db/schema';
 import { listingState } from './app-directory';
 import { emitWebhook } from './apps';
+import { audit } from './audit';
 import { tellSaved } from './automations';
 import { bookingOf, catalogOf, orderingOf, paymentsOf } from './booking';
+import { dropUnusedFiles, removeStored } from './files';
 import { insertSystemMessage, messageViews, participantsOf } from './messages';
 import { forgetNotificationsOf, tellForgotten } from './notify';
+import { KEPT_DAYS } from './retention';
+import { storageFor } from './storage';
 
 type Q = Kysely<Database> | Transaction<Database>;
 
@@ -179,8 +186,15 @@ export async function buildOrgExport(
       'name',
       'handle',
       'kind',
+      'about',
+      'website',
+      'founded_year',
+      'country',
+      'time_zone',
+      'workweek',
       'retention_days',
       'created_at',
+      'archived_at',
       'booking',
       'booking_items',
       'collections',
@@ -189,13 +203,15 @@ export async function buildOrgExport(
     ])
     .where('id', '=', orgId)
     .executeTakeFirstOrThrow();
-  const [team, threads, checkout, listings] = await Promise.all([
+  const closedAt = org.archived_at;
+  const [team, threads, checkout, listings, agent, apps, cards, updates] = await Promise.all([
+    // Its team now; closed, as it stood when it closed (every seat ended at that moment).
     db
       .selectFrom('org_members as m')
       .innerJoin('users as u', 'u.id', 'm.user_id')
       .select(['m.user_id', 'u.display_name', 'm.role', 'm.joined_at', 'u.kind'])
       .where('m.org_id', '=', orgId)
-      .where('m.left_at', 'is', null)
+      .where((eb) => (closedAt ? eb('m.left_at', '=', closedAt) : eb('m.left_at', 'is', null)))
       .execute(),
     db
       .selectFrom('business_threads as t')
@@ -241,6 +257,32 @@ export async function buildOrgExport(
       .where('a.org_id', '=', orgId)
       .where('a.revoked_at', 'is', null)
       .orderBy('a.created_at')
+      .execute(),
+    db
+      .selectFrom('org_agents')
+      .select(['knowledge', 'paused_at', 'created_at'])
+      .where('org_id', '=', orgId)
+      .executeTakeFirst(),
+    // Its own apps, stopped ones too (closing stops them all): never a token or a secret.
+    db
+      .selectFrom('org_apps')
+      .select(['id', 'name', 'scopes', 'webhook_url', 'events', 'created_at', 'revoked_at'])
+      .where('org_id', '=', orgId)
+      .orderBy('created_at')
+      .execute(),
+    db
+      .selectFrom('app_kits')
+      .select(['app_id', 'definition'])
+      .where('org_id', '=', orgId)
+      .orderBy('created_at')
+      .orderBy('key')
+      .execute(),
+    db
+      .selectFrom('org_updates')
+      .select(['id', 'body', 'created_at', 'edited_at'])
+      .where('org_id', '=', orgId)
+      .where('deleted_at', 'is', null)
+      .orderBy('created_at')
       .execute(),
   ]);
   const roleOf = new Map(team.map((m) => [m.user_id, m]));
@@ -335,9 +377,38 @@ export async function buildOrgExport(
       name: org.name,
       handle: org.handle,
       kind: org.kind,
+      about: org.about,
+      website: org.website,
+      foundedYear: org.founded_year,
+      country: org.country,
+      timeZone: org.time_zone,
+      workweek: org.workweek,
       retentionDays: org.retention_days,
       createdAt: org.created_at.toISOString(),
+      closedAt: closedAt?.toISOString() ?? null,
     },
+    agent: agent
+      ? {
+          knowledge: agent.knowledge,
+          paused: agent.paused_at !== null,
+          createdAt: agent.created_at.toISOString(),
+        }
+      : null,
+    apps: apps.map((a) => ({
+      name: a.name,
+      scopes: a.scopes as ApiScope[],
+      webhookUrl: a.webhook_url,
+      events: a.events as WebhookEvent[],
+      createdAt: a.created_at.toISOString(),
+      revokedAt: a.revoked_at?.toISOString() ?? null,
+      cards: cards.filter((k) => k.app_id === a.id).map((k) => k.definition),
+    })),
+    updates: updates.map((u) => ({
+      id: u.id,
+      body: u.body,
+      postedAt: u.created_at.toISOString(),
+      editedAt: u.edited_at?.toISOString() ?? null,
+    })),
     offer: {
       hours: bookingOf(org),
       items: catalogOf(org).items,
@@ -374,4 +445,135 @@ export async function buildOrgExport(
       })),
     conversations,
   };
+}
+
+const DAY = 86_400_000;
+
+/** Until when a closed organization's export is open to its last owner (DPA §12). */
+export const exportOpenUntil = (closedAt: Date): Date =>
+  new Date(closedAt.getTime() + KEPT_DAYS.closedOrgExport * DAY);
+
+/**
+ * Whether `userId` may export organization `org` at `now`: open, its owner and admins (the
+ * caller checks the seat); closed, its last owner alone, until `exportOpenUntil`, and never
+ * once what was its alone is gone.
+ */
+export function closedExportOpenTo(
+  org: { archived_at: Date | null; last_owner_id: string | null; cleared_at: Date | null },
+  userId: string,
+  now: Date,
+): boolean {
+  return (
+    org.archived_at !== null &&
+    org.cleared_at === null &&
+    org.last_owner_id === userId &&
+    now < exportOpenUntil(org.archived_at)
+  );
+}
+
+/**
+ * DPA §12: a closed organization whose export window is over keeps only what its customers' copies
+ * show of it (its name, handle, kind and country) and what lets it be taken back (its verified
+ * domain, R42). What was its alone goes: its team's seats and roles, its page and settings, its
+ * catalog and offer, its agent with the knowledge text it was given, its apps (with their
+ * tokens, webhooks, deliveries and kinds of card), its updates and what followers were told of
+ * them, its checkout account, and the team's own working notes on each thread (who had it, the
+ * escalations, who resolved or erased it). Its logo and catalog photos go when nothing else
+ * uses them. The conversations stay as its customers' copies, every message as it was. Returns
+ * whether it cleared one (an organization not yet due, or already cleared, is left alone).
+ */
+export async function clearClosedOrg(ctx: AppContext, orgId: string): Promise<boolean> {
+  const now = ctx.now();
+  const files = await ctx.db.transaction().execute(async (trx) => {
+    const org = await trx
+      .selectFrom('organizations')
+      .select(['id', 'handle', 'archived_at', 'cleared_at', 'avatar_file_id', 'booking_items'])
+      .where('id', '=', orgId)
+      .forUpdate()
+      .executeTakeFirst();
+    if (!org?.archived_at || org.cleared_at || exportOpenUntil(org.archived_at) > now) return null;
+    const photos = catalogOf({ booking_items: org.booking_items, collections: [] })
+      .items.map((i) => i.photoFileId)
+      .filter((id): id is string => typeof id === 'string');
+    await trx.deleteFrom('org_members').where('org_id', '=', orgId).execute();
+    await trx.deleteFrom('org_agents').where('org_id', '=', orgId).execute();
+    // Its apps' tokens, deliveries and kinds of card go with them; their bots' messages stay in
+    // the customers' copies, so the bots themselves stay, as senders.
+    await trx.deleteFrom('org_apps').where('org_id', '=', orgId).execute();
+    await trx.deleteFrom('org_checkout').where('org_id', '=', orgId).execute();
+    await trx.deleteFrom('checkout_states').where('org_id', '=', orgId).execute();
+    // Its updates, and what followers were told of each, as a taken-back update's (lib/updates.ts).
+    await sql`
+      with gone as (delete from org_updates where org_id = ${orgId} returning id)
+      delete from notifications
+      where kind = 'update' and data->>'updateId' in (select id::text from gone)`.execute(trx);
+    await trx
+      .updateTable('business_threads')
+      .set({
+        assignee_id: null,
+        escalated_at: null,
+        escalated_by: null,
+        escalation_note: null,
+        resolved_by: null,
+        erased_by: null,
+        updated_at: now,
+      })
+      .where('org_id', '=', orgId)
+      .execute();
+    await trx
+      .updateTable('organizations')
+      .set({
+        about: null,
+        website: null,
+        founded_year: null,
+        avatar_file_id: null,
+        time_zone: null,
+        workweek: null,
+        retention_days: null,
+        verify_token: null,
+        created_by: null,
+        last_owner_id: null,
+        booking: null,
+        booking_items: JSON.stringify([]),
+        collections: JSON.stringify([]),
+        ordering: null,
+        payments: null,
+        cleared_at: now,
+        updated_at: now,
+      })
+      .where('id', '=', orgId)
+      .execute();
+    const ids = [org.avatar_file_id, ...photos].filter((id): id is string => Boolean(id));
+    return { handle: org.handle, files: await dropUnusedFiles(trx, [...new Set(ids)]) };
+  });
+  if (!files) return false;
+  await removeStored(ctx, storageFor(ctx.config), files.files, 'closed organization');
+  await audit(ctx.db, {
+    actorId: null,
+    action: 'org.cleared',
+    target: orgId,
+    metadata: { handle: files.handle, files: files.files.length },
+  });
+  return true;
+}
+
+/** Closed organizations clear in lots this size, until none is due. */
+const CLEAR_LOT = 50;
+
+/** Daily: each closed organization whose export window is over is cleared (DPA §12). */
+export async function sweepClosedOrgs(ctx: AppContext): Promise<void> {
+  const due = new Date(ctx.now().getTime() - KEPT_DAYS.closedOrgExport * DAY);
+  for (;;) {
+    const lot = await ctx.db
+      .selectFrom('organizations')
+      .select('id')
+      .where('archived_at', 'is not', null)
+      .where('archived_at', '<=', due)
+      .where('cleared_at', 'is', null)
+      .orderBy('archived_at')
+      .limit(CLEAR_LOT)
+      .execute();
+    for (const { id } of lot) await clearClosedOrg(ctx, id);
+    if (lot.length < CLEAR_LOT) return;
+  }
 }

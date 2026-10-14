@@ -37,4 +37,13 @@ describe('the draft data processing agreement', () => {
     expect(doc).toContain('three times an hour');
     expect(doc).toContain('passwords hashed (scrypt)');
   });
+
+  it('says how an organization’s closing ends processing, as the code does it (section 12)', () => {
+    // lib/org-data.ts: the export window, then `clearClosedOrg` by the daily sweep.
+    expect(KEPT_DAYS.closedOrgExport).toBe(30);
+    expect(doc).toContain('available to its last owner for 30 days after closing');
+    expect(doc).toContain('After those\n30 days the Operator deletes');
+    expect(doc).not.toContain('⛔ Engineering');
+    expect(doc).not.toContain("Operator's proposal");
+  });
 });

@@ -211,14 +211,20 @@ other organizations' data. An authority's audit is not limited by this.
 
 On closing, the Organization exports what it needs first (section 8); after closing, nothing more
 is written in its conversations and its customers keep what they were sent (their own copy of a
-conversation they are a party to, as the privacy policy says). The Operator's proposal: the
-Organization's export stays available to its last owner for 30 days after closing, and after
-those 30 days the Operator deletes what was the Organization's alone (its team's roles, its
-settings, its knowledge text, its catalog, its tokens and webhooks, its insights) and keeps the
-conversations only as its customers' copies (section 1), unless Union or Member State law
-requires storage (Article 28(3)(g)). ⛔ Engineering: the 30-day export window after closing and the
-deletion after it are built before a first Organization signs (ROADMAP); today a closed
-organization nobody continued is removed only by the operator.
+conversation they are a party to, as the privacy policy says). The Organization's export stays
+available to its last owner for 30 days after closing (`GET /orgs/:id/export`, and Settings ·
+Security in the app; to anyone else the closed Organization is not there), with its team as it
+stood at closing, its page and settings, its catalog, its AI agent and the knowledge text it was
+given, its apps (never their tokens or secrets), its updates and its conversations. After those
+30 days the Operator deletes what was the Organization's alone: its team's seats and roles, its
+page and settings, its catalog and the photos only it used, its AI agent and that knowledge text,
+its apps with their tokens, webhooks and deliveries, its updates and what its followers were
+told of them, its checkout account, and its team's own notes on each conversation (who had it,
+escalations, who resolved or erased it), which is also everything its insights are drawn from.
+It keeps the conversations only as its customers' copies (section 1), with the Organization's
+name, handle, kind and country as those copies show it, and a verified domain for whoever proves
+it again (R42), unless Union or Member State law requires storage (Article 28(3)(g)). The
+deletion is a daily task of the Operator's, recorded in the audit log.
 
 ## 13. International transfers
 
@@ -258,4 +264,4 @@ law's rules on receiving and transferring the data are its own as controller.
 ---
 
 What this is: the agreement as decided, its facts kept true by a test. What it is not yet: signed,
-or published; it's offered to an Organization once section 12's clock is built.
+or published; it's offered to an Organization as it is, section 12's clock included.

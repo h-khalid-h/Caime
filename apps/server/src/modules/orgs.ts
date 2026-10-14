@@ -33,6 +33,7 @@ import {
   visibleCollections,
 } from '@caime/core';
 import type {
+  ClosedOrgExportsResponse,
   ErasedResponse,
   OkResponse,
   OrgInsightsResponse,
@@ -71,7 +72,13 @@ import { currencyOf, currentZone, defaultZoneOf, isCountry } from '../lib/geo';
 import { assertHandleAvailable } from '../lib/handles';
 import { orgInsights } from '../lib/insights';
 import { mailAddressOf } from '../lib/mail-address';
-import { applyOrgRetention, buildOrgExport, eraseBusinessConversation } from '../lib/org-data';
+import {
+  applyOrgRetention,
+  buildOrgExport,
+  closedExportOpenTo,
+  eraseBusinessConversation,
+  exportOpenUntil,
+} from '../lib/org-data';
 import {
   closedOrgById,
   closeOrg,
@@ -370,13 +377,21 @@ export async function orgRoutes(app: FastifyInstance, ctx: AppContext) {
   /**
    * What a clinic's lawyer needs (R54): the organization exports its own conversations (its
    * owner or admins, a few times an hour, each in the audit log), and erases a customer's at
-   * that customer's request.
+   * that customer's request. Closed, its export stays open to its last owner alone for
+   * `KEPT_DAYS.closedOrgExport` days (DPA §12); to anyone else it's as if it weren't there.
    */
   app.get('/orgs/:id/export', async (req, reply): Promise<OrgExportView> => {
     const auth = requireAuth(req);
     const { id } = parse(idParam, req.params);
-    const org = await orgById(ctx.db, id);
-    await managerSeat(ctx, auth.userId, id);
+    const org = await ctx.db
+      .selectFrom('organizations')
+      .select(['handle', 'archived_at', 'last_owner_id', 'cleared_at'])
+      .where('id', '=', id)
+      .executeTakeFirst();
+    if (!org) throw notFound(tr('That organization'));
+    if (!org.archived_at) await managerSeat(ctx, auth.userId, id);
+    else if (!closedExportOpenTo(org, auth.userId, ctx.now()))
+      throw notFound(tr('That organization'));
     ctx.limiter.hit(`org-export:${id}`, ctx.config.isTest ? 1000 : 3, 3_600_000);
     let data: OrgExportView;
     try {
@@ -394,13 +409,42 @@ export async function orgRoutes(app: FastifyInstance, ctx: AppContext) {
       actorId: auth.userId,
       action: 'org.exported',
       target: id,
-      metadata: { conversations: data.conversations.length },
+      metadata: { conversations: data.conversations.length, closed: org.archived_at !== null },
     });
     reply.header(
       'content-disposition',
       `attachment; filename="${org.handle}-caime-${ctx.now().toISOString().slice(0, 10)}.json"`,
     );
     return data;
+  });
+
+  /** The organizations you closed last whose export is still open to you (DPA §12). */
+  app.get('/me/closed-orgs', async (req): Promise<ClosedOrgExportsResponse> => {
+    const auth = requireAuth(req);
+    const rows = await ctx.db
+      .selectFrom('organizations')
+      .select(['id', 'name', 'handle', 'archived_at', 'last_owner_id', 'cleared_at'])
+      .where('last_owner_id', '=', auth.userId)
+      .where('archived_at', 'is not', null)
+      .where('cleared_at', 'is', null)
+      .orderBy('archived_at', 'desc')
+      .execute();
+    const now = ctx.now();
+    return {
+      orgs: rows.flatMap((o) =>
+        o.archived_at && closedExportOpenTo(o, auth.userId, now)
+          ? [
+              {
+                id: o.id,
+                name: o.name,
+                handle: o.handle,
+                closedAt: o.archived_at.toISOString(),
+                exportUntil: exportOpenUntil(o.archived_at).toISOString(),
+              },
+            ]
+          : [],
+      ),
+    };
   });
 
   app.delete('/orgs/:id/conversations/:conversationId', async (req): Promise<ErasedResponse> => {
@@ -645,14 +689,18 @@ export async function orgRoutes(app: FastifyInstance, ctx: AppContext) {
           userId,
         )
       : null;
+    // The last person leaving closes it: their seat ends with the rest, at the moment it closes
+    // and in the role they had, so its export names the team as it stood (DPA §12).
+    const closing = people.length === 1;
+    const now = ctx.now();
     await ctx.db.transaction().execute(async (trx) => {
       await trx
         .updateTable('org_members')
-        .set({ left_at: ctx.now(), role: 'agent' })
+        .set(closing ? { left_at: now } : { left_at: now, role: 'agent' })
         .where('org_id', '=', id)
         .where('user_id', '=', userId)
         .execute();
-      await leaveThreads(trx, id, userId, ctx.now());
+      await leaveThreads(trx, id, userId, now);
       // What leaned on their seat goes with it: writing for it to other organizations (R64), and
       // publishing apps under it (R74; the operator looks again at one that was listed).
       await trx
@@ -674,8 +722,9 @@ export async function orgRoutes(app: FastifyInstance, ctx: AppContext) {
           .where('org_id', '=', id)
           .where('user_id', '=', heir)
           .execute();
-      // Nobody left to run it: it closes, and stops showing anyone as verified.
-      if (people.length === 1) await closeOrg(trx, id, ctx.now());
+      // Nobody left to run it: it closes, and stops showing anyone as verified. Its export stays
+      // open to whoever was last.
+      if (closing) await closeOrg(trx, id, now, userId);
     });
     // Their seat in the organization's spaces ends with the one on its team (R43).
     for (const spaceId of await orgSpacesOf(ctx.db, id, userId))
@@ -685,7 +734,7 @@ export async function orgRoutes(app: FastifyInstance, ctx: AppContext) {
     await tellSaved(ctx, [userId]);
     await withdrawPlaceOffers(ctx, { kind: 'org', id }, userId);
     // Closed: what it paid for ends (a job keeps trying if Stripe can't be reached now).
-    if (people.length === 1) {
+    if (closing) {
       await endBillingOf(ctx, { orgId: id });
       await endFollowsOf(ctx, id);
       await disconnect(ctx, id);
@@ -798,7 +847,8 @@ export async function orgRoutes(app: FastifyInstance, ctx: AppContext) {
   /**
    * Its owner closes it (R42): its page goes, its team's seats end, its apps stop, and its
    * customers keep their conversations read-only. Verified, its handle waits for whoever proves
-   * its domain again; else it's held a year, then free.
+   * its domain again; else it's held a year, then free. Its export stays open to the owner who
+   * closed it for a while, then what was its alone goes (DPA §12, lib/org-data.ts).
    */
   app.post('/orgs/:id/close', async (req): Promise<OkResponse> => {
     const auth = requireAuth(req);
@@ -807,7 +857,7 @@ export async function orgRoutes(app: FastifyInstance, ctx: AppContext) {
     const seat = await orgSeat(ctx.db, auth.userId, id);
     if (!ownsOrg(seat?.role)) throw forbidden(tr('Only the organization’s owner closes it.'));
     const members = await team(ctx, id);
-    await ctx.db.transaction().execute((trx) => closeOrg(trx, id, ctx.now()));
+    await ctx.db.transaction().execute((trx) => closeOrg(trx, id, ctx.now(), auth.userId));
     // Closed, it takes no cards (R65): Stripe forgets Caime's access to its account.
     await disconnect(ctx, id);
     await audit(ctx.db, {

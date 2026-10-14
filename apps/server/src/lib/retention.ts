@@ -7,6 +7,7 @@
  * (they look back up to 365 days); copies of what was sent to an organization's apps, 30 days;
  * and a handle someone let go of is held from everyone a year, then forgotten (lib/handles.ts).
  */
+import { CLOSED_ORG_EXPORT_DAYS } from '@caime/core/api';
 import { type RawBuilder, sql } from 'kysely';
 import type { AppContext } from '../context';
 
@@ -24,6 +25,11 @@ export const KEPT_DAYS = {
   doneJobs: 7,
   /** A notification: half a year, then it goes (the privacy page says so). */
   notifications: 180,
+  /**
+   * A closed organization's export, open to its last owner; then what was its alone goes
+   * (DPA §12, lib/org-data.ts `clearClosedOrg`).
+   */
+  closedOrgExport: CLOSED_ORG_EXPORT_DAYS,
 } as const;
 
 /** The day of `at` as Caime keeps days ('YYYY-MM-DD', UTC). */

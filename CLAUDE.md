@@ -218,6 +218,14 @@ These are rules, not preferences.
   `processorsFor(config)` on the server (`HOSTING_PROVIDER` names the host, `EDGE_PROVIDER` the
   network in front of it, `SMTP_HOST_PROVIDERS` the company behind a mail host): a new provider
   joins the list, and the privacy page renders it; never prose about a company anywhere else.
+  Closing (DPA §12) records `organizations.last_owner_id` (`closeOrg`'s last argument; null when
+  that account is going) and ends every seat at the moment it closes, roles kept; the export
+  stays open to that owner alone for `KEPT_DAYS.closedOrgExport` days (`closedExportOpenTo`,
+  `GET /me/closed-orgs`, Settings · Security), then the daily `closed-orgs` task runs
+  `clearClosedOrg`, which deletes what was its alone and sets `cleared_at`. A new thing an
+  organization keeps of its own joins `buildOrgExport` and `clearClosedOrg` both; a file it
+  points at goes through `dropUnusedFiles` (`lib/files.ts`), whose one query lists every column
+  that points at a file: a new one joins it, with an index.
 - An organization's door (R53): its public page's call to action is `doorPath(handle)`
   (`/o/<handle>?write`, `lib/public-pages.ts`), which `appPath` admits, `handleIn` reads as the
   handle and `doorIn` (`lib/paths.ts`) tells from the plain page. Onboarding names it, the

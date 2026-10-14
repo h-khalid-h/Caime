@@ -274,13 +274,15 @@ describe('apps: tokens, bots and webhooks (PRD §73–75, R16)', () => {
       .where('id', '=', otherOrgId)
       .executeTakeFirstOrThrow();
     expect(org.archived_at).not.toBeNull();
-    const owners = await t.ctx.db
+    // Nobody holds a seat any more, and the bot never inherited it: the only owner is the person
+    // who left last, their seat ended in the role they had (kept for the export, DPA §12).
+    const seats = await t.ctx.db
       .selectFrom('org_members')
-      .select('user_id')
+      .select(['user_id', 'role', 'left_at'])
       .where('org_id', '=', otherOrgId)
-      .where('role', '=', 'owner')
       .execute();
-    expect(owners).toEqual([]);
+    expect(seats.filter((s) => s.left_at === null)).toEqual([]);
+    expect(seats.filter((s) => s.role === 'owner').map((s) => s.user_id)).toEqual([omar.user.id]);
     expect((await as(other, 'GET', `/v1/orgs/${otherOrgId}/inbox`)).statusCode).toBe(401);
   });
 

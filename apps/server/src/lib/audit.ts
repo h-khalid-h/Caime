@@ -47,6 +47,7 @@ export type AuditAction =
   | 'calendar.feed_stopped'
   | 'org.created'
   | 'org.closed'
+  | 'org.cleared'
   | 'org.booking_set'
   | 'org.booking_off'
   | 'org.checkout_connected'

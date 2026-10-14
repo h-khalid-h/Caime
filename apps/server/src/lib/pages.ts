@@ -276,6 +276,11 @@ long it keeps them: each message then goes when that time is up, as a disappeari
 and the conversation says so to you. It can export its conversations, and it can erase yours at
 your request, which empties every message in it and leaves a line saying so. Ask the
 organization; its team does it from its inbox.</li>
+<li>When an organization closes, nothing more is written in its conversations, and you keep
+yours with it, to read, as your own. Whoever ran it last can still export it for
+${span(KEPT_DAYS.closedOrgExport)}; then what was the organization&rsquo;s alone is deleted: its
+team, its page and settings, its catalog, its AI agent and what it was told, its apps, its
+updates and its team&rsquo;s notes on its conversations.</li>
 <li>In a conversation with disappearing messages, each message is emptied within about an hour of
 its time being up: the setting when it was sent, counted from then, so a change to the setting
 applies only to messages sent after it. It then shows as &ldquo;Message deleted&rdquo;:
@@ -470,6 +475,9 @@ for: it decides why and how long they are kept (it is their controller), and ${f
 stores and delivers them for it (as their processor) under a data processing agreement, available
 from ${mail}. Caime is not a medical, legal or accounting record system: an organization keeps
 its own records where the law asks it to.</li>
+<li>An organization&rsquo;s owner can close it. Its export then stays open to that owner for
+${span(KEPT_DAYS.closedOrgExport)} (You &rarr; Security); after that, what was the
+organization&rsquo;s alone is deleted, and its customers keep their conversations with it.</li>
 </ul>
 
 <h2>5. AI features</h2>

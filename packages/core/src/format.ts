@@ -252,6 +252,25 @@ export function formatWhenAt(
   return hasTime ? `${date}, ${formatClock(at, timeZone, locale)}` : date;
 }
 
+/**
+ * A deadline, always as a date and an hour (never "Today", which reads wrong inside a sentence):
+ * "Thu, 13 Nov, 3:04 PM", with the year when it isn't this one.
+ */
+export function formatDeadline(at: string, now: Date, timeZone: string, locale = 'en'): string {
+  const t = new Date(at);
+  const otherYear =
+    Number.isFinite(t.getTime()) && zonedParts(t, timeZone).year !== zonedParts(now, timeZone).year;
+  return dateFormat(locale, {
+    weekday: 'short',
+    day: 'numeric',
+    month: 'short',
+    ...(otherYear ? { year: 'numeric' as const } : {}),
+    hour: 'numeric',
+    minute: '2-digit',
+    timeZone,
+  }).format(Number.isFinite(t.getTime()) ? t : now);
+}
+
 export function formatBytes(bytes: number): string {
   if (bytes < 1024) return `${bytes} B`;
   const units = ['KB', 'MB', 'GB', 'TB'];

@@ -136,9 +136,16 @@ describe('About, and Caime’s own privacy, terms and help pages', () => {
       expect(privacy).toContain(
         'and 18 and older for people who live in Egypt or Saudi Arabia, whose law asks a guardian&rsquo;s consent',
       );
+      // An organization's closing (DPA §12): its export's window, read from the code.
+      expect(privacy).toContain(
+        'Whoever ran it last can still export it for 30 days; then what was the organization&rsquo;s alone is deleted',
+      );
       const terms = read((await t.app.inject({ method: 'GET', url: '/terms' })).body);
       expect(terms).toContain(
         'You need to be 13 or older (18 and older for people who live in Egypt or Saudi Arabia)',
+      );
+      expect(terms).toContain(
+        'Its export then stays open to that owner for 30 days (You &rarr; Security)',
       );
     } finally {
       await t.close();

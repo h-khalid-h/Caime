@@ -3849,4 +3849,14 @@ export const fr: Catalog = {
   'No meetings yet': 'Aucune réunion pour l’instant',
   'Meetings agreed in your conversations show here, with Join when it’s time.':
     'Les réunions convenues dans vos conversations s’affichent ici, avec Rejoindre le moment venu.',
+  // An organization's closing (DPA §12): its export, for its last owner.
+  'Export {name}': 'Exporter {name}',
+  'It closed. Its export is yours until {date}, then what was only its own is deleted.':
+    'Elle est fermée. Son export vous reste ouvert jusqu’au {date}, puis ce qui n’appartenait qu’à elle est supprimé.',
+  'Its export stays yours for {n} days after it closes, in Settings · Security. Then what was only its own is deleted, and its customers keep their conversations.':
+    {
+      one: 'Son export vous reste ouvert {n} jour après sa fermeture, dans Réglages · Sécurité. Ensuite, ce qui n’appartenait qu’à elle est supprimé, et ses clients gardent leurs conversations.',
+      other:
+        'Son export vous reste ouvert {n} jours après sa fermeture, dans Réglages · Sécurité. Ensuite, ce qui n’appartenait qu’à elle est supprimé, et ses clients gardent leurs conversations.',
+    },
 };

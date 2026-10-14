@@ -132,7 +132,8 @@ export async function handOverOrgs(trx: Q, userId: string, now: Date): Promise<s
         .where('user_id', '=', heir)
         .execute();
     else {
-      await closeOrg(trx, org_id, now);
+      // Its owner's account is going, so nobody is left to take its export.
+      await closeOrg(trx, org_id, now, null);
       closed.push(org_id);
     }
   }
@@ -145,8 +146,16 @@ export async function handOverOrgs(trx: Q, userId: string, now: Date): Promise<s
  * seats end, its apps stop for good, and its handle stays in the namespace only if it was
  * verified, for whoever proves its domain again; else it's held a year, like a person's. What
  * it paid for and who followed it end after this, outside the transaction (billing, updates).
+ * Its export stays open to `lastOwnerId` (null when that account is going) for
+ * `KEPT_DAYS.closedOrgExport` days, the seats as they stood at closing (their roles kept, ended
+ * at the moment it closed); then what was its alone goes (DPA §12, `clearClosedOrg`).
  */
-export async function closeOrg(trx: Q, orgId: string, now: Date): Promise<void> {
+export async function closeOrg(
+  trx: Q,
+  orgId: string,
+  now: Date,
+  lastOwnerId: string | null,
+): Promise<void> {
   const org = await trx
     .selectFrom('organizations')
     .select(['handle', 'verified_at', 'archived_at'])
@@ -155,13 +164,19 @@ export async function closeOrg(trx: Q, orgId: string, now: Date): Promise<void> 
   if (!org || org.archived_at) return;
   await trx
     .updateTable('organizations')
-    .set({ archived_at: now, reclaim_by: null, reclaim_token: null, updated_at: now })
+    .set({
+      archived_at: now,
+      last_owner_id: lastOwnerId,
+      reclaim_by: null,
+      reclaim_token: null,
+      updated_at: now,
+    })
     .where('id', '=', orgId)
     .execute();
   forgetSitemaps();
   await trx
     .updateTable('org_members')
-    .set({ left_at: now, role: 'agent' })
+    .set({ left_at: now })
     .where('org_id', '=', orgId)
     .where('left_at', 'is', null)
     .execute();

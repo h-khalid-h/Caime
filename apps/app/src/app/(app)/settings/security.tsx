@@ -1,5 +1,5 @@
 import type { DeviceSessionView } from '@caime/core/api';
-import { formatListTime } from '@caime/core/format';
+import { formatDeadline, formatListTime } from '@caime/core/format';
 import { tr } from '@caime/core/i18n';
 import { passwordError } from '@caime/core/rules';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
@@ -13,6 +13,7 @@ import { View } from 'react-native';
 import { endpoints } from '@/api/endpoints';
 import { qk } from '@/api/keys';
 import { PrivateDevices, RecoveryKey } from '@/features/e2ee/parts';
+import { saveOrgExport } from '@/features/orgs/orgExport';
 import { Group, SettingsPage } from '@/features/settings/SettingsPage';
 import { copyText } from '@/lib/clipboard';
 import { API_URL, isWeb } from '@/lib/config';
@@ -39,6 +40,21 @@ export default function Security() {
   const now = useNow();
   const { timeZone, locale } = useUserClock();
   const sessions = useQuery({ queryKey: qk.sessions, queryFn: endpoints.sessions });
+  // An organization you closed last: its export stays yours a while (DPA §12).
+  const closedOrgs = useQuery({ queryKey: qk.closedOrgs, queryFn: endpoints.closedOrgs });
+  const [exporting, setExporting] = useState<string | null>(null);
+  const exportClosed = async (orgId: string) => {
+    setExporting(orgId);
+    try {
+      await saveOrgExport(orgId);
+    } catch (e) {
+      toast((e as Error).message, { tone: 'danger' });
+      // Its window may have just ended: the list says so on its next look.
+      void qc.invalidateQueries({ queryKey: qk.closedOrgs });
+    } finally {
+      setExporting(null);
+    }
+  };
   const [current, setCurrent] = useState('');
   const [next, setNext] = useState('');
   const [pwError, setPwError] = useState<string | null>(null);
@@ -243,6 +259,26 @@ export default function Security() {
               : undefined
           }
         />
+        {(closedOrgs.data?.orgs ?? []).map((o) => (
+          <View key={o.id} style={{ borderTopWidth: 1, borderTopColor: t.c.border }}>
+            <ListRow
+              icon={FileText}
+              title={tr('Export {name}', { name: o.name })}
+              subtitle={
+                isWeb
+                  ? tr(
+                      'It closed. Its export is yours until {date}, then what was only its own is deleted.',
+                      {
+                        date: formatDeadline(o.exportUntil, now, timeZone, locale),
+                      },
+                    )
+                  : tr('Open Caime on the web to download it')
+              }
+              onPress={isWeb && exporting !== o.id ? () => void exportClosed(o.id) : undefined}
+              testID={`closed-org-export-${o.handle}`}
+            />
+          </View>
+        ))}
         <View style={{ borderTopWidth: 1, borderTopColor: t.c.border }}>
           <ListRow
             icon={Trash}

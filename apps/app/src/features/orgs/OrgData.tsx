@@ -20,6 +20,7 @@ import { Card } from '@/ui/Card';
 import { ChoiceSheet } from '@/ui/ChoiceSheet';
 import { Text } from '@/ui/Text';
 import { toast } from '@/ui/Toast';
+import { saveOrgExport } from './orgExport';
 
 const KEEP = ['off', '30', '90', '180', '365', '730'] as const;
 
@@ -34,14 +35,7 @@ export function OrgData({ org, refresh }: { org: OrgView; refresh: (o: OrgView) 
   const exportAll = async () => {
     setBusy(true);
     try {
-      const data = await endpoints.orgExport(org.id);
-      const text = JSON.stringify(data, null, 2);
-      const url = URL.createObjectURL(new Blob([text], { type: 'application/json' }));
-      const a = document.createElement('a');
-      a.href = url;
-      a.download = `${org.handle}-caime-${data.exportedAt.slice(0, 10)}.json`;
-      a.click();
-      setTimeout(() => URL.revokeObjectURL(url), 1000);
+      const data = await saveOrgExport(org.id);
       toast(
         trn(data.conversations.length, 'Exported {n} conversation', 'Exported {n} conversations'),
       );

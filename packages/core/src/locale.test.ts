@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 import {
   contextLine,
   formatClock,
+  formatDeadline,
   formatDue,
   formatListTime,
   MATCH_END,
@@ -27,6 +28,22 @@ describe('safeLocale', () => {
     expect(() => formatClock(iso, 'Africa/Cairo', 'en-US@posix')).not.toThrow();
     expect(() => formatListTime(iso, now, 'Not/AZone', '!!')).not.toThrow();
     expect(() => formatDue(iso, now, 'Africa/Cairo', 'en_US.UTF-8')).not.toThrow();
+    expect(() => formatDeadline('not a date', now, 'Not/AZone', '!!')).not.toThrow();
+  });
+});
+
+describe('formatDeadline', () => {
+  const now = new Date('2026-10-14T09:00:00Z');
+  it('says a date and an hour, never a word for the day, so it reads inside a sentence', () => {
+    expect(formatDeadline('2026-10-14T13:04:00Z', now, 'UTC', 'en-GB')).toBe('Wed 14 Oct, 13:04');
+    expect(formatDeadline('2026-11-13T13:04:00Z', now, 'Africa/Cairo', 'en-US')).toBe(
+      'Fri, Nov 13, 3:04 PM',
+    );
+  });
+  it('names the year only when it is another', () => {
+    expect(formatDeadline('2027-01-02T08:00:00Z', now, 'UTC', 'en-GB')).toBe(
+      'Sat, 2 Jan 2027, 8:00',
+    );
   });
 });
 

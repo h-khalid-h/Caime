@@ -797,6 +797,10 @@ export interface OrganizationsTable {
   reclaim_token: string | null;
   /** Closed and taken back: the open organization that continues it. */
   succeeded_by: string | null;
+  /** Closed: whoever owned it last, to whom its export stays open for a while (DPA §12). */
+  last_owner_id: Generated<string | null>;
+  /** Closed, and what was its alone deleted (DPA §12): when. */
+  cleared_at: NullableTimestamp;
   created_at: Generated<Date>;
   updated_at: Generated<Date>;
 }
@@ -1338,6 +1342,8 @@ export const ORG_COLUMNS = [
   'reclaim_by',
   'reclaim_token',
   'succeeded_by',
+  'last_owner_id',
+  'cleared_at',
   'created_at',
   'updated_at',
 ] as const satisfies ReadonlyArray<
