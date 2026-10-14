@@ -252,6 +252,8 @@ describe('AI assist (PRD §45, R17, R18)', () => {
       ).n,
     );
     expect(messagesAfter).toBe(messagesBefore);
+    // Each run is recorded after its answer (ctx.defer): wait for both.
+    await t.ctx.flush();
     const runs = await t.ctx.db
       .selectFrom('ai_runs')
       .select(['feature', 'outcome'])
