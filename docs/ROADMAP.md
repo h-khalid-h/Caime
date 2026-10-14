@@ -1320,7 +1320,14 @@ listed there with its owner.
 - [ ] Later in R73: phones seen in Arabic on a device (the layout flips at the next launch after
       the change, as `I18nManager` works; a relaunch could be offered); Hebrew and Persian would
       take the same path with their own paired faces.
-- [ ] Later in R67: Cai in a conversation ("Catch me up" opening Cai's chat on it), Cai's digests
+- [x] Cai in a conversation, in its privacy-safe shape (R67): "Ask about this conversation" in
+      its assist tools answers a question from the transcript a catch-up reads (never a private
+      conversation, a hidden or deleted message, or who on an organization's team wrote), in the
+      language the question is asked in, labelled "Suggested by Cai" and kept nowhere, within
+      the AI allowance (`ai.test.ts`, the AI assist E2E). Opening Cai's chat on a conversation
+      stays declined: a summary kept there would outlive the words it came from, past every
+      erasure path
+- [ ] Later in R67: Cai's digests
       in its chat, public pages for @cai and the friends (answer engines), more of what each friend knows.
 - [ ] ⛔ A trademark and store-name clearance for "Caime" before the store builds (the owner's).
 - [ ] Later layers of R62: a receipt from a paid card, refunds from a card paid by card, a
@@ -2963,3 +2970,10 @@ The six-slice review's plan, in its order; a block is ticked when its tests and 
   come from one list in core that the app's config is held to, and the app's builds claim the
   domain they talk to for links and passkeys. Mail DNS checked: one DMARC record now (the
   owner's fix); MX still at Postmark's inbound with Caime Mail off.
+- 2026-10-14 — Ask about this conversation (R67's "Cai in a conversation"): a question in the
+  conversation's assist tools, answered from the same bounded transcript a catch-up reads, in
+  the question's language (`writtenIn`), labelled and kept nowhere, one AI call within the
+  allowance (`POST /conversations/:id/ask`, `ai.ask`, `AiAnswerView`; `ASK_MAX` in core's
+  light `assist` module). Opening Cai's chat on a conversation was weighed and declined: a
+  summary kept in Cai's chat would outlive the words it came from. The terms' list of AI
+  suggestions names the answer; SECURITY's AI line and RESOURCES' AI table say what it reads.

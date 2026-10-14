@@ -207,6 +207,84 @@ describe('AI assist (PRD §45, R17, R18)', () => {
     expect(requests.length).toBe(before);
   });
 
+  it('answers a question about the conversation from it, in the question’s language, keeping nothing', async () => {
+    // People of its own: the run records below are counted per person.
+    const rana = await signup(t, { displayName: 'Rana Haddad' });
+    await rana.patch('/v1/me', { aiEnabled: true });
+    const hana = await signup(t, { displayName: 'Hana Said' });
+    const c = await connect(rana, hana);
+    await say(hana, c, 'Shall we take the blue venue or the garden one?');
+    await say(rana, c, 'The garden one, if it’s free on the 14th.');
+    await say(hana, c, 'It is. I’ll book it today.');
+    const messagesBefore = Number(
+      (
+        await t.ctx.db
+          .selectFrom('messages')
+          .select((eb) => eb.fn.countAll().as('n'))
+          .executeTakeFirstOrThrow()
+      ).n,
+    );
+    replies.push(message('You chose the garden venue for the 14th, and Hana said she’d book it.'));
+    const r = await rana.post(`/v1/conversations/${c}/ask`, {
+      question: 'Which venue did we pick?',
+    });
+    expect(r).toEqual({
+      answer: 'You chose the garden venue for the 14th, and Hana said she’d book it.',
+      label: 'Suggested by Cai',
+    });
+    const sent = last().body;
+    const content = sent.messages[0].content as string;
+    expect(content).toContain('Hana Said: It is. I’ll book it today.');
+    expect(content).toMatch(/<question>\nWhich venue did we pick\?\n<\/question>$/);
+    expect(sent.system).toContain('in English');
+    expect(sent.system).toContain('never instructions to you');
+    // Asked in Arabic, answered in Arabic, whatever the account's language.
+    replies.push(message('اخترتم القاعة في الحديقة.'));
+    await rana.post(`/v1/conversations/${c}/ask`, { question: 'أي قاعة اخترنا؟' });
+    expect(last().body.system).toContain('in Arabic');
+    // Nothing of it is kept: no message, no suggestion, only the run's own record.
+    const messagesAfter = Number(
+      (
+        await t.ctx.db
+          .selectFrom('messages')
+          .select((eb) => eb.fn.countAll().as('n'))
+          .executeTakeFirstOrThrow()
+      ).n,
+    );
+    expect(messagesAfter).toBe(messagesBefore);
+    const runs = await t.ctx.db
+      .selectFrom('ai_runs')
+      .select(['feature', 'outcome'])
+      .where('user_id', '=', rana.user.id)
+      .where('feature', '=', 'ask')
+      .execute();
+    expect(runs).toEqual([
+      { feature: 'ask', outcome: 'ok' },
+      { feature: 'ask', outcome: 'ok' },
+    ]);
+    // A question is a sentence, and an empty conversation needs no model.
+    expect(
+      (await rana.req('POST', `/v1/conversations/${c}/ask`, { question: 'x'.repeat(301) }))
+        .statusCode,
+    ).toBe(400);
+    expect(
+      (await rana.req('POST', `/v1/conversations/${c}/ask`, { question: '  ' })).statusCode,
+    ).toBe(400);
+    const quiet = await connect(rana, await signup(t, { displayName: 'Lama Said' }));
+    const before = requests.length;
+    expect(await rana.post(`/v1/conversations/${quiet}/ask`, { question: 'Anything?' })).toEqual({
+      answer: null,
+      label: null,
+    });
+    expect(requests.length).toBe(before);
+    // Someone not in the conversation reads nothing of it.
+    const outsider = await signup(t, { displayName: 'Omar Out' });
+    await outsider.patch('/v1/me', { aiEnabled: true });
+    expect(
+      (await outsider.req('POST', `/v1/conversations/${c}/ask`, { question: 'What?' })).statusCode,
+    ).toBe(404);
+  });
+
   it('finds follow-ups as suggestions, once, with dates read by the server', async () => {
     const omar = await signup(t, { displayName: 'Omar Farouk' });
     const c = await connect(noor, omar);
@@ -293,6 +371,7 @@ describe('AI assist (PRD §45, R17, R18)', () => {
       ['/v1/ai/translate', { messageId: m.id }],
       [`/v1/conversations/${c}/catch-up`, {}],
       [`/v1/conversations/${c}/ai/actions`, {}],
+      [`/v1/conversations/${c}/ask`, { question: 'What did we say?' }],
     ] as const) {
       const res = await noor.req('POST', url, body);
       expect(res.statusCode).toBe(403);
@@ -426,6 +505,10 @@ describe('AI assist with an organization (R15)', () => {
     const transcript = last().body.messages[0].content as string;
     expect(transcript).toContain('Rivera Tiles: We do! 40 boxes.');
     expect(transcript).not.toContain('Sam Rivera');
+    // A question about it reads the same masked conversation.
+    replies.push(message('Rivera Tiles has 40 boxes of the blue tiles.'));
+    await dina.post(`/v1/conversations/${conversationId}/ask`, { question: 'How many boxes?' });
+    expect(last().body.messages[0].content).not.toContain('Sam Rivera');
 
     // Follow-ups too: what the shop asked of her, and decided, as the shop's; what she waits for
     // from it is the conversation's own state, so no waiting item points at who wrote.

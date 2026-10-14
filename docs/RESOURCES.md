@@ -35,6 +35,7 @@ Each call is paid for by the token, so what is sent is bounded and what is repea
 | Rewrite, translate | `ANTHROPIC_MODEL_LIGHT` when set, else `ANTHROPIC_MODEL` | low | one message (1,500 characters) | 8,192 tokens |
 | Catch me up | the light model | low | 200 messages, 60,000 characters, 1,500 a message | 4,096 tokens |
 | Find follow-ups | `ANTHROPIC_MODEL` | medium | the same transcript, structured output | 8,192 tokens |
+| A question about a conversation (R67) | the light model | low | the same transcript and the question (300 characters) | 4,096 tokens |
 | An organization's agent | `ANTHROPIC_MODEL` | low | its knowledge (8,000 characters, sent as a cached system block) and the last 20 messages | 2,048 tokens, clipped to 1,500 characters |
 
 - **Allowances** (`packages/core/src/plans.ts`): 10 AI calls a day on Personal, 200 on Pro and

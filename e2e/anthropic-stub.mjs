@@ -67,6 +67,16 @@ function answer(body) {
     const open = (between(content, '<context>', '</context>').match(/^• /gm) ?? []).length;
     return reply(`About “${asked}”: here’s an idea. (${open} open things in mind.)`);
   }
+  if (system.includes('question about a conversation')) {
+    // A question about the conversation (R67): it names the question and what it read.
+    calls.push('ask');
+    const question = between(content, '<question>', '</question>');
+    const lines = linesOf(content);
+    const last = lines[lines.length - 1];
+    return reply(
+      `About “${question}”: ${lines.length} messages, the latest from ${last?.speaker ?? 'nobody'}.`,
+    );
+  }
   if (system.includes('catch someone up')) {
     calls.push('catch-up');
     const lines = linesOf(content);

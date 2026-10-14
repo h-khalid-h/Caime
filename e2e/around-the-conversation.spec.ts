@@ -1954,6 +1954,18 @@ test.describe
       await expect(offer).toContainText('Suggested by Cai');
       await expect(offer).toContainText('Alex wrote “The printer needs the final logo files');
 
+      // A question about the conversation, answered from it and kept nowhere (R67).
+      await page
+        .getByTestId('assist-question')
+        .filter({ visible: true })
+        .fill('What does the printer need?');
+      await page.getByTestId('assist-ask').filter({ visible: true }).click();
+      const answer = page.getByTestId('assist-answer').filter({ visible: true });
+      await expect(answer).toContainText('Suggested by Cai');
+      await expect(answer).toContainText(
+        /About “What does the printer need\?”: \d+ messages, the latest from Alex Chen\./,
+      );
+
       // The hover buttons beside a message open its actions (they used to vanish under the pointer).
       await visible(page, 'هل وصل العقد؟').hover();
       await page.getByRole('button', { name: 'React', exact: true }).click();
@@ -2009,7 +2021,7 @@ test.describe
       await expect(card).toContainText('3 things here');
       await card.getByTestId('suggestions-dismiss-all').click();
       await expect(page.getByTestId('suggestions-card')).toHaveCount(0);
-      expect(await stub()).toEqual(['catch-up', 'actions', 'translate', 'rewrite']);
+      expect(await stub()).toEqual(['catch-up', 'actions', 'ask', 'translate', 'rewrite']);
       expect(errors).toEqual([]);
     });
 

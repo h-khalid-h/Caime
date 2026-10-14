@@ -5,6 +5,9 @@ import { msg } from './i18n';
  */
 export const AI_LABEL = msg('Suggested by Cai');
 
+/** A question about a conversation (R67) is a sentence, not a document. */
+export const ASK_MAX = 300;
+
 export const REWRITE_STYLES = ['clearer', 'shorter', 'formal', 'friendly'] as const;
 export type RewriteStyle = (typeof REWRITE_STYLES)[number];
 

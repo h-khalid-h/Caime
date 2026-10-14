@@ -16,7 +16,7 @@ import {
 } from './app-directory';
 import { API_SCOPES, WEBHOOK_EVENTS } from './apps';
 import { ARABIC_VARIETIES } from './arabic-variety';
-import { REWRITE_STYLES } from './assist';
+import { ASK_MAX, REWRITE_STYLES } from './assist';
 import { COLLECTION_MAX, SAVE_KINDS, WORD_MAX, WORDS_MAX } from './automations';
 import { BILLED_PLANS, BILLING_INTERVALS } from './billing';
 import {
@@ -1317,6 +1317,9 @@ export const AiTranslateBody = z
     to: z.string().trim().min(2).max(35).optional(),
   })
   .strict();
+
+/** A question about a conversation (R67). */
+export const AiAskBody = z.object({ question: z.string().trim().min(1).max(ASK_MAX) }).strict();
 
 /** Spaces (PRD §40). */
 const SpaceName = z.string().trim().min(1, msg('Give the space a name.')).max(80);

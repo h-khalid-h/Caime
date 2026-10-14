@@ -109,8 +109,9 @@ These are known and tracked in `docs/ROADMAP.md`. None is hidden behind a featur
   control and the database's disk encryption. Private conversations (R18) are, on the web and in the phone
   apps (these not yet tried on a phone itself), and a private conversation's files, voice notes
   and cards aren't built: it takes text.
-- **AI assist reads other people's messages** when someone asks it to catch up or find
-  follow-ups in a standard conversation; they aren't asked first. A private conversation is the
+- **AI assist reads other people's messages** when someone asks it to catch up, find
+  follow-ups or answer a question about a standard conversation; they aren't asked first. The
+  answer, like the summary, is shown to the one who asked and kept nowhere. A private conversation is the
   answer: AI never reads one. A message can also try to steer what the model writes; what it
   writes only ever reaches the person who asked, as a suggestion.
 - **Public pages show only what's public.** A visitor who isn't signed in reads the landing

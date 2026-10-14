@@ -1666,6 +1666,16 @@ export interface AiCatchUpView {
   newCount: number;
 }
 
+/**
+ * A question about a conversation, answered from it for the one who asked (R67's "Cai in a
+ * conversation"): shown with `label`, never kept anywhere (R17).
+ */
+export interface AiAnswerView {
+  /** Null when the conversation has nothing to answer from yet. */
+  answer: string | null;
+  label: string | null;
+}
+
 export interface AiActionsView {
   /** New suggestions, also in GET /suggestions; things already suggested or tracked are left out. */
   found: SuggestionView[];

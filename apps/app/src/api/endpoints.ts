@@ -8,6 +8,7 @@ import type {
   AboutView,
   AgentTryView,
   AiActionsView,
+  AiAnswerView,
   AiCatchUpView,
   AiRewriteView,
   AiStatusView,
@@ -695,6 +696,9 @@ export const endpoints = {
     api.post<AiRewriteView>('/ai/rewrite', body),
   aiTranslate: (messageId: string) => api.post<AiTranslationView>('/ai/translate', { messageId }),
   catchUp: (id: string) => api.post<AiCatchUpView>(`/conversations/${id}/catch-up`, {}),
+  /** A question about the conversation, answered from it and kept nowhere (R67). */
+  askConversation: (id: string, question: string) =>
+    api.post<AiAnswerView>(`/conversations/${id}/ask`, { question }),
   findActions: (id: string) => api.post<AiActionsView>(`/conversations/${id}/ai/actions`, {}),
 
   // The calendar (R51)

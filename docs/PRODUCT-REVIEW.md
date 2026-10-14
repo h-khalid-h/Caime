@@ -810,8 +810,11 @@ with its reason, so it isn't proposed again without new facts.
     and Turkish (`caiIntent`, held to whole questions so "what to do in Paris today" goes to the
     model) from three queries; its model call is `runAi('cai')` under the person's daily
     allowance, the light model at low effort, at most 1,024 tokens out.
-  - Later: Cai's digests arrive in its chat; "Catch me up" from a conversation opens Cai's
-    chat on it; public pages for `@cai` and each friend for answer engines, with sticker sets.
+  - Later: Cai's digests arrive in its chat; public pages for `@cai` and each friend for answer
+    engines, with sticker sets. "Cai in a conversation" was built in place (2026-10-14): a
+    question asked in the conversation's assist tools is answered from it, labelled, and kept
+    nowhere, as a catch-up is (R17). Opening Cai's chat on a conversation is declined: what Cai
+    wrote there would keep a copy of other people's words that no deletion or erasure reaches.
 - **R68 — Cai keeps going: OpenAI's dots, evaluated for Caime (2026-10-06).** Dots (DevDay,
   2026-09-29) are always-on agents, one per person on ChatGPT's Pro and Business Premium plans: a
   cloud computer and browser each, 4,000 app plugins, reachable in ChatGPT, Slack and Teams,

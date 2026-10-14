@@ -1,7 +1,8 @@
-import { AI_LABEL } from '@caime/core/assist';
+import { AI_LABEL, ASK_MAX } from '@caime/core/assist';
 import { tr, trn } from '@caime/core/i18n';
 import { useQueryClient } from '@tanstack/react-query';
 import ListChecks from 'lucide-react-native/icons/list-checks';
+import MessageCircleQuestion from 'lucide-react-native/icons/message-circle-question-mark';
 import Sparkles from 'lucide-react-native/icons/sparkles';
 import { useState } from 'react';
 import { View } from 'react-native';
@@ -10,18 +11,40 @@ import { qk } from '@/api/keys';
 import { useTheme } from '@/theme/theme';
 import { Button } from '@/ui/Button';
 import { Text } from '@/ui/Text';
+import { TextField } from '@/ui/TextField';
 import { toast } from '@/ui/Toast';
 import { catchUp, useCatchUps } from './catchUp';
 
+type Answer = { question: string; answer: string | null; label: string | null };
+
 /**
- * AI assist for a whole conversation (PRD §45): catch me up, and find its follow-ups. Both are
- * suggestions: the summary is labelled, and follow-ups arrive as offers to accept or dismiss.
+ * AI assist for a whole conversation (PRD §45): catch me up, find its follow-ups, and ask it a
+ * question (R67). All are suggestions: the summary and the answer are labelled and kept nowhere,
+ * and follow-ups arrive as offers to accept or dismiss.
  */
 export function AssistTools({ conversationId }: { conversationId: string }) {
   const t = useTheme();
   const qc = useQueryClient();
   const result = useCatchUps((s) => s.byId[conversationId]);
   const [finding, setFinding] = useState(false);
+  const [question, setQuestion] = useState('');
+  const [asking, setAsking] = useState(false);
+  const [answer, setAnswer] = useState<Answer | null>(null);
+
+  const ask = async () => {
+    const q = question.trim();
+    if (!q || asking) return;
+    setAsking(true);
+    try {
+      const r = await endpoints.askConversation(conversationId, q);
+      setAnswer({ question: q, answer: r.answer, label: r.label });
+      setQuestion('');
+    } catch (e) {
+      toast((e as Error).message, { tone: 'danger' });
+    } finally {
+      setAsking(false);
+    }
+  };
 
   const find = async () => {
     setFinding(true);
@@ -83,7 +106,7 @@ export function AssistTools({ conversationId }: { conversationId: string }) {
               <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
                 <Sparkles size={13} color={t.c.accentStrong} />
                 <Text variant="overline" color="accentStrong">
-                  {result.label ?? tr(AI_LABEL)}
+                  {tr(result.label ?? AI_LABEL)}
                 </Text>
               </View>
               <Text variant="body" auto={result.summary} selectable>
@@ -93,6 +116,62 @@ export function AssistTools({ conversationId }: { conversationId: string }) {
           ) : (
             <Text variant="body" color="textSecondary">
               {tr('Nothing to catch up on yet.')}
+            </Text>
+          )}
+        </View>
+      ) : null}
+      <View style={{ flexDirection: 'row', alignItems: 'flex-end', gap: 8 }}>
+        <TextField
+          label={tr('Ask about this conversation')}
+          placeholder={tr('What did we decide about the date?')}
+          value={question}
+          onChangeText={setQuestion}
+          maxLength={ASK_MAX}
+          returnKeyType="send"
+          onSubmitEditing={() => void ask()}
+          style={{ flex: 1 }}
+          testID="assist-question"
+        />
+        <Button
+          label={tr('Ask')}
+          icon={MessageCircleQuestion}
+          size="md"
+          variant="secondary"
+          loading={asking}
+          disabled={!question.trim()}
+          onPress={() => void ask()}
+          testID="assist-ask"
+        />
+      </View>
+      {answer ? (
+        <View
+          accessibilityLiveRegion="polite"
+          testID="assist-answer"
+          style={{
+            padding: 12,
+            borderRadius: t.radii.md,
+            gap: 6,
+            backgroundColor: t.c.surfaceMuted,
+          }}
+        >
+          <Text variant="caption" color="textSecondary" auto={answer.question}>
+            {answer.question}
+          </Text>
+          {answer.answer ? (
+            <>
+              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+                <Sparkles size={13} color={t.c.accentStrong} />
+                <Text variant="overline" color="accentStrong">
+                  {tr(answer.label ?? AI_LABEL)}
+                </Text>
+              </View>
+              <Text variant="body" auto={answer.answer} selectable>
+                {answer.answer}
+              </Text>
+            </>
+          ) : (
+            <Text variant="body" color="textSecondary">
+              {tr('Nothing to answer from yet.')}
             </Text>
           )}
         </View>

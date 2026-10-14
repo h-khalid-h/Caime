@@ -12,6 +12,7 @@
 
 import type {
   AiActionsView,
+  AiAnswerView,
   AiCatchUpView,
   AiRewriteView,
   AiStatusView,
@@ -20,6 +21,7 @@ import type {
 } from '@caime/core';
 import {
   AI_LABEL,
+  AiAskBody,
   AiRewriteBody,
   AiTranslateBody,
   firstFutureWhen,
@@ -27,6 +29,7 @@ import {
   messagePreview,
   resolvePolicy,
   systemText,
+  writtenIn,
 } from '@caime/core';
 import { tr } from '@caime/core/i18n';
 import type { FastifyInstance } from 'fastify';
@@ -335,6 +338,35 @@ export async function aiRoutes(app: FastifyInstance, ctx: AppContext) {
       }),
     );
     return { summary, label: AI_LABEL, newCount };
+  });
+
+  /**
+   * A question about the conversation, answered from what the asker reads of it (R67): the same
+   * transcript as a catch-up (never a private conversation, a hidden or deleted message, or who
+   * on an organization's team wrote), in the language the question is asked in, kept nowhere.
+   */
+  app.post('/conversations/:id/ask', async (req): Promise<AiAnswerView> => {
+    const auth = requireAuth(req);
+    const { id } = parse(z.object({ id: z.string().uuid() }), req.params);
+    const { question } = parse(AiAskBody, req.body);
+    const { ai, me } = await gate(auth.userId);
+    const { me: seat } = await readable(auth.userId, id);
+    const { transcript, lines } = await transcriptOf(
+      auth.userId,
+      id,
+      Number(seat.last_read_seq),
+      me.time_zone,
+    );
+    if (lines.length === 0) return { answer: null, label: null };
+    const answer = await run('ask', auth.userId, () =>
+      ai.ask({
+        transcript: { text: transcript.text, newFrom: null },
+        question,
+        language: languageName(writtenIn(question) ?? baseLanguage(me.locale)),
+        today: today(me.time_zone),
+      }),
+    );
+    return { answer, label: AI_LABEL };
   });
 
   app.post('/conversations/:id/ai/actions', async (req): Promise<AiActionsView> => {

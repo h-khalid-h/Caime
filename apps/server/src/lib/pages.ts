@@ -487,7 +487,8 @@ organization&rsquo;s alone is deleted, and its customers keep their conversation
 </ul>
 
 <h2>5. AI features</h2>
-<p>What Caime&rsquo;s AI suggests (a rewrite, a summary, a translation, a follow-up) can be wrong.
+<p>What Caime&rsquo;s AI suggests (a rewrite, a summary, a translation, a follow-up, an answer
+about a conversation) can be wrong.
 Check it before you rely on it: you decide what&rsquo;s sent. AI assist is off until you turn it
 on. An organization can have an AI agent answer its customers: when you write to one that does,
 its agent reads your messages and answers first, and says it&rsquo;s an AI agent. It stays out once
