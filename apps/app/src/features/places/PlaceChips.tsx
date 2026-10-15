@@ -12,6 +12,7 @@ import { ScrollView } from 'react-native';
 import { endpoints } from '@/api/endpoints';
 import { qk } from '@/api/keys';
 import { Chip } from '@/ui/Chip';
+import { Text } from '@/ui/Text';
 import { useCountryName } from './countryName';
 import { placeName } from './placeName';
 
@@ -36,7 +37,13 @@ export function PlaceChips({
   });
   const mine = q.data?.mine ?? [];
   const theirs = mineOnly ? [] : (q.data?.theirs ?? []);
-  if (!mine.length && !theirs.length) return null;
+  if (!mine.length && !theirs.length)
+    // None saved yet: say where they come from, once it's known there are none.
+    return q.isSuccess && !mineOnly ? (
+      <Text variant="caption" color="textTertiary" testID={`${testID}-none`}>
+        {tr('Places you save in Settings show here, to send in one tap.')}
+      </Text>
+    ) : null;
   return (
     <ScrollView
       horizontal

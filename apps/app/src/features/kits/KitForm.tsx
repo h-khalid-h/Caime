@@ -416,18 +416,35 @@ export function KitForm({
     host?.items.find((i) => i.id === itemId) ??
     (host && host.items.length === 1 ? (host.items[0] ?? null) : null);
   // Where it's done (R92): the branch, from the places this conversation shows its customer.
+  const branchIds = useMemo(
+    () => [...new Set((host?.items ?? []).flatMap((i) => (i.placeId ? [i.placeId] : [])))],
+    [host],
+  );
   const placesHere = useQuery({
     queryKey: qk.conversationPlaces(conversation.id),
     queryFn: () => endpoints.conversationPlaces(conversation.id),
     staleTime: 60_000,
-    enabled: Boolean(item?.placeId),
+    enabled: branchIds.length > 0,
   });
-  const branch = item?.placeId
-    ? (placesHere.data?.theirs
-        .flatMap((g) => g.places)
-        .concat(placesHere.data.mine)
-        .find((p) => p.id === item.placeId) ?? null)
-    : null;
+  const placeById = (id: string | null | undefined) =>
+    id
+      ? (placesHere.data?.theirs
+          .flatMap((g) => g.places)
+          .concat(placesHere.data.mine)
+          .find((p) => p.id === id) ?? null)
+      : null;
+  const branch = placeById(item?.placeId);
+  // With items at two or more branches, the customer says where first (R92), and sees what's
+  // done there (and anything done anywhere).
+  const branches = branchIds.flatMap((id) => {
+    const p = placeById(id);
+    return p ? [{ id, name: branchName(p) }] : [];
+  });
+  const [branchId, setBranchId] = useState<string | null>(null);
+  const offeredItems =
+    host && branchId && branches.length > 1
+      ? host.items.filter((i) => !i.placeId || i.placeId === branchId)
+      : (host?.items ?? []);
   const [quantity, setQuantity] = useState(1);
   const slotWindow = useMemo(() => {
     const start = new Date();
@@ -1054,9 +1071,35 @@ export function KitForm({
               </View>
             ) : field.key === 'title' && host && host.items.length ? (
               <View key={field.key} style={{ gap: 10 }}>
+                {branches.length > 1 ? (
+                  <View style={{ gap: 6 }}>
+                    <Text variant="label">{tr('Where')}</Text>
+                    <ChoiceChips
+                      wrap
+                      flush
+                      label={tr('Where')}
+                      value={branchId}
+                      onChange={(id) => {
+                        setBranchId(id);
+                        // An item done elsewhere is chosen again.
+                        if (item?.placeId && item.placeId !== id) {
+                          setItemId(null);
+                          setSlot(null);
+                        }
+                      }}
+                      onClear={() => setBranchId(null)}
+                      options={branches.map((b) => ({
+                        value: b.id,
+                        label: b.name,
+                        testID: `book-branch-${b.id}`,
+                      }))}
+                      testID="book-branch"
+                    />
+                  </View>
+                ) : null}
                 <View style={{ gap: 6 }}>
                   <Text variant="label">{tr(field.label)}</Text>
-                  {host.items.length > ITEMS_AS_CHIPS ? (
+                  {offeredItems.length > ITEMS_AS_CHIPS ? (
                     // A long catalogue is found by name (R77), never a wall of chips.
                     <PickerField
                       label={tr(field.label)}
@@ -1076,7 +1119,7 @@ export function KitForm({
                           open={findingItem}
                           onClose={() => setFindingItem(false)}
                           title={tr(field.label)}
-                          items={grouped(host.items, host.collections).flatMap((g) =>
+                          items={grouped(offeredItems, host.collections).flatMap((g) =>
                             g.items.map((i) => ({
                               key: i.id,
                               title: i.name,
@@ -1104,7 +1147,7 @@ export function KitForm({
                       ) : null}
                     </PickerField>
                   ) : (
-                    grouped(host.items, host.collections).map((g) => (
+                    grouped(offeredItems, host.collections).map((g) => (
                       <View key={g.collection?.id ?? 'loose'} style={{ gap: 6 }}>
                         {g.collection ? (
                           <Text variant="overline" color="textTertiary" accessibilityRole="header">

@@ -38,6 +38,13 @@ describe('what a request says of itself in the log', () => {
     expect(requestForLog({ method: 'GET', url: `/j/${token}` }).url).toBe('/j/…');
     expect(requestForLog({ method: 'GET', url: `/v1/join/${token}` }).url).toBe('/v1/join/…');
     expect(requestForLog({ method: 'POST', url: `/v1/join/${token}?x=1` }).url).toBe('/v1/join/…');
+    // A mail's "Open in Caime" link (R75).
+    expect(
+      requestForLog({
+        method: 'GET',
+        url: '/v1/mail/seen/0d6c1a9e-1111-4222-8333-444455556666.abc',
+      }).url,
+    ).toBe('/v1/mail/seen/…');
     expect(requestForLog({ method: 'GET', url: '/j/short' }).url).toBe('/j/short');
   });
 });

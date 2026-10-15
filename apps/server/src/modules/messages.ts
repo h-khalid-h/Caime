@@ -33,6 +33,7 @@ import {
   type PaysShare,
   PINNED_MAX,
   PollPayload,
+  providersFor,
   ReactionBody,
   SendMessageBody,
   SplitOpBody,
@@ -431,8 +432,8 @@ export async function messageRoutes(app: FastifyInstance, ctx: AppContext) {
       .where('id', '=', business.orgId)
       .executeTakeFirst();
     const item = org ? orgHost(org).items.find((i) => i.id === p.booking?.itemId) : undefined;
-    if (who && item?.providers?.length && !item.providers.includes(who.id))
-      throw forbidden(tr('They don’t do that one.'));
+    const doers = org ? providersFor(orgHost(org).hours, item) : null;
+    if (who && doers && !doers.includes(who.id)) throw forbidden(tr('They don’t do that one.'));
     const booking = {
       ...p.booking,
       providerId: who?.id ?? null,

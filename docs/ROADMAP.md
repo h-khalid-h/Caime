@@ -1500,6 +1500,21 @@ listed there with its owner.
       page when it's everyone's and in the agent's catalog; a place let go of or kept for the team
       leaves its items done wherever. Verified with core `booking.test.ts`, `branches.test.ts`
       and `e2e/branches.spec.ts`.
+- [x] R92 branches for real (owner's report 2026-10-15, "not built yet: branches with their own
+      hours and staff"): a branch's people (`PlaceHours.staff`, people on the team only,
+      `assertBranchStaff`), read through core `providersFor` (the item's people, else its
+      branch's, else anyone) by the slots, `pickProvider` and the reassign route, so a booking
+      at a branch goes to whoever works there and holds them; a branch may keep its people
+      without days of its own; hours that differ by day, for the host and for a branch, in one
+      editor (`WeekHours`); a customer with items at two or more branches says where first
+      (`book-branch`, items done there or anywhere); the booking keeps its branch
+      (`AppointmentBooking.placeId`) and the team's Bookings view filters by it. Verified with
+      core `booking.test.ts`, `branches.test.ts` and `e2e/branches.spec.ts`.
+- [x] R92 a place as a Location card anywhere: the Location kit is offered in every
+      conversation (customer conversations and unlabelled chats included, still never by
+      someone under 18), and the form says where saved places come from when there are none.
+- [ ] R92 next: sending a saved place from the place itself (Settings · Places) into a chosen
+      conversation; the agent offering each branch's own slots (it offers the first item's).
 - [x] R93 writing to an address that isn't on Caime (PRODUCT-REVIEW R93): an email address typed in
       Search or Connect offers "Write to … by email" (`POST /conversations/by-email`,
       `openMailConversation` in `lib/provisional.ts`, one provisional person per address shared with
@@ -1701,6 +1716,16 @@ discovers, and mail at their own address.
       conversation's people alone, under a CSP `sandbox` with nothing loaded but `data:` (no
       script, no origin, a tracking pixel never fetched, `no-store`); erasure clears it. Verified
       with `mail.test.ts`.
+- [x] R75 phase 2, how far a mail got and words that read as chat (owner's request
+      2026-10-15): seen when they reply (every mail before it, `seenByReply`) or follow the
+      mail's "Open in Caime" link (`/v1/mail/seen/<id>.<mac>`, `serverKey('mail.seen')`, masked
+      in the log, landing on sign-up); "Opened, probably" from Postmark's open pixel
+      (`TrackOpens` on an HTML copy of the text, the `Open` webhook record, `opened_at` only
+      where `track_opens`), disclosed at each mail's end and on the privacy page, on by default
+      and off under the Caime address (`preferences.mailOpens`); a mail in's emphasis marks out
+      and its signature apart (core `mailText`, `mail_messages.signature`, migration 0086),
+      folded under the words. Verified with core `mail-text.test.ts` (the owner's own Gmail
+      thread) and `mail.test.ts`.
 - [ ] R75 phase 2: reply-all with CC, sending as the address from Gmail and Outlook through
       Caime's submission.
 - [ ] R75 phase 3: sign in with Google, Apple and Microsoft (claiming in one tap); Google
@@ -3383,6 +3408,10 @@ The six-slice review's plan, in its order; a block is ticked when its tests and 
 - 2026-10-15 — R75 notices: newsletters and no-reply mail land under Notices, muted, never a
   request, never answered.
 - 2026-10-15 — R75: "View as sent" opens a mail's own HTML in a sandbox (nothing runs or loads).
+- 2026-10-15 — R75: mail says Seen when they reply or open it in Caime and "Opened, probably"
+  by the provider's pixel (disclosed, off by a switch); signatures fold, Gmail's asterisks go.
+- 2026-10-15 — R92: branches have their own people and per-day hours; customers choose a branch;
+  the team filters Bookings by branch; a Location card from a saved place in any conversation.
 - 2026-10-15 — R93: a person reached by email offers "Write by email" (their mail conversation)
   rather than Connect, which failed with "That person wasn't found" (owner's report); the profile
   says "Reached by email" once.

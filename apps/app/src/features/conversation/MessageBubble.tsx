@@ -223,8 +223,40 @@ function FileRow({
   );
 }
 
+/** A mail's signature, folded until asked for (R75). */
+function MailSignature({ text, meta, onHold }: { text: string; meta: string; onHold: () => void }) {
+  const [open, setOpen] = useState(false);
+  return (
+    <View style={{ gap: 2 }}>
+      <Pressable
+        accessibilityRole="button"
+        accessibilityState={{ expanded: open }}
+        onPress={() => setOpen((o) => !o)}
+        onLongPress={onHold}
+        delayLongPress={300}
+        hitSlop={8}
+        style={{ alignSelf: 'flex-start' }}
+        testID="message-mail-signature"
+      >
+        <Text variant="captionStrong" color={meta}>
+          {open ? tr('Hide signature') : tr('Signature')}
+        </Text>
+      </Pressable>
+      {open ? (
+        <Text variant="caption" color={meta} selectable={Platform.OS === 'web'} auto={text}>
+          {text}
+        </Text>
+      ) : null}
+    </View>
+  );
+}
+
 function mailLine(mail: MessageMailView, spoken: boolean): string {
   if (mail.direction === 'in') return spoken ? tr('by email') : tr('by email ·');
+  // Seen is certain (they replied, or opened it in Caime); opened is the provider's pixel.
+  if (mail.seenAt) return spoken ? tr('seen, by email') : tr('Seen by email ·');
+  if (mail.openedAt && mail.delivery !== 'bounced')
+    return spoken ? tr('opened by email, probably') : tr('Opened, probably ·');
   switch (mail.delivery) {
     case 'delivered':
       return spoken ? tr('delivered by email') : tr('Delivered by email ·');
@@ -373,7 +405,7 @@ export const MessageBubble = memo(function MessageBubble({
     void suspiciousLink(m, url)
       .then((unusual) => openLink(url, unusual))
       .catch(() => openLink(url, true));
-  const bodyText = text ? (
+  const words = text ? (
     <Text variant="message" color={fg} selectable={Platform.OS === 'web'} auto={text}>
       {linkify(text).map((part) =>
         part.url && !inertLinks ? (
@@ -395,6 +427,17 @@ export const MessageBubble = memo(function MessageBubble({
       )}
     </Text>
   ) : null;
+  // A mail's signature (R75), folded under its words so a thread reads as a chat.
+  const signature = m.mail?.signature && !deleted ? m.mail.signature : null;
+  const bodyText =
+    words && signature ? (
+      <View style={{ gap: 4 }}>
+        {words}
+        <MailSignature text={signature} meta={meta} onHold={hold} />
+      </View>
+    ) : (
+      words
+    );
 
   let content: React.ReactNode;
   if (deleted) {

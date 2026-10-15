@@ -12,7 +12,7 @@ import type { FastifyInstance, FastifyRequest } from 'fastify';
 import type { AppContext } from '../context';
 import { AppError, badRequest, notFound } from '../lib/errors';
 import { receiveMail } from '../lib/mail-in';
-import { applyMailEvents } from '../lib/mail-out';
+import { applyMailEvents, seenByLink } from '../lib/mail-out';
 
 /** A mail with its attachments, as the provider posts it (their ceiling is near this). */
 const INBOUND_BODY_LIMIT = 60 * 1024 * 1024;
@@ -57,6 +57,15 @@ export async function mailRoutes(app: FastifyInstance, ctx: AppContext) {
       return { received: true, outcomes };
     },
   );
+
+  // A mail's "Open in Caime" link (R75): the mail it came in is seen, and the reader lands where
+  // signing up with their address makes the conversation theirs. Anyone holding the link is
+  // its reader; it says nothing back but where to go.
+  app.get('/mail/seen/:token', async (req, reply) => {
+    const { token } = req.params as { token: string };
+    if (token.length <= 120) await seenByLink(ctx, token);
+    return reply.redirect(`${ctx.config.PUBLIC_URL.replace(/\/+$/, '')}/sign-up`, 302);
+  });
 
   app.post('/mail/events/:provider', async (req): Promise<MailEventsResponse> => {
     const provider = fromProvider(ctx, req);

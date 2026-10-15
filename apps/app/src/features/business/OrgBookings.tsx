@@ -20,7 +20,7 @@ import { OrgMark } from '@/features/orgs/kinds';
 import { useNow, useUserClock } from '@/lib/time';
 import { useTheme } from '@/theme/theme';
 import { Avatar } from '@/ui/Avatar';
-import { Chip } from '@/ui/Chip';
+import { Chip, ChoiceChips } from '@/ui/Chip';
 import { EmptyState } from '@/ui/EmptyState';
 import { ListRow } from '@/ui/ListRow';
 import { Pressable } from '@/ui/Pressable';
@@ -75,14 +75,24 @@ export function OrgBookings({
   const hour = Math.floor(now.getTime() / 3_600_000);
   const window = useMemo(() => windowNow(new Date(hour * 3_600_000)), [hour]);
   const q = useOrgCalendar(orgId, window.from, window.to);
+  // By branch (R92): the branches the bookings ahead are at, named by the address they carry.
+  const branches = useMemo(() => {
+    const seen = new Map<string, string>();
+    for (const item of q.data?.items ?? [])
+      if (item.booking?.placeId && !seen.has(item.booking.placeId))
+        seen.set(item.booking.placeId, item.booking.where ?? item.place ?? '');
+    return [...seen].map(([id, name]) => ({ id, name }));
+  }, [q.data]);
+  const [branchId, setBranchId] = useState<string | null>(null);
   const sections = useMemo(() => {
     const byDay = new Map<string, OrgBookingView[]>();
     for (const item of q.data?.items ?? []) {
+      if (branchId && item.booking?.placeId !== branchId) continue;
       const day = formatDayHeading(item.at, now, timeZone, locale);
       byDay.set(day, [...(byDay.get(day) ?? []), item]);
     }
     return [...byDay].map(([title, data]) => ({ title, data }));
-  }, [q.data, now, timeZone, locale]);
+  }, [q.data, now, timeZone, locale, branchId]);
   if (q.isPending && !q.data) return <SkeletonRows count={4} />;
   return (
     <SectionList
@@ -210,15 +220,33 @@ export function OrgBookings({
       contentContainerStyle={{ paddingBottom: 24 }}
       testID="org-bookings"
       ListHeaderComponent={
-        // The team member's own calendar (M17): what they do here is on it, with the rest.
-        <ListRow
-          icon={CalendarClock}
-          title={tr('Your own calendar')}
-          subtitle={tr('The bookings you do, with your meetings and actions')}
-          chevron
-          onPress={() => router.navigate({ pathname: '/actions', params: { view: 'calendar' } })}
-          testID="bookings-own-calendar"
-        />
+        <View>
+          {/* The team member's own calendar (M17): what they do here is on it, with the rest. */}
+          <ListRow
+            icon={CalendarClock}
+            title={tr('Your own calendar')}
+            subtitle={tr('The bookings you do, with your meetings and actions')}
+            chevron
+            onPress={() => router.navigate({ pathname: '/actions', params: { view: 'calendar' } })}
+            testID="bookings-own-calendar"
+          />
+          {branches.length > 1 ? (
+            <View style={{ paddingHorizontal: 16, paddingBottom: 8 }}>
+              <ChoiceChips
+                label={tr('Where')}
+                value={branchId}
+                onChange={setBranchId}
+                onClear={() => setBranchId(null)}
+                options={branches.map((b) => ({
+                  value: b.id,
+                  label: b.name,
+                  testID: `bookings-branch-${b.id}`,
+                }))}
+                testID="bookings-branch"
+              />
+            </View>
+          ) : null}
+        </View>
       }
       ListFooterComponent={
         <Sheet

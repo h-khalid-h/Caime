@@ -2077,8 +2077,8 @@ test.describe
       await page.goto(`/c/${convo}`);
       await alex.page.goto(`/c/${convo}`);
       await page.getByRole('button', { name: 'Share a photo, a file or a card' }).click();
-      // Noor knows Alex from work: a checklist fits, sharing where she is doesn't (yet).
-      await expect(page.getByTestId('kit-option-location')).toHaveCount(0);
+      // Noor knows Alex from work: a checklist fits, and so does a place (R92: anyone).
+      await expect(page.getByTestId('kit-option-location')).toHaveCount(1);
       await page.getByTestId('kit-option-checklist').click();
       await page.getByLabel('List name').fill('Venue prep');
       await page.getByTestId('checklist-item-input-0').fill('Chairs');

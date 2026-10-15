@@ -85,11 +85,14 @@ export interface OutboundMail {
   inReplyTo: string | null;
   references: string[];
   attachments: MailAttachment[];
+  /** Ask the provider to say when it's opened (its pixel, on an HTML copy of the text). */
+  trackOpens: boolean;
 }
 
 export interface DeliveryEvent {
   providerId: string;
-  state: 'delivered' | 'bounced';
+  /** `opened` is the provider's pixel: probably read, never certainly (R75). */
+  state: 'delivered' | 'bounced' | 'opened';
   detail: string | null;
   at: string | null;
 }
@@ -153,6 +156,7 @@ interface PostmarkEvent {
   MessageID?: string;
   DeliveredAt?: string;
   BouncedAt?: string;
+  ReceivedAt?: string;
   Type?: string;
   Description?: string;
   Details?: string;
@@ -166,6 +170,16 @@ const header = (headers: PostmarkHeader[], name: string): string[] =>
 
 /** Message ids in a header's value: each "<…>". */
 const idsIn = (value: string): string[] => value.match(/<[^<>\s]+>/g) ?? [];
+
+/** Plain words as HTML, as they'd read in plain text: escaped, lines kept. */
+export function textAsHtml(text: string): string {
+  const escaped = text
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;');
+  return `<div style="white-space:pre-wrap">${escaped}</div>`;
+}
 
 /** HTML as plain words, for a mail that carries no text part: tags out, entities read. */
 export function htmlToText(html: string): string {
@@ -278,6 +292,8 @@ function postmark(config: Config): MailProvider {
           To: mail.to,
           Subject: mail.subject,
           TextBody: mail.text,
+          // Opens are told only through a pixel in an HTML part: the same words, as HTML.
+          ...(mail.trackOpens ? { HtmlBody: textAsHtml(mail.text), TrackOpens: true } : {}),
           MessageStream: 'outbound',
           Headers: [
             { Name: 'Message-ID', Value: mail.messageId },
@@ -323,6 +339,13 @@ function postmark(config: Config): MailProvider {
             state: 'bounced',
             detail: [raw.Type, raw.Description].filter(Boolean).join(': ') || null,
             at: raw.BouncedAt ?? null,
+          });
+        else if (raw.RecordType === 'Open')
+          out.push({
+            providerId: raw.MessageID,
+            state: 'opened',
+            detail: null,
+            at: raw.ReceivedAt ?? null,
           });
       }
       return out;

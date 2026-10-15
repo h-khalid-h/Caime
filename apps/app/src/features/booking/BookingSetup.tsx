@@ -10,10 +10,12 @@
 import type { BookingResponse, BookingSaveBody } from '@caime/core/api';
 import type {
   BookingAudience,
+  BookingDay,
   BookingHours,
   BookingItem,
   BookingUnit,
   OrderingSettings,
+  PlaceHours,
   SharedResource,
 } from '@caime/core/booking';
 import {
@@ -61,7 +63,6 @@ import Tag from 'lucide-react-native/icons/tag';
 import { useState } from 'react';
 import { View } from 'react-native';
 import { uploadFile } from '@/api/upload';
-import { DayPicker } from '@/features/settings/DayPicker';
 import { photoToUpload, pickFromLibrary } from '@/lib/photos';
 import { useUserClock } from '@/lib/time';
 import { Button } from '@/ui/Button';
@@ -73,11 +74,11 @@ import { Stepper } from '@/ui/Stepper';
 import { SwitchRow } from '@/ui/SwitchRow';
 import { Text } from '@/ui/Text';
 import { TextField } from '@/ui/TextField';
-import { TimeField } from '@/ui/TimeField';
 import { toast } from '@/ui/Toast';
 import { BranchHours } from './BranchHours';
 import { draftsOf, ItemOptionsEditor, type OptionDraft, optionsFrom } from './ItemOptionsEditor';
 import { ItemPhoto } from './ItemPhoto';
+import { WeekHours, weekHoursError } from './WeekHours';
 
 const LEADS: Array<{ value: number; label: string }> = [
   { value: 0, label: msg('Any time') },
@@ -173,9 +174,7 @@ export function BookingSetup({
   // Hours are the host's: an organization's own zone, else the person's (R76).
   const timeZone = host.timeZone;
   const [open, setOpen] = useState(false);
-  const [days, setDays] = useState<number[]>([]);
-  const [start, setStart] = useState('09:00');
-  const [end, setEnd] = useState('17:00');
+  const [days, setDays] = useState<BookingDay[]>([]);
   const [slot, setSlot] = useState<BookingHours['slotMinutes']>(30);
   const [lead, setLead] = useState(120);
   const [horizon, setHorizon] = useState(30);
@@ -208,11 +207,12 @@ export function BookingSetup({
 
   const edit = () => {
     const b = hours;
-    const first = b?.days[0];
     // Fresh hours start on the days the host works (R76), nine to five.
-    setDays(b ? b.days.map((d) => d.weekday) : [...host.workweek]);
-    setStart(first?.start ?? '09:00');
-    setEnd(first?.end ?? '17:00');
+    setDays(
+      b
+        ? b.days.map((d) => ({ ...d }))
+        : host.workweek.map((weekday) => ({ weekday, start: '09:00', end: '17:00' })),
+    );
     setSlot(b?.slotMinutes ?? 30);
     setLead(b?.leadMinutes ?? 120);
     setHorizon(b?.horizonDays ?? 30);
@@ -239,12 +239,12 @@ export function BookingSetup({
     }
   };
   const submit = () => {
-    if (!days.length) return setError(tr('Pick at least one day.'));
-    if (start >= end) return setError(tr('The day has to end after it starts.'));
+    const wrong = weekHoursError(days);
+    if (wrong) return setError(wrong);
     return saveHours({
       timeZone: hours?.timeZone ?? timeZone,
       slotMinutes: slot,
-      days: [...days].sort((a, b) => a - b).map((weekday) => ({ weekday, start, end })),
+      days,
       leadMinutes: lead,
       horizonDays: horizon,
       // What items share (R58) and a branch's own days (R92) stay as they are.
@@ -280,10 +280,10 @@ export function BookingSetup({
   };
   // A branch's own days (R92): none kept, it opens when the organization does.
   const [branch, setBranch] = useState<{ id: string; name: string } | null>(null);
-  const saveBranchDays = async (placeId: string, own: BookingHours['days'] | null) => {
+  const saveBranchDays = async (placeId: string, own: Omit<PlaceHours, 'placeId'> | null) => {
     if (!hours) return;
     const rest = (hours.placeHours ?? []).filter((p) => p.placeId !== placeId);
-    const placeHours = own ? [...rest, { placeId, days: own }] : rest;
+    const placeHours = own ? [...rest, { placeId, ...own }] : rest;
     const { placeHours: _was, ...base } = hours;
     await send({ ...offer, booking: placeHours.length ? { ...base, placeHours } : base });
   };
@@ -360,7 +360,16 @@ export function BookingSetup({
                 title={tr('Hours at {place}', { place: b.name })}
                 subtitle={
                   own
-                    ? describeHours({ ...hours, days: own.days }, host.weekStart)
+                    ? [
+                        own.days.length
+                          ? describeHours({ ...hours, days: own.days }, host.weekStart)
+                          : tr('The organization’s hours'),
+                        own.staff?.length
+                          ? trn(own.staff.length, 'One person works here', '{n} people work here')
+                          : null,
+                      ]
+                        .filter(Boolean)
+                        .join(' · ')
                     : tr('Same as the organization’s')
                 }
                 chevron
@@ -550,29 +559,9 @@ export function BookingSetup({
         }
       >
         <View style={{ gap: 16 }}>
-          <View style={{ gap: 6 }}>
-            <Text variant="label">{tr('Days')}</Text>
-            <DayPicker
-              days={days}
-              onChange={setDays}
-              label={tr('Days')}
-              weekStart={host.weekStart}
-              testID={`${testID}-day`}
-            />
-          </View>
-          <View style={{ flexDirection: 'row', gap: 12 }}>
-            <View style={{ flex: 1 }}>
-              <TimeField
-                label={tr('From')}
-                value={start}
-                onChange={setStart}
-                testID={`${testID}-start`}
-              />
-            </View>
-            <View style={{ flex: 1 }}>
-              <TimeField label={tr('To')} value={end} onChange={setEnd} testID={`${testID}-end`} />
-            </View>
-          </View>
+          {open ? (
+            <WeekHours days={days} onChange={setDays} weekStart={host.weekStart} testID={testID} />
+          ) : null}
           <View style={{ gap: 6 }}>
             <Text variant="label">{tr('Slots every')}</Text>
             <ChoiceChips
@@ -688,6 +677,7 @@ export function BookingSetup({
           branch={branch}
           hours={hours}
           weekStart={host.weekStart}
+          team={host.team ?? []}
           onClose={() => setBranch(null)}
           onSave={async (own) => {
             await saveBranchDays(branch.id, own);

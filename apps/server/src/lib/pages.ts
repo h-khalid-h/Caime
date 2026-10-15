@@ -363,7 +363,11 @@ mail or one from an address nobody answers (a newsletter, a no-reply sender) is 
 the same way, one conversation per sender under Notices, muted, and read for nothing. A mail&rsquo;s
 layout (its HTML) is kept with it as it came, shown only to the conversation&rsquo;s people in a
 sandbox where nothing in it runs or loads (so a tracking image tells its sender nothing), and
-erased with the message.</li>
+erased with the message. A mail in&rsquo;s signature is kept apart from its words, and erased
+with them. A mail sent from Caime links back to the conversation; following that link, or
+replying, tells its sender it was seen. Unless its sender turned it off, it also asks the mail
+provider to say when it&rsquo;s opened, which shows its sender &ldquo;Opened, probably&rdquo;:
+every such mail says so at its end.</li>
 `
     : ''
 }<li>A handle you stop using, by changing it or deleting your account, is kept from everyone for

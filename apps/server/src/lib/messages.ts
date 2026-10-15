@@ -86,6 +86,9 @@ export type MailViewRow = Pick<
   | 'to_address'
   | 'delivery'
   | 'delivery_at'
+  | 'signature'
+  | 'seen_at'
+  | 'opened_at'
 > & { has_html: boolean };
 
 export function mailViewOf(row: MailViewRow | undefined): MessageMailView | null {
@@ -97,6 +100,9 @@ export function mailViewOf(row: MailViewRow | undefined): MessageMailView | null
     delivery: row.delivery,
     deliveryAt: row.delivery_at?.toISOString() ?? null,
     hasHtml: row.has_html,
+    signature: row.signature,
+    seenAt: row.seen_at?.toISOString() ?? null,
+    openedAt: row.opened_at?.toISOString() ?? null,
   };
 }
 
@@ -235,6 +241,9 @@ export async function messageViews(
             'to_address',
             'delivery',
             'delivery_at',
+            'signature',
+            'seen_at',
+            'opened_at',
           ])
           // Whether there's HTML to show as sent, never the HTML itself with every view.
           .select(sql<boolean>`html is not null`.as('has_html'))

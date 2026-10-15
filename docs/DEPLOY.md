@@ -398,8 +398,11 @@ mail in is dropped as unverified (provider health then shows `mail` down, naming
    handle `MAIL_STAFF_HANDLE` names (Caime's own organization's, or the owner's), and without
    it nobody. Set it before the MX moves.
 3. **Sending** is already set up (going live, step 5): the same domain, DKIM and Return-Path.
-4. **Delivery events.** A webhook on the outbound stream for Delivery and Bounce at
-   `https://caime:<MAIL_WEBHOOK_SECRET>@cai.me/v1/mail/events/postmark`.
+4. **Delivery events.** A webhook on the outbound stream for Delivery, Bounce and Open at
+   `https://caime:<MAIL_WEBHOOK_SECRET>@cai.me/v1/mail/events/postmark`. Open is what says
+   "Opened, probably" (R75); Caime asks for the pixel per mail (`TrackOpens`), so leave the
+   stream's own open tracking off. Without Open ticked, mail says Seen only when answered or
+   opened in Caime.
 5. Set `MAIL_DOMAIN=cai.me`, `MAIL_PROVIDER=postmark`, `MAIL_PROVIDER_TOKEN`,
    `MAIL_WEBHOOK_SECRET` and `MAIL_STAFF_HANDLE` on the service and redeploy; the privacy page
    then names the provider. Check: `POST /v1/admin/providers/check` shows `mail` up; a mail

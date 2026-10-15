@@ -468,6 +468,13 @@ export interface MailMessagesTable {
   delivery_detail: string | null;
   /** The HTML part of a mail in, as sent (R75 phase 2), shown only in a sandbox. */
   html: Defaulted<string | null>;
+  /** A mail in's signature, cut from its words (core `mailText`). */
+  signature: Defaulted<string | null>;
+  /** A mail out the other side has seen: they replied, or opened it in Caime. */
+  seen_at: NullableTimestamp;
+  /** A mail out the provider saw opened (its pixel), only where `track_opens`: a "probably". */
+  opened_at: NullableTimestamp;
+  track_opens: Defaulted<boolean>;
   created_at: Generated<Date>;
 }
 export type MailMessage = Selectable<MailMessagesTable>;

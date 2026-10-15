@@ -26,6 +26,7 @@ function snapshot(): Record<string, unknown> {
     caiDigest: p.caiDigest,
     caiInitiative: p.caiInitiative,
     arabicVariety: p.arabicVariety,
+    mailOpens: p.mailOpens,
   };
   if (p.enterToSend !== null) preferences.enterToSend = p.enterToSend;
   // The language this device shows (what `auto` came to), so the server writes to this person

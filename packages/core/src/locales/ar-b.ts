@@ -2407,4 +2407,36 @@ export const arB: Catalog = {
     toMan: 'اكتب بالبريد الإلكتروني',
     other: 'اكتب بالبريد الإلكتروني',
   },
+  Signature: 'التوقيع',
+  'Hide signature': { toWoman: 'أخفي التوقيع', toMan: 'أخفِ التوقيع', other: 'أخفِ التوقيع' },
+  'Seen by email ·': 'شوهدت عبر البريد ·',
+  'seen, by email': 'شوهدت عبر البريد',
+  'Opened, probably ·': 'فُتحت على الأرجح ·',
+  'opened by email, probably': 'فُتحت عبر البريد على الأرجح',
+  'Tell me when my mail is opened': {
+    toWoman: 'أعلميني حين يُفتح بريدي',
+    toMan: 'أعلمني حين يُفتح بريدي',
+    other: 'أعلمني حين يُفتح بريدي',
+  },
+  'Mail from here says so at its end. Opened is a probably: some mail apps open everything.':
+    'البريد المرسل من هنا يذكر ذلك في آخره. الفتح احتمال لا يقين: بعض تطبيقات البريد تفتح كل شيء.',
+  'Places you save in Settings show here, to send in one tap.':
+    'الأماكن المحفوظة في الإعدادات تظهر هنا، لإرسالها بلمسة واحدة.',
+  'Same hours every day': 'الساعات نفسها كل يوم',
+  'The organization’s hours': 'ساعات المؤسسة',
+  '{n} people work here': {
+    zero: 'لا أحد يعمل هنا',
+    one: 'شخص واحد يعمل هنا',
+    two: 'شخصان يعملان هنا',
+    few: '{n} أشخاص يعملون هنا',
+    many: '{n} شخصًا يعملون هنا',
+    other: '{n} شخص يعملون هنا',
+  },
+  'Its own days and hours': 'أيام وساعات خاصة به',
+  'Off: it opens when the organization does.': 'عند الإيقاف: يفتح حين تفتح المؤسسة.',
+  'Who works here': 'من يعمل هنا',
+  'Its items are done by these people unless an item names its own. A booking goes to whoever of them is free.':
+    'يقدّم هؤلاء خدماته ما لم تحدّد الخدمة أشخاصها. يذهب الحجز إلى من يكون متاحًا منهم.',
+  'A branch keeps its own days, its own people, or both.':
+    'للفرع أيامه الخاصة أو أشخاصه أو كلاهما.',
 };

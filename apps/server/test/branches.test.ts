@@ -190,3 +190,65 @@ describe('branches as booking hosts (R92)', () => {
     expect(org.booking.placeHours).toBeUndefined();
   });
 });
+
+describe('a branch’s own people (R92)', () => {
+  let omar: Client; // on the team, works at Zamalek
+  beforeAll(async () => {
+    omar = await signup(t, { displayName: 'Omar Farouk' });
+    const r = await noor.post('/v1/connections/requests', { toUserId: omar.user.id });
+    await omar.post(`/v1/connections/requests/${r.requestId}/accept`, {});
+    await noor.post(`/v1/orgs/${orgId}/members`, { userIds: [omar.user.id] });
+    // The test before let Zamalek go: a branch for customers again.
+    const { places } = await noor
+      .req('PUT', `/v1/orgs/${orgId}/places`, {
+        places: [
+          {
+            kind: 'branch',
+            label: 'Zamalek',
+            country: 'EG',
+            city: 'Cairo',
+            street: '26 July Street',
+            orgAudience: 'customers',
+          },
+        ],
+      })
+      .then((r) => r.json());
+    zamalek = places[0].id;
+  });
+
+  it('are people on the team; its items go to whoever of them is free, and hold them', async () => {
+    const save = (staff: string[]) =>
+      noor.req('PUT', `/v1/orgs/${orgId}/booking`, {
+        booking: { ...HOURS, placeHours: [{ placeId: zamalek, days: [], staff }] },
+        items: [item('zam-a', zamalek), item('zam-b', zamalek)],
+      });
+    // Only someone on the team works at a branch.
+    expect((await save([lina.user.id])).statusCode).toBe(403);
+    const ok = await save([omar.user.id]);
+    expect(ok.statusCode, ok.body).toBe(200);
+    // No days of its own: the organization's.
+    const open = await lina.get(`/v1/orgs/${orgId}/slots?${window}&item=zam-a`);
+    expect(times(open)[0]).toBe('2026-10-01T06:00');
+    const sent = await lina.post(`/v1/conversations/${convo}/messages`, {
+      clientId: uuidv4(),
+      kind: 'kit',
+      payload: {
+        kit: 'appointment',
+        fields: { title: 'Cleaning', start: { at: open.slots[0], hasTime: true } },
+        booking: { itemId: 'zam-a' },
+      },
+    });
+    expect(sent.message.payload.booking.placeId).toBe(zamalek);
+    // Confirmed by the owner, it goes to the one person who works there, not the owner.
+    const confirmed = await noor.post(`/v1/messages/${sent.message.id}/kit`, { to: 'confirmed' });
+    expect(confirmed.message.payload.booking.providerId).toBe(omar.user.id);
+    // Omar is busy then: the branch's other item has no room at that time.
+    const other = await lina.get(`/v1/orgs/${orgId}/slots?${window}&item=zam-b`);
+    expect(other.slots).not.toContain(open.slots[0]);
+    // Anyone else at the branch can't be handed it.
+    const handed = await noor.req('POST', `/v1/messages/${sent.message.id}/booking/provider`, {
+      userId: noor.user.id,
+    });
+    expect(handed.statusCode).toBe(403);
+  });
+});

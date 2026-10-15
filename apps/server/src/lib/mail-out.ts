@@ -9,6 +9,7 @@
  * A provisional person who has been silent for a year, or is in no conversation any more, is
  * swept: their row goes, their words stay with whoever they wrote to (the sender column clears).
  */
+import { createHmac, timingSafeEqual } from 'node:crypto';
 import { uuidv4 } from '@caime/core';
 import { bareSubject, replySubject, subjectFromText } from '@caime/core/mail';
 import type { AppContext } from '../context';
@@ -23,6 +24,7 @@ import {
   MailRefused,
 } from './mail-provider';
 import { messageViews } from './messages';
+import { serverKey } from './server-keys';
 import { storageFor } from './storage';
 
 export const MAIL_SEND_JOB = 'mail.send';
@@ -110,7 +112,7 @@ async function send(ctx: AppContext, payload: Record<string, unknown>): Promise<
       .executeTakeFirstOrThrow(),
     ctx.db
       .selectFrom('users')
-      .select(['id', 'handle', 'display_name', 'kind'])
+      .select(['id', 'handle', 'display_name', 'kind', 'preferences'])
       .where('id', '=', m.sender_id)
       .executeTakeFirstOrThrow(),
   ]);
@@ -150,10 +152,21 @@ async function send(ctx: AppContext, payload: Record<string, unknown>): Promise<
       .select('message_id')
       .where((eb) => eb.or([eb('to_address', '=', to.email), eb('from_address', '=', to.email)]))
       .executeTakeFirst());
-  const opening =
+  // Whether its sender is told when it's opened (R75): a person's own choice, on unless they
+  // turned it off; an organization's agent and apps, as the organization, always.
+  const trackOpens =
+    speaksForOrg || (sender.preferences as { mailOpens?: boolean }).mailOpens !== false;
+  const rfcId = uuidv4();
+  const footer = [
+    // The first mail Caime ever sends an address that never wrote to it (R93) says who wrote
+    // and how to answer.
     !known && conversation.kind === 'direct'
-      ? `\n\n--\n${from.name} wrote this on Caime, from ${from.address}. Reply to this mail to answer: your reply reaches them there.`
-      : '';
+      ? `${from.name} wrote this on Caime, from ${from.address}. Reply to this mail to answer: your reply reaches them there.`
+      : null,
+    `Open in Caime: ${await seenLink(ctx, rfcId)}`,
+    trackOpens ? `${from.name} is told when this mail is opened.` : null,
+  ].filter(Boolean);
+  const opening = `\n\n--\n${footer.join('\n')}`;
   const body = m.body ?? '';
   const subject =
     (conversation.title &&
@@ -162,7 +175,7 @@ async function send(ctx: AppContext, payload: Record<string, unknown>): Promise<
     subjectFromText(body) ||
     `A message from ${from.name}`;
   const attachments = await attachmentsOf(ctx, m.id);
-  const rfcMessageId = `<${uuidv4()}@${domain}>`;
+  const rfcMessageId = `<${rfcId}@${domain}>`;
   const references = latest
     ? [...latest.references_ids, latest.rfc_message_id].slice(-REFERENCES_MAX)
     : [];
@@ -176,6 +189,7 @@ async function send(ctx: AppContext, payload: Record<string, unknown>): Promise<
     to_address: to.email,
     subject: subject.slice(0, 500),
     provider: provider.name,
+    track_opens: trackOpens,
   };
   try {
     const { providerId } = await provider.send({
@@ -187,6 +201,7 @@ async function send(ctx: AppContext, payload: Record<string, unknown>): Promise<
       inReplyTo: row.in_reply_to,
       references,
       attachments,
+      trackOpens,
     });
     await ctx.db
       .insertInto('mail_messages')
@@ -239,6 +254,55 @@ async function attachmentsOf(ctx: AppContext, messageId: string): Promise<MailAt
   return out;
 }
 
+/** The mail's link back to Caime (R75): opening it says the mail was seen. */
+async function seenLink(ctx: AppContext, rfcId: string): Promise<string> {
+  const base = ctx.config.PUBLIC_URL.replace(/\/+$/, '');
+  return `${base}/v1/mail/seen/${rfcId}.${await seenMac(ctx, rfcId)}`;
+}
+
+async function seenMac(ctx: AppContext, rfcId: string): Promise<string> {
+  return createHmac('sha256', await serverKey(ctx, 'mail.seen'))
+    .update(rfcId)
+    .digest('base64url')
+    .slice(0, 22);
+}
+
+/**
+ * A mail's "Open in Caime" link was followed: that mail is seen, and its sender told. False for
+ * a link Caime didn't write.
+ */
+export async function seenByLink(ctx: AppContext, token: string): Promise<boolean> {
+  const [rfcId, mac] = token.split('.');
+  if (!rfcId || !mac || !/^[0-9a-f-]{36}$/.test(rfcId)) return false;
+  const want = await seenMac(ctx, rfcId);
+  if (mac.length !== want.length || !timingSafeEqual(Buffer.from(mac), Buffer.from(want)))
+    return false;
+  const seen = await ctx.db
+    .updateTable('mail_messages')
+    .set({ seen_at: ctx.now() })
+    .where('rfc_message_id', '=', `<${rfcId}@${ctx.config.MAIL_DOMAIN}>`)
+    .where('direction', '=', 'out')
+    .where('seen_at', 'is', null)
+    .returning('message_id')
+    .execute();
+  await tellSenders(
+    ctx,
+    seen.map((r) => r.message_id),
+  );
+  return true;
+}
+
+/** Each message's sender sees how far it got (seen, opened), on the message. */
+export async function tellSenders(ctx: AppContext, messageIds: string[]): Promise<void> {
+  if (!messageIds.length) return;
+  const rows = await ctx.db
+    .selectFrom('messages')
+    .select(MESSAGE_COLUMNS)
+    .where('id', 'in', messageIds)
+    .execute();
+  for (const m of rows) await tellSender(ctx, m);
+}
+
 /** The sender's devices see how far it got, on the message. */
 async function tellSender(ctx: AppContext, m: Message): Promise<void> {
   if (!m.sender_id) return;
@@ -256,6 +320,24 @@ export async function applyMailEvents(ctx: AppContext, events: DeliveryEvent[]):
   if (!provider) return 0;
   let applied = 0;
   for (const e of events) {
+    if (e.state === 'opened') {
+      // The provider's pixel (R75): the first open, on a mail that carried one.
+      const opened = await ctx.db
+        .updateTable('mail_messages')
+        .set({ opened_at: e.at ? new Date(e.at) : ctx.now() })
+        .where('provider', '=', provider.name)
+        .where('provider_id', '=', e.providerId)
+        .where('direction', '=', 'out')
+        .where('track_opens', '=', true)
+        .where('opened_at', 'is', null)
+        .returning('message_id')
+        .executeTakeFirst();
+      if (!opened) continue;
+      applied++;
+      ctx.metrics.mail.inc({ direction: 'out', outcome: 'opened' });
+      await tellSenders(ctx, [opened.message_id]);
+      continue;
+    }
     const updated = await ctx.db
       .updateTable('mail_messages')
       .set({

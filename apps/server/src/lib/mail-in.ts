@@ -26,6 +26,7 @@
 import { createHash } from 'node:crypto';
 import { isReservedHandle, SendMessageBody, SYSTEM_ACCOUNTS } from '@caime/core';
 import { bareSubject } from '@caime/core/mail';
+import { mailText } from '@caime/core/mail-text';
 import { CAI_MAIL } from '@caime/core/meetings';
 import { CAI_ID } from '@caime/core/system-ids';
 import type { AppContext } from '../context';
@@ -36,6 +37,7 @@ import { ensureDirectConversation } from './conversations';
 import { storeBytes } from './files';
 import { alignedDomains, domainOf, handleOf, mailOn, senderName } from './mail-address';
 import { authenticateMail } from './mail-auth';
+import { tellSenders } from './mail-out';
 import type { InboundMail, MailAuth } from './mail-provider';
 import { afterMessage } from './message-effects';
 import { messageViews, participantsOf, sendMessage } from './messages';
@@ -334,6 +336,28 @@ async function threadFor(
   return createTopicConversation(ctx, senderId, generalId, subject);
 }
 
+/**
+ * Mail sent to someone that they've since answered: seen, as a reply says (R75). Each sender
+ * is told on their message.
+ */
+async function seenByReply(ctx: AppContext, theirAddress: string, ourAddress: string) {
+  const seen = await ctx.db
+    .updateTable('mail_messages')
+    .set({ seen_at: ctx.now() })
+    .where('direction', '=', 'out')
+    .where('to_address', '=', theirAddress)
+    .where('from_address', '=', ourAddress)
+    .where('seen_at', 'is', null)
+    .where('created_at', '<=', ctx.now())
+    .returning('message_id')
+    .execute();
+  if (seen.length)
+    await tellSenders(
+      ctx,
+      seen.map((r) => r.message_id),
+    );
+}
+
 /** The mail as a message: its attachments as the sender's files, its words, told live, then its effects. */
 async function deliver(
   ctx: AppContext,
@@ -357,7 +381,19 @@ async function deliver(
       ctx.log.warn({ err, name: file.name }, 'mail attachment not kept');
     }
   };
-  let text = mail.text.trim();
+  // Their words as a chat shows them (R75): a client's emphasis marks out, the signature apart,
+  // known by its own mark or by the one this sender's last mail ended with.
+  const before = await ctx.db
+    .selectFrom('mail_messages')
+    .select('signature')
+    .where('from_address', '=', mail.from.address)
+    .where('direction', '=', 'in')
+    .where('signature', 'is not', null)
+    .orderBy('created_at', 'desc')
+    .limit(1)
+    .executeTakeFirst();
+  const words = mailText(mail.text, mail.html, before?.signature ?? null);
+  let text = words.body;
   if (text.length > MESSAGE_MAX) {
     // The whole mail as a file, the start of it as the message.
     await keep({
@@ -399,9 +435,12 @@ async function deliver(
       provider: provider.name,
       provider_id: null,
       html: mail.html,
+      signature: words.signature?.slice(0, 2000) ?? null,
     })
     .onConflict((oc) => oc.columns(['rfc_message_id', 'to_address']).doNothing())
     .execute();
+  // They wrote back: what was mailed them from this address before it, they've seen.
+  await seenByReply(ctx, mail.from.address, toAddress);
   // Everyone else in it hears it now, as a sent message is heard; its effects run after.
   const [view] = await messageViews(ctx.db, [result.message], sender.id);
   const others = (await participantsOf(ctx.db, conversationId))

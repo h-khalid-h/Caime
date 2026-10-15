@@ -153,7 +153,10 @@ test.describe
       expect(reply?.From).toBe(`Noor Post <${address}>`);
       expect(reply?.To).toBe(SARA);
       expect(reply?.Subject).toBe('Re: The March venue');
-      expect(reply?.TextBody).toBe('Of course. It’s on its way.');
+      // The words, then a link back to Caime and that its sender is told when it's opened (R75).
+      expect(reply?.TextBody).toMatch(
+        /^Of course\. It’s on its way\.\n\n--\nOpen in Caime: \S+\nNoor Post is told when this mail is opened\.$/,
+      );
       expect(reply?.Headers.find((h) => h.Name === 'In-Reply-To')?.Value).toBe(
         `<e2e-${suffix}-1@partner.example>`,
       );
@@ -194,7 +197,9 @@ test.describe
       await expect.poll(async () => (await sent()).length).toBe(2);
       const [, first] = await sent();
       expect(first?.Subject).toBe('Venue');
-      expect(first?.TextBody).toBe('Shall we book the hall?\nThe big one.');
+      expect(first?.TextBody?.startsWith('Shall we book the hall?\nThe big one.\n\n--\n')).toBe(
+        true,
+      );
       // Her answer references our id: it lands in the topic, live, whatever its subject reads.
       const ourId = first?.Headers.find((h) => h.Name === 'Message-ID')?.Value ?? '';
       expect(ourId).toMatch(new RegExp(`^<[0-9a-f-]+@${DOMAIN}>$`));

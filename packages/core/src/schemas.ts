@@ -724,6 +724,8 @@ export const Preferences = z
     holdWhileBusy: z.boolean().optional(),
     /** Suggestions follow what this person keeps taking and passing on (M11); on by default. */
     learnFromChoices: z.boolean().optional(),
+    /** Their mail says when it's opened (R75, the provider's pixel, disclosed); on by default. */
+    mailOpens: z.boolean().optional(),
     /** Cai's morning brief (R68): the hour it comes, in their own time, or off. */
     caiBrief: z
       .string()
@@ -1563,9 +1565,23 @@ export const BookingHoursBody = z
         message: msg('Each shared resource once.'),
       })
       .optional(),
-    /** A branch's own days (R92), one of the host's places each: left out, there's none. */
+    /**
+     * A branch's own days and staff (R92), one of the host's places each: no days is the
+     * host's days, no staff is whoever does the item. Left out, there's none.
+     */
     placeHours: z
-      .array(z.object({ placeId: z.string().uuid(), days: BookingDays }).strict())
+      .array(
+        z
+          .object({
+            placeId: z.string().uuid(),
+            days: z.union([z.tuple([]), BookingDays]),
+            staff: z.array(z.string().uuid()).max(100).nullable().optional(),
+          })
+          .strict()
+          .refine((p) => p.days.length > 0 || (p.staff?.length ?? 0) > 0, {
+            message: msg('A branch keeps its own days, its own people, or both.'),
+          }),
+      )
       .max(PLACES_MAX)
       .refine((ps) => new Set(ps.map((p) => p.placeId)).size === ps.length, {
         message: msg('Each place’s hours once.'),

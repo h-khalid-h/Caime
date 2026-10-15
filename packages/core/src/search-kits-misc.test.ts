@@ -101,7 +101,18 @@ describe('kits (R19)', () => {
     );
     expect(ids.slice(0, 4)).toEqual(['approval', 'document_review', 'order_status', 'delivery']);
     expect(ids).toContain('invoice');
-    expect(ids).not.toContain('location');
+    // A place fits anyone (R92), after what's the relationship's own.
+    expect(ids.indexOf('location')).toBeGreaterThan(ids.indexOf('invoice'));
+  });
+  it('a place is offered to a customer and to someone never labelled (R92)', () => {
+    expect(
+      kitsFor({ spheres: [], isGroup: false, viewerIsMinor: false, isBusiness: true }).map(
+        (k) => k.id,
+      ),
+    ).toContain('location');
+    expect(
+      kitsFor({ spheres: [], isGroup: false, viewerIsMinor: false }).map((k) => k.id),
+    ).toContain('location');
   });
   it('family gets location and albums, not invoices', () => {
     const ids = kitsFor({ spheres: ['family'], isGroup: false, viewerIsMinor: false }).map(

@@ -1022,6 +1022,13 @@ These are rules, not preferences.
   `bookingFor` copies the branch's line as `AppointmentBooking.where` into the card's "Where";
   `savePlaces` lets go of any pointer at a place gone or kept for the team. One item is done at
   one branch: the same service at two is two items, each with its own capacity and providers.
+  A branch's people are `PlaceHours.staff` (team members only, `assertBranchStaff`; a branch
+  may keep people without days of its own), and who may do an item is core `providersFor` (the
+  item's people, else its branch's, else anyone): the slots, `pickProvider` and the reassign
+  route all ask it, never `item.providers` by hand. Hours that differ by day are edited in one
+  place, `features/booking/WeekHours.tsx`, for the host and for a branch. A booking keeps its
+  branch as `AppointmentBooking.placeId`; the form asks where first when items are at two or
+  more branches, and Bookings filters by it. The Location kit fits every conversation.
 - One address is one person (R93, `lib/provisional.ts`): `personForAddress` answers whoever an
   email is (`personByAddress`, else the provisional person made once); inbound mail, a meeting's
   guests and `openMailConversation` (writing to an address from Search or Connect, a message
@@ -1314,7 +1321,12 @@ These are rules, not preferences.
   its own mail (`notice_only`), and only a conversation that starts as a notice is one, the `mail.send` job from the person's or the organization's address in
   the thread, `sent` then `delivered` or `bounced` by `applyMailEvents`; `mail.sweep` daily). A
   message that came or went as mail has `messages.channel = 'mail'` and a `mail_messages` row
-  (`MessageView.mail`); erasure clears its subject, sender address and HTML. A mail's HTML
+  (`MessageView.mail`); erasure clears its subject, sender address, HTML and signature. A mail
+  in's words go through core `mailText` (emphasis marks out, the signature apart into
+  `mail_messages.signature`); a mail out is seen when they reply (`seenByReply`) or follow its
+  "Open in Caime" link (`seenByLink`), and opened only by the provider's pixel where its sender
+  left `preferences.mailOpens` on (`track_opens`, disclosed at the mail's end): the app says
+  "Seen" or "Opened, probably", never read. A mail's HTML
   (`mail_messages.html`) is never selected with a view (`hasHtml` says it's there) and is served
   only by `GET /messages/:id/mail.html` under a CSP `sandbox` that loads nothing but `data:`. A provisional sender is
   a person where a bot isn't (a thread's moves, the `automated` flag) and is never notified

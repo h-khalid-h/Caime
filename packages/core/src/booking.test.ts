@@ -17,6 +17,7 @@ import {
   orderSummary,
   piecePrice,
   placeOrder,
+  providersFor,
   stockLine,
 } from './booking';
 import type { Sphere } from './taxonomy';
@@ -64,6 +65,21 @@ describe('a branch’s own days (R92)', () => {
     expect(openSlots(branched, { ...window, item: elsewhere }).map((d) => d.toISOString())).toEqual(
       thursday,
     );
+  });
+
+  it('a branch with people but no days keeps the host’s days; its items go to its people', () => {
+    const OMAR = '11111111-2222-4333-8444-555555555555';
+    const NOOR = '66666666-7777-4888-8999-aaaaaaaaaaaa';
+    const staffed: BookingHours = {
+      ...cairo,
+      placeHours: [{ placeId: MAADI, days: [], staff: [OMAR] }],
+    };
+    const atMaadi = { placeId: MAADI, providers: null };
+    expect(hoursFor(staffed, atMaadi).days).toEqual(cairo.days);
+    expect(providersFor(staffed, atMaadi)).toEqual([OMAR]);
+    // An item that names its own people keeps to them; one elsewhere is anyone's.
+    expect(providersFor(staffed, { ...atMaadi, providers: [NOOR] })).toEqual([NOOR]);
+    expect(providersFor(staffed, { placeId: null, providers: null })).toBeNull();
   });
 });
 

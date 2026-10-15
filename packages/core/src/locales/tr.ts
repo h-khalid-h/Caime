@@ -4062,4 +4062,25 @@ export const turkish: Catalog = {
   'A notice, by mail': 'E-postayla bir bildirim',
   'View as sent': 'Gönderildiği gibi gör',
   'Write by email': 'E-postayla yaz',
+  Signature: 'İmza',
+  'Hide signature': 'İmzayı gizle',
+  'Seen by email ·': 'E-postayla görüldü ·',
+  'seen, by email': 'e-postayla görüldü',
+  'Opened, probably ·': 'Büyük olasılıkla açıldı ·',
+  'opened by email, probably': 'e-postayla büyük olasılıkla açıldı',
+  'Tell me when my mail is opened': 'E-postam açıldığında bana haber ver',
+  'Mail from here says so at its end. Opened is a probably: some mail apps open everything.':
+    'Buradan giden e-posta bunu sonunda belirtir. "Açıldı" bir olasılıktır: bazı e-posta uygulamaları her şeyi açar.',
+  'Places you save in Settings show here, to send in one tap.':
+    'Ayarlar’da kaydettiğiniz yerler burada görünür, tek dokunuşla gönderilir.',
+  'Same hours every day': 'Her gün aynı saatler',
+  'The organization’s hours': 'Kuruluşun saatleri',
+  '{n} people work here': { one: 'Burada bir kişi çalışıyor', other: 'Burada {n} kişi çalışıyor' },
+  'Its own days and hours': 'Kendi günleri ve saatleri',
+  'Off: it opens when the organization does.': 'Kapalıyken: kuruluş açıkken açıktır.',
+  'Who works here': 'Burada kim çalışıyor',
+  'Its items are done by these people unless an item names its own. A booking goes to whoever of them is free.':
+    'Bir öğe kendi kişilerini belirtmedikçe öğeleri bu kişiler yapar. Rezervasyon aralarından boşta olana gider.',
+  'A branch keeps its own days, its own people, or both.':
+    'Bir şube kendi günlerini, kendi kişilerini ya da ikisini birden tutar.',
 };

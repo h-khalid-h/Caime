@@ -30,6 +30,7 @@ import {
   type PaymentSettings,
   type PlacedOrder,
   placeOrder,
+  providersFor,
   type Sphere,
   tr,
   withSlugs,
@@ -312,8 +313,10 @@ function busyFor(
       });
     else if (!item) busy.push({ start: h.start, end: h.end, units: Infinity });
   }
-  const providersBusy = item?.providers?.length
-    ? item.providers.map((p) =>
+  // Who may do it (R58, R92): the item's people, else its branch's.
+  const who = providersFor(host.hours, item);
+  const providersBusy = who
+    ? who.map((p) =>
         held
           .filter((h) => h.booking?.providerId === p)
           .map((h) => ({ start: h.start, end: h.end })),
@@ -377,9 +380,10 @@ export async function openSlotsFor(
   );
   const { busy, providersBusy, resource } = busyFor(held, item, host);
   // An organization's providers are busy in their other calendars too (R90).
-  if (host.kind === 'org' && item?.providers?.length && providersBusy) {
-    const elsewhere = await busyElsewhere(ctx.db, item.providers, window);
-    item.providers.forEach((p, i) => {
+  const who = providersFor(hours, item);
+  if (host.kind === 'org' && who && providersBusy) {
+    const elsewhere = await busyElsewhere(ctx.db, who, window);
+    who.forEach((p, i) => {
       for (const b of elsewhere.get(p) ?? []) providersBusy[i]?.push(b);
     });
   }
@@ -432,7 +436,7 @@ export async function bookingFor(
   // someone only when the catalog is their own.
   if (ask.providerId && !booker.isSelf)
     throw new AppError(403, 'not_bookable', tr('Who does it is for the team to say.'));
-  if (ask.providerId && !(item.providers ?? []).includes(ask.providerId))
+  if (ask.providerId && !(providersFor(host.hours, item) ?? []).includes(ask.providerId))
     throw new AppError(403, 'not_bookable', tr('They don’t do that one.'));
   // The host may book their own slot for someone (a consultant filling their diary): the lead
   // time is for the other side.
@@ -463,9 +467,9 @@ export async function bookingFor(
     endAt: end.toISOString(),
     providerId: ask.providerId ?? null,
     providerName: null,
-    // Where (R92): the branch's address as written now, copied into the card.
+    // Where (R92): the branch, and its address as written now, copied into the card.
     ...(host.kind === 'org' && item.placeId
-      ? { where: await bookingWhere(ctx, host.id, item.placeId) }
+      ? { placeId: item.placeId, where: await bookingWhere(ctx, host.id, item.placeId) }
       : {}),
   };
 }
@@ -489,7 +493,8 @@ export async function pickProvider(
   const host = orgHost(org);
   const item = host.items.find((i) => i.id === booking.itemId);
   const team = await humanTeam(ctx.db, org.id);
-  const eligible = team.filter((u) => !item?.providers || item.providers.includes(u.id));
+  const who = providersFor(host.hours, item);
+  const eligible = team.filter((u) => !who || who.includes(u.id));
   if (eligible.length === 0) return null;
   const end = new Date(booking.endAt);
   const day = new Date(start.getTime() - 86_400_000);
@@ -598,6 +603,18 @@ export function assertItemsFit(
         if (!teamIds.has(p)) throw forbidden(tr('Only people on the team can be providers.'));
     }
   }
+}
+
+/** A branch's people (R92) are people on the team, and only an organization's branches have any. */
+export function assertBranchStaff(
+  host: Pick<BookingHost, 'kind'>,
+  hours: BookingHours | null,
+  teamIds: Set<string>,
+): void {
+  for (const branch of hours?.placeHours ?? [])
+    for (const p of branch.staff ?? [])
+      if (host.kind !== 'org' || !teamIds.has(p))
+        throw forbidden(tr('Only people on the team can be providers.'));
 }
 
 /**

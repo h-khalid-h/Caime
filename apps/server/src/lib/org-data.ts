@@ -71,7 +71,7 @@ export async function eraseMessagesWhere(
     ),
     mail_gone as (
       update mail_messages set subject = null, from_address = '', in_reply_to = null,
-        references_ids = '{}', delivery_detail = null, html = null
+        references_ids = '{}', delivery_detail = null, html = null, signature = null
       where message_id in (select id from gone)
     ),
     ${stockBackCtes(sql`select id from gone`, now)}

@@ -1087,11 +1087,17 @@ with its reason, so it isn't proposed again without new facts.
   (nothing is lost, nothing more is notified until it's answered), and declining mutes the
   address rather than refusing mail. (4) *Delivery, honestly*: a reply says sent (the provider
   took it), delivered (the receiving server took it) and bounced, as the server learns them;
-  it never says read by a tracking pixel. A pixel tracks someone who never agreed to it, which
-  Caime's privacy page promises nobody, and it lies (Apple's Mail Privacy Protection fetches
-  every pixel, Gmail fetches them through a proxy), so a "read" would be wrong as often as
-  right. Read becomes true the way it's true for every other message: when the sender claims
-  their account and reads it on Caime, which is the loop the proposal wants. (5) *Threads are
+  then *seen*, which is certain: they replied (everything mailed them before the reply is
+  seen) or followed the mail's "Open in Caime" link, which lands where signing up with the
+  address makes the conversation theirs. *Revised by the owner 2026-10-15* to show opens too:
+  the provider's pixel says "Opened, probably", never seen, because it lies both ways (Apple's
+  Mail Privacy Protection fetches every pixel, Gmail fetches through a proxy, many clients block
+  images). It is disclosed in every mail that carries it ("… is told when this mail is
+  opened") and on the privacy page, it is on by default for a person and off with one switch
+  under their Caime address (`preferences.mailOpens`), and a mail with it off carries no pixel
+  and no HTML. A mail in reads as a chat: a client's emphasis marks out and its signature set
+  apart (core `mailText`: a "-- " line, Gmail's or Outlook's marked block, else what the same
+  sender's last mail ended with), folded under the words. (5) *Threads are
   topics*: a mail thread (its References chain, else its normalised subject) is a topic in the
   conversation with that person, named by the subject, so a person's mail reads as their chats
   do and the general conversation stays one line per person. (6) *Organizations* get an address

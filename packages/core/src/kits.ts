@@ -258,7 +258,8 @@ export const KITS: Record<KitId, KitDef> = {
     name: msg('Location'),
     description: msg('Share a place, or where you are right now'),
     icon: 'map-pin',
-    spheres: ['family', 'friend', 'service_provider'],
+    // A place is useful with anyone (R92): where to meet, the clinic's address, a branch.
+    spheres: null,
     groups: true,
     // Under-18 accounts don't share locations (R29).
     adultsOnly: true,

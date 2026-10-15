@@ -65,6 +65,7 @@ function adoptPreferences(user: MeView): void {
     caiDigest: p.caiDigest ?? usePrefs.getState().caiDigest,
     caiInitiative: p.caiInitiative ?? usePrefs.getState().caiInitiative,
     arabicVariety: p.arabicVariety ?? usePrefs.getState().arabicVariety,
+    mailOpens: p.mailOpens ?? usePrefs.getState().mailOpens,
   });
 }
 

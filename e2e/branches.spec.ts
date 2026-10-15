@@ -32,11 +32,21 @@ test('an item at a branch: its own hours in the setup, and the card says where',
           street: '9 Road 233',
           orgAudience: 'customers',
         },
+        {
+          kind: 'branch',
+          label: 'Zamalek',
+          country: 'EG',
+          city: 'Cairo',
+          street: '26 July Street',
+          orgAudience: 'customers',
+        },
       ],
     },
   });
   expect(placed.ok(), await placed.text()).toBe(true);
-  const maadi = ((await placed.json()) as { places: Array<{ id: string }> }).places[0]?.id ?? '';
+  const placeIds = ((await placed.json()) as { places: Array<{ id: string }> }).places;
+  const maadi = placeIds[0]?.id ?? '';
+  const zamalek = placeIds[1]?.id ?? '';
   const offered = await owner.request.put(`/v1/orgs/${orgId}/booking`, {
     headers: CLIENT,
     data: {
@@ -60,6 +70,19 @@ test('an item at a branch: its own hours in the setup, and the card says where',
           providers: null,
           askTopic: false,
         },
+        {
+          id: 'whitening',
+          name: 'Whitening',
+          price: null,
+          unit: 'minutes',
+          minutes: 30,
+          capacity: 1,
+          maxQuantity: 1,
+          audience: 'public',
+          providers: null,
+          askTopic: false,
+          placeId: zamalek,
+        },
       ],
     },
   });
@@ -75,6 +98,10 @@ test('an item at a branch: its own hours in the setup, and the card says where',
   await expect(row).toContainText('Hours at Maadi');
   await expect(row).toContainText('Same as the organization’s');
   await row.click();
+  // Its own days, and its own hours on one of them.
+  await page.getByTestId('org-booking-branch-hours-own').click();
+  await page.getByTestId('org-booking-branch-hours-one-range').click();
+  await expect(page.getByTestId('org-booking-branch-hours-start-0')).toBeVisible();
   await page.getByTestId('org-booking-branch-hours-save').click();
   await expect(row).not.toContainText('Same as the organization’s');
   expect(errors).toEqual([]);
@@ -89,6 +116,10 @@ test('an item at a branch: its own hours in the setup, and the card says where',
   const convo = ((await started.json()) as { conversationId: string }).conversationId;
   const customer = await newPerson(phone);
   await customer.page.goto(`/c/${convo}?book=1`);
+  // Two branches: the customer says where, and sees what's done there.
+  await customer.page.getByTestId(`book-branch-${maadi}`).click();
+  await expect(customer.page.getByTestId('book-item-whitening')).toHaveCount(0);
+  await customer.page.getByTestId('book-item-cleaning').click();
   await expect(customer.page.getByTestId('book-item-line')).toContainText('At Maadi');
   const picker = customer.page.getByTestId('slot-picker');
   await expect(picker).toBeVisible();

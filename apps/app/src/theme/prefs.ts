@@ -34,6 +34,8 @@ export interface PrefValues {
   caiInitiative: Initiative;
   /** How Cai and the Caime Friends speak Arabic (R72): as you write and live, or one chosen. */
   arabicVariety: ArabicVarietyChoice;
+  /** Your mail says when it's opened (R75: the provider's pixel, said in the mail). */
+  mailOpens: boolean;
 }
 
 interface PrefsState extends PrefValues {
@@ -53,6 +55,7 @@ export const DEFAULT_PREFS: PrefValues = {
   caiDigest: false,
   caiInitiative: 'usual',
   arabicVariety: 'auto',
+  mailOpens: true,
 };
 
 export const usePrefs = create<PrefsState>()(

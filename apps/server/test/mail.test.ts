@@ -426,7 +426,15 @@ describe('a stranger writes in', () => {
     expect(out.From).toBe('Noor Mail <noor.mail@caime.test>');
     expect(out.To).toBe('sara@partner.example');
     expect(out.Subject).toBe('Re: Hello from outside');
-    expect(out.TextBody).toBe('Of course. It’s attached to my next message.');
+    // The words, then a link back to Caime, and that its sender is told when it's opened (R75).
+    const textBody = String(out.TextBody);
+    expect(textBody.startsWith('Of course. It’s attached to my next message.\n\n--\n')).toBe(true);
+    expect(textBody).toMatch(
+      /Open in Caime: http:\/\/localhost:8787\/v1\/mail\/seen\/[0-9a-f-]{36}\.[\w-]{22}/,
+    );
+    expect(textBody).toContain('Noor Mail is told when this mail is opened.');
+    expect(out.TrackOpens).toBe(true);
+    expect(String(out.HtmlBody)).toContain('Of course. It’s attached to my next message.');
     expect(out.token).toBe('test-postmark-token');
     const headers = out.Headers as Array<{ Name: string; Value: string }>;
     const header = (name: string) => headers.find((h) => h.Name === name)?.Value;
@@ -1044,8 +1052,10 @@ describe('who may write in, and to whom', () => {
     });
     await work();
     expect(sends).toHaveLength(1);
-    // Only the first mail of a conversation says who wrote.
-    expect(String(sends[0]?.TextBody)).toBe('Great, see you then.');
+    // Only the first mail of a conversation says who wrote; every one links back to Caime.
+    const later = String(sends[0]?.TextBody);
+    expect(later.startsWith('Great, see you then.\n\n--\nOpen in Caime: ')).toBe(true);
+    expect(later).not.toContain('wrote this on Caime');
   });
 
   it('never mails someone on Caime behind them, nor writes to one’s own or a Caime address (R93)', async () => {
@@ -1098,5 +1108,121 @@ describe('who may write in, and to whom', () => {
       .where('body', '=', 'Do you have a slot on Tuesday?')
       .executeTakeFirstOrThrow();
     expect(words.sender_id).toBeNull();
+  });
+});
+
+describe('how far a mail got, and words that read as chat (R75)', () => {
+  const lina = 'lina@studio.example';
+  const linaMail = (m: { text: string; html?: string; inReplyTo?: string; subject?: string }) =>
+    postmark({ from: lina, fromName: 'Lina Studio', to: 'rami.mail@caime.test', ...m });
+  const SIGNED =
+    '<div dir="ltr">{words}<br><br><div class="gmail_signature"><div dir="ltr"><b>Lina Saad</b><br>Studio <b>Lina</b></div></div></div>';
+
+  // A person of their own: the test before this one moved the clock a year on.
+  let rami: Client;
+  beforeAll(async () => {
+    rami = await signup(t, {
+      displayName: 'Rami Mail',
+      handle: 'rami.mail',
+      email: 'rami.mail@example.com',
+    });
+  });
+
+  it('sets a signature apart, says seen when they reply or follow the link, opened by the pixel, and asks nothing of whoever turned that off', async () => {
+    // Lina writes; her Gmail signature comes apart from her words, without its asterisks.
+    expect(
+      (
+        await inbound(
+          await linaMail({
+            subject: 'The posters',
+            text: 'Are the posters ready?\n\n*Lina Saad*\nStudio *Lina*',
+            html: SIGNED.replace('{words}', 'Are the posters ready?'),
+          }),
+        )
+      ).json().outcomes[0].outcome,
+    ).toBe('delivered');
+    await t.ctx.flush();
+    const request = (await conversationsOf(rami)).find((i) => i.section === 'requests');
+    const convo = request?.conversationId ?? '';
+    const first = (await messagesIn(rami, convo))[0] as unknown as {
+      body: string;
+      mail: { signature: string | null };
+    };
+    expect(first.body).toBe('Are the posters ready?');
+    expect(first.mail.signature).toBe('Lina Saad\nStudio Lina');
+    // Omar answers by mail; the provider says it was opened (its pixel): opened, probably.
+    sends = [];
+    const answer = await rami.post(`/v1/conversations/${convo}/messages`, {
+      clientId: 'rami-posters-1',
+      kind: 'text',
+      body: 'Tomorrow morning.',
+    });
+    await work();
+    expect(sends).toHaveLength(1);
+    const ours = (sends[0] as { Headers: Array<{ Name: string; Value: string }> }).Headers.find(
+      (h) => h.Name === 'Message-ID',
+    )?.Value;
+    await t.ctx.db
+      .updateTable('mail_messages')
+      .set({ provider_id: 'pm-posters-1' })
+      .where('message_id', '=', answer.message.id)
+      .execute();
+    expect(
+      (
+        await events([
+          { RecordType: 'Open', MessageID: 'pm-posters-1', ReceivedAt: '2026-10-15T08:00:00Z' },
+        ])
+      ).json().applied,
+    ).toBe(1);
+    const mailOf = async (id: string) =>
+      ((await messagesIn(rami, convo)).find((m) => m.id === id)?.mail ?? null) as {
+        openedAt: string | null;
+        seenAt: string | null;
+      } | null;
+    expect((await mailOf(answer.message.id))?.openedAt).toBe('2026-10-15T08:00:00.000Z');
+    expect((await mailOf(answer.message.id))?.seenAt).toBeNull();
+    // She replies: what Omar mailed her before is seen. Her signature is known from her last.
+    expect(
+      (
+        await inbound(
+          await linaMail({
+            subject: 'Re: The posters',
+            text: 'Perfect, thanks!\n\nLina Saad\nStudio Lina',
+            inReplyTo: ours,
+          }),
+        )
+      ).json().outcomes[0].outcome,
+    ).toBe('delivered');
+    await t.ctx.flush();
+    expect((await mailOf(answer.message.id))?.seenAt).not.toBeNull();
+    const reply = (await messagesIn(rami, convo)).find((m) => m.body === 'Perfect, thanks!') as
+      | { mail: { signature: string | null } }
+      | undefined;
+    expect(reply?.mail.signature).toBe('Lina Saad\nStudio Lina');
+    // Omar turns opens off: his next mail carries no pixel and says nothing of it, but still
+    // links back; following the link says seen and lands on signing up.
+    await rami.patch('/v1/me', { preferences: { mailOpens: false } });
+    sends = [];
+    const next = await rami.post(`/v1/conversations/${convo}/messages`, {
+      clientId: 'rami-posters-2',
+      kind: 'text',
+      body: 'They are at the front desk.',
+    });
+    await work();
+    expect(sends).toHaveLength(1);
+    const plain = sends[0] as Record<string, unknown>;
+    expect(plain.TrackOpens).toBeUndefined();
+    expect(plain.HtmlBody).toBeUndefined();
+    expect(String(plain.TextBody)).not.toContain('is told when this mail is opened');
+    const link = /\/v1\/mail\/seen\/\S+/.exec(String(plain.TextBody))?.[0] ?? '';
+    expect(link).not.toBe('');
+    // A link Caime didn't write changes nothing, and lands in the same place.
+    const forged = await t.app.inject({ method: 'GET', url: `${link.slice(0, -3)}AAA` });
+    expect(forged.statusCode).toBe(302);
+    expect((await mailOf(next.message.id))?.seenAt).toBeNull();
+    const followed = await t.app.inject({ method: 'GET', url: link });
+    expect(followed.statusCode).toBe(302);
+    expect(followed.headers.location).toBe('http://localhost:8787/sign-up');
+    expect((await mailOf(next.message.id))?.seenAt).not.toBeNull();
   });
 });

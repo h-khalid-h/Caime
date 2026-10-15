@@ -37,6 +37,7 @@ import type { AppContext } from '../context';
 import { builtinCountsChanged } from '../lib/app-directory';
 import { audit } from '../lib/audit';
 import {
+  assertBranchStaff,
   assertItemPhotos,
   assertItemsFit,
   assertPaymentsFit,
@@ -250,6 +251,7 @@ export async function calendarRoutes(app: FastifyInstance, ctx: AppContext) {
       true,
       kept.collections,
     );
+    assertBranchStaff(orgHost(org), body.booking, new Set(team.map((u) => u.id)));
     assertPaymentsFit(orgHost(org), body.payments, true);
     await assertPlacesFit(ctx, orgHost(org), kept.items, body.booking);
     await assertItemPhotos(ctx, auth.userId, kept.items, catalogOf(org).items);

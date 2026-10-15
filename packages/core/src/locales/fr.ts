@@ -4234,4 +4234,28 @@ export const fr: Catalog = {
   'A notice, by mail': 'Un avis, par e-mail',
   'View as sent': 'Voir tel qu’envoyé',
   'Write by email': 'Écrire par e-mail',
+  Signature: 'Signature',
+  'Hide signature': 'Masquer la signature',
+  'Seen by email ·': 'Vu par e-mail ·',
+  'seen, by email': 'vu, par e-mail',
+  'Opened, probably ·': 'Ouvert, probablement ·',
+  'opened by email, probably': 'ouvert par e-mail, probablement',
+  'Tell me when my mail is opened': 'Me prévenir quand mon e-mail est ouvert',
+  'Mail from here says so at its end. Opened is a probably: some mail apps open everything.':
+    'Les e-mails envoyés d’ici le disent à la fin. « Ouvert » reste probable : certaines messageries ouvrent tout.',
+  'Places you save in Settings show here, to send in one tap.':
+    'Les lieux enregistrés dans les Réglages apparaissent ici, à envoyer d’un geste.',
+  'Same hours every day': 'Mêmes horaires chaque jour',
+  'The organization’s hours': 'Les horaires de l’organisation',
+  '{n} people work here': {
+    one: 'Une personne travaille ici',
+    other: '{n} personnes travaillent ici',
+  },
+  'Its own days and hours': 'Ses propres jours et horaires',
+  'Off: it opens when the organization does.': 'Désactivé : il ouvre quand l’organisation ouvre.',
+  'Who works here': 'Qui travaille ici',
+  'Its items are done by these people unless an item names its own. A booking goes to whoever of them is free.':
+    'Ses prestations sont assurées par ces personnes, sauf si une prestation nomme les siennes. Une réservation va à celle qui est libre.',
+  'A branch keeps its own days, its own people, or both.':
+    'Une agence garde ses propres jours, ses propres personnes, ou les deux.',
 };

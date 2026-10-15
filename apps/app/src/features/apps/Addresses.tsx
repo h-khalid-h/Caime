@@ -15,10 +15,13 @@ import { useEffect, useRef, useState } from 'react';
 import { View } from 'react-native';
 import { endpoints } from '@/api/endpoints';
 import { qk } from '@/api/keys';
+import { savePrefs } from '@/features/settings/savePrefs';
 import { useMe } from '@/state/session';
+import { usePrefs } from '@/theme/prefs';
 import { Button } from '@/ui/Button';
 import { Divider } from '@/ui/Card';
 import { Sheet } from '@/ui/Sheet';
+import { SwitchRow } from '@/ui/SwitchRow';
 import { Text } from '@/ui/Text';
 import { TextField } from '@/ui/TextField';
 import { toast } from '@/ui/Toast';
@@ -238,6 +241,7 @@ export function AddressRows() {
   };
   const addresses = q.data?.addresses ?? [];
   const phoneBy = q.data?.phoneBy ?? [];
+  const mailOpens = usePrefs((s) => s.mailOpens);
   return (
     <>
       <Row
@@ -257,6 +261,17 @@ export function AddressRows() {
             line={tr('Your Caime address · Mail to it lands in Caime')}
             mark={AtSign}
             testID="address-caime"
+          />
+          {/* Whether mail sent from it says when it's opened (R75): the mail says so too. */}
+          <SwitchRow
+            label={tr('Tell me when my mail is opened')}
+            detail={tr(
+              'Mail from here says so at its end. Opened is a probably: some mail apps open everything.',
+            )}
+            value={mailOpens}
+            onChange={(v) => savePrefs({ mailOpens: v })}
+            inset
+            testID="mail-opens"
           />
         </>
       ) : null}

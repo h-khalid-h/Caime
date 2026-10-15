@@ -56,10 +56,22 @@ export interface BookingHours {
   placeHours?: PlaceHours[];
 }
 
-/** A place's own days of the host's hours (R92): its weekdays and their ranges. */
+/**
+ * A branch of the host's (R92): its own weekdays and their ranges (none: the host's), and the
+ * people of the team who work there (none: whoever does the item).
+ */
 export interface PlaceHours {
   placeId: string;
   days: BookingDay[];
+  staff?: string[] | null;
+}
+
+/** The branch an item is done at, as the hours keep it, if they keep anything of it. */
+function branchOf(
+  hours: Pick<BookingHours, 'placeHours'> | null | undefined,
+  item: Pick<BookingItem, 'placeId'> | null | undefined,
+): PlaceHours | undefined {
+  return item?.placeId ? hours?.placeHours?.find((p) => p.placeId === item.placeId) : undefined;
 }
 
 /** The hours an item is booked by (R92): its place's days when the place has its own. */
@@ -67,8 +79,22 @@ export function hoursFor(
   hours: BookingHours,
   item: Pick<BookingItem, 'placeId'> | null | undefined,
 ): BookingHours {
-  const own = item?.placeId ? hours.placeHours?.find((p) => p.placeId === item.placeId) : undefined;
-  return own ? { ...hours, days: own.days } : hours;
+  const own = branchOf(hours, item);
+  return own?.days.length ? { ...hours, days: own.days } : hours;
+}
+
+/**
+ * Who on the team may do an item (R58, R92): the people the item names, else the people of the
+ * branch it's done at, else null (anyone on the team). Every reader of an item's providers
+ * (the slots, who's picked, the reassign route) asks here.
+ */
+export function providersFor(
+  hours: Pick<BookingHours, 'placeHours'> | null | undefined,
+  item: Pick<BookingItem, 'placeId' | 'providers'> | null | undefined,
+): string[] | null {
+  if (item?.providers?.length) return item.providers;
+  const staff = branchOf(hours, item)?.staff;
+  return staff?.length ? staff : null;
 }
 
 /**
@@ -380,6 +406,8 @@ export interface AppointmentBooking {
   providerName: string | null;
   /** Where (R92): the item's place as it was written when booked, copied into the card. */
   where?: string | null;
+  /** The branch it's at (R92), for the team to see its bookings by branch. */
+  placeId?: string | null;
 }
 
 export interface Busy {

@@ -8,6 +8,8 @@ const CALENDAR_FEED = /\/calendar\/cal_[^/]*$/;
 const INVITE_TOKEN = /\/(i|invites)\/[^/]{16,}(?=\/|$)/;
 /** A meeting guest's link is their way in (R84): `/j/<token>`, `/v1/join/<token>`. */
 const GUEST_TOKEN = /\/(j|join)\/[^/]{16,}(?=\/|$)/;
+/** A mail's "Open in Caime" link (R75): `/v1/mail/seen/<token>`. */
+const MAIL_SEEN = /\/mail\/seen\/[^/]+$/;
 
 export function requestForLog(req: { method: string; url: string; ip?: string }) {
   return {
@@ -16,7 +18,8 @@ export function requestForLog(req: { method: string; url: string; ip?: string })
       .split('?')[0]
       ?.replace(CALENDAR_FEED, '/calendar/cal_….ics')
       .replace(INVITE_TOKEN, '/$1/…')
-      .replace(GUEST_TOKEN, '/$1/…'),
+      .replace(GUEST_TOKEN, '/$1/…')
+      .replace(MAIL_SEEN, '/mail/seen/…'),
     remoteAddress: req.ip,
   };
 }

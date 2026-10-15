@@ -633,6 +633,12 @@ export interface MessageMailView {
   deliveryAt: string | null;
   /** It came with HTML (R75 phase 2): "View as sent" opens it in a sandbox. */
   hasHtml: boolean;
+  /** A mail in's signature, set apart from its words (folded under them). */
+  signature: string | null;
+  /** A mail out they've seen: they replied, or opened it in Caime. */
+  seenAt: string | null;
+  /** A mail out the provider saw opened (its pixel): probably read, never certainly. */
+  openedAt: string | null;
 }
 
 /** What the mail provider's inbound webhook is answered (R75): each address here the mail reached, and what became of it there. */
