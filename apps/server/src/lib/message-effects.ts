@@ -121,7 +121,9 @@ async function effectsOf(ctx: AppContext, message: Message, read: Analysis | nul
   if (conversation.kind === 'direct') {
     const caimes = members.find((m) => systemAccountOf(m.user_id));
     if (caimes) {
-      if (caimes.user_id !== sender.id) await queueSystemReply(ctx, message, caimes.user_id);
+      // Mail someone sent themselves lands here (R91): kept, not answered.
+      if (caimes.user_id !== sender.id && message.channel !== 'mail')
+        await queueSystemReply(ctx, message, caimes.user_id);
       return;
     }
   }

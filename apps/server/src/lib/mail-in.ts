@@ -24,11 +24,19 @@
  *   anything else is dropped without a bounce, since a bounce says the address exists.
  */
 import { createHash } from 'node:crypto';
-import { defaultPrivacy, isReservedHandle, SendMessageBody, uuidv7 } from '@caime/core';
+import {
+  defaultPrivacy,
+  isReservedHandle,
+  SendMessageBody,
+  SYSTEM_ACCOUNTS,
+  uuidv7,
+} from '@caime/core';
 import { bareSubject } from '@caime/core/mail';
 import { CAI_MAIL } from '@caime/core/meetings';
+import { CAI_ID } from '@caime/core/system-ids';
 import type { AppContext } from '../context';
 import { ORG_COLUMNS, USER_COLUMNS, type UserRow } from '../db/schema';
+import { personByAddress } from './addresses';
 import { startCustomerConversation } from './business-threads';
 import { caiMail } from './cai-mail';
 import { ensureDirectConversation } from './conversations';
@@ -41,6 +49,7 @@ import { messageViews, participantsOf, sendMessage } from './messages';
 import { assertStorage } from './plans';
 import { between, pairKey } from './relations';
 import { storageFor } from './storage';
+import { openSystemConversation } from './system-accounts';
 import { createTopicConversation } from './topics';
 import { minorOf } from './users';
 
@@ -179,6 +188,16 @@ async function recipientOf(
 /** The person a mail is from: their account, or a provisional person made or found by the address. */
 async function senderOf(ctx: AppContext, mail: InboundMail): Promise<UserRow | null> {
   const address = mail.from.address;
+  // A person's sign-in address, or one they proved theirs (R91): that's them.
+  const ownerId = await personByAddress(ctx.db, address);
+  if (ownerId) {
+    const owner = await ctx.db
+      .selectFrom('users')
+      .select(USER_COLUMNS)
+      .where('id', '=', ownerId)
+      .executeTakeFirst();
+    return owner && !owner.deleted_at && !owner.suspended_at ? owner : null;
+  }
   const find = () =>
     ctx.db.selectFrom('users').select(USER_COLUMNS).where('email', '=', address).executeTakeFirst();
   const known = await find();
@@ -233,7 +252,16 @@ async function deliverTo(
   const target = await recipientOf(ctx, lands, lands !== handle);
   if (!target) return 'unknown';
   const sender = await senderOf(ctx, mail);
-  if (!sender || sender.id === (target.kind === 'person' ? target.user.id : null)) return 'refused';
+  if (!sender) return 'refused';
+  if (target.kind === 'person' && sender.id === target.user.id) {
+    // Mail from one of one's own addresses to one's own Caime address (R91): forwarded in to keep
+    // or to act on, it lands in one's conversation with Cai, as one's own message, unanswered.
+    const cai = SYSTEM_ACCOUNTS.find((a) => a.id === CAI_ID);
+    if (!cai) return 'refused';
+    const own = await openSystemConversation(ctx, sender.id, cai);
+    await deliver(ctx, sender, own.id, mail, toAddress);
+    return 'delivered';
+  }
   let conversationId: string;
   if (target.kind === 'person') {
     const person = target.user;

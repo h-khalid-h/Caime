@@ -283,6 +283,13 @@ offered while you&rsquo;re busy, and nobody sees them. From Google, Caime asks f
 Microsoft offers no such permission, so Caime asks to read your calendar&rsquo;s basics and keeps
 only the times. Disconnecting it, deleting your account or signing out everywhere deletes what was
 kept and gives the permission back. Your export lists the accounts you connected.</li>
+<li><strong>Email addresses and phone numbers you add as yours.</strong> Beside the email you sign
+in with, you can add more addresses and numbers under You &rarr; Apps. Each is proven by a six-digit
+code sent to it (an email by mail; a phone number over WhatsApp, which Meta delivers and which reads
+nothing of yours) before it counts for anything. Once proven, mail from it is from you, and people
+who have it can find you by it as by your sign-in email, if you let people find you by email. Caime
+keeps the address or number, how and when it was proven, and the code only hashed, for ten minutes.
+Removing it, or deleting your account, deletes it. Your export lists them.</li>
 <li><strong>A file from your Google Drive or OneDrive.</strong> When you turn on Files for a connected
 account, you can attach a file from it in a conversation. From Google, you pick it in Google&rsquo;s
 own window, which gives Caime that file and no other; from Microsoft, Caime lists your OneDrive as

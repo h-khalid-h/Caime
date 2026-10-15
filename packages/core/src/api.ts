@@ -6,6 +6,7 @@
  */
 import type { z } from 'zod';
 import type { AccountProvider, AccountState, AccountUse } from './accounts';
+import type { AddressKind, AddressMethod } from './addresses';
 import type { AgentAction } from './agents';
 import type { AppCategory, AppProvides, ListingState } from './app-directory';
 import type { ApiScope, WebhookEvent } from './apps';
@@ -290,6 +291,29 @@ export interface ConnectedAccountsResponse {
   offered: AccountProvider[];
   /** The uses each provider offers here: Google's files need its picker's key (R90). */
   usesOffered: Record<AccountProvider, AccountUse[]>;
+}
+
+/** An email address or phone number someone added as theirs (R91), proven or waiting for its code. */
+export interface OwnAddressView {
+  id: string;
+  kind: AddressKind;
+  /** Lower-cased email, or the number in E.164. */
+  value: string;
+  verified: boolean;
+  /** How it was proven; null until it is. */
+  method: AddressMethod | null;
+  verifiedAt: string | null;
+  createdAt: string;
+}
+
+export interface OwnAddressesResponse {
+  addresses: OwnAddressView[];
+  /** How a phone number can be proven here: by WhatsApp when its sender is set up, else none yet. */
+  phoneBy: AddressMethod[];
+}
+
+export interface OwnAddressResponse {
+  address: OwnAddressView;
 }
 
 /** A file or folder in a connected account's drive, as its browser lists it (R90). */

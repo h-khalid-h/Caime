@@ -199,7 +199,7 @@ export function Connected({ onDiscover }: { onDiscover: () => void }) {
   const shown = open ?? last.current;
   return (
     <>
-      {minor ? null : <Accounts />}
+      <Accounts minor={minor} />
       <Group
         footer={tr(
           'An app you let in reaches only what you allowed, never your password, privacy or account, and what it sends says it came through it. Remove one and it stops at once.',

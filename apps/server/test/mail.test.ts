@@ -7,7 +7,7 @@
  */
 import { createServer, type Server } from 'node:http';
 import type { AddressInfo } from 'node:net';
-import { isReservedHandle } from '@caime/core';
+import { isReservedHandle, uuidv7 } from '@caime/core';
 import type { InjectOptions } from 'fastify';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { runDueJobs } from '../src/lib/jobs';
@@ -777,6 +777,60 @@ describe('who may write in, and to whom', () => {
       ).json().outcomes[0].outcome,
     ).toBe('refused');
     await noor.req('DELETE', `/v1/blocks/${omar.user.id}`);
+  });
+
+  it('an address someone proved theirs is that person, and their own mail lands with Cai, unanswered (R91)', async () => {
+    await t.ctx.db
+      .insertInto('own_addresses')
+      .values({
+        id: uuidv7(),
+        user_id: omar.user.id,
+        kind: 'email',
+        value: 'omar@second-address.example',
+        method: 'email',
+        verified_at: t.ctx.now(),
+        created_at: t.ctx.now(),
+      })
+      .execute();
+    // Connected in the case before, unless this one runs alone.
+    const convo =
+      (await conversationsOf(noor)).find((c) => c.title === 'Omar Mail')?.conversationId ??
+      (await connect(noor, omar));
+    const res = await inbound(
+      await postmark({
+        from: 'omar@second-address.example',
+        to: 'noor.mail@caime.test',
+        subject: null,
+        text: 'From my other address.',
+      }),
+    );
+    expect(res.json().outcomes[0].outcome).toBe('delivered');
+    await t.ctx.flush();
+    expect(
+      (await messagesIn(noor, convo)).find((m) => m.body === 'From my other address.'),
+    ).toMatchObject({ senderId: omar.user.id, channel: 'mail' });
+
+    // Omar forwards a mail to his own Caime address: it's kept in his chat with Cai.
+    const self = await inbound(
+      await postmark({
+        from: 'omar@second-address.example',
+        to: 'omar.mail@caime.test',
+        subject: 'Fwd: the lease',
+        text: 'Keep this for me.',
+      }),
+    );
+    expect(self.json().outcomes[0].outcome).toBe('delivered');
+    await work();
+    const cai = (await conversationsOf(omar)).find((c) => c.title === 'Cai');
+    expect(cai).toBeDefined();
+    const withCai = await messagesIn(omar, cai?.conversationId ?? '');
+    const kept = withCai.find((m) => m.body === 'Keep this for me.');
+    expect(kept).toMatchObject({ senderId: omar.user.id, channel: 'mail' });
+    // Kept, not answered: nothing from Cai after it.
+    const after = withCai.slice(withCai.indexOf(kept as (typeof withCai)[number]) + 1);
+    expect(after.filter((m) => m.senderId !== omar.user.id)).toEqual([]);
+    // And nothing went out as mail to anyone.
+    expect(sends.filter((s) => JSON.stringify(s).includes('Keep this for me.'))).toEqual([]);
   });
 
   it('mail to an organization’s address is a customer thread in its inbox, answered as the organization', async () => {

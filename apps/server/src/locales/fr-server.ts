@@ -1364,4 +1364,19 @@ export const frServer: Catalog = {
   'That isn’t offered for this account here.': 'Ce n’est pas proposé pour ce compte ici.',
   'That picker': 'Ce sélecteur',
   'Pick a file': 'Choisir un fichier',
+  'That email belongs to someone else on Caime.':
+    'Cette adresse e-mail appartient à quelqu’un d’autre sur Caime.',
+  'That number belongs to someone else on Caime.':
+    'Ce numéro appartient à quelqu’un d’autre sur Caime.',
+  'Phone numbers can’t be proven here yet. Try again later.':
+    'Les numéros de téléphone ne peuvent pas encore être prouvés ici. Réessayez plus tard.',
+  'That doesn’t look like an email address.': 'Cela ne ressemble pas à une adresse e-mail.',
+  'Write the number with its country code, like +20 101 234 5678.':
+    'Écrivez le numéro avec l’indicatif du pays, comme +20 101 234 5678.',
+  'That’s already yours.': 'C’est déjà à vous.',
+  'That’s as many as one person can add. Remove one first.':
+    'C’est le maximum pour une personne. Retirez-en un d’abord.',
+  'That address': 'Cette adresse',
+  'That code isn’t right. Check it and try again.':
+    'Ce code n’est pas le bon. Vérifiez-le et réessayez.',
 };

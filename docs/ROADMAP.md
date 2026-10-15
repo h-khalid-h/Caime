@@ -1459,13 +1459,26 @@ listed there with its owner.
 - [ ] ⛔ R90 Google files on cai.me need the owner's Picker key: a browser API key limited to the
       Picker API and `https://cai.me/*`, and the project's number (`GOOGLE_PICKER_API_KEY`,
       `GOOGLE_PICKER_APP_ID`; docs/DEPLOY.md). Until then Files is offered for Microsoft alone.
-- [ ] R91 phase 1, Accounts (PRODUCT-REVIEW R91): one list per person and organization, each an
-      app with Verified (ownership proven) and Connected (access working) statuses; extra emails
-      by code; a phone number by a code over WhatsApp, SMS as the fallback; LinkedIn and PayPal
-      as verified identities; mail from one's own address to one's own Caime address into one's
-      Cai chat. ⛔ for the phone: a Meta Business account (verified), a WhatsApp Business number,
-      an approved authentication template, its token and number id; an SMS provider for the
-      fallback.
+- [x] R91 phase 1, a person's own addresses (PRODUCT-REVIEW R91): Settings · Apps' "Your accounts"
+      is one list, the sign-in email (verified or not), the Caime address, then email addresses
+      and phone numbers added as one's own (`own_addresses`, migration 0081, `lib/addresses.ts`),
+      each "Not proven yet" until a six-digit code sent to it comes back (hashed, ten minutes,
+      five tries counted in the database), then "Verified · Proven by a code by email" (or on
+      WhatsApp), then the connected accounts. A proven one is one person's alone (a unique index;
+      someone's sign-in email is refused as taken), finds them in a contacts file and in search as
+      their sign-in does, is the person for Caime Mail, travels in the export and goes with the
+      account. Mail from one's own address to one's own Caime address lands in one's Cai chat,
+      kept and unanswered (it was refused). Verified with `addresses.test.ts` (WhatsApp's Cloud
+      API played by a stand-in: the template, the code in the body and the copy-code button),
+      `mail.test.ts` and `e2e/addresses.spec.ts` (an email proven in the browser by the code the
+      SMTP stand-in caught).
+- [ ] ⛔ R91 phone numbers on cai.me need the owner's WhatsApp sender: a verified Meta Business
+      account, a WhatsApp Business number, an approved authentication template named `caime_code`
+      (body with the code, a copy-code button) and `WHATSAPP_TOKEN` and `WHATSAPP_PHONE_NUMBER_ID`
+      (docs/DEPLOY.md). Until then "Add a phone number" isn't offered.
+- [ ] R91 phase 1, the rest: an organization's own list (its domain, its Caime address, its
+      connected accounts), LinkedIn and PayPal as verified identities (⛔ their sign-in apps), SMS
+      as the phone's fallback (⛔ a provider), and people found by a proven phone number.
 - [ ] R91 phase 2: other calendars and Outlook mail read live inside Caime, tied to people,
       answered from one's own address; Gmail reading after the owner's CASA decision.
 - [ ] R91 phase 3: an organization's WhatsApp Business, Instagram and Messenger in its Business
@@ -3305,3 +3318,6 @@ The six-slice review's plan, in its order; a block is ticked when its tests and 
   working), the honest reach of "never leave Caime" per provider, personal WhatsApp, Messenger,
   Instagram and LinkedIn messages declined (no official interface), organizations' business
   channels into the Business inbox. Three phases on the roadmap.
+- 2026-10-15 — R91 phase 1 built: own email addresses and phone numbers, each proven by a code (by
+  mail, by WhatsApp through Meta's Cloud API with a provider-health probe), in the one "Your
+  accounts" list; proven ones find their person and are them for mail; self-mail lands with Cai.

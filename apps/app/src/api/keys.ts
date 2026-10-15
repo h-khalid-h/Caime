@@ -30,6 +30,8 @@ export const qk = {
   /** The orders in its customer conversations (R60), for the Business inbox's Orders view. */
   orgOrders: (orgId: string) => ['org-orders', orgId] as const,
   connectedApps: ['connected-apps'] as const,
+  /** Someone's own email addresses and phone numbers (R91). */
+  addresses: ['addresses'] as const,
   /** Connected Google and Microsoft accounts (R90). */
   accounts: ['accounts'] as const,
   /** A connected OneDrive's folder or search (R90), page by page. */

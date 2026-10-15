@@ -5,6 +5,7 @@
 import { z } from 'zod';
 import { PERSONAL_SCOPES, redirectUriError } from './access';
 import { ACCOUNT_USES } from './accounts';
+import { ADDRESS_KINDS } from './addresses';
 import { AGENT_KNOWLEDGE_MAX, AGENT_NAME_MAX } from './agents';
 import { MARKETING_PAGES, SITE_PAGES } from './api';
 import {
@@ -447,6 +448,14 @@ export const AccountStartBody = z
 export const AccountClaimBody = z
   .object({ claim: z.string().regex(/^[A-Za-z0-9_-]{40,8000}$/) })
   .strict();
+
+/** An email or a phone number to add as one's own (R91); a code goes to it. */
+export const AddressAddBody = z
+  .object({ kind: z.enum(ADDRESS_KINDS), value: z.string().trim().min(3).max(254) })
+  .strict();
+
+/** The code sent to it: six digits. */
+export const AddressVerifyBody = z.object({ code: z.string().regex(/^\d{6}$/) }).strict();
 
 /** A connected drive's folder, a search in it, or the next page of either (R90). */
 export const AccountFilesQuery = z

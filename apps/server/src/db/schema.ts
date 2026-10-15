@@ -579,6 +579,20 @@ export interface ConnectedAccountsTable {
   synced_at: Date | null;
 }
 
+/** An email or phone number someone added as theirs (R91), proven once `verified_at` is set. */
+export interface OwnAddressesTable {
+  id: string;
+  user_id: string;
+  kind: 'email' | 'phone';
+  value: string;
+  method: 'email' | 'whatsapp' | 'sms' | null;
+  verified_at: Date | null;
+  code_hash: Buffer | null;
+  code_attempts: Defaulted<number>;
+  code_expires_at: Date | null;
+  created_at: Generated<Date>;
+}
+
 export interface ExternalBusyTable {
   account_id: string;
   user_id: string;
@@ -1239,6 +1253,7 @@ export interface Database {
   tasks: TasksTable;
   calendar_feeds: CalendarFeedsTable;
   connected_accounts: ConnectedAccountsTable;
+  own_addresses: OwnAddressesTable;
   external_busy: ExternalBusyTable;
   decisions: DecisionsTable;
   notifications: NotificationsTable;

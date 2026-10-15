@@ -1786,3 +1786,7 @@ with its reason, so it isn't proposed again without new facts.
   *Not done, with why:* Meta's business verification, a WhatsApp Business number and an approved
   authentication template, an SMS provider, and LinkedIn's and PayPal's sign-in apps are the
   owner's to set up (⛔ in ROADMAP).
+  *Built (phase 1, 2026-10-15):* own email addresses and phone numbers (five of each), a code by
+  mail or over WhatsApp, the statuses in Settings · Apps' one list beside the sign-in email and the
+  Caime address, proven ones counted for mail, contacts and search, and one's own mail kept with
+  Cai. Organizations' list, LinkedIn, PayPal, SMS and finding by phone come next.

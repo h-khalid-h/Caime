@@ -31,6 +31,7 @@ import { Divider } from '@/ui/Card';
 import { Sheet } from '@/ui/Sheet';
 import { Text } from '@/ui/Text';
 import { toast } from '@/ui/Toast';
+import { AddressRows } from './Addresses';
 import { AppIcon } from './AppIcon';
 import { accountReturned, connectAccount, doneWithAccountReturn } from './connect';
 
@@ -201,9 +202,13 @@ function AccountRow({
   );
 }
 
-export function Accounts() {
+/**
+ * The one list of what is you (R91): your addresses first, proven or not, then the accounts
+ * connected for their uses. Under 18, only the addresses: accounts are connected by adults.
+ */
+export function Accounts({ minor }: { minor: boolean }) {
   const qc = useQueryClient();
-  const q = useQuery({ queryKey: qk.accounts, queryFn: endpoints.accounts });
+  const q = useQuery({ queryKey: qk.accounts, queryFn: endpoints.accounts, enabled: !minor });
   const [starting, setStarting] = useState<AccountProvider | null>(null);
   // The consent's return on the web, redeemed once (the screen may mount twice).
   const handled = useRef(false);
@@ -218,7 +223,6 @@ export function Accounts() {
   }, [qc]);
   const accounts = q.data?.accounts ?? [];
   const offered = q.data?.offered ?? [];
-  if (!q.data || (offered.length === 0 && accounts.length === 0)) return null;
   const connect = async (p: AccountProvider) => {
     setStarting(p);
     try {
@@ -238,13 +242,14 @@ export function Accounts() {
         .map((u) => `${tr(ACCOUNT_USE_LABELS[u].label)}: ${tr(ACCOUNT_USE_LABELS[u].detail)}`)
         .join('\n')}
     >
-      {accounts.map((a, i) => (
+      <AddressRows />
+      {accounts.map((a) => (
         <View key={a.id}>
-          {i > 0 ? <Divider /> : null}
-          <AccountRow account={a} offered={q.data.usesOffered[a.provider]} />
+          <Divider />
+          <AccountRow account={a} offered={q.data?.usesOffered[a.provider] ?? []} />
         </View>
       ))}
-      {offered.length > 0 && accounts.length > 0 ? <Divider /> : null}
+      {offered.length > 0 ? <Divider /> : null}
       {offered.length > 0 ? (
         <View style={{ padding: 16, gap: 8 }}>
           {accounts.length > 0 ? null : (

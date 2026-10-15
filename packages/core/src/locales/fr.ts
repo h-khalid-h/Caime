@@ -4136,4 +4136,31 @@ export const fr: Catalog = {
   'A file from {email}': 'Un fichier de {email}',
   'Attach a file from it in a conversation. Caime copies only the file you pick, as your own upload.':
     'Joignez-en un fichier dans une conversation. Caime ne copie que le fichier choisi, comme votre propre envoi.',
+  '{address} is yours on Caime.': '{address} est à vous sur Caime.',
+  'Enter the code': 'Saisir le code',
+  'Add a phone number': 'Ajouter un numéro de téléphone',
+  'Add an email address': 'Ajouter une adresse e-mail',
+  'A code went to {address} on WhatsApp. It works for ten minutes.':
+    'Un code a été envoyé à {address} sur WhatsApp. Il est valable dix minutes.',
+  'A code went to {address}. It works for ten minutes.':
+    'Un code a été envoyé à {address}. Il est valable dix minutes.',
+  'A code goes to it on WhatsApp. Proven, people who have the number can find you by it.':
+    'Un code y est envoyé sur WhatsApp. Une fois prouvé, les personnes qui ont ce numéro peuvent vous trouver grâce à lui.',
+  'A code goes to it. Proven, mail from it is from you, and people who have it can find you by it.':
+    'Un code y est envoyé. Une fois prouvée, le courrier qui en vient est de vous, et les personnes qui l’ont peuvent vous trouver grâce à elle.',
+  'Prove it': 'Prouver',
+  'Send the code': 'Envoyer le code',
+  Code: 'Code',
+  'Phone number': 'Numéro de téléphone',
+  'Email address': 'Adresse e-mail',
+  'With its country code.': 'Avec l’indicatif du pays.',
+  '{address} is removed': '{address} est retiré',
+  'Your sign-in · Verified': 'Votre connexion · Vérifiée',
+  'Your sign-in · Not confirmed yet': 'Votre connexion · Pas encore confirmée',
+  'Your Caime address · Mail to it lands in Caime':
+    'Votre adresse Caime · Le courrier qui y arrive arrive dans Caime',
+  'Not proven yet': 'Pas encore prouvé',
+  'Proven by a code by email': 'Prouvé par un code par e-mail',
+  'Proven by a code on WhatsApp': 'Prouvé par un code sur WhatsApp',
+  'Proven by a code by text message': 'Prouvé par un code par SMS',
 };

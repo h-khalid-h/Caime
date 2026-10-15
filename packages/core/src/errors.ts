@@ -68,6 +68,8 @@ export const ERROR_CODES = [
   'org_open',
   'passkey_failed',
   'paying',
+  'phone_taken',
+  'phone_unavailable',
   'plan_included',
   'plan_limit',
   'provider_failed',

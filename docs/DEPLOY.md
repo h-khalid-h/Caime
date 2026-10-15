@@ -459,6 +459,26 @@ alone (PRODUCT-REVIEW R90). Add to each client:
    alone. Check: Settings · Apps shows "Add Files" on each account; in a conversation the Share
    sheet lists Google Drive and OneDrive; a picked file arrives as an attachment.
 
+#### Phone numbers proven over WhatsApp (R91)
+
+A person adds a phone number under Settings · Apps and proves it with a code Caime sends over
+WhatsApp, through Meta's WhatsApp Business Platform (the Cloud API). Caime sends nothing else
+that way and reads nothing back.
+
+1. In Meta Business Suite, verify the business, then in a Meta app with the **WhatsApp** product
+   add a phone number that is not on a personal WhatsApp (the sender).
+2. Under WhatsApp Manager, Message templates, create an **Authentication** template named
+   `caime_code` in English (`en_US`): the code in its body and a **Copy code** button. Wait for
+   its approval.
+3. Make a **System user** with the app and the WhatsApp account assigned, and generate a
+   permanent token with `whatsapp_business_messaging`.
+4. In EasyPanel set `WHATSAPP_TOKEN` (that token) and `WHATSAPP_PHONE_NUMBER_ID` (the sender's
+   id, digits, from the app's WhatsApp, API setup page); `WHATSAPP_TEMPLATE` and
+   `WHATSAPP_TEMPLATE_LANGUAGE` only if the template's name or language differ. Redeploy.
+5. Check: `POST /v1/admin/providers/check` lists `whatsapp` up; Settings · Apps offers "Add a
+   phone number", and the code arrives on that number's WhatsApp within seconds. Each code is a
+   paid authentication conversation (Meta's price for the number's country).
+
 ### 4. Continuous deployment
 
 Every push to `main` runs CI (lint, typecheck, 230+ tests on real Postgres, the web budget, the

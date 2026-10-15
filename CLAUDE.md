@@ -992,6 +992,17 @@ These are rules, not preferences.
   `caiSettings` both honour: anything new that learns from choices reads it too. Settings · Cai
   (`settings/cai.tsx`) is the one place for what Cai keeps or knows; the learning switch lives
   there. A conversation opened with `?say=` puts the words in the composer once.
+- Own addresses (R91, `lib/addresses.ts`, `modules/addresses.ts`): an email or phone number
+  someone adds is a row of `own_addresses` that counts for nothing until its code comes back
+  (`verifyAddress`: hashed, `ADDRESS_CODE_MINUTES`, `ADDRESS_CODE_TRIES` counted in the
+  database); proven, it's one person's alone (the partial unique index), and who an email is goes
+  through `personByAddress` (the sign-in, else a proven one), read by Caime Mail's `senderOf`,
+  and by `provenEmailHolders` for the contacts match and search's `own_addresses` clause. A new
+  reader of "who is this address" uses them, never `users.email` alone. A phone's code goes over
+  WhatsApp (`lib/whatsapp.ts`, Meta's Cloud API, its template, a provider-health probe), the
+  email's by `ctx.mail` after the response. Mail from one's own address to one's own Caime
+  address lands in one's Cai chat and is never answered (`effectsOf` skips a `mail` message
+  there). The app's rows are `features/apps/Addresses.tsx`, inside the one "Your accounts" list.
 - An organization's AI agent is `lib/agent.ts`: a customer's message reaches it through
   `onCustomerMessage` (registered by `registerAgentJob`, so `lib/business.ts` never imports it),
   which queues the `agent.reply` job three seconds out. The job checks the thread is still its

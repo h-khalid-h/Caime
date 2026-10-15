@@ -287,6 +287,25 @@ const Env = z.object({
   GOOGLE_USERINFO_URL: z.string().url().default('https://openidconnect.googleapis.com/v1/userinfo'),
   GOOGLE_CALENDAR_API: z.string().url().default('https://www.googleapis.com/calendar/v3'),
   GOOGLE_REVOKE_URL: z.string().url().default('https://oauth2.googleapis.com/revoke'),
+  /**
+   * Phone numbers proven by a code over WhatsApp (R91): Meta's WhatsApp Business Platform, its
+   * Cloud API, with an approved authentication template. Off until the token and number are set.
+   */
+  WHATSAPP_TOKEN: z.string().min(20).optional(),
+  WHATSAPP_PHONE_NUMBER_ID: z
+    .string()
+    .regex(/^\d{6,30}$/)
+    .optional(),
+  WHATSAPP_TEMPLATE: z
+    .string()
+    .regex(/^[a-z0-9_]{1,512}$/)
+    .default('caime_code'),
+  /** The template's language as approved (one language: the code reads the same in any). */
+  WHATSAPP_TEMPLATE_LANGUAGE: z
+    .string()
+    .regex(/^[a-z]{2}(_[A-Z]{2})?$/)
+    .default('en_US'),
+  WHATSAPP_API: z.string().url().default('https://graph.facebook.com/v21.0'),
   /** Files from a connected Google account (R90): its Drive, and Google's picker's own key. */
   GOOGLE_DRIVE_API: z.string().url().default('https://www.googleapis.com/drive/v3'),
   /** A browser key limited to the Picker API and this site, and the project's number. */

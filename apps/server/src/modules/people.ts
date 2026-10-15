@@ -17,6 +17,7 @@ import type { FastifyInstance } from 'fastify';
 import { sql } from 'kysely';
 import { z } from 'zod';
 import type { AppContext } from '../context';
+import { provenEmailHolders } from '../lib/addresses';
 import { itemsFor, personHost } from '../lib/booking';
 import { busyNow } from '../lib/calendar';
 import { notFound } from '../lib/errors';
@@ -85,6 +86,10 @@ export async function peopleRoutes(app: FastifyInstance, ctx: AppContext) {
       .executeTakeFirstOrThrow();
     const now = ctx.now();
     const viewerIsMinor = minorOf(me, now);
+    const asked = [...new Set(emails)];
+    // An address someone proved theirs finds them as their sign-in does (R91), by the same rules.
+    const proven = await provenEmailHolders(ctx.db, asked);
+    const provenIds = [...new Set(proven.values())];
     const rows = await ctx.db
       .selectFrom('users as u')
       .leftJoin('connection_sides as s', (j) =>
@@ -95,7 +100,11 @@ export async function peopleRoutes(app: FastifyInstance, ctx: AppContext) {
       )
       .select(['u.id', 'u.email', 'u.birth_date', 'u.time_zone'])
       .select(sql<boolean>`c.id is not null`.as('is_connection'))
-      .where('u.email', 'in', [...new Set(emails)])
+      .where((eb) =>
+        provenIds.length
+          ? eb.or([eb('u.email', 'in', asked), eb('u.id', 'in', provenIds)])
+          : eb('u.email', 'in', asked),
+      )
       .where('u.id', '<>', auth.userId)
       .where('u.deleted_at', 'is', null)
       .where('u.suspended_at', 'is', null)
@@ -135,8 +144,10 @@ export async function peopleRoutes(app: FastifyInstance, ctx: AppContext) {
     for (const u of found) {
       const person = people.get(u.id);
       const pair = pairs.get(u.id);
-      if (!person || !pair || !u.email) continue;
-      matches.push({ email: u.email, person, connection: connectionState(pair) });
+      if (!person || !pair) continue;
+      const theirs = asked.filter((e) => e === u.email || proven.get(e) === u.id);
+      for (const email of theirs)
+        matches.push({ email, person, connection: connectionState(pair) });
     }
     return { matches };
   });
@@ -217,7 +228,8 @@ export async function peopleRoutes(app: FastifyInstance, ctx: AppContext) {
           ]),
           eb.and([
             sql<boolean>`coalesce((u.privacy->>'discoverByEmail')::boolean, false)`,
-            sql<boolean>`u.email = ${term}`,
+            // Their sign-in email, or an address they proved theirs (R91).
+            sql<boolean>`(u.email = lower(${term}) or exists (select 1 from own_addresses a where a.user_id = u.id and a.kind = 'email' and a.value = lower(${term}) and a.verified_at is not null))`,
           ]),
         ]),
       )

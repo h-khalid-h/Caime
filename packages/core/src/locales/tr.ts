@@ -3964,4 +3964,31 @@ export const turkish: Catalog = {
   'A file from {email}': '{email} hesabından bir dosya',
   'Attach a file from it in a conversation. Caime copies only the file you pick, as your own upload.':
     'Bir sohbete oradan dosya ekleyin. Caime yalnızca seçtiğiniz dosyayı, kendi yüklemeniz olarak kopyalar.',
+  '{address} is yours on Caime.': '{address} artık Caime’de sizin.',
+  'Enter the code': 'Kodu girin',
+  'Add a phone number': 'Telefon numarası ekle',
+  'Add an email address': 'E-posta adresi ekle',
+  'A code went to {address} on WhatsApp. It works for ten minutes.':
+    '{address} numarasına WhatsApp’tan bir kod gönderildi. On dakika geçerli.',
+  'A code went to {address}. It works for ten minutes.':
+    '{address} adresine bir kod gönderildi. On dakika geçerli.',
+  'A code goes to it on WhatsApp. Proven, people who have the number can find you by it.':
+    'Numaraya WhatsApp’tan bir kod gider. Kanıtlandığında, numaranızı bilenler sizi onunla bulabilir.',
+  'A code goes to it. Proven, mail from it is from you, and people who have it can find you by it.':
+    'Adrese bir kod gider. Kanıtlandığında, oradan gelen posta sizden sayılır ve adresi bilenler sizi onunla bulabilir.',
+  'Prove it': 'Kanıtla',
+  'Send the code': 'Kodu gönder',
+  Code: 'Kod',
+  'Phone number': 'Telefon numarası',
+  'Email address': 'E-posta adresi',
+  'With its country code.': 'Ülke koduyla birlikte.',
+  '{address} is removed': '{address} kaldırıldı',
+  'Your sign-in · Verified': 'Girişiniz · Doğrulandı',
+  'Your sign-in · Not confirmed yet': 'Girişiniz · Henüz onaylanmadı',
+  'Your Caime address · Mail to it lands in Caime':
+    'Caime adresiniz · Ona gelen posta Caime’ye düşer',
+  'Not proven yet': 'Henüz kanıtlanmadı',
+  'Proven by a code by email': 'E-postayla gelen kodla kanıtlandı',
+  'Proven by a code on WhatsApp': 'WhatsApp’tan gelen kodla kanıtlandı',
+  'Proven by a code by text message': 'SMS ile gelen kodla kanıtlandı',
 };

@@ -103,4 +103,12 @@ export const SUB_PROCESSORS: readonly SubProcessor[] = [
       'Those messages as mail carries them: the addresses, the subject, the words and any attachment.',
     when: 'configured',
   },
+  {
+    id: 'whatsapp',
+    name: 'Meta Platforms (WhatsApp Business Platform)',
+    does: 'Sends the one-time code that proves a phone number is yours, over WhatsApp.',
+    receives:
+      'The phone number you add and the code. No message of yours is read, from WhatsApp or anywhere.',
+    when: 'configured',
+  },
 ] as const;

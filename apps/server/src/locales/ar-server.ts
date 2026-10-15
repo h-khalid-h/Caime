@@ -1371,4 +1371,16 @@ export const arServer: Catalog = {
   'That isn’t offered for this account here.': 'هذا غير متاح لهذا الحساب هنا.',
   'That picker': 'أداة الاختيار تلك',
   'Pick a file': 'اختر ملفًا',
+  'That email belongs to someone else on Caime.': 'هذا البريد لشخص آخر على Caime.',
+  'That number belongs to someone else on Caime.': 'هذا الرقم لشخص آخر على Caime.',
+  'Phone numbers can’t be proven here yet. Try again later.':
+    'لا يمكن إثبات أرقام الهواتف هنا بعد. حاول لاحقًا.',
+  'That doesn’t look like an email address.': 'لا يبدو هذا عنوان بريد إلكتروني.',
+  'Write the number with its country code, like +20 101 234 5678.':
+    'اكتب الرقم مع رمز الدولة، مثل ‎+20 101 234 5678.',
+  'That’s already yours.': 'هذا لك بالفعل.',
+  'That’s as many as one person can add. Remove one first.':
+    'هذا أقصى ما يضيفه شخص واحد. أزل واحدًا أولًا.',
+  'That address': 'ذلك العنوان',
+  'That code isn’t right. Check it and try again.': 'هذا الرمز غير صحيح. تحقّق منه وحاول من جديد.',
 };

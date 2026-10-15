@@ -4669,4 +4669,33 @@ export const ar: Catalog = {
   'A file from {email}': 'ملف من {email}',
   'Attach a file from it in a conversation. Caime copies only the file you pick, as your own upload.':
     'أرفق منه ملفًا في محادثة. لا ينسخ Caime إلا الملف الذي تختاره، كأنك رفعته بنفسك.',
+  '{address} is yours on Caime.': '{address} لك على Caime الآن.',
+  'Enter the code': { toWoman: 'أدخلي الرمز', toMan: 'أدخل الرمز', other: 'أدخل الرمز' },
+  'Add a phone number': { toWoman: 'أضيفي رقم هاتف', toMan: 'أضف رقم هاتف', other: 'أضف رقم هاتف' },
+  'Add an email address': {
+    toWoman: 'أضيفي بريدًا إلكترونيًا',
+    toMan: 'أضف بريدًا إلكترونيًا',
+    other: 'أضف بريدًا إلكترونيًا',
+  },
+  'A code went to {address} on WhatsApp. It works for ten minutes.':
+    'أُرسل رمز إلى {address} على واتساب. يعمل لعشر دقائق.',
+  'A code went to {address}. It works for ten minutes.': 'أُرسل رمز إلى {address}. يعمل لعشر دقائق.',
+  'A code goes to it on WhatsApp. Proven, people who have the number can find you by it.':
+    'يصله رمز على واتساب. وبعد إثباته، يجدك به من لديه الرقم.',
+  'A code goes to it. Proven, mail from it is from you, and people who have it can find you by it.':
+    'يصله رمز. وبعد إثباته، يكون البريد الآتي منه منك، ويجدك به من لديه.',
+  'Prove it': { toWoman: 'أثبتيه', toMan: 'أثبته', other: 'أثبته' },
+  'Send the code': { toWoman: 'أرسلي الرمز', toMan: 'أرسل الرمز', other: 'أرسل الرمز' },
+  Code: 'الرمز',
+  'Phone number': 'رقم الهاتف',
+  'Email address': 'البريد الإلكتروني',
+  'With its country code.': 'مع رمز الدولة.',
+  '{address} is removed': 'أُزيل {address}',
+  'Your sign-in · Verified': 'لتسجيل الدخول · تم التوثيق',
+  'Your sign-in · Not confirmed yet': 'لتسجيل الدخول · لم يُؤكَّد بعد',
+  'Your Caime address · Mail to it lands in Caime': 'عنوانك على Caime · البريد إليه يصل إلى Caime',
+  'Not proven yet': 'لم يُثبت بعد',
+  'Proven by a code by email': 'أُثبت برمز عبر البريد',
+  'Proven by a code on WhatsApp': 'أُثبت برمز على واتساب',
+  'Proven by a code by text message': 'أُثبت برمز في رسالة نصية',
 };

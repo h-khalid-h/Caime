@@ -1305,4 +1305,17 @@ export const turkishServer: Catalog = {
   'That isn’t offered for this account here.': 'Bu, burada bu hesap için sunulmuyor.',
   'That picker': 'O seçici',
   'Pick a file': 'Bir dosya seçin',
+  'That email belongs to someone else on Caime.': 'Bu e-posta Caime’de başka birine ait.',
+  'That number belongs to someone else on Caime.': 'Bu numara Caime’de başka birine ait.',
+  'Phone numbers can’t be proven here yet. Try again later.':
+    'Telefon numaraları burada henüz kanıtlanamıyor. Daha sonra yeniden deneyin.',
+  'That doesn’t look like an email address.': 'Bu bir e-posta adresine benzemiyor.',
+  'Write the number with its country code, like +20 101 234 5678.':
+    'Numarayı ülke koduyla yazın, örneğin +20 101 234 5678.',
+  'That’s already yours.': 'Bu zaten sizin.',
+  'That’s as many as one person can add. Remove one first.':
+    'Bir kişinin ekleyebileceği en fazla bu kadar. Önce birini kaldırın.',
+  'That address': 'Bu adres',
+  'That code isn’t right. Check it and try again.':
+    'Bu kod doğru değil. Kontrol edip yeniden deneyin.',
 };

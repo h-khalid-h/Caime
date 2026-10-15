@@ -14,7 +14,7 @@ export interface Mail {
   subject: string;
   text: string;
   /** What kind of mail, for the log: never the subject, which carries a code. */
-  kind?: 'verification' | 'reset' | 'invitation';
+  kind?: 'verification' | 'reset' | 'invitation' | 'address';
   /** A calendar invitation (R84), sent as its own part so mail apps offer Accept and Decline. */
   icalEvent?: { method: 'REQUEST' | 'CANCEL'; content: string };
   /** Who it's from when not `EMAIL_FROM`: Cai's own address, for a meeting's invitations (R86). */

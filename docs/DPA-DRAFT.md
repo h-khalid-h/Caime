@@ -147,6 +147,7 @@ sub-processor does (the GDPR's Article 28(2) and (4)).
 | The mail provider the operator sets (`MAIL_PROVIDER`: ActiveCampaign, LLC (Postmark); PRODUCT-REVIEW R75) | Receives mail sent to Caime addresses, and sends as mail the replies written on Caime. | Those messages as mail carries them: the addresses, the subject, the words and any attachment. Nothing from a conversation not reached by mail, and nothing from a private one, ever. | When configured |
 | Cloudflare, Inc. | Relays calls that can’t connect directly between two devices. | Both devices’ network addresses, and the call’s media still encrypted end to end. | When configured, during a call |
 | The email provider the operator sets (SMTP), on cai.me ActiveCampaign, LLC (Postmark) | Sends Caime’s mail: a confirmation code, a password reset link. | An email address and the message, which carries no conversation. | When configured |
+| Meta Platforms (WhatsApp Business Platform) | Sends the one-time code that proves a phone number is a person’s own, over WhatsApp (PRODUCT-REVIEW R91). | The phone number added and the code; no message is read, from WhatsApp or anywhere. | When configured |
 
 ## 8. Assisting with data subjects' rights
 
@@ -238,7 +239,8 @@ the EEA: Cloudflare, Inc. (United States) under the EU-U.S. Data Privacy Framewo
 standard contractual clauses in its DPA as fallback; Anthropic, PBC (United States) under the
 standard contractual clauses incorporated in its Data Processing Addendum; Stripe Payments Europe
 (Ireland) within the EEA, its group's onward transfers under its own; Expo (650 Industries, Inc.,
-United States) and ActiveCampaign, LLC (Postmark, United States) under the Data Privacy Framework
+United States), ActiveCampaign, LLC (Postmark, United States) and Meta Platforms, Inc. (WhatsApp,
+United States) under the Data Privacy Framework
 where certified, else the standard contractual clauses in their terms (⛔ the owner confirms each
 on the Framework's list before the provider is turned on). A copy of each safeguard is available
 from `CONTACT_EMAIL`. An Organization outside the EEA (in Egypt, Saudi Arabia or the UAE) receives

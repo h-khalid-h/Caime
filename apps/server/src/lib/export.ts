@@ -112,6 +112,7 @@ export async function buildExport(ctx: AppContext, me: string, now: Date) {
     connectedApps,
     calendarFeed,
     connectedAccounts,
+    ownAddresses,
     automations,
     saved,
     visible,
@@ -830,6 +831,12 @@ export async function buildExport(ctx: AppContext, me: string, now: Date) {
       .orderBy('created_at')
       .execute(),
     db
+      .selectFrom('own_addresses')
+      .select(['kind', 'value', 'method', 'verified_at', 'created_at'])
+      .where('user_id', '=', me)
+      .orderBy('created_at')
+      .execute(),
+    db
       .selectFrom('automations')
       .selectAll()
       .where('user_id', '=', me)
@@ -1513,6 +1520,14 @@ export async function buildExport(ctx: AppContext, me: string, now: Date) {
       uses: a.uses,
       connectedAt: a.created_at.toISOString(),
       calendarReadAt: iso(a.synced_at),
+    })),
+    // The email addresses and phone numbers you added as yours (R91), and how each was proven.
+    ownAddresses: ownAddresses.map((a) => ({
+      kind: a.kind,
+      value: a.value,
+      provenBy: a.method,
+      provenAt: iso(a.verified_at),
+      addedAt: a.created_at.toISOString(),
     })),
     // What you set Caime to keep, and what it kept or you saved (PRD §69).
     automations: automations.map((a) => {

@@ -5,6 +5,7 @@
 
 import type { PersonalScope } from '@caime/core/access';
 import type { AccountProvider, AccountUse } from '@caime/core/accounts';
+import type { AddressKind } from '@caime/core/addresses';
 import type {
   AboutView,
   AccountFilesResponse,
@@ -113,6 +114,8 @@ import type {
   OrgsResponse,
   OrgUpdateResponse,
   OrgUpdatesView,
+  OwnAddressesResponse,
+  OwnAddressResponse,
   PasskeyCeremonyResponse,
   PasskeyResponse,
   PasskeySignInOptionsResponse,
@@ -582,6 +585,13 @@ export const endpoints = {
     api.post<PersonalTokenCreatedResponse>(`/me/bridges/${id}`, body),
   disconnectBridge: (id: string) => api.del<OkResponse>(`/me/bridges/${id}`),
   removeConnectedApp: (grantId: string) => api.del<OkResponse>(`/me/connected-apps/${grantId}`),
+  /** Email addresses and phone numbers someone adds as theirs, each proven by a code (R91). */
+  addresses: () => api.get<OwnAddressesResponse>('/me/addresses'),
+  addAddress: (body: { kind: AddressKind; value: string }) =>
+    api.post<OwnAddressResponse>('/me/addresses', body),
+  verifyAddress: (id: string, code: string) =>
+    api.post<OwnAddressResponse>(`/me/addresses/${id}/verify`, { code }),
+  removeAddress: (id: string) => api.del<OkResponse>(`/me/addresses/${id}`),
   /** Google and Microsoft accounts connected for their uses (R90), and the ones offered here. */
   accounts: () => api.get<ConnectedAccountsResponse>('/me/accounts'),
   startAccount: (provider: AccountProvider, body: { uses: AccountUse[]; back: 'web' | 'app' }) =>

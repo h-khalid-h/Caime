@@ -40,6 +40,8 @@ export function processorsFor(config: Config): SubProcessor[] {
     if (p.id === 'expo') list.push(p);
     const mail = p.id === 'mail' ? mailSender(config.SMTP_URL) : null;
     if (mail) list.push({ ...p, name: mail });
+    if (p.id === 'whatsapp' && config.WHATSAPP_TOKEN && config.WHATSAPP_PHONE_NUMBER_ID)
+      list.push(p);
     if (p.id === 'mail-in' && mailOn(config) && config.MAIL_PROVIDER)
       list.push({ ...p, name: MAIL_PROVIDER_NAMES[config.MAIL_PROVIDER] });
   }

@@ -24,6 +24,7 @@ import { s3Head } from './s3';
 import { SPEECH_PROVIDER_NAMES } from './speech';
 import { filesBucket } from './storage';
 import { stripe } from './stripe';
+import { whatsappFor } from './whatsapp';
 
 export const PROVIDERS = [
   'stripe',
@@ -36,6 +37,7 @@ export const PROVIDERS = [
   'files-s3',
   'backup-s3',
   'dns',
+  'whatsapp',
 ] as const;
 export type ProviderId = (typeof PROVIDERS)[number];
 
@@ -85,6 +87,9 @@ export function providerProbes(ctx: AppContext): ProviderProbe[] {
       name: SPEECH_PROVIDER_NAMES[speech.provider],
       check: () => speech.ping(),
     });
+  const whatsapp = whatsappFor(config);
+  if (whatsapp)
+    probes.push({ id: 'whatsapp', name: 'WhatsApp (Meta)', check: () => whatsapp.ping() });
   const mail = ctx.mail;
   if (mail && config.SMTP_URL)
     probes.push({ id: 'smtp', name: hostOf(config.SMTP_URL), check: () => mail.verify() });

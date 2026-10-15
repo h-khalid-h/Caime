@@ -51,6 +51,7 @@ import { registerUpdateJobs } from './lib/updates';
 import { accountRoutes } from './modules/account';
 import { connectedAccountRoutes } from './modules/accounts';
 import { actionRoutes } from './modules/actions';
+import { addressRoutes } from './modules/addresses';
 import { adminRoutes } from './modules/admin';
 import { agentRoutes } from './modules/agents';
 import { aiRoutes } from './modules/ai';
@@ -304,6 +305,7 @@ export async function buildApp(config: Config, options: BuildOptions = {}): Prom
       await connectionRoutes(v1, ctx);
       await contactRoutes(v1, ctx);
       await connectedAccountRoutes(v1, ctx);
+      await addressRoutes(v1, ctx);
       await inviteRoutes(v1, ctx);
       await relationshipRoutes(v1, ctx);
       await policyRoutes(v1, ctx);
