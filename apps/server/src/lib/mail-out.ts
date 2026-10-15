@@ -114,8 +114,12 @@ async function send(ctx: AppContext, payload: Record<string, unknown>): Promise<
       .where('id', '=', m.sender_id)
       .executeTakeFirstOrThrow(),
   ]);
-  // A person's words go out as theirs; in a customer thread, as the organization's.
-  if (sender.kind !== 'human') return;
+  // A person's words go out as theirs; in a customer thread, as the organization's, and there
+  // its AI agent's and its apps' too (R75): they speak for it, and a customer who wrote by mail
+  // hears from it only by mail.
+  const speaksForOrg =
+    conversation.kind === 'business' && (sender.kind === 'agent' || sender.kind === 'bot');
+  if (sender.kind !== 'human' && !speaksForOrg) return;
   let from = { address: mailAddressOf(sender.handle, ctx.config) ?? '', name: sender.display_name };
   if (conversation.kind === 'business') {
     if (!conversation.org_id) return;

@@ -1684,9 +1684,13 @@ discovers, and mail at their own address.
       and server), the catalog tests, `e2e/arabic.spec.ts`. Not done: feminine forms of the longer
       Arabic sentences (a native reviewer's), French reader-addressed forms (none exist yet), the
       Arabic varieties' voice lines by gender.
+- [x] R75 phase 2, the agent answering by mail: a customer who writes to an organization's
+      Caime address is answered by its AI agent, introduced as an AI, as mail from the
+      organization's address (an app's replies there too). Its replies had been dropped by the
+      send job, which took only a person's words. Verified with `mail-agent.test.ts`.
 - [ ] R75 phase 2: notices (no-reply senders, bulk mail) under Notices, HTML as sent in a
       sandbox, reply-all with CC, sending as the address from Gmail and Outlook through Caime's
-      submission, the agent answering by mail.
+      submission.
 - [ ] R75 phase 3: sign in with Google, Apple and Microsoft (claiming in one tap); Google
       Calendar and Outlook calendar sync as apps in Discover; a verified organization receiving
       at its own domain.
@@ -3362,3 +3366,5 @@ The six-slice review's plan, in its order; a block is ticked when its tests and 
   branch's address on the card, its name on the public page and in the agent's catalog.
 - 2026-10-15 — R91: people found by a proven phone number, from contacts and People search, by
   its own privacy switch.
+- 2026-10-15 — R75: an organization's AI agent (and its apps) answer a customer by mail when the
+  customer wrote by mail; the send job had dropped every word not a person's.

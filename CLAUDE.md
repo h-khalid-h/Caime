@@ -1306,7 +1306,8 @@ These are rules, not preferences.
   that keeps coming, held; threads are topics by References, else by `bareSubject`; attachments
   go through `storeBytes` in `lib/files.ts`, where the upload routes' finaliser lives too) and
   `lib/mail-out.ts` (`queueMailOut` from `effectsOf`: a person's words and files to each
-  provisional member, the `mail.send` job from the person's or the organization's address in
+  provisional member, and in a customer thread the agent's and apps' words too, as the
+  organization's (`speaksForOrg`; `mail-agent.test.ts`), the `mail.send` job from the person's or the organization's address in
   the thread, `sent` then `delivered` or `bounced` by `applyMailEvents`; `mail.sweep` daily). A
   message that came or went as mail has `messages.channel = 'mail'` and a `mail_messages` row
   (`MessageView.mail`); erasure clears its subject and sender address. A provisional sender is
