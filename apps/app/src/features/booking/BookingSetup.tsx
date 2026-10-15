@@ -54,6 +54,7 @@ import CalendarCheck from 'lucide-react-native/icons/calendar-check';
 import HandCoins from 'lucide-react-native/icons/hand-coins';
 import ImageIcon from 'lucide-react-native/icons/image';
 import Layers from 'lucide-react-native/icons/layers';
+import MapPin from 'lucide-react-native/icons/map-pin';
 import Plus from 'lucide-react-native/icons/plus';
 import ShoppingBag from 'lucide-react-native/icons/shopping-bag';
 import Tag from 'lucide-react-native/icons/tag';
@@ -74,6 +75,7 @@ import { Text } from '@/ui/Text';
 import { TextField } from '@/ui/TextField';
 import { TimeField } from '@/ui/TimeField';
 import { toast } from '@/ui/Toast';
+import { BranchHours } from './BranchHours';
 import { draftsOf, ItemOptionsEditor, type OptionDraft, optionsFrom } from './ItemOptionsEditor';
 import { ItemPhoto } from './ItemPhoto';
 
@@ -115,6 +117,8 @@ export interface BookingHostInfo {
   team?: Array<{ id: string; name: string }>;
   /** Whose catalog, for its items' photos (R63). */
   ref?: { kind: 'org' | 'person'; id: string };
+  /** An organization's places its customers may see (R92): where an item may be done. */
+  branches?: Array<{ id: string; name: string }>;
 }
 
 /** "Haircut · 45 min · EGP 200 · Everyone": an item in one line. */
@@ -243,8 +247,9 @@ export function BookingSetup({
       days: [...days].sort((a, b) => a - b).map((weekday) => ({ weekday, start, end })),
       leadMinutes: lead,
       horizonDays: horizon,
-      // What items share (R58) stays as it is.
+      // What items share (R58) and a branch's own days (R92) stay as they are.
       ...(hours?.resources?.length ? { resources: hours.resources } : {}),
+      ...(hours?.placeHours?.length ? { placeHours: hours.placeHours } : {}),
     });
   };
   const saveItems = async (next: BookingItem[], change?: { id: string; stock: number | null }) => {
@@ -272,6 +277,15 @@ export function BookingSetup({
         i.resourceId && !kept.has(i.resourceId) ? { ...i, resourceId: null } : i,
       ),
     });
+  };
+  // A branch's own days (R92): none kept, it opens when the organization does.
+  const [branch, setBranch] = useState<{ id: string; name: string } | null>(null);
+  const saveBranchDays = async (placeId: string, own: BookingHours['days'] | null) => {
+    if (!hours) return;
+    const rest = (hours.placeHours ?? []).filter((p) => p.placeId !== placeId);
+    const placeHours = own ? [...rest, { placeId, days: own }] : rest;
+    const { placeHours: _was, ...base } = hours;
+    await send({ ...offer, booking: placeHours.length ? { ...base, placeHours } : base });
   };
   // Collections (R61): a shelf removed leaves its items in none.
   const [shelf, setShelf] = useState<CatalogCollection | null>(null);
@@ -336,6 +350,26 @@ export function BookingSetup({
           testID={`${testID}-add-resource`}
         />
       ) : null}
+      {hours
+        ? (host.branches ?? []).map((b) => {
+            const own = hours.placeHours?.find((p) => p.placeId === b.id);
+            return (
+              <ListRow
+                key={b.id}
+                icon={MapPin}
+                title={tr('Hours at {place}', { place: b.name })}
+                subtitle={
+                  own
+                    ? describeHours({ ...hours, days: own.days }, host.weekStart)
+                    : tr('Same as the organization’s')
+                }
+                chevron
+                onPress={() => setBranch(b)}
+                testID={`${testID}-branch-${b.id}`}
+              />
+            );
+          })
+        : null}
       <ListRow
         icon={ShoppingBag}
         title={
@@ -649,6 +683,19 @@ export function BookingSetup({
           ) : null}
         </View>
       </Sheet>
+      {branch && hours ? (
+        <BranchHours
+          branch={branch}
+          hours={hours}
+          weekStart={host.weekStart}
+          onClose={() => setBranch(null)}
+          onSave={async (own) => {
+            await saveBranchDays(branch.id, own);
+            setBranch(null);
+          }}
+          testID={`${testID}-branch-hours`}
+        />
+      ) : null}
       {shared ? (
         <ResourceEditor
           resource={shared}
@@ -1365,6 +1412,8 @@ function ItemEditor({
   const [collectionId, setCollectionId] = useState<string | null>(item.collectionId);
   // What it shares with other items (R58), for something held at a time.
   const [resourceId, setResourceId] = useState<string | null>(item.resourceId ?? null);
+  // Where it's done (R92): one of an organization's branches, or wherever.
+  const [placeId, setPlaceId] = useState<string | null>(item.placeId ?? null);
   // Its photo (R63): the one it has, or one just uploaded (shown by the file's own address).
   const [photoFileId, setPhotoFileId] = useState<string | null>(item.photoFileId ?? null);
   const [photoPreview, setPhotoPreview] = useState<string | null>(
@@ -1446,6 +1495,8 @@ function ItemEditor({
           // Something ordered by the piece holds no time, so it shares nothing.
           resourceId:
             unit !== 'each' && resources.some((r) => r.id === resourceId) ? resourceId : null,
+          placeId:
+            unit !== 'each' && (host.branches ?? []).some((b) => b.id === placeId) ? placeId : null,
           photoFileId,
           ...(chosen.length ? { options: chosen } : {}),
         },
@@ -1554,6 +1605,27 @@ function ItemEditor({
                 })),
               ]}
               testID={`${testID}-collection-of`}
+            />
+          </View>
+        ) : null}
+        {host.branches?.length && unit !== 'each' ? (
+          <View style={{ gap: 6 }}>
+            <Text variant="label">{tr('Where')}</Text>
+            <ChoiceChips
+              wrap
+              flush
+              label={tr('Where')}
+              value={placeId ?? 'none'}
+              onChange={(v) => setPlaceId(v === 'none' ? null : v)}
+              options={[
+                { value: 'none', label: tr('Wherever'), testID: `${testID}-anywhere` },
+                ...host.branches.map((b) => ({
+                  value: b.id,
+                  label: b.name,
+                  testID: `${testID}-at-${b.id}`,
+                })),
+              ]}
+              testID={`${testID}-where`}
             />
           </View>
         ) : null}

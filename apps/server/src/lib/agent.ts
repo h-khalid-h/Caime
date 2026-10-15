@@ -41,6 +41,7 @@ import { inLanguage, languageOf } from './i18n';
 import { enqueue, registerJob } from './jobs';
 import { messagePreview } from './messages';
 import { notify } from './notify';
+import { bookablePlaceLines } from './places';
 import { agentRepliesToday } from './plans';
 import { postAs } from './post-as';
 import { stockFor, withStock } from './stock';
@@ -492,7 +493,10 @@ export async function agentReply(ctx: AppContext, payload: Record<string, unknow
   const slots = open
     ? open.slots.map((d) => `${d.toISOString()} · ${slotLine(d, open.hours.timeZone)}`).join('\n')
     : null;
-  const catalog = catalogLines(items);
+  const catalog = catalogLines(
+    items,
+    items.some((i) => i.placeId) ? await bookablePlaceLines(ctx, host.id) : undefined,
+  );
   const reply = await askAgent(
     ctx,
     'agent',

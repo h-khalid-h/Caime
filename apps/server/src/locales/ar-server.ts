@@ -1389,6 +1389,8 @@ export const arServer: Catalog = {
   'Writing to an address by email is for people over 18.':
     'المراسلة بالبريد الإلكتروني لمن تجاوز 18 عامًا.',
   'Someone on Caime uses that address. Ask them for their handle.':
-    'هذا العنوان لشخص على Caime. اطلب منه اسم المستخدم.',
+    'هذا العنوان لشخص على Caime. اطلب اسم المستخدم من صاحب العنوان.',
   'That kind of place isn’t offered here.': 'هذا النوع من الأماكن غير متاح هنا.',
+  'Only an organization’s items are done at its places.': 'عناصر المؤسسة وحدها تُقدَّم في أماكنها.',
+  'Choose one of your places that customers may see.': 'اختر أحد أماكنك التي يراها العملاء.',
 };

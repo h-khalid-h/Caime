@@ -4,7 +4,7 @@
  */
 import { tr } from '@caime/core/i18n';
 import type { Audience } from '@caime/core/privacy';
-import { SPHERE_DEFS, type Sphere } from '@caime/core/taxonomy';
+import type { Sphere } from '@caime/core/taxonomy';
 import { useState } from 'react';
 import { View } from 'react-native';
 import { Button } from '@/ui/Button';

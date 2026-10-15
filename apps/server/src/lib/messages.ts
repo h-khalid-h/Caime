@@ -1021,6 +1021,9 @@ export async function sendMessage(
         slotAsk = { host: found.host, booker: found.booker, ask, start };
         // A priced booking is a card about money whoever books it (the team for a customer too).
         if (booking.price) await assertAllAdults(tr('Paid bookings are for people over 18.'));
+        // Booked at a branch (R92): the card says where, unless the booker wrote it already.
+        if (typeof booking.where === 'string' && !card.fields.place)
+          card.fields.place = booking.where;
       }
       if (orderAsk) {
         // Checked against the counts now (a quick refusal), and taken under their locks below.

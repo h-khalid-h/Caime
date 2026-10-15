@@ -1489,8 +1489,12 @@ listed there with its owner.
       customer's address (`deliverTo`, copied, shown on the card), a Location card is one of the
       places (its words and its point, copied, never live), and both exports carry them.
       Verified with `places.test.ts` (core and server) and `e2e/places.spec.ts`.
-- [ ] R92 next: an organization's branches as booking hosts (hours, items and providers per
-      branch).
+- [x] R92 branches as booking hosts: an item at one of the organization's places (customers'
+      or everyone's), a branch's own days (`placeHours`, core `hoursFor`), the branch's address
+      copied into the appointment's "Where" (`AppointmentBooking.where`), named on the public
+      page when it's everyone's and in the agent's catalog; a place let go of or kept for the team
+      leaves its items done wherever. Verified with core `booking.test.ts`, `branches.test.ts`
+      and `e2e/branches.spec.ts`.
 - [x] R93 writing to an address that isn't on Caime (PRODUCT-REVIEW R93): an email address typed in
       Search or Connect offers "Write to … by email" (`POST /conversations/by-email`,
       `openMailConversation` in `lib/provisional.ts`, one provisional person per address shared with
@@ -3349,3 +3353,5 @@ The six-slice review's plan, in its order; a block is ticked when its tests and 
   new over HTTP every 20 to 60 s when it's in front, saying so in the banner (`delayed`).
 - 2026-10-15 — R92: a place shared as a Location card (the place's words and point copied, never
   live), from the card's form beside "Use where I am now".
+- 2026-10-15 — R92 branches as booking hosts: items at a branch, a branch's own days, the
+  branch's address on the card, its name on the public page and in the agent's catalog.

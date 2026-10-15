@@ -1387,4 +1387,8 @@ export const frServer: Catalog = {
   'Someone on Caime uses that address. Ask them for their handle.':
     'Quelqu’un sur Caime utilise cette adresse. Demandez-lui son identifiant.',
   'That kind of place isn’t offered here.': 'Ce type de lieu n’est pas proposé ici.',
+  'Only an organization’s items are done at its places.':
+    'Seuls les articles d’une organisation se font dans ses lieux.',
+  'Choose one of your places that customers may see.':
+    'Choisissez un de vos lieux que les clients peuvent voir.',
 };

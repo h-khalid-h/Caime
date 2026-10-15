@@ -1497,6 +1497,24 @@ const SlotMinutesSchema = z.union([
   z.literal(120),
 ]);
 
+/** A host's days (R51): a range each, each weekday once. */
+const BookingDays = z
+  .array(
+    z
+      .object({
+        weekday: z.number().int().min(0).max(6),
+        start: HHMM,
+        end: HHMM,
+      })
+      .strict()
+      .refine((d) => d.start < d.end, { message: msg('A day ends after it starts.') }),
+  )
+  .min(1)
+  .max(7)
+  .refine((days) => new Set(days.map((d) => d.weekday)).size === days.length, {
+    message: msg('One range for each day.'),
+  });
+
 /** A host's bookable hours (R51), or null to take bookings off. */
 export const BookingHoursBody = z
   .object({
@@ -1516,22 +1534,7 @@ export const BookingHoursBody = z
         { message: msg('That isn’t a time zone.') },
       ),
     slotMinutes: SlotMinutesSchema,
-    days: z
-      .array(
-        z
-          .object({
-            weekday: z.number().int().min(0).max(6),
-            start: HHMM,
-            end: HHMM,
-          })
-          .strict()
-          .refine((d) => d.start < d.end, { message: msg('A day ends after it starts.') }),
-      )
-      .min(1)
-      .max(7)
-      .refine((days) => new Set(days.map((d) => d.weekday)).size === days.length, {
-        message: msg('One range for each day.'),
-      }),
+    days: BookingDays,
     leadMinutes: z.number().int().min(0).max(10_080),
     horizonDays: z.number().int().min(1).max(90),
     /** What several items share (R58): left out, there's none. */
@@ -1548,6 +1551,14 @@ export const BookingHoursBody = z
       .max(RESOURCES_MAX)
       .refine((rs) => new Set(rs.map((r) => r.id)).size === rs.length, {
         message: msg('Each shared resource once.'),
+      })
+      .optional(),
+    /** A branch's own days (R92), one of the host's places each: left out, there's none. */
+    placeHours: z
+      .array(z.object({ placeId: z.string().uuid(), days: BookingDays }).strict())
+      .max(PLACES_MAX)
+      .refine((ps) => new Set(ps.map((p) => p.placeId)).size === ps.length, {
+        message: msg('Each place’s hours once.'),
       })
       .optional(),
   })
@@ -1638,6 +1649,8 @@ export const BookingItemBody = z
     stock: z.number().int().min(0).max(STOCK_MAX).nullable().optional(),
     // R60: a size to choose, extras to add, for something ordered by the piece.
     options: z.array(ItemOptionBody).max(ITEM_OPTIONS_MAX).optional(),
+    // R92: where it's done, one of the host's places; none, wherever the host is.
+    placeId: z.string().uuid().nullable().default(null),
   })
   .strict()
   .refine((i) => i.unit === 'each' || i.stock == null, {

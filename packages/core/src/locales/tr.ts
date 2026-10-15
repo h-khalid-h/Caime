@@ -4043,4 +4043,11 @@ export const turkish: Catalog = {
     'Şu an bağlı kalınamıyor. Yeni mesajlar yine gelir, biraz gecikmeyle.',
   'The place is shared as it’s written, never where you are.':
     'Yer yazıldığı gibi paylaşılır, bulunduğunuz yer asla.',
+  'Hours at {place}': '{place} saatleri',
+  'In {timeZone}. Its items are booked on these days.':
+    '{timeZone} saatiyle. Öğeleri bu günlerde rezerve edilir.',
+  'Same as the organization’s': 'Kuruluşunkiyle aynı',
+  Wherever: 'Herhangi bir yerde',
+  'At {place}': '{place} konumunda',
+  'Each place’s hours once.': 'Her yerin saatleri bir kez.',
 };

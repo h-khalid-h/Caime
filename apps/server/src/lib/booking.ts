@@ -41,6 +41,7 @@ import { humanTeam } from './booking-team';
 import { orgBookings } from './calendar';
 import { AppError, badRequest, forbidden } from './errors';
 import { busyElsewhere } from './external-busy';
+import { bookablePlaceIds, bookingWhere } from './places';
 import { soldOut } from './stock';
 import { cardsAhead } from './upcoming';
 
@@ -462,6 +463,10 @@ export async function bookingFor(
     endAt: end.toISOString(),
     providerId: ask.providerId ?? null,
     providerName: null,
+    // Where (R92): the branch's address as written now, copied into the card.
+    ...(host.kind === 'org' && item.placeId
+      ? { where: await bookingWhere(ctx, host.id, item.placeId) }
+      : {}),
   };
 }
 
@@ -550,6 +555,8 @@ export function catalogFrom(
       collectionId: i.collectionId && ids.has(i.collectionId) ? i.collectionId : null,
       resourceId:
         i.resourceId && i.unit !== 'each' && shared.has(i.resourceId) ? i.resourceId : null,
+      // Where it's done (R92) is for something booked at a time; `assertPlacesFit` checks it.
+      placeId: i.unit !== 'each' ? (i.placeId ?? null) : null,
     })),
     collections,
   ) as { items: BookingItem[]; collections: CatalogCollection[] };
@@ -591,6 +598,28 @@ export function assertItemsFit(
         if (!teamIds.has(p)) throw forbidden(tr('Only people on the team can be providers.'));
     }
   }
+}
+
+/**
+ * An organization's items and branches' days point at its own places, for its customers or
+ * everyone (R92): a booking copies the address to whoever booked. A person's catalog has none.
+ */
+export async function assertPlacesFit(
+  ctx: Pick<AppContext, 'db'>,
+  host: Pick<BookingHost, 'kind' | 'id'>,
+  items: BookingItem[],
+  hours: BookingHours | null,
+): Promise<void> {
+  const wanted = [
+    ...items.flatMap((i) => (i.placeId ? [i.placeId] : [])),
+    ...(hours?.placeHours ?? []).map((p) => p.placeId),
+  ];
+  if (wanted.length === 0) return;
+  if (host.kind === 'person')
+    throw forbidden(tr('Only an organization’s items are done at its places.'));
+  const open = await bookablePlaceIds(ctx, host.id);
+  if (wanted.some((id) => !open.has(id)))
+    throw badRequest(tr('Choose one of your places that customers may see.'));
 }
 
 /** "Thursday 8 October, 10:00" in the host's zone, for the agent and its customer. */
@@ -647,7 +676,11 @@ export function menuLines(all: BookingItem[]): string | null {
 }
 
 /** "<id> · Haircut · 45 min · EGP 200": the catalog as the agent reads it, one item per line. */
-export function catalogLines(all: BookingItem[]): string | null {
+export function catalogLines(
+  all: BookingItem[],
+  /** Where each place is (R92), for an item done at one. */
+  places: ReadonlyMap<string, string> = new Map(),
+): string | null {
   const items = all.filter(isBooked);
   if (items.length === 0) return null;
   return items
@@ -657,6 +690,7 @@ export function catalogLines(all: BookingItem[]): string | null {
         i.name,
         i.unit === 'minutes' ? `${i.minutes} min` : 'per day',
         i.price ? `${i.price.currency} ${i.price.value}` : 'free',
+        ...(i.placeId && places.get(i.placeId) ? [`at ${places.get(i.placeId)}`] : []),
       ].join(' · '),
     )
     .join('\n');

@@ -29,6 +29,7 @@ import { View } from 'react-native';
 import { endpoints } from '@/api/endpoints';
 import { useMyBooking, useSlots } from '@/api/hooks';
 import { qk } from '@/api/keys';
+import { branchName } from '@/features/booking/branchName';
 import { ItemPhoto } from '@/features/booking/ItemPhoto';
 import { CurrencyField } from '@/features/geo/CurrencyField';
 import { type Chosen, instantOf } from '@/features/when/when';
@@ -414,6 +415,19 @@ export function KitForm({
   const item: BookingItem | null =
     host?.items.find((i) => i.id === itemId) ??
     (host && host.items.length === 1 ? (host.items[0] ?? null) : null);
+  // Where it's done (R92): the branch, from the places this conversation shows its customer.
+  const placesHere = useQuery({
+    queryKey: qk.conversationPlaces(conversation.id),
+    queryFn: () => endpoints.conversationPlaces(conversation.id),
+    staleTime: 60_000,
+    enabled: Boolean(item?.placeId),
+  });
+  const branch = item?.placeId
+    ? (placesHere.data?.theirs
+        .flatMap((g) => g.places)
+        .concat(placesHere.data.mine)
+        .find((p) => p.id === item.placeId) ?? null)
+    : null;
   const [quantity, setQuantity] = useState(1);
   const slotWindow = useMemo(() => {
     const start = new Date();
@@ -1130,7 +1144,10 @@ export function KitForm({
                           ? tr('{m} min', { m: item.minutes ?? 0 })
                           : tr('Per day'),
                         price ? tr('{price}, not paid through Caime', { price }) : tr('Free'),
-                      ].join(' · ')}
+                        branch ? tr('At {place}', { place: branchName(branch) }) : null,
+                      ]
+                        .filter(Boolean)
+                        .join(' · ')}
                     </Text>
                   ) : null}
                 </View>

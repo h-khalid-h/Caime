@@ -4215,4 +4215,11 @@ export const fr: Catalog = {
     'Connexion instable pour le moment. Les nouveaux messages arrivent quand même, un peu plus tard.',
   'The place is shared as it’s written, never where you are.':
     'Le lieu est partagé tel qu’il est écrit, jamais l’endroit où vous êtes.',
+  'Hours at {place}': 'Horaires à {place}',
+  'In {timeZone}. Its items are booked on these days.':
+    'Fuseau {timeZone}. Ses articles se réservent ces jours-là.',
+  'Same as the organization’s': 'Comme ceux de l’organisation',
+  Wherever: 'N’importe où',
+  'At {place}': 'À {place}',
+  'Each place’s hours once.': 'Les horaires de chaque lieu une seule fois.',
 };

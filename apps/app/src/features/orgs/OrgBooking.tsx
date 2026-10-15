@@ -1,12 +1,13 @@
 /**
  * An organization's bookings (R51, R58), for its owner and admins: its hours and catalog,
  * through the one setup every host uses (features/booking/BookingSetup). Items may name who on
- * the team does them.
+ * the team does them and at which of its branches.
  */
 import type { OrgView } from '@caime/core/api';
 import { useQueryClient } from '@tanstack/react-query';
 import { endpoints } from '@/api/endpoints';
 import { qk } from '@/api/keys';
+import { branchName } from '@/features/booking/branchName';
 import { lazyPart } from '@/ui/Lazy';
 
 // Shared with Settings · Bookings: loaded when shown, so it sits in neither route's chunk nor
@@ -29,6 +30,10 @@ export function OrgBooking({ org }: { org: OrgView }) {
         payKinds: org.payKinds,
         team: (org.members ?? []).map((m) => ({ id: m.userId, name: m.person.displayName })),
         ref: { kind: 'org', id: org.id },
+        // Where its items may be done (R92): its places customers may see.
+        branches: (org.places ?? [])
+          .filter((p) => p.orgAudience !== 'team')
+          .map((p) => ({ id: p.id, name: branchName(p) })),
       }}
       offer={{
         booking: org.booking,

@@ -8,7 +8,8 @@
 import type { PlaceInput } from '@caime/core';
 import { type Audience, uuidv7 } from '@caime/core';
 import type { ConversationPlacesResponse, PlaceView } from '@caime/core/api';
-import { tr } from '@caime/core/i18n';
+import type { BookingHours, BookingItem } from '@caime/core/booking';
+import { currentTranslator, tr } from '@caime/core/i18n';
 import {
   ORG_PLACE_KINDS,
   type OrgPlaceAudience,
@@ -16,13 +17,14 @@ import {
   PERSON_PLACE_KINDS,
   type PlaceKind,
   placeAudienceFor,
+  placeLine,
   placeVisible,
 } from '@caime/core/places';
 import type { z } from 'zod';
 import type { AppContext } from '../context';
 import type { PlacesTable } from '../db/schema';
 import { badRequest } from './errors';
-import { isCountry } from './geo';
+import { countryNameIn, isCountry } from './geo';
 import { viewerRelation } from './relations';
 import { minorOf } from './users';
 
@@ -218,6 +220,17 @@ export async function savePlaces(
     }
     const gone = [...ids].filter((id) => !kept.has(id));
     if (gone.length) await trx.deleteFrom('places').where('id', 'in', gone).execute();
+    // An organization's items and hours point only at places its customers may see (R92): one
+    // gone, or now its team's alone, is let go of there in the same save.
+    if (!isPerson) {
+      const open = await trx
+        .selectFrom('places')
+        .select('id')
+        .where('org_id', '=', owner.orgId)
+        .where('org_audience', '!=', 'team')
+        .execute();
+      await letGoOfPlaces(trx, owner.orgId, new Set(open.map((r) => r.id)), now);
+    }
   });
   return placesOwnedBy(ctx, isPerson ? { userId: owner.userId } : { orgId: owner.orgId });
 }
@@ -250,4 +263,100 @@ export async function conversationPlaces(
     }
   }
   return { mine, theirs };
+}
+
+/**
+ * The places an organization's bookings may be at (R92): its own, for its customers or for
+ * everyone, never its team's alone, since a booking copies the address to its customer.
+ */
+export async function bookablePlaceIds(
+  ctx: Pick<AppContext, 'db'>,
+  orgId: string,
+): Promise<Set<string>> {
+  const rows = await ctx.db
+    .selectFrom('places')
+    .select('id')
+    .where('org_id', '=', orgId)
+    .where('org_audience', '!=', 'team')
+    .execute();
+  return new Set(rows.map((r) => r.id));
+}
+
+/** Drops an organization's items' and hours' pointers at places no longer among `open`. */
+async function letGoOfPlaces(
+  trx: Pick<AppContext, 'db'>['db'],
+  orgId: string,
+  open: Set<string>,
+  now: Date,
+): Promise<void> {
+  const org = await trx
+    .selectFrom('organizations')
+    .select(['booking', 'booking_items'])
+    .where('id', '=', orgId)
+    .executeTakeFirst();
+  if (!org) return;
+  const hours = (org.booking as BookingHours | null) ?? null;
+  const items = ((org.booking_items as BookingItem[] | null) ?? []) as BookingItem[];
+  const strayItem = items.some((i) => i.placeId && !open.has(i.placeId));
+  const strayHours = (hours?.placeHours ?? []).some((p) => !open.has(p.placeId));
+  if (!strayItem && !strayHours) return;
+  const placeHours = (hours?.placeHours ?? []).filter((p) => open.has(p.placeId));
+  await trx
+    .updateTable('organizations')
+    .set({
+      booking: hours
+        ? JSON.stringify({
+            ...hours,
+            ...(placeHours.length ? { placeHours } : { placeHours: undefined }),
+          })
+        : null,
+      booking_items: JSON.stringify(
+        items.map((i) => (i.placeId && !open.has(i.placeId) ? { ...i, placeId: null } : i)),
+      ),
+      updated_at: now,
+    })
+    .where('id', '=', orgId)
+    .execute();
+}
+
+/** Each bookable place's address, by id (R92): the agent's catalog says where each item is. */
+export async function bookablePlaceLines(
+  ctx: Pick<AppContext, 'db'>,
+  orgId: string,
+): Promise<Map<string, string>> {
+  const rows = await ctx.db
+    .selectFrom('places')
+    .select(COLUMNS)
+    .where('org_id', '=', orgId)
+    .where('org_audience', '!=', 'team')
+    .execute();
+  const language = currentTranslator().language;
+  return new Map(
+    rows.map((r) => [
+      r.id,
+      placeLine(placeView(r as Row, false), (code) => countryNameIn(code, language)),
+    ]),
+  );
+}
+
+/**
+ * Where a booking of an organization's item is (R92): its place's address, written in the
+ * request's language, to be copied into the card; null for an item done wherever.
+ */
+export async function bookingWhere(
+  ctx: Pick<AppContext, 'db'>,
+  orgId: string,
+  placeId: string | null | undefined,
+): Promise<string | null> {
+  if (!placeId) return null;
+  const row = await ctx.db
+    .selectFrom('places')
+    .select(COLUMNS)
+    .where('id', '=', placeId)
+    .where('org_id', '=', orgId)
+    .where('org_audience', '!=', 'team')
+    .executeTakeFirst();
+  if (!row) return null;
+  const language = currentTranslator().language;
+  return placeLine(placeView(row as Row, false), (code) => countryNameIn(code, language));
 }

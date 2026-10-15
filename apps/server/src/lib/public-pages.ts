@@ -138,6 +138,7 @@ export type PublicItem = Pick<
   | 'photoFileId'
   | 'stock'
   | 'options'
+  | 'placeId'
 >;
 export type PublicCollection = Pick<CatalogCollection, 'id' | 'slug' | 'name' | 'description'>;
 
@@ -177,6 +178,8 @@ function publicCatalog(
       photoFileId: i.photoFileId ?? null,
       ...(i.stock !== undefined ? { stock: i.stock } : {}),
       ...(i.options?.length ? { options: i.options } : {}),
+      // Where it's done (R92): named on a page only when that place is everyone's.
+      ...(i.placeId ? { placeId: i.placeId } : {}),
     }));
   const held = new Set(items.map((i) => i.collectionId));
   const collections = catalog.collections
@@ -872,6 +875,7 @@ export function renderPublic(
   <dl class="spec">
     <div>${label(tr('from'))}<dd><a href="${esc(hostPath(host))}">${esc(name)}</a></dd></div>
     <div>${label(item.unit === 'each' ? tr('price') : tr('booking'))}<dd>${esc(itemLine(item))}</dd></div>
+    ${placeOf(host, item) ? placeRow(placeOf(host, item) as PlaceView) : ''}
     ${optionRows(item)}
   </dl>
   <p class="cta">${bookLink([item], path, name, true)}<a href="${wayIn('sign-in', item.unit !== 'each' ? bookPath(path) : takeable(item) ? orderPath(path) : path)}" class="quiet">${esc(tr('Sign in'))}</a></p>
@@ -1038,7 +1042,13 @@ function payLink(host: PublicPerson | PublicOrg, pagePath: string, quiet: boolea
 }
 
 /** "45 min · EGP 200", "EGP 40 · 2 left": what an item is, in a line (R58, R60). */
-function itemLine(i: PublicItem): string {
+/** The place an item is done at (R92), when it's among those the page shows. */
+function placeOf(host: PublicPerson | PublicOrg, i: PublicItem): PlaceView | null {
+  if (host.kind !== 'org' || !i.placeId) return null;
+  return host.places.find((p) => p.id === i.placeId) ?? null;
+}
+
+function itemLine(i: PublicItem, at: PlaceView | null = null): string {
   return [
     i.unit === 'minutes' && i.minutes
       ? tr('{m} min', { m: i.minutes })
@@ -1049,6 +1059,7 @@ function itemLine(i: PublicItem): string {
       ? formatAmount(i.price.value, i.price.currency, currentTranslator().language)
       : tr('Free'),
     stockLine(i.stock),
+    at ? (at.label ?? tr(PLACE_KIND_LABELS[at.kind])) : null,
   ]
     .filter(Boolean)
     .join(' · ');
@@ -1093,10 +1104,6 @@ const hostName = (host: PublicPerson | PublicOrg) =>
 export const shelfPath = (host: PublicPerson | PublicOrg, slug: string) =>
   `${hostPath(host)}/${encodeURIComponent(slug)}`;
 
-/**
- * The public items as spec rows (R58), each a link to its own page (R61), in the host's order:
- * each public collection under its own name, which opens its page, then what's in none.
- */
 /** A place on a page (R92): its name, its address in the reader's language, and a map link. */
 function placeRow(p: PlaceView): string {
   const name = p.label ?? tr(PLACE_KIND_LABELS[p.kind]);
@@ -1128,13 +1135,17 @@ function placeLd(p: PlaceView) {
   };
 }
 
+/**
+ * The public items as spec rows (R58), each a link to its own page (R61), in the host's order:
+ * each public collection under its own name, which opens its page, then what's in none.
+ */
 function itemRows(host: PublicPerson | PublicOrg, items: PublicItem[] = host.items): string {
   if (items.length === 0) return '';
   const lines = (shown: PublicItem[]) =>
     shown
       .map(
         (i) =>
-          `<a href="${esc(shelfPath(host, i.slug))}">${esc(i.name)}</a> <span class="small">${esc(itemLine(i))}</span>`,
+          `<a href="${esc(shelfPath(host, i.slug))}">${esc(i.name)}</a> <span class="small">${esc(itemLine(i, placeOf(host, i)))}</span>`,
       )
       .join('<br>');
   return grouped(items, host.collections)

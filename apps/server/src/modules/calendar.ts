@@ -40,6 +40,7 @@ import {
   assertItemPhotos,
   assertItemsFit,
   assertPaymentsFit,
+  assertPlacesFit,
   type Booker,
   type BookingHost,
   catalogFrom,
@@ -250,6 +251,7 @@ export async function calendarRoutes(app: FastifyInstance, ctx: AppContext) {
       kept.collections,
     );
     assertPaymentsFit(orgHost(org), body.payments, true);
+    await assertPlacesFit(ctx, orgHost(org), kept.items, body.booking);
     await assertItemPhotos(ctx, auth.userId, kept.items, catalogOf(org).items);
     // The catalog and its counts (R60) as one save.
     const items = await ctx.db.transaction().execute(async (trx) => {
@@ -414,6 +416,7 @@ export async function calendarRoutes(app: FastifyInstance, ctx: AppContext) {
       .executeTakeFirstOrThrow();
     const kept = catalogFrom(body, catalogOf(me).collections, body.booking);
     assertItemsFit(personHost(me), kept.items, new Set(), !minorOf(me, ctx.now()));
+    await assertPlacesFit(ctx, personHost(me), kept.items, body.booking);
     assertPaymentsFit(personHost(me), body.payments, !minorOf(me, ctx.now()));
     await assertItemPhotos(ctx, auth.userId, kept.items, catalogOf(me).items);
     // The catalog and its counts (R60) as one save.

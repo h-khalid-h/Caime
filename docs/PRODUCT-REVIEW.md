@@ -1812,8 +1812,14 @@ with its reason, so it isn't proposed again without new facts.
   delivery address chosen from your places and sent with the order to that organization alone,
   a place shared as a Location card; a card stays true when the place later changes or goes;
   (4) one editor for both (`PlacesSetup`), Settings · Places and an organization's setup.
-  *Declined for now, with why:* an organization's branches as booking hosts (hours, items and
-  providers per branch) are the next layer once places exist, not this one; map search and
+  *Built since (2026-10-15):* an organization's branches as booking hosts: an item is done at
+  one of its places (for customers or everyone; never a place kept for the team, since a
+  booking copies the address to its customer), a branch may have days of its own (else the
+  organization's), the booking writes the branch's address into the card's "Where", the public
+  page names a branch that's everyone's, and the agent's catalog says where each item is. The
+  same service at two branches is two items, each with its own capacity and providers, rather
+  than one item with per-branch settings: the catalog, slots and holds already work per item.
+  *Declined for now, with why:* map search and
   address lookup need a provider that would see every address typed; tracking where someone is
   stays the live location card's, opt-in and timed.
 - **R93 — Write to an address that isn't on Caime yet (owner's request, 2026-10-15: "when I type

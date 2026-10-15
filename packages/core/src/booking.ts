@@ -49,6 +49,26 @@ export interface BookingHours {
   horizonDays: number;
   /** What several items share (R58), each with how many there are. */
   resources?: SharedResource[];
+  /**
+   * A branch's own days (R92): an item done at one of the host's places is booked on that
+   * place's days, and on the host's where the place has none.
+   */
+  placeHours?: PlaceHours[];
+}
+
+/** A place's own days of the host's hours (R92): its weekdays and their ranges. */
+export interface PlaceHours {
+  placeId: string;
+  days: BookingDay[];
+}
+
+/** The hours an item is booked by (R92): its place's days when the place has its own. */
+export function hoursFor(
+  hours: BookingHours,
+  item: Pick<BookingItem, 'placeId'> | null | undefined,
+): BookingHours {
+  const own = item?.placeId ? hours.placeHours?.find((p) => p.placeId === item.placeId) : undefined;
+  return own ? { ...hours, days: own.days } : hours;
 }
 
 /**
@@ -319,6 +339,11 @@ export interface BookingItem {
   /** Its options (R60), for something sold by the piece: a size to choose, extras to add. */
   options?: ItemOption[];
   /**
+   * Where it's done (R92): one of an organization's places, its customers' or everyone's; its
+   * days are that place's when it has its own (`hoursFor`), and a booking copies its address.
+   */
+  placeId?: string | null;
+  /**
    * How many are left of something sold by the piece (R60), kept apart from the catalog: its
    * host reads the count, anyone else only once it's fewer than one order may take (0 is sold
    * out). Left out when it isn't counted, or doesn't limit this reader.
@@ -353,6 +378,8 @@ export interface AppointmentBooking {
   /** Who on the team does it; the customer never sees this (R15). */
   providerId: string | null;
   providerName: string | null;
+  /** Where (R92): the item's place as it was written when booked, copied into the card. */
+  where?: string | null;
 }
 
 export interface Busy {
@@ -376,7 +403,7 @@ export interface SlotQuery {
   /** What's booked of this item (its own bookings; a host's meetings as Infinity). */
   busy: Busy[];
   /** The item booked; without one, the hours alone (a slot of `slotMinutes`, one at a time). */
-  item?: Pick<BookingItem, 'unit' | 'minutes' | 'capacity'> | null;
+  item?: Pick<BookingItem, 'unit' | 'minutes' | 'capacity' | 'placeId'> | null;
   /** Places (minutes) or days (days) wanted; 1 without. */
   quantity?: number;
   /**
@@ -421,9 +448,10 @@ function roomFor(busy: Busy[], start: number, end: number, want: number, capacit
  * item's capacity for the quantity wanted beside what's booked, and, for an item with named
  * providers, one of them free. Soonest first, at most `limit`.
  */
-export function openSlots(hours: BookingHours, opts: SlotQuery): Date[] {
+export function openSlots(all: BookingHours, opts: SlotQuery): Date[] {
   const limit = opts.limit ?? 200;
   const item = opts.item ?? null;
+  const hours = hoursFor(all, item);
   // Ordered by the piece (R60): no time to hold.
   if (item?.unit === 'each') return [];
   const want = Math.max(1, opts.quantity ?? 1);

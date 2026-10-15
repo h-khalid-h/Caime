@@ -1012,7 +1012,13 @@ These are rules, not preferences.
   A place is used by copying `placeLine` (a card's "Where" through `PlaceChips`, an order's
   `deliverTo`), never by pointing at a row; a point is taken only where its owner stands, never
   looked up. The one editor is `features/places/PlacesSetup.tsx`; facts are `PlacesSpec`. A new
-  reader of someone's places goes through `personPlacesFor` or `orgPlacesFor`.
+  reader of someone's places goes through `personPlacesFor` or `orgPlacesFor`. An
+  organization's branches are its booking hosts (R92): an item's `placeId` is one of its places
+  for customers or everyone (`assertPlacesFit`, `bookablePlaceIds`), the hours' `placeHours` give
+  a branch its own days, read only through core `hoursFor` (which `openSlots` calls), and
+  `bookingFor` copies the branch's line as `AppointmentBooking.where` into the card's "Where";
+  `savePlaces` lets go of any pointer at a place gone or kept for the team. One item is done at
+  one branch: the same service at two is two items, each with its own capacity and providers.
 - One address is one person (R93, `lib/provisional.ts`): `personForAddress` answers whoever an
   email is (`personByAddress`, else the provisional person made once); inbound mail, a meeting's
   guests and `openMailConversation` (writing to an address from Search or Connect, a message

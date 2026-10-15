@@ -1326,4 +1326,8 @@ export const turkishServer: Catalog = {
   'Someone on Caime uses that address. Ask them for their handle.':
     'Bu adresi Caime’de biri kullanıyor. Kullanıcı adını sorun.',
   'That kind of place isn’t offered here.': 'Bu tür bir yer burada sunulmuyor.',
+  'Only an organization’s items are done at its places.':
+    'Yalnızca bir kuruluşun öğeleri onun yerlerinde yapılır.',
+  'Choose one of your places that customers may see.':
+    'Müşterilerin görebileceği yerlerinizden birini seçin.',
 };

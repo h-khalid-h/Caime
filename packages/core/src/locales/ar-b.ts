@@ -2374,4 +2374,11 @@ export const arB: Catalog = {
     'تعذّر البقاء على اتصال الآن. الرسائل الجديدة تصل، لكن بعد قليل.',
   'The place is shared as it’s written, never where you are.':
     'يُشارَك المكان كما هو مكتوب، لا الموقع الحالي.',
+  'Hours at {place}': 'المواعيد في {place}',
+  'In {timeZone}. Its items are booked on these days.':
+    'بتوقيت {timeZone}. تُحجز عناصره في هذه الأيام.',
+  'Same as the organization’s': 'مثل مواعيد المؤسسة',
+  Wherever: 'في أي مكان',
+  'At {place}': 'في {place}',
+  'Each place’s hours once.': 'مواعيد كل مكان مرة واحدة.',
 };

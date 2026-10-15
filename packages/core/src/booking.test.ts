@@ -8,6 +8,7 @@ import {
   bookingSpan,
   canBook,
   describeHours,
+  hoursFor,
   isBooked,
   isOrdered,
   lineKey,
@@ -31,6 +32,40 @@ const cairo: BookingHours = {
   leadMinutes: 120,
   horizonDays: 14,
 };
+
+describe('a branch’s own days (R92)', () => {
+  const MAADI = '7f0c2c1e-1b6a-4c55-9a51-3d8e1a2b4c5d';
+  const branched: BookingHours = {
+    ...cairo,
+    // The Maadi branch opens on Friday afternoons only.
+    placeHours: [{ placeId: MAADI, days: [{ weekday: 5, start: '14:00', end: '15:00' }] }],
+  };
+  const now = new Date('2026-10-01T05:00:00Z');
+  const window = { from: now, to: new Date('2026-10-03T00:00:00Z'), now, busy: [] };
+
+  it('books an item done at a branch on that branch’s days', () => {
+    const atMaadi = { unit: 'minutes' as const, minutes: 30 as const, capacity: 1, placeId: MAADI };
+    expect(openSlots(branched, { ...window, item: atMaadi }).map((d) => d.toISOString())).toEqual([
+      '2026-10-02T11:00:00.000Z',
+      '2026-10-02T11:30:00.000Z',
+    ]);
+    expect(hoursFor(branched, atMaadi).days).toEqual([
+      { weekday: 5, start: '14:00', end: '15:00' },
+    ]);
+  });
+
+  it('books anything else, and an item at a place with no days of its own, on the host’s', () => {
+    const anywhere = { unit: 'minutes' as const, minutes: 30 as const, capacity: 1, placeId: null };
+    const elsewhere = { ...anywhere, placeId: '0e5b3d2a-9c41-4f7e-8a6d-1b2c3d4e5f60' };
+    const thursday = openSlots(cairo, { ...window, item: anywhere }).map((d) => d.toISOString());
+    expect(openSlots(branched, { ...window, item: anywhere }).map((d) => d.toISOString())).toEqual(
+      thursday,
+    );
+    expect(openSlots(branched, { ...window, item: elsewhere }).map((d) => d.toISOString())).toEqual(
+      thursday,
+    );
+  });
+});
 
 describe('open slots (R51)', () => {
   it('cuts each day’s hours into slots in the organization’s zone, within the window', () => {
