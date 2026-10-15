@@ -3281,3 +3281,11 @@ The six-slice review's plan, in its order; a block is ticked when its tests and 
 - 2026-10-15 — Caime Mail verified live both ways: the "mail in" line named the earlier silence
   (mails that came before raw content was on could vouch for no sender); with it on, an outside
   mail was delivered (DKIM and DMARC pass) and the owner's replies went out as mail.
+- 2026-10-15 — Caime Mail's SPF was never checked: Postmark's topmost Received line is its own
+  local hand-off ("by p-pm-inbound… (Postfix, from userid 996)", no sending address), and
+  `receivingHop` gave up there instead of reading on to the line from outside. Every mail logged
+  `spf: null`, so a sender whose DMARC passes only through SPF (Google Workspace's default
+  signing: `datac.com`, `d=…gappssmtp.com`) was dropped as unverified. Fixed, with a test from
+  the real header. Mail from one's own sign-in address to one's own Caime address is refused (by
+  design, but silently): what it should do (a note to self, "forward to Caime") is a decision
+  still open.

@@ -44,6 +44,9 @@ export function receivingHop(
     if (!by || !receivingHosts.test(by)) return null;
     // The from clause, up to " by ": its TCP-info comment carries the address in brackets.
     const fromClause = value.slice(0, value.search(/\sby\s/i));
+    // The provider handing the mail on inside one of its own hosts ("by p-pm-inbound… (Postfix,
+    // from userid 996)") names no address: its next line down is the one from outside.
+    if (!/^\s*from\s/i.test(fromClause)) continue;
     const ip = /\[(?:ipv6:)?([0-9a-f:.]+)\]/i.exec(fromClause)?.[1];
     if (!ip || !isIP(ip)) return null;
     if (isPrivateAddress(ip)) continue;

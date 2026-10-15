@@ -112,6 +112,32 @@ describe('mail in: who sent it, checked by Caime (R75)', () => {
     expect(await verified(null)).toBe(false);
   });
 
+  it('reads past Postmark’s own local hand-off to the line from outside (as Postmark writes it)', async () => {
+    // The top of a real Postmark inbound message (2026-10-15): its Postfix's local delivery first,
+    // its spam check and SPF verdict, then the line that names who connected.
+    const top = [
+      'Received: by p-pm-inboundg03a-aws-useast1a.inbound.postmarkapp.com (Postfix, from userid 996)',
+      '\tid E8ADC453CA3; Thu, 15 Oct 2026 00:42:13 +0000 (UTC)',
+      'X-Spam-Status: No',
+      'Received-SPF: pass (datac.example: Sender is authorized) receiver=p-pm-inboundg03a-aws-useast1a; identity=mailfrom; client-ip=192.0.2.66',
+      'Received: from mail-pl1-f174.google.com (mail-pl1-f174.google.com [198.51.100.174])',
+      '\t(using TLSv1.2 with cipher ECDHE-RSA-AES128-GCM-SHA256 (128/128 bits))',
+      '\t(No client certificate requested)',
+      '\tby p-pm-inboundg03a-aws-useast1a.inbound.postmarkapp.com (Postfix) with ESMTPS id AB0FA453CA2',
+      '\tfor <hussein@caime.test>; Thu, 15 Oct 2026 00:42:13 +0000 (UTC)',
+      'Received: by mail-pl1-f174.google.com with SMTP id d9443c01a7336',
+      '        for <hussein@caime.test>; Wed, 14 Oct 2026 17:42:13 -0700 (PDT)',
+      'From: Hassan <h@datac.example>',
+      '',
+      'hi',
+    ].join('\r\n');
+    expect(receivingHop(top, POSTMARK)).toEqual({
+      ip: '198.51.100.174',
+      helo: 'mail-pl1-f174.google.com',
+    });
+    // The verdict line beside it is the payload's to say, never read: only the Received line is.
+  });
+
   it('reads the connecting address from Postmark’s own line alone', async () => {
     expect(receivingHop(await mail(), POSTMARK)).toEqual({
       ip: SENDER_IP,
