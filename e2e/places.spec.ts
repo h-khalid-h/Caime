@@ -1,7 +1,7 @@
 /**
  * Places (R92): Noor adds her home in Settings Â· Places, shown to her connections; Sara, a
  * connection, sees it on Noor's profile with its address, and in their conversation a meeting's
- * "Where" fills from it with one tap.
+ * "Where" fills from it with one tap; Noor shares it there as a Location card.
  */
 import { expect, test } from '@playwright/test';
 import { apiSignUp, CLIENT, newPerson } from './helpers';
@@ -14,7 +14,7 @@ test('a place added in Settings shows to a connection and fills a meetingâ€™s â€
   const noorCtx = await browser.newContext({ viewport: { width: 1280, height: 860 } });
   const saraCtx = await browser.newContext({ viewport: { width: 1280, height: 860 } });
   const noor = await apiSignUp(noorCtx, 'Noor Places', `noor.places.${stamp}`);
-  await apiSignUp(saraCtx, 'Sara Places', `sara.places.${stamp}`);
+  const saraMe = await apiSignUp(saraCtx, 'Sara Places', `sara.places.${stamp}`);
   const asked = await saraCtx.request.post('/v1/connections/requests', {
     headers: CLIENT,
     data: { toUserId: noor.id },
@@ -53,6 +53,27 @@ test('a place added in Settings shows to a connection and fills a meetingâ€™s â€
   await expect(sara.page.getByTestId('kit-field-place').filter({ visible: true })).toHaveValue(
     /9 Road 233, Cairo/,
   );
+  await sara.page.keyboard.press('Escape');
+
+  // Noor shares her home as a Location card: the place as written, never live. A location is
+  // offered to someone labelled (a friend here).
+  const friend = await noorCtx.request.post('/v1/relationships', {
+    headers: CLIENT,
+    data: { userId: saraMe.id, sphere: 'friend', role: 'friend' },
+  });
+  expect(friend.status()).toBe(201);
+  await page.goto(`/c/${convo}`);
+  await page.getByRole('button', { name: 'Share a photo, a file or a card' }).click();
+  await page.getByTestId('kit-option-location').click();
+  await page.getByTestId('location-place-mine-0').filter({ visible: true }).click();
+  await expect(page.getByTestId('location-label').filter({ visible: true })).toHaveValue(
+    /9 Road 233, Cairo/,
+  );
+  await expect(page.getByTestId('live-for')).toHaveCount(0);
+  await page.getByTestId('kit-send').filter({ visible: true }).click();
+  await expect(
+    sara.page.getByTestId('message-location').filter({ visible: true }).last(),
+  ).toContainText('9 Road 233, Cairo');
   expect(errors).toEqual([]);
   expect(sara.errors).toEqual([]);
   await noorCtx.close();

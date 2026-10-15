@@ -4211,4 +4211,8 @@ export const fr: Catalog = {
     'C’est le maximum de lieux. Retirez-en un d’abord.',
   'Home address': 'Adresse du domicile',
   'Work address': 'Adresse du travail',
+  'Can’t stay connected just now. New messages still arrive, a little later.':
+    'Connexion instable pour le moment. Les nouveaux messages arrivent quand même, un peu plus tard.',
+  'The place is shared as it’s written, never where you are.':
+    'Le lieu est partagé tel qu’il est écrit, jamais l’endroit où vous êtes.',
 };

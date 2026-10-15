@@ -441,6 +441,9 @@ export function KitForm({
   const [locating, setLocating] = useState(false);
   // Or live, for a while: it follows them until then, while Caime is open (R29).
   const [liveFor, setLiveFor] = useState<'0' | '15' | '60' | '480'>('0');
+  // Or one of the places (R92): its words and its point, copied; never live, it isn't where
+  // anyone is.
+  const [fromPlace, setFromPlace] = useState<string | null>(null);
 
   const close = () => {
     setTexts({});
@@ -454,6 +457,7 @@ export function KitForm({
     setError(null);
     setSpot(null);
     setLiveFor('0');
+    setFromPlace(null);
     setSlot(null);
     setItemId(null);
     setQuantity(1);
@@ -476,6 +480,7 @@ export function KitForm({
         accuracy: Location.Accuracy.Balanced,
       });
       const round = (n: number) => Math.round(n * 1e6) / 1e6;
+      setFromPlace(null);
       setSpot({
         lat: round(coords.latitude),
         lng: round(coords.longitude),
@@ -501,7 +506,7 @@ export function KitForm({
         payload: {
           ...(spot ?? {}),
           ...(label ? { label } : {}),
-          ...(spot && liveFor !== '0' ? { live: { minutes: Number(liveFor) } } : {}),
+          ...(spot && !fromPlace && liveFor !== '0' ? { live: { minutes: Number(liveFor) } } : {}),
         },
       };
     } else if (kit === 'poll') {
@@ -648,13 +653,15 @@ export function KitForm({
       {kit === 'location' ? (
         <View style={{ gap: 12 }}>
           <Text variant="caption" color="textSecondary">
-            {liveFor === '0' || !spot
-              ? tr('Only this moment is shared, never where you go after.')
-              : tr(
-                  'Where you are follows here until then, while Caime is open. Stop it any time; only the latest point is kept.',
-                )}
+            {fromPlace
+              ? tr('The place is shared as it’s written, never where you are.')
+              : liveFor === '0' || !spot
+                ? tr('Only this moment is shared, never where you go after.')
+                : tr(
+                    'Where you are follows here until then, while Caime is open. Stop it any time; only the latest point is kept.',
+                  )}
           </Text>
-          {spot ? (
+          {spot && !fromPlace ? (
             <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
               <MapPin size={18} color={t.c.success} />
               <Text variant="body" style={{ flex: 1 }} testID="location-found">
@@ -665,7 +672,7 @@ export function KitForm({
               <Button label={tr('Clear')} size="sm" variant="ghost" onPress={() => setSpot(null)} />
             </View>
           ) : null}
-          {spot ? (
+          {spot && !fromPlace ? (
             <ChoiceChips
               wrap
               flush
@@ -696,6 +703,16 @@ export function KitForm({
             value={texts.label ?? ''}
             onChangeText={(v) => setTexts((s) => ({ ...s, label: v }))}
             testID="location-label"
+          />
+          <PlaceChips
+            conversationId={conversation.id}
+            onPick={(line, place) => {
+              setTexts((s) => ({ ...s, label: line }));
+              setFromPlace(place.id);
+              setSpot(place.point ? { lat: place.point.lat, lng: place.point.lng } : null);
+              setLiveFor('0');
+            }}
+            testID="location-place"
           />
         </View>
       ) : kit === 'poll' ? (

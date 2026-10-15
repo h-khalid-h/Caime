@@ -1483,7 +1483,11 @@ These are rules, not preferences.
 - On a phone, the realtime socket rests 30 s after the app goes to the background (`rest()` in
   `realtime/client.ts`) and comes back with a catch-up on `active`; a call or a live location
   share keeps it. Anything new that must hear the socket while the app is put away adds its
-  check there, or arrives by push instead.
+  check there, or arrives by push instead. A socket that hasn't said hello within `HELLO_MS`
+  is given up and tried again (a network can take the upgrade and hold it), and after
+  `DELAYED_AFTER_TRIES` tries without one the client catches up over HTTP every 20 to 60 s
+  while the app is in front (`catchUpMeanwhile`, state `delayed`, said by `ConnectionBanner`),
+  until a hello stops it: nothing new polls beside it.
 - The build compresses every hashed file under `_expo/static` once (`scripts/precompress.mjs`,
   Brotli 11 and gzip 9 siblings) and `@fastify/static` serves the variant the browser accepts
   (`preCompressed`); `pnpm budget` reports gzip (the budget) and the Brotli wire size. The web

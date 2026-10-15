@@ -1486,10 +1486,11 @@ listed there with its owner.
       nobody until chosen, family at most under 18), an organization's to anyone (its page, a map
       link, `PostalAddress` in its JSON-LD), its customers or its team. A card's "Where" fills from
       either side's with one tap (`GET /conversations/:id/places`), an order to deliver carries the
-      customer's address (`deliverTo`, copied, shown on the card), and both exports carry them.
+      customer's address (`deliverTo`, copied, shown on the card), a Location card is one of the
+      places (its words and its point, copied, never live), and both exports carry them.
       Verified with `places.test.ts` (core and server) and `e2e/places.spec.ts`.
 - [ ] R92 next: an organization's branches as booking hosts (hours, items and providers per
-      branch), and a place shared as a Location card.
+      branch).
 - [x] R93 writing to an address that isn't on Caime (PRODUCT-REVIEW R93): an email address typed in
       Search or Connect offers "Write to … by email" (`POST /conversations/by-email`,
       `openMailConversation` in `lib/provisional.ts`, one provisional person per address shared with
@@ -3343,3 +3344,8 @@ The six-slice review's plan, in its order; a block is ticked when its tests and 
   with audiences, on profiles, pages (JSON-LD addresses) and cards (a meeting's "Where", an order's
   delivery address); an address not on Caime written to from Search or Connect, by mail from one's
   own Caime address, as a message request. One provisional person per address now everywhere.
+- 2026-10-15 — "Connecting…" that never ends, on some Wi-Fi: a socket that doesn't say hello
+  within 15 s is given up and tried again, and while none gets through the app fetches what's
+  new over HTTP every 20 to 60 s when it's in front, saying so in the banner (`delayed`).
+- 2026-10-15 — R92: a place shared as a Location card (the place's words and point copied, never
+  live), from the card's form beside "Use where I am now".

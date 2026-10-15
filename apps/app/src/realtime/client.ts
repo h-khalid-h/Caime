@@ -39,6 +39,20 @@ const STALE_MS = 60_000;
  * share, which arrive and go through it.
  */
 const REST_AFTER_MS = 30_000;
+/**
+ * A socket that hasn't said hello by now is given up and tried again: a network that accepts
+ * the upgrade and then holds it (some Wi-Fi does) would otherwise keep "Connecting…" for good,
+ * since nothing else times a socket out before its hello.
+ */
+const HELLO_MS = 15_000;
+/**
+ * After this many tries without a hello, what's new is fetched over HTTP while the socket keeps
+ * trying (`catchUpMeanwhile`), every `DELAYED_MS` and then at most every `DELAYED_MAX_MS`, and
+ * only while the app is in front: the app keeps working on a network that lets no socket through.
+ */
+const DELAYED_AFTER_TRIES = 3;
+const DELAYED_MS = 20_000;
+const DELAYED_MAX_MS = 60_000;
 
 class RealtimeClient {
   private ws: WebSocket | null = null;
@@ -48,6 +62,10 @@ class RealtimeClient {
   private retryTimer: ReturnType<typeof setTimeout> | null = null;
   private pingTimer: ReturnType<typeof setInterval> | null = null;
   private restTimer: ReturnType<typeof setTimeout> | null = null;
+  private helloTimer: ReturnType<typeof setTimeout> | null = null;
+  /** The HTTP catch-up while the socket can't connect; null when it isn't running. */
+  private meanwhileTimer: ReturnType<typeof setTimeout> | null = null;
+  private meanwhileEvery = DELAYED_MS;
   /** The phone is in the background and the socket was let go on purpose: no retries. */
   private resting = false;
   private lastFrameAt = 0;
@@ -77,6 +95,7 @@ class RealtimeClient {
     for (const u of this.unsubscribers) u();
     this.unsubscribers = [];
     this.clearTimers();
+    this.stopMeanwhile();
     const ws = this.ws;
     this.ws = null;
     ws?.close(1000, 'signed out');
@@ -148,9 +167,49 @@ class RealtimeClient {
     if (this.retryTimer) clearTimeout(this.retryTimer);
     if (this.pingTimer) clearInterval(this.pingTimer);
     if (this.restTimer) clearTimeout(this.restTimer);
+    if (this.helloTimer) clearTimeout(this.helloTimer);
     this.retryTimer = null;
     this.pingTimer = null;
     this.restTimer = null;
+    this.helloTimer = null;
+  }
+
+  /** What the banner says while there's no socket: offline, catching up over HTTP, or trying. */
+  private waiting(): 'offline' | 'delayed' | 'connecting' {
+    if (!this.online) return 'offline';
+    return this.meanwhileTimer ? 'delayed' : 'connecting';
+  }
+
+  private stopMeanwhile(): void {
+    if (this.meanwhileTimer) clearTimeout(this.meanwhileTimer);
+    this.meanwhileTimer = null;
+    this.meanwhileEvery = DELAYED_MS;
+  }
+
+  /** Fetch what's new over HTTP every so often while the socket can't connect. */
+  private catchUpMeanwhile(): void {
+    if (this.meanwhileTimer) return;
+    this.meanwhileTimer = setTimeout(() => {
+      this.meanwhileTimer = null;
+      if (!this.wanted || this.ready || this.resting) return;
+      if (this.online && inFront()) void this.catchUp(true);
+      this.meanwhileEvery = Math.min(DELAYED_MAX_MS, this.meanwhileEvery * 1.5);
+      this.catchUpMeanwhile();
+    }, this.meanwhileEvery);
+    useLive.getState().setConnection(this.waiting());
+  }
+
+  /** Give up on a socket that never said hello, and try again. */
+  private giveUp(ws: WebSocket): void {
+    if (this.ws !== ws) return;
+    ws.onclose = null;
+    ws.onmessage = null;
+    ws.close();
+    this.ws = null;
+    this.ready = false;
+    this.clearTimers();
+    useLive.getState().setConnection(this.waiting());
+    this.scheduleRetry();
   }
 
   /** Let the socket go while the phone is put away, unless a call or a live share needs it. */
@@ -162,6 +221,7 @@ class RealtimeClient {
     if (Object.keys(useLiveShares.getState().shares).length) return;
     this.resting = true;
     this.clearTimers();
+    this.stopMeanwhile();
     const ws = this.ws;
     this.ws = null;
     this.ready = false;
@@ -171,7 +231,7 @@ class RealtimeClient {
   private connect(): void {
     if (!this.wanted || this.ws) return;
     this.clearTimers();
-    useLive.getState().setConnection(this.online ? 'connecting' : 'offline');
+    useLive.getState().setConnection(this.waiting());
     let ws: WebSocket;
     try {
       ws = new WebSocket(`${WS_URL}/v1/realtime`);
@@ -180,6 +240,7 @@ class RealtimeClient {
       return;
     }
     this.ws = ws;
+    this.helloTimer = setTimeout(() => this.giveUp(ws), HELLO_MS);
     ws.onopen = () => {
       this.lastFrameAt = Date.now();
       const token = getAuthToken();
@@ -214,7 +275,7 @@ class RealtimeClient {
       this.ready = false;
       this.clearTimers();
       if (this.wanted && !this.resting) {
-        useLive.getState().setConnection(this.online ? 'connecting' : 'offline');
+        useLive.getState().setConnection(this.waiting());
         this.scheduleRetry();
       }
     };
@@ -226,6 +287,9 @@ class RealtimeClient {
   private onHello(): void {
     this.attempt = 0;
     this.ready = true;
+    if (this.helloTimer) clearTimeout(this.helloTimer);
+    this.helloTimer = null;
+    this.stopMeanwhile();
     useLive.getState().setConnection('open');
     this.pingTimer = setInterval(() => {
       if (Date.now() - this.lastFrameAt > STALE_MS) {
@@ -245,6 +309,7 @@ class RealtimeClient {
   private scheduleRetry(): void {
     const base = Math.min(30_000, 1000 * 2 ** this.attempt);
     this.attempt += 1;
+    if (this.attempt >= DELAYED_AFTER_TRIES) this.catchUpMeanwhile();
     const delay = base / 2 + Math.random() * (base / 2);
     this.retryTimer = setTimeout(() => this.connect(), delay);
   }
@@ -278,6 +343,14 @@ class RealtimeClient {
       }
     }
   }
+}
+
+/** The app is on screen: a page that's visible, a phone's app in front. */
+function inFront(): boolean {
+  if (Platform.OS === 'web') {
+    return typeof document === 'undefined' || document.visibilityState !== 'hidden';
+  }
+  return AppState.currentState === 'active';
 }
 
 /** Resolves once the query isn't fetching (loaded, failed or paused offline). */

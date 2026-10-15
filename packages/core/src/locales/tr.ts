@@ -4039,4 +4039,8 @@ export const turkish: Catalog = {
     'Tutulabilecek en fazla yer bu kadar. Önce birini kaldırın.',
   'Home address': 'Ev adresi',
   'Work address': 'İş adresi',
+  'Can’t stay connected just now. New messages still arrive, a little later.':
+    'Şu an bağlı kalınamıyor. Yeni mesajlar yine gelir, biraz gecikmeyle.',
+  'The place is shared as it’s written, never where you are.':
+    'Yer yazıldığı gibi paylaşılır, bulunduğunuz yer asla.',
 };

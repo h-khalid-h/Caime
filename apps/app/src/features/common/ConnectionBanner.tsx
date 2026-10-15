@@ -48,7 +48,9 @@ export function ConnectionBanner() {
                 waitingText: waitingText(queued, actions),
               })
             : tr('Offline. Showing what’s on this device.')
-          : tr('Connecting…')}
+          : connection === 'delayed'
+            ? tr('Can’t stay connected just now. New messages still arrive, a little later.')
+            : tr('Connecting…')}
       </Text>
     </View>
   );

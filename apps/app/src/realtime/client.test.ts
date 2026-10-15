@@ -13,6 +13,7 @@ const h = vi.hoisted(() => ({
   callPhase: null as string | null,
   shares: {} as Record<string, unknown>,
   invalidated: [] as unknown[],
+  connection: [] as string[],
 }));
 
 class FakeSocket {
@@ -38,6 +39,7 @@ class FakeSocket {
 vi.mock('react-native', () => ({
   Platform: { OS: 'native' },
   AppState: {
+    currentState: 'active',
     addEventListener: (_: string, fn: (s: string) => void) => {
       h.appState.push(fn);
       return {
@@ -70,7 +72,12 @@ vi.mock('@/lib/config', () => ({ WS_URL: 'ws://caime.example' }));
 vi.mock('@/lib/network', () => ({ onNetworkChange: () => () => {} }));
 vi.mock('@/state/cache', () => ({ maxSeq: () => 0, upsertMessage: () => {} }));
 vi.mock('@/state/live', () => ({
-  useLive: { getState: () => ({ setConnection: () => {}, connection: 'open' }) },
+  useLive: {
+    getState: () => ({
+      setConnection: (c: string) => h.connection.push(c),
+      connection: 'open',
+    }),
+  },
 }));
 vi.mock('@/state/outbox', () => ({ useOutbox: { getState: () => ({ flush: () => {} }) } }));
 vi.mock('@/state/taskOutbox', () => ({
@@ -83,6 +90,7 @@ beforeEach(() => {
   h.sockets.length = 0;
   h.appState.length = 0;
   h.invalidated.length = 0;
+  h.connection.length = 0;
   h.callPhase = null;
   h.shares = {};
   h.wrongAccount.mockClear();
@@ -175,6 +183,44 @@ describe('the realtime socket', () => {
     vi.advanceTimersByTime(60_000);
     expect(ws.closed).toBe(false);
     expect(h.sockets).toHaveLength(1);
+    realtime.stop();
+  });
+
+  it('gives up on a socket that never says hello, and tries again', () => {
+    vi.useFakeTimers();
+    realtime.start('u1');
+    const held = h.sockets[0]!;
+    // The network takes the upgrade and holds it: open, then nothing.
+    held.onopen?.();
+    vi.advanceTimersByTime(14_000);
+    expect(held.closed).toBe(false);
+    vi.advanceTimersByTime(1_500);
+    expect(held.closed).toBe(true);
+    vi.advanceTimersByTime(2_000);
+    expect(h.sockets).toHaveLength(2);
+    realtime.stop();
+  });
+
+  it('fetches what’s new every so often while no socket gets through, and stops once one does', () => {
+    vi.useFakeTimers();
+    realtime.start('u1');
+    // Three sockets fail in a row.
+    for (let i = 0; i < 3; i++) {
+      h.sockets[i]!.onclose?.();
+      vi.advanceTimersByTime(10_000);
+    }
+    expect(h.connection.at(-1)).toBe('delayed');
+    // Within the first twenty seconds of saying so, the lists are fetched over HTTP.
+    expect(h.invalidated).toContainEqual({ queryKey: ['inbox'] });
+    h.invalidated.length = 0;
+    const last = h.sockets.at(-1)!;
+    last.onopen?.();
+    last.say({ type: 'hello', userId: 'u1', serverTime: 'now' });
+    expect(h.connection.at(-1)).toBe('open');
+    h.invalidated.length = 0;
+    // Connected, nothing is fetched on a timer any more.
+    vi.advanceTimersByTime(120_000);
+    expect(h.invalidated).toEqual([]);
     realtime.stop();
   });
 });

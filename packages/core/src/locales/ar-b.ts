@@ -2370,4 +2370,8 @@ export const arB: Catalog = {
     'هذا أقصى عدد من الأماكن. أزل واحدًا أولًا.',
   'Home address': 'عنوان المنزل',
   'Work address': 'عنوان العمل',
+  'Can’t stay connected just now. New messages still arrive, a little later.':
+    'تعذّر البقاء على اتصال الآن. الرسائل الجديدة تصل، لكن بعد قليل.',
+  'The place is shared as it’s written, never where you are.':
+    'يُشارَك المكان كما هو مكتوب، لا الموقع الحالي.',
 };

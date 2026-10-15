@@ -10,7 +10,8 @@ const TYPING_MS = 6000;
 interface LiveState {
   typing: Record<string, Record<string, number>>;
   presence: Record<string, PresenceState>;
-  connection: 'idle' | 'connecting' | 'open' | 'offline';
+  /** `delayed`: no socket after a few tries, so what's new is fetched every so often instead. */
+  connection: 'idle' | 'connecting' | 'delayed' | 'open' | 'offline';
   openConversationId: string | null;
   setTyping: (conversationId: string, userId: string) => void;
   clearTyping: (conversationId: string, userId: string) => void;
