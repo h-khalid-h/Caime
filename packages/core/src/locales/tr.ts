@@ -3991,4 +3991,52 @@ export const turkish: Catalog = {
   'Proven by a code by email': 'E-postayla gelen kodla kanıtlandı',
   'Proven by a code on WhatsApp': 'WhatsApp’tan gelen kodla kanıtlandı',
   'Proven by a code by text message': 'SMS ile gelen kodla kanıtlandı',
+  'Write to {address} by email': '{address} adresine e-postayla yaz',
+  'It goes from your Caime address. Their reply comes back here.':
+    'Caime adresinizden gider. Yanıt buraya gelir.',
+  Places: 'Yerler',
+  'Where to find you: a public one is on your page with a map, for search engines too; one for your customers shows to people you serve; one for your team stays inside.':
+    'Sizi nerede bulacakları: herkese açık bir yer sayfanızda haritasıyla, arama motorları için de görünür; müşterileriniz için olan, hizmet verdiğiniz kişilere görünür; ekibiniz için olan içeride kalır.',
+  'Your places': 'Yerleriniz',
+  'Each is shown to whom you choose, nobody until you do. When you pick one for a meeting or a delivery, its words go with that card, and the card keeps them if the place changes.':
+    'Her biri seçtiğiniz kişilere görünür; siz seçene kadar kimseye. Bir toplantı ya da teslimat için birini seçtiğinizde sözleri o karta geçer ve yer değişse de kart onları saklar.',
+  'Your places and theirs': 'Sizin ve onların yerleri',
+  '{name}’s {place}': '{place} · {name}',
+  'Add a place': 'Yer ekle',
+  'Caime can’t see where you are. Allow it in your settings.':
+    'Caime nerede olduğunuzu göremiyor. Ayarlarınızdan izin verin.',
+  'Couldn’t find where you are just now. Try again.':
+    'Şu an nerede olduğunuz bulunamadı. Yeniden deneyin.',
+  'Change this place': 'Bu yeri değiştir',
+  'What it is': 'Ne olduğu',
+  'Its name, if not that': 'Adı, öyle değilse',
+  City: 'Şehir',
+  Area: 'Semt',
+  Street: 'Sokak',
+  Building: 'Bina',
+  Floor: 'Kat',
+  Unit: 'Daire',
+  'Postal code': 'Posta kodu',
+  'How to find it': 'Nasıl bulunur',
+  'Taken where you stand': 'Bulunduğunuz yerden alındı',
+  'Use where I am': 'Konumumu kullan',
+  'A map opens there. Tap again to drop it.':
+    'Orada bir harita açılır. Kaldırmak için yeniden dokunun.',
+  'Only where you stand now, and only if you ask: nobody looks an address up.':
+    'Yalnızca şu an bulunduğunuz yer, yalnızca siz isterseniz: kimse bir adres aramaz.',
+  'Under 18, a place is shown to your family at most.':
+    '18 yaşından küçükken bir yer en fazla ailenize görünür.',
+  Map: 'Harita',
+  Headquarters: 'Merkez',
+  Branch: 'Şube',
+  'Anyone, on your page': 'Herkes, sayfanızda',
+  'Your customers': 'Müşterileriniz',
+  'Unit {unit}': 'Daire {unit}',
+  'Floor {floor}': 'Kat {floor}',
+  'Deliver to': 'Teslim adresi',
+  'Home, work, and who sees each': 'Ev, iş ve her birini kimin gördüğü',
+  'That’s as many places as one can keep. Remove one first.':
+    'Tutulabilecek en fazla yer bu kadar. Önce birini kaldırın.',
+  'Home address': 'Ev adresi',
+  'Work address': 'İş adresi',
 };

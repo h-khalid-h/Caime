@@ -52,6 +52,10 @@ import { PersonRule } from './PersonRule';
 import { RelationshipHistory } from './RelationshipHistory';
 import { SystemProfile } from './SystemProfile';
 
+// Shared by the person and the organization screens: loaded when shown, so neither route's
+// chunk nor the startup one carries it.
+const PlacesSpec = lazyPart(() => import('@/features/places/parts').then((m) => m.PlacesSpec));
+
 /** One line of who someone is to you (PRD §67): what it is, and what there is of it. */
 /** How they know them, and asking to connect: each in its sheet, loaded the first time it opens. */
 const RelationshipPicker = lazyPart(() =>
@@ -507,6 +511,15 @@ function PersonPage({ id, book = null, slug = null }: PersonScreenProps) {
         {state === 'connected' && !self ? <OtherAccounts personId={id} name={name} /> : null}
 
         {!self ? <RelationshipHistory personId={id} name={name} /> : null}
+
+        {!self && p.places.length ? (
+          <Card>
+            <Text variant="label" style={{ marginBottom: 4 }}>
+              {tr('Places')}
+            </Text>
+            <PlacesSpec places={p.places} testID="person-places" />
+          </Card>
+        ) : null}
 
         {state === 'connected' && !self ? (
           <Card>

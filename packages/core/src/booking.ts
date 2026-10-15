@@ -105,6 +105,8 @@ export interface ItemOption {
 export interface OrderAsk {
   lines: Array<{ itemId: string; quantity: number; choices?: string[] }>;
   fulfilment?: 'pickup' | 'delivery' | null;
+  /** Where to deliver it (R92): one of the customer's places as a line, for a delivery. */
+  deliverTo?: string | null;
 }
 
 /** What an Order card keeps of what was ordered (`payload.order`), fixed when it was placed. */
@@ -121,6 +123,8 @@ export interface PlacedOrder {
   /** The whole order's, where every priced line is in one currency; else null. */
   total: { value: number; currency: string } | null;
   fulfilment: 'pickup' | 'delivery' | null;
+  /** Where it's delivered (R92), copied from the customer's place when it was placed. */
+  deliverTo?: string | null;
 }
 
 /**
@@ -219,7 +223,9 @@ export function placeOrder(
           currency: priced[0]?.currency ?? '',
         }
       : null;
-  return { ok: true, order: { lines, total, fulfilment } };
+  // An address is said for a delivery alone, and copied: the place may change after.
+  const deliverTo = fulfilment === 'delivery' ? ask.deliverTo?.trim() || null : null;
+  return { ok: true, order: { lines, total, fulfilment, ...(deliverTo ? { deliverTo } : {}) } };
 }
 
 /** "2 × Coffee (Large, Oat milk), 1 × Fries": an order in one line, for the card's summary. */

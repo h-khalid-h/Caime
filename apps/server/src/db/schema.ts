@@ -4,6 +4,7 @@
  */
 import type {
   AiUse,
+  Audience,
   BookingHours,
   BookingItem,
   CatalogCollection,
@@ -591,6 +592,31 @@ export interface OwnAddressesTable {
   code_attempts: Defaulted<number>;
   code_expires_at: Date | null;
   created_at: Generated<Date>;
+}
+
+/** A place (R92): a person's or an organization's, one of the two owners set. */
+export interface PlacesTable {
+  id: string;
+  user_id: string | null;
+  org_id: string | null;
+  kind: 'home' | 'work' | 'hq' | 'branch' | 'other';
+  label: string | null;
+  country: string;
+  city: string | null;
+  area: string | null;
+  street: string | null;
+  building: string | null;
+  floor: string | null;
+  unit: string | null;
+  postal_code: string | null;
+  directions: string | null;
+  lat: number | null;
+  lng: number | null;
+  audience: Json<Audience | null>;
+  org_audience: 'everyone' | 'customers' | 'team' | null;
+  position: Defaulted<number>;
+  created_at: Generated<Date>;
+  updated_at: Generated<Date>;
 }
 
 export interface ExternalBusyTable {
@@ -1254,6 +1280,7 @@ export interface Database {
   calendar_feeds: CalendarFeedsTable;
   connected_accounts: ConnectedAccountsTable;
   own_addresses: OwnAddressesTable;
+  places: PlacesTable;
   external_busy: ExternalBusyTable;
   decisions: DecisionsTable;
   notifications: NotificationsTable;

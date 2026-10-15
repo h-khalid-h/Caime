@@ -1318,4 +1318,12 @@ export const turkishServer: Catalog = {
   'That address': 'Bu adres',
   'That code isn’t right. Check it and try again.':
     'Bu kod doğru değil. Kontrol edip yeniden deneyin.',
+  'Caime can’t send email here yet.': 'Caime burada henüz e-posta gönderemiyor.',
+  'That’s a Caime address. Find them by their handle.':
+    'Bu bir Caime adresi. Kişiyi kullanıcı adıyla bulun.',
+  'Writing to an address by email is for people over 18.':
+    'Bir adrese e-postayla yazmak 18 yaşından büyükler içindir.',
+  'Someone on Caime uses that address. Ask them for their handle.':
+    'Bu adresi Caime’de biri kullanıyor. Kullanıcı adını sorun.',
+  'That kind of place isn’t offered here.': 'Bu tür bir yer burada sunulmuyor.',
 };

@@ -6,6 +6,7 @@
 import type { PersonalScope } from '@caime/core/access';
 import type { AccountProvider, AccountUse } from '@caime/core/accounts';
 import type { AddressKind } from '@caime/core/addresses';
+
 import type {
   AboutView,
   AccountFilesResponse,
@@ -48,6 +49,7 @@ import type {
   ContactsMatchResponse,
   ConversationDevicesView,
   ConversationIdResponse,
+  ConversationPlacesResponse,
   ConversationResponse,
   CountriesView,
   CurrenciesView,
@@ -125,6 +127,8 @@ import type {
   PersonalTokensResponse,
   PersonInsightsResponse,
   PersonProfileView,
+  PlacesResponse,
+  PlaceView,
   PlanUsageView,
   PoliciesResponse,
   PolicyCreatedResponse,
@@ -166,6 +170,9 @@ import type { BilledPlan, BillingInterval, BillingView } from '@caime/core/billi
 import type { ContactAccount } from '@caime/core/contact-return';
 import type { SuggestionKind } from '@caime/core/intelligence';
 import type { AiUse, AppPricing } from '@caime/core/marketplace';
+
+/** A place as it's saved (R92): a view, its id kept when it's one already there. */
+type PlaceInput = Omit<PlaceView, 'id'> & { id?: string };
 
 /** Whose slots: an organization's or a person's (R58). */
 export interface BookingHostRef {
@@ -368,6 +375,9 @@ export const endpoints = {
   inbox: () => api.get<InboxResponse>('/inbox'),
   inboxAll: () => api.get<InboxAllResponse>('/inbox?view=all'),
   conversation: (id: string) => api.get<ConversationResponse>(`/conversations/${id}`),
+  /** The one-to-one with an address that isn't on Caime yet, by mail (R93). */
+  conversationByEmail: (email: string, name?: string) =>
+    api.post<ConversationResponse>('/conversations/by-email', { email, ...(name ? { name } : {}) }),
   openDirect: (userId: string, title?: string, opts: { private?: boolean } = {}) =>
     api.post<ConversationResponse>('/conversations', {
       kind: 'direct',
@@ -585,6 +595,13 @@ export const endpoints = {
     api.post<PersonalTokenCreatedResponse>(`/me/bridges/${id}`, body),
   disconnectBridge: (id: string) => api.del<OkResponse>(`/me/bridges/${id}`),
   removeConnectedApp: (grantId: string) => api.del<OkResponse>(`/me/connected-apps/${grantId}`),
+  /** A person's places (R92), an organization's, and what a conversation's card may say. */
+  myPlaces: () => api.get<PlacesResponse>('/me/places'),
+  saveMyPlaces: (places: PlaceInput[]) => api.put<PlacesResponse>('/me/places', { places }),
+  saveOrgPlaces: (orgId: string, places: PlaceInput[]) =>
+    api.put<PlacesResponse>(`/orgs/${orgId}/places`, { places }),
+  conversationPlaces: (conversationId: string) =>
+    api.get<ConversationPlacesResponse>(`/conversations/${conversationId}/places`),
   /** Email addresses and phone numbers someone adds as theirs, each proven by a code (R91). */
   addresses: () => api.get<OwnAddressesResponse>('/me/addresses'),
   addAddress: (body: { kind: AddressKind; value: string }) =>

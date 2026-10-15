@@ -29,6 +29,10 @@ import { Screen, TopBar } from '@/ui/Screen';
 import { Text } from '@/ui/Text';
 import { TextField } from '@/ui/TextField';
 
+const WriteByEmail = lazyPart(() =>
+  import('@/features/people/WriteByEmail').then((m) => m.WriteByEmail),
+);
+
 function useDebounced<T>(value: T, ms = 300): T {
   const [v, setV] = useState(value);
   useEffect(() => {
@@ -57,6 +61,8 @@ export default function Connect() {
   const { desktop } = useLayout();
   const [term, setTerm] = useState('');
   const debounced = useDebounced(term.trim());
+  // An address typed (R93): the lazy row checks it and offers to write; nothing else loads.
+  const writable = debounced.includes('@') ? debounced : null;
   const [target, setTarget] = useState<PeopleSearchResult['person'] | null>(null);
   const [inviting, setInviting] = useState(false);
   // Opened from onboarding (`?contacts=1`), or back from an account's consent on the web.
@@ -226,13 +232,23 @@ export default function Connect() {
         }
         ListEmptyComponent={
           orgs.length ? null : debounced.length >= 2 && results.isFetched ? (
-            <View style={{ padding: 24, gap: 12, alignItems: 'center' }}>
-              <Text variant="body" color="textSecondary" align="center">
+            <View style={{ paddingVertical: 24, gap: 12, alignItems: 'center' }}>
+              <Text
+                variant="body"
+                color="textSecondary"
+                align="center"
+                style={{ paddingHorizontal: 24 }}
+              >
                 {tr(
                   'No one found for “{debounced}”. They may not be on Caime yet, or they keep their profile private.',
                   { debounced },
                 )}
               </Text>
+              {writable ? (
+                <View style={{ alignSelf: 'stretch' }}>
+                  <WriteByEmail typed={writable} />
+                </View>
+              ) : null}
               <Button
                 label={tr('Invite them')}
                 variant="secondary"

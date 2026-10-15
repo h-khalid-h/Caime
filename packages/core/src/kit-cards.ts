@@ -598,7 +598,10 @@ export function kitDetails(
   );
 }
 
-/** What an order placed from a catalog says beyond its summary and total (R60): how it's had. */
+/**
+ * What an order placed from a catalog says beyond its summary and total (R60): how it's had,
+ * and for a delivery where to (R92), as the customer's place read when it was placed.
+ */
 export function orderDetails(
   order: PlacedOrder | null | undefined,
 ): Array<{ key: string; label: string; value: string }> {
@@ -609,6 +612,9 @@ export function orderDetails(
       label: tr('How'),
       value: order.fulfilment === 'pickup' ? tr('Pickup') : tr('Delivery'),
     },
+    ...(order.fulfilment === 'delivery' && order.deliverTo
+      ? [{ key: 'deliverTo', label: tr('Deliver to'), value: order.deliverTo }]
+      : []),
   ];
 }
 

@@ -51,6 +51,7 @@ import {
 } from './marketplace';
 import { latestFoundedYear, ORG_KINDS, UPDATE_MAX } from './orgs';
 import { PAYMENT_KINDS, PAYMENT_METHODS_MAX, paymentUrlError } from './payments';
+import { ORG_PLACE_AUDIENCES, PLACE_KINDS, PLACES_MAX } from './places';
 import { AI_TONES, NOTIFY_MODES, PRIORITIES, PRIVACY_PRESETS } from './policy';
 import { PRIVACY_FIELDS } from './privacy';
 import {
@@ -771,6 +772,46 @@ const AudienceSchema = z.discriminatedUnion('kind', [
   z.object({ kind: z.literal('nobody') }),
 ]);
 
+/** A part of an address: its words, or nothing (an empty one is nothing). */
+const PlacePart = (max: number) => z.string().trim().max(max).nullable().optional();
+
+/**
+ * A place as its owner saves it (R92): kept by `id` when it's one already there. A person's
+ * says who sees it with `audience`, an organization's with `orgAudience`; the server takes the
+ * one its owner has.
+ */
+export const PlaceInput = z
+  .object({
+    id: z.string().uuid().optional(),
+    kind: z.enum(PLACE_KINDS),
+    label: PlacePart(40),
+    country: Country,
+    city: PlacePart(80),
+    area: PlacePart(80),
+    street: PlacePart(160),
+    building: PlacePart(80),
+    floor: PlacePart(20),
+    unit: PlacePart(20),
+    postalCode: PlacePart(20),
+    directions: PlacePart(300),
+    point: z
+      .object({ lat: z.number().min(-90).max(90), lng: z.number().min(-180).max(180) })
+      .nullable()
+      .optional(),
+    audience: AudienceSchema.nullable().optional(),
+    orgAudience: z.enum(ORG_PLACE_AUDIENCES).nullable().optional(),
+  })
+  .strict();
+
+/** Every place an owner keeps, in their order: the list saved whole. */
+export const PlacesBody = z
+  .object({
+    places: z
+      .array(PlaceInput)
+      .max(PLACES_MAX, msg('That’s as many places as one can keep. Remove one first.')),
+  })
+  .strict();
+
 export const PrivacyBody = z
   .object({
     // partialRecord: zod 4's z.record with enum keys requires every key.
@@ -960,6 +1001,14 @@ export const FollowOrgBody = z.object({
 
 // --- Conversations and messages ----------------------------------------------------------------
 
+/** A one-to-one with an email address that isn't on Caime (R93), and the name to call them. */
+export const ConversationByEmailBody = z
+  .object({
+    email: z.string().trim().min(3).max(254),
+    name: z.string().trim().min(1).max(80).optional(),
+  })
+  .strict();
+
 export const CreateConversationBody = z.discriminatedUnion('kind', [
   z.object({
     kind: z.literal('direct'),
@@ -1103,6 +1152,7 @@ export const OrderAskBody = z
       .min(1)
       .max(ORDER_LINES_MAX),
     fulfilment: z.enum(['pickup', 'delivery']).nullable().optional(),
+    deliverTo: z.string().trim().max(500).nullable().optional(),
   })
   .strict();
 

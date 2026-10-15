@@ -331,6 +331,24 @@ describe('orders from the catalog (R60)', () => {
     expect(orderSummary(placed.order)).toBe('3 × shawarma, 1 × fries, 3 × water');
   });
 
+  it('keeps a delivery address for a delivery alone, copied as a line (R92)', () => {
+    const lines = [{ itemId: 'shawarma', quantity: 1 }];
+    const delivered = placeOrder(settings, menu, {
+      lines,
+      fulfilment: 'delivery',
+      deliverTo: '  Floor 3, 9 Road 233, Maadi, Cairo, Egypt  ',
+    });
+    if (!delivered.ok) throw new Error(delivered.reason);
+    expect(delivered.order.deliverTo).toBe('Floor 3, 9 Road 233, Maadi, Cairo, Egypt');
+    const pickedUp = placeOrder(settings, menu, {
+      lines,
+      fulfilment: 'pickup',
+      deliverTo: 'Somewhere',
+    });
+    if (!pickedUp.ok) throw new Error(pickedUp.reason);
+    expect(pickedUp.order.deliverTo).toBeUndefined();
+  });
+
   it('takes no more than is left (R60): a count limits an order, none is sold out', () => {
     const counted = [item('fries', { maxQuantity: 5, stock: 2 }), item('shawarma', { stock: 0 })];
     expect(orderableMax(counted[0] as BookingItem)).toBe(2);

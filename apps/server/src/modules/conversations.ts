@@ -8,6 +8,7 @@
  */
 
 import {
+  ConversationByEmailBody,
   CreateConversationBody,
   canAddToGroup,
   canChangeGroupRole,
@@ -59,6 +60,7 @@ import { recordEvent } from '../lib/events';
 import { leaveGroupCallsIn } from '../lib/group-calls';
 import { assertNoMinorWithGuests } from '../lib/meeting-guests';
 import { assertCanMessage, participantsOf } from '../lib/messages';
+import { openMailConversation } from '../lib/provisional';
 import { between, pairKey, readReceiptsVisibleTo } from '../lib/relations';
 import { spaceChanged } from '../lib/spaces';
 import { openSystemConversation } from '../lib/system-accounts';
@@ -67,6 +69,16 @@ import { parse } from '../lib/validate';
 import { requireAuth } from '../plugins/auth';
 
 export async function conversationRoutes(app: FastifyInstance, ctx: AppContext) {
+  // Writing to an address that isn't on Caime yet (R93): its one-to-one, by mail from here.
+  app.post('/conversations/by-email', async (req, reply): Promise<ConversationResponse> => {
+    const auth = requireAuth(req);
+    const body = parse(ConversationByEmailBody, req.body);
+    const result = await openMailConversation(ctx, auth.userId, body.email, body.name);
+    if (result.created) reply.status(201);
+    const m = await membership(ctx, auth.userId, result.id);
+    return { conversation: await conversationView(ctx, auth.userId, m.conversation, m.me) };
+  });
+
   app.post('/conversations', async (req, reply): Promise<ConversationResponse> => {
     const auth = requireAuth(req);
     const body = parse(CreateConversationBody, req.body);

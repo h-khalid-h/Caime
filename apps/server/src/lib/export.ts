@@ -18,6 +18,7 @@ import { listingState } from './app-directory';
 import { automationView, visibleSaved } from './automations';
 import { bookingOf, catalogOf, orderingOf, paymentsOf } from './booking';
 import { type CustomerMask, maskPayload, masksFor } from './business';
+import { placesOwnedBy } from './places';
 import { relationshipView } from './relations';
 import { itemsWithStock } from './stock';
 import { meView } from './users';
@@ -113,6 +114,7 @@ export async function buildExport(ctx: AppContext, me: string, now: Date) {
     calendarFeed,
     connectedAccounts,
     ownAddresses,
+    places,
     automations,
     saved,
     visible,
@@ -836,6 +838,7 @@ export async function buildExport(ctx: AppContext, me: string, now: Date) {
       .where('user_id', '=', me)
       .orderBy('created_at')
       .execute(),
+    placesOwnedBy(ctx, { userId: me }),
     db
       .selectFrom('automations')
       .selectAll()
@@ -1529,6 +1532,8 @@ export async function buildExport(ctx: AppContext, me: string, now: Date) {
       provenAt: iso(a.verified_at),
       addedAt: a.created_at.toISOString(),
     })),
+    // Your places (R92), with who sees each.
+    places,
     // What you set Caime to keep, and what it kept or you saved (PRD §69).
     automations: automations.map((a) => {
       const view = automationView(a);

@@ -212,4 +212,18 @@ test.describe
       await expect(visible(page, 'Sara Haddad · The invoice')).toBeVisible();
       expect(errors).toEqual([]);
     });
+
+    test('an address not on Caime, typed in Connect, is written to by email (R93)', async () => {
+      const layla = `layla.${suffix}@outside.example`;
+      await page.goto('/connect');
+      await page.getByTestId('connect-search').fill(layla);
+      await page.getByTestId('write-by-email').filter({ visible: true }).click();
+      await page.waitForURL(/\/c\//);
+      await page.getByTestId('composer-input').fill('Hi Layla, are we still on for Thursday?');
+      await page.getByTestId('composer-send').click();
+      await expect
+        .poll(async () => (await sent()).find((m) => m.To === layla)?.TextBody ?? '')
+        .toContain('Noor Post wrote this on Caime, from ' + address);
+      expect(errors).toEqual([]);
+    });
   });

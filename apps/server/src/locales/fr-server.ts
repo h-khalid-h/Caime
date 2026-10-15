@@ -1379,4 +1379,12 @@ export const frServer: Catalog = {
   'That address': 'Cette adresse',
   'That code isn’t right. Check it and try again.':
     'Ce code n’est pas le bon. Vérifiez-le et réessayez.',
+  'Caime can’t send email here yet.': 'Caime ne peut pas encore envoyer d’e-mails ici.',
+  'That’s a Caime address. Find them by their handle.':
+    'C’est une adresse Caime. Trouvez la personne par son identifiant.',
+  'Writing to an address by email is for people over 18.':
+    'Écrire à une adresse par e-mail est réservé aux plus de 18 ans.',
+  'Someone on Caime uses that address. Ask them for their handle.':
+    'Quelqu’un sur Caime utilise cette adresse. Demandez-lui son identifiant.',
+  'That kind of place isn’t offered here.': 'Ce type de lieu n’est pas proposé ici.',
 };

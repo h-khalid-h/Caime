@@ -4163,4 +4163,52 @@ export const fr: Catalog = {
   'Proven by a code by email': 'Prouvé par un code par e-mail',
   'Proven by a code on WhatsApp': 'Prouvé par un code sur WhatsApp',
   'Proven by a code by text message': 'Prouvé par un code par SMS',
+  'Write to {address} by email': 'Écrire à {address} par e-mail',
+  'It goes from your Caime address. Their reply comes back here.':
+    'Il part de votre adresse Caime. La réponse revient ici.',
+  Places: 'Lieux',
+  'Where to find you: a public one is on your page with a map, for search engines too; one for your customers shows to people you serve; one for your team stays inside.':
+    'Où vous trouver : un lieu public figure sur votre page avec une carte, aussi pour les moteurs de recherche ; un lieu pour vos clients se montre aux personnes que vous servez ; un lieu pour votre équipe reste en interne.',
+  'Your places': 'Vos lieux',
+  'Each is shown to whom you choose, nobody until you do. When you pick one for a meeting or a delivery, its words go with that card, and the card keeps them if the place changes.':
+    'Chacun est montré à qui vous choisissez, à personne tant que vous ne choisissez pas. Quand vous en prenez un pour un rendez-vous ou une livraison, ses mots partent avec cette carte, qui les garde si le lieu change.',
+  'Your places and theirs': 'Vos lieux et les leurs',
+  '{name}’s {place}': '{place} · {name}',
+  'Add a place': 'Ajouter un lieu',
+  'Caime can’t see where you are. Allow it in your settings.':
+    'Caime ne voit pas où vous êtes. Autorisez-le dans vos réglages.',
+  'Couldn’t find where you are just now. Try again.':
+    'Impossible de savoir où vous êtes pour le moment. Réessayez.',
+  'Change this place': 'Modifier ce lieu',
+  'What it is': 'Ce que c’est',
+  'Its name, if not that': 'Son nom, si ce n’est pas cela',
+  City: 'Ville',
+  Area: 'Quartier',
+  Street: 'Rue',
+  Building: 'Immeuble',
+  Floor: 'Étage',
+  Unit: 'Appartement',
+  'Postal code': 'Code postal',
+  'How to find it': 'Comment le trouver',
+  'Taken where you stand': 'Pris là où vous êtes',
+  'Use where I am': 'Utiliser ma position',
+  'A map opens there. Tap again to drop it.':
+    'Une carte s’ouvre à cet endroit. Touchez encore pour l’enlever.',
+  'Only where you stand now, and only if you ask: nobody looks an address up.':
+    'Seulement là où vous êtes, et seulement si vous le demandez : personne ne recherche d’adresse.',
+  'Under 18, a place is shown to your family at most.':
+    'Avant 18 ans, un lieu n’est montré qu’à votre famille au plus.',
+  Map: 'Carte',
+  Headquarters: 'Siège',
+  Branch: 'Agence',
+  'Anyone, on your page': 'Tout le monde, sur votre page',
+  'Your customers': 'Vos clients',
+  'Unit {unit}': 'Appartement {unit}',
+  'Floor {floor}': 'Étage {floor}',
+  'Deliver to': 'Livrer à',
+  'Home, work, and who sees each': 'Domicile, travail, et qui voit chacun',
+  'That’s as many places as one can keep. Remove one first.':
+    'C’est le maximum de lieux. Retirez-en un d’abord.',
+  'Home address': 'Adresse du domicile',
+  'Work address': 'Adresse du travail',
 };

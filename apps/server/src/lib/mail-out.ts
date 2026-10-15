@@ -136,6 +136,20 @@ async function send(ctx: AppContext, payload: Record<string, unknown>): Promise<
     .where('mm.message_id', '<>', m.id)
     .orderBy('x.seq', 'desc')
     .executeTakeFirst();
+  // The first mail Caime ever sends an address that never wrote to it (R93) says who wrote and
+  // how to answer: the person reading it may never have heard of Caime. Any mail before, either
+  // way, in any of their conversations, and they know.
+  const known =
+    latest ??
+    (await ctx.db
+      .selectFrom('mail_messages')
+      .select('message_id')
+      .where((eb) => eb.or([eb('to_address', '=', to.email), eb('from_address', '=', to.email)]))
+      .executeTakeFirst());
+  const opening =
+    !known && conversation.kind === 'direct'
+      ? `\n\n--\n${from.name} wrote this on Caime, from ${from.address}. Reply to this mail to answer: your reply reaches them there.`
+      : '';
   const body = m.body ?? '';
   const subject =
     (conversation.title &&
@@ -164,7 +178,7 @@ async function send(ctx: AppContext, payload: Record<string, unknown>): Promise<
       from,
       to: to.email,
       subject,
-      text: body || attachments.map((a) => a.name).join('\n'),
+      text: (body || attachments.map((a) => a.name).join('\n')) + opening,
       messageId: rfcMessageId,
       inReplyTo: row.in_reply_to,
       references,

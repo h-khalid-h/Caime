@@ -511,7 +511,9 @@ These are rules, not preferences.
 - The interface's words (R54, ADR-16): every string the app or core shows is written in English
   where it's used, wrapped in `tr('…')` (variables as `{name}`), `trn(n, 'one thing', '{n}
   things')` for a count, or `msg('…')` in a table of options that's translated where it's shown
-  (`tr(item.label)`, or `trAll(items)`); the English is the key into `locales/ar.ts` and
+  (`tr(item.label)`, or `trAll(items)`); the English is the key into `locales/ar.ts` (two halves the app
+  fetches side by side, `ar-a.ts` and `ar-b.ts`, so no download is a chunk over 100 KB; `ar.ts`
+  merges them for the tests and the server, and a new Arabic key goes at the end of `ar-b.ts`) and
   `locales/fr.ts` (R55: French is the third language, for the Maghreb and Lebanon) and
   `locales/tr.ts` (R59: Turkish, exported as `turkish` since `tr` is the function; the server's
   is `turkishServer`), and
@@ -1003,6 +1005,19 @@ These are rules, not preferences.
   email's by `ctx.mail` after the response. Mail from one's own address to one's own Caime
   address lands in one's Cai chat and is never answered (`effectsOf` skips a `mail` message
   there). The app's rows are `features/apps/Addresses.tsx`, inside the one "Your accounts" list.
+- Places (R92, core `places.ts`, `lib/places.ts`, `modules/places.ts`): a person's or an
+  organization's named addresses, saved as a whole list (`savePlaces`, kept by id), a person's
+  shown only through `placeVisible` (its `Audience`, the limited preset, blocks) clamped by
+  `placeAudienceFor` under 18, an organization's by `orgPlaceVisible` (anyone, customers, team).
+  A place is used by copying `placeLine` (a card's "Where" through `PlaceChips`, an order's
+  `deliverTo`), never by pointing at a row; a point is taken only where its owner stands, never
+  looked up. The one editor is `features/places/PlacesSetup.tsx`; facts are `PlacesSpec`. A new
+  reader of someone's places goes through `personPlacesFor` or `orgPlacesFor`.
+- One address is one person (R93, `lib/provisional.ts`): `personForAddress` answers whoever an
+  email is (`personByAddress`, else the provisional person made once); inbound mail, a meeting's
+  guests and `openMailConversation` (writing to an address from Search or Connect, a message
+  request from one's own Caime address) all ask it, never an insert of their own. An address that
+  is someone's on Caime is refused as taken, never mailed behind them.
 - An organization's AI agent is `lib/agent.ts`: a customer's message reaches it through
   `onCustomerMessage` (registered by `registerAgentJob`, so `lib/business.ts` never imports it),
   which queues the `agent.reply` job three seconds out. The job checks the thread is still its

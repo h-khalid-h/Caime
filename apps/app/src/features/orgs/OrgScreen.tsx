@@ -64,6 +64,10 @@ import { OrgInsights } from './OrgInsights';
 import { nextOrgPlanLine } from './planLine';
 import { setupNextLine } from './setupSteps';
 
+// Shared by the person and the organization screens: loaded when shown, so neither route's
+// chunk nor the startup one carries it.
+const PlacesSpec = lazyPart(() => import('@/features/places/parts').then((m) => m.PlacesSpec));
+
 /** Loaded when it's shown: shared by several screens, needed by none at first. */
 const PeoplePicker = lazyPart(() =>
   import('@/features/people/PeoplePicker').then((m) => m.PeoplePicker),
@@ -342,6 +346,7 @@ export function OrgScreen({
                 : null,
             ]}
           />
+          <PlacesSpec places={org.places} testID="org-places" style={{ alignSelf: 'stretch' }} />
           {org.myRole ? null : org.blockedByMe ? (
             <View style={{ alignItems: 'center', gap: 8, marginTop: 6 }} testID="org-blocked">
               <Text variant="caption" color="textSecondary" align="center">

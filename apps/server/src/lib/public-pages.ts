@@ -27,7 +27,7 @@ import {
   stockLine,
   systemAccountOf,
 } from '@caime/core';
-import { MARKETING_PAGES } from '@caime/core/api';
+import { MARKETING_PAGES, type PlaceView } from '@caime/core/api';
 import {
   currentTranslator,
   dirOf,
@@ -37,12 +37,14 @@ import {
   sentence,
   tr,
 } from '@caime/core/i18n';
+import { mapsUrl, PLACE_KIND_LABELS, placeLine } from '@caime/core/places';
 import type { CharacterHandle } from '@caime/core/system-accounts';
 import { tagged } from '@caime/core/tagged';
 import type { Kysely } from 'kysely';
 import type { Database } from '../db/schema';
 import { catalogOf, paymentsOf } from './booking';
 import { orgRef } from './business';
+import { countryNameIn } from './geo';
 import {
   type MarketplacePage,
   marketplacePageFor,
@@ -51,6 +53,7 @@ import {
 } from './marketplace-pages';
 import { orgsOf } from './orgs';
 import { FACE, px, THEME_VARS, type } from './page-style';
+import { orgPlacesFor } from './places';
 import {
   esc,
   explorerStyle,
@@ -115,6 +118,8 @@ export interface PublicOrg {
   country: string | null;
   foundedYear: number | null;
   updatedAt: Date;
+  /** Its places for anyone (R92), in its order. */
+  places: PlaceView[];
   items: PublicItem[];
   collections: PublicCollection[];
   pays: PaymentKind[];
@@ -246,6 +251,7 @@ export async function publicOrg(db: Q, handle: string): Promise<PublicOrg | null
     country: o.country,
     foundedYear: o.founded_year,
     updatedAt: o.updated_at,
+    places: await orgPlacesFor({ db }, o.id, null),
     ...publicCatalog(o, await stockFor(db, o.id, catalogOf(o).items)),
     pays: publicPays(o),
   };
@@ -802,6 +808,7 @@ export function renderPublic(
             ...(o.avatarUrl ? { logo: `${publicUrl}${o.avatarUrl}` } : {}),
             ...(page.about ? { description: page.about } : {}),
             ...(page.foundedYear ? { foundingDate: String(page.foundedYear) } : {}),
+            ...(page.places.length ? { location: page.places.map(placeLd) } : {}),
           },
         }),
         body: `
@@ -819,6 +826,7 @@ export function renderPublic(
     }</dd></div>
     ${page.foundedYear ? `<div>${label(tr('since'))}<dd>${page.foundedYear}</dd></div>` : ''}
     ${page.website ? `<div>${label(tr('website'))}<dd><a href="${esc(page.website)}" rel="noopener">${esc(page.website.replace(/^https?:\/\//, ''))}</a></dd></div>` : ''}
+    ${page.places.map(placeRow).join('')}
     ${itemRows(page)}
     ${payRow(page)}
   </dl>
@@ -1089,6 +1097,37 @@ export const shelfPath = (host: PublicPerson | PublicOrg, slug: string) =>
  * The public items as spec rows (R58), each a link to its own page (R61), in the host's order:
  * each public collection under its own name, which opens its page, then what's in none.
  */
+/** A place on a page (R92): its name, its address in the reader's language, and a map link. */
+function placeRow(p: PlaceView): string {
+  const name = p.label ?? tr(PLACE_KIND_LABELS[p.kind]);
+  const line = placeLine(p, (code) => countryNameIn(code, currentTranslator().language));
+  const map = p.point
+    ? ` <a href="${esc(mapsUrl(p.point))}" rel="noopener nofollow">${esc(tr('Map'))}</a>`
+    : '';
+  const directions = p.directions ? `<br><span class="quiet">${esc(p.directions)}</span>` : '';
+  return `<div>${label(name)}<dd>${esc(line)}${map}${directions}</dd></div>`;
+}
+
+/** A place in an organization's JSON-LD: a schema.org Place with its postal address. */
+function placeLd(p: PlaceView) {
+  const street = [p.unit, p.floor, p.building, p.street].filter(Boolean).join(', ');
+  return {
+    '@type': 'Place',
+    name: p.label ?? PLACE_KIND_LABELS[p.kind],
+    address: {
+      '@type': 'PostalAddress',
+      ...(street ? { streetAddress: street } : {}),
+      ...(p.city ? { addressLocality: p.city } : {}),
+      ...(p.area ? { addressRegion: p.area } : {}),
+      ...(p.postalCode ? { postalCode: p.postalCode } : {}),
+      addressCountry: p.country,
+    },
+    ...(p.point
+      ? { geo: { '@type': 'GeoCoordinates', latitude: p.point.lat, longitude: p.point.lng } }
+      : {}),
+  };
+}
+
 function itemRows(host: PublicPerson | PublicOrg, items: PublicItem[] = host.items): string {
   if (items.length === 0) return '';
   const lines = (shown: PublicItem[]) =>

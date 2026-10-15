@@ -53,6 +53,9 @@ import { TextField } from '@/ui/TextField';
 import { exampleAmount, parseNumber } from './amounts';
 import { SlotPicker } from './SlotPicker';
 
+// Places to fill a card from (R92): loaded with the form's first place field, never at start.
+const PlaceChips = lazyPart(() => import('@/features/places/parts').then((m) => m.PlaceChips));
+
 /** Choosing a day, loaded the first time it's opened. */
 /** Up to this many items are chips; more are found by name. */
 const ITEMS_AS_CHIPS = 8;
@@ -582,7 +585,17 @@ export function KitForm({
               kit,
               fields: checked.fields,
               ...(appointment && item ? { booking: { itemId: item.id, quantity } } : {}),
-              ...(picking ? { order: { lines, fulfilment: way ?? host?.ways[0] ?? null } } : {}),
+              ...(picking
+                ? {
+                    order: {
+                      lines,
+                      fulfilment: way ?? host?.ways[0] ?? null,
+                      ...((way ?? host?.ways[0]) === 'delivery' && texts.deliverTo?.trim()
+                        ? { deliverTo: texts.deliverTo.trim() }
+                        : {}),
+                    },
+                  }
+                : {}),
               ...(payingShare ? { share: { splitId: payingShare.splitId } } : {}),
             },
       };
@@ -917,6 +930,23 @@ export function KitForm({
                   testID="order-way"
                 />
               ) : null}
+              {(way ?? host.ways[0]) === 'delivery' ? (
+                <View style={{ gap: 6 }}>
+                  <TextField
+                    label={tr('Deliver to')}
+                    value={texts.deliverTo ?? ''}
+                    onChangeText={(v) => setTexts((s) => ({ ...s, deliverTo: v }))}
+                    multiline
+                    testID="order-deliver-to"
+                  />
+                  <PlaceChips
+                    conversationId={conversation.id}
+                    mineOnly
+                    onPick={(line) => setTexts((s) => ({ ...s, deliverTo: line }))}
+                    testID="order-deliver-from"
+                  />
+                </View>
+              ) : null}
               <Text variant="caption" color="textSecondary" testID="order-total">
                 {orderTotal
                   ? tr('{price}, not paid through Caime', { price: orderTotal })
@@ -1172,6 +1202,13 @@ export function KitForm({
               />
             ),
           )}
+          {def.fields.some((f) => f.key === 'place' && f.type === 'text') ? (
+            <PlaceChips
+              conversationId={conversation.id}
+              onPick={(line) => setTexts((s) => ({ ...s, place: line }))}
+              testID="kit-place-from"
+            />
+          ) : null}
         </View>
       ) : null}
       {error ? (

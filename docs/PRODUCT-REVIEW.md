@@ -1790,3 +1790,43 @@ with its reason, so it isn't proposed again without new facts.
   mail or over WhatsApp, the statuses in Settings · Apps' one list beside the sign-in email and the
   Caime address, proven ones counted for mail, contacts and search, and one's own mail kept with
   Cai. Organizations' list, LinkedIn, PayPal, SMS and finding by phone come next.
+- **R92 — Places: where people and organizations are, each shown to whom it's for (owner's
+  brainstorm, 2026-10-15: "people and organizations can have multiple locations, each with a
+  country, city, street, building, floor, unit, and a name like Home, Office, HQ, Branch, and
+  visibility Family, Customers, Friends… for appointments, meetings, delivery").** Validated
+  against Caime: today a person and an organization carry a country and nothing more; a
+  meeting's and an appointment's "Where" is free text typed each time, an order offers delivery
+  with no address to deliver to, an organization's public page has no address (so no map, no
+  local search result), and the privacy field `location` exists with no reader. *What's right:*
+  places are facts about a relationship's other side (where to meet, where to deliver, which
+  branch), so they belong to the connection-first product, and an audience per place is
+  Caime's privacy model already (`Audience`: everyone, connections, spheres, nobody). *Refined:*
+  (1) one `places` model for both owners, a name (Home, Work, HQ, Branch, or the owner's own),
+  the parts an address has anywhere (country, city, area, street, building, floor, unit, postal
+  code, directions) and an optional point (taken from the device where the owner stands, never
+  looked up from the words: no geocoding provider sees an address); (2) a person's place is
+  shown by the privacy evaluator, `nobody` until chosen, and under 18 never beyond family;
+  an organization's is public (its page, its JSON-LD `PostalAddress`, a directions link), for
+  its customers, or for its team; (3) a place is *used* by copying it, never by pointing at it:
+  a card's "Where" filled from one of your places or one of theirs you can see, an order's
+  delivery address chosen from your places and sent with the order to that organization alone,
+  a place shared as a Location card; a card stays true when the place later changes or goes;
+  (4) one editor for both (`PlacesSetup`), Settings · Places and an organization's setup.
+  *Declined for now, with why:* an organization's branches as booking hosts (hours, items and
+  providers per branch) are the next layer once places exist, not this one; map search and
+  address lookup need a provider that would see every address typed; tracking where someone is
+  stays the live location card's, opt-in and timed.
+- **R93 — Write to an address that isn't on Caime yet (owner's request, 2026-10-15: "when I type
+  an email in search, people or connect and it's not on Caime yet, I shall be able to proceed
+  with the conversation by email").** Validated: Caime Mail (R75) already carries a one-to-one
+  with someone reached by mail both ways, but only once they've written first; nothing lets a
+  person start one. *Refined:* an email address typed in Search or Connect (People's and Chats'
+  search hand their words to Search) offers "Write to … by email" when nobody findable by it
+  shows; it opens the one-to-one with that address's provisional person (made once, the same one
+  inbound mail and meeting guests use), and the first message goes out from the person's own
+  Caime address with a line saying who wrote and that a reply reaches them in Caime. It's a
+  message request like any stranger's: one message until they reply, which keeps Caime's
+  sending domain clean. An address that is someone's on Caime is never mailed behind them and
+  never named: the offer answers as sign-up does ("someone on Caime uses that address"), and
+  whoever lets people find them by email shows as themselves in the results above. Adults with
+  a Caime address only; twenty new addresses a day.

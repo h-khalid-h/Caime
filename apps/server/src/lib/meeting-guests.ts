@@ -9,7 +9,7 @@
  * Never from a private conversation, a business one, or by someone under 18; up to eight in all.
  */
 
-import { defaultPrivacy, uuidv4, uuidv7 } from '@caime/core';
+import { uuidv4, uuidv7 } from '@caime/core';
 import { GROUP_CALL_MAX } from '@caime/core/calls';
 import { firstName } from '@caime/core/format';
 import { tr } from '@caime/core/i18n';
@@ -26,6 +26,7 @@ import { AppError, badRequest, forbidden, mailUnavailable, notFound } from './er
 import { meetingUid, onOccurrencePosted, queueNextTime } from './meeting-series';
 import { queueMeetingStart } from './meeting-start';
 import { assertCanMessage, messageViews, participantsOf, sendMessage } from './messages';
+import { personForAddress } from './provisional';
 import { between, isBlockedEitherWay } from './relations';
 import { minorOf } from './users';
 
@@ -92,43 +93,6 @@ function meetingOk(ctx: AppContext, m: Message): MeetingPayload {
   if (!Number.isFinite(at) || at < ctx.now().getTime() - 60 * 60_000)
     throw badRequest(tr('That meeting is over.'));
   return p;
-}
-
-/** The person an address is: their account, or a provisional person made for it (R75). */
-async function personFor(ctx: AppContext, email: string, name: string) {
-  const find = () =>
-    ctx.db
-      .selectFrom('users')
-      .select([
-        'id',
-        'kind',
-        'display_name',
-        'deleted_at',
-        'suspended_at',
-        'birth_date',
-        'time_zone',
-      ])
-      .where('email', '=', email)
-      .executeTakeFirst();
-  const known = await find();
-  if (known) return known;
-  const id = uuidv7();
-  await ctx.db
-    .insertInto('users')
-    .values({
-      id,
-      email,
-      // A handle nobody can type or find, as a provisional person's always is (R75).
-      handle: `mail:${id}`,
-      password_hash: '',
-      display_name: name,
-      kind: 'provisional',
-      privacy: JSON.stringify(defaultPrivacy({ minor: false })),
-      created_at: ctx.now(),
-    })
-    .onConflict((oc) => oc.column('email').doNothing())
-    .execute();
-  return find();
 }
 
 /**
@@ -498,7 +462,7 @@ export async function inviteGuest(
     )
   )
     throw noGuestsHere();
-  const person = await personFor(ctx, email, name);
+  const person = await personForAddress(ctx, email, name);
   // An address that may not be asked (gone, suspended, blocked either way, or someone on Caime a
   // message request couldn't reach): nothing is sent, and nothing says so (an invitation never
   // tells whether an address is on Caime).

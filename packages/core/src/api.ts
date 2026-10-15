@@ -27,9 +27,10 @@ import type { Lean } from './learning';
 import type { AiUse, AppPricing, ListingCheck } from './marketplace';
 import type { OrgKind, OrgRole } from './orgs';
 import type { PaymentSettings } from './payments';
+import type { OrgPlaceAudience, PlaceKind, PlaceParts, PlacePoint } from './places';
 import type { OrgAllowance, OrgPlan, PersonAllowance } from './plans';
 import type { EffectivePolicy, NotificationLevel, RelationshipPolicy } from './policy';
-import type { PrivacySettings } from './privacy';
+import type { Audience, PrivacySettings } from './privacy';
 import type { Repeat } from './repeat';
 import type { Preferences } from './schemas';
 import type { ParsedQuery } from './search';
@@ -356,6 +357,30 @@ export interface ContactAccountStartResponse {
   url: string;
 }
 
+/**
+ * A place (R92): a named address and, when its owner took it where they stood, its point. Who
+ * sees it is said only to whoever set it: a person's `audience`, an organization's `orgAudience`.
+ */
+export interface PlaceView extends PlaceParts {
+  id: string;
+  kind: PlaceKind;
+  /** The owner's own name for it, else its kind's. */
+  label: string | null;
+  point: PlacePoint | null;
+  audience: Audience | null;
+  orgAudience: OrgPlaceAudience | null;
+}
+
+export interface PlacesResponse {
+  places: PlaceView[];
+}
+
+/** What a card's "Where" may be filled from in a conversation: your places, and theirs you see. */
+export interface ConversationPlacesResponse {
+  mine: PlaceView[];
+  theirs: Array<{ owner: string; places: PlaceView[] }>;
+}
+
 export interface PersonProfileView {
   person: PersonView;
   /** The organizations they're on the team of (R43), shown as their professional details are. */
@@ -373,6 +398,8 @@ export interface PersonProfileView {
   collections: CatalogCollection[];
   /** They have a way to be paid this viewer may see (R62): Pay is offered. */
   payable: boolean;
+  /** Their places this viewer may see (R92), in their order. */
+  places: PlaceView[];
   connection: ConnectionStateView;
   blockedByMe: boolean;
   relationships: RelationshipView[];
@@ -1196,6 +1223,8 @@ export interface OrgDomainView {
 
 export interface OrgView extends OrgSummaryView {
   createdAt: string;
+  /** Its places this viewer may see (R92): all of them, with who sees each, for its team. */
+  places: PlaceView[];
   /** Its team, for the people on it. */
   members: OrgMemberView[] | null;
   /** Verification, for its owner and admins. */
@@ -1393,6 +1422,8 @@ export interface OrgExportView {
     ordering: OrderingSettings | null;
     payments: PaymentSettings | null;
   };
+  /** Its places (R92), with who each is shown to. */
+  places: PlaceView[];
   /** Its own checkout account (R65), if it connected one: the provider's id, never a key. */
   checkout: {
     provider: string;

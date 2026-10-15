@@ -25,6 +25,7 @@ import { OrgBooking } from './OrgBooking';
 import { OrgCheckout } from './OrgCheckout';
 import { OrgData } from './OrgData';
 import { OrgDoor } from './OrgDoor';
+import { OrgPlaces } from './OrgPlaces';
 import { OrgPlan } from './OrgPlan';
 import { OrgVerification } from './OrgVerification';
 
@@ -98,6 +99,7 @@ export function OrgSetupScreen({ handle }: { handle: string }) {
           <OrgVerification org={org} refresh={put} />
           <OrgData org={org} refresh={put} />
         </View>
+        <OrgPlaces org={org} />
         <OrgBooking org={org} />
         <View style={{ paddingHorizontal: 16, paddingTop: 12 }}>
           <OrgCheckout org={org} />

@@ -92,6 +92,7 @@ import { orgRoutes } from './modules/orgs';
 import { pageRoutes, sitePageAt } from './modules/pages';
 import { passkeyRoutes } from './modules/passkeys';
 import { peopleRoutes } from './modules/people';
+import { placeRoutes } from './modules/places';
 import { policyRoutes } from './modules/policies';
 import { realtimeRoutes } from './modules/realtime';
 import { relationshipRoutes } from './modules/relationships';
@@ -306,6 +307,7 @@ export async function buildApp(config: Config, options: BuildOptions = {}): Prom
       await contactRoutes(v1, ctx);
       await connectedAccountRoutes(v1, ctx);
       await addressRoutes(v1, ctx);
+      await placeRoutes(v1, ctx);
       await inviteRoutes(v1, ctx);
       await relationshipRoutes(v1, ctx);
       await policyRoutes(v1, ctx);

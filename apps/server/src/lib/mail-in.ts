@@ -24,19 +24,12 @@
  *   anything else is dropped without a bounce, since a bounce says the address exists.
  */
 import { createHash } from 'node:crypto';
-import {
-  defaultPrivacy,
-  isReservedHandle,
-  SendMessageBody,
-  SYSTEM_ACCOUNTS,
-  uuidv7,
-} from '@caime/core';
+import { isReservedHandle, SendMessageBody, SYSTEM_ACCOUNTS } from '@caime/core';
 import { bareSubject } from '@caime/core/mail';
 import { CAI_MAIL } from '@caime/core/meetings';
 import { CAI_ID } from '@caime/core/system-ids';
 import type { AppContext } from '../context';
 import { ORG_COLUMNS, USER_COLUMNS, type UserRow } from '../db/schema';
-import { personByAddress } from './addresses';
 import { startCustomerConversation } from './business-threads';
 import { caiMail } from './cai-mail';
 import { ensureDirectConversation } from './conversations';
@@ -47,6 +40,7 @@ import type { InboundMail, MailAuth } from './mail-provider';
 import { afterMessage } from './message-effects';
 import { messageViews, participantsOf, sendMessage } from './messages';
 import { assertStorage } from './plans';
+import { personForAddress } from './provisional';
 import { between, pairKey } from './relations';
 import { storageFor } from './storage';
 import { openSystemConversation } from './system-accounts';
@@ -187,45 +181,13 @@ async function recipientOf(
 
 /** The person a mail is from: their account, or a provisional person made or found by the address. */
 async function senderOf(ctx: AppContext, mail: InboundMail): Promise<UserRow | null> {
-  const address = mail.from.address;
-  // A person's sign-in address, or one they proved theirs (R91): that's them.
-  const ownerId = await personByAddress(ctx.db, address);
-  if (ownerId) {
-    const owner = await ctx.db
-      .selectFrom('users')
-      .select(USER_COLUMNS)
-      .where('id', '=', ownerId)
-      .executeTakeFirst();
-    return owner && !owner.deleted_at && !owner.suspended_at ? owner : null;
-  }
-  const find = () =>
-    ctx.db.selectFrom('users').select(USER_COLUMNS).where('email', '=', address).executeTakeFirst();
-  const known = await find();
-  if (known) {
-    if (known.kind === 'provisional') return known;
-    if (known.kind === 'human' && !known.deleted_at && !known.suspended_at) return known;
-    return null;
-  }
-  const id = uuidv7();
-  await ctx.db
-    .insertInto('users')
-    .values({
-      id,
-      email: address,
-      // A handle nobody can type or find (a colon is never in one); claiming gives a real one.
-      handle: `mail:${id}`,
-      password_hash: '',
-      display_name: senderName(mail.from.name, address),
-      kind: 'provisional',
-      privacy: JSON.stringify(defaultPrivacy({ minor: false })),
-      // Its own clock, as the sweep reads it (a test moves the clock).
-      created_at: ctx.now(),
-    })
-    .onConflict((oc) => oc.column('email').doNothing())
-    .execute();
-  // Two mails from a new address at once: the first one's row is theirs.
-  const row = await find();
-  return row?.kind === 'provisional' || row?.kind === 'human' ? row : null;
+  const row = await personForAddress(
+    ctx,
+    mail.from.address,
+    senderName(mail.from.name, mail.from.address),
+  );
+  if (!row || row.deleted_at || row.suspended_at) return null;
+  return row.kind === 'provisional' || row.kind === 'human' ? row : null;
 }
 
 async function deliverTo(

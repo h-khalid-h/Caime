@@ -1479,6 +1479,24 @@ listed there with its owner.
 - [ ] R91 phase 1, the rest: an organization's own list (its domain, its Caime address, its
       connected accounts), LinkedIn and PayPal as verified identities (⛔ their sign-in apps), SMS
       as the phone's fallback (⛔ a provider), and people found by a proven phone number.
+- [x] R92 places (PRODUCT-REVIEW R92): a person's and an organization's named addresses
+      (`places`, migration 0082, core `places.ts`, `lib/places.ts`), saved as a whole list in
+      Settings · Places and an organization's setup by one editor (`PlacesSetup`); a person's shown
+      through the privacy evaluator (`placeVisible`: their audience, the limited preset, blocks;
+      nobody until chosen, family at most under 18), an organization's to anyone (its page, a map
+      link, `PostalAddress` in its JSON-LD), its customers or its team. A card's "Where" fills from
+      either side's with one tap (`GET /conversations/:id/places`), an order to deliver carries the
+      customer's address (`deliverTo`, copied, shown on the card), and both exports carry them.
+      Verified with `places.test.ts` (core and server) and `e2e/places.spec.ts`.
+- [ ] R92 next: an organization's branches as booking hosts (hours, items and providers per
+      branch), and a place shared as a Location card.
+- [x] R93 writing to an address that isn't on Caime (PRODUCT-REVIEW R93): an email address typed in
+      Search or Connect offers "Write to … by email" (`POST /conversations/by-email`,
+      `openMailConversation` in `lib/provisional.ts`, one provisional person per address shared with
+      inbound mail and meeting guests), a message request (one mail until they answer, twenty new
+      addresses a day), the first mail saying who wrote and how replying works; an address that is
+      someone's on Caime is refused as taken and never mailed. Verified in `mail.test.ts` and
+      `e2e/mail.spec.ts`.
 - [ ] R91 phase 2: other calendars and Outlook mail read live inside Caime, tied to people,
       answered from one's own address; Gmail reading after the owner's CASA decision.
 - [ ] R91 phase 3: an organization's WhatsApp Business, Instagram and Messenger in its Business
@@ -3321,3 +3339,7 @@ The six-slice review's plan, in its order; a block is ticked when its tests and 
 - 2026-10-15 — R91 phase 1 built: own email addresses and phone numbers, each proven by a code (by
   mail, by WhatsApp through Meta's Cloud API with a provider-health probe), in the one "Your
   accounts" list; proven ones find their person and are them for mail; self-mail lands with Cai.
+- 2026-10-15 — R92 places and R93 writing by email built: places for people and organizations
+  with audiences, on profiles, pages (JSON-LD addresses) and cards (a meeting's "Where", an order's
+  delivery address); an address not on Caime written to from Search or Connect, by mail from one's
+  own Caime address, as a message request. One provisional person per address now everywhere.

@@ -29,7 +29,14 @@ export function deviceLanguageTag(): string | null {
 }
 
 async function catalogFor(language: InterfaceLanguage): Promise<Catalog> {
-  if (language === 'ar') return (await import('@caime/core/locales/ar')).ar;
+  // Arabic comes in two halves, fetched side by side: no one download over a chunk's budget.
+  if (language === 'ar') {
+    const [a, b] = await Promise.all([
+      import('@caime/core/locales/ar-a'),
+      import('@caime/core/locales/ar-b'),
+    ]);
+    return { ...a.arA, ...b.arB };
+  }
   if (language === 'fr') return (await import('@caime/core/locales/fr')).fr;
   if (language === 'tr') return (await import('@caime/core/locales/tr')).turkish;
   return {};

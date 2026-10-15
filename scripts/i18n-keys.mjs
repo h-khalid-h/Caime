@@ -194,10 +194,20 @@ if (mode) {
     const file = server
       ? join(root, 'apps/server/src/locales', `${lang}-server.ts`)
       : join(root, 'packages/core/src/locales', `${lang}.ts`);
-    const mod = await import(file).catch(() => null);
     // A catalog's export is named for its language (`ar`, `frServer`); Turkish's can't be `tr`,
     // the translating function's name, so the module's one export is taken where the name misses.
-    const catalog = mod?.[server ? `${lang}Server` : lang] ?? Object.values(mod ?? {})[0] ?? {};
+    // A catalog the app downloads in halves (`ar-a.ts`, `ar-b.ts`) is read from its halves.
+    const halves = server
+      ? []
+      : [`${lang}-a.ts`, `${lang}-b.ts`].map((f) => join(root, 'packages/core/src/locales', f));
+    const catalog = {};
+    for (const f of [file, ...halves]) {
+      const mod = await import(f).catch(() => null);
+      Object.assign(
+        catalog,
+        mod?.[server ? `${lang}Server` : lang] ?? Object.values(mod ?? {})[0] ?? {},
+      );
+    }
     if (mode === 'missing')
       for (const k of keys.values())
         if (!(k.text in catalog)) console.log(k.plural ? `[plural] ${k.text}` : k.text);

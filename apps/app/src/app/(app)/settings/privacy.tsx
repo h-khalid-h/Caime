@@ -1,24 +1,25 @@
 import { msg, tr } from '@caime/core/i18n';
-import type { Audience, PrivacyField } from '@caime/core/privacy';
-import { SPHERE_DEFS, type Sphere } from '@caime/core/taxonomy';
+import type { PrivacyField } from '@caime/core/privacy';
 import { useQueryClient } from '@tanstack/react-query';
 import { useState } from 'react';
 import { View } from 'react-native';
 import { endpoints } from '@/api/endpoints';
 import { useAiStatus } from '@/api/hooks';
 import { qk } from '@/api/keys';
+import { audienceLine } from '@/features/settings/audienceLine';
 import { Group, SettingsPage } from '@/features/settings/SettingsPage';
 import { useMe, useSession } from '@/state/session';
 import { useTheme } from '@/theme/theme';
-import { Button } from '@/ui/Button';
-import { ChoiceList } from '@/ui/ChoiceList';
 import { ChoiceSheet } from '@/ui/ChoiceSheet';
+import { lazyPart } from '@/ui/Lazy';
 import { ListRow } from '@/ui/ListRow';
-import { Sheet } from '@/ui/Sheet';
-import { SpherePicker } from '@/ui/SpherePicker';
 import { SwitchRow } from '@/ui/SwitchRow';
 import { Text } from '@/ui/Text';
 import { toast } from '@/ui/Toast';
+
+const AudienceSheet = lazyPart(() =>
+  import('@/features/settings/AudienceSheet').then((m) => m.AudienceSheet),
+);
 
 const FIELDS: Array<{ field: PrivacyField; label: string }> = [
   { field: 'profilePhoto', label: msg('Profile photo') },
@@ -33,24 +34,6 @@ const FIELDS: Array<{ field: PrivacyField; label: string }> = [
   { field: 'busy', label: msg('When you’re in a meeting') },
   { field: 'busyDetails', label: msg('What the meeting is') },
 ];
-
-type Kind = Audience['kind'];
-
-function describe(a: Audience | undefined): string {
-  if (!a) return tr('Your connections');
-  switch (a.kind) {
-    case 'everyone':
-      return tr('Everyone');
-    case 'connections':
-      return tr('Your connections');
-    case 'nobody':
-      return 'Nobody';
-    case 'spheres':
-      return a.spheres.length
-        ? a.spheres.map((s) => tr(SPHERE_DEFS[s].plural)).join(', ')
-        : tr('Some of your people');
-  }
-}
 
 export default function Privacy() {
   const t = useTheme();
@@ -100,7 +83,7 @@ export default function Privacy() {
           <View key={f.field} style={{ borderTopWidth: i ? 1 : 0, borderTopColor: t.c.border }}>
             <ListRow
               title={tr(f.label)}
-              subtitle={describe(me.privacy.fields[f.field])}
+              subtitle={audienceLine(me.privacy.fields[f.field])}
               chevron
               onPress={() => setEditing(f.field)}
             />
@@ -192,77 +175,5 @@ export default function Privacy() {
         />
       ) : null}
     </SettingsPage>
-  );
-}
-
-/** Who sees one thing: everyone, the people they're connected with, only some kinds of them, or nobody. */
-function AudienceSheet({
-  title,
-  current,
-  onClose,
-  onSave,
-}: {
-  title: string;
-  current: Audience | undefined;
-  onClose: () => void;
-  onSave: (a: Audience) => void;
-}) {
-  const [kind, setKind] = useState<Kind>(current?.kind ?? 'connections');
-  const [spheres, setSpheres] = useState<Sphere[]>(
-    current?.kind === 'spheres' ? current.spheres : [],
-  );
-  const some = kind === 'spheres';
-  return (
-    <Sheet
-      open
-      onClose={onClose}
-      title={title}
-      footer={
-        some ? (
-          <Button
-            label={tr('Save')}
-            size="lg"
-            block
-            disabled={!spheres.length}
-            onPress={() => onSave({ kind: 'spheres', spheres })}
-            testID="audience-save"
-          />
-        ) : undefined
-      }
-    >
-      <View style={{ marginHorizontal: -20 }}>
-        <ChoiceList<Kind>
-          label={title}
-          value={kind}
-          onChange={(k) => {
-            setKind(k);
-            if (k !== 'spheres') onSave({ kind: k } as Audience);
-          }}
-          testID="audience-kind"
-          options={[
-            { value: 'everyone', label: tr('Everyone') },
-            { value: 'connections', label: tr('Your connections') },
-            {
-              value: 'spheres',
-              label: tr('Only some of your people'),
-              detail: tr('By how you know them'),
-            },
-            { value: 'nobody', label: tr('Nobody') },
-          ]}
-        />
-      </View>
-      {some ? (
-        <SpherePicker
-          multiple
-          plural
-          wrap
-          flush
-          label={tr('Who sees it')}
-          value={spheres}
-          onChange={setSpheres}
-          testID="audience"
-        />
-      ) : null}
-    </Sheet>
   );
 }

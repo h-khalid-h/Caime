@@ -88,6 +88,7 @@ import {
   orgSpacesOf,
 } from '../lib/orgs';
 import { personViewsFor } from '../lib/people-batch';
+import { orgPlacesFor } from '../lib/places';
 import { assertInsights, assertTeamRoom, orgPlanView } from '../lib/plans';
 import { doorPath } from '../lib/public-pages';
 import { viewerRelation } from '../lib/relations';
@@ -198,13 +199,15 @@ async function orgView(ctx: AppContext, viewerId: string, org: Organization): Pr
         }
       : null;
   const plan = seat && canManageOrg(seat.role) ? await orgPlanView(ctx, org.id) : null;
-  const [blockedByMe, agent] = await Promise.all([
+  const [blockedByMe, agent, places] = await Promise.all([
     orgBlocked(ctx.db, viewerId, org.id),
     activeAgent(ctx, org.id),
+    orgPlacesFor(ctx, org.id, viewerId),
   ]);
   return {
     ...summary,
     createdAt: org.created_at.toISOString(),
+    places,
     members,
     domain,
     plan,

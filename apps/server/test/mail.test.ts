@@ -865,6 +865,90 @@ describe('who may write in, and to whom', () => {
     expect(sends[0]?.Subject).toBe('Re: Appointment');
   });
 
+  it('writing to an address that isn’t on Caime: one mail, saying who wrote, until they answer (R93)', async () => {
+    const open = await noor.req('POST', '/v1/conversations/by-email', {
+      email: 'Layla@Outside.example',
+      name: 'Layla',
+    });
+    expect(open.statusCode).toBe(201);
+    const convo = open.json().conversation.id as string;
+    // The same address again is the same conversation.
+    const again = await noor.post('/v1/conversations/by-email', { email: 'layla@outside.example' });
+    expect(again.conversation.id).toBe(convo);
+
+    sends = [];
+    await noor.post(`/v1/conversations/${convo}/messages`, {
+      clientId: 'noor-to-layla-1',
+      kind: 'text',
+      body: 'Hi Layla, are we still on for the shoot next week?',
+    });
+    await work();
+    expect(sends).toHaveLength(1);
+    expect(sends[0]?.From).toBe('Noor Mail <noor.mail@caime.test>');
+    expect(sends[0]?.To).toBe('layla@outside.example');
+    expect(String(sends[0]?.TextBody)).toContain(
+      'Noor Mail wrote this on Caime, from noor.mail@caime.test. Reply to this mail to answer',
+    );
+    // A message request: nothing more until she answers.
+    const more = await noor.req('POST', `/v1/conversations/${convo}/messages`, {
+      clientId: 'noor-to-layla-2',
+      kind: 'text',
+      body: 'Hello?',
+    });
+    expect(more.json().error.code).toBe('awaiting_acceptance');
+
+    // She answers from her mail: it lands in the same conversation, and Noor writes freely.
+    const outHeaders = (sends[0]?.Headers ?? []) as Array<{ Name: string; Value: string }>;
+    const outId = outHeaders.find((h) => h.Name === 'Message-ID')?.Value ?? '';
+    const reply = await inbound(
+      await postmark({
+        from: 'layla@outside.example',
+        fromName: 'Layla',
+        to: 'noor.mail@caime.test',
+        subject: `Re: ${String(sends[0]?.Subject)}`,
+        text: 'Yes, Thursday works.',
+        inReplyTo: outId,
+        references: [outId],
+      }),
+    );
+    expect(reply.json().outcomes[0].outcome).toBe('delivered');
+    await t.ctx.flush();
+    expect(
+      (await messagesIn(noor, convo)).find((m) => m.body === 'Yes, Thursday works.'),
+    ).toBeTruthy();
+    sends = [];
+    await noor.post(`/v1/conversations/${convo}/messages`, {
+      clientId: 'noor-to-layla-3',
+      kind: 'text',
+      body: 'Great, see you then.',
+    });
+    await work();
+    expect(sends).toHaveLength(1);
+    // Only the first mail of a conversation says who wrote.
+    expect(String(sends[0]?.TextBody)).toBe('Great, see you then.');
+  });
+
+  it('never mails someone on Caime behind them, nor writes to one’s own or a Caime address (R93)', async () => {
+    const taken = await noor.req('POST', '/v1/conversations/by-email', {
+      email: 'omar.mail@example.com',
+    });
+    expect(taken.statusCode).toBe(409);
+    expect(taken.json().error.code).toBe('email_taken');
+    expect(JSON.stringify(taken.json())).not.toContain('Omar');
+    const own = await noor.req('POST', '/v1/conversations/by-email', {
+      email: 'noor.mail@example.com',
+    });
+    expect(own.statusCode).toBe(400);
+    const caime = await noor.req('POST', '/v1/conversations/by-email', {
+      email: 'someone@caime.test',
+    });
+    expect(caime.statusCode).toBe(400);
+    const young = await mina.req('POST', '/v1/conversations/by-email', {
+      email: 'friend@outside.example',
+    });
+    expect(young.statusCode).toBe(403);
+  });
+
   it('a provisional person silent for a year goes; their words stay', async () => {
     const before = await t.ctx.db
       .selectFrom('users')

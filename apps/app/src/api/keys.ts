@@ -30,6 +30,9 @@ export const qk = {
   /** The orders in its customer conversations (R60), for the Business inbox's Orders view. */
   orgOrders: (orgId: string) => ['org-orders', orgId] as const,
   connectedApps: ['connected-apps'] as const,
+  /** A person's places (R92), and those a conversation's card may say. */
+  myPlaces: ['places'] as const,
+  conversationPlaces: (id: string) => ['places', 'conversation', id] as const,
   /** Someone's own email addresses and phone numbers (R91). */
   addresses: ['addresses'] as const,
   /** Connected Google and Microsoft accounts (R90). */

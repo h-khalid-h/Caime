@@ -23,6 +23,7 @@ import { bookingOf, catalogOf, orderingOf, paymentsOf } from './booking';
 import { dropUnusedFiles, removeStored } from './files';
 import { insertSystemMessage, messageViews, participantsOf } from './messages';
 import { forgetNotificationsOf, tellForgotten } from './notify';
+import { placesOwnedBy } from './places';
 import { KEPT_DAYS } from './retention';
 import { itemsWithStock, stockBackCtes, tellStockChanged } from './stock';
 import { storageFor } from './storage';
@@ -426,6 +427,8 @@ export async function buildOrgExport(
       ordering: orderingOf(org),
       payments: paymentsOf(org),
     },
+    // Its places (R92), with who each was shown to.
+    places: await placesOwnedBy(ctx, { orgId }),
     checkout: checkout
       ? {
           provider: checkout.provider,
@@ -507,6 +510,7 @@ export async function clearClosedOrg(ctx: AppContext, orgId: string): Promise<bo
       .filter((id): id is string => typeof id === 'string');
     await trx.deleteFrom('org_members').where('org_id', '=', orgId).execute();
     await trx.deleteFrom('org_agents').where('org_id', '=', orgId).execute();
+    await trx.deleteFrom('places').where('org_id', '=', orgId).execute();
     // Its apps' tokens, deliveries and kinds of card go with them; their bots' messages stay in
     // the customers' copies, so the bots themselves stay, as senders.
     await trx.deleteFrom('org_apps').where('org_id', '=', orgId).execute();

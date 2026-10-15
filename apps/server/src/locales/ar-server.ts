@@ -1383,4 +1383,12 @@ export const arServer: Catalog = {
     'هذا أقصى ما يضيفه شخص واحد. أزل واحدًا أولًا.',
   'That address': 'ذلك العنوان',
   'That code isn’t right. Check it and try again.': 'هذا الرمز غير صحيح. تحقّق منه وحاول من جديد.',
+  'Caime can’t send email here yet.': 'لا يرسل Caime بريدًا إلكترونيًا هنا بعد.',
+  'That’s a Caime address. Find them by their handle.':
+    'هذا عنوان على Caime. ابحث عن صاحبه باسم المستخدم.',
+  'Writing to an address by email is for people over 18.':
+    'المراسلة بالبريد الإلكتروني لمن تجاوز 18 عامًا.',
+  'Someone on Caime uses that address. Ask them for their handle.':
+    'هذا العنوان لشخص على Caime. اطلب منه اسم المستخدم.',
+  'That kind of place isn’t offered here.': 'هذا النوع من الأماكن غير متاح هنا.',
 };

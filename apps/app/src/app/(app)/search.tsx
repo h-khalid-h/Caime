@@ -28,11 +28,16 @@ import { RelationshipChip } from '@/ui/Chip';
 import { Back } from '@/ui/directional';
 import { Guide } from '@/ui/Guide';
 import { IconButton } from '@/ui/IconButton';
+import { lazyPart } from '@/ui/Lazy';
 import { ListRow, SectionTitle } from '@/ui/ListRow';
 import { useLayout } from '@/ui/layout';
 import { Screen, TopBar } from '@/ui/Screen';
 import { Text } from '@/ui/Text';
 import { TextField } from '@/ui/TextField';
+
+const WriteByEmail = lazyPart(() =>
+  import('@/features/people/WriteByEmail').then((m) => m.WriteByEmail),
+);
 
 const EXAMPLES = [
   'my manager',
@@ -119,6 +124,8 @@ export default function Search() {
     [offline, qc, debounced, me.id],
   );
   const r = local ?? q.data?.results;
+  // An address typed (R93): the lazy row checks it and offers to write; nothing else loads.
+  const writable = debounced.includes('@') ? debounced : null;
   const nothing =
     (local ? true : q.isFetched) &&
     r &&
@@ -210,6 +217,9 @@ export default function Search() {
           </View>
         ) : null}
         {askable ? <CaiAnswer question={debounced} open={open} auto={asked} /> : null}
+        {writable && !offline && q.isFetched && !r?.people?.length ? (
+          <WriteByEmail typed={writable} />
+        ) : null}
         {r?.people?.length ? (
           <>
             <SectionTitle>{tr('People')}</SectionTitle>

@@ -13,6 +13,7 @@ import KeyRound from 'lucide-react-native/icons/key-round';
 import Keyboard from 'lucide-react-native/icons/keyboard';
 import LayoutGrid from 'lucide-react-native/icons/layout-grid';
 import Lock from 'lucide-react-native/icons/lock';
+import MapPin from 'lucide-react-native/icons/map-pin';
 import Palette from 'lucide-react-native/icons/palette';
 import Shield from 'lucide-react-native/icons/shield';
 import Sparkles from 'lucide-react-native/icons/sparkles';
@@ -75,6 +76,14 @@ const ITEMS: Array<{
     // One place for what someone offers (R58, R60, R61, R62): booked, ordered or paid.
     title: msg('What you offer'),
     subtitle: msg('Bookings, orders and ways to be paid'),
+  },
+  {
+    href: '/settings/places',
+    path: '/settings/places',
+    icon: MapPin,
+    // Where you are (R92): each place shown to whom you choose, used by cards.
+    title: msg('Your places'),
+    subtitle: msg('Home, work, and who sees each'),
   },
   {
     href: '/settings/saved',

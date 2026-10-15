@@ -283,6 +283,13 @@ offered while you&rsquo;re busy, and nobody sees them. From Google, Caime asks f
 Microsoft offers no such permission, so Caime asks to read your calendar&rsquo;s basics and keeps
 only the times. Disconnecting it, deleting your account or signing out everywhere deletes what was
 kept and gives the permission back. Your export lists the accounts you connected.</li>
+<li><strong>Your places.</strong> You can add the places you are (home, work), each with its
+address and, only if you ask, the point where you stood when you added it; nobody looks an address
+up, and no map service sees one. Each is shown only to whom you choose (nobody until you choose;
+under 18, your family at most). When you pick one for a meeting or a delivery, its words are
+copied into that card and stay with it. An organization's places are shown to anyone on its page,
+to its customers, or to its team, as it chooses. Your export lists your places; deleting one, or
+your account, deletes it.</li>
 <li><strong>Email addresses and phone numbers you add as yours.</strong> Beside the email you sign
 in with, you can add more addresses and numbers under You &rarr; Apps. Each is proven by a six-digit
 code sent to it (an email by mail; a phone number over WhatsApp, which Meta delivers and which reads

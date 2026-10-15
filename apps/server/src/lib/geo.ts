@@ -52,6 +52,11 @@ export interface CountryEntry extends CountryName {
   zone: string;
 }
 
+/** A country's name in `locale`'s language, from the same cached list (its code if unknown). */
+export function countryNameIn(code: string, locale: string | null | undefined): string {
+  return countriesIn(locale).find((c) => c.code === code)?.name ?? code;
+}
+
 /** Lists kept, one per language as asked for (zh-TW, pt-PT), the oldest let go past `KEPT`. */
 const lists = new Map<string, CountryEntry[]>();
 const KEPT = 64;

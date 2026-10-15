@@ -47,6 +47,7 @@ import type {
 } from '@caime/core/api';
 import { tr } from '@caime/core/i18n';
 import { personViewsFor } from '../lib/people-batch';
+import { personPlacesFor } from '../lib/places';
 import { parse } from '../lib/validate';
 import { requireAuth } from '../plugins/auth';
 
@@ -544,9 +545,12 @@ export async function peopleRoutes(app: FastifyInstance, ctx: AppContext) {
       isConnected: relation.isConnected,
       spheres: relation.ownerSpheresForViewer,
     }).filter((c) => shown.has(c.id));
+    // Their places this viewer may see (R92), by their rules for them.
+    const places = user.kind === 'human' ? await personPlacesFor(ctx, user, auth.userId) : [];
     return {
       person: personView(user, relation, now, identity),
       organizations,
+      places,
       booking,
       ordering,
       collections: booking || ordering ? collections : [],
