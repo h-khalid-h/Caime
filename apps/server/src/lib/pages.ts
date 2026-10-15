@@ -360,7 +360,10 @@ Caime is kept as a person only you can see (their address and the name their mai
 year passes with no mail either way, or until every conversation with them is gone; signing up
 with that address makes that person, and your conversations with them, theirs. A list&rsquo;s
 mail or one from an address nobody answers (a newsletter, a no-reply sender) is a notice: kept
-the same way, one conversation per sender under Notices, muted, and read for nothing.</li>
+the same way, one conversation per sender under Notices, muted, and read for nothing. A mail&rsquo;s
+layout (its HTML) is kept with it as it came, shown only to the conversation&rsquo;s people in a
+sandbox where nothing in it runs or loads (so a tracking image tells its sender nothing), and
+erased with the message.</li>
 `
     : ''
 }<li>A handle you stop using, by changing it or deleting your account, is kept from everyone for

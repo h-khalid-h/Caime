@@ -9,10 +9,12 @@ import { createServer, type Server } from 'node:http';
 import type { AddressInfo } from 'node:net';
 import { isReservedHandle, uuidv7 } from '@caime/core';
 import type { InjectOptions } from 'fastify';
+import { sql } from 'kysely';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { runDueJobs } from '../src/lib/jobs';
 import { STAFF_ADDRESSES } from '../src/lib/mail-in';
 import { sweepProvisional } from '../src/lib/mail-out';
+import { eraseMessagesWhere } from '../src/lib/org-data';
 import { type Client, createTestApp, signup, type TestApp } from './helpers';
 import { BULK_DOMAIN, BULK_IP, mailDns, rawMail, SENDER_IP } from './mail-fixtures';
 
@@ -149,6 +151,7 @@ const messagesIn = async (c: Client, id: string) =>
       subject: string | null;
       address: string;
       delivery: string | null;
+      hasHtml: boolean;
     } | null;
     files: Array<{ name: string; kind: string }>;
   }>;
@@ -334,6 +337,67 @@ describe('a stranger writes in', () => {
     // One silent notification for the request, however many mails are held in it.
     const notifications = (await noor.get('/v1/notifications')).notifications as unknown[];
     expect(notifications).toHaveLength(1);
+  });
+
+  it('someone reached by email is opened as their mail conversation, never connected with', async () => {
+    const opened = await noor.post('/v1/conversations', { kind: 'direct', userId: sender });
+    expect(opened.conversation.id).toBe(general);
+    const privately = await noor.req('POST', '/v1/conversations', {
+      kind: 'direct',
+      userId: sender,
+      private: true,
+    });
+    expect(privately.statusCode).toBe(400);
+    const asked = await noor.req('POST', '/v1/connections/requests', { toUserId: sender });
+    expect(asked.statusCode).toBe(404);
+  });
+
+  it('keeps a mail’s HTML as sent, shown to the conversation alone in a sandbox, gone on erasure', async () => {
+    const res = await inbound(
+      await postmark({
+        from: 'sara@partner.example',
+        to: 'noor.mail@caime.test',
+        subject: 'The newsletter',
+        text: 'Our news, in plain words.',
+        html: '<html><body><h1>Our news</h1><img src="https://track.example/p.gif"><script>alert(1)</script></body></html>',
+      }),
+    );
+    expect(res.json().outcomes[0].outcome).toBe('delivered');
+    await t.ctx.flush();
+    const msgs = await messagesIn(noor, general);
+    const mail = msgs.find((m) => m.body === 'Our news, in plain words.');
+    expect(mail?.mail).toMatchObject({ hasHtml: true });
+    // A mail without HTML says so.
+    expect(msgs.find((m) => m.body === 'And the invoice too.')?.mail).toMatchObject({
+      hasHtml: false,
+    });
+    const url = `/v1/messages/${mail?.id}/mail.html`;
+    const shown = await noor.req('GET', url);
+    expect(shown.statusCode).toBe(200);
+    expect(shown.headers['content-type']).toContain('text/html');
+    // No script runs, nothing is fetched, and it has no origin of Caime's.
+    const csp = String(shown.headers['content-security-policy']);
+    expect(csp).toContain('sandbox');
+    expect(csp).toContain("default-src 'none'");
+    expect(csp).not.toContain('allow-scripts');
+    expect(csp).not.toContain('allow-same-origin');
+    expect(shown.headers['cache-control']).toContain('no-store');
+    expect(shown.body).toContain('<h1>Our news</h1>');
+    // Nobody outside the conversation reads it.
+    expect((await omar.req('GET', url)).statusCode).toBe(404);
+    // Erased, it's gone with the words.
+    await eraseMessagesWhere(
+      t.ctx.db,
+      sql`select id from messages where id = ${mail?.id ?? ''}`,
+      new Date(),
+    );
+    const row = await t.ctx.db
+      .selectFrom('mail_messages')
+      .select('html')
+      .where('message_id', '=', mail?.id ?? '')
+      .executeTakeFirstOrThrow();
+    expect(row.html).toBeNull();
+    expect((await noor.req('GET', url)).statusCode).toBe(404);
   });
 
   it('delivers the same mail once, however often the provider posts it', async () => {

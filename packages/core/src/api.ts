@@ -631,6 +631,8 @@ export interface MessageMailView {
   address: string;
   delivery: MailDelivery | null;
   deliveryAt: string | null;
+  /** It came with HTML (R75 phase 2): "View as sent" opens it in a sandbox. */
+  hasHtml: boolean;
 }
 
 /** What the mail provider's inbound webhook is answered (R75): each address here the mail reached, and what became of it there. */

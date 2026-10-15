@@ -594,6 +594,28 @@ export const MessageBubble = memo(function MessageBubble({
           {mailLine(m.mail, false)}
         </Text>
       ) : null}
+      {m.mail?.hasHtml && !deleted ? (
+        // The mail as its sender laid it out (R75 phase 2), in a sandbox the server sets.
+        <Pressable
+          accessibilityRole="link"
+          onPress={() =>
+            void openFile({
+              id: `mail-${m.id}`,
+              url: `/v1/messages/${m.id}/mail.html`,
+              name: `${m.mail?.subject || tr('Mail')}.html`,
+              mime: 'text/html',
+            }).catch((e: Error) => toast(e.message, { tone: 'danger' }))
+          }
+          onLongPress={hold}
+          delayLongPress={300}
+          hitSlop={8}
+          testID="message-mail-html"
+        >
+          <Text variant="captionStrong" color={meta} style={{ fontSize: 11 }}>
+            {tr('View as sent')}
+          </Text>
+        </Pressable>
+      ) : null}
       {m.sentVia ? (
         // Sent through a token or an app its sender let in, not typed here (PRD §74).
         <Text

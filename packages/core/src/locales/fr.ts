@@ -4232,4 +4232,6 @@ export const fr: Catalog = {
     'Un avis par e-mail, d’une adresse à laquelle personne ne répond : il est là pour être lu.',
   Notices: 'Avis',
   'A notice, by mail': 'Un avis, par e-mail',
+  'View as sent': 'Voir tel qu’envoyé',
+  'Write by email': 'Écrire par e-mail',
 };

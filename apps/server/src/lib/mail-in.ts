@@ -398,6 +398,7 @@ async function deliver(
       subject: mail.subject?.slice(0, 500) ?? null,
       provider: provider.name,
       provider_id: null,
+      html: mail.html,
     })
     .onConflict((oc) => oc.columns(['rfc_message_id', 'to_address']).doNothing())
     .execute();

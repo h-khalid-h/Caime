@@ -1314,7 +1314,9 @@ These are rules, not preferences.
   its own mail (`notice_only`), and only a conversation that starts as a notice is one, the `mail.send` job from the person's or the organization's address in
   the thread, `sent` then `delivered` or `bounced` by `applyMailEvents`; `mail.sweep` daily). A
   message that came or went as mail has `messages.channel = 'mail'` and a `mail_messages` row
-  (`MessageView.mail`); erasure clears its subject and sender address. A provisional sender is
+  (`MessageView.mail`); erasure clears its subject, sender address and HTML. A mail's HTML
+  (`mail_messages.html`) is never selected with a view (`hasHtml` says it's there) and is served
+  only by `GET /messages/:id/mail.html` under a CSP `sandbox` that loads nothing but `data:`. A provisional sender is
   a person where a bot isn't (a thread's moves, the `automated` flag) and is never notified
   (reached by mail instead). A customer's thread starts through `startCustomerConversation`
   (`lib/business-threads.ts`), for the route and for mail alike. A subject's rules are core's

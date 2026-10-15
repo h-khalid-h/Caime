@@ -1393,4 +1393,7 @@ export const frServer: Catalog = {
     'Choisissez un de vos lieux que les clients peuvent voir.',
   'This is a notice by mail, from an address nobody answers. Nothing is sent from here.':
     'C’est un avis par e-mail, d’une adresse à laquelle personne ne répond. Rien n’est envoyé d’ici.',
+  'That mail': 'Cet e-mail',
+  'Someone reached by email is written to by email.':
+    'À une personne jointe par e-mail, on écrit par e-mail.',
 };

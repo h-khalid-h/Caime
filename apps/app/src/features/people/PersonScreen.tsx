@@ -238,7 +238,21 @@ function PersonPage({ id, book = null, slug = null }: PersonScreenProps) {
         testID="person-pay"
       />
     ) : null;
-  const primaryAction = self ? null : state === 'connected' ? (
+  // Someone reached by email (R93) isn't on Caime to connect with: they're written to by mail.
+  const byMail = person.kind === 'provisional';
+  const primaryAction = self ? null : byMail ? (
+    <Button
+      label={tr('Write by email')}
+      icon={MessageCircle}
+      size="lg"
+      block
+      onPress={() => {
+        const general = p.conversations.find((c) => c.isGeneral);
+        void openChatWith({ conversationId: general?.id ?? null, person });
+      }}
+      testID="person-write-mail"
+    />
+  ) : state === 'connected' ? (
     <Button
       label={tr('Message')}
       icon={MessageCircle}
@@ -342,19 +356,22 @@ function PersonPage({ id, book = null, slug = null }: PersonScreenProps) {
               {person.statusText}
             </Text>
           ) : null}
-          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
-            {person.trust.level === 'org_verified' || person.trust.level === 'verified' ? (
-              <BadgeCheck size={14} color={t.c.success} />
-            ) : (
-              <Shield size={14} color={t.c.textTertiary} />
-            )}
-            <Text variant="caption" color="textSecondary" accessibilityHint={person.trust.detail}>
-              {/* The organization is named once, on its chip below (R43). */}
-              {person.trust.level === 'org_verified' && p.organizations.length
-                ? tr('Verified')
-                : person.trust.label}
-            </Text>
-          </View>
+          {/* For someone reached by email, the line above already says so. */}
+          {byMail ? null : (
+            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+              {person.trust.level === 'org_verified' || person.trust.level === 'verified' ? (
+                <BadgeCheck size={14} color={t.c.success} />
+              ) : (
+                <Shield size={14} color={t.c.textTertiary} />
+              )}
+              <Text variant="caption" color="textSecondary" accessibilityHint={person.trust.detail}>
+                {/* The organization is named once, on its chip below (R43). */}
+                {person.trust.level === 'org_verified' && p.organizations.length
+                  ? tr('Verified')
+                  : person.trust.label}
+              </Text>
+            </View>
+          )}
           {p.organizations.length ? (
             <View
               style={{ flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'center', gap: 8 }}

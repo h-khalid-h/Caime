@@ -1395,4 +1395,7 @@ export const arServer: Catalog = {
   'Choose one of your places that customers may see.': 'اختر أحد أماكنك التي يراها العملاء.',
   'This is a notice by mail, from an address nobody answers. Nothing is sent from here.':
     'هذه نشرة بالبريد من عنوان لا يُرد عليه. لا يُرسل شيء من هنا.',
+  'That mail': 'ذلك البريد',
+  'Someone reached by email is written to by email.':
+    'من يُتواصل معه بالبريد تُكتب له رسالة بالبريد.',
 };

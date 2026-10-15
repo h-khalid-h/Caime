@@ -718,6 +718,38 @@ export async function messageRoutes(app: FastifyInstance, ctx: AppContext) {
     return { receipt: await receiptFor(ctx, id, auth.userId) };
   });
 
+  // A mail as it was sent (R75 phase 2): its HTML, to whoever is in its conversation, in a
+  // sandbox: no script runs, nothing is fetched (a tracking pixel tells its sender nothing), no
+  // form posts, and it has no origin, so it reads no cookie of Caime's.
+  app.get('/messages/:id/mail.html', async (req, reply) => {
+    const auth = requireAuth(req);
+    const { id } = parse(z.object({ id: z.string().uuid() }), req.params);
+    const gone = () => notFound(tr('That mail'));
+    const m = await ctx.db
+      .selectFrom('messages')
+      .select(['conversation_id', 'deleted_at'])
+      .where('id', '=', id)
+      .executeTakeFirst();
+    if (!m || m.deleted_at) throw gone();
+    await membership(ctx, auth.userId, m.conversation_id);
+    const row = await ctx.db
+      .selectFrom('mail_messages')
+      .select('html')
+      .where('message_id', '=', id)
+      .executeTakeFirst();
+    if (!row?.html) throw gone();
+    return reply
+      .header('content-type', 'text/html; charset=utf-8')
+      .header(
+        'content-security-policy',
+        "sandbox; default-src 'none'; style-src 'unsafe-inline'; img-src data:; font-src data:",
+      )
+      .header('x-content-type-options', 'nosniff')
+      .header('referrer-policy', 'no-referrer')
+      .header('cache-control', 'private, no-store')
+      .send(row.html);
+  });
+
   // A meeting that repeats (R58): "Stop repeating" on the time ahead ends the series there.
   app.post('/messages/:id/repeat/stop', async (req): Promise<MessageResponse> => {
     const auth = requireAuth(req);

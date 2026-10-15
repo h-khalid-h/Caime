@@ -4060,4 +4060,6 @@ export const turkish: Catalog = {
     'Kimsenin yanıtlamadığı bir adresten gelen e-posta bildirimi: okumak için burada.',
   Notices: 'Duyurular',
   'A notice, by mail': 'E-postayla bir bildirim',
+  'View as sent': 'Gönderildiği gibi gör',
+  'Write by email': 'E-postayla yaz',
 };

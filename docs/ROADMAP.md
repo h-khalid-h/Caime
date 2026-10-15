@@ -1695,8 +1695,14 @@ discovers, and mail at their own address.
       suggestions, under the folded Notices section; nothing is sent from it (`notice_only`).
       Only a conversation that starts as a notice is one, so a correspondent's list mail never
       silences them. Verified with core `mail.test.ts`, `attention.test.ts` and `mail.test.ts`.
-- [ ] R75 phase 2: HTML as sent in a sandbox, reply-all with CC, sending as the address from
-      Gmail and Outlook through Caime's submission.
+- [x] R75 phase 2, HTML as sent: a mail's HTML is kept with it (`mail_messages.html`, migration
+      0085, up to `MAIL_HTML_MAX`), said by `MessageMailView.hasHtml` without being sent with the
+      view, and opened by "View as sent" through `GET /messages/:id/mail.html` for the
+      conversation's people alone, under a CSP `sandbox` with nothing loaded but `data:` (no
+      script, no origin, a tracking pixel never fetched, `no-store`); erasure clears it. Verified
+      with `mail.test.ts`.
+- [ ] R75 phase 2: reply-all with CC, sending as the address from Gmail and Outlook through
+      Caime's submission.
 - [ ] R75 phase 3: sign in with Google, Apple and Microsoft (claiming in one tap); Google
       Calendar and Outlook calendar sync as apps in Discover; a verified organization receiving
       at its own domain.
@@ -3376,3 +3382,7 @@ The six-slice review's plan, in its order; a block is ticked when its tests and 
   customer wrote by mail; the send job had dropped every word not a person's.
 - 2026-10-15 — R75 notices: newsletters and no-reply mail land under Notices, muted, never a
   request, never answered.
+- 2026-10-15 — R75: "View as sent" opens a mail's own HTML in a sandbox (nothing runs or loads).
+- 2026-10-15 — R93: a person reached by email offers "Write by email" (their mail conversation)
+  rather than Connect, which failed with "That person wasn't found" (owner's report); the profile
+  says "Reached by email" once.

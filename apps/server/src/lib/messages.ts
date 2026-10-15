@@ -77,7 +77,18 @@ export type { FileView, MessageView };
 export const fileUrl = (id: string) => `/v1/files/${id}`;
 
 /** A mail message as the app shows it (R75): the other side's address, the subject, how far one sent got. */
-export function mailViewOf(row: MailMessage | undefined): MessageMailView | null {
+export type MailViewRow = Pick<
+  MailMessage,
+  | 'message_id'
+  | 'direction'
+  | 'subject'
+  | 'from_address'
+  | 'to_address'
+  | 'delivery'
+  | 'delivery_at'
+> & { has_html: boolean };
+
+export function mailViewOf(row: MailViewRow | undefined): MessageMailView | null {
   if (!row) return null;
   return {
     direction: row.direction,
@@ -85,6 +96,7 @@ export function mailViewOf(row: MailMessage | undefined): MessageMailView | null
     address: row.direction === 'in' ? row.from_address : row.to_address,
     delivery: row.delivery,
     deliveryAt: row.delivery_at?.toISOString() ?? null,
+    hasHtml: row.has_html,
   };
 }
 
@@ -213,8 +225,22 @@ export async function messageViews(
       : Promise.resolve([]),
     // What a mail message was on the wire (R75), only where one is in the batch.
     rows.some((m) => m.channel === 'mail')
-      ? db.selectFrom('mail_messages').selectAll().where('message_id', 'in', ids).execute()
-      : Promise.resolve([] as MailMessage[]),
+      ? db
+          .selectFrom('mail_messages')
+          .select([
+            'message_id',
+            'direction',
+            'subject',
+            'from_address',
+            'to_address',
+            'delivery',
+            'delivery_at',
+          ])
+          // Whether there's HTML to show as sent, never the HTML itself with every view.
+          .select(sql<boolean>`html is not null`.as('has_html'))
+          .where('message_id', 'in', ids)
+          .execute()
+      : Promise.resolve([] as MailViewRow[]),
   ]);
   // Bots and agents say so wherever their messages go (R16).
   const automatedSenders = new Set(

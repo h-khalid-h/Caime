@@ -96,6 +96,21 @@ export async function conversationRoutes(app: FastifyInstance, ctx: AppContext) 
         const m = await membership(ctx, auth.userId, result.id);
         return { conversation: await conversationView(ctx, auth.userId, m.conversation, m.me) };
       }
+      // Someone reached by email (R93): written to by mail, as their address is, never connected.
+      const reached = await ctx.db
+        .selectFrom('users')
+        .select('email')
+        .where('id', '=', body.userId)
+        .where('kind', '=', 'provisional')
+        .executeTakeFirst();
+      if (reached) {
+        if (body.title || body.private || !reached.email)
+          throw badRequest(tr('Someone reached by email is written to by email.'));
+        const result = await openMailConversation(ctx, auth.userId, reached.email, undefined);
+        if (result.created) reply.status(201);
+        const m = await membership(ctx, auth.userId, result.id);
+        return { conversation: await conversationView(ctx, auth.userId, m.conversation, m.me) };
+      }
       if (body.title || body.private) {
         if (!b.connected)
           throw forbidden(

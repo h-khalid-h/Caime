@@ -47,6 +47,9 @@ export interface MailAttachment {
 }
 
 /** A mail as it arrived, whoever the provider. */
+/** The longest HTML part kept to be shown as sent (R75): a mail's own design, not a site. */
+export const MAIL_HTML_MAX = 500_000;
+
 export interface InboundMail {
   /** The Message-ID header, or one made from the mail when it has none. */
   rfcMessageId: string;
@@ -56,6 +59,8 @@ export interface InboundMail {
   subject: string | null;
   /** The reply's own words where the provider strips the quoted history, else the whole text. */
   text: string;
+  /** Its HTML part as sent, when it has one under `MAIL_HTML_MAX` characters (R75 phase 2). */
+  html: string | null;
   inReplyTo: string | null;
   references: string[];
   /** The message as it arrived, for Caime's own check of who sent it; null when not sent. */
@@ -250,6 +255,7 @@ function postmark(config: Config): MailProvider {
         references,
         raw: typeof m.RawEmail === 'string' && m.RawEmail ? m.RawEmail : null,
         spam: /^yes/i.test(spamStatus),
+        html: m.HtmlBody?.trim() && m.HtmlBody.length <= MAIL_HTML_MAX ? m.HtmlBody : null,
         notice: isNoticeMail(from, {
           list:
             header(headers, 'List-Id').length > 0 || header(headers, 'List-Unsubscribe').length > 0,
