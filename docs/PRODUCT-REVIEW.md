@@ -1749,3 +1749,40 @@ with its reason, so it isn't proposed again without new facts.
   upload's 100 MB. OneDrive's pre-signed download address is followed by hand, without the
   access, which goes to the provider's API alone (the test caught `fetch` carrying it to a
   same-origin redirect).
+- **R91 — Accounts: everything that is you, each with what it is and whether it's proven (owner's
+  brainstorm, 2026-10-15: "hussein.khalid@cai.me has accounts: hassan@datac.com Google Connected,
+  h-khalid@outlook.it Microsoft Connected, +201013152969 WhatsApp Verified, cal.com/h-khalid Cal
+  Connected, linkedin.com/… LinkedIn Verified… Any connected shall be fully synced so the user
+  doesn't need to leave Caime. The same for organizations.")** Validated against Caime. *What's
+  right:* a person's sign-in email, their Caime address and R90's connections live in three places
+  today; one list per person (and per organization), each row an app and a status, is clearer and
+  is the relationship-first product's own account of who someone is. *Refined:* two different
+  facts share the list, so two statuses, never one mixed word. **Verified** is ownership proven:
+  an email by a code, a phone number by a code sent over WhatsApp (Meta's WhatsApp Business
+  Platform, its authentication templates: it proves the number and that it's on WhatsApp, often
+  cheaper and surer than SMS in Egypt and the Gulf) or by SMS as the fallback, a domain by DNS
+  (R42), a profile by the provider's own sign-in (LinkedIn, PayPal, Meta). **Connected** is access
+  granted for named uses and working (R90), with "Needs reconnecting" and "Unverified" (claimed,
+  not proven) beside them; each row says how it was verified. A verified phone lets people who
+  have the number find the person (R89 declined matching by phone until numbers could be proven),
+  and verified profiles may show as badges, each under its own privacy field. *What "never leave
+  Caime" can honestly mean, per provider:* other calendars shown in Caime's calendar, read live
+  (a read-only calendar permission, not restricted); Outlook mail shown in Caime, tied to the
+  person it's with, answered from the person's own address; Gmail sent as oneself, and read only
+  after the owner decides on Google's CASA assessment (restricted scope, yearly, paid); files as
+  R90 phase 2. *Declined, with why:* reading personal WhatsApp, Messenger, Instagram or LinkedIn
+  messages, for which no official interface exists (unofficial tools break those platforms' terms
+  and get accounts banned); copying whole mailboxes and calendars into Caime's storage (show them
+  live with the person's access and keep only what a feature needs, as the busy times are kept:
+  storage, liability and a second copy of everyone's mail to protect). *Where the messages are
+  real:* an organization's WhatsApp Business, Instagram and Facebook Page messages, through Meta's
+  official business APIs, into the Business inbox (R15), answered by the team and its agent.
+  *Phases:* (1) the Accounts list for people and organizations (Verified and Connected), extra
+  emails by code, phone numbers by WhatsApp code (SMS fallback), LinkedIn and PayPal as verified
+  identities; mail from one's own address to one's own Caime address lands in one's Cai chat,
+  marked as from one's email (refused silently today). (2) Other calendars and Outlook mail inside
+  Caime, read live, tied to people, answered from one's own address; Gmail reading after the CASA
+  decision. (3) Organizations' WhatsApp Business, Instagram and Messenger in the Business inbox.
+  *Not done, with why:* Meta's business verification, a WhatsApp Business number and an approved
+  authentication template, an SMS provider, and LinkedIn's and PayPal's sign-in apps are the
+  owner's to set up (⛔ in ROADMAP).

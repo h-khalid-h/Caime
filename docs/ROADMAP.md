@@ -1459,6 +1459,17 @@ listed there with its owner.
 - [ ] ⛔ R90 Google files on cai.me need the owner's Picker key: a browser API key limited to the
       Picker API and `https://cai.me/*`, and the project's number (`GOOGLE_PICKER_API_KEY`,
       `GOOGLE_PICKER_APP_ID`; docs/DEPLOY.md). Until then Files is offered for Microsoft alone.
+- [ ] R91 phase 1, Accounts (PRODUCT-REVIEW R91): one list per person and organization, each an
+      app with Verified (ownership proven) and Connected (access working) statuses; extra emails
+      by code; a phone number by a code over WhatsApp, SMS as the fallback; LinkedIn and PayPal
+      as verified identities; mail from one's own address to one's own Caime address into one's
+      Cai chat. ⛔ for the phone: a Meta Business account (verified), a WhatsApp Business number,
+      an approved authentication template, its token and number id; an SMS provider for the
+      fallback.
+- [ ] R91 phase 2: other calendars and Outlook mail read live inside Caime, tied to people,
+      answered from one's own address; Gmail reading after the owner's CASA decision.
+- [ ] R91 phase 3: an organization's WhatsApp Business, Instagram and Messenger in its Business
+      inbox (Meta's business APIs; ⛔ Meta app review and business verification).
 - [ ] R90 next use: mail sent as one's Gmail or Outlook address, and Outlook mail read in; Gmail
       read only after the owner decides on Google's CASA.
 - [ ] R89 on phones, built and not yet tried on one: the phone's own address book (expo-contacts,
@@ -3289,3 +3300,8 @@ The six-slice review's plan, in its order; a block is ticked when its tests and 
   the real header. Mail from one's own sign-in address to one's own Caime address is refused (by
   design, but silently): what it should do (a note to self, "forward to Caime") is a decision
   still open.
+- 2026-10-15 — R91, accounts: the owner's brainstorm validated into the product review. One list
+  of what is someone (Verified: ownership proven, a phone by WhatsApp code; Connected: access
+  working), the honest reach of "never leave Caime" per provider, personal WhatsApp, Messenger,
+  Instagram and LinkedIn messages declined (no official interface), organizations' business
+  channels into the Business inbox. Three phases on the roadmap.
