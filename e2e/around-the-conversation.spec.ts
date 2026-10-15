@@ -707,6 +707,9 @@ test.describe
       await page.getByTestId('settings-orgs').filter({ visible: true }).click();
       await page.getByTestId('org-create-start').click();
       await page.getByTestId('org-name').fill(`Nile Dental ${stamp}`);
+      // The brand run together comes first (docs/HANDLES.md); the dotted one is a chip away.
+      await expect(page.getByTestId('org-handle')).toHaveValue(`niledental${stamp}`);
+      await page.getByTestId(`org-handle-option-${handle}`).click();
       await expect(page.getByTestId('org-handle')).toHaveValue(handle);
       await page.getByTestId('org-kind-clinic').click();
       // The year it began is picked, never typed: a list found as you type.

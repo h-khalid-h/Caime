@@ -285,6 +285,15 @@ These are rules, not preferences.
   `characters.test.ts` fail otherwise). Anything that lets someone take a handle checks it with
   `assertHandleAvailable` (`lib/handles.ts`), which answers a reserved handle exactly as a taken
   one; only the operator's `/v1/admin/{people,orgs}/:handle/handle` gives one out.
+- Handles are made by one engine (R94, `docs/HANDLES.md`, core `handle-engine.ts`, policy
+  `HANDLE_POLICY_VERSION`): `personCandidates` and `orgCandidates` rank what a name could have,
+  `GET /v1/handles/candidates` returns the free ones (then the best with 2, 3… never at random),
+  and sign-up and a new organization offer them. `isReservedHandle` also refuses generic words
+  alone (`GENERIC_WORDS`), and `assertHandleAvailable`/`unavailableAmong` refuse a lookalike of
+  anyone's handle by `handleSkeleton`, which the database keeps as `handle_skeleton` (migration
+  0088; a change to one is a change to the other, held by `handle-engine.test.ts`). A name with
+  no Latin letters is never transliterated: the form asks for its Latin spelling. A test
+  person's default handle is `p<n>x<hex>` (`test/helpers.ts`), never a generic word.
 - A handle someone lets go of (a new one, a deleted account, the operator moving them) is held
   from everyone for a year: anything new that frees a handle calls `releaseHandle` in the same
   transaction, so there's no moment it's anyone's. `released_handles` keeps only the handle and

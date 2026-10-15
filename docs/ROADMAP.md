@@ -1726,6 +1726,17 @@ discovers, and mail at their own address.
       and its signature apart (core `mailText`, `mail_messages.signature`, migration 0086),
       folded under the words. Verified with core `mail-text.test.ts` (the owner's own Gmail
       thread) and `mail.test.ts`.
+- [x] R75 mail from before the change: a mail out later answered by its address is seen at the
+      answer's time (migration 0087), and the closing lines a sender's mails share fold into
+      their signature once (`lib/mail-backfill.ts`, core `sharedTail`, marked done in
+      `server_settings`). Verified with `mail-backfill.test.ts` on the owner's thread's shape.
+- [x] R94 handles by one engine (`docs/HANDLES.md`): ranked, deterministic candidates for people
+      and organizations (`GET /v1/handles/candidates`, chips at sign-up and on a new organization),
+      generic words alone reserved, lookalikes refused (`handle_skeleton`, migration 0088), the
+      Latin spelling asked for a name in another script, numbers in order instead of at random,
+      gender asked at sign-up and never required (its twin too). Verified with core
+      `handle-engine.test.ts`, `rules.test.ts`, server `handle-engine.test.ts` and
+      `e2e/entry-twins.spec.ts`. Not yet: a test racing two claims, more scripts' names.
 - [ ] R75 phase 2: reply-all with CC, sending as the address from Gmail and Outlook through
       Caime's submission.
 - [ ] R75 phase 3: sign in with Google, Apple and Microsoft (claiming in one tap); Google
@@ -3410,6 +3421,8 @@ The six-slice review's plan, in its order; a block is ticked when its tests and 
 - 2026-10-15 — R75: "View as sent" opens a mail's own HTML in a sandbox (nothing runs or loads).
 - 2026-10-15 — R75: mail says Seen when they reply or open it in Caime and "Opened, probably"
   by the provider's pixel (disclosed, off by a switch); signatures fold, Gmail's asterisks go.
+- 2026-10-15 — R94: handles by one engine (ranked candidates, generic words kept, lookalikes
+  refused); gender asked at sign-up, never required; mail from before folded and marked seen.
 - 2026-10-15 — R92: branches have their own people and per-day hours; customers choose a branch;
   the team filters Bookings by branch; a Location card from a saved place in any conversation.
 - 2026-10-15 — R93: a person reached by email offers "Write by email" (their mail conversation)

@@ -553,6 +553,7 @@ function entryBody(screen: EntryScreen): string {
         ${field(tr('Password'), 'password', tr('At least 10 characters. A short sentence works well.'))}
         ${field(tr('Date of birth'), 'text', tr('Only to keep younger people safer, from the day you turn 18. Never shown to anyone.'))}
         ${field(tr('Where you live'), 'text', tr('Sets your defaults, like your work week and the currency of amounts. Never shown to anyone.'))}
+        ${field(tr('Gender (optional)'), 'text', tr('Only how Caime writes to you in Arabic and French. Never guessed, never in your handle.'))}
       </div>
       <button type="button" disabled>${esc(tr('Create account'))}</button>
     </form>

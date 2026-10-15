@@ -35,6 +35,7 @@ import { registerGroupCallSweep } from './lib/group-calls';
 import { registerLanguage } from './lib/i18n';
 import { startWorkers } from './lib/jobs';
 import { requestForLog } from './lib/log';
+import { registerMailBackfill, startMailBackfill } from './lib/mail-backfill';
 import { registerMailJobs } from './lib/mail-out';
 import { mailProviderFor } from './lib/mail-provider';
 import { registerGuestsAgain } from './lib/meeting-guests';
@@ -372,12 +373,16 @@ export async function buildApp(config: Config, options: BuildOptions = {}): Prom
   registerCallSweep();
   registerGroupCallSweep();
   registerPreviewJob();
+  registerMailBackfill();
   const stopWorkers = config.WORKERS ? startWorkers(ctx) : () => {};
   // Older images get the preview new ones are given (R70): queued once, whichever instance.
   if (config.WORKERS)
     void startPreviewBackfill(ctx).catch((err) =>
       ctx.log.warn({ err }, 'preview backfill not queued'),
     );
+  // Mail from before signatures were set apart (R75): folded once, whichever instance.
+  if (config.WORKERS)
+    void startMailBackfill(ctx).catch((err) => ctx.log.warn({ err }, 'mail backfill not queued'));
 
   app.addHook('onClose', async () => {
     stopWorkers();

@@ -2439,4 +2439,13 @@ export const arB: Catalog = {
     'يقدّم هؤلاء خدماته ما لم تحدّد الخدمة أشخاصها. يذهب الحجز إلى من يكون متاحًا منهم.',
   'A branch keeps its own days, its own people, or both.':
     'للفرع أيامه الخاصة أو أشخاصه أو كلاهما.',
+  'Gender (optional)': 'الجنس (اختياري)',
+  'Handles it could have': 'معرّفات ممكنة لها',
+  'Handles you could have': 'معرّفات ممكنة لك',
+  'Only for your handle, the way you spell it.': 'لمعرّفك فقط، بالطريقة التي تكتبه بها.',
+  'Only how Caime writes to you in Arabic and French. Never guessed, never in your handle.':
+    'فقط لطريقة مخاطبتك بالعربية والفرنسية. لا يُخمَّن أبدًا، ولا يدخل في معرّفك.',
+  'Opens the choices': 'يفتح الخيارات',
+  'Prefer not to say': 'أفضّل عدم الإفصاح',
+  'Your name in Latin letters': 'اسمك بالحروف اللاتينية',
 };

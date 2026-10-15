@@ -26,9 +26,13 @@ import { peekLink } from '@/state/pendingLink';
 import { useSession } from '@/state/session';
 import { useTheme } from '@/theme/theme';
 import { Button } from '@/ui/Button';
+import { ChoiceChips } from '@/ui/Chip';
+import { ChoiceList } from '@/ui/ChoiceList';
 import { DateField } from '@/ui/DateField';
 import { dayOf, yearsBefore } from '@/ui/dates';
+import { PickerField } from '@/ui/PickerField';
 import { Pressable } from '@/ui/Pressable';
+import { Sheet } from '@/ui/Sheet';
 import { Text } from '@/ui/Text';
 import { TextField } from '@/ui/TextField';
 
@@ -42,6 +46,19 @@ export default function SignUp() {
   const [displayName, setDisplayName] = useState('');
   const [handle, setHandle] = useState('');
   const [handleTouched, setHandleTouched] = useState(false);
+  // The handles the name could have (docs/HANDLES.md), best first and free now.
+  const [candidates, setCandidates] = useState<string[]>([]);
+  const [needsLatin, setNeedsLatin] = useState(false);
+  const [latinName, setLatinName] = useState('');
+  // Asked, never required (R81): "Prefer not to say" is null.
+  const [gender, setGender] = useState<'woman' | 'man' | 'other' | 'none'>('none');
+  const [choosingGender, setChoosingGender] = useState(false);
+  const GENDERS = [
+    { value: 'woman' as const, label: tr('Woman') },
+    { value: 'man' as const, label: tr('Man') },
+    { value: 'other' as const, label: tr('Another word') },
+    { value: 'none' as const, label: tr('Prefer not to say') },
+  ];
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [birthDate, setBirthDate] = useState<string | null>(null);
@@ -75,10 +92,32 @@ export default function SignUp() {
     password: useRef<TextInput>(null),
   };
 
-  // Suggest a handle from the name until the person edits it themselves.
+  // Suggest a handle from the name until the person edits it themselves: at once from the name,
+  // then the engine's best that's free (debounced).
   useEffect(() => {
-    if (!handleTouched) setHandle(handleFromName(displayName));
-  }, [displayName, handleTouched]);
+    if (!handleTouched) setHandle(handleFromName(latinName || displayName));
+    const name = displayName.trim();
+    if (!name) {
+      setCandidates([]);
+      setNeedsLatin(false);
+      return;
+    }
+    const timer = setTimeout(() => {
+      endpoints
+        .handleCandidates({
+          for: 'person',
+          name,
+          ...(latinName.trim() ? { latinName: latinName.trim() } : {}),
+        })
+        .then((r) => {
+          setCandidates(r.candidates);
+          setNeedsLatin(r.needsLatinName);
+          if (!handleTouched && r.candidates[0]) setHandle(r.candidates[0]);
+        })
+        .catch(() => setCandidates([]));
+    }, 400);
+    return () => clearTimeout(timer);
+  }, [displayName, latinName, handleTouched]);
 
   // Check availability as they type (debounced).
   useEffect(() => {
@@ -130,6 +169,7 @@ export default function SignUp() {
         password,
         birthDate: birthDate ?? '',
         country: country ?? '',
+        gender: gender === 'none' ? null : gender,
         ...device,
         // Whose @handle link brought them, counted for the operator and told to nobody.
         ...(handleIn(peekLink()) ? { invite: handleIn(peekLink()) ?? undefined } : {}),
@@ -199,6 +239,18 @@ export default function SignUp() {
           hint={tr('How people see you. Use any name you like.')}
           testID="signup-name"
         />
+        {needsLatin ? (
+          // A name in another script is never guessed at (docs/HANDLES.md): its Latin spelling,
+          // as they write it, makes their handle.
+          <TextField
+            label={tr('Your name in Latin letters')}
+            value={latinName}
+            onChangeText={setLatinName}
+            autoCapitalize="words"
+            hint={tr('Only for your handle, the way you spell it.')}
+            testID="signup-latin-name"
+          />
+        ) : null}
         <View style={{ gap: 6 }}>
           <TextField
             ref={refs.handle}
@@ -225,10 +277,23 @@ export default function SignUp() {
             trailing={handleStatus}
             testID="signup-handle"
           />
-          {availability &&
-          availability.handle === h &&
-          !availability.available &&
-          availability.suggestion ? (
+          {candidates.length > 1 ? (
+            <ChoiceChips
+              wrap
+              flush
+              label={tr('Handles you could have')}
+              value={candidates.includes(h) ? h : null}
+              onChange={(v) => {
+                setHandleTouched(true);
+                setHandle(v);
+              }}
+              options={candidates.map((c) => ({ value: c, label: `@${c}` }))}
+              testID="signup-handle-option"
+            />
+          ) : availability &&
+            availability.handle === h &&
+            !availability.available &&
+            availability.suggestion ? (
             <Pressable
               accessibilityRole="button"
               onPress={() => {
@@ -300,6 +365,35 @@ export default function SignUp() {
           )}
           testID="signup-country"
         />
+        {/* A field like the others (its twin is one, lib/public-pages.ts), opening four choices. */}
+        <PickerField
+          label={tr('Gender (optional)')}
+          shown={GENDERS.find((g) => g.value === gender)?.label ?? null}
+          placeholder={tr('Prefer not to say')}
+          accessibilityHint={tr('Opens the choices')}
+          onOpen={() => setChoosingGender(true)}
+          hint={tr(
+            'Only how Caime writes to you in Arabic and French. Never guessed, never in your handle.',
+          )}
+          testID="signup-gender"
+        >
+          <Sheet
+            open={choosingGender}
+            onClose={() => setChoosingGender(false)}
+            title={tr('Gender (optional)')}
+          >
+            <ChoiceList
+              label={tr('Gender (optional)')}
+              value={gender}
+              options={GENDERS}
+              onChange={(v) => {
+                setGender(v);
+                setChoosingGender(false);
+              }}
+              testID="signup-gender"
+            />
+          </Sheet>
+        </PickerField>
       </View>
       {errors.form ? (
         <Text variant="bodyStrong" color="danger" accessibilityLiveRegion="assertive">

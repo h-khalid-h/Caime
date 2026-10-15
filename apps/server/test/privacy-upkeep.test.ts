@@ -239,7 +239,9 @@ describe('what Caime keeps, and for how long', () => {
     expect(await replaced(second.note?.id)).toEqual([
       expect.objectContaining({ title: second.note?.title, body: null }),
     ]);
-    expect(JSON.stringify(pushed.filter((p) => p.quiet))).not.toMatch(/5521|4417|9031/);
+    // What a person reads, never an id (a uuid may hold those digits by chance).
+    const shown = pushed.filter((p) => p.quiet).map((p) => [p.title, p.body]);
+    expect(JSON.stringify(shown)).not.toMatch(/5521|4417|9031/);
   });
 
   it('keeps nothing of a message’s words in what Caime offered from it, once it’s deleted', async () => {

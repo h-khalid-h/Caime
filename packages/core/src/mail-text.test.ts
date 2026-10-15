@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { mailText } from './mail-text';
+import { mailText, sharedTail, signatureWithoutMarks } from './mail-text';
 
 // What Gmail sent in the owner's test thread (2026-10-15): its plain-text copy writes bold and
 // italic as asterisks, and every mail carries the same signature.
@@ -66,5 +66,20 @@ describe('mailText', () => {
 
   it('folds runs of blank lines', () => {
     expect(mailText('One\n\n\n\nTwo', null).body).toBe('One\n\nTwo');
+  });
+});
+
+describe('sharedTail (mail received before signatures were set apart)', () => {
+  const first = GMAIL_TEXT.replace('Finally', 'First email');
+  it('finds the signature two mails from the same sender end with', () => {
+    const tail = sharedTail(first, GMAIL_TEXT);
+    expect(tail?.split('\n')[0]).toBe('*Hussein Khalid*');
+    const out = mailText(GMAIL_TEXT, null, tail);
+    expect(out.body).toBe('Finally');
+    expect(signatureWithoutMarks(out.signature ?? '')).toContain('Hussein Khalid\nCEO | DATA C');
+  });
+  it('finds nothing in mails that end differently, or in one that is only the shared lines', () => {
+    expect(sharedTail('Yes.\nThanks', 'No.\nCheers')).toBeNull();
+    expect(sharedTail('Sara\nAcme', 'Hello\nSara\nAcme')).toBeNull();
   });
 });

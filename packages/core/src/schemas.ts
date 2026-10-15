@@ -37,6 +37,7 @@ import { COLLECTIONS_MAX, SLUG_MAX, slugError } from './catalog';
 import { CONTACTS_MATCH_MAX } from './contacts';
 import { isPublicKey, isSealed, isSignature, type PublicJwk, type SealedMessage } from './e2ee';
 import { isEmoji } from './emoji';
+import { isGenericHandle } from './handle-engine';
 import { msg } from './i18n';
 import { IMPORT_MAX_MESSAGES, IMPORT_MAX_TEXT } from './imports';
 import { INITIATIVES } from './initiative';
@@ -245,6 +246,8 @@ const ALONGSIDE = [
 export function isReservedHandle(handle: string): boolean {
   const h = normalizeHandle(handle);
   if (RESERVED.has(h)) return true;
+  // Generic words alone (customers, best.team) name nobody in particular (docs/HANDLES.md).
+  if (isGenericHandle(h)) return true;
   const words = h.split(/[._\d]+/).filter(Boolean);
   return [...words, words.join('')].some(readsAsProduct);
 }
@@ -306,6 +309,11 @@ export const SignupBody = z.object({
   birthDate: Day,
   /** Where they live (ISO 3166-1), which sets their defaults. */
   country: Country,
+  /**
+   * Asked, never required (R81, owner's answer 2026-10-15): null is "Prefer not to say". Only the
+   * words that have a form for it read it; never a handle, never a guess.
+   */
+  gender: z.enum(['woman', 'man', 'other']).nullable().optional(),
   timeZone: TimeZone.optional(),
   locale: z.string().max(35).optional(),
   client: z.enum(['web', 'native']).default('web'),

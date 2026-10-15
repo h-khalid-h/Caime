@@ -627,6 +627,13 @@ describe('closing and taking back an organization (R42)', () => {
       closedOrg: { id: closedId, name: 'Bassem’s Bakery', domain: 'bakery.example' },
     });
     expect(check.json().suggestion).toMatch(/^bakery\d+$/);
+    // Starting one by the same name offers that handle back first, with whose it was.
+    const offered = await t.app.inject({ url: '/v1/handles/candidates?for=org&name=Bakery' });
+    expect(offered.json().reclaimable).toMatchObject({
+      handle: 'bakery',
+      closedOrg: { id: closedId, domain: 'bakery.example' },
+    });
+    expect(offered.json().candidates).not.toContain('bakery');
     // It holds however long: years on, still.
     const was = t.clock.now.toISOString();
     try {

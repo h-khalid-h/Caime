@@ -1850,3 +1850,16 @@ with its reason, so it isn't proposed again without new facts.
   never named: the offer answers as sign-up does ("someone on Caime uses that address"), and
   whoever lets people find them by email shows as themselves in the results above. Adults with
   a Caime address only; twenty new addresses a day.
+
+- **R94 (2026-10-15) Handles by one engine.** The owner's three-layer proposal (canonical identity,
+  one primary handle, optional aliases) is adopted as `docs/HANDLES.md`, policy version 1: the
+  UUID stays the identity; one deterministic engine (core `handle-engine.ts`) proposes ranked
+  candidates per kind of entity (a person: given.family first, never a date or a gender; an
+  organization: its brand before its registered name, legal forms out), then a short number in
+  order, never at random; generic words alone ("customers", "best.team") are kept for Caime; a
+  lookalike of anyone's handle is refused by a skeleton the database keeps; a name in another
+  script asks for its Latin spelling rather than being transliterated by guesswork. Kept from
+  Caime against the proposal: dots and underscores (not hyphens), and a year's hold on a handle
+  let go of instead of redirecting aliases, which would have to remember whose it was (R35).
+  Gender is asked at sign-up, never required, never read by the engine (owner's answer).
+

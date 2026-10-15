@@ -51,8 +51,26 @@ export default function NewOrganization() {
   const [errors, setErrors] = useState<Record<string, string | undefined>>({});
   const [busy, setBusy] = useState(false);
 
+  // Its handles (docs/HANDLES.md): the brand first, free now, until the owner types their own.
+  const [candidates, setCandidates] = useState<string[]>([]);
   useEffect(() => {
     if (!handleTouched) setHandle(handleFromName(name));
+    if (!name.trim()) {
+      setCandidates([]);
+      return;
+    }
+    const timer = setTimeout(() => {
+      endpoints
+        .handleCandidates({ for: 'org', name: name.trim() })
+        .then((r) => {
+          setCandidates(r.candidates);
+          // A closed organization's handle comes first: proving its domain takes it back (R42).
+          const first = r.reclaimable?.handle ?? r.candidates[0];
+          if (!handleTouched && first) setHandle(first);
+        })
+        .catch(() => setCandidates([]));
+    }, 400);
+    return () => clearTimeout(timer);
   }, [name, handleTouched]);
 
   // One namespace with people: check as they type.
@@ -164,6 +182,20 @@ export default function NewOrganization() {
           }
           testID="org-handle"
         />
+        {candidates.length > 1 ? (
+          <ChoiceChips
+            wrap
+            flush
+            label={tr('Handles it could have')}
+            value={candidates.includes(normalizeHandle(handle)) ? normalizeHandle(handle) : null}
+            onChange={(v) => {
+              setHandleTouched(true);
+              setHandle(v);
+            }}
+            options={candidates.map((c) => ({ value: c, label: `@${c}` }))}
+            testID="org-handle-option"
+          />
+        ) : null}
         {taken?.closedOrg && taken.handle === normalizeHandle(handle) ? (
           <ReclaimCard closed={taken.closedOrg} />
         ) : null}

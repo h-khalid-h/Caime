@@ -297,7 +297,8 @@ describe('handle availability', () => {
     }
     // Every "caime" with a number after it is the product's too, so there's nothing to offer.
     expect(await check('caime')).toEqual({ ...taken, suggestion: null });
-    expect((await check('support')).suggestion).toMatch(/^support\d+$/);
+    // A generic word has no numbered suggestion: every "support<n>" is generic too (R94).
+    expect((await check('support')).suggestion).toBeNull();
   });
 });
 

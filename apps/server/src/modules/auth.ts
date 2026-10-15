@@ -56,7 +56,7 @@ import {
 } from '../lib/errors';
 import { recordEvent } from '../lib/events';
 import { currentZone, isCountry } from '../lib/geo';
-import { assertHandleAvailable } from '../lib/handles';
+import { assertHandleAvailable, claimLost } from '../lib/handles';
 import { guestLink } from '../lib/meeting-join';
 import { endAllAccess } from '../lib/moderation';
 import { sendResetLink } from '../lib/reset';
@@ -168,46 +168,55 @@ export async function authRoutes(app: FastifyInstance, ctx: AppContext) {
             .executeTakeFirst(),
         ])
       : [undefined, undefined];
-    await ctx.db.transaction().execute(async (trx) => {
-      const account = {
-        email: body.email,
-        handle: body.handle,
-        password_hash: passwordHash,
-        display_name: body.displayName,
-        birth_date: body.birthDate,
-        locale,
-        time_zone: timeZone,
-        country: body.country,
-        workweek,
-        privacy: JSON.stringify(defaultPrivacy({ minor: isMinor(body.birthDate, now, timeZone) })),
-        invited_by: inviter?.id ?? null,
-        invited_by_org: inviterOrg?.id ?? null,
-      };
-      if (claiming)
-        await trx
-          .updateTable('users')
-          .set({ ...account, kind: 'human', email_verified_at: null })
-          .where('id', '=', id)
-          .where('kind', '=', 'provisional')
-          .execute();
-      else
-        await trx
-          .insertInto('users')
-          .values({ id, ...account })
-          .execute();
-      await trx
-        .insertInto('identities')
-        .values({
-          id: uuidv7(),
-          user_id: id,
-          kind: 'personal',
+    await ctx.db
+      .transaction()
+      .execute(async (trx) => {
+        const account = {
+          email: body.email,
+          handle: body.handle,
+          password_hash: passwordHash,
           display_name: body.displayName,
-          is_default: true,
-        })
-        .execute();
-      await seedDefaults(trx, id, workweek);
-      await recordEvent(trx, 'user.created', id, { userId: id });
-    });
+          birth_date: body.birthDate,
+          // Said, or not (R81): "Prefer not to say" leaves it null, as it is by default.
+          gender: body.gender ?? null,
+          locale,
+          time_zone: timeZone,
+          country: body.country,
+          workweek,
+          privacy: JSON.stringify(
+            defaultPrivacy({ minor: isMinor(body.birthDate, now, timeZone) }),
+          ),
+          invited_by: inviter?.id ?? null,
+          invited_by_org: inviterOrg?.id ?? null,
+        };
+        if (claiming)
+          await trx
+            .updateTable('users')
+            .set({ ...account, kind: 'human', email_verified_at: null })
+            .where('id', '=', id)
+            .where('kind', '=', 'provisional')
+            .execute();
+        else
+          await trx
+            .insertInto('users')
+            .values({ id, ...account })
+            .execute();
+        await trx
+          .insertInto('identities')
+          .values({
+            id: uuidv7(),
+            user_id: id,
+            kind: 'personal',
+            display_name: body.displayName,
+            is_default: true,
+          })
+          .execute();
+        await seedDefaults(trx, id, workweek);
+        await recordEvent(trx, 'user.created', id, { userId: id });
+      })
+      .catch((err) => {
+        throw claimLost(err);
+      });
     const codes = await storeRecoveryCodes(ctx, id);
     const token = await createSession(ctx, req, reply, id, body.client, body.deviceName);
     await audit(ctx.db, { actorId: id, action: 'auth.signup', ...clientInfo(req) });

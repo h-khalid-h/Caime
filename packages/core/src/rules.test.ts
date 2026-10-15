@@ -71,7 +71,8 @@ describe('reserved handles (R35)', () => {
       ...['cai.mei', 'caimei', 'caimeng', 'caimen', 'cai.ling', 'lin.cai', 'cai_wei', 'caitlin'],
       ...['caiming', 'cairo', 'mccain', 'connie', 'lucaimeyer', 'saracaime', 'caimes'],
       // A character's or a staff word's name beside anything else is someone's own.
-      ...['momo.ali', 'niko.k', 'panda.lover', 'support.team', 'admin1', 'help_desk.eg'],
+      // (Generic words alone, support.team or admin1, are kept: docs/HANDLES.md.)
+      ...['momo.ali', 'niko.k', 'panda.lover', 'help_desk.eg'],
       ...['teamdatac', 'helpinghands', 'aboutyou', 'sara', 'noor.links', 'datac'],
     ])
       expect(isReservedHandle(h), h).toBe(false);

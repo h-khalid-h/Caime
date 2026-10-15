@@ -12,6 +12,7 @@ import {
 } from '@caime/core';
 import type {
   HandleAvailabilityResponse,
+  HandleCandidatesResponse,
   IdentitiesResponse,
   IdResponse,
   MeResponse,
@@ -21,6 +22,12 @@ import type {
   UserResponse,
 } from '@caime/core/api';
 import { defaultWorkweek } from '@caime/core/countries';
+import {
+  HANDLE_POLICY_VERSION,
+  hasHandleLetters,
+  orgCandidates,
+  personCandidates,
+} from '@caime/core/handle-engine';
 import { tr } from '@caime/core/i18n';
 import type { FastifyInstance } from 'fastify';
 import { z } from 'zod';
@@ -32,6 +39,8 @@ import { badRequest, notFound } from '../lib/errors';
 import { currentZone, isCountry } from '../lib/geo';
 import {
   assertHandleAvailable,
+  claimLost,
+  closedOrgAmong,
   closedOrgHolding,
   closedOrgMessage,
   HANDLE_UNAVAILABLE,
@@ -201,7 +210,14 @@ export async function meRoutes(app: FastifyInstance, ctx: AppContext) {
         .where('id', '=', auth.userId)
         .forUpdate()
         .executeTakeFirstOrThrow();
-      await trx.updateTable('users').set(patch).where('id', '=', auth.userId).execute();
+      await trx
+        .updateTable('users')
+        .set(patch)
+        .where('id', '=', auth.userId)
+        .execute()
+        .catch((err) => {
+          throw claimLost(err);
+        });
       // The handle they had is held from everyone, so their links never open someone else.
       if (patch.handle !== undefined && patch.handle !== was.handle.toLowerCase())
         await releaseHandle(trx, was.handle, ctx.now());
@@ -279,6 +295,44 @@ export async function meRoutes(app: FastifyInstance, ctx: AppContext) {
    * Public, so sign-up can check a handle as it's typed. Handles are public identifiers, but the
    * endpoint is rate-limited per address so it can't be used to list accounts.
    */
+  /**
+   * The handles a name could have, best first and free now (docs/HANDLES.md, core
+   * `personCandidates` and `orgCandidates`, then the name with a short number), public for
+   * sign-up and limited per address as the check below is.
+   */
+  app.get('/handles/candidates', async (req): Promise<HandleCandidatesResponse> => {
+    ctx.limiter.hit(`handle:ip:${req.ip}`, ctx.config.isTest ? 10_000 : 60, 60_000);
+    const q = parse(
+      z.object({
+        for: z.enum(['person', 'org']),
+        name: z.string().max(120),
+        latinName: z.string().max(120).optional(),
+        legalName: z.string().max(200).optional(),
+      }),
+      req.query,
+    );
+    const ranked =
+      q.for === 'person'
+        ? personCandidates({ displayName: q.name, latinName: q.latinName ?? null })
+        : orgCandidates({ name: q.name, legalName: q.legalName ?? null });
+    const needsLatinName =
+      ranked.length === 0 && q.name.trim().length > 0 && !hasHandleLetters(q.name);
+    // Then the best with a short number, in order, never at random.
+    const base = ranked[0]?.slice(0, 27);
+    const numbered = base ? Array.from({ length: 8 }, (_, i) => `${base}${i + 2}`) : [];
+    const all = [...ranked, ...numbered];
+    const [unavailable, reclaimable] = await Promise.all([
+      unavailableAmong(ctx.db, all, ctx.now()),
+      q.for === 'org' ? closedOrgAmong(ctx.db, ranked) : null,
+    ]);
+    return {
+      candidates: all.filter((h) => !unavailable.has(h)).slice(0, 4),
+      needsLatinName,
+      policyVersion: HANDLE_POLICY_VERSION,
+      ...(reclaimable ? { reclaimable } : {}),
+    };
+  });
+
   app.get('/me/handle-available', async (req): Promise<HandleAvailabilityResponse> => {
     ctx.limiter.hit(`handle:ip:${req.ip}`, ctx.config.isTest ? 10_000 : 60, 60_000);
     const { handle } = parse(z.object({ handle: z.string().max(60) }), req.query);
@@ -293,7 +347,8 @@ export async function meRoutes(app: FastifyInstance, ctx: AppContext) {
     const base = wanted.slice(0, 26);
     const candidates = [
       wanted,
-      ...Array.from({ length: 6 }, () => `${base}${Math.floor(10 + Math.random() * 990)}`),
+      // A short number, in order, never at random (docs/HANDLES.md).
+      ...Array.from({ length: 6 }, (_, i) => `${base}${i + 2}`),
     ];
     // Taken (one namespace with organizations), held or reserved all read the same, and none of
     // them is ever suggested (lib/handles.ts).

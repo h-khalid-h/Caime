@@ -228,7 +228,7 @@ test.describe
       await page.getByTestId('composer-send').click();
       await expect
         .poll(async () => (await sent()).find((m) => m.To === layla)?.TextBody ?? '')
-        .toContain('Noor Post wrote this on Caime, from ' + address);
+        .toContain(`Noor Post wrote this on Caime, from ${address}`);
       expect(errors).toEqual([]);
     });
   });

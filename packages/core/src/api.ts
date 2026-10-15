@@ -2571,6 +2571,21 @@ export type MeResponse = UserResponse | { user: GrantUserView };
 export interface PrivacyResponse {
   privacy: MeView['privacy'];
 }
+/**
+ * The handles a name could have, best first and each free now (docs/HANDLES.md): what sign-up
+ * and a new organization offer. `needsLatinName` when the name is in a script the engine never
+ * guesses at; the form asks for its Latin spelling.
+ */
+export interface HandleCandidatesResponse {
+  candidates: string[];
+  needsLatinName: boolean;
+  policyVersion: number;
+  /**
+   * An organization's: the best of its handles that a closed, verified organization holds, which
+   * proving its domain again takes back (R42). The form offers that before anything else.
+   */
+  reclaimable?: { handle: string; closedOrg: ClosedOrgView };
+}
 export interface HandleAvailabilityResponse {
   available: boolean;
   reason: string | null;

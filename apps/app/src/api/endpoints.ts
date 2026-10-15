@@ -70,6 +70,7 @@ import type {
   GroupCallMaybeResponse,
   GroupCallResponse,
   HandleAvailabilityResponse,
+  HandleCandidatesResponse,
   HandleView,
   IceConfigView,
   IdResponse,
@@ -237,6 +238,8 @@ export const endpoints = {
     client: 'web' | 'native';
     deviceName?: string;
     invite?: string;
+    /** Said or not (R81): null is "Prefer not to say". */
+    gender?: 'woman' | 'man' | 'other' | null;
   }) => api.post<AuthResponse>('/auth/signup', body),
   login: (body: {
     identifier: string;
@@ -304,6 +307,13 @@ export const endpoints = {
   currencies: (locale: string) => api.get<CurrenciesView>(`/currencies${q({ locale })}`),
   handleAvailable: (handle: string) =>
     api.get<HandleAvailabilityResponse>(`/me/handle-available${q({ handle })}`),
+  /** The handles a name could have, best first, each free now (docs/HANDLES.md). */
+  handleCandidates: (ask: {
+    for: 'person' | 'org';
+    name: string;
+    latinName?: string;
+    legalName?: string;
+  }) => api.get<HandleCandidatesResponse>(`/handles/candidates${q(ask)}`),
 
   // People and relationships
   searchPeople: (term: string) => api.get<PeopleSearchResponse>(`/people/search${q({ q: term })}`),

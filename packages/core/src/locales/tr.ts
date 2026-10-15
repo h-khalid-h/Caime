@@ -4083,4 +4083,14 @@ export const turkish: Catalog = {
     'Bir öğe kendi kişilerini belirtmedikçe öğeleri bu kişiler yapar. Rezervasyon aralarından boşta olana gider.',
   'A branch keeps its own days, its own people, or both.':
     'Bir şube kendi günlerini, kendi kişilerini ya da ikisini birden tutar.',
+  'Gender (optional)': 'Cinsiyet (isteğe bağlı)',
+  'Handles it could have': 'Alabileceği kullanıcı adları',
+  'Handles you could have': 'Alabileceğiniz kullanıcı adları',
+  'Only for your handle, the way you spell it.':
+    'Yalnızca kullanıcı adınız için, yazdığınız şekliyle.',
+  'Only how Caime writes to you in Arabic and French. Never guessed, never in your handle.':
+    'Yalnızca Caime’in size Arapça ve Fransızca nasıl yazdığı için. Asla tahmin edilmez, kullanıcı adınızda yer almaz.',
+  'Opens the choices': 'Seçenekleri açar',
+  'Prefer not to say': 'Belirtmek istemiyorum',
+  'Your name in Latin letters': 'Latin harfleriyle adınız',
 };

@@ -9,6 +9,7 @@
  * organization's handle stays with it, closed or not (its row stays).
  */
 import { type ClosedOrgView, isReservedHandle } from '@caime/core';
+import { handleSkeleton } from '@caime/core/handle-engine';
 import { tr } from '@caime/core/i18n';
 import type { Kysely, Transaction } from 'kysely';
 import type { Database } from '../db/schema';
@@ -19,6 +20,17 @@ type Q = Kysely<Database> | Transaction<Database>;
 
 /** How a handle that can't be had reads: someone has it, it's held, or it's reserved. */
 export const HANDLE_UNAVAILABLE = () => tr('That handle isn’t available.');
+
+/**
+ * A claim that lost a race to the unique constraint on `handle` (docs/HANDLES.md §6) reads as any
+ * taken handle; anything else is thrown as it was. `.catch((e) => { throw claimLost(e); })`.
+ */
+export function claimLost(err: unknown): unknown {
+  const e = err as { code?: string; constraint?: string };
+  return e.code === '23505' && (e.constraint ?? '').includes('handle')
+    ? conflict('handle_taken', HANDLE_UNAVAILABLE())
+    : err;
+}
 
 /**
  * A closed organization holding `handle` (R42): one that was verified at its domain keeps it
@@ -39,6 +51,27 @@ export async function closedOrgHolding(db: Q, handle: string): Promise<ClosedOrg
     : null;
 }
 
+/** The best of `handles` (in their order) a closed, verified organization holds, if any. */
+export async function closedOrgAmong(
+  db: Q,
+  handles: string[],
+): Promise<{ handle: string; closedOrg: ClosedOrgView } | null> {
+  if (!handles.length) return null;
+  const rows = await db
+    .selectFrom('organizations')
+    .select(['handle'])
+    .where('handle', 'in', handles)
+    .where('archived_at', 'is not', null)
+    .where('verified_at', 'is not', null)
+    .where('succeeded_by', 'is', null)
+    .where('domain', 'is not', null)
+    .execute();
+  const held = new Set(rows.map((r) => r.handle.toLowerCase()));
+  const best = handles.find((h) => held.has(h));
+  const closedOrg = best ? await closedOrgHolding(db, best) : null;
+  return best && closedOrg ? { handle: best, closedOrg } : null;
+}
+
 /** Whether someone has `handle`: a person (but whoever `except` names) or an open organization. */
 export async function handleTaken(
   db: Q,
@@ -56,6 +89,37 @@ export async function handleTaken(
       .selectFrom('organizations')
       .select('id')
       .where('handle', '=', handle)
+      .where('archived_at', 'is', null)
+      .$if(Boolean(except.orgId), (qb) => qb.where('id', '<>', except.orgId!))
+      .executeTakeFirst(),
+  ]);
+  return Boolean(person || org);
+}
+
+/**
+ * Whether another person's or an open organization's handle reads the same as `handle`
+ * (docs/HANDLES.md: macrocare and macro.care, rnacrocare): one name to a reader, so not a second
+ * owner's. The skeleton is core `handleSkeleton`, kept by the database (migration 0088).
+ */
+export async function handleLookalike(
+  db: Q,
+  handle: string,
+  except: { userId?: string; orgId?: string } = {},
+): Promise<boolean> {
+  const skeleton = handleSkeleton(handle);
+  const [person, org] = await Promise.all([
+    db
+      .selectFrom('users')
+      .select('id')
+      .where('handle_skeleton', '=', skeleton)
+      .where('handle', '<>', handle)
+      .$if(Boolean(except.userId), (qb) => qb.where('id', '<>', except.userId!))
+      .executeTakeFirst(),
+    db
+      .selectFrom('organizations')
+      .select('id')
+      .where('handle_skeleton', '=', skeleton)
+      .where('handle', '<>', handle)
       .where('archived_at', 'is', null)
       .$if(Boolean(except.orgId), (qb) => qb.where('id', '<>', except.orgId!))
       .executeTakeFirst(),
@@ -95,7 +159,8 @@ export async function releaseHandle(db: Q, handle: string, now: Date): Promise<v
 /** Which of `handles` nobody may take now: someone has it, it's held or it's reserved. */
 export async function unavailableAmong(db: Q, handles: string[], now: Date): Promise<Set<string>> {
   if (!handles.length) return new Set();
-  const [people, orgs, held] = await Promise.all([
+  const skeletons = [...new Set(handles.map(handleSkeleton))];
+  const [people, orgs, held, alike] = await Promise.all([
     db.selectFrom('users').select('handle').where('handle', 'in', handles).execute(),
     db
       .selectFrom('organizations')
@@ -115,8 +180,23 @@ export async function unavailableAmong(db: Q, handles: string[], now: Date): Pro
       .where('handle', 'in', handles)
       .where('held_until', '>', dayOf(now))
       .execute(),
+    // Lookalikes of anyone's: one name to a reader (docs/HANDLES.md).
+    db
+      .selectFrom('users')
+      .select('handle_skeleton as skeleton')
+      .where('handle_skeleton', 'in', skeletons)
+      .union(
+        db
+          .selectFrom('organizations')
+          .select('handle_skeleton as skeleton')
+          .where('handle_skeleton', 'in', skeletons)
+          .where('archived_at', 'is', null),
+      )
+      .execute(),
   ]);
+  const taken = new Set(alike.map((r) => r.skeleton));
   return new Set([
+    ...handles.filter((h) => taken.has(handleSkeleton(h))),
     ...[...people, ...orgs, ...held].map((r) => String(r.handle).toLowerCase()),
     ...handles.filter((h) => isReservedHandle(h)),
   ]);
@@ -134,7 +214,11 @@ export async function assertHandleAvailable(
 ): Promise<void> {
   // Whether someone has it before whether it's held: a handle is held in the transaction that
   // lets it go, so once the first no longer finds its holder, the second finds the hold.
-  if (isReservedHandle(handle) || (await handleTaken(db, handle, except)))
+  if (
+    isReservedHandle(handle) ||
+    (await handleTaken(db, handle, except)) ||
+    (await handleLookalike(db, handle, except))
+  )
     throw conflict('handle_taken', HANDLE_UNAVAILABLE());
   // A closed organization's, verified: said, with its domain, so that the organization itself
   // can take it back (R42). Anyone else gets what a taken handle gets.

@@ -31,6 +31,7 @@ const SCREENS: Record<string, string[]> = {
     'Email',
     'Password',
     'Where you live',
+    'Gender (optional)',
     'Create account',
   ],
 };

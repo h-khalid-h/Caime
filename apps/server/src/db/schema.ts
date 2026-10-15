@@ -13,7 +13,14 @@ import type {
   OrderingSettings,
   PaymentSettings,
 } from '@caime/core';
-import type { ColumnType, Generated, Insertable, Selectable, Updateable } from 'kysely';
+import type {
+  ColumnType,
+  Generated,
+  GeneratedAlways,
+  Insertable,
+  Selectable,
+  Updateable,
+} from 'kysely';
 
 type Timestamp = ColumnType<Date, Date | string | undefined, Date | string>;
 type NullableTimestamp = ColumnType<
@@ -33,6 +40,8 @@ export interface UsersTable {
   email: string;
   email_verified_at: NullableTimestamp;
   handle: string;
+  /** What the handle reads as, for lookalikes (migration 0088, core `handleSkeleton`). */
+  handle_skeleton: GeneratedAlways<string | null>;
   password_hash: string;
   display_name: string;
   kind: Defaulted<'human' | 'bot' | 'agent' | 'assistant' | 'character' | 'provisional'>;
@@ -858,6 +867,8 @@ export interface OrganizationsTable {
   id: string;
   name: string;
   handle: string;
+  /** What the handle reads as, for lookalikes (migration 0088, core `handleSkeleton`). */
+  handle_skeleton: GeneratedAlways<string | null>;
   kind: OrgKind;
   about: string | null;
   website: string | null;
@@ -1409,6 +1420,7 @@ export const USER_COLUMNS = [
   'id',
   'email',
   'email_verified_at',
+  'handle_skeleton',
   'handle',
   'password_hash',
   'display_name',
@@ -1447,6 +1459,7 @@ export const ORG_COLUMNS = [
   'id',
   'name',
   'handle',
+  'handle_skeleton',
   'kind',
   'about',
   'website',

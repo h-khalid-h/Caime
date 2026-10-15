@@ -120,3 +120,34 @@ export function mailText(
   if (!body) return { body: clean.replace(/\n{3,}/g, '\n\n').trim(), signature: null };
   return { body, signature: sig || null };
 }
+
+/**
+ * The closing lines two mails from the same sender share (R75), at least two of them that aren't
+ * blank, as a signature to fold: how mail received before signatures were set apart is cleaned.
+ * Null when they end differently, or when one of them is nothing else.
+ */
+export function sharedTail(a: string, b: string): string | null {
+  const lines = (t: string) =>
+    t
+      .replace(/\r\n/g, '\n')
+      .split('\n')
+      .map((l) => l.trim())
+      .filter(Boolean);
+  const x = lines(a);
+  const y = lines(b);
+  let n = 0;
+  while (
+    n < Math.min(x.length, y.length) &&
+    norm(x[x.length - 1 - n] ?? '') === norm(y[y.length - 1 - n] ?? '')
+  )
+    n++;
+  n = Math.min(n, SIGNATURE_LINES_MAX);
+  // Two lines at least, and words of their own left in both.
+  if (n < 2 || n >= x.length || n >= y.length) return null;
+  return x.slice(x.length - n).join('\n');
+}
+
+/** A signature's own emphasis marks out (`*Name*`), for one cut from plain text. */
+export function signatureWithoutMarks(signature: string): string {
+  return signature.replace(/(^|[\s(|])\*([^*\n]{1,200}?)\*(?=[\s.,;:!?)|]|$)/gm, '$1$2');
+}

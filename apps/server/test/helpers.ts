@@ -115,7 +115,8 @@ export async function signup(
   }> = {},
 ): Promise<Client> {
   counter++;
-  const handle = patch.handle ?? `user${counter}${randomBytes(2).toString('hex')}`;
+  // Never generic words alone (docs/HANDLES.md: "user" is one), never a lookalike of another.
+  const handle = patch.handle ?? `p${counter}x${randomBytes(2).toString('hex')}`;
   const res = await t.app.inject({
     method: 'POST',
     url: '/v1/auth/signup',

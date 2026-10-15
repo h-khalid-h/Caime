@@ -69,7 +69,7 @@ import { disconnect } from '../lib/checkout';
 import { qrPath } from '../lib/door';
 import { AppError, badRequest, conflict, forbidden, notFound } from '../lib/errors';
 import { currencyOf, currentZone, defaultZoneOf, isCountry } from '../lib/geo';
-import { assertHandleAvailable } from '../lib/handles';
+import { assertHandleAvailable, claimLost } from '../lib/handles';
 import { orgInsights } from '../lib/insights';
 import { mailAddressOf } from '../lib/mail-address';
 import {
@@ -276,26 +276,31 @@ export async function orgRoutes(app: FastifyInstance, ctx: AppContext) {
     await assertHandleAvailable(ctx.db, body.handle, ctx.now());
     if (!isCountry(body.country)) throw badRequest(tr('Choose where it’s based.'));
     const id = uuidv7();
-    await ctx.db.transaction().execute(async (trx) => {
-      await trx
-        .insertInto('organizations')
-        .values({
-          id,
-          name: body.name,
-          handle: body.handle,
-          kind: body.kind,
-          about: body.about ?? null,
-          website: body.website ?? null,
-          country: body.country,
-          founded_year: body.foundedYear ?? null,
-          created_by: auth.userId,
-        })
-        .execute();
-      await trx
-        .insertInto('org_members')
-        .values({ org_id: id, user_id: auth.userId, role: 'owner', added_by: auth.userId })
-        .execute();
-    });
+    await ctx.db
+      .transaction()
+      .execute(async (trx) => {
+        await trx
+          .insertInto('organizations')
+          .values({
+            id,
+            name: body.name,
+            handle: body.handle,
+            kind: body.kind,
+            about: body.about ?? null,
+            website: body.website ?? null,
+            country: body.country,
+            founded_year: body.foundedYear ?? null,
+            created_by: auth.userId,
+          })
+          .execute();
+        await trx
+          .insertInto('org_members')
+          .values({ org_id: id, user_id: auth.userId, role: 'owner', added_by: auth.userId })
+          .execute();
+      })
+      .catch((err) => {
+        throw claimLost(err);
+      });
     await audit(ctx.db, { actorId: auth.userId, action: 'org.created', target: id });
     reply.status(201);
     return { org: await orgView(ctx, auth.userId, await orgById(ctx.db, id)) };

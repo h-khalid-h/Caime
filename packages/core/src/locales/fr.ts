@@ -4258,4 +4258,14 @@ export const fr: Catalog = {
     'Ses prestations sont assurées par ces personnes, sauf si une prestation nomme les siennes. Une réservation va à celle qui est libre.',
   'A branch keeps its own days, its own people, or both.':
     'Une agence garde ses propres jours, ses propres personnes, ou les deux.',
+  'Gender (optional)': 'Genre (facultatif)',
+  'Handles it could have': 'Identifiants possibles',
+  'Handles you could have': 'Identifiants possibles pour vous',
+  'Only for your handle, the way you spell it.':
+    'Seulement pour votre identifiant, comme vous l’écrivez.',
+  'Only how Caime writes to you in Arabic and French. Never guessed, never in your handle.':
+    'Seulement pour la façon dont Caime s’adresse à vous en arabe et en français. Jamais deviné, jamais dans votre identifiant.',
+  'Opens the choices': 'Ouvre les choix',
+  'Prefer not to say': 'Je préfère ne pas le dire',
+  'Your name in Latin letters': 'Votre nom en lettres latines',
 };
