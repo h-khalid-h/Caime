@@ -253,13 +253,29 @@ export async function provenEmailHolders(
   db: Kysely<Database>,
   emails: string[],
 ): Promise<Map<string, string>> {
+  return provenHolders(db, 'email', emails);
+}
+
+/** Whose each proven phone number is (R91), by the number as E.164: unproven ones count for nothing. */
+export async function provenPhoneHolders(
+  db: Kysely<Database>,
+  phones: string[],
+): Promise<Map<string, string>> {
+  return provenHolders(db, 'phone', phones);
+}
+
+async function provenHolders(
+  db: Kysely<Database>,
+  kind: 'email' | 'phone',
+  values: string[],
+): Promise<Map<string, string>> {
   const out = new Map<string, string>();
-  if (!emails.length) return out;
+  if (!values.length) return out;
   const rows = await db
     .selectFrom('own_addresses')
     .select(['value', 'user_id'])
-    .where('kind', '=', 'email')
-    .where('value', 'in', emails)
+    .where('kind', '=', kind)
+    .where('value', 'in', values)
     .where('verified_at', 'is not', null)
     .execute();
   for (const r of rows) out.set(r.value, r.user_id);

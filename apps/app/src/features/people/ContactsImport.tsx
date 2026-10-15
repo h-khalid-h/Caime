@@ -248,28 +248,52 @@ export function ContactsImport({
     onClose();
   };
 
-  /** Who of a list is here: its addresses a page at a time, one row per person. */
-  const find = useCallback(async (list: ContactList, limited: boolean, label: string) => {
-    const emails = [...new Set(list.contacts.flatMap((c) => c.emails))];
-    const found: ContactMatchView[] = [];
-    try {
-      for (let i = 0; i < emails.length; i += CONTACTS_MATCH_MAX)
-        found.push(
-          ...(await endpoints.matchContacts(emails.slice(i, i + CONTACTS_MATCH_MAX))).matches,
-        );
-    } catch (e) {
-      toast((e as Error).message, { tone: 'danger' });
-      setPhase({ at: 'choose' });
-      return;
-    }
-    const seen = new Set<string>();
-    const matches = found.filter((m) => !seen.has(m.person.id) && Boolean(seen.add(m.person.id)));
-    setAsked(new Set());
-    setInvited(new Set());
-    setTerm('');
-    setShown(INVITE_PAGE);
-    setPhase({ at: 'results', list, limited, matches, label });
-  }, []);
+  /**
+   * Who of a list is here: its addresses and numbers a page at a time, one row per person. A
+   * number goes as the country it was saved in writes it internationally (R91), and finds only
+   * someone who proved it theirs.
+   */
+  const country = me.country;
+  const find = useCallback(
+    async (list: ContactList, limited: boolean, label: string) => {
+      const emails = [...new Set(list.contacts.flatMap((c) => c.emails))];
+      const phones = [
+        ...new Set(
+          list.contacts.flatMap((c) => c.phones.flatMap((p) => toInternational(p, country) ?? [])),
+        ),
+      ];
+      const asks = [
+        ...emails.map((value) => ({ kind: 'email' as const, value })),
+        ...phones.map((value) => ({ kind: 'phone' as const, value })),
+      ];
+      const found: ContactMatchView[] = [];
+      try {
+        for (let i = 0; i < asks.length; i += CONTACTS_MATCH_MAX) {
+          const page = asks.slice(i, i + CONTACTS_MATCH_MAX);
+          found.push(
+            ...(
+              await endpoints.matchContacts({
+                emails: page.flatMap((a) => (a.kind === 'email' ? [a.value] : [])),
+                phones: page.flatMap((a) => (a.kind === 'phone' ? [a.value] : [])),
+              })
+            ).matches,
+          );
+        }
+      } catch (e) {
+        toast((e as Error).message, { tone: 'danger' });
+        setPhase({ at: 'choose' });
+        return;
+      }
+      const seen = new Set<string>();
+      const matches = found.filter((m) => !seen.has(m.person.id) && Boolean(seen.add(m.person.id)));
+      setAsked(new Set());
+      setInvited(new Set());
+      setTerm('');
+      setShown(INVITE_PAGE);
+      setPhase({ at: 'results', list, limited, matches, label });
+    },
+    [country],
+  );
 
   const fromRaws = useCallback(
     (source: ContactSource, raws: RawContact[], limited: boolean, label: string) => {
@@ -409,15 +433,20 @@ export function ContactsImport({
   }, [returned, accounts.data, fromAccount]);
 
   const results = phase.at === 'results' ? phase : null;
-  const matchedEmails = useMemo(
-    () => new Set(results?.matches.map((m) => m.email) ?? []),
+  // What found someone, an address or a number as it was sent.
+  const matchedBy = useMemo(
+    () => new Set(results?.matches.flatMap((m) => [m.email, m.phone]).filter(Boolean) ?? []),
     [results],
   );
   const toInvite = useMemo(() => {
     if (!results) return [];
     return results.list.contacts
       .map((c, i) => ({ c, i }))
-      .filter(({ c }) => !c.emails.some((e) => matchedEmails.has(e)))
+      .filter(
+        ({ c }) =>
+          !c.emails.some((e) => matchedBy.has(e)) &&
+          !c.phones.some((p) => matchedBy.has(toInternational(p, country) ?? '')),
+      )
       .filter(({ c }) => c.emails.length || c.phones.length)
       .sort((a, b) =>
         a.c.name && b.c.name
@@ -428,7 +457,7 @@ export function ContactsImport({
               ? 1
               : 0,
       );
-  }, [results, matchedEmails, locale]);
+  }, [results, matchedBy, locale, country]);
   const listed = term.trim()
     ? toInvite.filter(({ c }) => finds(term, c.name, ...c.emails, ...c.phones))
     : toInvite;
@@ -574,7 +603,7 @@ export function ContactsImport({
                 {dropping
                   ? tr('Drop the file to read it.')
                   : tr(
-                      'Read on this device: only email addresses are sent, to see who’s on Caime, and nothing is kept. Whoever isn’t here, you invite yourself.',
+                      'Read on this device: only email addresses and numbers are sent, to see who’s on Caime, and nothing is kept. Whoever isn’t here, you invite yourself.',
                     )}
               </Text>
             </View>
@@ -688,7 +717,7 @@ export function ContactsImport({
                 <Text variant="caption" color="textSecondary" testID="contacts-none-found">
                   {results.list.contacts.some((c) => c.emails.length)
                     ? tr(
-                        'Nobody with these addresses is on Caime yet, or they keep their address private.',
+                        'Nobody with these addresses or numbers is on Caime yet, or they keep them private.',
                       )
                     : tr(
                         'People are found on Caime by their email address, and none of these contacts has one. Invite them below.',

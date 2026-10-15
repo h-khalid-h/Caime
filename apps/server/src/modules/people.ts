@@ -17,7 +17,7 @@ import type { FastifyInstance } from 'fastify';
 import { sql } from 'kysely';
 import { z } from 'zod';
 import type { AppContext } from '../context';
-import { provenEmailHolders } from '../lib/addresses';
+import { provenEmailHolders, provenPhoneHolders } from '../lib/addresses';
 import { itemsFor, personHost } from '../lib/booking';
 import { busyNow } from '../lib/calendar';
 import { notFound } from '../lib/errors';
@@ -39,7 +39,8 @@ import { identityShownTo, minorOf, personView, privacyOf } from '../lib/users';
 
 export { identityShownTo };
 
-import { CONTACTS_MATCH_MAX, ContactsMatchBody } from '@caime/core';
+import { CONTACTS_MATCH_MAX, ContactsMatchBody, toInternational } from '@caime/core';
+import { addressValue } from '@caime/core/addresses';
 import type {
   ContactMatchView,
   ContactsMatchResponse,
@@ -73,12 +74,13 @@ export async function peopleRoutes(app: FastifyInstance, ctx: AppContext) {
    * A contacts file into People (R79): who, of these addresses, is on Caime and findable by
    * address, as search finds them (`discoverByEmail`: an adult's choice, on unless they turned
    * it off; never a blocked person, never under 18 to an adult who doesn't know them, never
-   * oneself). Nothing of the addresses is kept: the request log is the method and the path,
+   * oneself), and of these numbers, whoever proved one theirs and lets a number find them
+   * (R91, `discoverByPhone`). Nothing of the addresses is kept: the request log is the method and the path,
    * and nothing here writes.
    */
   app.post('/people/match', async (req): Promise<ContactsMatchResponse> => {
     const auth = requireAuth(req);
-    const { emails } = parse(ContactsMatchBody, req.body);
+    const { emails, phones } = parse(ContactsMatchBody, req.body);
     ctx.limiter.hit(`people-match:${auth.userId}`, ctx.config.isTest ? 1000 : 30, 3_600_000);
     const me = await ctx.db
       .selectFrom('users')
@@ -88,9 +90,13 @@ export async function peopleRoutes(app: FastifyInstance, ctx: AppContext) {
     const now = ctx.now();
     const viewerIsMinor = minorOf(me, now);
     const asked = [...new Set(emails)];
-    // An address someone proved theirs finds them as their sign-in does (R91), by the same rules.
+    const numbers = [...new Set(phones)];
+    // An address someone proved theirs finds them as their sign-in does (R91), by the same rules;
+    // a number only once proven, and only someone who lets a number find them.
     const proven = await provenEmailHolders(ctx.db, asked);
     const provenIds = [...new Set(proven.values())];
+    const byPhone = await provenPhoneHolders(ctx.db, numbers);
+    const phoneIds = [...new Set(byPhone.values())];
     const rows = await ctx.db
       .selectFrom('users as u')
       .leftJoin('connection_sides as s', (j) =>
@@ -99,18 +105,37 @@ export async function peopleRoutes(app: FastifyInstance, ctx: AppContext) {
       .leftJoin('connections as c', (j) =>
         j.onRef('c.id', '=', 's.connection_id').on('c.status', '=', 'active'),
       )
-      .select(['u.id', 'u.email', 'u.birth_date', 'u.time_zone'])
+      .select(['u.id', 'u.email', 'u.birth_date', 'u.time_zone', 'u.privacy'])
       .select(sql<boolean>`c.id is not null`.as('is_connection'))
       .where((eb) =>
-        provenIds.length
-          ? eb.or([eb('u.email', 'in', asked), eb('u.id', 'in', provenIds)])
-          : eb('u.email', 'in', asked),
+        eb.or([
+          ...(asked.length || provenIds.length
+            ? [
+                eb.and([
+                  sql<boolean>`coalesce((u.privacy->>'discoverByEmail')::boolean, false)`,
+                  eb.or([
+                    ...(asked.length ? [eb('u.email', 'in', asked)] : []),
+                    ...(provenIds.length ? [eb('u.id', 'in', provenIds)] : []),
+                  ]),
+                ]),
+              ]
+            : []),
+          ...(phoneIds.length
+            ? [
+                eb.and([
+                  sql<boolean>`coalesce((u.privacy->>'discoverByPhone')::boolean, false)`,
+                  eb('u.id', 'in', phoneIds),
+                ]),
+              ]
+            : []),
+          // Nothing asked that anyone holds: an empty answer.
+          sql<boolean>`false`,
+        ]),
       )
       .where('u.id', '<>', auth.userId)
       .where('u.deleted_at', 'is', null)
       .where('u.suspended_at', 'is', null)
       .where('u.kind', '=', 'human')
-      .where(sql<boolean>`coalesce((u.privacy->>'discoverByEmail')::boolean, false)`)
       .where((eb) =>
         eb.not(
           eb.exists(
@@ -146,9 +171,15 @@ export async function peopleRoutes(app: FastifyInstance, ctx: AppContext) {
       const person = people.get(u.id);
       const pair = pairs.get(u.id);
       if (!person || !pair) continue;
-      const theirs = asked.filter((e) => e === u.email || proven.get(e) === u.id);
-      for (const email of theirs)
-        matches.push({ email, person, connection: connectionState(pair) });
+      const connection = connectionState(pair);
+      // Each way they were found, by the switch that let it: an email, or a proven number.
+      const privacy = u.privacy as { discoverByEmail?: boolean; discoverByPhone?: boolean } | null;
+      if (privacy?.discoverByEmail)
+        for (const email of asked.filter((e) => e === u.email || proven.get(e) === u.id))
+          matches.push({ email, phone: null, person, connection });
+      if (privacy?.discoverByPhone)
+        for (const phone of numbers.filter((n) => byPhone.get(n) === u.id))
+          matches.push({ email: null, phone, person, connection });
     }
     return { matches };
   });
@@ -165,12 +196,16 @@ export async function peopleRoutes(app: FastifyInstance, ctx: AppContext) {
     ctx.limiter.hit(`people-search:${auth.userId}`, ctx.config.isTest ? 1000 : 120, 60_000);
     const me = await ctx.db
       .selectFrom('users')
-      .select(['birth_date', 'time_zone'])
+      .select(['birth_date', 'time_zone', 'country'])
       .where('id', '=', auth.userId)
       .executeTakeFirstOrThrow();
     const now = ctx.now();
     const viewerIsMinor = minorOf(me, now);
     const term = q.replace(/^@/, '').toLowerCase();
+    // A number typed as people write it where the searcher lives (R91): found only as proven.
+    const number = /^[+\d][\d\s\-().]{5,}$/.test(q.trim())
+      ? (addressValue('phone', q) ?? toInternational(q, me.country))
+      : null;
     const like = `${term.replace(/[\\%_]/g, (c) => `\\${c}`)}%`;
     const contains = `%${term.replace(/[\\%_]/g, (c) => `\\${c}`)}%`;
 
@@ -227,6 +262,14 @@ export async function peopleRoutes(app: FastifyInstance, ctx: AppContext) {
               eb('u.display_name', 'ilike', contains),
             ]),
           ]),
+          ...(number
+            ? [
+                eb.and([
+                  sql<boolean>`coalesce((u.privacy->>'discoverByPhone')::boolean, false)`,
+                  sql<boolean>`exists (select 1 from own_addresses a where a.user_id = u.id and a.kind = 'phone' and a.value = ${number} and a.verified_at is not null)`,
+                ]),
+              ]
+            : []),
           eb.and([
             sql<boolean>`coalesce((u.privacy->>'discoverByEmail')::boolean, false)`,
             // Their sign-in email, or an address they proved theirs (R91).

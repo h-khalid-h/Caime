@@ -1789,7 +1789,11 @@ with its reason, so it isn't proposed again without new facts.
   *Built (phase 1, 2026-10-15):* own email addresses and phone numbers (five of each), a code by
   mail or over WhatsApp, the statuses in Settings · Apps' one list beside the sign-in email and the
   Caime address, proven ones counted for mail, contacts and search, and one's own mail kept with
-  Cai. Organizations' list, LinkedIn, PayPal, SMS and finding by phone come next.
+  Cai. Finding by phone since (2026-10-15): a contact's number, made international on the device
+  by the person's country, or a number typed in People search finds whoever proved it theirs, by
+  its own switch (By your phone number: on for a new adult, off for an account that never chose,
+  never under 18), since a number is more widely known than an address. Organizations' list,
+  LinkedIn, PayPal and SMS come next.
 - **R92 — Places: where people and organizations are, each shown to whom it's for (owner's
   brainstorm, 2026-10-15: "people and organizations can have multiple locations, each with a
   country, city, street, building, floor, unit, and a name like Home, Office, HQ, Branch, and

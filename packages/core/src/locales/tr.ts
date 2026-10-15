@@ -327,8 +327,6 @@ export const turkish: Catalog = {
   'From your contacts': 'Kişilerinizden',
   '{n} contacts': { one: '{n} kişi', other: '{n} kişi' },
   '{n} people are on Caime': { one: '{n} kişi Caime’de', other: '{n} kişi Caime’de' },
-  'Nobody with these addresses is on Caime yet, or they keep their address private.':
-    'Bu adreslerle henüz kimse Caime’de değil ya da adreslerini gizli tutuyorlar.',
   '{n} aren’t on Caime yet': {
     one: '{n} kişi henüz Caime’de değil',
     other: '{n} kişi henüz Caime’de değil',
@@ -3906,8 +3904,6 @@ export const turkish: Catalog = {
   'Who’s already here, and a way to invite the rest.':
     'Kimler zaten burada, gerisini davet etmenin bir yolu da.',
   'Drop the file to read it.': 'Okumak için dosyayı bırakın.',
-  'Read on this device: only email addresses are sent, to see who’s on Caime, and nothing is kept. Whoever isn’t here, you invite yourself.':
-    'Bu cihazda okunur: kimin Caime’de olduğunu görmek için yalnızca e-posta adresleri gönderilir ve hiçbir şey saklanmaz. Burada olmayanları siz davet edersiniz.',
   '{n} contacts read…': { one: '{n} kişi okundu…', other: '{n} kişi okundu…' },
   'Reading your contacts…': 'Rehberiniz okunuyor…',
   'Caime can’t see your contacts. Allow it in Settings to find your people, or choose a file instead.':
@@ -4050,4 +4046,14 @@ export const turkish: Catalog = {
   Wherever: 'Herhangi bir yerde',
   'At {place}': '{place} konumunda',
   'Each place’s hours once.': 'Her yerin saatleri bir kez.',
+  'Nobody with these addresses or numbers is on Caime yet, or they keep them private.':
+    'Bu adreslerle ya da numaralarla henüz Caime’de kimse yok veya bunlar gizli tutuluyor.',
+  'Read on this device: only email addresses and numbers are sent, to see who’s on Caime, and nothing is kept. Whoever isn’t here, you invite yourself.':
+    'Bu cihazda okunur: yalnızca e-posta adresleri ve numaralar gönderilir, Caime’de kim olduğunu görmek için; hiçbir şey saklanmaz. Burada olmayanları kendin davet edersin.',
+  'By your phone number': 'Telefon numaranla',
+  'Someone with your number in their contacts can find you, once you’ve proven it':
+    'Rehberinde numaran olan biri, numaranı kanıtladıktan sonra seni bulabilir',
+  'Use a number with its country code.': 'Ülke koduyla birlikte bir numara kullan.',
+  'Nothing to look for.': 'Aranacak bir şey yok.',
+  'Too many at once.': 'Bir seferde çok fazla.',
 };

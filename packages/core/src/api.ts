@@ -265,7 +265,9 @@ export interface PeopleSearchResult {
  */
 export interface ContactMatchView {
   /** The address as sent, lower-cased, so the app pairs it with the contact it came from. */
-  email: string;
+  email: string | null;
+  /** Or the number as sent (R91), found because its owner proved it theirs. */
+  phone: string | null;
   person: PersonView;
   connection: ConnectionStateView;
 }

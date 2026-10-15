@@ -308,7 +308,8 @@ export const endpoints = {
   // People and relationships
   searchPeople: (term: string) => api.get<PeopleSearchResponse>(`/people/search${q({ q: term })}`),
   /** A contacts file (R79): who, of these addresses, is here; nothing of them is kept. */
-  matchContacts: (emails: string[]) => api.post<ContactsMatchResponse>('/people/match', { emails }),
+  matchContacts: (ask: { emails: string[]; phones: string[] }) =>
+    api.post<ContactsMatchResponse>('/people/match', ask),
   /** The accounts contacts can be read from here (R89), and the consent link for one. */
   contactAccounts: () => api.get<ContactAccountsResponse>('/contacts/accounts'),
   startContactAccount: (account: ContactAccount, body: { key: string; back: 'web' | 'app' }) =>

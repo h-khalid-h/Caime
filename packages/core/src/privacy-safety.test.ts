@@ -79,9 +79,10 @@ describe('privacy', () => {
     ).toBe(false);
   });
 
-  it('minors are never discoverable by email and only take requests from shared connections (R29)', () => {
+  it('minors are never discoverable by email or number and only take requests from shared connections (R29)', () => {
     const s = defaultPrivacy({ minor: true });
     expect(s.discoverByEmail).toBe(false);
+    expect(s.discoverByPhone).toBe(false);
     expect(s.messageRequests).toBe('shared_connections');
     expect(canSee(s, 'profilePhoto', stranger)).toBe(false);
   });

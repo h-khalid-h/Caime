@@ -229,7 +229,8 @@ they also see your profile photo, About you, pronouns, gender, status, your prof
 organization Caime has verified you&rsquo;re on the team of), when you&rsquo;re online, when you
 were last seen, and when you&rsquo;ve read their messages.</li>
 <li><strong>Anyone on Caime</strong> who finds you by your name or @handle (unless you turn off By
-your name or @handle), or by your email address (unless you turn off By your email), sees your
+your name or @handle), by your email address (unless you turn off By your email), or by a phone
+number you proved yours (while By your phone number is on), sees your
 name, @handle and what You &rarr; Privacy shows everyone: at first, your profile photo, About you
 and your professional details. People in your groups and spaces see the same.</li>
 <li><strong>Organizations you write to.</strong> When you message a business, a clinic, a school
@@ -262,10 +263,10 @@ ${f.processors
 </ul></li>
 <li><strong>Your contacts, when you look for your people in them.</strong> Whether they come
 from your phone, your browser&rsquo;s contact picker, a file, or your Google or Microsoft account,
-Caime reads them on your device and sends only their email addresses, to say which of them are on
-Caime and can be found by email; nothing of them is kept, on the server or in your data. Their
-phone numbers never leave your device, except in an invitation you send yourself, by WhatsApp, a
-text or an email. To read a Google or Microsoft account, you sign in to it and allow Caime to read
+Caime reads them on your device and sends only their email addresses and phone numbers, to say
+which of them are on Caime and can be found by them (a number finds only someone who proved it
+theirs and lets a number find them); nothing of them is kept, on the server or in your data, and
+an invitation to the rest is one you send yourself, by WhatsApp, a text or an email. To read a Google or Microsoft account, you sign in to it and allow Caime to read
 your contacts: Caime&rsquo;s server trades that permission for access that lasts an hour, hands
 it to your device without keeping it, and asks for nothing that would let it read them again
 without you. The account remembers your permission until you remove it there (in your Google
@@ -294,7 +295,9 @@ your account, deletes it.</li>
 in with, you can add more addresses and numbers under You &rarr; Apps. Each is proven by a six-digit
 code sent to it (an email by mail; a phone number over WhatsApp, which Meta delivers and which reads
 nothing of yours) before it counts for anything. Once proven, mail from it is from you, and people
-who have it can find you by it as by your sign-in email, if you let people find you by email. Caime
+who have it can find you by it as by your sign-in email: an address if you let people find you by
+email, a number if you turn on By your phone number (it starts off for accounts made before it
+existed). Caime
 keeps the address or number, how and when it was proven, and the code only hashed, for ten minutes.
 Removing it, or deleting your account, deletes it. Your export lists them.</li>
 <li><strong>A file from your Google Drive or OneDrive.</strong> When you turn on Files for a connected
@@ -628,9 +631,10 @@ you, already connected, with your label for them applied. A link works for thirt
 anyone who has it; take one back from the same place.</li>
 <li><strong>Connecting.</strong> Find someone in Connect by their @handle, name or email, or open
 their link, and ask to connect. Anyone can find you by your name or @handle while By your name or
-@handle is on, and by your email address while By your email is on (both in You &rarr; Privacy).
-By your email starts on if you sign up as an adult. Under 18, adults you&rsquo;re not connected
-with can&rsquo;t find you, and nobody can find you by email.</li>
+@handle is on, by your email address while By your email is on, and by a phone number you proved
+yours while By your phone number is on (all in You &rarr; Privacy). Both start on if you sign up as
+an adult. Under 18, adults you&rsquo;re not connected with can&rsquo;t find you, and nobody can
+find you by email or number.</li>
 <li><strong>Say how you know them.</strong> Family, friend, work, a client: only you see it, and
 Caime uses it to put what matters first. If you both turn on Share with <em>name</em>, each of you
 sees how the other described you. Asking to connect shows them which kind it is and where, unless

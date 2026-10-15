@@ -251,6 +251,30 @@ describe('a phone number of one’s own', () => {
     const done = await noor.post(`/v1/me/addresses/${address.id}/verify`, { code });
     expect(done.address).toMatchObject({ verified: true, method: 'whatsapp' });
 
+    // Proven, the number finds Noor from someone's contacts and in search (R91), while she lets
+    // a number find her; turned off, it finds nobody.
+    const found = await omar.post('/v1/people/match', { phones: ['+201013152969'] });
+    expect(found.matches).toEqual([
+      expect.objectContaining({
+        email: null,
+        phone: '+201013152969',
+        person: expect.objectContaining({ id: noor.user.id }),
+      }),
+    ]);
+    const typed = await omar.get(`/v1/people/search?q=${encodeURIComponent('+20 101 315 2969')}`);
+    expect(typed.results.map((r: { person: { id: string } }) => r.person.id)).toContain(
+      noor.user.id,
+    );
+    await noor.req('PUT', '/v1/me/privacy', { discoverByPhone: false });
+    expect((await omar.post('/v1/people/match', { phones: ['+201013152969'] })).matches).toEqual(
+      [],
+    );
+    const hidden = await omar.get(`/v1/people/search?q=${encodeURIComponent('+201013152969')}`);
+    expect(hidden.results.map((r: { person: { id: string } }) => r.person.id)).not.toContain(
+      noor.user.id,
+    );
+    await noor.req('PUT', '/v1/me/privacy', { discoverByPhone: true });
+
     const taken = await omar.req('POST', '/v1/me/addresses', {
       kind: 'phone',
       value: '00201013152969',

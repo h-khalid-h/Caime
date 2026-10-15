@@ -407,8 +407,6 @@ export const arA: Catalog = {
     many: '{n} شخصًا على Caime',
     other: '{n} شخص على Caime',
   },
-  'Nobody with these addresses is on Caime yet, or they keep their address private.':
-    'لا أحد بهذه العناوين على Caime بعد، أو أنهم يُبقون عنوانهم خاصًا.',
   '{n} aren’t on Caime yet': {
     zero: 'لا أحد خارج Caime',
     one: 'واحد ليس على Caime بعد',

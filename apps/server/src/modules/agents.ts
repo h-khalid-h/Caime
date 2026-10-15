@@ -130,6 +130,7 @@ export async function agentRoutes(app: FastifyInstance, ctx: AppContext) {
               ...defaultPrivacy({ minor: false }),
               discoverByHandle: false,
               discoverByEmail: false,
+              discoverByPhone: false,
               messageRequests: 'nobody',
             }),
             onboarded_at: ctx.now(),

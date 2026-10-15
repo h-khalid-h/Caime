@@ -70,12 +70,15 @@ export function privacyOf(
 ): PrivacySettings {
   const fallback = defaultPrivacy({ minor: minorOf(user, now) });
   const p = user.privacy as Partial<PrivacySettings> | null;
-  if (!p) return fallback;
+  // A number finds only someone who said it may (R91): never by a default nobody saved.
+  if (!p) return { ...fallback, discoverByPhone: false };
   return {
     fields: { ...fallback.fields, ...(p.fields ?? {}) },
     discoverByHandle: p.discoverByHandle ?? fallback.discoverByHandle,
     // Minors are never discoverable by email, whatever is stored (R29).
     discoverByEmail: minorOf(user, now) ? false : (p.discoverByEmail ?? fallback.discoverByEmail),
+    // Off where it was never said (R91): a number finds only someone who said it may.
+    discoverByPhone: minorOf(user, now) ? false : (p.discoverByPhone ?? false),
     messageRequests: p.messageRequests ?? fallback.messageRequests,
   };
 }

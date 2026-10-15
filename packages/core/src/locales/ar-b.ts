@@ -2219,8 +2219,6 @@ export const arB: Catalog = {
     toMan: 'أفلت الملف لقراءته.',
     other: 'أفلت الملف لقراءته.',
   },
-  'Read on this device: only email addresses are sent, to see who’s on Caime, and nothing is kept. Whoever isn’t here, you invite yourself.':
-    'تُقرأ على هذا الجهاز: تُرسل عناوين البريد وحدها لمعرفة من على Caime، ولا يُحفظ شيء. ومن ليس هنا، فدعوته منك أنت.',
   '{n} contacts read…': {
     zero: 'لم تُقرأ أي جهة اتصال…',
     one: 'قُرئت جهة اتصال واحدة…',
@@ -2381,4 +2379,18 @@ export const arB: Catalog = {
   Wherever: 'في أي مكان',
   'At {place}': 'في {place}',
   'Each place’s hours once.': 'مواعيد كل مكان مرة واحدة.',
+  'Nobody with these addresses or numbers is on Caime yet, or they keep them private.':
+    'لا أحد بهذه العناوين أو الأرقام على Caime بعد، أو أنها خاصة.',
+  'Read on this device: only email addresses and numbers are sent, to see who’s on Caime, and nothing is kept. Whoever isn’t here, you invite yourself.':
+    'تُقرأ على هذا الجهاز: تُرسل عناوين البريد والأرقام فقط لمعرفة من على Caime، ولا يُحفظ شيء. ومن ليس هنا تدعوه بنفسك.',
+  'By your phone number': 'برقم هاتفك',
+  'Someone with your number in their contacts can find you, once you’ve proven it':
+    'من لديه رقمك في جهات اتصاله يمكنه إيجادك، بعد إثبات الرقم',
+  'Use a number with its country code.': {
+    toWoman: 'استخدمي رقمًا مع رمز البلد.',
+    toMan: 'استخدم رقمًا مع رمز البلد.',
+    other: 'استخدم رقمًا مع رمز البلد.',
+  },
+  'Nothing to look for.': 'لا شيء للبحث عنه.',
+  'Too many at once.': 'عدد كبير دفعة واحدة.',
 };

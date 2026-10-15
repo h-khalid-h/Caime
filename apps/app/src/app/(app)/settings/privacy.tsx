@@ -114,6 +114,20 @@ export default function Privacy() {
           onChange={(v) => void save({ discoverByEmail: v })}
           testID="find-by-email"
         />
+        <SwitchRow
+          inset
+          divider
+          label={tr('By your phone number')}
+          detail={
+            me.minor
+              ? tr('Always off under 18')
+              : tr('Someone with your number in their contacts can find you, once you’ve proven it')
+          }
+          value={me.privacy.discoverByPhone}
+          disabled={me.minor}
+          onChange={(v) => void save({ discoverByPhone: v })}
+          testID="find-by-phone"
+        />
       </Group>
       <Group
         title={tr('Message requests')}

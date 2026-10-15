@@ -36,6 +36,8 @@ export interface PrivacySettings {
   fields: Record<PrivacyField, Audience>;
   discoverByHandle: boolean;
   discoverByEmail: boolean;
+  /** Found by a phone number they proved theirs (R91), from someone's contacts or search. */
+  discoverByPhone: boolean;
   messageRequests: MessageRequestsFrom;
 }
 
@@ -87,6 +89,8 @@ export function defaultPrivacy(opts: { minor: boolean }): PrivacySettings {
     discoverByHandle: true,
     // R29: under-18 accounts are never discoverable by email.
     discoverByEmail: !opts.minor,
+    // R29 too, and only a number they proved theirs (R91) ever finds them.
+    discoverByPhone: !opts.minor,
     messageRequests: opts.minor ? 'shared_connections' : 'everyone',
   };
 }

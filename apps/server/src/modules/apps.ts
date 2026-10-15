@@ -196,6 +196,7 @@ export async function appRoutes(app: FastifyInstance, ctx: AppContext) {
             ...defaultPrivacy({ minor: false }),
             discoverByHandle: false,
             discoverByEmail: false,
+            discoverByPhone: false,
             messageRequests: 'nobody',
           }),
           onboarded_at: ctx.now(),

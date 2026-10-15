@@ -824,7 +824,10 @@ These are rules, not preferences.
   (`contacts/local.native.ts`, expo-contacts, READ_CONTACTS alone: `blockedPermissions` drops
   the plugin's WRITE), the browser's picker (`contacts/local.ts`), a Google or Microsoft account
   (`contacts/accounts*.ts`) and a file (`@caime/core/contacts`, dropped on a desktop:
-  `contacts/drop.ts`). Only addresses reach `POST /people/match` (`modules/people.ts`: the
+  `contacts/drop.ts`). Only addresses and numbers reach `POST /people/match` (a number made
+  international on the device by the person's country, `toInternational`, and found only as
+  proven, `provenPhoneHolders`, behind the privacy switch `discoverByPhone`, off where it was
+  never saved; a number typed in People search finds the same way) (`modules/people.ts`: the
   search route's rules, `personViewsFor(…, { sharesConversation: false })`, one `betweenMany`
   for every match's state), a page at a time. An account's consent is `lib/contact-accounts.ts`
   behind `modules/contacts.ts`: the server writes the provider's link with its state sealed by

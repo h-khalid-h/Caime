@@ -354,8 +354,6 @@ export const fr: Catalog = {
     one: '{n} personne est sur Caime',
     other: '{n} personnes sont sur Caime',
   },
-  'Nobody with these addresses is on Caime yet, or they keep their address private.':
-    'Personne avec ces adresses n’est encore sur Caime, ou ils gardent leur adresse privée.',
   '{n} aren’t on Caime yet': {
     one: '{n} n’est pas encore sur Caime',
     other: '{n} ne sont pas encore sur Caime',
@@ -4074,8 +4072,6 @@ export const fr: Catalog = {
   'Who’s already here, and a way to invite the rest.':
     'Qui est déjà là, et de quoi inviter les autres.',
   'Drop the file to read it.': 'Déposez le fichier pour le lire.',
-  'Read on this device: only email addresses are sent, to see who’s on Caime, and nothing is kept. Whoever isn’t here, you invite yourself.':
-    'Lus sur cet appareil : seules les adresses e-mail sont envoyées, pour voir qui est sur Caime, et rien n’est conservé. Ceux qui n’y sont pas, c’est vous qui les invitez.',
   '{n} contacts read…': { one: '{n} contact lu…', other: '{n} contacts lus…' },
   'Reading your contacts…': 'Lecture de vos contacts…',
   'Caime can’t see your contacts. Allow it in Settings to find your people, or choose a file instead.':
@@ -4222,4 +4218,14 @@ export const fr: Catalog = {
   Wherever: 'N’importe où',
   'At {place}': 'À {place}',
   'Each place’s hours once.': 'Les horaires de chaque lieu une seule fois.',
+  'Nobody with these addresses or numbers is on Caime yet, or they keep them private.':
+    'Personne avec ces adresses ou numéros n’est encore sur Caime, ou ces personnes les gardent privés.',
+  'Read on this device: only email addresses and numbers are sent, to see who’s on Caime, and nothing is kept. Whoever isn’t here, you invite yourself.':
+    'Lu sur cet appareil : seuls les e-mails et les numéros sont envoyés, pour voir qui est sur Caime, et rien n’est conservé. Les autres, vous les invitez vous-même.',
+  'By your phone number': 'Par votre numéro de téléphone',
+  'Someone with your number in their contacts can find you, once you’ve proven it':
+    'Quelqu’un qui a votre numéro dans ses contacts peut vous trouver, une fois le numéro prouvé',
+  'Use a number with its country code.': 'Utilisez un numéro avec son indicatif pays.',
+  'Nothing to look for.': 'Rien à chercher.',
+  'Too many at once.': 'Trop à la fois.',
 };

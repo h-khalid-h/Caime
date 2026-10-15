@@ -258,11 +258,13 @@ export async function meRoutes(app: FastifyInstance, ctx: AppContext) {
       fields: { ...current.fields, ...(body.fields ?? {}) },
       discoverByHandle: body.discoverByHandle ?? current.discoverByHandle,
       discoverByEmail: body.discoverByEmail ?? current.discoverByEmail,
+      discoverByPhone: body.discoverByPhone ?? current.discoverByPhone,
       messageRequests: body.messageRequests ?? current.messageRequests,
     };
     if (minorOf(user, now)) {
       // Protections for under-18 accounts are rules, not defaults (R29).
       next.discoverByEmail = false;
+      next.discoverByPhone = false;
       if (next.messageRequests === 'everyone') next.messageRequests = 'shared_connections';
     }
     await ctx.db

@@ -1476,9 +1476,14 @@ listed there with its owner.
       account, a WhatsApp Business number, an approved authentication template named `caime_code`
       (body with the code, a copy-code button) and `WHATSAPP_TOKEN` and `WHATSAPP_PHONE_NUMBER_ID`
       (docs/DEPLOY.md). Until then "Add a phone number" isn't offered.
+- [x] R91 people found by a proven phone number: a contact's number (made international on the
+      device by the person's country) or a number typed in People search finds whoever proved it
+      theirs while By your phone number is on (`discoverByPhone`, off for accounts that never
+      saved it, never under 18). Verified with `addresses.test.ts` and `contacts.test.ts`.
 - [ ] R91 phase 1, the rest: an organization's own list (its domain, its Caime address, its
       connected accounts), LinkedIn and PayPal as verified identities (⛔ their sign-in apps), SMS
-      as the phone's fallback (⛔ a provider), and people found by a proven phone number.
+      as the phone's fallback (⛔ a provider). A number is proven only over WhatsApp until then
+      (⛔ `WHATSAPP_TOKEN`, `WHATSAPP_PHONE_NUMBER_ID` in EasyPanel).
 - [x] R92 places (PRODUCT-REVIEW R92): a person's and an organization's named addresses
       (`places`, migration 0082, core `places.ts`, `lib/places.ts`), saved as a whole list in
       Settings · Places and an organization's setup by one editor (`PlacesSetup`); a person's shown
@@ -3355,3 +3360,5 @@ The six-slice review's plan, in its order; a block is ticked when its tests and 
   live), from the card's form beside "Use where I am now".
 - 2026-10-15 — R92 branches as booking hosts: items at a branch, a branch's own days, the
   branch's address on the card, its name on the public page and in the agent's catalog.
+- 2026-10-15 — R91: people found by a proven phone number, from contacts and People search, by
+  its own privacy switch.

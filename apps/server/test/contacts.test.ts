@@ -48,6 +48,7 @@ describe('POST /v1/people/match', () => {
     expect(matches).toEqual([
       {
         email: 'sara@partner.example',
+        phone: null,
         person: expect.objectContaining({ id: sara.user.id, displayName: 'Sara Haddad' }),
         connection: { state: 'none', connectionId: null, requestId: null },
       },

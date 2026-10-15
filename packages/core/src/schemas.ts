@@ -5,7 +5,7 @@
 import { z } from 'zod';
 import { PERSONAL_SCOPES, redirectUriError } from './access';
 import { ACCOUNT_USES } from './accounts';
-import { ADDRESS_KINDS } from './addresses';
+import { ADDRESS_KINDS, E164 } from './addresses';
 import { AGENT_KNOWLEDGE_MAX, AGENT_NAME_MAX } from './agents';
 import { MARKETING_PAGES, SITE_PAGES } from './api';
 import {
@@ -422,9 +422,18 @@ export const BridgeBody = z
 /** Addresses from a contacts file (R79): up to a page of them at a time, nothing kept. */
 export const ContactsMatchBody = z
   .object({
-    emails: z.array(Email).min(1).max(CONTACTS_MATCH_MAX),
+    emails: z.array(Email).max(CONTACTS_MATCH_MAX).default([]),
+    // R91: numbers as the device made them international (E.164), against proven ones only.
+    phones: z
+      .array(z.string().regex(E164, msg('Use a number with its country code.')))
+      .max(CONTACTS_MATCH_MAX)
+      .default([]),
   })
-  .strict();
+  .strict()
+  .refine((b) => b.emails.length + b.phones.length > 0, { message: msg('Nothing to look for.') })
+  .refine((b) => b.emails.length + b.phones.length <= CONTACTS_MATCH_MAX, {
+    message: msg('Too many at once.'),
+  });
 
 /**
  * Reading contacts from an account (R89): the key the device seals its access with (32 bytes,
@@ -818,6 +827,7 @@ export const PrivacyBody = z
     fields: z.partialRecord(z.enum(PRIVACY_FIELDS), AudienceSchema).optional(),
     discoverByHandle: z.boolean().optional(),
     discoverByEmail: z.boolean().optional(),
+    discoverByPhone: z.boolean().optional(),
     messageRequests: z.enum(['everyone', 'shared_connections', 'nobody']).optional(),
   })
   .strict();
