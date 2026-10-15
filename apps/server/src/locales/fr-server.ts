@@ -1391,4 +1391,6 @@ export const frServer: Catalog = {
     'Seuls les articles d’une organisation se font dans ses lieux.',
   'Choose one of your places that customers may see.':
     'Choisissez un de vos lieux que les clients peuvent voir.',
+  'This is a notice by mail, from an address nobody answers. Nothing is sent from here.':
+    'C’est un avis par e-mail, d’une adresse à laquelle personne ne répond. Rien n’est envoyé d’ici.',
 };

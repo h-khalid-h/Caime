@@ -1688,9 +1688,15 @@ discovers, and mail at their own address.
       Caime address is answered by its AI agent, introduced as an AI, as mail from the
       organization's address (an app's replies there too). Its replies had been dropped by the
       send job, which took only a person's words. Verified with `mail-agent.test.ts`.
-- [ ] R75 phase 2: notices (no-reply senders, bulk mail) under Notices, HTML as sent in a
-      sandbox, reply-all with CC, sending as the address from Gmail and Outlook through Caime's
-      submission.
+- [x] R75 phase 2, notices: a list's mail, an automatic one or one from an address nobody
+      answers (core `isNoticeMail`: List-Id or List-Unsubscribe, bulk precedence, Auto-Submitted,
+      a no-reply local part) lands in one conversation per sender (`conversations.notice`,
+      migration 0084), never a request, muted, with no topics, no notifications and no
+      suggestions, under the folded Notices section; nothing is sent from it (`notice_only`).
+      Only a conversation that starts as a notice is one, so a correspondent's list mail never
+      silences them. Verified with core `mail.test.ts`, `attention.test.ts` and `mail.test.ts`.
+- [ ] R75 phase 2: HTML as sent in a sandbox, reply-all with CC, sending as the address from
+      Gmail and Outlook through Caime's submission.
 - [ ] R75 phase 3: sign in with Google, Apple and Microsoft (claiming in one tap); Google
       Calendar and Outlook calendar sync as apps in Discover; a verified organization receiving
       at its own domain.
@@ -3368,3 +3374,5 @@ The six-slice review's plan, in its order; a block is ticked when its tests and 
   its own privacy switch.
 - 2026-10-15 — R75: an organization's AI agent (and its apps) answer a customer by mail when the
   customer wrote by mail; the send job had dropped every word not a person's.
+- 2026-10-15 — R75 notices: newsletters and no-reply mail land under Notices, muted, never a
+  request, never answered.

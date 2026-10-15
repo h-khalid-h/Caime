@@ -48,6 +48,8 @@ async function postmark(m: {
   attachments?: Array<{ name: string; type: string; content: string }>;
   /** The address it was delivered to when it's in no To or Cc (a Bcc, a list). */
   envelopeTo?: string;
+  /** More headers, as a list's mail carries (List-Unsubscribe, Precedence). */
+  extraHeaders?: Array<{ Name: string; Value: string }>;
 }) {
   counter++;
   const domain = m.from.replace(/^.*@/, '');
@@ -59,6 +61,7 @@ async function postmark(m: {
   if (m.inReplyTo) headers.push({ Name: 'In-Reply-To', Value: m.inReplyTo });
   if (m.references?.length) headers.push({ Name: 'References', Value: m.references.join(' ') });
   if (m.spam) headers.push({ Name: 'X-Spam-Status', Value: 'Yes, score=9.1' });
+  headers.push(...(m.extraHeaders ?? []));
   const to = Array.isArray(m.to) ? m.to : [m.to];
   const text = m.text ?? 'Could you send me the contract by Friday?';
   const raw = await rawMail({
@@ -863,6 +866,59 @@ describe('who may write in, and to whom', () => {
     expect(sends[0]?.From).toBe('Nile Dental <nile.dental@caime.test>');
     expect(sends[0]?.To).toBe('patient@clinic-customer.example');
     expect(sends[0]?.Subject).toBe('Re: Appointment');
+  });
+
+  it('a list’s mail is a notice: never a request, muted, nobody told, never answered (R75)', async () => {
+    const before = (await noor.get('/v1/notifications')).notifications.length;
+    const res = await inbound(
+      await postmark({
+        from: 'news@shop-letters.example',
+        fromName: 'Shop Letters',
+        to: 'noor.mail@caime.test',
+        subject: 'This week’s offers',
+        text: 'Could you check our new arrivals by Friday?',
+        extraHeaders: [
+          { Name: 'List-Unsubscribe', Value: '<mailto:unsubscribe@shop-letters.example>' },
+        ],
+      }),
+    );
+    expect(res.json().outcomes[0].outcome).toBe('delivered');
+    await work();
+    const inbox = (await noor.get('/v1/inbox?view=all')).conversations as Array<{
+      id: string;
+      section: string;
+      title: string;
+    }>;
+    const notice = inbox.find((c) => c.title === 'Shop Letters');
+    expect(notice?.section).toBe('notices');
+    // Nothing asked of Noor, and nobody told.
+    expect((await noor.get('/v1/notifications')).notifications.length).toBe(before);
+    const view = await noor.get(`/v1/conversations/${notice?.id}`);
+    expect(view.conversation.notice).toBe(true);
+    const answered = await noor.req('POST', `/v1/conversations/${notice?.id}/messages`, {
+      clientId: 'noor-to-a-list',
+      kind: 'text',
+      body: 'Unsubscribe me',
+    });
+    expect(answered.statusCode).toBe(409);
+    expect(answered.json().error.code).toBe('notice_only');
+    // The next one from the same list lands in the same place.
+    await inbound(
+      await postmark({
+        from: 'news@shop-letters.example',
+        fromName: 'Shop Letters',
+        to: 'noor.mail@caime.test',
+        subject: 'Next week',
+        text: 'More offers.',
+        extraHeaders: [{ Name: 'Precedence', Value: 'bulk' }],
+      }),
+    );
+    await work();
+    const messages = (await noor.get(`/v1/conversations/${notice?.id}/messages`)).messages;
+    expect(messages.map((m: { body: string }) => m.body)).toEqual([
+      'Could you check our new arrivals by Friday?',
+      'More offers.',
+    ]);
   });
 
   it('writing to an address that isn’t on Caime: one mail, saying who wrote, until they answer (R93)', async () => {

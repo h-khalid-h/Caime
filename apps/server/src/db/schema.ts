@@ -336,6 +336,8 @@ export interface ConversationsTable {
   direct_key: string | null;
   connection_id: string | null;
   is_general: Defaulted<boolean>;
+  /** Bulk or no-reply mail (R75): read here, never answered. */
+  notice: Defaulted<boolean>;
   parent_id: string | null;
   context_id: string | null;
   space_id: string | null;

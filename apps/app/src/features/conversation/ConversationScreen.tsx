@@ -807,26 +807,28 @@ export function ConversationScreen({
 
   // Closed by a block (PRD §55): the customer blocked the organization.
   const closed = business?.closed ?? false;
-  const disabled = business?.orgClosed
-    ? tr(
-        '{name} closed on Caime. What was sent here stays to read; find it again to start a new conversation.',
-        { name: org?.name ?? tr('This organization') },
-      )
-    : closed
-      ? thread
-        ? tr('The customer closed this conversation.')
-        : tr('You blocked {name}.', { name: org?.name ?? tr('this organization') })
-      : conversation?.request === 'incoming'
-        ? tr('Accept the request to reply.')
-        : thread?.awaitingAcceptance
-          ? tr('You can write again once they answer.')
-          : conversation && !conversation.participants.some((p) => p.userId === me.id)
-            ? tr('You’re no longer in this conversation.')
-            : conversation?.privacyClass === 'private' && !privateSupported
-              ? tr(
-                  'Private conversations don’t open on this device. Open Caime on your phone or in a current browser.',
-                )
-              : null;
+  const disabled = conversation?.notice
+    ? tr('A notice by mail, from an address nobody answers: it’s here to read.')
+    : business?.orgClosed
+      ? tr(
+          '{name} closed on Caime. What was sent here stays to read; find it again to start a new conversation.',
+          { name: org?.name ?? tr('This organization') },
+        )
+      : closed
+        ? thread
+          ? tr('The customer closed this conversation.')
+          : tr('You blocked {name}.', { name: org?.name ?? tr('this organization') })
+        : conversation?.request === 'incoming'
+          ? tr('Accept the request to reply.')
+          : thread?.awaitingAcceptance
+            ? tr('You can write again once they answer.')
+            : conversation && !conversation.participants.some((p) => p.userId === me.id)
+              ? tr('You’re no longer in this conversation.')
+              : conversation?.privacyClass === 'private' && !privateSupported
+                ? tr(
+                    'Private conversations don’t open on this device. Open Caime on your phone or in a current browser.',
+                  )
+                : null;
   const disabledAction =
     closed && !thread && org && !business?.orgClosed
       ? {

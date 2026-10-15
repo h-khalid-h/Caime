@@ -40,3 +40,32 @@ export function replySubject(subject: string | null | undefined): string | null 
   if (!subject) return null;
   return `Re: ${bareSubject(subject) ?? subject}`;
 }
+
+/** What a mail says of itself, for telling a notice from a person's mail (R75). */
+export interface MailSignals {
+  /** List-Id or List-Unsubscribe: sent to a list. */
+  list: boolean;
+  /** Precedence: bulk, list or junk. */
+  precedence: string | null;
+  /** Auto-Submitted, other than "no": written by a machine. */
+  autoSubmitted: string | null;
+}
+
+/** Local parts a person doesn't answer from: a no-reply address, a notifier, a bounce. */
+const NO_REPLY =
+  /^(no[-_.]?reply|do[-_.]?not[-_.]?reply|donotreply|notifications?|notify|alerts?|newsletters?|news|mailer[-_.]?daemon|bounces?|postmaster|updates?|marketing|digest)([-_.+].*)?$/i;
+
+/**
+ * A notice (R75): mail sent to a list, by a machine, or from an address nobody answers. It is
+ * never a person's and never a request, so a mail declaring itself one only makes itself
+ * quieter: a sender can't use it to reach anyone sooner.
+ */
+export function isNoticeMail(fromAddress: string, signals: MailSignals): boolean {
+  if (signals.list) return true;
+  const precedence = signals.precedence?.trim().toLowerCase();
+  if (precedence === 'bulk' || precedence === 'list' || precedence === 'junk') return true;
+  const auto = signals.autoSubmitted?.trim().toLowerCase();
+  if (auto && auto !== 'no') return true;
+  const local = fromAddress.split('@')[0] ?? '';
+  return NO_REPLY.test(local);
+}

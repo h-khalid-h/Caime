@@ -16,6 +16,7 @@ export const ATTENTION_SECTIONS = [
   'waiting',
   'recent',
   'quiet',
+  'notices',
   'requests',
   'archived',
 ] as const;
@@ -27,6 +28,7 @@ export const SECTION_LABELS: Record<AttentionSection, string> = {
   waiting: msg('Waiting'),
   recent: msg('Recent'),
   quiet: msg('Quiet'),
+  notices: msg('Notices'),
   requests: msg('Requests'),
   archived: msg('Archived'),
 };
@@ -46,6 +48,7 @@ export type ReasonCode =
   | 'muted'
   | 'quiet_relationship'
   | 'message_request'
+  | 'notice'
   | 'unread'
   | 'pinned';
 
@@ -59,6 +62,8 @@ export interface AttentionInput {
   pinned?: boolean;
   /** From someone who is not a connection, not yet accepted (R14). */
   isMessageRequest: boolean;
+  /** Bulk or no-reply mail (R75): never a person's, never a request, never answered. */
+  isNotice?: boolean;
   mutedUntil: string | null;
   /** The user's own setting for this conversation. */
   override: Priority | 'auto';
@@ -149,6 +154,13 @@ export function classifyAttention(input: AttentionInput, now: Date): AttentionRe
 
   if (input.archived && !breaksThrough) {
     return { section: 'archived', reasons: [], rank: at };
+  }
+  if (input.isNotice) {
+    return {
+      section: 'notices',
+      reasons: [{ code: 'notice', label: tr('A notice, by mail') }],
+      rank: at,
+    };
   }
   if (input.isMessageRequest) {
     return {
@@ -281,12 +293,15 @@ export function inboxSections<T extends Placed>(
   return { sections, counts };
 }
 
-/** The All list: everything but requests and what's archived, pinned first, then the latest. */
+/**
+ * The All list: everything but requests, notices and what's archived, pinned first, then the
+ * latest.
+ */
 export function inboxAllList<T extends Placed & { pinned: boolean; lastActivityAt: string }>(
   items: readonly T[],
 ): T[] {
   return items
-    .filter((c) => c.section !== 'archived' && c.section !== 'requests')
+    .filter((c) => c.section !== 'archived' && c.section !== 'requests' && c.section !== 'notices')
     .sort(
       (a, b) =>
         Number(b.pinned) - Number(a.pinned) ||

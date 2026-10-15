@@ -69,6 +69,7 @@ export async function membership(
       'conversations.direct_key',
       'conversations.connection_id',
       'conversations.is_general',
+      'conversations.notice',
       'conversations.parent_id',
       'conversations.context_id',
       'conversations.space_id',
@@ -96,6 +97,7 @@ export async function membership(
     direct_key: row.direct_key,
     connection_id: row.connection_id,
     is_general: row.is_general,
+    notice: row.notice,
     parent_id: row.parent_id,
     context_id: row.context_id,
     space_id: row.space_id,
@@ -350,6 +352,7 @@ export async function conversationView(
         : null,
     connected,
     mailSubject,
+    notice: conversation.notice,
     topics: topics.map((c) => ({
       id: c.id,
       title: c.title ?? 'Topic',

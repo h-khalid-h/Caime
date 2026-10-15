@@ -46,7 +46,7 @@ type Show = 'attention' | 'all' | Sphere;
 const NewChatSheet = lazyPart(() => import('./NewChatSheet').then((m) => m.NewChatSheet));
 
 /** Sections that stay folded until opened: they never compete for attention (R14). */
-const FOLDED = new Set(['requests', 'archived']);
+const FOLDED = new Set(['notices', 'requests', 'archived']);
 
 export function InboxList({ pane }: { pane?: boolean }) {
   const t = useTheme();

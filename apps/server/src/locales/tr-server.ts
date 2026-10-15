@@ -1330,4 +1330,6 @@ export const turkishServer: Catalog = {
     'Yalnızca bir kuruluşun öğeleri onun yerlerinde yapılır.',
   'Choose one of your places that customers may see.':
     'Müşterilerin görebileceği yerlerinizden birini seçin.',
+  'This is a notice by mail, from an address nobody answers. Nothing is sent from here.':
+    'Bu, kimsenin yanıtlamadığı bir adresten gelen bir e-posta bildirimi. Buradan hiçbir şey gönderilmez.',
 };

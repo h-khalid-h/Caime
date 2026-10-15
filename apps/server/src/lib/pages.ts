@@ -358,7 +358,9 @@ address. A sender is taken for who they are only when the receiving mail server 
 address; anything else is dropped unread. Someone who writes to you by mail and isn&rsquo;t on
 Caime is kept as a person only you can see (their address and the name their mail gave) until a
 year passes with no mail either way, or until every conversation with them is gone; signing up
-with that address makes that person, and your conversations with them, theirs.</li>
+with that address makes that person, and your conversations with them, theirs. A list&rsquo;s
+mail or one from an address nobody answers (a newsletter, a no-reply sender) is a notice: kept
+the same way, one conversation per sender under Notices, muted, and read for nothing.</li>
 `
     : ''
 }<li>A handle you stop using, by changing it or deleting your account, is kept from everyone for
@@ -621,7 +623,9 @@ conversation with them: a thread is a topic named by its subject, attachments ar
 what you answer goes back to them as mail from your address, with &ldquo;Sent&rdquo;,
 &ldquo;Delivered&rdquo; or &ldquo;Bounced&rdquo; beside it as the mail servers say. A stranger&rsquo;s
 first mail is a message request, like anyone&rsquo;s first message; under 18, only people you&rsquo;re
-connected with reach you by mail. An organization&rsquo;s address lands in its inbox.</li>
+connected with reach you by mail. A newsletter or a no-reply sender&rsquo;s mail is a notice: it
+waits under Notices, tells you nothing, asks nothing of you, and isn&rsquo;t answered. An
+organization&rsquo;s address lands in its inbox.</li>
 `
     : ''
 }<li><strong>Inviting someone.</strong> In Connect, Invite someone makes a link that says who

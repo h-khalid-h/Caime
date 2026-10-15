@@ -116,6 +116,9 @@ async function effectsOf(ctx: AppContext, message: Message, read: Analysis | nul
         .executeTakeFirst()
     : undefined;
   if (!sender) return;
+  // A notice (R75) is read, not acted on: nobody is told, nothing in it is anyone's promise or
+  // request, and nothing goes back.
+  if (conversation.notice) return;
   // Cai or a Caime Friend (R67): what's written to one is answered by it, and nothing else
   // happens; what it writes tells nobody (it never needs anyone) and promises nothing.
   if (conversation.kind === 'direct') {

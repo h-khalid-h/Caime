@@ -62,6 +62,7 @@ export const ERROR_CODES = [
   'not_reclaimable',
   'not_resumable',
   'not_undoable',
+  'notice_only',
   'offset_mismatch',
   'org_blocked',
   'org_closed',

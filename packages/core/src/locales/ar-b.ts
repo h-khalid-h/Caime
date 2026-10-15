@@ -2393,4 +2393,8 @@ export const arB: Catalog = {
   },
   'Nothing to look for.': 'لا شيء للبحث عنه.',
   'Too many at once.': 'عدد كبير دفعة واحدة.',
+  'A notice by mail, from an address nobody answers: it’s here to read.':
+    'نشرة بالبريد من عنوان لا يُرد عليه: هي هنا للقراءة.',
+  Notices: 'النشرات',
+  'A notice, by mail': 'نشرة بالبريد',
 };

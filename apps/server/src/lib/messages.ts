@@ -707,6 +707,13 @@ export async function sendMessage(
   const me = members.find((p) => p.user_id === senderId);
   if (!me) throw notFound(tr('That conversation'));
   if (!canPostTo(conversation.kind, me.role)) throw forbidden(tr('Only admins can post here.'));
+  // A notice (R75) is read, never answered: only its own mail arrives in it.
+  if (conversation.notice && opts.channel !== 'mail')
+    throw new AppError(
+      409,
+      'notice_only',
+      tr('This is a notice by mail, from an address nobody answers. Nothing is sent from here.'),
+    );
   // End to end encrypted (R18): only text sealed on one of the sender's own devices, for every
   // device of everyone in it. Nothing the server could read, so nothing it would work from.
   if (conversation.privacy_class === 'private') {

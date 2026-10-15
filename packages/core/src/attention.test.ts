@@ -97,6 +97,9 @@ describe('attention sections', () => {
   it('archived and message requests have their own places', () => {
     expect(at({ archived: true, unreadCount: 2 }).section).toBe('archived');
     expect(at({ isMessageRequest: true, unreadCount: 1 }).section).toBe('requests');
+    // A notice by mail (R75) is never a request, and archiving one still archives it.
+    expect(at({ isNotice: true, isMessageRequest: true, unreadCount: 3 }).section).toBe('notices');
+    expect(at({ isNotice: true, archived: true }).section).toBe('archived');
   });
 
   it('quiet relationships (e.g. Public) sit in Quiet unless I raise them', () => {

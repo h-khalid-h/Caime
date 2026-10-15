@@ -230,18 +230,61 @@ async function deliverTo(
     const rel = await between(ctx.db, person.id, sender.id);
     if (rel.blockedByMe || rel.blockedMe) return 'refused';
     if (minorOf(person, ctx.now()) && !rel.connected) return 'refused';
-    const general = await ensureDirectConversation(ctx.db, sender.id, person.id, {
-      createdBy: sender.id,
-      connectionId: rel.connectionId,
-      requestFrom: rel.connected ? null : sender.id,
-    });
-    conversationId = await threadFor(ctx, general.id, sender.id, person.id, mail);
+    const notice =
+      mail.notice && !rel.connected ? await noticeFor(ctx, sender.id, person.id) : null;
+    if (notice) conversationId = notice;
+    else {
+      const general = await ensureDirectConversation(ctx.db, sender.id, person.id, {
+        createdBy: sender.id,
+        connectionId: rel.connectionId,
+        requestFrom: rel.connected ? null : sender.id,
+      });
+      conversationId = await threadFor(ctx, general.id, sender.id, person.id, mail);
+    }
   } else {
     conversationId = (await startCustomerConversation(ctx, sender, target.org, null))
       .conversationId;
   }
   await deliver(ctx, sender, conversationId, mail, toAddress);
   return 'delivered';
+}
+
+/**
+ * Where a notice lands (R75): one conversation per sender, never a request, muted for the
+ * person, without topics, and never answered (`sendMessage` refuses). Only a conversation that
+ * starts as a notice is one: a sender someone already writes with stays that conversation, so a
+ * person's own list mail never silences them. Null when it isn't a notice's to take.
+ */
+async function noticeFor(
+  ctx: AppContext,
+  senderId: string,
+  personId: string,
+): Promise<string | null> {
+  const { key } = pairKey(senderId, personId);
+  const existing = await ctx.db
+    .selectFrom('conversations')
+    .select(['id', 'notice'])
+    .where('direct_key', '=', key)
+    .where('is_general', '=', true)
+    .executeTakeFirst();
+  if (existing) return existing.notice ? existing.id : null;
+  const made = await ensureDirectConversation(ctx.db, senderId, personId, {
+    createdBy: senderId,
+    connectionId: null,
+    requestFrom: null,
+  });
+  await ctx.db
+    .updateTable('conversations')
+    .set({ notice: true })
+    .where('id', '=', made.id)
+    .execute();
+  await ctx.db
+    .updateTable('participants')
+    .set({ muted_until: new Date('9999-12-31T00:00:00Z') })
+    .where('conversation_id', '=', made.id)
+    .where('user_id', '=', personId)
+    .execute();
+  return made.id;
 }
 
 /**

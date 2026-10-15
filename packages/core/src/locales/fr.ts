@@ -4228,4 +4228,8 @@ export const fr: Catalog = {
   'Use a number with its country code.': 'Utilisez un numéro avec son indicatif pays.',
   'Nothing to look for.': 'Rien à chercher.',
   'Too many at once.': 'Trop à la fois.',
+  'A notice by mail, from an address nobody answers: it’s here to read.':
+    'Un avis par e-mail, d’une adresse à laquelle personne ne répond : il est là pour être lu.',
+  Notices: 'Avis',
+  'A notice, by mail': 'Un avis, par e-mail',
 };

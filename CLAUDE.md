@@ -1307,7 +1307,11 @@ These are rules, not preferences.
   go through `storeBytes` in `lib/files.ts`, where the upload routes' finaliser lives too) and
   `lib/mail-out.ts` (`queueMailOut` from `effectsOf`: a person's words and files to each
   provisional member, and in a customer thread the agent's and apps' words too, as the
-  organization's (`speaksForOrg`; `mail-agent.test.ts`), the `mail.send` job from the person's or the organization's address in
+  organization's (`speaksForOrg`; `mail-agent.test.ts`); a notice, core `isNoticeMail` on the
+  mail's own list, precedence and auto-submitted headers or a no-reply sender, lands through
+  `noticeFor` in one muted conversation per sender (`conversations.notice`, the inbox's
+  `notices` section) whose effects are skipped and which `sendMessage` closes to anything but
+  its own mail (`notice_only`), and only a conversation that starts as a notice is one, the `mail.send` job from the person's or the organization's address in
   the thread, `sent` then `delivered` or `bounced` by `applyMailEvents`; `mail.sweep` daily). A
   message that came or went as mail has `messages.channel = 'mail'` and a `mail_messages` row
   (`MessageView.mail`); erasure clears its subject and sender address. A provisional sender is

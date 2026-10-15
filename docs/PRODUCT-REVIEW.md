@@ -1119,7 +1119,10 @@ with its reason, so it isn't proposed again without new facts.
   staying on Caime until phase 2 says them in words; (b) settled in the build as the composer
   showing the subject the mail will carry, the thread's where there is one, else the first line,
   with only a subject someone writes starting a topic, so a reply in the general conversation
-  never opens a topic of its own). Phase 2: notices, HTML as sent in a sandbox,
+  never opens a topic of its own). *Built in phase 2 (2026-10-15):* notices as (8) says, by a
+  mail's own list, precedence and auto-submitted headers or a no-reply address (a sender can
+  only make itself quieter by them), in a conversation that started as a notice, so a person
+  someone already writes with stays one; and the agent answering by mail. Phase 2: notices, HTML as sent in a sandbox,
   reply-all with CC, sending as the address from other clients, the agent by mail. Phase 3:
   sign-in with Google, Apple and Microsoft; calendar sync as apps; a verified organization
   receiving at its own domain. ⛔ Before production: the mail domain's MX at the inbound

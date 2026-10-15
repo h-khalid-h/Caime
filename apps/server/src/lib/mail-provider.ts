@@ -8,6 +8,7 @@
  * DMARC); never a display name, a Reply-To or a Sender.
  */
 import { createHash } from 'node:crypto';
+import { isNoticeMail } from '@caime/core/mail';
 import type { Config } from '../config';
 import { addressOf } from './mail-address';
 
@@ -61,6 +62,11 @@ export interface InboundMail {
   raw: string | null;
   /** The provider's spam verdict. */
   spam: boolean;
+  /**
+   * Bulk or no-reply mail (R75, core `isNoticeMail`): its list headers, precedence, an
+   * automatic submission, or an address nobody answers from.
+   */
+  notice: boolean;
   attachments: MailAttachment[];
 }
 
@@ -244,6 +250,12 @@ function postmark(config: Config): MailProvider {
         references,
         raw: typeof m.RawEmail === 'string' && m.RawEmail ? m.RawEmail : null,
         spam: /^yes/i.test(spamStatus),
+        notice: isNoticeMail(from, {
+          list:
+            header(headers, 'List-Id').length > 0 || header(headers, 'List-Unsubscribe').length > 0,
+          precedence: header(headers, 'Precedence')[0] ?? null,
+          autoSubmitted: header(headers, 'Auto-Submitted')[0] ?? null,
+        }),
         attachments,
       };
     },

@@ -4056,4 +4056,8 @@ export const turkish: Catalog = {
   'Use a number with its country code.': 'Ülke koduyla birlikte bir numara kullan.',
   'Nothing to look for.': 'Aranacak bir şey yok.',
   'Too many at once.': 'Bir seferde çok fazla.',
+  'A notice by mail, from an address nobody answers: it’s here to read.':
+    'Kimsenin yanıtlamadığı bir adresten gelen e-posta bildirimi: okumak için burada.',
+  Notices: 'Duyurular',
+  'A notice, by mail': 'E-postayla bir bildirim',
 };

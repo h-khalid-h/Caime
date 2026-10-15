@@ -1,5 +1,12 @@
 import { describe, expect, it } from 'vitest';
-import { bareSubject, replySubject, SUBJECT_LINE_MAX, SUBJECT_MAX, subjectFromText } from './mail';
+import {
+  bareSubject,
+  isNoticeMail,
+  replySubject,
+  SUBJECT_LINE_MAX,
+  SUBJECT_MAX,
+  subjectFromText,
+} from './mail';
 
 describe('bareSubject', () => {
   it('drops the replies’ and forwards’ prefixes, stacked, counted, and in other languages', () => {
@@ -47,5 +54,25 @@ describe('replySubject', () => {
     expect(replySubject('Re:')).toBe('Re: Re:');
     expect(replySubject(null)).toBeNull();
     expect(replySubject('')).toBeNull();
+  });
+});
+
+describe('a notice by mail (R75)', () => {
+  const none = { list: false, precedence: null, autoSubmitted: null };
+  it('is mail to a list, by a machine, or from an address nobody answers', () => {
+    expect(isNoticeMail('news@shop.example', { ...none, list: true })).toBe(true);
+    expect(isNoticeMail('hana@clinic.example', { ...none, precedence: 'Bulk' })).toBe(true);
+    expect(isNoticeMail('hana@clinic.example', { ...none, autoSubmitted: 'auto-generated' })).toBe(
+      true,
+    );
+    expect(isNoticeMail('no-reply@linkedin.example', none)).toBe(true);
+    expect(isNoticeMail('noreply+abc@bank.example', none)).toBe(true);
+    expect(isNoticeMail('notifications@github.example', none)).toBe(true);
+  });
+  it('never a person writing, whatever their address', () => {
+    expect(isNoticeMail('hana@clinic.example', none)).toBe(false);
+    expect(isNoticeMail('newsom@family.example', none)).toBe(false);
+    expect(isNoticeMail('hana@clinic.example', { ...none, autoSubmitted: 'no' })).toBe(false);
+    expect(isNoticeMail('hana@clinic.example', { ...none, precedence: 'first-class' })).toBe(false);
   });
 });

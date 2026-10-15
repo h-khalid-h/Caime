@@ -697,6 +697,8 @@ export interface ConversationView {
    * ("Re: …" of the latest mail either way); null when none went yet, or nobody here is.
    */
   mailSubject: string | null;
+  /** Bulk or no-reply mail (R75): read here, never answered. */
+  notice: boolean;
   purpose: string | null;
   isGeneral: boolean;
   parentId: string | null;
