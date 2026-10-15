@@ -1736,3 +1736,16 @@ with its reason, so it isn't proposed again without new facts.
   and permissions (docs/DEPLOY.md), and Google verifies `calendar.freebusy` (a sensitive scope)
   before more than a hundred people may use it (⛔ in ROADMAP); the phone's sign-in sheet return
   is built and not yet tried on a phone.
+  *Phase 2, files (2026-10-15).* An account's Files use attaches a file from its drive in a
+  conversation, copied in by the server as the person's own upload (`lib/cloud-files.ts`), so it's
+  kept, shown, searched, exported and erased as any file is, and Caime keeps no link to it there.
+  From Google, the file is picked in Google's own picker, which grants Caime that file alone
+  (`drive.file`, outside Google's restricted tier). The picker runs on one page of its own on
+  Caime, under a policy written for it, so no page of the app ever runs Google's script. A
+  one-time ticket names the person and the account, so the page needs no session, and a phone
+  opens it in its sign-in sheet. From Microsoft, which has no per-file permission, Caime lists the
+  person's OneDrive as they browse it (`Files.Read`), through the server, keeping nothing of the
+  list. A Google document is copied as a PDF. The copy is streamed, hashed and capped at the
+  upload's 100 MB. OneDrive's pre-signed download address is followed by hand, without the
+  access, which goes to the provider's API alone (the test caught `fetch` carrying it to a
+  same-origin redirect).

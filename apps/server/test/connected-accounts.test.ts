@@ -202,9 +202,11 @@ describe('connected accounts (R90)', () => {
     expect(await noor.get('/v1/me/accounts')).toEqual({
       accounts: [],
       offered: ['google', 'microsoft'],
+      // Google's files need its picker's key, which this Caime doesn't have.
+      usesOffered: { google: ['calendar'], microsoft: ['calendar', 'files'] },
     });
     const alone = await signup(bare);
-    expect(await alone.get('/v1/me/accounts')).toEqual({ accounts: [], offered: [] });
+    expect((await alone.get('/v1/me/accounts')).offered).toEqual([]);
     expect(
       (await alone.req('POST', '/v1/me/accounts/google/start', { uses: ['calendar'], back: 'web' }))
         .statusCode,

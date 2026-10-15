@@ -1448,8 +1448,19 @@ listed there with its owner.
 - [x] R90 on cai.me: the owner's Google client (calendar.freebusy, in Testing with its test
       users until Google verifies it) and Microsoft client (`common`) carry the new redirect
       addresses, and both connected a real calendar from Settings · Apps (the owner, 2026-10-14).
-- [ ] R90 next uses: files picked from Drive and OneDrive; mail sent as one's Gmail or Outlook
-      address and Outlook mail read in; Gmail read only after the owner decides on Google's CASA.
+- [x] R90 phase 2, a file from Google Drive or OneDrive in a conversation: Settings · Apps adds
+      Files to a connected account (the provider asks again for that alone); the Share sheet
+      offers each drive; OneDrive is browsed in Caime (folders, search, pages) through the server;
+      Google's file is picked in Google's picker on its own page (a one-time ticket, its own
+      policy; a phone opens it in the sign-in sheet); the server copies the one picked in as the
+      person's upload (streamed, hashed, 100 MB cap, a Google document as a PDF). Verified with
+      stand-ins (`cloud-files.test.ts`; `e2e/connected-accounts.spec.ts` attaches from OneDrive in
+      the browser). Google's picker itself runs only against Google, so it's checked on cai.me.
+- [ ] ⛔ R90 Google files on cai.me need the owner's Picker key: a browser API key limited to the
+      Picker API and `https://cai.me/*`, and the project's number (`GOOGLE_PICKER_API_KEY`,
+      `GOOGLE_PICKER_APP_ID`; docs/DEPLOY.md). Until then Files is offered for Microsoft alone.
+- [ ] R90 next use: mail sent as one's Gmail or Outlook address, and Outlook mail read in; Gmail
+      read only after the owner decides on Google's CASA.
 - [ ] R89 on phones, built and not yet tried on one: the phone's own address book (expo-contacts,
       READ_CONTACTS alone on Android), iOS 18's "share more" picker, an account's consent in the
       system's sign-in sheet returning to `caime://connect`, and a text from the system's
@@ -1573,9 +1584,10 @@ discovers, and mail at their own address.
       `abuse@`, `hello@`, `support@`, `help@`, `contact@`, `info@`, `privacy@`, `security@`,
       `legal@`, `billing@`) reach `MAIL_STAFF_HANDLE`; a mail lands once wherever its addresses
       meet, and a provider's retry is the one message (a client id from the mail's own).
-- [ ] ⛔ R75 in production, the owner's: Postmark Pro, the inbound domain with raw content and
-      both webhooks, `MAIL_*` with `MAIL_STAFF_HANDLE`, then the MX from Cloudflare Email
-      Routing to Postmark (docs/DEPLOY.md, Caime Mail).
+- [x] R75 in production on cai.me (2026-10-15): Postmark Pro, the inbound domain with raw content
+      and both webhooks, `MAIL_*` with `MAIL_STAFF_HANDLE`, the MX at Postmark. Verified live: a
+      mail from outside to `hussein.khalid@cai.me` logged `"outcomes":["delivered"]` with DKIM and
+      DMARC passing, arrived as a conversation, and the owner's replies reached the senders' inboxes.
 - [x] R79 layer 1, bridges (PRODUCT-REVIEW R79): Zapier, Make, n8n, Pipedream and IFTTT as
       bridge built-ins in Discover (a sheet that makes a scoped personal token in one tap and
       says what each can do with Caime; on while the token lives); a contacts file into People
@@ -3262,3 +3274,10 @@ The six-slice review's plan, in its order; a block is ticked when its tests and 
   its own checks, which said so to nobody. Each mail in now writes one log line ("mail in": its
   outcomes and the DKIM, SPF and DMARC results, never an address or a word), so the operator sees
   why in the service's log; the cause is found with Postmark's Retry once that's deployed.
+- 2026-10-15 — R90 phase 2, files from Google Drive and OneDrive: a connection's Files use, the
+  Share sheet's drives, OneDrive browsed in Caime, Google's picker on its own page, the picked
+  file copied in as an upload. Found on the way: following OneDrive's download redirect with
+  `fetch` carried the access to it when it was same-origin; the redirect is now followed by hand.
+- 2026-10-15 — Caime Mail verified live both ways: the "mail in" line named the earlier silence
+  (mails that came before raw content was on could vouch for no sender); with it on, an outside
+  mail was delivered (DKIM and DMARC pass) and the owner's replies went out as mail.

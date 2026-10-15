@@ -448,6 +448,18 @@ export const AccountClaimBody = z
   .object({ claim: z.string().regex(/^[A-Za-z0-9_-]{40,8000}$/) })
   .strict();
 
+/** A connected drive's folder, a search in it, or the next page of either (R90). */
+export const AccountFilesQuery = z
+  .object({
+    folder: z.string().min(1).max(400).optional(),
+    q: z.string().trim().min(1).max(200).optional(),
+    next: z.string().min(1).max(2000).optional(),
+  })
+  .strict();
+
+/** A file picked in a connected drive, to copy into Caime as the person's upload (R90). */
+export const AccountImportBody = z.object({ fileId: z.string().min(1).max(400) }).strict();
+
 /**
  * What the token-reachable routes take in their query (PRD §73–74, R79): written here, so the
  * route parses with the very schema the OpenAPI document is written from (`lib/openapi.ts`).

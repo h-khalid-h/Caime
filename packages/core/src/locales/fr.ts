@@ -4124,4 +4124,16 @@ export const fr: Catalog = {
   'When you’re busy there, your bookable times aren’t offered. Caime keeps only when, never what or with whom.':
     'Quand vous y êtes occupé, vos créneaux réservables ne sont pas proposés. Caime ne garde que le moment, jamais l’objet ni avec qui.',
   'No apps are connected yet.': 'Aucune application n’est encore connectée.',
+  'Search {where}': 'Rechercher dans {where}',
+  'Nothing here matches that.': 'Rien ici ne correspond.',
+  'This folder is empty.': 'Ce dossier est vide.',
+  Folder: 'Dossier',
+  '{email} is connected.': '{email} est connecté.',
+  'Add {use}': 'Ajouter {use}',
+  'Couldn’t attach it: {e}': 'Impossible de le joindre : {e}',
+  'Your browser blocked the window. Allow pop-ups for Caime and try again.':
+    'Votre navigateur a bloqué la fenêtre. Autorisez les fenêtres pop-up pour Caime et réessayez.',
+  'A file from {email}': 'Un fichier de {email}',
+  'Attach a file from it in a conversation. Caime copies only the file you pick, as your own upload.':
+    'Joignez-en un fichier dans une conversation. Caime ne copie que le fichier choisi, comme votre propre envoi.',
 };

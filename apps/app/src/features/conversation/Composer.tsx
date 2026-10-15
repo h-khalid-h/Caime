@@ -1,4 +1,10 @@
-import type { ConversationView, CustomKitOfferView, MessageView } from '@caime/core/api';
+import { ACCOUNT_DRIVE_NAMES } from '@caime/core/accounts';
+import type {
+  ConnectedAccountView,
+  ConversationView,
+  CustomKitOfferView,
+  MessageView,
+} from '@caime/core/api';
 import { listTitle } from '@caime/core/format';
 import { tr, trn } from '@caime/core/i18n';
 import { SUBJECT_MAX, subjectFromText } from '@caime/core/mail';
@@ -8,6 +14,7 @@ import { useQuery, useQueryClient } from '@tanstack/react-query';
 import * as DocumentPicker from 'expo-document-picker';
 import { router } from 'expo-router';
 import Camera from 'lucide-react-native/icons/camera';
+import Cloud from 'lucide-react-native/icons/cloud';
 import FileText from 'lucide-react-native/icons/file-text';
 import ImageIcon from 'lucide-react-native/icons/image';
 import Mic from 'lucide-react-native/icons/mic';
@@ -70,6 +77,9 @@ import { mailBound, topicsFor } from './topics';
 const Recorder = lazy(() =>
   import('@/features/voice/parts').then((m) => ({ default: m.Recorder })),
 );
+
+/** A connected OneDrive's browser (R90), loaded when it's opened. */
+const DriveSheet = lazy(() => import('@/features/cloud/DriveSheet'));
 
 export interface ComposerHandle {
   focus: () => void;
@@ -158,6 +168,16 @@ export const Composer = forwardRef<ComposerHandle, ComposerProps>(function Compo
   const shownSubject = subject ?? conversation.mailSubject ?? subjectFromText(text) ?? '';
   const [stickers, setStickers] = useState(false);
   const [attach, setAttach] = useState(false);
+  // The person's connected drives (R90), asked for once the Share sheet opens, never before.
+  const drives = (
+    useQuery({
+      queryKey: qk.accounts,
+      queryFn: endpoints.accounts,
+      enabled: attach && !privately,
+      staleTime: 60_000,
+    }).data?.accounts ?? []
+  ).filter((a) => a.uses.includes('files') && a.state !== 'reconnect');
+  const [drive, setDrive] = useState<ConnectedAccountView | null>(null);
   const [kit, setKit] = useState<KitChoice | null>(openKit ?? null);
   // What the form opened with starts with (R61, R62); a form opened from "+" starts empty.
   const [start, setStart] = useState<KitStart | null>(openKit ? (kitStart ?? null) : null);
@@ -438,6 +458,48 @@ export const Composer = forwardRef<ComposerHandle, ComposerProps>(function Compo
       toast(tr('Couldn’t upload: {e}', { e: (e as Error).message }), { tone: 'danger' });
     } finally {
       setUploading(null);
+    }
+  };
+
+  /** A file picked in a connected drive, copied in by the server as this person's upload. */
+  const sendFromDrive = async (account: ConnectedAccountView, fileId: string, name: string) => {
+    setUploading(name);
+    try {
+      const { file } = await endpoints.importAccountFile(account.id, fileId);
+      const caption = text.trim();
+      const mentions = mentionable && caption ? mentionedIn(caption, people) : [];
+      useOutbox.getState().enqueue(id, {
+        kind: /^(image|video)\//.test(file.mime) ? 'media' : 'file',
+        body: caption || null,
+        fileIds: [file.id],
+        replyToId: replyTo?.id ?? null,
+        ...(mentions.length ? { mentions } : {}),
+      });
+      if (caption) {
+        setText('');
+        useDrafts.getState().clear(id);
+      }
+      onClearReply();
+    } catch (e) {
+      toast(tr('Couldn’t attach it: {e}', { e: (e as Error).message }), { tone: 'danger' });
+    } finally {
+      setUploading(null);
+    }
+  };
+
+  /** Google's own picker (its page on Caime), then the file it gives back. */
+  const pickFromGoogleDrive = async (account: ConnectedAccountView) => {
+    try {
+      const { pickFromGoogle } = await import('@/features/cloud/googlePicker');
+      const fileId = await pickFromGoogle(account.id);
+      if (fileId) await sendFromDrive(account, fileId, ACCOUNT_DRIVE_NAMES.google);
+    } catch (e) {
+      toast(
+        (e as Error).message === 'blocked'
+          ? tr('Your browser blocked the window. Allow pop-ups for Caime and try again.')
+          : (e as Error).message,
+        { tone: 'danger' },
+      );
     }
   };
 
@@ -854,6 +916,20 @@ export const Composer = forwardRef<ComposerHandle, ComposerProps>(function Compo
             onPress={fromSheet(() => void pickFiles())}
             testID="attach-file"
           />
+          {drives.map((a) => (
+            <ListRow
+              key={a.id}
+              icon={Cloud}
+              title={ACCOUNT_DRIVE_NAMES[a.provider]}
+              subtitle={tr('A file from {email}', {
+                email: a.email ?? ACCOUNT_DRIVE_NAMES[a.provider],
+              })}
+              onPress={fromSheet(() =>
+                a.provider === 'google' ? void pickFromGoogleDrive(a) : setDrive(a),
+              )}
+              testID={`attach-drive-${a.provider}`}
+            />
+          ))}
           {kits.length || own?.length ? (
             <>
               <Text
@@ -888,6 +964,20 @@ export const Composer = forwardRef<ComposerHandle, ComposerProps>(function Compo
           ) : null}
         </View>
       </Sheet>
+      {drive ? (
+        <Suspense fallback={null}>
+          <DriveSheet
+            account={drive}
+            open
+            onClose={() => setDrive(null)}
+            onPick={(f) => {
+              const from = drive;
+              setDrive(null);
+              void sendFromDrive(from, f.id, f.name);
+            }}
+          />
+        </Suspense>
+      ) : null}
       <KitForm
         conversation={conversation}
         kit={kit}

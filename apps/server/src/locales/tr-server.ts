@@ -1294,4 +1294,15 @@ export const turkishServer: Catalog = {
     other: '• Hâlâ açık {n} sipariş',
   },
   'That connection was started by someone else.': 'Bu bağlantıyı başka biri başlattı.',
+  'Turn on Files for this account first.': 'Önce bu hesap için Dosyalar’ı açın.',
+  'That account needs connecting again.': 'Bu hesabın yeniden bağlanması gerekiyor.',
+  'Google’s files are picked in Google’s own window.':
+    'Google dosyaları Google’ın kendi penceresinde seçilir.',
+  'That page isn’t one of these.': 'O sayfa bunlardan biri değil.',
+  'That kind of Google file can’t be attached. Pick a document or a file.':
+    'Bu tür bir Google dosyası eklenemez. Bir belge ya da dosya seçin.',
+  'Pick a file, not a folder.': 'Klasör değil, bir dosya seçin.',
+  'That isn’t offered for this account here.': 'Bu, burada bu hesap için sunulmuyor.',
+  'That picker': 'O seçici',
+  'Pick a file': 'Bir dosya seçin',
 };

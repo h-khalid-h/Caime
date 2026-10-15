@@ -287,6 +287,14 @@ const Env = z.object({
   GOOGLE_USERINFO_URL: z.string().url().default('https://openidconnect.googleapis.com/v1/userinfo'),
   GOOGLE_CALENDAR_API: z.string().url().default('https://www.googleapis.com/calendar/v3'),
   GOOGLE_REVOKE_URL: z.string().url().default('https://oauth2.googleapis.com/revoke'),
+  /** Files from a connected Google account (R90): its Drive, and Google's picker's own key. */
+  GOOGLE_DRIVE_API: z.string().url().default('https://www.googleapis.com/drive/v3'),
+  /** A browser key limited to the Picker API and this site, and the project's number. */
+  GOOGLE_PICKER_API_KEY: z.string().min(10).optional(),
+  GOOGLE_PICKER_APP_ID: z
+    .string()
+    .regex(/^\d{6,20}$/)
+    .optional(),
 });
 
 export type Config = z.infer<typeof Env> & {

@@ -16,7 +16,7 @@ export function isAccountProvider(v: unknown): v is AccountProvider {
 }
 
 /** What a connection is used for. Only these are offered; a later use joins the list. */
-export const ACCOUNT_USES = ['calendar'] as const;
+export const ACCOUNT_USES = ['calendar', 'files'] as const;
 export type AccountUse = (typeof ACCOUNT_USES)[number];
 
 /** The provider's own name for itself: never translated. */
@@ -24,6 +24,15 @@ export const ACCOUNT_PROVIDER_NAMES: Record<AccountProvider, string> = {
   google: 'Google',
   microsoft: 'Microsoft',
 };
+
+/** Each provider's drive, by its own name: never translated. */
+export const ACCOUNT_DRIVE_NAMES: Record<AccountProvider, string> = {
+  google: 'Google Drive',
+  microsoft: 'OneDrive',
+};
+
+/** Where Google's picker hands a phone back the file picked: `caime://picked#file=…`. */
+export const ACCOUNT_PICKED_PATH = 'picked';
 
 /** Who the account is, asked of every connection: its address, nothing else. */
 const IDENTITY: Record<AccountProvider, string[]> = {
@@ -40,6 +49,12 @@ const USE_SCOPES: Record<AccountUse, Record<AccountProvider, string[]>> = {
     // Microsoft has no busy-only permission; the basic read gives times and no bodies, and
     // Caime keeps only the times.
     microsoft: ['Calendars.ReadBasic'],
+  },
+  files: {
+    // Only the files the person picks in Google's own picker: never the drive.
+    google: ['https://www.googleapis.com/auth/drive.file'],
+    // The person's own OneDrive, read when they browse it in Caime to pick one.
+    microsoft: ['Files.Read'],
   },
 };
 
@@ -66,7 +81,16 @@ export const ACCOUNT_USE_LABELS: Record<AccountUse, { label: string; detail: str
       'When you’re busy there, your bookable times aren’t offered. Caime keeps only when, never what or with whom.',
     ),
   },
+  files: {
+    label: msg('Files'),
+    detail: msg(
+      'Attach a file from it in a conversation. Caime copies only the file you pick, as your own upload.',
+    ),
+  },
 };
+
+/** The most a picked file may be: the same as an upload. */
+export const ACCOUNT_FILE_MAX_BYTES = 100 * 1024 * 1024;
 
 /** Why a connection isn't working: it needs connecting again, or the provider didn't answer. */
 export type AccountState = 'connected' | 'reconnect' | 'failing';

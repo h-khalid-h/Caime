@@ -283,6 +283,12 @@ offered while you&rsquo;re busy, and nobody sees them. From Google, Caime asks f
 Microsoft offers no such permission, so Caime asks to read your calendar&rsquo;s basics and keeps
 only the times. Disconnecting it, deleting your account or signing out everywhere deletes what was
 kept and gives the permission back. Your export lists the accounts you connected.</li>
+<li><strong>A file from your Google Drive or OneDrive.</strong> When you turn on Files for a connected
+account, you can attach a file from it in a conversation. From Google, you pick it in Google&rsquo;s
+own window, which gives Caime that file and no other; from Microsoft, Caime lists your OneDrive as
+you browse it, since Microsoft offers no such per-file permission, and keeps nothing of the list.
+The file you pick is copied into Caime as your own upload, and from then on it&rsquo;s kept, shown,
+exported and deleted like any file you send. Caime keeps no link to it there.</li>
 <li><strong>Services you choose.</strong> If you add Your calendar (You &rarr; Apps) to
 Google Calendar, Outlook or Apple Calendar, that service reads your open actions with a due date,
 with who asked you or who you&rsquo;re waiting on, and the meetings and appointments you&rsquo;ve

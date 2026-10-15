@@ -4,18 +4,35 @@
  * claim and finishes nothing), redeeming that claim signed in, reading a calendar again, and
  * disconnecting. Adults only, as an app's grant is.
  */
-import { AccountClaimBody, AccountStartBody } from '@caime/core';
+import { randomBytes } from 'node:crypto';
+import {
+  AccountClaimBody,
+  AccountFilesQuery,
+  AccountImportBody,
+  AccountStartBody,
+} from '@caime/core';
 import { isAccountProvider } from '@caime/core/accounts';
-import type {
-  AccountStartResponse,
-  ConnectedAccountResponse,
-  ConnectedAccountsResponse,
-  OkResponse,
+import {
+  type AccountFilesResponse,
+  type AccountStartResponse,
+  APP_SCHEME,
+  type ConnectedAccountResponse,
+  type ConnectedAccountsResponse,
+  type FileResponse,
+  type OkResponse,
 } from '@caime/core/api';
 import { tr } from '@caime/core/i18n';
 import type { FastifyInstance } from 'fastify';
 import { z } from 'zod';
 import type { AppContext } from '../context';
+import {
+  filesAccess,
+  googlePickerOn,
+  googlePickerPage,
+  importAccountFile,
+  listAccountFiles,
+  usesOffered,
+} from '../lib/cloud-files';
 import {
   accountConsentUrl,
   accountOf,
@@ -24,10 +41,14 @@ import {
   accountView,
   disconnectAccount,
   finishAccountConsent,
+  openPickerTicket,
+  pickerTicket,
   redeemAccountClaim,
 } from '../lib/connected-accounts';
-import { forbidden, notFound } from '../lib/errors';
+import { badRequest, forbidden, notFound } from '../lib/errors';
 import { queueAccountSync } from '../lib/external-busy';
+import { fileView } from '../lib/messages';
+import { storageFor } from '../lib/storage';
 import { minorOf } from '../lib/users';
 import { parse } from '../lib/validate';
 import { requireAuth } from '../plugins/auth';
@@ -55,13 +76,19 @@ export async function connectedAccountRoutes(app: FastifyInstance, ctx: AppConte
 
   app.get('/me/accounts', async (req): Promise<ConnectedAccountsResponse> => {
     const auth = requireAuth(req);
-    return { accounts: await accountsOf(ctx, auth.userId), offered: accountsOffered(ctx) };
+    return {
+      accounts: await accountsOf(ctx, auth.userId),
+      offered: accountsOffered(ctx),
+      usesOffered: usesOffered(ctx.config),
+    };
   });
 
   app.post('/me/accounts/:provider/start', async (req): Promise<AccountStartResponse> => {
     const auth = requireAuth(req);
     const p = provider((req.params as { provider: string }).provider);
     const body = parse(AccountStartBody, req.body);
+    if (body.uses.some((u) => !usesOffered(ctx.config)[p].includes(u)))
+      throw badRequest(tr('That isn’t offered for this account here.'));
     await adult(auth.userId);
     ctx.limiter.hit(`accounts-start:${auth.userId}`, ctx.config.isTest ? 1000 : 20, 3_600_000);
     return { url: await accountConsentUrl(ctx, auth.userId, p, body) };
@@ -97,6 +124,68 @@ export async function connectedAccountRoutes(app: FastifyInstance, ctx: AppConte
     ctx.limiter.hit(`accounts-sync:${id}`, ctx.config.isTest ? 1000 : 12, 3_600_000);
     if (row.uses.includes('calendar')) await queueAccountSync(ctx, id);
     return { account: accountView(row) };
+  });
+
+  // --- Files (R90): a OneDrive's folders browsed in Caime, Google's picked in its own picker,
+  // and the one picked copied in as the person's upload.
+  const storage = storageFor(ctx.config);
+  const idParam = (req: { params: unknown }) =>
+    parse(z.object({ id: z.string().uuid() }), req.params).id;
+
+  app.get('/me/accounts/:id/files', async (req): Promise<AccountFilesResponse> => {
+    const auth = requireAuth(req);
+    const row = await accountOf(ctx, auth.userId, idParam(req));
+    ctx.limiter.hit(`accounts-files:${auth.userId}`, ctx.config.isTest ? 1000 : 600, 3_600_000);
+    return listAccountFiles(ctx, row, parse(AccountFilesQuery, req.query));
+  });
+
+  app.post('/me/accounts/:id/files/import', async (req, reply): Promise<FileResponse> => {
+    const auth = requireAuth(req);
+    const row = await accountOf(ctx, auth.userId, idParam(req));
+    const { fileId } = parse(AccountImportBody, req.body);
+    ctx.limiter.hit(`accounts-import:${auth.userId}`, ctx.config.isTest ? 1000 : 120, 3_600_000);
+    const file = await importAccountFile(ctx, storage, row, fileId);
+    reply.status(201);
+    return { file: fileView(file) };
+  });
+
+  /** A one-time address for Google's picker (its own page), for the web's window or a phone's sheet. */
+  app.post('/me/accounts/:id/picker', async (req): Promise<AccountStartResponse> => {
+    const auth = requireAuth(req);
+    const row = await accountOf(ctx, auth.userId, idParam(req));
+    const { back } = parse(z.object({ back: z.enum(['web', 'app']) }).strict(), req.body);
+    if (row.provider !== 'google' || !googlePickerOn(ctx.config)) throw notFound(tr('That picker'));
+    if (!row.uses.includes('files')) throw forbidden(tr('Turn on Files for this account first.'));
+    const ticket = await pickerTicket(ctx, auth.userId, row.id, back);
+    const base = ctx.config.PUBLIC_URL.replace(/\/+$/, '');
+    return { url: `${base}/v1/accounts/google/picker?${new URLSearchParams({ t: ticket })}` };
+  });
+
+  /**
+   * Google's picker page: the ticket says who and which account (no session needed), and the
+   * page's own policy lets Google's script run there and nowhere else.
+   */
+  app.get('/accounts/google/picker', async (req, reply) => {
+    ctx.limiter.hit(`accounts-picker:${req.ip}`, ctx.config.isTest ? 1000 : 120, 3_600_000);
+    const { t } = parse(z.object({ t: z.string().max(4000) }), req.query);
+    const ticket = await openPickerTicket(ctx, t);
+    if (!ticket || !googlePickerOn(ctx.config)) throw notFound(tr('That picker'));
+    const row = await accountOf(ctx, ticket.userId, ticket.accountId);
+    const access = await filesAccess(ctx, row);
+    const nonce = randomBytes(16).toString('base64');
+    const page = googlePickerPage(ctx.config, {
+      access,
+      back: ticket.back,
+      nonce,
+      appScheme: APP_SCHEME,
+      title: tr('Pick a file'),
+    });
+    return reply
+      .header('content-type', 'text/html; charset=utf-8')
+      .header('cache-control', 'no-store')
+      .header('referrer-policy', 'no-referrer')
+      .header('content-security-policy', page.csp)
+      .send(page.html);
   });
 
   app.delete('/me/accounts/:id', async (req): Promise<OkResponse> => {

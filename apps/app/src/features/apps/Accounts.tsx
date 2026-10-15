@@ -9,9 +9,11 @@
 import {
   ACCOUNT_PROVIDER_NAMES,
   ACCOUNT_USE_LABELS,
+  ACCOUNT_USES,
   type AccountProvider,
   type AccountReturn,
   type AccountReturnError,
+  type AccountUse,
 } from '@caime/core/accounts';
 import type { ConnectedAccountView } from '@caime/core/api';
 import { formatWhen } from '@caime/core/format';
@@ -52,22 +54,30 @@ async function finish(r: AccountReturn, done: () => void) {
   try {
     const { account } = await endpoints.claimAccount(r.provider, r.claim);
     done();
+    const email = account.email ?? name;
     toast(
-      tr('{email} is connected. Its calendar is read in a moment.', {
-        email: account.email ?? name,
-      }),
+      account.uses.includes('calendar')
+        ? tr('{email} is connected. Its calendar is read in a moment.', { email })
+        : tr('{email} is connected.', { email }),
     );
   } catch (e) {
     toast((e as Error).message, { tone: 'danger' });
   }
 }
 
-function AccountRow({ account }: { account: ConnectedAccountView }) {
+function AccountRow({
+  account,
+  offered,
+}: {
+  account: ConnectedAccountView;
+  /** The uses this provider offers here, so one not yet on can be added. */
+  offered: AccountUse[];
+}) {
   const qc = useQueryClient();
   const now = useNow();
   const { timeZone, locale } = useUserClock();
   const [asking, setAsking] = useState(false);
-  const [busy, setBusy] = useState<'sync' | 'remove' | 'again' | null>(null);
+  const [busy, setBusy] = useState<'sync' | 'remove' | 'again' | AccountUse | null>(null);
   const name = ACCOUNT_PROVIDER_NAMES[account.provider];
   const uses = account.uses.map((u) => tr(ACCOUNT_USE_LABELS[u].label)).join(' · ');
   const state =
@@ -78,12 +88,15 @@ function AccountRow({ account }: { account: ConnectedAccountView }) {
         : account.syncedAt
           ? tr('read {when}', { when: formatWhen(account.syncedAt, now, timeZone, locale) })
           : tr('not read yet');
-  const run = async (what: 'sync' | 'remove' | 'again') => {
+  const missing = offered.filter((u) => !account.uses.includes(u));
+  const run = async (what: 'sync' | 'remove' | 'again' | AccountUse) => {
     setAsking(false);
     setBusy(what);
     try {
-      if (what === 'again') {
-        const r = await connectAccount(account.provider, account.uses);
+      if (what === 'again' || (ACCOUNT_USES as readonly string[]).includes(what)) {
+        // Connecting again, or adding a use: the provider asks for what's new and keeps the rest.
+        const uses = what === 'again' ? account.uses : [...account.uses, what as AccountUse];
+        const r = await connectAccount(account.provider, uses);
         if (r !== 'left')
           await finish(r, () => void qc.invalidateQueries({ queryKey: qk.accounts }));
       } else if (what === 'sync') {
@@ -136,6 +149,19 @@ function AccountRow({ account }: { account: ConnectedAccountView }) {
             testID={`account-${account.provider}-sync`}
           />
         )}
+        {account.state === 'reconnect'
+          ? null
+          : missing.map((u) => (
+              <Button
+                key={u}
+                label={tr('Add {use}', { use: tr(ACCOUNT_USE_LABELS[u].label) })}
+                size="sm"
+                variant="secondary"
+                loading={busy === u}
+                onPress={() => void run(u)}
+                testID={`account-${account.provider}-add-${u}`}
+              />
+            ))}
         <Button
           label={tr('Disconnect')}
           size="sm"
@@ -205,11 +231,17 @@ export function Accounts() {
     }
   };
   return (
-    <Group title={tr('Your accounts')} footer={tr(ACCOUNT_USE_LABELS.calendar.detail)}>
+    <Group
+      title={tr('Your accounts')}
+      // What each use offered here does, one line each ("Calendar: …").
+      footer={ACCOUNT_USES.filter((u) => offered.some((p) => q.data?.usesOffered[p].includes(u)))
+        .map((u) => `${tr(ACCOUNT_USE_LABELS[u].label)}: ${tr(ACCOUNT_USE_LABELS[u].detail)}`)
+        .join('\n')}
+    >
       {accounts.map((a, i) => (
         <View key={a.id}>
           {i > 0 ? <Divider /> : null}
-          <AccountRow account={a} />
+          <AccountRow account={a} offered={q.data.usesOffered[a.provider]} />
         </View>
       ))}
       {offered.length > 0 && accounts.length > 0 ? <Divider /> : null}

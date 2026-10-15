@@ -1361,4 +1361,14 @@ export const arServer: Catalog = {
     other: '• {n} طلب ما زال مفتوحًا',
   },
   'That connection was started by someone else.': 'بدأ شخص آخر هذا الربط.',
+  'Turn on Files for this account first.': 'فعّل الملفات لهذا الحساب أولًا.',
+  'That account needs connecting again.': 'يحتاج ذلك الحساب إلى ربط من جديد.',
+  'Google’s files are picked in Google’s own window.': 'تُختار ملفات Google في نافذة Google نفسها.',
+  'That page isn’t one of these.': 'تلك الصفحة ليست منها.',
+  'That kind of Google file can’t be attached. Pick a document or a file.':
+    'لا يمكن إرفاق هذا النوع من ملفات Google. اختر مستندًا أو ملفًا.',
+  'Pick a file, not a folder.': 'اختر ملفًا لا مجلدًا.',
+  'That isn’t offered for this account here.': 'هذا غير متاح لهذا الحساب هنا.',
+  'That picker': 'أداة الاختيار تلك',
+  'Pick a file': 'اختر ملفًا',
 };

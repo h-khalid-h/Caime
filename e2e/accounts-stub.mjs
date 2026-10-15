@@ -22,6 +22,7 @@ const requests = [];
 const REFRESH = { google: 'google-e2e-refresh', microsoft: 'microsoft-e2e-refresh' };
 /** When the account's calendar is busy: `{ start, end }` in UTC. */
 let busy = [];
+const NOTE = Buffer.from('The clinic opens on Sunday at nine.\n');
 
 const cors = {
   'access-control-allow-origin': '*',
@@ -106,7 +107,7 @@ createServer(async (req, res) => {
       scope:
         token === 'google'
           ? 'openid https://www.googleapis.com/auth/userinfo.email https://www.googleapis.com/auth/contacts.readonly https://www.googleapis.com/auth/contacts.other.readonly https://www.googleapis.com/auth/calendar.freebusy'
-          : 'https://graph.microsoft.com/Contacts.Read https://graph.microsoft.com/People.Read https://graph.microsoft.com/Calendars.ReadBasic',
+          : 'https://graph.microsoft.com/Contacts.Read https://graph.microsoft.com/People.Read https://graph.microsoft.com/Calendars.ReadBasic https://graph.microsoft.com/Files.Read',
     });
   }
   if (path === '/google/revoke' && req.method === 'POST') return json(res, 200, {});
@@ -125,6 +126,29 @@ createServer(async (req, res) => {
       id: 'microsoft-e2e-subject',
       userPrincipalName: 'noor.e2e@outlook.example',
     });
+  }
+  // A OneDrive (R90): one folder with a note in it, read by Caime's server with the access; the
+  // bytes come from a pre-signed address that needs none, as OneDrive's do.
+  if (path.startsWith('/v1.0/me/drive/')) {
+    if (bearer !== ACCESS.microsoft) return json(res, 401, {});
+    const note = {
+      id: 'note1',
+      name: 'Clinic plan.txt',
+      size: NOTE.length,
+      file: { mimeType: 'text/plain' },
+    };
+    if (path === '/v1.0/me/drive/root/children')
+      return json(res, 200, { value: [{ id: 'dir1', name: 'Clinic', folder: { childCount: 1 } }] });
+    if (path === '/v1.0/me/drive/items/dir1/children') return json(res, 200, { value: [note] });
+    if (path === '/v1.0/me/drive/items/note1') return json(res, 200, note);
+    if (path === '/v1.0/me/drive/items/note1/content') {
+      res.writeHead(302, { location: `http://127.0.0.1:${PORT}/blob/note1` });
+      return res.end();
+    }
+  }
+  if (path === '/blob/note1') {
+    res.writeHead(200, { 'content-type': 'text/plain', 'content-length': String(NOTE.length) });
+    return res.end(NOTE);
   }
   if (path === '/v1.0/me/calendarView') {
     if (bearer !== ACCESS.microsoft) return json(res, 401, {});

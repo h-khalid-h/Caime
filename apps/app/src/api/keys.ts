@@ -32,6 +32,9 @@ export const qk = {
   connectedApps: ['connected-apps'] as const,
   /** Connected Google and Microsoft accounts (R90). */
   accounts: ['accounts'] as const,
+  /** A connected OneDrive's folder or search (R90), page by page. */
+  accountFiles: (id: string, folder: string | null, search: string) =>
+    ['accounts', id, 'files', folder, search] as const,
   /** Discover (R74): a search and a category each page on their own. */
   directory: (search: string, category: string) => ['directory', search, category] as const,
   directoryApp: (id: string) => ['directory', 'app', id] as const,

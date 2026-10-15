@@ -3952,4 +3952,16 @@ export const turkish: Catalog = {
   'When you’re busy there, your bookable times aren’t offered. Caime keeps only when, never what or with whom.':
     'Orada meşgulken rezervasyon saatleriniz sunulmaz. Caime yalnızca zamanı tutar; ne olduğunu ya da kiminle olduğunu asla.',
   'No apps are connected yet.': 'Henüz bağlı uygulama yok.',
+  'Search {where}': '{where} içinde ara',
+  'Nothing here matches that.': 'Burada bununla eşleşen bir şey yok.',
+  'This folder is empty.': 'Bu klasör boş.',
+  Folder: 'Klasör',
+  '{email} is connected.': '{email} bağlandı.',
+  'Add {use}': '{use} ekle',
+  'Couldn’t attach it: {e}': 'Eklenemedi: {e}',
+  'Your browser blocked the window. Allow pop-ups for Caime and try again.':
+    'Tarayıcınız pencereyi engelledi. Caime için açılır pencerelere izin verip yeniden deneyin.',
+  'A file from {email}': '{email} hesabından bir dosya',
+  'Attach a file from it in a conversation. Caime copies only the file you pick, as your own upload.':
+    'Bir sohbete oradan dosya ekleyin. Caime yalnızca seçtiğiniz dosyayı, kendi yüklemeniz olarak kopyalar.',
 };

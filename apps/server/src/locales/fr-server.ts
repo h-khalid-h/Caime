@@ -1353,4 +1353,15 @@ export const frServer: Catalog = {
   },
   'That connection was started by someone else.':
     'Cette connexion a été commencée par quelqu’un d’autre.',
+  'Turn on Files for this account first.': 'Activez d’abord Fichiers pour ce compte.',
+  'That account needs connecting again.': 'Ce compte doit être connecté à nouveau.',
+  'Google’s files are picked in Google’s own window.':
+    'Les fichiers Google se choisissent dans la fenêtre de Google.',
+  'That page isn’t one of these.': 'Cette page n’en fait pas partie.',
+  'That kind of Google file can’t be attached. Pick a document or a file.':
+    'Ce type de fichier Google ne peut pas être joint. Choisissez un document ou un fichier.',
+  'Pick a file, not a folder.': 'Choisissez un fichier, pas un dossier.',
+  'That isn’t offered for this account here.': 'Ce n’est pas proposé pour ce compte ici.',
+  'That picker': 'Ce sélecteur',
+  'Pick a file': 'Choisir un fichier',
 };

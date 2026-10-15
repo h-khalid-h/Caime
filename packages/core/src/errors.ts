@@ -7,6 +7,7 @@
  * `code_changed`, `unconfirmed_devices`); the rest are the server's.
  */
 export const ERROR_CODES = [
+  'account_reconnect',
   'ai_adults_only',
   'ai_busy',
   'ai_declined',
@@ -69,6 +70,7 @@ export const ERROR_CODES = [
   'paying',
   'plan_included',
   'plan_limit',
+  'provider_failed',
   'rate_limited',
   'recently_declined',
   'record_not_found',

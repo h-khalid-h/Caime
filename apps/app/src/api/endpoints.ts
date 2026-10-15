@@ -7,6 +7,7 @@ import type { PersonalScope } from '@caime/core/access';
 import type { AccountProvider, AccountUse } from '@caime/core/accounts';
 import type {
   AboutView,
+  AccountFilesResponse,
   AccountStartResponse,
   AgentTryView,
   AiActionsView,
@@ -59,6 +60,7 @@ import type {
   DirectoryResponse,
   EffectivePolicyResponse,
   ErasedResponse,
+  FileResponse,
   FollowingResponse,
   FollowResponse,
   FollowUpSentResponse,
@@ -588,6 +590,14 @@ export const endpoints = {
     api.post<ConnectedAccountResponse>(`/me/accounts/${provider}/claim`, { claim }),
   syncAccount: (id: string) => api.post<ConnectedAccountResponse>(`/me/accounts/${id}/sync`, {}),
   removeAccount: (id: string) => api.del<OkResponse>(`/me/accounts/${id}`),
+  /** A connected OneDrive's folder or search (R90), and a picked file copied in as an upload. */
+  accountFiles: (id: string, query: { folder?: string; q?: string; next?: string }) =>
+    api.get<AccountFilesResponse>(`/me/accounts/${id}/files${q(query)}`),
+  importAccountFile: (id: string, fileId: string) =>
+    api.post<FileResponse>(`/me/accounts/${id}/files/import`, { fileId }),
+  /** A one-time address for Google's picker, on its own page. */
+  accountPicker: (id: string, back: 'web' | 'app') =>
+    api.post<AccountStartResponse>(`/me/accounts/${id}/picker`, { back }),
   // Discover (R74): the apps people can connect, a page at a time
   directory: (params: { before?: string; q?: string; category?: AppCategory | null }) =>
     api.get<DirectoryResponse>(`/directory${q(params)}`),

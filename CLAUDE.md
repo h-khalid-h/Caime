@@ -854,7 +854,16 @@ These are rules, not preferences.
   Disconnecting, `endAllAccess` and deleting an account go through `disconnectAccount`. A new
   use joins `ACCOUNT_USES`, `USE_SCOPES`, `ACCOUNT_USE_LABELS`, the privacy page and DEPLOY's
   list of scopes; the app's section is `features/apps/Accounts.tsx`, its return `connect.ts`
-  (web: the fragment read once) and `connect.native.ts` (the sign-in sheet).
+  (web: the fragment read once) and `connect.native.ts` (the sign-in sheet). Files
+  (`lib/cloud-files.ts`): `usesOffered` says what each provider offers here (Google's files need
+  `GOOGLE_PICKER_API_KEY` and `GOOGLE_PICKER_APP_ID`); OneDrive is listed by `listAccountFiles`
+  (a next page followed only when it's Graph's own); Google's picker is `googlePickerPage`, the
+  one page that loads a third party's script, under its own policy, opened by a sealed five-minute
+  `pickerTicket` (no session, so a phone's sheet can open it); a picked file is copied by
+  `importAccountFile` as the person's upload (streamed, hashed, capped at
+  `ACCOUNT_FILE_MAX_BYTES`, a redirect followed by hand without the access). The composer's Share
+  sheet offers each drive, `features/cloud/DriveSheet.tsx` (lazy) browses OneDrive and
+  `features/cloud/googlePicker*.ts` open Google's. A new drive provider joins all three.
 - Provider health (R78, `lib/provider-health.ts`): every provider Caime talks to has its cheapest
   authenticated read as a `ping` on its own interface (`AiAssist.ping`, `SpeechToText.ping`,
   `MailProvider.ping`, `Mailer.verify`; Stripe's balance through `stripe(ctx)`, Cloudflare

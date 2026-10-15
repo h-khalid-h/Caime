@@ -288,6 +288,25 @@ export interface ConnectedAccountsResponse {
   accounts: ConnectedAccountView[];
   /** The providers this Caime can connect (it has their clients); none, and nothing is offered. */
   offered: AccountProvider[];
+  /** The uses each provider offers here: Google's files need its picker's key (R90). */
+  usesOffered: Record<AccountProvider, AccountUse[]>;
+}
+
+/** A file or folder in a connected account's drive, as its browser lists it (R90). */
+export interface AccountFileView {
+  id: string;
+  name: string;
+  folder: boolean;
+  /** Bytes; null for a folder or where the provider doesn't say. */
+  size: number | null;
+  mime: string | null;
+  modifiedAt: string | null;
+}
+
+export interface AccountFilesResponse {
+  items: AccountFileView[];
+  /** The next page's key, or null at the end. */
+  next: string | null;
 }
 export interface ConnectedAccountResponse {
   account: ConnectedAccountView;

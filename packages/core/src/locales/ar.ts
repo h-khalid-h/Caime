@@ -4653,4 +4653,20 @@ export const ar: Catalog = {
   'When you’re busy there, your bookable times aren’t offered. Caime keeps only when, never what or with whom.':
     'حين تكون مشغولًا فيه، لا تُعرض أوقات الحجز لديك. يحتفظ Caime بالتوقيت وحده، لا بالموضوع ولا بمن معك.',
   'No apps are connected yet.': 'لا تطبيقات مربوطة بعد.',
+  'Search {where}': {
+    toWoman: 'ابحثي في {where}',
+    toMan: 'ابحث في {where}',
+    other: 'ابحث في {where}',
+  },
+  'Nothing here matches that.': 'لا شيء هنا يطابق ذلك.',
+  'This folder is empty.': 'هذا المجلد فارغ.',
+  Folder: 'مجلد',
+  '{email} is connected.': 'تم ربط {email}.',
+  'Add {use}': 'إضافة {use}',
+  'Couldn’t attach it: {e}': 'تعذّر إرفاقه: {e}',
+  'Your browser blocked the window. Allow pop-ups for Caime and try again.':
+    'حظر المتصفح النافذة. اسمح بالنوافذ المنبثقة لـ Caime وحاول من جديد.',
+  'A file from {email}': 'ملف من {email}',
+  'Attach a file from it in a conversation. Caime copies only the file you pick, as your own upload.':
+    'أرفق منه ملفًا في محادثة. لا ينسخ Caime إلا الملف الذي تختاره، كأنك رفعته بنفسك.',
 };

@@ -450,6 +450,14 @@ alone (PRODUCT-REVIEW R90). Add to each client:
 3. No new variable. Check: Settings · Apps shows "Your accounts" with Connect Google and Connect
    Microsoft; connecting one comes back to the same screen, the row says "read just now" a moment
    later, and a bookable slot over a meeting in that calendar is no longer offered.
+4. **Files (phase 2).** Microsoft: add the delegated Graph permission `Files.Read`; nothing else.
+   Google: enable the **Google Picker API** and the **Google Drive API**, add the scope
+   `…/auth/drive.file` to the consent screen (not restricted), and create an **API key** under
+   Credentials restricted to the Picker API and the website `https://cai.me/*`. Set
+   `GOOGLE_PICKER_API_KEY` to that key and `GOOGLE_PICKER_APP_ID` to the project's number (the
+   digits on the project's dashboard), then redeploy. Without them, Files is offered for Microsoft
+   alone. Check: Settings · Apps shows "Add Files" on each account; in a conversation the Share
+   sheet lists Google Drive and OneDrive; a picked file arrives as an attachment.
 
 ### 4. Continuous deployment
 

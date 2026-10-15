@@ -433,3 +433,41 @@ export async function disconnectAllAccounts(ctx: AppContext, userId: string): Pr
     .execute();
   for (const r of rows) await disconnectAccount(ctx, r);
 }
+
+interface PickerTicket {
+  u: string;
+  a: string;
+  b: 'web' | 'app';
+  e: number;
+}
+const PICKER_MS = 5 * 60_000;
+const pickerLabel = 'caime account picker v1';
+
+/**
+ * Google's picker opens on a page of its own (R90): this one-time ticket names who asked, for
+ * which account and where it returns, so the page needs no session (a phone's sign-in sheet has
+ * none), good for five minutes.
+ */
+export async function pickerTicket(
+  ctx: AppContext,
+  userId: string,
+  accountId: string,
+  back: 'web' | 'app',
+): Promise<string> {
+  const ticket: PickerTicket = {
+    u: userId,
+    a: accountId,
+    b: back,
+    e: ctx.now().getTime() + PICKER_MS,
+  };
+  return sealJson(await stateKey(ctx), ticket, pickerLabel);
+}
+
+export async function openPickerTicket(
+  ctx: AppContext,
+  raw: string | undefined,
+): Promise<{ userId: string; accountId: string; back: 'web' | 'app' } | null> {
+  const t = openJson<PickerTicket>(await stateKey(ctx), raw, pickerLabel);
+  if (!t || typeof t.e !== 'number' || t.e <= ctx.now().getTime()) return null;
+  return { userId: t.u, accountId: t.a, back: t.b === 'app' ? 'app' : 'web' };
+}

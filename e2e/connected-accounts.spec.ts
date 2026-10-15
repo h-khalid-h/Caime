@@ -107,3 +107,57 @@ test('a Google calendar connected in Settings keeps its busy hour out of the boo
   expect(errors).toEqual([]);
   await desktop.close();
 });
+
+test('a file from OneDrive is attached in a conversation, copied in as an upload', async ({
+  browser,
+}) => {
+  const desktop = await browser.newContext({ viewport: { width: 1280, height: 860 } });
+  const other = await browser.newContext();
+  await apiSignUp(desktop, 'Noor Drive', `noor.drive.${stamp}`);
+  const sara = await apiSignUp(other, 'Sara Drive', `sara.drive.${stamp}`);
+  const made = await desktop.request.post('/v1/conversations', {
+    headers: CLIENT,
+    data: { kind: 'direct', userId: sara.id },
+  });
+  expect(made.ok(), await made.text()).toBe(true);
+  const conversationId = ((await made.json()) as { conversation: { id: string } }).conversation.id;
+  const { page, errors } = await newPerson(desktop);
+  // Connected for the calendar, then Files added: the provider asks again, and keeps the rest.
+  await page.goto('/settings/apps');
+  await page.getByTestId('account-connect-microsoft').click();
+  await page.waitForURL(/\/settings\/apps/);
+  const row = page.getByTestId('account-microsoft').filter({ visible: true });
+  await expect(row).toContainText('noor.e2e@outlook.example');
+  await page.getByTestId('account-microsoft-add-files').filter({ visible: true }).click();
+  await page.waitForURL(/\/settings\/apps/);
+  await expect(page.getByTestId('account-microsoft-state').filter({ visible: true })).toContainText(
+    'Calendar · Files',
+  );
+  // In the conversation, OneDrive is offered beside a file from this device.
+  await page.goto(`/c/${conversationId}`);
+  await page.getByTestId('composer-attach').filter({ visible: true }).click();
+  await page.getByTestId('attach-drive-microsoft').click();
+  await page.getByTestId('drive-item-Clinic').click();
+  await expect(page.getByTestId('drive-up')).toBeVisible();
+  await page.screenshot({
+    path: 'e2e/screenshots/desktop-onedrive-browse.png',
+    animations: 'disabled',
+  });
+  await page.getByTestId('drive-item-Clinic plan.txt').click();
+  await expect(page.getByTestId('message-file').filter({ visible: true })).toContainText(
+    'Clinic plan.txt',
+  );
+  // Only Caime's server read the drive, and the bytes came without the access.
+  const requests = (
+    (await (await fetch(`${ACCOUNTS_STUB}/requests`)).json()) as {
+      requests: Array<{ path: string; browser: boolean; access: string | null }>;
+    }
+  ).requests;
+  const drive = requests.filter((r) => r.path.startsWith('/v1.0/me/drive/'));
+  expect(drive.length).toBeGreaterThan(0);
+  expect(drive.every((r) => !r.browser)).toBe(true);
+  expect(requests.find((r) => r.path === '/blob/note1')?.access ?? null).toBeNull();
+  expect(errors).toEqual([]);
+  await desktop.close();
+  await other.close();
+});
