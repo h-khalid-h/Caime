@@ -1409,4 +1409,37 @@ export const frServer: Catalog = {
   'Open in Caime: {url}': 'Dans Caime : {url}',
   'Caime keeps this up to date. Change it in Caime.':
     'Caime le tient à jour. Modifiez-le dans Caime.',
+  // Booking before an account (R97 (1), block C).
+  'Pick a time below. No account needed; {name} confirms in a conversation.':
+    'Choisissez un horaire ci-dessous. Aucun compte requis ; {name} confirme dans une conversation.',
+  'That address has a {site} account.': 'Cette adresse a un compte {site}.',
+  'Sign in to book': 'Connectez-vous pour réserver',
+  'Booking without an account isn’t available here yet. Join {site} to book.':
+    'Réserver sans compte n’est pas encore possible ici. Rejoignez {site} pour réserver.',
+  'That can’t be booked from here.': 'Cela ne peut pas être réservé d’ici.',
+  'That time was just taken. Pick another.':
+    'Cet horaire vient d’être pris. Choisissez-en un autre.',
+  'That took too long. Pick a time again.':
+    'Cela a pris trop de temps. Choisissez à nouveau un horaire.',
+  'That code has run out. Pick a time again to get a new one.':
+    'Ce code a expiré. Choisissez à nouveau un horaire pour en recevoir un nouveau.',
+  'Too many tries for now. Try again in an hour.':
+    'Trop d’essais pour le moment. Réessayez dans une heure.',
+  'Booking without an account is for people 18 or over. Under 18, join {site} with your age.':
+    'Réserver sans compte est réservé aux 18 ans et plus. Avant 18 ans, rejoignez {site} en indiquant votre âge.',
+  '{item}, {when}. {name} confirms in your conversation.':
+    '{item}, {when}. {name} confirme dans votre conversation.',
+  'To follow it, join {site} free with {email}: your booking will be there.':
+    'Pour la suivre, rejoignez {site} gratuitement avec {email} : votre réservation y sera.',
+  'Join {site}': 'Rejoindre {site}',
+  'Check your email': 'Vérifiez votre e-mail',
+  'A six-digit code went to {email}. Type it to book {item}, {when}.':
+    'Un code à six chiffres a été envoyé à {email}. Saisissez-le pour réserver {item}, {when}.',
+  'Pick another time': 'Choisir un autre horaire',
+  'No free times this week.': 'Aucun horaire libre cette semaine.',
+  Earlier: 'Plus tôt',
+  Later: 'Plus tard',
+  'Book a time': 'Réserver un horaire',
+  'A code goes to your email; the time is yours once you type it here. Nothing is kept before that.':
+    'Un code arrive dans votre e-mail ; l’horaire est à vous dès que vous le saisissez ici. Rien n’est conservé avant.',
 };

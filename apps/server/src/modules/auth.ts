@@ -1,4 +1,3 @@
-import { randomInt, timingSafeEqual } from 'node:crypto';
 /**
  * Accounts and sessions (PRD §35, §55; PRODUCT-REVIEW R24, R29; ADR-7).
  */
@@ -45,7 +44,7 @@ import {
   recoverySalt,
   verifyPassword,
 } from '../lib/crypto';
-import { verificationMail } from '../lib/email';
+import { sendEmailCode, spendEmailCode } from '../lib/email-codes';
 import {
   AppError,
   badRequest,
@@ -65,33 +64,6 @@ import { clientInfo, createSession, endSessions, passwordTry } from '../lib/sess
 import { meView, oldEnoughIn, seedDefaults, tooYoung, workweekFor } from '../lib/users';
 import { parse } from '../lib/validate';
 import { requireAuth, suspended, tokenFrom } from '../plugins/auth';
-
-const CODE_LIFE_MS = 24 * 3_600_000;
-const CODE_TRIES = 10;
-
-/** Six digits to the address, kept hashed, a day, ten tries; a new one replaces the last. */
-async function sendEmailCode(ctx: AppContext, userId: string, email: string, name: string) {
-  if (!ctx.mail) return;
-  const code = String(randomInt(0, 1_000_000)).padStart(6, '0');
-  await ctx.db
-    .insertInto('email_codes')
-    .values({
-      user_id: userId,
-      code_hash: hashToken(code),
-      attempts: 0,
-      expires_at: new Date(ctx.now().getTime() + CODE_LIFE_MS),
-    })
-    .onConflict((oc) =>
-      oc.column('user_id').doUpdateSet({
-        code_hash: hashToken(code),
-        attempts: 0,
-        expires_at: new Date(ctx.now().getTime() + CODE_LIFE_MS),
-      }),
-    )
-    .execute();
-  const mail = ctx.mail;
-  ctx.defer('email.code', () => mail.send(verificationMail(email, name, code)));
-}
 
 /**
  * New recovery codes in place of the old, all under one salt: made one set at a time for an
@@ -409,37 +381,13 @@ export async function authRoutes(app: FastifyInstance, ctx: AppContext) {
     const body = parse(EmailCodeBody, req.body);
     // Six digits: a few tries a minute is a person reading the mail, not a search.
     ctx.limiter.hit(`email-verify:${auth.userId}`, ctx.config.isTest ? 1000 : 10, 600_000);
-    const wrong = new AppError(
-      400,
-      'wrong_code',
-      tr('That code isn’t right. Check the email again.'),
-    );
-    const row = await ctx.db
-      .selectFrom('email_codes')
-      .selectAll()
-      .where('user_id', '=', auth.userId)
-      .executeTakeFirst();
-    if (!row || row.expires_at <= ctx.now())
-      throw new AppError(400, 'code_expired', tr('That code has run out. Send a new one.'));
-    if (row.attempts >= CODE_TRIES)
-      throw new AppError(400, 'code_expired', tr('Too many tries with that code. Send a new one.'));
-    if (!timingSafeEqual(row.code_hash, hashToken(body.code))) {
-      // Counted in the database, not from the row read above: a burst of parallel guesses would
-      // otherwise each write 1 and the code would take any number of tries.
-      await ctx.db
-        .updateTable('email_codes')
-        .set((eb) => ({ attempts: eb('attempts', '+', 1) }))
-        .where('user_id', '=', auth.userId)
-        .execute();
-      throw wrong;
-    }
+    await spendEmailCode(ctx, auth.userId, body.code);
     const user = await ctx.db
       .updateTable('users')
       .set({ email_verified_at: ctx.now(), updated_at: ctx.now() })
       .where('id', '=', auth.userId)
       .returningAll()
       .executeTakeFirstOrThrow();
-    await ctx.db.deleteFrom('email_codes').where('user_id', '=', auth.userId).execute();
     await audit(ctx.db, {
       actorId: auth.userId,
       action: 'auth.email_verified',

@@ -182,7 +182,9 @@ EXPO_ACCESS_TOKEN=…                 # set
 
 # --- Mail out (Postmark): codes and reset links (step 5)
 EMAIL_FROM=Caime <hello@cai.me>
-SMTP_URL=…                          # set: smtp.postmarkapp.com, the server token
+SMTP_URL=…                          # set: smtp.postmarkapp.com, the server token. Also what booking
+                                    #   before an account needs (R97 (1)): without it an item's page
+                                    #   says "join to book" and takes no code
 
 # --- Caime Mail (R75), after Postmark Pro and the MX move (below)
 # MAIL_DOMAIN=cai.me

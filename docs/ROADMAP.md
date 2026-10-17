@@ -1875,7 +1875,11 @@ a person or an organization using Caime in full needs no Workspace, Microsoft 36
 or Signal; and that an integration framework come before more connectors, then governed AI over
 all data. Ten read-only slices at `87fc778`; the synthesis, the matrix, the age-assurance design
 and the framework are in the review. Blocks in order, each commit through the full gate; a tick
-means verified, and anything needing the owner's credentials stays ⛔ until it has them.
+means verified, and anything needing the owner's credentials stays ⛔ until it has them. Every
+slice names the unfair advantage it sharpens (REVIEW §14: the relationship as the object, one
+identity with the customer side as a conversation, the door link that needs no account, flat
+pricing, privacy from the business model, Arabic-first intelligence, governed AI, the compounding
+graph) and the number that will show it; one that sharpens none is hygiene and says so.
 
 - [x] A1. The reliability core (2026-10-17): the bus listens again with backoff for as long as
       it's open, destroys the lost client, counts its reconnects and tells the hub, which sends
@@ -1945,13 +1949,40 @@ means verified, and anything needing the owner's credentials stays ⛔ until it 
       stranger triggers, the privacy page and the DPA).
 - [ ] ⛔ B, the owner's: an age-assurance provider (Agemin or another) with retention terms, a DPA
       and the NIST result; the penetration test.
-- [ ] C. Adoption: booking or messaging before an account (public slots, a provisional booker by
-      email or phone code, three fields on a link arrival); the business front door (`/business`
-      to `/orgs/new`, "For me / For my organization" in onboarding, a checklist that moves past
-      DNS, a Book link and QR beside the door, "block time" and holidays); team invites by link
-      and email with domain auto-join; space and group join links; invite-first sharing, and
-      WhatsApp or SMS first on a browser without a contact picker; "Copy guest link"; the iPhone
-      "Add to Home Screen" card; an expired-invite page; "Keep this" on the guest page.
+- [x] C1a. Booking before an account (2026-10-17): an organization's bookable public item's page
+      lists the week's open times by the host's day (`publicSlotsFor`: `openSlotsFor` with the
+      public booker, seven days, sixteen a day, paged by `?from=`, nothing reads a calendar under
+      a visitor's view), with a script-free form (the time, a name, an address, "I'm 18 or over")
+      that posts to `POST /v1/public/book` (its own form parser, anonymous, limited by address and
+      ip): a known account's address is sent to sign in and never mailed, no mailer is said so,
+      else the provisional person (`personForAddress`, R93) gets the six-digit code
+      (`lib/email-codes.ts`, now shared with sign-up's confirmation) and the choice rides back to
+      the page as a sealed fifteen-minute claim (`?code=`); `POST /v1/public/book/confirm` spends
+      the code, starts the customer conversation and posts the appointment card as the provisional
+      person through `sendMessage` with the catalog booking (a taken time said on the page), then
+      `?booked=` says the organization confirms in the conversation and that joining with the same
+      address claims it. Every step is the page itself (`PublicItemPage.booking`,
+      `visitorBookingState`); a refresh repeats nothing. Verified with `public-booking.test.ts`
+      (the week's times and the lead, the code by the memory mailer, the card as a request from
+      the provisional customer with nothing of the team on any page, the time held after, the
+      claim sealed and run out, a taken time, a known account, the age box, no mailer),
+      `public-pages.test.ts`, `server-i18n.test.ts`, and the E2E `public-booking.spec.ts` (a
+      visitor books with the SMTP stand-in's code; the team finds the request). Live, it needs
+      `SMTP_URL` on the service (⛔ the owner's; the page says "join to book" without it).
+      Sharpens advantage 3 (the door link that needs no account) and the customer side of 2
+      (REVIEW §14); its numbers, bookings per door link and bookers who join within thirty days,
+      are counted from C1b on (`caime_public_bookings_total`, the booker's `claimed_at`).
+- [ ] C1b. The confirmation reaching the booker: an email when the team confirms or moves the
+      card (`afterCardMove` for a provisional customer, through `ctx.mail`, with the time and the
+      sign-up link that claims the address); booking from a person's public items; a phone number
+      proven by WhatsApp code as the address; "message before an account" at the door the same
+      way; three fields on a link arrival.
+- [ ] C2–C3. The business front door (`/business` to `/orgs/new`, "For me / For my organization"
+      in onboarding, a checklist that moves past DNS, a Book link and QR beside the door, "block
+      time" and holidays); team invites by link and email with domain auto-join; space and group
+      join links; invite-first sharing, and WhatsApp or SMS first on a browser without a contact
+      picker; "Copy guest link"; the iPhone "Add to Home Screen" card; an expired-invite page;
+      "Keep this" on the guest page.
 - [ ] D. Performance and integrity: the aliased `selectAll` guard and its eleven sites; people
       lists through `personViewsFor` with a scale ceiling; `participants.last_sent_seq` for the
       inbox; a large-group mode and one transcript view; a `defer` semaphore and gauge; bus payload
@@ -3588,6 +3619,11 @@ means verified, and anything needing the owner's credentials stays ⛔ until it 
   journeys, safety, reliability, performance, intelligence, mail and calendar, chat, integrations,
   business and code integrity; the matrix against WhatsApp, Signal, Slack, Calendly and Workspace;
   an age-assurance design; the integration framework mapped to the code; plan M16 (A–H).
+- 2026-10-17 — M16 C1a: booking before an account. A visitor books an organization's public item
+  from its page: the week's times, a name and an address, a code, the appointment request from
+  their provisional self; every step is the page, nothing kept before the code. Needs `SMTP_URL`
+  live (⛔). The confirmation's mail to the booker and the door's "message before an account"
+  are C1b.
 - 2026-10-17 — R98: the owner's "Caime Places" brainstorm validated into places as a context
   for spaces (a place-space with an owner, follow for updates and join for the group, one join
   rule, admins as any space's; time-in-place guardians, ownerless places, public groups,

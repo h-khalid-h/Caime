@@ -116,7 +116,7 @@ export async function registerWeb(app: FastifyInstance, ctx: AppContext): Promis
     const found =
       path === '/' && signedIn
         ? { kind: 'app' as const }
-        : await publicPageFor(ctx.db, path, ctx.now(), search);
+        : await publicPageFor(ctx, path, ctx.now(), search);
     // The way in is painted before the app only for a visitor: signed in, these screens send
     // the person on at once, and the paint would only flash.
     const page = found.kind === 'entry' && signedIn ? { kind: 'app' as const } : found;

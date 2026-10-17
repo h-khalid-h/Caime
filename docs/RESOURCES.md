@@ -95,6 +95,13 @@ is empty; a replay costs what the send's effects would have. The migrations lint
 seconds; the published image a layer set in the registry per green commit (the layers are shared
 across commits); a staging service a second container and database, the owner's choice.
 
+Booking before an account (R97 (1)) costs the server, per view of a bookable item's page, the
+week's slots (`openSlotsFor` over the host's bookings in the window, no calendar read under a
+visitor's view: `fresh: false`) and nothing kept; per booking, one code mail and the same rows a
+customer's own booking writes. A visitor's device gets a page with no script, as every public
+page. The limits (thirty starts an hour from an address, three codes an hour to one email) bound
+what a stranger's form can cost.
+
 ## What a change says
 
 A pull request states, under **Resources**, what the change costs on each of the three: queries

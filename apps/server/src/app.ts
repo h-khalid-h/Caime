@@ -97,6 +97,7 @@ import { passkeyRoutes } from './modules/passkeys';
 import { peopleRoutes } from './modules/people';
 import { placeRoutes } from './modules/places';
 import { policyRoutes } from './modules/policies';
+import { publicBookingRoutes } from './modules/public-booking';
 import { realtimeRoutes } from './modules/realtime';
 import { relationshipRoutes } from './modules/relationships';
 import { safetyRoutes } from './modules/safety';
@@ -325,6 +326,7 @@ export async function buildApp(config: Config, options: BuildOptions = {}): Prom
       await conversationRoutes(v1, ctx);
       await messageRoutes(v1, ctx);
       await importRoutes(v1, ctx);
+      await publicBookingRoutes(v1, ctx);
       await callRoutes(v1, ctx);
       await groupCallRoutes(v1, ctx);
       await e2eeRoutes(v1, ctx);

@@ -10,6 +10,8 @@ without re-deriving decisions.
 1. Read `docs/ROADMAP.md` (what is done, in progress, blocked) and `docs/GOAL.md` (the target).
 2. Skim `docs/PRODUCT-REVIEW.md` (refinements R1–R98 override the PRD) and `docs/ARCHITECTURE.md`
    (ADRs). Open `docs/PRD.md` (cited as `PRD §n`) and `docs/BRAND.md` when a task touches them.
+   A slice of product work names the unfair advantage it sharpens and the number that shows it
+   (`docs/REVIEW-2026-10-17.md` §14); adoption and friction are optimised in its service.
 3. Run `pnpm install` then `pnpm check`. If anything is red, fixing it comes first.
 4. Check the latest CI run on GitHub (`h-khalid-h/Caime`, workflow `CI`). A red `main` is work now.
 5. At the end of a work block: update `docs/ROADMAP.md` (tick only what is verified, add a log
@@ -165,6 +167,19 @@ appointment from a catalog).
   anything new in `effectsOf` is idempotent (a dedupe key, an `on conflict`), and a new path that
   sends a message either runs `afterMessage` after its response or passes `effects: false`,
   never neither.
+- Booking before an account (R97 (1), `lib/public-booking.ts`, `modules/public-booking.ts`): an
+  organization's bookable public item's page carries the week's open times and a script-free form
+  (`PublicItemPage.booking`, from `visitorBookingState(ctx, org, itemId, search)`; `publicPageFor`
+  takes `ctx` for it); `POST /v1/public/book` and `/confirm` take forms in their own plugin (as
+  OAuth's two do: anonymous, no session read or made) and answer only with a redirect back to the
+  page (`?code=`, `?booked=`, `?book-error=<VisitorRefusal>`), so the page renders every step and
+  a refresh repeats nothing. The choice between the steps is a sealed claim (`sealClaim`,
+  `serverKey('public.book')`, `CLAIM_MS`), never a row; the address is proven by
+  `lib/email-codes.ts` (`sendEmailCode`, `spendEmailCode`, shared with sign-up's confirmation);
+  the booking is `startCustomerConversation` and `sendMessage` as the provisional person, so
+  `bookingFor` checks the time under the host's lock as for anyone. A known account's address is
+  refused as `account` and never mailed (R93); without `ctx.mail` the page says so. Anything new a
+  visitor may do from a page follows this shape: a page state, a form, a redirect, a sealed claim.
 - Jobs (`lib/jobs.ts`): a job that fails its last attempt is dead (`dead_at`), out of the due
   index, counted on `caime_jobs_dead`, listed with its last error and never its payload at
   `GET /v1/admin/jobs`, and given its attempts back by `retryJob` (`POST …/retry`); never delete

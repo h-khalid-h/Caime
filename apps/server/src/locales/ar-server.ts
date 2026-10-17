@@ -1411,4 +1411,35 @@ export const arServer: Catalog = {
   'Open in Caime: {url}': 'في Caime: {url}',
   'Caime keeps this up to date. Change it in Caime.':
     'يُبقي Caime هذا الموعد محدَّثًا، وتغييره يكون في Caime.',
+  // Booking before an account (R97 (1), block C).
+  'Pick a time below. No account needed; {name} confirms in a conversation.':
+    'اختر وقتًا أدناه. لا حاجة إلى حساب؛ {name} تؤكد في محادثة.',
+  'That address has a {site} account.': 'لهذا العنوان حساب على {site}.',
+  'Sign in to book': 'سجّل الدخول للحجز',
+  'Booking without an account isn’t available here yet. Join {site} to book.':
+    'الحجز بلا حساب غير متاح هنا بعد. انضم إلى {site} للحجز.',
+  'That can’t be booked from here.': 'لا يمكن حجز هذا من هنا.',
+  'That time was just taken. Pick another.': 'حُجز هذا الوقت للتو. اختر وقتًا آخر.',
+  'That took too long. Pick a time again.': 'طال الوقت أكثر من اللازم. اختر وقتًا من جديد.',
+  'That code has run out. Pick a time again to get a new one.':
+    'انتهت صلاحية هذا الرمز. اختر وقتًا من جديد للحصول على رمز جديد.',
+  'Too many tries for now. Try again in an hour.':
+    'محاولات كثيرة في الوقت الحالي. حاول مرة أخرى بعد ساعة.',
+  'Booking without an account is for people 18 or over. Under 18, join {site} with your age.':
+    'الحجز بلا حساب لمن بلغ 18 عامًا فأكثر. دون 18، انضم إلى {site} مع ذكر عمرك.',
+  '{item}, {when}. {name} confirms in your conversation.':
+    '{item}، {when}. {name} تؤكد في محادثتك.',
+  'To follow it, join {site} free with {email}: your booking will be there.':
+    'لمتابعته، انضم إلى {site} مجانًا بالعنوان {email}: ستجد حجزك هناك.',
+  'Join {site}': 'انضم إلى {site}',
+  'Check your email': 'تحقق من بريدك',
+  'A six-digit code went to {email}. Type it to book {item}, {when}.':
+    'أُرسل رمز من ستة أرقام إلى {email}. اكتبه لحجز {item}، {when}.',
+  'Pick another time': 'اختر وقتًا آخر',
+  'No free times this week.': 'لا أوقات متاحة هذا الأسبوع.',
+  Earlier: 'أبكر',
+  Later: 'لاحقًا',
+  'Book a time': 'احجز وقتًا',
+  'A code goes to your email; the time is yours once you type it here. Nothing is kept before that.':
+    'يصلك رمز على بريدك؛ ويصبح الوقت لك حين تكتبه هنا. لا يُحفظ شيء قبل ذلك.',
 };

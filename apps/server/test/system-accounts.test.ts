@@ -226,7 +226,7 @@ describe('Cai (R67)', () => {
 
 describe('their public pages (R67)', () => {
   it('say what each is, never a person', async () => {
-    const page = await publicPageFor(t.ctx.db, '/@cai', t.clock.now);
+    const page = await publicPageFor(t.ctx, '/@cai', t.clock.now);
     expect(page).toMatchObject({
       kind: 'person',
       system: 'assistant',
@@ -236,7 +236,7 @@ describe('their public pages (R67)', () => {
     expect(html.status).toBe(200);
     expect(html.head).toContain('"@type":"SoftwareApplication"');
     expect(html.body).toContain('Caime’s assistant');
-    const momo = await publicPageFor(t.ctx.db, '/@momo', t.clock.now);
+    const momo = await publicPageFor(t.ctx, '/@momo', t.clock.now);
     expect(renderPublic(momo, 'https://caime.test', '/@momo').head).toContain('"@type":"Thing"');
   });
 });

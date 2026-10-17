@@ -1348,4 +1348,35 @@ export const turkishServer: Catalog = {
   'Open in Caime: {url}': 'Caime’de: {url}',
   'Caime keeps this up to date. Change it in Caime.':
     'Caime bunu güncel tutar. Değişiklikleri Caime’de yapın.',
+  // Booking before an account (R97 (1), block C).
+  'Pick a time below. No account needed; {name} confirms in a conversation.':
+    'Aşağıdan bir saat seçin. Hesap gerekmez; {name} bir konuşmada onaylar.',
+  'That address has a {site} account.': 'Bu adresin bir {site} hesabı var.',
+  'Sign in to book': 'Rezervasyon için giriş yapın',
+  'Booking without an account isn’t available here yet. Join {site} to book.':
+    'Hesapsız rezervasyon burada henüz yapılamıyor. Rezervasyon için {site}’e katılın.',
+  'That can’t be booked from here.': 'Bu buradan rezerve edilemez.',
+  'That time was just taken. Pick another.': 'Bu saat az önce alındı. Başka bir saat seçin.',
+  'That took too long. Pick a time again.': 'Bu çok uzun sürdü. Yeniden bir saat seçin.',
+  'That code has run out. Pick a time again to get a new one.':
+    'Bu kodun süresi doldu. Yeni bir kod için yeniden bir saat seçin.',
+  'Too many tries for now. Try again in an hour.':
+    'Şimdilik çok fazla deneme yapıldı. Bir saat sonra yeniden deneyin.',
+  'Booking without an account is for people 18 or over. Under 18, join {site} with your age.':
+    'Hesapsız rezervasyon 18 yaş ve üzeri içindir. 18 yaşından küçükseniz yaşınızı belirterek {site}’e katılın.',
+  '{item}, {when}. {name} confirms in your conversation.':
+    '{item}, {when}. {name} konuşmanızda onaylar.',
+  'To follow it, join {site} free with {email}: your booking will be there.':
+    'Takip etmek için {email} ile {site}’e ücretsiz katılın: rezervasyonunuz orada olacak.',
+  'Join {site}': '{site}’e katıl',
+  'Check your email': 'E-postanızı kontrol edin',
+  'A six-digit code went to {email}. Type it to book {item}, {when}.':
+    '{email} adresine altı haneli bir kod gönderildi. {item}, {when} için rezervasyon yapmak üzere kodu yazın.',
+  'Pick another time': 'Başka bir saat seç',
+  'No free times this week.': 'Bu hafta boş saat yok.',
+  Earlier: 'Daha erken',
+  Later: 'Daha geç',
+  'Book a time': 'Bir saat ayırtın',
+  'A code goes to your email; the time is yours once you type it here. Nothing is kept before that.':
+    'E-postanıza bir kod gelir; kodu buraya yazdığınızda saat sizindir. Öncesinde hiçbir şey saklanmaz.',
 };

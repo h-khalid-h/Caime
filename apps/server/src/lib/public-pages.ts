@@ -15,6 +15,7 @@ import {
   bySlug,
   canSee,
   formatAmount,
+  formatClock,
   grouped,
   handleError,
   itemPhotoPath,
@@ -41,7 +42,8 @@ import { mapsUrl, PLACE_KIND_LABELS, placeLine } from '@caime/core/places';
 import type { CharacterHandle } from '@caime/core/system-accounts';
 import { tagged } from '@caime/core/tagged';
 import type { Kysely } from 'kysely';
-import type { Database } from '../db/schema';
+import type { AppContext } from '../context';
+import type { Database, Organization } from '../db/schema';
 import { catalogOf, paymentsOf } from './booking';
 import { orgRef } from './business';
 import { countryNameIn } from './geo';
@@ -66,6 +68,11 @@ import {
 } from './page-parts';
 import { FACE, px, THEME_VARS, type } from './page-style';
 import { orgPlacesFor } from './places';
+import {
+  type VisitorBookingState,
+  type VisitorRefusal,
+  visitorBookingState,
+} from './public-booking';
 import {
   esc,
   explorerStyle,
@@ -211,6 +218,12 @@ export interface PublicItemPage {
   kind: 'item';
   host: PublicPerson | PublicOrg;
   item: PublicItem;
+  /**
+   * Booking before an account (R97 (1)): the week's open times and the form, the code step or
+   * the booked notice, on an organization's bookable public item; null where the page offers
+   * only joining.
+   */
+  booking: VisitorBookingState | null;
 }
 export interface PublicCollectionPage {
   kind: 'collection';
@@ -250,14 +263,23 @@ export type EntryScreen = 'welcome' | 'sign-in' | 'sign-up';
 export const ENTRY_SCREENS: readonly EntryScreen[] = ['welcome', 'sign-in', 'sign-up'];
 
 /** An open organization's public face, by handle. */
-export async function publicOrg(db: Q, handle: string): Promise<PublicOrg | null> {
+/** An open organization by handle, with its catalog (the public pages are the catalog's readers). */
+export async function orgRowByHandle(db: Q, handle: string): Promise<Organization | null> {
   const o = await db
     .selectFrom('organizations')
     .selectAll()
     .where('handle', '=', handle)
     .where('archived_at', 'is', null)
     .executeTakeFirst();
-  if (!o) return null;
+  return o ?? null;
+}
+
+export async function publicOrg(db: Q, handle: string): Promise<PublicOrg | null> {
+  const o = await orgRowByHandle(db, handle);
+  return o ? publicOrgFrom(db, o) : null;
+}
+
+async function publicOrgFrom(db: Q, o: Organization): Promise<PublicOrg> {
   return {
     kind: 'org',
     org: orgRef(o),
@@ -374,11 +396,12 @@ export async function publicInvite(db: Q, token: string, now: Date): Promise<Pub
 
 /** The page a path is, for whoever isn't signed in. */
 export async function publicPageFor(
-  db: Q,
+  ctx: AppContext,
   path: string,
   now: Date,
   search: URLSearchParams = new URLSearchParams(),
 ): Promise<PublicPage> {
+  const db = ctx.db;
   if (path === '/') return { kind: 'landing' };
   // The marketplace and what's under it (R80): its rows, read now.
   const market = /^\/marketplace(?:\/([^/?#]+))?\/?$/.exec(path);
@@ -408,9 +431,16 @@ export async function publicPageFor(
   // @handle both are looked up at once (one of them misses, cheaply), so a person's page, the
   // common one, doesn't wait a round trip on the organization's miss first.
   if (org) {
-    const o = await publicOrg(db, handle);
-    if (!o) return slug ? { kind: 'app' } : { kind: 'missing' };
-    return slug ? (shelfPage(o, slug) ?? { kind: 'app' }) : o;
+    const row = await orgRowByHandle(db, handle);
+    if (!row) return slug ? { kind: 'app' } : { kind: 'missing' };
+    const o = await publicOrgFrom(db, row);
+    if (!slug) return o;
+    const shelf = shelfPage(o, slug);
+    if (!shelf) return { kind: 'app' };
+    // A visitor books an organization's item from its page (R97 (1)).
+    return shelf.kind === 'item'
+      ? { ...shelf, booking: await visitorBookingState(ctx, row, shelf.item.id, search) }
+      : shelf;
   }
   const [o, person] = await Promise.all([publicOrg(db, handle), publicPerson(db, handle, now)]);
   const host = o ?? person;
@@ -437,7 +467,7 @@ function shelfPage(
 ): PublicItemPage | PublicCollectionPage | null {
   const found = bySlug(host.items, host.collections, slug);
   if (!found) return null;
-  if (found.kind === 'item') return { kind: 'item', host, item: found.item };
+  if (found.kind === 'item') return { kind: 'item', host, item: found.item, booking: null };
   return {
     kind: 'collection',
     host,
@@ -903,10 +933,11 @@ export function renderPublic(
       ${chips(itemChips(host, item))}
       ${item.description ? `<p class="lead">${esc(item.description)}</p>` : ''}
       ${item.options?.length ? `<dl class="spec">${optionRows(item)}</dl>` : ''}
+      ${page.booking ? bookingSection(host, item, page.booking, path) : ''}
       ${section(sentence(tr('from')), hostCard(host))}
       ${section(tr('More from {name}', { name }), moreCards(host, item))}
     </div>
-    ${actionBar(host, item, path)}
+    ${actionBar(host, item, path, Boolean(page.booking))}
   </div>
   ${pageFoot(tr(PROMISE), wordmark(18))}
 </main>`,
@@ -1245,7 +1276,12 @@ function itemChips(host: PublicPerson | PublicOrg, i: PublicItem) {
  * The item's way in (R95): what it costs and how long, and Book or Order, in reach of a thumb at
  * the bottom of a phone and beside the page on a desktop; what happens next said under it.
  */
-function actionBar(host: PublicPerson | PublicOrg, item: PublicItem, path: string): string {
+function actionBar(
+  host: PublicPerson | PublicOrg,
+  item: PublicItem,
+  path: string,
+  booksHere = false,
+): string {
   const name = hostName(host);
   const each = item.unit === 'each';
   const price = item.price
@@ -1257,19 +1293,143 @@ function actionBar(host: PublicPerson | PublicOrg, item: PublicItem, path: strin
       : item.unit === 'days'
         ? tr('per day')
         : (stockLine(item.stock) ?? '');
-  const button = takeable(item)
-    ? bookLink([item], path, name, true)
-    : `<span class="btn quiet" aria-disabled="true">${esc(tr('Sold out'))}</span>`;
-  const how = each
-    ? tr('You order from {name} in a conversation. Joining {site} is free.', {
-        name,
-        site: SITE_NAME,
-      })
-    : tr('You pick a time with {name} in a conversation. Joining {site} is free.', {
-        name,
-        site: SITE_NAME,
-      });
+  const button = booksHere
+    ? `<a class="btn" href="#book">${esc(tr('Book'))}</a>`
+    : takeable(item)
+      ? bookLink([item], path, name, true)
+      : `<span class="btn quiet" aria-disabled="true">${esc(tr('Sold out'))}</span>`;
+  const how = booksHere
+    ? tr('Pick a time below. No account needed; {name} confirms in a conversation.', { name })
+    : each
+      ? tr('You order from {name} in a conversation. Joining {site} is free.', {
+          name,
+          site: SITE_NAME,
+        })
+      : tr('You pick a time with {name} in a conversation. Joining {site} is free.', {
+          name,
+          site: SITE_NAME,
+        });
   return `<aside class="actionbar" aria-label="${esc(each ? tr('Order') : tr('Book'))}"><div class="sum"><strong>${esc(price)}</strong>${length ? `<span>${esc(length)}</span>` : ''}</div>${button}<p class="how">${esc(how)}</p></aside>`;
+}
+
+/** Why a visitor's booking stopped, in the page's words; a known account is sent to sign in. */
+function refusalLine(reason: VisitorRefusal, path: string): string {
+  const site = SITE_NAME;
+  switch (reason) {
+    case 'account':
+      return `${esc(tr('That address has a {site} account.', { site }))} <a href="${esc(wayIn('sign-in', bookPath(path)))}">${esc(tr('Sign in to book'))}</a>`;
+    case 'no_mail':
+      return esc(
+        tr('Booking without an account isn’t available here yet. Join {site} to book.', { site }),
+      );
+    case 'not_bookable':
+      return esc(tr('That can’t be booked from here.'));
+    case 'slot_taken':
+      return esc(tr('That time was just taken. Pick another.'));
+    case 'expired':
+      return esc(tr('That took too long. Pick a time again.'));
+    case 'wrong_code':
+      return esc(tr('That code isn’t right. Check the email again.'));
+    case 'code_expired':
+      return esc(tr('That code has run out. Pick a time again to get a new one.'));
+    case 'too_many':
+      return esc(tr('Too many tries for now. Try again in an hour.'));
+    case 'adult':
+      return esc(
+        tr(
+          'Booking without an account is for people 18 or over. Under 18, join {site} with your age.',
+          {
+            site,
+          },
+        ),
+      );
+  }
+}
+
+/** A day of the week shown, in the page's language and the host's zone: "Monday 20 October". */
+function dayLabel(day: string, timeZone: string): string {
+  return new Intl.DateTimeFormat(currentTranslator().language, {
+    weekday: 'long',
+    day: 'numeric',
+    month: 'long',
+    timeZone,
+  }).format(new Date(`${day}T12:00:00.000Z`));
+}
+
+/** When a booking is for, in the page's language and the host's zone: "Monday 20 October, 09:30". */
+function whenLabel(at: string, timeZone: string): string {
+  const language = currentTranslator().language;
+  return `${new Intl.DateTimeFormat(language, { weekday: 'long', day: 'numeric', month: 'long', timeZone }).format(new Date(at))}, ${formatClock(at, timeZone, language)}`;
+}
+
+/**
+ * Booking before an account on an item's page (R97 (1)): the week's open times as radio buttons
+ * by day, a name, an address and the age box, posted to `/v1/public/book`; then the code, posted
+ * to `/v1/public/book/confirm`; then the notice that the organization confirms in the
+ * conversation, and that joining with the same address claims it (R93). No script: every step
+ * is a page.
+ */
+function bookingSection(
+  host: PublicPerson | PublicOrg,
+  item: PublicItem,
+  booking: VisitorBookingState,
+  path: string,
+): string {
+  const name = hostName(host);
+  const handle = host.kind === 'org' ? host.org.handle : host.handle;
+  const language = currentTranslator().language;
+  const hidden =
+    `<input type="hidden" name="host" value="${esc(handle)}">` +
+    `<input type="hidden" name="item" value="${esc(item.id)}">` +
+    `<input type="hidden" name="lang" value="${esc(language)}">`;
+  const notice = (reason: VisitorRefusal | null) =>
+    reason ? `<p class="notice" role="alert">${refusalLine(reason, path)}</p>` : '';
+  if (booking.step === 'booked') {
+    const when = whenLabel(booking.at, booking.timeZone);
+    return `<section class="book" id="book" aria-labelledby="book-title"><h2 id="book-title">${esc(tr('Booked'))}</h2>
+<p class="notice ok">${esc(tr('{item}, {when}. {name} confirms in your conversation.', { item: item.name, when, name }))}</p>
+<p class="how">${esc(tr('To follow it, join {site} free with {email}: your booking will be there.', { site: SITE_NAME, email: booking.email }))}</p>
+<p><a class="btn" href="${esc(wayIn('sign-up', path))}">${esc(tr('Join {site}', { site: SITE_NAME }))}</a></p></section>`;
+  }
+  if (booking.step === 'code') {
+    const when = whenLabel(booking.at, booking.timeZone);
+    return `<section class="book" id="book" aria-labelledby="book-title"><h2 id="book-title">${esc(tr('Check your email'))}</h2>
+<p class="lead">${esc(tr('A six-digit code went to {email}. Type it to book {item}, {when}.', { email: booking.email, item: item.name, when }))}</p>
+${notice(booking.error)}
+<form class="form" method="post" action="/v1/public/book/confirm">${hidden}<input type="hidden" name="claim" value="${esc(booking.claim)}">
+<div class="fields"><label class="field">${esc(tr('Code'))}<input name="code" inputmode="numeric" pattern="[0-9]{6}" maxlength="6" autocomplete="one-time-code" required></label></div>
+<button class="btn" type="submit">${esc(tr('Book'))}</button>
+<p class="how"><a href="${esc(path)}">${esc(tr('Pick another time'))}</a></p></form></section>`;
+  }
+  const { slots } = booking;
+  const days = slots.days.length
+    ? slots.days
+        .map(
+          (d) =>
+            `<fieldset class="day"><legend>${esc(dayLabel(d.day, slots.timeZone))}</legend><div class="times">${d.times
+              .map(
+                (t) =>
+                  `<label class="time"><input type="radio" name="slot" value="${esc(t)}" required><span>${esc(formatClock(t, slots.timeZone, language))}</span></label>`,
+              )
+              .join('')}</div></fieldset>`,
+        )
+        .join('')
+    : `<p class="lead">${esc(tr('No free times this week.'))}</p>`;
+  const pager =
+    slots.previous || slots.next
+      ? `<p class="pager">${slots.previous ? `<a href="${esc(`${path}?from=${slots.previous}`)}#book">${esc(tr('Earlier'))}</a>` : ''}${slots.next ? `<a href="${esc(`${path}?from=${slots.next}`)}#book">${esc(tr('Later'))}</a>` : ''}</p>`
+      : '';
+  return `<section class="book" id="book" aria-labelledby="book-title"><h2 id="book-title">${esc(tr('Book a time'))}</h2>
+${notice(booking.error)}
+<form class="form" method="post" action="/v1/public/book">${hidden}
+${days}${pager}
+<div class="fields">
+<label class="field">${esc(tr('Your name'))}<input name="name" maxlength="80" autocomplete="name" required></label>
+<label class="field">${esc(tr('Email'))}<input type="email" name="email" maxlength="254" autocomplete="email" required></label>
+<label class="check"><input type="checkbox" name="adult" value="on" required><span>${esc(tr('I’m 18 or over'))}</span></label>
+</div>
+<button class="btn" type="submit">${esc(tr('Book'))}</button>
+<p class="how">${esc(tr('A code goes to your email; the time is yours once you type it here. Nothing is kept before that.'))}</p></form></section>`;
 }
 
 /** A place on a page (R92, R95) as a card: its name, its address in the reader's language, a map. */
