@@ -133,6 +133,7 @@ export async function sweepRecords(ctx: AppContext): Promise<void> {
     ctx,
     sql`delete from jobs where id in (select id from jobs
       where (done_at is not null and done_at < ${before(KEPT_DAYS.doneJobs)})
+         or (dead_at is not null and dead_at < ${before(KEPT_DAYS.doneJobs)})
          or (done_at is null and attempts >= max_attempts and run_at < ${before(KEPT_DAYS.doneJobs)})
       limit ${LOT})`,
   );

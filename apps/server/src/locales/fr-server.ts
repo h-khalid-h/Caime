@@ -559,6 +559,7 @@ export const frServer: Catalog = {
   'That password isn’t right.': 'Ce mot de passe n’est pas le bon.',
   'A message is linked with its conversation.': 'Un message est lié à sa conversation.',
   'That message': 'Ce message',
+  'That job': 'Cette tâche',
   'That context': 'Ce contexte',
   'That task': 'Cette tâche',
   'You can’t assign this person.': 'Vous ne pouvez pas assigner cette personne.',

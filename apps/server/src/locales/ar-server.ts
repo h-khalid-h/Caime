@@ -562,6 +562,7 @@ export const arServer: Catalog = {
   'That password isn’t right.': 'كلمة المرور تلك غير صحيحة.',
   'A message is linked with its conversation.': 'تُربط الرسالة بمحادثتها.',
   'That message': 'تلك الرسالة',
+  'That job': 'تلك المهمة',
   'That context': 'ذلك السياق',
   'That task': 'تلك المهمة',
   'You can’t assign this person.': 'لا يمكنك إسناد هذا الشخص.',

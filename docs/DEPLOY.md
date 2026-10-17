@@ -909,5 +909,12 @@ curl -fsSI https://caime.example.com/ | grep -i content-security-policy
 Then sign up at the domain, and from a second browser connect and send a message: it should
 arrive without a reload.
 
+The container's own health check is `/v1/healthz` (liveness: the process answers, with a ten-minute
+start period for a long migration); the uptime check and the proxy read `/v1/readyz`, which answers
+503 while the database doesn't answer or the instance doesn't hear the bus, and never restarts a
+container by itself.
 
-The container's own health check is `/v1/healthz` (liveness); the uptime check reads `/v1/readyz` (the database and the bus).
+The dead-letter: a job that failed its last attempt stays as `caime_jobs_dead` on /metrics (alert
+when above 0 for an hour) and is listed by `GET /v1/admin/jobs` (kind, attempts, when, its last
+error; never its payload) with the operator's token; `POST /v1/admin/jobs/:id/retry` gives it its
+attempts back. Retention lets a dead job go after the same days as a done one.

@@ -17,6 +17,7 @@ import {
   SuspensionBody,
 } from '@caime/core';
 import type {
+  AdminJobsResponse,
   AdminPersonResponse,
   AppListingReviewResponse,
   AppListingsResponse,
@@ -49,6 +50,7 @@ import { backupDir, lastBackup, listBackups, runBackup } from '../lib/backup';
 import { endBillingOf, paysThroughBilling } from '../lib/billing';
 import { AppError, badRequest, conflict, mailUnavailable, notFound } from '../lib/errors';
 import { handleHeld, handleTaken, releaseHandle } from '../lib/handles';
+import { retryJob, troubledJobs } from '../lib/jobs';
 import {
   endAllAccess,
   removeForEveryone,
@@ -391,6 +393,26 @@ export async function adminRoutes(app: FastifyInstance, ctx: AppContext) {
       metadata: { file: made.file, bytes: made.bytes, operator: by },
     });
     return { backup: made };
+  });
+
+  /** The dead-letter (review 2026-10-17): jobs out of attempts or failing, never their payload. */
+  app.get('/admin/jobs', async (req): Promise<AdminJobsResponse> => {
+    const by = operator(req);
+    await audit(ctx.db, { actorId: null, action: 'admin.jobs_viewed', metadata: { operator: by } });
+    return troubledJobs(ctx);
+  });
+
+  /** A dead job given its attempts back, to run now. */
+  app.post('/admin/jobs/:id/retry', async (req): Promise<OkResponse> => {
+    const by = operator(req);
+    const { id } = parse(z.object({ id: z.string().min(1).max(64) }), req.params);
+    if (!(await retryJob(ctx, id))) throw notFound(tr('That job'));
+    await audit(ctx.db, {
+      actorId: null,
+      action: 'admin.job_retried',
+      metadata: { jobId: id, operator: by },
+    });
+    return { ok: true };
   });
 
   /** The product's health (PRD §82–83): aggregates only, over the last `days`. */

@@ -1890,12 +1890,25 @@ means verified, and anything needing the owner's credentials stays ⛔ until it 
       `server_settings` and read on every scrape. Verified with `bus.test.ts` (the listener's
       backend terminated, readyz 503 meanwhile, events after), `migrations.test.ts`,
       `health.test.ts`, `files.test.ts`, `calendar-sync.test.ts`, `metrics.test.ts`.
-- [ ] A2. Launch floor, the rest: alerting receiver, Sentry (server and app), log shipping, a
-      status page; batched backfills and a CI lint against a drop in the same release; backups
-      streamed off host and a timed restore drill; jobs with timeouts and a heartbeat, a
-      dead-letter state with a metric and admin retry, `billing.reconcile` background and locked,
-      an outbox for message effects and push, an image semaphore; the CI-tested image published
-      by sha and deployed as that tag, a staging service.
+- [x] A2. The job system and the heavy work (2026-10-17): a job out of attempts is dead
+      (`jobs.dead_at`, migration 0090), out of the due index (`jobs_due`), counted on
+      `caime_jobs_dead`, listed to the operator with its last error and never its payload
+      (`GET /v1/admin/jobs`) and retried by hand (`POST /v1/admin/jobs/:id/retry`); a running job
+      renews its lock every minute, so a stale lock is a dead worker's, and has a time limit (ten
+      minutes, or its kind's own); a periodic task is claimed once per interval across every
+      instance (`periodic_runs`, `claimPeriodic`), so `billing.reconcile` (now in the background)
+      and the calendar sweep run on one; a backup's copy off the host is streamed, never read
+      whole; images are decoded two at a time on an instance (`lib/semaphore.ts`) and never past
+      50 megapixels. Verified with `jobs.test.ts` (dead after the last attempt, the time limit,
+      the retry, the claim), `metrics.test.ts`, `backup-copy.test.ts` (an unsigned streamed put),
+      `files.test.ts`, `migrations.test.ts`.
+- [ ] A3. Launch floor, the rest: an outbox for message effects and push (today `ctx.defer`, in
+      memory); batched backfills and a CI lint against a drop in the same release; the CI-tested
+      image published by sha and deployed as that tag, a staging service; the restore drill run
+      and timed once the bucket exists.
+- [ ] ⛔ A3, the owner's: the alert receiver (an uptime check on `/v1/readyz`, a status page,
+      `caime_jobs_dead > 0` and the rules in DEPLOY), a Sentry project for the server and the
+      app, log shipping.
 - [ ] ⛔ A, the owner's: the support address answered (the `@caime` organization made, `hello@`
       landing in its inbox), the alert receiver's account, the Sentry project, the bucket for
       backups (`BACKUP_S3_*`).

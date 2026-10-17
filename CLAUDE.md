@@ -144,6 +144,17 @@ appointment from a catalog).
   backup, the audit check, the probes) is written to `server_settings` through `lib/settings.ts`
   and read back by `syncGauges` on every scrape, so an instance without workers reports it too.
   A test that waits for something uses `until` from `test/helpers.ts`.
+- Jobs (`lib/jobs.ts`): a job that fails its last attempt is dead (`dead_at`), out of the due
+  index, counted on `caime_jobs_dead`, listed with its last error and never its payload at
+  `GET /v1/admin/jobs`, and given its attempts back by `retryJob` (`POST …/retry`); never delete
+  or hand-edit a job row to "fix" one. A running job renews `locked_at` every `HEARTBEAT_MS`, so
+  a lock older than `STALE_LOCK_MS` is a dead worker's; a job has `JOB_TIMEOUT_MS` unless
+  `registerJob(kind, handler, { timeoutMs })` says otherwise, and work that may run longer is cut
+  into jobs. A periodic task runs on one instance per interval (`claimPeriodic`, `periodic_runs`);
+  `runPeriodic` (the tests' direct runner) claims nothing. Anything that decodes an image goes
+  through `images.run` (`lib/renditions.ts`, two at a time, never nested) with
+  `limitInputPixels: IMAGE_PIXELS_MAX`; a backup's copy is streamed (`s3PutStream`), and nothing
+  reads a whole file into memory to send it.
 - Kill a local server by port (`lsof -ti tcp:8787 | xargs kill`), never `pkill -f` with a
   pattern: it matches the shell running the command.
 - Biome reformats files: after `biome check --write`, re-read before scripted edits, and run it

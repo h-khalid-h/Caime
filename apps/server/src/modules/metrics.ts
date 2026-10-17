@@ -17,14 +17,16 @@ export async function metricsRoutes(app: FastifyInstance, ctx: AppContext) {
     const q = await ctx.db
       .selectFrom('jobs')
       .select([
-        sql<number>`count(*)::int`.as('queued'),
-        sql<number>`coalesce(extract(epoch from (now() - min(run_at) filter (where run_at <= now() and locked_at is null))), 0)::int`.as(
+        sql<number>`count(*) filter (where dead_at is null)::int`.as('queued'),
+        sql<number>`count(*) filter (where dead_at is not null)::int`.as('dead'),
+        sql<number>`coalesce(extract(epoch from (now() - min(run_at) filter (where run_at <= now() and locked_at is null and dead_at is null))), 0)::int`.as(
           'oldest',
         ),
       ])
       .where('done_at', 'is', null)
       .executeTakeFirst();
     ctx.metrics.jobsQueued.set({}, q?.queued ?? 0);
+    ctx.metrics.jobsDead.set({}, q?.dead ?? 0);
     ctx.metrics.jobsOldestSeconds.set({}, Math.max(0, q?.oldest ?? 0));
     return reply
       .header('content-type', 'text/plain; version=0.0.4; charset=utf-8')

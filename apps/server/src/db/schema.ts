@@ -787,8 +787,18 @@ export interface JobsTable {
   locked_by: string | null;
   last_error: string | null;
   done_at: NullableTimestamp;
+  /** Out of attempts (review 2026-10-17): listed to the operator, retried by hand. */
+  dead_at: NullableTimestamp;
   dedupe_key: string | null;
   created_at: Generated<Date>;
+}
+
+/** A periodic task's one run per interval across every instance (`claimPeriodic`). */
+export interface PeriodicRunsTable {
+  name: string;
+  started_at: Date;
+  finished_at: Date | null;
+  instance: string;
 }
 
 export interface AuditLogTable {
@@ -1340,6 +1350,7 @@ export interface Database {
   reports: ReportsTable;
   domain_events: DomainEventsTable;
   jobs: JobsTable;
+  periodic_runs: PeriodicRunsTable;
   audit_log: AuditLogTable;
   ai_runs: AiRunsTable;
   server_settings: ServerSettingsTable;

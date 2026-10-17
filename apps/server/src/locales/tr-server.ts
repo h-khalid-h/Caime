@@ -543,6 +543,7 @@ export const turkishServer: Catalog = {
   'That password isn’t right.': 'Bu parola doğru değil.',
   'A message is linked with its conversation.': 'Bir mesaj kendi konuşmasına bağlıdır.',
   'That message': 'Bu mesaj',
+  'That job': 'Bu iş',
   'That context': 'Bu bağlam',
   'That task': 'Bu görev',
   'You can’t assign this person.': 'Bu kişiyi atayamazsınız.',

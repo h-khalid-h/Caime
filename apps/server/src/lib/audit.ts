@@ -33,6 +33,8 @@ export type AuditAction =
   | 'admin.reports_viewed'
   | 'admin.backups_viewed'
   | 'admin.backup_run'
+  | 'admin.jobs_viewed'
+  | 'admin.job_retried'
   | 'admin.audit_verified'
   | 'admin.providers_viewed'
   | 'admin.providers_checked'

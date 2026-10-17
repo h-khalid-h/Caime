@@ -3068,6 +3068,23 @@ export interface BackupsResponse {
   last: BackupView | null;
   files: BackupView[];
 }
+/** A background job the operator may need to see: dead (out of attempts) or failing. Never its payload. */
+export interface AdminJobView {
+  id: string;
+  kind: string;
+  attempts: number;
+  maxAttempts: number;
+  runAt: string;
+  lockedAt: string | null;
+  deadAt: string | null;
+  lastError: string | null;
+  createdAt: string;
+}
+export interface AdminJobsResponse {
+  jobs: AdminJobView[];
+  /** How many are dead in all. */
+  dead: number;
+}
 export interface BackupResponse {
   backup: BackupView;
 }

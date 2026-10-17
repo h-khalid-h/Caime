@@ -9,7 +9,13 @@ import sharp from 'sharp';
 import type { AppContext } from '../context';
 import { eachLimit } from './batch';
 import { enqueue, registerJob } from './jobs';
+import { Semaphore } from './semaphore';
 import { type Storage, storageFor } from './storage';
+
+/** Images decoded at once on an instance (sharp is CPU- and memory-bound); the rest wait. */
+export const images = new Semaphore(2);
+/** The most pixels an image may have to be decoded at all: 50 megapixels, about 200 MB raw. */
+export const IMAGE_PIXELS_MAX = 50_000_000;
 
 export const RENDITIONS = {
   /** A 160-point face or tile on a 3x screen. */
@@ -19,7 +25,7 @@ export const RENDITIONS = {
 } as const;
 
 const resized = (input: string, edge: number, quality: number, out: string) =>
-  sharp(input)
+  sharp(input, { limitInputPixels: IMAGE_PIXELS_MAX })
     .resize({ width: edge, height: edge, fit: 'inside', withoutEnlargement: true })
     .webp({ quality })
     .toFile(out);
@@ -84,7 +90,8 @@ async function backfill(ctx: AppContext, payload: unknown): Promise<void> {
     let previewKey: string | null = f.thumb_key;
     try {
       await storage.write(temp, storage.read(f.storage_key));
-      previewKey = (await makeRenditions(storage, temp, f.id, f.width, f.height)).previewKey;
+      previewKey = (await images.run(() => makeRenditions(storage, temp, f.id, f.width, f.height)))
+        .previewKey;
     } catch (err) {
       ctx.log.warn({ err, fileId: f.id }, 'preview backfill failed');
     } finally {

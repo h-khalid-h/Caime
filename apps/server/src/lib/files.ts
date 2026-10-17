@@ -14,7 +14,7 @@ import type { AppContext } from '../context';
 import type { Database, FilesTable } from '../db/schema';
 import { badRequest } from './errors';
 import { stripHeifDetails } from './heif';
-import { makeRenditions } from './renditions';
+import { IMAGE_PIXELS_MAX, images, makeRenditions } from './renditions';
 import { sniffFile } from './sniff';
 import type { Storage } from './storage';
 
@@ -57,42 +57,47 @@ export async function finalizeFile(
     }
   }
   if (sniffed.kind === 'image' && sniffed.mime !== 'image/gif' && sniffed.mime !== 'image/heic') {
-    try {
-      const input = storage.path(tempKey);
-      if (REENCODE.has(sniffed.mime)) {
-        // Rotate by EXIF, cap the size, and drop every metadata block (GPS included).
-        const out = storage.path(`${tempKey}.clean`);
-        const pipeline = sharp(input, { failOn: 'truncated' })
-          .rotate()
-          .resize({ width: 4096, height: 4096, fit: 'inside', withoutEnlargement: true });
-        const encoded =
-          sniffed.mime === 'image/png'
-            ? pipeline.png()
-            : sniffed.mime === 'image/webp'
-              ? pipeline.webp({ quality: 88 })
-              : pipeline.jpeg({ quality: 88, mozjpeg: true });
-        await encoded.toFile(out);
-        await storage.remove(tempKey);
-        await storage.moveFrom(`${tempKey}.clean`, tempKey);
-        cleaned = true;
+    // One of a few at a time on this instance, and never a picture too large to decode.
+    await images.run(async () => {
+      try {
+        const input = storage.path(tempKey);
+        if (REENCODE.has(sniffed.mime)) {
+          // Rotate by EXIF, cap the size, and drop every metadata block (GPS included).
+          const out = storage.path(`${tempKey}.clean`);
+          const pipeline = sharp(input, { failOn: 'truncated', limitInputPixels: IMAGE_PIXELS_MAX })
+            .rotate()
+            .resize({ width: 4096, height: 4096, fit: 'inside', withoutEnlargement: true });
+          const encoded =
+            sniffed.mime === 'image/png'
+              ? pipeline.png()
+              : sniffed.mime === 'image/webp'
+                ? pipeline.webp({ quality: 88 })
+                : pipeline.jpeg({ quality: 88, mozjpeg: true });
+          await encoded.toFile(out);
+          await storage.remove(tempKey);
+          await storage.moveFrom(`${tempKey}.clean`, tempKey);
+          cleaned = true;
+        }
+        const meta = await sharp(storage.path(tempKey), {
+          limitInputPixels: IMAGE_PIXELS_MAX,
+        }).metadata();
+        width = meta.width ?? null;
+        height = meta.height ?? null;
+        // Made beside the upload, then kept where files are kept.
+        ({ thumbKey, previewKey } = await makeRenditions(storage, tempKey, id, width, height));
+      } catch (err) {
+        ctx.log.warn({ err }, 'image processing failed');
+        thumbKey = null;
+        previewKey = null;
+        // A photo whose hidden details (where it was taken among them) couldn't be taken out is
+        // never kept as it came.
+        if (REENCODE.has(sniffed.mime) && !cleaned) {
+          await storage.remove(tempKey);
+          await storage.remove(`${tempKey}.clean`);
+          throw badRequest(tr('That photo couldn’t be read, so it wasn’t sent. Try another.'));
+        }
       }
-      const meta = await sharp(storage.path(tempKey)).metadata();
-      width = meta.width ?? null;
-      height = meta.height ?? null;
-      // Made beside the upload, then kept where files are kept.
-      ({ thumbKey, previewKey } = await makeRenditions(storage, tempKey, id, width, height));
-    } catch (err) {
-      ctx.log.warn({ err }, 'image processing failed');
-      thumbKey = null;
-      previewKey = null;
-      // A photo whose hidden details (where it was taken among them) couldn't be taken out is
-      // never kept as it came.
-      if (REENCODE.has(sniffed.mime) && !cleaned) {
-        await storage.remove(tempKey);
-        await storage.remove(`${tempKey}.clean`);
-        throw badRequest(tr('That photo couldn’t be read, so it wasn’t sent. Try another.'));
-      }
-    }
+    });
   }
   await storage.moveFrom(tempKey, key);
   const size = (await storage.size(key)) ?? 0;

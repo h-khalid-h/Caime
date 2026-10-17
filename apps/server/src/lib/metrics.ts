@@ -157,6 +157,10 @@ export function createMetrics(pool: pg.Pool) {
       'caime_jobs_oldest_seconds',
       'How long the longest-waiting due job has waited.',
     ),
+    jobsDead: new Gauge(
+      'caime_jobs_dead',
+      'Background jobs out of attempts, awaiting the operator.',
+    ),
     jobSeconds: new Histogram('caime_job_duration_seconds', 'Time a job took, by kind.', SECONDS),
     webhooks: new Counter(
       'caime_webhook_deliveries_total',

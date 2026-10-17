@@ -803,5 +803,11 @@ export async function reconcileBilling(ctx: AppContext): Promise<void> {
 /** Billing's background work: ending customers that couldn't be ended at once, and reconciling. */
 export function registerBillingJobs(): void {
   registerJob(CLOSE, async (ctx, p) => closeCustomer(ctx, String(p.customerId)));
-  registerPeriodic({ name: 'billing.reconcile', everyMs: 6 * 3_600_000, run: reconcileBilling });
+  // In the background (a Stripe call per customer, one page at a time), claimed by one instance.
+  registerPeriodic({
+    name: 'billing.reconcile',
+    everyMs: 6 * 3_600_000,
+    background: true,
+    run: reconcileBilling,
+  });
 }

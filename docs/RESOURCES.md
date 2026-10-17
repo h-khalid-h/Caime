@@ -83,6 +83,11 @@ Each call is paid for by the token, so what is sent is bounded and what is repea
 | Images | a photo is shrunk on the device before it's uploaded (3,072 px on the long edge, JPEG 0.9, PNG kept as PNG; 1,024 for a profile photo or a logo; `lib/photoSize.ts`): 2.25 times the pixels of 2026-10-05's 2,048, so a zoomed or full-screen photo stays sharp on a QHD screen, still under a 12-megapixel original's 4,032. The server keeps two renditions (R70): the thumbnail (480 px, WebP 80) for what's drawn up to 160 points (tiles, faces, logos) and the preview (1,280 px, WebP 82, made only for an image bigger than the thumbnail) for what's drawn larger (a photo in a message, an item's sheet and page, a link's card); the stored photo (4,096 px at most) only when opened. A 1200 x 630 card (63 KB PNG) is what a shared link to Caime shows | Never a full-size image in a row, nor a small one stretched (core `imageFor`); one more resize per photo at upload, and older images get their preview from a backfill (`files.previews`, 25 at a time, once); the server still caps and strips metadata, so nothing trusts the device's shrink |
 | Storage on the device | the query cache (7 days, trimmed to what makes the next launch instant and written at most every 1.5 s, serialised only once the screen is idle), drafts, the outbox, keys for private conversations; on the web, the worker keeps the whole build (788 KB of scripts as Brotli, the fonts, the images) so the app opens with no network | A deploy costs a device only the files whose content changed (they're named by hash; `sw.js` keeps what it has and drops what the new build no longer lists); nothing else is written to disk without a reason in its pull request |
 
+Heavy work is bounded (review 2026-10-17): an instance decodes two images at a time and none
+over 50 megapixels; a job runs ten minutes at most and renews its lock every minute; a periodic
+task runs on one instance per interval, so a second worker adds no provider calls; a backup's copy
+off the host streams from disk. None of this costs a device anything.
+
 ## What a change says
 
 A pull request states, under **Resources**, what the change costs on each of the three: queries

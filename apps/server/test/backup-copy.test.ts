@@ -37,9 +37,14 @@ beforeAll(async () => {
       payloadHash: String(req.headers['x-amz-content-sha256']),
       contentType: req.headers['content-type'] ? String(req.headers['content-type']) : undefined,
     });
+    // A streamed put says UNSIGNED-PAYLOAD and gives its length, as S3 allows.
+    const unsigned =
+      req.headers['x-amz-content-sha256'] === 'UNSIGNED-PAYLOAD' &&
+      Number(req.headers['content-length']) === body.length;
     if (
       req.headers.authorization !== expected.authorization ||
-      createHash('sha256').update(body).digest('hex') !== req.headers['x-amz-content-sha256']
+      (!unsigned &&
+        createHash('sha256').update(body).digest('hex') !== req.headers['x-amz-content-sha256'])
     ) {
       res.writeHead(403, { 'content-type': 'application/xml' });
       return res.end('<Error><Code>SignatureDoesNotMatch</Code></Error>');

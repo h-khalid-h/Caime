@@ -10,8 +10,10 @@
  * (`copyOffHost`), and the hourly task tries again for a backup whose copy failed while the
  * file is still here. Without it, the volume's own backup is what survives the box.
  */
+
 import { execFile } from 'node:child_process';
-import { mkdir, readdir, readFile, rename, rm, stat } from 'node:fs/promises';
+import { createReadStream } from 'node:fs';
+import { mkdir, readdir, rename, rm, stat } from 'node:fs/promises';
 import { join } from 'node:path';
 import { promisify } from 'node:util';
 import { sql } from 'kysely';
@@ -19,7 +21,7 @@ import type { Config } from '../config';
 import type { AppContext } from '../context';
 import { registerPeriodic } from './jobs';
 import { backupState } from './metrics';
-import { type S3Config, s3Put } from './s3';
+import { type S3Config, s3PutStream } from './s3';
 
 const run = promisify(execFile);
 
@@ -104,8 +106,17 @@ export async function copyOffHost(ctx: AppContext, record: BackupRecord): Promis
   if (!bucket || record.copy) return record;
   const key = `${ctx.config.BACKUP_S3_PREFIX}${record.file}`;
   try {
-    const body = await readFile(join(backupDir(ctx), record.file));
-    await s3Put(bucket, key, body, 'application/octet-stream', ctx.now());
+    // Streamed from disk (review 2026-10-17 §4 H3): a dump is never read whole into memory.
+    const path = join(backupDir(ctx), record.file);
+    const { size } = await stat(path);
+    await s3PutStream(
+      bucket,
+      key,
+      createReadStream(path),
+      size,
+      'application/octet-stream',
+      ctx.now(),
+    );
   } catch (err) {
     ctx.log.warn({ err, file: record.file }, 'backup: the copy off the host failed');
     return record;
