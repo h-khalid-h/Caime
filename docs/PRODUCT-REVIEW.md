@@ -1939,3 +1939,56 @@ with its reason, so it isn't proposed again without new facts.
   organization's own domain after that. *Declined:* stories or a status feed (R40), native desktop
   apps (R40), a generic field-mapping layer before a third importer, calls above eight before the
   media-server decision. *Not done, with why:* the owner's decisions in the review's §13.
+
+- **R98 (2026-10-17) Places as a context for spaces, never a map of people (owner's brainstorm:
+  "Caime Places", each with a geo-based group; Follow vs Join; a private place's group joined on
+  the owner's or a guardian's acceptance; a public place claimed as private by its owner;
+  guardians as the top tenth of members by time spent within the place's scope).** Validated
+  against Caime: a place is already a fact with an audience (R92: a person's or an organization's
+  named addresses, a point taken only where its owner stands, never looked up); a space is already
+  the container for a community (`SPACE_KINDS` has `community` and `school`) with roles
+  (`canChangeSpaceRole`, `MANAGING_ROLES`), requests and, from M16 block C, join links; following
+  exists for organizations' updates alone (PRD §59: nothing about following reaches the inbox,
+  attention, search, AI or anyone's connections). *What's right:* a place is a natural anchor for a
+  group (a building, a compound, a parents' circle, a café's regulars, a mosque's neighbourhood),
+  and the two verbs are right: join to be in it, follow to hear from it. *Refined:* (1) **A
+  place-space.** A space may be anchored to a place: one of its owner's places (R92), copied as its
+  line and point, with a scope in metres shown as a fact on the space's head ("Around Nile Dental ·
+  300 m"); the anchor is the owner's own point, and members report nothing. Every place-space has
+  an owner, a person or an organization (R43): no ownerless entity and no registry of places, so
+  two spaces about the same park may exist as two WhatsApp groups do. An organization's own is
+  marked as its ("Run by Nile Dental", with its verified mark), which is how a visitor tells the
+  official from the community: *that* is "claiming", and it needs no process beyond R42's domain
+  proof. (2) **Follow is for updates, join is for the group.** A place-space whose owner is an
+  organization carries that organization's updates (PRD §59: the same `org_updates` and
+  `org_follows`, never a second feed); a follower sees the place's facts and updates and nothing a
+  member writes; a member is in the group. A person is never followed (R40: no graph of
+  followers), and a group's words are never public content: a group a visitor can read is a
+  broadcast (§59), not a place-space. (3) **One join rule for every place-space,** set by its
+  owner: by invitation, by link or QR (block C), or ask to join (a request its owner or admins
+  accept, the message-request pattern); the default is "ask" for a person's and "link" for a
+  verified organization's, which answers the brainstorm's public-versus-private question with one
+  rule and two defaults. Under 18 (R29) a minor joins one only when its owner is a verified
+  organization or an adult connection of theirs, as `minorMayWriteToOrg` and the invite rule
+  already decide. (4) **Admins, not a ranking.** The people who run a place-space are its admins,
+  as any space's: appointed by its owner (an organization's owner and admins by seat), and any
+  admin may make a member one. No new word: not guardians, hosts or stewards ("host" is a booking
+  host, R58; "guardian" will mean a parent under R29). The brainstorm's guardians, the top tenth of
+  members by time spent within the scope, are declined: measuring time in a place needs the phone
+  to report where it is continuously (R92 takes a point only where its owner stands, by their act;
+  live location is explicit and ends at `live.until`), a device's report is not trusted
+  (convention 11) and is trivially faked, it drains the battery (convention 14), it cannot include
+  minors (R29), and a ranked status is the engagement mechanic R40 rules out. (5) **Nothing finds
+  people by where they are.** A place-space is found by its link or QR at the door (R53's encoder),
+  its owner's page (an organization's page lists the spaces it runs; a person's shows one only
+  within the place's audience), its name in search, and an invitation; "spaces near me" comes, if
+  at all, later and only over verified organizations' place-spaces, never a person's or a
+  community's. (6) **Presence, if ever, is an act:** an "I'm here" a member taps at the place,
+  counted and never kept as a trail, is a later layer and a decision of its own. *Declined:*
+  ownerless public places and the claiming of them (a registry Caime would have to arbitrate),
+  public reading of a group's words, following people, time-in-place measurement, discovery of
+  people by proximity. *Order:* after block C, whose join links and acceptance are the
+  prerequisite; the place-space itself is `spaces.place` (the copied line, point and scope), a
+  `join_rule`, the organization's updates on its page and the page listing: small. *Costs:* no
+  query per member or per message; a join request is a row; the point is the owner's own, taken
+  once.

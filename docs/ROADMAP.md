@@ -1994,6 +1994,13 @@ means verified, and anything needing the owner's credentials stays ⛔ until it 
       €/user cost model in RESOURCES.md.
 - [ ] ⛔ H, the owner's: a smaller paid tier; WhatsApp Business in the inbox and reminders by
       WhatsApp or SMS (Meta's approval); Stripe Connect live with local currencies.
+- [ ] R98, after C: places as a context for spaces (PRODUCT-REVIEW R98): `spaces.place` from
+      one of the owner's places (the copied line, point and scope shown as a fact on the space's
+      head), one join rule (invitation, link or QR, ask to join; "ask" by default for a person's,
+      "link" for a verified organization's), an organization's updates on its place-space
+      through `org_updates`, the organization's page listing the spaces it runs, admins as any
+      space's. Declined there: ownerless places and claiming, public reading of a group's words,
+      following people, guardians by time spent in a place, finding people by proximity.
 
 ## Log
 
@@ -3581,6 +3588,10 @@ means verified, and anything needing the owner's credentials stays ⛔ until it 
   journeys, safety, reliability, performance, intelligence, mail and calendar, chat, integrations,
   business and code integrity; the matrix against WhatsApp, Signal, Slack, Calendly and Workspace;
   an age-assurance design; the integration framework mapped to the code; plan M16 (A–H).
+- 2026-10-17 — R98: the owner's "Caime Places" brainstorm validated into places as a context
+  for spaces (a place-space with an owner, follow for updates and join for the group, one join
+  rule, admins as any space's; time-in-place guardians, ownerless places, public groups,
+  following people and proximity discovery declined, with why). Queued after block C.
 - 2026-10-17 — M16 block A, the launch floor: A1 the reliability core (the bus listens again
   and tells the hub, readyz says both, liveness apart, statement and pool timeouts, the
   no-transaction migration path, chunks spooled, request ids, gauges from the database), A2 the
