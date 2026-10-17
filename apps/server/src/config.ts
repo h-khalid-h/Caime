@@ -21,6 +21,12 @@ const Env = z.object({
   HOST: z.string().default('0.0.0.0'),
   /** Public origin, e.g. https://caime.example.com — used for cookies, links and web push. */
   PUBLIC_URL: z.string().url().default('http://localhost:8787'),
+  /**
+   * The commit this build is (A3): the image's `CAIME_VERSION` build argument, which CI sets to
+   * the sha it tested, said on `/v1/healthz` so a deploy is verified by what answers, never by
+   * a panel's status alone. A build made without it says `unknown`.
+   */
+  CAIME_VERSION: z.string().min(1).max(64).default('unknown'),
   DATABASE_URL: z.string().min(1),
   DATABASE_POOL_MAX: z.coerce.number().int().positive().default(20),
   /** Where uploads live when S3 is not configured (mount a volume here in production). */
@@ -324,6 +330,8 @@ export type Config = z.infer<typeof Env> & {
   cloudflareTurn: { keyId: string; token: string } | null;
   isProduction: boolean;
   isTest: boolean;
+  /** The commit this build is (`CAIME_VERSION`), or `unknown`. */
+  version: string;
   secureCookies: boolean;
   /** About's links: PRIVACY_URL, TERMS_URL and HELP_URL, or Caime's own page for each. */
   aboutLinks: { privacyUrl: string; termsUrl: string; helpUrl: string };
@@ -355,6 +363,7 @@ export function loadConfig(env: NodeJS.ProcessEnv = process.env): Config {
         : null,
     isProduction: c.NODE_ENV === 'production',
     isTest: c.NODE_ENV === 'test',
+    version: c.CAIME_VERSION,
     secureCookies: c.PUBLIC_URL.startsWith('https://'),
     aboutLinks: {
       privacyUrl: c.PRIVACY_URL ?? own('privacy'),

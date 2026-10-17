@@ -1902,13 +1902,35 @@ means verified, and anything needing the owner's credentials stays ⛔ until it 
       50 megapixels. Verified with `jobs.test.ts` (dead after the last attempt, the time limit,
       the retry, the claim), `metrics.test.ts`, `backup-copy.test.ts` (an unsigned streamed put),
       `files.test.ts`, `migrations.test.ts`.
-- [ ] A3. Launch floor, the rest: an outbox for message effects and push (today `ctx.defer`, in
-      memory); batched backfills and a CI lint against a drop in the same release; the CI-tested
-      image published by sha and deployed as that tag, a staging service; the restore drill run
-      and timed once the bucket exists.
-- [ ] ⛔ A3, the owner's: the alert receiver (an uptime check on `/v1/readyz`, a status page,
-      `caime_jobs_dead > 0` and the rules in DEPLOY), a Sentry project for the server and the
-      app, log shipping.
+- [x] A3. Launch floor, the rest (2026-10-17): a message's effects (who is told, the push, the
+      suggestions, the webhooks, the mail out) are an outbox — the send writes
+      `messages.effects_at` a grace ahead (migration 0091; its partial index built concurrently
+      in 0092, the first `-- no-transaction` file), `afterMessage` clears it, and the
+      `message.effects` sweep replays what an instance that died never finished, reading the
+      words again at the message's own time, ten minutes on after a failure, let go after a day
+      and counted (`caime_message_effects_total`); the migrations lint
+      (`scripts/migrations-lint.mjs`, `pnpm migrations:lint`, in `check` and CI against
+      `origin/production`): a committed migration changed fails, a contraction names the commit
+      already in production that stopped reading it (`-- contracts after <sha>`), a backfill of a
+      big table is a procedure that commits each batch, an index on one is built concurrently,
+      a `-- no-transaction` file holds one statement; the image says which commit it is
+      (`CAIME_VERSION` → `/v1/healthz` and `/v1/readyz` `version`), CI builds it with the sha it
+      tests, checks the image answers as that sha, publishes it to
+      `ghcr.io/h-khalid-h/caime:<sha>` and moves the `production` tag with the branch, and tries
+      staging first when its webhook and address exist (the `staging` tag, its webhook, up to ten
+      minutes for staging to answer as the commit and be ready, else production stays). Verified
+      with `effects-outbox.test.ts` (due a grace ahead, cleared by the fast path, replayed and
+      told, left within the grace, let go after a day), `migrations-lint.test.ts` (each rule,
+      every big table in the schema, A3's own files), `health.test.ts`, `migrations.test.ts`,
+      `messaging.test.ts`, `metrics.test.ts`; the lint against production (3 new, ok).
+- [ ] ⛔ A3, the owner's: the `caime` service switched from EasyPanel's own build to the
+      published image (Source → Docker image `ghcr.io/h-khalid-h/caime:production`, the deploy
+      webhook set; DEPLOY "Running the tested image"), after which `/v1/healthz` on cai.me says the
+      commit; a `caime-staging` service on the `staging` tag with `EASYPANEL_STAGING_DEPLOY_WEBHOOK`
+      and `STAGING_URL` in GitHub (DEPLOY "Staging"); the restore drill run and timed once the
+      bucket exists (`BACKUP_S3_*`); the alert receiver (an uptime check on `/v1/readyz`, a status
+      page, `caime_jobs_dead > 0` and `caime_message_effects_total{outcome="dropped"}` rising, and
+      the rules in DEPLOY), a Sentry project for the server and the app, log shipping.
 - [ ] ⛔ A, the owner's: the support address answered (the `@caime` organization made, `hello@`
       landing in its inbox), the alert receiver's account, the Sentry project, the bucket for
       backups (`BACKUP_S3_*`).
@@ -3559,6 +3581,15 @@ means verified, and anything needing the owner's credentials stays ⛔ until it 
   journeys, safety, reliability, performance, intelligence, mail and calendar, chat, integrations,
   business and code integrity; the matrix against WhatsApp, Signal, Slack, Calendly and Workspace;
   an age-assurance design; the integration framework mapped to the code; plan M16 (A–H).
+- 2026-10-17 — M16 block A, the launch floor: A1 the reliability core (the bus listens again
+  and tells the hub, readyz says both, liveness apart, statement and pool timeouts, the
+  no-transaction migration path, chunks spooled, request ids, gauges from the database), A2 the
+  job system (dead letter, heartbeat and time limit, periodic claims, streamed backups, the image
+  semaphore, the operator's jobs routes), A3 the rest (the effects outbox and its sweep, the
+  migrations lint in check and CI, the image by sha with its version on healthz, the staging
+  gate). Each through the full gate; A1 live on cai.me (`readyz` ok on cceea42), A2 and A3 pushed
+  in turn behind their E2E. The owner's switch to the published image, staging, the bucket and
+  the alert receiver stay ⛔.
 - 2026-10-17 — R96: bookings and connected calendars in step (owner's report): a stranger's
   booking holds the host's time while its request waits; every calendar of one's own read, a
   failed read never taken for a free day, a stale read redone before booking; Plans writes

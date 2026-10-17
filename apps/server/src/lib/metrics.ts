@@ -146,6 +146,11 @@ export function createMetrics(pool: pg.Pool) {
     ),
     realtime: new Gauge('caime_realtime_connections', 'Open realtime connections.'),
     messages: new Counter('caime_messages_total', 'Messages sent, by kind.'),
+    // The outbox (A3): what the sweep did about effects the fast path never finished.
+    effects: new Counter(
+      'caime_message_effects_total',
+      'Message effects the sweep replayed or gave up on, by outcome.',
+    ),
     mail: new Counter(
       'caime_mail_total',
       'Mail received and sent (R75), by direction and outcome.',

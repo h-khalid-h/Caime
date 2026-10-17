@@ -615,7 +615,21 @@ export interface SendOptions {
    * already agreed (the series going on, `meeting-series.ts`) or asked again (a space's copy).
    */
   occurrence?: { series: MeetingSeries; agreed: boolean } | null;
+  /**
+   * `false` where nothing follows the message (a series' next time, a space's copy of a card,
+   * a request card whose route tells its assignee itself): nobody is told, nothing is
+   * suggested, and the `message.effects` sweep leaves it be. Otherwise the caller runs
+   * `afterMessage` once the response is away, and the sweep stands in for a crash (A3).
+   */
+  effects?: false;
 }
+
+/**
+ * How long the fast path has to finish a message's effects before the `message.effects` sweep
+ * takes them over (review 2026-10-17 §4, A3): past the longest honest fan-out, so a slow group
+ * is never told twice, and short enough that a crash is made good within minutes.
+ */
+export const EFFECTS_GRACE_MS = 5 * 60_000;
 
 /**
  * Every refusal sending this would meet, and nothing sent: for sending one thing to several
@@ -1252,6 +1266,9 @@ export async function sendMessage(
           body: text || null,
           payload: JSON.stringify(payload),
           card_start_at: cardStartAt(payload),
+          // The outbox (A3): due for the sweep unless the fast path clears it first.
+          effects_at:
+            opts.effects === false ? null : new Date(ctx.now().getTime() + EFFECTS_GRACE_MS),
           mode,
           mode_source: body.mode ? 'user' : 'auto',
           entities: JSON.stringify(entities),

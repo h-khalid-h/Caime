@@ -29,6 +29,10 @@ RUN pnpm --filter @caime/app build:web \
  && pnpm --filter @caime/server deploy --prod --legacy /out
 
 FROM node:${NODE_VERSION}-bookworm-slim AS runtime
+# Which commit this is (A3): CI passes the sha it tested, and /v1/healthz says it; a build made
+# without it (a panel's own) says `unknown`.
+ARG CAIME_VERSION=unknown
+ENV CAIME_VERSION=$CAIME_VERSION
 # pg_dump and pg_restore for the database backups (docs/DEPLOY.md, "Backups"), at the database's
 # major version (16), from PostgreSQL's own apt repository: Debian's client is 15.
 RUN apt-get update \

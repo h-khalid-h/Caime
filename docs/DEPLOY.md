@@ -2,8 +2,11 @@
 
 Caime ships as **one image**, built from the `Dockerfile`: the API, realtime (WebSocket) and the
 web app on one origin, so the session cookie is first-party (ARCHITECTURE.md ADR-7). It needs
-PostgreSQL 16 and a volume for uploads. Everything else is optional. CI builds the image and
-tries it on every push to `main`, but publishes it nowhere: EasyPanel builds it from source.
+PostgreSQL 16 and a volume for uploads. Everything else is optional. CI builds the image on every
+push to `main`, tries it, and publishes it to the GitHub Container Registry by its sha
+(`ghcr.io/h-khalid-h/caime:<sha>`; `production` names the one the branch moved to, `staging` the one
+staging tries first); the live service still builds from source until it is switched to the image
+("Running the tested image", below).
 
 ## Live deployment
 
@@ -236,8 +239,10 @@ In your EasyPanel project, **+ Service → Postgres**. Name it `db`, version 16.
 | Mounts | **Volume** named `data` mounted at `/data` (uploads and thumbnails live here). |
 | Deploy | Deploy. The health check waits for `/v1/readyz` (database reachable, migrations applied). |
 
-To run an image instead, build it (`docker build -t caime .`) and push it to a registry of
-your own; none is published.
+To run the tested image instead, pull `ghcr.io/h-khalid-h/caime:<sha>` (every green commit of
+`main` is published; `production` names the one production runs), or build it yourself
+(`docker build -t caime .`). The image says which commit it is: `/v1/healthz` answers
+`{"ok":true,"version":"<sha>"}`, and `unknown` for a build made without `CAIME_VERSION`.
 
 ### 3. Environment
 
@@ -503,6 +508,42 @@ redeploy automatically after that:
    name `EASYPANEL_DEPLOY_WEBHOOK`, value the URL.
 
 The CI job calls it only after the new image passed its smoke test.
+
+#### Running the tested image ⛔ the owner's switch
+
+What runs today is EasyPanel's own build of `production`: the same Dockerfile, but another
+builder at another moment, so not byte for byte the image CI tried. To run exactly what passed,
+in the `caime` service set **Source → Docker image** `ghcr.io/h-khalid-h/caime:production` (the
+repository is public, so the package is: no registry credential), keep the environment and the
+mount, and set `EASYPANEL_DEPLOY_WEBHOOK` as above, since nothing watches a registry tag: on a
+green run CI moves the `production` tag to the tested sha and then calls the webhook, and
+EasyPanel pulls it. Rolling back is pointing the service at the sha tag of the release before.
+Verify by `curl -fsS https://cai.me/v1/healthz`: `"version"` is the commit (a source build says
+`unknown`).
+
+#### Staging ⛔ the owner's service
+
+A second service, `caime-staging`, with its own database, volume and domain (say
+`staging.cai.me`; `PUBLIC_URL` to match, Stripe's test keys or none, mail and the connected
+accounts off), **Source → Docker image** `ghcr.io/h-khalid-h/caime:staging`. In GitHub set the
+secret `EASYPANEL_STAGING_DEPLOY_WEBHOOK` (its deploy webhook) and the repository variable
+`STAGING_URL` (`https://staging.cai.me`). From then on a green commit goes to staging first: CI
+moves the `staging` tag, calls its webhook and waits up to ten minutes for `/v1/healthz` there to
+answer as that commit and `/v1/readyz` with 200; only then do the `production` tag and the
+branch move. Staging that never comes up on the commit is a red run, and production stays.
+Without the secret and the variable the step is skipped and nothing changes.
+
+#### Migrations
+
+`pnpm migrations:lint` runs in CI against `production` (and in `pnpm check` against
+`origin/production` as fetched: `git fetch origin production` first). A release's new migrations
+must keep to CLAUDE.md's convention 7: a migration production has run is never changed; a
+contraction (a column or table dropped, renamed or retyped) names the commit, already in
+production, that stopped reading it (`-- contracts after <sha>`), so the old container never
+reads a column the new schema dropped; a backfill of a big table (messages, participants,
+notifications and the rest the script lists) is a procedure that updates a batch and commits it
+in a loop, called from a `-- no-transaction` file; an index on a big table is built
+`concurrently`, in a `-- no-transaction` file of its own, which holds one statement.
 
 ## Expo Go (the phone app, before store builds)
 
@@ -902,9 +943,13 @@ curl -s https://caime.example.com/sitemap.xml | head -5
 ## Checks after a deploy
 
 ```sh
-curl -fsS https://caime.example.com/v1/readyz         # {"ok":true}
+curl -fsS https://caime.example.com/v1/readyz         # {"ok":true,"version":"<commit>"}
+curl -fsS https://caime.example.com/v1/healthz        # the same; "unknown" for a source build
 curl -fsSI https://caime.example.com/ | grep -i content-security-policy
 ```
+
+The `version` is the commit CI tested when the service runs the published image; a build from
+source cannot say, so until the switch verify a page the release changed.
 
 Then sign up at the domain, and from a second browser connect and send a message: it should
 arrive without a reload.
@@ -918,3 +963,9 @@ The dead-letter: a job that failed its last attempt stays as `caime_jobs_dead` o
 when above 0 for an hour) and is listed by `GET /v1/admin/jobs` (kind, attempts, when, its last
 error; never its payload) with the operator's token; `POST /v1/admin/jobs/:id/retry` gives it its
 attempts back. Retention lets a dead job go after the same days as a done one.
+
+A message's effects (who is told, the push, the suggestions, the webhooks, the mail out) are an
+outbox: the `message.effects` sweep replays what an instance that died between the send and them
+never finished, within about five minutes. `caime_message_effects_total{outcome="replayed"}`
+counts those (a few after a restart is normal); `outcome="dropped"` rising means effects failed
+for a day running, and the log line `message effects given up on` names the message.

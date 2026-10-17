@@ -11,7 +11,11 @@ export async function healthRoutes(app: FastifyInstance, ctx: AppContext) {
   // The lists need no sign-in (sign-up uses them), so each address has a generous allowance.
   const lists = (req: FastifyRequest) =>
     ctx.limiter.hit(`lists:ip:${req.ip}`, ctx.config.isTest ? 10_000 : 120, 60_000);
-  app.get('/healthz', async (): Promise<HealthResponse> => ({ ok: true }));
+  // Up, and which build (A3): the commit CI tested, or `unknown` for a build made without it.
+  app.get(
+    '/healthz',
+    async (): Promise<HealthResponse> => ({ ok: true, version: ctx.config.version }),
+  );
   // Where this Caime's policies and help live: its own pages (pages.ts), or where its operator
   // published them. Never a domain of the code's own.
   app.get('/about', async (): Promise<AboutView> => ctx.config.aboutLinks);
@@ -57,15 +61,16 @@ export async function healthRoutes(app: FastifyInstance, ctx: AppContext) {
   // the listener dead while queries work; review 2026-10-17 §4 H1). The container's own check
   // is /healthz (liveness), so a blip here never restarts every instance at once.
   app.get('/readyz', async (req, reply): Promise<HealthResponse | FastifyReply> => {
+    const version = ctx.config.version;
     try {
       await sql`select 1`.execute(ctx.db);
     } catch {
-      return reply.status(503).send({ ok: false });
+      return reply.status(503).send({ ok: false, version });
     }
     if (!ctx.bus.healthy()) {
       req.log.warn({ reason: ctx.bus.lastError }, 'not ready: the bus is not listening');
-      return reply.status(503).send({ ok: false });
+      return reply.status(503).send({ ok: false, version });
     }
-    return { ok: true };
+    return { ok: true, version };
   });
 }

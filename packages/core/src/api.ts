@@ -2560,6 +2560,8 @@ export interface CheckoutSettledResponse {
 }
 export interface HealthResponse {
   ok: boolean;
+  /** The commit this build is (`CAIME_VERSION`), or `unknown` for a build made without it. */
+  version: string;
 }
 
 export interface UserResponse {

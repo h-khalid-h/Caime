@@ -88,6 +88,13 @@ over 50 megapixels; a job runs ten minutes at most and renews its lock every min
 task runs on one instance per interval, so a second worker adds no provider calls; a backup's copy
 off the host streams from disk. None of this costs a device anything.
 
+A message's effects are an outbox (A3): one more update per message (its due time cleared once
+the effects ran) and a partial index over what is due, a handful of rows at any time; the
+`message.effects` sweep reads that index once a minute, on one instance, and does nothing when it
+is empty; a replay costs what the send's effects would have. The migrations lint costs CI a few
+seconds; the published image a layer set in the registry per green commit (the layers are shared
+across commits); a staging service a second container and database, the owner's choice.
+
 ## What a change says
 
 A pull request states, under **Resources**, what the change costs on each of the three: queries

@@ -25,14 +25,15 @@ without re-deriving decisions.
 | `apps/server` | Fastify 5 API (`/v1`), WebSocket realtime, Postgres (Kysely + SQL migrations), jobs, push, files; serves the exported web app from `WEB_DIR`. A route module (`modules/*.ts`) holds routes and nothing another module imports: what two modules share lives in `lib/` (a conversation's view and membership in `lib/conversation-views.ts`, topics in `lib/topics.ts`, a space's conversations in `lib/space-conversations.ts`). |
 | `apps/app` | Expo SDK 57 universal app (Expo Router; routes in `src/app/`, screens in `src/features/`, primitives in `src/ui/`). iOS, Android and Web. |
 | `e2e/` | Playwright tests against the production bundle (`playwright.config.ts` at the root). |
-| `scripts/` | `bundle-budget.mjs` (the web JS budget), `i18n-keys.mjs` (missing, stale and bare strings), `web-fonts.mjs` (`pnpm fonts`), `precompress.mjs`, `geo.mjs`, `speech-bakeoff.mjs` and the rest of the build's helpers. |
+| `scripts/` | `bundle-budget.mjs` (the web JS budget), `migrations-lint.mjs` (what a release's migrations keep to, against `origin/production`), `i18n-keys.mjs` (missing, stale and bare strings), `web-fonts.mjs` (`pnpm fonts`), `precompress.mjs`, `geo.mjs`, `speech-bakeoff.mjs` and the rest of the build's helpers. |
 | `docs/` | PRD, product review, brand, competitive strategy, architecture, roadmap, goal, deploy, security, the developer guide for organizations' apps (`API.md`), the draft data processing agreement for the owner's lawyer (`DPA-DRAFT.md`, facts held to the code by `dpa-draft.test.ts`; never published as it is) and the legal review of it, the privacy policy and the terms (`LEGAL-REVIEW-2026-10.md`). |
 
 ## Commands
 
 ```sh
 pnpm install                 # once; hoisted node_modules (ADR-1)
-pnpm check                   # lint + typecheck + all tests: run before every commit
+pnpm check                   # lint + migrations lint + typecheck + all tests: run before every commit
+pnpm migrations:lint         # this release's migrations against origin/production (git fetch origin production first)
 pnpm test                    # all packages, app logic included (server tests need Postgres: TEST_DATABASE_URL,
                              #   default postgres://caishy:caishy-dev@127.0.0.1:5432/postgres)
 pnpm dev:server              # API on :8787 (DATABASE_URL; see apps/server/.env.example)
@@ -72,7 +73,14 @@ These are rules, not preferences.
    later release (drop or rename only once every instance runs code that no longer reads it).
    A migration runs in a transaction with no statement timeout and a 15 s `lock_timeout` (a
    held table fails the deploy fast while the old container serves); one that builds an index
-   `concurrently` starts with `-- no-transaction` and is written to run again (`if not exists`).
+   `concurrently` starts with `-- no-transaction`, holds that one statement (the runner sends
+   the file whole) and is written to run again (`if not exists`). `pnpm migrations:lint` (in
+   `check` and CI) holds a release to this against `origin/production`: a committed migration
+   changed or gone fails; a contraction (a column or table dropped, renamed or retyped) carries
+   `-- contracts after <sha>`, the commit already in production that stopped reading it; a
+   backfill of a big table (`BIG_TABLES` in the script) is a procedure that updates a batch and
+   commits it in a loop, called from a `-- no-transaction` file, never a bare `update` over the
+   table; an index on a big table is built `concurrently`.
 8. **Never assume gender or age.** Copy uses names, not pronouns; gender is never inferred (R27).
    A person may say it (R81: `users.gender`, null by default, its own privacy field), and then
    the words take its form where the language has one: what's said *to* them through `tr`
@@ -143,7 +151,20 @@ appointment from a catalog).
   `details.requestId` is the line to find in the log. A gauge a periodic task fills (the last
   backup, the audit check, the probes) is written to `server_settings` through `lib/settings.ts`
   and read back by `syncGauges` on every scrape, so an instance without workers reports it too.
-  A test that waits for something uses `until` from `test/helpers.ts`.
+  A test that waits for something uses `until` from `test/helpers.ts`. `/v1/healthz` and
+  `/v1/readyz` say `version`, the image's `CAIME_VERSION` (CI builds it with the sha it tests and
+  publishes it to `ghcr.io/h-khalid-h/caime:<sha>`; a build made without it says `unknown`): a
+  deploy is verified by what answers, never by a panel's status.
+- A message's effects are an outbox (A3): `sendMessage` writes `messages.effects_at` a grace
+  ahead (`EFFECTS_GRACE_MS`) unless `opts.effects === false` (a series' next time, a space's copy
+  of a card, a request card whose route tells its assignee itself); `afterMessage` clears it once
+  `effectsOf` is done; the `message.effects` sweep (`replayEffects`, a minute, in the background,
+  one instance) claims what's still due by moving its time on, reads the words again at the
+  message's own time and runs `afterMessage`, ten minutes on after a failure, let go after a day
+  (`caime_message_effects_total`, outcome `replayed`, `failed`, `dropped`). At least once, so
+  anything new in `effectsOf` is idempotent (a dedupe key, an `on conflict`), and a new path that
+  sends a message either runs `afterMessage` after its response or passes `effects: false`,
+  never neither.
 - Jobs (`lib/jobs.ts`): a job that fails its last attempt is dead (`dead_at`), out of the due
   index, counted on `caime_jobs_dead`, listed with its last error and never its payload at
   `GET /v1/admin/jobs`, and given its attempts back by `retryJob` (`POST …/retry`); never delete

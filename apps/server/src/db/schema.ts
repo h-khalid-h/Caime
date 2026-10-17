@@ -419,6 +419,11 @@ export interface MessagesTable {
   /** A meeting's or an appointment's start (`fields.start.at`), kept apart so a window over
    * cards is an index read, never a scan of every payload (review 2026-10-09 M21). */
   card_start_at: Date | null;
+  /**
+   * When the `message.effects` sweep may step in for the fast path (review 2026-10-17 §4, A3):
+   * set a grace ahead by the send, cleared once the effects are done, null where none are wanted.
+   */
+  effects_at: NullableTimestamp;
   search: ColumnType<string, never, never>;
   /** The words and what a card says of itself (title, reference, summary, booking), indexed. */
   search_all: ColumnType<string, never, never>;
@@ -1419,6 +1424,7 @@ export const MESSAGE_COLUMNS = [
   'pinned_at',
   'pinned_by',
   'card_start_at',
+  'effects_at',
 ] as const satisfies ReadonlyArray<Exclude<keyof MessagesTable, 'search' | 'search_all'>>;
 export type Message = Selectable<Omit<MessagesTable, 'search' | 'search_all'>>;
 export type Space = Selectable<SpacesTable>;

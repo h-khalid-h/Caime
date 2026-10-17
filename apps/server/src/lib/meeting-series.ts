@@ -180,7 +180,8 @@ async function nextJob(ctx: AppContext, payload: Record<string, unknown>): Promi
               : {}),
           },
         },
-        { occurrence: { series: { ...card.series, n: next.n }, agreed: true } },
+        // Nobody is told of a time the series posts itself (A3: the sweep leaves it be too).
+        { occurrence: { series: { ...card.series, n: next.n }, agreed: true }, effects: false },
       );
     } catch (err) {
       if (!(err instanceof AppError)) throw err;

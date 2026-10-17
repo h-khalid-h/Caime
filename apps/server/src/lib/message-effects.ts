@@ -21,14 +21,15 @@ import {
 import { sql } from 'kysely';
 import type { AppContext } from '../context';
 import type { Conversation, Message, Relationship } from '../db/schema';
+import { MESSAGE_COLUMNS } from '../db/schema';
 import { runAutomations } from './automations';
 import { eachLimit } from './batch';
 import { busyUntilFor } from './calendar';
 import { isGroupTopic } from './conversations';
 import { asReader } from './i18n';
-import { enqueue } from './jobs';
+import { enqueue, registerPeriodic } from './jobs';
 import { queueMailOut } from './mail-out';
-import { messagePreview } from './messages';
+import { analyseText, messagePreview } from './messages';
 import { notify } from './notify';
 import {
   activeConnectionIds,
@@ -61,7 +62,10 @@ export function afterMessage(
 ): Promise<void> {
   const key = message.conversation_id;
   const previous = inOrder.get(key) ?? Promise.resolve();
-  const run = previous.catch(() => undefined).then(() => effectsOf(ctx, message, read));
+  const run = previous
+    .catch(() => undefined)
+    .then(() => effectsOf(ctx, message, read))
+    .then(() => effectsDone(ctx, message));
   inOrder.set(key, run);
   run
     .finally(() => {
@@ -69,6 +73,96 @@ export function afterMessage(
     })
     .catch(() => undefined);
   return run;
+}
+
+/**
+ * The outbox (review 2026-10-17 §4, A3). The send wrote `effects_at` a grace ahead
+ * (`EFFECTS_GRACE_MS`, `lib/messages.ts`); the effects done, the row says so, and the sweep
+ * below has nothing to do. A failure leaves it, so the sweep tries again.
+ */
+async function effectsDone(ctx: AppContext, message: Message): Promise<void> {
+  if (!message.effects_at) return;
+  await ctx.db
+    .updateTable('messages')
+    .set({ effects_at: null })
+    .where('id', '=', message.id)
+    .execute();
+}
+
+/** How long a replay that failed waits before the next, and how many are taken at once. */
+export const EFFECTS_RETRY_MS = 10 * 60_000;
+export const EFFECTS_BATCH = 50;
+/** A message this old with its effects still due is let go: whoever it was for has moved on. */
+export const EFFECTS_GIVE_UP_MS = 24 * 3_600_000;
+
+/**
+ * What the fast path never finished (the instance died, or the effects failed): each message
+ * still due is claimed by moving its time on (so another instance's sweep passes it by), read
+ * again as its sender's words at the time it was sent, and run through `afterMessage` as the
+ * send would have. At least once, never at most: a crash between the effects and the mark can
+ * tell someone twice, and that is the price of never telling them.
+ */
+export async function replayEffects(ctx: AppContext): Promise<number> {
+  const now = ctx.now();
+  const due = await ctx.db
+    .updateTable('messages')
+    .set({ effects_at: new Date(now.getTime() + EFFECTS_RETRY_MS) })
+    .where('id', 'in', (qb) =>
+      qb
+        .selectFrom('messages')
+        .select('id')
+        .where('effects_at', 'is not', null)
+        .where('effects_at', '<=', now)
+        .orderBy('created_at')
+        .limit(EFFECTS_BATCH),
+    )
+    .returning(MESSAGE_COLUMNS)
+    .execute();
+  let replayed = 0;
+  for (const message of due.sort((a, b) => a.created_at.getTime() - b.created_at.getTime())) {
+    if (now.getTime() - message.created_at.getTime() > EFFECTS_GIVE_UP_MS) {
+      ctx.log.warn({ messageId: message.id }, 'message effects given up on after a day');
+      ctx.metrics.effects.inc({ outcome: 'dropped' });
+      await ctx.db
+        .updateTable('messages')
+        .set({ effects_at: null })
+        .where('id', '=', message.id)
+        .execute();
+      continue;
+    }
+    const sender = message.sender_id
+      ? await ctx.db
+          .selectFrom('users')
+          .select(['time_zone', 'locale', 'workweek', 'country'])
+          .where('id', '=', message.sender_id)
+          .executeTakeFirst()
+      : undefined;
+    // Its words as the rules read them when it was sent: the same dates, the same asks.
+    const { analysis } = sender
+      ? analyseText(message.body ?? '', sender, message.created_at)
+      : { analysis: null };
+    try {
+      await afterMessage(ctx, message, analysis);
+      ctx.metrics.effects.inc({ outcome: 'replayed' });
+      replayed++;
+    } catch (err) {
+      ctx.log.warn({ err, messageId: message.id }, 'message effects failed again');
+      ctx.metrics.effects.inc({ outcome: 'failed' });
+    }
+  }
+  return replayed;
+}
+
+/** The sweep: a minute's floor, in the background, one instance per interval (A2). */
+export function registerEffectsSweep(): void {
+  registerPeriodic({
+    name: 'message.effects',
+    everyMs: 60_000,
+    background: true,
+    run: async (ctx) => {
+      await replayEffects(ctx);
+    },
+  });
 }
 
 /** Cai's and the Caime Friends' answers (R67, `lib/system-accounts.ts` registers the job). */

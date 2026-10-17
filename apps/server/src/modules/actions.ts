@@ -360,7 +360,8 @@ export async function actionRoutes(app: FastifyInstance, ctx: AppContext) {
             me,
             body.conversationId,
             requestCard(task.id, task.title, task.due_at?.toISOString() ?? null),
-            { trusted: true },
+            // The route tells the assignee itself (below): no effects, none replayed (A3).
+            { trusted: true, effects: false },
           );
         } catch (err) {
           await ctx.db.deleteFrom('tasks').where('id', '=', task.id).execute();

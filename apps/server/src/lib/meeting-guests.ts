@@ -285,7 +285,10 @@ async function spaceFor(
       kind: 'kit',
       payload: { kit: 'meeting', fields: goesOn ? (p.fields ?? {}) : once },
     },
-    series && goesOn ? { occurrence: { series, agreed: false } } : {},
+    // The copy tells nobody (the space's people see the card); the effects sweep leaves it be.
+    series && goesOn
+      ? { occurrence: { series, agreed: false }, effects: false }
+      : { effects: false },
   );
   await ctx.db
     .updateTable('meeting_spaces')
