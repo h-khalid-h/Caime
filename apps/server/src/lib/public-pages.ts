@@ -52,6 +52,18 @@ import {
   renderMarketplace,
 } from './marketplace-pages';
 import { orgsOf } from './orgs';
+import {
+  avatar,
+  chips,
+  crumbs,
+  icon,
+  offerCard,
+  pageFoot,
+  SHEET_STYLE,
+  section,
+  topBar,
+  verifiedMark,
+} from './page-parts';
 import { FACE, px, THEME_VARS, type } from './page-style';
 import { orgPlacesFor } from './places';
 import {
@@ -470,6 +482,10 @@ function wordmark(height: number): string {
   return `<svg class="mark" role="img" aria-label="${esc(tr('Caime'))}" width="${width}" height="${height}" viewBox="${WORDMARK.viewBox}"><path class="mark-letters" d="${WORDMARK.letters}"/><path class="mark-heart" d="${HEART_PATH}" transform="${WORDMARK.heartTransform}"/></svg>`;
 }
 
+/** Cai's face (R67): the brand's heart, as the app's `Avatar` draws Cai. */
+const heartMark = (size: number) =>
+  `<span class="av av-face" aria-hidden="true" style="width:${size}px;height:${size}px"><svg width="${Math.round(size * 0.5)}" height="${Math.round(size * 0.5)}" viewBox="0 0 24 24"><path class="mark-heart" d="${HEART_PATH}"/></svg></span>`;
+
 /** A Caime Friend as the app's `Character` draws one (brand's own drawing), for the eye alone. */
 const friend = (name: Character, size: number, expression: Expression) =>
   `<span class="friend" aria-hidden="true">${characterSvg(name, { size, expression, accents: true, detail: size >= 48 })}</span>`;
@@ -759,25 +775,27 @@ export function renderPublic(
         }),
         body: `
 <main class="pub pub-sheet" ${langAttrs()}>
-  <header class="masthead"><a class="wordmark" href="/">${SITE_NAME}</a><span class="mono">${esc(p.system === 'assistant' ? tr('Caime’s assistant') : p.system === 'character' ? tr('Caime Friend') : tr('a person on {site}', { site: SITE_NAME }))}</span></header>
-  ${p.facts?.character ? friend(p.facts.character, 96, 'happy') : p.avatarUrl ? `<img class="face" src="${esc(p.avatarUrl)}" alt="" width="96" height="96">` : ''}
-  <h1>${esc(p.displayName)}</h1>
-  ${p.bio ? `<p class="lead">${esc(p.bio)}</p>` : ''}
-  ${
-    p.facts
-      ? `<p>${esc(p.facts.helps)}</p>
-  <h2 class="mono">${esc(tr('What {name} knows', { name: p.displayName }))}</h2>
-  <ul class="knows">${p.facts.knows.map((k) => `<li>${esc(k)}</li>`).join('')}</ul>`
-      : ''
-  }
-  <dl class="spec">
+  ${topBar(wayIn('sign-in', path), wordmark(22))}
+  <section class="hero">
+    ${p.facts?.character ? friend(p.facts.character, 96, 'happy') : p.system === 'assistant' ? heartMark(88) : avatar({ name: p.displayName, src: p.avatarUrl, size: 88, shape: 'face' })}
+    <h1>${esc(p.displayName)}</h1>
+    <p class="who"><bdi>@${esc(p.handle)}</bdi><span class="mono">${esc(p.system === 'assistant' ? tr('Caime’s assistant') : p.system === 'character' ? tr('Caime Friend') : tr('a person on {site}', { site: SITE_NAME }))}</span></p>
+    ${p.bio ? `<p class="lead">${esc(p.bio)}</p>` : ''}
+    ${p.facts ? `<p class="lead">${esc(p.facts.helps)}</p>` : ''}
+    <div class="actions">${bookLink(p.items, `/@${p.handle}`, p.displayName)}${payLink(page, `/@${p.handle}`, p.items.length > 0)}<a class="btn${p.items.length || p.pays.length ? ' quiet' : ''}" href="${wayIn('sign-up', path)}">${icon('message', 18)}${esc(tr('Message {name} on {site}', { name: p.displayName, site: SITE_NAME }))}</a></div>
+  </section>
+  ${p.facts ? section(tr('What {name} knows', { name: p.displayName }), `<ul class="knows">${p.facts.knows.map((k) => `<li>${esc(k)}</li>`).join('')}</ul>`) : ''}
+  ${offerSections(page)}
+  ${section(
+    sentence(tr('about')),
+    `<dl class="spec">
     <div>${label(tr('handle'))}<dd>@${esc(p.handle)}</dd></div>
     ${p.headline ? `<div>${label(tr('headline'))}<dd>${esc(p.headline)}</dd></div>` : ''}
     ${p.organizations.length ? `<div>${label(tr('with'))}<dd>${p.organizations.map((o) => `<a href="/o/${esc(o.handle)}">${esc(o.name)}</a>`).join(', ')}</dd></div>` : ''}
-    ${itemRows(page)}
     ${payRow(page)}
-  </dl>
-  <p class="cta">${bookLink(p.items, `/@${p.handle}`, p.displayName)}${payLink(page, `/@${p.handle}`, p.items.length > 0)}<a href="${wayIn('sign-up', path)}"${p.items.length || p.pays.length ? ' class="quiet"' : ''}>${esc(tr('Message {name} on {site}', { name: p.displayName, site: SITE_NAME }))}</a> <a href="${wayIn('sign-in', path)}" class="quiet">${esc(tr('Sign in'))}</a></p>
+  </dl>`,
+  )}
+  ${pageFoot(tr(PROMISE), wordmark(18))}
 </main>`,
       };
     }
@@ -817,11 +835,19 @@ export function renderPublic(
         }),
         body: `
 <main class="pub pub-sheet" ${langAttrs()}>
-  <header class="masthead"><a class="wordmark" href="/">${SITE_NAME}</a><span class="mono">${esc(tr('an organization on {site}', { site: SITE_NAME }))}</span></header>
-  ${o.avatarUrl ? `<img class="mark" src="${esc(o.avatarUrl)}" alt="" width="96" height="96">` : ''}
-  <h1>${esc(o.name)}</h1>
-  ${page.about ? `<p class="lead">${esc(page.about)}</p>` : ''}
-  <dl class="spec">
+  ${topBar(wayIn('sign-in', doorPath(o.handle)), wordmark(22))}
+  <section class="hero">
+    ${avatar({ name: o.name, src: o.avatarUrl, size: 88, shape: 'mark' })}
+    <h1>${esc(o.name)}</h1>
+    <p class="who"><bdi>@${esc(o.handle)}</bdi>${o.verified && o.verifiedDomain ? verifiedMark(o.verifiedDomain) : ''}<span class="mono">${esc(tr('an organization on {site}', { site: SITE_NAME }))}</span></p>
+    ${page.about ? `<p class="lead">${esc(page.about)}</p>` : ''}
+    <div class="actions">${bookLink(page.items, `/o/${o.handle}`, o.name)}${payLink(page, `/o/${o.handle}`, page.items.length > 0)}<a class="btn${page.items.length || page.pays.length ? ' quiet' : ''}" href="${wayIn('sign-up', doorPath(o.handle))}">${icon('message', 18)}${esc(tr('Message {name} on {site}', { name: o.name, site: SITE_NAME }))}</a></div>
+  </section>
+  ${offerSections(page)}
+  ${section(tr('Where'), page.places.length ? `<ul class="cards">${page.places.map(placeCard).join('')}</ul>` : '')}
+  ${section(
+    sentence(tr('about')),
+    `<dl class="spec">
     <div>${label(tr('handle'))}<dd>@${esc(o.handle)}</dd></div>
     <div>${label(tr('verified'))}<dd>${
       o.verified && o.verifiedDomain
@@ -830,11 +856,10 @@ export function renderPublic(
     }</dd></div>
     ${page.foundedYear ? `<div>${label(tr('since'))}<dd>${page.foundedYear}</dd></div>` : ''}
     ${page.website ? `<div>${label(tr('website'))}<dd><a href="${esc(page.website)}" rel="noopener">${esc(page.website.replace(/^https?:\/\//, ''))}</a></dd></div>` : ''}
-    ${page.places.map(placeRow).join('')}
-    ${itemRows(page)}
     ${payRow(page)}
-  </dl>
-  <p class="cta">${bookLink(page.items, `/o/${o.handle}`, o.name)}${payLink(page, `/o/${o.handle}`, page.items.length > 0)}<a href="${wayIn('sign-up', doorPath(o.handle))}"${page.items.length || page.pays.length ? ' class="quiet"' : ''}>${esc(tr('Message {name} on {site}', { name: o.name, site: SITE_NAME }))}</a> <a href="${wayIn('sign-in', doorPath(o.handle))}" class="quiet">${esc(tr('Sign in'))}</a></p>
+  </dl>`,
+  )}
+  ${pageFoot(tr(PROMISE), wordmark(18))}
 </main>`,
       };
     }
@@ -868,18 +893,22 @@ export function renderPublic(
           },
         }),
         body: `
-<main class="pub pub-sheet" ${langAttrs()}>
-  <header class="masthead"><a class="wordmark" href="/">${SITE_NAME}</a><span class="mono"><a href="${esc(hostPath(host))}">${esc(name)}</a>${shelf ? ` · <a href="${esc(shelfPath(host, shelf.slug))}">${esc(shelf.name)}</a>` : ''}</span></header>
-  ${photo ? `<img class="photo" src="${esc(photo)}" alt="${esc(item.name)}" width="320" height="320">` : ''}
-  <h1>${esc(item.name)}</h1>
-  ${item.description ? `<p class="lead">${esc(item.description)}</p>` : ''}
-  <dl class="spec">
-    <div>${label(tr('from'))}<dd><a href="${esc(hostPath(host))}">${esc(name)}</a></dd></div>
-    <div>${label(item.unit === 'each' ? tr('price') : tr('booking'))}<dd>${esc(itemLine(item))}</dd></div>
-    ${placeOf(host, item) ? placeRow(placeOf(host, item) as PlaceView) : ''}
-    ${optionRows(item)}
-  </dl>
-  <p class="cta">${bookLink([item], path, name, true)}<a href="${wayIn('sign-in', item.unit !== 'each' ? bookPath(path) : takeable(item) ? orderPath(path) : path)}" class="quiet">${esc(tr('Sign in'))}</a></p>
+<main class="pub pub-sheet pub-item" ${langAttrs()}>
+  ${topBar(wayIn('sign-in', item.unit !== 'each' ? bookPath(path) : takeable(item) ? orderPath(path) : path), wordmark(22))}
+  ${crumbs([{ name, href: hostPath(host) }, ...(shelf ? [{ name: shelf.name, href: shelfPath(host, shelf.slug) }] : [])])}
+  <div class="item-layout">
+    <div class="item-main">
+      ${photo ? `<img class="photo" src="${esc(photo)}" alt="${esc(item.name)}" width="960" height="720">` : `<div class="cover">${icon(item.unit === 'each' ? 'box' : 'calendar', 44)}</div>`}
+      <h1>${esc(item.name)}</h1>
+      ${chips(itemChips(host, item))}
+      ${item.description ? `<p class="lead">${esc(item.description)}</p>` : ''}
+      ${item.options?.length ? `<dl class="spec">${optionRows(item)}</dl>` : ''}
+      ${section(sentence(tr('from')), hostCard(host))}
+      ${section(tr('More from {name}', { name }), moreCards(host, item))}
+    </div>
+    ${actionBar(host, item, path)}
+  </div>
+  ${pageFoot(tr(PROMISE), wordmark(18))}
 </main>`,
       };
     }
@@ -918,14 +947,16 @@ export function renderPublic(
         }),
         body: `
 <main class="pub pub-sheet" ${langAttrs()}>
-  <header class="masthead"><a class="wordmark" href="/">${SITE_NAME}</a><span class="mono"><a href="${esc(hostPath(host))}">${esc(name)}</a></span></header>
-  <h1>${esc(collection.name)}</h1>
-  ${collection.description ? `<p class="lead">${esc(collection.description)}</p>` : ''}
-  <dl class="spec">
-    <div>${label(tr('from'))}<dd><a href="${esc(hostPath(host))}">${esc(name)}</a></dd></div>
-    ${itemRows({ ...host, collections: [] }, items)}
-  </dl>
-  <p class="cta">${bookLink(items, hostPath(host), name)}</p>
+  ${topBar(wayIn('sign-in', hostPath(host)), wordmark(22))}
+  ${crumbs([{ name, href: hostPath(host) }])}
+  <section class="hero">
+    <h1>${esc(collection.name)}</h1>
+    <p class="who">${hostFace(host, 28)}<a href="${esc(hostPath(host))}">${esc(name)}</a></p>
+    ${collection.description ? `<p class="lead">${esc(collection.description)}</p>` : ''}
+    <div class="actions">${bookLink(items, hostPath(host), name)}</div>
+  </section>
+  ${offerSections({ ...host, collections: [] }, items)}
+  ${pageFoot(tr(PROMISE), wordmark(18))}
 </main>`,
       };
     }
@@ -961,17 +992,25 @@ export function renderPublic(
         }),
         body: `
 <main class="pub pub-sheet" ${langAttrs()}>
-  <header class="masthead"><a class="wordmark" href="/">${SITE_NAME}</a><span class="mono">${esc(tr('an invitation'))}</span></header>
-  ${page.avatarUrl ? `<img class="face" src="${esc(page.avatarUrl)}" alt="" width="96" height="96">` : ''}
-  <h1>${esc(tr('{name} invited you', { name: page.displayName }))}</h1>
-  ${page.note ? `<p class="lead">“${esc(page.note)}”</p>` : ''}
-  <dl class="spec">
+  ${topBar(wayIn('sign-in', path), wordmark(22))}
+  <section class="hero hero-center">
+    ${avatar({ name: page.displayName, src: page.avatarUrl, size: 96, shape: 'face' })}
+    <p class="kicker"><span class="mono">${esc(tr('an invitation'))}</span></p>
+    <h1>${esc(tr('{name} invited you', { name: page.displayName }))}</h1>
+    ${page.note ? `<p class="quote">“${esc(page.note)}”</p>` : ''}
+    ${page.context ? chips([{ icon: 'layers', text: page.context }]) : ''}
+    <div class="actions"><a class="btn" href="${wayIn('sign-up', path)}">${esc(tr('Join {name} on {site}', { name: page.displayName, site: SITE_NAME }))}</a><a class="btn quiet" href="${wayIn('sign-in', path)}">${esc(tr('Sign in'))}</a></div>
+  </section>
+  ${section(
+    sentence(tr('about')),
+    `<dl class="spec">
     <div>${label(tr('from'))}<dd>${esc(page.displayName)}</dd></div>
     ${page.context ? `<div>${label(tr('about'))}<dd>${esc(page.context)}</dd></div>` : ''}
     <div>${label(tr('to join'))}<dd>${esc(tr('Sign up in half a minute and you’re connected with {name}, no app to install.', { name: page.displayName }))}</dd></div>
     <div>${label(SITE_NAME)}<dd>${esc(tr(PROMISE))}</dd></div>
-  </dl>
-  <p class="cta"><a href="${wayIn('sign-up', path)}">${esc(tr('Join {name} on {site}', { name: page.displayName, site: SITE_NAME }))}</a> <a href="${wayIn('sign-in', path)}" class="quiet">${esc(tr('Sign in'))}</a></p>
+  </dl>`,
+  )}
+  ${pageFoot(tr(PROMISE), wordmark(18))}
 </main>`,
       };
     case 'missing':
@@ -987,10 +1026,15 @@ export function renderPublic(
         }),
         body: `
 <main class="pub pub-sheet" ${langAttrs()}>
-  <header class="masthead"><a class="wordmark" href="/">${SITE_NAME}</a><span class="mono">${esc(tr('not here'))}</span></header>
-  <h1>${esc(tr('Nobody by that handle'))}</h1>
-  <p class="lead">${esc(tr('It may have changed, or been let go of.'))}</p>
-  <p class="cta"><a href="/">${esc(tr('Open {site}', { site: SITE_NAME }))}</a></p>
+  ${topBar('/sign-in', wordmark(22))}
+  <section class="gone">
+    ${friend('pico', 112, 'curious')}
+    <p class="kicker"><span class="mono">${esc(tr('not here'))}</span></p>
+    <h1>${esc(tr('Nobody by that handle'))}</h1>
+    <p class="lead">${esc(tr('It may have changed, or been let go of.'))}</p>
+    <div class="actions" style="justify-content:center"><a class="btn" href="/">${esc(tr('Open {site}', { site: SITE_NAME }))}</a></div>
+  </section>
+  ${pageFoot(tr(PROMISE), wordmark(18))}
 </main>`,
       };
     default:
@@ -1039,7 +1083,7 @@ function payRow(host: PublicPerson | PublicOrg): string {
 /** Pay, after Book and Order, where anyone may pay the host. */
 function payLink(host: PublicPerson | PublicOrg, pagePath: string, quiet: boolean): string {
   if (!host.pays.length) return '';
-  return `<a href="${wayIn('sign-up', payPath(pagePath))}"${quiet ? ' class="quiet"' : ''}>${esc(tr('Pay {name}', { name: hostName(host) }))}</a> `;
+  return `<a class="btn${quiet ? ' quiet' : ''}" href="${wayIn('sign-up', payPath(pagePath))}">${icon('card', 18)}${esc(tr('Pay {name}', { name: hostName(host) }))}</a>`;
 }
 
 /** "45 min · EGP 200", "EGP 40 · 2 left": what an item is, in a line (R58, R60). */
@@ -1105,17 +1149,6 @@ const hostName = (host: PublicPerson | PublicOrg) =>
 export const shelfPath = (host: PublicPerson | PublicOrg, slug: string) =>
   `${hostPath(host)}/${encodeURIComponent(slug)}`;
 
-/** A place on a page (R92): its name, its address in the reader's language, and a map link. */
-function placeRow(p: PlaceView): string {
-  const name = p.label ?? tr(PLACE_KIND_LABELS[p.kind]);
-  const line = placeLine(p, (code) => countryNameIn(code, currentTranslator().language));
-  const map = p.point
-    ? ` <a href="${esc(mapsUrl(p.point))}" rel="noopener nofollow">${esc(tr('Map'))}</a>`
-    : '';
-  const directions = p.directions ? `<br><span class="quiet">${esc(p.directions)}</span>` : '';
-  return `<div>${label(name)}<dd>${esc(line)}${map}${directions}</dd></div>`;
-}
-
 /** A place in an organization's JSON-LD: a schema.org Place with its postal address. */
 function placeLd(p: PlaceView) {
   const street = [p.unit, p.floor, p.building, p.street].filter(Boolean).join(', ');
@@ -1137,25 +1170,117 @@ function placeLd(p: PlaceView) {
 }
 
 /**
- * The public items as spec rows (R58), each a link to its own page (R61), in the host's order:
- * each public collection under its own name, which opens its page, then what's in none.
+ * The public offers as cards (R58, R95), each to its own page (R61), in the host's order: each
+ * public collection under its own name, which opens its page, then what's in none.
  */
-function itemRows(host: PublicPerson | PublicOrg, items: PublicItem[] = host.items): string {
+function offerSections(host: PublicPerson | PublicOrg, items: PublicItem[] = host.items): string {
   if (items.length === 0) return '';
-  const lines = (shown: PublicItem[]) =>
-    shown
-      .map(
-        (i) =>
-          `<a href="${esc(shelfPath(host, i.slug))}">${esc(i.name)}</a> <span class="small">${esc(itemLine(i, placeOf(host, i)))}</span>`,
-      )
-      .join('<br>');
+  const cards = (shown: PublicItem[]) =>
+    `<ul class="cards">${shown.map((i) => cardOf(host, i)).join('')}</ul>`;
   return grouped(items, host.collections)
     .map((g) =>
       g.collection
-        ? `<div><dt class="mono"><a href="${esc(shelfPath(host, g.collection.slug))}">${esc(g.collection.name)}</a></dt><dd>${lines(g.items)}</dd></div>`
-        : `<div>${label(tr('offers'))}<dd>${lines(g.items)}</dd></div>`,
+        ? section(g.collection.name, cards(g.items), shelfPath(host, g.collection.slug))
+        : section(sentence(tr('offers')), cards(g.items)),
     )
     .join('');
+}
+
+/** One offer as a card, to its own page. */
+function cardOf(host: PublicPerson | PublicOrg, i: PublicItem): string {
+  return offerCard({
+    href: shelfPath(host, i.slug),
+    name: i.name,
+    line: itemLine(i, placeOf(host, i)),
+    photo: photoOf(host, i),
+    each: i.unit === 'each',
+    out: !takeable(i),
+  });
+}
+
+/** The host's face or logo, small, beside its name. */
+function hostFace(host: PublicPerson | PublicOrg, size: number): string {
+  return host.kind === 'org'
+    ? avatar({ name: host.org.name, src: host.org.avatarUrl, size, shape: 'mark' })
+    : avatar({ name: host.displayName, src: host.avatarUrl, size, shape: 'face' });
+}
+
+/** Who offers it, as a card to their page: face or logo, name, verified, handle. */
+function hostCard(host: PublicPerson | PublicOrg): string {
+  const handle = host.kind === 'org' ? host.org.handle : host.handle;
+  const verified =
+    host.kind === 'org' && host.org.verified ? verifiedMark(host.org.verifiedDomain ?? null) : '';
+  return `<a class="card" href="${esc(hostPath(host))}">${hostFace(host, 48)}<span class="card-body"><span class="card-title">${esc(hostName(host))}</span><span class="card-line"><bdi>@${esc(handle)}</bdi></span></span>${verified}${icon('chevron', 18, 'chev')}</a>`;
+}
+
+/** The host's other offers, up to four, as cards. */
+function moreCards(host: PublicPerson | PublicOrg, item: PublicItem): string {
+  const others = host.items.filter((i) => i.id !== item.id).slice(0, 4);
+  return others.length
+    ? `<ul class="cards">${others.map((i) => cardOf(host, i)).join('')}</ul>`
+    : '';
+}
+
+/** What an item is, as chips: how long, what it costs, where, what's left. */
+function itemChips(host: PublicPerson | PublicOrg, i: PublicItem) {
+  const at = placeOf(host, i);
+  return [
+    i.unit === 'minutes' && i.minutes
+      ? { icon: 'clock' as const, text: tr('{m} min', { m: i.minutes }) }
+      : i.unit === 'days'
+        ? { icon: 'clock' as const, text: tr('per day') }
+        : null,
+    {
+      icon: 'tag' as const,
+      text: i.price
+        ? formatAmount(i.price.value, i.price.currency, currentTranslator().language)
+        : tr('Free'),
+    },
+    at ? { icon: 'pin' as const, text: at.label ?? tr(PLACE_KIND_LABELS[at.kind]) } : null,
+    stockLine(i.stock) ? { icon: 'box' as const, text: stockLine(i.stock) ?? '' } : null,
+  ];
+}
+
+/**
+ * The item's way in (R95): what it costs and how long, and Book or Order, in reach of a thumb at
+ * the bottom of a phone and beside the page on a desktop; what happens next said under it.
+ */
+function actionBar(host: PublicPerson | PublicOrg, item: PublicItem, path: string): string {
+  const name = hostName(host);
+  const each = item.unit === 'each';
+  const price = item.price
+    ? formatAmount(item.price.value, item.price.currency, currentTranslator().language)
+    : tr('Free');
+  const length =
+    item.unit === 'minutes' && item.minutes
+      ? tr('{m} min', { m: item.minutes })
+      : item.unit === 'days'
+        ? tr('per day')
+        : (stockLine(item.stock) ?? '');
+  const button = takeable(item)
+    ? bookLink([item], path, name, true)
+    : `<span class="btn quiet" aria-disabled="true">${esc(tr('Sold out'))}</span>`;
+  const how = each
+    ? tr('You order from {name} in a conversation. Joining {site} is free.', {
+        name,
+        site: SITE_NAME,
+      })
+    : tr('You pick a time with {name} in a conversation. Joining {site} is free.', {
+        name,
+        site: SITE_NAME,
+      });
+  return `<aside class="actionbar" aria-label="${esc(each ? tr('Order') : tr('Book'))}"><div class="sum"><strong>${esc(price)}</strong>${length ? `<span>${esc(length)}</span>` : ''}</div>${button}<p class="how">${esc(how)}</p></aside>`;
+}
+
+/** A place on a page (R92, R95) as a card: its name, its address in the reader's language, a map. */
+function placeCard(p: PlaceView): string {
+  const name = p.label ?? tr(PLACE_KIND_LABELS[p.kind]);
+  const line = placeLine(p, (code) => countryNameIn(code, currentTranslator().language));
+  const map = p.point
+    ? `<a class="btn quiet" href="${esc(mapsUrl(p.point))}" rel="noopener nofollow">${esc(tr('Map'))}</a>`
+    : '';
+  const directions = p.directions ? `<span class="card-line">${esc(p.directions)}</span>` : '';
+  return `<li><div class="card"><span class="thumb thumb-icon">${icon('pin', 22)}</span><span class="card-body"><span class="card-title">${esc(name)}</span><span class="card-line">${esc(line)}</span>${directions}</span>${map}</div></li>`;
 }
 
 /** What an item is to an answer engine (R61): a product sold or a service booked, its offer. */
@@ -1215,16 +1340,16 @@ function bookLink(all: PublicItem[], pagePath: string, name: string, own = false
   if (own && items.length === 1) {
     const verb = items[0]?.unit === 'each' ? tr('Order') : tr('Book');
     const to = items[0]?.unit === 'each' ? orderPath(pagePath) : bookPath(pagePath);
-    return `<a href="${wayIn('sign-up', to)}">${esc(verb)}</a> `;
+    return `<a class="btn" href="${wayIn('sign-up', to)}">${esc(verb)}</a>`;
   }
   const out: string[] = [];
   if (items.some((i) => i.unit !== 'each'))
     out.push(
-      `<a href="${wayIn('sign-up', bookPath(pagePath))}">${esc(tr('Book {name}', { name }))}</a> `,
+      `<a class="btn" href="${wayIn('sign-up', bookPath(pagePath))}">${icon('calendar', 18)}${esc(tr('Book {name}', { name }))}</a>`,
     );
   if (items.some((i) => i.unit === 'each'))
     out.push(
-      `<a href="${wayIn('sign-up', orderPath(pagePath))}"${out.length ? ' class="quiet"' : ''}>${esc(tr('Order from {name}', { name }))}</a> `,
+      `<a class="btn${out.length ? ' quiet' : ''}" href="${wayIn('sign-up', orderPath(pagePath))}">${icon('box', 18)}${esc(tr('Order from {name}', { name }))}</a>`,
     );
   return out.join('');
 }
@@ -1344,6 +1469,7 @@ ${explorerStyle()}
 .pub-market .shots{display:flex;gap:12px;overflow-x:auto;margin:18px 0 8px;padding-bottom:6px;scroll-snap-type:x mandatory}
 .pub-market .shots img{flex:none;width:min(560px,86%);height:auto;aspect-ratio:8/5;object-fit:cover;border-radius:${px.radius('lg')};border:1px solid var(--border);background:var(--surface-muted);scroll-snap-align:start}
 @media (min-width:720px){.pub-market .apps{grid-template-columns:1fr 1fr}}
+${SHEET_STYLE}
 </style>`;
 
 /** The shell with a page's head and body in it. Tolerant of a template without the markers. */

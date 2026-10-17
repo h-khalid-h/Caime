@@ -1398,4 +1398,11 @@ export const arServer: Catalog = {
   'That mail': 'ذلك البريد',
   'Someone reached by email is written to by email.':
     'من يُتواصل معه بالبريد تُكتب له رسالة بالبريد.',
+  'You are here': 'موقعك في الصفحة',
+  'Make your own page on {site}': 'صفحة خاصة بك على {site}',
+  'More from {name}': 'المزيد من {name}',
+  'You order from {name} in a conversation. Joining {site} is free.':
+    'الطلب من {name} في محادثة، والانضمام إلى {site} مجاني.',
+  'You pick a time with {name} in a conversation. Joining {site} is free.':
+    'اختيار الموعد مع {name} في محادثة، والانضمام إلى {site} مجاني.',
 };

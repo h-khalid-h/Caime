@@ -716,7 +716,7 @@ describe('your data', () => {
     const studio = (
       await rana.post('/v1/orgs', {
         name: 'Rana Studio',
-        handle: `studio.${uuidv4().slice(0, 6)}`,
+        handle: `dana.studio.${uuidv4().slice(0, 6)}`,
         kind: 'shop',
         country: 'EG',
       })
@@ -769,7 +769,7 @@ describe('your data', () => {
     const shop = (
       await karim.post('/v1/orgs', {
         name: 'Karim’s Shop',
-        handle: `shop.${uuidv4().slice(0, 6)}`,
+        handle: `rana.shop.${uuidv4().slice(0, 6)}`,
         kind: 'shop',
         country: 'EG',
       })

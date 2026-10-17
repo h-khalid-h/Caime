@@ -519,7 +519,7 @@ describe('Discover and Connected (R74)', () => {
     const studio = (
       await dev.post('/v1/orgs', {
         name: 'Dana Studio',
-        handle: `studio.${uuidv4().slice(0, 6)}`,
+        handle: `dana.studio.${uuidv4().slice(0, 6)}`,
         kind: 'shop',
         country: 'EG',
       })
@@ -527,7 +527,7 @@ describe('Discover and Connected (R74)', () => {
     const theirs = (
       await noor.post('/v1/orgs', {
         name: 'Noor Clinic',
-        handle: `clinic.${uuidv4().slice(0, 6)}`,
+        handle: `noor.clinic.${uuidv4().slice(0, 6)}`,
         kind: 'clinic',
         country: 'LB',
       })
@@ -540,7 +540,7 @@ describe('Discover and Connected (R74)', () => {
     expect((await directory(noor)).apps[FIRST_LISTED]?.publisher).toEqual({
       kind: 'org',
       name: 'Dana Studio',
-      handle: expect.stringMatching(/^studio\./),
+      handle: expect.stringMatching(/^dana\.studio\./),
       verified: false,
     });
     // Its owner and admins see what's published under it, whatever state each listing is in.

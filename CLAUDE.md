@@ -656,6 +656,11 @@ These are rules, not preferences.
   twin and in the app and fails on any that moved, so a change to an entry screen changes its
   twin. Signed in, these paths serve the bare app (they only send the person on).
   Measure with Lighthouse's mobile preset against the local production bundle (docs/RESOURCES.md).
+- A visitor's page (a person, an organization, an item, a collection, an invite, the 404; R95)
+  is built of `lib/page-parts.ts` (`topBar`, `avatar` with initials, `verifiedMark`, `chips`,
+  `offerCard`, `section`, `crumbs`, `pageFoot`, `icon` from lucide's paths, `SHEET_STYLE`):
+  a new visitor page uses those parts, never markup of its own, and an item's way in is
+  `actionBar` (price, Book or Order, what happens next). Handles in running text sit in `<bdi>`.
 - The public pages (`lib/public-pages.ts`; the invite and the 404 too) are Caime's own: sentence case, quiet labels
   (`.mono`, Inter semibold since R69, no monospace), spec-sheet rows (`.spec`) and the landing
   page's layer explorer (`LAYERS`: radio inputs and CSS, no script, so a visitor's page stays a

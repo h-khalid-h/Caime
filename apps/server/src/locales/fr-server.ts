@@ -1396,4 +1396,11 @@ export const frServer: Catalog = {
   'That mail': 'Cet e-mail',
   'Someone reached by email is written to by email.':
     'À une personne jointe par e-mail, on écrit par e-mail.',
+  'You are here': 'Vous êtes ici',
+  'Make your own page on {site}': 'Créez votre page sur {site}',
+  'More from {name}': 'Aussi chez {name}',
+  'You order from {name} in a conversation. Joining {site} is free.':
+    'Vous commandez auprès de {name} dans une conversation. Rejoindre {site} est gratuit.',
+  'You pick a time with {name} in a conversation. Joining {site} is free.':
+    'Vous choisissez un moment avec {name} dans une conversation. Rejoindre {site} est gratuit.',
 };

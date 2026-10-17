@@ -1863,3 +1863,16 @@ with its reason, so it isn't proposed again without new facts.
   let go of instead of redirecting aliases, which would have to remember whose it was (R35).
   Gender is asked at sign-up, never required, never read by the engine (owner's answer).
 
+- **R95 (2026-10-15) The pages a visitor lands on are designed, not printed.** The owner's report
+  (the Discovery Call page on a phone: a title, two spec rows, two buttons, and half a screen of
+  nothing) is right: a visitor decides from that page whether to trust and book, and it read as
+  a data sheet. Every page someone reaches by a link (a person, an organization, an item, a
+  collection, an invite, the 404) is now built of one set of parts on the app's tokens: who
+  it is at the top with their face or logo (initials, never a blank; the heart for Cai) and
+  the verified mark; what they offer as cards with photos; where, with a map; the facts kept
+  as the spec sheet below; and on an item, its price and Book or Order always in reach, with
+  what happens next said in one line ("you pick a time with them in a conversation; joining is
+  free"). Still no script on these pages, still only what the privacy evaluator shows anyone.
+  Not done yet: the landing page, the site and the marketplace move onto the same parts next;
+  open times on an item's page are for an organization only, since a person's would show
+  their week to anyone.

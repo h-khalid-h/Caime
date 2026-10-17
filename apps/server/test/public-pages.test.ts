@@ -393,8 +393,12 @@ describe('the readable web (R44)', () => {
     });
     const org = await visit('/o/nile.dental');
     expect(org.body).toContain('>Book Nile Dental</a>');
+    // Each offer a card to its own page (R95), with what it is in a line.
     expect(org.body).toContain(
-      '<a href="/o/nile.dental/cleaning">Cleaning</a> <span class="small">45 min · EGP',
+      '<a class="card" href="/o/nile.dental/cleaning"><span class="thumb thumb-icon">',
+    );
+    expect(org.body).toContain(
+      '<span class="card-title">Cleaning</span><span class="card-line">45 min · EGP',
     );
     expect(org.body).not.toContain('Consultation');
     expect(org.body).toContain('%2Fo%2Fnile.dental%3Fbook');
@@ -407,8 +411,9 @@ describe('the readable web (R44)', () => {
     });
     const person = await visit('/@noor');
     expect(person.body).toContain('>Book Noor Haddad</a>');
+    expect(person.body).toContain('<a class="card" href="/@noor/a-quick-chat">');
     expect(person.body).toContain(
-      '<a href="/@noor/a-quick-chat">A quick chat</a> <span class="small">30 min · Free</span>',
+      '<span class="card-title">A quick chat</span><span class="card-line">30 min · Free</span>',
     );
     expect(person.body).not.toContain('Arabic lesson');
     // Without hours there's nothing to book, whatever the catalog says.
@@ -497,11 +502,29 @@ describe('the readable web (R44)', () => {
     expect(page.body).toContain('<meta name="caime-page" content="item">');
     // A visitor gets the page, not the app.
     expect(page.body).not.toMatch(/<script\b[^>]*\bsrc=/);
+    // Designed for whoever lands on it (R95): what it costs and Book in one bar, in reach of a
+    // thumb, what happens next under it; who offers it as a card (initials without a logo); the
+    // host's other offers; a way in at the top and Caime's foot at the end.
+    const bar = page.body.slice(page.body.indexOf('<aside class="actionbar"'));
+    expect(bar).toMatch(
+      /^<aside class="actionbar" aria-label="Book"><div class="sum"><strong>EGP\s?1,500/,
+    );
+    expect(bar).toContain('<span>60 min</span>');
+    expect(bar).toContain(
+      'You pick a time with Nile Dental in a conversation. Joining Caime is free.',
+    );
+    expect(page.body).toContain('<span class="av av-mark av-letters" aria-hidden="true"');
+    expect(page.body).toContain('>ND</span>');
+    expect(page.body).toContain('<h2 class="overline">More from Nile Dental</h2>');
+    expect(page.body).toContain('<a class="topbar-in" href="/sign-in?link=');
+    expect(page.body).toContain('<footer class="pagefoot">');
+    expect(page.body).toContain('<ul class="chips">');
 
     const shelf = await visit('/o/nile.dental/care-at-home');
     expect(shelf.body).toContain('<h1>Care at home</h1>');
     expect(shelf.body).toContain('"@type":"OfferCatalog"');
-    expect(shelf.body).toContain('<a href="/o/nile.dental/soft-toothbrush">Soft toothbrush</a>');
+    expect(shelf.body).toContain('<a class="card" href="/o/nile.dental/soft-toothbrush">');
+    expect(shelf.body).toContain('<span class="card-title">Soft toothbrush</span>');
     expect(shelf.body).toContain('>Order from Nile Dental</a>');
     const product = await visit('/o/nile.dental/soft-toothbrush');
     expect(product.body).toContain('"@type":"Product"');
@@ -513,10 +536,10 @@ describe('the readable web (R44)', () => {
     expect(org.body).toContain('<a href="/o/nile.dental/care-at-home">Care at home</a>');
     // In the host's order: the shelf under its own name with what's on it, then the rest.
     const care = org.body.indexOf(
-      '<dt class="mono"><a href="/o/nile.dental/care-at-home">Care at home</a></dt><dd><a href="/o/nile.dental/soft-toothbrush">',
+      '<h2 class="overline"><a href="/o/nile.dental/care-at-home">Care at home</a></h2><ul class="cards"><li><a class="card" href="/o/nile.dental/soft-toothbrush">',
     );
     expect(care).toBeGreaterThan(-1);
-    expect(org.body.indexOf('<dt class="mono">Offers</dt>', care)).toBeGreaterThan(care);
+    expect(org.body.indexOf('<h2 class="overline">Offers</h2>', care)).toBeGreaterThan(care);
     expect(org.body).not.toContain('Staff floss');
     expect(org.body).not.toContain('For the team');
     // What isn't public is no page: under an organization it's the app's, never a crawler's.

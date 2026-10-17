@@ -1335,4 +1335,11 @@ export const turkishServer: Catalog = {
   'That mail': 'Bu e-posta',
   'Someone reached by email is written to by email.':
     'E-postayla ulaşılan birine e-postayla yazılır.',
+  'You are here': 'Buradasınız',
+  'Make your own page on {site}': '{site} üzerinde kendi sayfanızı oluşturun',
+  'More from {name}': '{name} ile ilgili diğerleri',
+  'You order from {name} in a conversation. Joining {site} is free.':
+    '{name} ile bir sohbette sipariş verirsiniz. {site} üyeliği ücretsizdir.',
+  'You pick a time with {name} in a conversation. Joining {site} is free.':
+    '{name} ile bir sohbette zaman seçersiniz. {site} üyeliği ücretsizdir.',
 };

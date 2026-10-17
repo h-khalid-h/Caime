@@ -1736,7 +1736,20 @@ discovers, and mail at their own address.
       Latin spelling asked for a name in another script, numbers in order instead of at random,
       gender asked at sign-up and never required (its twin too). Verified with core
       `handle-engine.test.ts`, `rules.test.ts`, server `handle-engine.test.ts` and
-      `e2e/entry-twins.spec.ts`. Not yet: a test racing two claims, more scripts' names.
+      `e2e/entry-twins.spec.ts`; two sign-ups racing for one handle get one account and one
+      `handle_taken` (`claimLost`). Not yet: more scripts' names.
+- [x] R95 the pages a visitor lands on, designed (owner's request 2026-10-15): a person, an
+      organization, an item, a collection, an invite and the 404 are built of one set of parts
+      (`lib/page-parts.ts`): a top bar with Sign in, a header with the face or logo (initials when
+      there's none, the heart for Cai), the verified mark, the actions, offers as cards with their
+      photo or icon, places as cards with a map, the facts as a spec sheet, and Caime's foot. An
+      item's page has a cover, fact chips, who offers it as a card, more from them, and a bar with
+      its price and Book or Order in reach of a thumb (a side card on a desktop) saying what
+      happens next. Tokens only, no script, logical sides, every language. Verified with
+      `public-pages.test.ts`, `invites.test.ts`, `e2e/a11y.spec.ts` and screenshots at 390 and
+      1280 px in English and Arabic. Next: the landing page, the site and the marketplace on the
+      same parts; an item's next open times on its page (for an organization; a person's would
+      show their week to anyone, which needs the owner's word).
 - [ ] R75 phase 2: reply-all with CC, sending as the address from Gmail and Outlook through
       Caime's submission.
 - [ ] R75 phase 3: sign in with Google, Apple and Microsoft (claiming in one tap); Google
@@ -3421,6 +3434,9 @@ The six-slice review's plan, in its order; a block is ticked when its tests and 
 - 2026-10-15 — R75: "View as sent" opens a mail's own HTML in a sandbox (nothing runs or loads).
 - 2026-10-15 — R75: mail says Seen when they reply or open it in Caime and "Opened, probably"
   by the provider's pixel (disclosed, off by a switch); signatures fold, Gmail's asterisks go.
+- 2026-10-15 — R95: the pages a visitor lands on (a person, an organization, an item, a
+  collection, an invite, the 404) designed: a header with face or logo, offers as cards, a
+  bar with the price and Book in reach of a thumb, Caime's foot.
 - 2026-10-15 — R94: handles by one engine (ranked candidates, generic words kept, lookalikes
   refused); gender asked at sign-up, never required; mail from before folded and marked seen.
 - 2026-10-15 — R92: branches have their own people and per-day hours; customers choose a branch;
