@@ -1914,3 +1914,28 @@ with its reason, so it isn't proposed again without new facts.
   5), and a calendar connected before reads its main calendar alone and writes nothing until it
   is connected again (its row offers both); Google verifies the new sensitive scope with the
   rest.
+- **R97 (2026-10-17) The whole product challenged, and what it decided (docs/REVIEW-2026-10-17.md).**
+  The owner asked that Caime be challenged as a product, so that someone using it in full needs
+  no Workspace, Microsoft 365, Slack, WhatsApp or Signal. The review's decisions, which refine the
+  PRD: (1) *A customer books, orders or messages before they have an account.* Public slots on
+  the page; a booking by name and email or phone, confirmed by a code, as a provisional person
+  claimed later (the meeting guests' mechanism); three fields on a link arrival. Sign-up stays
+  the way to keep things, never the way in. (2) *Age is a level, not a date.* `self_declared`,
+  `estimated_adult`/`estimated_minor` (a face estimate by a provider, verdict and band kept, never
+  an image or template) and `document_verified`; asked only where a risk calls for it (money,
+  organizations, strangers, guests, outside mail, a report that names an age), demanded where a
+  country's law does; `minorOf` reads it so every gate inherits it. Blanket verification at
+  sign-up is declined. (3) *Many at once.* Team invites by link and email with domain auto-join,
+  space and group join links: the on-ramp WhatsApp groups and Slack teams need, with acceptance
+  where a minor would meet strangers. (4) *Automations are recipes that belong to a conversation
+  or a space* (R19): a message, a card posted or moved, a task due, no reply in N hours or a time
+  of day; conditions as the save-to-collection rule has them; actions that are Cai's suggestions
+  by default (R12), a task, a reminder, assign or escalate, or a signed delivery. (5) *The
+  integration framework before more connectors*, in the order credentials, per-use health,
+  connector interface with dead-letter, governance, the contract, the person event feed, recipes
+  and organization-installed apps, then governed AI with sources on every answer and an approval
+  before any external action. (6) *The honest position on mail:* "keep Workspace for mail, bring
+  the conversation here" until Caime Mail carries CC, cards and a person's own address; an
+  organization's own domain after that. *Declined:* stories or a status feed (R40), native desktop
+  apps (R40), a generic field-mapping layer before a third importer, calls above eight before the
+  media-server decision. *Not done, with why:* the owner's decisions in the review's §13.

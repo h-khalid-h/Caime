@@ -8,7 +8,7 @@ without re-deriving decisions.
 ## Start of every session
 
 1. Read `docs/ROADMAP.md` (what is done, in progress, blocked) and `docs/GOAL.md` (the target).
-2. Skim `docs/PRODUCT-REVIEW.md` (refinements R1–R54 override the PRD) and `docs/ARCHITECTURE.md`
+2. Skim `docs/PRODUCT-REVIEW.md` (refinements R1–R97 override the PRD) and `docs/ARCHITECTURE.md`
    (ADRs). Open `docs/PRD.md` (cited as `PRD §n`) and `docs/BRAND.md` when a task touches them.
 3. Run `pnpm install` then `pnpm check`. If anything is red, fixing it comes first.
 4. Check the latest CI run on GitHub (`h-khalid-h/Caime`, workflow `CI`). A red `main` is work now.
@@ -25,7 +25,7 @@ without re-deriving decisions.
 | `apps/server` | Fastify 5 API (`/v1`), WebSocket realtime, Postgres (Kysely + SQL migrations), jobs, push, files; serves the exported web app from `WEB_DIR`. A route module (`modules/*.ts`) holds routes and nothing another module imports: what two modules share lives in `lib/` (a conversation's view and membership in `lib/conversation-views.ts`, topics in `lib/topics.ts`, a space's conversations in `lib/space-conversations.ts`). |
 | `apps/app` | Expo SDK 57 universal app (Expo Router; routes in `src/app/`, screens in `src/features/`, primitives in `src/ui/`). iOS, Android and Web. |
 | `e2e/` | Playwright tests against the production bundle (`playwright.config.ts` at the root). |
-| `scripts/` | `bundle-budget.mjs` (the web JS budget). |
+| `scripts/` | `bundle-budget.mjs` (the web JS budget), `i18n-keys.mjs` (missing, stale and bare strings), `web-fonts.mjs` (`pnpm fonts`), `precompress.mjs`, `geo.mjs`, `speech-bakeoff.mjs` and the rest of the build's helpers. |
 | `docs/` | PRD, product review, brand, competitive strategy, architecture, roadmap, goal, deploy, security, the developer guide for organizations' apps (`API.md`), the draft data processing agreement for the owner's lawyer (`DPA-DRAFT.md`, facts held to the code by `dpa-draft.test.ts`; never published as it is) and the legal review of it, the privacy policy and the terms (`LEGAL-REVIEW-2026-10.md`). |
 
 ## Commands
@@ -114,6 +114,20 @@ These are rules, not preferences.
     language it was written in. The model is asked only for what the rules don't answer, for
     whoever may use it, on the latest model by default. A new language brings its readers and
     their golden lines with its catalog.
+
+## Vocabulary
+
+One word per concept in what people read (docs/REVIEW-2026-10-17.md §10); the code may keep its
+older name. **Organization** (never "business" for the thing itself; "Business" is the plan, the
+inbox tab and "Verified business"). **Action** in the interface, `tasks` in code; never "task" in a
+key. **Promise** in the interface, `commitment` in code. **Card** in the interface, `kit` only in
+code and the developer API; never "kit" in a refusal. The **Customer** sphere (how you know
+someone) is not the **Client** role (who they are to an organization): a label that joins them
+names both. **Account** is your Caime account; an email or phone you add is an **address**; a
+Google or Microsoft account you connect is a **connected account**. A business **thread** is the
+Business inbox's; a mail thread is a **topic**. **Space**, **group** and **topic** as PRD §56 has
+them; **meeting** (proposed, accepted), **appointment** (requested, confirmed), **booking** (an
+appointment from a catalog).
 
 ## Working notes
 

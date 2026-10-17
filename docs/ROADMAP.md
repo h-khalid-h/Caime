@@ -1867,6 +1867,89 @@ The six-slice review's plan, in its order; a block is ticked when its tests and 
 - [x] Docs drift (BRAND.md friends, type rows, radii, five places; CLAUDE.md's page sizes, axe
       languages, auth kicker, setup list; `previewUrl` in `API_ROUTES` and API.md).
 
+## M16 — The whole-product challenge (docs/REVIEW-2026-10-17.md)
+
+The owner asked (2026-10-17) that the product be challenged beyond code: journeys, adoption,
+trust, intelligence, reliability, mail, calendar, chat, calls, files, apps, copy and readiness, so
+a person or an organization using Caime in full needs no Workspace, Microsoft 365, Slack, WhatsApp
+or Signal; and that an integration framework come before more connectors, then governed AI over
+all data. Ten read-only slices at `87fc778`; the synthesis, the matrix, the age-assurance design
+and the framework are in the review. Blocks in order, each commit through the full gate; a tick
+means verified, and anything needing the owner's credentials stays ⛔ until it has them.
+
+- [ ] A. Launch floor: alerting receiver, Sentry (server and app), `x-request-id`, log shipping, a
+      status page; bus reconnect with backoff and bus health in readyz, gauges read from the
+      database on every instance, liveness apart from readiness; pool and statement timeouts,
+      upload chunks to a temp file, the booking check freshened before the send transaction, a
+      `CONCURRENTLY` path and `lock_timeout` in `migrate.ts`, batched backfills, a CI lint against
+      a drop in the same release; backups streamed off host and a timed restore drill; jobs with
+      timeouts and a heartbeat, a dead-letter state with a metric and admin retry,
+      `billing.reconcile` background and locked, an outbox for message effects and push, an image
+      semaphore; the CI-tested image published by sha and deployed as that tag, a staging service.
+- [ ] ⛔ A, the owner's: the support address answered (the `@caime` organization made, `hello@`
+      landing in its inbox), the alert receiver's account, the Sentry project, the bucket for
+      backups (`BACKUP_S3_*`).
+- [ ] B. Safety and trust: a provisional person's history moved only after the emailed code; the
+      address oracle closed; the invite rule both ways for minors; `GET /people/:id` gated and a
+      minor's fields clamped; the read-receipt timing leak; "who can add me" with acceptance for
+      minors; the guest's age answer honoured; request caps and blurred request media; reports
+      with a snapshot, a child-safety reason, held content, organization suspension and a
+      date-of-birth tool; the mail copy cleared on delete, file bytes and delivery copies on
+      erasure; the vault key from the environment and encrypted dumps; age assurance phase 1
+      (`age_assurance` levels, `AgeProvider` behind a signed webhook, the paid, organization and
+      stranger triggers, the privacy page and the DPA).
+- [ ] ⛔ B, the owner's: an age-assurance provider (Agemin or another) with retention terms, a DPA
+      and the NIST result; the penetration test.
+- [ ] C. Adoption: booking or messaging before an account (public slots, a provisional booker by
+      email or phone code, three fields on a link arrival); the business front door (`/business`
+      to `/orgs/new`, "For me / For my organization" in onboarding, a checklist that moves past
+      DNS, a Book link and QR beside the door, "block time" and holidays); team invites by link
+      and email with domain auto-join; space and group join links; invite-first sharing, and
+      WhatsApp or SMS first on a browser without a contact picker; "Copy guest link"; the iPhone
+      "Add to Home Screen" card; an expired-invite page; "Keep this" on the guest page.
+- [ ] D. Performance and integrity: the aliased `selectAll` guard and its eleven sites; people
+      lists through `personViewsFor` with a scale ceiling; `participants.last_sent_seq` for the
+      inbox; a large-group mode and one transcript view; a `defer` semaphore and gauge; bus payload
+      chunking; the user foreign-key indexes; one `cardEnd`, one `truncate`, `escapeLike`
+      everywhere, one `visibleMessages`, one transcript builder, one `publicUrl`; `apply.ts` on
+      `qk` with a unit test and `patchCache` everywhere; `toLocaleLowerCase`, the 98 placeholders
+      renamed, numbers through core's formatter; the two OAuth pipelines merged; identities
+      decided.
+- [ ] E. Chat polish: distinct read ticks with a contrast test; the English leaks and a scanner
+      that flags any word-bearing literal; quoted replies with the author and a jump, swipe to
+      reply; message info and who reacted; video as a message, voice notes with a waveform, speed
+      and scrub; link previews fetched once on the server for non-private chats; a sticky date
+      pill, open at first unread, counts on the jump button, big emoji-only messages, highlighted
+      mentions; honest error states with retry; one vocabulary; confirm and undo on delete; mark
+      as unread, reply privately, last seen.
+- [ ] F. Mail, calendar, meetings: CC and reply-all as people on the topic; unverified mail shown
+      under Notices, never dropped; a follow-up allowance to new addresses; invitations arriving
+      by mail become cards; cards travel by mail; "Suggest another time" with guest invitations
+      updated and cancelled; week and month grids, "New meeting" picking the person first, Google
+      and Outlook events shown to the person alone with consent, the other side's local time; an
+      in-call side panel and the call linked to its card; VoIP ringing (⛔ a development build on
+      a phone); more than eight people by ADR-17's media server (decided after F).
+- [ ] G. Integration framework and governed AI (REVIEW §11): credentials (key outside the
+      database with a key id and re-seal, a downscoped picker token, sealed webhook secrets,
+      rotation); per-use health, Google and Microsoft probes, a freshness gauge, a reconnect
+      notification, an operator dead-letter view; the connector interface with stand-ins,
+      per-item dead-letter, `Retry-After`, single-run sweeps; audit rows for accounts, automations
+      and policies, deliveries purged on erasure, an organization policy over members' tokens;
+      real response schemas and webhooks in OpenAPI, a forward-compatible versioned SDK on npm, a
+      sandbox; a person event feed and personal webhooks; recipes per conversation and space,
+      organization-installed apps, posting as an app into a space, slash commands as signed
+      deliveries; Cai with sources everywhere, read-only tools over the person's own records,
+      voice transcripts analysed, the agent's review mode, on/off per action, office hours and
+      citations, a nightly evaluation harness with prompt hashes, golden-set hardening, allowance
+      by tokens with no silent search spend, private content filtered and refused on the server.
+- [ ] H. Business depth: a Business seat includes Pro; a cap on organizations per person; room
+      checks inside the transaction; quick replies, away and greeting messages; customer notes,
+      tags and fields; tax invoices (counsel); booking and revenue analytics; intake forms as
+      cards; a files place per person and space with scoped share links and Office previews; a
+      €/user cost model in RESOURCES.md.
+- [ ] ⛔ H, the owner's: a smaller paid tier; WhatsApp Business in the inbox and reminders by
+      WhatsApp or SMS (Meta's approval); Stripe Connect live with local currencies.
+
 ## Log
 
 - 2026-09-26 — Session 1: docs written; brand system adopted from the owner's board (vector
@@ -3449,6 +3532,10 @@ The six-slice review's plan, in its order; a block is ticked when its tests and 
 - 2026-10-15 — R75: "View as sent" opens a mail's own HTML in a sandbox (nothing runs or loads).
 - 2026-10-15 — R75: mail says Seen when they reply or open it in Caime and "Opened, probably"
   by the provider's pixel (disclosed, off by a switch); signatures fold, Gmail's asterisks go.
+- 2026-10-17 — Whole-product challenge review (docs/REVIEW-2026-10-17.md): ten slices over
+  journeys, safety, reliability, performance, intelligence, mail and calendar, chat, integrations,
+  business and code integrity; the matrix against WhatsApp, Signal, Slack, Calendly and Workspace;
+  an age-assurance design; the integration framework mapped to the code; plan M16 (A–H).
 - 2026-10-17 — R96: bookings and connected calendars in step (owner's report): a stranger's
   booking holds the host's time while its request waits; every calendar of one's own read, a
   failed read never taken for a free day, a stale read redone before booking; Plans writes
