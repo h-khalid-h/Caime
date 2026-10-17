@@ -51,6 +51,9 @@ RUN mkdir -p /data && chown node:node /data
 USER node
 EXPOSE 8787
 VOLUME ["/data"]
-HEALTHCHECK --interval=30s --timeout=5s --start-period=30s --retries=3 \
-  CMD node -e "fetch('http://127.0.0.1:'+(process.env.PORT||8787)+'/v1/readyz').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))"
+# Liveness (the process answers), never readiness: a database blip must not restart every
+# container at once (review 2026-10-17 §4 M8); /v1/readyz is for the uptime check. The start
+# period covers a long migration, which runs before the server listens.
+HEALTHCHECK --interval=30s --timeout=5s --start-period=600s --retries=3 \
+  CMD node -e "fetch('http://127.0.0.1:'+(process.env.PORT||8787)+'/v1/healthz').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))"
 CMD ["node", "--enable-source-maps", "dist/server.js"]

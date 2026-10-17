@@ -2175,7 +2175,9 @@ export type RealtimeEvent =
 export type RealtimeFrame =
   | { type: 'hello'; userId: string; serverTime: string }
   | { type: 'pong'; serverTime: string }
-  | { type: 'event'; event: RealtimeEvent };
+  | { type: 'event'; event: RealtimeEvent }
+  /** The server lost its bus for a while: fetch what was said meanwhile (review 2026-10-17). */
+  | { type: 'resync' };
 
 /** A personal access token, as its owner sees it: never the token itself after it's made. */
 export interface PersonalTokenView {

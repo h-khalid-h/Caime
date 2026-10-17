@@ -1877,15 +1877,25 @@ all data. Ten read-only slices at `87fc778`; the synthesis, the matrix, the age-
 and the framework are in the review. Blocks in order, each commit through the full gate; a tick
 means verified, and anything needing the owner's credentials stays ⛔ until it has them.
 
-- [ ] A. Launch floor: alerting receiver, Sentry (server and app), `x-request-id`, log shipping, a
-      status page; bus reconnect with backoff and bus health in readyz, gauges read from the
-      database on every instance, liveness apart from readiness; pool and statement timeouts,
-      upload chunks to a temp file, the booking check freshened before the send transaction, a
-      `CONCURRENTLY` path and `lock_timeout` in `migrate.ts`, batched backfills, a CI lint against
-      a drop in the same release; backups streamed off host and a timed restore drill; jobs with
-      timeouts and a heartbeat, a dead-letter state with a metric and admin retry,
-      `billing.reconcile` background and locked, an outbox for message effects and push, an image
-      semaphore; the CI-tested image published by sha and deployed as that tag, a staging service.
+- [x] A1. The reliability core (2026-10-17): the bus listens again with backoff for as long as
+      it's open, destroys the lost client, counts its reconnects and tells the hub, which sends
+      every socket `resync` (the client catches up); `/v1/readyz` says the database answers and
+      the bus is heard, the container's check is `/v1/healthz` with a ten-minute start period;
+      every connection starts with a 30 s statement timeout and a 60 s idle-in-transaction
+      timeout and waits ten seconds at most for the pool; a migration runs with no statement
+      timeout and a 15 s `lock_timeout`, and a file marked `-- no-transaction` runs outside one
+      (`create index concurrently`); an upload's chunk lands in a temp file before the row lock;
+      the send transaction's slot check no longer reads calendars under the lock; `x-request-id`
+      on every answer and in a 500's details; the backup, audit and provider gauges written to
+      `server_settings` and read on every scrape. Verified with `bus.test.ts` (the listener's
+      backend terminated, readyz 503 meanwhile, events after), `migrations.test.ts`,
+      `health.test.ts`, `files.test.ts`, `calendar-sync.test.ts`, `metrics.test.ts`.
+- [ ] A2. Launch floor, the rest: alerting receiver, Sentry (server and app), log shipping, a
+      status page; batched backfills and a CI lint against a drop in the same release; backups
+      streamed off host and a timed restore drill; jobs with timeouts and a heartbeat, a
+      dead-letter state with a metric and admin retry, `billing.reconcile` background and locked,
+      an outbox for message effects and push, an image semaphore; the CI-tested image published
+      by sha and deployed as that tag, a staging service.
 - [ ] ⛔ A, the owner's: the support address answered (the `@caime` organization made, `hello@`
       landing in its inbox), the alert receiver's account, the Sentry project, the bucket for
       backups (`BACKUP_S3_*`).

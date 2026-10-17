@@ -15,12 +15,17 @@ import type { ProviderHealthView } from '@caime/core/api';
 import { SUB_PROCESSORS } from '@caime/core/processors';
 import type { AppContext } from '../context';
 import { backupBucket } from './backup';
+
+/** The last probes, shared by every instance (`lib/gauges.ts` reads them on scrape). */
+export const PROVIDERS_SETTING = 'providers.last';
+
 import { cloudflareIceRequest } from './calls';
 import { expoPush } from './expo-push';
 import { registerPeriodic } from './jobs';
 import { MAIL_PROVIDER_NAMES } from './mail-provider';
 import { type ProviderHealth, providerState } from './metrics';
 import { s3Head } from './s3';
+import { writeSetting } from './settings';
 import { SPEECH_PROVIDER_NAMES } from './speech';
 import { filesBucket } from './storage';
 import { stripe } from './stripe';
@@ -184,6 +189,8 @@ export async function checkProviders(ctx: AppContext): Promise<ProviderHealthVie
       providerState.set(probe.id, state);
     }),
   );
+  // Every instance's /metrics says so, not only the one that probed.
+  await writeSetting(ctx.db, PROVIDERS_SETTING, Object.fromEntries(providerState), ctx.now());
   return providersView(ctx);
 }
 

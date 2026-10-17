@@ -12,6 +12,7 @@ import { type Kysely, sql } from 'kysely';
 import type { Database } from '../db/schema';
 import { registerPeriodic } from './jobs';
 import { auditState } from './metrics';
+import { writeSetting } from './settings';
 
 export type AuditAction =
   | 'auth.signup'
@@ -196,6 +197,9 @@ export async function verifyAuditChain(
 }
 
 /** Daily: the newest rows verified, the result on /metrics and the head in the log. */
+/** The last check, shared by every instance (`lib/gauges.ts` reads it on scrape). */
+export const AUDIT_SETTING = 'audit.last';
+
 export function registerAuditCheck(): void {
   registerPeriodic({
     name: 'audit.verify',
@@ -206,6 +210,8 @@ export function registerAuditCheck(): void {
       auditState.checkedAt = Date.now();
       auditState.ok = report.ok;
       auditState.headSeq = report.lastSeq ?? 0;
+      // Every instance's /metrics says so, not only the one that checked.
+      await writeSetting(ctx.db, AUDIT_SETTING, { ...auditState }, ctx.now());
       const line = {
         checked: report.checked,
         seq: report.lastSeq,

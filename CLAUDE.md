@@ -70,6 +70,9 @@ These are rules, not preferences.
    Production deploys with the old container serving until the new one is ready, on the new
    schema, so a migration expands first (add a column or table, backfill) and contracts in a
    later release (drop or rename only once every instance runs code that no longer reads it).
+   A migration runs in a transaction with no statement timeout and a 15 s `lock_timeout` (a
+   held table fails the deploy fast while the old container serves); one that builds an index
+   `concurrently` starts with `-- no-transaction` and is written to run again (`if not exists`).
 8. **Never assume gender or age.** Copy uses names, not pronouns; gender is never inferred (R27).
    A person may say it (R81: `users.gender`, null by default, its own privacy field), and then
    the words take its form where the language has one: what's said *to* them through `tr`
@@ -131,6 +134,16 @@ appointment from a catalog).
 
 ## Working notes
 
+- The container's health check is `/v1/healthz` (the process answers); `/v1/readyz` is for the
+  uptime check and says the database answers *and* this instance hears the bus (`lib/bus.ts`
+  listens again with backoff for as long as it's open, destroys the lost client, and tells the
+  hub, which sends every socket a `resync` so the client catches up). Every connection starts
+  with `statement_timeout` 30 s and `idle_in_transaction_session_timeout` 60 s (`db/pool.ts`):
+  anything longer is a job, never a request. Every answer carries `x-request-id`, and a 500's
+  `details.requestId` is the line to find in the log. A gauge a periodic task fills (the last
+  backup, the audit check, the probes) is written to `server_settings` through `lib/settings.ts`
+  and read back by `syncGauges` on every scrape, so an instance without workers reports it too.
+  A test that waits for something uses `until` from `test/helpers.ts`.
 - Kill a local server by port (`lsof -ti tcp:8787 | xargs kill`), never `pkill -f` with a
   pattern: it matches the shell running the command.
 - Biome reformats files: after `biome check --write`, re-read before scripted edits, and run it

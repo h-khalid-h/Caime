@@ -2,6 +2,13 @@
  * Realtime fan-out across server instances through Postgres LISTEN/NOTIFY (ADR-5). Every
  * instance, including the sender, receives every message and delivers to the sockets it holds.
  * Payloads over the NOTIFY limit travel by reference to `domain_events`.
+ *
+ * The listening connection is the one thing here that can be lost (a database restart, a
+ * failover): it is made again with a backoff that never gives up while the bus is open (review
+ * 2026-10-17 §4 H1: one try after a second, swallowed, left every socket on the instance deaf
+ * for good), the lost client is destroyed rather than returned to the pool, `healthy()` says
+ * whether the instance can hear (readyz reads it), and whoever asks (`onReconnect`) is told
+ * when it can again, so the sockets are sent a `resync` and catch up on what was missed.
  */
 import type pg from 'pg';
 
@@ -24,6 +31,9 @@ export type BusTransform = (
 
 const CHANNEL = 'caime_realtime';
 const MAX_INLINE = 7000;
+/** The first wait before listening again, doubled each failure up to the longest. */
+const FIRST_RETRY_MS = 1000;
+const MAX_RETRY_MS = 30_000;
 
 export class Bus {
   private handlers = new Set<Handler>();
@@ -31,13 +41,54 @@ export class Bus {
   private closed = false;
   /** Other channels this instance listens on (the job queue's wake-up), by name. */
   private channels = new Map<string, Set<(payload: string) => void>>();
+  private reconnectHooks = new Set<() => void>();
+  private retryMs = FIRST_RETRY_MS;
+  private retryTimer: NodeJS.Timeout | null = null;
+  /** How many times the listening connection was lost and made again. */
+  reconnects = 0;
+  /** Why the connection was last lost or couldn't be made; null while it listens. */
+  lastError: string | null = null;
   transform: BusTransform | null = null;
 
   constructor(private readonly pool: pg.Pool) {}
 
   async start(): Promise<void> {
+    await this.listen(false);
+  }
+
+  /** Whether this instance hears the bus now. */
+  healthy(): boolean {
+    return this.listener !== null;
+  }
+
+  /** Told each time the connection is made again after being lost; returns the way to stop. */
+  onReconnect(fn: () => void): () => void {
+    this.reconnectHooks.add(fn);
+    return () => this.reconnectHooks.delete(fn);
+  }
+
+  /** The listening connection's backend, for a test that ends it. */
+  async backendPid(): Promise<number | null> {
+    if (!this.listener) return null;
+    const r = await this.listener.query<{ pid: number }>('select pg_backend_pid() as pid');
+    return r.rows[0]?.pid ?? null;
+  }
+
+  private async listen(again: boolean): Promise<void> {
     const client = await this.pool.connect();
-    this.listener = client;
+    let lost = false;
+    const onLost = (err?: Error) => {
+      if (lost) return;
+      lost = true;
+      this.lastError = err?.message ?? 'connection closed';
+      if (this.listener === client) this.listener = null;
+      // Destroyed, never returned: the pool must not hand a dead connection to a query.
+      client.removeAllListeners('notification');
+      client.release(err ?? new Error(this.lastError));
+      if (!this.closed) this.scheduleRetry();
+    };
+    client.on('error', onLost);
+    client.on('end', () => onLost());
     client.on('notification', (n) => {
       if (n.channel === CHANNEL) {
         if (n.payload) void this.dispatch(n.payload);
@@ -45,14 +96,36 @@ export class Bus {
       }
       for (const fn of this.channels.get(n.channel) ?? []) fn(n.payload ?? '');
     });
-    client.on('error', () => {
-      // The listening connection dropped (database restart). Reconnect after a short pause.
-      this.listener = null;
-      if (!this.closed) setTimeout(() => void this.start().catch(() => {}), 1000);
-    });
-    await client.query(`listen ${CHANNEL}`);
-    // Whatever else was being listened for survives a reconnect.
-    for (const channel of this.channels.keys()) await client.query(`listen ${channel}`);
+    try {
+      await client.query(`listen ${CHANNEL}`);
+      // Whatever else was being listened for survives a reconnect.
+      for (const channel of this.channels.keys()) await client.query(`listen ${channel}`);
+    } catch (err) {
+      onLost(err as Error);
+      throw err;
+    }
+    this.listener = client;
+    this.retryMs = FIRST_RETRY_MS;
+    this.lastError = null;
+    if (again) {
+      this.reconnects += 1;
+      for (const fn of this.reconnectHooks) fn();
+    }
+  }
+
+  private scheduleRetry(): void {
+    if (this.retryTimer || this.closed) return;
+    const wait = this.retryMs;
+    this.retryMs = Math.min(MAX_RETRY_MS, this.retryMs * 2);
+    this.retryTimer = setTimeout(() => {
+      this.retryTimer = null;
+      void this.listen(true).catch((err: Error) => {
+        // The database is still away (connecting failed before any client existed): again later.
+        this.lastError = err.message;
+        if (!this.closed) this.scheduleRetry();
+      });
+    }, wait);
+    this.retryTimer.unref?.();
   }
 
   /**
@@ -133,12 +206,21 @@ export class Bus {
 
   async stop(): Promise<void> {
     this.closed = true;
-    if (this.listener) {
-      await this.listener.query(`unlisten ${CHANNEL}`).catch(() => {});
-      for (const channel of this.channels.keys())
-        await this.listener.query(`unlisten ${channel}`).catch(() => {});
-      this.listener.release();
+    if (this.retryTimer) {
+      clearTimeout(this.retryTimer);
+      this.retryTimer = null;
+    }
+    const client = this.listener;
+    if (client) {
       this.listener = null;
+      // Closing on purpose: its end is nobody's loss.
+      client.removeAllListeners('error');
+      client.removeAllListeners('end');
+      client.removeAllListeners('notification');
+      await client.query(`unlisten ${CHANNEL}`).catch(() => {});
+      for (const channel of this.channels.keys())
+        await client.query(`unlisten ${channel}`).catch(() => {});
+      client.release();
     }
   }
 }

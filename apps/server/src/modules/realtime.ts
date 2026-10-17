@@ -70,6 +70,11 @@ export class Hub {
     }
   }
 
+  /** Every socket this instance holds (the bus came back: each catches up on what it missed). */
+  deliverAll(frame: string): void {
+    for (const c of this.all()) if (c.socket.readyState === c.socket.OPEN) c.socket.send(frame);
+  }
+
   online(userId: string): boolean {
     return (this.byUser.get(userId)?.size ?? 0) > 0;
   }
@@ -178,6 +183,9 @@ export async function realtimeRoutes(app: FastifyInstance, ctx: AppContext): Pro
     }
     hub.deliver(msg.userIds, JSON.stringify({ type: 'event', event: msg.event }));
   });
+  // The bus was lost and is heard again: whatever was said meanwhile reached no socket here,
+  // so each is told to catch up over HTTP (the client's `resync`).
+  ctx.bus.onReconnect(() => hub.deliverAll(JSON.stringify({ type: 'resync' })));
 
   const membershipCache = new Map<string, number>();
   const isMember = async (userId: string, conversationId: string): Promise<boolean> => {

@@ -233,6 +233,10 @@ export async function buildApp(config: Config, options: BuildOptions = {}): Prom
   await app.register(websocket, { options: { maxPayload: 64 * 1024 } });
   await app.register(multipart, { limits: { fileSize: 100 * 1024 * 1024, files: 10 } });
 
+  // The request's id on every answer, and in a 500's details: what support asks for first.
+  app.addHook('onSend', async (req, reply) => {
+    reply.header('x-request-id', req.id);
+  });
   app.setErrorHandler((error, req, reply) => {
     const err = error as Error & { statusCode?: number };
     if (err instanceof AppError) {
@@ -249,7 +253,9 @@ export async function buildApp(config: Config, options: BuildOptions = {}): Prom
     }
     req.log.error({ err }, 'unhandled error');
     if (config.isTest) console.error('unhandled error', err);
-    return reply.status(500).send(errorBody('internal', tr('Something went wrong on our side.')));
+    return reply
+      .status(500)
+      .send(errorBody('internal', tr('Something went wrong on our side.'), { requestId: req.id }));
   });
   let web: WebApp | null = null;
   app.setNotFoundHandler((req, reply) => {

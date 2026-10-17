@@ -171,3 +171,17 @@ export function clientFor(
     del: async (url) => ok(await req('DELETE', url)),
   };
 }
+
+/** Waits for `check` to be true, asking every 25 ms, up to `ms`; throws with `what` if it never is. */
+export async function until(
+  check: () => boolean | Promise<boolean>,
+  ms = 5_000,
+  what = 'the condition',
+): Promise<void> {
+  const end = Date.now() + ms;
+  while (Date.now() < end) {
+    if (await check()) return;
+    await new Promise((r) => setTimeout(r, 25));
+  }
+  throw new Error(`${what} did not happen within ${ms} ms`);
+}

@@ -263,6 +263,9 @@ class RealtimeClient {
           return;
         }
         this.onHello();
+      } else if (frame.type === 'resync' && this.me) {
+        // The server lost its bus for a while: what was said meanwhile is fetched, not waited for.
+        void this.catchUp(true);
       } else if (frame.type === 'event' && this.me) {
         const me = this.me;
         // Applied in the order received: each waits on the one applier, then runs at once.

@@ -15,7 +15,8 @@ async function shutdown(signal: string) {
   if (closing) return;
   closing = true;
   app.log.info(`${signal} received, draining`);
-  const force = setTimeout(() => process.exit(1), 15_000);
+  // Under the orchestrator's ten-second stop grace: a forced exit here beats a SIGKILL there.
+  const force = setTimeout(() => process.exit(1), 8_000);
   force.unref();
   await app.close();
   process.exit(0);

@@ -361,6 +361,12 @@ export async function openSlotsFor(
     limit?: number;
     /** A repeating appointment booking its next time (R58): its own times ahead hold nothing. */
     exceptSeries?: string;
+    /**
+     * Whether the other calendars are read again first (R96). False inside the send transaction,
+     * which checked a moment before and holds the conversation's lock: a provider's four seconds
+     * are never waited for under it.
+     */
+    fresh?: boolean;
   } = {},
 ): Promise<{ hours: BookingHours; slots: Date[] } | null> {
   const hours = host.hours;
@@ -369,7 +375,8 @@ export async function openSlotsFor(
   // Whoever's time this is, their other calendars read again if the last read is stale (R96):
   // a meeting put there a minute ago holds its slot.
   const who = providersFor(hours, item);
-  await freshenBusy(ctx, host.kind === 'person' ? [host.id] : (who ?? []));
+  if (opts.fresh !== false)
+    await freshenBusy(ctx, host.kind === 'person' ? [host.id] : (who ?? []));
   const held = await heldBy(
     ctx,
     host,
@@ -420,7 +427,7 @@ export async function bookingFor(
    * A later time of a repeating appointment (R58): agreed with the series, so the lead time and
    * the horizon are behind it, and its own times ahead aren't in its way.
    */
-  opts: { series?: string } = {},
+  opts: { series?: string; fresh?: boolean } = {},
 ): Promise<AppointmentBooking> {
   const hours = host.hours;
   const item = host.items.find((i) => i.id === ask.itemId);
@@ -456,7 +463,7 @@ export async function bookingFor(
         ? { ...host, hours: { ...hours, leadMinutes: 0 } }
         : host,
     { from: start, to: end },
-    { item, quantity, limit: 1, exceptSeries: opts.series },
+    { item, quantity, limit: 1, exceptSeries: opts.series, fresh: opts.fresh },
   );
   if (!open?.slots.some((d) => d.getTime() === start.getTime()))
     throw new AppError(409, 'slot_taken', tr('That time has just been taken. Pick another.'));

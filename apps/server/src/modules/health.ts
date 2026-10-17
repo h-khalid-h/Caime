@@ -53,12 +53,19 @@ export async function healthRoutes(app: FastifyInstance, ctx: AppContext) {
     // The asker's device's, by the name the list has for it.
     return { zones: timeZonesIn(locale, ctx.now()), suggested: currentZone(timeZone) };
   });
-  app.get('/readyz', async (_req, reply): Promise<HealthResponse | FastifyReply> => {
+  // Ready: the database answers and this instance hears the bus (a database restart can leave
+  // the listener dead while queries work; review 2026-10-17 §4 H1). The container's own check
+  // is /healthz (liveness), so a blip here never restarts every instance at once.
+  app.get('/readyz', async (req, reply): Promise<HealthResponse | FastifyReply> => {
     try {
       await sql`select 1`.execute(ctx.db);
-      return { ok: true };
     } catch {
       return reply.status(503).send({ ok: false });
     }
+    if (!ctx.bus.healthy()) {
+      req.log.warn({ reason: ctx.bus.lastError }, 'not ready: the bus is not listening');
+      return reply.status(503).send({ ok: false });
+    }
+    return { ok: true };
   });
 }

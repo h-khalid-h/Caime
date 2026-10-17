@@ -4,8 +4,14 @@
  *
  * Photos are re-encoded without metadata, so a picture never reveals where it was taken.
  */
-import { createHash } from 'node:crypto';
+
+import { createHash, randomUUID } from 'node:crypto';
+import { createReadStream, createWriteStream } from 'node:fs';
+import { rm } from 'node:fs/promises';
+import { tmpdir } from 'node:os';
+import { join } from 'node:path';
 import { type Readable, Transform } from 'node:stream';
+import { pipeline } from 'node:stream/promises';
 import { canSee, uuidv7 } from '@caime/core';
 import type { FileResponse, UploadChunkResponse, UploadStartResponse } from '@caime/core/api';
 import { tr } from '@caime/core/i18n';
@@ -253,38 +259,46 @@ export async function fileRoutes(app: FastifyInstance, ctx: AppContext) {
       const auth = requireAuth(req);
       const { id } = parse(z.object({ id: z.string().uuid() }), req.params);
       const offset = Number(req.headers['upload-offset']);
+      // The chunk lands in a file of its own first: the row's lock and the transaction are held
+      // only while it's appended from disk, never while a slow phone is still sending (review
+      // 2026-10-17 §4 H4: twenty such uploads held every connection in the pool).
+      const spool = join(tmpdir(), `caime-chunk-${randomUUID()}`);
+      await pipeline(req.body as Readable, createWriteStream(spool));
       // One chunk at a time: the row is locked while the chunk is appended and the offset moves,
       // so two chunks sent at once (a retry racing its original) never interleave their bytes;
       // the second waits, finds the offset moved, and is told where to resume.
-      const { f, written } = await ctx.db.transaction().execute(async (trx) => {
-        const f = await trx
-          .selectFrom('files')
-          .selectAll()
-          .where('id', '=', id)
-          .where('owner_id', '=', auth.userId)
-          .forUpdate()
-          .executeTakeFirst();
-        if (!f) throw notFound(tr('That upload'));
-        if (f.status !== 'uploading')
-          throw new AppError(409, 'upload_complete', tr('This upload is already complete.'));
-        if (!Number.isInteger(offset) || offset !== Number(f.upload_offset)) {
-          throw new AppError(409, 'offset_mismatch', tr('Resume from the server’s offset.'), {
-            offset: Number(f.upload_offset),
-          });
-        }
-        const written = await storage.append(f.storage_key, req.body as Readable);
-        if (written > Number(f.size)) {
-          await storage.remove(f.storage_key);
-          await trx.updateTable('files').set({ status: 'failed' }).where('id', '=', id).execute();
-          throw badRequest(tr('More bytes than declared.'));
-        }
-        await trx
-          .updateTable('files')
-          .set({ upload_offset: written })
-          .where('id', '=', id)
-          .execute();
-        return { f, written };
-      });
+      const { f, written } = await ctx.db
+        .transaction()
+        .execute(async (trx) => {
+          const f = await trx
+            .selectFrom('files')
+            .selectAll()
+            .where('id', '=', id)
+            .where('owner_id', '=', auth.userId)
+            .forUpdate()
+            .executeTakeFirst();
+          if (!f) throw notFound(tr('That upload'));
+          if (f.status !== 'uploading')
+            throw new AppError(409, 'upload_complete', tr('This upload is already complete.'));
+          if (!Number.isInteger(offset) || offset !== Number(f.upload_offset)) {
+            throw new AppError(409, 'offset_mismatch', tr('Resume from the server’s offset.'), {
+              offset: Number(f.upload_offset),
+            });
+          }
+          const written = await storage.append(f.storage_key, createReadStream(spool));
+          if (written > Number(f.size)) {
+            await storage.remove(f.storage_key);
+            await trx.updateTable('files').set({ status: 'failed' }).where('id', '=', id).execute();
+            throw badRequest(tr('More bytes than declared.'));
+          }
+          await trx
+            .updateTable('files')
+            .set({ upload_offset: written })
+            .where('id', '=', id)
+            .execute();
+          return { f, written };
+        })
+        .finally(() => rm(spool, { force: true }));
       if (written < Number(f.size)) return { id, offset: written, complete: false };
       const done = await finalizeFile(
         ctx,

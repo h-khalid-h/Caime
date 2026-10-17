@@ -4,12 +4,13 @@
  * meet any data.
  */
 import { randomBytes, randomUUID } from 'node:crypto';
-import { copyFile, mkdtemp, readdir, rm } from 'node:fs/promises';
+import { copyFile, mkdtemp, readdir, rm, writeFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import pg from 'pg';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { migrate, migrationsDir } from '../src/db/migrate';
+import { createDb, STATEMENT_TIMEOUT_MS } from '../src/db/pool';
 import { adminUrl, dropDatabase, urlFor } from './global-setup';
 
 const name = `caime_t_migrations_${randomBytes(4).toString('hex')}`;
@@ -29,7 +30,9 @@ beforeAll(async () => {
   await admin.connect();
   await admin.query(`create database ${name}`);
   await admin.end();
-  pool = new pg.Pool({ connectionString: urlFor(name), max: 1 });
+  // The server's own pool (its session defaults included), one connection, so a migration's
+  // `set` and `reset` are seen by the next query on it.
+  pool = createDb(urlFor(name), 1).pool;
   dir = await mkdtemp(join(tmpdir(), 'caime-migrations-'));
 });
 afterAll(async () => {
@@ -137,5 +140,31 @@ describe('0036: recovery codes only as slow hashes', () => {
     );
     expect(kept.rows).toEqual([{ salted: true }]);
     await expect(code(null)).rejects.toMatchObject({ code: '23502' });
+  });
+});
+
+describe('how a migration runs (review 2026-10-17)', () => {
+  it('runs a file marked no-transaction outside one, so an index can be built concurrently', async () => {
+    await writeFile(
+      join(dir, '9998_index_in_a_transaction.sql'),
+      'create index concurrently if not exists users_handle_test_a on users (handle);\n',
+    );
+    // Inside a transaction, Postgres refuses it; the deploy fails loudly, nothing half-applied.
+    await expect(migrate(pool, () => {}, dir)).rejects.toThrow(/cannot run inside a transaction/);
+    await rm(join(dir, '9998_index_in_a_transaction.sql'));
+    await writeFile(
+      join(dir, '9999_index_concurrently.sql'),
+      '-- no-transaction\ncreate index concurrently if not exists users_handle_test_b on users (handle);\n',
+    );
+    expect(await migrate(pool, () => {}, dir)).toEqual(['9999_index_concurrently.sql']);
+    // Recorded, so a second run applies nothing; and the session's own timeout is back on the
+    // connection the pool hands to the next query (a migration lifts it for itself alone).
+    expect(await migrate(pool, () => {}, dir)).toEqual([]);
+    const made = await pool.query(
+      "select indexname from pg_indexes where indexname = 'users_handle_test_b'",
+    );
+    expect(made.rowCount).toBe(1);
+    const timeout = await pool.query('show statement_timeout');
+    expect(timeout.rows[0].statement_timeout).toBe(`${STATEMENT_TIMEOUT_MS / 1000}s`);
   });
 });

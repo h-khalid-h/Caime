@@ -1223,13 +1223,14 @@ export async function sendMessage(
         await sql`select pg_advisory_xact_lock(hashtext(${`slots:${slotAsk.host.kind}:${slotAsk.host.id}`}))`.execute(
           trx,
         );
+        // The calendars were read again a moment ago, before the transaction: not under its lock.
         (payload as Record<string, unknown>).booking = await bookingFor(
           ctx,
           slotAsk.host,
           slotAsk.booker,
           slotAsk.ask,
           slotAsk.start,
-          seriesBooking,
+          { ...seriesBooking, fresh: false },
         );
       }
       // The share once more, under the split's lock: two Pay cards for one share at once leave one.

@@ -908,3 +908,6 @@ curl -fsSI https://caime.example.com/ | grep -i content-security-policy
 
 Then sign up at the domain, and from a second browser connect and send a message: it should
 arrive without a reload.
+
+
+The container's own health check is `/v1/healthz` (liveness); the uptime check reads `/v1/readyz` (the database and the bus).

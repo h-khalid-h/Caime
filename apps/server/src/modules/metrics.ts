@@ -5,11 +5,14 @@
 import type { FastifyInstance, FastifyReply } from 'fastify';
 import { sql } from 'kysely';
 import type { AppContext } from '../context';
+import { syncGauges } from '../lib/gauges';
 import { requireOperator } from '../lib/operator';
 
 export async function metricsRoutes(app: FastifyInstance, ctx: AppContext) {
   app.get('/metrics', async (req, reply): Promise<FastifyReply> => {
     requireOperator(ctx, req, ctx.config.METRICS_TOKEN);
+    // What another instance's task found (the backup, the audit check, the probes).
+    await syncGauges(ctx);
     // The queue as it is now: a stuck worker shows as jobs that wait and age.
     const q = await ctx.db
       .selectFrom('jobs')
