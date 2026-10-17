@@ -10,7 +10,11 @@
  * other (docs/SECURITY.md).
  */
 
-import { ACCOUNT_BUSY_DAYS, ACCOUNT_SYNC_MINUTES } from '@caime/core/accounts';
+import {
+  ACCOUNT_BUSY_DAYS,
+  ACCOUNT_FRESH_SECONDS,
+  ACCOUNT_SYNC_MINUTES,
+} from '@caime/core/accounts';
 import type { SitePage } from '@caime/core/api';
 import { LAW_MINIMUM_AGES } from '@caime/core/countries';
 import type { SubProcessor } from '@caime/core/processors';
@@ -276,13 +280,25 @@ Caime&rsquo;s use of information received from Google APIs adheres to the
 User Data Policy</a>, including the Limited Use requirements.</li>
 <li><strong>A Google or Microsoft account you connect, for your calendar.</strong> When you connect
 one under You &rarr; Apps and turn its calendar on, you allow Caime to read when you&rsquo;re busy
-there, and Caime keeps the account&rsquo;s email address, a permission to read again (encrypted on
-Caime&rsquo;s server with a key of its own), and the start and end of each busy time for the next
-${ACCOUNT_BUSY_DAYS} days, read again every ${ACCOUNT_SYNC_MINUTES} minutes; never an
-event&rsquo;s title, its people or its place. Those times only keep your bookable times from being
-offered while you&rsquo;re busy, and nobody sees them. From Google, Caime asks for busy times alone;
-Microsoft offers no such permission, so Caime asks to read your calendar&rsquo;s basics and keeps
-only the times. Disconnecting it, deleting your account or signing out everywhere deletes what was
+there, in each calendar of your own (Google asks you separately whether Caime may see the list of
+your calendars; without it, only your main one is read), and Caime keeps the account&rsquo;s email
+address, a permission to read again (encrypted on Caime&rsquo;s server with a key of its own), and
+the start and end of each busy time for the next ${ACCOUNT_BUSY_DAYS} days, read again every
+${ACCOUNT_SYNC_MINUTES} minutes, and again before your bookable times are shown or one is booked
+when the last read is more than ${ACCOUNT_FRESH_SECONDS} seconds old; never an event&rsquo;s title,
+its people or its place. Those times only keep your bookable times from being offered while
+you&rsquo;re busy, and nobody sees them. From Google, Caime asks for busy times and the list of your
+calendars alone; Microsoft offers no such permission, so Caime asks to read your calendar&rsquo;s
+basics and keeps only the times. When you turn its Plans on, Caime writes your meetings and
+appointments in Caime into that account&rsquo;s main calendar, each with its title, whom it&rsquo;s
+with, when, where and a link back to Caime (one still asked for as tentative), keeps them up to
+date as they&rsquo;re agreed, moved or cancelled, and invites nobody by it. Of each event it wrote,
+Caime keeps the account&rsquo;s id for it, when it is and a fingerprint of what it wrote, so it can
+change it or take it out; it reads nothing else of the calendar for it. From Google, Caime asks to
+manage events on the calendars you own; Microsoft offers nothing narrower than reading and writing
+your calendar. An event whose meeting is cancelled or removed in Caime is taken out; one that is
+over stays in your calendar, as yours. Disconnecting first takes out the events Caime wrote that
+are still ahead; disconnecting, deleting your account or signing out everywhere deletes what was
 kept and gives the permission back. Your export lists the accounts you connected.</li>
 <li><strong>Your places.</strong> You can add the places you are (home, work), each with its
 address and, only if you ask, the point where you stood when you added it; nobody looks an address

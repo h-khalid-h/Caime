@@ -1405,4 +1405,9 @@ export const arServer: Catalog = {
     'الطلب من {name} في محادثة، والانضمام إلى {site} مجاني.',
   'You pick a time with {name} in a conversation. Joining {site} is free.':
     'اختيار الموعد مع {name} في محادثة، والانضمام إلى {site} مجاني.',
+  'Asked, not agreed yet.': 'مطلوب، ولم يُتفق عليه بعد.',
+  'Join in Caime: {url}': 'الانضمام في Caime: {url}',
+  'Open in Caime: {url}': 'في Caime: {url}',
+  'Caime keeps this up to date. Change it in Caime.':
+    'يُبقي Caime هذا الموعد محدَّثًا، وتغييره يكون في Caime.',
 };

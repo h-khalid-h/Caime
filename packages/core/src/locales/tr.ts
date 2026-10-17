@@ -3942,11 +3942,11 @@ export const turkish: Catalog = {
     'Microsoft, Caime’i hesabınızın uygulama ve hizmetlerinden kaldırana kadar izninizi saklar.',
   'Google is told to forget the permission too.': 'Google’dan da izni unutması istenir.',
   'Your accounts': 'Hesaplarınız',
-  'Connect the calendar you already keep, and nobody books you over a meeting there.':
-    'Zaten kullandığınız takvimi bağlayın; kimse oradaki bir toplantının üstüne randevu almasın.',
+  'Connect the calendar you already keep: nobody books you over a meeting there, and your plans in Caime show in it.':
+    'Zaten kullandığınız takvimi bağlayın: kimse oradaki bir toplantının üstüne randevu almaz ve Caime’deki planlarınız orada görünür.',
   Calendar: 'Takvim',
-  'When you’re busy there, your bookable times aren’t offered. Caime keeps only when, never what or with whom.':
-    'Orada meşgulken rezervasyon saatleriniz sunulmaz. Caime yalnızca zamanı tutar; ne olduğunu ya da kiminle olduğunu asla.',
+  'When you’re busy in any of your calendars there, your bookable times aren’t offered. Caime keeps only when, never what or with whom.':
+    'Oradaki takvimlerinizden herhangi birinde meşgulken rezervasyon saatleriniz sunulmaz. Caime yalnızca zamanı tutar; ne olduğunu ya da kiminle olduğunu asla.',
   'No apps are connected yet.': 'Henüz bağlı uygulama yok.',
   'Search {where}': '{where} içinde ara',
   'Nothing here matches that.': 'Burada bununla eşleşen bir şey yok.',
@@ -4093,4 +4093,11 @@ export const turkish: Catalog = {
   'Opens the choices': 'Seçenekleri açar',
   'Prefer not to say': 'Belirtmek istemiyorum',
   'Your name in Latin letters': 'Latin harfleriyle adınız',
+  Plans: 'Planlar',
+  'Your meetings and appointments in Caime are added to its calendar and kept up to date as they’re asked, agreed, moved or cancelled. Nobody else is invited.':
+    'Caime’deki toplantılarınız ve randevularınız bu takvime eklenir; istendiğinde, kabul edildiğinde, taşındığında ya da iptal edildiğinde güncel tutulur. Başka kimse davet edilmez.',
+  'Read every calendar': 'Tüm takvimleri oku',
+  'main calendar only': 'yalnızca ana takvim',
+  'The plans Caime added to its calendar that are still ahead are taken out.':
+    'Caime’in bu takvime eklediği ve henüz gelmemiş planlar kaldırılır.',
 };

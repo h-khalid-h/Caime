@@ -1,9 +1,10 @@
 /**
  * A person's Google or Microsoft account, connected to Caime for the uses they turn on (R90). One
  * connection per account, its permissions the narrowest each use needs, and nothing kept beyond
- * what a use needs. Phase 1 is the calendar: when the person is busy, never what or with whom, so
- * their bookable slots are never offered over a meeting in another calendar. Files (a picked
- * file from Drive or OneDrive) and mail come later, each a use of the same connection. Pure: the
+ * what a use needs. The calendar: when the person is busy in any calendar of their own, never
+ * what or with whom, so their bookable slots are never offered over a meeting kept there. Plans
+ * (R96): their meetings and appointments in Caime written into that calendar and kept in step.
+ * Files: a picked file from Drive or OneDrive. Each is a use of the same connection. Pure: the
  * app and the server read it.
  */
 import { msg } from './i18n';
@@ -16,7 +17,7 @@ export function isAccountProvider(v: unknown): v is AccountProvider {
 }
 
 /** What a connection is used for. Only these are offered; a later use joins the list. */
-export const ACCOUNT_USES = ['calendar', 'files'] as const;
+export const ACCOUNT_USES = ['calendar', 'plans', 'files'] as const;
 export type AccountUse = (typeof ACCOUNT_USES)[number];
 
 /** The provider's own name for itself: never translated. */
@@ -41,6 +42,10 @@ const IDENTITY: Record<AccountProvider, string[]> = {
   microsoft: ['openid', 'email', 'offline_access', 'User.Read'],
 };
 
+/** Google's list of a person's calendars: which of them are their own (no events, no times). */
+export const GOOGLE_CALENDAR_LIST_SCOPE =
+  'https://www.googleapis.com/auth/calendar.calendarlist.readonly';
+
 /** Each use's permissions, the narrowest that do the job. */
 const USE_SCOPES: Record<AccountUse, Record<AccountProvider, string[]>> = {
   calendar: {
@@ -50,6 +55,12 @@ const USE_SCOPES: Record<AccountUse, Record<AccountProvider, string[]>> = {
     // Caime keeps only the times.
     microsoft: ['Calendars.ReadBasic'],
   },
+  plans: {
+    // Events on the calendars the person owns, never one shared with them: Caime writes its own.
+    google: ['https://www.googleapis.com/auth/calendar.events.owned'],
+    // Microsoft has no narrower permission that writes an event.
+    microsoft: ['Calendars.ReadWrite'],
+  },
   files: {
     // Only the files the person picks in Google's own picker: never the drive.
     google: ['https://www.googleapis.com/auth/drive.file'],
@@ -58,9 +69,30 @@ const USE_SCOPES: Record<AccountUse, Record<AccountProvider, string[]>> = {
   },
 };
 
+/**
+ * Asked with a use, never needed for it: unticked on Google's screen, the use still works, less
+ * well. The calendar's list lets every calendar of the person's own be read, not only the main.
+ */
+const USE_EXTRAS: Partial<Record<AccountUse, Partial<Record<AccountProvider, string[]>>>> = {
+  calendar: { google: [GOOGLE_CALENDAR_LIST_SCOPE] },
+};
+
 /** Everything a connection with these uses asks for. */
 export function accountScopes(provider: AccountProvider, uses: readonly AccountUse[]): string[] {
-  return [...new Set([...IDENTITY[provider], ...uses.flatMap((u) => USE_SCOPES[u][provider])])];
+  return [
+    ...new Set([
+      ...IDENTITY[provider],
+      ...uses.flatMap((u) => [...USE_SCOPES[u][provider], ...(USE_EXTRAS[u]?.[provider] ?? [])]),
+    ]),
+  ];
+}
+
+/**
+ * Whether a connection reads every calendar of the person's own, or the main one alone (Google's
+ * list unticked, or a connection made before it was asked for). Microsoft's read lists them all.
+ */
+export function readsEveryCalendar(provider: AccountProvider, scopes: readonly string[]): boolean {
+  return provider === 'microsoft' || scopes.includes(GOOGLE_CALENDAR_LIST_SCOPE);
 }
 
 /** The uses a granted set of permissions covers (Google lets each one be unticked). */
@@ -78,7 +110,13 @@ export const ACCOUNT_USE_LABELS: Record<AccountUse, { label: string; detail: str
   calendar: {
     label: msg('Calendar'),
     detail: msg(
-      'When you’re busy there, your bookable times aren’t offered. Caime keeps only when, never what or with whom.',
+      'When you’re busy in any of your calendars there, your bookable times aren’t offered. Caime keeps only when, never what or with whom.',
+    ),
+  },
+  plans: {
+    label: msg('Plans'),
+    detail: msg(
+      'Your meetings and appointments in Caime are added to its calendar and kept up to date as they’re asked, agreed, moved or cancelled. Nobody else is invited.',
     ),
   },
   files: {
@@ -98,6 +136,11 @@ export type AccountState = 'connected' | 'reconnect' | 'failing';
 /** How long a calendar is looked ahead, and how often it's read again. */
 export const ACCOUNT_BUSY_DAYS = 90;
 export const ACCOUNT_SYNC_MINUTES = 15;
+/**
+ * Before a slot is offered or taken, a calendar last read longer ago than this is read again
+ * (R96): a meeting put there a minute ago holds the time.
+ */
+export const ACCOUNT_FRESH_SECONDS = 60;
 
 /** Where a connection's consent returns in the app: Settings · Apps, with what happened. */
 export const ACCOUNT_RETURN_PATH = 'settings/apps';

@@ -1876,3 +1876,41 @@ with its reason, so it isn't proposed again without new facts.
   Not done yet: the landing page, the site and the marketplace move onto the same parts next;
   open times on an item's page are for an organization only, since a person's would show
   their week to anyone.
+- **R96 (2026-10-17) Bookings and the calendars people already keep, in step both ways.** The
+  owner's report: someone booked them through their public link at a time their Google Calendar
+  already held a meeting, and the booking never showed in Google or Outlook. Four causes, each
+  fixed where it lives. (1) *A booking waited in a message request and held nothing.* A
+  stranger who books from a public catalog writes a first message, so the host's side is a
+  request, and every reader of a person's cards (`visibleCards`) left requests out: the slot
+  stayed open to a second stranger and the booking was on nobody's calendar until the host
+  replied. A booking now says whose catalog it's from (`AppointmentBooking.hostId`, written only
+  by `bookingFor`; older ones backfilled), and one from the host's own catalog holds their time
+  and shows on their calendar, as asked, while its request waits. A stranger's meeting proposal
+  still doesn't. (2) *Only the main calendar was read, and a failed read looked like a free
+  day.* Busy times now come from every calendar the person owns and shows (Google's list of
+  calendars, `calendar.calendarlist.readonly`, asked beside the busy times and never needed for
+  them; Microsoft's own calendars, never one shared with them), and a calendar Google answers
+  with an error is a failed read (the last one stands, the row says so), never an empty one.
+  (3) *The read was up to fifteen minutes old.* Before a slot is offered or taken, a calendar
+  last read more than a minute ago is read again (`freshenBusy`, four seconds at most; a slower
+  answer lands for the next asker), so a meeting put there a moment ago holds its slot. (4)
+  *Nothing was written back.* R90 declined writing to calendars because Caime's feed carries
+  its cards to any calendar; in practice a subscribed feed refreshes when Google or Outlook
+  decide (often half a day later), which reads as "not synced", and every scheduling product
+  people compare Caime with writes the booking into the connected calendar. So the decline is
+  reversed: a connection's **Plans** use writes the person's meetings and appointments (what
+  their Caime calendar holds, asked ones as tentative, a series' times ahead included) into
+  that calendar, with the title, whom it's with, when, where and a link back, invites nobody,
+  and keeps it in step by reconciling what the cards say with what was written
+  (`calendar_pushes`, a hash per event): queued at the end of a ten-second bucket by any change
+  to a card (sent, moved, stopped, moved to a space, removed), and swept hourly for what changes
+  without one. Its narrowest permissions: Google's `calendar.events.owned` (events on calendars
+  the person owns, never one shared with them), Microsoft's `Calendars.ReadWrite` (nothing
+  narrower writes). An event Caime wrote is left out of what's read back, so its own cards never
+  hold their time twice. Disconnecting takes out what's still ahead before the permission goes;
+  what's over stays in the person's calendar as theirs. Connecting a calendar now asks for both
+  directions, each untickable. *Not done, with why:* the owner's Google and Microsoft clients
+  need the two new Google scopes and the Microsoft permission (DEPLOY, Connected accounts, step
+  5), and a calendar connected before reads its main calendar alone and writes nothing until it
+  is connected again (its row offers both); Google verifies the new sensitive scope with the
+  rest.

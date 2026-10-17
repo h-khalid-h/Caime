@@ -1750,6 +1750,21 @@ discovers, and mail at their own address.
       1280 px in English and Arabic. Next: the landing page, the site and the marketplace on the
       same parts; an item's next open times on its page (for an organization; a person's would
       show their week to anyone, which needs the owner's word).
+- [x] R96 bookings and connected calendars in step both ways (owner's report 2026-10-17): a
+      booking from a person's own catalog holds their time and is on their calendar while the
+      booker's message request waits (`AppointmentBooking.hostId`, older bookings backfilled by
+      migration 0089); busy times come from every calendar the person owns (Google's calendar list,
+      Microsoft's own calendars), a calendar Google answers with an error is a failed read, not an
+      empty one, and a read older than a minute is redone before a slot is offered or taken; with
+      Plans on, Caime's meetings and appointments are written into the connected Google or Outlook
+      calendar (asked as tentative), rewritten as they move, taken out when cancelled, removed or
+      no longer theirs, and taken out ahead of a disconnect; what Caime wrote is left out of what's
+      read back. Verified with `calendar-sync.test.ts` (Google and Microsoft stand-ins, events
+      included), `connected-accounts.test.ts` and `e2e/connected-accounts.spec.ts` (a stranger's
+      booking lands in Google as tentative and leaves it on disconnect).
+- [ ] ⛔ R96 live: add Google's `calendar.calendarlist.readonly` and `calendar.events.owned` and
+      Microsoft's `Calendars.ReadWrite` to the owner's clients (DEPLOY, Connected accounts, step
+      5), then connect again ("Read every calendar", "Add Plans") on each account.
 - [ ] R75 phase 2: reply-all with CC, sending as the address from Gmail and Outlook through
       Caime's submission.
 - [ ] R75 phase 3: sign in with Google, Apple and Microsoft (claiming in one tap); Google
@@ -3434,6 +3449,10 @@ The six-slice review's plan, in its order; a block is ticked when its tests and 
 - 2026-10-15 — R75: "View as sent" opens a mail's own HTML in a sandbox (nothing runs or loads).
 - 2026-10-15 — R75: mail says Seen when they reply or open it in Caime and "Opened, probably"
   by the provider's pixel (disclosed, off by a switch); signatures fold, Gmail's asterisks go.
+- 2026-10-17 — R96: bookings and connected calendars in step (owner's report): a stranger's
+  booking holds the host's time while its request waits; every calendar of one's own read, a
+  failed read never taken for a free day, a stale read redone before booking; Plans writes
+  Caime's meetings and appointments into Google and Outlook and keeps them in step.
 - 2026-10-15 — R95: the pages a visitor lands on (a person, an organization, an item, a
   collection, an invite, the 404) designed: a header with face or logo, offers as cards, a
   bar with the price and Book in reach of a thumb, Caime's foot.

@@ -2,7 +2,8 @@
  * Connected accounts (R90): Noor connects a Google account from Settings · Apps for its calendar.
  * The consent comes back to the screen with a claim it redeems, the server reads when Noor is
  * busy there (never in the browser), the row says it was read, and Noor's bookable slots leave
- * that hour out. Disconnecting tells Google and gives the hour back.
+ * that hour out. Someone who books Noor's lesson lands in that Google calendar (R96, Plans), as
+ * asked. Disconnecting takes the lesson back out, tells Google and gives the hour back.
  */
 import { expect, test } from '@playwright/test';
 import { ACCOUNTS_STUB, apiSignUp, CLIENT, newPerson, visible } from './helpers';
@@ -76,9 +77,44 @@ test('a Google calendar connected in Settings keeps its busy hour out of the boo
   expect(page.url()).not.toContain('claim=');
   // Read by the server a moment later; the row says so on its own.
   await expect(page.getByTestId('account-google-state').filter({ visible: true })).toContainText(
-    /Calendar · read /,
+    /Calendar · Plans · read /,
   );
   expect(await slots()).toEqual(['08:00', '09:00', '11:00', '12:00']);
+  // A stranger books the 08:00 lesson from Noor's catalog: the slot is held while the request
+  // waits, and the lesson is written into Noor's Google calendar, as asked, by the server.
+  const lina = await browser.newContext();
+  await apiSignUp(lina, 'Lina Calendar', `lina.calendar.${stamp}`);
+  const chat = await lina.request.post('/v1/conversations', {
+    headers: CLIENT,
+    data: { kind: 'direct', userId: noor.id },
+  });
+  expect(chat.ok(), await chat.text()).toBe(true);
+  const chatId = ((await chat.json()) as { conversation: { id: string } }).conversation.id;
+  const booked = await lina.request.post(`/v1/conversations/${chatId}/messages`, {
+    headers: CLIENT,
+    data: {
+      clientId: crypto.randomUUID(),
+      kind: 'kit',
+      payload: {
+        kit: 'appointment',
+        fields: { title: 'Lesson', start: { at: at('08:00'), hasTime: true } },
+        booking: { itemId: 'lesson', quantity: 1 },
+      },
+    },
+  });
+  expect(booked.status(), await booked.text()).toBe(201);
+  expect(await slots()).toEqual(['09:00', '11:00', '12:00']);
+  const written = async () =>
+    (
+      (await (await fetch(`${ACCOUNTS_STUB}/events`)).json()) as {
+        google: Array<{ summary: string; status: string; start: { dateTime: string } }>;
+      }
+    ).google;
+  await expect
+    .poll(async () => (await written()).map((e) => [e.summary, e.status, e.start.dateTime]), {
+      timeout: 30_000,
+    })
+    .toEqual([['Lesson · Lina Calendar', 'tentative', new Date(at('08:00')).toISOString()]]);
   await page.screenshot({
     path: 'e2e/screenshots/desktop-connected-accounts.png',
     animations: 'disabled',
@@ -97,7 +133,10 @@ test('a Google calendar connected in Settings keeps its busy hour out of the boo
   await page.getByTestId('account-remove-confirm').click();
   await expect(page.getByTestId('account-google')).toHaveCount(0);
   await expect(page.getByTestId('account-connect-google').filter({ visible: true })).toBeVisible();
-  expect(await slots()).toEqual(['08:00', '09:00', '10:00', '11:00', '12:00']);
+  // What Caime wrote that's still ahead left the calendar before the permission went.
+  expect(await written()).toEqual([]);
+  expect(await slots()).toEqual(['09:00', '10:00', '11:00', '12:00']);
+  await lina.close();
   const after = (
     (await (await fetch(`${ACCOUNTS_STUB}/requests`)).json()) as {
       requests: Array<{ path: string; browser: boolean }>;
@@ -131,7 +170,7 @@ test('a file from OneDrive is attached in a conversation, copied in as an upload
   await page.getByTestId('account-microsoft-add-files').filter({ visible: true }).click();
   await page.waitForURL(/\/settings\/apps/);
   await expect(page.getByTestId('account-microsoft-state').filter({ visible: true })).toContainText(
-    'Calendar · Files',
+    'Calendar · Plans · Files',
   );
   // In the conversation, OneDrive is offered beside a file from this device.
   await page.goto(`/c/${conversationId}`);

@@ -2271,11 +2271,11 @@ export const arB: Catalog = {
     'تحتفظ Microsoft بإذنك إلى أن تزيل Caime من تطبيقات حسابك وخدماته.',
   'Google is told to forget the permission too.': 'ويُطلب من Google أن تنسى الإذن أيضًا.',
   'Your accounts': 'حساباتك',
-  'Connect the calendar you already keep, and nobody books you over a meeting there.':
-    'اربط التقويم الذي تستخدمه، فلا يحجز أحد وقتك فوق اجتماع فيه.',
+  'Connect the calendar you already keep: nobody books you over a meeting there, and your plans in Caime show in it.':
+    'اربط التقويم الذي تستخدمه: لا يحجز أحد وقتك فوق اجتماع فيه، وتظهر فيه مواعيدك في Caime.',
   Calendar: 'التقويم',
-  'When you’re busy there, your bookable times aren’t offered. Caime keeps only when, never what or with whom.':
-    'حين تكون مشغولًا فيه، لا تُعرض أوقات الحجز لديك. يحتفظ Caime بالتوقيت وحده، لا بالموضوع ولا بمن معك.',
+  'When you’re busy in any of your calendars there, your bookable times aren’t offered. Caime keeps only when, never what or with whom.':
+    'حين يكون وقتك محجوزًا في أيٍّ من تقاويمك هناك، لا تُعرض أوقات الحجز لديك. يحتفظ Caime بالتوقيت وحده، لا بالموضوع ولا بمن معك.',
   'No apps are connected yet.': 'لا تطبيقات مربوطة بعد.',
   'Search {where}': {
     toWoman: 'ابحثي في {where}',
@@ -2448,4 +2448,11 @@ export const arB: Catalog = {
   'Opens the choices': 'يفتح الخيارات',
   'Prefer not to say': 'أفضّل عدم الإفصاح',
   'Your name in Latin letters': 'اسمك بالحروف اللاتينية',
+  Plans: 'المواعيد',
+  'Your meetings and appointments in Caime are added to its calendar and kept up to date as they’re asked, agreed, moved or cancelled. Nobody else is invited.':
+    'تُضاف اجتماعاتك ومواعيدك في Caime إلى تقويمه وتبقى محدَّثة حين تُطلب أو يُتفق عليها أو تُنقل أو تُلغى. لا يُدعى أحد غيرك.',
+  'Read every calendar': 'قراءة كل التقاويم',
+  'main calendar only': 'التقويم الرئيسي وحده',
+  'The plans Caime added to its calendar that are still ahead are taken out.':
+    'تُزال المواعيد القادمة التي أضافها Caime إلى تقويمه.',
 };

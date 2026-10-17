@@ -866,13 +866,27 @@ These are rules, not preferences.
   sealed with `serverKey('accounts.vault')` (`lib/vault.ts`) and an access lives in memory only
   (`accessFor`, which marks `reconnect` on `invalid_grant`). The calendar use keeps
   `external_busy` (start and end, nothing else), read by `syncAccountCalendar`
-  (`lib/external-busy.ts`: on connect, on "Read now", and the `accounts.calendar` sweep) and read
-  for holding time only through `busyElsewhere`: a person's `heldBy`, an organization's providers
-  in `openSlotsFor`, `pickProvider`. A change that shows (connected, ended, state moved, first
+  (`lib/external-busy.ts`: on connect, on "Read now", the `accounts.calendar` sweep, and
+  `freshenBusy` before a slot is offered or taken when the last read is older than
+  `ACCOUNT_FRESH_SECONDS`, which `openSlotsFor` and `pickProvider` call) from every calendar the
+  person owns (R96: Google's list through the optional `GOOGLE_CALENDAR_LIST_SCOPE`, else the main
+  one, `mainCalendarOnly` on the view; a calendar Google answers with an error is a failed read,
+  never an empty one), less what Caime wrote there (`withoutOwn`), and read for holding time only
+  through `busyElsewhere`: a person's `heldBy`, an organization's providers in `openSlotsFor`,
+  `pickProvider`. The Plans use (R96, `lib/calendar-push.ts`) writes what `cardsAhead` gives the
+  person into that calendar by reconciling (`pushAccountPlans` against `calendar_pushes`, a hash
+  per event; Google's event id is derived, Microsoft's kept), never by replaying events: anything
+  that changes a meeting or an appointment calls `queueCalendarPush` for its people (a card sent,
+  `afterCardMove`, `stopRepeating`, a meeting moved to a space, `removeForEveryone`, a booking's
+  provider reassigned), the
+  `accounts.plans` sweep catches the rest hourly, and `disconnectAccount` runs `withdrawPlans`
+  first. A booking from a person's own catalog (`AppointmentBooking.hostId`, written only by
+  `bookingFor`) is in `visibleCards` for them while the booker's request waits; nothing else from
+  a pending request is. A change that shows (connected, ended, state moved, first
   read) publishes `apps.changed` through `accountsChanged`; a routine read says nothing.
   Disconnecting, `endAllAccess` and deleting an account go through `disconnectAccount`. A new
-  use joins `ACCOUNT_USES`, `USE_SCOPES`, `ACCOUNT_USE_LABELS`, the privacy page and DEPLOY's
-  list of scopes; the app's section is `features/apps/Accounts.tsx`, its return `connect.ts`
+  use joins `ACCOUNT_USES`, `USE_SCOPES` (an optional permission in `USE_EXTRAS`),
+  `ACCOUNT_USE_LABELS`, `usesOffered`, the privacy page and DEPLOY's list of scopes; the app's section is `features/apps/Accounts.tsx`, its return `connect.ts`
   (web: the fragment read once) and `connect.native.ts` (the sign-in sheet). Files
   (`lib/cloud-files.ts`): `usesOffered` says what each provider offers here (Google's files need
   `GOOGLE_PICKER_API_KEY` and `GOOGLE_PICKER_APP_ID`); OneDrive is listed by `listAccountFiles`

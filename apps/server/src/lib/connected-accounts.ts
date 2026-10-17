@@ -20,12 +20,14 @@ import {
   type AccountReturnError,
   type AccountUse,
   accountScopes,
+  readsEveryCalendar,
   usesGranted,
 } from '@caime/core/accounts';
 import { APP_SCHEME, type ConnectedAccountView } from '@caime/core/api';
 import { tr } from '@caime/core/i18n';
 import type { AppContext } from '../context';
 import type { ConnectedAccountsTable } from '../db/schema';
+import { withdrawPlans } from './calendar-push';
 import { contactClient } from './contact-accounts';
 import { AppError, badRequest, notFound } from './errors';
 import { serverKey } from './server-keys';
@@ -39,7 +41,7 @@ const PROVIDER_MS = 10_000;
 
 type Row = Pick<
   ConnectedAccountsTable,
-  'id' | 'user_id' | 'provider' | 'email' | 'uses' | 'state' | 'refresh_sealed'
+  'id' | 'user_id' | 'provider' | 'email' | 'uses' | 'scopes' | 'state' | 'refresh_sealed'
 > & { created_at: Date; synced_at: Date | null };
 
 export function accountsOffered(ctx: Pick<AppContext, 'config'>): AccountProvider[] {
@@ -241,6 +243,7 @@ export function accountView(r: Row): ConnectedAccountView {
     state: r.state,
     createdAt: r.created_at.toISOString(),
     syncedAt: r.synced_at?.toISOString() ?? null,
+    mainCalendarOnly: r.uses.includes('calendar') && !readsEveryCalendar(r.provider, r.scopes),
   };
 }
 
@@ -250,6 +253,7 @@ const ROW = [
   'provider',
   'email',
   'uses',
+  'scopes',
   'state',
   'refresh_sealed',
   'created_at',
@@ -409,11 +413,14 @@ export async function accountsChanged(ctx: AppContext, userId: string): Promise<
 }
 
 /**
- * Disconnects: the provider is told where it can be (Google revokes the token; Microsoft has no
- * such call, and the person removes Caime under their account's apps), and the connection and
- * everything read with it go.
+ * Disconnects: the events Caime wrote there that are still ahead are taken out (R96), the
+ * provider is told where it can be (Google revokes the token; Microsoft has no such call, and
+ * the person removes Caime under their account's apps), and the connection and everything read
+ * or written with it go.
  */
 export async function disconnectAccount(ctx: AppContext, account: Row): Promise<void> {
+  // What Caime wrote into its calendar that's still ahead goes first, while it still may (R96).
+  await withdrawPlans(ctx, account);
   const refresh = unseal(await vaultKey(ctx), account.refresh_sealed, refreshLabel(account.id));
   if (account.provider === 'google' && refresh)
     await postForm(ctx.config.GOOGLE_REVOKE_URL, { token: refresh.toString() }).catch((err) =>

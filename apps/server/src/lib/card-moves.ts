@@ -3,7 +3,8 @@
  * someone taps, and a Checkout payment settled from Stripe (R65) run the same after-effects, so
  * a card paid by card tells the same people a hand-made "paid" does. The brief is queued when
  * a meeting or an appointment is agreed, the event recorded, everyone shown the card as it
- * stands, the organization's apps told, and the other side notified. Ending a Pay card's open
+ * stands, its people's own calendars put in step (R96), the organization's apps told, and the
+ * other side notified. Ending a Pay card's open
  * session (`expireCheckout`) stays with the route: a payment settled here has none left to end.
  */
 import {
@@ -22,6 +23,7 @@ import type { AppContext } from '../context';
 import type { Message } from '../db/schema';
 import { queueBrief } from './briefs';
 import type { CustomerMask } from './business';
+import { queueCalendarPush } from './calendar-push';
 import { recordEvent } from './events';
 import { tellCardApp } from './kits';
 import { queueNextTime } from './meeting-series';
@@ -62,6 +64,8 @@ export async function afterCardMove(
   if (!view) throw new Error('A moved card has no view');
   await recordEvent(ctx.db, 'kit.moved', actorId, { messageId: m.id, kit: card.kit, to });
   await ctx.bus.publish(members, { type: 'message.updated', data: { ...view, clientId: null } });
+  // Its people's own calendars follow it (R96): agreed, cancelled, declined, done.
+  if (card.kit === 'meeting' || card.kit === 'appointment') await queueCalendarPush(ctx, members);
   // The organization's apps hear who moved it, unless one of them did (PRD §74).
   if (business) await tellCardApp(ctx, m, business, actorId, 'kit.moved', { from, to });
   const mover = await ctx.db

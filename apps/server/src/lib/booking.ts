@@ -41,7 +41,7 @@ import type { Organization, User } from '../db/schema';
 import { humanTeam } from './booking-team';
 import { orgBookings } from './calendar';
 import { AppError, badRequest, forbidden } from './errors';
-import { busyElsewhere } from './external-busy';
+import { busyElsewhere, freshenBusy } from './external-busy';
 import { bookablePlaceIds, bookingWhere } from './places';
 import { soldOut } from './stock';
 import { cardsAhead } from './upcoming';
@@ -366,6 +366,10 @@ export async function openSlotsFor(
   const hours = host.hours;
   if (!hours) return null;
   const item = opts.item ?? null;
+  // Whoever's time this is, their other calendars read again if the last read is stale (R96):
+  // a meeting put there a minute ago holds its slot.
+  const who = providersFor(hours, item);
+  await freshenBusy(ctx, host.kind === 'person' ? [host.id] : (who ?? []));
   const held = await heldBy(
     ctx,
     host,
@@ -380,7 +384,6 @@ export async function openSlotsFor(
   );
   const { busy, providersBusy, resource } = busyFor(held, item, host);
   // An organization's providers are busy in their other calendars too (R90).
-  const who = providersFor(hours, item);
   if (host.kind === 'org' && who && providersBusy) {
     const elsewhere = await busyElsewhere(ctx.db, who, window);
     who.forEach((p, i) => {
@@ -458,6 +461,7 @@ export async function bookingFor(
   if (!open?.slots.some((d) => d.getTime() === start.getTime()))
     throw new AppError(409, 'slot_taken', tr('That time has just been taken. Pick another.'));
   return {
+    hostId: host.id,
     itemId: item.id,
     name: item.name,
     unit: item.unit,
@@ -520,7 +524,11 @@ export async function pickProvider(
     if (s < end.getTime() && e > start.getTime()) busy.add(p);
     if (sameDay(h.at)) load.set(p, (load.get(p) ?? 0) + 1);
   }
-  // Busy in their other calendar at that time (R90) is busy here too.
+  // Busy in their other calendar at that time (R90) is busy here too, as read just now (R96).
+  await freshenBusy(
+    ctx,
+    eligible.map((u) => u.id),
+  );
   const elsewhere = await busyElsewhere(
     ctx.db,
     eligible.map((u) => u.id),

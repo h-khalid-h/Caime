@@ -26,6 +26,7 @@ import { registerBriefJob } from './lib/briefs';
 import { Bus } from './lib/bus';
 import { businessRealtime } from './lib/business';
 import { registerCaiJobs } from './lib/cai';
+import { registerCalendarPush } from './lib/calendar-push';
 import { registerCallSweep } from './lib/calls';
 import { canonicalLocation } from './lib/canonical-host';
 import { createMailer, type Mailer } from './lib/email';
@@ -367,6 +368,7 @@ export async function buildApp(config: Config, options: BuildOptions = {}): Prom
   registerMeetingStartJob();
   registerSeriesJob();
   registerAccountSync();
+  registerCalendarPush();
   registerGuestsAgain();
   registerTranscribeJob();
   registerMailJobs();

@@ -3,7 +3,8 @@
  * read from their cards, for their calendar feed, a conversation's details and a space's page;
  * and what's owed by a day (review 2026-10-09 M14), a Pay card's or an invoice's due date, for
  * the calendar and Cai. Only where they may still read it: a conversation they're in and let in
- * (no request pending or declined), never a private one, never a card deleted, or deleted by
+ * (no request pending or declined, except a booking from their own catalog, which holds its time
+ * while its request waits: R96), never a private one, never a card deleted, or deleted by
  * them for themselves. In a business conversation a team member (in every one of the
  * organization's, R15) has only the cards that are theirs to do: a booking naming them, or a
  * card made by hand in a thread assigned to them; the customer has them all. Every reader (the
@@ -60,7 +61,17 @@ function visibleCards(
       )
       .where('c.privacy_class', '=', 'standard')
       .where((eb) =>
-        eb.or([eb('p.request_state', 'is', null), eb('p.request_state', '=', 'accepted')]),
+        eb.or([
+          eb('p.request_state', 'is', null),
+          eb('p.request_state', '=', 'accepted'),
+          // A booking from their own catalog holds their time while its request waits (R96):
+          // they offered it to whoever may book, and a second stranger mustn't take the slot.
+          // Only the server writes `booking`, through the catalog's checks (`bookingFor`).
+          eb.and([
+            eb('p.request_state', '=', 'pending'),
+            eb(sql`m.payload->'booking'->>'hostId'`, '=', userId),
+          ]),
+        ]),
       )
       .where(({ not, exists, selectFrom }) =>
         not(

@@ -58,6 +58,7 @@ import {
   personHost,
 } from './booking';
 import { customerMask, maskFor, maskMessage, recordBusinessMessage } from './business';
+import { queueCalendarPush } from './calendar-push';
 import { checkoutAccountOf } from './checkout-account';
 import { assertSealedForEveryone } from './e2ee';
 import { AppError, badRequest, forbidden, notFound } from './errors';
@@ -1365,6 +1366,13 @@ export async function sendMessage(
   }
   ctx.metrics.messages.inc({ kind: body.kind });
   if (tookStock && orderTake) await tellStockChanged(ctx, [orderTake.host.id]);
+  // A meeting or an appointment goes into its people's own calendars (R96), asked or agreed.
+  const kit = (payload as { kit?: unknown }).kit;
+  if (message.card_start_at && (kit === 'meeting' || kit === 'appointment'))
+    await queueCalendarPush(
+      ctx,
+      (await participantsOf(ctx.db, conversationId)).map((p) => p.user_id),
+    );
   // A business thread moves with each message: whose turn it is, and who has it (PRD §38).
   // A repeating appointment's next time is the series going on, not anyone writing (R58): it
   // reopens no thread, wakes no agent and tells no app.

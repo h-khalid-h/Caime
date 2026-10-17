@@ -63,6 +63,7 @@ import { assertCanWrite } from '../lib/blocks';
 import { orgHost, pickProvider } from '../lib/booking';
 import { humanTeam } from '../lib/booking-team';
 import { customerMask, maskFor, maskId } from '../lib/business';
+import { queueCalendarPush } from '../lib/calendar-push';
 import { afterCardMove } from '../lib/card-moves';
 import { expireCheckout, stillPayableAfter } from '../lib/checkout';
 import { membership, sendSystem } from '../lib/conversation-views';
@@ -448,6 +449,8 @@ export async function messageRoutes(app: FastifyInstance, ctx: AppContext) {
     const members = (await participantsOf(ctx.db, m.conversation_id)).map((p) => p.user_id);
     const [view] = await messageViews(ctx.db, [updated], auth.userId);
     await ctx.bus.publish(members, { type: 'message.updated', data: { ...view, clientId: null } });
+    // It leaves the calendar of whoever had it and joins the new one's (R96).
+    await queueCalendarPush(ctx, members);
     // Whoever it's now theirs to do hears so, unless they named themselves.
     if (who && who.id !== auth.userId)
       await notify(ctx, {

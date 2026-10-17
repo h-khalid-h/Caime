@@ -19,6 +19,7 @@ import { seriesOf } from '@caime/core/series';
 import { type Kysely, sql, type Transaction } from 'kysely';
 import type { AppContext } from '../context';
 import { type Database, MESSAGE_COLUMNS, type Message } from '../db/schema';
+import { queueCalendarPush } from './calendar-push';
 import { membership } from './conversation-views';
 import { lockConversation } from './conversations';
 import { hashToken, newToken } from './crypto';
@@ -313,12 +314,14 @@ async function spaceFor(
   await queueMeetingStart(ctx, copy.id);
   await queueNextTime(ctx, copy.id);
   // Each side sees its card as it now is: the copy accepted in the space, and the original
-  // saying where it went.
+  // saying where it went; and their own calendars follow it there (R96).
+  const told: string[] = [];
   for (const [m, conversationId] of [
     [accepted, spaceId],
     [moved, moved.conversation_id],
   ] as const) {
     const everyone = (await participantsOf(ctx.db, conversationId)).map((x) => x.user_id);
+    told.push(...everyone);
     for (const userId of everyone) {
       const [view] = await messageViews(ctx.db, [m], userId);
       if (view)
@@ -328,6 +331,7 @@ async function spaceFor(
         });
     }
   }
+  await queueCalendarPush(ctx, told);
   return { conversationId: spaceId, messageId: copy.id };
 }
 

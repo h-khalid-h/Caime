@@ -25,6 +25,7 @@ import { tr } from '@caime/core/i18n';
 import type { FastifyInstance } from 'fastify';
 import { z } from 'zod';
 import type { AppContext } from '../context';
+import { queueAccountPush } from '../lib/calendar-push';
 import {
   filesAccess,
   googlePickerOn,
@@ -101,6 +102,8 @@ export async function connectedAccountRoutes(app: FastifyInstance, ctx: AppConte
     await adult(auth.userId);
     const account = await redeemAccountClaim(ctx, auth.userId, p, body.claim);
     if (account.uses.includes('calendar')) await queueAccountSync(ctx, account.id);
+    // Plans written now (R96), or, turned off at the provider, what was written taken out.
+    await queueAccountPush(ctx, account.id);
     return { account };
   });
 

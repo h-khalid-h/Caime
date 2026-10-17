@@ -1403,4 +1403,9 @@ export const frServer: Catalog = {
     'Vous commandez auprès de {name} dans une conversation. Rejoindre {site} est gratuit.',
   'You pick a time with {name} in a conversation. Joining {site} is free.':
     'Vous choisissez un moment avec {name} dans une conversation. Rejoindre {site} est gratuit.',
+  'Asked, not agreed yet.': 'Demandé, pas encore convenu.',
+  'Join in Caime: {url}': 'Rejoindre dans Caime : {url}',
+  'Open in Caime: {url}': 'Dans Caime : {url}',
+  'Caime keeps this up to date. Change it in Caime.':
+    'Caime le tient à jour. Modifiez-le dans Caime.',
 };

@@ -1342,4 +1342,9 @@ export const turkishServer: Catalog = {
     '{name} ile bir sohbette sipariş verirsiniz. {site} üyeliği ücretsizdir.',
   'You pick a time with {name} in a conversation. Joining {site} is free.':
     '{name} ile bir sohbette zaman seçersiniz. {site} üyeliği ücretsizdir.',
+  'Asked, not agreed yet.': 'İstendi, henüz kabul edilmedi.',
+  'Join in Caime: {url}': 'Caime’de katıl: {url}',
+  'Open in Caime: {url}': 'Caime’de: {url}',
+  'Caime keeps this up to date. Change it in Caime.':
+    'Caime bunu güncel tutar. Değişiklikleri Caime’de yapın.',
 };

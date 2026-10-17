@@ -108,6 +108,17 @@ every line, one insert of what it took), and a give-back one statement (a cancel
 removal's, or two more CTEs in the erasure's own). A count that changes tells the host's devices
 once (`booking.changed`, two small queries to find whose), never a poll.
 
+Connected calendars in step (R96). Offering or taking a slot costs one indexed query on the
+host's (or the providers') connections; a calendar last read more than a minute ago is read again
+then, one provider call per calendar (Google's list and one free/busy question for up to 50
+calendars; Microsoft a page per calendar), so a host's calendar is asked at most once a minute
+however many people look, and a slot waits four seconds at most for it. Writing plans costs
+nothing on a change but one query to find who has Plans on and one queued job per connection
+per ten-second bucket (a burst is one run); a run reads the person's cards ahead (the calendar's
+own two queries) and the events written, and calls the provider only for what differs (a hash
+per event), at most 100 writes a run, four at a time. The hourly sweep takes 200 connections a
+run, background, and for most of them calls no provider at all. No model, no device work.
+
 ## Cai and the Caime Friends (R67, R71, R72)
 
 Nothing runs until someone writes to one. A message to one queues one job (deduplicated by

@@ -1,8 +1,9 @@
 /**
- * Your accounts (R90): a Google or Microsoft account connected once for the uses turned on,
- * phase 1 its calendar's busy times, so bookable times are never offered over a meeting kept
- * there. Each row says what it's used for, when it was last read and whether it needs
- * connecting again; reading it now and disconnecting are one tap each. The consent returns here
+ * Your accounts (R90): a Google or Microsoft account connected once for the uses turned on: its
+ * calendars' busy times, so bookable times are never offered over a meeting kept there, and
+ * (R96) Plans, Caime's meetings and appointments written into that calendar. Each row says what
+ * it's used for, when it was last read and whether it needs connecting again (or again to read
+ * every calendar, not only the main one); reading it now and disconnecting are one tap each. The consent returns here
  * with a sealed claim this screen redeems (`connect.ts`), so only the person who asked can finish
  * a connection.
  */
@@ -90,6 +91,8 @@ function AccountRow({
           ? tr('read {when}', { when: formatWhen(account.syncedAt, now, timeZone, locale) })
           : tr('not read yet');
   const missing = offered.filter((u) => !account.uses.includes(u));
+  // Read from the main calendar alone (R96): connecting again asks for the list of them all.
+  const every = account.state !== 'reconnect' && account.mainCalendarOnly;
   const run = async (what: 'sync' | 'remove' | 'again' | AccountUse) => {
     setAsking(false);
     setBusy(what);
@@ -127,7 +130,9 @@ function AccountRow({
             color={account.state === 'connected' ? 'textSecondary' : 'danger'}
             testID={`account-${account.provider}-state`}
           >
-            {`${name} · ${uses} · ${state}`}
+            {every
+              ? `${name} · ${uses} · ${state} · ${tr('main calendar only')}`
+              : `${name} · ${uses} · ${state}`}
           </Text>
         </View>
       </View>
@@ -150,6 +155,16 @@ function AccountRow({
             testID={`account-${account.provider}-sync`}
           />
         )}
+        {every ? (
+          <Button
+            label={tr('Read every calendar')}
+            size="sm"
+            variant="secondary"
+            loading={busy === 'again'}
+            onPress={() => void run('again')}
+            testID={`account-${account.provider}-every`}
+          />
+        ) : null}
         {account.state === 'reconnect'
           ? null
           : missing.map((u) => (
@@ -190,6 +205,11 @@ function AccountRow({
           />
         }
       >
+        {account.uses.includes('plans') ? (
+          <Text variant="body" color="textSecondary">
+            {tr('The plans Caime added to its calendar that are still ahead are taken out.')}
+          </Text>
+        ) : null}
         <Text variant="body" color="textSecondary">
           {account.provider === 'microsoft'
             ? tr(
@@ -226,7 +246,8 @@ export function Accounts({ minor }: { minor: boolean }) {
   const connect = async (p: AccountProvider) => {
     setStarting(p);
     try {
-      const r = await connectAccount(p, ['calendar']);
+      // Its calendar both ways (R96): busy times read, plans written; either can be unticked.
+      const r = await connectAccount(p, ['calendar', 'plans']);
       if (r !== 'left') await finish(r, () => void qc.invalidateQueries({ queryKey: qk.accounts }));
     } catch (e) {
       toast((e as Error).message, { tone: 'danger' });
@@ -255,7 +276,7 @@ export function Accounts({ minor }: { minor: boolean }) {
           {accounts.length > 0 ? null : (
             <Text variant="body" color="textSecondary">
               {tr(
-                'Connect the calendar you already keep, and nobody books you over a meeting there.',
+                'Connect the calendar you already keep: nobody books you over a meeting there, and your plans in Caime show in it.',
               )}
             </Text>
           )}

@@ -4114,11 +4114,11 @@ export const fr: Catalog = {
     'Microsoft garde votre autorisation jusqu’à ce que vous retiriez Caime des applications et services de votre compte.',
   'Google is told to forget the permission too.': 'Google est aussi prié d’oublier l’autorisation.',
   'Your accounts': 'Vos comptes',
-  'Connect the calendar you already keep, and nobody books you over a meeting there.':
-    'Connectez l’agenda que vous tenez déjà : personne ne vous réserve pendant une réunion qui y figure.',
+  'Connect the calendar you already keep: nobody books you over a meeting there, and your plans in Caime show in it.':
+    'Connectez l’agenda que vous tenez déjà : personne ne vous réserve pendant une réunion qui y figure, et vos rendez-vous dans Caime y apparaissent.',
   Calendar: 'Agenda',
-  'When you’re busy there, your bookable times aren’t offered. Caime keeps only when, never what or with whom.':
-    'Quand vous y êtes occupé, vos créneaux réservables ne sont pas proposés. Caime ne garde que le moment, jamais l’objet ni avec qui.',
+  'When you’re busy in any of your calendars there, your bookable times aren’t offered. Caime keeps only when, never what or with whom.':
+    'Quand l’un de vos agendas y est occupé, vos créneaux réservables ne sont pas proposés. Caime ne garde que le moment, jamais l’objet ni avec qui.',
   'No apps are connected yet.': 'Aucune application n’est encore connectée.',
   'Search {where}': 'Rechercher dans {where}',
   'Nothing here matches that.': 'Rien ici ne correspond.',
@@ -4268,4 +4268,11 @@ export const fr: Catalog = {
   'Opens the choices': 'Ouvre les choix',
   'Prefer not to say': 'Je préfère ne pas le dire',
   'Your name in Latin letters': 'Votre nom en lettres latines',
+  Plans: 'Rendez-vous',
+  'Your meetings and appointments in Caime are added to its calendar and kept up to date as they’re asked, agreed, moved or cancelled. Nobody else is invited.':
+    'Vos réunions et rendez-vous dans Caime sont ajoutés à son agenda et tenus à jour quand ils sont demandés, convenus, déplacés ou annulés. Personne d’autre n’est invité.',
+  'Read every calendar': 'Lire tous les agendas',
+  'main calendar only': 'agenda principal seulement',
+  'The plans Caime added to its calendar that are still ahead are taken out.':
+    'Les rendez-vous à venir que Caime a ajoutés à son agenda en sont retirés.',
 };

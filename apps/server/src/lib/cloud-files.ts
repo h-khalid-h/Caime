@@ -48,8 +48,8 @@ export function googlePickerOn(config: Config): boolean {
 /** The uses each provider offers on this Caime: Google's files need its picker. */
 export function usesOffered(config: Config): Record<AccountProvider, AccountUse[]> {
   return {
-    google: googlePickerOn(config) ? ['calendar', 'files'] : ['calendar'],
-    microsoft: ['calendar', 'files'],
+    google: googlePickerOn(config) ? ['calendar', 'plans', 'files'] : ['calendar', 'plans'],
+    microsoft: ['calendar', 'plans', 'files'],
   };
 }
 

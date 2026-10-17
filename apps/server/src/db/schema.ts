@@ -598,6 +598,25 @@ export interface ConnectedAccountsTable {
   state: 'connected' | 'reconnect' | 'failing';
   created_at: Generated<Date>;
   synced_at: Date | null;
+  /** When its plans were last put in step with the person's cards (R96). */
+  pushed_at: Date | null;
+}
+
+/** An event Caime wrote into a connected calendar for a card or a time of a series (R96). */
+export interface CalendarPushesTable {
+  account_id: string;
+  user_id: string;
+  /** The card's calendar id (`meetingUid`), the feed's too. */
+  uid: string;
+  /** The provider's id for the event. */
+  event_id: string;
+  start_at: Date;
+  end_at: Date;
+  /** Whether it shows busy there (a timed one); an all-day one is written free. */
+  holds: boolean;
+  /** What was written, hashed: written again only when it changes. */
+  fingerprint: string;
+  pushed_at: Generated<Date>;
 }
 
 /** An email or phone number someone added as theirs (R91), proven once `verified_at` is set. */
@@ -1304,6 +1323,7 @@ export interface Database {
   own_addresses: OwnAddressesTable;
   places: PlacesTable;
   external_busy: ExternalBusyTable;
+  calendar_pushes: CalendarPushesTable;
   decisions: DecisionsTable;
   notifications: NotificationsTable;
   push_subscriptions: PushSubscriptionsTable;

@@ -408,6 +408,11 @@ export interface AppointmentBooking {
   where?: string | null;
   /** The branch it's at (R92), for the team to see its bookings by branch. */
   placeId?: string | null;
+  /**
+   * Whose catalog it's from (R96): the organization's id, or the person's. A booking from a
+   * person's own catalog holds their time while the booker's message request waits.
+   */
+  hostId?: string;
 }
 
 export interface Busy {

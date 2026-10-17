@@ -287,6 +287,11 @@ export interface ConnectedAccountView {
   state: AccountState;
   createdAt: string;
   syncedAt: string | null;
+  /**
+   * Its calendar is read from the main calendar alone (R96): Google's list of calendars wasn't
+   * granted, or the connection was made before it was asked for. Connecting again reads them all.
+   */
+  mainCalendarOnly: boolean;
 }
 export interface ConnectedAccountsResponse {
   accounts: ConnectedAccountView[];

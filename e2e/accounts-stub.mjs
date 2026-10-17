@@ -7,7 +7,9 @@
  * it carried, so a test can tell the access reached the browser and nothing else.
  *
  * Connected accounts (R90) too: a refresh token with every code, renewed accesses, who the
- * account is, a calendar's busy times (set by the test, `POST /busy`) and Google's revocation.
+ * account is, a calendar's busy times (set by the test, `POST /busy`) and Google's revocation;
+ * and (R96) the list of calendars and the events Caime writes into each, listed for the test at
+ * `GET /events`.
  */
 import { createServer } from 'node:http';
 
@@ -22,6 +24,14 @@ const requests = [];
 const REFRESH = { google: 'google-e2e-refresh', microsoft: 'microsoft-e2e-refresh' };
 /** When the account's calendar is busy: `{ start, end }` in UTC. */
 let busy = [];
+/** The events Caime wrote (R96), by provider and id. */
+const events = { google: new Map(), microsoft: new Map() };
+let madeEvents = 0;
+const readJson = async (req) => {
+  let raw = '';
+  for await (const chunk of req) raw += chunk;
+  return raw ? JSON.parse(raw) : {};
+};
 const NOTE = Buffer.from('The clinic opens on Sunday at nine.\n');
 
 const cors = {
@@ -56,6 +66,11 @@ createServer(async (req, res) => {
     requests.length = 0;
     return json(res, 200, { ok: true });
   }
+  if (path === '/events' && req.method === 'GET')
+    return json(res, 200, {
+      google: [...events.google.values()],
+      microsoft: [...events.microsoft.values()],
+    });
   if (path === '/busy' && req.method === 'POST') {
     let raw = '';
     for await (const chunk of req) raw += chunk;
@@ -106,8 +121,8 @@ createServer(async (req, res) => {
       ...(renewing && token === 'google' ? {} : { refresh_token: REFRESH[token] }),
       scope:
         token === 'google'
-          ? 'openid https://www.googleapis.com/auth/userinfo.email https://www.googleapis.com/auth/contacts.readonly https://www.googleapis.com/auth/contacts.other.readonly https://www.googleapis.com/auth/calendar.freebusy'
-          : 'https://graph.microsoft.com/Contacts.Read https://graph.microsoft.com/People.Read https://graph.microsoft.com/Calendars.ReadBasic https://graph.microsoft.com/Files.Read',
+          ? 'openid https://www.googleapis.com/auth/userinfo.email https://www.googleapis.com/auth/contacts.readonly https://www.googleapis.com/auth/contacts.other.readonly https://www.googleapis.com/auth/calendar.freebusy https://www.googleapis.com/auth/calendar.calendarlist.readonly https://www.googleapis.com/auth/calendar.events.owned'
+          : 'https://graph.microsoft.com/Contacts.Read https://graph.microsoft.com/People.Read https://graph.microsoft.com/Calendars.ReadBasic https://graph.microsoft.com/Calendars.ReadWrite https://graph.microsoft.com/Files.Read',
     });
   }
   if (path === '/google/revoke' && req.method === 'POST') return json(res, 200, {});
@@ -119,6 +134,35 @@ createServer(async (req, res) => {
   if (path === '/gcal/freeBusy' && req.method === 'POST') {
     if (bearer !== ACCESS.google) return json(res, 401, {});
     return json(res, 200, { calendars: { primary: { busy } } });
+  }
+  // The list of the account's calendars (R96): the main one alone.
+  if (path === '/gcal/users/me/calendarList') {
+    if (bearer !== ACCESS.google) return json(res, 401, {});
+    return json(res, 200, {
+      items: [{ id: 'noor.e2e@gmail.example', primary: true, selected: true }],
+    });
+  }
+  // Events Caime writes into the main calendar (R96), each under the id Caime gives it.
+  const gEvent = path.match(/^\/gcal\/calendars\/primary\/events(?:\/([^/]+))?$/);
+  if (gEvent) {
+    if (bearer !== ACCESS.google) return json(res, 401, {});
+    const id = gEvent[1];
+    if (req.method === 'POST') {
+      const e = await readJson(req);
+      if (events.google.has(e.id)) return json(res, 409, { error: { code: 409 } });
+      events.google.set(e.id, e);
+      return json(res, 200, e);
+    }
+    if (!id || !events.google.has(id)) return json(res, 404, { error: { code: 404 } });
+    if (req.method === 'PUT') {
+      events.google.set(id, { id, ...(await readJson(req)) });
+      return json(res, 200, events.google.get(id));
+    }
+    if (req.method === 'DELETE') {
+      events.google.delete(id);
+      res.writeHead(204);
+      return res.end();
+    }
   }
   if (path === '/v1.0/me') {
     if (bearer !== ACCESS.microsoft) return json(res, 401, {});
@@ -149,6 +193,30 @@ createServer(async (req, res) => {
   if (path === '/blob/note1') {
     res.writeHead(200, { 'content-type': 'text/plain', 'content-length': String(NOTE.length) });
     return res.end(NOTE);
+  }
+  if (path === '/v1.0/me/calendars') {
+    if (bearer !== ACCESS.microsoft) return json(res, 401, {});
+    return json(res, 200, { value: [{ id: 'default', isDefaultCalendar: true, canEdit: true }] });
+  }
+  const mEvent = path.match(/^\/v1\.0\/me\/events(?:\/([^/]+))?$/);
+  if (mEvent) {
+    if (bearer !== ACCESS.microsoft) return json(res, 401, {});
+    const id = mEvent[1] ? decodeURIComponent(mEvent[1]) : null;
+    if (req.method === 'POST') {
+      const made = `ms-event-${++madeEvents}`;
+      events.microsoft.set(made, { id: made, ...(await readJson(req)) });
+      return json(res, 201, { id: made });
+    }
+    if (!id || !events.microsoft.has(id)) return json(res, 404, {});
+    if (req.method === 'PATCH') {
+      events.microsoft.set(id, { ...events.microsoft.get(id), ...(await readJson(req)) });
+      return json(res, 200, { id });
+    }
+    if (req.method === 'DELETE') {
+      events.microsoft.delete(id);
+      res.writeHead(204);
+      return res.end();
+    }
   }
   if (path === '/v1.0/me/calendarView') {
     if (bearer !== ACCESS.microsoft) return json(res, 401, {});

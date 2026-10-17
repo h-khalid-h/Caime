@@ -28,6 +28,7 @@ import { eachLimit } from './batch';
 import { assertCanWrite } from './blocks';
 import { pickProvider } from './booking';
 import { queueBrief } from './briefs';
+import { queueCalendarPush } from './calendar-push';
 import { membership } from './conversation-views';
 import { AppError, badRequest, notFound } from './errors';
 import { enqueue, registerJob } from './jobs';
@@ -347,6 +348,8 @@ export async function stopRepeating(
   if (!view) throw notFound(tr('That message'));
   const members = (await participantsOf(ctx.db, stopped.conversation_id)).map((x) => x.user_id);
   await ctx.bus.publish(members, { type: 'message.updated', data: { ...view, clientId: null } });
+  // Its times ahead leave its people's own calendars (R96).
+  await queueCalendarPush(ctx, members);
   const mover = await ctx.db
     .selectFrom('users')
     .select('display_name')

@@ -203,7 +203,7 @@ describe('connected accounts (R90)', () => {
       accounts: [],
       offered: ['google', 'microsoft'],
       // Google's files need its picker's key, which this Caime doesn't have.
-      usesOffered: { google: ['calendar'], microsoft: ['calendar', 'files'] },
+      usesOffered: { google: ['calendar', 'plans'], microsoft: ['calendar', 'plans', 'files'] },
     });
     const alone = await signup(bare);
     expect((await alone.get('/v1/me/accounts')).offered).toEqual([]);
@@ -217,8 +217,9 @@ describe('connected accounts (R90)', () => {
   it('asks Google for busy times alone, offline, and returns a claim only its asker redeems', async () => {
     const { link, state } = await connect(noor, 'google');
     expect(link.origin + link.pathname).toBe(`${base}/google/auth`);
+    // Busy times, and the list of calendars so each of the person's own is read (R96).
     expect(link.searchParams.get('scope')).toBe(
-      'openid email https://www.googleapis.com/auth/calendar.freebusy',
+      'openid email https://www.googleapis.com/auth/calendar.freebusy https://www.googleapis.com/auth/calendar.calendarlist.readonly',
     );
     expect(link.searchParams.get('access_type')).toBe('offline');
     expect(link.searchParams.get('redirect_uri')).toBe(
@@ -242,6 +243,8 @@ describe('connected accounts (R90)', () => {
       uses: ['calendar'],
       state: 'connected',
       syncedAt: null,
+      // The list of calendars wasn't granted: the main one alone is read until connected again.
+      mainCalendarOnly: true,
     });
     // Nothing secret is answered or kept in the clear.
     const row = await t.ctx.db

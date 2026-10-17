@@ -184,11 +184,11 @@ describe('files from a connected account (R90)', () => {
 
   it('offers Files where it can work: OneDrive always, Google only with its picker’s key', async () => {
     expect((await noor.get('/v1/me/accounts')).usesOffered).toEqual({
-      google: ['calendar', 'files'],
-      microsoft: ['calendar', 'files'],
+      google: ['calendar', 'plans', 'files'],
+      microsoft: ['calendar', 'plans', 'files'],
     });
     const alone = await signup(bare);
-    expect((await alone.get('/v1/me/accounts')).usesOffered.google).toEqual(['calendar']);
+    expect((await alone.get('/v1/me/accounts')).usesOffered.google).toEqual(['calendar', 'plans']);
     const refused = await alone.req('POST', '/v1/me/accounts/google/start', {
       uses: ['calendar', 'files'],
       back: 'web',

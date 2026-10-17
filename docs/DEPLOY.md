@@ -461,6 +461,16 @@ alone (PRODUCT-REVIEW R90). Add to each client:
    digits on the project's dashboard), then redeploy. Without them, Files is offered for Microsoft
    alone. Check: Settings · Apps shows "Add Files" on each account; in a conversation the Share
    sheet lists Google Drive and OneDrive; a picked file arrives as an attachment.
+5. **Every calendar, and Plans (R96).** Google: add the scopes
+   `…/auth/calendar.calendarlist.readonly` (which calendars are the person's own, so each is read,
+   not only the main one) and `…/auth/calendar.events.owned` (Caime writes the person's meetings
+   and appointments into the calendars they own; sensitive, verified with the rest) to the consent
+   screen. Microsoft: add the delegated Graph permission `Calendars.ReadWrite`. No new variable.
+   A calendar connected before this reads its main calendar alone and writes nothing: its row says
+   "main calendar only" with **Read every calendar**, and offers **Add Plans**; either asks the
+   provider again and keeps the rest. Check: book one of your own items from another account; the
+   booking appears in that Google or Outlook calendar as tentative within half a minute, turns
+   firm when you confirm it, and leaves it when you cancel it.
 
 #### Phone numbers proven over WhatsApp (R91)
 
