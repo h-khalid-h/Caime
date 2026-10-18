@@ -1231,8 +1231,12 @@ appointment from a catalog).
   signal already on its way when its sender or the one it's for left is late, as one to an ended
   call is: `409 call_ended`; between devices that were never in it, 403.
 - A meeting's guests (R83, R84): invited by address from an accepted meeting card held here
-  (`features/kits/MeetingGuests.tsx`: Invite by email, the sheet lazy; the card that moved says
-  so and opens the space), they arrive at `/j/<token>` (`features/meetings/JoinMeeting.tsx`, a
+  (`features/kits/MeetingGuests.tsx`: Invite a guest, the sheet lazy; the card that moved says
+  so and opens the space), or by a link the inviter sends themselves (H6, `inviteGuestByLink`: a
+  provisional person of their own at `LINK_GUEST_DOMAIN`, no address, the link shown once; the
+  same name asked again in the space gets a new link; nothing mails that domain and
+  `personForAddress` answers nobody for it, so a link someone was handed never stands for an
+  address's history: anything new that hands out a guest's link keeps to that), they arrive at `/j/<token>` (`features/meetings/JoinMeeting.tsx`, a
   root route outside the groups, open to anyone): the meeting, the name, "I'm 18 or over",
   Join, which signs them in as their provisional self. A guest's session never mounts the app
   (`RootStack`: `(app)` is for a signed-in person who isn't provisional); the same address is

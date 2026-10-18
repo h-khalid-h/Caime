@@ -267,7 +267,8 @@ export type PublicPage =
   | PublicCollectionPage
   | PublicInvite
   | PublicTeamInvite
-  | { kind: 'missing' }
+  /** Nothing here: a handle nobody has, or (`invite`) an invite link that's no longer open. */
+  | { kind: 'missing'; what?: 'invite' }
   | { kind: 'app' }
   /**
    * The app's way in for a visitor (welcome, sign-in, sign-up): the screen's words and shape,
@@ -478,9 +479,11 @@ export async function publicPageFor(
   if (site && (MARKETING_PAGES as readonly string[]).includes(site))
     return { kind: 'site', page: site as SiteOnlyPage };
   const invite = /^\/i\/([^/?#]+)$/.exec(path);
-  if (invite) return (await publicInvite(db, invite[1] ?? '', now)) ?? { kind: 'missing' };
+  if (invite)
+    return (await publicInvite(db, invite[1] ?? '', now)) ?? { kind: 'missing', what: 'invite' };
   const team = /^\/t\/([^/?#]+)$/.exec(path);
-  if (team) return (await publicTeamInvite(ctx, team[1] ?? '')) ?? { kind: 'missing' };
+  if (team)
+    return (await publicTeamInvite(ctx, team[1] ?? '')) ?? { kind: 'missing', what: 'invite' };
   const at = /^\/@([^/?#]+)(?:\/([^/?#]+))?$/.exec(path);
   const org = /^\/o\/([^/?#]+)(?:\/([^/?#]+))?$/.exec(path);
   const raw = safeDecode((at ?? org)?.[1] ?? '');
@@ -1173,13 +1176,19 @@ export function renderPublic(
 </main>`,
       };
     }
-    case 'missing':
+    case 'missing': {
+      // An invite link that's no longer open says so, never that nobody has a handle (review
+      // 2026-10-17 §1 M).
+      const invite = page.what === 'invite';
+      const heading = invite ? tr('This invite isn’t open') : tr('Nobody by that handle');
       return {
         status: 404,
         lang: currentTranslator().language,
         head: meta({
           title: `${tr('Not here')} · ${SITE_NAME}`,
-          description: tr('Nobody by that handle.'),
+          description: invite
+            ? tr('This invite isn’t open any more.')
+            : tr('Nobody by that handle.'),
           image: null,
           index: false,
           canonical: false,
@@ -1190,13 +1199,14 @@ export function renderPublic(
   <section class="gone">
     ${friend('pico', 112, 'curious')}
     <p class="kicker"><span class="mono">${esc(tr('not here'))}</span></p>
-    <h1>${esc(tr('Nobody by that handle'))}</h1>
-    <p class="lead">${esc(tr('It may have changed, or been let go of.'))}</p>
+    <h1>${esc(heading)}</h1>
+    <p class="lead">${esc(invite ? tr('It may have run out, or been taken back. Ask whoever sent it for a new one.') : tr('It may have changed, or been let go of.'))}</p>
     <div class="actions" style="justify-content:center"><a class="btn" href="/">${esc(tr('Open {site}', { site: SITE_NAME }))}</a></div>
   </section>
   ${pageFoot(tr(PROMISE), wordmark(18))}
 </main>`,
       };
+    }
     default:
       return {
         status: 200,

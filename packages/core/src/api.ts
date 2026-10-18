@@ -3224,6 +3224,11 @@ export interface AdminPersonResponse {
 /** `POST /v1/messages/:id/guests` (R84): the meeting's own space, and its card there. */
 export interface MeetingGuestResponse {
   space: { conversationId: string; messageId: string };
+  /**
+   * A guest by link's own link (review 2026-10-17 §1 H6), shown this once to send however the
+   * inviter likes; null for a guest by address, whose link goes by mail.
+   */
+  link: string | null;
 }
 
 /** One side of a receipt (R62): a person, or an organization with its verified domain. */

@@ -1393,4 +1393,9 @@ export const turkishServer: Catalog = {
   'Whoever has this link': 'Bu bağlantıya sahip olan herkes',
   'Sign up or sign in, then join: its conversations with customers are in your Business inbox, no app to install.':
     'Kaydolun ya da giriş yapın, ardından katılın: müşterilerle konuşmaları İşletme gelen kutunuzda, yüklenecek uygulama yok.',
+  'Say who it’s for: their name.': 'Kimin için olduğunu yazın: adını.',
+  'This invite isn’t open': 'Bu davet açık değil',
+  'This invite isn’t open any more.': 'Bu davet artık açık değil.',
+  'It may have run out, or been taken back. Ask whoever sent it for a new one.':
+    'Süresi dolmuş ya da geri alınmış olabilir. Gönderen kişiden yenisini isteyin.',
 };

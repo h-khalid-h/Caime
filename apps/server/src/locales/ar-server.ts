@@ -1456,4 +1456,9 @@ export const arServer: Catalog = {
   'Whoever has this link': 'كل من لديه هذا الرابط',
   'Sign up or sign in, then join: its conversations with customers are in your Business inbox, no app to install.':
     'إنشاء حساب أو تسجيل الدخول، ثم الانضمام: محادثاتها مع العملاء في صندوق الأعمال، دون تثبيت أي تطبيق.',
+  'Say who it’s for: their name.': 'يلزم اسم الضيف.',
+  'This invite isn’t open': 'هذه الدعوة ليست مفتوحة',
+  'This invite isn’t open any more.': 'هذه الدعوة لم تعد مفتوحة.',
+  'It may have run out, or been taken back. Ask whoever sent it for a new one.':
+    'ربما انتهت مدتها أو سُحبت. يمكن طلب دعوة جديدة ممن أرسلها.',
 };

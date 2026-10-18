@@ -3800,9 +3800,6 @@ export const turkish: Catalog = {
   'Open the link from your invitation again to get back to your meeting.':
     'Toplantına dönmek için davetindeki bağlantıyı yeniden aç.',
   'Invitation sent to {email}': 'Davet {email} adresine gönderildi',
-  'Invite by email': 'E-postayla davet et',
-  'They get a calendar invitation with their own link, and join without an account. The meeting moves to a space of its own, where they see it and nothing else.':
-    'Kendi bağlantılarıyla bir takvim daveti alırlar ve hesap olmadan katılırlar. Toplantı kendi alanına taşınır; orada yalnızca onu görürler.',
   'Send the invitation': 'Daveti gönder',
   'Their email': 'E-posta adresi',
   'Their name': 'Adı',
@@ -4173,4 +4170,13 @@ export const turkish: Catalog = {
   'Your domain, verified': 'Doğrulanmış alan adınız',
   'An AI agent that answers first': 'İlk yanıtı veren bir AI temsilcisi',
   'Next: an AI agent that answers first': 'Sıradaki: ilk yanıtı veren bir AI temsilcisi',
+  'Their link': 'Davet bağlantısı',
+  'Invite a guest': 'Misafir davet et',
+  'Send it to {name} yourself, on WhatsApp or anywhere: it opens this meeting alone, without an account. It’s shown this once.':
+    '{name} kişisine WhatsApp’tan ya da başka bir yoldan kendiniz gönderin: hesap olmadan yalnızca bu toplantıyı açar. Yalnızca bu kez gösterilir.',
+  'They join without an account and see this meeting’s own space, nothing else. By email, they get a calendar invitation with their link; or make a link to send yourself.':
+    'Hesap olmadan katılır ve yalnızca bu toplantının alanını görür. E-postayla bağlantısını içeren bir takvim daveti alır; ya da kendiniz göndermek için bir bağlantı oluşturun.',
+  'Join “{title}” on Caime:': 'Caime’de “{title}” toplantısına katılın:',
+  'Join the meeting on Caime:': 'Caime’de toplantıya katılın:',
+  'Make a link instead': 'Bunun yerine bağlantı oluştur',
 };

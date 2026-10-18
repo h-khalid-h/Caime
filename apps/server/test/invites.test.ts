@@ -94,8 +94,12 @@ describe('invite links (R1)', () => {
       conversationId: null,
     });
     expect((await noor.get(`/v1/invites/${token}`)).invite.mine).toBe(true);
-    // A token nobody has is nobody's page.
-    expect((await visit('/i/nobodyhasthistoken000000')).statusCode).toBe(404);
+    // A token nobody has is nobody's page: one that says the invite isn't open (review
+    // 2026-10-17 §1 M), never "Nobody by that handle".
+    const gone = await visit('/i/nobodyhasthistoken000000');
+    expect(gone.statusCode).toBe(404);
+    expect(gone.body).toContain('<h1>This invite isn’t open</h1>');
+    expect(gone.body).toContain('Ask whoever sent it for a new one.');
     expect((await sam.req('GET', '/v1/invites/nobodyhasthistoken000000')).statusCode).toBe(404);
   });
 

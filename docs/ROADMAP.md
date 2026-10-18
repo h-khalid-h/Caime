@@ -2077,10 +2077,31 @@ graph) and the number that will show it; one that sharpens none is hygiene and s
       the team to do, and its row opens the invites; a direct sign-up reaches `/orgs/new` from
       onboarding) and `around-the-conversation.spec.ts` (a new organization's row says "Next: set
       bookable hours", verified or not).
+- [x] C3c. A guest by link, and a page for an invite that isn't open (2026-10-18, review §1 H6
+      and M): meeting guests couldn't be invited where Caime can't send mail (production, until
+      `SMTP_URL`), and the organizer never had the link to send. Now the guest sheet makes a link
+      for a guest named by the inviter ("Make a link instead"), shown once with Copy and Share, to
+      send on WhatsApp or anywhere; the guest is a provisional person of their own with no
+      address (`LINK_GUEST_DOMAIN`, `guest.invalid`), whose only conversation is the meeting's
+      space, so a link someone was handed never stands for anyone's address or what was written
+      to it (a guest session reads whatever its provisional person is in, which is why the
+      address-bound link stays mail-only). The same name asked again gets that guest a new link
+      and ends the last; the rules any guest keeps hold (an adult inviter, nobody under 18 in the
+      meeting, eight at most); nothing mails that domain and `personForAddress` answers nobody for
+      it. A dead invite link (`/i/…`, `/t/…`) says "This invite isn't open" and to ask for a new
+      one, never "Nobody by that handle". Verified with `meeting-guest-links.test.ts` (with no
+      mailer: by address refused, by link made; the guest at no one's address in the space alone;
+      the link reads and joins, the space opens and the conversation it was agreed in doesn't;
+      asked again, a new link and the last ended, another name another guest; a name needed; never
+      with someone under 18 in it or by them, nothing made; no one's address), `invites.test.ts`
+      and `team-invites.test.ts` (the dead link's page), and the E2E `meetings.spec.ts` (Ana makes
+      Lina's link from the card, the meeting moves to its space, Lina opens the link in a fresh
+      browser, sees the name Ana gave, joins and is in the meeting). Sharpens advantage 3's way in
+      for meetings (no account, no mail needed) and adoption where WhatsApp carries invitations.
 - [ ] C2–C3. The rest of the front door: domain auto-join for a verified organization (C3b);
       space and group join links; invite-first sharing, and WhatsApp or SMS first on a browser
-      without a contact picker; "Copy guest link"; the iPhone "Add to Home Screen" card; an
-      expired-invite page; "Keep this" on the guest page.
+      without a contact picker; the iPhone "Add to Home Screen" card; "Keep this" on the guest
+      page.
 - [ ] D. Performance and integrity: the aliased `selectAll` guard and its eleven sites; people
       lists through `personViewsFor` with a scale ceiling; `participants.last_sent_seq` for the
       inbox; a large-group mode and one transcript view; a `defer` semaphore and gauge; bus payload
@@ -3717,6 +3738,9 @@ graph) and the number that will show it; one that sharpens none is hygiene and s
   journeys, safety, reliability, performance, intelligence, mail and calendar, chat, integrations,
   business and code integrity; the matrix against WhatsApp, Signal, Slack, Calendly and Workspace;
   an age-assurance design; the integration framework mapped to the code; plan M16 (A–H).
+- 2026-10-18 — M16 C3c: a meeting guest invited by a link the inviter sends themselves (works
+  without mail, on WhatsApp or anywhere; the guest at no one's address); a dead invite link says
+  so. C3a live on cai.me (`b225093`).
 - 2026-10-18 — M16 C2b: a direct sign-up sets up their organization from onboarding; setting
   one up is a checklist (hours, the team, the domain, an AI agent) whose next step never waits on
   DNS.

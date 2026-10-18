@@ -3966,9 +3966,6 @@ export const fr: Catalog = {
   'Open the link from your invitation again to get back to your meeting.':
     'Ouvrez à nouveau le lien de votre invitation pour revenir à votre réunion.',
   'Invitation sent to {email}': 'Invitation envoyée à {email}',
-  'Invite by email': 'Inviter par e-mail',
-  'They get a calendar invitation with their own link, and join without an account. The meeting moves to a space of its own, where they see it and nothing else.':
-    'La personne invitée reçoit une invitation d’agenda avec son propre lien et rejoint sans compte. La réunion passe dans un espace à part, le seul qu’elle voit.',
   'Send the invitation': 'Envoyer l’invitation',
   'Their email': 'Son e-mail',
   'Their name': 'Son nom',
@@ -4348,4 +4345,13 @@ export const fr: Catalog = {
   'Your domain, verified': 'Votre domaine, vérifié',
   'An AI agent that answers first': 'Un agent IA qui répond en premier',
   'Next: an AI agent that answers first': 'Ensuite : un agent IA qui répond en premier',
+  'Their link': 'Son lien',
+  'Invite a guest': 'Inviter quelqu’un',
+  'Send it to {name} yourself, on WhatsApp or anywhere: it opens this meeting alone, without an account. It’s shown this once.':
+    'Envoyez-le vous-même à {name}, sur WhatsApp ou ailleurs : il ouvre cette réunion seule, sans compte. Il n’est affiché qu’une fois.',
+  'They join without an account and see this meeting’s own space, nothing else. By email, they get a calendar invitation with their link; or make a link to send yourself.':
+    'Sans compte, la personne voit l’espace de cette réunion, rien d’autre. Par e-mail, elle reçoit une invitation d’agenda avec son lien ; ou créez un lien à envoyer vous-même.',
+  'Join “{title}” on Caime:': 'Rejoignez « {title} » sur Caime :',
+  'Join the meeting on Caime:': 'Rejoignez la réunion sur Caime :',
+  'Make a link instead': 'Créer plutôt un lien',
 };

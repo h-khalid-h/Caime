@@ -372,8 +372,10 @@ export const endpoints = {
   /** A paid Pay card's receipt (R62), for its two sides. */
   receipt: (messageId: string) => api.get<ReceiptResponse>(`/messages/${messageId}/receipt`),
   // A meeting's guests (R84): inviting by address, and a guest's own link.
-  inviteGuest: (messageId: string, body: { email: string; name?: string | null }) =>
-    api.post<MeetingGuestResponse>(`/messages/${messageId}/guests`, body),
+  inviteGuest: (
+    messageId: string,
+    body: { email: string; name?: string | null } | { link: true; name: string },
+  ) => api.post<MeetingGuestResponse>(`/messages/${messageId}/guests`, body),
   joinLink: (token: string) => api.get<JoinView>(`/join/${encodeURIComponent(token)}`),
   takeJoin: (
     token: string,

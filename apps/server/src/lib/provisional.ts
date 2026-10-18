@@ -16,12 +16,24 @@ import { mailOn } from './mail-address';
 import { isBlockedEitherWay, pairKey } from './relations';
 import { minorOf } from './users';
 
+/**
+ * A guest by link (review 2026-10-17 §1 H6) is a provisional person of their own with no address:
+ * a name a meeting's inviter gave, held under this reserved domain (RFC 2606: nothing is
+ * delivered to it and nobody holds an address there), so nothing reaches them by mail and
+ * nobody's address, or what others wrote to it, is ever behind a link someone else was handed.
+ */
+export const LINK_GUEST_DOMAIN = 'guest.invalid';
+export const isLinkGuestAddress = (email: string | null | undefined) =>
+  Boolean(email?.toLowerCase().endsWith(`@${LINK_GUEST_DOMAIN}`));
+
 export async function personForAddress(
   ctx: AppContext,
   address: string,
   name: string,
 ): Promise<UserRow | null> {
   const email = address.toLowerCase();
+  // Nobody is written to at a guest's reserved address: it's no one's to reach.
+  if (isLinkGuestAddress(email)) return null;
   const byId = (id: string) =>
     ctx.db.selectFrom('users').select(USER_COLUMNS).where('id', '=', id).executeTakeFirst();
   const ownerId = await personByAddress(ctx.db, email);

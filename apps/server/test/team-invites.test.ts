@@ -103,8 +103,12 @@ describe('a link to share', () => {
     expect(page.body).toContain(`href="/sign-up?link=${encodeURIComponent(`/t/${token}`)}"`);
     expect(page.body).toContain(`href="/sign-in?link=${encodeURIComponent(`/t/${token}`)}"`);
     expect(page.body).not.toContain('entry-abc.js');
-    // A token nobody has is nobody's page, and a token of the wrong shape isn't looked up.
-    expect((await visit(`/t/t_${'x'.repeat(43)}`)).statusCode).toBe(404);
+    // A token nobody has is nobody's page, and a token of the wrong shape isn't looked up; the
+    // page says the invite isn't open, never that nobody has a handle.
+    const gone = await visit(`/t/t_${'x'.repeat(43)}`);
+    expect(gone.statusCode).toBe(404);
+    expect(gone.body).toContain('<h1>This invite isn’t open</h1>');
+    expect(gone.body).not.toContain('Nobody by that handle');
     expect((await visit('/t/short')).statusCode).toBe(404);
   });
 

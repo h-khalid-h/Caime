@@ -2100,13 +2100,6 @@ export const arB: Catalog = {
   'Open the link from your invitation again to get back to your meeting.':
     'افتح الرابط من دعوتك مرة أخرى للعودة إلى اجتماعك.',
   'Invitation sent to {email}': 'أُرسلت الدعوة إلى {email}',
-  'Invite by email': {
-    toWoman: 'ادعي بالبريد الإلكتروني',
-    toMan: 'ادعُ بالبريد الإلكتروني',
-    other: 'ادعُ بالبريد الإلكتروني',
-  },
-  'They get a calendar invitation with their own link, and join without an account. The meeting moves to a space of its own, where they see it and nothing else.':
-    'تصلهم دعوة تقويم برابط خاص بهم، وينضمون دون حساب. ينتقل الاجتماع إلى مساحة خاصة به، يرونه فيها ولا يرون شيئًا غيره.',
   'Send the invitation': { toWoman: 'أرسلي الدعوة', toMan: 'أرسل الدعوة', other: 'أرسل الدعوة' },
   'Their email': 'بريدهم الإلكتروني',
   'Their name': 'اسمهم',
@@ -2532,4 +2525,13 @@ export const arB: Catalog = {
   'Your domain, verified': 'نطاقك موثّقًا',
   'An AI agent that answers first': 'وكيل ذكاء اصطناعي يردّ أولًا',
   'Next: an AI agent that answers first': 'التالي: وكيل ذكاء اصطناعي يردّ أولًا',
+  'Their link': 'رابط الدعوة',
+  'Invite a guest': 'دعوة ضيف',
+  'Send it to {name} yourself, on WhatsApp or anywhere: it opens this meeting alone, without an account. It’s shown this once.':
+    'يُرسل إلى {name} مباشرة، عبر واتساب أو غيره: يفتح هذا الاجتماع وحده، دون حساب. يظهر هذه المرة فقط.',
+  'They join without an account and see this meeting’s own space, nothing else. By email, they get a calendar invitation with their link; or make a link to send yourself.':
+    'الانضمام دون حساب، ورؤية مساحة هذا الاجتماع وحدها. عبر البريد تصل دعوة تقويم مع الرابط؛ أو يمكن إنشاء رابط لإرساله مباشرة.',
+  'Join “{title}” on Caime:': 'الانضمام إلى «{title}» على Caime:',
+  'Join the meeting on Caime:': 'الانضمام إلى الاجتماع على Caime:',
+  'Make a link instead': 'إنشاء رابط بدلًا من ذلك',
 };

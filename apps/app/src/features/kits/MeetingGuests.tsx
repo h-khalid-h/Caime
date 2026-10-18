@@ -1,6 +1,6 @@
 /**
  * A meeting card's guests (R83, R84): an accepted meeting held on Caime invites someone by their
- * address, and its first guest gives it a space of its own; the card it came from then says it
+ * address or by a link to send (H6), and its first guest gives it a space of its own; the card it came from then says it
  * moved, and opens the space. Who may invite is the server's to decide (an adult, never in a
  * private or business conversation, up to eight); this offers it where it can be.
  */
@@ -41,31 +41,44 @@ export function MeetingGuests({
   const [inviting, setInviting] = useState(false);
   const [opened, setOpened] = useState(false);
   if (deleted || card.state !== 'accepted') return null;
+  // The first guest moves the card, and the sheet stays through it: a link is shown in it once.
+  const sheet = opened ? (
+    <InviteGuestSheet
+      key="sheet"
+      open={inviting}
+      messageId={messageId}
+      title={card.title ?? ''}
+      onClose={() => setInviting(false)}
+    />
+  ) : null;
   if (card.movedTo) {
     const to = card.movedTo.conversationId;
     return (
-      <View style={{ gap: 6 }} testID="kit-moved">
-        <Text variant="caption" color="textSecondary">
-          {tr('Moved to its own space, with its guests.')}
-        </Text>
-        <View style={{ flexDirection: 'row' }}>
-          <Button
-            label={tr('Open')}
-            size="sm"
-            variant="secondary"
-            onPress={() => router.push({ pathname: '/c/[id]', params: { id: to } })}
-            testID="kit-moved-open"
-          />
+      <>
+        <View key="moved" style={{ gap: 6 }} testID="kit-moved">
+          <Text variant="caption" color="textSecondary">
+            {tr('Moved to its own space, with its guests.')}
+          </Text>
+          <View style={{ flexDirection: 'row' }}>
+            <Button
+              label={tr('Open')}
+              size="sm"
+              variant="secondary"
+              onPress={() => router.push({ pathname: '/c/[id]', params: { id: to } })}
+              testID="kit-moved-open"
+            />
+          </View>
         </View>
-      </View>
+        {sheet}
+      </>
     );
   }
   if (!where || minor || meetingVenue(card.fields?.place) !== 'caime') return null;
   return (
     <>
-      <View style={{ flexDirection: 'row' }}>
+      <View key="invite" style={{ flexDirection: 'row' }}>
         <Button
-          label={tr('Invite by email')}
+          label={tr('Invite a guest')}
           size="sm"
           variant="ghost"
           onPress={() => {
@@ -75,14 +88,7 @@ export function MeetingGuests({
           testID="kit-invite"
         />
       </View>
-      {opened ? (
-        <InviteGuestSheet
-          open={inviting}
-          messageId={messageId}
-          title={card.title ?? ''}
-          onClose={() => setInviting(false)}
-        />
-      ) : null}
+      {sheet}
     </>
   );
 }

@@ -9,7 +9,7 @@
  * Never from a private conversation, a business one, or by someone under 18; up to eight in all.
  */
 
-import { uuidv4, uuidv7 } from '@caime/core';
+import { defaultPrivacy, uuidv4, uuidv7 } from '@caime/core';
 import { GROUP_CALL_MAX } from '@caime/core/calls';
 import { firstName } from '@caime/core/format';
 import { tr } from '@caime/core/i18n';
@@ -28,7 +28,7 @@ import { AppError, badRequest, forbidden, mailUnavailable, notFound } from './er
 import { meetingUid, onOccurrencePosted, queueNextTime } from './meeting-series';
 import { queueMeetingStart } from './meeting-start';
 import { assertCanMessage, messageViews, participantsOf, sendMessage } from './messages';
-import { personForAddress } from './provisional';
+import { isLinkGuestAddress, LINK_GUEST_DOMAIN, personForAddress } from './provisional';
 import { between, isBlockedEitherWay } from './relations';
 import { minorOf } from './users';
 
@@ -342,9 +342,37 @@ function endOf(p: MeetingPayload): number | null {
 }
 
 /**
- * A guest's own link to one time of a meeting, kept hashed (a new one each time they're asked
- * again, the last one ended), and the time's calendar invitation by mail.
+ * A guest's own link to one time of a meeting, kept hashed: a new one each time they're asked
+ * again, which ends the last.
  */
+async function mintGuestLink(
+  ctx: AppContext,
+  inviterId: string | null,
+  spaceMessageId: string,
+  guestId: string,
+): Promise<string> {
+  const token = newToken('cmg');
+  await ctx.db
+    .insertInto('meeting_guests')
+    .values({
+      id: uuidv7(),
+      space_message_id: spaceMessageId,
+      user_id: guestId,
+      invited_by: inviterId,
+      token_hash: hashToken(token),
+    })
+    .onConflict((oc) =>
+      oc.columns(['space_message_id', 'user_id']).doUpdateSet({
+        token_hash: hashToken(token),
+        invited_by: inviterId,
+        revoked_at: null,
+      }),
+    )
+    .execute();
+  return `${ctx.config.PUBLIC_URL.replace(/\/+$/, '')}/j/${token}`;
+}
+
+/** A guest's own link, minted, and the time's calendar invitation with it by mail. */
 async function sendInvitation(
   ctx: AppContext,
   input: {
@@ -357,29 +385,10 @@ async function sendInvitation(
   const mail = ctx.mail;
   if (!mail) return;
   const { inviter, space, guest, p } = input;
-  const token = newToken('cmg');
-  await ctx.db
-    .insertInto('meeting_guests')
-    .values({
-      id: uuidv7(),
-      space_message_id: space.messageId,
-      user_id: guest.id,
-      invited_by: inviter.id,
-      token_hash: hashToken(token),
-    })
-    .onConflict((oc) =>
-      oc.columns(['space_message_id', 'user_id']).doUpdateSet({
-        token_hash: hashToken(token),
-        invited_by: inviter.id,
-        revoked_at: null,
-      }),
-    )
-    .execute();
-
+  const link = await mintGuestLink(ctx, inviter.id, space.messageId, guest.id);
   const start = new Date(String(p.fields?.start?.at));
   const end = new Date(endOf(p) ?? start.getTime() + 60 * 60_000);
   const title = String(p.title || p.fields?.title || 'Meeting').slice(0, 120);
-  const link = `${ctx.config.PUBLIC_URL.replace(/\/+$/, '')}/j/${token}`;
   const sender = invitationSender(ctx.config, inviter.name);
   const ics = buildInvitation({
     method: 'REQUEST',
@@ -421,16 +430,13 @@ async function sendInvitation(
  * provisional one when the address has no account (one with an account is asked, as any message
  * request is, never added outright); their own link; and a calendar invitation by mail.
  */
-export async function inviteGuest(
-  ctx: AppContext,
-  actorId: string,
-  messageId: string,
-  input: { email: string; name?: string | null },
-): Promise<{ conversationId: string; messageId: string }> {
-  if (!ctx.mail) throw mailUnavailable();
-  const email = input.email.trim().toLowerCase();
-  if (!ADDRESS.test(email) || email.length > 254)
-    throw badRequest(tr('That isn’t an email address.'));
+/**
+ * What inviting any guest takes, by address or by link: a member of the conversation the meeting
+ * was agreed in (a chat or a group, never private or a business's), 18 or over, a meeting on
+ * Caime still standing, and nobody under 18 in it or in its space (R29: a guest is a stranger to
+ * everyone there, said without saying who).
+ */
+async function guestRoom(ctx: AppContext, actorId: string, messageId: string) {
   const card = await ctx.db
     .selectFrom('messages')
     .select(MESSAGE_COLUMNS)
@@ -447,13 +453,8 @@ export async function inviteGuest(
     .executeTakeFirstOrThrow();
   // Under 18 (R29): never someone a stranger to them, by their hand.
   if (minorOf(actor, ctx.now())) throw forbidden(tr('Guests are invited by people 18 or over.'));
-  if (actor.email?.toLowerCase() === email) throw badRequest(tr('That’s your own address.'));
   ctx.limiter.hit(`guests:${actorId}`, ctx.config.isTest ? 1000 : 30, 60 * 60_000);
   const p = meetingOk(ctx, card);
-
-  const name = (input.name?.trim() || email.split('@')[0] || email).slice(0, 80);
-  // Under 18 (R29): a guest is a stranger to everyone in the meeting, so a meeting with someone
-  // under 18 in it, or in its space, takes none, said without saying who.
   const held = await spaceRowOf(ctx.db, card.id);
   const around = await participantsOf(ctx.db, held?.conversation_id ?? card.conversation_id);
   if (
@@ -464,6 +465,96 @@ export async function inviteGuest(
     )
   )
     throw noGuestsHere();
+  return { card, actor, p };
+}
+
+/**
+ * A guest by link (review 2026-10-17 §1 H6): the inviter names them and gets their link, shown
+ * this once, to send however they like (WhatsApp, SMS), and nothing is mailed, so it works where
+ * this Caime can't send mail. The guest is a provisional person of their own with no address
+ * (`LINK_GUEST_DOMAIN`), whose only conversation is this meeting's space; asking again for the
+ * same name in the same space gives that guest a new link and ends the last.
+ */
+export async function inviteGuestByLink(
+  ctx: AppContext,
+  actorId: string,
+  messageId: string,
+  input: { name: string },
+): Promise<{ conversationId: string; messageId: string; link: string }> {
+  const name = input.name.trim().slice(0, 80);
+  if (!name) throw badRequest(tr('Say who it’s for: their name.'));
+  const { card, p } = await guestRoom(ctx, actorId, messageId);
+  const space = await spaceFor(ctx, actorId, card, p);
+  const guestId = await ctx.db.transaction().execute(async (trx) => {
+    // Under the lock the members route takes, so nobody joins meanwhile past the limit or under 18.
+    await lockConversation(trx, space.conversationId);
+    const inSpace = await participantsOf(trx, space.conversationId);
+    const same = await trx
+      .selectFrom('users')
+      .select(['id', 'email'])
+      .where(
+        'id',
+        'in',
+        inSpace.map((x) => x.user_id),
+      )
+      .where('kind', '=', 'provisional')
+      .where(sql<boolean>`lower(display_name) = ${name.toLowerCase()}`)
+      .execute();
+    const again = same.find((u) => isLinkGuestAddress(u.email));
+    if (again) return again.id;
+    if (inSpace.length >= SPACE_MAX) throw badRequest(tr('A meeting holds eight people at most.'));
+    if (
+      await anyMinor(
+        trx,
+        inSpace.map((x) => x.user_id),
+        ctx.now(),
+      )
+    )
+      throw noGuestsHere();
+    const id = uuidv7();
+    await trx
+      .insertInto('users')
+      .values({
+        id,
+        email: `${id}@${LINK_GUEST_DOMAIN}`,
+        // A handle nobody can type or find, as a provisional person's (a colon is never in one).
+        handle: `guest:${id}`,
+        password_hash: '',
+        display_name: name,
+        kind: 'provisional',
+        privacy: JSON.stringify(defaultPrivacy({ minor: false })),
+        created_at: ctx.now(),
+      })
+      .execute();
+    await trx
+      .insertInto('participants')
+      .values({
+        conversation_id: space.conversationId,
+        user_id: id,
+        role: 'member',
+        joined_at: ctx.now(),
+        request_state: null,
+      })
+      .execute();
+    return id;
+  });
+  const link = await mintGuestLink(ctx, actorId, space.messageId, guestId);
+  return { ...space, link };
+}
+
+export async function inviteGuest(
+  ctx: AppContext,
+  actorId: string,
+  messageId: string,
+  input: { email: string; name?: string | null },
+): Promise<{ conversationId: string; messageId: string }> {
+  if (!ctx.mail) throw mailUnavailable();
+  const email = input.email.trim().toLowerCase();
+  if (!ADDRESS.test(email) || email.length > 254 || isLinkGuestAddress(email))
+    throw badRequest(tr('That isn’t an email address.'));
+  const { card, actor, p } = await guestRoom(ctx, actorId, messageId);
+  if (actor.email?.toLowerCase() === email) throw badRequest(tr('That’s your own address.'));
+  const name = (input.name?.trim() || email.split('@')[0] || email).slice(0, 80);
   const person = await personForAddress(ctx, email, name);
   // An address that may not be asked (gone, suspended, blocked either way, or someone on Caime a
   // message request couldn't reach): nothing is sent, and nothing says so (an invitation never
@@ -545,7 +636,8 @@ async function askGuestsAgain(ctx: AppContext, posted: Message, from: Message): 
     .executeTakeFirst();
   const p = (posted.payload ?? {}) as MeetingPayload;
   for (const g of guests) {
-    if (!g.email) continue;
+    // A guest by link has no address: the next time's link is the inviter's to send again.
+    if (!g.email || isLinkGuestAddress(g.email)) continue;
     await sendInvitation(ctx, {
       inviter: g.inviter_name
         ? { id: g.invited_by, name: g.inviter_name }

@@ -1457,4 +1457,9 @@ export const frServer: Catalog = {
   'Whoever has this link': 'Quiconque a ce lien',
   'Sign up or sign in, then join: its conversations with customers are in your Business inbox, no app to install.':
     'Inscrivez-vous ou connectez-vous, puis rejoignez-la : ses conversations avec les clients sont dans votre boîte Entreprise, sans application à installer.',
+  'Say who it’s for: their name.': 'Indiquez pour qui c’est : son nom.',
+  'This invite isn’t open': 'Cette invitation n’est pas ouverte',
+  'This invite isn’t open any more.': 'Cette invitation n’est plus ouverte.',
+  'It may have run out, or been taken back. Ask whoever sent it for a new one.':
+    'Elle a peut-être expiré ou été retirée. Demandez-en une nouvelle à la personne qui l’a envoyée.',
 };

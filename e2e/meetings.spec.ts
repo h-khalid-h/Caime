@@ -171,6 +171,48 @@ test('a guest invited by email joins from their own link, and is in the meetingâ
   await gusCtx.close();
 });
 
+test('a guest by link: the inviter sends it themselves, and its holder joins the meeting', async ({
+  browser,
+}) => {
+  const { anaCtx, benCtx, ana, conversationId } = await agreedMeeting(browser, 'Link review');
+
+  // Ana makes a link for Lina from the card: shown once, to send however she likes.
+  await ana.page.goto(`/c/${conversationId}`);
+  const original = ana.page.getByTestId('kit-meeting').filter({ hasText: 'Link review' });
+  await original.getByTestId('kit-invite').click();
+  await ana.page.getByTestId('guest-name').fill('Lina Link');
+  await ana.page.getByTestId('guest-make-link').click();
+  const shown = ana.page.getByTestId('guest-link');
+  await expect(shown).toContainText('/j/cmg_');
+  const link = new URL((await shown.textContent()) ?? '').pathname;
+  await ana.page.getByTestId('guest-link-done').click();
+  // The meeting moved to its own space, which opens.
+  await expect(ana.page).not.toHaveURL(new RegExp(conversationId));
+  await expect(
+    ana.page.getByTestId('kit-meeting').filter({ hasText: 'Link review' }),
+  ).toBeVisible();
+
+  // Lina, in a browser with nothing of Caime: the name Ana gave, the age, Join.
+  const linaCtx = await browser.newContext();
+  const lina = await newPerson(linaCtx);
+  await lina.page.goto(link);
+  await expect(lina.page.getByTestId('join-form')).toBeVisible();
+  await expect(lina.page.getByTestId('join-form')).toContainText('Ana Meet');
+  await expect(lina.page.getByTestId('join-name')).toHaveValue('Lina Link');
+  await lina.page.getByTestId('join-adult').getByRole('switch').click();
+  await lina.page.getByTestId('join-submit').click();
+  // Lina is in the meeting's own space: its title, who's in it, the call.
+  const meeting = lina.page.getByTestId('guest-meeting');
+  await expect(meeting).toBeVisible();
+  await expect(lina.page.getByText('Link review').first()).toBeVisible();
+  await expect(meeting).toContainText('Ana Meet');
+  await expect(meeting).toContainText('Ben Meet');
+  expect([...ana.errors, ...lina.errors]).toEqual([]);
+  await anaCtx.close();
+  await benCtx.close();
+  await linaCtx.close();
+});
+
 test('a meeting that repeats is agreed once, and the calendar has each week until it stops', async ({
   browser,
 }) => {
