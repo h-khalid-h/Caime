@@ -3,7 +3,7 @@ import { tr } from '@caime/core/i18n';
 import type { QueryClient } from '@tanstack/react-query';
 import { AppState, Platform } from 'react-native';
 import { endpoints } from '@/api/endpoints';
-import { patchMessage, removeMessage, restoreMessage } from '@/state/cache';
+import { applyEditToInbox, patchMessage, removeMessage, restoreMessage } from '@/state/cache';
 import { toast } from '@/ui/Toast';
 
 /** How long Undo is offered: as long as a toast with an action stays. */
@@ -21,18 +21,17 @@ const waiting = new Map<
  */
 export function deleteWithUndo(qc: QueryClient, m: MessageView, forEveryone: boolean): void {
   if (waiting.has(m.id)) return;
-  if (forEveryone)
-    patchMessage(qc, m.conversationId, m.id, (x) => ({
-      ...x,
-      body: null,
-      files: [],
-      deletedAt: new Date().toISOString(),
-    }));
-  else removeMessage(qc, m.conversationId, m.id);
+  if (forEveryone) {
+    const gone = { body: null, files: [], deletedAt: new Date().toISOString() };
+    patchMessage(qc, m.conversationId, m.id, (x) => ({ ...x, ...gone }));
+    // Its row in Chats says so too, when it's the last thing said there.
+    applyEditToInbox(qc, { ...m, ...gone });
+  } else removeMessage(qc, m.conversationId, m.id);
   const send = (keepalive: boolean) => {
     waiting.delete(m.id);
     endpoints.deleteMessage(m.id, forEveryone, { keepalive }).catch((e) => {
       restoreMessage(qc, m);
+      if (forEveryone) applyEditToInbox(qc, m);
       toast((e as Error).message, { tone: 'danger' });
     });
   };
@@ -45,6 +44,7 @@ export function deleteWithUndo(qc: QueryClient, m: MessageView, forEveryone: boo
         clearTimeout(timer);
         waiting.delete(m.id);
         restoreMessage(qc, m);
+        if (forEveryone) applyEditToInbox(qc, m);
       },
     },
   });

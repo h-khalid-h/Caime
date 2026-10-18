@@ -1,6 +1,6 @@
-import type { MessageView } from '@caime/core/api';
-import { previewText } from '@caime/core/format';
-import { tr } from '@caime/core/i18n';
+import type { ConversationView, MessageView } from '@caime/core/api';
+import { joinNames, previewText } from '@caime/core/format';
+import { tr, trn } from '@caime/core/i18n';
 import { onlineManager, useQueryClient } from '@tanstack/react-query';
 import Bookmark from 'lucide-react-native/icons/bookmark';
 import Copy from 'lucide-react-native/icons/copy';
@@ -30,10 +30,12 @@ import { MORE_REACTIONS, QUICK_REACTIONS } from '@/ui/emoji';
 import { ListRow } from '@/ui/ListRow';
 import { Pressable } from '@/ui/Pressable';
 import { afterSheet, Sheet } from '@/ui/Sheet';
+import { Spec, type SpecRow } from '@/ui/Spec';
 import { Text } from '@/ui/Text';
 import { TextField } from '@/ui/TextField';
 import { toast } from '@/ui/Toast';
 import { deleteWithUndo } from './deleteWithUndo';
+import { messageInfo, namesIn } from './rows';
 
 /** A decision's longest title (the server's). */
 const DECISION_MAX = 300;
@@ -79,6 +81,26 @@ export async function toggleReaction(
   }
 }
 
+/**
+ * Who reacted with what (M16 E2): each reaction's people by name, "You" first for one's own, and
+ * anyone no longer here counted.
+ */
+function reactedBy(m: MessageView, me: string, names: Map<string, string>): SpecRow[] {
+  return m.reactions.map((r) => {
+    const here = r.userIds.filter((id) => id !== me && names.has(id));
+    const gone = r.userIds.filter((id) => id !== me && !names.has(id)).length;
+    const who = [
+      ...(r.mine || r.userIds.includes(me) ? [tr('You')] : []),
+      ...here.map((id) => names.get(id) as string),
+      ...(gone ? [trn(gone, '{n} other', '{n} others')] : []),
+    ];
+    return { label: r.emoji, value: joinNames(who, who.length), testID: 'reacted-by' };
+  });
+}
+
+/** Names as a line, all of them: in a group of up to a hundred, who is the point. */
+const everyone = (names: string[]) => joinNames(names, names.length);
+
 export function MessageActions({
   m: current,
   me,
@@ -91,6 +113,7 @@ export function MessageActions({
   canPin = false,
   onForward,
   canSave = true,
+  conversation,
 }: {
   m: MessageView | null;
   me: string;
@@ -109,6 +132,8 @@ export function MessageActions({
   onForward?: (m: MessageView) => void;
   /** Whether it may be saved here: never from a message request not yet accepted. */
   canSave?: boolean;
+  /** Where it was said: who reacted, and in a group who has it (M16 E2). */
+  conversation?: ConversationView;
 }) {
   const t = useTheme();
   const qc = useQueryClient();
@@ -169,6 +194,25 @@ export function MessageActions({
       setSaving(false);
     }
   };
+  const info = deleted ? null : messageInfo(m, conversation, me);
+  const facts: Array<SpecRow | false> = [
+    ...(deleted ? [] : reactedBy(m, me, namesIn(conversation))),
+    Boolean(info?.read.length) && {
+      label: tr('read by'),
+      value: everyone(info?.read ?? []),
+      testID: 'info-read',
+    },
+    Boolean(info?.delivered.length) && {
+      label: tr('delivered to'),
+      value: everyone(info?.delivered ?? []),
+      testID: 'info-delivered',
+    },
+    Boolean(info?.waiting.length) && {
+      label: tr('not delivered yet'),
+      value: everyone(info?.waiting ?? []),
+      testID: 'info-waiting',
+    },
+  ];
   if (keeping === m.id) return <SaveSheet messageId={m.id} onClose={dismiss} />;
   if (decision !== null)
     return (
@@ -261,6 +305,9 @@ export function MessageActions({
             </Text>
           </Pressable>
         )
+      ) : null}
+      {facts.some(Boolean) ? (
+        <Spec rows={facts} dense style={{ marginTop: 8, marginBottom: 4 }} testID="message-info" />
       ) : null}
       <View style={{ marginHorizontal: -20 }}>
         {!deleted ? (

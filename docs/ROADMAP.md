@@ -2657,6 +2657,21 @@ graph) and the number that will show it; one that sharpens none is hygiene and s
       languages, `search-languages.test.ts`, `cache.test.ts` (a delete undone lands in its own
       page), `e2e/honest-chat.spec.ts` (Undo puts it back and the server still has it; past it,
       the other side sees it deleted; a failed first load and Try again), and the full gate.
+- [x] E2. Replies and reactions (2026-10-18, review §7). A quoted reply says whose words it
+      quotes ("You" for one's own, the organization to its customer; it said "Reply", or
+      "Replying to themselves") and a tap on it goes to them, loading older pages as search's
+      jump does; the composer's banner said "Replying to yourself" with the English word in every
+      language, and a photo's kind ("media"), now whole sentences and core's preview. A reaction
+      chip is touched at a finger's size and a hold on it names who reacted, as the message's
+      sheet now does ("You and Alex", anyone since gone counted). One's own message in a group of
+      up to a hundred says who read it, who has it and who doesn't yet, counted as the ticks are
+      (reading withheld says "delivered", someone reached by mail is left to the mail line). On a
+      phone a message swiped toward the reading direction's end (right, or left in Arabic) is
+      answered; built, not yet tried on a phone. Verified:
+      `rows.test.ts` (who has it, the cases that say nothing, the quote's names), the catalogs in
+      four languages, `e2e/honest-chat.spec.ts` (the quote's names both ways and the jump, the
+      banner's own sentence, a hold on a reaction naming both, a group message read once the other
+      opened it), and the full gate.
 - [ ] F. Mail, calendar, meetings: CC and reply-all as people on the topic; unverified mail shown
       under Notices, never dropped; a follow-up allowance to new addresses; invitations arriving
       by mail become cards; cards travel by mail; "Suggest another time" with guest invitations
@@ -4278,6 +4293,9 @@ graph) and the number that will show it; one that sharpens none is hygiene and s
   journeys, safety, reliability, performance, intelligence, mail and calendar, chat, integrations,
   business and code integrity; the matrix against WhatsApp, Signal, Slack, Calendly and Workspace;
   an age-assurance design; the integration framework mapped to the code; plan M16 (A–H).
+- 2026-10-18 — M16 E2: replies and reactions: a quote names whose words it quotes and goes to
+  them, a hold on a reaction names who, one's own group message says who read it, and a swipe
+  answers on a phone (built, not yet tried on one).
 - 2026-10-18 — M16 E1: a chat that says what's true: read never looks like delivered, no English
   showing through in the other languages (and a scanner that would see it), a failed load said
   as one with Try again, Undo on delete. D4b verified on cai.me (the shared chunk byte for byte,

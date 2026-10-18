@@ -83,9 +83,10 @@ import { MessageActions, toggleReaction } from './MessageActions';
 import { MessageBubble } from './MessageBubble';
 import { PinnedBar } from './PinnedBar';
 import { RequestBanner } from './RequestBanner';
-import { buildRows, type Row } from './rows';
+import { buildRows, namesIn, type Row } from './rows';
 import { mayKeepFrom } from './SharedFiles';
 import { SuggestionBar } from './SuggestionBar';
+import { SwipeToReply } from './SwipeToReply';
 import { TypingIndicator, useTypingNames } from './TypingIndicator';
 import { mailBound } from './topics';
 
@@ -334,6 +335,10 @@ export function ConversationScreen({
   const org = business?.org ?? null;
   const thread = business?.thread ?? null;
   const customer = thread?.customer ?? null;
+  // The message a reply answers, from its quote (M16 E2): found and marked as search's jump is.
+  const openReply = useCallback((m: MessageView) => {
+    if (m.replyTo) setFocus(m.replyTo.seq);
+  }, []);
   const onReply = useCallback((m: MessageView) => {
     setEditing(null);
     setReplyTo(m);
@@ -677,25 +682,33 @@ export function ConversationScreen({
         </View>
       );
     return (
-      <MessageBubble
-        m={item.m}
-        mine={item.mine}
-        first={item.first}
-        last={item.last}
-        senderName={item.senderName}
-        delivery={item.delivery}
-        timeZone={timeZone}
-        locale={locale}
-        onLongPress={setActionsFor}
-        onReply={onReply}
-        onReact={onReact}
-        onRetry={onRetry}
-        highlighted={marked !== null && item.m.seq === marked}
-        inertLinks={conversation?.request === 'incoming'}
-        // A request's photos come veiled (M16 B4): a tap shows them, under 18 accepting does.
-        veil={conversation?.request === 'incoming' ? (me.minor ? 'accept' : 'tap') : undefined}
-        where={where}
-      />
+      <SwipeToReply
+        onReply={() => onReply(item.m)}
+        enabled={!item.m.deletedAt && item.m.kind !== 'system'}
+      >
+        <MessageBubble
+          m={item.m}
+          mine={item.mine}
+          first={item.first}
+          last={item.last}
+          senderName={item.senderName}
+          replyName={item.replyName}
+          onOpenReply={openReply}
+          onOpenReactions={setActionsFor}
+          delivery={item.delivery}
+          timeZone={timeZone}
+          locale={locale}
+          onLongPress={setActionsFor}
+          onReply={onReply}
+          onReact={onReact}
+          onRetry={onRetry}
+          highlighted={marked !== null && item.m.seq === marked}
+          inertLinks={conversation?.request === 'incoming'}
+          // A request's photos come veiled (M16 B4): a tap shows them, under 18 accepting does.
+          veil={conversation?.request === 'incoming' ? (me.minor ? 'accept' : 'tap') : undefined}
+          where={where}
+        />
+      </SwipeToReply>
     );
   };
 
@@ -825,12 +838,16 @@ export function ConversationScreen({
     </View>
   );
 
-  const replyName = replyTo
-    ? replyTo.senderId === me.id
-      ? 'yourself'
-      : (conversation?.participants.find((p) => p.userId === replyTo.senderId)?.person
-          .displayName ?? null)
-    : null;
+  // Whose words the reply answers, as a whole sentence in the reader's language (an English
+  // "yourself" once sat inside every language's "Replying to …").
+  const replyWriter = replyTo?.senderId ? namesIn(conversation).get(replyTo.senderId) : undefined;
+  const replyTitle = !replyTo
+    ? null
+    : replyTo.senderId === me.id
+      ? tr('Replying to yourself')
+      : replyWriter
+        ? tr('Replying to {replyName}', { replyName: replyWriter })
+        : null;
 
   // Closed by a block (PRD §55): the customer blocked the organization.
   const closed = business?.closed ?? false;
@@ -949,7 +966,7 @@ export function ConversationScreen({
           onDoneEditing={() => setEditing(null)}
           disabled={disabled}
           disabledAction={disabledAction}
-          replyName={replyName}
+          replyTitle={replyTitle}
           placeholder={thread && org ? tr('Reply as {name}', { name: org.name }) : undefined}
           onEditLast={() => {
             const last = messages.findLast(
@@ -1005,6 +1022,7 @@ export function ConversationScreen({
         onForward={setForwarding}
         // Nothing of a request is kept until it's accepted, nor once declined (the server's rule).
         canSave={conversation ? mayKeepFrom(conversation) : false}
+        conversation={conversation}
         onClose={() => setActionsFor(null)}
         onReply={onReply}
         onEdit={(m) => {

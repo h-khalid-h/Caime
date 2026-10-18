@@ -3,7 +3,11 @@
  * Undo puts the message back as it was, with nothing sent; once the Undo has passed, the other
  * side sees it deleted. A first load that fails says so, with Try again, never "nothing needs
  * you", the first-run screen or "the beginning of your conversation".
+ *
+ * Replies and reactions (M16 E2): a quoted reply names whom it quotes and a tap goes to it; who
+ * reacted is named; a message of one's own in a group says who has read it.
  */
+import { randomUUID } from 'node:crypto';
 import { type BrowserContext, expect, type Page, test } from '@playwright/test';
 import { apiSignUp, CLIENT, newPerson, visible } from './helpers';
 
@@ -17,12 +21,13 @@ test.describe
     let noor: { page: Page; errors: string[] };
     let alex: { page: Page; errors: string[] };
     let convo: string;
+    let alexId: string;
 
     test.beforeAll(async ({ browser }) => {
       noorCtx = await browser.newContext({ viewport: { width: 1280, height: 800 } });
       alexCtx = await browser.newContext({ viewport: { width: 1280, height: 800 } });
       const n = await apiSignUp(noorCtx, 'Noor Honest', `noor.honest.${suffix}`);
-      await apiSignUp(alexCtx, 'Alex Honest', `alex.honest.${suffix}`);
+      alexId = (await apiSignUp(alexCtx, 'Alex Honest', `alex.honest.${suffix}`)).id;
       const asked = await alexCtx.request.post('/v1/connections/requests', {
         headers: CLIENT,
         data: { toUserId: n.id, relationship: { sphere: 'friend' } },
@@ -48,7 +53,7 @@ test.describe
       await page.getByTestId('composer-input').fill('The door code is 4417');
       await page.getByTestId('composer-send').click();
       const bubble = page
-        .getByLabel(/The door code is 4417, (Sent|Delivered|Read)$/)
+        .getByLabel(/The door code is 4417, .*(Sent|Delivered|Read)$/)
         .filter({ visible: true });
       await expect(bubble).toBeVisible();
       await alex.page.goto(`/c/${convo}`);
@@ -62,8 +67,11 @@ test.describe
         await expect(visible(page, 'Deleted for everyone')).toBeVisible();
       };
       await deleteForEveryone();
+      // Gone from the conversation and from its row in Chats, while Undo is still offered.
+      await expect(bubble).toHaveCount(0);
       await expect(page.getByText('The door code is 4417').filter({ visible: true })).toHaveCount(
         0,
+        { timeout: 3000 },
       );
       await page.getByRole('button', { name: 'Undo' }).filter({ visible: true }).click();
       await expect(visible(page, 'The door code is 4417')).toBeVisible();
@@ -111,5 +119,97 @@ test.describe
       await expect(page.getByTestId('home-load-failed')).toHaveCount(0);
       await expect(page.getByTestId('home-summary')).not.toHaveText(' ');
       await page.close();
+    });
+    const say = async (
+      ctx: BrowserContext,
+      conversation: string,
+      body: string,
+      replyToId?: string,
+    ) => {
+      const said = await ctx.request.post(`/v1/conversations/${conversation}/messages`, {
+        headers: CLIENT,
+        data: { clientId: randomUUID(), body, ...(replyToId ? { replyToId } : {}) },
+      });
+      expect(said.ok(), await said.text()).toBe(true);
+      return ((await said.json()) as { message: { id: string } }).message.id;
+    };
+
+    test('a reply names whom it quotes, a tap goes to it, and who reacted is named', async () => {
+      const asked = await say(noorCtx, convo, 'Can you bring the chairs?');
+      await say(alexCtx, convo, 'Yes, all six.', asked);
+      // To Alex the quote is Noor's; to Noor, whose words they were, it's "You".
+      await alex.page.goto(`/c/${convo}`);
+      const theirs = alex.page.getByTestId('message-quote').filter({ visible: true }).last();
+      await expect(theirs).toContainText('Noor Honest');
+      await expect(theirs).toContainText('Can you bring the chairs?');
+      const { page } = noor;
+      await page.goto(`/c/${convo}`);
+      const quote = page.getByTestId('message-quote').filter({ visible: true }).last();
+      await expect(quote).toContainText('You');
+      await quote.click();
+      await expect(page.getByTestId('message-highlighted').filter({ visible: true })).toContainText(
+        'Can you bring the chairs?',
+      );
+      // Answering one's own words says so in a whole sentence, in every language.
+      await page
+        .getByLabel(/Can you bring the chairs\?, .*(Sent|Delivered|Read)$/)
+        .filter({ visible: true })
+        .hover();
+      await page.getByRole('button', { name: 'Reply', exact: true }).click();
+      await expect(visible(page, 'Replying to yourself')).toBeVisible();
+
+      // Both react; holding the reaction names who, Noor as "You".
+      for (const ctx of [alexCtx, noorCtx]) {
+        const reacted = await ctx.request.post(`/v1/messages/${asked}/reactions`, {
+          headers: CLIENT,
+          data: { emoji: '👍' },
+        });
+        expect(reacted.ok(), await reacted.text()).toBe(true);
+      }
+      const chip = page
+        .getByRole('button', { name: '👍 2, including you' })
+        .filter({ visible: true });
+      await expect(chip).toBeVisible();
+      await chip.click({ delay: 700 });
+      await expect(page.getByTestId('reacted-by').filter({ visible: true })).toContainText(
+        'You and Alex Honest',
+      );
+      await page.keyboard.press('Escape');
+      expect(noor.errors).toEqual([]);
+      expect(alex.errors).toEqual([]);
+    });
+
+    test('a message of one’s own in a group says who has read it', async () => {
+      const made = await noorCtx.request.post('/v1/conversations', {
+        headers: CLIENT,
+        data: { kind: 'group', title: `Chairs ${suffix}`, memberIds: [alexId] },
+      });
+      expect(made.ok(), await made.text()).toBe(true);
+      const group = ((await made.json()) as { conversation: { id: string } }).conversation.id;
+      await say(noorCtx, group, 'Six chairs, Saturday at ten');
+      const { page } = noor;
+      await page.goto(`/c/${group}`);
+      const bubble = page
+        .getByLabel(/Six chairs, Saturday at ten, .*(Sent|Delivered|Read)$/)
+        .filter({ visible: true });
+      const info = async () => {
+        await bubble.hover();
+        await page.getByRole('button', { name: 'React', exact: true }).click();
+        return page.getByTestId('message-info').filter({ visible: true });
+      };
+      // Alex hasn't opened it: not read, whether or not it has reached a device of theirs.
+      await expect(await info()).toContainText('Alex Honest');
+      await expect(page.getByTestId('info-read')).toHaveCount(0);
+      await page.keyboard.press('Escape');
+      await alex.page.goto(`/c/${group}`);
+      await expect(visible(alex.page, 'Six chairs, Saturday at ten')).toBeVisible();
+      await expect(bubble).toHaveAccessibleName(/, Read$/, { timeout: 15_000 });
+      await info();
+      await expect(page.getByTestId('info-read').filter({ visible: true })).toContainText(
+        'Alex Honest',
+      );
+      await page.keyboard.press('Escape');
+      expect(noor.errors).toEqual([]);
+      expect(alex.errors).toEqual([]);
     });
   });

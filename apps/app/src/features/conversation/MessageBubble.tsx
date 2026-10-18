@@ -71,6 +71,10 @@ export interface BubbleProps {
   /** Last in the run (gets the tail and the time). */
   last: boolean;
   senderName?: string | null;
+  /** Who wrote the message this one answers (M16 E2); the quote says "Reply" without it. */
+  replyName?: string | null;
+  /** Go to the message this one answers. */
+  onOpenReply?: (m: MessageView) => void;
   delivery?: Delivery;
   timeZone: string;
   locale: string;
@@ -315,6 +319,8 @@ export const MessageBubble = memo(function MessageBubble({
   first,
   last,
   senderName,
+  replyName,
+  onOpenReply,
   delivery,
   timeZone,
   locale,
@@ -322,6 +328,7 @@ export const MessageBubble = memo(function MessageBubble({
   onReply,
   onReact,
   onRetry,
+  onOpenReactions,
   highlighted,
   inertLinks = false,
   veil,
@@ -422,8 +429,18 @@ export const MessageBubble = memo(function MessageBubble({
     borderBottomEndRadius: mine && !last ? tail : r,
   };
 
+  // A long press on anything inside the bubble (a photo, a file, a link) is the message's, as on
+  // the bubble itself (R88): a phone has no hover, and the inner press would take the touch.
+  const hold = () => onLongPress?.(m);
+
+  // The message it answers, by whoever wrote it, and a tap away (M16 E2).
   const reply = m.replyTo ? (
-    <View
+    <Pressable
+      accessibilityRole="link"
+      accessibilityLabel={listed([replyName ?? tr('Reply'), replyText])}
+      accessibilityHint={tr('Shows the message it answers')}
+      onPress={onOpenReply ? () => onOpenReply(m) : undefined}
+      onLongPress={hold}
       style={{
         borderStartWidth: 3,
         borderStartColor: mine ? t.bubble.meta : t.c.accent,
@@ -431,19 +448,16 @@ export const MessageBubble = memo(function MessageBubble({
         marginBottom: 6,
         opacity: 0.9,
       }}
+      testID="message-quote"
     >
-      <Text variant="captionStrong" color={mine ? fg : 'textSecondary'} numberOfLines={1}>
-        {m.replyTo.senderId === m.senderId ? tr('Replying to themselves') : tr('Reply')}
+      <Text variant="captionStrong" color={mine ? fg : 'textSecondary'} numberOfLines={1} auto>
+        {replyName ?? tr('Reply')}
       </Text>
       <Text variant="caption" color={mine ? fg : 'textSecondary'} numberOfLines={2}>
         {replyText}
       </Text>
-    </View>
+    </Pressable>
   ) : null;
-
-  // A long press on anything inside the bubble (a photo, a file, a link) is the message's, as on
-  // the bubble itself (R88): a phone has no hover, and the inner press would take the touch.
-  const hold = () => onLongPress?.(m);
   // A private message's links are checked here, from its words: the server never had them.
   const open = (url: string) =>
     void suspiciousLink(m, url)
@@ -951,7 +965,11 @@ export const MessageBubble = memo(function MessageBubble({
                   : `${re.emoji} ${re.count}`
               }
               accessibilityState={{ selected: re.mine }}
+              accessibilityHint={tr('Hold to see who reacted')}
               onPress={() => onReact?.(m, re.emoji)}
+              onLongPress={() => (onOpenReactions ?? onLongPress)?.(m)}
+              // Drawn small beside the bubble; touched as a finger needs (44 points).
+              hitSlop={{ top: 10, bottom: 10, left: 4, right: 4 }}
               style={{
                 flexDirection: 'row',
                 alignItems: 'center',

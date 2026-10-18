@@ -295,7 +295,14 @@ appointment from a catalog).
   destructive action on a message takes that shape rather than a confirmation. Read and delivered
   differ by shape and colour: sent and delivered in the bubble's `tick` token (3:1 on the bubble,
   1.8:1 from its `fg`), read in `fg` with a heavier stroke, and on a card of one's own the
-  tertiary text and the text (`tokens.test.ts` holds both).
+  tertiary text and the text (`tokens.test.ts` holds both). A quote says whose words it quotes (`replyName`
+  from `namesIn`, `rows.ts`: the people, "You", and to a customer the organization) and a tap on
+  it goes to them through the screen's `setFocus`, as search's jump does (M16 E2). Who reacted
+  and who has a message of one's own in a group are the message's sheet (`reactedBy` there,
+  `messageInfo` in `rows.ts`, counting as the ticks do: reading withheld is "delivered", someone
+  reached by mail left to the mail line, a group of many says nothing), never a screen of their
+  own; a reaction chip's hold opens that sheet. A phone answers a bubble swiped toward the
+  reading direction's end (`SwipeToReply`, nothing on the web, where the hover's Reply does it).
 - Fonts: on the web the faces are WOFF2 in `apps/app/public/fonts`, written there with the
   shell's `caime-fonts` block in `index.html` by `pnpm fonts` (`scripts/web-fonts.mjs`, from
   Fontsource's cuts; OFL beside them), never by hand: the brand's two families by weight, `Inter`

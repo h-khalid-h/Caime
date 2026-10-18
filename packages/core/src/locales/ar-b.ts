@@ -2877,4 +2877,14 @@ export const arB: Catalog = {
   'What you’re waiting on couldn’t load': 'تعذّر تحميل ما تنتظره',
   'These messages couldn’t load': 'تعذّر تحميل هذه الرسائل',
   'Your conversations couldn’t load': 'تعذّر تحميل محادثاتك',
+  'Shows the message it answers': 'يعرض الرسالة الأصلية',
+  'Hold to see who reacted': {
+    toWoman: 'اضغطي مطولًا لمعرفة من تفاعل',
+    toMan: 'اضغط مطولًا لمعرفة من تفاعل',
+    other: 'اضغط مطولًا لمعرفة من تفاعل',
+  },
+  'read by': 'تمت القراءة',
+  'delivered to': 'تم التسليم',
+  'not delivered yet': 'لم تُسلَّم بعد',
+  'Replying to yourself': 'ردًا على رسالتك',
 };

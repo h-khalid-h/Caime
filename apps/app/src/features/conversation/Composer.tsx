@@ -5,7 +5,7 @@ import type {
   CustomKitOfferView,
   MessageView,
 } from '@caime/core/api';
-import { listTitle } from '@caime/core/format';
+import { listTitle, messagePreview } from '@caime/core/format';
 import { tr, trn } from '@caime/core/i18n';
 import { isLargeGroup } from '@caime/core/large-group';
 import { SUBJECT_MAX, subjectFromText } from '@caime/core/mail';
@@ -97,7 +97,8 @@ export interface ComposerProps {
   disabled?: string | null;
   /** Something to do about why it's disabled (unblock, accept). */
   disabledAction?: { label: string; onPress: () => void; testID?: string };
-  replyName?: string | null;
+  /** Whose words a reply answers, said whole ("Replying to Sarah", "Replying to yourself"). */
+  replyTitle?: string | null;
   /** ↑ in an empty box: edit the last message you sent (web). */
   onEditLast?: () => void;
   /** What the empty box says: "Reply as DATA C" for an organization's team (R15). */
@@ -131,7 +132,7 @@ export const Composer = forwardRef<ComposerHandle, ComposerProps>(function Compo
     onDoneEditing,
     disabled,
     disabledAction,
-    replyName,
+    replyTitle,
     onEditLast,
     placeholder,
     where,
@@ -616,8 +617,18 @@ export const Composer = forwardRef<ComposerHandle, ComposerProps>(function Compo
   ) : replyTo ? (
     <Banner
       icon={Reply}
-      title={replyName ? tr('Replying to {replyName}', { replyName }) : tr('Replying to a message')}
-      body={replyingText ?? replyTo.kind}
+      title={replyTitle ?? tr('Replying to a message')}
+      body={
+        // A photo, a voice note or a card says what it is in the reader's words, never its kind.
+        replyingText ??
+        messagePreview({
+          kind: replyTo.kind,
+          body: null,
+          payload: replyTo.payload,
+          deleted: false,
+          sealed: replyTo.sealed,
+        })
+      }
       onClose={onClearReply}
     />
   ) : uploading ? (

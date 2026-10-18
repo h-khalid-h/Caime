@@ -1,5 +1,6 @@
 import type { ConversationView, MessageView } from '@caime/core/api';
 import { formatDayHeading } from '@caime/core/format';
+import { tr } from '@caime/core/i18n';
 import { isLargeGroup } from '@caime/core/large-group';
 import type { OutboxItem } from '@/state/outbox';
 import type { Delivery } from './MessageBubble';
@@ -14,6 +15,8 @@ export type Row =
       last: boolean;
       delivery?: Delivery;
       senderName: string | null;
+      /** Who wrote the message this one answers, as the reader knows them ("You" for their own). */
+      replyName: string | null;
     }
   | { type: 'day'; key: string; label: string }
   | { type: 'unread'; key: string };
@@ -99,6 +102,51 @@ function deliveryOf(
 }
 
 /**
+ * Who's who here, by the names the viewer knows (M16 E2): its people, and to a customer the
+ * organization, whose team reads to them as one (R15).
+ */
+export function namesIn(conversation: ConversationView | undefined): Map<string, string> {
+  const names = new Map(
+    conversation?.participants.map((p) => [p.userId, p.person.displayName]) ?? [],
+  );
+  const business = conversation?.business;
+  if (business && !business.thread) names.set(business.org.id, business.org.name);
+  return names;
+}
+
+export interface MessageInfo {
+  read: string[];
+  delivered: string[];
+  waiting: string[];
+}
+
+/**
+ * Who has a message of mine in a group (M16 E2): read, arrived, or not yet, by name, as the
+ * ticks count it. Someone whose reading is withheld (R25) is said to have it once it arrived,
+ * never to have read it; someone reached by mail is left to the bubble's mail line. Null where
+ * nothing more is to be said: a chat (its ticks say it), an organization's conversation, a
+ * group of many (nobody's devices say), or a message still on this device.
+ */
+export function messageInfo(
+  m: MessageView,
+  conversation: ConversationView | undefined,
+  me: string,
+): MessageInfo | null {
+  if (!conversation || m.senderId !== me || m.seq === Number.MAX_SAFE_INTEGER) return null;
+  if (conversation.kind === 'direct' || conversation.business || m.kind === 'system') return null;
+  if (isLargeGroup(conversation.kind, conversation.participants.length)) return null;
+  const info: MessageInfo = { read: [], delivered: [], waiting: [] };
+  for (const p of conversation.participants) {
+    if (p.userId === me || p.person.kind !== 'human') continue;
+    const name = p.person.displayName;
+    if (p.readSeq !== null && p.readSeq >= m.seq) info.read.push(name);
+    else if (p.deliveredSeq >= m.seq) info.delivered.push(name);
+    else info.waiting.push(name);
+  }
+  return info;
+}
+
+/**
  * Build the rows, newest first (the list is inverted): day separators, a "new messages" marker
  * at the first unread message, and runs of messages from the same sender grouped.
  */
@@ -126,9 +174,7 @@ export function buildRows(opts: {
   // A customer talks one-to-one with an organization; its team sees who wrote what.
   const isGroup =
     conversation?.kind !== 'direct' && !(conversation?.business && !conversation.business.thread);
-  const names = new Map(
-    conversation?.participants.map((p) => [p.userId, p.person.displayName]) ?? [],
-  );
+  const names = namesIn(conversation);
   const rows: Row[] = [];
   let lastDay = '';
   let markedUnread = false;
@@ -174,6 +220,11 @@ export function buildRows(opts: {
       last: !sameAsNext,
       delivery: mine ? delivery : undefined,
       senderName: author ?? (isGroup && m.senderId ? (names.get(m.senderId) ?? null) : null),
+      replyName: !m.replyTo?.senderId
+        ? null
+        : m.replyTo.senderId === me
+          ? tr('You')
+          : (names.get(m.replyTo.senderId) ?? null),
     });
   }
   return rows.reverse();

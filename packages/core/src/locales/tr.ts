@@ -1107,7 +1107,6 @@ export const turkish: Catalog = {
   'Translating…': 'Çevriliyor…',
   'Hide translation': 'Çeviriyi gizle',
   'Opens the topic': 'Konuyu açar',
-  'Replying to themselves': 'Kendi mesajına yanıt veriyor',
   'Message deleted': 'Mesaj silindi',
   'Transcript · {label}': 'Yazıya döküm · {label}',
   Transcript: 'Yazıya döküm',
@@ -4444,4 +4443,10 @@ export const turkish: Catalog = {
   'What you’re waiting on couldn’t load': 'Beklediklerinizin listesi yüklenemedi',
   'These messages couldn’t load': 'Bu mesajlar yüklenemedi',
   'Your conversations couldn’t load': 'Konuşmalarınız yüklenemedi',
+  'Shows the message it answers': 'Yanıtladığı mesajı gösterir',
+  'Hold to see who reacted': 'Kimlerin tepki verdiğini görmek için basılı tutun',
+  'read by': 'okuyanlar',
+  'delivered to': 'iletilenler',
+  'not delivered yet': 'henüz iletilmedi',
+  'Replying to yourself': 'Kendinize yanıt',
 };

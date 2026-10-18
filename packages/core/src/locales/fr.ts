@@ -1157,7 +1157,6 @@ export const fr: Catalog = {
   'Translating…': 'Traduction…',
   'Hide translation': 'Masquer la traduction',
   'Opens the topic': 'Ouvre le sujet',
-  'Replying to themselves': 'Se répond',
   'Message deleted': 'Message supprimé',
   'Transcript · {label}': 'Transcription · {label}',
   Transcript: 'Transcription',
@@ -4625,4 +4624,10 @@ export const fr: Catalog = {
   'What you’re waiting on couldn’t load': 'Ce que vous attendez n’a pas pu se charger',
   'These messages couldn’t load': 'Ces messages n’ont pas pu se charger',
   'Your conversations couldn’t load': 'Vos conversations n’ont pas pu se charger',
+  'Shows the message it answers': 'Affiche le message auquel il répond',
+  'Hold to see who reacted': 'Maintenez appuyé pour voir qui a réagi',
+  'read by': 'lu par',
+  'delivered to': 'remis à',
+  'not delivered yet': 'pas encore remis',
+  'Replying to yourself': 'Réponse à vous-même',
 };

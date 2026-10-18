@@ -1231,7 +1231,6 @@ export const arA: Catalog = {
   'Translating…': 'جارٍ الترجمة…',
   'Hide translation': 'إخفاء الترجمة',
   'Opens the topic': 'يفتح الموضوع',
-  'Replying to themselves': 'ردًا على رسالة من المرسل نفسه',
   'Message deleted': 'حُذفت الرسالة',
   Contact: 'جهة اتصال',
   'Mentions you': 'فيها إشارة إليك',
