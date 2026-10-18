@@ -15,3 +15,5 @@ export interface BareLiteral {
   text: string;
 }
 export function bareLiterals(): BareLiteral[];
+/** Every `tr`, `trn` or `trFor` call whose result is cased by hand, as "file:line" (M16 D4). */
+export function casedWords(): string[];

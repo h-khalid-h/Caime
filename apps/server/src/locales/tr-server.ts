@@ -82,8 +82,6 @@ export const turkishServer: Catalog = {
   'your name and handle, and may ask': 'adınızı ve kullanıcı adınızı; size istek gönderebilir',
   '{n} GB': '{n} GB',
   'price shown in the app': 'fiyat uygulamada gösterilir',
-  '{price} a month': 'ayda {price}',
-  '{price} a year': 'yılda {price}',
   ', or ': ' veya ',
   'It lands in the inbox, first if they’ve waited longest.':
     'Gelen kutusuna düşer; en uzun bekleyen en üstte.',

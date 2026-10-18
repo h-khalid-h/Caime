@@ -68,7 +68,7 @@ export function OrgPlan({
             '{startsToday} of {toLocaleString} conversations started by the team today. Customers writing first are never counted.',
             {
               startsToday: plan.used.startsToday,
-              toLocaleString: plan.allowance.startsPerDay.toLocaleString('en-US'),
+              toLocaleString: plan.allowance.startsPerDay,
             },
           )}
         </Text>
@@ -77,7 +77,7 @@ export function OrgPlan({
             '{agentRepliesToday} of {toLocaleString} AI agent answers in the last 24 hours. Past that, your team answers as usual.',
             {
               agentRepliesToday: plan.used.agentRepliesToday,
-              toLocaleString: plan.allowance.agentRepliesPerDay.toLocaleString('en-US'),
+              toLocaleString: plan.allowance.agentRepliesPerDay,
             },
           )}
         </Text>

@@ -153,7 +153,7 @@ describe('a listing says more (R80)', () => {
     for (const id of [square.id, small.id]) {
       const r = await dev.req('PATCH', `/v1/me/oauth-apps/${digest.id}`, { screenshotIds: [id] });
       expect(r.statusCode).toBe(400);
-      expect(r.json().error.message).toBe('A screenshot is 8:5 and at least 1280 pixels wide.');
+      expect(r.json().error.message).toBe('A screenshot is 8:5 and at least 1,280 pixels wide.');
     }
     const notMine = await dev.req('PATCH', `/v1/me/oauth-apps/${digest.id}`, {
       screenshotIds: [theirs.id],

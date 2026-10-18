@@ -19,7 +19,10 @@
  *   `trFor(gender, text)` picks, by that person's gender as shown to the reader; `tr` reads
  *   such an entry for anyone, so a word used as a category never takes the reader's gender.
  *   Nobody's is ever guessed: null reads the form for anyone.
+ * - Numbers (M16 D4): a number passed as a variable is written in the reader's language
+ *   (`shownNumber`), never forced into English digits and separators where it's used.
  */
+import { numberFormat } from './locale';
 
 export const INTERFACE_LANGUAGES = ['en', 'ar', 'fr', 'tr'] as const;
 export type InterfaceLanguage = (typeof INTERFACE_LANGUAGES)[number];
@@ -105,11 +108,31 @@ export function resolveLanguage(
   return choice && choice !== 'auto' ? choice : languageFor(deviceTag);
 }
 
-export function fill(text: string, vars?: Vars): string {
+export function fill(text: string, vars?: Vars, language?: string): string {
   if (!vars) return text;
-  return text.replace(/\{(\w+)\}/g, (whole, key: string) =>
-    key in vars ? (vars[key] == null ? '' : String(vars[key])) : whole,
-  );
+  return text.replace(/\{(\w+)\}/g, (whole, key: string) => {
+    if (!(key in vars)) return whole;
+    const value = vars[key];
+    if (value == null) return '';
+    return typeof value === 'number' && language ? shownNumber(value, language) : String(value);
+  });
+}
+
+/** The locale a number is written in for a language: Arabic's digits stay Latin, as they were. */
+export const numberLocale = (language: string): string =>
+  language === 'ar' ? 'ar-u-nu-latn' : language;
+
+/**
+ * A number as a sentence in the reader's language writes it (M16 D4): its own separators
+ * ("1,000", "12 345", "12.345"). A year, a code or an id is passed as text, so it stays as it is.
+ * Never throws.
+ */
+export function shownNumber(n: number, language: string = currentTranslator().language): string {
+  try {
+    return numberFormat(numberLocale(language)).format(n);
+  } catch {
+    return String(n);
+  }
 }
 
 const rulesCache = new Map<string, Intl.PluralRules>();
@@ -151,16 +174,16 @@ export function makeTranslator(
     dir: dirOf(language),
     gender,
     catalog,
-    tr: (text, vars) => fill(toReader(text), vars),
-    trFor: (g, text, vars) => fill(ofSomeone(text, g), vars),
+    tr: (text, vars) => fill(toReader(text), vars, language),
+    trFor: (g, text, vars) => fill(ofSomeone(text, g), vars, language),
     trn(count, one, other, vars) {
       const all = { n: count, ...vars };
       const entry = catalog[other];
       if (entry && typeof entry !== 'string' && !isGenderForms(entry) && !isReaderForms(entry)) {
         const category = pluralRules(language).select(count);
-        return fill(entry[category] ?? entry.other, all);
+        return fill(entry[category] ?? entry.other, all, language);
       }
-      return fill(count === 1 ? one : other, all);
+      return fill(count === 1 ? one : other, all, language);
     },
   };
 }
@@ -203,6 +226,20 @@ export function currentTranslator(): Translator {
  */
 export function sentence(label: string): string {
   return label.charAt(0).toLocaleUpperCase(currentTranslator().language) + label.slice(1);
+}
+
+/**
+ * A catalog's words in lower case, as they read inside a sentence ("All {kinds}"), by the
+ * reader's language's rules: Turkish "İş" is "iş", never "i̇ş" (M16 D4). Someone's own words and
+ * names keep their case: only what came from `tr` goes through this.
+ */
+export function lower(words: string): string {
+  return words.toLocaleLowerCase(currentTranslator().language);
+}
+
+/** Its first letter only, as a label reads after another word ("Former manager"). */
+export function lowerFirst(words: string): string {
+  return words.charAt(0).toLocaleLowerCase(currentTranslator().language) + words.slice(1);
 }
 
 export function tr(text: string, vars?: Vars): string {

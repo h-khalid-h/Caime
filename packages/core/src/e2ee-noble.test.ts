@@ -1,7 +1,15 @@
 import { describe, expect, it } from 'vitest';
-import type { IntroducedDevice, PublicDevice, SealedMessage } from './e2ee';
+import {
+  type IntroducedDevice,
+  introductionText,
+  introductionTexts,
+  type PublicDevice,
+  type SealedMessage,
+} from './e2ee';
 import * as web from './e2ee-crypto';
 import * as noble from './e2ee-noble';
+import { makeTranslator, setTranslator } from './i18n';
+import { ar } from './locales/ar';
 
 /** The two backends: the browser's Web Crypto (Node's here) and the phones' pure JavaScript. */
 const BACKENDS = { web, noble } as const;
@@ -166,6 +174,38 @@ describe('the phones’ encryption is the browser’s, byte for byte (R18)', () 
     const devices = [first.pub, phone.pub];
     expect(await noble.securityCode(devices)).toBe(await web.securityCode(devices));
     expect(await noble.securityCode(devices)).toMatch(/^(\d{5} ){5}\d{5}$/);
+  });
+
+  it('an introduction signed in one language checks in any other (M16 D4)', async () => {
+    const first = await device('web', 'dev-a', 'sami');
+    const phone = await device('noble', 'dev-b', 'sami');
+    const intro = async (d: Device, by: Device | null): Promise<IntroducedDevice> => ({
+      ...d.pub,
+      introducedBy: by ? by.pub.id : null,
+      introduction: await BACKENDS[(by ?? d).on].introduce({ keys: (by ?? d).keys as any }, d.pub),
+    });
+    // Made while each device read Arabic, then checked by devices reading English.
+    setTranslator(makeTranslator('ar', ar));
+    const chain = [await intro(first, null), await intro(phone, first)];
+    setTranslator(makeTranslator('en', {}));
+    const lookup = (id: string) => chain.find((d) => d.id === id);
+    for (const b of Object.values(BACKENDS))
+      expect((await b.chainRoot(chain[1]!, lookup))?.id).toBe('dev-a');
+    // One made before, over the label as Arabic said it, still holds on both.
+    const said = new TextEncoder().encode(introductionTexts(first.pub)[1]!);
+    const old = web.toBase64Url(
+      await crypto.subtle.sign(
+        { name: 'ECDSA', hash: 'SHA-256' },
+        (first.keys as Awaited<ReturnType<typeof web.newDeviceKeys>>).signing.privateKey,
+        said,
+      ),
+    );
+    const before = [{ ...first.pub, introducedBy: null, introduction: old }];
+    for (const b of Object.values(BACKENDS))
+      expect((await b.chainRoot(before[0]!, (id) => before.find((d) => d.id === id)))?.id).toBe(
+        'dev-a',
+      );
+    expect(introductionText(first.pub)).toContain('"label":"caime-e2ee/1 device"');
   });
 
   it('keys and envelopes made on a phone are what a browser takes', async () => {

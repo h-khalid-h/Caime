@@ -6,7 +6,7 @@
 import type { Rhythm } from './api';
 import { type CallKind, type CallOutcome, callText } from './calls';
 import { CURRENCY_DECIMALS } from './currency-data';
-import { msg, tr, trn } from './i18n';
+import { currentTranslator, msg, numberLocale, shownNumber, tr, trn } from './i18n';
 import { dateFormat, numberFormat, safeLocale } from './locale';
 import { zonedParts } from './time';
 
@@ -271,17 +271,29 @@ export function formatDeadline(at: string, now: Date, timeZone: string, locale =
   }).format(Number.isFinite(t.getTime()) ? t : now);
 }
 
+const BYTE_UNITS = ['kilobyte', 'megabyte', 'gigabyte', 'terabyte'] as const;
+
+/** A size as the reader's language writes it (M16 D4): "1.5 MB", "1,5 Mo", "5 GB". */
 export function formatBytes(bytes: number): string {
-  if (bytes < 1024) return `${bytes} B`;
-  const units = ['KB', 'MB', 'GB', 'TB'];
+  if (bytes < 1024) return `${shownNumber(bytes)} B`;
   let v = bytes / 1024;
   let u = 0;
-  while (v >= 1024 && u < units.length - 1) {
+  while (v >= 1024 && u < BYTE_UNITS.length - 1) {
     v /= 1024;
     u++;
   }
   // "5 GB", not "5.0 GB"; "1.5 MB" keeps its tenth.
-  return `${(v < 10 ? v.toFixed(1) : String(Math.round(v))).replace(/\.0$/, '')} ${units[u]}`;
+  const value = v < 10 ? Math.round(v * 10) / 10 : Math.round(v);
+  try {
+    return numberFormat(numberLocale(currentTranslator().language), {
+      style: 'unit',
+      unit: BYTE_UNITS[u],
+      unitDisplay: 'short',
+      maximumFractionDigits: 1,
+    }).format(value);
+  } catch {
+    return `${value} ${['KB', 'MB', 'GB', 'TB'][u]}`;
+  }
 }
 
 /**

@@ -1029,7 +1029,8 @@ export function renderPublic(
         o.verified && o.verifiedDomain
           ? tr('Verified · {domain}', { domain: o.verifiedDomain })
           : null,
-        page.foundedYear ? tr('Since {year}', { year: page.foundedYear }) : null,
+        // A year is text: written as a number it would read "2,019".
+        page.foundedYear ? tr('Since {year}', { year: String(page.foundedYear) }) : null,
       ].filter(Boolean);
       const description = truncate(
         page.about ??

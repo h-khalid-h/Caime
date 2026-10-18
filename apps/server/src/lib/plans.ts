@@ -216,7 +216,7 @@ export async function assertStartRoom(ctx: AppContext, orgId: string, userId: st
     : '';
   const next = nextOrgPlan(org.plan);
   const more = next
-    ? ` ${tr('{plan} includes {n} a day.', { plan: PLAN_NAMES[next], n: ORG_ALLOWANCES[next].startsPerDay.toLocaleString('en-US') })}`
+    ? ` ${tr('{plan} includes {n} a day.', { plan: PLAN_NAMES[next], n: ORG_ALLOWANCES[next].startsPerDay })}`
     : '';
   throw limit(
     ctx,

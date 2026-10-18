@@ -133,7 +133,7 @@ export function OrgAgent({ org }: { org: OrgView }) {
       ? tr('Paused: your team answers everyone')
       : tr('Answers first · {repliesToday} of {toLocaleString} answers in the last 24 hours', {
           repliesToday: agent.repliesToday,
-          toLocaleString: agent.repliesPerDay.toLocaleString('en-US'),
+          toLocaleString: agent.repliesPerDay,
         })
     : null;
 

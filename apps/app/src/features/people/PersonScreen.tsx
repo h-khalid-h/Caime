@@ -1,6 +1,6 @@
 import type { PersonProfileView, RelationshipView } from '@caime/core/api';
 import { formatClock, formatDue, formatListTime, RHYTHM_TEXT } from '@caime/core/format';
-import { tr, trn } from '@caime/core/i18n';
+import { lower, tr, trn } from '@caime/core/i18n';
 import { systemHandleOf } from '@caime/core/system-ids';
 import { useQueryClient } from '@tanstack/react-query';
 import { router } from 'expo-router';
@@ -560,7 +560,7 @@ function PersonPage({ id, book = null, slug = null }: PersonScreenProps) {
                     label: tr('conversation'),
                     value: [
                       trn(p.summary.messages, '{n} message', '{n} messages'),
-                      p.summary.rhythm ? tr(RHYTHM_TEXT[p.summary.rhythm]).toLowerCase() : null,
+                      p.summary.rhythm ? lower(tr(RHYTHM_TEXT[p.summary.rhythm])) : null,
                       p.summary.lastTalkedAt
                         ? tr('last {when}', {
                             when: formatListTime(p.summary.lastTalkedAt, now, timeZone, locale),

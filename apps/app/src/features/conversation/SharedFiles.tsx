@@ -249,9 +249,11 @@ export function SharedFiles({
                     {jump && a.messageSeq !== null ? (
                       <Pressable
                         accessibilityRole="button"
-                        accessibilityLabel={tr('Show this {toLowerCase} in the conversation', {
-                          toLowerCase: what.toLowerCase(),
-                        })}
+                        accessibilityLabel={
+                          video
+                            ? tr('Show this video in the conversation')
+                            : tr('Show this photo in the conversation')
+                        }
                         onPress={() => jump(a)}
                         hitSlop={8}
                         focusRadius={14}
@@ -274,9 +276,7 @@ export function SharedFiles({
                     {mayKeep && a.messageId ? (
                       <Pressable
                         accessibilityRole="button"
-                        accessibilityLabel={tr('Save this {toLowerCase}', {
-                          toLowerCase: what.toLowerCase(),
-                        })}
+                        accessibilityLabel={video ? tr('Save this video') : tr('Save this photo')}
                         onPress={() => setKeeping(a)}
                         hitSlop={8}
                         focusRadius={14}

@@ -1,4 +1,4 @@
-import { type Gender, msg, tr, trFor, trForms } from './i18n';
+import { type Gender, lower, lowerFirst, msg, tr, trFor, trForms } from './i18n';
 /**
  * The relationship taxonomy: Sphere → Role → Context (PRD §7–§9).
  *
@@ -345,9 +345,10 @@ export function relationshipLabel(input: {
   const gender = input.gender ?? null;
   const base = input.roleLabel?.trim() || (role ? trFor(gender, role.label) : undefined);
   let head = base ?? trFor(gender, SPHERE_DEFS[input.sphere].label);
+  // A label the person wrote keeps its case; a catalog's reads in lower case after "Former".
   if (input.status === 'ended')
     head = trFor(gender, 'Former {role}', {
-      role: `${head.charAt(0).toLowerCase()}${head.slice(1)}`,
+      role: input.roleLabel?.trim() ? head : lowerFirst(head),
     });
   return input.orgName ? `${head} · ${input.orgName}` : head;
 }
@@ -527,33 +528,55 @@ export function relationshipOfferText(
   offer: { sphere?: string | null; role?: string | null; orgName?: string | null },
 ): string {
   const sphere = (offer.sphere ?? null) as Sphere | null;
-  const at = offer.orgName ? tr(' at {orgName}', { orgName: offer.orgName }) : '';
-  if (!sphere || !(sphere in SPHERE_DEFS))
-    return tr('{name} may be someone you know{at}', { name, at });
+  const orgName = offer.orgName || null;
+  // Each case is a sentence whole, with and without where (M16 D4): no article or " at …" is
+  // glued on, so each language says it its own way.
+  const say = (alone: string, atOrg: string, vars: Record<string, string> = {}) =>
+    orgName ? tr(atOrg, { name, orgName, ...vars }) : tr(alone, { name, ...vars });
+  const someoneYouKnow = () =>
+    say(msg('{name} may be someone you know'), msg('{name} may be someone you know at {orgName}'));
+  if (!sphere || !(sphere in SPHERE_DEFS)) return someoneYouKnow();
   const role = findRole(sphere, offer.role);
   if (role)
-    return tr('{name} may be your {toLowerCase}{at}', {
-      name,
-      toLowerCase: tr(role.label).toLowerCase(),
-      at,
+    return say(msg('{name} may be your {role}'), msg('{name} may be your {role} at {orgName}'), {
+      role: lower(tr(role.label)),
     });
   if (sphere === 'family') return tr('{name} may be family', { name });
-  if (sphere === 'work') return tr('{name} may be someone you work with{at}', { name, at });
+  if (sphere === 'work')
+    return say(
+      msg('{name} may be someone you work with'),
+      msg('{name} may be someone you work with at {orgName}'),
+    );
   // The spheres that name a group are said of a person: never "may be a community".
   if (sphere === 'community')
-    return tr('{name} may be someone from your community{at}', { name, at });
+    return say(
+      msg('{name} may be someone from your community'),
+      msg('{name} may be someone from your community at {orgName}'),
+    );
   if (sphere === 'organization')
     return tr('{name} may be someone from {orgName}', {
       name,
-      orgName: offer.orgName || tr('an organization'),
+      orgName: orgName ?? tr('an organization'),
     });
-  if (sphere === 'public' || sphere === 'other')
-    return tr('{name} may be someone you know{at}', { name, at });
-  const label = tr(SPHERE_DEFS[sphere].label).toLowerCase();
-  return tr('{name} may be {an} {label}{at}', {
-    name,
-    an: /^[aeiou]/.test(label) ? 'an' : 'a',
-    label,
-    at,
-  });
+  const as = OFFERED_AS[sphere];
+  return as ? say(as[0], as[1]) : someoneYouKnow();
 }
+
+/** The kinds an offer names by their own word, each sentence whole: "Cy may be a customer". */
+const OFFERED_AS: Partial<Record<Sphere, readonly [alone: string, atOrg: string]>> = {
+  friend: [msg('{name} may be a friend'), msg('{name} may be a friend at {orgName}')],
+  acquaintance: [
+    msg('{name} may be an acquaintance'),
+    msg('{name} may be an acquaintance at {orgName}'),
+  ],
+  customer: [msg('{name} may be a customer'), msg('{name} may be a customer at {orgName}')],
+  vendor: [msg('{name} may be a vendor'), msg('{name} may be a vendor at {orgName}')],
+  service_provider: [
+    msg('{name} may be a service provider'),
+    msg('{name} may be a service provider at {orgName}'),
+  ],
+  professional: [
+    msg('{name} may be a professional'),
+    msg('{name} may be a professional at {orgName}'),
+  ],
+};

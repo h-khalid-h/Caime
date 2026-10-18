@@ -5,6 +5,7 @@
  * Nothing here happens until it's set up.
  */
 import type { AutomationView, PolicyView } from '@caime/core/api';
+import { whoSends } from '@caime/core/automations';
 import { tr, trn } from '@caime/core/i18n';
 import { resolvePolicy } from '@caime/core/policy';
 import { findRole, SPHERE_DEFS, type Sphere } from '@caime/core/taxonomy';
@@ -33,25 +34,18 @@ import { toast } from '@/ui/Toast';
 // Shared with Notifications and a person's page: loaded when a rule is opened.
 const RuleSheet = lazyPart(() => import('@/features/settings/RuleSheet').then((m) => m.RuleSheet));
 
-/** Who a rule is for, as it reads in a sentence: "vendors", "managers", "people from work". */
-function whom(p: Pick<PolicyView, 'scope'>): string {
-  const { sphere, role } = p.scope;
-  if (p.scope.connectionId) return 'this person';
-  if (!sphere) return 'everyone else';
-  const r = findRole(sphere, role);
-  if (r) return tr(r.plural).toLowerCase();
-  switch (sphere) {
-    case 'work':
-      return 'people from work';
-    case 'community':
-      return 'people from your community';
-    case 'public':
-      return 'public figures, creators and services';
-    case 'other':
-      return 'everyone else';
-    default:
-      return tr(SPHERE_DEFS[sphere].plural).toLowerCase();
-  }
+/**
+ * A reminder rule as one sentence (M16 D4): who it's for said as automations say it ("someone
+ * you call “Vendor”", "someone from work"), never a word lowered into a sentence of another.
+ */
+function reminderLine(p: Pick<PolicyView, 'scope' | 'settings'>): string {
+  const inWords_ = inWords(p.settings.followUpHours ?? 0);
+  if (p.scope.connectionId)
+    return tr('If this person hasn’t answered in {inWords}', { inWords: inWords_ });
+  return tr('If {who} hasn’t answered in {inWords}', {
+    who: whoSends({ sphere: p.scope.sphere ?? null, role: p.scope.role ?? null }),
+    inWords: inWords_,
+  });
 }
 
 /** Who a rule is for, as a label: its name, or "Work · Managers". */
@@ -208,10 +202,7 @@ export default function Automations() {
           <View key={p.id} style={{ borderTopWidth: i ? 1 : 0, borderTopColor: t.c.border }}>
             <ListRow
               icon={Clock}
-              title={tr('If {whom} haven’t answered in {inWords}', {
-                whom: whom(p),
-                inWords: inWords(p.settings.followUpHours ?? 0),
-              })}
+              title={reminderLine(p)}
               subtitle={p.name}
               chevron
               onPress={() => setRule(p.id)}

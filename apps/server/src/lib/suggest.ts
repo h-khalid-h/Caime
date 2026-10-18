@@ -7,7 +7,7 @@
 
 import type { SuggestionView } from '@caime/core';
 import { SPACE_KIND_DEFS, SPHERE_DEFS, type SpaceKind, type Sphere, uuidv7 } from '@caime/core';
-import { tr } from '@caime/core/i18n';
+import { lower, tr } from '@caime/core/i18n';
 import { initiativeOf, offersSuggestion } from '@caime/core/initiative';
 import { type Insertable, sql } from 'kysely';
 import type { AppContext } from '../context';
@@ -171,7 +171,7 @@ function offerOf(place: Place, other: string) {
     rationale: tr('You and {other} are both in {space}, a {kind} space.', {
       other,
       space: place.name,
-      kind: tr(SPACE_KIND_DEFS[place.spaceKind].label).toLowerCase(),
+      kind: lower(tr(SPACE_KIND_DEFS[place.spaceKind].label)),
     }),
     confidence: 0.6,
   };

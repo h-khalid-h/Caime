@@ -70,6 +70,7 @@ const SECRETS_SUBTITLE = msg(
  * of the sheet's content that asked for it, never a second sheet over the first.
  */
 function Secrets({ shown, orgId }: { shown: OrgAppSecretsView; orgId: string }) {
+  const { timeZone, locale } = useUserClock();
   return (
     <View style={{ gap: 12 }}>
       {shown.token ? (
@@ -103,7 +104,7 @@ function Secrets({ shown, orgId }: { shown: OrgAppSecretsView; orgId: string }) 
             <Text variant="caption" color="textSecondary" testID="org-app-secret-overlap">
               {tr(
                 'The secret it had keeps signing deliveries too (a second v1) until {when}: switch before then.',
-                { when: new Date(shown.app.secretOverlapUntil).toLocaleString() },
+                { when: formatWhen(shown.app.secretOverlapUntil, new Date(), timeZone, locale) },
               )}
             </Text>
           ) : null}

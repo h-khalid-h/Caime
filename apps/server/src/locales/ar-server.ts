@@ -60,8 +60,6 @@ export const arServer: Catalog = {
   'your name and handle, and may ask': 'اسمك ومعرّفك، وله أن يطلب',
   '{n} GB': '{n} غيغابايت',
   'price shown in the app': 'السعر يظهر في التطبيق',
-  '{price} a month': '{price} شهريًا',
-  '{price} a year': '{price} سنويًا',
   ', or ': '، أو ',
   'It lands in the inbox, first if they’ve waited longest.':
     'تصل إلى صندوق الوارد، وتتصدّره إن طال انتظارها أكثر من غيرها.',

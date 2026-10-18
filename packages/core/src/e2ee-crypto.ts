@@ -8,6 +8,7 @@ import {
   ecPublic,
   type IntroducedDevice,
   introductionText,
+  introductionTexts,
   E2EE_LABEL as LABEL,
   type PrivatePayload,
   type PublicDevice,
@@ -297,12 +298,11 @@ export async function introduce(
 
 async function introducedBy(device: IntroducedDevice, signingKey: PublicJwk): Promise<boolean> {
   try {
-    return await subtle().verify(
-      ECDSA,
-      await importVerify(signingKey),
-      fromBase64Url(device.introduction),
-      utf8(introductionText(device)),
-    );
+    const key = await importVerify(signingKey);
+    const signature = fromBase64Url(device.introduction);
+    for (const text of introductionTexts(device))
+      if (await subtle().verify(ECDSA, key, signature, utf8(text))) return true;
+    return false;
   } catch {
     return false;
   }

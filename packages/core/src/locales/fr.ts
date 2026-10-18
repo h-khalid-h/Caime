@@ -313,7 +313,6 @@ export const fr: Catalog = {
   'Remind me': 'Me rappeler',
   'When they haven’t answered a question or a request of yours.':
     'Quand on n’a pas répondu à une de vos questions ou demandes.',
-  'If {whom} haven’t answered in {inWords}': 'Si {whom} n’ont pas répondu sous {inWords}',
   'Add a reminder': 'Ajouter un rappel',
   'A kind of suggestion you keep taking is offered first; one you keep passing on is set apart, with the count beside it. Nothing is hidden, and it says why. Off keeps every suggestion the same.':
     'Un type de suggestion que vous acceptez souvent est proposé en premier ; un type que vous écartez souvent est mis à part, avec le compte à côté. Rien n’est caché, et la raison est indiquée. Désactivé, toutes les suggestions sont traitées de la même façon.',
@@ -1227,8 +1226,6 @@ export const fr: Catalog = {
   'What’s shown': 'Ce qui est affiché',
   'Loading what’s been shared…': 'Chargement de ce qui a été partagé…',
   Photo: 'Photo',
-  'Show this {toLowerCase} in the conversation': 'Afficher ce {toLowerCase} dans la conversation',
-  'Save this {toLowerCase}': 'Enregistrer ce {toLowerCase}',
   'Add to actions': 'Ajouter aux actions',
   'Track it': 'Suivre',
   'Add label': 'Ajouter une étiquette',
@@ -1521,7 +1518,6 @@ export const fr: Catalog = {
   'Nobody’s gone quiet.': 'Tout le monde donne des nouvelles.',
   'When you write': 'Quand vous écrivez',
   'Your messages by the hour of your day.': 'Vos messages par heure de la journée.',
-  'Messages by hour: {join}': 'Messages par heure : {join}',
   'Worked out from your own one-to-ones, for you only. Nobody else sees this, and nothing anyone said is read for it.':
     'Calculé à partir de vos propres tête-à-tête, rien que pour vous. Personne d’autre ne le voit, et rien de ce que quiconque a dit n’est lu pour cela.',
   'Taken out of the album': 'Retirée de l’album',
@@ -2381,7 +2377,6 @@ export const fr: Catalog = {
   'Couldn’t update “{title}”: {message}': 'Impossible de mettre à jour « {title} » : {message}',
   '{count} unread': '{count} non lus',
   'Your label: {label}': 'Votre étiquette : {label}',
-  'Copy the {toLowerCase}': 'Copier {toLowerCase}',
   '{label} copied': '{label} copié',
   'Choose a day': 'Choisir un jour',
   'Opens a date picker': 'Ouvre un sélecteur de date',
@@ -2516,7 +2511,6 @@ export const fr: Catalog = {
   'Not base64.': 'Pas du base64.',
   'Not a P-256 key.': 'Pas une clé P-256.',
   'Not a recovery key.': 'Pas une clé de récupération.',
-  '{E2EE_LABEL} device': 'Appareil {E2EE_LABEL}',
   '{join} and {names}': '{join} et {names}',
   '{join} and {rest} others': '{join} et {rest} autres',
   '{n}m': '{n} min',
@@ -2998,17 +2992,9 @@ export const fr: Catalog = {
   Journalist: 'Journaliste',
   Journalists: 'Journalistes',
   'Former {role}': { woman: 'Ancienne {role}', man: 'Ancien {role}', other: 'Ancien {role}' },
-  ' at {orgName}': ' chez {orgName}',
-  '{name} may be someone you know{at}': '{name} est peut-être une connaissance{at}',
-  '{name} may be your {toLowerCase}{at}': '{name} est peut-être votre {toLowerCase}{at}',
   '{name} may be family': '{name} est peut-être de la famille',
-  '{name} may be someone you work with{at}':
-    '{name} est peut-être quelqu’un avec qui vous travaillez{at}',
-  '{name} may be someone from your community{at}':
-    '{name} est peut-être quelqu’un de votre communauté{at}',
   '{name} may be someone from {orgName}': '{name} est peut-être quelqu’un de {orgName}',
   'an organization': 'une organisation',
-  '{name} may be {an} {label}{at}': '{name} : peut-être {label}{at}',
   'an automated account (bot)': 'un compte automatisé (bot)',
   'an AI agent': 'un agent IA',
   Bot: 'Bot',
@@ -4526,4 +4512,45 @@ export const fr: Catalog = {
   'A big group: only what’s for you alerts you':
     'Un grand groupe : seul ce qui vous concerne vous alerte',
   '{length} undone': '{length} annulées',
+  'If {who} hasn’t answered in {inWords}': 'Si {who} n’a pas répondu sous {inWords}',
+  'If this person hasn’t answered in {inWords}': 'Si cette personne n’a pas répondu sous {inWords}',
+  '{name} may be someone you know': '{name} est peut-être une connaissance',
+  '{name} may be someone you know at {orgName}':
+    '{name} est peut-être une connaissance chez {orgName}',
+  '{name} may be your {role}': '{name} est peut-être votre {role}',
+  '{name} may be your {role} at {orgName}': '{name} est peut-être votre {role} chez {orgName}',
+  '{name} may be someone you work with': '{name} est peut-être quelqu’un avec qui vous travaillez',
+  '{name} may be someone you work with at {orgName}':
+    '{name} est peut-être quelqu’un avec qui vous travaillez chez {orgName}',
+  '{name} may be someone from your community': '{name} est peut-être quelqu’un de votre communauté',
+  '{name} may be someone from your community at {orgName}':
+    '{name} est peut-être quelqu’un de votre communauté chez {orgName}',
+  '{name} may be a friend': '{name} fait peut-être partie de vos amis',
+  '{name} may be a friend at {orgName}': '{name} fait peut-être partie de vos amis chez {orgName}',
+  '{name} may be an acquaintance': '{name} fait peut-être partie de vos connaissances',
+  '{name} may be an acquaintance at {orgName}':
+    '{name} fait peut-être partie de vos connaissances chez {orgName}',
+  '{name} may be a customer': '{name} fait peut-être partie de vos clients',
+  '{name} may be a customer at {orgName}':
+    '{name} fait peut-être partie de vos clients chez {orgName}',
+  '{name} may be a vendor': '{name} fait peut-être partie de vos fournisseurs',
+  '{name} may be a vendor at {orgName}':
+    '{name} fait peut-être partie de vos fournisseurs chez {orgName}',
+  '{name} may be a service provider': '{name} fait peut-être partie de vos prestataires',
+  '{name} may be a service provider at {orgName}':
+    '{name} fait peut-être partie de vos prestataires chez {orgName}',
+  '{name} may be a professional':
+    '{name} fait peut-être partie des professionnels que vous consultez',
+  '{name} may be a professional at {orgName}':
+    '{name} fait peut-être partie des professionnels que vous consultez chez {orgName}',
+  'Copy: {label}': 'Copier : {label}',
+  'Show this photo in the conversation': 'Afficher cette photo dans la conversation',
+  'Show this video in the conversation': 'Afficher cette vidéo dans la conversation',
+  'Save this photo': 'Enregistrer cette photo',
+  'Save this video': 'Enregistrer cette vidéo',
+  'Messages by hour: {hours}': 'Messages par heure : {hours}',
+  '{hour}h: {count}': '{hour} h : {count}',
+  'No messages by hour yet': 'Pas encore de messages par heure',
+  '{price} a month': '{price} par mois',
+  '{price} a year': '{price} par an',
 };

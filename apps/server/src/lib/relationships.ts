@@ -6,7 +6,7 @@ import {
   type Sphere,
   uuidv7,
 } from '@caime/core';
-import { tr } from '@caime/core/i18n';
+import { lower, tr } from '@caime/core/i18n';
 import { type Kysely, sql, type Transaction } from 'kysely';
 import type { AppContext } from '../context';
 import type { Database, Relationship } from '../db/schema';
@@ -45,7 +45,7 @@ export function validateRole(
     throw badRequest(
       tr('“{role}” isn’t a {sphere} role. Use a custom role instead.', {
         role,
-        sphere: tr(SPHERE_DEFS[sphere].label).toLowerCase(),
+        sphere: lower(tr(SPHERE_DEFS[sphere].label)),
       }),
     );
   if (role && roleLabel) throw badRequest(tr('Choose a role or write your own, not both.'));

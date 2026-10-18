@@ -14,6 +14,8 @@ const DATA: ReadonlyArray<[file: string, text: string]> = [
   ['packages/core/src/contact-return.ts', 'caime contacts v1 {}'],
   ['packages/core/src/contact-sources.ts', 'HTTP {}'],
   ['packages/core/src/contact-sources.ts', 'Bearer {}'],
+  ['packages/core/src/e2ee.ts', '{} device'],
+  ['packages/core/src/e2ee.ts', 'Appareil {}'],
   ['packages/core/src/e2ee-recovery.ts', '{} recovery'],
   ['packages/core/src/ics.ts', 'Not a date: {}'],
   ['packages/core/src/ics.ts', 'An event needs a date or a start: {}'],

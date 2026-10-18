@@ -769,6 +769,15 @@ appointment from a catalog).
   number) to the browser; user-written text passes `auto` and keeps its own direction. Never
   read `I18nManager.isRTL` on the web: React Native Web's is always false. Look at the Arabic
   screenshots (`e2e/screenshots/*arabic*`) after a change to a shared primitive.
+  A catalog's words set in lower case inside a sentence go through core `lower` (`lowerFirst`
+  for the first letter, `sentence` for a capital), by the reader's language's rules (Turkish
+  "İş" is "iş", never "i̇ş"), never `toLowerCase` on what `tr` gave (`i18n-case.test.ts` fails on
+  one); someone's own words and names keep their case. A number in a sentence is passed as a
+  number, and `fill` writes it as the reader's language does (`shownNumber`: its separators,
+  grouped as the language groups, Arabic's digits Latin as they were), never
+  `toLocaleString('en-US')` where it's used; a year, a code or an id is passed as text, so it
+  stays as it is; a size is `formatBytes`, in the reader's units ("1,5 Mo"). What's signed or
+  sent as protocol (an approval's label, a header) never goes through `tr`. M16 D4.
   A sentence is a whole key: never build one from fragments (`tr(' describes you as ')`) or put
   an English word into it as a variable (`{value}` = 's', `{who}` = 'You answer'); a count is
   `trn`, and a line that names who did something passes `by` already translated (`tr('You')`)

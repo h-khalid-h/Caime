@@ -11,7 +11,7 @@ import {
   withoutWord,
   wordsFrom,
 } from '@caime/core/automations';
-import { msg, tr } from '@caime/core/i18n';
+import { lower, msg, tr } from '@caime/core/i18n';
 import { ROLES, SPHERE_DEFS, SPHERES, type Sphere } from '@caime/core/taxonomy';
 import { useQueryClient } from '@tanstack/react-query';
 import { useState } from 'react';
@@ -184,7 +184,7 @@ export function AutomationSheet({
                 {
                   value: ALL,
                   label: tr('All {toLowerCase}', {
-                    toLowerCase: tr(SPHERE_DEFS[sphere as Sphere].plural).toLowerCase(),
+                    toLowerCase: lower(tr(SPHERE_DEFS[sphere as Sphere].plural)),
                   }),
                 },
                 ...roles.map((r) => ({ value: r.id, label: tr(r.plural) })),

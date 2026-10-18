@@ -23,11 +23,15 @@ import {
   type InterfaceLanguage,
   languageFor,
   languageInSearch,
+  lower,
   msg,
+  numberLocale,
   sentence,
+  shownNumber,
   tr,
   trn,
 } from '@caime/core/i18n';
+import { numberFormat } from '@caime/core/locale';
 import { APP_SCREENSHOTS_MAX } from '@caime/core/marketplace';
 import { ORG_ALLOWANCES, PERSON_ALLOWANCES } from '@caime/core/plans';
 import { KEPT_DAYS } from './retention';
@@ -321,12 +325,13 @@ export const LANDING_LAYERS: ExplorerItem[] = [
   },
 ];
 
-const n = (x: number) => x.toLocaleString('en');
+/** A number on a page, as the reader's language writes it (M16 D4). */
+const n = (x: number) => shownNumber(x);
 const gb = (bytes: number) => tr('{n} GB', { n: n(Math.round(bytes / 1024 ** 3)) });
 
 /** A price as the page says it: "€29 a month", from Stripe's minor units. */
 export function money(amount: number, currency: string): string {
-  return new Intl.NumberFormat('en', {
+  return numberFormat(numberLocale(currentTranslator().language), {
     style: 'currency',
     currency: currency.toUpperCase(),
     minimumFractionDigits: amount % 100 ? 2 : 0,
@@ -627,9 +632,7 @@ ${main}
           tr(
             'Every customer conversation in one place, sorted by who has waited longest, in six views: {views}.',
             {
-              views: BUSINESS_VIEWS.map((v) => tr(BUSINESS_VIEW_LABELS[v]).toLowerCase()).join(
-                tr(', '),
-              ),
+              views: BUSINESS_VIEWS.map((v) => lower(tr(BUSINESS_VIEW_LABELS[v]))).join(tr(', ')),
             },
           ),
         ),

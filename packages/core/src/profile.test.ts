@@ -1,5 +1,8 @@
 import { describe, expect, it } from 'vitest';
 import { RHYTHM_TEXT, rhythmOf } from './format';
+import { makeTranslator, setTranslator } from './i18n';
+import { fr } from './locales/fr';
+import { turkish } from './locales/tr';
 import { relationshipOfferText } from './taxonomy';
 
 describe('who someone is to you, in words (PRD §12, §67, §71)', () => {
@@ -39,5 +42,38 @@ describe('who someone is to you, in words (PRD §12, §67, §71)', () => {
     );
     expect(relationshipOfferText('Pat', { sphere: 'public' })).toBe('Pat may be someone you know');
     expect(relationshipOfferText('Ola', { sphere: 'other' })).toBe('Ola may be someone you know');
+  });
+
+  it('says each offer as one sentence, in each language its own way (M16 D4)', () => {
+    expect(relationshipOfferText('Cy', { sphere: 'customer', orgName: 'Acme' })).toBe(
+      'Cy may be a customer at Acme',
+    );
+    expect(relationshipOfferText('Ada', { sphere: 'acquaintance', orgName: 'Acme' })).toBe(
+      'Ada may be an acquaintance at Acme',
+    );
+    expect(relationshipOfferText('Zed', { orgName: 'Acme' })).toBe(
+      'Zed may be someone you know at Acme',
+    );
+    setTranslator(makeTranslator('fr', fr));
+    try {
+      // No English article carried over: French says it its own way.
+      expect(relationshipOfferText('Cy', { sphere: 'customer' })).toBe(
+        'Cy fait peut-être partie de vos clients',
+      );
+      expect(relationshipOfferText('Cy', { sphere: 'customer', orgName: 'Acme' })).toBe(
+        'Cy fait peut-être partie de vos clients chez Acme',
+      );
+    } finally {
+      setTranslator(makeTranslator('en', {}));
+    }
+    setTranslator(makeTranslator('tr', turkish));
+    try {
+      // A role read in lower case by Turkish rules: "İş arkadaşı" is never "i̇ş arkadaşı".
+      expect(relationshipOfferText('Ece', { sphere: 'work', role: 'colleague' })).toBe(
+        'Ece iş arkadaşı olabilir',
+      );
+    } finally {
+      setTranslator(makeTranslator('en', {}));
+    }
   });
 });

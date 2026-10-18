@@ -2546,6 +2546,32 @@ graph) and the number that will show it; one that sharpens none is hygiene and s
       a sooner read never put off, nothing said of a crowd's messages, a conversation left
       forgotten, a connection's and a card's refreshes by `qk`'s keys), `keys.test.ts`, and the
       full gate.
+- [x] D4a. Words that read right in every language (2026-10-18, review §10). First, a private
+      conversations bug the R54 conversion made: the label a device signs to approve another of
+      its person's devices went through `tr`, so a device reading Arabic, French or Turkish signed
+      its own translation, which a device reading another language couldn't check, and that
+      person's new devices went unvouched for across languages. An approval now signs the
+      protocol's own words in every language (`introductionText`), and one made since R54 still
+      verifies (`introductionTexts`; `e2ee-noble.test.ts` signs in Arabic and checks in English,
+      on the browser's and the phones' code). A catalog's words
+      lowered inside a sentence go through core `lower` and `lowerFirst`, by the reader's
+      language's rules, at the ten places that lowered them by hand (Turkish "İş" read "i̇ş" in
+      the Notifications and Automations choices, a person's rhythm, the relationship offers, a
+      refused role, a space's suggestion, the site's list of views), and `i18n-case.test.ts` fails
+      on one more. The reminders read "If this person haven't answered" in English in every
+      language (five phrases never reached the catalog): each rule is now a sentence of its own,
+      naming who it's for as automations do. A relationship offer is a sentence whole for each
+      kind, with and without where ("Cy may be a customer at Acme"), where an English "a" or "an"
+      and " at …" were glued on in every language. The hours chart's words for a screen reader
+      read "tr(), tr(), 9h 3)" since the R54 conversion, and now read the hours. A number in a
+      sentence is written as the reader's language writes it (`fill` through `shownNumber`:
+      "12 345" in French, "12.345" in Turkish, a year passed as text, Arabic's digits Latin as they
+      were), where an organization's allowances, a limit's message and the site's numbers and
+      prices were forced into English; a size is said in the reader's units ("1,5 Mo"); a
+      price's period ("€6 a month") goes through the catalog; a copy button's name keeps its
+      field's label, where a name in it lost its capital. Verified: `i18n-case.test.ts`,
+      `profile.test.ts` (the offers in English, French and Turkish), the catalogs in all four
+      languages, and the full gate.
 - [ ] E. Chat polish: distinct read ticks with a contrast test; the English leaks and a scanner
       that flags any word-bearing literal; quoted replies with the author and a jump, swipe to
       reply; message info and who reacted; video as a message, voice notes with a waveform, speed
@@ -4174,6 +4200,10 @@ graph) and the number that will show it; one that sharpens none is hygiene and s
   journeys, safety, reliability, performance, intelligence, mail and calendar, chat, integrations,
   business and code integrity; the matrix against WhatsApp, Signal, Slack, Calendly and Workspace;
   an age-assurance design; the integration framework mapped to the code; plan M16 (A–H).
+- 2026-10-18 — M16 D4a: a device's approval is signed in the protocol's own words, so devices
+  reading different languages vouch for each other again; words lowered by the reader's own
+  rules; reminders and relationship offers whole sentences in every language; numbers written as
+  each language writes them. D3a and D3b verified on cai.me.
 - 2026-10-18 — M16 D3b: live events refresh by `qk`'s keys alone, a sooner refresh never put off,
   the inbox read once per change where it was read twice; the cache written only through its two
   helpers; "Do all"'s Undo honest about what it couldn't take back.

@@ -257,7 +257,7 @@ function words(a: MarketEntry) {
 function mark(a: MarketEntry, name: string, size: number): string {
   if (a.iconUrl)
     return `<img class="appmark" src="${esc(a.iconUrl)}" alt="" width="${size}" height="${size}" loading="lazy">`;
-  return `<span class="appmark" aria-hidden="true">${esc(Array.from(name)[0]?.toUpperCase() ?? '·')}</span>`;
+  return `<span class="appmark" aria-hidden="true">${esc(Array.from(name)[0]?.toLocaleUpperCase(currentTranslator().language) ?? '·')}</span>`;
 }
 
 /** Who made it, as consent and Discover say it, with Verified where it was proved. */

@@ -1,5 +1,5 @@
 import type { PolicyView } from '@caime/core/api';
-import { tr } from '@caime/core/i18n';
+import { lower, tr } from '@caime/core/i18n';
 import { resolvePolicy } from '@caime/core/policy';
 import { findRole, ROLES, SPHERE_DEFS, SPHERES, type Sphere } from '@caime/core/taxonomy';
 import { workHours } from '@caime/core/time';
@@ -139,7 +139,7 @@ function NewRule({
                   {
                     value: 'all',
                     label: tr('All {toLowerCase}', {
-                      toLowerCase: tr(SPHERE_DEFS[sphere].plural).toLowerCase(),
+                      toLowerCase: lower(tr(SPHERE_DEFS[sphere].plural)),
                     }),
                   },
                   ...ROLES[sphere].map((r) => ({ value: r.id, label: tr(r.plural) })),

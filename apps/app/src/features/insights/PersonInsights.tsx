@@ -269,13 +269,15 @@ function Insights({ i }: { i: PersonInsightsView }) {
           <View
             style={{ flexDirection: 'row', alignItems: 'flex-end', gap: 3, height: 64 }}
             accessibilityRole="image"
-            accessibilityLabel={tr('Messages by hour: {join}', {
-              join:
-                i.hours
-                  .map((n, h) => (n ? `${h}h ${n}` : 'tr('))
-                  .filter(Boolean)
-                  .join('), ') || 'none',
-            })}
+            accessibilityLabel={
+              i.hours.some(Boolean)
+                ? tr('Messages by hour: {hours}', {
+                    hours: i.hours
+                      .flatMap((n, h) => (n ? [tr('{hour}h: {count}', { hour: h, count: n })] : []))
+                      .join(tr(', ')),
+                  })
+                : tr('No messages by hour yet')
+            }
             testID="insights-hours"
           >
             {HOURS.map((h) => {

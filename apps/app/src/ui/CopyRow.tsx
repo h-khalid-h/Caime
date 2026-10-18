@@ -43,7 +43,7 @@ export function CopyRow({
         </Text>
         <IconButton
           icon={Copy}
-          label={tr('Copy the {toLowerCase}', { toLowerCase: label.toLowerCase() })}
+          label={tr('Copy: {label}', { label })}
           onPress={() => void copyText(value).then(() => toast(tr('{label} copied', { label })))}
         />
       </View>

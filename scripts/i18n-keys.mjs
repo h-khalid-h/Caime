@@ -66,6 +66,44 @@ export function collectKeys() {
   return keys;
 }
 
+/**
+ * A catalog's words cased by hand (M16 D4): `tr(…).toLowerCase()` turns Turkish "İş" into
+ * "i̇ş". Core's `lower`, `lowerFirst` and `sentence` case by the reader's language; what's
+ * listed here is every `tr`, `trn` or `trFor` call whose result is cased directly.
+ */
+export function casedWords() {
+  const parser = require('@babel/parser');
+  const traverse = require('@babel/traverse').default;
+  const files = execSync(
+    "git ls-files --cached --others --exclude-standard 'apps/app/src/**/*.ts' 'apps/app/src/**/*.tsx' 'packages/core/src/*.ts' 'apps/server/src/**/*.ts'",
+    { cwd: root },
+  )
+    .toString()
+    .trim()
+    .split('\n')
+    .filter((f) => f && !/\.test\.tsx?$/.test(f) && !/\/locales\//.test(f));
+  const out = [];
+  for (const rel of files) {
+    const src = readFileSync(join(root, rel), 'utf8');
+    if (!/\.to(Locale)?(Lower|Upper)Case\(/.test(src)) continue;
+    const ast = parser.parse(src, { sourceType: 'module', plugins: ['typescript', 'jsx'] });
+    traverse(ast, {
+      MemberExpression(path) {
+        const { object, property } = path.node;
+        if (property.type !== 'Identifier') return;
+        if (!/^to(Locale)?(Lower|Upper)Case$/.test(property.name)) return;
+        if (
+          object.type === 'CallExpression' &&
+          object.callee.type === 'Identifier' &&
+          /^(tr|trn|trFor)$/.test(object.callee.name)
+        )
+          out.push(`${rel}:${path.node.loc.start.line}`);
+      },
+    });
+  }
+  return out;
+}
+
 /** Attributes and fields whose string a person reads. */
 const TEXT_FIELDS = new Set([
   'title',

@@ -1183,8 +1183,8 @@ test.describe
       await page.getByTestId('settings-plan').click();
       await expect(page.getByTestId('plan-name')).toHaveText('Personal');
       await expect(page.getByTestId('plan-ai')).toContainText('0 of 10 in the last 24 hours');
-      // Nile Dental's logo is hers: a few KB of her storage.
-      await expect(page.getByTestId('plan-files')).toContainText(/^Files[\d.]+ KB of 5 GB$/);
+      // Nile Dental's logo is hers: a few kB of her storage, in the reader's units.
+      await expect(page.getByTestId('plan-files')).toContainText(/^Files[\d.]+ kB of 5 GB$/);
       await expect(page.getByTestId('plan-automations')).toContainText('of 5');
       // Pro sells the depth of the wedge (R47): insights are named, and locked until then.
       await expect(page.getByTestId('plan-insights')).toContainText('Comes with Pro');

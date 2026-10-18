@@ -21,6 +21,7 @@ import {
   ecPublic,
   type IntroducedDevice,
   introductionText,
+  introductionTexts,
   E2EE_LABEL as LABEL,
   type PrivatePayload,
   type PublicDevice,
@@ -290,7 +291,8 @@ export async function introduce(
 
 function introducedBy(device: IntroducedDevice, signingKey: PublicJwk): boolean {
   try {
-    return verify(signingKey, fromBase64Url(device.introduction), utf8(introductionText(device)));
+    const signature = fromBase64Url(device.introduction);
+    return introductionTexts(device).some((text) => verify(signingKey, signature, utf8(text)));
   } catch {
     return false;
   }

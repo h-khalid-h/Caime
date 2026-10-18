@@ -85,8 +85,6 @@ export const frServer: Catalog = {
   'your name and handle, and may ask': 'votre nom et identifiant, et peut demander',
   '{n} GB': '{n} Go',
   'price shown in the app': 'prix affiché dans l’application',
-  '{price} a month': '{price} par mois',
-  '{price} a year': '{price} par an',
   ', or ': ', ou ',
   'It lands in the inbox, first if they’ve waited longest.':
     'Elle arrive dans la boîte de réception, en tête si elle attend depuis le plus longtemps.',

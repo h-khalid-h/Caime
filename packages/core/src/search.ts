@@ -8,7 +8,7 @@
 
 import { asciiDigits } from './digits';
 import { previewText } from './format';
-import { tr } from './i18n';
+import { lower, tr } from './i18n';
 import { findRole, relationshipFromWord, SPHERES, type Sphere } from './taxonomy';
 
 export const SEARCH_SCOPES = [
@@ -718,7 +718,7 @@ function parseWords(q: string, out: ParsedQuery): ParsedQuery {
       scope: fileOnly[2],
       fileKind: fileOnly[1],
       text: '',
-      interpretation: tr('All {toLowerCase}', { toLowerCase: q.toLowerCase() }),
+      interpretation: tr('All {toLowerCase}', { toLowerCase: lower(q) }),
     };
   }
 
@@ -732,7 +732,7 @@ function parseWords(q: string, out: ParsedQuery): ParsedQuery {
       relationship: rel,
       text: '',
       interpretation: tr('People you classified as {toLowerCase}', {
-        toLowerCase: named.toLowerCase(),
+        toLowerCase: lower(named),
       }),
     };
   }

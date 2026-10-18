@@ -104,9 +104,11 @@ export function priceAmount(p: Pick<PriceView, 'amount' | 'currency'>, locale = 
   }
 }
 
-/** "€6 a month", "€60 a year". */
+/** "€6 a month", "€60 a year", in the reader's language. */
 export const priceText = (p: PriceView, locale?: string) =>
-  `${priceAmount(p, locale)} a ${p.interval}`;
+  p.interval === 'year'
+    ? tr('{price} a year', { price: priceAmount(p, locale) })
+    : tr('{price} a month', { price: priceAmount(p, locale) });
 
 /** When a subscription renews or ends: "October 23, 2026". */
 export function billingDate(iso: string, timeZone: string, locale = 'en-US'): string {

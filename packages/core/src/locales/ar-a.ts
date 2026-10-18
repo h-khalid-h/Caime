@@ -355,7 +355,6 @@ export const arA: Catalog = {
   'Remind me': 'ذكّرني',
   'When they haven’t answered a question or a request of yours.':
     'حين لا يجيبون عن سؤال أو طلب منك.',
-  'If {whom} haven’t answered in {inWords}': 'إن لم يجب {whom} خلال {inWords}',
   'Add a reminder': 'إضافة تذكير',
   'Quiet hours': 'ساعات الهدوء',
   'Add quiet hours': 'إضافة ساعات هدوء',
@@ -1296,8 +1295,6 @@ export const arA: Catalog = {
   'What’s shown': 'ما يُعرض',
   'Loading what’s been shared…': 'جارٍ تحميل ما تمت مشاركته…',
   Photo: 'صورة',
-  'Show this {toLowerCase} in the conversation': 'إظهار {toLowerCase} في المحادثة',
-  'Save this {toLowerCase}': 'حفظ {toLowerCase}',
   'Voice note': 'رسالة صوتية',
   'Add to actions': 'إضافة إلى الإجراءات',
   'Track it': 'تابعه',
@@ -1582,7 +1579,6 @@ export const arA: Catalog = {
   'Nobody’s gone quiet.': 'لم ينقطع التواصل مع أحد.',
   'When you write': 'متى تكتب',
   'Your messages by the hour of your day.': 'رسائلك بحسب ساعة يومك.',
-  'Messages by hour: {join}': 'الرسائل بحسب الساعة: {join}',
   'Worked out from your own one-to-ones, for you only. Nobody else sees this, and nothing anyone said is read for it.':
     'محسوبة من محادثاتك الفردية، لك وحدك. لا يراها غيرك، ولا يُقرأ لها شيء مما قاله أحد.',
   'Taken out of the album': 'أُخرجت من الألبوم',
@@ -2357,7 +2353,6 @@ export const arA: Catalog = {
   'Couldn’t update “{title}”: {message}': 'تعذّر تحديث «{title}»: {message}',
   '{count} unread': 'غير المقروءة: {count}',
   'Your label: {label}': 'تصنيفك: {label}',
-  'Copy the {toLowerCase}': 'نسخ {toLowerCase}',
   '{label} copied': 'نُسخ {label}',
   'Choose a day': { toWoman: 'اختاري يومًا', toMan: 'اختر يومًا', other: 'اختر يومًا' },
   'Opens a date picker': 'يفتح منتقي التاريخ',

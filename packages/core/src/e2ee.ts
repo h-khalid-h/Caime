@@ -1,4 +1,3 @@
-import { tr } from './i18n';
 /**
  * End-to-end encryption for private conversations (R18, PRD §61), with the Web Crypto API (the
  * browser's, and Node's for tests), so no key or message text ever reaches the server in the
@@ -106,15 +105,37 @@ export function canonical(value: unknown): string {
 /** Only the parts of a public key that are the key (a JWK may carry more). */
 export const ecPublic = (k: PublicJwk): PublicJwk => ({ kty: 'EC', crv: 'P-256', x: k.x, y: k.y });
 
-/** What's signed to introduce a device: whose it is, which it is, and its keys. */
-export const introductionText = (d: PublicDevice) =>
+/** An introduction's label: the protocol's own words, the same on every device in any language. */
+const INTRODUCTION_LABEL = `${E2EE_LABEL} device`;
+/**
+ * The label as each interface language said it: from R54 until M16 D4 a device signed its
+ * reader's translation, so a device reading another language couldn't check it. An introduction
+ * made then still verifies against its own.
+ */
+const SIGNED_IN_A_LANGUAGE = [
+  `جهاز ${E2EE_LABEL}`,
+  `Appareil ${E2EE_LABEL}`,
+  `${E2EE_LABEL} cihazı`,
+];
+
+/**
+ * What's signed to introduce a device: whose it is, which it is, and its keys. Data, never the
+ * reader's words: a device reading Arabic and one reading English sign and check the same text.
+ */
+export const introductionText = (d: PublicDevice, label = INTRODUCTION_LABEL) =>
   canonical({
-    label: tr('{E2EE_LABEL} device', { E2EE_LABEL }),
+    label,
     userId: d.userId,
     id: d.id,
     e: ecPublic(d.encryptionKey),
     s: ecPublic(d.signingKey),
   });
+
+/** Every text an introduction may have been signed over: the protocol's first, then the old. */
+export const introductionTexts = (d: PublicDevice): string[] => [
+  introductionText(d),
+  ...SIGNED_IN_A_LANGUAGE.map((label) => introductionText(d, label)),
+];
 
 /** A signature as a device makes one: base64url, not too long. */
 export const isSignature = (v: unknown): v is string =>
