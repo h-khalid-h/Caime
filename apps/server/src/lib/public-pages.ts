@@ -48,8 +48,9 @@ import { tagged } from '@caime/core/tagged';
 import type { Kysely } from 'kysely';
 import type { AppContext } from '../context';
 import type { Database, Organization, User } from '../db/schema';
+import { USER_COLUMNS } from '../db/schema';
 import { catalogOf, paymentsOf } from './booking';
-import { orgRef } from './business';
+import { ORG_REF_COLUMNS, orgRef } from './business';
 import { countryNameIn } from './geo';
 import { joinLinkOpening, liveJoinLink } from './join-links';
 import {
@@ -457,7 +458,7 @@ export async function publicInvite(db: Q, token: string, now: Date): Promise<Pub
   if (!i) return null;
   const u = await db
     .selectFrom('users')
-    .selectAll()
+    .select(USER_COLUMNS)
     .where('id', '=', i.user_id)
     .where('deleted_at', 'is', null)
     .where('suspended_at', 'is', null)
@@ -484,7 +485,7 @@ export async function publicTeamInvite(
   if (!invite) return null;
   const org = await ctx.db
     .selectFrom('organizations')
-    .select(['id', 'name', 'handle', 'kind', 'domain', 'verified_at', 'country', 'avatar_file_id'])
+    .select(ORG_REF_COLUMNS)
     .where('id', '=', invite.org_id)
     .where('archived_at', 'is', null)
     .executeTakeFirst();

@@ -48,8 +48,8 @@ import type { FastifyInstance } from 'fastify';
 import { sql } from 'kysely';
 import { z } from 'zod';
 import type { AppContext } from '../context';
-import type { Organization } from '../db/schema';
-import { USER_COLUMNS } from '../db/schema';
+import type { Organization, OrgRow } from '../db/schema';
+import { columnsOf, ORG_COLUMNS, USER_COLUMNS } from '../db/schema';
 import { assertAgeChecked } from '../lib/age';
 import { activeAgent } from '../lib/agent';
 import { audit } from '../lib/audit';
@@ -122,20 +122,34 @@ async function team(ctx: AppContext, orgId: string) {
     .execute();
 }
 
-async function summaryOf(
-  ctx: AppContext,
-  org: Organization,
-  myRole: OrgRole | null,
-): Promise<OrgSummaryView> {
-  // People: an app's bot is on the team, but isn't one of them.
-  const { n } = await ctx.db
+/**
+ * How many people are on each team, in one query however many teams (M16 D1). People: an app's
+ * bot is on the team, but isn't one of them.
+ */
+async function memberCounts(ctx: AppContext, orgIds: string[]): Promise<Map<string, number>> {
+  if (!orgIds.length) return new Map();
+  const rows = await ctx.db
     .selectFrom('org_members as m')
     .innerJoin('users as u', 'u.id', 'm.user_id')
-    .select(sql<number>`count(*)::int`.as('n'))
-    .where('m.org_id', '=', org.id)
+    .select(['m.org_id', sql<number>`count(*)::int`.as('n')])
+    .where('m.org_id', 'in', orgIds)
     .where('m.left_at', 'is', null)
     .where('u.kind', '=', 'human')
-    .executeTakeFirstOrThrow();
+    .groupBy('m.org_id')
+    .execute();
+  return new Map(rows.map((r) => [r.org_id, r.n]));
+}
+
+async function summaryOf(
+  ctx: AppContext,
+  org: OrgRow,
+  myRole: OrgRole | null,
+): Promise<OrgSummaryView> {
+  return summaryFrom(org, (await memberCounts(ctx, [org.id])).get(org.id) ?? 0, myRole);
+}
+
+/** An organization as a list shows it: never its catalog, which none of this reads. */
+function summaryFrom(org: OrgRow, n: number, myRole: OrgRole | null): OrgSummaryView {
   return {
     id: org.id,
     name: org.name,
@@ -325,17 +339,18 @@ export async function orgRoutes(app: FastifyInstance, ctx: AppContext) {
     const rows = await ctx.db
       .selectFrom('org_members as m')
       .innerJoin('organizations as o', 'o.id', 'm.org_id')
-      .selectAll('o')
-      .select('m.role as my_role')
+      .select([...columnsOf('o', ORG_COLUMNS), 'm.role as my_role'])
       .where('m.user_id', '=', auth.userId)
       .where('m.left_at', 'is', null)
       .where('o.archived_at', 'is', null)
       .orderBy('o.name')
       .execute();
+    const counts = await memberCounts(
+      ctx,
+      rows.map((o) => o.id),
+    );
     return {
-      orgs: await Promise.all(
-        rows.map(({ my_role, ...org }) => summaryOf(ctx, org as Organization, my_role)),
-      ),
+      orgs: rows.map(({ my_role, ...org }) => summaryFrom(org, counts.get(org.id) ?? 0, my_role)),
     };
   });
 
@@ -347,7 +362,7 @@ export async function orgRoutes(app: FastifyInstance, ctx: AppContext) {
     const term = q.replace(/^@/, '');
     const rows = await ctx.db
       .selectFrom('organizations')
-      .selectAll()
+      .select(ORG_COLUMNS)
       .where('archived_at', 'is', null)
       // Never found while suspended (M16 B3).
       .where('suspended_at', 'is', null)
@@ -361,11 +376,24 @@ export async function orgRoutes(app: FastifyInstance, ctx: AppContext) {
       .orderBy('name')
       .limit(20)
       .execute();
+    // Twenty at most, each with its team's size and my place on it, in two queries (M16 D1).
+    const ids = rows.map((o) => o.id);
+    const [counts, seats] = await Promise.all([
+      memberCounts(ctx, ids),
+      ids.length
+        ? ctx.db
+            .selectFrom('org_members')
+            .select(['org_id', 'role'])
+            .where('org_id', 'in', ids)
+            .where('user_id', '=', auth.userId)
+            .where('left_at', 'is', null)
+            .execute()
+        : [],
+    ]);
+    const roleOf = new Map(seats.map((m) => [m.org_id, m.role]));
     return {
-      orgs: await Promise.all(
-        rows.map(async (org) =>
-          summaryOf(ctx, org, (await orgSeat(ctx.db, auth.userId, org.id))?.role ?? null),
-        ),
+      orgs: rows.map((org) =>
+        summaryFrom(org, counts.get(org.id) ?? 0, roleOf.get(org.id) ?? null),
       ),
     };
   });

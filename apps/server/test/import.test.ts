@@ -74,6 +74,16 @@ describe('a chat brought over from WhatsApp (R45)', () => {
     const mine = await noor.get(`/v1/conversations/${conversationId}`);
     expect(mine.conversation.me.lastReadSeq).toBe(4);
     expect(conversation.other.userId).toBe(noor.user.id);
+    // Where each last wrote (M16 D1): Alex at his line, Noor at the line saying she brought it.
+    const sent = await t.ctx.db
+      .selectFrom('participants')
+      .select(['user_id', 'last_sent_seq'])
+      .where('conversation_id', '=', conversationId)
+      .execute();
+    expect(Object.fromEntries(sent.map((p) => [p.user_id, Number(p.last_sent_seq)]))).toEqual({
+      [noor.user.id]: 4,
+      [alex.user.id]: 2,
+    });
 
     // In the order they were written, not the order they were sent; the line at the end.
     const page = await alex.get(`/v1/conversations/${conversationId}/messages`);

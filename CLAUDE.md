@@ -225,9 +225,16 @@ appointment from a catalog).
   and `rank`, the app's `useInbox` and `useInboxAll` are `select`s over that one query (core
   `inboxSections` and `inboxAllList`, which the server uses too), and `patchItems` patches the
   raw list. `GET /v1/inbox` (sections) stays for tokens and the SDK. `inbox-scale.test.ts`
-  measures a big inbox; anything per person listed must be a batched query or a map, and any
-  date-in-a-zone goes through `zonedParts` (a cached formatter per zone), never a new
-  `Intl.DateTimeFormat`.
+  measures a big inbox (and holds it to a ceiling of queries); anything per person listed must
+  be a batched query or a map, and any date-in-a-zone goes through `zonedParts` (a cached
+  formatter per zone), never a new `Intl.DateTimeFormat`. Where someone last wrote in a
+  conversation is `participants.last_sent_seq` (M16 D1), what "asked since I last wrote" reads
+  (the inbox's, and `sendMessage`'s count of what a reply answered): every path that inserts a
+  message writes it for its sender in the same statement that marks it read (`sendMessage`,
+  `insertSystemMessage`, an import), and a new one does too, never a look back through the
+  messages for it. A list of people (connections, requests, a search) draws them through
+  `personViewsFor` and their standing through `betweenMany`, never `viewerRelation` or
+  `between` per row; `people-scale.test.ts` holds each list to the same queries for 3 and 30.
 - The persisted query cache is restored as-is; `invalidateQueries()` runs right after restore so
   a relaunch shows the cache instantly and then refreshes it. Its persister is Caime's own
   (`api/queryClient.ts`): a save is asked for on every change, taken at most every 1.5 s, and
@@ -1682,9 +1689,12 @@ appointment from a catalog).
 - A person or an organization is read with `.select(USER_COLUMNS)` or `.select(ORG_COLUMNS)`
   (`db/schema.ts`; `UserRow`, `OrgRow`), never `selectAll()`, which carried the five catalog
   jsonb columns (`CATALOG_COLUMNS`) with every presence change, sender and person in a view:
-  `columns.test.ts` holds the lists to the tables and allows `selectAll()` only where the
-  catalog is the point (the public pages, an export, the organization's own view and summary, a
-  profile, an item's photo). When a card is for is `messages.card_start_at` (migration 0066 and
+  `columns.test.ts` holds the lists to the tables, and `select-all.test.ts` (M16 D1) holds the
+  source, from its syntax tree, so an alias, a join or a `where` hides nothing and
+  `returningAll()` counts: a whole person or organization only in the functions it names (an
+  export, `orgById`, the public pages, an item's photo, a profile), a whole message nowhere. A
+  join selects `columnsOf('u', USER_COLUMNS)`, never `selectAll('u')`, and what builds an
+  `orgRef` selects `ORG_REF_COLUMNS`. When a card is for is `messages.card_start_at` (migration 0066 and
   0067, `cardStartAt` in `lib/kits.ts`, written on send; a test that inserts a card by hand
   writes it too): a meeting's or an appointment's start, a Pay card's or an invoice's due day
   (M14, midnight UTC of the date). The calendar, the slots, the briefs and search read cards by
@@ -1710,7 +1720,8 @@ appointment from a catalog).
   `lib/text.ts` (`clip`, `escapeLike`), and a card's agreed state is core's `AGREED_STATES`.
 - A message is selected with `.select(MESSAGE_COLUMNS)` (`db/schema.ts`), never `selectAll()`,
   which shipped its tsvector with every row: `messaging.test.ts` holds the list to the table's
-  columns and the source to the rule, so a new column joins the list. A sweep over due rows
+  columns and `select-all.test.ts` the source to the rule (`returning(MESSAGE_COLUMNS)` after
+  an update too), so a new column joins the list. A sweep over due rows
   (reminders, held notifications) takes `SWEEP_BATCH` at a time and runs `background: true`,
   so nothing holds the job loop; a check per item in a loop (the AI actions route) is a query
   for the set first. Every model call's usage carries `cacheReadTokens` and

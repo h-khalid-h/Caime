@@ -36,6 +36,7 @@ import {
   viewerRelation,
 } from '../lib/relations';
 import { itemsWithStock } from '../lib/stock';
+import { escapeLike } from '../lib/text';
 import { identityShownTo, minorOf, personView, privacyOf } from '../lib/users';
 
 export { identityShownTo };
@@ -207,8 +208,8 @@ export async function peopleRoutes(app: FastifyInstance, ctx: AppContext) {
     const number = /^[+\d][\d\s\-().]{5,}$/.test(q.trim())
       ? (addressValue('phone', q) ?? toInternational(q, me.country))
       : null;
-    const like = `${term.replace(/[\\%_]/g, (c) => `\\${c}`)}%`;
-    const contains = `%${term.replace(/[\\%_]/g, (c) => `\\${c}`)}%`;
+    const like = `${escapeLike(term)}%`;
+    const contains = `%${escapeLike(term)}%`;
 
     const rows = await ctx.db
       .selectFrom('users as u')
@@ -218,8 +219,12 @@ export async function peopleRoutes(app: FastifyInstance, ctx: AppContext) {
       .leftJoin('connections as c', (j) =>
         j.onRef('c.id', '=', 's.connection_id').on('c.status', '=', 'active'),
       )
-      .selectAll('u')
+      // Only what's needed to choose them: each is drawn below with everyone else at once.
       .select([
+        'u.id',
+        'u.birth_date',
+        'u.time_zone',
+        'u.age_minor_until',
         sql<boolean>`c.id is not null`.as('is_connection'),
         sql<number>`greatest(similarity(u.display_name, ${term}), similarity(u.handle::text, ${term}), coalesce(similarity(s.nickname, ${term}), 0))`.as(
           'score',
@@ -305,24 +310,29 @@ export async function peopleRoutes(app: FastifyInstance, ctx: AppContext) {
 
     // Their birthday where they are (packages/core safety.ts isMinor), as every other gate has it.
     const found = viewerIsMinor ? rows : rows.filter((u) => u.is_connection || !minorOf(u, now));
+    // Everyone found in a fixed number of queries, never a few per person per keystroke (M16
+    // D1): as strangers are seen, since being found says nothing of a conversation together.
     const ids = found.map((r) => r.id);
-    const mine = await activeRelationships(ctx.db, auth.userId, ids);
-    const results = await Promise.all(
-      found.map(async (u) => {
-        const [relation, b, identity] = await Promise.all([
-          viewerRelation(ctx.db, u.id, auth.userId),
-          between(ctx.db, auth.userId, u.id),
-          identityShownTo(ctx, u.id, auth.userId),
-        ]);
-        const rel = mine.find((r) => r.subject_id === u.id);
-        const person = personView(u, relation, now, identity);
-        return {
+    const [mine, people, pairs] = await Promise.all([
+      activeRelationships(ctx.db, auth.userId, ids),
+      personViewsFor(ctx, auth.userId, ids, { sharesConversation: false }),
+      betweenMany(ctx.db, auth.userId, ids),
+    ]);
+    const relOf = new Map<string, (typeof mine)[number]>();
+    for (const r of mine) if (!relOf.has(r.subject_id)) relOf.set(r.subject_id, r);
+    const results = found.flatMap((u) => {
+      const person = people.get(u.id);
+      const pair = pairs.get(u.id);
+      if (!person || !pair) return [];
+      const rel = relOf.get(u.id);
+      return [
+        {
           person,
-          connection: connectionState(b),
+          connection: connectionState(pair),
           relationship: rel ? relationshipView(rel, person.gender) : null,
-        };
-      }),
-    );
+        },
+      ];
+    });
     return { results };
   });
 

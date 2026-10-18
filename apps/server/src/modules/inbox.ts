@@ -19,6 +19,7 @@ import {
 import type { FastifyInstance } from 'fastify';
 import { sql } from 'kysely';
 import type { AppContext } from '../context';
+import { columnsOf, MESSAGE_COLUMNS } from '../db/schema';
 import { maskPayload, orgRef } from '../lib/business';
 import { overdueAtSql } from '../lib/due';
 import { messagePreview } from '../lib/messages';
@@ -97,11 +98,8 @@ export async function buildInbox(
       'p.draft',
       sql<number>`coalesce(u.unread, 0)`.as('unread'),
       sql<number>`coalesce(u.unread_mentions, 0)`.as('unread_mentions'),
-      sql<
-        string | null
-      >`(select max(m.seq)::text from messages m where m.conversation_id = c.id and m.sender_id = ${userId})`.as(
-        'my_last_seq',
-      ),
+      // Where I last wrote, kept on my row (M16 D1), never looked for among the messages.
+      'p.last_sent_seq',
       sql<number>`(select count(*)::int from participants x where x.conversation_id = c.id and x.left_at is null)`.as(
         'member_count',
       ),
@@ -140,10 +138,12 @@ export async function buildInbox(
       .innerJoin('conversations as lc', (j) =>
         j.onRef('lc.id', '=', 'm.conversation_id').onRef('lc.last_seq', '=', 'm.seq'),
       )
-      .selectAll('m')
+      .select(columnsOf('m', MESSAGE_COLUMNS))
       .where('m.conversation_id', 'in', ids)
       .execute(),
-    // The latest message from someone else after my last one, that asks me something.
+    // The latest message from someone else since I last wrote that asks me something: in a
+    // one-to-one or a customer's conversation anything that asks, in a group only what names me
+    // or answers me. One row a conversation, past my own mark (M16 D1).
     ctx.db
       .selectFrom('messages as m')
       .innerJoin('participants as p', (j) =>
@@ -152,26 +152,22 @@ export async function buildInbox(
       .innerJoin('conversations as c', 'c.id', 'm.conversation_id')
       // Whose message it answers comes with it, so nothing lists everything I ever sent.
       .leftJoin('messages as r', 'r.id', 'm.reply_to_id')
-      .select([
-        'm.conversation_id',
-        'm.seq',
-        'm.is_question',
-        'm.is_request',
-        'm.created_at',
-        'm.mentions',
-        'm.reply_to_id',
-        'r.sender_id as reply_to_sender',
-        'c.kind',
-        'p.dismissed_seq',
-      ])
+      .distinctOn('m.conversation_id')
+      .select(['m.conversation_id', 'm.seq', 'm.is_question', 'm.is_request', 'm.created_at'])
       .where('m.conversation_id', 'in', ids)
       .where('m.sender_id', 'is not', null)
       .where('m.sender_id', '<>', userId)
       .where('m.deleted_at', 'is', null)
       .where((eb) => eb.or([eb('m.is_question', '=', true), eb('m.is_request', '=', true)]))
-      .where(
-        sql<boolean>`m.seq > coalesce((select max(x.seq) from messages x where x.conversation_id = m.conversation_id and x.sender_id = ${userId}), 0)`,
+      .whereRef('m.seq', '>', 'p.last_sent_seq')
+      .where((eb) =>
+        eb.or([
+          eb('c.kind', 'in', ['direct', 'business']),
+          sql<boolean>`${userId}::uuid = any(m.mentions)`,
+          eb('r.sender_id', '=', userId),
+        ]),
       )
+      .orderBy('m.conversation_id')
       .orderBy('m.seq', 'desc')
       .execute(),
     ctx.db
@@ -243,22 +239,20 @@ export async function buildInbox(
     rows.map((r) => r.space_id),
   );
 
+  // Each list read once into a map: a conversation's row is found, never searched for.
+  const lastOf = new Map(lastMessages.map((m) => [m.conversation_id, m]));
+  const tasksOf = new Map(tasks.map((x) => [x.conversation_id, x]));
+  const pendingOf = new Map(pending.map((m) => [m.conversation_id, m]));
+  const waitingOf = new Map(waitingByPerson.map((w) => [w.assignee_id, w.n]));
+  const relOf = new Map<string, (typeof rels)[number]>();
+  for (const x of rels) if (!relOf.has(x.subject_id)) relOf.set(x.subject_id, x);
   const conversations = rows.map((r): InboxItemView => {
-    const last = lastMessages.find((m) => m.conversation_id === r.id);
-    const t = tasks.find((x) => x.conversation_id === r.id);
+    const last = lastOf.get(r.id);
+    const t = tasksOf.get(r.id);
     const other = r.other_id && r.kind === 'direct' ? people.get(r.other_id) : undefined;
-    const rel =
-      r.kind === 'direct' && r.other_id ? rels.find((x) => x.subject_id === r.other_id) : undefined;
+    const rel = r.kind === 'direct' && r.other_id ? relOf.get(r.other_id) : undefined;
     const policy = resolvePolicy(policies, policyTargetFor(rel, r.connection_id));
-    const inbound = pending.find(
-      (m) =>
-        m.conversation_id === r.id &&
-        (m.kind === 'direct' ||
-          m.kind === 'business' ||
-          m.mentions.includes(userId) ||
-          (m.reply_to_id !== null && m.reply_to_sender === userId)),
-    );
-    const myLast = r.my_last_seq ? Number(r.my_last_seq) : 0;
+    const inbound = pendingOf.get(r.id);
     // Cai and the Caime Friends never need you, and you never wait on them (R67).
     const caimes = isSystemKind(other?.kind);
     const lastIsMine = last !== undefined && last.sender_id === userId && last.kind !== 'system';
@@ -272,9 +266,7 @@ export async function buildInbox(
         now.getTime() - last!.created_at.getTime() > policy.followUpHours * 3_600_000,
     );
     const waitingOnThem =
-      r.kind === 'direct' && r.is_general && r.other_id
-        ? (waitingByPerson.find((w) => w.assignee_id === r.other_id)?.n ?? 0)
-        : 0;
+      r.kind === 'direct' && r.is_general && r.other_id ? (waitingOf.get(r.other_id) ?? 0) : 0;
     const input: AttentionInput = {
       archived: r.archived_at !== null,
       pinned: r.pinned_at !== null,
@@ -286,7 +278,7 @@ export async function buildInbox(
       unreadMentions: r.unread_mentions,
       lastActivityAt: (r.last_message_at ?? r.created_at).toISOString(),
       pendingInbound:
-        !caimes && inbound && Number(inbound.seq) > myLast
+        !caimes && inbound
           ? {
               isQuestion: inbound.is_question,
               isRequest: inbound.is_request,

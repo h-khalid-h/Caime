@@ -2446,6 +2446,31 @@ graph) and the number that will show it; one that sharpens none is hygiene and s
       `qk` with a unit test and `patchCache` everywhere; `toLocaleLowerCase`, the 98 placeholders
       renamed, numbers through core's formatter; the two OAuth pipelines merged; identities
       decided.
+- [x] D1. Whole rows only where they're the point; lists that cost the same at any size; the
+      inbox without a walk back (2026-10-18, review §4 H6, H7, H8): the guard is
+      `select-all.test.ts`, read from the source's syntax tree, so an alias, a join or a `where`
+      before `selectAll`, and a `returningAll`, hide nothing; a whole person or organization
+      only in the functions it names (an export, `orgById`, the public pages, an item's photo, a
+      profile), a whole message nowhere. It found seventeen the old one passed: the inbox
+      carried both search vectors of every last message and the Business inbox of every
+      thread's; every open of a conversation each member's catalog; the organizations' lists,
+      their search, the following list and a profile's organizations whole rows; the invite
+      page its maker's catalog; five updates returned their whole message or person. Each now
+      names its columns (`columnsOf(alias, LIST)`, `ORG_REF_COLUMNS` for an `orgRef`). Connections, requests, people
+      search and the organizations' lists draw people through `personViewsFor` and their
+      standing through `betweenMany`, with team sizes and seats in one query each: measured on
+      the same test, 274 queries for 30 connections became 12 (and 12 for 3), requests 272 → 10,
+      a search's 364 → 15, the organizations' 32 → 3, held equal for 3 and 30 under a ceiling
+      (`people-scale.test.ts`). Where someone last wrote is `participants.last_sent_seq`
+      (migration 0104, filled by a procedure a thousand rows a batch from a no-transaction file,
+      0105), written with the read mark by a message, a system line and an import; the inbox's
+      "asked since I last wrote" is one row a conversation by `distinct on`, decided in SQL, and
+      `sendMessage`'s count of what a reply answered reads the column too. Verified:
+      `select-all.test.ts`, `people-scale.test.ts`, `last-sent.test.ts` (each path, the inbox,
+      the fill across three batches leaving a higher mark alone), `inbox-scale.test.ts` (a
+      5,000-message conversation never written in, needing me, the inbox at 17 queries for 301
+      conversations), `import.test.ts`, and the full gate. The fill runs once more with D2's
+      migration, for anything the old container wrote while this one started.
 - [ ] E. Chat polish: distinct read ticks with a contrast test; the English leaks and a scanner
       that flags any word-bearing literal; quoted replies with the author and a jump, swipe to
       reply; message info and who reacted; video as a message, voice notes with a waveform, speed
@@ -4074,6 +4099,9 @@ graph) and the number that will show it; one that sharpens none is hygiene and s
   journeys, safety, reliability, performance, intelligence, mail and calendar, chat, integrations,
   business and code integrity; the matrix against WhatsApp, Signal, Slack, Calendly and Workspace;
   an age-assurance design; the integration framework mapped to the code; plan M16 (A–H).
+- 2026-10-18 — M16 D1: whole rows only where they're the point (a guard over the syntax tree
+  that found seventeen reads the old one passed), people lists at a fixed cost (274 queries for 30
+  connections → 12), and where someone last wrote kept on their row for the inbox.
 - 2026-10-18 — M16 B7: age assurance, phase 1: a check on the provider's own page (Agemin first,
   from its published API), heard by its signed notice and by the return, the stricter reading
   applied to every under-18 rule, asked before an organization, a sale or a first message to a

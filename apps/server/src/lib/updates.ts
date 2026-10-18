@@ -9,7 +9,8 @@ import { previewText, uuidv7 } from '@caime/core';
 import { sql } from 'kysely';
 import type { AppContext } from '../context';
 import type { OrgUpdate } from '../db/schema';
-import { orgRef } from './business';
+import { columnsOf } from '../db/schema';
+import { ORG_REF_COLUMNS, orgRef } from './business';
 import { enqueue, registerJob } from './jobs';
 import { runNotificationHooks, type Written, withLivePush } from './notify';
 
@@ -268,8 +269,8 @@ export async function followingOf(ctx: AppContext, userId: string): Promise<Foll
   const rows = await ctx.db
     .selectFrom('org_follows as f')
     .innerJoin('organizations as o', 'o.id', 'f.org_id')
-    .selectAll('o')
     .select([
+      ...columnsOf('o', ORG_REF_COLUMNS),
       'f.notify',
       sql<number>`(select count(*) from org_updates u where u.org_id = f.org_id and u.deleted_at is null and u.created_at > f.read_at)::int`.as(
         'unread',

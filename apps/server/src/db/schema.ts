@@ -443,6 +443,11 @@ export interface ParticipantsTable {
   dismissed_seq: BigIntCol;
   draft: string | null;
   draft_updated_at: NullableTimestamp;
+  /**
+   * Where they last wrote here (M16 D1): written by every path that inserts a message for its
+   * sender, so the inbox's "asked since my last message" never looks for it among the messages.
+   */
+  last_sent_seq: BigIntCol;
 }
 
 export type MessageKind =
@@ -1661,3 +1666,14 @@ export const ORG_COLUMNS = [
 /** A person or an organization as the app reads them: everything but the catalog. */
 export type UserRow = Pick<Selectable<UsersTable>, (typeof USER_COLUMNS)[number]>;
 export type OrgRow = Pick<Selectable<OrganizationsTable>, (typeof ORG_COLUMNS)[number]>;
+
+/**
+ * A column list under a query's alias (`columnsOf('u', USER_COLUMNS)` is `u.id`, `u.email`…), for
+ * a join: `selectAll('u')` would carry what the list leaves out (M16 D1, `select-all.test.ts`).
+ */
+export function columnsOf<A extends string, C extends string>(
+  alias: A,
+  columns: readonly C[],
+): Array<`${A}.${C}`> {
+  return columns.map((c) => `${alias}.${c}` as `${A}.${C}`);
+}

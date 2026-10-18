@@ -1,5 +1,4 @@
-import { readdirSync, readFileSync } from 'node:fs';
-import { join } from 'node:path';
+import { readFileSync } from 'node:fs';
 import { uuidv4 } from '@caime/core';
 import { sql } from 'kysely';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
@@ -1659,15 +1658,7 @@ describe('a message row (REVIEW-2026-10-05, performance)', () => {
     `.execute(t.ctx.db);
     const inTable = rows.rows.map((r) => r.column_name).sort();
     expect([...MESSAGE_COLUMNS, 'search', 'search_all'].sort()).toEqual(inTable);
-    // No query over messages ships the vector: the source says `select(MESSAGE_COLUMNS)`.
-    const root = join(__dirname, '..', 'src');
-    const offenders = readdirSync(root, { recursive: true })
-      .map(String)
-      .filter((f) => f.endsWith('.ts'))
-      .filter((f) =>
-        /selectFrom\('messages'\)\s*\.selectAll\(\)/.test(readFileSync(join(root, f), 'utf8')),
-      );
-    expect(offenders).toEqual([]);
+    // No query over messages ships the vectors: `select-all.test.ts` holds the source to it.
   });
 });
 

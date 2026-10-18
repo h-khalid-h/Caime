@@ -29,15 +29,16 @@ import { AppError, badRequest, conflict, forbidden, notFound } from '../lib/erro
 import { recordEvent } from '../lib/events';
 import { leaveGroupCallsAfterDisconnect } from '../lib/group-calls';
 import { notify } from '../lib/notify';
+import { personViewsFor } from '../lib/people-batch';
 import {
   activeRelationships,
   between,
   pairKey,
   relationshipView,
   shareAConnection,
-  viewerRelation,
 } from '../lib/relations';
-import { identityShownTo, minorOf, personView, privacyOf } from '../lib/users';
+import { escapeLike } from '../lib/text';
+import { minorOf, privacyOf } from '../lib/users';
 import { parse } from '../lib/validate';
 import { requireAuth } from '../plugins/auth';
 
@@ -164,8 +165,8 @@ export async function connectionRoutes(app: FastifyInstance, ctx: AppContext) {
     const rows = await ctx.db
       .selectFrom('connection_requests as r')
       .innerJoin('users as u', 'u.id', direction === 'incoming' ? 'r.from_user' : 'r.to_user')
-      .selectAll('u')
       .select([
+        'u.id',
         'r.id as request_id',
         'r.note',
         'r.context_sphere',
@@ -177,15 +178,22 @@ export async function connectionRoutes(app: FastifyInstance, ctx: AppContext) {
       .where('u.deleted_at', 'is', null)
       .orderBy('r.created_at', 'desc')
       .execute();
-    const now = ctx.now();
-    const requests = await Promise.all(
-      rows.map(async (row) => {
-        const relation = await viewerRelation(ctx.db, row.id, auth.userId);
-        const identity = await identityShownTo(ctx, row.id, auth.userId);
-        return {
+    // Everyone asking (or asked) in a fixed number of queries, however many (M16 D1); nobody
+    // here is connected yet, so nobody is known through a conversation either.
+    const people = await personViewsFor(
+      ctx,
+      auth.userId,
+      rows.map((r) => r.id),
+      { sharesConversation: false },
+    );
+    const requests = rows.flatMap((row) => {
+      const person = people.get(row.id);
+      if (!person) return [];
+      return [
+        {
           id: row.request_id,
           direction,
-          person: personView(row, relation, now, identity),
+          person,
           note: row.note,
           // Context the requester chose to share (PRD §52). Their private classification never is.
           context: row.context_sphere
@@ -196,9 +204,9 @@ export async function connectionRoutes(app: FastifyInstance, ctx: AppContext) {
               }
             : null,
           createdAt: row.requested_at.toISOString(),
-        };
-      }),
-    );
+        },
+      ];
+    });
     return { requests };
   });
 
@@ -259,12 +267,13 @@ export async function connectionRoutes(app: FastifyInstance, ctx: AppContext) {
       z.object({ sphere: z.string().optional(), q: z.string().trim().max(100).optional() }),
       req.query,
     );
+    const like = q ? `%${escapeLike(q)}%` : '';
     const rows = await ctx.db
       .selectFrom('connection_sides as s')
       .innerJoin('connections as c', 'c.id', 's.connection_id')
       .innerJoin('users as u', 'u.id', 's.other_id')
-      .selectAll('u')
       .select([
+        'u.id',
         's.connection_id',
         's.nickname',
         's.attention',
@@ -280,41 +289,41 @@ export async function connectionRoutes(app: FastifyInstance, ctx: AppContext) {
       .$if(Boolean(q), (qb) =>
         qb.where((eb) =>
           eb.or([
-            eb('u.display_name', 'ilike', `%${q}%`),
-            eb('s.nickname', 'ilike', `%${q}%`),
-            eb('u.handle', 'ilike', `${q}%`),
+            eb('u.display_name', 'ilike', like),
+            eb('s.nickname', 'ilike', like),
+            eb('u.handle', 'ilike', `${escapeLike(q ?? '')}%`),
           ]),
         ),
       )
       .orderBy('u.display_name')
       .execute();
-    const rels = await activeRelationships(
-      ctx.db,
-      auth.userId,
-      rows.map((r) => r.id),
-    );
-    const now = ctx.now();
-    const conversations = rows.length
-      ? await ctx.db
-          .selectFrom('conversations')
-          .select(['id', 'direct_key'])
-          .where('is_general', '=', true)
-          .where(
-            'direct_key',
-            'in',
-            rows.map((r) => pairKey(auth.userId, r.id).key),
-          )
-          .execute()
-      : [];
-    const out = await Promise.all(
-      rows.map(async (u) => {
-        const relation = await viewerRelation(ctx.db, u.id, auth.userId);
-        const identity = await identityShownTo(ctx, u.id, auth.userId);
-        const person = personView(u, relation, now, identity);
-        const mine = rels
-          .filter((r) => r.subject_id === u.id)
-          .map((r) => relationshipView(r, person.gender));
-        return {
+    // Everyone in a fixed number of queries however many there are (M16 D1), each list read
+    // once into a map.
+    const ids = rows.map((r) => r.id);
+    const [rels, people, conversations] = await Promise.all([
+      activeRelationships(ctx.db, auth.userId, ids),
+      personViewsFor(ctx, auth.userId, ids),
+      rows.length
+        ? ctx.db
+            .selectFrom('conversations')
+            .select(['id', 'direct_key'])
+            .where('is_general', '=', true)
+            .where(
+              'direct_key',
+              'in',
+              rows.map((r) => pairKey(auth.userId, r.id).key),
+            )
+            .execute()
+        : [],
+    ]);
+    const conversationOf = new Map(conversations.map((c) => [c.direct_key, c.id]));
+    const relsOf = new Map<string, typeof rels>();
+    for (const r of rels) relsOf.set(r.subject_id, [...(relsOf.get(r.subject_id) ?? []), r]);
+    const out = rows.flatMap((u) => {
+      const person = people.get(u.id);
+      if (!person) return [];
+      return [
+        {
           connectionId: u.connection_id,
           person,
           nickname: u.nickname,
@@ -323,14 +332,13 @@ export async function connectionRoutes(app: FastifyInstance, ctx: AppContext) {
           archived: u.archived_at !== null,
           connectedAt: u.connected_at.toISOString(),
           lastInteractionAt: u.last_interaction_at?.toISOString() ?? null,
-          relationships: mine,
-          conversationId:
-            conversations.find((c) => c.direct_key === pairKey(auth.userId, u.id).key)?.id ?? null,
+          relationships: (relsOf.get(u.id) ?? []).map((r) => relationshipView(r, person.gender)),
+          conversationId: conversationOf.get(pairKey(auth.userId, u.id).key) ?? null,
           also: [] as ConnectionView['also'],
           mergedInto: u.merged_into,
-        };
-      }),
-    );
+        },
+      ];
+    });
     // Accounts said to be the same person (PRD §51) show under the one they're merged into. What
     // it was merged into may be gone (no longer connected, or not in this search): it stands on
     // its own again. Found before anything changes, and never round in a circle.

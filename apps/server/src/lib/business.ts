@@ -17,7 +17,7 @@ import type { Kysely, Transaction } from 'kysely';
 import { sql } from 'kysely';
 import type { AppContext } from '../context';
 import type { BusinessThread, Database, Organization } from '../db/schema';
-import { ORG_COLUMNS } from '../db/schema';
+import { columnsOf, MESSAGE_COLUMNS, ORG_COLUMNS } from '../db/schema';
 import { emitWebhook } from './apps';
 import type { RealtimeEvent } from './bus';
 import { currencyOf } from './geo';
@@ -34,12 +34,19 @@ export function orgAvatarUrl(org: Pick<Organization, 'id' | 'avatar_file_id'>): 
   return org.avatar_file_id ? `/v1/orgs/${org.id}/avatar?v=${org.avatar_file_id.slice(-8)}` : null;
 }
 
-export function orgRef(
-  o: Pick<
-    Organization,
-    'id' | 'name' | 'handle' | 'kind' | 'domain' | 'verified_at' | 'country' | 'avatar_file_id'
-  >,
-): OrgRef {
+/** What `orgRef` reads, for a query that builds one: `columnsOf('o', ORG_REF_COLUMNS)` (M16 D1). */
+export const ORG_REF_COLUMNS = [
+  'id',
+  'name',
+  'handle',
+  'kind',
+  'domain',
+  'verified_at',
+  'country',
+  'avatar_file_id',
+] as const satisfies ReadonlyArray<keyof Organization>;
+
+export function orgRef(o: Pick<Organization, (typeof ORG_REF_COLUMNS)[number]>): OrgRef {
   const verified = o.verified_at !== null;
   return {
     id: o.id,
@@ -457,8 +464,11 @@ export async function threadViews(
     ctx.db
       .selectFrom('messages as m')
       .leftJoin('users as u', 'u.id', 'm.sender_id')
-      .selectAll('m')
-      .select(['u.display_name as sender_name', 'u.kind as sender_kind'])
+      .select([
+        ...columnsOf('m', MESSAGE_COLUMNS),
+        'u.display_name as sender_name',
+        'u.kind as sender_kind',
+      ])
       .where(
         sql<boolean>`(m.conversation_id, m.seq) in (select conversation_id, max(seq) from messages where conversation_id in (${sql.join(ids)}) and kind <> 'system' group by conversation_id)`,
       )

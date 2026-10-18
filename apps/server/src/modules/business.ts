@@ -32,10 +32,17 @@ import { sql } from 'kysely';
 import { z } from 'zod';
 import type { AppContext } from '../context';
 import type { BusinessThread } from '../db/schema';
-import { USER_COLUMNS } from '../db/schema';
+import { columnsOf, USER_COLUMNS } from '../db/schema';
 import { emitWebhook } from '../lib/apps';
 import { orgBlocked } from '../lib/blocks';
-import { factsOf, orgRef, publishThread, teamOf, threadViews } from '../lib/business';
+import {
+  factsOf,
+  ORG_REF_COLUMNS,
+  orgRef,
+  publishThread,
+  teamOf,
+  threadViews,
+} from '../lib/business';
 import { startCustomerConversation } from '../lib/business-threads';
 import { AppError, badRequest, forbidden, notFound } from '../lib/errors';
 import { recordEvent } from '../lib/events';
@@ -396,7 +403,7 @@ export async function businessRoutes(app: FastifyInstance, ctx: AppContext) {
     const orgs = await ctx.db
       .selectFrom('org_members as m')
       .innerJoin('organizations as o', 'o.id', 'm.org_id')
-      .selectAll('o')
+      .select(columnsOf('o', ORG_REF_COLUMNS))
       .where('m.user_id', '=', auth.userId)
       .where('m.left_at', 'is', null)
       .where('o.archived_at', 'is', null)
@@ -426,9 +433,10 @@ export async function businessRoutes(app: FastifyInstance, ctx: AppContext) {
       )
       .groupBy('t.org_id')
       .execute();
+    const countsOf = new Map(counts.map((x) => [x.org_id, x]));
     return {
       orgs: orgs.map((o) => {
-        const c = counts.find((x) => x.org_id === o.id);
+        const c = countsOf.get(o.id);
         return {
           org: orgRef(o),
           waiting: c?.waiting ?? 0,

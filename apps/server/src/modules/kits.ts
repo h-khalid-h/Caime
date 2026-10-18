@@ -231,7 +231,7 @@ export async function kitRoutes(app: FastifyInstance, ctx: AppContext) {
           })}::jsonb`,
         })
         .where('id', '=', id)
-        .returningAll()
+        .returning(MESSAGE_COLUMNS)
         .executeTakeFirstOrThrow();
     });
     const members = (await participantsOf(ctx.db, m.conversation_id)).map((p) => p.user_id);

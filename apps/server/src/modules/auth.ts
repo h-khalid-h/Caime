@@ -458,7 +458,7 @@ export async function authRoutes(app: FastifyInstance, ctx: AppContext) {
       .updateTable('users')
       .set({ email_verified_at: ctx.now(), updated_at: ctx.now() })
       .where('id', '=', auth.userId)
-      .returningAll()
+      .returning(USER_COLUMNS)
       .executeTakeFirstOrThrow();
     await audit(ctx.db, {
       actorId: auth.userId,
@@ -529,7 +529,7 @@ export async function authRoutes(app: FastifyInstance, ctx: AppContext) {
       })
       .where('id', '=', row.user_id)
       .where('deleted_at', 'is', null)
-      .returningAll()
+      .returning(USER_COLUMNS)
       .executeTakeFirst();
     if (!user) throw failure;
     await endAllAccess(ctx, user.id, clientInfo(req));

@@ -1207,16 +1207,16 @@ export async function sendMessage(
           select exists (
             select 1 from messages m
             join participants p on p.conversation_id = m.conversation_id and p.user_id = ${senderId}
+            left join messages y on y.id = m.reply_to_id
             where m.conversation_id = ${conversationId}
               and m.sender_id is distinct from ${senderId}
               and m.seq > p.dismissed_seq
-              and m.seq > coalesce((select max(x.seq) from messages x
-                where x.conversation_id = m.conversation_id and x.sender_id = ${senderId}), 0)
+              -- Since they last wrote (M16 D1): kept on their row, never looked for.
+              and m.seq > p.last_sent_seq
               and (m.is_question or m.is_request) and m.deleted_at is null
               and (${conversation.kind} in ('direct', 'business')
                 or ${senderId}::uuid = any(m.mentions)
-                or m.reply_to_id in (select y.id from messages y
-                  where y.conversation_id = m.conversation_id and y.sender_id = ${senderId}))
+                or y.sender_id = ${senderId})
           ) as answered
         `.execute(ctx.db)
       ).rows[0]?.answered,
@@ -1356,6 +1356,7 @@ export async function sendMessage(
         .set({
           last_read_seq: seq,
           last_delivered_seq: seq,
+          last_sent_seq: seq,
           draft: null,
           draft_updated_at: null,
           ...(acceptRequest ? { request_state: 'accepted' as const, archived_at: null } : {}),
@@ -1459,7 +1460,7 @@ export async function insertSystemMessage(
       .executeTakeFirstOrThrow();
     await trx
       .updateTable('participants')
-      .set({ last_read_seq: bumped.last_seq })
+      .set({ last_read_seq: bumped.last_seq, last_sent_seq: bumped.last_seq })
       .where('conversation_id', '=', conversationId)
       .where('user_id', '=', actorId)
       .execute();

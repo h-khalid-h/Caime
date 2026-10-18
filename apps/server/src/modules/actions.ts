@@ -111,7 +111,7 @@ async function syncRequestCard(ctx: AppContext, t: Task): Promise<void> {
       }),
     })
     .where('id', '=', card.id)
-    .returningAll()
+    .returning(MESSAGE_COLUMNS)
     .executeTakeFirstOrThrow();
   const [view] = await messageViews(ctx.db, [updated], t.owner_id);
   await ctx.bus.publish(

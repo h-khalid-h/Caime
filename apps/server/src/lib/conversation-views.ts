@@ -13,7 +13,7 @@ import { replySubject } from '@caime/core/mail';
 import { sql } from 'kysely';
 import type { AppContext } from '../context';
 import type { Conversation, Participant } from '../db/schema';
-import { ORG_COLUMNS } from '../db/schema';
+import { columnsOf, ORG_COLUMNS, USER_COLUMNS } from '../db/schema';
 import { businessClosed } from '../lib/blocks';
 import { orgRef, threadViews } from '../lib/business';
 import { isGroupTopic } from '../lib/conversations';
@@ -128,6 +128,7 @@ export async function membership(
     dismissed_seq: row.dismissed_seq,
     draft: row.draft,
     draft_updated_at: row.draft_updated_at,
+    last_sent_seq: row.last_sent_seq,
   };
   return { conversation, me };
 }
@@ -142,8 +143,9 @@ export async function conversationView(
   const members = await ctx.db
     .selectFrom('participants as p')
     .innerJoin('users as u', 'u.id', 'p.user_id')
-    .selectAll('u')
     .select([
+      // Never their catalogs: every open of a conversation read each member's (M16 D1).
+      ...columnsOf('u', USER_COLUMNS),
       'p.role as member_role',
       'p.last_read_seq',
       'p.last_delivered_seq',
@@ -171,8 +173,10 @@ export async function conversationView(
     meUser ? readReceiptsVisibleTo(ctx.db, now, meUser, others) : new Set<string>(),
     meUser ? viewerRelation(ctx.db, userId, userId) : null,
   ]);
+  const relOf = new Map<string, (typeof rels)[number]>();
+  for (const r of rels) if (!relOf.has(r.subject_id)) relOf.set(r.subject_id, r);
   const participants = members.flatMap((m) => {
-    const rel = rels.find((r) => r.subject_id === m.id);
+    const rel = relOf.get(m.id);
     const person =
       m.id === userId ? (myself ? personView(m, myself, now, null) : null) : views.get(m.id);
     if (!person) return [];

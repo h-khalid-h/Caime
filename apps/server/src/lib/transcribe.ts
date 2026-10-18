@@ -130,7 +130,7 @@ async function transcribe(ctx: AppContext, payload: Record<string, unknown>): Pr
     .where('id', '=', m.id)
     .where('body', 'is', null)
     .where('deleted_at', 'is', null)
-    .returningAll()
+    .returning(MESSAGE_COLUMNS)
     .executeTakeFirst();
   if (!updated) return;
   const members = (await participantsOf(ctx.db, m.conversation_id)).map((p) => p.user_id);

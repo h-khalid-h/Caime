@@ -2,6 +2,7 @@ import { ImportChatBody, type ImportChatView, ImportGroupChatBody, uuidv7 } from
 import { tr } from '@caime/core/i18n';
 import { canEditConversation } from '@caime/core/permissions';
 import type { FastifyInstance } from 'fastify';
+import { sql } from 'kysely';
 import { z } from 'zod';
 import type { AppContext } from '../context';
 import { assertCanWrite } from '../lib/blocks';
@@ -83,6 +84,15 @@ async function land(
       .set({ last_read_seq: from + ordered.length, last_delivered_seq: from + ordered.length })
       .where('conversation_id', '=', conversationId)
       .execute();
+    // And where each of them last wrote (M16 D1), in one statement for them all.
+    const lastOf = new Map<string, number>();
+    for (const [k, m] of ordered.entries()) lastOf.set(m.senderId, from + k + 1);
+    if (lastOf.size)
+      await sql`
+      update participants p set last_sent_seq = greatest(p.last_sent_seq, v.seq)
+      from (values ${sql.join([...lastOf].map(([id, seq]) => sql`(${id}::uuid, ${seq}::bigint)`))}) as v(user_id, seq)
+      where p.conversation_id = ${conversationId} and p.user_id = v.user_id
+    `.execute(trx);
     // Counted for the product's metrics: how many, never who wrote what.
     await recordEvent(trx, 'chat.imported', by, { group, count: ordered.length });
   });

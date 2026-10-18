@@ -9,7 +9,8 @@ import { tr } from '@caime/core/i18n';
 import type { Kysely, Transaction } from 'kysely';
 import type { AppContext } from '../context';
 import type { Database, Organization, OrgMember } from '../db/schema';
-import { joinThreads, orgRef } from './business';
+import { columnsOf } from '../db/schema';
+import { joinThreads, ORG_REF_COLUMNS, orgRef } from './business';
 import { forbidden, notFound } from './errors';
 import { releaseHandle } from './handles';
 import { assertTeamRoom } from './plans';
@@ -183,7 +184,7 @@ export async function orgsOf(db: Q, userId: string): Promise<OrgRef[]> {
   const rows = await db
     .selectFrom('org_members as m')
     .innerJoin('organizations as o', 'o.id', 'm.org_id')
-    .selectAll('o')
+    .select(columnsOf('o', ORG_REF_COLUMNS))
     .where('m.user_id', '=', userId)
     .where('m.left_at', 'is', null)
     .where('o.archived_at', 'is', null)
