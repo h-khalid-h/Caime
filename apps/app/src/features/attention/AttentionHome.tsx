@@ -28,6 +28,7 @@ import { ConversationRow } from '@/features/inbox/ConversationRow';
 import { openDirectWith } from '@/features/inbox/openChat';
 import { useBadges } from '@/features/shell/useBadges';
 import { YouButton } from '@/features/shell/YouButton';
+import { isWeb } from '@/lib/config';
 import { useNow, useUserClock } from '@/lib/time';
 import { useSession } from '@/state/session';
 import { usePrefs } from '@/theme/prefs';
@@ -37,6 +38,7 @@ import { Button } from '@/ui/Button';
 import { Chevron } from '@/ui/directional';
 import { EmptyState } from '@/ui/EmptyState';
 import { IconButton } from '@/ui/IconButton';
+import { lazyPart } from '@/ui/Lazy';
 import { SectionTitle } from '@/ui/ListRow';
 import { useLayout } from '@/ui/layout';
 import { Pressable } from '@/ui/Pressable';
@@ -44,6 +46,18 @@ import { Screen, useScrolled } from '@/ui/Screen';
 import { SkeletonRows } from '@/ui/Skeleton';
 import { Text } from '@/ui/Text';
 import { toast } from '@/ui/Toast';
+
+// An iPhone's or an iPad's browser tab, which nothing can notify (H7): the card says how, and
+// decides the rest itself (`homeScreenHint`), loaded only there.
+const HomeScreenCard = lazyPart(() =>
+  import('@/features/push/HomeScreenCard').then((m) => m.HomeScreenCard),
+);
+const appleTab =
+  isWeb &&
+  typeof window !== 'undefined' &&
+  typeof navigator !== 'undefined' &&
+  /iP(?:hone|ad|od)|Mac/.test(navigator.userAgent) &&
+  !('PushManager' in window);
 
 const DAY_MS = 86_400_000;
 
@@ -397,6 +411,7 @@ export function AttentionHome() {
           </Text>
         </View>
         <RecoveryCodesCard />
+        {appleTab ? <HomeScreenCard /> : null}
         <TeamInboxes />
         {loading ? (
           <SkeletonRows />

@@ -84,3 +84,20 @@ export function inviteWays(
     });
   return ways;
 }
+
+/**
+ * The ways to send one's own link to anyone, where nothing on the device can say who (a
+ * desktop's browser, an iPhone's: no contact picker), so the people already written to are
+ * asked first (review 2026-10-17 §1 C): WhatsApp, which asks whom, and, on a device with a
+ * messages app (`texts`), a message with nobody in it yet.
+ */
+export function openInviteWays(
+  invite: { text: string },
+  where: { ios: boolean; texts: boolean },
+): InviteWay[] {
+  const body = encodeURIComponent(invite.text);
+  const ways: InviteWay[] = [{ kind: 'whatsapp', to: '', url: `https://wa.me/?text=${body}` }];
+  if (where.texts)
+    ways.push({ kind: 'sms', to: '', url: `sms:${where.ios ? '&' : '?'}body=${body}` });
+  return ways;
+}

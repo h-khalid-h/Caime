@@ -48,8 +48,9 @@ export const qk = {
   directoryApp: (id: string) => ['directory', 'app', id] as const,
   /** Every page of Discover and every app's own view: a connection changes them all. */
   allDirectory: ['directory'] as const,
-  /** My invite links (R1). */
+  /** My invite links (R1), and the general one onboarding shares (refreshed with them). */
   invites: ['invites'] as const,
+  generalInvite: ['invites', 'general'] as const,
   contactAccounts: ['contact-accounts'] as const,
   invite: (token: string) => ['invite', token] as const,
   /** A paid Pay card's receipt (R62). */

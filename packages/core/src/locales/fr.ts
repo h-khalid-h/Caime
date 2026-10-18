@@ -4354,4 +4354,11 @@ export const fr: Catalog = {
   'Join “{title}” on Caime:': 'Rejoignez « {title} » sur Caime :',
   'Join the meeting on Caime:': 'Rejoignez la réunion sur Caime :',
   'Make a link instead': 'Créer plutôt un lien',
+  'Notifications on this iPad': 'Les notifications sur cet iPad',
+  'Notifications on this iPhone': 'Les notifications sur cet iPhone',
+  'Caime can notify you only once it’s on the Home Screen: tap Share, then Add to Home Screen, and open it from there.':
+    'Caime ne peut vous notifier qu’une fois sur l’écran d’accueil : touchez Partager, puis Sur l’écran d’accueil, et ouvrez-le depuis là.',
+  'Invite on WhatsApp': 'Inviter sur WhatsApp',
+  'Text an invite': 'Inviter par SMS',
+  'Your link, to whoever you choose': 'Votre lien, à qui vous voulez',
 };

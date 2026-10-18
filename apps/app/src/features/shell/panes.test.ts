@@ -27,10 +27,15 @@ const APART: Array<[module: string, importer: string]> = [
 ];
 
 /**
- * Shared by several screens and needed by none at first, so each loads it with `lazyPart`
- * (R79's budget trim): a static import anywhere would put it back in the shared startup chunk.
+ * Shared by several screens and needed by none at first, so each loads it with `lazyPart` (a
+ * part) or `import()` (a function) (R79's budget trim): a static import anywhere would put it
+ * back in the shared startup chunk.
  */
-const LAZY_EVERYWHERE = ['@/features/people/PeoplePicker', '@/features/geo/TimeZoneField'];
+const LAZY_EVERYWHERE = [
+  '@/features/people/PeoplePicker',
+  '@/features/geo/TimeZoneField',
+  '@/features/people/generalInvite',
+];
 
 const files = readdirSync(src, { recursive: true })
   .map(String)

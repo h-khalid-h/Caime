@@ -967,7 +967,10 @@ appointment from a catalog).
   (`contacts/returned.ts`), since the root remounts after the language loads. Whoever isn't here
   is invited by the person, from their own apps (`contact-invites.ts`: `toInternational` by the
   inviter's country, `inviteWays`; `contacts/send*.ts`, expo-sms on a phone), with their general
-  invite link (one made only if they have none). A new source is a mapper in core and a row in
+  invite link (`generalInviteUrl`, `features/people/generalInvite.ts`, loaded apart: one made
+  only if they have none), which onboarding's "Share your link" sends too, never the bare
+  `/@handle`; where the browser reads no contacts (`localSource` null: a desktop, an iPhone) the
+  sheet opens with `openInviteWays` (WhatsApp, and a text on a phone) above the accounts. A new source is a mapper in core and a row in
   the sheet; a new provider joins `CONTACT_ACCOUNTS`, its scopes and lists, `contactClient`, the
   E2E stand-in (`e2e/accounts-stub.mjs`) and the privacy page.
 - Connected accounts (R90, `lib/connected-accounts.ts`, `modules/accounts.ts`, core
@@ -1429,7 +1432,10 @@ appointment from a catalog).
   messaging the open tab (`caime.open`), never by reloading it: a call may be on. Anything new
   pushed with a `data` field it can open belongs in `pathOf` there and in its phone twin,
   `notificationPath` (`sw.test.ts` holds them to the same answers). Turn off is remembered in the
-  browser (`caime.push-off`); sign-out drops the subscription and closes what's shown. Phones
+  browser (`caime.push-off`); sign-out drops the subscription and closes what's shown. An
+  iPhone's or iPad's tab has no push at all (Safari pushes only to the Home Screen): Attention
+  tells it how (`HomeScreenCard`, loaded only on an Apple device's tab without `PushManager`,
+  drawn by `homeScreenHint`), never a prompt that can't work. Phones
   (`features/push/push.native.ts`, the same shape; `support.native.ts`) register an Expo token
   after the phone's own permission, make Android's two channels first (core `PUSH_CHANNELS`, which
   the server names on each push), show nothing while Caime is in front, clear a read one, and

@@ -2098,10 +2098,31 @@ graph) and the number that will show it; one that sharpens none is hygiene and s
       Lina's link from the card, the meeting moves to its space, Lina opens the link in a fresh
       browser, sees the name Ana gave, joins and is in the meeting). Sharpens advantage 3's way in
       for meetings (no account, no mail needed) and adoption where WhatsApp carries invitations.
+- [x] C3d. Invite-first sharing, WhatsApp first where no contacts can be read, and the iPhone
+      card (2026-10-18, review §1 M and H7): onboarding's "Share your link" sent the bare
+      `/@handle`, which only finds someone; it now sends the person's general invite link
+      (`generalInviteUrl`, their live link with no relationship or note, else one made then), read
+      as the step shows since a browser shares only inside the tap, so whoever opens it is
+      connected (or asks, R29) at once; the contacts sheet sends the same link, so a person has one
+      to take back, never one per tap. Where the browser reads no contacts (a desktop's, an
+      iPhone's: no picker), the sheet opens with "Invite on WhatsApp" and, on a phone, "Text an
+      invite" (core `openInviteWays`: WhatsApp asks whom, a message with nobody in it yet) above
+      the accounts and the file. An iPhone's or iPad's browser tab, which Safari never notifies,
+      gets a card on Attention: Share, then Add to Home Screen, then open Caime from there
+      (`homeScreenHint`: an Apple device in a tab without push, iOS 16.4 or later, not told
+      before; "Not now" remembered on that browser), loaded only on such a tab, so the startup
+      chunk stays 448.4 KB. Verified with `homeScreen.test.ts` (iPhone Safari and Chrome, an iPad
+      that says it's a Mac; never from the Home Screen, with push, before 16.4, on a Mac or
+      Android; told once), `contact-sources.test.ts` (the open ways' links, with and without a
+      messages app) and the E2E `first-steps.spec.ts` (onboarding makes the link as the step
+      shows, Share copies it, twice is the same link and the account has one; the contacts sheet
+      offers WhatsApp first with that link and no text on a desktop; whoever accepts it is
+      connected; a desktop gets no card; on an iPhone the card shows, "Not now" keeps it gone
+      after a reload, and the sheet offers WhatsApp and a text). The condition of the switch
+      (making it cheap), not an advantage: its number is the connections made through invite
+      links in a new person's first week.
 - [ ] C2–C3. The rest of the front door: domain auto-join for a verified organization (C3b);
-      space and group join links; invite-first sharing, and WhatsApp or SMS first on a browser
-      without a contact picker; the iPhone "Add to Home Screen" card; "Keep this" on the guest
-      page.
+      space and group join links; "Keep this" on the guest page.
 - [ ] D. Performance and integrity: the aliased `selectAll` guard and its eleven sites; people
       lists through `personViewsFor` with a scale ceiling; `participants.last_sent_seq` for the
       inbox; a large-group mode and one transcript view; a `defer` semaphore and gauge; bus payload
@@ -3738,6 +3759,10 @@ graph) and the number that will show it; one that sharpens none is hygiene and s
   journeys, safety, reliability, performance, intelligence, mail and calendar, chat, integrations,
   business and code integrity; the matrix against WhatsApp, Signal, Slack, Calendly and Workspace;
   an age-assurance design; the integration framework mapped to the code; plan M16 (A–H).
+- 2026-10-18 — M16 C3d: onboarding shares the general invite link (it connects at once, one per
+  person, the contacts sheet's too); where a browser can't read contacts, WhatsApp and a text
+  come first; an iPhone's browser tab is told how to get notifications. C2b live on cai.me
+  (`795de62`).
 - 2026-10-18 — M16 C3c: a meeting guest invited by a link the inviter sends themselves (works
   without mail, on WhatsApp or anywhere; the guest at no one's address); a dead invite link says
   so. C3a live on cai.me (`b225093`).

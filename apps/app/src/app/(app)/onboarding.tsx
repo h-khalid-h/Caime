@@ -127,6 +127,21 @@ export default function Onboarding() {
     }
   };
 
+  // Their general invite link (R1), which connects whoever opens it, not the bare @handle, which
+  // only finds them (review 2026-10-17 §1 M): read when the step shows, since a browser shares
+  // only inside the tap itself; the handle while it's on its way, or if it can't be had.
+  const general = useQuery({
+    queryKey: qk.generalInvite,
+    queryFn: () => import('@/features/people/generalInvite').then((m) => m.generalInviteUrl()),
+    enabled: step === 'people' && !linked,
+    staleTime: Number.POSITIVE_INFINITY,
+    retry: false,
+  });
+  const shareInvite = () =>
+    general.data
+      ? shareLink(tr('Join me on Caime'), general.data)
+      : shareLink(tr('I’m on Caime as @{handle}.', { handle: me.handle }), handleLink(me.handle));
+
   // The rows that show the idea best: close people always, work in work hours, managers first.
   const PICKS: Array<{ sphere: Sphere; role?: string; label: string }> = [
     { sphere: 'family', label: tr(SPHERE_DEFS.family.plural) },
@@ -319,12 +334,7 @@ export default function Onboarding() {
                   variant="secondary"
                   size="lg"
                   block
-                  onPress={() =>
-                    void shareLink(
-                      tr('I’m on Caime as @{handle}.', { handle: me.handle }),
-                      handleLink(me.handle),
-                    )
-                  }
+                  onPress={() => void shareInvite()}
                   testID="onboarding-share"
                 />
                 {/* Here to answer customers (C2b): the organization is one tap away for whoever

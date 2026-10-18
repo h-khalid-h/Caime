@@ -2534,4 +2534,11 @@ export const arB: Catalog = {
   'Join “{title}” on Caime:': 'الانضمام إلى «{title}» على Caime:',
   'Join the meeting on Caime:': 'الانضمام إلى الاجتماع على Caime:',
   'Make a link instead': 'إنشاء رابط بدلًا من ذلك',
+  'Notifications on this iPad': 'الإشعارات على هذا الـiPad',
+  'Notifications on this iPhone': 'الإشعارات على هذا الـiPhone',
+  'Caime can notify you only once it’s on the Home Screen: tap Share, then Add to Home Screen, and open it from there.':
+    'لا تصل إشعارات Caime إلا بعد إضافته إلى الشاشة الرئيسية: المشاركة، ثم «إضافة إلى الشاشة الرئيسية»، ثم فتحه من هناك.',
+  'Invite on WhatsApp': 'دعوة عبر WhatsApp',
+  'Text an invite': 'دعوة برسالة نصية',
+  'Your link, to whoever you choose': 'رابطك، لأي شخص من اختيارك',
 };

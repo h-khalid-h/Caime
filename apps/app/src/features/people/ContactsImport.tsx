@@ -8,7 +8,12 @@
  * (core `contact-invites.ts`). Caime never writes to anyone on anyone's behalf.
  */
 import type { ContactAccountView, ContactMatchView } from '@caime/core/api';
-import { type InviteWay, inviteWays, toInternational } from '@caime/core/contact-invites';
+import {
+  type InviteWay,
+  inviteWays,
+  openInviteWays,
+  toInternational,
+} from '@caime/core/contact-invites';
 import {
   AccountReadFailed,
   type ContactAccount,
@@ -28,6 +33,8 @@ import BookUser from 'lucide-react-native/icons/book-user';
 import Contact2 from 'lucide-react-native/icons/contact';
 import FileText from 'lucide-react-native/icons/file-text';
 import Mail from 'lucide-react-native/icons/mail';
+import MessageCircle from 'lucide-react-native/icons/message-circle';
+import MessageSquareText from 'lucide-react-native/icons/message-square-text';
 import Search from 'lucide-react-native/icons/search';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { ActivityIndicator, Linking, View } from 'react-native';
@@ -463,19 +470,15 @@ export function ContactsImport({
     : toInvite;
 
   // The person's own link, made once, before any button needs it: a browser opens WhatsApp in
-  // a new tab only inside the tap itself.
-  const needsLink = toInvite.length > 0;
+  // a new tab only inside the tap itself. Where nothing on the device can say who, the sheet
+  // opens with ways to send it, so it's wanted at once.
+  const needsLink = toInvite.length > 0 || (!localSource && phase.at === 'choose');
   useEffect(() => {
     if (!needsLink || link) return;
     void (async () => {
       try {
-        const { invites } = await endpoints.invites();
-        const general = invites.find(
-          (i) => !i.relationship && !i.note && new Date(i.expiresAt).getTime() > Date.now(),
-        );
-        if (general) return setLink(general.url);
-        const { invite } = await endpoints.makeInvite({});
-        setLink(invite.url);
+        const { generalInviteUrl } = await import('@/features/people/generalInvite');
+        setLink(await generalInviteUrl());
         void qc.invalidateQueries({ queryKey: qk.invites });
       } catch {
         setLink(null);
@@ -528,8 +531,28 @@ export function ContactsImport({
     if (sent) toast(trn(sent, 'Request sent to {n} person', 'Requests sent to {n} people'));
   };
 
+  // Nothing on this device reads people (a desktop's browser, an iPhone's): the people already
+  // written to come first, each sent the person's link from their own WhatsApp or messages.
+  const openWays = openInviteWays(
+    { text: tr('Hi, I’m on Caime. Join me there: {url}', { url: link ?? '' }) },
+    { ios: iosTexts, texts: textsHere },
+  );
   const sources = (
     <View style={{ marginHorizontal: -16 }}>
+      {localSource
+        ? null
+        : openWays.map((w) => (
+            <ListRow
+              key={w.kind}
+              icon={w.kind === 'whatsapp' ? MessageCircle : MessageSquareText}
+              title={w.kind === 'whatsapp' ? tr('Invite on WhatsApp') : tr('Text an invite')}
+              subtitle={tr('Your link, to whoever you choose')}
+              disabled={!link}
+              onPress={() => void sendInvite(w, '')}
+              chevron
+              testID={`contacts-open-${w.kind}`}
+            />
+          ))}
       {localSource ? (
         <ListRow
           icon={localSource === 'device' ? BookUser : Contact2}

@@ -4179,4 +4179,11 @@ export const turkish: Catalog = {
   'Join “{title}” on Caime:': 'Caime’de “{title}” toplantısına katılın:',
   'Join the meeting on Caime:': 'Caime’de toplantıya katılın:',
   'Make a link instead': 'Bunun yerine bağlantı oluştur',
+  'Notifications on this iPad': 'Bu iPad’de bildirimler',
+  'Notifications on this iPhone': 'Bu iPhone’da bildirimler',
+  'Caime can notify you only once it’s on the Home Screen: tap Share, then Add to Home Screen, and open it from there.':
+    'Caime size yalnızca Ana Ekran’a eklendiğinde bildirim gönderebilir: Paylaş’a, ardından Ana Ekrana Ekle’ye dokunun ve oradan açın.',
+  'Invite on WhatsApp': 'WhatsApp’ta davet et',
+  'Text an invite': 'SMS ile davet et',
+  'Your link, to whoever you choose': 'Bağlantınız, seçtiğiniz kişiye',
 };

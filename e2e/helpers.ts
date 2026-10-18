@@ -66,7 +66,7 @@ export async function apiSignUp(
   displayName: string,
   handle: string,
   /** Where they live: Egypt, unless a test needs elsewhere (a teen: Egypt's minimum is 18). */
-  opts: { birthDate?: string; country?: string } = {},
+  opts: { birthDate?: string; country?: string; onboarded?: boolean } = {},
 ) {
   const res = await context.request.post('/v1/auth/signup', {
     // Each from a network of its own (a documentation range), as people sign up: the server
@@ -85,6 +85,8 @@ export async function apiSignUp(
   });
   expect(res.ok(), await res.text()).toBe(true);
   const { user } = (await res.json()) as { user: { id: string; handle: string } };
+  // A test about onboarding itself starts there.
+  if (opts.onboarded === false) return user;
   const done = await context.request.patch('/v1/me', {
     headers: CLIENT,
     data: { onboarded: true },

@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { inviteWays, toInternational } from './contact-invites';
+import { inviteWays, openInviteWays, toInternational } from './contact-invites';
 import { newContactKey, openContactAccess, sealContactAccess } from './contact-seal';
 import {
   type AccountFetch,
@@ -232,6 +232,23 @@ describe('inviting someone yourself', () => {
     expect(android.map((w) => w.url)).toEqual([
       'https://wa.me/33612345678?text=x',
       'sms:+33612345678?body=x',
+    ]);
+  });
+
+  it('sends one’s link to whoever is chosen where nothing on the device says who', () => {
+    const text = 'Join me: https://cai.me/i/x';
+    // WhatsApp asks whom; a desktop has no messages app to open.
+    expect(openInviteWays({ text }, { ios: false, texts: false })).toEqual([
+      {
+        kind: 'whatsapp',
+        to: '',
+        url: 'https://wa.me/?text=Join%20me%3A%20https%3A%2F%2Fcai.me%2Fi%2Fx',
+      },
+    ]);
+    // An iPhone's browser opens a message with nobody in it yet, its body after "&".
+    expect(openInviteWays({ text: 'x' }, { ios: true, texts: true }).map((w) => w.url)).toEqual([
+      'https://wa.me/?text=x',
+      'sms:&body=x',
     ]);
   });
 });
