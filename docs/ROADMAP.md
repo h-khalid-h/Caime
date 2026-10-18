@@ -1990,10 +1990,28 @@ graph) and the number that will show it; one that sharpens none is hygiene and s
       `product-metrics.test.ts`, `public-pages.test.ts`, and the E2E `public-booking.spec.ts` (the
       team confirms, the booker's mail arrives, the booker signs up in the browser, is asked the
       code, and the booking is in the new account). Live it needs `SMTP_URL` (⛔ the owner's).
-- [ ] C1c. Booking from a person's public items; a phone number proven by WhatsApp code as the
-      address; "message before an account" at the door the same way; a reminder by mail the day
-      before for a provisional booker (no-shows are a clinic's cost); three fields on a link
-      arrival.
+- [x] C1c. The day before, and a professional's own page (2026-10-18): advantage 3 says "a
+      professional's one link shows times, books, later reminds", and now it does both. A confirmed
+      booking whose customer booked before an account is recalled by mail the day before
+      (`booking.remind` at start less 24 hours, queued only when that is twelve hours or more after
+      the confirmation, so one confirmed within a day and a half is its own reminder; its payload
+      ids alone, the card read again when it runs, silent once moved, cancelled or claimed; counted
+      as `reminded`). A person's public item books from their page the same way as an
+      organization's (`VisitorHost`, `visitorMayBook`: an adult on Caime who takes message requests
+      from everyone, the rule a stranger on Caime meets; R29: never a minor): the booking is a
+      message request in their one-to-one that holds the time while it waits, an unanswered one
+      refuses a second (`waiting`), and agreeing to a card that came as a request answers it (the
+      kit move route), as a reply does; the booker hears by mail when the person confirms or
+      cancels, under the person's name. Verified with `public-booking.test.ts` (the reminder queued
+      a day ahead and sent once, none after a cancel or for a confirmation 26 hours out; a
+      person's page, its form, the request in their inbox, the confirm answering it, the mail; one
+      request at a time; no form for someone who takes no requests; never a minor), and the E2E
+      `public-booking.spec.ts` (a visitor books Lina's lesson from her page, Lina confirms it on
+      the card in the app, the request banner goes and the visitor's confirmation arrives). Live,
+      it needs `SMTP_URL` (⛔ the owner's).
+- [ ] C1d. "Message before an account" at an organization's door the same way (the reply reaches
+      the visitor by mail only with Caime Mail on, said so on the page); a phone number proven by
+      WhatsApp code as the address where `WHATSAPP_*` is set; three fields on a link arrival.
 - [ ] C2–C3. The business front door (`/business` to `/orgs/new`, "For me / For my organization"
       in onboarding, a checklist that moves past DNS, a Book link and QR beside the door, "block
       time" and holidays); team invites by link and email with domain auto-join; space and group
@@ -3636,6 +3654,10 @@ graph) and the number that will show it; one that sharpens none is hygiene and s
   journeys, safety, reliability, performance, intelligence, mail and calendar, chat, integrations,
   business and code integrity; the matrix against WhatsApp, Signal, Slack, Calendly and Workspace;
   an age-assurance design; the integration framework mapped to the code; plan M16 (A–H).
+- 2026-10-18 — M16 C1c: the booker recalled by mail the day before a confirmed booking, and a
+  person's public item booked from their page as an organization's is (a message request that
+  holds the time; agreeing to it answers it). Advantage 3 now books from a professional's own
+  link and reminds; numbers as C1b counts them, plus `reminded`.
 - 2026-10-18 — M16 C1b: the claim of a provisional person's history needs the address's code
   (review §2 H1, pulled forward from B since C1a made that history real); a provisional booker
   hears by mail with a calendar invitation when the clinic confirms or cancels; no booking form

@@ -1447,4 +1447,7 @@ export const arServer: Catalog = {
     'لهذا العنوان رسائل بانتظاره على Caime، ولا يستطيع Caime هذا بعدُ إرسال الرمز الذي يثبت أنه لك. استخدم عنوانًا آخر، أو حاول لاحقًا.',
   'Messages are waiting for this address on Caime. We sent it a six-digit code: type it here to bring them into your account.':
     'لهذا العنوان رسائل بانتظاره على Caime. أرسلنا إليه رمزًا من ستة أرقام: اكتبه هنا لتُضاف الرسائل إلى حسابك.',
+  'That page': 'تلك الصفحة',
+  'Your earlier booking here is still waiting for an answer. Join {site} with the same address to follow it.':
+    'حجزك السابق هنا لا يزال بانتظار الرد. انضم إلى {site} بالعنوان نفسه لتتابعه.',
 };

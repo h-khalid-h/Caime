@@ -1,7 +1,8 @@
 /**
- * Booking before an account (R97 (1), block C): the two forms an organization's item page posts
- * for a visitor, each answered with a redirect back to the page (`?code=`, `?booked=`,
- * `?book-error=`), so the page renders every step itself and a refresh repeats nothing.
+ * Booking before an account (R97 (1), block C): the two forms an item's page posts for a visitor
+ * (an organization's item, or a person's since C1c), each answered with a redirect back to the
+ * page (`?code=`, `?booked=`, `?book-error=`), so the page renders every step itself and a
+ * refresh repeats nothing.
  * Only these two take forms, in their own plugin as OAuth's do: a form is anonymous here (no
  * session is read or made), the choice rides as a sealed claim, and nothing is booked until
  * the address's code comes back, so a form posted from another site can only cost its author a
@@ -20,9 +21,10 @@ import {
   openClaim,
   STARTS_AN_HOUR,
   startVisitorBooking,
+  type VisitorHost,
   type VisitorRefusal,
 } from '../lib/public-booking';
-import { orgRowByHandle } from '../lib/public-pages';
+import { orgRowByHandle, personRowByHandle } from '../lib/public-pages';
 import { parse } from '../lib/validate';
 
 const Handle = z.string().min(1).max(64);
@@ -50,10 +52,19 @@ export async function publicBookingRoutes(app: FastifyInstance, ctx: AppContext)
   const hourly = (key: string, max: number) =>
     ctx.limiter.hit(key, ctx.config.isTest ? 1000 : max, 3_600_000);
 
+  /** Whose page the form came from: an organization's handle, else a person's (one namespace). */
+  const hostByHandle = async (handle: string): Promise<VisitorHost> => {
+    const org = await orgRowByHandle(ctx.db, handle);
+    if (org) return { kind: 'org', row: org };
+    const person = await personRowByHandle(ctx.db, handle);
+    if (person) return { kind: 'person', row: person };
+    throw notFound(tr('That page'));
+  };
+
   /** Back to the item's page, with the step's state in the query (the language kept). */
   const back = (
     reply: FastifyReply,
-    handle: string,
+    host: VisitorHost,
     slug: string,
     state: Record<string, string>,
     lang: string | undefined,
@@ -61,10 +72,9 @@ export async function publicBookingRoutes(app: FastifyInstance, ctx: AppContext)
     const q = new URLSearchParams(state);
     if (lang && (INTERFACE_LANGUAGES as readonly string[]).includes(lang)) q.set('lang', lang);
     const query = q.toString();
-    return reply.redirect(
-      `/o/${encodeURIComponent(handle)}/${encodeURIComponent(slug)}${query ? `?${query}` : ''}`,
-      303,
-    );
+    const handle = encodeURIComponent(host.row.handle);
+    const at = host.kind === 'org' ? `/o/${handle}` : `/@${handle}`;
+    return reply.redirect(`${at}/${encodeURIComponent(slug)}${query ? `?${query}` : ''}`, 303);
   };
 
   await app.register(async (forms) => {
@@ -79,12 +89,11 @@ export async function publicBookingRoutes(app: FastifyInstance, ctx: AppContext)
     /** Step one: the time, the name and the address; a code goes to the address. */
     forms.post('/public/book', async (req, reply) => {
       const form = parse(StartForm, req.body);
-      const org = await orgRowByHandle(ctx.db, form.host);
-      if (!org) throw notFound(tr('That organization'));
-      const slug = catalogOf(org).items.find((i) => i.id === form.item)?.slug ?? form.item;
+      const host = await hostByHandle(form.host);
+      const slug = catalogOf(host.row).items.find((i) => i.id === form.item)?.slug ?? form.item;
       const refused = (reason: VisitorRefusal) => {
         ctx.metrics.publicBookings.inc({ outcome: reason });
-        return back(reply, org.handle, slug, { 'book-error': reason }, form.lang);
+        return back(reply, host, slug, { 'book-error': reason }, form.lang);
       };
       // Without an account nobody says their age: the box stands for it (R29).
       if (form.adult !== 'on') return refused('adult');
@@ -95,7 +104,7 @@ export async function publicBookingRoutes(app: FastifyInstance, ctx: AppContext)
         if (err instanceof AppError && err.code === 'rate_limited') return refused('too_many');
         throw err;
       }
-      const started = await startVisitorBooking(ctx, org, {
+      const started = await startVisitorBooking(ctx, host, {
         itemId: form.item,
         at: form.slot,
         name: form.name,
@@ -103,15 +112,14 @@ export async function publicBookingRoutes(app: FastifyInstance, ctx: AppContext)
       });
       if (started.kind === 'refused') return refused(started.reason);
       ctx.metrics.publicBookings.inc({ outcome: 'code_sent' });
-      return back(reply, org.handle, slug, { code: started.claim }, form.lang);
+      return back(reply, host, slug, { code: started.claim }, form.lang);
     });
 
     /** Step two: the code; the booking lands as the provisional person's request. */
     forms.post('/public/book/confirm', async (req, reply) => {
       const form = parse(ConfirmForm, req.body);
-      const org = await orgRowByHandle(ctx.db, form.host);
-      if (!org) throw notFound(tr('That organization'));
-      const slug = catalogOf(org).items.find((i) => i.id === form.item)?.slug ?? form.item;
+      const host = await hostByHandle(form.host);
+      const slug = catalogOf(host.row).items.find((i) => i.id === form.item)?.slug ?? form.item;
       const counted = (outcome: VisitorRefusal | 'booked') =>
         ctx.metrics.publicBookings.inc({ outcome });
       try {
@@ -119,29 +127,29 @@ export async function publicBookingRoutes(app: FastifyInstance, ctx: AppContext)
       } catch (err) {
         if (err instanceof AppError && err.code === 'rate_limited') {
           counted('too_many');
-          return back(reply, org.handle, slug, { 'book-error': 'too_many' }, form.lang);
+          return back(reply, host, slug, { 'book-error': 'too_many' }, form.lang);
         }
         throw err;
       }
       const claim = await openClaim(ctx, form.claim);
       if (!claim) {
         counted('expired');
-        return back(reply, org.handle, slug, { 'book-error': 'expired' }, form.lang);
+        return back(reply, host, slug, { 'book-error': 'expired' }, form.lang);
       }
-      const done = await confirmVisitorBooking(ctx, org, claim, form.code.trim());
+      const done = await confirmVisitorBooking(ctx, host, claim, form.code.trim());
       counted(done.kind === 'booked' ? 'booked' : done.reason);
       if (done.kind === 'refused') {
         // A wrong code is tried again on the same claim; anything else starts over.
         const again = done.reason === 'wrong_code' || done.reason === 'code_expired';
         return back(
           reply,
-          org.handle,
+          host,
           slug,
           again ? { code: form.claim, 'book-error': done.reason } : { 'book-error': done.reason },
           form.lang,
         );
       }
-      return back(reply, org.handle, slug, { booked: form.claim }, form.lang);
+      return back(reply, host, slug, { booked: form.claim }, form.lang);
     });
   });
 }

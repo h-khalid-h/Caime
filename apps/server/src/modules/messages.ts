@@ -53,6 +53,7 @@ import type {
   OkResponse,
   ReceiptResponse,
 } from '@caime/core/api';
+import { AGREED_STATES } from '@caime/core/kit-states';
 import type { FastifyInstance } from 'fastify';
 import { sql } from 'kysely';
 import { z } from 'zod';
@@ -351,6 +352,10 @@ export async function messageRoutes(app: FastifyInstance, ctx: AppContext) {
       await expireCheckout(ctx, id).catch((e) =>
         req.log.warn({ err: (e as Error).message }, 'checkout expire'),
       );
+    // Agreeing to what came as a message request (a booking from one's public catalog, a meeting
+    // proposed by someone new) answers it, as a reply does (R14): it leaves Requests.
+    if ((card.kit === 'meeting' || card.kit === 'appointment') && to === AGREED_STATES[card.kit])
+      await answerRequest(m.conversation_id, auth.userId);
     // What follows any move, a payment by card's too (M11): the brief, the event, the people.
     const view = await afterCardMove(ctx, confirmed, {
       from,
@@ -360,6 +365,22 @@ export async function messageRoutes(app: FastifyInstance, ctx: AppContext) {
     });
     return { message: view };
   });
+
+  /** Whoever agreed, if the conversation was still a request to them, has answered it. */
+  async function answerRequest(conversationId: string, userId: string): Promise<void> {
+    const answered = await ctx.db
+      .updateTable('participants')
+      .set({ request_state: 'accepted', archived_at: null })
+      .where('conversation_id', '=', conversationId)
+      .where('user_id', '=', userId)
+      .where('request_state', 'in', ['pending', 'declined'])
+      .executeTakeFirst();
+    if (Number(answered.numUpdatedRows) > 0)
+      await ctx.bus.publish(
+        (await participantsOf(ctx.db, conversationId)).map((p) => p.user_id),
+        { type: 'conversation.updated', data: { conversationId } },
+      );
+  }
 
   async function assignOnConfirm<T extends { id: string; payload: unknown }>(
     row: T,

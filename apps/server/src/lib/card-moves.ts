@@ -70,9 +70,10 @@ export async function afterCardMove(
   // The organization's apps hear who moved it, unless one of them did (PRD §74).
   if (business) await tellCardApp(ctx, m, business, actorId, 'kit.moved', { from, to });
   // A customer who booked before an account has no device to be told on: confirmed or
-  // cancelled reaches them by mail, with the event for their calendar (R97 (1), C1b).
-  if (card.kit === 'appointment' && business && (to === 'confirmed' || to === 'cancelled'))
-    await mailProvisionalBooker(ctx, moved, business, to);
+  // cancelled reaches them by mail, with the event for their calendar, and a confirmed one is
+  // recalled the day before (R97 (1), C1b, C1c), whether an organization or a person is the host.
+  if (card.kit === 'appointment' && (to === 'confirmed' || to === 'cancelled'))
+    await mailProvisionalBooker(ctx, moved, to);
   const mover = await ctx.db
     .selectFrom('users')
     .select('display_name')

@@ -103,7 +103,11 @@ page. The limits (thirty starts an hour from an address, three codes an hour to 
 what a stranger's form can cost. Telling a provisional booker costs one mail per confirm or
 cancel (with a calendar part a few hundred bytes long), sent after the response; a customer with
 an account costs nothing more than before. The door's numbers in product metrics read only the
-handful of people who were or are provisional, and their messages by the sender index.
+handful of people who were or are provisional, and their messages by the sender index. The day
+before a confirmed one (C1c) costs one job row and one mail, and only for a booker without an
+account whose booking was confirmed a day and a half or more ahead; the job reads the card and
+two rows again when it runs. A person's page books the same way, at the same cost, with one more
+row read for the person behind the handle.
 
 ## What a change says
 

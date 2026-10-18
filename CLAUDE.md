@@ -167,28 +167,34 @@ appointment from a catalog).
   anything new in `effectsOf` is idempotent (a dedupe key, an `on conflict`), and a new path that
   sends a message either runs `afterMessage` after its response or passes `effects: false`,
   never neither.
-- Booking before an account (R97 (1), `lib/public-booking.ts`, `modules/public-booking.ts`): an
-  organization's bookable public item's page carries the week's open times and a script-free form
-  (`PublicItemPage.booking`, from `visitorBookingState(ctx, org, itemId, search)`; `publicPageFor`
-  takes `ctx` for it); `POST /v1/public/book` and `/confirm` take forms in their own plugin (as
-  OAuth's two do: anonymous, no session read or made) and answer only with a redirect back to the
-  page (`?code=`, `?booked=`, `?book-error=<VisitorRefusal>`), so the page renders every step and
-  a refresh repeats nothing. The choice between the steps is a sealed claim (`sealClaim`,
-  `serverKey('public.book')`, `CLAIM_MS`), never a row; the address is proven by
-  `lib/email-codes.ts` (`sendEmailCode`, `spendEmailCode`, shared with sign-up's confirmation);
-  the booking is `startCustomerConversation` and `sendMessage` as the provisional person, so
-  `bookingFor` checks the time under the host's lock as for anyone. A known account's address is
-  refused as `account` and never mailed (R93); without `ctx.mail` the page offers no form at all
-  (`visitorBookingState` is null) and a direct post is refused `no_mail`. A provisional booker has
-  no device to be told on, so `afterCardMove` mails them when the team confirms or cancels
-  (`mailProvisionalBooker`, `lib/booking-mail.ts`: the time on the host's clock, an ICS invitation
-  or cancellation under the appointment's `meetingUid`, the sign-up link that claims the address);
-  a customer with an account hears in Caime only. Each step is counted on
-  `caime_public_bookings_total{outcome}` (`code_sent`, `booked`, or a `VisitorRefusal`), and
-  product metrics' `growth.door` reads bookings made this way (their client id is `public-book:…`)
-  and, of the people who first booked 30 to 60 days ago, those who joined within thirty days
-  (`users.claimed_at`). Anything new a visitor may do from a page follows this shape: a page
-  state, a form, a redirect, a sealed claim.
+- Booking before an account (R97 (1), `lib/public-booking.ts`, `modules/public-booking.ts`): a
+  bookable public item's page, an organization's or a person's (`VisitorHost`; a person only while
+  `visitorMayBook`: an adult on Caime who takes message requests from everyone, the rule a stranger
+  on Caime meets), carries the week's open times and a script-free form (`PublicItemPage.booking`,
+  from `visitorBookingState(ctx, host, itemId, search)`; `publicPageFor` takes `ctx` for it);
+  `POST /v1/public/book` and `/confirm` take forms in their own plugin (as OAuth's two do:
+  anonymous, no session read or made) and answer only with a redirect back to the page (`?code=`,
+  `?booked=`, `?book-error=<VisitorRefusal>`), so the page renders every step and a refresh repeats
+  nothing. The choice between the steps is a sealed claim (`sealClaim`, `serverKey('public.book')`,
+  `CLAIM_MS`), never a row; the address is proven by `lib/email-codes.ts` (`sendEmailCode`,
+  `spendEmailCode`, shared with sign-up's confirmation); the booking is `startCustomerConversation`
+  (a person's: `ensureDirectConversation` as a message request, an unanswered one refused `waiting`)
+  and `sendMessage` as the provisional person, so `bookingFor` checks the time under the host's lock
+  as for anyone; agreeing to a card that came as a message request answers it (the kit move route),
+  as a reply does. A known account's address is refused as `account` and never mailed (R93); without
+  `ctx.mail` the page offers no form at all (`visitorBookingState` is null) and a direct post is
+  refused `no_mail`. A provisional booker has no device to be told on, so `afterCardMove` mails them
+  when the team confirms or cancels (`mailProvisionalBooker`, `lib/booking-mail.ts`: the time on the
+  host's clock, an ICS invitation or cancellation under the appointment's `meetingUid`, the sign-up
+  link that claims the address), and a confirmed one is recalled the day before (`booking.remind`,
+  queued only when that is at least `REMIND_FRESH_MS` after the confirmation, its payload ids alone,
+  the card read again when it runs: moved, cancelled or claimed since, it says nothing); a customer
+  with an account hears in Caime only. Each step is counted on
+  `caime_public_bookings_total{outcome}` (`code_sent`, `booked`, `reminded`, or a `VisitorRefusal`),
+  and product metrics' `growth.door` reads bookings made this way (their client id is
+  `public-book:…`) and, of the people who first booked 30 to 60 days ago, those who joined within
+  thirty days (`users.claimed_at`). Anything new a visitor may do from a page follows this shape: a
+  page state, a form, a redirect, a sealed claim.
 - Jobs (`lib/jobs.ts`): a job that fails its last attempt is dead (`dead_at`), out of the due
   index, counted on `caime_jobs_dead`, listed with its last error and never its payload at
   `GET /v1/admin/jobs`, and given its attempts back by `retryJob` (`POST …/retry`); never delete
@@ -1459,7 +1465,8 @@ appointment from a catalog).
   stub's control port is 8797), and `e2e/mail.spec.ts` posts its webhooks.
 - Mail (R48) goes out only through `ctx.mail` (`lib/email.ts`, null without `SMTP_URL`, so a
   route that needs it throws `mailUnavailable()`), after the response with `ctx.defer`, never
-  through the job queue (a reset link is a secret). Texts stay ASCII so they travel as plain
+  through the job queue with a secret in it (a reset link is one): a job that mails later (a
+  booking's reminder) carries ids alone and reads the rest when it runs. Texts stay ASCII so they travel as plain
   7-bit text and `e2e/smtp-stub.mjs` can read them; tests pass `memoryMailer()` to
   `createTestApp({}, { mail })` and read its outbox after `t.ctx.flush()`. A new auth screen is
   a reserved handle (`forgot`, `reset`).

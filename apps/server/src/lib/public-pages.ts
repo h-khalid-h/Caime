@@ -43,7 +43,7 @@ import type { CharacterHandle } from '@caime/core/system-accounts';
 import { tagged } from '@caime/core/tagged';
 import type { Kysely } from 'kysely';
 import type { AppContext } from '../context';
-import type { Database, Organization } from '../db/schema';
+import type { Database, Organization, User } from '../db/schema';
 import { catalogOf, paymentsOf } from './booking';
 import { orgRef } from './business';
 import { countryNameIn } from './geo';
@@ -70,6 +70,7 @@ import { FACE, px, THEME_VARS, type } from './page-style';
 import { orgPlacesFor } from './places';
 import {
   type VisitorBookingState,
+  type VisitorHost,
   type VisitorRefusal,
   visitorBookingState,
 } from './public-booking';
@@ -274,6 +275,23 @@ export async function orgRowByHandle(db: Q, handle: string): Promise<Organizatio
   return o ?? null;
 }
 
+/**
+ * A person's row with their catalog, by handle, for a visitor's booking of their public item
+ * (R97 (1), C1c): only someone live on Caime. Whether a visitor may book them is
+ * `visitorMayBook`'s to say (an adult who takes message requests from anyone).
+ */
+export async function personRowByHandle(db: Q, handle: string): Promise<User | null> {
+  const u = await db
+    .selectFrom('users')
+    .selectAll()
+    .where('handle', '=', handle)
+    .where('kind', '=', 'human')
+    .where('deleted_at', 'is', null)
+    .where('suspended_at', 'is', null)
+    .executeTakeFirst();
+  return u ?? null;
+}
+
 export async function publicOrg(db: Q, handle: string): Promise<PublicOrg | null> {
   const o = await orgRowByHandle(db, handle);
   return o ? publicOrgFrom(db, o) : null;
@@ -439,13 +457,30 @@ export async function publicPageFor(
     if (!shelf) return { kind: 'app' };
     // A visitor books an organization's item from its page (R97 (1)).
     return shelf.kind === 'item'
-      ? { ...shelf, booking: await visitorBookingState(ctx, row, shelf.item.id, search) }
+      ? {
+          ...shelf,
+          booking: await visitorBookingState(ctx, { kind: 'org', row }, shelf.item.id, search),
+        }
       : shelf;
   }
   const [o, person] = await Promise.all([publicOrg(db, handle), publicPerson(db, handle, now)]);
   const host = o ?? person;
   if (!host) return { kind: 'missing' };
-  return slug ? (shelfPage(host, slug) ?? { kind: 'missing' }) : host;
+  if (!slug) return host;
+  const shelf = shelfPage(host, slug);
+  if (!shelf) return { kind: 'missing' };
+  if (shelf.kind !== 'item') return shelf;
+  // A visitor books a person's public item from its page too (C1c), and an organization's under
+  // its @ address as under /o/.
+  const row = o ? await orgRowByHandle(db, handle) : await personRowByHandle(db, handle);
+  if (!row) return shelf;
+  const visitorHost: VisitorHost = o
+    ? { kind: 'org', row: row as Organization }
+    : { kind: 'person', row: row as User };
+  return {
+    ...shelf,
+    booking: await visitorBookingState(ctx, visitorHost, shelf.item.id, search),
+  };
 }
 
 /** `%D9%82…` as the letters it is; junk as nothing. */
@@ -1343,6 +1378,8 @@ function refusalLine(reason: VisitorRefusal, path: string): string {
           },
         ),
       );
+    case 'waiting':
+      return `${esc(tr('Your earlier booking here is still waiting for an answer. Join {site} with the same address to follow it.', { site }))} <a href="${esc(wayIn('sign-up', path))}">${esc(tr('Join {site}', { site }))}</a>`;
   }
 }
 

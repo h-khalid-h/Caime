@@ -22,6 +22,7 @@ import { registerWebhookJob } from './lib/apps';
 import { registerAuditCheck } from './lib/audit';
 import { registerBackupJob } from './lib/backup';
 import { registerBillingJobs } from './lib/billing';
+import { registerBookingReminders } from './lib/booking-mail';
 import { registerBriefJob } from './lib/briefs';
 import { Bus } from './lib/bus';
 import { businessRealtime } from './lib/business';
@@ -374,6 +375,7 @@ export async function buildApp(config: Config, options: BuildOptions = {}): Prom
   registerSystemJobs();
   registerCaiJobs();
   registerBriefJob();
+  registerBookingReminders();
   registerMeetingStartJob();
   registerSeriesJob();
   registerAccountSync();

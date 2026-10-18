@@ -1,26 +1,30 @@
 /**
- * Booking before an account (R97 (1), block C): a visitor on an organization's item page picks
- * one of the week's open times, gives a name and an address, proves the address with a six-digit
- * code, and the booking lands as an appointment request from their provisional self (R93: one
- * address is one person; signing up with it later claims it all). Nothing of theirs is kept
- * before the code comes back: what they chose rides between the two steps as a sealed claim in
- * the page's address, fifteen minutes long, bound to this purpose. Only organizations' catalogs
- * in this slice; a person's public items still say "join to book".
+ * Booking before an account (R97 (1), block C): a visitor on an item's page picks one of the
+ * week's open times, gives a name and an address, proves the address with a six-digit code, and
+ * the booking lands as an appointment request from their provisional self (R93: one address is
+ * one person; signing up with it later claims it all). The item is an organization's (the
+ * request opens its customer conversation) or a person's (C1c: their one-to-one, as a message
+ * request whose booking holds the time while it waits). Nothing of theirs is kept before the code
+ * comes back: what they chose rides between the two steps as a sealed claim in the page's
+ * address, fifteen minutes long, bound to this purpose.
  */
 import { addressValue } from '@caime/core/addresses';
 import type { BookingItem } from '@caime/core/booking';
 import { isBooked } from '@caime/core/booking';
 import { zonedParts } from '@caime/core/time';
 import type { AppContext } from '../context';
-import type { Organization } from '../db/schema';
-import { itemsFor, openSlotsFor, orgHost } from './booking';
+import type { Organization, User } from '../db/schema';
+import { type BookingHost, itemsFor, openSlotsFor, orgHost, personHost } from './booking';
 import { startCustomerConversation } from './business-threads';
+import { ensureDirectConversation } from './conversations';
 import { sendEmailCode, spendEmailCode } from './email-codes';
 import { AppError } from './errors';
 import { afterMessage } from './message-effects';
 import { sendMessage } from './messages';
 import { personForAddress } from './provisional';
+import { isBlockedEitherWay } from './relations';
 import { serverKey } from './server-keys';
+import { minorOf, privacyOf } from './users';
 import { seal, unseal } from './vault';
 
 /** How many days the page shows, and how many times a day: the rest is in the conversation. */
@@ -35,10 +39,40 @@ export const STARTS_AN_HOUR = 30;
 const LABEL = 'caime public booking v1';
 const claimKey = (ctx: AppContext) => serverKey(ctx, 'public.book');
 
-/** What a visitor chose, sealed between the two steps; `e` is when it runs out (ms). */
+/** Whose catalog a visitor books from: an organization's, or a person's (C1c). */
+export type VisitorHost = { kind: 'org'; row: Organization } | { kind: 'person'; row: User };
+
+function hostOf(host: VisitorHost): BookingHost {
+  return host.kind === 'org' ? orgHost(host.row) : personHost(host.row);
+}
+
+/**
+ * Whom a visitor may book: an open organization (the handle's lookup has seen to that), or a
+ * person on Caime who is an adult (R29: no stranger books a minor; their page shows nothing
+ * either) and takes message requests from anyone, since the booking is one (a stranger on Caime
+ * meets the same rule, `assertCanMessage`).
+ */
+export function visitorMayBook(host: VisitorHost, now: Date): boolean {
+  if (host.kind === 'org') return true;
+  const u = host.row;
+  return (
+    u.kind === 'human' &&
+    !u.deleted_at &&
+    !u.suspended_at &&
+    !minorOf(u, now) &&
+    privacyOf(u, now).messageRequests === 'everyone'
+  );
+}
+
+/**
+ * What a visitor chose, sealed between the two steps; `e` is when it runs out (ms). Version 2
+ * names the host's kind (an organization's claims were version 1, fifteen minutes long, and read
+ * as run out).
+ */
 export interface BookingClaim {
-  v: 1;
-  orgId: string;
+  v: 2;
+  hostKind: 'org' | 'person';
+  hostId: string;
   itemId: string;
   at: string;
   personId: string;
@@ -85,11 +119,11 @@ function shiftDay(day: string, days: number): string {
  */
 export async function publicSlotsFor(
   ctx: AppContext,
-  org: Organization,
+  visitorHost: VisitorHost,
   item: BookingItem,
   from?: string | null,
 ): Promise<PublicSlots | null> {
-  const host = orgHost(org);
+  const host = hostOf(visitorHost);
   if (!host.hours || !isBooked(item)) return null;
   if (!itemsFor(host, VISITOR).some((i) => i.id === item.id)) return null;
   const timeZone = host.hours.timeZone;
@@ -140,7 +174,7 @@ export async function openClaim(ctx: AppContext, token: string): Promise<Booking
   if (!plain) return null;
   try {
     const claim = JSON.parse(plain.toString()) as BookingClaim;
-    if (claim.v !== 1 || typeof claim.e !== 'number' || claim.e <= ctx.now().getTime()) return null;
+    if (claim.v !== 2 || typeof claim.e !== 'number' || claim.e <= ctx.now().getTime()) return null;
     return claim;
   } catch {
     return null;
@@ -157,7 +191,8 @@ export type VisitorRefusal =
   | 'wrong_code'
   | 'code_expired'
   | 'too_many'
-  | 'adult';
+  | 'adult'
+  | 'waiting';
 
 export type VisitorStart =
   | { kind: 'code'; claim: string }
@@ -170,10 +205,11 @@ export type VisitorStart =
  */
 export async function startVisitorBooking(
   ctx: AppContext,
-  org: Organization,
+  visitorHost: VisitorHost,
   ask: { itemId: string; at: string; name: string; email: string },
 ): Promise<VisitorStart> {
-  const host = orgHost(org);
+  if (!visitorMayBook(visitorHost, ctx.now())) return { kind: 'refused', reason: 'not_bookable' };
+  const host = hostOf(visitorHost);
   const item = host.hours ? itemsFor(host, VISITOR).find((i) => i.id === ask.itemId) : null;
   if (!item || !isBooked(item)) return { kind: 'refused', reason: 'not_bookable' };
   const at = new Date(ask.at);
@@ -203,8 +239,9 @@ export async function startVisitorBooking(
       .execute();
   await sendEmailCode(ctx, person.id, email, name);
   const claim: BookingClaim = {
-    v: 1,
-    orgId: org.id,
+    v: 2,
+    hostKind: visitorHost.kind,
+    hostId: visitorHost.row.id,
     itemId: item.id,
     at: at.toISOString(),
     personId: person.id,
@@ -220,17 +257,19 @@ export type VisitorBooked =
   | { kind: 'refused'; reason: VisitorRefusal };
 
 /**
- * Step two: the code spent, the customer's conversation started (or found), the appointment
- * posted as the provisional person with the catalog booking, exactly as a customer's own
- * booking is (`bookingFor` checks the time again under the host's lock), its effects run.
+ * Step two: the code spent, the conversation started (or found: an organization's customer
+ * conversation, or the one-to-one with a person as a message request), the appointment posted
+ * as the provisional person with the catalog booking, exactly as anyone's own booking is
+ * (`bookingFor` checks the time again under the host's lock), its effects run.
  */
 export async function confirmVisitorBooking(
   ctx: AppContext,
-  org: Organization,
+  visitorHost: VisitorHost,
   claim: BookingClaim,
   code: string,
 ): Promise<VisitorBooked> {
-  if (claim.orgId !== org.id) return { kind: 'refused', reason: 'expired' };
+  if (claim.hostKind !== visitorHost.kind || claim.hostId !== visitorHost.row.id)
+    return { kind: 'refused', reason: 'expired' };
   try {
     await spendEmailCode(ctx, claim.personId, code);
   } catch (err) {
@@ -244,9 +283,23 @@ export async function confirmVisitorBooking(
     .where('id', '=', claim.personId)
     .executeTakeFirst();
   if (person?.kind !== 'provisional') return { kind: 'refused', reason: 'account' };
-  const { conversationId } = await startCustomerConversation(ctx, person, org, null);
-  const item = itemsFor(orgHost(org), VISITOR).find((i) => i.id === claim.itemId);
-  if (!item) return { kind: 'refused', reason: 'not_bookable' };
+  const item = itemsFor(hostOf(visitorHost), VISITOR).find((i) => i.id === claim.itemId);
+  if (!item || !visitorMayBook(visitorHost, ctx.now()))
+    return { kind: 'refused', reason: 'not_bookable' };
+  let conversationId: string;
+  if (visitorHost.kind === 'org') {
+    ({ conversationId } = await startCustomerConversation(ctx, person, visitorHost.row, null));
+  } else {
+    // A person blocked by the host (or blocking them) books nothing, and is told nothing more.
+    if (await isBlockedEitherWay(ctx.db, visitorHost.row.id, person.id))
+      return { kind: 'refused', reason: 'not_bookable' };
+    ({ id: conversationId } = await ensureDirectConversation(
+      ctx.db,
+      person.id,
+      visitorHost.row.id,
+      { createdBy: person.id, requestFrom: person.id },
+    ));
+  }
   try {
     const sent = await sendMessage(ctx, person.id, conversationId, {
       // Twice is once: the claim stands for one booking.
@@ -268,6 +321,9 @@ export async function confirmVisitorBooking(
       return { kind: 'refused', reason: 'slot_taken' };
     if (err instanceof AppError && err.code === 'not_bookable')
       return { kind: 'refused', reason: 'not_bookable' };
+    // An earlier request to the person, still unanswered (R14: one message until they answer).
+    if (err instanceof AppError && err.code === 'awaiting_acceptance')
+      return { kind: 'refused', reason: 'waiting' };
     throw err;
   }
 }
@@ -295,6 +351,7 @@ const REFUSALS: readonly VisitorRefusal[] = [
   'code_expired',
   'too_many',
   'adult',
+  'waiting',
 ];
 
 /**
@@ -304,14 +361,17 @@ const REFUSALS: readonly VisitorRefusal[] = [
  */
 export async function visitorBookingState(
   ctx: AppContext,
-  org: Organization,
+  visitorHost: VisitorHost,
   itemId: string,
   search: URLSearchParams,
 ): Promise<VisitorBookingState | null> {
   // Without a mailer nothing proves the address: the page offers joining, never a form that
   // could only end in "not available here".
-  if (!ctx.mail) return null;
-  const host = orgHost(org);
+  if (!ctx.mail || !visitorMayBook(visitorHost, ctx.now())) return null;
+  const host = hostOf(visitorHost);
+  // A claim is this host's and this item's, or it says nothing on this page.
+  const ours = (claim: BookingClaim | null): claim is BookingClaim =>
+    Boolean(claim && claim.hostId === visitorHost.row.id && claim.itemId === itemId);
   const item = host.items.find((i) => i.id === itemId);
   if (!item || !isBooked(item) || !host.hours) return null;
   const timeZone = host.hours.timeZone;
@@ -321,16 +381,15 @@ export async function visitorBookingState(
   const booked = search.get('booked');
   if (booked) {
     const claim = await openClaim(ctx, booked);
-    if (claim && claim.itemId === item.id)
-      return { step: 'booked', at: claim.at, email: claim.email, timeZone };
+    if (ours(claim)) return { step: 'booked', at: claim.at, email: claim.email, timeZone };
   }
   const code = search.get('code');
   if (code) {
     const claim = await openClaim(ctx, code);
-    if (claim && claim.itemId === item.id)
+    if (ours(claim))
       return { step: 'code', claim: code, email: claim.email, at: claim.at, timeZone, error };
   }
-  const slots = await publicSlotsFor(ctx, org, item, search.get('from'));
+  const slots = await publicSlotsFor(ctx, visitorHost, item, search.get('from'));
   if (!slots) return null;
   return { step: 'pick', slots, error: booked || code ? 'expired' : error };
 }

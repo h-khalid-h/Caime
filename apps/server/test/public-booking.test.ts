@@ -1,15 +1,17 @@
 /**
- * Booking before an account (R97 (1), block C): a visitor on an organization's item page picks
- * a time, proves an address with a code, and the booking lands as a provisional person's
- * appointment request to the team.
+ * Booking before an account (R97 (1), block C): a visitor on an organization's or a person's
+ * item page picks a time, proves an address with a code, and the booking lands as a provisional
+ * person's appointment request; the booker hears by mail, the day before too.
  */
 import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
+import { sql } from 'kysely';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { memoryMailer } from '../src/lib/email';
+import { runDueJobs } from '../src/lib/jobs';
 import { productMetrics } from '../src/lib/product-metrics';
-import { CLAIM_MS, openClaim, sealClaim } from '../src/lib/public-booking';
+import { CLAIM_MS, openClaim, sealClaim, visitorMayBook } from '../src/lib/public-booking';
 import { type Client, createTestApp, signup, type TestApp } from './helpers';
 
 let t: TestApp;
@@ -251,8 +253,9 @@ describe('booking before an account (R97 (1))', () => {
 
   it('a claim is sealed to its purpose and runs out', async () => {
     const claim = {
-      v: 1 as const,
-      orgId,
+      v: 2 as const,
+      hostKind: 'org' as const,
+      hostId: orgId,
       itemId: 'cleaning',
       at: '2026-10-20T08:00:00.000Z',
       personId: noor.user.id,
@@ -485,5 +488,226 @@ describe('after booking before an account (C1b)', () => {
     } finally {
       t.clock.set(was.toISOString());
     }
+  });
+});
+
+/** The reminders queued for a card (C1c). */
+const remindersFor = (messageId: string) =>
+  t.ctx.db
+    .selectFrom('jobs')
+    .select(['run_at', 'done_at'])
+    .where('kind', '=', 'booking.remind')
+    .where(sql<boolean>`payload->>'messageId' = ${messageId}`)
+    .execute();
+
+describe('the day before, and a person’s page (C1c)', () => {
+  it('a confirmed booking is recalled the day before, once; not when cancelled or too close', async () => {
+    const was = t.ctx.now();
+    try {
+      // Wednesday 11:00 in Cairo, two days out: recalled on Tuesday at 11:00.
+      await bookAsVisitor('Dina Farag', 'dina@example.com', '2026-10-21T08:00:00.000Z');
+      const dina = await cardOf('Dina Farag');
+      await noor.req('POST', `/v1/messages/${dina.id}/kit`, { to: 'confirmed' });
+      await t.ctx.flush();
+      expect((await remindersFor(dina.id)).map((j) => j.run_at.toISOString())).toEqual([
+        '2026-10-20T08:00:00.000Z',
+      ]);
+      // Wednesday 11:30, confirmed then cancelled: its reminder finds nothing to say.
+      await bookAsVisitor('Eli Saad', 'eli@example.com', '2026-10-21T08:30:00.000Z');
+      const eli = await cardOf('Eli Saad');
+      await noor.req('POST', `/v1/messages/${eli.id}/kit`, { to: 'confirmed' });
+      await noor.req('POST', `/v1/messages/${eli.id}/kit`, { to: 'cancelled' });
+      // Tuesday 11:30, 26 and a half hours out: the confirmation is its own reminder.
+      await bookAsVisitor('Fay Nour', 'fay@example.com', '2026-10-20T08:30:00.000Z');
+      const fay = await cardOf('Fay Nour');
+      await noor.req('POST', `/v1/messages/${fay.id}/kit`, { to: 'confirmed' });
+      await t.ctx.flush();
+      expect(await remindersFor(fay.id)).toEqual([]);
+      const before = mail.outbox.length;
+      t.clock.set('2026-10-20T08:30:00Z');
+      await runDueJobs(t.ctx);
+      const sent = mail.outbox.slice(before);
+      const reminder = sent.find((m) => m.to === 'dina@example.com');
+      expect(reminder?.subject).toBe('Reminder: Cleaning with Nile Dental');
+      expect(reminder?.kind).toBe('booking');
+      expect(reminder?.text).toContain('Hi Dina,');
+      expect(reminder?.text).toMatch(/Wednesday,? 21 October 2026 at 11:00 \(Africa\/Cairo\)/);
+      expect(reminder?.text).toContain(
+        `https://caime.example/sign-up?link=${encodeURIComponent(`/c/${dina.conversationId}`)}`,
+      );
+      expect(reminder?.text).not.toContain('Noor');
+      expect(sent.filter((m) => m.to === 'eli@example.com')).toEqual([]);
+      expect(t.ctx.metrics.publicBookings.get({ outcome: 'reminded' })).toBe(1);
+      // Once: run again, nothing more.
+      await runDueJobs(t.ctx);
+      expect(mail.outbox.slice(before).filter((m) => m.to === 'dina@example.com')).toHaveLength(1);
+    } finally {
+      t.clock.set(was.toISOString());
+    }
+  });
+
+  it('a person’s public item is booked from their page as a message request; confirming answers it', async () => {
+    const lina = await signup(t, {
+      displayName: 'Lina Haddad',
+      handle: 'lina.tutor',
+      country: 'EG',
+    });
+    const set = await lina.req('PUT', '/v1/me/booking', {
+      booking: {
+        timeZone: 'Africa/Cairo',
+        slotMinutes: 30,
+        days: [1, 2, 3].map((weekday) => ({ weekday, start: '09:00', end: '12:00' })),
+        leadMinutes: 60,
+        horizonDays: 14,
+      },
+      items: [
+        {
+          id: 'lesson',
+          name: 'Lesson',
+          price: null,
+          unit: 'minutes',
+          minutes: 60,
+          capacity: 1,
+          maxQuantity: 1,
+          audience: 'public',
+          providers: null,
+          askTopic: false,
+        },
+      ],
+    });
+    expect(set.statusCode, set.body).toBe(200);
+    const itemPage = async (query = '') =>
+      (
+        await t.app.inject({
+          url: `/@lina.tutor/lesson${query}`,
+          headers: { accept: 'text/html' },
+        })
+      ).body;
+    const html = await itemPage();
+    expect(html).toContain('id="book"');
+    expect(html).toContain('name="host" value="lina.tutor"');
+    const slot = /name="slot" value="([^"]+)"/.exec(html)?.[1] as string;
+    expect(slot).toBeTruthy();
+    const start = await form('/v1/public/book', {
+      host: 'lina.tutor',
+      item: 'lesson',
+      slot,
+      name: 'Omar Visitor',
+      email: 'omar.visitor@example.com',
+      adult: 'on',
+    });
+    expect(start.headers.location).toMatch(/^\/@lina\.tutor\/lesson\?code=/);
+    const claim = paramOf(start.headers.location as string, 'code') as string;
+    await t.ctx.flush();
+    const done = await form('/v1/public/book/confirm', {
+      host: 'lina.tutor',
+      item: 'lesson',
+      claim,
+      code: codeFor('omar.visitor@example.com'),
+    });
+    expect(done.headers.location).toBe(`/@lina.tutor/lesson?booked=${claim}`);
+    expect(await itemPage(`?booked=${claim}`)).toContain(
+      'Lina Haddad confirms in your conversation',
+    );
+    await t.ctx.flush();
+    // In Lina's inbox: a message request holding the appointment, on her calendar meanwhile.
+    const inbox = await lina.get('/v1/inbox?view=all');
+    const row = inbox.conversations.find((c: any) => c.request === 'incoming');
+    expect(row, JSON.stringify(inbox.conversations)).toBeDefined();
+    const messages = await lina.get(`/v1/conversations/${row.id}/messages`);
+    const card = messages.messages.find((m: any) => m.kind === 'kit');
+    expect(card.payload.kit).toBe('appointment');
+    expect(card.payload.state).toBe('requested');
+    expect(card.payload.booking.hostId).toBe(lina.user.id);
+    expect(card.payload.fields.start.at).toBe(slot);
+    // Confirming it answers the request, and the booker hears by mail with the event.
+    const before = mail.outbox.length;
+    const moved = await lina.req('POST', `/v1/messages/${card.id}/kit`, { to: 'confirmed' });
+    expect(moved.statusCode, moved.body).toBe(200);
+    await t.ctx.flush();
+    const after = await lina.get('/v1/inbox?view=all');
+    const answered = after.conversations.find((c: any) => c.id === row.id);
+    expect(answered?.request).not.toBe('incoming');
+    expect(answered?.section).not.toBe('requests');
+    const told = mail.outbox.slice(before).find((m) => m.to === 'omar.visitor@example.com');
+    expect(told?.subject).toBe('Confirmed: Lesson with Lina Haddad');
+    expect(told?.icalEvent?.method).toBe('REQUEST');
+    expect(told?.text).toContain(
+      `https://caime.example/sign-up?link=${encodeURIComponent(`/c/${row.id}`)}`,
+    );
+  });
+
+  it('one request at a time, nobody who takes no requests, and never a minor', async () => {
+    const sami = await signup(t, {
+      displayName: 'Sami Tutor',
+      handle: 'sami.tutor',
+      country: 'EG',
+    });
+    const items = [
+      {
+        id: 'lesson',
+        name: 'Lesson',
+        price: null,
+        unit: 'minutes',
+        minutes: 30,
+        capacity: 1,
+        maxQuantity: 1,
+        audience: 'public',
+        providers: null,
+        askTopic: false,
+      },
+    ];
+    const hours = {
+      timeZone: 'Africa/Cairo',
+      slotMinutes: 30,
+      days: [1, 2, 3].map((weekday) => ({ weekday, start: '09:00', end: '12:00' })),
+      leadMinutes: 60,
+      horizonDays: 14,
+    };
+    await sami.req('PUT', '/v1/me/booking', { booking: hours, items });
+    const book = async (slot: string, email: string) => {
+      const start = await form('/v1/public/book', {
+        host: 'sami.tutor',
+        item: 'lesson',
+        slot,
+        name: 'Pia',
+        email,
+        adult: 'on',
+      });
+      const claim = paramOf(start.headers.location as string, 'code');
+      if (!claim) return start.headers.location as string;
+      await t.ctx.flush();
+      const done = await form('/v1/public/book/confirm', {
+        host: 'sami.tutor',
+        item: 'lesson',
+        claim,
+        code: codeFor(email),
+      });
+      return done.headers.location as string;
+    };
+    expect(await book('2026-10-20T07:00:00.000Z', 'pia@example.com')).toContain('booked=');
+    // Unanswered, a second booking waits for the first (R14: one message until they answer).
+    const again = await book('2026-10-20T08:00:00.000Z', 'pia@example.com');
+    expect(paramOf(again, 'book-error')).toBe('waiting');
+    // Someone who takes no message requests offers no form, and a post books nothing.
+    await sami.req('PUT', '/v1/me/privacy', { messageRequests: 'nobody' });
+    const closed = (
+      await t.app.inject({ url: '/@sami.tutor/lesson', headers: { accept: 'text/html' } })
+    ).body;
+    expect(closed).not.toContain('id="book"');
+    expect(paramOf(await book('2026-10-20T08:30:00.000Z', 'quinn@example.com'), 'book-error')).toBe(
+      'not_bookable',
+    );
+    // Under 18 (R29): never booked by a stranger, whatever the catalog says.
+    const row = await t.ctx.db
+      .selectFrom('users')
+      .selectAll()
+      .where('id', '=', sami.user.id)
+      .executeTakeFirstOrThrow();
+    const open = { ...row, privacy: { ...(row.privacy as object), messageRequests: 'everyone' } };
+    expect(visitorMayBook({ kind: 'person', row: open }, t.ctx.now())).toBe(true);
+    expect(
+      visitorMayBook({ kind: 'person', row: { ...open, birth_date: '2012-03-01' } }, t.ctx.now()),
+    ).toBe(false);
   });
 });

@@ -155,3 +155,95 @@ test('a visitor books from the item page with a code, and the team sees the requ
   await visitor.close();
   await team.close();
 });
+
+test('a visitor books a person’s lesson from their page, and confirming it answers the request', async ({
+  browser,
+}) => {
+  const suffix = Date.now().toString(36);
+  const host = await browser.newContext();
+  await apiSignUp(host, 'Lina Haddad', `lina.pb.${suffix}`);
+  const set = await host.request.put('/v1/me/booking', {
+    headers: CLIENT,
+    data: {
+      booking: {
+        timeZone: 'Africa/Cairo',
+        slotMinutes: 30,
+        days: [0, 1, 2, 3, 4, 5, 6].map((weekday) => ({ weekday, start: '00:00', end: '23:30' })),
+        leadMinutes: 0,
+        horizonDays: 14,
+      },
+      items: [
+        {
+          id: 'lesson',
+          name: 'Lesson',
+          price: null,
+          unit: 'minutes',
+          minutes: 30,
+          capacity: 1,
+          maxQuantity: 1,
+          audience: 'public',
+          providers: null,
+          askTopic: false,
+        },
+      ],
+    },
+  });
+  expect(set.ok(), await set.text()).toBe(true);
+
+  // A visitor, with no account, on Lina's lesson page as the server paints it.
+  const visitor = await browser.newContext();
+  const page = await visitor.newPage();
+  await page.goto(`/@lina.pb.${suffix}/lesson`);
+  await expect(visible(page, 'Book a time')).toBeVisible();
+  const email = `omar.pb.${suffix}@example.com`;
+  const slots = page.locator('input[name="slot"]');
+  const chosen = (await slots.first().getAttribute('value')) as string;
+  await slots.first().check();
+  await page.locator('input[name="name"]').fill('Omar Visitor');
+  await page.locator('input[name="email"]').fill(email);
+  await page.locator('input[name="adult"]').check();
+  await page.locator('#book button[type="submit"]').click();
+  await expect(visible(page, 'Check your email')).toBeVisible();
+  let code = '';
+  await expect
+    .poll(async () => {
+      code = /^(\d{6}) /.exec((await mailsTo(email)).at(-1)?.subject ?? '')?.[1] ?? '';
+      return code;
+    })
+    .toMatch(/^\d{6}$/);
+  await page.locator('input[name="code"]').fill(code);
+  await page.locator('#book button[type="submit"]').click();
+  await expect(visible(page, /Lina Haddad confirms in your conversation/)).toBeVisible();
+
+  // Lina, in the app: a message request holding the lesson; confirming it answers the request.
+  const inbox = await host.request.get('/v1/inbox?view=all', { headers: CLIENT });
+  type Row = { id: string; request: string | null };
+  const row = ((await inbox.json()) as { conversations: Row[] }).conversations.find(
+    (c) => c.request === 'incoming',
+  );
+  expect(row).toBeDefined();
+  const linaPage = await host.newPage();
+  await linaPage.goto(`/c/${row?.id}`);
+  await expect(linaPage.getByTestId('request-incoming').filter({ visible: true })).toBeVisible();
+  const card = linaPage.getByTestId('kit-appointment').filter({ hasText: 'Lesson', visible: true });
+  await expect(card).toBeVisible();
+  await card.getByRole('button', { name: 'Confirm', exact: true }).click();
+  await expect(linaPage.getByTestId('request-incoming').filter({ visible: true })).toHaveCount(0);
+  await expect
+    .poll(async () => (await mailsTo(email)).map((m) => m.subject))
+    .toContain('Confirmed: Lesson with Lina Haddad');
+  const told = (await mailsTo(email)).find((m) => m.subject.startsWith('Confirmed:'));
+  expect(told?.text).toContain('Lina Haddad confirmed your booking');
+  // The time she confirmed is the one the visitor chose.
+  const messages = await host.request.get(`/v1/conversations/${row?.id}/messages`, {
+    headers: CLIENT,
+  });
+  type Card = { kind: string; payload: { state: string; fields: { start: { at: string } } } };
+  const lesson = ((await messages.json()) as { messages: Card[] }).messages.find(
+    (m) => m.kind === 'kit',
+  );
+  expect(lesson?.payload.state).toBe('confirmed');
+  expect(lesson?.payload.fields.start.at).toBe(chosen);
+  await visitor.close();
+  await host.close();
+});

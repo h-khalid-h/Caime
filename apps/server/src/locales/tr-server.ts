@@ -1384,4 +1384,7 @@ export const turkishServer: Catalog = {
     'Bu adres için Caime’de bekleyen mesajlar var ve bu Caime, adresin size ait olduğunu kanıtlayan kodu henüz gönderemiyor. Başka bir adres kullanın ya da daha sonra yeniden deneyin.',
   'Messages are waiting for this address on Caime. We sent it a six-digit code: type it here to bring them into your account.':
     'Bu adres için Caime’de bekleyen mesajlar var. Adrese altı haneli bir kod gönderdik: mesajları hesabınıza almak için kodu buraya yazın.',
+  'That page': 'Bu sayfa',
+  'Your earlier booking here is still waiting for an answer. Join {site} with the same address to follow it.':
+    'Buradaki önceki rezervasyonunuz hâlâ yanıt bekliyor. Takip etmek için aynı adresle {site} hesabı açın.',
 };

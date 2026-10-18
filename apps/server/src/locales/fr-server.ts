@@ -1447,4 +1447,7 @@ export const frServer: Catalog = {
     'Des messages attendent cette adresse sur Caime, et ce Caime ne peut pas encore envoyer le code qui prouve qu’elle est à vous. Utilisez une autre adresse, ou réessayez plus tard.',
   'Messages are waiting for this address on Caime. We sent it a six-digit code: type it here to bring them into your account.':
     'Des messages attendent cette adresse sur Caime. Nous lui avons envoyé un code à six chiffres : saisissez-le ici pour les retrouver dans votre compte.',
+  'That page': 'Cette page',
+  'Your earlier booking here is still waiting for an answer. Join {site} with the same address to follow it.':
+    'Votre réservation précédente ici attend encore une réponse. Rejoignez {site} avec la même adresse pour la suivre.',
 };
