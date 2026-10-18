@@ -91,7 +91,7 @@ export default function Onboarding() {
   });
   const teamOrg = team.data?.invite.org.name ?? null;
 
-  const finish = async (next: '/' | '/connect' | '/connect?contacts=1' | 'link') => {
+  const finish = async (next: '/' | '/connect' | '/connect?contacts=1' | '/orgs/new' | 'link') => {
     setBusy(true);
     try {
       const res = await endpoints.updateMe({ onboarded: true });
@@ -326,6 +326,16 @@ export default function Onboarding() {
                     )
                   }
                   testID="onboarding-share"
+                />
+                {/* Here to answer customers (C2b): the organization is one tap away for whoever
+                    signed up directly, as for whoever came from the page for organizations. */}
+                <Button
+                  label={tr('Set up my organization')}
+                  variant="secondary"
+                  size="lg"
+                  block
+                  onPress={() => void finish('/orgs/new')}
+                  testID="onboarding-org"
                 />
                 <Button
                   label={tr('I’ll do it later')}

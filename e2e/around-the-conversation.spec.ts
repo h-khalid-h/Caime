@@ -728,9 +728,10 @@ test.describe
       await expect(facts).toContainText('Clinic or practice');
       await expect(page.getByTestId('org-unverified')).toBeVisible();
 
-      // Setting it up is its own screen (R57), reached from the page; the row says what's next.
+      // Setting it up is its own screen (R57), reached from the page; the row says what's next:
+      // hours first (C2b), so a clinic without a domain isn't stuck before it lets anyone in.
       const setup = page.getByTestId('org-setup');
-      await expect(setup).toContainText('Next: verify your domain');
+      await expect(setup).toContainText('Next: set bookable hours');
       await setup.click();
       await expect(page).toHaveURL(new RegExp(`/o/${handle.replaceAll('.', '\\.')}/setup$`));
       // A domain of its own each run: a verified domain belongs to one organization.

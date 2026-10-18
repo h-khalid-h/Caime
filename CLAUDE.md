@@ -332,7 +332,10 @@ appointment from a catalog).
   admins only; others get a line saying so): the door, `OrgVerification`, `OrgData`, `OrgBooking`,
   `OrgCheckout`, `OrgAgent`, `OrgApps` and `OrgPlan`, in a clinic's order. The page (`OrgScreen`)
   is the daily work (inbox, updates, spaces, team, insights) and offers the setup in one row
-  (`org-setup`) whose subtitle is `setupNextLine(org)` (`setupSteps.ts`: what's next). A new
+  (`org-setup`) whose subtitle is `setupNextLine(org)`: the first of `setupSteps` (`setupSteps.ts`:
+  hours, the team, the domain, an AI agent, in the order that lets customers in soonest, so DNS
+  never blocks the rest) not done, which the setup screen lists at its top. A new step joins that
+  list with its done test, never a line of its own. A new
   thing an organization configures goes on the setup screen, never on the page; a line both need
   lives in a small module of its own (`planLine.ts`), since a module two route chunks share moves
   into `__common` (`nextOrgPlanLine` cost 2.1 KB there).

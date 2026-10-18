@@ -4163,4 +4163,14 @@ export const turkish: Catalog = {
   'They answer for the organization, over 18.':
     'Kuruluş adına yanıt verirler; 18 yaşını doldurmuş olmaları gerekir.',
   'Or add people you’re connected with': 'Ya da bağlantıda olduğunuz kişileri ekleyin',
+  'Set up my organization': 'Kuruluşumu kur',
+  'Getting set up': 'Kurulum',
+  '{step}: done': '{step}: tamam',
+  '{step}: still to do': '{step}: yapılacak',
+  'Invite your team': 'Ekibinizi davet edin',
+  'The rest of the team': 'Ekibin geri kalanı',
+  'Next: invite your team': 'Sıradaki: ekibinizi davet edin',
+  'Your domain, verified': 'Doğrulanmış alan adınız',
+  'An AI agent that answers first': 'İlk yanıtı veren bir AI temsilcisi',
+  'Next: an AI agent that answers first': 'Sıradaki: ilk yanıtı veren bir AI temsilcisi',
 };

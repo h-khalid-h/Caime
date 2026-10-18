@@ -4338,4 +4338,14 @@ export const fr: Catalog = {
   'They answer for the organization, over 18.':
     'Ces personnes répondent au nom de l’organisation, à partir de 18 ans.',
   'Or add people you’re connected with': 'Ou ajoutez des personnes avec qui vous êtes en contact',
+  'Set up my organization': 'Créer mon organisation',
+  'Getting set up': 'Mise en place',
+  '{step}: done': '{step} : fait',
+  '{step}: still to do': '{step} : à faire',
+  'Invite your team': 'Invitez votre équipe',
+  'The rest of the team': 'Le reste de l’équipe',
+  'Next: invite your team': 'Ensuite : invitez votre équipe',
+  'Your domain, verified': 'Votre domaine, vérifié',
+  'An AI agent that answers first': 'Un agent IA qui répond en premier',
+  'Next: an AI agent that answers first': 'Ensuite : un agent IA qui répond en premier',
 };

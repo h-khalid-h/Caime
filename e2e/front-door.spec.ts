@@ -53,9 +53,21 @@ test('a closed day leaves the item page without times, and the door carries the 
   });
   expect(hours.ok(), await hours.text()).toBe(true);
 
-  // The setup: the door, and beside it the one item's own page to book from.
+  // The page says what's next: with hours, the rest of the team (C2b), before the domain.
   const page = await team.newPage();
+  await page.goto(`/o/${handle}`);
+  await expect(page.getByTestId('org-setup').filter({ visible: true })).toContainText(
+    'Next: invite your team',
+  );
+  // The setup's checklist: hours done, the team still to do, and its row opens the invites.
   await page.goto(`/o/${handle}/setup`);
+  const steps = page.getByTestId('setup-steps').filter({ visible: true });
+  await expect(steps.getByTestId('setup-step-hours')).toContainText('Done');
+  await expect(steps.getByTestId('setup-step-team')).not.toContainText('Done');
+  await steps.getByTestId('setup-step-team').click();
+  await expect(page.getByTestId('team-invite-make').filter({ visible: true })).toBeVisible();
+  await page.keyboard.press('Escape');
+  // The door, and beside it the one item's own page to book from.
   const book = page.getByTestId('org-door-book-link').filter({ visible: true });
   await expect(book).toContainText(`/o/${handle}/cleaning`);
   await expect(page.getByTestId('org-door-book-qr').filter({ visible: true })).toBeVisible();
@@ -115,6 +127,29 @@ test('Start free on the page for organizations lands a new owner on starting the
   const next = page.getByTestId('onboarding-link');
   await expect(next).toHaveText('Start your organization');
   await next.click();
+  await page.waitForURL((url) => url.pathname === '/orgs/new');
+  await owner.close();
+});
+
+test('someone who signs up directly sets up their organization from onboarding', async ({
+  browser,
+}) => {
+  const suffix = Date.now().toString(36);
+  const owner = await browser.newContext({
+    extraHTTPHeaders: { 'x-forwarded-for': '203.0.113.22' },
+  });
+  const page = await owner.newPage();
+  await page.goto('/sign-up');
+  await page.getByTestId('signup-name').fill('Sami Owner');
+  await page.getByTestId('signup-handle').fill(`sami.fd.${suffix}`);
+  await page.getByTestId('signup-email').fill(`sami.fd.${suffix}@example.com`);
+  await page.getByTestId('signup-password').fill('a long enough passphrase');
+  await page.getByTestId('signup-birth-date').fill('1985-02-11');
+  await expect(page.getByText('Available')).toBeVisible();
+  await page.getByTestId('signup-submit').click();
+  await page.waitForURL('**/onboarding');
+  await page.getByTestId('onboarding-rules-next').click();
+  await page.getByTestId('onboarding-org').click();
   await page.waitForURL((url) => url.pathname === '/orgs/new');
   await owner.close();
 });

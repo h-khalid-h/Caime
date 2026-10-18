@@ -2062,11 +2062,25 @@ graph) and the number that will show it; one that sharpens none is hygiene and s
       joins in one tap on onboarding and lands in the Business inbox; the owner's team list shows
       them without a reload). Mailing an invite live needs `SMTP_URL` (⛔ the owner's); links work
       without it.
-- [ ] C2–C3. The rest of the front door ("For me / For my organization" for whoever signs up
-      directly, a checklist that moves past DNS); domain auto-join for a verified organization
-      (C3b); space and group join links; invite-first sharing, and WhatsApp or SMS first on a
-      browser without a contact picker; "Copy guest link"; the iPhone "Add to Home Screen" card;
-      an expired-invite page; "Keep this" on the guest page.
+- [x] C2b. The front door's first steps, the rest (2026-10-18, review §1 H2, H4): someone who
+      signs up directly sets up their organization from onboarding's last step ("Set up my
+      organization", beside finding people), as whoever came from the page for organizations
+      does; and setting one up is a checklist that moves past DNS (`setupSteps`: bookable hours,
+      the rest of the team, the domain verified, an AI agent that answers first, each done or
+      not), so the page's "Set up" row says the first one still to take and a clinic without a
+      domain is never stuck before it lets customers in. The setup screen lists them at its top
+      ("Getting set up"); a tap goes to the step's section, and the team's opens C3a's invites
+      there. Sharpens adoption on the way in for advantages 2 and 3 (an owner reaches hours, the
+      Book link and the team without a domain). Verified with `setupSteps.test.ts` (the order, the
+      next line at each stage, the team counted by its people) and the E2E: `front-door.spec.ts`
+      (with hours set, the page says "Next: invite your team"; the checklist shows hours done and
+      the team to do, and its row opens the invites; a direct sign-up reaches `/orgs/new` from
+      onboarding) and `around-the-conversation.spec.ts` (a new organization's row says "Next: set
+      bookable hours", verified or not).
+- [ ] C2–C3. The rest of the front door: domain auto-join for a verified organization (C3b);
+      space and group join links; invite-first sharing, and WhatsApp or SMS first on a browser
+      without a contact picker; "Copy guest link"; the iPhone "Add to Home Screen" card; an
+      expired-invite page; "Keep this" on the guest page.
 - [ ] D. Performance and integrity: the aliased `selectAll` guard and its eleven sites; people
       lists through `personViewsFor` with a scale ceiling; `participants.last_sent_seq` for the
       inbox; a large-group mode and one transcript view; a `defer` semaphore and gauge; bus payload
@@ -3703,6 +3717,9 @@ graph) and the number that will show it; one that sharpens none is hygiene and s
   journeys, safety, reliability, performance, intelligence, mail and calendar, chat, integrations,
   business and code integrity; the matrix against WhatsApp, Signal, Slack, Calendly and Workspace;
   an age-assurance design; the integration framework mapped to the code; plan M16 (A–H).
+- 2026-10-18 — M16 C2b: a direct sign-up sets up their organization from onboarding; setting
+  one up is a checklist (hours, the team, the domain, an AI agent) whose next step never waits on
+  DNS.
 - 2026-10-18 — M16 C3a: team invites by link and by email. An owner or admin hands out a link
   (or sends one to an address) from the team's Add sheet; whoever opens it reads whose team it is
   without the app, signs up through it and joins in one tap; an emailed one is for whoever proves
