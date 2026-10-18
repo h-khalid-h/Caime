@@ -124,6 +124,13 @@ export async function sweepRecords(ctx: AppContext): Promise<void> {
       where least(coalesce(revoked_at, expires_at), expires_at) < ${before(KEPT_DAYS.spentInvites)}
       limit ${LOT} for update skip locked)`,
   );
+  // A join link (M16 C3e) the same way: run out or taken back, kept as long as an invite link.
+  await inLots(
+    ctx,
+    sql`delete from join_links where id in (select id from join_links
+      where least(coalesce(revoked_at, expires_at), expires_at) < ${before(KEPT_DAYS.spentInvites)}
+      limit ${LOT} for update skip locked)`,
+  );
   // A passkey ceremony nobody finished (R36): its challenge is no use after its few minutes.
   await inLots(
     ctx,

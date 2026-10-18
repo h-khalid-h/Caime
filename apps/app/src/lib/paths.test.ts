@@ -13,6 +13,7 @@ import {
   inviteIn,
   isAuthorizeLink,
   itemIn,
+  joinLinkIn,
   orderIn,
   ownLinkPath,
 } from './paths';
@@ -106,6 +107,16 @@ describe('paths from links', () => {
     expect(inviteIn('/i/short')).toBeNull();
     expect(inviteIn('/i/abcdefghijklmnopqrstuv/x')).toBeNull();
     expect(inviteIn('/@noor')).toBeNull();
+  });
+
+  it('says which group or space a join link opens (M16 C3e)', () => {
+    const token = `g_${'a'.repeat(43)}`;
+    expect(joinLinkIn(`/g/${token}`)).toBe(token);
+    expect(appPath(`/g/${token}`)).toBe(`/g/${token}`);
+    expect(joinLinkIn('/g/short')).toBeNull();
+    expect(joinLinkIn(`/g/${token}/x`)).toBeNull();
+    // A team invite's token is a team invite's, never a join link's.
+    expect(joinLinkIn(`/t/t_${'a'.repeat(43)}`)).toBeNull();
   });
 
   it('never gives anyone a handle that reads as one of the app’s own places (R35)', () => {

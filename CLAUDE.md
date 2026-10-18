@@ -387,6 +387,23 @@ appointment from a catalog).
   the members route and an invite both call it, and anything new that puts someone on a team
   does too. `managerSeat` lives beside it. Invites are in `buildOrgExport`, deleted by
   `clearClosedOrg`, and swept after `KEPT_DAYS.spentInvites` as invite links are.
+- Join links (M16 C3e, `lib/join-links.ts`, `modules/join-links.ts`): a group's or a space's
+  owner or admins make a link (`g_…`, shown once, kept as its hash, masked in the log, open core
+  `JOIN_LINK_DAYS`, `JOIN_LINKS_OPEN` at most) from its Add sheet (`features/join/JoinLinks.tsx`,
+  lazy everywhere) or from a group just made with nobody (`/new-group` opens `/c/<id>?invite=link`
+  on it). `/g/<token>` is a visitor's page (`publicJoinLink`: the place, its kind, how many, who
+  asks; never who is in it), `joinLinkIn` (`lib/paths.ts`) reads it, the `g/[token]` route asks
+  before joining, and onboarding joins someone who came through it in one tap (`joinPlaceVia`). A
+  link leads only where core `joinLinkFits` allows (a standard group of its own) or into an open
+  space, stops at `JOIN_LINK_ROOM`, and dies when its maker stops running the place
+  (`liveJoinLink`). Anyone joins a group only through `addToGroup` (`lib/group-members.ts`) and a
+  space through `addToSpace`, each under the place's row with a `vouch` (the members route's seat
+  check, or `claimJoinLink`); while a link is open nobody under 18 is added by either
+  (`assertNoMinorWhileLinkOpen`), only adults make or use one, none where anyone is under 18, and
+  every refusal reads the same whatever its reason (R29). A new way into a group or a space goes
+  through those two. An account made for a link counts as its maker's to have brought
+  (`invited_by`; `growth.joinLinks`). Links are in their maker's export and swept after
+  `KEPT_DAYS.spentInvites` as invite links are.
 - Reserved handles (R35) are `RESERVED_HANDLES` and `isReservedHandle` beside `Handle` in
   `packages/core/src/schemas.ts`: the product's names (also inside other handles), its
   characters, staff words, and the names of its pages, top-level screens and web-root files. A
@@ -1411,7 +1428,9 @@ appointment from a catalog).
   `handOverGroup`/`handOverGroups` in `lib/conversations.ts`), a query that wants the people who
   run something takes `MANAGING_ROLES`, and what only an organization's owner does (closing it,
   retention, making admins) is `ownsOrg` (`orgs.ts`). Anything new that checks a role calls one
-  of these, never `me.role` by hand; outside core a role is compared only to label it. The app's panel is
+  of these, never `me.role` by hand; outside core a role is compared only to label it. Anyone
+  comes into a group only through `addToGroup` (`lib/group-members.ts`: the members route and a
+  join link), which mirrors its topics and tells them (`tellTopics`). The app's panel is
   `features/conversation/GroupPeople.tsx` (loaded with the details).
 - Organizations' updates (PRD §59): `lib/updates.ts` and `modules/updates.ts`, in tables of their
   own (`org_updates`, `org_follows`), never conversations: nothing about following may reach the

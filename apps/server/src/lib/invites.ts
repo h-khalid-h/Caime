@@ -22,7 +22,7 @@ import { avatarUrl, minorOf, privacyOf } from './users';
 
 export const INVITE_DAYS = 30;
 /** How long after signing up a person is still counted as brought by whoever they connect with first. */
-const NEW_ACCOUNT_MS = 24 * 3_600_000;
+export const NEW_ACCOUNT_MS = 24 * 3_600_000;
 
 type Invite = Selectable<InvitesTable>;
 

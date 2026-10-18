@@ -120,6 +120,7 @@ export async function buildExport(ctx: AppContext, me: string, now: Date) {
     visible,
     customers,
     meetingInvitations,
+    joinLinks,
   ] = await Promise.all([
     // An organization's page is public; whose link a person followed is only counted (R29: it
     // could name someone under 18, or someone who can't be found).
@@ -897,6 +898,46 @@ export async function buildExport(ctx: AppContext, me: string, now: Date) {
       .where((eb) => eb.or([eb('g.user_id', '=', me), eb('g.invited_by', '=', me)]))
       .orderBy('g.created_at')
       .execute(),
+    // The join links you made (M16 C3e), with the place's name while you're still in it.
+    db
+      .selectFrom('join_links as l')
+      .leftJoin('conversations as c', 'c.id', 'l.conversation_id')
+      .leftJoin('spaces as s', 's.id', 'l.space_id')
+      .select([
+        'l.conversation_id',
+        'l.uses',
+        'l.expires_at',
+        'l.revoked_at',
+        'l.created_at',
+        'c.title as group_title',
+        's.name as space_name',
+      ])
+      .select((eb) =>
+        eb
+          .or([
+            eb.exists(
+              eb
+                .selectFrom('participants as p')
+                .select('p.user_id')
+                .whereRef('p.conversation_id', '=', 'l.conversation_id')
+                .where('p.user_id', '=', me)
+                .where('p.left_at', 'is', null),
+            ),
+            eb.exists(
+              eb
+                .selectFrom('space_members as m')
+                .select('m.user_id')
+                .whereRef('m.space_id', '=', 'l.space_id')
+                .where('m.user_id', '=', me)
+                .where('m.left_at', 'is', null),
+            ),
+          ])
+          .as('still_in'),
+      )
+      .where('l.created_by', '=', me)
+      .orderBy('l.created_at')
+      .orderBy('l.id')
+      .execute(),
   ]);
   const person = (name: string | null, handle: string | null) =>
     name === null ? null : { displayName: name, handle };
@@ -1357,6 +1398,16 @@ export async function buildExport(ctx: AppContext, me: string, now: Date) {
       role: sp.role,
       joinedAt: sp.joined_at.toISOString(),
       leftAt: iso(sp.left_at),
+    })),
+    // The join links you made (M16 C3e): where each led while you're in it, how many joined
+    // through it (never who), and when it ran out or was taken back; never its token.
+    joinLinks: joinLinks.map((l) => ({
+      to: l.conversation_id ? 'group' : 'space',
+      name: l.still_in ? (l.group_title ?? l.space_name) : null,
+      joined: l.uses,
+      expiresAt: l.expires_at.toISOString(),
+      takenBackAt: iso(l.revoked_at),
+      at: l.created_at.toISOString(),
     })),
     meetingInvitations: meetingInvitations.map((g) => ({
       meetingSpaceId: g.conversation_id,

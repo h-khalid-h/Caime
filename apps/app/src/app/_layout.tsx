@@ -22,7 +22,7 @@ import { ScreenToasts } from '@/features/shell/ScreenToasts';
 import { isWeb } from '@/lib/config';
 import { loadLanguage, useLanguage } from '@/lib/i18n';
 import { keepAppForOffline } from '@/lib/offline';
-import { handleIn, inviteIn, teamInviteIn } from '@/lib/paths';
+import { handleIn, inviteIn, joinLinkIn, teamInviteIn } from '@/lib/paths';
 import { useOutbox } from '@/state/outbox';
 import { useRememberLinks } from '@/state/pendingLink';
 import { useSession } from '@/state/session';
@@ -43,7 +43,12 @@ export const ErrorBoundary = ScreenError;
 function onPublicPage(): boolean {
   if (typeof document === 'undefined' || typeof window === 'undefined') return false;
   const path = window.location.pathname;
-  if (handleIn(path) === null && inviteIn(path) === null && teamInviteIn(path) === null)
+  if (
+    handleIn(path) === null &&
+    inviteIn(path) === null &&
+    teamInviteIn(path) === null &&
+    joinLinkIn(path) === null
+  )
     return false;
   const kind = document.querySelector('meta[name="caime-page"]')?.getAttribute('content');
   return (
@@ -52,7 +57,8 @@ function onPublicPage(): boolean {
     kind === 'item' ||
     kind === 'collection' ||
     kind === 'invite' ||
-    kind === 'team-invite'
+    kind === 'team-invite' ||
+    kind === 'join-link'
   );
 }
 

@@ -64,6 +64,21 @@ export function minorOf(user: Pick<User, 'birth_date' | 'time_zone'>, now: Date)
   return isMinor(user.birth_date, now, user.time_zone);
 }
 
+/** Whether anyone among these people is under 18 (R29), in one query. */
+export async function anyMinor(
+  db: Kysely<Database> | Transaction<Database>,
+  userIds: string[],
+  now: Date,
+): Promise<boolean> {
+  if (!userIds.length) return false;
+  const people = await db
+    .selectFrom('users')
+    .select(['birth_date', 'time_zone'])
+    .where('id', 'in', userIds)
+    .execute();
+  return people.some((u) => minorOf(u, now));
+}
+
 export function privacyOf(
   user: Pick<User, 'privacy' | 'birth_date' | 'time_zone'>,
   now: Date,

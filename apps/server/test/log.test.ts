@@ -47,6 +47,20 @@ describe('what a request says of itself in the log', () => {
     expect(requestForLog({ method: 'GET', url: list }).url).toBe(list);
   });
 
+  it('never a join link’s token, which lets whoever has it into a group or a space (M16 C3e)', () => {
+    const token = `g_${'Qm9vay1hLXRhYmxl'.repeat(2)}LWZvci10d28Ab`;
+    expect(requestForLog({ method: 'GET', url: `/g/${token}?lang=fr` }).url).toBe('/g/…');
+    expect(requestForLog({ method: 'GET', url: `/v1/join-links/${token}` }).url).toBe(
+      '/v1/join-links/…',
+    );
+    expect(requestForLog({ method: 'POST', url: `/v1/join-links/${token}/accept` }).url).toBe(
+      '/v1/join-links/…/accept',
+    );
+    // A place's own list of them names no token.
+    const list = '/v1/conversations/0d6c1a9e-1111-4222-8333-444455556666/join-links';
+    expect(requestForLog({ method: 'GET', url: list }).url).toBe(list);
+  });
+
   it('never a meeting guest’s link, which is their way in (R84)', () => {
     const token = 'cmg_Qm9vay1hLXRhYmxlLWZvci10d28';
     expect(requestForLog({ method: 'GET', url: `/j/${token}` }).url).toBe('/j/…');

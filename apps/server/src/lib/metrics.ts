@@ -151,6 +151,11 @@ export function createMetrics(pool: pg.Pool) {
       'caime_public_bookings_total',
       'Bookings before an account, by outcome (a code sent, booked, or why not).',
     ),
+    // Join links (M16 C3e): made, and joined through, by group or space.
+    joinLinks: new Counter(
+      'caime_join_links_total',
+      'Join links made and joined through, by target (group, space) and outcome.',
+    ),
     // The outbox (A3): what the sweep did about effects the fast path never finished.
     effects: new Counter(
       'caime_message_effects_total',

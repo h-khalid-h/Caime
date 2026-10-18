@@ -159,7 +159,7 @@ test('the signed-in screens, phone and desktop, in every interface language', as
   expect(report(found)).toEqual([]);
 });
 
-test('what a visitor gets: the landing page, the site, entry screens, a person, an organization and a meeting guest’s link', async ({
+test('what a visitor gets: the landing page, the site, entry screens, a person, an organization, a meeting guest’s link and a join link', async ({
   browser,
 }) => {
   test.setTimeout(180_000);
@@ -261,6 +261,29 @@ test('what a visitor gets: the landing page, the site, entry screens, a person, 
   ] as const) {
     await page.goto(path);
     await expect(page.getByTestId('join-form')).toBeVisible();
+    await audit(page, name, found);
+  }
+
+  // A link to join a group (M16 C3e), as someone without an account opens it.
+  const circle = (await (
+    await maker.request.post('/v1/conversations', {
+      headers: CLIENT,
+      data: { kind: 'group', title: 'Reading circle' },
+    })
+  ).json()) as { conversation: { id: string } };
+  const joinLink = (await (
+    await maker.request.post(`/v1/conversations/${circle.conversation.id}/join-links`, {
+      headers: CLIENT,
+      data: {},
+    })
+  ).json()) as { url: string };
+  const joinPath = new URL(joinLink.url).pathname;
+  for (const [path, name] of [
+    [joinPath, 'join link'],
+    [`${joinPath}?lang=ar`, 'join link (ar)'],
+  ] as const) {
+    await page.goto(path);
+    await expect(page.getByRole('heading', { level: 1 })).toBeVisible();
     await audit(page, name, found);
   }
   await other.close();

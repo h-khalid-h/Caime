@@ -28,9 +28,16 @@ export default function NewGroup() {
   const [picked, setPicked] = useState<Set<string>>(new Set());
   const [privacy, setPrivacy] = useState<'standard' | 'private'>('standard');
   const [busy, setBusy] = useState(false);
+  // A standard group may start with nobody: its people come in by the link it opens on (M16 C3e).
+  const byLink = picked.size === 0 && privacy === 'standard';
   const create = async () => {
-    if (!title.trim() || picked.size === 0) {
-      toast(tr('Name the group and add at least one person.'));
+    if (!title.trim()) {
+      toast(tr('Name the group.'));
+      return;
+    }
+    // A private group starts with its people: each message is sealed for their devices.
+    if (picked.size === 0 && !byLink) {
+      toast(tr('Add at least one person.'));
       return;
     }
     setBusy(true);
@@ -41,7 +48,10 @@ export default function NewGroup() {
         purpose.trim() || undefined,
         { private: privacy === 'private' },
       );
-      router.replace({ pathname: '/c/[id]', params: { id: conversation.id } });
+      router.replace({
+        pathname: '/c/[id]',
+        params: byLink ? { id: conversation.id, invite: 'link' } : { id: conversation.id },
+      });
     } catch (e) {
       toast((e as Error).message, { tone: 'danger' });
     } finally {
@@ -109,7 +119,14 @@ export default function NewGroup() {
           {tr('People · {size} chosen', { size: picked.size })}
         </Text>
         <PeoplePicker picked={picked} onToggle={(id) => setPicked((p) => toggled(p, id))} />
-        <Button label={tr('Create group')} size="lg" block onPress={create} loading={busy} />
+        <Button
+          label={byLink ? tr('Create, then invite with a link') : tr('Create group')}
+          size="lg"
+          block
+          onPress={create}
+          loading={busy}
+          testID="new-group-create"
+        />
       </ScrollView>
     </Screen>
   );

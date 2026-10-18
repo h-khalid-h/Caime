@@ -74,7 +74,6 @@ export const turkish: Catalog = {
     'Bu davetin süresi dolmuş ya da geri alınmış. Yeni bir bağlantı isteyin veya @kullanıcıadı ile bulun.',
   'That isn’t an invite link.': 'Bu bir davet bağlantısı değil.',
   'Nothing to open': 'Açılacak bir şey yok',
-  'Name the group and add at least one person.': 'Gruba ad verin ve en az bir kişi ekleyin.',
   'New group': 'Yeni grup',
   'Group name': 'Grup adı',
   'Weekend hikers, Q3 launch…': 'Hafta sonu yürüyüşçüleri, Q3 lansmanı…',
@@ -4186,4 +4185,39 @@ export const turkish: Catalog = {
   'Invite on WhatsApp': 'WhatsApp’ta davet et',
   'Text an invite': 'SMS ile davet et',
   'Your link, to whoever you choose': 'Bağlantınız, seçtiğiniz kişiye',
+  'You joined “{place}”': 'Katıldınız: “{place}”',
+  'This link has run out, or was taken back. Ask whoever sent it for a new one.':
+    'Bu bağlantının süresi dolmuş ya da geri alınmış. Gönderen kişiden yenisini isteyin.',
+  '{name} invites you to “{place}”': '{name} sizi davet ediyor: “{place}”',
+  'Join “{place}”': 'Katılın: “{place}”',
+  space: 'alan',
+  group: 'grup',
+  people: 'kişiler',
+  'You’re in “{place}” already.': 'Zaten buradasınız: “{place}”.',
+  'Open it': 'Açın',
+  'You read what was said there before you came, and its people see your name.':
+    'Siz gelmeden önce orada söylenenleri okursunuz; oradakiler de adınızı görür.',
+  'Join the space': 'Alana katılın',
+  'Join the group': 'Gruba katılın',
+  'Invite with a link': 'Bağlantıyla davet et',
+  'Post it where its people already are: whoever opens it joins the space, over 18, and reads what was said before. It stays open {n} days.':
+    {
+      one: 'İnsanlarının zaten bulunduğu yerde paylaşın: açan, 18 yaşını doldurmuşsa alana katılır ve önceden söylenenleri okur. {n} gün açık kalır.',
+      other:
+        'İnsanlarının zaten bulunduğu yerde paylaşın: açan, 18 yaşını doldurmuşsa alana katılır ve önceden söylenenleri okur. {n} gün açık kalır.',
+    },
+  'Post it where its people already are: whoever opens it joins the group, over 18, and reads what was said before. It stays open {n} days.':
+    {
+      one: 'İnsanlarının zaten bulunduğu yerde paylaşın: açan, 18 yaşını doldurmuşsa gruba katılır ve önceden söylenenleri okur. {n} gün açık kalır.',
+      other:
+        'İnsanlarının zaten bulunduğu yerde paylaşın: açan, 18 yaşını doldurmuşsa gruba katılır ve önceden söylenenleri okur. {n} gün açık kalır.',
+    },
+  'Join “{place}” on Caime': 'Caime’de katılın: “{place}”',
+  'A link from {name}': '{name} tarafından bir bağlantı',
+  'Create, then invite with a link': 'Oluştur, sonra bağlantıyla davet et',
+  'You came to join “{place}”: it opens next, with what was said there before. Find others by @handle or email any time.':
+    'Katılmak için geldiniz: “{place}” şimdi, önceden söylenenlerle birlikte açılacak. Başkalarını istediğiniz zaman @kullanıcıadı veya e-postayla bulun.',
+  'You came to join a group: it opens next. Find others by @handle or email any time.':
+    'Bir gruba katılmak için geldiniz: şimdi açılacak. Başkalarını istediğiniz zaman @kullanıcıadı veya e-postayla bulun.',
+  '{by} made a link to join': 'Katılma bağlantısı oluşturan: {by}',
 };

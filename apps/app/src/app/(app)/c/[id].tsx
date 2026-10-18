@@ -2,7 +2,7 @@ import { useLocalSearchParams } from 'expo-router';
 import { ConversationScreen } from '@/features/conversation/ConversationScreen';
 
 export default function Conversation() {
-  const { id, seq, book, order, pay, item, checkout, say, join } = useLocalSearchParams<{
+  const { id, seq, book, order, pay, item, checkout, say, join, invite } = useLocalSearchParams<{
     id: string;
     seq?: string;
     book?: string;
@@ -12,6 +12,7 @@ export default function Conversation() {
     checkout?: string;
     say?: string;
     join?: string;
+    invite?: string;
   }>();
   const focusSeq = seq && /^\d+$/.test(seq) ? Number(seq) : undefined;
   // `?book` (R58) and `?order` (R60): opened on that card's form; `?item` (R61) chosen in it.
@@ -36,6 +37,8 @@ export default function Conversation() {
       say={say ? say.slice(0, 1000) : null}
       // `?join` (R83): a meeting's card to join, from the calendar or a calendar app.
       join={join && /^[0-9a-f-]{36}$/i.test(join) ? join : null}
+      // `?invite=link` (M16 C3e): a group just made with nobody yet, opened on its join link.
+      inviteLink={invite === 'link'}
       key={`${id}:${seq ?? ''}`}
     />
   );

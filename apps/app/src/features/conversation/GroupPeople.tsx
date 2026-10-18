@@ -6,7 +6,7 @@
  */
 import type { ConversationView, ParticipantView } from '@caime/core/api';
 import { tr, trn } from '@caime/core/i18n';
-import { handsOverOnLeaving } from '@caime/core/permissions';
+import { handsOverOnLeaving, joinLinkFits } from '@caime/core/permissions';
 import {
   canChangeSpaceRole,
   canManageSpace,
@@ -43,6 +43,7 @@ import { TextField } from '@/ui/TextField';
 import { toast } from '@/ui/Toast';
 
 /** Loaded when it's shown: shared by several screens, needed by none at first. */
+const JoinLinks = lazyPart(() => import('@/features/join/JoinLinks').then((m) => m.JoinLinks));
 const PeoplePicker = lazyPart(() =>
   import('@/features/people/PeoplePicker').then((m) => m.PeoplePicker),
 );
@@ -84,6 +85,18 @@ export function GroupPeople({
   const [busy, setBusy] = useState(false);
   const people = conversation.participants;
   const inIt = new Set(people.map((p) => p.userId));
+  // A link that lets anyone in (M16 C3e): a standalone group's, never with someone under 18 in
+  // it (R29) or a meeting's guests, offered to whoever runs it.
+  const linkable =
+    manager &&
+    joinLinkFits({
+      kind: conversation.kind,
+      privacyClass: conversation.privacyClass,
+      parentId: conversation.parentId,
+      spaceId: conversation.space?.id ?? null,
+    }) &&
+    !conversation.hasMinor &&
+    !people.some((p) => p.person.kind === 'provisional');
   const space = useSpace(spaceOf && adding ? spaceOf.id : '');
   const refresh = () => {
     void qc.invalidateQueries({ queryKey: qk.conversation(conversation.id) });
@@ -293,6 +306,9 @@ export function GroupPeople({
           />
         }
       >
+        {linkable ? (
+          <JoinLinks target="group" id={conversation.id} name={conversation.title} />
+        ) : null}
         <View style={{ marginHorizontal: -4 }}>
           <PeoplePicker
             picked={picked}

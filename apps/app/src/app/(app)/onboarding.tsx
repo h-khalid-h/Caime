@@ -10,7 +10,7 @@ import { qk } from '@/api/keys';
 import { Character } from '@/brand/Character';
 import { handleLink } from '@/lib/config';
 import { useRtl } from '@/lib/direction';
-import { doorIn, handleIn, inviteIn, isAuthorizeLink, teamInviteIn } from '@/lib/paths';
+import { doorIn, handleIn, inviteIn, isAuthorizeLink, joinLinkIn, teamInviteIn } from '@/lib/paths';
 import { shareLink } from '@/lib/share';
 import { peekLink, takeLink } from '@/state/pendingLink';
 import { useMe, useSession } from '@/state/session';
@@ -61,7 +61,9 @@ export default function Onboarding() {
   const forOrg = pending === '/orgs/new';
   // Came through a team invite (C3a): the last step joins the team and opens its inbox.
   const teamToken = teamInviteIn(pending);
-  const linked = Boolean(linkHandle || inviteToken || forApp || forOrg || teamToken);
+  // Came through a link to join a group or a space (C3e): the last step joins and opens it.
+  const joinToken = joinLinkIn(pending);
+  const linked = Boolean(linkHandle || inviteToken || forApp || forOrg || teamToken || joinToken);
   // Two steps, how Caime works and your people; someone who came for a person, an organization
   // or an app goes straight to it (R56). The recovery codes wait on Chats, not here.
   const steps = (['rules', 'people'] as const).filter((x) => x !== 'rules' || !linked);
@@ -90,6 +92,13 @@ export default function Onboarding() {
     retry: false,
   });
   const teamOrg = team.data?.invite.org.name ?? null;
+  const joining = useQuery({
+    queryKey: qk.groupLink(joinToken ?? ''),
+    queryFn: () => endpoints.openJoinLink(joinToken ?? ''),
+    enabled: joinToken !== null,
+    retry: false,
+  });
+  const joinPlace = joining.data?.link.name ?? null;
 
   const finish = async (next: '/' | '/connect' | '/connect?contacts=1' | '/orgs/new' | 'link') => {
     setBusy(true);
@@ -119,6 +128,25 @@ export default function Onboarding() {
       useSession.getState().setUser(res.user);
       router.replace('/');
       const then = joined ? `/o/${joined.handle}/inbox` : link;
+      if (then) setTimeout(() => router.push(then), 0);
+    } catch (e) {
+      toast((e as Error).message, { tone: 'danger' });
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  // Joined in one tap and opened; anything in the way (run out, taken back, under 18) is said by
+  // the link's own screen, which opens instead.
+  const joinPlaceVia = async (token: string) => {
+    setBusy(true);
+    try {
+      const joined = await endpoints.acceptJoinLink(token).catch(() => null);
+      const res = await endpoints.updateMe({ onboarded: true });
+      const link = takeLink();
+      useSession.getState().setUser(res.user);
+      router.replace('/');
+      const then = joined ? `/c/${joined.conversationId}` : link;
       if (then) setTimeout(() => router.push(then), 0);
     } catch (e) {
       toast((e as Error).message, { tone: 'danger' });
@@ -261,25 +289,34 @@ export default function Onboarding() {
                         : tr(
                             'You came to join a team: its conversations with customers will be in your Business inbox. Find people by @handle or email any time.',
                           )
-                      : doorHandle
-                        ? tr(
-                            'You came here to write to {name}: open the conversation and say what you need. Find others by @handle or email any time.',
-                            { name: doorName ?? `@${doorHandle}` },
-                          )
-                        : linkHandle
+                      : joinToken
+                        ? joinPlace
                           ? tr(
-                              'You came here for @{linkHandle}. Find others by @handle or email any time.',
-                              { linkHandle },
+                              'You came to join “{place}”: it opens next, with what was said there before. Find others by @handle or email any time.',
+                              { place: joinPlace },
                             )
-                          : inviteToken
+                          : tr(
+                              'You came to join a group: it opens next. Find others by @handle or email any time.',
+                            )
+                        : doorHandle
+                          ? tr(
+                              'You came here to write to {name}: open the conversation and say what you need. Find others by @handle or email any time.',
+                              { name: doorName ?? `@${doorHandle}` },
+                            )
+                          : linkHandle
                             ? tr(
-                                '{inviter} invited you: open the conversation and you’re connected. Find others by @handle or email any time.',
-                                { inviter: inviter ?? tr('Someone') },
+                                'You came here for @{linkHandle}. Find others by @handle or email any time.',
+                                { linkHandle },
                               )
-                            : tr(
-                                'Find them in your contacts, by @handle or email, or share your link: @{handle}',
-                                { handle: me.handle },
-                              )}
+                            : inviteToken
+                              ? tr(
+                                  '{inviter} invited you: open the conversation and you’re connected. Find others by @handle or email any time.',
+                                  { inviter: inviter ?? tr('Someone') },
+                                )
+                              : tr(
+                                  'Find them in your contacts, by @handle or email, or share your link: @{handle}',
+                                  { handle: me.handle },
+                                )}
               </Text>
             </View>
             {linked ? (
@@ -293,18 +330,28 @@ export default function Onboarding() {
                         ? teamOrg
                           ? tr('Join {org}’s team', { org: teamOrg })
                           : tr('Join the team')
-                        : inviteToken
-                          ? tr('Open the conversation with {inviter}', {
-                              inviter: inviter ?? 'them',
-                            })
-                          : doorHandle
-                            ? tr('Write to {name}', { name: doorName ?? `@${doorHandle}` })
-                            : tr('See @{linkHandle}', { linkHandle })
+                        : joinToken
+                          ? joinPlace
+                            ? tr('Join “{place}”', { place: joinPlace })
+                            : tr('Join the group')
+                          : inviteToken
+                            ? tr('Open the conversation with {inviter}', {
+                                inviter: inviter ?? 'them',
+                              })
+                            : doorHandle
+                              ? tr('Write to {name}', { name: doorName ?? `@${doorHandle}` })
+                              : tr('See @{linkHandle}', { linkHandle })
                 }
                 size="lg"
                 block
                 loading={busy}
-                onPress={() => void (teamToken ? joinTeam(teamToken) : finish('link'))}
+                onPress={() =>
+                  void (teamToken
+                    ? joinTeam(teamToken)
+                    : joinToken
+                      ? joinPlaceVia(joinToken)
+                      : finish('link'))
+                }
                 testID="onboarding-link"
               />
             ) : null}

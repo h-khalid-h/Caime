@@ -81,6 +81,7 @@ import { healthRoutes } from './modules/health';
 import { importRoutes } from './modules/imports';
 import { inboxRoutes } from './modules/inbox';
 import { inviteRoutes } from './modules/invites';
+import { joinLinkRoutes } from './modules/join-links';
 import { kitRoutes } from './modules/kits';
 import { mailRoutes } from './modules/mail';
 import { meRoutes } from './modules/me';
@@ -346,6 +347,7 @@ export async function buildApp(config: Config, options: BuildOptions = {}): Prom
       await spaceRoutes(v1, ctx);
       await orgRoutes(v1, ctx);
       await teamInviteRoutes(v1, ctx);
+      await joinLinkRoutes(v1, ctx);
       await handleRoutes(v1, ctx);
       await businessRoutes(v1, ctx);
       await updateRoutes(v1, ctx);

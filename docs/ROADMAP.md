@@ -2122,8 +2122,49 @@ graph) and the number that will show it; one that sharpens none is hygiene and s
       after a reload, and the sheet offers WhatsApp and a text). The condition of the switch
       (making it cheap), not an advantage: its number is the connections made through invite
       links in a new person's first week.
+- [x] C3e. Join links for groups and spaces (2026-10-18, review §1 H5: a group couldn't be
+      brought over, since a group or a space took only its members' connections, one by one). Now
+      a group's or a space's owner or admins make a link from its Add sheet (`g_…`, shown once,
+      kept as its hash, open thirty days, ten open at most) to post where its people already are,
+      and a group may start with nobody: "Create, then invite with a link" opens it on its link.
+      Whoever opens `/g/<token>` without an account reads a page without the app (the place, its
+      kind, how many are in it, who asks; never who is in it, nothing said there), signs up
+      through it and joins in one tap on onboarding's last step; signed in, the link's screen asks
+      before joining. They land in the group, or the space's General, reading what was said
+      before (both pages say so), and its people see "… joined". A link leads only into a
+      standard group of its own (never a topic, a space's conversation, a private group or a
+      meeting's group, core `joinLinkFits`) or an open space, stops at 256 people, and dies when
+      it runs out, is taken back, or its maker stops running the place. Under 18 (R29), whoever
+      comes in by a link is a stranger to the people there, as a meeting's guest is: only adults
+      make or use one, none where someone under 18 is, and while one is open nobody under 18 is
+      added by any path; blocks either way with its maker, or by anyone in it, keep someone out;
+      every refusal reads the same whatever the reason. Anyone joins a group only through
+      `addToGroup` and a space through `addToSpace`, each under the place's row with what vouches
+      for them (the seat that adds, or the link claimed then), so two taps count one join. An
+      account made for the link is its maker's to have brought (`invited_by`), counted with links
+      made and joins in `growth.joinLinks` and `caime_join_links_total`. Verified with
+      `join-links.test.ts` (18: who makes, lists and takes back; the hash alone; the visitor page
+      with no names, no history and no script; a stranger in with one tap, into its topics and
+      its history, twice once; an older account brought by no one; taken back, run out and swept,
+      the maker demoted; never a private group, a topic, a space's conversation or a meeting's
+      group; ten open and the room; a group with nobody yet; under 18 in the same words with
+      nothing written, both add routes refusing a minor while a link is open, no link where one
+      is; three kinds of block; a space into General as a member; an organization's space in its
+      name, archived dead; the export without tokens or names; the product metrics' three
+      deltas; the page 7 queries and a join 40, the same with two in it or twenty-three),
+      `permissions.test.ts`, `log.test.ts`, and the E2E `join-links.spec.ts` (an empty group opens
+      on its link; a fresh browser reads the page without the app, signs up, joins in one tap and
+      reads what was said before while the owner sees them come in; a space's link from its Add
+      sheet, opened signed in, asks first and lands in General) and `a11y.spec.ts` (the page, in
+      English and Arabic). The link panel and the accept screen load apart; the startup chunk is
+      448.7 KB (448.4 before). The condition of the switch (moving a group over costs one message),
+      not an advantage: its number is `growth.joinLinks.newPeople`, the accounts made for a link
+      that joined through it. Not built: approval before joining (the review's optional half,
+      and R97 (3)'s way to let someone under 18 in on an adult's acceptance: until it comes, a
+      link refuses them, stricter than R97 asks), and the importer's groups and iPhone `.zip`
+      (H5's other half).
 - [ ] C2–C3. The rest of the front door: domain auto-join for a verified organization (C3b);
-      space and group join links; "Keep this" on the guest page.
+      "Keep this" on the guest page; a join link's approval; the importer's groups and `.zip`.
 - [ ] D. Performance and integrity: the aliased `selectAll` guard and its eleven sites; people
       lists through `personViewsFor` with a scale ceiling; `participants.last_sent_seq` for the
       inbox; a large-group mode and one transcript view; a `defer` semaphore and gauge; bus payload
@@ -3760,6 +3801,11 @@ graph) and the number that will show it; one that sharpens none is hygiene and s
   journeys, safety, reliability, performance, intelligence, mail and calendar, chat, integrations,
   business and code integrity; the matrix against WhatsApp, Signal, Slack, Calendly and Workspace;
   an age-assurance design; the integration framework mapped to the code; plan M16 (A–H).
+- 2026-10-18 — M16 C3e: join links for groups and spaces. Its owner or admins post one where
+  its people already are; whoever opens it reads where it leads without the app, signs up and
+  joins in one tap, reading what was said before; adults only, none where anyone is under 18,
+  and nobody under 18 added while one is open. One way into a group (`addToGroup`) and one into
+  a space (`addToSpace`). C3c and C3d live on cai.me (`3b573a9`).
 - 2026-10-18 — Correction: production has sent mail through Postmark's SMTP since the owner set
   `SMTP_URL` on 2026-10-14 (logged that day), so the ⛔ "needs `SMTP_URL`" this log and C1a–C1c,
   C3a and C3c carried since was wrong when written. Checked from here without a credential: the

@@ -1046,14 +1046,20 @@ export const CreateConversationBody = z.discriminatedUnion('kind', [
     /** End to end encrypted (R18): a conversation of its own with the same person. */
     private: z.boolean().optional(),
   }),
-  z.object({
-    kind: z.literal('group'),
-    title: z.string().trim().min(1, msg('Name the group.')).max(80),
-    purpose: z.string().trim().max(200).optional(),
-    memberIds: z.array(z.string().uuid()).min(1, msg('Add at least one person.')).max(255),
-    /** End to end encrypted (R18). */
-    private: z.boolean().optional(),
-  }),
+  z
+    .object({
+      kind: z.literal('group'),
+      title: z.string().trim().min(1, msg('Name the group.')).max(80),
+      purpose: z.string().trim().max(200).optional(),
+      /** Nobody yet makes a group to be joined by its link (M16 C3e). */
+      memberIds: z.array(z.string().uuid()).max(255).default([]),
+      /** End to end encrypted (R18): its people are chosen, so it starts with them. */
+      private: z.boolean().optional(),
+    })
+    .refine((b) => !b.private || b.memberIds.length > 0, {
+      message: msg('Add at least one person.'),
+      path: ['memberIds'],
+    }),
 ]);
 
 /** A topic started from a conversation (PRD §58): its subject, as its name. */

@@ -8,6 +8,8 @@ import {
   canRemoveFromGroup,
   canRemoveOthersMessages,
   handsOverOnLeaving,
+  JOIN_LINK_ROOM,
+  joinLinkFits,
   MANAGING_ROLES,
   minorMayWriteToOrg,
 } from './permissions';
@@ -62,5 +64,19 @@ describe('conversation permissions (convention 4)', () => {
     expect(minorMayWriteToOrg(true, false)).toBe(false);
     expect(minorMayWriteToOrg(true, true)).toBe(true);
     expect(minorMayWriteToOrg(false, false)).toBe(true);
+  });
+
+  it('a join link leads only into a standard group of its own (M16 C3e)', () => {
+    const group = { kind: 'group', privacyClass: 'standard', parentId: null, spaceId: null };
+    expect(joinLinkFits(group)).toBe(true);
+    // Sealed for the devices its people chose; a topic has its group's people; a space's
+    // conversation, its space's (whose own link is the way in); a one-to-one is two people.
+    expect(joinLinkFits({ ...group, privacyClass: 'private' })).toBe(false);
+    expect(joinLinkFits({ ...group, parentId: 'g' })).toBe(false);
+    expect(joinLinkFits({ ...group, spaceId: 's' })).toBe(false);
+    expect(joinLinkFits({ ...group, kind: 'direct' })).toBe(false);
+    expect(joinLinkFits({ ...group, kind: 'business' })).toBe(false);
+    // The most a group starts with too: its owner and 255 more (`CreateConversationBody`).
+    expect(JOIN_LINK_ROOM).toBe(256);
   });
 });

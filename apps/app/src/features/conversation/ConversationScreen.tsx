@@ -89,6 +89,9 @@ import { SuggestionBar } from './SuggestionBar';
 import { TypingIndicator, useTypingNames } from './TypingIndicator';
 import { mailBound } from './topics';
 
+/** A group's join link (M16 C3e), for one just made with nobody yet: loaded when it opens. */
+const JoinLinks = lazyPart(() => import('@/features/join/JoinLinks').then((m) => m.JoinLinks));
+
 /** "How do you know …?" for a connection never labelled (R3), loaded the first time it opens. */
 const RelationshipPicker = lazyPart(() =>
   import('@/features/relationships/RelationshipPicker').then((m) => m.RelationshipPicker),
@@ -106,7 +109,10 @@ export function ConversationScreen({
   checkout = null,
   say = null,
   join = null,
+  inviteLink = false,
 }: {
+  /** A group just made with nobody yet (M16 C3e): its join link sheet, opened once. */
+  inviteLink?: boolean;
   id: string;
   /** A meeting's card to join (R83), checked here before anything is called. */
   join?: string | null;
@@ -142,6 +148,8 @@ export function ConversationScreen({
   const [labelling, setLabelling] = useState(false);
   const labelled = useOpened(labelling);
   const [privateInfo, setPrivateInfo] = useState(false);
+  const [inviting, setInviting] = useState(inviteLink);
+  const invited = useOpened(inviting);
   const [editing, setEditing] = useState<MessageView | null>(null);
   const [actionsFor, setActionsFor] = useState<MessageView | null>(null);
   const [forwarding, setForwarding] = useState<MessageView | null>(null);
@@ -994,6 +1002,18 @@ export function ConversationScreen({
             gender: other.person.gender,
           }}
         />
+      ) : null}
+      {conversation && invited ? (
+        <Sheet
+          open={inviting}
+          onClose={() => {
+            setInviting(false);
+            router.setParams({ invite: undefined });
+          }}
+          title={conversation.title}
+        >
+          <JoinLinks target="group" id={conversation.id} name={conversation.title} />
+        </Sheet>
       ) : null}
       {conversation && privately ? (
         <PrivateSheet

@@ -1430,6 +1430,56 @@ export interface TeamInviteAcceptResponse {
 }
 
 /**
+ * A join link (M16 C3e): a group's or a space's, as its owner and admins list it. Never its
+ * token, which comes back once, as `url`, when it's made.
+ */
+export interface JoinLinkView {
+  id: string;
+  /** How many joined through it. */
+  uses: number;
+  expiresAt: string;
+  createdAt: string;
+  /** Who made it, by the name they show. */
+  by: string | null;
+}
+export interface JoinLinksResponse {
+  links: JoinLinkView[];
+}
+export interface JoinLinkMadeResponse {
+  link: JoinLinkView;
+  url: string;
+}
+/**
+ * What a join link offers whoever opens it signed in: where it leads, as a visitor's page says
+ * it, and never who is in it by name.
+ */
+export interface JoinLinkOpenView {
+  target: 'group' | 'space';
+  name: string;
+  purpose: string | null;
+  /** A space's kind (a family, a team…); null for a group. */
+  spaceKind: string | null;
+  /** How many are in it now. */
+  memberCount: number;
+  /** The organization a space is its own, for its name and mark beside it. */
+  org: OrgRef | null;
+  /** Who made the link, by the name they show. */
+  invitedBy: string | null;
+  /** Already in it: opening it changes nothing. */
+  member: boolean;
+  expiresAt: string;
+}
+export interface JoinLinkOpenResponse {
+  link: JoinLinkOpenView;
+}
+export interface JoinLinkAcceptResponse {
+  /** Where to land: the group, or the space's General. */
+  conversationId: string;
+  spaceId: string | null;
+  already: boolean;
+}
+
+/**
  * An organization's export of its own conversations (R54): everything it is the controller of,
  * nothing of its people's own. The team by name; a customer named once per conversation.
  */
@@ -1784,6 +1834,11 @@ export interface ProductMetricsView {
      * days of it.
      */
     door: { booked: number; joined: Rate };
+    /**
+     * Join links (M16 C3e): made and joined through in the window, and the joins by an account
+     * made for the link (`newPeople`, the number that shows a group moving over).
+     */
+    joinLinks: { made: number; joined: number; newPeople: number };
   };
   ai: { calls: number; ok: number; byFeature: Record<string, { ok: number; other: number }> };
   business: {
@@ -2902,7 +2957,7 @@ export interface CollectionRenamedResponse {
  * them in `apple-app-site-association` and the app's Android intent filters carry the same ones
  * (`app.config.ts`, held to this list by `appLinks.test.ts`).
  */
-export const APP_LINK_PREFIXES = ['/@', '/o/', '/c/', '/i/', '/t/', '/s/', '/p/'] as const;
+export const APP_LINK_PREFIXES = ['/@', '/o/', '/c/', '/i/', '/t/', '/g/', '/s/', '/p/'] as const;
 
 /** The phone apps' ids, as `app.json` names them (held to it by `appLinks.test.ts`). */
 export const APP_IDS = { ios: 'me.cai.app', android: 'me.cai.app' } as const;

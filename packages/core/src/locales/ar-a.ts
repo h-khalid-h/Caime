@@ -82,7 +82,6 @@ export const arA: Catalog = {
     'أُرسل طلبًا: القرار لهم في من يتواصل معهم',
 
   'Nothing to open': 'لا شيء لفتحه',
-  'Name the group and add at least one person.': 'سمِّ المجموعة وأضف شخصًا واحدًا على الأقل.',
   'New group': 'مجموعة جديدة',
   'Group name': 'اسم المجموعة',
   'Weekend hikers, Q3 launch…': 'رحلات نهاية الأسبوع، إطلاق الربع الثالث…',

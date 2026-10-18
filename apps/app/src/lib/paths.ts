@@ -107,3 +107,8 @@ export function inviteIn(path: string | null | undefined): string | null {
 export function teamInviteIn(path: string | null | undefined): string | null {
   return path?.match(/^\/t\/(t_[A-Za-z0-9_-]{43})$/)?.[1] ?? null;
 }
+
+/** The token of a link to join a group or a space (`/g/<token>`, M16 C3e), or null. */
+export function joinLinkIn(path: string | null | undefined): string | null {
+  return path?.match(/^\/g\/(g_[A-Za-z0-9_-]{43})$/)?.[1] ?? null;
+}

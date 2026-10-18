@@ -78,8 +78,6 @@ export const fr: Catalog = {
     'Cette invitation a expiré ou a été retirée. Demandez un nouveau lien, ou cherchez la personne par @identifiant.',
   'That isn’t an invite link.': 'Ce n’est pas un lien d’invitation.',
   'Nothing to open': 'Rien à ouvrir',
-  'Name the group and add at least one person.':
-    'Nommez le groupe et ajoutez au moins une personne.',
   'New group': 'Nouveau groupe',
   'Group name': 'Nom du groupe',
   'Weekend hikers, Q3 launch…': 'Randonneurs du week-end, Lancement T3…',
@@ -4361,4 +4359,39 @@ export const fr: Catalog = {
   'Invite on WhatsApp': 'Inviter sur WhatsApp',
   'Text an invite': 'Inviter par SMS',
   'Your link, to whoever you choose': 'Votre lien, à qui vous voulez',
+  'You joined “{place}”': 'Vous avez rejoint « {place} »',
+  'This link has run out, or was taken back. Ask whoever sent it for a new one.':
+    'Ce lien a expiré ou a été retiré. Demandez-en un nouveau à la personne qui l’a envoyé.',
+  '{name} invites you to “{place}”': '{name} vous invite dans « {place} »',
+  'Join “{place}”': 'Rejoindre « {place} »',
+  space: 'espace',
+  group: 'groupe',
+  people: 'personnes',
+  'You’re in “{place}” already.': 'Vous êtes déjà dans « {place} ».',
+  'Open it': 'L’ouvrir',
+  'You read what was said there before you came, and its people see your name.':
+    'Vous lisez ce qui s’y est dit avant votre arrivée, et ses membres voient votre nom.',
+  'Join the space': 'Rejoindre l’espace',
+  'Join the group': 'Rejoindre le groupe',
+  'Invite with a link': 'Inviter avec un lien',
+  'Post it where its people already are: whoever opens it joins the space, over 18, and reads what was said before. It stays open {n} days.':
+    {
+      one: 'Publiez-le là où ses membres se trouvent déjà : qui l’ouvre rejoint l’espace, à partir de 18 ans, et lit ce qui s’y est dit avant. Il reste ouvert {n} jour.',
+      other:
+        'Publiez-le là où ses membres se trouvent déjà : qui l’ouvre rejoint l’espace, à partir de 18 ans, et lit ce qui s’y est dit avant. Il reste ouvert {n} jours.',
+    },
+  'Post it where its people already are: whoever opens it joins the group, over 18, and reads what was said before. It stays open {n} days.':
+    {
+      one: 'Publiez-le là où ses membres se trouvent déjà : qui l’ouvre rejoint le groupe, à partir de 18 ans, et lit ce qui s’y est dit avant. Il reste ouvert {n} jour.',
+      other:
+        'Publiez-le là où ses membres se trouvent déjà : qui l’ouvre rejoint le groupe, à partir de 18 ans, et lit ce qui s’y est dit avant. Il reste ouvert {n} jours.',
+    },
+  'Join “{place}” on Caime': 'Rejoignez « {place} » sur Caime',
+  'A link from {name}': 'Un lien de {name}',
+  'Create, then invite with a link': 'Créer, puis inviter avec un lien',
+  'You came to join “{place}”: it opens next, with what was said there before. Find others by @handle or email any time.':
+    'Vous êtes ici pour rejoindre « {place} » : il s’ouvre ensuite, avec ce qui s’y est dit avant. Trouvez d’autres personnes par @identifiant ou e-mail à tout moment.',
+  'You came to join a group: it opens next. Find others by @handle or email any time.':
+    'Vous êtes ici pour rejoindre un groupe : il s’ouvre ensuite. Trouvez d’autres personnes par @identifiant ou e-mail à tout moment.',
+  '{by} made a link to join': 'Lien pour rejoindre : {by}',
 };

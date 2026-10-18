@@ -11,6 +11,8 @@ export type EventType =
   | 'connection.requested'
   | 'invite.made'
   | 'invite.joined'
+  | 'join_link.made'
+  | 'join_link.joined'
   | 'connection.created'
   | 'connection.removed'
   | 'relationship.assigned'

@@ -1398,4 +1398,18 @@ export const turkishServer: Catalog = {
   'This invite isn’t open any more.': 'Bu davet artık açık değil.',
   'It may have run out, or been taken back. Ask whoever sent it for a new one.':
     'Süresi dolmuş ya da geri alınmış olabilir. Gönderen kişiden yenisini isteyin.',
+  'Join links aren’t available here.': 'Katılma bağlantıları burada kullanılamaz.',
+  '{n} links are open: take one back first.': '{n} bağlantı açık: önce birini geri alın.',
+  'That link': 'O bağlantı',
+  'It’s full: {n} people are in it.': 'Dolu: içinde {n} kişi var.',
+  'They can’t join while a link to it is open.': 'Bir katılma bağlantısı açıkken katılamazlar.',
+  'Join links are made by people 18 or over.':
+    'Katılma bağlantılarını 18 yaş ve üzeri kişiler oluşturur.',
+  'Join links are for people 18 or over: ask someone in it to add you.':
+    'Katılma bağlantıları 18 yaş ve üzeri içindir: içindeki birinden sizi eklemesini isteyin.',
+  'This link can’t add you to it.': 'Bu bağlantı sizi ekleyemez.',
+  'an invitation to a space': 'bir alan daveti',
+  'an invitation to a group': 'bir grup daveti',
+  'Sign up or sign in, then join: you read what was said there before you came, and its people see your name.':
+    'Kaydolun ya da giriş yapın, sonra katılın: siz gelmeden önce orada söylenenleri okursunuz; oradakiler de adınızı görür.',
 };

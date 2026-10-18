@@ -5,15 +5,16 @@
  */
 import type { OrgSpaceView, SpaceKind, SpaceSummaryView } from '@caime/core';
 import { handsOverOnLeaving, nextSpaceOwner } from '@caime/core';
-import { sql } from 'kysely';
+import { sql, type Transaction } from 'kysely';
 import type { AppContext } from '../context';
-import { ORG_COLUMNS } from '../db/schema';
+import { type Database, ORG_COLUMNS } from '../db/schema';
 import { tellSaved } from './automations';
 import { orgRef } from './business';
 import { sendSystem } from './conversation-views';
 import { handOverGroups } from './conversations';
 import { recordEvent } from './events';
 import { leaveGroupCallsIn } from './group-calls';
+import { assertNoMinorWhileLinkOpen, lockTarget, peopleIn } from './join-links';
 import { participantsOf } from './messages';
 import { activeMembers, tellSpace } from './space-conversations';
 import { generalOf } from './spaces';
@@ -37,17 +38,29 @@ export const offerWhoTheyKnowIn = (ctx: AppContext, spaceId: string, newcomers: 
     );
   });
 
-/** People into a space, in a role: in its General conversation too, caught up, and told. */
+/**
+ * People into a space, in a role: in its General conversation too, caught up, and told. Under the
+ * space's lock: `vouch`, when given, says why they may come in (a join link, M16 C3e), and while a
+ * link to it is open nobody under 18 comes in by any path (R29). With `joined`, the one person
+ * let themselves in, and General says they joined.
+ */
 export async function addToSpace(
   ctx: AppContext,
   spaceId: string,
   adding: string[],
   addedBy: string,
   role: 'member' | 'admin' = 'member',
+  opts: {
+    vouch?: (trx: Transaction<Database>, inIt: string[]) => Promise<void>;
+    joined?: boolean;
+  } = {},
 ): Promise<void> {
   if (adding.length === 0) return;
   const general = await generalOf(ctx.db, spaceId);
   await ctx.db.transaction().execute(async (trx) => {
+    await lockTarget(trx, { kind: 'space', id: spaceId });
+    if (opts.vouch) await opts.vouch(trx, await peopleIn(trx, { kind: 'space', id: spaceId }));
+    await assertNoMinorWhileLinkOpen(trx, { kind: 'space', id: spaceId }, adding, ctx.now());
     for (const userId of adding) {
       await trx
         .insertInto('space_members')
@@ -78,7 +91,8 @@ export async function addToSpace(
     }
     await recordEvent(trx, 'space.member_added', addedBy, { spaceId, userIds: adding });
   });
-  await sendSystem(ctx, general.id, addedBy, 'members_added', { userIds: adding });
+  if (opts.joined) await sendSystem(ctx, general.id, addedBy, 'member_joined', { userId: addedBy });
+  else await sendSystem(ctx, general.id, addedBy, 'members_added', { userIds: adding });
   await ctx.bus.publish(adding, {
     type: 'conversation.created',
     data: { conversationId: general.id },

@@ -30,7 +30,7 @@ import { queueMeetingStart } from './meeting-start';
 import { assertCanMessage, messageViews, participantsOf, sendMessage } from './messages';
 import { isLinkGuestAddress, LINK_GUEST_DOMAIN, personForAddress } from './provisional';
 import { between, isBlockedEitherWay } from './relations';
-import { minorOf } from './users';
+import { anyMinor, minorOf } from './users';
 
 type Q = Kysely<Database> | Transaction<Database>;
 
@@ -131,17 +131,6 @@ const spaceRowOf = (db: Q, cardId: string) =>
     .select(['message_id', 'conversation_id', 'space_message_id', 'copy_client_id', 'created_by'])
     .where((eb) => eb.or([eb('message_id', '=', cardId), eb('space_message_id', '=', cardId)]))
     .executeTakeFirst();
-
-/** Whether anyone among these people is under 18. */
-async function anyMinor(db: Q, userIds: string[], now: Date): Promise<boolean> {
-  if (!userIds.length) return false;
-  const people = await db
-    .selectFrom('users')
-    .select(['birth_date', 'time_zone'])
-    .where('id', 'in', userIds)
-    .execute();
-  return people.some((u) => minorOf(u, now));
-}
 
 /** Whether a conversation holds a meeting's guest: a provisional person (R84). */
 async function holdsGuests(db: Q, conversationId: string): Promise<boolean> {

@@ -420,6 +420,8 @@ export function systemText(payload: unknown, viewerId?: string | null): string {
         : tr('{by} took away what it’s for', { by });
     case 'member_joined':
       return tr('{name} joined', { name: p.name ?? by });
+    case 'link_made':
+      return tr('{by} made a link to join', { by });
     case 'members_added':
       return p.names?.length
         ? tr('{by} added {joinNames}', { by, joinNames: joinNames(p.names) })

@@ -114,7 +114,14 @@ row, and one mail when it's sent to an address; opening and accepting it are a h
 indexed reads and the seat's own transaction, the same one adding someone always ran (now under
 the organization's row, so the plan's room is read once inside it); nothing polls, no job runs,
 and spent ones go with the retention sweep's existing pass. On the device, the invite panel loads
-with the team's Add sheet and the accept screen is its own route, neither in the first download.
+with the team's Add sheet and the accept screen is its own route, neither in the first download. A join link (C3e) is one row; its
+visitor page reads 7 queries and a join 40, in one transaction under the place's row, the same
+with two people in the group or twenty-three (`join-links.test.ts` counts them), once per person;
+nothing polls, no job runs, and spent ones go with the same retention pass. A link stops at 256
+people; past about a hundred, each message in a group costs what block D's large-group mode is
+there to cut, so that mode is owed before links fill groups that far. On the device,
+the link panel loads with a group's or a space's Add sheet (or the sheet a group just made opens
+on), and the accept screen is its own route, neither in the first download.
 
 ## What a change says
 

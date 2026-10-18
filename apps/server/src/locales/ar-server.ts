@@ -1461,4 +1461,17 @@ export const arServer: Catalog = {
   'This invite isn’t open any more.': 'هذه الدعوة لم تعد مفتوحة.',
   'It may have run out, or been taken back. Ask whoever sent it for a new one.':
     'ربما انتهت مدتها أو سُحبت. يمكن طلب دعوة جديدة ممن أرسلها.',
+  'Join links aren’t available here.': 'روابط الانضمام غير متاحة هنا.',
+  '{n} links are open: take one back first.': 'عدد الروابط المفتوحة {n}: يلزم سحب أحدها أولًا.',
+  'That link': 'ذلك الرابط',
+  'It’s full: {n} people are in it.': 'اكتمل العدد: الحد {n}.',
+  'They can’t join while a link to it is open.': 'لا يمكن الانضمام ما دام رابط إليها مفتوحًا.',
+  'Join links are made by people 18 or over.': 'إنشاء روابط الانضمام لمن بلغ 18 عامًا.',
+  'Join links are for people 18 or over: ask someone in it to add you.':
+    'روابط الانضمام لمن بلغ 18 عامًا: يمكن أن يضيفك أحد أعضائها.',
+  'This link can’t add you to it.': 'لا يمكن لهذا الرابط أن يضيفك إليها.',
+  'an invitation to a space': 'دعوة إلى مساحة',
+  'an invitation to a group': 'دعوة إلى مجموعة',
+  'Sign up or sign in, then join: you read what was said there before you came, and its people see your name.':
+    'التسجيل أو الدخول، ثم الانضمام: ما قيل فيها قبل وصولك يظهر لك، واسمك يظهر لمن فيها.',
 };

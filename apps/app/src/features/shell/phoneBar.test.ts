@@ -35,6 +35,7 @@ describe('the phone’s bar', () => {
       '/oauth/authorize',
       '/i/abcdef',
       '/t/t_abcdef',
+      '/g/g_abcdef',
       '/new-group',
       '/new-space',
       '/orgs/new',

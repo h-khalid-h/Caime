@@ -81,6 +81,10 @@ import type {
   InviteOpenResponse,
   InviteResponse,
   InvitesResponse,
+  JoinLinkAcceptResponse,
+  JoinLinkMadeResponse,
+  JoinLinkOpenResponse,
+  JoinLinksResponse,
   JoinResponse,
   JoinView,
   LiveCallsResponse,
@@ -545,6 +549,26 @@ export const endpoints = {
     api.get<TeamInviteOpenResponse>(`/team-invites/${encodeURIComponent(token)}`),
   acceptTeamInvite: (token: string) =>
     api.post<TeamInviteAcceptResponse>(`/team-invites/${encodeURIComponent(token)}/accept`),
+  /**
+   * Join links (M16 C3e): a group's or a space's own (made, listed, taken back by its owner and
+   * admins), and one opened by whoever has it, and accepted.
+   */
+  joinLinks: (target: 'group' | 'space', id: string) =>
+    api.get<JoinLinksResponse>(
+      `/${target === 'group' ? 'conversations' : 'spaces'}/${id}/join-links`,
+    ),
+  makeJoinLink: (target: 'group' | 'space', id: string) =>
+    api.post<JoinLinkMadeResponse>(
+      `/${target === 'group' ? 'conversations' : 'spaces'}/${id}/join-links`,
+    ),
+  revokeJoinLink: (target: 'group' | 'space', id: string, linkId: string) =>
+    api.del<OkResponse>(
+      `/${target === 'group' ? 'conversations' : 'spaces'}/${id}/join-links/${linkId}`,
+    ),
+  openJoinLink: (token: string) =>
+    api.get<JoinLinkOpenResponse>(`/join-links/${encodeURIComponent(token)}`),
+  acceptJoinLink: (token: string) =>
+    api.post<JoinLinkAcceptResponse>(`/join-links/${encodeURIComponent(token)}/accept`),
   removeFromOrg: (id: string, userId: string) =>
     api.del<OkResponse>(`/orgs/${id}/members/${userId}`),
   updateOrgMember: (

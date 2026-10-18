@@ -20,6 +20,33 @@ export function canAddToGroup(role: ConversationRole | null | undefined): boolea
   return manages(role);
 }
 
+/**
+ * Join links (M16 C3e, review 2026-10-17 §1 H5): a link a group's or a space's owner or admins
+ * hand out, which lets anyone who opens it in, so a group moves over from another app in one
+ * message. Open as long as R1's invites; a group or space a link fills holds as many as a group
+ * is started with, its owner beside them; ten open at once is plenty for any one place.
+ */
+export const JOIN_LINK_DAYS = 30;
+export const JOIN_LINK_ROOM = 256;
+export const JOIN_LINKS_OPEN = 10;
+
+/**
+ * Whether a conversation takes a join link of its own: a standalone group. Never a private one
+ * (R18: every message is sealed for each device of people chosen one by one, never whoever holds
+ * a link), a topic (its group's people are its people) or a space's conversation (the space's
+ * link lets people in). The server also refuses a meeting's space, which holds its guests.
+ */
+export function joinLinkFits(c: {
+  kind: ConversationKind | string;
+  privacyClass: string;
+  parentId: string | null;
+  spaceId: string | null;
+}): boolean {
+  return (
+    c.kind === 'group' && c.privacyClass === 'standard' && c.parentId === null && c.spaceId === null
+  );
+}
+
 /** Who writes in a conversation of a kind: in a broadcast its owner and admins; everyone else reads. */
 export function canPostTo(
   kind: ConversationKind | string,

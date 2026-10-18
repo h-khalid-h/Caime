@@ -35,6 +35,7 @@ const LAZY_EVERYWHERE = [
   '@/features/people/PeoplePicker',
   '@/features/geo/TimeZoneField',
   '@/features/people/generalInvite',
+  '@/features/join/JoinLinks',
 ];
 
 const files = readdirSync(src, { recursive: true })

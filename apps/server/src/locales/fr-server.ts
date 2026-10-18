@@ -1462,4 +1462,19 @@ export const frServer: Catalog = {
   'This invite isn’t open any more.': 'Cette invitation n’est plus ouverte.',
   'It may have run out, or been taken back. Ask whoever sent it for a new one.':
     'Elle a peut-être expiré ou été retirée. Demandez-en une nouvelle à la personne qui l’a envoyée.',
+  'Join links aren’t available here.': 'Les liens pour rejoindre ne sont pas disponibles ici.',
+  '{n} links are open: take one back first.': '{n} liens sont ouverts : retirez-en un d’abord.',
+  'That link': 'Ce lien',
+  'It’s full: {n} people are in it.': 'C’est complet : {n} personnes y sont.',
+  'They can’t join while a link to it is open.':
+    'Aucun ajout possible tant qu’un lien pour rejoindre est ouvert.',
+  'Join links are made by people 18 or over.':
+    'Les liens pour rejoindre sont créés par des personnes de 18 ans ou plus.',
+  'Join links are for people 18 or over: ask someone in it to add you.':
+    'Les liens pour rejoindre sont réservés aux personnes de 18 ans ou plus : demandez à quelqu’un qui en fait partie de vous ajouter.',
+  'This link can’t add you to it.': 'Ce lien ne peut pas vous y ajouter.',
+  'an invitation to a space': 'une invitation dans un espace',
+  'an invitation to a group': 'une invitation dans un groupe',
+  'Sign up or sign in, then join: you read what was said there before you came, and its people see your name.':
+    'Inscrivez-vous ou connectez-vous, puis rejoignez : vous lisez ce qui s’y est dit avant votre arrivée, et ses membres voient votre nom.',
 };

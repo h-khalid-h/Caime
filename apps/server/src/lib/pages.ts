@@ -146,7 +146,9 @@ active.</li>
 <li><strong>The people you know.</strong> Who you&rsquo;re connected with, how you&rsquo;ve told
 Caime you know each of them (and how you described them before), what you call them, your
 requests to connect, the invite links you make (how you&rsquo;d know whoever joins, what they&rsquo;re
-shown, and how many joined), and who you&rsquo;ve blocked.</li>
+shown, and how many joined), the links you make to join a group or a space you run (where each
+leads, how many joined through it and when it runs out; the link itself only as a fingerprint,
+and never who opened it), and who you&rsquo;ve blocked.</li>
 <li><strong>What you send.</strong> Messages, photos, videos, files, voice messages, places you
 share, cards (a meeting, an order, a poll) and your votes, and reactions, with which messages each
 person has received and read, so Caime can show them to the people they&rsquo;re for. A live
@@ -368,7 +370,9 @@ a year.</li>
 <li>An invite link that ran out or was taken back is kept for ${span(KEPT_DAYS.spentInvites)}, then
 forgotten; the people who joined through it stay your connections. An organization&rsquo;s invite
 to its team, with the address it was sent to, is kept the same way once it ran out, was taken back
-or was used; whoever joined through it stays on the team. A notification is kept for
+or was used; whoever joined through it stays on the team. A link to join a group or a space is
+kept the same way once it ran out or was taken back; whoever joined through it stays in it. A
+notification is kept for
 ${span(KEPT_DAYS.notifications)}, then goes.</li>
 ${
   f.mailDomain

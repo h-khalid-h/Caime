@@ -23,7 +23,9 @@ import {
   normalizeHandle,
   ORG_ROLE_LABELS,
   PAYMENT_KIND_LABELS,
+  SPACE_KIND_DEFS,
   SPHERE_DEFS,
+  type SpaceKind,
   type Sphere,
   type SystemKind,
   stockLine,
@@ -38,6 +40,7 @@ import {
   msg,
   sentence,
   tr,
+  trn,
 } from '@caime/core/i18n';
 import { mapsUrl, PLACE_KIND_LABELS, placeLine } from '@caime/core/places';
 import type { CharacterHandle } from '@caime/core/system-accounts';
@@ -48,6 +51,7 @@ import type { Database, Organization, User } from '../db/schema';
 import { catalogOf, paymentsOf } from './booking';
 import { orgRef } from './business';
 import { countryNameIn } from './geo';
+import { joinLinkOpening, liveJoinLink } from './join-links';
 import {
   type MarketplacePage,
   marketplacePageFor,
@@ -255,6 +259,21 @@ export interface PublicTeamInvite {
   addressed: boolean;
   expiresAt: string;
 }
+/**
+ * A join link's page (M16 C3e): where it leads (a group, or a space and its kind), how many are
+ * in it, who asks, and the ways in. Never who is in it: no names, faces or handles, no words.
+ */
+export interface PublicJoinLink {
+  kind: 'join-link';
+  target: 'group' | 'space';
+  name: string;
+  purpose: string | null;
+  spaceKind: string | null;
+  memberCount: number;
+  org: OrgRef | null;
+  inviter: string | null;
+  expiresAt: string;
+}
 export type PublicPage =
   | { kind: 'landing' }
   /** A page of the site about Caime (site-pages.ts): everyone's, signed in or not. */
@@ -267,6 +286,7 @@ export type PublicPage =
   | PublicCollectionPage
   | PublicInvite
   | PublicTeamInvite
+  | PublicJoinLink
   /** Nothing here: a handle nobody has, or (`invite`) an invite link that's no longer open. */
   | { kind: 'missing'; what?: 'invite' }
   | { kind: 'app' }
@@ -460,6 +480,27 @@ export async function publicTeamInvite(
   };
 }
 
+/** A join link's page while it's open (M16 C3e). */
+export async function publicJoinLink(
+  ctx: AppContext,
+  token: string,
+): Promise<PublicJoinLink | null> {
+  const live = await liveJoinLink(ctx, token);
+  if (!live) return null;
+  const o = await joinLinkOpening(ctx, live);
+  return {
+    kind: 'join-link',
+    target: o.target,
+    name: o.name,
+    purpose: o.purpose,
+    spaceKind: o.spaceKind,
+    memberCount: o.memberCount,
+    org: o.org,
+    inviter: o.invitedBy,
+    expiresAt: o.expiresAt,
+  };
+}
+
 /** The page a path is, for whoever isn't signed in. */
 export async function publicPageFor(
   ctx: AppContext,
@@ -484,6 +525,9 @@ export async function publicPageFor(
   const team = /^\/t\/([^/?#]+)$/.exec(path);
   if (team)
     return (await publicTeamInvite(ctx, team[1] ?? '')) ?? { kind: 'missing', what: 'invite' };
+  const join = /^\/g\/([^/?#]+)$/.exec(path);
+  if (join)
+    return (await publicJoinLink(ctx, join[1] ?? '')) ?? { kind: 'missing', what: 'invite' };
   const at = /^\/@([^/?#]+)(?:\/([^/?#]+))?$/.exec(path);
   const org = /^\/o\/([^/?#]+)(?:\/([^/?#]+))?$/.exec(path);
   const raw = safeDecode((at ?? org)?.[1] ?? '');
@@ -1170,6 +1214,54 @@ export function renderPublic(
     <div>${label(tr('for'))}<dd>${esc(page.addressed ? tr('The address it was sent to, alone') : tr('Whoever has this link'))}</dd></div>
     <div>${label(tr('open until'))}<dd>${esc(dayLabel(page.expiresAt.slice(0, 10), 'UTC'))}</dd></div>
     <div>${label(tr('to join'))}<dd>${esc(tr('Sign up or sign in, then join: its conversations with customers are in your Business inbox, no app to install.'))}</dd></div>
+  </dl>`,
+  )}
+  ${pageFoot(tr(PROMISE), wordmark(18))}
+</main>`,
+      };
+    }
+    case 'join-link': {
+      const place = page.name;
+      // An organization's space is the organization's to invite to, never a team member's.
+      const asker = page.org?.name ?? page.inviter;
+      const title = asker
+        ? tr('{name} invites you to “{place}”', { name: asker, place })
+        : tr('Join “{place}”', { place });
+      const kindLabel =
+        page.target === 'space' && page.spaceKind && page.spaceKind in SPACE_KIND_DEFS
+          ? tr(SPACE_KIND_DEFS[page.spaceKind as SpaceKind].label)
+          : null;
+      const lead = page.purpose ?? tr(PROMISE);
+      return {
+        status: 200,
+        lang: currentTranslator().language,
+        head: meta({
+          title: `${title} · ${SITE_NAME}`,
+          description: `${lead}`,
+          image: page.org?.avatarUrl ? `${publicUrl}${page.org.avatarUrl}` : null,
+          index: false,
+          canonical: false,
+        }),
+        body: `
+<main class="pub pub-sheet" ${langAttrs()}>
+  ${topBar(wayIn('sign-in', path), wordmark(22))}
+  <section class="hero hero-center">
+    ${avatar({ name: page.org?.name ?? place, src: page.org?.avatarUrl ?? null, size: 96, shape: page.org ? 'mark' : 'face' })}
+    <p class="kicker"><span class="mono">${esc(page.target === 'space' ? tr('an invitation to a space') : tr('an invitation to a group'))}</span></p>
+    <h1>${esc(title)}</h1>
+    <p class="lead" dir="auto">${esc(lead)}</p>
+    ${page.org ? `<p class="who"><bdi>@${esc(page.org.handle)}</bdi>${page.org.verified ? verifiedMark(page.org.verifiedDomain) : ''}</p>` : ''}
+    <div class="actions"><a class="btn" href="${wayIn('sign-up', path)}">${esc(tr('Join “{place}”', { place }))}</a><a class="btn quiet" href="${wayIn('sign-in', path)}">${esc(tr('Sign in'))}</a></div>
+  </section>
+  ${section(
+    sentence(tr('about')),
+    `<dl class="spec">
+    <div>${label(page.target === 'space' ? tr('space') : tr('group'))}<dd dir="auto">${esc(place)}</dd></div>
+    ${kindLabel ? `<div>${label(tr('kind'))}<dd>${esc(kindLabel)}</dd></div>` : ''}
+    <div>${label(tr('people'))}<dd>${esc(trn(page.memberCount, '{n} person', '{n} people'))}</dd></div>
+    ${page.inviter && !page.org ? `<div>${label(tr('from'))}<dd>${esc(page.inviter)}</dd></div>` : ''}
+    <div>${label(tr('open until'))}<dd>${esc(dayLabel(page.expiresAt.slice(0, 10), 'UTC'))}</dd></div>
+    <div>${label(tr('to join'))}<dd>${esc(tr('Sign up or sign in, then join: you read what was said there before you came, and its people see your name.'))}</dd></div>
   </dl>`,
   )}
   ${pageFoot(tr(PROMISE), wordmark(18))}

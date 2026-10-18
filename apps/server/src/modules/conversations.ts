@@ -53,12 +53,11 @@ import {
   lockConversation,
   mirrorTopics,
   seatIn,
-  type TopicChange,
 } from '../lib/conversations';
 import { AppError, badRequest, forbidden, notFound } from '../lib/errors';
 import { recordEvent } from '../lib/events';
 import { leaveGroupCallsIn } from '../lib/group-calls';
-import { assertNoMinorWithGuests } from '../lib/meeting-guests';
+import { addToGroup, tellTopics } from '../lib/group-members';
 import { assertCanMessage, participantsOf } from '../lib/messages';
 import { openMailConversation } from '../lib/provisional';
 import { between, pairKey, readReceiptsVisibleTo } from '../lib/relations';
@@ -171,17 +170,20 @@ export async function conversationRoutes(app: FastifyInstance, ctx: AppContext) 
       const m = await membership(ctx, auth.userId, result.id);
       return { conversation: await conversationView(ctx, auth.userId, m.conversation, m.me) };
     }
-    // Groups are made of people you're connected with (anti-abuse, PRD §55).
+    // Groups are made of people you're connected with (anti-abuse, PRD §55), or of nobody yet,
+    // to be joined by the link its owner hands out (M16 C3e).
     const memberIds = [...new Set(body.memberIds.filter((id) => id !== auth.userId))];
     if (body.private && memberIds.length + 1 > PRIVATE_GROUP_MAX) throw privateGroupFull();
-    const connected = await ctx.db
-      .selectFrom('connection_sides as s')
-      .innerJoin('connections as c', 'c.id', 's.connection_id')
-      .select('s.other_id')
-      .where('s.owner_id', '=', auth.userId)
-      .where('s.other_id', 'in', memberIds)
-      .where('c.status', '=', 'active')
-      .execute();
+    const connected = memberIds.length
+      ? await ctx.db
+          .selectFrom('connection_sides as s')
+          .innerJoin('connections as c', 'c.id', 's.connection_id')
+          .select('s.other_id')
+          .where('s.owner_id', '=', auth.userId)
+          .where('s.other_id', 'in', memberIds)
+          .where('c.status', '=', 'active')
+          .execute()
+      : [];
     if (connected.length !== memberIds.length)
       throw badRequest(tr('You can add people you’re connected with.'));
     const id = uuidv7();
@@ -393,15 +395,6 @@ export async function conversationRoutes(app: FastifyInstance, ctx: AppContext) 
     return { ok: true };
   });
 
-  /** A topic's people changed with its group's: everyone in it, and whoever went, sees so. */
-  async function tellTopics(changes: TopicChange[]) {
-    for (const c of changes)
-      await ctx.bus.publish(
-        [...c.left, ...(await participantsOf(ctx.db, c.topicId)).map((p) => p.user_id)],
-        { type: 'conversation.updated', data: { conversationId: c.topicId } },
-      );
-  }
-
   app.post('/conversations/:id/members', async (req): Promise<OkResponse> => {
     const auth = requireAuth(req);
     const { id } = parse(z.object({ id: z.string().uuid() }), req.params);
@@ -436,61 +429,15 @@ export async function conversationRoutes(app: FastifyInstance, ctx: AppContext) 
       if (connected.length !== new Set(body.userIds).size)
         throw badRequest(tr('You can add people you’re connected with.'));
     }
-    const added = await ctx.db.transaction().execute(async (trx) => {
-      await lockConversation(trx, id);
-      // Who runs it, and who's in it, as they are now.
-      const mine = await seatIn(trx, id, auth.userId);
-      if (!mine) throw notFound(tr('That conversation'));
-      if (!canAddToGroup(mine.role)) throw forbidden(tr('Only admins can add people.'));
-      const inIt = new Set((await participantsOf(trx, id)).map((p) => p.user_id));
-      const fresh = [...new Set(body.userIds)].filter((u) => !inIt.has(u));
-      // A meeting's guests are strangers to everyone in it (R84): nobody under 18 joins them (R29).
-      await assertNoMinorWithGuests(trx, id, fresh, ctx.now());
-      // Every message in a private group is sealed for each of its people's devices.
-      if (conversation.privacy_class === 'private' && inIt.size + fresh.length > PRIVATE_GROUP_MAX)
-        throw privateGroupFull();
-      const { last_seq } = await trx
-        .selectFrom('conversations')
-        .select('last_seq')
-        .where('id', '=', id)
-        .executeTakeFirstOrThrow();
-      for (const userId of fresh)
-        await trx
-          .insertInto('participants')
-          .values({
-            conversation_id: id,
-            user_id: userId,
-            role: 'member',
-            joined_at: ctx.now(),
-            last_read_seq: last_seq,
-          })
-          // Back in it after leaving, they start again: a member, from now, caught up. Whatever
-          // they were before (an admin, the longest there) isn't theirs any more.
-          .onConflict((oc) =>
-            oc
-              .columns(['conversation_id', 'user_id'])
-              .doUpdateSet({
-                left_at: null,
-                role: 'member',
-                joined_at: ctx.now(),
-                last_read_seq: last_seq,
-                last_delivered_seq: last_seq,
-              })
-              .where('participants.left_at', 'is not', null),
-          )
-          .execute();
-      // Its topics have its people.
-      return { fresh, topics: await mirrorTopics(trx, id, ctx.now()) };
+    await addToGroup(ctx, id, body.userIds, {
+      actorId: auth.userId,
+      // Who runs it, as they are now.
+      vouch: async (trx) => {
+        const mine = await seatIn(trx, id, auth.userId);
+        if (!mine) throw notFound(tr('That conversation'));
+        if (!canAddToGroup(mine.role)) throw forbidden(tr('Only admins can add people.'));
+      },
     });
-    await tellTopics(added.topics);
-    if (!added.fresh.length) return { ok: true };
-    await sendSystem(ctx, id, auth.userId, 'members_added', { userIds: added.fresh });
-    await ctx.bus.publish([...(await participantsOf(ctx.db, id)).map((p) => p.user_id)], {
-      type: 'conversation.updated',
-      data: { conversationId: id },
-    });
-    // A space's conversation: the space shows who's in each of its conversations.
-    if (conversation.space_id) await spaceChanged(ctx, conversation.space_id);
     return { ok: true };
   });
 
@@ -575,7 +522,7 @@ export async function conversationRoutes(app: FastifyInstance, ctx: AppContext) 
       id,
       ...topics.filter((t) => t.left.includes(userId)).map((t) => t.topicId),
     ]);
-    await tellTopics(topics);
+    await tellTopics(ctx, topics);
     await sendSystem(
       ctx,
       id,
@@ -631,7 +578,7 @@ export async function conversationRoutes(app: FastifyInstance, ctx: AppContext) 
       return mirrorTopics(trx, id, ctx.now());
     });
     if (!changed) return { ok: true };
-    await tellTopics(changed);
+    await tellTopics(ctx, changed);
     await sendSystem(
       ctx,
       id,

@@ -193,6 +193,18 @@ export async function productMetrics(ctx: AppContext, days: number): Promise<Pro
           and s.claimed_at is not null and s.claimed_at <= b.first_at + interval '30 days') as joined
   `);
 
+  // Join links (M16 C3e): made and joined through in the window, and of those joins, how many
+  // were by an account made for the link (under a day old when it joined).
+  const joinLinks = await q<{ made: number; joined: number; fresh: number }>(sql`
+    select
+      count(*) filter (where type = 'join_link.made')::int as made,
+      count(*) filter (where type = 'join_link.joined')::int as joined,
+      count(*) filter (where type = 'join_link.joined' and (payload->>'fresh')::boolean)::int as fresh
+    from domain_events
+    where type in ('join_link.made', 'join_link.joined')
+      and created_at > ${from} and created_at <= ${to}
+  `);
+
   const suggestions = await q<{ accepted: number; decided: number }>(sql`
     select count(*) filter (where status = 'accepted')::int as accepted,
       count(*) filter (where status in ('accepted', 'dismissed'))::int as decided
@@ -270,6 +282,7 @@ export async function productMetrics(ctx: AppContext, days: number): Promise<Pro
           ? Math.round((invites.via_people / engagement.people) * 1000) / 1000
           : null,
       door: { booked: door.booked, joined: rate(door.joined, door.cohort) },
+      joinLinks: { made: joinLinks.made, joined: joinLinks.joined, newPeople: joinLinks.fresh },
     },
     ai: {
       calls: ai.reduce((n, r) => n + r.n, 0),
@@ -286,6 +299,7 @@ export async function productMetrics(ctx: AppContext, days: number): Promise<Pro
       'Time to find counts searches in the apps only; what was searched for is never kept.',
       'Needs you precision counts answers and “doesn’t need me”; something left alone says nothing.',
       'Invites count sign-ups through someone’s @handle link; a link that was opened and not followed isn’t seen.',
+      'Join links count links made and joins through them; a link opened and not followed isn’t seen.',
     ],
   };
 }

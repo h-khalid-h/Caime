@@ -18,6 +18,7 @@ const HIDDEN = [
   /^\/oauth\//,
   /^\/i\//,
   /^\/t\//,
+  /^\/g\//,
   /^\/new-group(?:\/|$)/,
   /^\/new-space(?:\/|$)/,
   /^\/orgs\/new(?:\/|$)/,

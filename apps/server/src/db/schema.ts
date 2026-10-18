@@ -242,6 +242,19 @@ export interface OrgInvitesTable {
   created_at: Generated<Date>;
 }
 
+/** A join link (M16 C3e): a group's or a space's, by its token's hash. */
+export interface JoinLinksTable {
+  id: string;
+  conversation_id: string | null;
+  space_id: string | null;
+  token_hash: Buffer;
+  created_by: string | null;
+  uses: Defaulted<number>;
+  expires_at: Date;
+  revoked_at: NullableTimestamp;
+  created_at: Generated<Date>;
+}
+
 export interface CustomRolesTable {
   id: string;
   user_id: string;
@@ -1332,6 +1345,7 @@ export interface Database {
   connection_requests: ConnectionRequestsTable;
   invites: InvitesTable;
   org_invites: OrgInvitesTable;
+  join_links: JoinLinksTable;
   custom_roles: CustomRolesTable;
   relationships: RelationshipsTable;
   relationship_events: RelationshipEventsTable;

@@ -48,6 +48,7 @@ import { toast } from '@/ui/Toast';
 import { SPACE_ICONS } from './kinds';
 
 /** Loaded when it's shown: shared by several screens, needed by none at first. */
+const JoinLinks = lazyPart(() => import('@/features/join/JoinLinks').then((m) => m.JoinLinks));
 const PeoplePicker = lazyPart(() =>
   import('@/features/people/PeoplePicker').then((m) => m.PeoplePicker),
 );
@@ -486,6 +487,8 @@ export function SpaceScreen({ id }: { id: string }) {
           />
         }
       >
+        {/* A link that lets anyone in (M16 C3e), for whoever runs the space. */}
+        {manager ? <JoinLinks target="space" id={space.id} name={space.name} /> : null}
         <View style={{ marginHorizontal: -4 }}>
           <PeoplePicker
             picked={picked}
