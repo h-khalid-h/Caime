@@ -2686,8 +2686,22 @@ graph) and the number that will show it; one that sharpens none is hygiene and s
       in four languages, `e2e/reading-flow.spec.ts` (opened at the first of 30 with the count,
       the jump button's 30, the pill, a big 👍, a mention of the reader marked, "Last seen just
       now" once the other closed their tab), and the full gate.
-- [ ] E3b. Mark as unread; reply privately from a group (a quote across conversations the
-      server checks both people may read).
+- [x] E3b. Coming back, and answering privately (2026-10-18). Mark as unread from a row's
+      actions puts a dot in Chats (`participants.marked_unread_at`, migration 0123, expand only)
+      that reading the conversation, opening it or "Mark as read" clears; only its person sees
+      it. Reply privately, on someone else's message in a group, opens the chat with them (a
+      message request where they aren't a connection, as any first message is) with the message
+      quoted above the composer; the server takes it only into the chat of two people who are both
+      in that group now and may read it there, keeps only which message it was, and every reader
+      gets the quote as they may read it then (`privateReply`: the group's name and the words,
+      neither once they've left, the words not once it's deleted or gone), so nothing of the group
+      is copied into the chat; a tap on it opens the group at the message. Row actions' "Unmuted"
+      was English in every language. Verified: `reading.test.ts` (the mark set, cleared by reading
+      and by its person, never the other side's; the quote for both people, nothing of its words
+      in the reply's row, refused into the group, from a chat, with an outsider and for a deleted
+      message, and said as where-not-what once deleted or left), the catalogs in four languages
+      and the server's, `e2e/reading-flow.spec.ts` (the dot until opened; answered privately from
+      a group, quoted in the chat, and back to the message), and the full gate.
 - [ ] F. Mail, calendar, meetings: CC and reply-all as people on the topic; unverified mail shown
       under Notices, never dropped; a follow-up allowance to new addresses; invitations arriving
       by mail become cards; cards travel by mail; "Suggest another time" with guest invitations
@@ -4309,6 +4323,8 @@ graph) and the number that will show it; one that sharpens none is hygiene and s
   journeys, safety, reliability, performance, intelligence, mail and calendar, chat, integrations,
   business and code integrity; the matrix against WhatsApp, Signal, Slack, Calendly and Workspace;
   an age-assurance design; the integration framework mapped to the code; plan M16 (A–H).
+- 2026-10-18 — M16 E3b: mark as unread (a dot until it's read) and reply privately from a group
+  (quoted as each reader may read it, nothing copied). Block E's reading flow done.
 - 2026-10-18 — M16 E3a: reading a conversation: opened at the first unread with their count, the
   jump button's count, a date pill, big emoji, mentions marked, last seen in a chat's head.
 - 2026-10-18 — M16 E2: replies and reactions: a quote names whose words it quotes and goes to

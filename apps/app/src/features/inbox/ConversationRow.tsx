@@ -55,7 +55,7 @@ export const ConversationRow = memo(function ConversationRow({
   const typing = useLive((s) => typingIn(s, item.id).length > 0);
   const presence = useLive((s) => (item.other ? s.presence[item.other.id] : undefined));
   const reason = item.reasons.find((r) => EXPLAINING.has(r.code));
-  const unread = item.unreadCount > 0;
+  const unread = item.unreadCount > 0 || item.markedUnread;
   const title = listTitle(item);
   const preview = typing
     ? tr('typing…')
@@ -79,7 +79,11 @@ export const ConversationRow = memo(function ConversationRow({
     title,
     item.relationship?.label,
     reason?.label,
-    unread ? trn(item.unreadCount, '{n} unread', '{n} unread') : null,
+    item.unreadCount > 0
+      ? trn(item.unreadCount, '{n} unread', '{n} unread')
+      : item.markedUnread
+        ? tr('Marked unread')
+        : null,
     preview,
   ]);
 
@@ -172,6 +176,7 @@ export const ConversationRow = memo(function ConversationRow({
                 count={item.unreadCount}
                 muted={item.muted}
                 mention={item.unreadMentions > 0}
+                dot={item.markedUnread}
               />
             </View>
             {item.relationship || reason || item.org ? (

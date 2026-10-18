@@ -1492,4 +1492,7 @@ export const turkishServer: Catalog = {
   '{monthly}, or {yearly}': '{monthly} veya {yearly}',
   '{free}, always': '{free}, her zaman',
   'Accounts are connected by people over 18.': 'Hesapları 18 yaşını geçenler bağlar.',
+  'A private reply is written in a chat between two people.':
+    'Özel yanıt iki kişilik bir sohbette yazılır.',
+  'That message can’t be answered privately here.': 'Bu mesaja burada özelden yanıt verilemez.',
 };

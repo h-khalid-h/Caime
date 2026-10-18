@@ -1547,4 +1547,7 @@ export const arServer: Catalog = {
   '{monthly}, or {yearly}': '{monthly}، أو {yearly}',
   '{free}, always': '{free}، دائمًا',
   'Accounts are connected by people over 18.': 'ربط الحسابات لمن تجاوز 18 عامًا.',
+  'A private reply is written in a chat between two people.':
+    'يُكتب الرد الخاص في محادثة بين شخصين.',
+  'That message can’t be answered privately here.': 'لا يمكن الرد على هذه الرسالة بشكل خاص هنا.',
 };

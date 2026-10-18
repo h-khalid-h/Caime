@@ -450,6 +450,8 @@ export interface ParticipantsTable {
    * sender, so the inbox's "asked since my last message" never looks for it among the messages.
    */
   last_sent_seq: BigIntCol;
+  /** Marked unread by them (M16 E3b): a dot in Chats until they read it or say otherwise. */
+  marked_unread_at: NullableTimestamp;
 }
 
 export type MessageKind =

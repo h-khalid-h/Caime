@@ -566,6 +566,20 @@ export interface AssetsResponse {
   nextBefore: string | null;
 }
 
+/**
+ * The group's message a private reply answers (M16 E3b), read again for whoever reads it:
+ * `preview` (and its seq and writer) only while they may still read it there, so none of the
+ * group's words are kept in the chat. `title` is the group's name, null once they've left it.
+ */
+export interface PrivateReplyView {
+  conversationId: string;
+  messageId: string;
+  title: string | null;
+  seq: number | null;
+  senderId: string | null;
+  preview: string | null;
+}
+
 export interface ReactionView {
   emoji: string;
   count: number;
@@ -616,6 +630,8 @@ export interface MessageView {
     preview: string;
     kind: string;
   } | null;
+  /** A group's message this answers privately (M16 E3b). */
+  privateReply: PrivateReplyView | null;
   forwarded: boolean;
   urgent: boolean;
   isQuestion: boolean;
@@ -746,6 +762,8 @@ export interface ConversationView {
     mutedUntil: string | null;
     archived: boolean;
     pinned: boolean;
+    /** Marked unread to come back to (M16 E3b): opening it clears the mark. */
+    markedUnread: boolean;
     draft: string | null;
     requestState: 'pending' | 'accepted' | 'declined' | null;
   };
@@ -797,6 +815,8 @@ export interface InboxItemView {
   } | null;
   unreadCount: number;
   unreadMentions: number;
+  /** Marked unread to come back to (M16 E3b): a dot where a count would be. */
+  markedUnread: boolean;
   lastActivityAt: string;
   pinned: boolean;
   muted: boolean;

@@ -2,7 +2,8 @@
  * Reading a conversation (M16 E3, review 2026-10-17 §7): it opens at the first unread with their
  * count on the line, the jump button counts what's below, a pill says the day while scrolling,
  * emoji alone are drawn big, a mention of the reader is marked, and the head says when the other
- * person was last here once they've gone.
+ * person was last here once they've gone. A conversation marked unread keeps a dot until it's
+ * opened, and a group's message answered privately is quoted in the chat and leads back (E3b).
  */
 import { randomUUID } from 'node:crypto';
 import { type BrowserContext, expect, type Page, test } from '@playwright/test';
@@ -17,6 +18,7 @@ test.describe
     let noor: { page: Page; errors: string[] };
     let convo: string;
     let noorId: string;
+    let alexId: string;
 
     const say = async (body: string, extra: Record<string, unknown> = {}) => {
       const said = await alexCtx.request.post(`/v1/conversations/${convo}/messages`, {
@@ -30,7 +32,7 @@ test.describe
       noorCtx = await browser.newContext({ viewport: { width: 1280, height: 800 } });
       alexCtx = await browser.newContext({ viewport: { width: 1280, height: 800 } });
       noorId = (await apiSignUp(noorCtx, 'Noor Reads', `noor.reads.${suffix}`)).id;
-      await apiSignUp(alexCtx, 'Alex Reads', `alex.reads.${suffix}`);
+      alexId = (await apiSignUp(alexCtx, 'Alex Reads', `alex.reads.${suffix}`)).id;
       const asked = await alexCtx.request.post('/v1/connections/requests', {
         headers: CLIENT,
         data: { toUserId: noorId, relationship: { sphere: 'friend' } },
@@ -81,6 +83,68 @@ test.describe
       await visible(page, 'Line 20 of the plan').hover();
       await page.mouse.wheel(0, -600);
       await expect(page.getByTestId('date-pill').filter({ visible: true })).toHaveText('Today');
+      expect(noor.errors).toEqual([]);
+    });
+
+    test('marked unread in Chats keeps a dot until the conversation is opened', async () => {
+      const { page } = noor;
+      await page.goto('/chats');
+      const row = page.getByTestId(`conversation-${convo}`).filter({ visible: true });
+      await row.click({ delay: 700 });
+      await page.getByTestId('row-unread').click();
+      await expect(row.getByTestId('badge-dot')).toBeVisible();
+      // Opening it is coming back to it: the mark goes, on the server too.
+      const unmarked = page.waitForResponse(
+        (r) => r.url().endsWith(`/v1/conversations/${convo}`) && r.request().method() === 'PATCH',
+      );
+      await row.click();
+      await expect(page.getByTestId('composer-input').filter({ visible: true })).toBeVisible();
+      await unmarked;
+      await page.goto('/chats');
+      await expect(
+        page
+          .getByTestId(`conversation-${convo}`)
+          .filter({ visible: true })
+          .getByTestId('badge-dot'),
+      ).toHaveCount(0);
+      expect(noor.errors).toEqual([]);
+    });
+
+    test('a group’s message answered privately is quoted in the chat, and leads back to it', async () => {
+      const made = await noorCtx.request.post('/v1/conversations', {
+        headers: CLIENT,
+        data: { kind: 'group', title: `Cake ${suffix}`, memberIds: [alexId] },
+      });
+      expect(made.ok(), await made.text()).toBe(true);
+      const group = ((await made.json()) as { conversation: { id: string } }).conversation.id;
+      const said = await alexCtx.request.post(`/v1/conversations/${group}/messages`, {
+        headers: CLIENT,
+        data: { clientId: randomUUID(), body: 'Who brings the cake?' },
+      });
+      expect(said.ok(), await said.text()).toBe(true);
+      const { page } = noor;
+      await page.goto(`/c/${group}`);
+      await page
+        .getByLabel(/Who brings the cake\?/)
+        .filter({ visible: true })
+        .first()
+        .hover();
+      await page.getByRole('button', { name: 'React', exact: true }).click();
+      await page.getByTestId('message-reply-privately').click();
+      await expect(page).toHaveURL(new RegExp(`/c/${convo}`));
+      await expect(
+        visible(page, `Replying privately to Alex Reads in Cake ${suffix}`),
+      ).toBeVisible();
+      await page.getByTestId('composer-input').fill('I will, quietly');
+      await page.getByTestId('composer-send').click();
+      const quote = page.getByTestId('message-private-quote').filter({ visible: true }).last();
+      await expect(quote).toContainText('Who brings the cake?');
+      await expect(quote).toContainText(`Cake ${suffix}`);
+      await quote.click();
+      await expect(page).toHaveURL(new RegExp(`/c/${group}`));
+      await expect(page.getByTestId('message-highlighted').filter({ visible: true })).toContainText(
+        'Who brings the cake?',
+      );
       expect(noor.errors).toEqual([]);
     });
 

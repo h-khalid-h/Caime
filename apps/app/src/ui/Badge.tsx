@@ -8,12 +8,31 @@ export function Badge({
   count,
   muted,
   mention,
+  dot,
 }: {
   count: number;
   muted?: boolean;
   mention?: boolean;
+  /** Marked unread with nothing new (M16 E3b): a dot where the count would be. */
+  dot?: boolean;
 }) {
   const t = useTheme();
+  if (count <= 0 && !mention && dot)
+    return (
+      <View
+        accessible
+        accessibilityRole="image"
+        accessibilityLabel={tr('Marked unread')}
+        style={{
+          width: 12,
+          height: 12,
+          borderRadius: 6,
+          marginHorizontal: 5,
+          backgroundColor: muted ? t.c.textTertiary : t.c.accentStrong,
+        }}
+        testID="badge-dot"
+      />
+    );
   if (count <= 0 && !mention) return null;
   const label = mention && count <= 0 ? '@' : count > 99 ? '99+' : String(count);
   return (

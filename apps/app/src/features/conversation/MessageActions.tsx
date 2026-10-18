@@ -7,6 +7,7 @@ import Copy from 'lucide-react-native/icons/copy';
 import Flag from 'lucide-react-native/icons/flag';
 import Languages from 'lucide-react-native/icons/languages';
 import ListChecks from 'lucide-react-native/icons/list-checks';
+import Lock from 'lucide-react-native/icons/lock';
 import Pencil from 'lucide-react-native/icons/pencil';
 import Pin from 'lucide-react-native/icons/pin';
 import PinOff from 'lucide-react-native/icons/pin-off';
@@ -114,6 +115,7 @@ export function MessageActions({
   onForward,
   canSave = true,
   conversation,
+  onReplyPrivately,
 }: {
   m: MessageView | null;
   me: string;
@@ -134,6 +136,8 @@ export function MessageActions({
   canSave?: boolean;
   /** Where it was said: who reacted, and in a group who has it (M16 E2). */
   conversation?: ConversationView;
+  /** Answer it in the chat of the one who wrote it (M16 E3b): offered in a group only. */
+  onReplyPrivately?: (m: MessageView) => void;
 }) {
   const t = useTheme();
   const qc = useQueryClient();
@@ -312,6 +316,15 @@ export function MessageActions({
       <View style={{ marginHorizontal: -20 }}>
         {!deleted ? (
           <ListRow icon={ReplyArrow} title={tr('Reply')} onPress={close(() => onReply(m))} />
+        ) : null}
+        {onReplyPrivately && !mine && !deleted && m.senderId && m.kind !== 'system' && keepable ? (
+          <ListRow
+            icon={Lock}
+            title={tr('Reply privately')}
+            subtitle={tr('In your chat, quoting it')}
+            onPress={handOff(() => onReplyPrivately(m))}
+            testID="message-reply-privately"
+          />
         ) : null}
         {shown && !deleted ? (
           <ListRow

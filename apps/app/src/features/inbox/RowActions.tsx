@@ -6,6 +6,7 @@ import ArchiveIcon from 'lucide-react-native/icons/archive';
 import Bell from 'lucide-react-native/icons/bell';
 import BellOff from 'lucide-react-native/icons/bell-off';
 import CheckCheck from 'lucide-react-native/icons/check-check';
+import MessageSquareDot from 'lucide-react-native/icons/message-square-dot';
 import Pin from 'lucide-react-native/icons/pin';
 import Star from 'lucide-react-native/icons/star';
 import Zap from 'lucide-react-native/icons/zap';
@@ -67,17 +68,30 @@ export function RowActions({ item, onClose }: { item: InboxItemView | null; onCl
       title={listTitle(item)}
       subtitle={item.relationship?.label ?? undefined}
     >
-      {item.unreadCount > 0 ? (
+      {item.unreadCount > 0 || item.markedUnread ? (
         <ListRow
           icon={CheckCheck}
           title={tr('Mark as read')}
           onPress={() => {
             close();
             markInboxRead(qc, item.id);
-            void endpoints.receipts(item.id, { read: item.lastSeq }).catch(() => {});
+            // Reading clears a mark to come back; with nothing new, the mark alone is cleared.
+            if (item.unreadCount > 0)
+              void endpoints.receipts(item.id, { read: item.lastSeq }).catch(() => {});
+            else
+              void endpoints.updateConversation(item.id, { markedUnread: false }).catch(() => {});
           }}
+          testID="row-read"
         />
-      ) : null}
+      ) : (
+        // A reminder to come back to it (M16 E3b): a dot in Chats until it's read.
+        <ListRow
+          icon={MessageSquareDot}
+          title={tr('Mark as unread')}
+          onPress={() => run({ markedUnread: true }, tr('Marked unread'))}
+          testID="row-unread"
+        />
+      )}
       <ListRow
         icon={Pin}
         title={item.pinned ? tr('Unpin') : tr('Pin to the top')}
@@ -109,7 +123,7 @@ export function RowActions({ item, onClose }: { item: InboxItemView | null; onCl
         <ListRow
           icon={Bell}
           title={tr('Unmute')}
-          onPress={() => run({ mutedUntil: null }, 'Unmuted')}
+          onPress={() => run({ mutedUntil: null }, tr('Unmuted'))}
         />
       ) : (
         <ListRow

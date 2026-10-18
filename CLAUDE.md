@@ -309,8 +309,17 @@ appointment from a catalog).
   bottom), and the date pill reads each row's `day` from `onViewableItemsChanged`; emoji alone
   are core `emojiOnly`, mentions marked by core `mentionSpans` over the words as shown (a private
   message's as opened) for the ids the message names, and a chat's "Last seen" is core
-  `lastSeenLine` over `PersonView.lastSeenAt`, never shown where that's null and fetched again
-  when the other person leaves while it's open; nothing else polls for it.
+  `lastSeenLine` (`last-seen.ts`, apart from `format.ts`, which the first download carries) over `PersonView.lastSeenAt`, never shown where that's null and fetched again
+  when the other person leaves while it's open; nothing else polls for it. Marked unread
+  (M16 E3b) is `participants.marked_unread_at`, set and cleared by `PATCH /conversations/:id`
+  (`markedUnread`), cleared by any read in the receipts route, on `InboxItemView.markedUnread`
+  and `ConversationView.me` (the screen clears it on open): the person's alone. A private reply
+  is `privateReplyTo` on a send, checked in `sendMessage` (a chat of two people both in that
+  standard group now, a message the sender may read) and kept as `payload.privateReply`, ids
+  alone; `messageViews` reads the quote again for each reader in one query for the batch
+  (`privateReply`: words and seq only while they may read it there, the group's name only while
+  they're in it), so a new place that quotes another conversation follows the same shape and
+  never copies words.
 - Fonts: on the web the faces are WOFF2 in `apps/app/public/fonts`, written there with the
   shell's `caime-fonts` block in `index.html` by `pnpm fonts` (`scripts/web-fonts.mjs`, from
   Fontsource's cuts; OFL beside them), never by hand: the brand's two families by weight, `Inter`

@@ -128,6 +128,7 @@ export async function membership(
     draft: row.draft,
     draft_updated_at: row.draft_updated_at,
     last_sent_seq: row.last_sent_seq,
+    marked_unread_at: row.marked_unread_at,
   };
   return { conversation, me };
 }
@@ -395,6 +396,7 @@ export async function conversationView(
       mutedUntil: me.muted_until?.toISOString() ?? null,
       archived: me.archived_at !== null,
       pinned: me.pinned_at !== null,
+      markedUnread: me.marked_unread_at !== null,
       draft: me.draft,
       requestState: me.request_state,
     },

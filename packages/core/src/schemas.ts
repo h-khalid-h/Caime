@@ -1136,6 +1136,8 @@ export const UpdateConversationBody = z
     mutedUntil: z.string().datetime().nullable().optional(),
     archived: z.boolean().optional(),
     pinned: z.boolean().optional(),
+    /** Marked unread to come back to (M16 E3b); reading it clears it too. */
+    markedUnread: z.boolean().optional(),
     draft: z.string().max(10_000).nullable().optional(),
     retentionDays: z.number().int().min(1).max(3650).nullable().optional(),
   })
@@ -1297,6 +1299,10 @@ export const SendMessageBody = z
     body: z.string().max(10_000).nullable().optional(),
     payload: z.unknown().optional(),
     replyToId: z.string().uuid().nullable().optional(),
+    /** Reply privately (M16 E3b): a group's message, answered in the chat of two people in it. */
+    privateReplyTo: z
+      .object({ conversationId: z.string().uuid(), messageId: z.string().uuid() })
+      .optional(),
     fileIds: z.array(z.string().uuid()).max(10).optional(),
     urgent: z.boolean().optional(),
     mentions: z.array(z.string().uuid()).max(50).optional(),

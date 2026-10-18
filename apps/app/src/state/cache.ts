@@ -300,5 +300,10 @@ export function applyEditToInbox(qc: QueryClient, m: MessageView): void {
 }
 
 export function markInboxRead(qc: QueryClient, conversationId: string): void {
-  patchItems(qc, conversationId, (item) => ({ ...item, unreadCount: 0, unreadMentions: 0 }));
+  patchItems(qc, conversationId, (item) => ({
+    ...item,
+    unreadCount: 0,
+    unreadMentions: 0,
+    markedUnread: false,
+  }));
 }

@@ -1,13 +1,8 @@
 import type { MessageView } from '@caime/core/api';
 import { GROUP_CALL_MAX } from '@caime/core/calls';
-import {
-  contextLine,
-  formatDue,
-  lastSeenLine,
-  messagePreview,
-  retentionText,
-} from '@caime/core/format';
+import { contextLine, formatDue, messagePreview, retentionText } from '@caime/core/format';
 import { tr, trn } from '@caime/core/i18n';
+import { lastSeenLine } from '@caime/core/last-seen';
 import { canRemoveOthersMessages } from '@caime/core/permissions';
 import { canPin } from '@caime/core/pins';
 import { isSystemKind } from '@caime/core/system-ids';
@@ -67,6 +62,7 @@ import {
 } from '@/state/cache';
 import { useLive } from '@/state/live';
 import { useOutbox } from '@/state/outbox';
+import { usePrivateReply } from '@/state/privateReply';
 import { useMe } from '@/state/session';
 import { useTheme } from '@/theme/theme';
 import { Avatar } from '@/ui/Avatar';
@@ -392,6 +388,15 @@ export function ConversationScreen({
     );
   }, [id, focusSeq, msgs, messages, rows]);
 
+  // Marked unread to come back to (M16 E3b): opening it is coming back, once a visit.
+  const unmarkedFor = useRef<string | null>(null);
+  useEffect(() => {
+    if (!conversation?.me.markedUnread || unmarkedFor.current === id) return;
+    unmarkedFor.current = id;
+    markInboxRead(qc, id);
+    void endpoints.updateConversation(id, { markedUnread: false }).catch(() => {});
+  }, [conversation?.me.markedUnread, id, qc]);
+
   // At the bottom, everything there is seen: the jump button counts only what came after.
   useEffect(() => {
     if (atBottom && !jumped.current && openedAtUnread.current === id)
@@ -442,6 +447,37 @@ export function ConversationScreen({
   const openReply = useCallback((m: MessageView) => {
     if (m.replyTo) setFocus(m.replyTo.seq);
   }, []);
+  // Reply privately (M16 E3b): the chat with the one who wrote it, opened (made once if need be),
+  // with the message quoted in its composer; the server checks both are in this group.
+  const replyPrivately = useCallback(
+    async (m: MessageView) => {
+      if (!m.senderId || !conversation) return;
+      try {
+        const chat = (await endpoints.openDirect(m.senderId)).conversation;
+        usePrivateReply.getState().set({
+          in: chat.id,
+          name: namesIn(conversation).get(m.senderId) ?? null,
+          quote: {
+            conversationId: conversation.id,
+            messageId: m.id,
+            title: conversation.title,
+            seq: m.seq,
+            senderId: m.senderId,
+            preview: messagePreview({
+              kind: m.kind,
+              body: m.body,
+              payload: m.payload,
+              deleted: false,
+            }),
+          },
+        });
+        router.push({ pathname: '/c/[id]', params: { id: chat.id } });
+      } catch (e) {
+        toast((e as Error).message, { tone: 'danger' });
+      }
+    },
+    [conversation],
+  );
   const onReply = useCallback((m: MessageView) => {
     setEditing(null);
     setReplyTo(m);
@@ -810,6 +846,7 @@ export function ConversationScreen({
           senderName={item.senderName}
           replyName={item.replyName}
           onOpenReply={openReply}
+          privateReplyName={item.privateReplyName}
           onOpenReactions={setActionsFor}
           delivery={item.delivery}
           timeZone={timeZone}
@@ -1214,6 +1251,14 @@ export function ConversationScreen({
         // Nothing of a request is kept until it's accepted, nor once declined (the server's rule).
         canSave={conversation ? mayKeepFrom(conversation) : false}
         conversation={conversation}
+        onReplyPrivately={
+          // A group's message, never a private one's: its words never reach the server.
+          conversation &&
+          !where.private &&
+          ['group', 'community', 'broadcast'].includes(conversation.kind)
+            ? (m) => void replyPrivately(m)
+            : undefined
+        }
         onClose={() => setActionsFor(null)}
         onReply={onReply}
         onEdit={(m) => {

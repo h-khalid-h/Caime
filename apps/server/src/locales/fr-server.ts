@@ -1559,4 +1559,8 @@ export const frServer: Catalog = {
   '{monthly}, or {yearly}': '{monthly}, ou {yearly}',
   '{free}, always': '{free}, toujours',
   'Accounts are connected by people over 18.': 'Les comptes se connectent à partir de 18 ans.',
+  'A private reply is written in a chat between two people.':
+    'Une réponse privée s’écrit dans une conversation à deux.',
+  'That message can’t be answered privately here.':
+    'Ce message ne peut pas recevoir de réponse privée ici.',
 };

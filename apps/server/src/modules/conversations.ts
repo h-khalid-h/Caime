@@ -406,6 +406,9 @@ export async function conversationRoutes(app: FastifyInstance, ctx: AppContext) 
       ...(body.mutedUntil !== undefined ? { muted_until: body.mutedUntil } : {}),
       ...(body.archived !== undefined ? { archived_at: body.archived ? ctx.now() : null } : {}),
       ...(body.pinned !== undefined ? { pinned_at: body.pinned ? ctx.now() : null } : {}),
+      ...(body.markedUnread !== undefined
+        ? { marked_unread_at: body.markedUnread ? ctx.now() : null }
+        : {}),
       ...(body.draft !== undefined ? { draft: body.draft, draft_updated_at: ctx.now() } : {}),
     };
     // Only what was sent: an empty SET is invalid SQL (renaming a group used to fail here).
@@ -707,7 +710,8 @@ export async function conversationRoutes(app: FastifyInstance, ctx: AppContext) 
     if (Object.keys(patch).length === 0) return { ok: true };
     await ctx.db
       .updateTable('participants')
-      .set(patch)
+      // Reading it is coming back to it: a mark to come back (M16 E3b) goes with the read.
+      .set(patch.last_read_seq !== undefined ? { ...patch, marked_unread_at: null } : patch)
       .where('conversation_id', '=', id)
       .where('user_id', '=', auth.userId)
       .execute();

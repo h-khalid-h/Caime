@@ -56,6 +56,7 @@ import { realtime } from '@/realtime/client';
 import { applyEditToInbox, upsertMessage } from '@/state/cache';
 import { useDrafts } from '@/state/drafts';
 import { useOutbox } from '@/state/outbox';
+import { usePrivateReply } from '@/state/privateReply';
 import { useMe } from '@/state/session';
 import { fontFace } from '@/theme/fonts';
 import { usePrefs } from '@/theme/prefs';
@@ -211,6 +212,9 @@ export const Composer = forwardRef<ComposerHandle, ComposerProps>(function Compo
   const [editText, setEditText] = useState<string | null>(null);
   const editingText = useOpened(editing, where).text;
   const replyingText = useOpened(replyTo, where).text;
+  // A group's message being answered here privately (M16 E3b), taken from its sheet: never in a
+  // private chat, whose words the server never has.
+  const privateDraft = usePrivateReply((s) => (s.draft?.in === id && !privately ? s.draft : null));
   // Seen as private here, and now said not to be: nothing is written from here in the clear.
   const downgraded = privately && conversation.privacyClass !== 'private';
   // This browser, until one of theirs approves it, can't write here.
@@ -364,6 +368,14 @@ export const Composer = forwardRef<ComposerHandle, ComposerProps>(function Compo
         body,
         replyToId: replyTo?.id ?? null,
         ...(mentions.length ? { mentions } : {}),
+        ...(privateDraft && into === id
+          ? {
+              privateReplyTo: {
+                conversationId: privateDraft.quote.conversationId,
+                messageId: privateDraft.quote.messageId,
+              },
+            }
+          : {}),
       },
       replyTo
         ? {
@@ -382,8 +394,11 @@ export const Composer = forwardRef<ComposerHandle, ComposerProps>(function Compo
               ? { by: replyTo.sealed.by, cid: replyTo.sealed.cid }
               : undefined,
           }
-        : {},
+        : privateDraft && into === id
+          ? { privateReply: privateDraft.quote }
+          : {},
     );
+    if (privateDraft && into === id) usePrivateReply.getState().set(null);
     setText('');
     setHeight(MIN_H);
     setCaret(0);
@@ -409,6 +424,7 @@ export const Composer = forwardRef<ComposerHandle, ComposerProps>(function Compo
     replyTo,
     replyingText,
     privately,
+    privateDraft,
     mentionable,
     people,
     asksSubject,
@@ -630,6 +646,21 @@ export const Composer = forwardRef<ComposerHandle, ComposerProps>(function Compo
         })
       }
       onClose={onClearReply}
+    />
+  ) : privateDraft ? (
+    // Answering a group's message privately (M16 E3b): by whom and where, put aside by its ×.
+    <Banner
+      icon={Reply}
+      title={
+        privateDraft.name && privateDraft.quote.title
+          ? tr('Replying privately to {name} in {group}', {
+              name: privateDraft.name,
+              group: privateDraft.quote.title,
+            })
+          : tr('Replying privately')
+      }
+      body={privateDraft.quote.preview ?? ''}
+      onClose={() => usePrivateReply.getState().set(null)}
     />
   ) : uploading ? (
     <Banner icon={Paperclip} title={tr('Uploading')} body={uploading} />

@@ -28,6 +28,8 @@ export interface OutboxItem {
   private?: boolean;
   /** The message a private one answers, sealed inside it. */
   replyToSealed?: { by: string; cid: string };
+  /** A group's message it answers privately (M16 E3b), shown while it's on its way. */
+  privateReply?: MessageView['privateReply'];
 }
 
 interface OutboxState {
@@ -36,7 +38,11 @@ interface OutboxState {
     conversationId: string,
     body: Omit<SendBody, 'clientId'>,
     replyTo?: MessageView['replyTo'],
-    opts?: { private?: boolean; replyToSealed?: { by: string; cid: string } },
+    opts?: {
+      private?: boolean;
+      replyToSealed?: { by: string; cid: string };
+      privateReply?: MessageView['privateReply'];
+    },
   ) => string;
   resolve: (clientId: string) => void;
   retry: (clientId: string) => void;
@@ -109,6 +115,7 @@ export const useOutbox = create<OutboxState>()(
           attempts: 0,
           ...(opts.private ? { private: true } : {}),
           ...(opts.replyToSealed ? { replyToSealed: opts.replyToSealed } : {}),
+          ...(opts.privateReply ? { privateReply: opts.privateReply } : {}),
         };
         set((s) => ({ items: [...s.items, item] }));
         get().flush();

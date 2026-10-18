@@ -5,12 +5,12 @@ import {
   formatWhen,
   initials,
   joinNames,
-  lastSeenLine,
   overdueAt,
   textDirection,
 } from './format';
 import { isUuid, uuidv7, uuidv7Time } from './ids';
 import { kitsFor } from './kits';
+import { lastSeenLine } from './last-seen';
 import {
   fromUnderstanding,
   isPlainText,

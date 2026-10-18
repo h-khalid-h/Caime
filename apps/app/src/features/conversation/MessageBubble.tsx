@@ -106,6 +106,8 @@ export interface BubbleProps {
   replyName?: string | null;
   /** Go to the message this one answers. */
   onOpenReply?: (m: MessageView) => void;
+  /** Who wrote the group's message this answers privately (M16 E3b). */
+  privateReplyName?: string | null;
   delivery?: Delivery;
   timeZone: string;
   locale: string;
@@ -354,6 +356,7 @@ export const MessageBubble = memo(function MessageBubble({
   senderName,
   replyName,
   onOpenReply,
+  privateReplyName,
   delivery,
   timeZone,
   locale,
@@ -489,6 +492,48 @@ export const MessageBubble = memo(function MessageBubble({
   // A long press on anything inside the bubble (a photo, a file, a link) is the message's, as on
   // the bubble itself (R88): a phone has no hover, and the inner press would take the touch.
   const hold = () => onLongPress?.(m);
+
+  // The group's message this answers privately (M16 E3b): who wrote it and where, read again
+  // for the reader, and a tap away while they may still read it there.
+  const answered = m.privateReply;
+  const privateQuote = answered ? (
+    <Pressable
+      accessibilityRole={answered.seq !== null ? 'link' : 'text'}
+      accessibilityLabel={listed([
+        tr('Replied privately'),
+        privateReplyName,
+        answered.title,
+        answered.preview ?? tr('That message can’t be shown here any more.'),
+      ])}
+      onPress={
+        answered.seq !== null
+          ? () =>
+              router.push({
+                pathname: '/c/[id]',
+                params: { id: answered.conversationId, seq: String(answered.seq) },
+              })
+          : undefined
+      }
+      onLongPress={hold}
+      style={{
+        borderStartWidth: 3,
+        borderStartColor: mine ? t.bubble.meta : t.c.accent,
+        paddingStart: 8,
+        marginBottom: 6,
+        opacity: 0.9,
+      }}
+      testID="message-private-quote"
+    >
+      <Text variant="captionStrong" color={mine ? fg : 'textSecondary'} numberOfLines={1}>
+        {privateReplyName && answered.title
+          ? tr('{name} in {group}, privately', { name: privateReplyName, group: answered.title })
+          : tr('Replied privately')}
+      </Text>
+      <Text variant="caption" color={mine ? fg : 'textSecondary'} numberOfLines={2}>
+        {answered.preview ?? tr('That message can’t be shown here any more.')}
+      </Text>
+    </Pressable>
+  ) : null;
 
   // The message it answers, by whoever wrote it, and a tap away (M16 E2).
   const reply = m.replyTo ? (
@@ -988,6 +1033,7 @@ export const MessageBubble = memo(function MessageBubble({
               }}
             >
               {reply}
+              {privateQuote}
               {content}
               {translation && !deleted ? (
                 <TranslationBlock id={m.id} value={translation} fg={fg} meta={meta} />

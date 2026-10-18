@@ -231,6 +231,8 @@ export interface SendBody {
   body?: string | null;
   payload?: unknown;
   replyToId?: string | null;
+  /** Reply privately (M16 E3b): the group's message this answers. */
+  privateReplyTo?: { conversationId: string; messageId: string };
   fileIds?: string[];
   urgent?: boolean;
   mentions?: string[];

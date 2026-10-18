@@ -174,6 +174,17 @@ function albumOf(
   return { count: mine.length, photos: mine.slice(0, ALBUM_PREVIEW).map(fileView) };
 }
 
+/** The group's message a private reply answers (M16 E3b), as the server wrote it on send. */
+function privateReplyOf(
+  m: Pick<Message, 'payload'>,
+): { conversationId: string; messageId: string } | null {
+  const ref = (m.payload as { privateReply?: { conversationId?: unknown; messageId?: unknown } })
+    ?.privateReply;
+  return ref && typeof ref.conversationId === 'string' && typeof ref.messageId === 'string'
+    ? { conversationId: ref.conversationId, messageId: ref.messageId }
+    : null;
+}
+
 /** Load full views for a set of message rows, as seen by `viewerId`. */
 export async function messageViews(
   db: Q,
@@ -187,7 +198,16 @@ export async function messageViews(
   const albumIds = rows
     .filter((m) => m.kind === 'kit' && (m.payload as { kit?: unknown })?.kit === 'shared_album')
     .map((m) => m.id);
-  const [reactions, files, replies, votes, senders, albums, mails] = await Promise.all([
+  // The groups' messages answered privately here (M16 E3b), as the viewer may read them now.
+  const privateIds = [
+    ...new Set(
+      rows.flatMap((m) => {
+        const ref = privateReplyOf(m);
+        return ref && m.deleted_at === null ? [ref.messageId] : [];
+      }),
+    ),
+  ];
+  const [reactions, files, replies, votes, senders, albums, mails, answered] = await Promise.all([
     db
       .selectFrom('reactions')
       .selectAll()
@@ -263,6 +283,33 @@ export async function messageViews(
           .where('message_id', 'in', ids)
           .execute()
       : Promise.resolve([] as MailViewRow[]),
+    // Only what they may read there now: in it, there for everyone, not hidden for them.
+    privateIds.length
+      ? db
+          .selectFrom('messages as m')
+          .innerJoin('conversations as c', 'c.id', 'm.conversation_id')
+          .innerJoin('participants as p', (j) =>
+            j
+              .onRef('p.conversation_id', '=', 'm.conversation_id')
+              .on('p.user_id', '=', viewerId)
+              .on('p.left_at', 'is', null),
+          )
+          .select([
+            'm.id',
+            'm.seq',
+            'm.sender_id',
+            'm.kind',
+            'm.body',
+            'm.payload',
+            'm.deleted_at',
+            'm.sealed',
+            'm.expires_at',
+            'c.title',
+          ])
+          .where('m.id', 'in', privateIds)
+          .where(notHiddenFor(viewerId, 'm.id'))
+          .execute()
+      : Promise.resolve([]),
   ]);
   // Bots and agents say so wherever their messages go (R16).
   const automatedSenders = new Set(
@@ -282,6 +329,14 @@ export async function messageViews(
       byEmoji.set(r.emoji, [...(byEmoji.get(r.emoji) ?? []), r.user_id]);
     }
     const reply = m.reply_to_id ? replies.find((r) => r.id === m.reply_to_id) : undefined;
+    const privateRef = deleted ? null : privateReplyOf(m);
+    const source = privateRef ? answered.find((r) => r.id === privateRef.messageId) : undefined;
+    // Gone for everyone, or past its time: its group still says where, never what.
+    const readable =
+      source &&
+      source.deleted_at === null &&
+      source.sealed === null &&
+      (source.expires_at === null || source.expires_at > new Date());
     let poll: MessageView['poll'] = null;
     if (m.kind === 'poll' && !deleted) {
       const mine = votes.filter((v) => v.message_id === m.id);
@@ -315,6 +370,16 @@ export async function messageViews(
             // A private one's words are only on the devices it was sealed for.
             preview: reply.sealed ? '' : messagePreview(reply),
             kind: reply.kind,
+          }
+        : null,
+      privateReply: privateRef
+        ? {
+            conversationId: privateRef.conversationId,
+            messageId: privateRef.messageId,
+            title: source?.title ?? null,
+            seq: readable ? Number(source.seq) : null,
+            senderId: readable ? source.sender_id : null,
+            preview: readable ? messagePreview(source) : null,
           }
         : null,
       forwarded: m.forwarded_from_id !== null,
@@ -888,6 +953,37 @@ export async function sendMessage(
   const mentions = [...new Set(body.mentions ?? [])].filter(
     (id) => memberIds.has(id) && id !== senderId,
   );
+  // Reply privately (M16 E3b): a group's message answered in the chat of two people who are both
+  // in that group now, and may both read it there; what it says is read again whenever the reply
+  // is shown, so none of the group's words are copied here.
+  let privateReply: { conversationId: string; messageId: string } | null = null;
+  if (body.privateReplyTo) {
+    if (body.kind !== 'text' || conversation.kind !== 'direct')
+      throw badRequest(tr('A private reply is written in a chat between two people.'));
+    const source = await ctx.db
+      .selectFrom('messages as m')
+      .innerJoin('conversations as c', 'c.id', 'm.conversation_id')
+      .select(['m.id', 'm.conversation_id'])
+      .where('m.id', '=', body.privateReplyTo.messageId)
+      .where('m.conversation_id', '=', body.privateReplyTo.conversationId)
+      .where('c.kind', 'in', ['group', 'community', 'broadcast'])
+      .where('c.privacy_class', '=', 'standard')
+      .where('m.sealed', 'is', null)
+      .where(readableBy(senderId, ctx.now(), 'm'))
+      .executeTakeFirst();
+    const both = source
+      ? await ctx.db
+          .selectFrom('participants')
+          .select('user_id')
+          .where('conversation_id', '=', source.conversation_id)
+          .where('user_id', 'in', [...memberIds])
+          .where('left_at', 'is', null)
+          .execute()
+      : [];
+    if (!source || both.length < memberIds.size)
+      throw badRequest(tr('That message can’t be answered privately here.'));
+    privateReply = { conversationId: source.conversation_id, messageId: source.id };
+  }
 
   let files: Array<{ id: string; kind: string; name: string }> = [];
   if (body.fileIds?.length) {
@@ -949,6 +1045,7 @@ export async function sendMessage(
     (typeof payload !== 'object' || payload === null || Object.keys(payload).length > 0)
   )
     throw badRequest(tr('A text message carries no payload.'));
+  if (privateReply) payload = { privateReply };
   let kitMode: Mode | null = null;
   // Its id, now: a repeating meeting's first time names its series by it (R58).
   const id = uuidv7();

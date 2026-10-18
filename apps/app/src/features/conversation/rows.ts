@@ -19,6 +19,8 @@ export type Row =
       replyName: string | null;
       /** Its day, as its separator says it: what the date pill shows over it (M16 E3). */
       day: string;
+      /** Who wrote the group's message this answers privately (M16 E3b), as the reader knows them. */
+      privateReplyName: string | null;
     }
   | { type: 'day'; key: string; label: string }
   /** Where the unread start, and how many there are (M16 E3). */
@@ -58,6 +60,7 @@ export function pendingAsMessage(item: OutboxItem, me: string): MessageView {
     entities: {},
     mentions: item.body.mentions ?? [],
     replyTo: item.replyTo,
+    privateReply: item.privateReply ?? null,
     forwarded: false,
     urgent: Boolean(item.body.urgent),
     isQuestion: false,
@@ -241,6 +244,11 @@ export function buildRows(opts: {
           ? tr('You')
           : (names.get(m.replyTo.senderId) ?? null),
       day,
+      privateReplyName: !m.privateReply?.senderId
+        ? null
+        : m.privateReply.senderId === me
+          ? tr('You')
+          : (names.get(m.privateReply.senderId) ?? null),
     });
   }
   return rows.reverse();
