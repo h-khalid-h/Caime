@@ -100,14 +100,20 @@ const SITE_PATHS: ReadonlySet<string> = new Set([
   '/sign-in',
 ]);
 
-/** A link within the site, carrying the chosen language where there is one. */
-export const siteHref = (path: string, facts: Pick<SiteFacts, 'linkLang'> | null): string =>
-  facts?.linkLang &&
-  (SITE_PATHS.has(path.split('#')[0] ?? path) || path.startsWith('/marketplace/'))
-    ? path.includes('#')
-      ? path.replace('#', `?lang=${facts.linkLang}#`)
-      : `${path}?lang=${facts.linkLang}`
-    : path;
+/** A link within the site, carrying the chosen language where there is one (after any query). */
+export const siteHref = (path: string, facts: Pick<SiteFacts, 'linkLang'> | null): string => {
+  const [beforeHash = path, hash] = path.split('#');
+  const [bare = beforeHash, query] = beforeHash.split('?');
+  if (!facts?.linkLang || !(SITE_PATHS.has(bare) || bare.startsWith('/marketplace/'))) return path;
+  const lang = `lang=${facts.linkLang}`;
+  return `${bare}?${query ? `${query}&${lang}` : lang}${hash !== undefined ? `#${hash}` : ''}`;
+};
+
+/**
+ * Where "Start free" on the page for organizations leads (C2a): sign-up, and then straight to
+ * starting the organization (`?link=`, which the app keeps through onboarding).
+ */
+export const BUSINESS_START = `/sign-up?link=${encodeURIComponent('/orgs/new')}`;
 
 /** The site's pages, in the order the nav lists them; `home` is the landing page. */
 export const SITE_NAV: ReadonlyArray<{ path: string; label: string; kicker: string }> = [
@@ -476,7 +482,7 @@ const cta = (facts: Pick<SiteFacts, 'linkLang'> | null, links: Array<[string, st
   `<p class="cta">${links
     .map(
       ([href, text], i) =>
-        `<a href="${siteHref(href, facts)}"${i ? ' class="quiet"' : ''}>${esc(text)}</a>`,
+        `<a href="${esc(siteHref(href, facts))}"${i ? ' class="quiet"' : ''}>${esc(text)}</a>`,
     )
     .join(' ')}</p>`;
 
@@ -600,7 +606,7 @@ ${main}
       ),
     )}</p>
     ${cta(facts, [
-      ['/sign-up', tr('Start free')],
+      [BUSINESS_START, tr('Start free')],
       ['/pricing', tr('Pricing')],
     ])}
   </section>
@@ -714,7 +720,7 @@ ${main}
   ${explorer('step', tr('A customer’s day · pick a step'), BUSINESS_STEPS)}
   <section class="hero">
     ${cta(facts, [
-      ['/sign-up', tr('Start free')],
+      [BUSINESS_START, tr('Start free')],
       ['/developers', tr('For developers')],
     ])}
   </section>

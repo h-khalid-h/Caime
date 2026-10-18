@@ -139,6 +139,7 @@ export const qk = {
   allOrgs: ['org'] as const,
   allOrgListings: ['org-listings'] as const,
   allOrgInboxes: ['org-inbox'] as const,
+  allOrgDoors: ['org-door'] as const,
   allUpdates: ['updates'] as const,
   allCalendars: ['calendar'] as const,
   allOrgCalendars: ['org-calendar'] as const,

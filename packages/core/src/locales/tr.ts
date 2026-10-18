@@ -4100,4 +4100,23 @@ export const turkish: Catalog = {
   'main calendar only': 'yalnızca ana takvim',
   'The plans Caime added to its calendar that are still ahead are taken out.':
     'Caime’in bu takvime eklediği ve henüz gelmemiş planlar kaldırılır.',
+  'Add closed days': 'Kapalı gün ekle',
+  'A holiday or a week away: nobody books a time on those days.':
+    'Bir tatil ya da bir haftalık izin: o günlere kimse randevu alamaz.',
+  'Choose the first and the last day.': 'İlk ve son günü seçin.',
+  'A closure ends on the day it starts or later.':
+    'Kapalı dönem başladığı gün ya da daha sonra biter.',
+  'Closed days': 'Kapalı günler',
+  'Nobody books a time on these days.': 'Bu günlere kimse randevu alamaz.',
+  'First day closed': 'Kapalı ilk gün',
+  'Last day closed': 'Kapalı son gün',
+  'A holiday': 'Bir tatil',
+  'Book online': 'Çevrim içi randevu',
+  'Beside it, the way to book: whoever opens this picks a time, with an account or without one, and the booking lands in your inbox.':
+    'Yanında randevu bağlantısı: açan kişi hesabı olsun olmasın bir saat seçer ve randevu gelen kutunuza düşer.',
+  'QR code for booking with {name}': '{name} için randevu QR kodu',
+  'Book with {name} on Caime:': 'Caime’de {name} için randevu alın:',
+  'You came to answer customers as your organization: start it next, then your door, hours and team. Find people by @handle or email any time.':
+    'Müşterilere kuruluşunuz adına yanıt vermek için geldiniz: şimdi onu oluşturun, ardından kapısını, saatlerini ve ekibini. İnsanları istediğiniz zaman @kullanıcı adı ya da e-postayla bulun.',
+  'Start your organization': 'Kuruluşunuzu oluşturun',
 };

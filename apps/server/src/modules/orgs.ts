@@ -17,6 +17,7 @@ import {
   canManageOrg,
   canRemoveFromOrg,
   handsOverOnLeaving,
+  isBooked,
   methodsFor,
   nextOwner,
   normalizeDomain,
@@ -90,6 +91,7 @@ import {
 import { personViewsFor } from '../lib/people-batch';
 import { orgPlacesFor } from '../lib/places';
 import { assertInsights, assertTeamRoom, orgPlanView } from '../lib/plans';
+import { VISITOR } from '../lib/public-booking';
 import { doorPath } from '../lib/public-pages';
 import { viewerRelation } from '../lib/relations';
 import { forgetSitemaps } from '../lib/sitemap-cache';
@@ -383,10 +385,24 @@ export async function orgRoutes(app: FastifyInstance, ctx: AppContext) {
     const { id } = parse(idParam, req.params);
     const org = await orgById(ctx.db, id);
     if (!(await orgSeat(ctx.db, auth.userId, id))) throw notFound(tr('That organization'));
-    const url = `${ctx.config.PUBLIC_URL.replace(/\/+$/, '')}${doorPath(org.handle)}`;
-    // The same for everyone on the team until the handle changes: a browser may keep it a while.
-    reply.header('cache-control', 'private, max-age=3600');
-    return { url, qr: qrPath(url) };
+    const base = ctx.config.PUBLIC_URL.replace(/\/+$/, '');
+    const url = `${base}${doorPath(org.handle)}`;
+    // Beside the door, the way to book (C2a): what a visitor may book from a page, as its page
+    // shows it (one item: its own page with the times; more: the organization's, listing them).
+    const shelf = await ctx.db
+      .selectFrom('organizations')
+      .select(['booking', 'booking_items', 'collections'])
+      .where('id', '=', id)
+      .executeTakeFirstOrThrow();
+    const host = orgHost({ id, ...shelf });
+    const bookable = host.hours ? itemsFor(host, VISITOR).filter(isBooked) : [];
+    const handle = encodeURIComponent(org.handle);
+    const bookUrl = bookable.length
+      ? `${base}/o/${handle}${bookable.length === 1 ? `/${encodeURIComponent(bookable[0]?.slug ?? '')}` : ''}`
+      : null;
+    // Follows the catalog, so it's asked again each time (cheap: a code of a short link).
+    reply.header('cache-control', 'private, no-cache');
+    return { url, qr: qrPath(url), book: bookUrl ? { url: bookUrl, qr: qrPath(bookUrl) } : null };
   });
 
   /**

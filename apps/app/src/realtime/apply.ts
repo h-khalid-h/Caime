@@ -350,7 +350,11 @@ export function applyEvent(qc: QueryClient, event: RealtimeEvent, me: string): v
     case 'booking.changed':
       // A host's offer saved (hours, catalog, ordering, ways to be paid) on another device.
       if (event.data.orgId === null) invalidate(qk.myBooking);
-      else invalidate(qk.allOrgs, 'orgs');
+      else {
+        invalidate(qk.allOrgs, 'orgs');
+        // The door's Book link follows the catalog (C2a).
+        invalidate(qk.allOrgDoors, 'org-doors');
+      }
       invalidate(qk.allSlots, 'slots');
       return;
     case 'suggestion.created':

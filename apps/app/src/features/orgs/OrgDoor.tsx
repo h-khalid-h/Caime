@@ -42,11 +42,73 @@ function saveSvg(name: string, svg: string): void {
   setTimeout(() => URL.revokeObjectURL(url), 1000);
 }
 
+/** A link and its code, side by side: the code to print, the link to copy, save or share. */
+function LinkCode({
+  url,
+  qr,
+  label,
+  file,
+  shareText,
+  testID,
+}: {
+  url: string;
+  qr: { size: number; path: string };
+  /** What a screen reader says the code is. */
+  label: string;
+  file: string;
+  shareText: string;
+  testID: string;
+}) {
+  const side = qr.size + QUIET * 2;
+  return (
+    <View style={{ flexDirection: 'row', gap: 16, alignItems: 'flex-start' }}>
+      {/* Always black on white, whatever the theme: a code is for a camera, not a reader. */}
+      <View
+        style={{ borderRadius: 8, overflow: 'hidden', backgroundColor: '#fff' }}
+        accessible
+        accessibilityRole="image"
+        accessibilityLabel={label}
+        testID={`${testID}-qr`}
+      >
+        <Svg width={128} height={128} viewBox={`${-QUIET} ${-QUIET} ${side} ${side}`}>
+          <Rect x={-QUIET} y={-QUIET} width={side} height={side} fill="#fff" />
+          <Path d={qr.path} fill="#000" />
+        </Svg>
+      </View>
+      <View style={{ flex: 1, gap: 8 }}>
+        <CopyRow label={tr('Link')} value={url} testID={`${testID}-link`} />
+        <View style={{ flexDirection: 'row', gap: 8, flexWrap: 'wrap' }}>
+          {isWeb ? (
+            <Button
+              label={tr('Save the code')}
+              icon={Download}
+              size="sm"
+              variant="secondary"
+              onPress={() => {
+                saveSvg(file, svgFile(qr.size, qr.path));
+                toast(tr('Saved as an SVG: it prints sharp at any size.'));
+              }}
+              testID={`${testID}-save`}
+            />
+          ) : null}
+          <Button
+            label={tr('Share')}
+            icon={Share}
+            size="sm"
+            variant="secondary"
+            onPress={() => void shareLink(shareText, url)}
+            testID={`${testID}-share`}
+          />
+        </View>
+      </View>
+    </View>
+  );
+}
+
 export function OrgDoor({ org }: { org: OrgView }) {
   const t = useTheme();
   const door = useQuery({ queryKey: qk.orgDoor(org.id), queryFn: () => endpoints.orgDoor(org.id) });
   const d = door.data;
-  const side = d ? d.qr.size + QUIET * 2 : 0;
   return (
     <View testID="org-door">
       <Card>
@@ -58,47 +120,33 @@ export function OrgDoor({ org }: { org: OrgView }) {
           )}
         </Text>
         {d ? (
-          <View style={{ flexDirection: 'row', gap: 16, alignItems: 'flex-start' }}>
-            {/* Always black on white, whatever the theme: a code is for a camera, not a reader. */}
-            <View
-              style={{ borderRadius: 8, overflow: 'hidden', backgroundColor: '#fff' }}
-              accessibilityRole="image"
-              accessibilityLabel={tr('QR code of {name}’s link', { name: org.name })}
-              testID="org-door-qr"
-            >
-              <Svg width={128} height={128} viewBox={`${-QUIET} ${-QUIET} ${side} ${side}`}>
-                <Rect x={-QUIET} y={-QUIET} width={side} height={side} fill="#fff" />
-                <Path d={d.qr.path} fill="#000" />
-              </Svg>
-            </View>
-            <View style={{ flex: 1, gap: 8 }}>
-              <CopyRow label={tr('Link')} value={d.url} testID="org-door-link" />
-              <View style={{ flexDirection: 'row', gap: 8, flexWrap: 'wrap' }}>
-                {isWeb ? (
-                  <Button
-                    label={tr('Save the code')}
-                    icon={Download}
-                    size="sm"
-                    variant="secondary"
-                    onPress={() => {
-                      saveSvg(`${org.handle}-caime`, svgFile(d.qr.size, d.qr.path));
-                      toast(tr('Saved as an SVG: it prints sharp at any size.'));
-                    }}
-                    testID="org-door-save"
-                  />
-                ) : null}
-                <Button
-                  label={tr('Share')}
-                  icon={Share}
-                  size="sm"
-                  variant="secondary"
-                  onPress={() =>
-                    void shareLink(tr('Write to {name} on Caime:', { name: org.name }), d.url)
-                  }
-                  testID="org-door-share"
+          <View style={{ gap: 16 }}>
+            <LinkCode
+              url={d.url}
+              qr={d.qr}
+              label={tr('QR code of {name}’s link', { name: org.name })}
+              file={`${org.handle}-caime`}
+              shareText={tr('Write to {name} on Caime:', { name: org.name })}
+              testID="org-door"
+            />
+            {d.book ? (
+              <View style={{ gap: 8 }} testID="org-door-book">
+                <Text variant="bodyStrong">{tr('Book online')}</Text>
+                <Text variant="caption" color="textSecondary">
+                  {tr(
+                    'Beside it, the way to book: whoever opens this picks a time, with an account or without one, and the booking lands in your inbox.',
+                  )}
+                </Text>
+                <LinkCode
+                  url={d.book.url}
+                  qr={d.book.qr}
+                  label={tr('QR code for booking with {name}', { name: org.name })}
+                  file={`${org.handle}-book-caime`}
+                  shareText={tr('Book with {name} on Caime:', { name: org.name })}
+                  testID="org-door-book"
                 />
               </View>
-            </View>
+            ) : null}
           </View>
         ) : (
           <Text variant="caption" color={door.isError ? 'danger' : 'textTertiary'}>

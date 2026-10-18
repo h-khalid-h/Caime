@@ -1369,6 +1369,12 @@ export interface OrgDoorView {
   url: string;
   /** The code of it: modules per side, and the dark modules as one SVG path in module units. */
   qr: { size: number; path: string };
+  /**
+   * The way to book beside it (C2a): the item's page when one item may be booked from a page,
+   * else the organization's page listing them; null while nothing can be (no hours, no public
+   * item). A visitor books there with or without an account (R97 (1)).
+   */
+  book: { url: string; qr: { size: number; path: string } } | null;
 }
 
 /**

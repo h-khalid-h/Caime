@@ -54,6 +54,31 @@ export interface BookingHours {
    * place's days, and on the host's where the place has none.
    */
   placeHours?: PlaceHours[];
+  /** Days closed whatever the week says (C2a): no time falls on one, at any branch. */
+  closed?: ClosedDays[];
+}
+
+/**
+ * A stretch the host is closed (C2a): a holiday, a week away. Its days are the host's own
+ * (`YYYY-MM-DD` on its clock), both ends included; the note is the team's own word for it.
+ */
+export interface ClosedDays {
+  from: string;
+  to: string;
+  note?: string;
+}
+
+/** How many closures the hours keep: a year's holidays and then some. */
+export const CLOSED_MAX = 50;
+
+/** A day of the calendar as the hours name one, `YYYY-MM-DD`. */
+function dayKey(d: { year: number; month: number; day: number }): string {
+  return `${d.year}-${String(d.month).padStart(2, '0')}-${String(d.day).padStart(2, '0')}`;
+}
+
+/** Whether the host is closed on a day (`YYYY-MM-DD` on its clock). */
+export function closedOn(hours: Pick<BookingHours, 'closed'>, day: string): boolean {
+  return (hours.closed ?? []).some((c) => c.from <= day && day <= c.to);
 }
 
 /**
@@ -516,6 +541,8 @@ export function openSlots(all: BookingHours, opts: SlotQuery): Date[] {
   const first = zonedParts(new Date(earliest), hours.timeZone);
   for (let offset = 0; offset <= hours.horizonDays + 1 && out.length < limit; offset++) {
     const d = addDays(first, offset);
+    // Closed whatever the week says (C2a): the host's closures hold at every branch.
+    if (closedOn(all, dayKey(d))) continue;
     for (const day of hours.days) {
       if (day.weekday !== d.weekday) continue;
       const openAt = minutesOf(day.start);
@@ -532,6 +559,9 @@ export function openSlots(all: BookingHours, opts: SlotQuery): Date[] {
         if (start < earliest) continue;
         if (start >= latest) break;
         if (end > opts.now.getTime() + (hours.horizonDays + 1) * DAY_MS) break;
+        // A stay spans no closed night.
+        const nights = Array.from({ length: want }, (_, i) => dayKey(addDays(d, i)));
+        if (nights.some((night) => closedOn(all, night))) continue;
         if (open(start, end)) out.push(new Date(start));
         continue;
       }

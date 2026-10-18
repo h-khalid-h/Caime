@@ -1450,4 +1450,5 @@ export const frServer: Catalog = {
   'That page': 'Cette page',
   'Your earlier booking here is still waiting for an answer. Join {site} with the same address to follow it.':
     'Votre réservation précédente ici attend encore une réponse. Rejoignez {site} avec la même adresse pour la suivre.',
+  'They’ve left that call.': 'Cette personne a quitté l’appel.',
 };

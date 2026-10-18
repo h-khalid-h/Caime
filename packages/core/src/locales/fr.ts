@@ -4275,4 +4275,23 @@ export const fr: Catalog = {
   'main calendar only': 'agenda principal seulement',
   'The plans Caime added to its calendar that are still ahead are taken out.':
     'Les rendez-vous à venir que Caime a ajoutés à son agenda en sont retirés.',
+  'Add closed days': 'Ajouter des jours de fermeture',
+  'A holiday or a week away: nobody books a time on those days.':
+    'Un jour férié ou une semaine d’absence : personne ne réserve ces jours-là.',
+  'Choose the first and the last day.': 'Choisissez le premier et le dernier jour.',
+  'A closure ends on the day it starts or later.':
+    'Une fermeture se termine le jour où elle commence ou plus tard.',
+  'Closed days': 'Jours de fermeture',
+  'Nobody books a time on these days.': 'Personne ne réserve ces jours-là.',
+  'First day closed': 'Premier jour de fermeture',
+  'Last day closed': 'Dernier jour de fermeture',
+  'A holiday': 'Un jour férié',
+  'Book online': 'Réserver en ligne',
+  'Beside it, the way to book: whoever opens this picks a time, with an account or without one, and the booking lands in your inbox.':
+    'À côté, le lien pour réserver : qui l’ouvre choisit un horaire, avec ou sans compte, et la réservation arrive dans votre boîte de réception.',
+  'QR code for booking with {name}': 'Code QR pour réserver chez {name}',
+  'Book with {name} on Caime:': 'Réservez chez {name} sur Caime :',
+  'You came to answer customers as your organization: start it next, then your door, hours and team. Find people by @handle or email any time.':
+    'Vous êtes venu répondre aux clients au nom de votre organisation : créez-la maintenant, puis sa porte, ses horaires et son équipe. Trouvez des gens par @identifiant ou e-mail à tout moment.',
+  'Start your organization': 'Créer votre organisation',
 };

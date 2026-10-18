@@ -2012,12 +2012,28 @@ graph) and the number that will show it; one that sharpens none is hygiene and s
 - [ ] C1d. "Message before an account" at an organization's door the same way (the reply reaches
       the visitor by mail only with Caime Mail on, said so on the page); a phone number proven by
       WhatsApp code as the address where `WHATSAPP_*` is set; three fields on a link arrival.
-- [ ] C2–C3. The business front door (`/business` to `/orgs/new`, "For me / For my organization"
-      in onboarding, a checklist that moves past DNS, a Book link and QR beside the door, "block
-      time" and holidays); team invites by link and email with domain auto-join; space and group
-      join links; invite-first sharing, and WhatsApp or SMS first on a browser without a contact
-      picker; "Copy guest link"; the iPhone "Add to Home Screen" card; an expired-invite page;
-      "Keep this" on the guest page.
+- [x] C2a. The business front door, first part (2026-10-18): days a host is closed (holidays, a
+      week away) are kept with the hours (`BookingHours.closed`, `from`/`to` on its clock, a note,
+      fifty at most) and skipped by core `openSlots` at every branch and for every night of a stay
+      (`closedOn`), so neither the page nor the app nor the agent offers a time on one and a
+      booking that names one is refused `slot_taken`; the setup lists them and edits them in a
+      sheet ("Add closed days"). The door carries the way to book beside it (`OrgDoorView.book`:
+      the one item a visitor may book from a page, else the organization's page listing them, with
+      its own code to print). "Start free" on the page for organizations goes to sign-up with
+      `?link=/orgs/new`, and onboarding treats it as a linked arrival ("Start your organization"),
+      so a new owner lands on starting theirs. Sharpens advantage 3 (the Book link and its code
+      beside the door, and a clinic's holidays honoured) and adoption on the way in (review §1
+      H2, H4). Verified with core `booking.test.ts` (a closed day and a stay over one), the server's
+      `booking.test.ts` (no time, a refused booking, a backwards closure refused), `door.test.ts`
+      (none, one item's page, the organization's page, none again), `public-pages.test.ts`, and
+      the E2E `front-door.spec.ts` (closed days added in the setup leave the item page without
+      times that day; the door shows the Book link and code; Start free signs a new owner up and
+      lands them on `/orgs/new`).
+- [ ] C2–C3. The rest of the front door ("For me / For my organization" for whoever signs up
+      directly, a checklist that moves past DNS); team invites by link and email with domain
+      auto-join; space and group join links; invite-first sharing, and WhatsApp or SMS first on a
+      browser without a contact picker; "Copy guest link"; the iPhone "Add to Home Screen" card;
+      an expired-invite page; "Keep this" on the guest page.
 - [ ] D. Performance and integrity: the aliased `selectAll` guard and its eleven sites; people
       lists through `personViewsFor` with a scale ceiling; `participants.last_sent_seq` for the
       inbox; a large-group mode and one transcript view; a `defer` semaphore and gauge; bus payload
@@ -3654,6 +3670,11 @@ graph) and the number that will show it; one that sharpens none is hygiene and s
   journeys, safety, reliability, performance, intelligence, mail and calendar, chat, integrations,
   business and code integrity; the matrix against WhatsApp, Signal, Slack, Calendly and Workspace;
   an age-assurance design; the integration framework mapped to the code; plan M16 (A–H).
+- 2026-10-18 — M16 C2a: closed days (holidays) kept with the hours and skipped by the slots
+  everywhere; the Book link and its code beside the door; "Start free" on the page for
+  organizations lands a new owner on starting theirs through onboarding. With it, a group call's
+  late signal (from or to a device that had just left a call others were still in) answers 409
+  as one to an ended call does; it was 403, and the meeting guests' E2E caught the race.
 - 2026-10-18 — M16 C1c: the booker recalled by mail the day before a confirmed booking, and a
   person's public item booked from their page as an organization's is (a message request that
   holds the time; agreeing to it answers it). Advantage 3 now books from a professional's own

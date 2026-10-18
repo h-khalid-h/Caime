@@ -7,6 +7,7 @@ import {
   bookingPrice,
   bookingSpan,
   canBook,
+  closedOn,
   describeHours,
   hoursFor,
   isBooked,
@@ -283,6 +284,38 @@ describe('catalog items (R58)', () => {
     expect(two).not.toContain('2026-10-02');
     expect(two).toContain('2026-10-04');
     expect(two).toContain('2026-10-01');
+  });
+
+  it('a closed day (C2a) has no times, and a stay spans no closed night', () => {
+    // Sunday 4 and Monday 5 October closed (a holiday); Saturday 3 and Tuesday 6 open.
+    const shut: BookingHours = {
+      ...noLead,
+      closed: [{ from: '2026-10-04', to: '2026-10-05', note: 'Holiday' }],
+    };
+    const wide = { from: now, to: new Date('2026-10-08T00:00:00Z'), now, busy: [] };
+    const days = new Set(openSlots(shut, wide).map((d) => d.toISOString().slice(0, 10)));
+    expect(days.has('2026-10-04')).toBe(false);
+    expect(days.has('2026-10-05')).toBe(false);
+    expect(days.has('2026-10-03')).toBe(true);
+    expect(days.has('2026-10-06')).toBe(true);
+    // A branch's own days close with the host's.
+    const branch = { placeId: '00000000-0000-4000-8000-000000000001', days: shut.days };
+    const atBranch = openSlots(
+      { ...shut, placeHours: [branch] },
+      { ...wide, item: { unit: 'minutes', minutes: 30, capacity: 1, placeId: branch.placeId } },
+    ).map((d) => d.toISOString().slice(0, 10));
+    expect(atBranch).not.toContain('2026-10-04');
+    expect(atBranch).toContain('2026-10-06');
+    // Two nights from Saturday would sleep on Sunday: out; from Tuesday: in.
+    const room = { unit: 'days' as const, minutes: null, capacity: 2 };
+    const stays = openSlots(shut, { ...wide, item: room, quantity: 2 }).map((d) =>
+      d.toISOString().slice(0, 10),
+    );
+    expect(stays).not.toContain('2026-10-03');
+    expect(stays).toContain('2026-10-06');
+    expect(closedOn(shut, '2026-10-05')).toBe(true);
+    expect(closedOn(shut, '2026-10-06')).toBe(false);
+    expect(closedOn(noLead, '2026-10-05')).toBe(false);
   });
 
   it('bookingSpan, canBook, bookableItems and bookingPrice', () => {

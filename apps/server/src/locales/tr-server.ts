@@ -1387,4 +1387,5 @@ export const turkishServer: Catalog = {
   'That page': 'Bu sayfa',
   'Your earlier booking here is still waiting for an answer. Join {site} with the same address to follow it.':
     'Buradaki önceki rezervasyonunuz hâlâ yanıt bekliyor. Takip etmek için aynı adresle {site} hesabı açın.',
+  'They’ve left that call.': 'Bu kişi aramadan ayrıldı.',
 };

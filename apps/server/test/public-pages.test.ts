@@ -304,9 +304,15 @@ describe('the readable web (R44)', () => {
     );
     expect(asked.body).not.toContain('entry-abc.js');
     // The ways into the app carry it too, and the entry screens honour it.
-    expect(asked.body).toContain('<a href="/sign-up?lang=ar">ابدأ مجانًا</a>');
+    // On the page for organizations, Start free goes on to starting one (C2a), the language kept.
+    expect(asked.body).toContain(
+      '<a href="/sign-up?link=%2Forgs%2Fnew&amp;lang=ar">ابدأ مجانًا</a>',
+    );
     expect((await visit('/sign-in?lang=ar')).body).toContain('class="pub-entry" dir="rtl"');
-    expect((await visit('/business')).body).toContain('<a href="/sign-up">Start free</a>');
+    expect((await visit('/business')).body).toContain(
+      '<a href="/sign-up?link=%2Forgs%2Fnew">Start free</a>',
+    );
+    expect((await visit('/pricing')).body).toContain('<a href="/sign-up">Start free</a>');
     // The numbers are the code's still, in Arabic sentences.
     expect((await visit('/security?lang=ar')).body).toContain('حتى 64 شخصًا، و20 جهازًا');
     // The browser's own language gives Arabic without asking, and links carry nothing extra.

@@ -2455,4 +2455,22 @@ export const arB: Catalog = {
   'main calendar only': 'التقويم الرئيسي وحده',
   'The plans Caime added to its calendar that are still ahead are taken out.':
     'تُزال المواعيد القادمة التي أضافها Caime إلى تقويمه.',
+  'Add closed days': 'إضافة أيام إغلاق',
+  'A holiday or a week away: nobody books a time on those days.':
+    'عطلة أو أسبوع غياب: لا حجز لأي موعد في تلك الأيام.',
+  'Choose the first and the last day.': 'يلزم تحديد اليوم الأول واليوم الأخير.',
+  'A closure ends on the day it starts or later.': 'ينتهي الإغلاق في يوم بدئه أو بعده.',
+  'Closed days': 'أيام الإغلاق',
+  'Nobody books a time on these days.': 'لا حجز لأي موعد في هذه الأيام.',
+  'First day closed': 'أول يوم إغلاق',
+  'Last day closed': 'آخر يوم إغلاق',
+  'A holiday': 'عطلة',
+  'Book online': 'الحجز عبر الإنترنت',
+  'Beside it, the way to book: whoever opens this picks a time, with an account or without one, and the booking lands in your inbox.':
+    'وبجانبه طريق الحجز: من يفتح هذا يختار موعدًا، بحساب أو من دونه، ويصل الحجز إلى صندوق الوارد.',
+  'QR code for booking with {name}': 'رمز QR للحجز لدى {name}',
+  'Book with {name} on Caime:': 'الحجز لدى {name} على Caime:',
+  'You came to answer customers as your organization: start it next, then your door, hours and team. Find people by @handle or email any time.':
+    'الردّ على العملاء باسم مؤسستك يبدأ بإنشائها، ثم بابها ومواعيدها وفريقها. البحث عن الناس بالمعرّف @ أو البريد متاح في أي وقت.',
+  'Start your organization': 'إنشاء مؤسستك',
 };

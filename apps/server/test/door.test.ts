@@ -63,7 +63,57 @@ describe('the door', () => {
     const theirs = await omar.get(`/v1/orgs/${orgId}/door`);
     expect(theirs).toEqual(mine);
     const res = await noor.req('GET', `/v1/orgs/${orgId}/door`);
-    expect(res.headers['cache-control']).toBe('private, max-age=3600');
+    // Asked again each time: the Book link beside it follows the catalog (C2a).
+    expect(res.headers['cache-control']).toBe('private, no-cache');
+  });
+
+  it('carries the way to book beside it once something can be booked from a page (C2a)', async () => {
+    expect((await noor.get(`/v1/orgs/${orgId}/door`)).book).toBeNull();
+    const item = (patch: Record<string, unknown>) => ({
+      id: 'x',
+      name: 'X',
+      price: null,
+      unit: 'minutes',
+      minutes: 30,
+      capacity: 1,
+      maxQuantity: 1,
+      audience: 'public',
+      providers: null,
+      askTopic: false,
+      ...patch,
+    });
+    const hours = {
+      timeZone: 'Africa/Cairo',
+      slotMinutes: 30,
+      days: [1, 2, 3].map((weekday) => ({ weekday, start: '09:00', end: '12:00' })),
+      leadMinutes: 60,
+      horizonDays: 14,
+    };
+    // One public item (a connections-only one doesn't count): its own page, with the times.
+    await noor.req('PUT', `/v1/orgs/${orgId}/booking`, {
+      booking: hours,
+      items: [
+        item({ id: 'cleaning', name: 'Cleaning' }),
+        item({ id: 'consult', name: 'Consultation', audience: 'connections' }),
+      ],
+    });
+    const one = (await noor.get(`/v1/orgs/${orgId}/door`)).book;
+    expect(one.url).toBe('https://caime.example/o/nile.dental/cleaning');
+    expect(one.qr.path).toBe(qrPath(one.url).path);
+    // Two: the organization's page, which lists them.
+    await noor.req('PUT', `/v1/orgs/${orgId}/booking`, {
+      booking: hours,
+      items: [
+        item({ id: 'cleaning', name: 'Cleaning' }),
+        item({ id: 'whitening', name: 'Whitening' }),
+      ],
+    });
+    expect((await omar.get(`/v1/orgs/${orgId}/door`)).book.url).toBe(
+      'https://caime.example/o/nile.dental',
+    );
+    // No hours, nothing to book: none.
+    await noor.req('PUT', `/v1/orgs/${orgId}/booking`, { booking: null, items: [] });
+    expect((await noor.get(`/v1/orgs/${orgId}/door`)).book).toBeNull();
   });
 
   it('is not a customer’s, nor a stranger’s', async () => {

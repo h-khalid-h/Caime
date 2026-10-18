@@ -25,6 +25,7 @@ import {
   BOOKING_CAPACITY_MAX,
   BOOKING_DAYS_MAX,
   BOOKING_ITEMS_MAX,
+  CLOSED_MAX,
   ITEM_OPTIONS_MAX,
   OPTION_CHOICES_MAX,
   ORDER_LINES_MAX,
@@ -1600,6 +1601,18 @@ export const BookingHoursBody = z
       .refine((ps) => new Set(ps.map((p) => p.placeId)).size === ps.length, {
         message: msg('Each place’s hours once.'),
       })
+      .optional(),
+    /** Days closed whatever the week says (C2a): holidays, a week away. Left out, there's none. */
+    closed: z
+      .array(
+        z
+          .object({ from: Day, to: Day, note: z.string().trim().max(80).optional() })
+          .strict()
+          .refine((c) => c.from <= c.to, {
+            message: msg('A closure ends on the day it starts or later.'),
+          }),
+      )
+      .max(CLOSED_MAX)
       .optional(),
   })
   .strict();

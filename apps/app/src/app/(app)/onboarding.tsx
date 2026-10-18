@@ -57,7 +57,9 @@ export default function Onboarding() {
   const door = useOrg(doorHandle ?? '');
   const doorName = door.data?.org.name ?? null;
   const forApp = isAuthorizeLink(pending);
-  const linked = Boolean(linkHandle || inviteToken || forApp);
+  // Came from the page for organizations (C2a): the last step starts theirs.
+  const forOrg = pending === '/orgs/new';
+  const linked = Boolean(linkHandle || inviteToken || forApp || forOrg);
   // Two steps, how Caime works and your people; someone who came for a person, an organization
   // or an app goes straight to it (R56). The recovery codes wait on Chats, not here.
   const steps = (['rules', 'people'] as const).filter((x) => x !== 'rules' || !linked);
@@ -203,25 +205,29 @@ export default function Onboarding() {
                   ? tr(
                       'An app asked to act for you. See what it asks first; find people by @handle or email any time.',
                     )
-                  : doorHandle
+                  : forOrg
                     ? tr(
-                        'You came here to write to {name}: open the conversation and say what you need. Find others by @handle or email any time.',
-                        { name: doorName ?? `@${doorHandle}` },
+                        'You came to answer customers as your organization: start it next, then your door, hours and team. Find people by @handle or email any time.',
                       )
-                    : linkHandle
+                    : doorHandle
                       ? tr(
-                          'You came here for @{linkHandle}. Find others by @handle or email any time.',
-                          { linkHandle },
+                          'You came here to write to {name}: open the conversation and say what you need. Find others by @handle or email any time.',
+                          { name: doorName ?? `@${doorHandle}` },
                         )
-                      : inviteToken
+                      : linkHandle
                         ? tr(
-                            '{inviter} invited you: open the conversation and you’re connected. Find others by @handle or email any time.',
-                            { inviter: inviter ?? tr('Someone') },
+                            'You came here for @{linkHandle}. Find others by @handle or email any time.',
+                            { linkHandle },
                           )
-                        : tr(
-                            'Find them in your contacts, by @handle or email, or share your link: @{handle}',
-                            { handle: me.handle },
-                          )}
+                        : inviteToken
+                          ? tr(
+                              '{inviter} invited you: open the conversation and you’re connected. Find others by @handle or email any time.',
+                              { inviter: inviter ?? tr('Someone') },
+                            )
+                          : tr(
+                              'Find them in your contacts, by @handle or email, or share your link: @{handle}',
+                              { handle: me.handle },
+                            )}
               </Text>
             </View>
             {linked ? (
@@ -229,11 +235,13 @@ export default function Onboarding() {
                 label={
                   forApp
                     ? tr('See what the app asks')
-                    : inviteToken
-                      ? tr('Open the conversation with {inviter}', { inviter: inviter ?? 'them' })
-                      : doorHandle
-                        ? tr('Write to {name}', { name: doorName ?? `@${doorHandle}` })
-                        : tr('See @{linkHandle}', { linkHandle })
+                    : forOrg
+                      ? tr('Start your organization')
+                      : inviteToken
+                        ? tr('Open the conversation with {inviter}', { inviter: inviter ?? 'them' })
+                        : doorHandle
+                          ? tr('Write to {name}', { name: doorName ?? `@${doorHandle}` })
+                          : tr('See @{linkHandle}', { linkHandle })
                 }
                 size="lg"
                 block

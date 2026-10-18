@@ -321,9 +321,13 @@ appointment from a catalog).
   organization route passes `write` to `OrgScreen`, which starts (or opens) the customer's
   conversation once through `endpoints.messageOrg` and replaces the route. The team reads
   `GET /orgs/:id/door` (`OrgDoorView`: the link on `PUBLIC_URL`, the QR as one SVG path from
-  `lib/door.ts`, cached an hour in the browser), drawn by `features/orgs/OrgDoor.tsx`. Anything
-  else printed for a clinic (a receipt line, a bio) reuses that link and path, never another
-  encoder or a second link shape.
+  `lib/door.ts`, and beside it `book`, the way to book (C2a): the one item a visitor may book
+  from a page, or the organization's page listing several, null while there's none; asked again
+  each time, since it follows the catalog, and refreshed by `booking.changed`), drawn by
+  `features/orgs/OrgDoor.tsx`. Anything else printed for a clinic (a receipt line, a bio) reuses
+  those links and paths, never another encoder or a second link shape. The page for
+  organizations' "Start free" is `BUSINESS_START` (`/sign-up?link=/orgs/new`), which onboarding
+  treats as a linked arrival ("Start your organization").
 - An organization's setup (R57) is `/o/[handle]/setup` (`features/orgs/OrgSetup.tsx`, owner and
   admins only; others get a line saying so): the door, `OrgVerification`, `OrgData`, `OrgBooking`,
   `OrgCheckout`, `OrgAgent`, `OrgApps` and `OrgPlan`, in a clinic's order. The page (`OrgScreen`)
@@ -397,7 +401,8 @@ appointment from a catalog).
   `closedOrgById` is for taking one back. A closed organization's conversations refuse every
   write with `409 org_closed` (`sendMessage`), and the app says so in the composer's place.
 - Onboarding (R56) is two steps, how Caime works and your people, and a linked arrival (an
-  invite, a handle, a door, an app's consent) starts at the last; the recovery codes are a card
+  invite, a handle, a door, an app's consent, `/orgs/new` from the page for organizations)
+  starts at the last; the recovery codes are a card
   on Attention, the first screen (`features/account/RecoveryCodesCard.tsx`, its sheet loaded when opened) while
   `me.recoveryCodesSeen` is false:
   the fresh codes come from `useSession().freshRecoveryCodes` (memory only) and Done sets
@@ -505,7 +510,9 @@ appointment from a catalog).
   `orgHost`, `personHost`), each with hours (`booking`, core `BookingHours`) and a catalog
   (`booking_items`, core `BookingItem`: a price or none, minutes or days, capacity, how many in
   one booking, an audience, providers for an organization, `askTopic`), set by
-  `PUT /orgs/:id/booking` (owner or admins) and `PUT /me/booking` with one body (`BookingBody`)
+  `PUT /orgs/:id/booking` (owner or admins) and `PUT /me/booking` with one body (`BookingBody`;
+  the hours' `closed` days, holidays on the host's clock, are skipped by core `openSlots` at every
+  branch: `closedOn`)
   and one app component (`features/booking/BookingSetup.tsx`, used by `OrgBooking` and
   Settings · Bookings). Slots are never kept: `openSlotsFor(ctx, host, window, { item, quantity })`
   cuts the hours with core `openSlots` (the item's length on the grid, full at its capacity,
@@ -1204,7 +1211,9 @@ appointment from a catalog).
   each connection (`BYE` on its control channel), stops what it sends at once and closes its
   connections only once the leave has landed (`LEAVE_MS` at most), so the others hear it from the
   server before their connection fails; a goodbye heard lets that device go, never retried
-  (closed first, a device still in it restarted ICE against a call that had ended: 409s).
+  (closed first, a device still in it restarted ICE against a call that had ended: 409s). A
+  signal already on its way when its sender or the one it's for left is late, as one to an ended
+  call is: `409 call_ended`; between devices that were never in it, 403.
 - A meeting's guests (R83, R84): invited by address from an accepted meeting card held here
   (`features/kits/MeetingGuests.tsx`: Invite by email, the sheet lazy; the card that moved says
   so and opens the space), they arrive at `/j/<token>` (`features/meetings/JoinMeeting.tsx`, a

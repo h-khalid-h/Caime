@@ -14,6 +14,7 @@ import type {
   BookingHours,
   BookingItem,
   BookingUnit,
+  ClosedDays,
   OrderingSettings,
   PlaceHours,
   SharedResource,
@@ -22,6 +23,7 @@ import {
   BOOKING_CAPACITY_MAX,
   BOOKING_DAYS_MAX,
   BOOKING_ITEMS_MAX,
+  CLOSED_MAX,
   describeHours,
   itemPhotoPath,
   RESOURCES_MAX,
@@ -53,6 +55,7 @@ import {
 import type { Sphere } from '@caime/core/taxonomy';
 import Boxes from 'lucide-react-native/icons/boxes';
 import CalendarCheck from 'lucide-react-native/icons/calendar-check';
+import CalendarOff from 'lucide-react-native/icons/calendar-off';
 import HandCoins from 'lucide-react-native/icons/hand-coins';
 import ImageIcon from 'lucide-react-native/icons/image';
 import Layers from 'lucide-react-native/icons/layers';
@@ -67,6 +70,8 @@ import { photoToUpload, pickFromLibrary } from '@/lib/photos';
 import { useUserClock } from '@/lib/time';
 import { Button } from '@/ui/Button';
 import { Chip, ChoiceChips } from '@/ui/Chip';
+import { DateField } from '@/ui/DateField';
+import { dayOf, formatDay } from '@/ui/dates';
 import { ListRow, SectionTitle } from '@/ui/ListRow';
 import { Sheet } from '@/ui/Sheet';
 import { SpherePicker } from '@/ui/SpherePicker';
@@ -247,9 +252,10 @@ export function BookingSetup({
       days,
       leadMinutes: lead,
       horizonDays: horizon,
-      // What items share (R58) and a branch's own days (R92) stay as they are.
+      // What items share (R58), a branch's own days (R92) and closed days (C2a) stay as they are.
       ...(hours?.resources?.length ? { resources: hours.resources } : {}),
       ...(hours?.placeHours?.length ? { placeHours: hours.placeHours } : {}),
+      ...(hours?.closed?.length ? { closed: hours.closed } : {}),
     });
   };
   const saveItems = async (next: BookingItem[], change?: { id: string; stock: number | null }) => {
@@ -277,6 +283,15 @@ export function BookingSetup({
         i.resourceId && !kept.has(i.resourceId) ? { ...i, resourceId: null } : i,
       ),
     });
+  };
+  // Closed days (C2a): kept with the hours, in the order they come, at every branch.
+  const closed = hours?.closed ?? [];
+  const [closing, setClosing] = useState<{ index: number | null; days: ClosedDays } | null>(null);
+  const saveClosed = async (next: ClosedDays[]) => {
+    if (!hours) return;
+    const { closed: _was, ...base } = hours;
+    const sorted = [...next].sort((a, b) => (a.from < b.from ? -1 : a.from > b.from ? 1 : 0));
+    await send({ ...offer, booking: sorted.length ? { ...base, closed: sorted } : base });
   };
   // A branch's own days (R92): none kept, it opens when the organization does.
   const [branch, setBranch] = useState<{ id: string; name: string } | null>(null);
@@ -379,6 +394,31 @@ export function BookingSetup({
             );
           })
         : null}
+      {hours
+        ? closed.map((c, i) => (
+            <ListRow
+              key={`${c.from}-${c.to}`}
+              icon={CalendarOff}
+              title={closedLabel(c, locale)}
+              subtitle={c.note || tr('Closed')}
+              chevron
+              onPress={() => setClosing({ index: i, days: c })}
+              testID={`${testID}-closed-${i}`}
+            />
+          ))
+        : null}
+      {hours && closed.length < CLOSED_MAX ? (
+        <ListRow
+          icon={Plus}
+          title={tr('Add closed days')}
+          subtitle={tr('A holiday or a week away: nobody books a time on those days.')}
+          onPress={() => {
+            const today = dayOf(new Date());
+            setClosing({ index: null, days: { from: today, to: today } });
+          }}
+          testID={`${testID}-add-closed`}
+        />
+      ) : null}
       <ListRow
         icon={ShoppingBag}
         title={
@@ -684,6 +724,29 @@ export function BookingSetup({
             setBranch(null);
           }}
           testID={`${testID}-branch-hours`}
+        />
+      ) : null}
+      {closing ? (
+        <ClosedEditor
+          days={closing.days}
+          isNew={closing.index === null}
+          locale={locale}
+          onClose={() => setClosing(null)}
+          onSave={async (c) => {
+            await saveClosed(
+              closing.index === null
+                ? [...closed, c]
+                : closed.map((x, i) => (i === closing.index ? c : x)),
+            );
+            setClosing(null);
+            toast(tr('Saved'));
+          }}
+          onRemove={async () => {
+            await saveClosed(closed.filter((_, i) => i !== closing.index));
+            setClosing(null);
+            toast(tr('Removed'));
+          }}
+          testID={`${testID}-closed`}
         />
       ) : null}
       {shared ? (
@@ -1145,6 +1208,122 @@ function MoveButtons({ move, testID }: { move: Move; testID: string }) {
 }
 
 /** Something several items share (R58): its name, and how many there are. */
+/** "4 October 2026", or "4 October 2026 to 5 October 2026": a closure as the setup lists it. */
+function closedLabel(c: ClosedDays, locale?: string): string {
+  return c.from === c.to
+    ? formatDay(c.from, locale)
+    : tr('{from} to {to}', { from: formatDay(c.from, locale), to: formatDay(c.to, locale) });
+}
+
+/** Days closed whatever the week says (C2a): a holiday, a week away, with the team's word for it. */
+function ClosedEditor({
+  days,
+  isNew,
+  locale,
+  onClose,
+  onSave,
+  onRemove,
+  testID,
+}: {
+  days: ClosedDays;
+  isNew: boolean;
+  locale?: string;
+  onClose: () => void;
+  onSave: (c: ClosedDays) => Promise<void>;
+  onRemove: () => Promise<void>;
+  testID: string;
+}) {
+  const [from, setFrom] = useState<string | null>(days.from);
+  const [to, setTo] = useState<string | null>(days.to);
+  const [note, setNote] = useState(days.note ?? '');
+  const [busy, setBusy] = useState<'save' | 'remove' | null>(null);
+  const [error, setError] = useState<string | null>(null);
+  const today = dayOf(new Date());
+  const submit = async () => {
+    if (!from || !to) return setError(tr('Choose the first and the last day.'));
+    if (to < from) return setError(tr('A closure ends on the day it starts or later.'));
+    setBusy('save');
+    setError(null);
+    try {
+      await onSave({ from, to, ...(note.trim() ? { note: note.trim() } : {}) });
+    } catch (e) {
+      setError((e as Error).message);
+    } finally {
+      setBusy(null);
+    }
+  };
+  return (
+    <Sheet
+      open
+      onClose={onClose}
+      title={isNew ? tr('Closed days') : closedLabel(days, locale)}
+      subtitle={tr('Nobody books a time on these days.')}
+      footer={
+        <View style={{ gap: 8 }}>
+          <Button
+            label={tr('Save')}
+            block
+            size="lg"
+            onPress={() => void submit()}
+            loading={busy === 'save'}
+            testID={`${testID}-save`}
+          />
+          {!isNew ? (
+            <Button
+              label={tr('Remove')}
+              variant="ghost"
+              block
+              loading={busy === 'remove'}
+              onPress={() => {
+                setBusy('remove');
+                setError(null);
+                void onRemove()
+                  .catch((e: Error) => setError(e.message))
+                  .finally(() => setBusy(null));
+              }}
+              testID={`${testID}-remove`}
+            />
+          ) : null}
+        </View>
+      }
+    >
+      <View style={{ gap: 16 }}>
+        <DateField
+          label={tr('First day closed')}
+          value={from}
+          onChange={(day) => {
+            setFrom(day);
+            // A last day before the first moves with it.
+            if (day && (!to || to < day)) setTo(day);
+          }}
+          min={isNew ? today : undefined}
+          testID={`${testID}-from`}
+        />
+        <DateField
+          label={tr('Last day closed')}
+          value={to}
+          onChange={setTo}
+          min={from ?? undefined}
+          testID={`${testID}-to`}
+        />
+        <TextField
+          label={tr('What it is')}
+          placeholder={tr('A holiday')}
+          value={note}
+          onChangeText={setNote}
+          maxLength={80}
+          testID={`${testID}-note`}
+        />
+        {error ? (
+          <Text variant="bodyStrong" color="danger" testID={`${testID}-error`}>
+            {error}
+          </Text>
+        ) : null}
+      </View>
+    </Sheet>
+  );
+}
+
 function ResourceEditor({
   resource,
   isNew,

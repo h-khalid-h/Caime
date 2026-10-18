@@ -1450,4 +1450,5 @@ export const arServer: Catalog = {
   'That page': 'تلك الصفحة',
   'Your earlier booking here is still waiting for an answer. Join {site} with the same address to follow it.':
     'حجزك السابق هنا لا يزال بانتظار الرد. انضم إلى {site} بالعنوان نفسه لتتابعه.',
+  'They’ve left that call.': 'انتهت المكالمة لهذا الجهاز.',
 };

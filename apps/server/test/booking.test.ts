@@ -137,6 +137,43 @@ describe('bookings (R51)', () => {
     expect((await lina.get(`/v1/orgs/${orgId}/slots?${window}`)).slots).toEqual([]);
     await noor.req('PUT', `/v1/orgs/${orgId}/booking`, { booking: HOURS });
   });
+
+  it('a closed day (C2a) offers no time and books nothing; a closure ends on or after its start', async () => {
+    // Thursday 1 October closed: the window keeps Friday (no hours) and nothing else.
+    const shut = { ...HOURS, closed: [{ from: '2026-10-01', to: '2026-10-01', note: 'Holiday' }] };
+    const items = [{ ...CLEANING, capacity: 1, maxQuantity: 1 }];
+    expect(
+      (await noor.req('PUT', `/v1/orgs/${orgId}/booking`, { booking: shut, items })).statusCode,
+    ).toBe(200);
+    expect((await lina.get(`/v1/orgs/${orgId}`)).org.booking.closed).toEqual(shut.closed);
+    expect((await lina.get(`/v1/orgs/${orgId}/slots?${window}`)).slots).toEqual([]);
+    // A booking that names a time on it is refused as a taken one.
+    const refused = await lina.req('POST', `/v1/conversations/${convo}/messages`, {
+      clientId: uuidv4(),
+      kind: 'kit',
+      payload: {
+        kit: 'appointment',
+        fields: { title: 'Cleaning', start: { at: '2026-10-01T07:00:00Z', hasTime: true } },
+        booking: { itemId: 'cleaning', quantity: 1 },
+      },
+    });
+    expect(refused.statusCode).toBe(409);
+    expect(refused.json().error.code).toBe('slot_taken');
+    // The same day open again, the same booking would fit.
+    const open = { ...HOURS };
+    await noor.req('PUT', `/v1/orgs/${orgId}/booking`, { booking: open, items });
+    expect((await lina.get(`/v1/orgs/${orgId}/slots?${window}&item=cleaning`)).slots).toContain(
+      '2026-10-01T07:00:00.000Z',
+    );
+    // The last day before the first is refused, in the person's words.
+    const backwards = await noor.req('PUT', `/v1/orgs/${orgId}/booking`, {
+      booking: { ...HOURS, closed: [{ from: '2026-10-05', to: '2026-10-04' }] },
+    });
+    expect(backwards.statusCode).toBe(400);
+    expect(backwards.body).toContain('A closure ends on the day it starts or later.');
+    await noor.req('PUT', `/v1/orgs/${orgId}/booking`, { booking: HOURS, items: [] });
+    expect((await lina.get(`/v1/orgs/${orgId}/slots?${window}`)).slots).toHaveLength(6);
+  });
 });
 
 const CLEANING = {

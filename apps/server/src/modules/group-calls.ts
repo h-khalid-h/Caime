@@ -407,8 +407,19 @@ export async function groupCallRoutes(app: FastifyInstance, ctx: AppContext) {
     const to = joined.find(
       (m) => m.user_id === body.toUser && m.device === body.to && m.user_id !== auth.userId,
     );
-    if (!mine || mine.device !== body.deviceId || !to)
+    if (!mine || mine.device !== body.deviceId || !to) {
+      // A candidate already on its way when its sender or the one it's for left is late, as one
+      // to an ended call is (409); between devices that were never in it, it's refused.
+      const left = await ctx.db
+        .selectFrom('call_members')
+        .select('user_id')
+        .where('call_id', '=', id)
+        .where('user_id', 'in', [auth.userId, body.toUser])
+        .where('state', '=', 'left')
+        .executeTakeFirst();
+      if (left) throw new AppError(409, 'call_ended', tr('They’ve left that call.'));
       throw forbidden(tr('This device isn’t in that call.'));
+    }
     ctx.limiter.hit(`call-signal:${id}:${auth.userId}`, ctx.config.isTest ? 10_000 : 600, 60_000);
     // An offer or an answer each way, and one more per reconnect; only candidates are many.
     // Counted for each pair of devices, so nobody can spend what someone has for the others.

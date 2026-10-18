@@ -434,6 +434,11 @@ describe('group calls (PRD §47)', () => {
     await alive(noor, id);
     await alive(sam, id, 'sam-phone-1');
     expect((await leave(omar, id)).json().call).toMatchObject({ state: 'active', rev: 3 });
+    // A candidate already on its way when Omar left, either way, is late (409), not refused.
+    const lateTo = await signal(noor, id, device(noor), device(omar));
+    expect(lateTo.statusCode).toBe(409);
+    expect(lateTo.json().error.code).toBe('call_ended');
+    expect((await signal(omar, id, device(omar), device(noor))).statusCode).toBe(409);
     expect(await lines(sam)).toHaveLength(0);
     await busSettled(t, heard);
     heard.length = 0;
