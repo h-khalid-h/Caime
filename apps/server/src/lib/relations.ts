@@ -187,6 +187,21 @@ export async function isBlockedEitherWay(db: Q, a: string, b: string): Promise<b
   return Boolean(row);
 }
 
+/** Are `a` and `b` both in some conversation now (a one-to-one, a group, a space's), neither gone? */
+export async function inAConversationTogether(db: Q, a: string, b: string): Promise<boolean> {
+  const row = await db
+    .selectFrom('participants as x')
+    .innerJoin('participants as y', 'y.conversation_id', 'x.conversation_id')
+    .select('x.conversation_id')
+    .where('x.user_id', '=', a)
+    .where('y.user_id', '=', b)
+    .where('x.left_at', 'is', null)
+    .where('y.left_at', 'is', null)
+    .limit(1)
+    .executeTakeFirst();
+  return Boolean(row);
+}
+
 /** Do `a` and `b` share at least one active connection (friend of a friend)? */
 export async function shareAConnection(db: Q, a: string, b: string): Promise<boolean> {
   const row = await db

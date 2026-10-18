@@ -4,6 +4,7 @@
  */
 import {
   canSee,
+  clampForMinor,
   defaultPolicies,
   defaultPrivacy,
   isMinor,
@@ -74,28 +75,44 @@ export async function anyMinor(
   const people = await db
     .selectFrom('users')
     .select(['birth_date', 'time_zone'])
+    // A meeting's guest who didn't say they're 18 or over on its page (R85 (3)) is taken at their
+    // word: their age is the one thing a guest says of themselves.
+    .select((eb) =>
+      eb
+        .exists(
+          eb
+            .selectFrom('meeting_guests as g')
+            .select('g.id')
+            .whereRef('g.user_id', '=', 'users.id')
+            .where('g.joined_at', 'is not', null)
+            .where('g.adult', '=', false),
+        )
+        .as('saidMinor'),
+    )
     .where('id', 'in', userIds)
     .execute();
-  return people.some((u) => minorOf(u, now));
+  return people.some((u) => u.saidMinor || minorOf(u, now));
 }
 
 export function privacyOf(
   user: Pick<User, 'privacy' | 'birth_date' | 'time_zone'>,
   now: Date,
 ): PrivacySettings {
-  const fallback = defaultPrivacy({ minor: minorOf(user, now) });
+  const minor = minorOf(user, now);
+  const fallback = defaultPrivacy({ minor });
   const p = user.privacy as Partial<PrivacySettings> | null;
   // A number finds only someone who said it may (R91): never by a default nobody saved.
   if (!p) return { ...fallback, discoverByPhone: false };
-  return {
+  const settings: PrivacySettings = {
     fields: { ...fallback.fields, ...(p.fields ?? {}) },
     discoverByHandle: p.discoverByHandle ?? fallback.discoverByHandle,
-    // Minors are never discoverable by email, whatever is stored (R29).
-    discoverByEmail: minorOf(user, now) ? false : (p.discoverByEmail ?? fallback.discoverByEmail),
+    discoverByEmail: p.discoverByEmail ?? fallback.discoverByEmail,
     // Off where it was never said (R91): a number finds only someone who said it may.
-    discoverByPhone: minorOf(user, now) ? false : (p.discoverByPhone ?? false),
+    discoverByPhone: p.discoverByPhone ?? false,
     messageRequests: p.messageRequests ?? fallback.messageRequests,
   };
+  // Under 18, whatever is stored (R29): nothing to everyone, never found by an address.
+  return minor ? clampForMinor(settings) : settings;
 }
 
 export function avatarUrl(user: Pick<User, 'id' | 'avatar_file_id'>): string | null {

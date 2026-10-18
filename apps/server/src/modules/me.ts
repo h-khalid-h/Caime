@@ -2,6 +2,7 @@
  * The account owner's profile, preferences, privacy and identities (PRD §34, §35).
  */
 import {
+  clampForMinor,
   Handle,
   IdentityBody,
   type PlanUsageView,
@@ -277,18 +278,14 @@ export async function meRoutes(app: FastifyInstance, ctx: AppContext) {
       discoverByPhone: body.discoverByPhone ?? current.discoverByPhone,
       messageRequests: body.messageRequests ?? current.messageRequests,
     };
-    if (minorOf(user, now)) {
-      // Protections for under-18 accounts are rules, not defaults (R29).
-      next.discoverByEmail = false;
-      next.discoverByPhone = false;
-      if (next.messageRequests === 'everyone') next.messageRequests = 'shared_connections';
-    }
+    // Protections for under-18 accounts are rules, not defaults (R29): what's saved is clamped.
+    const saved = minorOf(user, now) ? clampForMinor(next) : next;
     await ctx.db
       .updateTable('users')
-      .set({ privacy: JSON.stringify(next), updated_at: now })
+      .set({ privacy: JSON.stringify(saved), updated_at: now })
       .where('id', '=', auth.userId)
       .execute();
-    return { privacy: next };
+    return { privacy: saved };
   });
 
   /**

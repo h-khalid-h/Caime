@@ -1383,8 +1383,6 @@ export const frServer: Catalog = {
     'C’est une adresse Caime. Trouvez la personne par son identifiant.',
   'Writing to an address by email is for people over 18.':
     'Écrire à une adresse par e-mail est réservé aux plus de 18 ans.',
-  'Someone on Caime uses that address. Ask them for their handle.':
-    'Quelqu’un sur Caime utilise cette adresse. Demandez-lui son identifiant.',
   'That kind of place isn’t offered here.': 'Ce type de lieu n’est pas proposé ici.',
   'Only an organization’s items are done at its places.':
     'Seuls les articles d’une organisation se font dans ses lieux.',
@@ -1530,4 +1528,8 @@ export const frServer: Catalog = {
     'Un code arrive dans votre e-mail ; votre message part dès que vous le saisissez ici. {name} répond par e-mail : aucun compte nécessaire.',
   'A code goes to your email; your message goes once you type it here. Join {site} with that address to read the answer.':
     'Un code arrive dans votre e-mail ; votre message part dès que vous le saisissez ici. Rejoignez {site} avec cette adresse pour lire la réponse.',
+  'Under 18, a link connects you with someone you know through someone. Ask {name} to connect through a person you both know.':
+    'Avant 18 ans, un lien ne vous relie qu’à quelqu’un que vous connaissez par une autre personne. Demandez à {name} de passer par une personne que vous connaissez tous les deux.',
+  'That address can’t be written to by email from here. If they’re on Caime, find them there.':
+    'On ne peut pas écrire à cette adresse par e-mail d’ici. Si la personne est sur Caime, trouvez-la là-bas.',
 };

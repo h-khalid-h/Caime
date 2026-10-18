@@ -93,10 +93,17 @@ export async function openMailConversation(
     throw forbidden(tr('Writing to an address by email is for people over 18.'));
   const holder = await personByAddress(ctx.db, address);
   if (holder === userId) throw badRequest(tr('That’s your own address.'));
+  // Someone's on Caime is never written to behind them (R93), and the answer names nobody and
+  // says nothing of how they may be found: the same words for anyone's address.
   const taken = () =>
-    conflict('email_taken', tr('Someone on Caime uses that address. Ask them for their handle.'));
-  if (holder) throw taken();
-  // Only a new address counts against the day: writing again to one already started doesn't.
+    conflict(
+      'email_taken',
+      tr(
+        'That address can’t be written to by email from here. If they’re on Caime, find them there.',
+      ),
+    );
+  // Every new address counts against the day before anything is said of it, so asking can't
+  // list who is on Caime (review 2026-10-17 §2 H2); writing again to one already started doesn't.
   const known = await ctx.db
     .selectFrom('users')
     .select('id')
@@ -117,6 +124,7 @@ export async function openMailConversation(
       ctx.config.isTest ? 1000 : NEW_ADDRESSES_A_DAY,
       86_400_000,
     );
+  if (holder) throw taken();
   const person = await personForAddress(ctx, address, name?.trim() || address);
   // Someone signed up with it, or proved it theirs, a moment ago.
   if (person?.kind !== 'provisional') throw taken();

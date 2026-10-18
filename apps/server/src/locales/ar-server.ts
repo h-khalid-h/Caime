@@ -1387,8 +1387,6 @@ export const arServer: Catalog = {
     'هذا عنوان على Caime. ابحث عن صاحبه باسم المستخدم.',
   'Writing to an address by email is for people over 18.':
     'المراسلة بالبريد الإلكتروني لمن تجاوز 18 عامًا.',
-  'Someone on Caime uses that address. Ask them for their handle.':
-    'هذا العنوان لشخص على Caime. اطلب اسم المستخدم من صاحب العنوان.',
   'That kind of place isn’t offered here.': 'هذا النوع من الأماكن غير متاح هنا.',
   'Only an organization’s items are done at its places.': 'عناصر المؤسسة وحدها تُقدَّم في أماكنها.',
   'Choose one of your places that customers may see.': 'اختر أحد أماكنك التي يراها العملاء.',
@@ -1520,4 +1518,8 @@ export const arServer: Catalog = {
     'يصلك رمز على بريدك؛ وتُرسَل رسالتك حين تكتبه هنا. يأتي ردّ {name} بالبريد الإلكتروني، بلا حاجة إلى حساب.',
   'A code goes to your email; your message goes once you type it here. Join {site} with that address to read the answer.':
     'يصلك رمز على بريدك؛ وتُرسَل رسالتك حين تكتبه هنا. انضم إلى {site} بهذا العنوان لقراءة الردّ.',
+  'Under 18, a link connects you with someone you know through someone. Ask {name} to connect through a person you both know.':
+    'دون 18 عامًا، يصلك الرابط بمن تعرفه عن طريق شخص آخر فقط. اطلب من {name} أن يتواصل معك عن طريق شخص تعرفانه كلاكما.',
+  'That address can’t be written to by email from here. If they’re on Caime, find them there.':
+    'لا يمكن مراسلة هذا العنوان بالبريد الإلكتروني من هنا. إن كان صاحبه على Caime فابحث عنه هناك.',
 };

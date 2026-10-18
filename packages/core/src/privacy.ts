@@ -95,6 +95,26 @@ export function defaultPrivacy(opts: { minor: boolean }): PrivacySettings {
   };
 }
 
+/**
+ * Under 18 (R29) the protections are rules, not defaults: nothing of a profile shows to everyone,
+ * nobody finds the account by an address, and requests come only from someone who shares a
+ * connection, whatever was saved. A setting saved wider (before, or by an older app) reads as the
+ * people they're connected with.
+ */
+export function clampForMinor(settings: PrivacySettings): PrivacySettings {
+  const fields = { ...settings.fields };
+  for (const field of PRIVACY_FIELDS)
+    if (fields[field].kind === 'everyone') fields[field] = { kind: 'connections' };
+  return {
+    ...settings,
+    fields,
+    discoverByEmail: false,
+    discoverByPhone: false,
+    messageRequests:
+      settings.messageRequests === 'everyone' ? 'shared_connections' : settings.messageRequests,
+  };
+}
+
 export function audienceAllows(audience: Audience, viewer: Viewer): boolean {
   switch (audience.kind) {
     case 'everyone':

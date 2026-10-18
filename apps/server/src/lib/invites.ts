@@ -204,16 +204,31 @@ export async function acceptInvite(
     if (conversationId)
       return { status: 'connected', connectionId: b.connectionId, conversationId, already: true };
   }
+  const now = ctx.now();
+  const me = await ctx.db
+    .selectFrom('users')
+    .select(USER_COLUMNS)
+    .where('id', '=', userId)
+    .executeTakeFirstOrThrow();
+  // Under 18 (R29), the other way: an adult's link, which anyone may have got anywhere, never
+  // connects someone under 18 who doesn't know them through someone, nor stands as a request to
+  // them (requests reach a minor only from someone who shares a connection).
+  if (
+    !minorOf(inviter, now) &&
+    minorOf(me, now) &&
+    !b.incomingRequestId &&
+    !(await shareAConnection(ctx.db, userId, inviter.id))
+  )
+    throw forbidden(
+      tr(
+        'Under 18, a link connects you with someone you know through someone. Ask {name} to connect through a person you both know.',
+        { name: inviter.display_name },
+      ),
+    );
   // Under 18 (R29): an adult the inviter doesn't already know through someone is not connected
   // by a link they may have got anywhere. The link stands as that adult's request instead, which
   // the inviter decides on, as `POST /connections/requests` would have asked them to.
-  const now = ctx.now();
   if (minorOf(inviter, now) && !b.incomingRequestId) {
-    const me = await ctx.db
-      .selectFrom('users')
-      .select(USER_COLUMNS)
-      .where('id', '=', userId)
-      .executeTakeFirstOrThrow();
     if (!minorOf(me, now) && !(await shareAConnection(ctx.db, userId, inviter.id))) {
       if (b.outgoingRequestId) return { status: 'requested', requestId: b.outgoingRequestId };
       const requestId = uuidv7();

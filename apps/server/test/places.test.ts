@@ -97,6 +97,11 @@ describe('a person’s places', () => {
       .req('PUT', '/v1/me/places', { places: [{ ...HOME, audience: { kind: 'everyone' } }] })
       .then((r) => r.json());
     expect(places[0].audience).toEqual({ kind: 'spheres', spheres: ['family'] });
+    // An adult with no tie to them doesn't reach their profile at all (R29)…
+    expect((await omar.req('GET', `/v1/people/${teen.user.id}`)).statusCode).toBe(404);
+    // …and a connection who isn't family sees it without the place.
+    const asked = await teen.post('/v1/connections/requests', { toUserId: omar.user.id });
+    await omar.post(`/v1/connections/requests/${asked.requestId}/accept`, {});
     expect((await omar.get(`/v1/people/${teen.user.id}`)).places).toEqual([]);
   });
 

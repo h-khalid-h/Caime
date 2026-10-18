@@ -181,6 +181,7 @@ export default function Privacy() {
           key={editing}
           title={editingLabel}
           current={current}
+          minor={me.minor}
           onClose={() => setEditing(null)}
           onSave={(audience) => {
             void save({ fields: { [editing]: audience } });

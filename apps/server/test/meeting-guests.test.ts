@@ -294,6 +294,34 @@ describe('guests in a meeting (R84)', () => {
     ).toBe(200);
   });
 
+  it('takes a guest at their word on their age: one who won’t say 18 or over keeps others out (R85 (3))', async () => {
+    const card = await meeting({ title: 'Study group', start: tomorrow, durationMinutes: 30 });
+    const { space } = await ana.post(`/v1/messages/${card.id}/guests`, {
+      email: 'kid@example.com',
+      name: 'Kim Kid',
+    });
+    await t.ctx.flush();
+    const token = /\/j\/(cmg_[A-Za-z0-9_-]+)/.exec(mail.outbox.at(-1)?.text ?? '')?.[1];
+    expect(token).toBeTruthy();
+    // The guest joins without saying they're 18 or over: they're in, as R85 (3) has it.
+    const joined = await t.app.inject({
+      method: 'POST',
+      url: `/v1/join/${token}`,
+      payload: { adult: false, client: 'native' },
+    });
+    expect(joined.statusCode).toBe(200);
+    expect(joined.json().conversationId).toBe(space.conversationId);
+    // From then on the meeting is one with someone under 18 in it: no more strangers come.
+    const sentBefore = mail.outbox.length;
+    const next = await ana.req('POST', `/v1/messages/${space.messageId}/guests`, {
+      email: 'stranger@example.com',
+    });
+    expect(next.statusCode).toBe(403);
+    expect(next.json().error.message).toBe('Guests aren’t available in this conversation.');
+    await t.ctx.flush();
+    expect(mail.outbox.length).toBe(sentBefore);
+  });
+
   it('asks someone on Caime only as a message request could (their own setting)', async () => {
     const quiet = await signup(t, { displayName: 'Quinn Quiet' });
     await quiet.req('PUT', '/v1/me/privacy', { messageRequests: 'nobody' });

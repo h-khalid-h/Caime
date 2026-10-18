@@ -384,7 +384,18 @@ appointment from a catalog).
   is the only key to one (`/i/<token>`: `publicInvite` renders the visitor's page, `inviteIn` in
   `lib/paths.ts` recognizes it, the `i/[token]` route accepts). A person's export lists their
   links; the privacy page says so. Under 18 (R29): an adult the inviter doesn't know through
-  someone gets `status: 'requested'` (a request the inviter decides on), never a connection.
+  someone gets `status: 'requested'` (a request the inviter decides on), never a connection; the
+  other way, someone under 18 who opens an adult's link and doesn't know them through someone is
+  refused in words that say why (`acceptInvite`, M16 B1), never connected and never a request.
+- Someone under 18 (R29, M16 B1): their privacy is core's `clampForMinor` over whatever is
+  stored, read by `privacyOf` every time and saved so by `PUT /me/privacy` (nothing to everyone,
+  never found by an address, message requests from shared connections at most; the audience
+  sheet offers them no Everyone). A profile (`GET /people/:id`) reads as nobody to anyone new
+  where finding them would (the handle route's rules): a suspended account, someone found no way
+  they allowed (a provisional person by nobody), someone under 18 to an adult; whoever is in
+  touch keeps it (a connection, a request either way, a block of theirs to undo, a conversation
+  they're both in: `inAConversationTogether`, `lib/relations.ts`). A new audience that could
+  reach everyone joins the clamp, and a new path that shows someone's profile keeps both rules.
 - Team invites (M16 C3a, `lib/team-invites.ts`, `modules/team-invites.ts`): an owner or admin
   makes a link (or sends one to an address, mailed after the response) from the team's Add sheet
   (`features/orgs/TeamInvites.tsx`); its token (`t_…`) is shown once and kept as its hash, masked
@@ -1217,7 +1228,9 @@ appointment from a catalog).
   email is (`personByAddress`, else the provisional person made once); inbound mail, a meeting's
   guests and `openMailConversation` (writing to an address from Search or Connect, a message
   request from one's own Caime address) all ask it, never an insert of their own. An address that
-  is someone's on Caime is refused as taken, never mailed behind them. Signing up with an address
+  is someone's on Caime is refused as taken, never mailed behind them; `openMailConversation`
+  counts every new address against the day before it says anything of it, and its refusal names
+  nobody (review §2 H2; what still differs is in SECURITY). Signing up with an address
   that has a provisional person claims it (the same row, its history theirs) only with the code
   sent to that address (review 2026-10-17 §2 H1): `POST /auth/signup` answers 409
   `email_code_needed` and sends it (three an hour to one address), the form shows the code field
@@ -1282,7 +1295,9 @@ appointment from a catalog).
   `personForAddress` answers nobody for it, so a link someone was handed never stands for an
   address's history: anything new that hands out a guest's link keeps to that), they arrive at `/j/<token>` (`features/meetings/JoinMeeting.tsx`, a
   root route outside the groups, open to anyone): the meeting, the name, "I'm 18 or over",
-  Join, which signs them in as their provisional self. A guest's session never mounts the app
+  Join, which signs them in as their provisional self; one who doesn't say it joins (R85 (3)) and
+  counts as under 18 from then on in `anyMinor` (`meeting_guests.adult`), so no more guests come
+  and no join link opens there. A guest's session never mounts the app
   (`RootStack`: `(app)` is for a signed-in person who isn't provisional); the same address is
   their meeting (`JoinView.space`, only to that guest: when, who, Join the call while it's on,
   else Start), and any other address goes to `(guest)/meeting`, which takes them back to the
@@ -1600,7 +1615,10 @@ appointment from a catalog).
   goes through `eachLimit`, never a bare `Promise.all` over people. Whether people may see a read
   position is `readReceiptsVisibleTo` for them all at once (the conversation view, the receipts
   route; `readReceiptVisibleTo` is the one-person form of it), and a receipts event goes to
-  whoever sent what it newly covers and the reader's own devices, never a whole group. A view
+  whoever sent what it newly covers and the reader's own devices, never a whole group; someone
+  withheld hears nothing at a read's moment (an event only for what newly arrived), and a
+  request pending or declined tells its sender nothing: no receipt (only the reader's own
+  devices hear), no position in `conversationView`, no event when it's declined (M16 B1). A view
   that lists a conversation's people takes them from `personViewsFor`. `createTestApp` counts
   the server's queries (`t.queries()`): a scale test says what a path costs, with a ceiling.
 - A person or an organization is read with `.select(USER_COLUMNS)` or `.select(ORG_COLUMNS)`

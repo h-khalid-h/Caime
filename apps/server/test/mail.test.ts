@@ -10,7 +10,7 @@ import type { AddressInfo } from 'node:net';
 import { isReservedHandle, uuidv7 } from '@caime/core';
 import type { InjectOptions } from 'fastify';
 import { sql } from 'kysely';
-import { afterAll, beforeAll, describe, expect, it } from 'vitest';
+import { afterAll, beforeAll, describe, expect, it, vi } from 'vitest';
 import { memoryMailer } from '../src/lib/email';
 import { runDueJobs } from '../src/lib/jobs';
 import { STAFF_ADDRESSES } from '../src/lib/mail-in';
@@ -1108,9 +1108,14 @@ describe('who may write in, and to whom', () => {
   });
 
   it('never mails someone on Caime behind them, nor writes to one’s own or a Caime address (R93)', async () => {
+    // Counted against the day before anything is said of it (review 2026-10-17 §2 H2), and the
+    // answer names nobody.
+    const hit = vi.spyOn(t.ctx.limiter, 'hit');
     const taken = await noor.req('POST', '/v1/conversations/by-email', {
       email: 'omar.mail@example.com',
     });
+    expect(hit.mock.calls.some(([key]) => key === `mail-start:${noor.user.id}`)).toBe(true);
+    hit.mockRestore();
     expect(taken.statusCode).toBe(409);
     expect(taken.json().error.code).toBe('email_taken');
     expect(JSON.stringify(taken.json())).not.toContain('Omar');

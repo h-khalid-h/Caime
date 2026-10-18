@@ -1938,12 +1938,35 @@ graph) and the number that will show it; one that sharpens none is hygiene and s
 - [ ] ⛔ A, the owner's: the support address answered (the `@caime` organization made, `hello@`
       landing in its inbox), the alert receiver's account, the Sentry project, the bucket for
       backups (`BACKUP_S3_*`).
-- [ ] B. Safety and trust (a provisional person's history moved only after the emailed code is
-      done, in C1b): the address oracle closed; the invite rule both ways for minors; `GET /people/:id` gated and a
-      minor's fields clamped; the read-receipt timing leak; "who can add me" with acceptance for
-      minors; the guest's age answer honoured; request caps and blurred request media; reports
-      with a snapshot, a child-safety reason, held content, organization suspension and a
-      date-of-birth tool; the mail copy cleared on delete, file bytes and delivery copies on
+- [x] B1. Safety and trust, the first slice (2026-10-18): the condition of the switch for a parent,
+      a school or a clinic's compliance officer rather than an advantage, so its numbers are the
+      tests that hold each rule. The address oracle closed as far as one address, one person allows
+      (REVIEW §2 H2): writing to an address by email counts every new address against the day
+      (twenty) before anything is said of it, and an address that's someone's on Caime is refused
+      in words that name nobody and say nothing of how they're found; what still differs (a held
+      address refused, an unknown one opened, twenty a day for an adult's account) tells no more
+      than sign-up's `email_taken`, and SECURITY says so. The invite rule both ways (H3): an
+      adult's link opened by someone under 18 who doesn't know them through someone is refused,
+      saying why (a school or a club uses a verified organization's join link, which asks), as a
+      minor's link opened by an adult stranger stands as a request. A profile (`GET /people/:id`)
+      reads as nobody to anyone new where finding them would: a suspended account (R49), someone
+      found no way they allowed (a provisional person by nobody), someone under 18 to an adult
+      (R29); whoever is in touch keeps it (a connection, a request either way, a block of theirs
+      to undo, a conversation they're both in: `inAConversationTogether`). A minor's
+      privacy is clamped whatever is stored or sent (core `clampForMinor`, read by `privacyOf` and
+      saved by `PUT /me/privacy`: nothing to everyone, never found by an address, requests from
+      shared connections at most), and the audience sheet offers them no Everyone. The read
+      receipt's timing: someone who may not see a read hears nothing at its moment; a request
+      not answered, or declined, tells its sender nothing (no receipt, no position in the
+      conversation, no event when it's declined). The guest's age answer: a guest
+      who doesn't say they're 18 or over joins (R85 (3)) and counts as under 18 from then on
+      (`anyMinor`), so the meeting takes no more guests and opens no join link. Verified with
+      `trust.test.ts` (5), `meeting-guests.test.ts`, `mail.test.ts` (the day's limit hit before a
+      held address is refused), core `privacy-safety.test.ts` (the clamp), `invites.test.ts` and
+      the full gate.
+- [ ] B, the rest: "who can add me" with acceptance for minors; request caps and blurred request
+      media; reports with a snapshot, a child-safety reason, held content, organization suspension
+      and a date-of-birth tool; the mail copy cleared on delete, file bytes and delivery copies on
       erasure; the vault key from the environment and encrypted dumps; age assurance phase 1
       (`age_assurance` levels, `AgeProvider` behind a signed webhook, the paid, organization and
       stranger triggers, the privacy page and the DPA).
@@ -3945,6 +3968,15 @@ graph) and the number that will show it; one that sharpens none is hygiene and s
   journeys, safety, reliability, performance, intelligence, mail and calendar, chat, integrations,
   business and code integrity; the matrix against WhatsApp, Signal, Slack, Calendly and Workspace;
   an age-assurance design; the integration framework mapped to the code; plan M16 (A–H).
+- 2026-10-18 — M16 B1, safety and trust's first slice: writing to an address by email counts
+  against the day before anything is said of it and refuses someone's address without naming
+  them (H2; what still differs is in SECURITY); an adult's invite link no longer connects someone
+  under 18 they don't know through someone (H3); a profile reads as nobody to anyone new where
+  finding them would (suspended, found no way they allowed, under 18 to an adult), and those in
+  touch keep it; a minor's privacy is clamped whatever was saved; a read nobody may see sends
+  nothing at its moment, and a request pending or declined tells its sender nothing; a guest who
+  doesn't say they're 18 or over keeps further guests and join links out. The privacy page and
+  the help say what changed for people under 18 and for requests.
 - 2026-10-18 — M16 C1d: an organization's page, and its door's link and QR, take a message from
   anyone with a name and an address proven by its code, into the Business inbox; the team's
   answer goes back by mail from the organization's address, and the reply comes back into the

@@ -176,14 +176,22 @@ export async function conversationView(
     const person =
       m.id === userId ? (myself ? personView(m, myself, now, null) : null) : views.get(m.id);
     if (!person) return [];
+    // A request they haven't answered, or declined, tells nobody else anything of it (R14): not
+    // that it arrived, nor that it was read.
+    const unanswered =
+      m.id !== userId &&
+      (m.member_request_state === 'pending' || m.member_request_state === 'declined');
     return [
       {
         userId: m.id,
         role: m.member_role,
         person,
         relationship: rel ? relationshipView(rel, person.gender) : null,
-        readSeq: m.id !== userId && receiptsVisible.has(m.id) ? Number(m.last_read_seq) : null,
-        deliveredSeq: Number(m.last_delivered_seq),
+        readSeq:
+          m.id !== userId && !unanswered && receiptsVisible.has(m.id)
+            ? Number(m.last_read_seq)
+            : null,
+        deliveredSeq: unanswered ? 0 : Number(m.last_delivered_seq),
         joinedAt: m.member_joined_at.toISOString(),
       },
     ];

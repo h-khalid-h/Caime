@@ -479,7 +479,9 @@ and we&rsquo;ll answer within a month.</p>
 live${lawAges(f.minimumAge) ? `, and ${lawAges(f.minimumAge)}, whose law asks a guardian&rsquo;s consent for younger people that Caime doesn&rsquo;t yet ask for` : ''}. The rules for people under 18 apply until the day they turn 18. Under 18:</p>
 <ul>
 <li>Adults you&rsquo;re not connected with can&rsquo;t find you, by name, @handle or email, and
-can&rsquo;t send you a connection or message request unless you share a connection.</li>
+can&rsquo;t send you a connection or message request unless you share a connection. Nor can they
+open your profile, unless one of you asked the other to connect or you&rsquo;re in a conversation
+together. An adult&rsquo;s invite link connects you only with someone you know through someone.</li>
 <li>You can&rsquo;t share a location, whether a place or where you are right now. A video, or a
 photo in a format such as HEIC, still carries where it was taken.</li>
 <li>You can start a conversation only with an organization that has verified who it is, and an
@@ -489,7 +491,8 @@ never answers you. Its apps still can, and what they write is marked Automated.<
 organization&rsquo;s own card with an amount, in a conversation you&rsquo;re in.</li>
 <li>Group calls are only with people you&rsquo;re connected with.</li>
 <li>AI assist, access tokens and apps, Your calendar, buying a plan and running an organization are
-for people 18 and over. Your photo and About you start out shown to your connections only.</li>
+for people 18 and over. Nothing on your profile (your photo, About you, when you&rsquo;re online)
+is shown to everyone, whatever was set before: your connections at most.</li>
 <li>Someone over 18 in a conversation with you can still use AI assist on it, and an
 organization&rsquo;s apps get what you write to it.</li>
 </ul>
@@ -694,6 +697,9 @@ Caime uses it to put what matters first. If you both turn on Share with <em>name
 sees how the other described you. Asking to connect shows them which kind it is and where, unless
 you turn off Show <em>name</em> the context. Caime may suggest one, and says why; nothing changes
 until you accept it.</li>
+<li><strong>Message requests.</strong> A first message from someone you&rsquo;re not connected
+with waits in Requests, silently, and they can send one until you answer. Reading it or declining
+it never tells them: to them it stays unanswered. Replying accepts it.</li>
 </ul>
 
 <h2>Conversations</h2>

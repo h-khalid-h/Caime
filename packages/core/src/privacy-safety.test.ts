@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { canSee, defaultPrivacy, readReceiptsVisible, type Viewer } from './privacy';
+import { canSee, clampForMinor, defaultPrivacy, readReceiptsVisible, type Viewer } from './privacy';
 import {
   ageOn,
   assessLink,
@@ -23,6 +23,20 @@ const stranger: Viewer = {
 };
 
 describe('privacy', () => {
+  it('under 18 (R29), nothing shows to everyone and nothing finds them by an address, whatever was saved', () => {
+    const wide = defaultPrivacy({ minor: false });
+    const clamped = clampForMinor({ ...wide, messageRequests: 'everyone' });
+    expect(canSee(clamped, 'profilePhoto', stranger)).toBe(false);
+    expect(canSee(clamped, 'profilePhoto', connected)).toBe(true);
+    expect(canSee(clamped, 'bio', stranger)).toBe(false);
+    expect(clamped.discoverByEmail).toBe(false);
+    expect(clamped.discoverByPhone).toBe(false);
+    expect(clamped.messageRequests).toBe('shared_connections');
+    // Narrower choices stay as they were.
+    expect(clamped.fields.location).toEqual({ kind: 'nobody' });
+    expect(clampForMinor({ ...wide, messageRequests: 'nobody' }).messageRequests).toBe('nobody');
+  });
+
   it('defaults: connections see presence, strangers do not; location is never shared by default', () => {
     const s = defaultPrivacy({ minor: false });
     expect(canSee(s, 'lastSeen', connected)).toBe(true);

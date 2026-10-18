@@ -27,6 +27,7 @@ import {
   activeRelationships,
   between,
   betweenMany,
+  inAConversationTogether,
   loadPolicies,
   mutualFit,
   pairKey,
@@ -338,6 +339,35 @@ export async function peopleRoutes(app: FastifyInstance, ctx: AppContext) {
     // Being blocked by them looks exactly like not existing.
     if (b.blockedMe) throw notFound(tr('That person'));
     const now = ctx.now();
+    const settings = privacyOf(user, now);
+    // Anyone new reads as nobody where finding them would (the handle route's rules): a suspended
+    // account (R49), someone found no way they allowed (a provisional person by nobody), someone
+    // under 18 to an adult (R29). Whoever is in touch keeps what they have: a connection, a
+    // request either way, a block of theirs to undo, a conversation they're both in.
+    const unfindable =
+      user.kind === 'provisional' ||
+      (user.kind === 'human' &&
+        !settings.discoverByHandle &&
+        !settings.discoverByEmail &&
+        !settings.discoverByPhone);
+    const minor = minorOf(user, now);
+    if (
+      id !== auth.userId &&
+      (user.suspended_at || unfindable || minor) &&
+      !b.connected &&
+      !b.incomingRequestId &&
+      !b.outgoingRequestId &&
+      !b.blockedByMe &&
+      !(await inAConversationTogether(ctx.db, auth.userId, id))
+    ) {
+      if (user.suspended_at || unfindable) throw notFound(tr('That person'));
+      const viewer = await ctx.db
+        .selectFrom('users')
+        .select(['birth_date', 'time_zone'])
+        .where('id', '=', auth.userId)
+        .executeTakeFirstOrThrow();
+      if (!minorOf(viewer, now)) throw notFound(tr('That person'));
+    }
     const { key } = pairKey(auth.userId, id);
     const conversations = await ctx.db
       .selectFrom('conversations as cv')
@@ -350,10 +380,9 @@ export async function peopleRoutes(app: FastifyInstance, ctx: AppContext) {
       .orderBy('cv.last_message_at', (ob) => ob.desc().nullsLast())
       .execute();
     const conversationIds = conversations.map((c) => c.id);
-    const privacySettings = privacyOf(user, now);
     // In a meeting right now (R51), by their rules for the viewer: looked up only where allowed.
     const busy =
-      user.kind === 'human' && canSee(privacySettings, 'busy', relation)
+      user.kind === 'human' && canSee(settings, 'busy', relation)
         ? await busyNow(ctx, id, now)
         : null;
     const counts = conversationIds.length
@@ -545,7 +574,7 @@ export async function peopleRoutes(app: FastifyInstance, ctx: AppContext) {
     const privacy = resolvePolicy(policies, policyTargetFor(primary, b.connectionId)).privacy;
     // Where they work is one of their professional details, shown as those are (R43).
     const organizations =
-      user.kind !== 'human' || canSee(privacySettings, 'identityDetails', relation)
+      user.kind !== 'human' || canSee(settings, 'identityDetails', relation)
         ? await orgsOf(ctx.db, id)
         : [];
     // They take bookings (R58): their hours, and the items this viewer may book; a connection
@@ -610,7 +639,7 @@ export async function peopleRoutes(app: FastifyInstance, ctx: AppContext) {
         ? {
             until: busy.until.toISOString(),
             title:
-              canSee(privacySettings, 'busyDetails', relation) ||
+              canSee(settings, 'busyDetails', relation) ||
               conversationIds.includes(busy.conversationId)
                 ? busy.title
                 : null,
@@ -619,7 +648,7 @@ export async function peopleRoutes(app: FastifyInstance, ctx: AppContext) {
       connection: connectionState(b),
       blockedByMe: b.blockedByMe,
       relationships: mine.map((r) =>
-        relationshipView(r, canSee(privacySettings, 'gender', relation) ? user.gender : null),
+        relationshipView(r, canSee(settings, 'gender', relation) ? user.gender : null),
       ),
       mutual: primary ? await mutualFit(ctx.db, auth.userId, id, primary) : null,
       conversations: conversations.map((c) => ({

@@ -1322,8 +1322,6 @@ export const turkishServer: Catalog = {
     'Bu bir Caime adresi. Kişiyi kullanıcı adıyla bulun.',
   'Writing to an address by email is for people over 18.':
     'Bir adrese e-postayla yazmak 18 yaşından büyükler içindir.',
-  'Someone on Caime uses that address. Ask them for their handle.':
-    'Bu adresi Caime’de biri kullanıyor. Kullanıcı adını sorun.',
   'That kind of place isn’t offered here.': 'Bu tür bir yer burada sunulmuyor.',
   'Only an organization’s items are done at its places.':
     'Yalnızca bir kuruluşun öğeleri onun yerlerinde yapılır.',
@@ -1463,4 +1461,8 @@ export const turkishServer: Catalog = {
     'E-postanıza bir kod gelir; kodu buraya yazdığınızda mesajınız gönderilir. {name} e-postayla yanıtlar: hesap gerekmez.',
   'A code goes to your email; your message goes once you type it here. Join {site} with that address to read the answer.':
     'E-postanıza bir kod gelir; kodu buraya yazdığınızda mesajınız gönderilir. Yanıtı okumak için bu adresle {site}’e katılın.',
+  'Under 18, a link connects you with someone you know through someone. Ask {name} to connect through a person you both know.':
+    '18 yaşından küçükken bir bağlantı sizi yalnızca birisi aracılığıyla tanıdığınız biriyle bağlar. {name} ile ikinizin de tanıdığı biri aracılığıyla bağlantı kurun.',
+  'That address can’t be written to by email from here. If they’re on Caime, find them there.':
+    'Bu adrese buradan e-postayla yazılamaz. Caime’deyse orada bulun.',
 };

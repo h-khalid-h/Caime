@@ -325,6 +325,7 @@ function PlaceSheet({
         <AudienceSheet
           title={tr('Who sees it')}
           current={d.audience ?? { kind: 'nobody' }}
+          minor={me.minor && owner.kind === 'person'}
           onClose={() => setAudienceOpen(false)}
           onSave={(audience: Audience) => {
             set({ audience });

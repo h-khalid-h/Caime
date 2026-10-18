@@ -388,8 +388,12 @@ export async function conversationRoutes(app: FastifyInstance, ctx: AppContext) 
       .where('conversation_id', '=', id)
       .where('user_id', '=', auth.userId)
       .execute();
+    // Accepted, everyone in it hears (they may write again); declined, it reads to its sender as
+    // unanswered (R14), so only the decider's own devices hear of it, at that moment or after.
     await ctx.bus.publish(
-      (await participantsOf(ctx.db, id)).map((p) => p.user_id),
+      decision === 'accept'
+        ? (await participantsOf(ctx.db, id)).map((p) => p.user_id)
+        : [auth.userId],
       { type: 'conversation.updated', data: { conversationId: id } },
     );
     return { ok: true };
@@ -679,6 +683,12 @@ export async function conversationRoutes(app: FastifyInstance, ctx: AppContext) 
       },
     });
     const others = senders.map((s) => s.sender_id as string);
+    // A request not yet answered, or declined, tells its sender nothing, not even that it arrived
+    // (R14): only the reader's own devices hear of it.
+    if (me.request_state === 'pending' || me.request_state === 'declined') {
+      await ctx.bus.publish([auth.userId], event(null));
+      return { ok: true };
+    }
     if (patch.last_read_seq === undefined || others.length === 0) {
       await ctx.bus.publish([auth.userId, ...others], event(null));
       return { ok: true };
@@ -704,7 +714,10 @@ export async function conversationRoutes(app: FastifyInstance, ctx: AppContext) 
       );
     }
     await ctx.bus.publish(allowed, event(patch.last_read_seq));
-    if (withheld.length) await ctx.bus.publish(withheld, event(null));
+    // Whoever may not see the read hears only what newly arrived, never a read's moment: an event
+    // with nothing in it, sent as the reader reads, would say it all the same.
+    if (withheld.length && patch.last_delivered_seq !== undefined)
+      await ctx.bus.publish(withheld, event(null));
     return { ok: true };
   });
 

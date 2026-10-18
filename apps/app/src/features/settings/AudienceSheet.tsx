@@ -18,11 +18,14 @@ type Kind = Audience['kind'];
 export function AudienceSheet({
   title,
   current,
+  minor = false,
   onClose,
   onSave,
 }: {
   title: string;
   current: Audience | undefined;
+  /** Under 18 (R29) nothing is shown to everyone, so it isn't offered: the server would narrow it. */
+  minor?: boolean;
   onClose: () => void;
   onSave: (a: Audience) => void;
 }) {
@@ -59,7 +62,7 @@ export function AudienceSheet({
           }}
           testID="audience-kind"
           options={[
-            { value: 'everyone', label: tr('Everyone') },
+            ...(minor ? [] : [{ value: 'everyone' as const, label: tr('Everyone') }]),
             { value: 'connections', label: tr('Your connections') },
             {
               value: 'spheres',
