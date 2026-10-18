@@ -449,6 +449,7 @@ export async function adminRoutes(app: FastifyInstance, ctx: AppContext) {
     });
     return {
       enabled: ctx.config.BACKUP_ENABLED,
+      encrypts: ctx.config.backupKey !== null,
       dir: backupDir(ctx),
       keepDays: ctx.config.BACKUP_KEEP_DAYS,
       last: await lastBackup(ctx),

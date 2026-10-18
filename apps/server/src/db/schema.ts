@@ -657,6 +657,8 @@ export interface ConnectedAccountsTable {
   uses: string[];
   scopes: string[];
   refresh_sealed: Buffer;
+  /** The id of the key that sealed it (M16 B5, `vaultKid`), or null for the database's own. */
+  refresh_kid: string | null;
   state: 'connected' | 'reconnect' | 'failing';
   created_at: Generated<Date>;
   synced_at: Date | null;

@@ -52,6 +52,7 @@ import { speechFor } from './lib/speech';
 import { registerSystemJobs } from './lib/system-accounts';
 import { registerTranscribeJob } from './lib/transcribe';
 import { registerUpdateJobs } from './lib/updates';
+import { registerVaultReseal, startVaultReseal } from './lib/vault-reseal';
 import { accountRoutes } from './modules/account';
 import { connectedAccountRoutes } from './modules/accounts';
 import { actionRoutes } from './modules/actions';
@@ -398,6 +399,7 @@ export async function buildApp(config: Config, options: BuildOptions = {}): Prom
   registerGroupCallSweep();
   registerPreviewJob();
   registerMailBackfill();
+  registerVaultReseal();
   const stopWorkers = config.WORKERS ? startWorkers(ctx) : () => {};
   // Older images get the preview new ones are given (R70): queued once, whichever instance.
   if (config.WORKERS)
@@ -407,6 +409,9 @@ export async function buildApp(config: Config, options: BuildOptions = {}): Prom
   // Mail from before signatures were set apart (R75): folded once, whichever instance.
   if (config.WORKERS)
     void startMailBackfill(ctx).catch((err) => ctx.log.warn({ err }, 'mail backfill not queued'));
+  // A VAULT_KEY new to what's sealed (M16 B5): everything moves to it that day, whichever instance.
+  if (config.WORKERS)
+    void startVaultReseal(ctx).catch((err) => ctx.log.warn({ err }, 'vault pass not queued'));
 
   app.addHook('onClose', async () => {
     stopWorkers();

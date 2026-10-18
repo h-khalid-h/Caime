@@ -4,6 +4,7 @@
  */
 import { z } from 'zod';
 import { parseOperatorTokens } from './lib/operator';
+import { key32 } from './lib/vault';
 
 const bool = z
   .enum(['true', 'false', '1', '0', 'yes', 'no'])
@@ -14,6 +15,11 @@ const webPage = z
   .string()
   .url()
   .refine((v) => /^https?:\/\//i.test(v), 'an http(s) address');
+
+/** 32 random bytes as base64 or base64url (`openssl rand -base64 32`), the shape of every key. */
+const secretKey = z
+  .string()
+  .refine((v) => key32(v) !== null, '32 random bytes as base64 (openssl rand -base64 32)');
 
 const Env = z.object({
   NODE_ENV: z.enum(['development', 'test', 'production']).default('development'),
@@ -148,6 +154,20 @@ const Env = z.object({
   /** Where in the bucket (`caime/backups/`), so one bucket may hold more than Caime's. */
   BACKUP_S3_PREFIX: z.string().default('caime/backups/'),
   BACKUP_S3_PATH_STYLE: bool.default(true),
+  /**
+   * The key each backup is encrypted with before it's kept or copied off the host (M16 B5):
+   * kept apart from the backups (a password manager, never the bucket), and needed to restore
+   * one (`node dist/decrypt-backup.js`, docs/DEPLOY.md). Without it, dumps are kept plain.
+   */
+  BACKUP_KEY: secretKey.optional(),
+  /**
+   * The key connected accounts' tokens are sealed with (M16 B5), held here and never in the
+   * database, so a dump of it opens nothing. Set once and kept: to replace it, the new one goes
+   * here and the old one in VAULT_KEY_PREVIOUS until `caime_vault_sealed{key="older"}` is 0.
+   * Without it the database's own key seals, as before.
+   */
+  VAULT_KEY: secretKey.optional(),
+  VAULT_KEY_PREVIOUS: secretKey.optional(),
   /**
    * Files in an S3-compatible bucket (docs/DEPLOY.md, "Scaling") rather than on DATA_DIR: all
    * four set, what's uploaded is kept there (uploads in progress stay on the instance's disk
@@ -328,6 +348,10 @@ export type Config = z.infer<typeof Env> & {
   turnUrls: string[];
   /** Cloudflare's relay, when both its key id and token are set. */
   cloudflareTurn: { keyId: string; token: string } | null;
+  /** VAULT_KEY (and VAULT_KEY_PREVIOUS) as bytes, or null where the database's own key seals. */
+  vaultKeys: { current: Buffer; previous: Buffer | null } | null;
+  /** BACKUP_KEY as bytes, or null where backups are kept plain. */
+  backupKey: Buffer | null;
   isProduction: boolean;
   isTest: boolean;
   /** The commit this build is (`CAIME_VERSION`), or `unknown`. */
@@ -346,6 +370,11 @@ export function loadConfig(env: NodeJS.ProcessEnv = process.env): Config {
     throw new Error(`Invalid configuration:\n${problems}`);
   }
   const c = parsed.data;
+  if (c.VAULT_KEY_PREVIOUS && !c.VAULT_KEY)
+    throw new Error(
+      'Invalid configuration:\n  VAULT_KEY_PREVIOUS: only beside a VAULT_KEY, the key that seals now',
+    );
+  const vaultKey = key32(c.VAULT_KEY);
   const own = (page: string) => `${c.PUBLIC_URL.replace(/\/+$/, '')}/${page}`;
   const list = (v: string) =>
     v
@@ -361,6 +390,8 @@ export function loadConfig(env: NodeJS.ProcessEnv = process.env): Config {
       c.CLOUDFLARE_TURN_KEY_ID && c.CLOUDFLARE_TURN_API_TOKEN
         ? { keyId: c.CLOUDFLARE_TURN_KEY_ID, token: c.CLOUDFLARE_TURN_API_TOKEN }
         : null,
+    vaultKeys: vaultKey ? { current: vaultKey, previous: key32(c.VAULT_KEY_PREVIOUS) } : null,
+    backupKey: key32(c.BACKUP_KEY),
     isProduction: c.NODE_ENV === 'production',
     isTest: c.NODE_ENV === 'test',
     version: c.CAIME_VERSION,

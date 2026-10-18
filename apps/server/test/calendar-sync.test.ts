@@ -350,6 +350,7 @@ describe('bookings and connected calendars in step (R96)', () => {
         'scopes',
         'state',
         'refresh_sealed',
+        'refresh_kid',
         'created_at',
         'synced_at',
       ])

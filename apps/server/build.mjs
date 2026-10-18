@@ -1,7 +1,8 @@
 /**
  * Production build: one ESM bundle of the server and the workspace packages it uses (they ship
  * as TypeScript source), with every npm dependency left external and installed normally, so
- * native modules (sharp) and packages that read files next to themselves keep working.
+ * native modules (sharp) and packages that read files next to themselves keep working. Beside
+ * it, `dist/decrypt-backup.js` turns an encrypted backup back for `pg_restore` (M16 B5).
  */
 import { cp, readFile, rm } from 'node:fs/promises';
 import { build } from 'esbuild';
@@ -11,8 +12,8 @@ const external = Object.keys(pkg.dependencies ?? {}).filter((d) => !d.startsWith
 
 await rm('dist', { recursive: true, force: true });
 await build({
-  entryPoints: ['src/index.ts'],
-  outfile: 'dist/server.js',
+  entryPoints: { server: 'src/index.ts', 'decrypt-backup': 'src/decrypt-backup.ts' },
+  outdir: 'dist',
   bundle: true,
   platform: 'node',
   target: 'node22',
@@ -22,4 +23,4 @@ await build({
   logLevel: 'warning',
 });
 await cp('src/db/migrations', 'dist/migrations', { recursive: true });
-console.log(`built dist/server.js (external: ${external.join(', ')})`);
+console.log(`built dist/server.js and dist/decrypt-backup.js (external: ${external.join(', ')})`);

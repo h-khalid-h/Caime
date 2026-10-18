@@ -33,6 +33,7 @@ import { AppError, badRequest, notFound } from './errors';
 import { serverKey } from './server-keys';
 import { TtlCache } from './ttl-cache';
 import { seal, unseal } from './vault';
+import { openSecret, sealSecret } from './vault-keys';
 
 /** How long a consent may take, and its claim be redeemed in. */
 const CLAIM_MS = 10 * 60_000;
@@ -41,7 +42,15 @@ const PROVIDER_MS = 10_000;
 
 type Row = Pick<
   ConnectedAccountsTable,
-  'id' | 'user_id' | 'provider' | 'email' | 'uses' | 'scopes' | 'state' | 'refresh_sealed'
+  | 'id'
+  | 'user_id'
+  | 'provider'
+  | 'email'
+  | 'uses'
+  | 'scopes'
+  | 'state'
+  | 'refresh_sealed'
+  | 'refresh_kid'
 > & { created_at: Date; synced_at: Date | null };
 
 export function accountsOffered(ctx: Pick<AppContext, 'config'>): AccountProvider[] {
@@ -81,9 +90,8 @@ interface Claim {
 
 const stateLabel = (p: AccountProvider) => `caime account state v1 ${p}`;
 const claimLabel = (p: AccountProvider) => `caime account claim v1 ${p}`;
-const refreshLabel = (id: string) => `caime account refresh v1 ${id}`;
+export const refreshLabel = (id: string) => `caime account refresh v1 ${id}`;
 const stateKey = (ctx: AppContext) => serverKey(ctx, 'accounts.state');
-const vaultKey = (ctx: AppContext) => serverKey(ctx, 'accounts.vault');
 
 function sealJson(key: Buffer, value: unknown, label: string): string {
   return seal(key, Buffer.from(JSON.stringify(value)), label).toString('base64url');
@@ -256,6 +264,7 @@ const ROW = [
   'scopes',
   'state',
   'refresh_sealed',
+  'refresh_kid',
   'created_at',
   'synced_at',
 ] as const;
@@ -283,7 +292,7 @@ export async function redeemAccountClaim(
     .where('subject', '=', claim.sub)
     .executeTakeFirst();
   const id = existing?.id ?? uuidv7();
-  const sealed = seal(await vaultKey(ctx), Buffer.from(claim.refresh), refreshLabel(id));
+  const { sealed, kid } = await sealSecret(ctx, Buffer.from(claim.refresh), refreshLabel(id));
   const row = await ctx.db
     .insertInto('connected_accounts')
     .values({
@@ -295,6 +304,7 @@ export async function redeemAccountClaim(
       uses: claim.uses,
       scopes: claim.scopes,
       refresh_sealed: sealed,
+      refresh_kid: kid,
       state: 'connected',
     })
     .onConflict((oc) =>
@@ -303,6 +313,7 @@ export async function redeemAccountClaim(
         uses: claim.uses,
         scopes: claim.scopes,
         refresh_sealed: sealed,
+        refresh_kid: kid,
         state: 'connected',
       }),
     )
@@ -334,6 +345,40 @@ export async function accountOf(ctx: AppContext, userId: string, id: string): Pr
   return row;
 }
 
+/**
+ * A connection's refresh token opened, or null when no key here opens it. One sealed with a key
+ * that no longer seals is sealed again with the one that does as it's used (M16 B5).
+ */
+export async function openRefresh(
+  ctx: AppContext,
+  account: Pick<Row, 'id' | 'refresh_sealed' | 'refresh_kid'>,
+): Promise<Buffer | null> {
+  const opened = await openSecret(
+    ctx,
+    { sealed: account.refresh_sealed, kid: account.refresh_kid },
+    refreshLabel(account.id),
+  );
+  if (!opened) return null;
+  if (opened.stale) await resealRefresh(ctx, account.id, account.refresh_sealed, opened.plain);
+  return opened.plain;
+}
+
+/** Sealed again with the key that seals now, unless it changed meanwhile (a renewal kept one). */
+export async function resealRefresh(
+  ctx: AppContext,
+  id: string,
+  was: Buffer,
+  plain: Buffer,
+): Promise<void> {
+  const next = await sealSecret(ctx, plain, refreshLabel(id));
+  await ctx.db
+    .updateTable('connected_accounts')
+    .set({ refresh_sealed: next.sealed, refresh_kid: next.kid })
+    .where('id', '=', id)
+    .where('refresh_sealed', '=', was)
+    .execute();
+}
+
 /** Accesses renewed from a refresh token, in memory only, a minute short of their hour. */
 const accessCache = new TtlCache<string, string>(10_000, 50 * 60_000);
 
@@ -346,7 +391,7 @@ export async function accessFor(ctx: AppContext, account: Row): Promise<string |
   const cached = accessCache.get(account.id, ctx.now().getTime());
   if (cached) return cached;
   const client = contactClient(ctx.config, account.provider);
-  const refresh = unseal(await vaultKey(ctx), account.refresh_sealed, refreshLabel(account.id));
+  const refresh = await openRefresh(ctx, account);
   if (!client || !refresh) {
     await markAccount(ctx, account.id, 'reconnect');
     return null;
@@ -371,18 +416,14 @@ export async function accessFor(ctx: AppContext, account: Row): Promise<string |
     return null;
   }
   // Microsoft hands a new refresh token with each access: the new one is kept.
-  if (typeof body.refresh_token === 'string' && body.refresh_token !== refresh.toString())
+  if (typeof body.refresh_token === 'string' && body.refresh_token !== refresh.toString()) {
+    const next = await sealSecret(ctx, Buffer.from(body.refresh_token), refreshLabel(account.id));
     await ctx.db
       .updateTable('connected_accounts')
-      .set({
-        refresh_sealed: seal(
-          await vaultKey(ctx),
-          Buffer.from(body.refresh_token),
-          refreshLabel(account.id),
-        ),
-      })
+      .set({ refresh_sealed: next.sealed, refresh_kid: next.kid })
       .where('id', '=', account.id)
       .execute();
+  }
   const seconds = typeof body.expires_in === 'number' ? body.expires_in : 3600;
   accessCache.set(account.id, access, ctx.now().getTime(), Math.max(60, seconds - 60) * 1000);
   return access;
@@ -421,7 +462,13 @@ export async function accountsChanged(ctx: AppContext, userId: string): Promise<
 export async function disconnectAccount(ctx: AppContext, account: Row): Promise<void> {
   // What Caime wrote into its calendar that's still ahead goes first, while it still may (R96).
   await withdrawPlans(ctx, account);
-  const refresh = unseal(await vaultKey(ctx), account.refresh_sealed, refreshLabel(account.id));
+  const refresh = (
+    await openSecret(
+      ctx,
+      { sealed: account.refresh_sealed, kid: account.refresh_kid },
+      refreshLabel(account.id),
+    )
+  )?.plain;
   if (account.provider === 'google' && refresh)
     await postForm(ctx.config.GOOGLE_REVOKE_URL, { token: refresh.toString() }).catch((err) =>
       ctx.log.warn({ err: (err as Error).name }, 'accounts: Google did not take the revocation'),

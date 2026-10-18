@@ -117,8 +117,25 @@ export class Histogram extends Family {
 
 const SECONDS = [0.005, 0.01, 0.025, 0.05, 0.1, 0.25, 0.5, 1, 2.5, 5, 10];
 
-/** The last database backup that succeeded (lib/backup.ts writes it): when, and how big. */
-export const backupState = { at: 0, bytes: 0, copiedAt: 0 };
+/**
+ * The last database backup that succeeded (lib/backup.ts writes it): when, how big, and whether
+ * it was encrypted with BACKUP_KEY (M16 B5).
+ */
+export const backupState = { at: 0, bytes: 0, copiedAt: 0, encrypted: false };
+
+/**
+ * Connected accounts' sealed tokens (M16 B5, lib/vault-reseal.ts writes it): whether VAULT_KEY
+ * seals on this instance, and at the last pass, how many are sealed with which key and whether the
+ * database still holds its own (`at` 0 until a pass ran).
+ */
+export const vaultState = {
+  external: false,
+  sealing: 0,
+  older: 0,
+  unopenable: 0,
+  databaseKey: false,
+  at: 0,
+};
 
 /** The audit chain's last check (lib/audit.ts writes it): when, whether it held, its head. */
 export const auditState = { checkedAt: 0, ok: true, headSeq: 0 };
@@ -227,6 +244,33 @@ export function createMetrics(pool: pg.Pool) {
     new Gauge('caime_backup_bytes', 'The size of the last database backup.', () => [
       { labels: {}, value: backupState.bytes },
     ]),
+    new Gauge(
+      'caime_backup_encrypted',
+      'Whether the last backup was encrypted with BACKUP_KEY (absent until one was made).',
+      () => (backupState.at ? [{ labels: {}, value: backupState.encrypted ? 1 : 0 }] : []),
+    ),
+    new Gauge(
+      'caime_vault_key_external',
+      'Whether VAULT_KEY seals connected accounts’ tokens on this instance (0: the database’s own key does).',
+      () => [{ labels: {}, value: vaultState.external ? 1 : 0 }],
+    ),
+    new Gauge(
+      'caime_vault_database_key',
+      'Whether the database still held its own key to connected accounts’ tokens at the last pass (absent until one ran).',
+      () => (vaultState.at ? [{ labels: {}, value: vaultState.databaseKey ? 1 : 0 }] : []),
+    ),
+    new Gauge(
+      'caime_vault_sealed',
+      'Connected accounts’ tokens at the last pass, by key: the one that seals now, an older one that still opens them, or one that’s gone (absent until a pass ran).',
+      () =>
+        vaultState.at
+          ? [
+              { labels: { key: 'sealing' }, value: vaultState.sealing },
+              { labels: { key: 'older' }, value: vaultState.older },
+              { labels: { key: 'unopenable' }, value: vaultState.unopenable },
+            ]
+          : [],
+    ),
     new Gauge(
       'caime_backup_last_copy_timestamp_seconds',
       'When the last backup was last copied off the host (0 when no copy is configured or none has gone).',

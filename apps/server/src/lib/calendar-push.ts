@@ -55,6 +55,7 @@ const ACCOUNT_COLUMNS = [
   'scopes',
   'state',
   'refresh_sealed',
+  'refresh_kid',
   'created_at',
   'synced_at',
 ] as const;

@@ -209,6 +209,10 @@ BACKUP_KEEP_DAYS=30
 # BACKUP_S3_BUCKET=<a bucket in an EU region>
 # BACKUP_S3_ACCESS_KEY_ID=<HMAC access id>
 # BACKUP_S3_SECRET_ACCESS_KEY=<HMAC secret>
+# BACKUP_KEY=<openssl rand -base64 32, kept in a password manager too: restoring needs it>
+
+# --- Keys apart from the data (M16 B5, "Keys apart from the data", below): set once, never removed
+# VAULT_KEY=<openssl rand -base64 32, kept in a password manager too>
 
 # --- Health of the providers, hourly (R78); webhooks only to public https addresses
 PROVIDER_HEALTH_ENABLED=true
@@ -919,6 +923,63 @@ hate to lose.
 
 **Alert** when no copy has gone for a day and a half, once a bucket is set:
 `time() - caime_backup_last_copy_timestamp_seconds > 129600`.
+
+**Encrypted** (M16 B5). With `BACKUP_KEY` set (32 random bytes, `openssl rand -base64 32`), each
+checked dump is encrypted before it's kept or copied (AES-256-GCM, streamed; the file is
+`caime-<date>.dump.enc`, beginning `CAIMEBK1` and the key's id), decrypted through once to check
+it, and only then put in place; the plain dump never stays on the volume, and the bucket gets the
+encrypted file. `/metrics` says whether the last one was (`caime_backup_encrypted`), and
+`GET /v1/admin/backups` says whether new ones will be (`encrypts`). Keep the key where the
+backups aren't (a password manager, never the bucket): without it a backup is noise. To restore,
+turn the file back first, with the key in the environment, never on the command line:
+
+```sh
+BACKUP_KEY=… node dist/decrypt-backup.js caime-<date>.dump.enc /tmp/caime-<date>.dump
+# from a checkout instead: BACKUP_KEY=… pnpm --filter @caime/server decrypt-backup <in> <out>
+```
+
+then follow the drill above with the `.dump`. A file made with another key says so, with both
+keys' ids; one changed or cut decrypts to nothing and leaves nothing behind. To replace the key,
+set the new one: later backups use it, and earlier ones still need the one they were made with
+(their id says which). ⛔ The owner sets `BACKUP_KEY` in EasyPanel; until then dumps are plain.
+
+**Alert** when backups stop being encrypted once the key is set: `caime_backup_encrypted == 0`.
+
+## Keys apart from the data
+
+The refresh tokens of the Google and Microsoft accounts people connect (R90) are sealed with
+AES-256-GCM. Until `VAULT_KEY` is set, the key that seals them is the database's own
+(`accounts.vault` in `server_settings`), so a dump carries the key beside what it seals (review
+2026-10-17 §5 H1). With `VAULT_KEY` (32 random bytes, `openssl rand -base64 32`) in the
+environment:
+
+- new tokens are sealed with it, each naming it by an id (a fingerprint, never the key);
+- one sealed with the database's key opens with that key and is sealed again with `VAULT_KEY` the
+  next time it's used, by a pass queued at start, and by the daily `vault.reseal` pass;
+- once nothing that key opens is left, the database's key is deleted, so no later dump holds it.
+
+`/metrics` says where it stands: `caime_vault_key_external` (1 once the instance has the key),
+`caime_vault_database_key` (0 once the database's is gone) and `caime_vault_sealed` by `key`
+(`sealing`, `older`: sealed with a key still here, `unopenable`: sealed with a key that's gone,
+whose connection asks to be connected again). Dumps made before the move still hold the old key:
+they age out after `BACKUP_KEEP_DAYS`, and the bucket's copies by its lifecycle rule.
+
+Set it once and keep it: without it every connection must be connected again. To replace it, put
+the new key in `VAULT_KEY` and the old one in `VAULT_KEY_PREVIOUS`, deploy, and remove
+`VAULT_KEY_PREVIOUS` once `caime_vault_sealed{key="older"}` reads 0 (the next day's pass at the
+latest). `VAULT_KEY_PREVIOUS` alone is refused at start. ⛔ The owner sets `VAULT_KEY` in EasyPanel
+(and keeps a copy in a password manager); check the file first with `check-env`.
+
+**Alert** when the key is set but the database still holds its own two days on, or when
+anything is sealed with a key that's gone:
+
+```yaml
+      - alert: CaimeVaultKeyInDatabase
+        expr: caime_vault_key_external == 1 and caime_vault_database_key == 1
+        for: 2d
+      - alert: CaimeVaultUnopenable
+        expr: caime_vault_sealed{key="unopenable"} > 0
+```
 
 ## What the proxy needn't do
 

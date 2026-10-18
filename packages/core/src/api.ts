@@ -3306,9 +3306,13 @@ export interface BackupView {
   bytes: number;
   at: string;
   copy?: string | null;
+  /** Encrypted with BACKUP_KEY (`….dump.enc`, M16 B5). */
+  encrypted?: boolean;
 }
 export interface BackupsResponse {
   enabled: boolean;
+  /** Whether new backups are encrypted (BACKUP_KEY is set). */
+  encrypts: boolean;
   dir: string;
   keepDays: number;
   last: BackupView | null;

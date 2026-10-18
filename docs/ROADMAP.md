@@ -2012,8 +2012,24 @@ graph) and the number that will show it; one that sharpens none is hygiene and s
       a day (`REQUESTS_PER_DAY`, `429 requests_today`; one already started reopens freely), and a
       request's photos come blurred until tapped (under 18, until accepted). Verified with
       `place-invites.test.ts` (7), the catalogs in every language and the full gate.
-- [ ] B, the rest: the vault key from the environment and encrypted dumps; a visitor's report from
-      a page, a suspended account's reason, appeal and export; age assurance phase 1
+- [x] B5. Keys apart from the data (2026-10-18), the condition of a clinic's DPA and of the copy
+      off the host: `VAULT_KEY` from the environment seals connected accounts' refresh tokens, each
+      naming its key by id (`connected_accounts.refresh_kid`, migration 0101); what the database's
+      own key sealed moves to it as it's used, by a pass queued at start and by the daily
+      `vault.reseal`, which then deletes the database's key, so no later dump holds what opens the
+      tokens; `VAULT_KEY_PREVIOUS` replaces a key the same way; `BACKUP_KEY` encrypts each checked
+      dump (AES-256-GCM, streamed, the key's id in its header, decrypted through once before it's
+      kept or copied; `dist/decrypt-backup.js` turns one back); both checked as 32 bytes at start
+      and by `check-env`; `/metrics` says where each stands (`caime_vault_key_external`,
+      `caime_vault_database_key`, `caime_vault_sealed`, `caime_backup_encrypted`). Verified with
+      `vault-keys.test.ts` (5), `backup.test.ts` and `backup-copy.test.ts` (an encrypted dump
+      restored by `pg_restore`; another key, a changed or cut file refused, leaving nothing),
+      `connected-accounts.test.ts` run under `VAULT_KEY`, the built tool decrypting a file byte for
+      byte, and the full gate. ⛔ The owner sets `VAULT_KEY` and `BACKUP_KEY` in EasyPanel, each kept
+      in a password manager too (DEPLOY.md, "Keys apart from the data"); until then the database
+      holds its key and dumps are plain.
+- [ ] B, the rest: a visitor's report from a page, a suspended account's reason, appeal and
+      export; age assurance phase 1
       (`age_assurance` levels, `AgeProvider` behind a signed webhook, the paid, organization and
       stranger triggers, the privacy page and the DPA).
 - [ ] ⛔ B, the owner's: an age-assurance provider (Agemin or another) with retention terms, a DPA
@@ -4014,6 +4030,9 @@ graph) and the number that will show it; one that sharpens none is hygiene and s
   journeys, safety, reliability, performance, intelligence, mail and calendar, chat, integrations,
   business and code integrity; the matrix against WhatsApp, Signal, Slack, Calendly and Workspace;
   an age-assurance design; the integration framework mapped to the code; plan M16 (A–H).
+- 2026-10-18 — M16 B5: keys apart from the data: VAULT_KEY seals connected accounts' tokens and
+  the database's key goes once nothing it opens is left; BACKUP_KEY encrypts every dump before it's
+  kept or copied, with a tool to turn one back; ⛔ both values are the owner's to set.
 - 2026-10-18 — M16 B4: asked before being added: "Who can add you", minors asked where strangers
   are, invitations on Attention, blocks honoured by adds, twenty new message requests a day, a
   request's photos blurred. B3 went live after its own gate; B1 and B2 verified on cai.me.

@@ -1,8 +1,14 @@
-import { readdir, stat, utimes, writeFile } from 'node:fs/promises';
+import { execFile } from 'node:child_process';
+import { randomBytes } from 'node:crypto';
+import { readdir, readFile, stat, utimes, writeFile } from 'node:fs/promises';
 import { join } from 'node:path';
+import { promisify } from 'node:util';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { backupDir, backupDue, runBackup } from '../src/lib/backup';
+import { checkEncrypted, decryptFile } from '../src/lib/backup-crypt';
 import { createTestApp, signup, type TestApp } from './helpers';
+
+const run = promisify(execFile);
 
 const ADMIN = 'operator-token-for-the-backup-test-0123456789';
 let t: TestApp;
@@ -85,5 +91,69 @@ describe('database backups (REVIEW-2026-09, P0)', () => {
       'caime-2026-09-23T14-00-00-000Z.dump',
       'caime-2026-09-24T13-00-00-000Z.dump',
     ]);
+  });
+});
+
+describe('backups encrypted with BACKUP_KEY (M16 B5)', () => {
+  it('encrypts each checked dump before it’s kept, and only that key turns it back', async () => {
+    const key = randomBytes(32);
+    t.ctx.config.backupKey = key;
+    try {
+      t.clock.advance(25 * 3_600_000);
+      const made = await runBackup(t.ctx);
+      expect(made).toMatchObject({
+        file: 'caime-2026-09-25T14-00-00-000Z.dump.enc',
+        encrypted: true,
+      });
+      const dir = backupDir(t.ctx);
+      const path = join(dir, made?.file as string);
+      // Nothing plain is left beside it: the dump was encrypted and its plain file removed.
+      expect((await readdir(dir)).filter((n) => n.startsWith('caime-2026-09-25'))).toEqual([
+        made?.file,
+      ]);
+      const bytes = await readFile(path);
+      expect(bytes.length).toBe(made?.bytes);
+      expect(bytes.subarray(0, 8).toString()).toBe('CAIMEBK1');
+      expect(bytes.includes(Buffer.from('PGDMP'))).toBe(false);
+      await checkEncrypted(key, path);
+      // Turned back with its key, it's the dump pg_restore reads.
+      const out = join(dir, 'restored.dump');
+      await decryptFile(key, path, out);
+      expect((await readFile(out)).subarray(0, 5).toString()).toBe('PGDMP');
+      expect((await run('pg_restore', ['--list', out])).stdout).toMatch(/TABLE DATA/);
+      // Another key is named as such; a file changed or cut decrypts to nothing at all.
+      const elsewhere = join(dir, 'elsewhere.dump');
+      await expect(decryptFile(randomBytes(32), path, elsewhere)).rejects.toThrow(
+        /Made with another key/,
+      );
+      const changed = Buffer.from(bytes);
+      const mid = changed.length >> 1;
+      changed[mid] = (changed[mid] ?? 0) ^ 1;
+      const tampered = join(dir, 'tampered.enc');
+      await writeFile(tampered, changed);
+      await expect(decryptFile(key, tampered, elsewhere)).rejects.toThrow(/Changed or cut/);
+      await writeFile(tampered, bytes.subarray(0, bytes.length - 100));
+      await expect(decryptFile(key, tampered, elsewhere)).rejects.toThrow(/Changed or cut/);
+      await writeFile(tampered, 'PGDMP and nothing more of ours');
+      await expect(decryptFile(key, tampered, elsewhere)).rejects.toThrow(/Not an encrypted/);
+      expect((await readdir(dir)).filter((n) => n.startsWith('elsewhere'))).toEqual([]);
+      // The operator sees it as encrypted, and that new ones will be.
+      const listed = (await admin('GET')).json();
+      expect(listed.encrypts).toBe(true);
+      expect(listed.last).toMatchObject({ file: made?.file, encrypted: true });
+      expect(listed.files.find((f: any) => f.file === made?.file)?.encrypted).toBe(true);
+    } finally {
+      t.ctx.config.backupKey = null;
+    }
+    const stub = await createTestApp({ METRICS_TOKEN: 'metrics-token-for-the-backup-test-01234' });
+    try {
+      const scraped = await stub.app.inject({
+        url: '/metrics',
+        headers: { authorization: 'Bearer metrics-token-for-the-backup-test-01234' },
+      });
+      expect(scraped.body).toMatch(/^caime_backup_encrypted 1$/m);
+    } finally {
+      await stub.close();
+    }
   });
 });

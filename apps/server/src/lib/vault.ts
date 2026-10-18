@@ -4,10 +4,31 @@
  * secret), never a column of plain text. A label that doesn't match, or bytes that were
  * changed, opens to nothing. Layout: nonce (12) | body | tag (16).
  */
-import { createCipheriv, createDecipheriv, randomBytes } from 'node:crypto';
+import { createCipheriv, createDecipheriv, createHash, randomBytes } from 'node:crypto';
 
 const NONCE = 12;
 const TAG = 16;
+
+/**
+ * A key's id (M16 B5): the first nine bytes of a labelled SHA-256 of it, which names the key a
+ * value was sealed with and tells nobody the key.
+ */
+export function keyId(purpose: 'vault' | 'backup', key: Buffer): Buffer {
+  return createHash('sha256')
+    .update(`caime ${purpose} key id v1\n`)
+    .update(key)
+    .digest()
+    .subarray(0, 9);
+}
+
+/** 32 random bytes written as base64 or base64url (`openssl rand -base64 32`), or null. */
+export function key32(text: string | undefined): Buffer | null {
+  const v = text?.trim() ?? '';
+  if (!/^[A-Za-z0-9+/_-]{43}=?$/.test(v)) return null;
+  // Node reads both alphabets as base64.
+  const key = Buffer.from(v, 'base64');
+  return key.length === 32 ? key : null;
+}
 
 export function seal(key: Buffer, plain: Buffer, label: string): Buffer {
   const nonce = randomBytes(NONCE);

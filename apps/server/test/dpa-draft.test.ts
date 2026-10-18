@@ -40,6 +40,9 @@ describe('the draft data processing agreement', () => {
     // The export's rate limit (modules/orgs.ts), and how passwords are kept (lib/crypto.ts).
     expect(doc).toContain('three times an hour');
     expect(doc).toContain('passwords hashed (scrypt)');
+    // The keys the Operator holds apart from the data (M16 B5, config.ts).
+    expect(doc).toContain('`BACKUP_KEY`');
+    expect(doc).toContain('`VAULT_KEY`');
   });
 
   it('says how an organization’s closing ends processing, as the code does it (section 12)', () => {

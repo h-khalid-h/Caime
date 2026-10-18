@@ -9,6 +9,10 @@
  * Off the host: with BACKUP_S3_* set, each dump is put in a bucket once it's checked
  * (`copyOffHost`), and the hourly task tries again for a backup whose copy failed while the
  * file is still here. Without it, the volume's own backup is what survives the box.
+ *
+ * Encrypted (M16 B5): with BACKUP_KEY set, a checked dump is encrypted (`lib/backup-crypt.ts`)
+ * and checked again by decrypting it through, before it's kept or copied; the plain dump never
+ * stays on the disk, and `node dist/decrypt-backup.js` turns one back for `pg_restore`.
  */
 
 import { execFile } from 'node:child_process';
@@ -19,6 +23,7 @@ import { promisify } from 'node:util';
 import { sql } from 'kysely';
 import type { Config } from '../config';
 import type { AppContext } from '../context';
+import { checkEncrypted, ENCRYPTED, encryptFile } from './backup-crypt';
 import { registerPeriodic } from './jobs';
 import { backupState } from './metrics';
 import { type S3Config, s3PutStream } from './s3';
@@ -50,6 +55,8 @@ export interface BackupRecord {
   at: string;
   /** Where the copy off the host went (`s3://bucket/key`), or null when none has. */
   copy?: string | null;
+  /** Encrypted with BACKUP_KEY (`….dump.enc`, M16 B5). */
+  encrypted?: boolean;
 }
 
 /** The bucket a copy goes to, when every part of it is set. */
@@ -92,6 +99,7 @@ export async function lastBackup(ctx: AppContext): Promise<BackupRecord | null> 
   if (last) {
     backupState.at = Date.parse(last.at);
     backupState.bytes = last.bytes;
+    backupState.encrypted = last.encrypted === true;
     if (last.copy) backupState.copiedAt = Math.max(backupState.copiedAt, Date.parse(last.at));
   }
   return last;
@@ -139,9 +147,11 @@ export async function listBackups(ctx: AppContext): Promise<BackupRecord[]> {
   const names = await readdir(dir).catch(() => [] as string[]);
   const out: BackupRecord[] = [];
   for (const name of names) {
-    if (!name.startsWith(PREFIX) || !name.endsWith(SUFFIX)) continue;
+    if (!name.startsWith(PREFIX)) continue;
+    const encrypted = name.endsWith(`${SUFFIX}${ENCRYPTED}`);
+    if (!encrypted && !name.endsWith(SUFFIX)) continue;
     const s = await stat(join(dir, name)).catch(() => null);
-    if (s) out.push({ file: name, bytes: s.size, at: s.mtime.toISOString() });
+    if (s) out.push({ file: name, bytes: s.size, at: s.mtime.toISOString(), encrypted });
   }
   return out.sort((a, b) => b.at.localeCompare(a.at));
 }
@@ -163,9 +173,11 @@ export async function runBackup(ctx: AppContext): Promise<BackupRecord | null> {
         .then((r) => r.rows[0] ?? { locked: false });
       if (!locked) return null;
       const now = ctx.now();
-      const file = `${PREFIX}${now.toISOString().replace(/[:.]/g, '-')}${SUFFIX}`;
+      const key = ctx.config.backupKey;
+      const dump = `${PREFIX}${now.toISOString().replace(/[:.]/g, '-')}${SUFFIX}`;
+      const file = key ? `${dump}${ENCRYPTED}` : dump;
       const path = join(dir, file);
-      const part = `${path}.part`;
+      const part = join(dir, `${dump}.part`);
       // Custom format is compressed and restores selectively; no owners or grants, so it restores
       // into any role. The connection travels in libpq's environment, never as an argument: a
       // failure's error names the command and its arguments, and the log would carry the password.
@@ -178,9 +190,29 @@ export async function runBackup(ctx: AppContext): Promise<BackupRecord | null> {
         await rm(part, { force: true });
         throw new Error('The backup lists no table data.');
       }
-      await rename(part, path);
+      if (key) {
+        // Encrypted, and decrypted through to check its tag, before it's kept: the plain dump
+        // goes whatever happens, and only a whole encrypted file is renamed into place.
+        const sealedPart = `${path}.part`;
+        try {
+          await encryptFile(key, part, sealedPart);
+          await checkEncrypted(key, sealedPart);
+        } catch (err) {
+          await rm(sealedPart, { force: true });
+          throw err;
+        } finally {
+          await rm(part, { force: true });
+        }
+        await rename(sealedPart, path);
+      } else await rename(part, path);
       const { size } = await stat(path);
-      const record: BackupRecord = { file, bytes: size, at: now.toISOString(), copy: null };
+      const record: BackupRecord = {
+        file,
+        bytes: size,
+        at: now.toISOString(),
+        copy: null,
+        encrypted: key !== null,
+      };
       await trx
         .insertInto('server_settings')
         .values({ key: SETTING, value: JSON.stringify(record) })
@@ -190,8 +222,9 @@ export async function runBackup(ctx: AppContext): Promise<BackupRecord | null> {
         .execute();
       backupState.at = now.getTime();
       backupState.bytes = size;
+      backupState.encrypted = key !== null;
       await forgetOld(ctx, dir, now);
-      ctx.log.info({ file, bytes: size }, 'database backed up');
+      ctx.log.info({ file, bytes: size, encrypted: key !== null }, 'database backed up');
       return record;
     })
     .then((record) => (record ? copyOffHost(ctx, record) : record));

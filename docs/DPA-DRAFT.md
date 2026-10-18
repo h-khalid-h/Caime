@@ -106,8 +106,13 @@ What the product does today, from docs/SECURITY.md, which is checked against the
   changes, closing), kept as a hash chain the database seals at each commit and verifies daily,
   so a record changed or removed after the fact shows.
 - Daily database backups, each checked by reading it back, kept 30 days, copied off the host when
-  a bucket is configured. ⛔ The owner configures the bucket (DEPLOY.md, the environment in full);
-  until then backups stay on the host.
+  a bucket is configured, and encrypted (AES-256-GCM) before they're kept or copied once the
+  Operator sets a backup key (`BACKUP_KEY`), kept apart from the backups. ⛔ The owner configures
+  the bucket and the key (DEPLOY.md, the environment in full); until then backups stay on the host,
+  unencrypted.
+- The credentials people connect (a Google or Microsoft account's refresh token) sealed with
+  AES-256-GCM under a key held in the environment, never in the database (`VAULT_KEY`), so a copy
+  of the database opens none of them. ⛔ The owner sets the key; until then the database holds it.
 - Rate limits on sign-up, sign-in, exports and domain checks; abuse reports read by a person.
 - End-to-end encryption is offered to people for private conversations; business conversations
   are not end-to-end encrypted, so that the team, the agent and the apps can read them. Say so.

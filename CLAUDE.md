@@ -1046,8 +1046,13 @@ appointment from a catalog).
   `ACCOUNT_USES` lists, asking `accountScopes` (identity plus each use's narrowest). The consent
   returns a claim sealed with `serverKey('accounts.state')` naming who asked, redeemed signed in
   (`POST /me/accounts/:provider/claim`, another person's claim is 403); the refresh token is
-  sealed with `serverKey('accounts.vault')` (`lib/vault.ts`) and an access lives in memory only
-  (`accessFor`, which marks `reconnect` on `invalid_grant`). The calendar use keeps
+  sealed through `lib/vault-keys.ts` (M16 B5: `sealSecret` with `VAULT_KEY` from the environment,
+  the value naming its key by id in `refresh_kid`, else the database's own `accounts.vault`;
+  `openSecret` by that id, `VAULT_KEY_PREVIOUS` while a key is replaced; `openRefresh` seals a
+  stale one again as it's used, and `lib/vault-reseal.ts` moves the rest at start and daily, then
+  deletes the database's key) and an access lives in memory only (`accessFor`, which marks
+  `reconnect` on `invalid_grant`); anything new kept sealed for someone goes through that pair and
+  joins the pass, never a key of its own in `server_settings`. The calendar use keeps
   `external_busy` (start and end, nothing else), read by `syncAccountCalendar`
   (`lib/external-busy.ts`: on connect, on "Read now", the `accounts.calendar` sweep, and
   `freshenBusy` before a slot is offered or taken when the last read is older than
@@ -1602,7 +1607,11 @@ appointment from a catalog).
   run with `BACKUP_ENABLED=false` unless they're about it. With `BACKUP_S3_*` set, `copyOffHost`
   puts each checked dump in the bucket through `lib/s3.ts` (Signature Version 4 by hand over
   fetch: put and delete, nothing else; a new use of S3 extends it rather than adding an SDK),
-  and `backup-copy.test.ts` runs a signing stand-in. Caime never deletes in the bucket.
+  and `backup-copy.test.ts` runs a signing stand-in. Caime never deletes in the bucket. With
+  `BACKUP_KEY` (M16 B5), a checked dump is encrypted by `lib/backup-crypt.ts` (streamed AES-256-GCM,
+  `CAIMEBK1` and the key's id first) and decrypted through before it's kept as `….dump.enc`, the
+  plain dump removed whatever happens; `src/decrypt-backup.ts`, built beside the server as
+  `dist/decrypt-backup.js`, turns one back with the key from the environment, never an argument.
 - Files live where `storageFor(config)` says (`lib/storage.ts`): `DATA_DIR`, or with `FILES_S3_*`
   a bucket (`s3Storage`) for every durable key, with `tmp/` keys on the instance's disk. Anything
   that reads a file by path (sniffing, sharp) works on a `tmp/` key and moves the result with

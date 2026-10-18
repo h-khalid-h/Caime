@@ -1,9 +1,14 @@
+import { randomBytes } from 'node:crypto';
 import { createServer, type IncomingMessage, type Server } from 'node:http';
 import type { AddressInfo } from 'node:net';
 import { accountReturnOf } from '@caime/core/accounts';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { runDueJobs } from '../src/lib/jobs';
+import { storedServerKey } from '../src/lib/server-keys';
+import { DATABASE_VAULT_KEY, vaultKid } from '../src/lib/vault-keys';
 import { type Client, createTestApp, signup, type TestApp } from './helpers';
+
+const VAULT_KEY = randomBytes(32);
 
 /**
  * Connected accounts (R90): a Google or Microsoft account connected once, its calendar's busy
@@ -135,6 +140,8 @@ beforeAll(async () => {
     MICROSOFT_CLIENT_SECRET: 'ms-secret',
     MICROSOFT_LOGIN_BASE: base,
     MICROSOFT_GRAPH_API: `${base}/graph`,
+    // Sealed with the environment's key, never the database's (M16 B5).
+    VAULT_KEY: VAULT_KEY.toString('base64'),
   });
   bare = await createTestApp();
   // Thursday 1 October 2026, 05:00Z: 08:00 in Cairo.
@@ -249,10 +256,13 @@ describe('connected accounts (R90)', () => {
     // Nothing secret is answered or kept in the clear.
     const row = await t.ctx.db
       .selectFrom('connected_accounts')
-      .select(['refresh_sealed'])
+      .select(['refresh_sealed', 'refresh_kid'])
       .where('id', '=', account.id)
       .executeTakeFirstOrThrow();
     expect(Buffer.from(row.refresh_sealed).toString()).not.toContain('g-refresh');
+    // Sealed with VAULT_KEY and named by its id; the database holds no key that opens it.
+    expect(row.refresh_kid).toBe(vaultKid(VAULT_KEY));
+    expect(await storedServerKey(t.ctx, DATABASE_VAULT_KEY)).toBeNull();
   });
 
   it('keeps when Noor is busy there, and Noor’s slots are never offered over it', async () => {

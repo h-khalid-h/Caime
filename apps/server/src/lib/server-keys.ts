@@ -6,7 +6,25 @@
 import { randomBytes } from 'node:crypto';
 import type { AppContext } from '../context';
 
-export async function serverKey(ctx: AppContext, name: string): Promise<Buffer> {
+/** A key kept under its name, or null when none is: read, never made. */
+export async function storedServerKey(
+  ctx: Pick<AppContext, 'db'>,
+  name: string,
+): Promise<Buffer | null> {
+  const stored = await ctx.db
+    .selectFrom('server_settings')
+    .select('value')
+    .where('key', '=', name)
+    .executeTakeFirst();
+  return stored ? Buffer.from((stored.value as { key: string }).key, 'base64url') : null;
+}
+
+/** A key no longer kept (M16 B5: the database's vault key, once the environment's took over). */
+export async function dropServerKey(ctx: Pick<AppContext, 'db'>, name: string): Promise<void> {
+  await ctx.db.deleteFrom('server_settings').where('key', '=', name).execute();
+}
+
+export async function serverKey(ctx: Pick<AppContext, 'db'>, name: string): Promise<Buffer> {
   const read = () =>
     ctx.db.selectFrom('server_settings').select('value').where('key', '=', name).executeTakeFirst();
   const stored = await read();

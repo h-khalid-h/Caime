@@ -1,4 +1,4 @@
-import { createHash } from 'node:crypto';
+import { createHash, randomBytes } from 'node:crypto';
 import { createServer, type Server } from 'node:http';
 import type { AddressInfo } from 'node:net';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
@@ -114,6 +114,24 @@ describe('a copy of each backup off the host (docs/DEPLOY.md, "Backups")', () =>
     await runPeriodic(t.ctx);
     expect(seen).toEqual([`PUT /caime-backups/caime/backups/${made?.file}`]);
     expect((await lastBackup(t.ctx))?.copy).toBe(`s3://caime-backups/caime/backups/${made?.file}`);
+  });
+
+  it('with BACKUP_KEY, what goes off the host is the encrypted file (M16 B5)', async () => {
+    seen.length = 0;
+    t.clock.advance(25 * 3_600_000);
+    t.ctx.config.backupKey = randomBytes(32);
+    try {
+      const made = await runBackup(t.ctx);
+      expect(made?.file).toMatch(/\.dump\.enc$/);
+      const key = `/caime-backups/caime/backups/${made?.file}`;
+      expect(seen).toEqual([`PUT ${key}`]);
+      const object = objects.get(key);
+      expect(object?.body.length).toBe(made?.bytes);
+      expect(object?.body.subarray(0, 8).toString()).toBe('CAIMEBK1');
+      expect(object?.body.includes(Buffer.from('PGDMP'))).toBe(false);
+    } finally {
+      t.ctx.config.backupKey = null;
+    }
   });
 
   it('refuses a request signed with another secret', async () => {
