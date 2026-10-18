@@ -58,13 +58,15 @@ test.describe
       await expect(page.getByTestId('unread-line').filter({ visible: true })).toHaveText(
         '30 unread messages',
       );
-      // At the first of them, not at the newest.
+      // At the first of them, not at the newest. The newest is the bubble, the last of its words
+      // on the page: on a desktop the Chats row beside the conversation says them too.
+      const newest = page.getByText('Line 30 of the plan').filter({ visible: true }).last();
       await expect(visible(page, 'Line 1 of the plan')).toBeInViewport();
-      await expect(visible(page, 'Line 30 of the plan')).not.toBeInViewport();
+      await expect(newest).not.toBeInViewport();
       const count = page.getByTestId('jump-count').filter({ visible: true });
       await expect(count).toHaveText('30');
       await page.getByRole('button', { name: /^Jump to the newest message/ }).click();
-      await expect(visible(page, 'Line 30 of the plan')).toBeInViewport();
+      await expect(newest).toBeInViewport();
       await expect(page.getByTestId('jump-count')).toHaveCount(0);
       expect(noor.errors).toEqual([]);
     });
@@ -88,6 +90,13 @@ test.describe
 
     test('marked unread in Chats keeps a dot until the conversation is opened', async () => {
       const { page } = noor;
+      // Read to its end first (scrolled back for the pill, the last two never came into view),
+      // so the row offers to mark it unread.
+      const read = await noorCtx.request.post(`/v1/conversations/${convo}/receipts`, {
+        headers: CLIENT,
+        data: { read: 1_000_000 },
+      });
+      expect(read.ok(), await read.text()).toBe(true);
       await page.goto('/chats');
       const row = page.getByTestId(`conversation-${convo}`).filter({ visible: true });
       await row.click({ delay: 700 });
@@ -124,10 +133,10 @@ test.describe
       expect(said.ok(), await said.text()).toBe(true);
       const { page } = noor;
       await page.goto(`/c/${group}`);
+      // The bubble, whose name goes on to its time; the Chats row beside it says the words too.
       await page
-        .getByLabel(/Who brings the cake\?/)
+        .getByLabel(/Who brings the cake\?, \d/)
         .filter({ visible: true })
-        .first()
         .hover();
       await page.getByRole('button', { name: 'React', exact: true }).click();
       await page.getByTestId('message-reply-privately').click();
@@ -151,7 +160,9 @@ test.describe
     test('the head says when the other person was last here once they have gone', async () => {
       const alex = await newPerson(alexCtx);
       await alex.page.goto('/chats');
+      // The chat with Alex (the last test ended in the group).
       const { page } = noor;
+      await page.goto(`/c/${convo}`);
       const head = page
         .getByRole('button', { name: /Alex Reads, details/ })
         .filter({ visible: true });

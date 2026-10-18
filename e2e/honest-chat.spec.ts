@@ -95,6 +95,9 @@ test.describe
 
     test('a first load that fails says so, and Try again brings the day', async () => {
       // A fresh launch, nothing kept from before (the cache would show the last inbox instead).
+      // Noor's open tab saves its cache to the storage they share whenever it changes, so it's
+      // left first (its last save is then, as it goes) and the launch finds the cache cleared.
+      await noor.page.goto('about:blank');
       const page = await noorCtx.newPage();
       await page.addInitScript(() => localStorage.removeItem('caime.cache.v1'));
       await page.route(INBOX, (route) =>
@@ -150,12 +153,15 @@ test.describe
       await expect(page.getByTestId('message-highlighted').filter({ visible: true })).toContainText(
         'Can you bring the chairs?',
       );
-      // Answering one's own words says so in a whole sentence, in every language.
+      // Answering one's own words says so in a whole sentence, in every language. The bubble the
+      // pointer left keeps its buttons a moment (so a pointer can reach them): one Reply first.
       await page
         .getByLabel(/Can you bring the chairs\?, .*(Sent|Delivered|Read)$/)
         .filter({ visible: true })
         .hover();
-      await page.getByRole('button', { name: 'Reply', exact: true }).click();
+      const reply = page.getByRole('button', { name: 'Reply', exact: true });
+      await expect(reply).toHaveCount(1);
+      await reply.click();
       await expect(visible(page, 'Replying to yourself')).toBeVisible();
 
       // Both react; holding the reaction names who, Noor as "You".
