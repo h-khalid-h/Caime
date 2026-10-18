@@ -1857,6 +1857,12 @@ export interface ProductMetricsView {
      * made for the link (`newPeople`, the number that shows a group moving over).
      */
     joinLinks: { made: number; joined: number; newPeople: number };
+    /**
+     * Meeting guests (R84, M16 C3f): who came in by their link in the window, and of guests, who
+     * made it their account in the window (`kept`: by link keeping the meeting, or by address
+     * signing up with it), the number that shows a meeting bringing someone in.
+     */
+    guests: { joined: number; kept: number };
   };
   ai: { calls: number; ok: number; byFeature: Record<string, { ok: number; other: number }> };
   business: {
@@ -3355,4 +3361,15 @@ export interface JoinResponse {
   messageId: string;
   seq: number;
   token?: string;
+}
+
+/**
+ * `POST /v1/guest/keep` (M16 C3f): what a guest's page takes to sign-up to keep their meeting:
+ * their name, and the address their invitation came to (proven there by its code at sign-up),
+ * or, for a guest by link, who has none, a claim naming them that sign-up takes for half an hour.
+ */
+export interface GuestKeepResponse {
+  name: string;
+  email: string | null;
+  claim: string | null;
 }

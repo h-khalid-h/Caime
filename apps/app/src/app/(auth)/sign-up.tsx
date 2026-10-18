@@ -8,7 +8,7 @@ import {
   passwordError,
 } from '@caime/core/rules';
 import { tagged } from '@caime/core/tagged';
-import { router } from 'expo-router';
+import { router, useLocalSearchParams } from 'expo-router';
 import AtSign from 'lucide-react-native/icons/at-sign';
 import Check from 'lucide-react-native/icons/check';
 import { useEffect, useRef, useState } from 'react';
@@ -22,6 +22,7 @@ import { useCountries } from '@/features/geo/countries';
 import { WEB_URL } from '@/lib/config';
 import { openLink, opensWithEnter } from '@/lib/links';
 import { handleIn } from '@/lib/paths';
+import type { KeptMeeting } from '@/state/guestLink';
 import { peekLink } from '@/state/pendingLink';
 import { useSession } from '@/state/session';
 import { useTheme } from '@/theme/theme';
@@ -74,6 +75,21 @@ export default function SignUp() {
   const [password, setPassword] = useState('');
   const [birthDate, setBirthDate] = useState<string | null>(null);
   const [country, setCountry] = useState<string | null>(null);
+  // Keeping a meeting (M16 C3f): what the guest's page handed over, read only when it says so,
+  // so the store stays out of every other sign-up's download.
+  const { keep } = useLocalSearchParams<{ keep?: string }>();
+  const [kept, setKept] = useState<KeptMeeting | null>(null);
+  useEffect(() => {
+    if (keep !== '1') return;
+    void import('@/state/guestLink')
+      .then((g) => g.keptMeeting())
+      .then((k) => {
+        if (!k) return;
+        setKept(k);
+        setDisplayName((n) => n || k.name);
+        if (k.email) setEmail((e) => e || (k.email ?? ''));
+      });
+  }, [keep]);
   const [device] = useState(deviceInfo);
   const [errors, setErrors] = useState<Partial<Record<Field | 'form', string>>>({});
   // One request for the list and the suggestion (CountryField asks with the same time zone).
@@ -190,7 +206,9 @@ export default function SignUp() {
         // Whose @handle link brought them, counted for the operator and told to nobody.
         ...(handleIn(peekLink()) ? { invite: handleIn(peekLink()) ?? undefined } : {}),
         ...(codeAsked && !resend ? { emailCode: emailCode.trim() } : {}),
+        ...(kept?.claim ? { keep: kept.claim } : {}),
       });
+      if (kept) void import('@/state/guestLink').then((g) => g.forgetKeptMeeting());
       await useSession.getState().signedIn(res);
     } catch (err) {
       if (err instanceof ApiError && err.code === 'email_code_needed') {
@@ -250,8 +268,12 @@ export default function SignUp() {
   return (
     <AuthLayout
       kicker={tr('new account')}
-      title={tr('Create your account')}
-      subtitle={tr('It takes a minute. You can change all of it later.')}
+      title={kept ? tr('Keep “{title}”', { title: kept.title }) : tr('Create your account')}
+      subtitle={
+        kept
+          ? tr('Your own account, free: the meeting, its people and what was said come with it.')
+          : tr('It takes a minute. You can change all of it later.')
+      }
     >
       <View style={{ gap: 14 }}>
         <TextField
@@ -354,7 +376,11 @@ export default function SignUp() {
           returnKeyType="next"
           onSubmitEditing={() => refs.password.current?.focus()}
           error={errors.email}
-          hint={tr('For signing in. Hidden from others unless you choose otherwise.')}
+          hint={
+            kept?.email
+              ? tr('The address your invitation came to: keep it, and the meeting comes with it.')
+              : tr('For signing in. Hidden from others unless you choose otherwise.')
+          }
           testID="signup-email"
         />
         {codeAsked ? (

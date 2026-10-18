@@ -327,6 +327,11 @@ export const SignupBody = z.object({
    * account), which is claimed by whoever proves the address and nobody else.
    */
   emailCode: z.string().max(12).optional(),
+  /**
+   * A meeting's guest by link keeping the meeting (M16 C3f): the claim their own page was handed,
+   * naming the guest whose row becomes this account, so the meeting comes with it.
+   */
+  keep: z.string().max(512).optional(),
 });
 
 /**

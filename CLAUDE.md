@@ -1269,7 +1269,15 @@ appointment from a catalog).
   link this device kept (`state/guestLink.ts`, loaded only by those two). The call is drawn by
   the root layout for anyone signed in (`CallLayer`), and a guest's socket opens like anyone's
   (`GET /v1/realtime` is a guest route; their typing is dropped). Anything a guest's page calls
-  must be in `GUEST_ROUTES`; the E2E fails on a refused request.
+  must be in `GUEST_ROUTES`; the E2E fails on a refused request. A guest keeps the meeting as
+  their own account (C3f, `lib/guest-keep.ts`) only through sign-up, the account being the guest's
+  own row: by address, as any address is claimed, by its code; by link, with the claim
+  `POST /guest/keep` hands their page (sealed with `serverKey('guest.keep')`, thirty minutes,
+  spent once the row is a person), which the page keeps beside the guest's link
+  (`keepMeeting`) and sign-up reads only on `?keep=1`; onboarding then opens the meeting, since a
+  pending `/c/<id>` (`conversationIn`) is a linked arrival. Whatever turns a provisional row into
+  an account ends every session it had first (`endSessions`), and an update that finds it
+  claimed already makes no session: anything new that does so keeps both.
 - Live location: the server sets `live.until` and refuses moves after it (`liveNow` in
   `packages/core/src/location.ts`, no zod, so the app can import it). The app's
   `LiveLocationSharer` (mounted in the signed-in layout) moves this device's shares from

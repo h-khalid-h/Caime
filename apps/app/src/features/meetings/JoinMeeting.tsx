@@ -29,6 +29,7 @@ import {
 } from '@/features/calls/calls';
 import { useNow, useUserClock } from '@/lib/time';
 import { useGroupCall } from '@/state/groupCall';
+import { rememberLink } from '@/state/pendingLink';
 import { clientKind, useSession } from '@/state/session';
 import { Button } from '@/ui/Button';
 import { EmptyState } from '@/ui/EmptyState';
@@ -250,6 +251,7 @@ function GuestMeeting({ view, space }: { view: JoinView; space: NonNullable<Join
             )}
           </Text>
         )}
+        {inCall ? null : <KeepMeeting view={view} space={space} />}
         <Button
           label={tr('Sign out')}
           variant="ghost"
@@ -261,5 +263,48 @@ function GuestMeeting({ view, space }: { view: JoinView; space: NonNullable<Join
         />
       </View>
     </AuthLayout>
+  );
+}
+
+/**
+ * Keeping the meeting (M16 C3f): the guest makes it their own account, and the meeting, its
+ * people and what was said stay theirs. Sign-up does the rest, with what this hands it: their
+ * name, and the address their invitation came to (its code proves it there) or, for a guest by
+ * link, a claim naming them; onboarding then opens the meeting's conversation.
+ */
+function KeepMeeting({ view, space }: { view: JoinView; space: NonNullable<JoinView['space']> }) {
+  const keep = useMutation({
+    mutationFn: async () => {
+      const kept = await endpoints.keepGuest();
+      const links = await guestLinks();
+      await links.keepMeeting({ ...kept, title: view.meeting.title });
+      await links.forgetGuestLink();
+      rememberLink(`/c/${space.conversationId}`);
+      await useSession.getState().signOut();
+      // Once signed out has rendered, so the way in is open to go to.
+      setTimeout(() => router.replace({ pathname: '/sign-up', params: { keep: '1' } }), 0);
+    },
+  });
+  return (
+    <View style={{ gap: 8 }} testID="guest-keep">
+      <Text variant="bodyStrong">{tr('Keep this meeting')}</Text>
+      <Text variant="caption" color="textSecondary">
+        {tr(
+          'Make it your own Caime account, free: the meeting, its people and what was said stay yours.',
+        )}
+      </Text>
+      {keep.error ? (
+        <Text color="danger" testID="guest-keep-error">
+          {(keep.error as Error).message}
+        </Text>
+      ) : null}
+      <Button
+        label={tr('Keep this')}
+        variant="secondary"
+        loading={keep.isPending}
+        onPress={() => keep.mutate()}
+        testID="guest-keep-button"
+      />
+    </View>
   );
 }

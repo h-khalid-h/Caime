@@ -4228,4 +4228,19 @@ export const turkish: Catalog = {
     '{domain} alan adında doğrulanmış adresi olan herkes ekibe katılabilir',
   'They join as team members. Anyone you remove stays off it until you or an invite bring them back.':
     'Ekip üyesi olarak katılırlar. Çıkardığınız kişi, siz ya da bir davet geri getirene kadar dışarıda kalır.',
+  '“{place}” is yours now: it opens next, with everyone in it. Find others by @handle or email any time.':
+    '“{place}” artık sizin: şimdi içindeki herkesle birlikte açılacak. Başkalarını istediğiniz zaman @kullanıcıadı veya e-postayla bulun.',
+  'Your conversation opens next. Find others by @handle or email any time.':
+    'Sohbetiniz şimdi açılacak. Başkalarını istediğiniz zaman @kullanıcıadı veya e-postayla bulun.',
+  'Open “{place}”': 'Açın: “{place}”',
+  'Open the conversation': 'Sohbeti açın',
+  'Keep “{title}”': 'Saklayın: “{title}”',
+  'Your own account, free: the meeting, its people and what was said come with it.':
+    'Kendi hesabınız, ücretsiz: toplantı, katılımcıları ve konuşulanlar onunla gelir.',
+  'The address your invitation came to: keep it, and the meeting comes with it.':
+    'Davetinizin geldiği adres: onu koruyun, toplantı da onunla gelsin.',
+  'Keep this meeting': 'Bu toplantıyı saklayın',
+  'Make it your own Caime account, free: the meeting, its people and what was said stay yours.':
+    'Kendi Caime hesabınız yapın, ücretsiz: toplantı, katılımcıları ve konuşulanlar sizde kalır.',
+  'Keep this': 'Saklayın',
 };

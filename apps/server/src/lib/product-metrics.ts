@@ -205,6 +205,17 @@ export async function productMetrics(ctx: AppContext, days: number): Promise<Pro
       and created_at > ${from} and created_at <= ${to}
   `);
 
+  // Meeting guests (R84, M16 C3f): who came in by their link in the window, and of guests, who
+  // made it their account in the window: the same row, claimed, by link or by address.
+  const guests = await q<{ joined: number; kept: number }>(sql`
+    select
+      (select count(distinct user_id)::int from meeting_guests
+        where joined_at > ${from} and joined_at <= ${to}) as joined,
+      (select count(distinct g.user_id)::int from meeting_guests g
+        join users u on u.id = g.user_id
+        where u.claimed_at > ${from} and u.claimed_at <= ${to}) as kept
+  `);
+
   const suggestions = await q<{ accepted: number; decided: number }>(sql`
     select count(*) filter (where status = 'accepted')::int as accepted,
       count(*) filter (where status in ('accepted', 'dismissed'))::int as decided
@@ -283,6 +294,7 @@ export async function productMetrics(ctx: AppContext, days: number): Promise<Pro
           : null,
       door: { booked: door.booked, joined: rate(door.joined, door.cohort) },
       joinLinks: { made: joinLinks.made, joined: joinLinks.joined, newPeople: joinLinks.fresh },
+      guests: { joined: guests.joined, kept: guests.kept },
     },
     ai: {
       calls: ai.reduce((n, r) => n + r.n, 0),

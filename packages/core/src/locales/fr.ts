@@ -4402,4 +4402,19 @@ export const fr: Catalog = {
     'Toute personne ayant une adresse confirmée à {domain} peut rejoindre l’équipe',
   'They join as team members. Anyone you remove stays off it until you or an invite bring them back.':
     'Elles la rejoignent comme membres. Une personne retirée n’y revient que par vous ou par une invitation.',
+  '“{place}” is yours now: it opens next, with everyone in it. Find others by @handle or email any time.':
+    '« {place} » est à vous désormais : il s’ouvre ensuite, avec tous ceux qui y sont. Trouvez d’autres personnes par @identifiant ou e-mail à tout moment.',
+  'Your conversation opens next. Find others by @handle or email any time.':
+    'Votre conversation s’ouvre ensuite. Trouvez d’autres personnes par @identifiant ou e-mail à tout moment.',
+  'Open “{place}”': 'Ouvrir « {place} »',
+  'Open the conversation': 'Ouvrir la conversation',
+  'Keep “{title}”': 'Garder « {title} »',
+  'Your own account, free: the meeting, its people and what was said come with it.':
+    'Votre propre compte, gratuit : la réunion, ses participants et ce qui s’y est dit viennent avec.',
+  'The address your invitation came to: keep it, and the meeting comes with it.':
+    'L’adresse où votre invitation est arrivée : gardez-la, et la réunion vient avec.',
+  'Keep this meeting': 'Garder cette réunion',
+  'Make it your own Caime account, free: the meeting, its people and what was said stay yours.':
+    'Faites-en votre propre compte Caime, gratuit : la réunion, ses participants et ce qui s’y est dit restent à vous.',
+  'Keep this': 'La garder',
 };

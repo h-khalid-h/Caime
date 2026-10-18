@@ -1483,4 +1483,11 @@ export const frServer: Catalog = {
     'Confirmez d’abord votre adresse : c’est elle qui permet de rejoindre l’équipe.',
   'No address of yours lets you join this team.':
     'Aucune de vos adresses ne permet de rejoindre cette équipe.',
+  'This way to keep the meeting has run out. Open your link again, and keep it from there.':
+    'Ce moyen de garder la réunion a expiré. Rouvrez votre lien et gardez-la depuis là.',
+  'Only a meeting’s guest keeps it this way.':
+    'Seul l’invité d’une réunion la garde de cette façon.',
+  'Keeping a meeting is for people over 18.': 'Garder une réunion est réservé aux plus de 18 ans.',
+  'Messages are waiting for this address on Caime. Keep the meeting with another address.':
+    'Des messages attendent cette adresse sur Caime. Gardez la réunion avec une autre adresse.',
 };

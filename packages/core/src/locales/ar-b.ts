@@ -2592,4 +2592,19 @@ export const arB: Catalog = {
     'الانضمام إلى الفريق متاح لكل من لديه عنوان مؤكَّد في {domain}',
   'They join as team members. Anyone you remove stays off it until you or an invite bring them back.':
     'الانضمام بصفة عضو في الفريق. من تزيله يبقى خارجه حتى تعيده أنت أو دعوة.',
+  '“{place}” is yours now: it opens next, with everyone in it. Find others by @handle or email any time.':
+    '«{place}» لك الآن، ويُفتح تاليًا مع كل من فيه. البحث عن آخرين بالمعرّف @ أو البريد متاح في أي وقت.',
+  'Your conversation opens next. Find others by @handle or email any time.':
+    'المحادثة تُفتح تاليًا. البحث عن آخرين بالمعرّف @ أو البريد متاح في أي وقت.',
+  'Open “{place}”': 'فتح «{place}»',
+  'Open the conversation': 'فتح المحادثة',
+  'Keep “{title}”': 'الاحتفاظ بـ«{title}»',
+  'Your own account, free: the meeting, its people and what was said come with it.':
+    'حساب خاص بك، مجانًا: يأتي معه الاجتماع ومن فيه وما قيل فيه.',
+  'The address your invitation came to: keep it, and the meeting comes with it.':
+    'العنوان الذي وصلت إليه الدعوة: بإبقائه يأتي الاجتماع معه.',
+  'Keep this meeting': 'الاحتفاظ بهذا الاجتماع',
+  'Make it your own Caime account, free: the meeting, its people and what was said stay yours.':
+    'حساب Caime خاص بك، مجانًا: يبقى لك الاجتماع ومن فيه وما قيل فيه.',
+  'Keep this': 'الاحتفاظ به',
 };

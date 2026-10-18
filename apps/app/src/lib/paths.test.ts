@@ -7,6 +7,7 @@ import { describe, expect, it } from 'vitest';
 import {
   appPath,
   bookIn,
+  conversationIn,
   deepLinkPath,
   doorIn,
   handleIn,
@@ -117,6 +118,16 @@ describe('paths from links', () => {
     expect(joinLinkIn(`/g/${token}/x`)).toBeNull();
     // A team invite's token is a team invite's, never a join link's.
     expect(joinLinkIn(`/t/t_${'a'.repeat(43)}`)).toBeNull();
+  });
+
+  it('says which conversation a link opens, as a kept meeting arrives (M16 C3f)', () => {
+    const id = '01a14dd4-786e-71a3-b79d-f9afff52c0de';
+    expect(conversationIn(`/c/${id}`)).toBe(id);
+    expect(appPath(`/c/${id}`)).toBe(`/c/${id}`);
+    // A conversation with more to say (a booking's form, a topic) is that, not an arrival.
+    expect(conversationIn(`/c/${id}?book=1`)).toBeNull();
+    expect(conversationIn('/c/0192-ab')).toBeNull();
+    expect(conversationIn(`/g/g_${'a'.repeat(43)}`)).toBeNull();
   });
 
   it('never gives anyone a handle that reads as one of the app’s own places (R35)', () => {

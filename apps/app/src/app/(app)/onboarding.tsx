@@ -10,7 +10,15 @@ import { qk } from '@/api/keys';
 import { Character } from '@/brand/Character';
 import { handleLink } from '@/lib/config';
 import { useRtl } from '@/lib/direction';
-import { doorIn, handleIn, inviteIn, isAuthorizeLink, joinLinkIn, teamInviteIn } from '@/lib/paths';
+import {
+  conversationIn,
+  doorIn,
+  handleIn,
+  inviteIn,
+  isAuthorizeLink,
+  joinLinkIn,
+  teamInviteIn,
+} from '@/lib/paths';
 import { shareLink } from '@/lib/share';
 import { peekLink, takeLink } from '@/state/pendingLink';
 import { useMe, useSession } from '@/state/session';
@@ -63,7 +71,11 @@ export default function Onboarding() {
   const teamToken = teamInviteIn(pending);
   // Came through a link to join a group or a space (C3e): the last step joins and opens it.
   const joinToken = joinLinkIn(pending);
-  const linked = Boolean(linkHandle || inviteToken || forApp || forOrg || teamToken || joinToken);
+  // Came for a conversation (a meeting its guest kept, M16 C3f): the last step opens it.
+  const conversationId = conversationIn(pending);
+  const linked = Boolean(
+    linkHandle || inviteToken || forApp || forOrg || teamToken || joinToken || conversationId,
+  );
   // Two steps, how Caime works and your people; someone who came for a person, an organization
   // or an app goes straight to it (R56). The recovery codes wait on Chats, not here.
   const steps = (['rules', 'people'] as const).filter((x) => x !== 'rules' || !linked);
@@ -99,6 +111,13 @@ export default function Onboarding() {
     retry: false,
   });
   const joinPlace = joining.data?.link.name ?? null;
+  const opening = useQuery({
+    queryKey: qk.conversation(conversationId ?? ''),
+    queryFn: () => endpoints.conversation(conversationId ?? ''),
+    enabled: conversationId !== null,
+    retry: false,
+  });
+  const openPlace = opening.data?.conversation.title ?? null;
 
   const finish = async (next: '/' | '/connect' | '/connect?contacts=1' | '/orgs/new' | 'link') => {
     setBusy(true);
@@ -298,25 +317,34 @@ export default function Onboarding() {
                           : tr(
                               'You came to join a group: it opens next. Find others by @handle or email any time.',
                             )
-                        : doorHandle
-                          ? tr(
-                              'You came here to write to {name}: open the conversation and say what you need. Find others by @handle or email any time.',
-                              { name: doorName ?? `@${doorHandle}` },
-                            )
-                          : linkHandle
+                        : conversationId
+                          ? openPlace
                             ? tr(
-                                'You came here for @{linkHandle}. Find others by @handle or email any time.',
-                                { linkHandle },
+                                '“{place}” is yours now: it opens next, with everyone in it. Find others by @handle or email any time.',
+                                { place: openPlace },
                               )
-                            : inviteToken
+                            : tr(
+                                'Your conversation opens next. Find others by @handle or email any time.',
+                              )
+                          : doorHandle
+                            ? tr(
+                                'You came here to write to {name}: open the conversation and say what you need. Find others by @handle or email any time.',
+                                { name: doorName ?? `@${doorHandle}` },
+                              )
+                            : linkHandle
                               ? tr(
-                                  '{inviter} invited you: open the conversation and you’re connected. Find others by @handle or email any time.',
-                                  { inviter: inviter ?? tr('Someone') },
+                                  'You came here for @{linkHandle}. Find others by @handle or email any time.',
+                                  { linkHandle },
                                 )
-                              : tr(
-                                  'Find them in your contacts, by @handle or email, or share your link: @{handle}',
-                                  { handle: me.handle },
-                                )}
+                              : inviteToken
+                                ? tr(
+                                    '{inviter} invited you: open the conversation and you’re connected. Find others by @handle or email any time.',
+                                    { inviter: inviter ?? tr('Someone') },
+                                  )
+                                : tr(
+                                    'Find them in your contacts, by @handle or email, or share your link: @{handle}',
+                                    { handle: me.handle },
+                                  )}
               </Text>
             </View>
             {linked ? (
@@ -334,13 +362,17 @@ export default function Onboarding() {
                           ? joinPlace
                             ? tr('Join “{place}”', { place: joinPlace })
                             : tr('Join the group')
-                          : inviteToken
-                            ? tr('Open the conversation with {inviter}', {
-                                inviter: inviter ?? 'them',
-                              })
-                            : doorHandle
-                              ? tr('Write to {name}', { name: doorName ?? `@${doorHandle}` })
-                              : tr('See @{linkHandle}', { linkHandle })
+                          : conversationId
+                            ? openPlace
+                              ? tr('Open “{place}”', { place: openPlace })
+                              : tr('Open the conversation')
+                            : inviteToken
+                              ? tr('Open the conversation with {inviter}', {
+                                  inviter: inviter ?? 'them',
+                                })
+                              : doorHandle
+                                ? tr('Write to {name}', { name: doorName ?? `@${doorHandle}` })
+                                : tr('See @{linkHandle}', { linkHandle })
                 }
                 size="lg"
                 block

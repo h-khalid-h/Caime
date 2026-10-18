@@ -69,6 +69,7 @@ import type {
   FollowUpSentResponse,
   GroupCallMaybeResponse,
   GroupCallResponse,
+  GuestKeepResponse,
   HandleAvailabilityResponse,
   HandleCandidatesResponse,
   HandleView,
@@ -249,6 +250,10 @@ export const endpoints = {
     invite?: string;
     /** Said or not (R81): null is "Prefer not to say". */
     gender?: 'woman' | 'man' | 'other' | null;
+    /** The six digits that prove an address with history waiting (review 2026-10-17 §2 H1). */
+    emailCode?: string;
+    /** A guest by link keeping their meeting (M16 C3f): the claim their page was handed. */
+    keep?: string;
   }) => api.post<AuthResponse>('/auth/signup', body),
   login: (body: {
     identifier: string;
@@ -386,6 +391,8 @@ export const endpoints = {
     token: string,
     body: { name: string | null; adult: boolean; client: 'web' | 'native' },
   ) => api.post<JoinResponse>(`/join/${encodeURIComponent(token)}`, body),
+  /** Keeping the meeting as one's own account (M16 C3f): what sign-up takes. */
+  keepGuest: () => api.post<GuestKeepResponse>('/guest/keep'),
   cancelRequest: (id: string) => api.del<OkResponse>(`/connections/requests/${id}`),
   updateConnection: (id: string, patch: Record<string, unknown>) =>
     api.patch<OkResponse>(`/connections/${id}`, patch),

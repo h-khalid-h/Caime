@@ -1479,4 +1479,10 @@ export const arServer: Catalog = {
   'Confirm your address first: it’s what lets you join.':
     'يلزم تأكيد عنوانك أولًا: هو ما يتيح الانضمام.',
   'No address of yours lets you join this team.': 'لا عنوان لك يتيح الانضمام إلى هذا الفريق.',
+  'This way to keep the meeting has run out. Open your link again, and keep it from there.':
+    'انتهت مهلة هذه الطريقة للاحتفاظ بالاجتماع. افتح رابطك من جديد واحتفظ به من هناك.',
+  'Only a meeting’s guest keeps it this way.': 'هذه الطريقة لضيوف الاجتماعات فقط.',
+  'Keeping a meeting is for people over 18.': 'الاحتفاظ باجتماع لمن تجاوزوا 18 عامًا.',
+  'Messages are waiting for this address on Caime. Keep the meeting with another address.':
+    'لهذا العنوان رسائل بانتظاره على Caime. الاحتفاظ بالاجتماع ممكن بعنوان آخر.',
 };

@@ -176,7 +176,9 @@ invited them; nothing else sent to Cai&rsquo;s address is read. Someone invited 
 Caime can do nothing else on it. A guest can be invited by a link instead, which the inviter sends
 them themselves: then Caime keeps only the name the inviter gave, with no address, shows the link to
 the inviter once (and keeps it only as a fingerprint), and whoever opens it joins that meeting
-alone.</li>
+alone. A guest may keep the meeting as a Caime account of their own: the account is that guest, so
+the meeting and what was said in it stay theirs, and the guest&rsquo;s sign-ins end then, on every
+device.</li>
 <li><strong>What Caime works out for you.</strong> In conversations that aren&rsquo;t private,
 Caime notes the dates, amounts, links, email addresses, phone numbers, reference numbers (an order,
 an invoice, a ticket), topics (such as Project Atlas), questions and requests in each message. From these, and from a team, a space or a work email domain you share with someone,

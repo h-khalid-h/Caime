@@ -8,7 +8,7 @@
  */
 import { randomUUID } from 'node:crypto';
 import { type Browser, expect, test } from '@playwright/test';
-import { apiSignUp, CLIENT, mailsTo, newPerson } from './helpers';
+import { apiSignUp, CLIENT, mailsTo, newPerson, visible } from './helpers';
 
 /** Ana and Ben, connected at work, with their conversation. */
 async function colleagues(browser: Browser) {
@@ -211,6 +211,77 @@ test('a guest by link: the inviter sends it themselves, and its holder joins the
   await anaCtx.close();
   await benCtx.close();
   await linaCtx.close();
+});
+
+test('a guest by link keeps the meeting as their own account, and lands in it (C3f)', async ({
+  browser,
+}) => {
+  const { anaCtx, benCtx, card, tag } = await agreedMeeting(browser, 'Budget review');
+  // Ana makes Gus's link (the card's sheet is the test above's), and says something in the space.
+  const made = await anaCtx.request.post(`/v1/messages/${card.id}/guests`, {
+    headers: CLIENT,
+    data: { link: true, name: 'Gus Keep' },
+  });
+  expect(made.ok(), await made.text()).toBe(true);
+  const { link, space } = (await made.json()) as {
+    link: string;
+    space: { conversationId: string };
+  };
+  const said = await anaCtx.request.post(`/v1/conversations/${space.conversationId}/messages`, {
+    headers: CLIENT,
+    data: { clientId: randomUUID(), kind: 'text', body: 'Slides are in the folder.' },
+  });
+  expect(said.ok(), await said.text()).toBe(true);
+  const people = async () =>
+    (
+      (await (
+        await anaCtx.request.get(`/v1/conversations/${space.conversationId}`, { headers: CLIENT })
+      ).json()) as {
+        conversation: { participants: Array<{ userId: string; person: { displayName: string } }> };
+      }
+    ).conversation.participants;
+  const guestId = (await people()).find((p) => p.person.displayName === 'Gus Keep')?.userId;
+
+  // Gus joins as a guest, and keeps it from the meeting's own page.
+  const gusCtx = await browser.newContext({
+    extraHTTPHeaders: { 'x-forwarded-for': '203.0.113.61' },
+  });
+  const gus = await newPerson(gusCtx);
+  await gus.page.goto(new URL(link).pathname);
+  await gus.page.getByTestId('join-adult').getByRole('switch').click();
+  await gus.page.getByTestId('join-submit').click();
+  await expect(gus.page.getByTestId('guest-keep')).toContainText('Keep this meeting');
+  await gus.page.getByTestId('guest-keep-button').click();
+
+  // Sign-up already knows who they are and what they keep: a handle, an address, a password.
+  await gus.page.waitForURL((u) => u.pathname === '/sign-up');
+  await expect(gus.page.getByText('Keep “Budget review”')).toBeVisible();
+  await expect(gus.page.getByTestId('signup-name')).toHaveValue('Gus Keep');
+  const handle = `gus_keep_${tag}`;
+  await gus.page.getByTestId('signup-handle').fill(handle);
+  await gus.page.getByTestId('signup-email').fill(`gus.keep.${tag}@example.com`);
+  await gus.page.getByTestId('signup-password').fill('a long enough passphrase');
+  await gus.page.getByTestId('signup-birth-date').fill('1991-04-02');
+  await expect(gus.page.getByText('Available')).toBeVisible();
+  await gus.page.getByTestId('signup-submit').click();
+
+  // The last step opens the meeting, theirs now, with what was said before they kept it.
+  await gus.page.waitForURL('**/onboarding');
+  const open = gus.page.getByTestId('onboarding-link');
+  await expect(open).toHaveText('Open “Budget review”');
+  await open.click();
+  await gus.page.waitForURL((u) => u.pathname === `/c/${space.conversationId}`);
+  await expect(visible(gus.page, 'Slides are in the folder.')).toBeVisible();
+  // The same person the meeting knew, an account now, and nobody twice.
+  const me = (await (await gusCtx.request.get('/v1/me', { headers: CLIENT })).json()) as {
+    user: { id: string; handle: string };
+  };
+  expect(me.user).toMatchObject({ id: guestId, handle });
+  expect(await people()).toHaveLength(3);
+  expect([...gus.errors]).toEqual([]);
+  await gusCtx.close();
+  await anaCtx.close();
+  await benCtx.close();
 });
 
 test('a meeting that repeats is agreed once, and the calendar has each week until it stops', async ({

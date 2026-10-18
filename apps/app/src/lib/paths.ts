@@ -108,6 +108,17 @@ export function teamInviteIn(path: string | null | undefined): string | null {
   return path?.match(/^\/t\/(t_[A-Za-z0-9_-]{43})$/)?.[1] ?? null;
 }
 
+/**
+ * The conversation a link opens (`/c/<id>`, nothing after it), or null: a meeting kept by its
+ * guest (M16 C3f) arrives at its conversation as a link does.
+ */
+export function conversationIn(path: string | null | undefined): string | null {
+  return (
+    path?.match(/^\/c\/([0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12})$/i)?.[1] ??
+    null
+  );
+}
+
 /** The token of a link to join a group or a space (`/g/<token>`, M16 C3e), or null. */
 export function joinLinkIn(path: string | null | undefined): string | null {
   return path?.match(/^\/g\/(g_[A-Za-z0-9_-]{43})$/)?.[1] ?? null;

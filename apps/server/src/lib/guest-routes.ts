@@ -8,7 +8,8 @@
  * A guest is in one conversation, their meeting's space, and these are what being in it takes:
  * their session and their own name, reading the space and its card, its call (ICE, what's live,
  * start, join, decline, leave, signal, alive), and the live socket that rings them and carries
- * the call's signals (it tells each person only what's theirs, and drops a guest's typing).
+ * the call's signals (it tells each person only what's theirs, and drops a guest's typing),
+ * and keeping the meeting as their own account (M16 C3f), which hands them what sign-up takes.
  * Each route still checks membership itself, so none reaches past the space. Writing in the
  * space, people, search, settings: never.
  */
@@ -19,6 +20,7 @@ export const GUEST_ROUTES: ReadonlySet<string> = new Set([
   'GET /v1/realtime',
   'GET /v1/join/:token',
   'POST /v1/join/:token',
+  'POST /v1/guest/keep',
   'GET /v1/conversations/:id',
   'GET /v1/conversations/:id/messages',
   'GET /v1/calls/ice',

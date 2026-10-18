@@ -2188,8 +2188,36 @@ graph) and the number that will show it; one that sharpens none is hygiene and s
       finds the card on the page and lands in the inbox, on the team as an agent). Advantages 2
       and 4: the whole team on one identity each at one price, without an invite per person; the
       number is joins by domain (`caime_team_joins_total{by="domain"}`, the audit's `byDomain`).
-- [ ] C2–C3. The rest of the front door: "Keep this" on the guest page; a join link's approval;
-      the importer's groups and `.zip`.
+- [x] C3f. "Keep this" on a meeting guest's page (2026-10-18, review §1 M: the guest page offered
+      only Sign out). The guest's meeting page offers "Keep this meeting"; one tap takes them to
+      sign-up already knowing their name (and, for a guest invited by address, the address), titled
+      "Keep “Budget review”", and the account they make is the guest they were (the same row), so the
+      meeting, its people and what was said there stay theirs; onboarding's last step opens it
+      ("Open “Budget review”": a pending conversation link is now a linked arrival). A guest by
+      address keeps it as anyone claims an address, by the code sent there (§2 H1); a guest by link,
+      who has no address and nothing behind them but the meeting, is handed a claim naming them
+      (sealed with its own server key, half an hour), which sign-up takes in place of a code and
+      which is spent once the guest is a person. Under 18 nobody keeps one (a meeting's guests are
+      strangers to each other, R29), and an address with messages of its own is never folded into a
+      guest's (refused as taken; keep it with another address). Found on the way and closed for
+      every claim, not only a kept meeting: a provisional person's sessions (a guest's, for one
+      meeting) lived on as the claimed account's, on whatever device had taken the link, a forwarded
+      invitation's included; now every one ends as the account is made, and a claim that finds its
+      row already claimed makes no session. Verified with `guest-keep.test.ts` (6: a claim only for a
+      guest by link, the address for one by address, nothing for a person or nobody; kept, the same
+      row, the address unconfirmed and a code mailed, the guest's session ended, what was said there
+      read and the space written in as a person, the audit's `keptMeeting`, the link then asking to
+      sign in, the claim spent; a changed or run-out claim refused and under 18 refused on the birth
+      date; an address with history or an account refused; a guest by address keeping it by the code,
+      their session ended; `growth.guests`), `paths.test.ts` (`conversationIn`) and the E2E
+      `meetings.spec.ts` (Gus joins by link, keeps it, signs up already named, lands in the meeting
+      from onboarding reading what Ana said, the same person, nobody twice). The startup chunk 448.8
+      KB (448.7 before). The condition (meeting guests without accounts), not an advantage: its number
+      is `growth.guests` (guests who came in by their link, and of guests, who made it their account).
+      Not built: keeping a guest's meeting with an address that already has messages waiting (its
+      history and the guest's in one account; refused for now).
+- [ ] C2–C3. The rest of the front door: a join link's approval; the importer's groups and
+      `.zip`.
 - [ ] D. Performance and integrity: the aliased `selectAll` guard and its eleven sites; people
       lists through `personViewsFor` with a scale ceiling; `participants.last_sent_seq` for the
       inbox; a large-group mode and one transcript view; a `defer` semaphore and gauge; bus payload
@@ -3826,6 +3854,9 @@ graph) and the number that will show it; one that sharpens none is hygiene and s
   journeys, safety, reliability, performance, intelligence, mail and calendar, chat, integrations,
   business and code integrity; the matrix against WhatsApp, Signal, Slack, Calendly and Workspace;
   an age-assurance design; the integration framework mapped to the code; plan M16 (A–H).
+- 2026-10-18 — M16 C3f: a meeting's guest keeps the meeting as their own account in one tap from
+  its page; a guest's sessions no longer outlive a claim of their row. CI on `2710524` had failed
+  on a join link spec's sent line matching the list's preview too (fixed in `5eb72bd`).
 - 2026-10-18 — M16 C3b: a verified organization may let anyone with a confirmed address at its
   domain onto its team in one tap, without an invite each; someone it removed comes back only by
   a manager or an invite.

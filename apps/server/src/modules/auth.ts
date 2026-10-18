@@ -19,6 +19,7 @@ import {
   uuidv7,
 } from '@caime/core';
 import type {
+  GuestKeepResponse,
   JoinResponse,
   JoinView,
   OkResponse,
@@ -56,6 +57,7 @@ import {
 } from '../lib/errors';
 import { recordEvent } from '../lib/events';
 import { currentZone, isCountry } from '../lib/geo';
+import { keepFor, keepRanOut, keptGuest } from '../lib/guest-keep';
 import { assertHandleAvailable, claimLost } from '../lib/handles';
 import { guestLink } from '../lib/meeting-join';
 import { endAllAccess } from '../lib/moderation';
@@ -105,6 +107,15 @@ export async function authRoutes(app: FastifyInstance, ctx: AppContext) {
     // Their birthday, where they are, against the age where they live.
     if (!oldEnoughIn(ctx.config.MINIMUM_AGE, body.country, body.birthDate, now, timeZone))
       throw tooYoung(ctx.config.MINIMUM_AGE, body.country);
+    // A meeting's guest by link keeping it (M16 C3f): the claim their own page was handed names
+    // the guest this account becomes, so the meeting comes with it.
+    const keeping = body.keep ? await keptGuest(ctx, body.keep) : null;
+    if (body.keep && !keeping) throw keepRanOut();
+    // Its guests are strangers to each other, and nobody under 18 is ever with one (R29).
+    if (keeping && isMinor(body.birthDate, now, timeZone)) {
+      const message = tr('Keeping a meeting is for people over 18.');
+      throw new AppError(403, 'forbidden', message, { fields: [{ path: 'birthDate', message }] });
+    }
     const existing = await ctx.db
       .selectFrom('users')
       .select(['id', 'kind'])
@@ -113,6 +124,14 @@ export async function authRoutes(app: FastifyInstance, ctx: AppContext) {
     if (existing && existing.kind !== 'provisional') {
       throw conflict('email_taken', tr('That email already has an account. Sign in instead?'));
     }
+    // The address has history of its own, for whoever proves it: never folded into a guest's.
+    if (keeping && existing)
+      throw conflict(
+        'email_taken',
+        tr(
+          'Messages are waiting for this address on Caime. Keep the meeting with another address.',
+        ),
+      );
     // Someone who wrote in by mail, was a meeting's guest or booked before an account (R75, R84,
     // R97) claims that provisional person: the same row, so the conversations they're already in
     // are theirs the moment they're in.
@@ -143,7 +162,7 @@ export async function authRoutes(app: FastifyInstance, ctx: AppContext) {
       }
       await spendEmailCode(ctx, claiming, body.emailCode.trim());
     }
-    const id = claiming ?? uuidv7();
+    const id = claiming ?? keeping ?? uuidv7();
     const locale = safeLocale(body.locale);
     const workweek = workweekFor(body.country);
     const passwordHash = await hashPassword(body.password);
@@ -167,6 +186,9 @@ export async function authRoutes(app: FastifyInstance, ctx: AppContext) {
             .executeTakeFirst(),
         ])
       : [undefined, undefined];
+    // A provisional person's sessions were a guest's, for one meeting (R84): none of them becomes
+    // the account's, whoever's device it is on, so they end before the row turns into one...
+    if (claiming || keeping) await endSessions(ctx, { userId: id });
     await ctx.db
       .transaction()
       .execute(async (trx) => {
@@ -188,16 +210,27 @@ export async function authRoutes(app: FastifyInstance, ctx: AppContext) {
           invited_by: inviter?.id ?? null,
           invited_by_org: inviterOrg?.id ?? null,
         };
-        if (claiming)
-          // The address is proven by the code just spent: confirmed, and when it was claimed kept
-          // for the one number that asks (product metrics' door: bookers who joined).
-          await trx
+        if (claiming || keeping) {
+          // A claimed address is proven by the code just spent; a kept guest's address is new, and
+          // confirmed by the code sent next. When it was claimed is kept for the numbers that ask
+          // (product metrics' door, bookers who joined; and guests who kept their meeting).
+          const done = await trx
             .updateTable('users')
-            .set({ ...account, kind: 'human', email_verified_at: now, claimed_at: now })
+            .set({
+              ...account,
+              kind: 'human',
+              email_verified_at: claiming ? now : null,
+              claimed_at: now,
+            })
             .where('id', '=', id)
             .where('kind', '=', 'provisional')
-            .execute();
-        else
+            .executeTakeFirst();
+          // Someone else's sign-up made it an account a moment ago: never a session to theirs.
+          if (Number(done.numUpdatedRows) !== 1)
+            throw claiming
+              ? conflict('email_taken', tr('That email already has an account. Sign in instead?'))
+              : keepRanOut();
+        } else
           await trx
             .insertInto('users')
             .values({ id, ...account })
@@ -218,9 +251,16 @@ export async function authRoutes(app: FastifyInstance, ctx: AppContext) {
       .catch((err) => {
         throw claimLost(err);
       });
+    // ...and again once it has, for one a guest's link took meanwhile.
+    if (claiming || keeping) await endSessions(ctx, { userId: id });
     const codes = await storeRecoveryCodes(ctx, id);
     const token = await createSession(ctx, req, reply, id, body.client, body.deviceName);
-    await audit(ctx.db, { actorId: id, action: 'auth.signup', ...clientInfo(req) });
+    await audit(ctx.db, {
+      actorId: id,
+      action: 'auth.signup',
+      ...clientInfo(req),
+      ...(keeping ? { metadata: { keptMeeting: true } } : {}),
+    });
     // A code to confirm the address, when mail can go out (R48); nothing waits on it. A claim
     // proved it already.
     if (ctx.mail && !claiming) await sendEmailCode(ctx, id, body.email, body.displayName);
@@ -582,6 +622,16 @@ export async function authRoutes(app: FastifyInstance, ctx: AppContext) {
           ? { conversationId: link.conversationId, messageId: link.messageId, seq: link.seq }
           : null,
     };
+  });
+
+  /**
+   * Keeping the meeting (M16 C3f): what the guest's page takes to sign-up. A guest by address
+   * proves it there with its code; a guest by link is handed a claim naming them.
+   */
+  app.post('/guest/keep', async (req): Promise<GuestKeepResponse> => {
+    const auth = requireAuth(req);
+    ctx.limiter.hit(`guest-keep:${auth.userId}`, ctx.config.isTest ? 1000 : 20, 3_600_000);
+    return keepFor(ctx, auth.userId);
   });
 
   /** Taking the link: signed in as the guest, for that meeting only, until a day after it. */

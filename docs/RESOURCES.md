@@ -126,7 +126,12 @@ is one boolean on the organization and a timestamp on a seat; the organization's
 three indexed rows more for someone not on its team, and only where its domain takes people; a
 join is the seat's own transaction; proving an address looks the organization up once by its
 domain's unique index, after the response. Nothing polls, and nothing fans out to everyone at a
-domain when the switch is turned on.
+domain when the switch is turned on. Keeping a meeting (C3f) stores nothing new: a guest by link's
+claim is sealed by the server and kept by no one (one read of the guest's row to hand it, one more
+when sign-up takes it), the account is the guest's own row updated in sign-up's transaction, and
+ending the guest's sessions is one update; the guest page's block is in its route's chunk, the
+sign-up screen reads what it's handed through a dynamic import only when `?keep=1` says so, and the
+startup chunk grew 0.1 KB (448.8 KB: the conversation-link reader onboarding uses).
 
 ## What a change says
 

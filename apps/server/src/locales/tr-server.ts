@@ -1418,4 +1418,10 @@ export const turkishServer: Catalog = {
     'Önce adresinizi doğrulayın: katılmayı sağlayan odur.',
   'No address of yours lets you join this team.':
     'Adreslerinizden hiçbiri bu ekibe katılmayı sağlamıyor.',
+  'This way to keep the meeting has run out. Open your link again, and keep it from there.':
+    'Toplantıyı saklamanın bu yolunun süresi doldu. Bağlantınızı yeniden açın ve oradan saklayın.',
+  'Only a meeting’s guest keeps it this way.': 'Bu yolla yalnızca toplantının konuğu saklayabilir.',
+  'Keeping a meeting is for people over 18.': 'Toplantı saklamak 18 yaş üstü kişiler içindir.',
+  'Messages are waiting for this address on Caime. Keep the meeting with another address.':
+    'Bu adres için Caime’de bekleyen mesajlar var. Toplantıyı başka bir adresle saklayın.',
 };
