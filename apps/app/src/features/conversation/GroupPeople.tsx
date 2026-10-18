@@ -58,6 +58,15 @@ const roleOf = (role: string): SpaceRole =>
 const NAME_MAX = 80;
 const PURPOSE_MAX = 200;
 
+/** What an add did (M16 B4): who came in, and who was asked instead. */
+const addedLine = (added: number, invited: number) =>
+  [
+    added || !invited ? trn(added, 'Added {n} person', 'Added {n} people') : '',
+    invited ? trn(invited, 'Asked {n} person to join', 'Asked {n} people to join') : '',
+  ]
+    .filter(Boolean)
+    .join(' · ');
+
 export function GroupPeople({
   conversation,
   onNavigate,
@@ -105,11 +114,11 @@ export function GroupPeople({
     void qc.invalidateQueries({ queryKey: qk.conversation(conversation.id) });
     void qc.invalidateQueries({ queryKey: qk.inbox });
   };
-  const run = async (work: () => Promise<unknown>, done: string) => {
+  const run = async <T,>(work: () => Promise<T>, done: string | ((result: T) => string)) => {
     setBusy(true);
     try {
-      await work();
-      toast(done);
+      const result = await work();
+      toast(typeof done === 'function' ? done(result) : done);
       refresh();
       return true;
     } catch (e) {
@@ -300,7 +309,9 @@ export function GroupPeople({
                 if (
                   await run(
                     () => endpoints.addToGroup(conversation.id, [...picked]),
-                    trn(n, 'Added {n} person', 'Added {n} people'),
+                    // Who came in, and who was asked instead (M16 B4).
+                    (r) =>
+                      addedLine(r.added.length || (r.invited.length ? 0 : n), r.invited.length),
                   )
                 ) {
                   setAdding(false);

@@ -39,6 +39,7 @@ import { badRequest, forbidden, notFound } from '../lib/errors';
 import { recordEvent } from '../lib/events';
 import { assertCanSend, messageViews, participantsOf, sendMessage } from '../lib/messages';
 import { notify } from '../lib/notify';
+import { placeInvitationsFor } from '../lib/place-invites';
 import { between } from '../lib/relations';
 import { visibleTasksSql } from '../lib/task-visibility';
 import { taskViews } from '../lib/tasks';
@@ -210,13 +211,15 @@ export async function actionRoutes(app: FastifyInstance, ctx: AppContext) {
       .where('owner_id', '=', me)
       .where('assignee_id', 'is distinct from', me)
       .where('status', 'in', ['open', 'accepted']);
-    const [rows, count, items, mine] = await Promise.all([
+    const [rows, count, items, mine, invitations] = await Promise.all([
       waitingWhere.selectAll().orderBy('created_at', 'asc').limit(WAITING_SHOWN).execute(),
       waitingWhere.select(sql<number>`count(*)::int`.as('n')).executeTakeFirstOrThrow(),
       calendarItems(ctx, me, { from: now, until: new Date(now.getTime() + COMING_UP_MS) }, (r) =>
         taskViews(ctx, r, me),
       ),
       ctx.db.selectFrom('users').select('preferences').where('id', '=', me).executeTakeFirst(),
+      // Invitations to a group or a space waiting for this person (M16 B4): asked here, first.
+      placeInvitationsFor(ctx, me),
     ]);
     const waiting = await taskViews(ctx, rows, me);
     // A wait gone quiet: three days or more (a day with "More", never with "Less": R66), and not
@@ -229,6 +232,7 @@ export async function actionRoutes(app: FastifyInstance, ctx: AppContext) {
         (!t.remind_at || t.remind_at.getTime() <= now.getTime()),
     );
     return {
+      invitations,
       waiting,
       waitingCount: count.n,
       comingUp: items

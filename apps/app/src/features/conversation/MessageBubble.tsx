@@ -84,6 +84,11 @@ export interface BubbleProps {
   highlighted?: boolean;
   /** In a message request not yet accepted, links read as text and open nothing (R14). */
   inertLinks?: boolean;
+  /**
+   * In a message request not yet accepted, photos come blurred (M16 B4): `tap` shows one on a
+   * tap, `accept` (under 18) only once the request is accepted.
+   */
+  veil?: 'tap' | 'accept';
   /** The conversation shown, and whether it's private (R18): messages open only as its. */
   where: { conversationId: string; private: boolean };
 }
@@ -316,9 +321,13 @@ export const MessageBubble = memo(function MessageBubble({
   onRetry,
   highlighted,
   inertLinks = false,
+  veil,
   where,
 }: BubbleProps) {
   const t = useTheme();
+  // Seen on a tap, for this message, while it's shown (M16 B4).
+  const [unveiled, setUnveiled] = useState(false);
+  const veiled = veil !== undefined && !unveiled;
   const meId = useSession((s) => s.user?.id ?? null);
   const translation = useTranslations((s) => s.byId[m.id]);
   // A private message's words are opened here, on this device (R18); in a private conversation,
@@ -507,11 +516,19 @@ export const MessageBubble = memo(function MessageBubble({
               <Pressable
                 key={f.id}
                 accessibilityRole="imagebutton"
-                accessibilityLabel={f.name}
-                onPress={() => showPhotos(photos, i)}
+                accessibilityLabel={
+                  veiled
+                    ? veil === 'tap'
+                      ? tr('A photo from someone you’re not connected with. Tap to see it.')
+                      : tr('A photo from someone you’re not connected with. Accept to see it.')
+                    : f.name
+                }
+                onPress={() =>
+                  veiled ? veil === 'tap' && setUnveiled(true) : showPhotos(photos, i)
+                }
                 onLongPress={hold}
                 delayLongPress={300}
-                testID="message-photo"
+                testID={veiled ? 'message-photo-veiled' : 'message-photo'}
               >
                 <Image
                   source={{
@@ -526,9 +543,37 @@ export const MessageBubble = memo(function MessageBubble({
                     borderRadius: t.radii.sm,
                     backgroundColor: t.c.surfaceMuted,
                   }}
+                  blurRadius={veiled ? 40 : 0}
                   contentFit="cover"
                   transition={150}
                 />
+                {veiled ? (
+                  <View
+                    pointerEvents="none"
+                    style={{
+                      position: 'absolute',
+                      top: 0,
+                      bottom: 0,
+                      left: 0,
+                      right: 0,
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                    }}
+                  >
+                    <Text
+                      variant="captionStrong"
+                      style={{
+                        backgroundColor: t.c.surface,
+                        borderRadius: t.radii.sm,
+                        paddingHorizontal: 8,
+                        paddingVertical: 4,
+                        overflow: 'hidden',
+                      }}
+                    >
+                      {veil === 'tap' ? tr('Tap to see') : tr('Accept to see')}
+                    </Text>
+                  </View>
+                ) : null}
               </Pressable>
             );
           })}

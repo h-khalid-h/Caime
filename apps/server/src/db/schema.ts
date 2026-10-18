@@ -270,6 +270,19 @@ export interface JoinRequestsTable {
   outcome: 'accepted' | 'declined' | 'withdrawn' | null;
 }
 
+/** An invitation to a group or a space, the invited person's to answer (M16 B4). */
+export interface PlaceInvitesTable {
+  id: string;
+  conversation_id: string | null;
+  space_id: string | null;
+  user_id: string;
+  invited_by: string | null;
+  created_at: Generated<Date>;
+  expires_at: Date;
+  decided_at: NullableTimestamp;
+  outcome: 'accepted' | 'declined' | null;
+}
+
 export interface CustomRolesTable {
   id: string;
   user_id: string;
@@ -1385,6 +1398,7 @@ export interface Database {
   org_invites: OrgInvitesTable;
   join_links: JoinLinksTable;
   join_requests: JoinRequestsTable;
+  place_invites: PlaceInvitesTable;
   custom_roles: CustomRolesTable;
   relationships: RelationshipsTable;
   relationship_events: RelationshipEventsTable;

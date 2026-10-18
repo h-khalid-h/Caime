@@ -80,6 +80,7 @@ export const ERROR_CODES = [
   'rate_limited',
   'recently_declined',
   'record_not_found',
+  'requests_today',
   'rule_exists',
   'saved_full',
   'sign_in',

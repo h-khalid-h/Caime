@@ -357,6 +357,11 @@ export function applyEvent(qc: QueryClient, event: RealtimeEvent, me: string): v
       }
       invalidate(qk.allSlots, 'slots');
       return;
+    case 'invites.changed':
+      // Asked into a group or a space, or an invitation answered on another device (M16 B4):
+      // Attention carries them.
+      invalidate(qk.attentionHome, 'attention-home');
+      return;
     case 'join.asked':
       // Someone asked through a link to a place this person runs, or an ask was answered on
       // another device (C3h): who waits, and how many each link let in, read again.

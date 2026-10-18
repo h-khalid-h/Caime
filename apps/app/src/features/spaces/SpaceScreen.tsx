@@ -56,6 +56,15 @@ const PeoplePicker = lazyPart(() =>
   import('@/features/people/PeoplePicker').then((m) => m.PeoplePicker),
 );
 
+/** What an add did (M16 B4): who came in, and who was asked instead. */
+const addedLine = (added: number, invited: number) =>
+  [
+    added || !invited ? trn(added, 'Added {n} person', 'Added {n} people') : '',
+    invited ? trn(invited, 'Asked {n} person to join', 'Asked {n} people to join') : '',
+  ]
+    .filter(Boolean)
+    .join(' · ');
+
 function useRefresh(id: string) {
   const qc = useQueryClient();
   return () => {
@@ -171,11 +180,11 @@ export function SpaceScreen({ id }: { id: string }) {
   const [busy, setBusy] = useState(false);
   const me = useSession((s) => s.user?.id ?? '');
 
-  const run = async (work: () => Promise<unknown>, done?: string) => {
+  const run = async <T,>(work: () => Promise<T>, done?: string | ((result: T) => string)) => {
     setBusy(true);
     try {
-      await work();
-      if (done) toast(done);
+      const result = await work();
+      if (done) toast(typeof done === 'function' ? done(result) : done);
       refresh();
       return true;
     } catch (e) {
@@ -481,7 +490,9 @@ export function SpaceScreen({ id }: { id: string }) {
                 if (
                   await run(
                     () => endpoints.addToSpace(space.id, [...picked]),
-                    trn(n, 'Added {n} person', 'Added {n} people'),
+                    // Who came in, and who was asked instead (M16 B4).
+                    (r) =>
+                      addedLine(r.added.length || (r.invited.length ? 0 : n), r.invited.length),
                   )
                 ) {
                   setAdding(false);

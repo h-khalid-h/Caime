@@ -16,6 +16,7 @@ import {
   handsOverOnLeaving,
   MembersBody,
   PRIVATE_GROUP_MAX,
+  REQUESTS_PER_DAY,
   ReceiptsBody,
   SpaceRoleBody,
   systemAccountOf,
@@ -27,6 +28,7 @@ import {
 import type {
   ConversationIdResponse,
   ConversationResponse,
+  MembersAddedResponse,
   OkResponse,
   PersonConversationsResponse,
 } from '@caime/core/api';
@@ -59,6 +61,7 @@ import { recordEvent } from '../lib/events';
 import { leaveGroupCallsIn } from '../lib/group-calls';
 import { addToGroup, tellTopics } from '../lib/group-members';
 import { assertCanMessage, participantsOf } from '../lib/messages';
+import { assertNoMinorWhereNoneMay, invitePeople, whoMustBeAsked } from '../lib/place-invites';
 import { openMailConversation } from '../lib/provisional';
 import { between, pairKey, readReceiptsVisibleTo } from '../lib/relations';
 import { spaceChanged } from '../lib/spaces';
@@ -66,6 +69,38 @@ import { openSystemConversation } from '../lib/system-accounts';
 import { assertCanStartTopic, createTopicConversation } from '../lib/topics';
 import { parse } from '../lib/validate';
 import { requireAuth } from '../plugins/auth';
+
+/**
+ * A new message request counts toward the day's (M16 B4, `REQUESTS_PER_DAY`): reaching out, never
+ * a flood. One already started (answered or not) reopens without counting.
+ */
+async function assertRequestRoom(ctx: AppContext, senderId: string, targetId: string) {
+  const open = await ctx.db
+    .selectFrom('conversations')
+    .select('id')
+    .where('direct_key', '=', pairKey(senderId, targetId).key)
+    .where('is_general', '=', true)
+    .executeTakeFirst();
+  if (open) return;
+  const started = await ctx.db
+    .selectFrom('conversations as c')
+    .innerJoin('participants as p', 'p.conversation_id', 'c.id')
+    .select(sql<number>`count(*)::int`.as('n'))
+    .where('c.created_by', '=', senderId)
+    .where('c.kind', '=', 'direct')
+    .where('c.created_at', '>', new Date(ctx.now().getTime() - 86_400_000))
+    .where('p.user_id', '<>', senderId)
+    .where('p.request_state', 'is not', null)
+    .executeTakeFirstOrThrow();
+  if (started.n >= REQUESTS_PER_DAY)
+    throw new AppError(
+      429,
+      'requests_today',
+      tr('That’s {n} message requests today. Try again tomorrow, or connect with them first.', {
+        n: REQUESTS_PER_DAY,
+      }),
+    );
+}
 
 export async function conversationRoutes(app: FastifyInstance, ctx: AppContext) {
   // Writing to an address that isn't on Caime yet (R93): its one-to-one, by mail from here.
@@ -160,7 +195,10 @@ export async function conversationRoutes(app: FastifyInstance, ctx: AppContext) 
         const m = await membership(ctx, auth.userId, id);
         return { conversation: await conversationView(ctx, auth.userId, m.conversation, m.me) };
       }
-      if (!b.connected) await assertCanMessage(ctx, auth.userId, body.userId);
+      if (!b.connected) {
+        await assertCanMessage(ctx, auth.userId, body.userId);
+        await assertRequestRoom(ctx, auth.userId, body.userId);
+      }
       const result = await ensureDirectConversation(ctx.db, auth.userId, body.userId, {
         connectionId: b.connectionId,
         createdBy: auth.userId,
@@ -186,6 +224,10 @@ export async function conversationRoutes(app: FastifyInstance, ctx: AppContext) 
       : [];
     if (connected.length !== memberIds.length)
       throw badRequest(tr('You can add people you’re connected with.'));
+    // Whoever says to ask first, or would be under 18 among people they don't know, is invited
+    // once it's made rather than put in (M16 B4).
+    const asked = await whoMustBeAsked(ctx.db, null, memberIds, auth.userId, ctx.now());
+    const putIn = memberIds.filter((u) => !asked.ask.has(u));
     const id = uuidv7();
     await ctx.db.transaction().execute(async (trx) => {
       await trx
@@ -204,7 +246,7 @@ export async function conversationRoutes(app: FastifyInstance, ctx: AppContext) 
         // Joined now, on the app's clock: who's been in it longest decides who runs it next.
         .values([
           { conversation_id: id, user_id: auth.userId, role: 'owner', joined_at: ctx.now() },
-          ...memberIds.map((u) => ({
+          ...putIn.map((u) => ({
             conversation_id: id,
             user_id: u,
             role: 'member' as const,
@@ -226,13 +268,22 @@ export async function conversationRoutes(app: FastifyInstance, ctx: AppContext) 
       title: body.title,
       by: creator.display_name,
     });
-    await ctx.bus.publish([auth.userId, ...memberIds], {
+    await ctx.bus.publish([auth.userId, ...putIn], {
       type: 'conversation.created',
       data: { conversationId: id },
     });
+    await invitePeople(
+      ctx,
+      { kind: 'group', id },
+      [...asked.ask].filter((u) => !asked.silent.has(u)),
+      auth.userId,
+    );
     reply.status(201);
     const m = await membership(ctx, auth.userId, id);
-    return { conversation: await conversationView(ctx, auth.userId, m.conversation, m.me) };
+    return {
+      conversation: await conversationView(ctx, auth.userId, m.conversation, m.me),
+      invited: [...asked.ask],
+    };
   });
 
   /** Start a topic (PRD §58): in a one-to-one, a group, or a space's General. */
@@ -399,7 +450,7 @@ export async function conversationRoutes(app: FastifyInstance, ctx: AppContext) 
     return { ok: true };
   });
 
-  app.post('/conversations/:id/members', async (req): Promise<OkResponse> => {
+  app.post('/conversations/:id/members', async (req): Promise<MembersAddedResponse> => {
     const auth = requireAuth(req);
     const { id } = parse(z.object({ id: z.string().uuid() }), req.params);
     const body = parse(MembersBody, req.body);
@@ -433,16 +484,35 @@ export async function conversationRoutes(app: FastifyInstance, ctx: AppContext) 
       if (connected.length !== new Set(body.userIds).size)
         throw badRequest(tr('You can add people you’re connected with.'));
     }
-    await addToGroup(ctx, id, body.userIds, {
-      actorId: auth.userId,
-      // Who runs it, as they are now.
-      vouch: async (trx) => {
-        const mine = await seatIn(trx, id, auth.userId);
-        if (!mine) throw notFound(tr('That conversation'));
-        if (!canAddToGroup(mine.role)) throw forbidden(tr('Only admins can add people.'));
-      },
-    });
-    return { ok: true };
+    // Refused where nobody under 18 may be at all; else asked rather than put in where their
+    // setting or their age says so (M16 B4).
+    await assertNoMinorWhereNoneMay(ctx.db, { kind: 'group', id }, body.userIds, ctx.now());
+    const asked = await whoMustBeAsked(
+      ctx.db,
+      { kind: 'group', id },
+      body.userIds,
+      auth.userId,
+      ctx.now(),
+    );
+    const putIn = body.userIds.filter((u) => !asked.ask.has(u));
+    const added = putIn.length
+      ? await addToGroup(ctx, id, putIn, {
+          actorId: auth.userId,
+          // Who runs it, as they are now.
+          vouch: async (trx) => {
+            const mine = await seatIn(trx, id, auth.userId);
+            if (!mine) throw notFound(tr('That conversation'));
+            if (!canAddToGroup(mine.role)) throw forbidden(tr('Only admins can add people.'));
+          },
+        })
+      : [];
+    await invitePeople(
+      ctx,
+      { kind: 'group', id },
+      [...asked.ask].filter((u) => !asked.silent.has(u)),
+      auth.userId,
+    );
+    return { ok: true, added, invited: [...asked.ask] };
   });
 
   app.delete('/conversations/:id/members/:userId', async (req): Promise<OkResponse> => {

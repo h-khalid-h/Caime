@@ -1537,4 +1537,8 @@ export const frServer: Catalog = {
   'This organization is suspended, so nothing is posted for now.':
     'Cette organisation est suspendue : rien n’est publié pour le moment.',
   'This report isn’t about an organization.': 'Ce signalement ne concerne pas une organisation.',
+  'Join it, or not, from Attention.': 'Rejoignez-le, ou non, depuis Attention.',
+  'That invitation isn’t open any more.': 'Cette invitation n’est plus ouverte.',
+  'That’s {n} message requests today. Try again tomorrow, or connect with them first.':
+    'Cela fait {n} demandes de message aujourd’hui. Réessayez demain, ou entrez d’abord en contact.',
 };

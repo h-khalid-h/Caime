@@ -1527,4 +1527,8 @@ export const arServer: Catalog = {
   'This organization is suspended, so nothing is posted for now.':
     'هذه المؤسسة معلّقة، فلا نشر في الوقت الحالي.',
   'This report isn’t about an organization.': 'هذا البلاغ لا يخص مؤسسة.',
+  'Join it, or not, from Attention.': 'انضمّ إليها أو لا، من «الاهتمام».',
+  'That invitation isn’t open any more.': 'هذه الدعوة لم تعد قائمة.',
+  'That’s {n} message requests today. Try again tomorrow, or connect with them first.':
+    'بلغت طلبات المراسلة اليوم حدّها ({n}). حاول غدًا، أو تواصل أولًا.',
 };

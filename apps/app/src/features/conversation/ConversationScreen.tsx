@@ -687,6 +687,8 @@ export function ConversationScreen({
         onRetry={onRetry}
         highlighted={marked !== null && item.m.seq === marked}
         inertLinks={conversation?.request === 'incoming'}
+        // A request's photos come veiled (M16 B4): a tap shows them, under 18 accepting does.
+        veil={conversation?.request === 'incoming' ? (me.minor ? 'accept' : 'tap') : undefined}
         where={where}
       />
     );

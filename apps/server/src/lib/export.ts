@@ -152,6 +152,7 @@ export async function buildExport(ctx: AppContext, me: string, now: Date) {
     meetingInvitations,
     joinLinks,
     joinRequests,
+    placeInvitations,
     mailCopies,
     externalBusy,
     calendarPushes,
@@ -982,6 +983,15 @@ export async function buildExport(ctx: AppContext, me: string, now: Date) {
       .orderBy('created_at')
       .orderBy('id')
       .execute(),
+    // Invitations to a group or a space they were asked into (M16 B4): when, and how each ended;
+    // never who asked.
+    db
+      .selectFrom('place_invites')
+      .select(['conversation_id', 'created_at', 'decided_at', 'outcome'])
+      .where('user_id', '=', me)
+      .orderBy('created_at')
+      .orderBy('id')
+      .execute(),
     // What Caime keeps of their messages that went or came as mail (R75): the envelope and how
     // far it got, never the HTML (shown only in its sandbox), and nothing of a message erased.
     db
@@ -1501,6 +1511,13 @@ export async function buildExport(ctx: AppContext, me: string, now: Date) {
     })),
     // Your asks to join (M16 C3h): to a group or a space, when, and how each ended.
     joinRequests: joinRequests.map((r) => ({
+      to: r.conversation_id ? 'group' : 'space',
+      at: r.created_at.toISOString(),
+      decidedAt: iso(r.decided_at),
+      outcome: r.outcome,
+    })),
+    // Invitations into a group or a space (M16 B4): to which kind, when, and how each ended.
+    placeInvitations: placeInvitations.map((r) => ({
       to: r.conversation_id ? 'group' : 'space',
       at: r.created_at.toISOString(),
       decidedAt: iso(r.decided_at),

@@ -1,4 +1,4 @@
-import { tr } from '@caime/core/i18n';
+import { tr, trn } from '@caime/core/i18n';
 import { router } from 'expo-router';
 import { useState } from 'react';
 import { ScrollView } from 'react-native';
@@ -42,12 +42,15 @@ export default function NewGroup() {
     }
     setBusy(true);
     try {
-      const { conversation } = await endpoints.createGroup(
+      const { conversation, invited } = await endpoints.createGroup(
         title.trim(),
         [...picked],
         purpose.trim() || undefined,
         { private: privacy === 'private' },
       );
+      // Whoever says to be asked first comes in by saying yes (M16 B4).
+      if (invited?.length)
+        toast(trn(invited.length, 'Asked {n} person to join', 'Asked {n} people to join'));
       router.replace({
         pathname: '/c/[id]',
         params: byLink ? { id: conversation.id, invite: 'link' } : { id: conversation.id },

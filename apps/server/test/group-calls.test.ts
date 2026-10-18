@@ -596,6 +596,10 @@ describe('group calls (PRD §47)', () => {
     const rami = await signup(t, { displayName: 'Rami Young', birthDate: '2011-12-31' });
     await connect(rami, noor);
     const family = await group(noor, 'Family', [sam, rami]);
+    // Beside Sam, a stranger to them, Rami is asked first (M16 B4) and comes in by saying yes.
+    const [invitation] = (await rami.get('/v1/attention')).invitations;
+    expect(invitation.placeId).toBe(family);
+    await rami.post(`/v1/invitations/${invitation.id}/accept`, {});
     // Sam and Rami aren't connected: Sam's call doesn't ring Rami, and Rami can't join it.
     const samCalls = (await start(sam, family)).json().call;
     expect(Object.keys(await inCall(samCalls.id)).sort()).toEqual(['Noor', 'Sam']);

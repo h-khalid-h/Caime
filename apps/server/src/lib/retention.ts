@@ -155,6 +155,13 @@ export async function sweepRecords(ctx: AppContext): Promise<void> {
       where decided_at < ${before(KEPT_DAYS.spentInvites)}
       limit ${LOT} for update skip locked)`,
   );
+  // An invitation to a group or a space (M16 B4) the same way, once answered or run out.
+  await inLots(
+    ctx,
+    sql`delete from place_invites where id in (select id from place_invites
+      where coalesce(decided_at, expires_at) < ${before(KEPT_DAYS.spentInvites)}
+      limit ${LOT} for update skip locked)`,
+  );
   // A report once closed, and what was kept of what it reported with it (M16 B3, cascading):
   // half a year, a year for a child's safety. An open report stays, however old.
   await inLots(

@@ -27,6 +27,8 @@ export function canAddToGroup(role: ConversationRole | null | undefined): boolea
  * is started with, its owner beside them; ten open at once is plenty for any one place.
  */
 export const JOIN_LINK_DAYS = 30;
+/** How long an invitation to a group or a space waits for its answer (M16 B4). */
+export const PLACE_INVITE_DAYS = 7;
 export const JOIN_LINK_ROOM = 256;
 export const JOIN_LINKS_OPEN = 10;
 

@@ -867,6 +867,37 @@ export interface AttentionHomeResponse {
   comingUp: CalendarItemView[];
   /** A wait with no news for three days or more, not asked about since: still waiting? */
   ask: { taskId: string; since: string } | null;
+  /** Invitations to a group or a space, waiting for this person's answer (M16 B4). */
+  invitations: PlaceInvitationView[];
+}
+
+/**
+ * An invitation to a group or a space (M16 B4): only what lets someone decide, as a join link's
+ * page says it (the place, its kind, how many are in it, who asked); nothing of what's in it.
+ */
+export interface PlaceInvitationView {
+  id: string;
+  kind: 'group' | 'space';
+  placeId: string;
+  name: string;
+  /** How many are in it now. */
+  people: number;
+  by: PersonView | null;
+  createdAt: string;
+  expiresAt: string;
+}
+
+/** Where an accepted invitation landed: the group, or the space. */
+export interface InvitationAnsweredResponse {
+  conversationId: string | null;
+  spaceId: string | null;
+}
+
+/** Who an add put in, and who it asked instead (M16 B4: they come in by saying yes). */
+export interface MembersAddedResponse {
+  ok: true;
+  added: string[];
+  invited: string[];
 }
 
 /** A wait Cai follows up for its owner (R68). */
@@ -2374,7 +2405,8 @@ export type RealtimeSignalType =
   /** A host's offer (hours, catalog, ordering, ways to be paid) was saved: `{ orgId }` or `{ orgId: null }` for their own. */
   | 'booking.changed'
   /** Someone asked to join a place one runs, or an ask was answered (C3h): `{ target, id }`. */
-  | 'join.asked';
+  | 'join.asked'
+  | 'invites.changed';
 
 export type RealtimeEvent =
   | RealtimeDataEvent
@@ -2922,6 +2954,8 @@ export interface ReportedResponse {
 
 export interface ConversationResponse {
   conversation: ConversationView;
+  /** A group just made: whom it asked rather than put in (M16 B4). */
+  invited?: string[];
 }
 export interface ConversationIdResponse {
   conversationId: string;
@@ -3058,6 +3092,8 @@ export interface SpacesResponse {
 }
 export interface SpaceResponse {
   space: SpaceView;
+  /** A space just made: whom it asked rather than put in (M16 B4). */
+  invited?: string[];
 }
 export interface OrgsResponse {
   orgs: OrgSummaryView[];

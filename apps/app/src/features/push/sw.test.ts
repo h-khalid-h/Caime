@@ -458,6 +458,7 @@ describe('the service worker', () => {
     const cases = [
       [{ handle: 'nile.dental' }, '/o/nile.dental'],
       [{ spaceId: 's1' }, '/s/s1'],
+      [{ invitation: 'i1' }, '/'],
       [{ userId: 'u1' }, '/p/u1'],
       [{}, '/notifications'],
       // A meeting starting (R83): its join address; anything else in `path` is never followed.

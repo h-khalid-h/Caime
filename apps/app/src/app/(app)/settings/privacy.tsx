@@ -154,6 +154,29 @@ export default function Privacy() {
           ]}
         />
       </Group>
+      <Group
+        title={tr('Groups and spaces')}
+        footer={
+          me.minor
+            ? tr(
+                'Under 18, you’re asked first whenever a group or a space holds people you’re not connected with.',
+              )
+            : tr(
+                'Only people you’re connected with can add you. Choose “Nobody” and each of them invites you instead, for you to accept or not.',
+              )
+        }
+      >
+        <ChoiceSheet
+          label={tr('Who can add you')}
+          value={me.privacy.groupAdds}
+          onChange={(groupAdds) => void save({ groupAdds })}
+          testID="group-adds"
+          options={[
+            { value: 'connections', label: tr('Your connections') },
+            { value: 'ask', label: tr('Nobody: they invite you') },
+          ]}
+        />
+      </Group>
       {ai.data?.available ? (
         <Group
           title={tr('AI assist')}

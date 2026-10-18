@@ -55,7 +55,7 @@ import { latestFoundedYear, ORG_KINDS, UPDATE_MAX } from './orgs';
 import { PAYMENT_KINDS, PAYMENT_METHODS_MAX, paymentUrlError } from './payments';
 import { ORG_PLACE_AUDIENCES, PLACE_KINDS, PLACES_MAX } from './places';
 import { AI_TONES, NOTIFY_MODES, PRIORITIES, PRIVACY_PRESETS } from './policy';
-import { PRIVACY_FIELDS } from './privacy';
+import { GROUP_ADDS, PRIVACY_FIELDS } from './privacy';
 import {
   HANDLE_PATTERN,
   HANDLE_REPEAT_RULE,
@@ -851,6 +851,7 @@ export const PrivacyBody = z
     discoverByEmail: z.boolean().optional(),
     discoverByPhone: z.boolean().optional(),
     messageRequests: z.enum(['everyone', 'shared_connections', 'nobody']).optional(),
+    groupAdds: z.enum(GROUP_ADDS).optional(),
   })
   .strict();
 

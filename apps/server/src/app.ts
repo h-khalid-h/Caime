@@ -98,6 +98,7 @@ import { orgRoutes } from './modules/orgs';
 import { pageRoutes, sitePageAt } from './modules/pages';
 import { passkeyRoutes } from './modules/passkeys';
 import { peopleRoutes } from './modules/people';
+import { placeInviteRoutes } from './modules/place-invites';
 import { placeRoutes } from './modules/places';
 import { policyRoutes } from './modules/policies';
 import { publicBookingRoutes } from './modules/public-booking';
@@ -352,6 +353,7 @@ export async function buildApp(config: Config, options: BuildOptions = {}): Prom
       await teamInviteRoutes(v1, ctx);
       await domainJoinRoutes(v1, ctx);
       await joinLinkRoutes(v1, ctx);
+      await placeInviteRoutes(v1, ctx);
       await handleRoutes(v1, ctx);
       await businessRoutes(v1, ctx);
       await updateRoutes(v1, ctx);

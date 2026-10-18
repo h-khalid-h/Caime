@@ -1,4 +1,4 @@
-import { tr } from '@caime/core/i18n';
+import { tr, trn } from '@caime/core/i18n';
 import { canManageOrg } from '@caime/core/orgs';
 import { SPACE_KIND_DEFS, SPACE_KINDS, type SpaceKind } from '@caime/core/spaces';
 import { useQueryClient } from '@tanstack/react-query';
@@ -69,7 +69,7 @@ export default function NewSpace() {
     if (!kind) return toast(tr('Choose what kind of space it is.'));
     setBusy(true);
     try {
-      const { space } = await endpoints.createSpace({
+      const { space, invited } = await endpoints.createSpace({
         name: name.trim(),
         kind,
         ...(purpose.trim() ? { purpose: purpose.trim() } : {}),
@@ -79,6 +79,9 @@ export default function NewSpace() {
       qc.setQueryData(qk.space(space.id), { space });
       void qc.invalidateQueries({ queryKey: qk.spaces });
       if (org) void qc.invalidateQueries({ queryKey: qk.orgSpaces(org.id) });
+      // Whoever says to be asked first comes in by saying yes (M16 B4).
+      if (invited?.length)
+        toast(trn(invited.length, 'Asked {n} person to join', 'Asked {n} people to join'));
       router.replace({ pathname: '/s/[id]', params: { id: space.id } });
     } catch (e) {
       toast((e as Error).message, { tone: 'danger' });

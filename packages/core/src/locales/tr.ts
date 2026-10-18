@@ -4285,4 +4285,25 @@ export const turkish: Catalog = {
   'Caime has suspended {name}': 'Caime, {name} adlı kuruluşu askıya aldı',
   'Until it’s lifted, nothing is written as it or to it, its page answers as nobody’s and its apps can’t act. Its conversations stay to read.':
     'Askı kalkana kadar onun adına ya da ona bir şey yazılmaz, sayfası kimseye ait değilmiş gibi görünür ve uygulamaları işlem yapamaz. Konuşmaları okunmak üzere kalır.',
+  '{name} invited you to “{place}”': '{name} sizi davet etti: “{place}”',
+  'You’re invited to “{place}”': 'Davet: “{place}”',
+  'A group of {n} people': { one: '{n} kişilik bir grup', other: '{n} kişilik bir grup' },
+  'A space of {n} people': { one: '{n} kişilik bir alan', other: '{n} kişilik bir alan' },
+  'Asked {n} people to join': {
+    one: '{n} kişiye katılma daveti gönderildi',
+    other: '{n} kişiye katılma daveti gönderildi',
+  },
+  'Groups and spaces': 'Gruplar ve alanlar',
+  'Under 18, you’re asked first whenever a group or a space holds people you’re not connected with.':
+    '18 yaşından küçükken, bir grupta ya da alanda bağlantınız olmayan kişiler varsa önce size sorulur.',
+  'Only people you’re connected with can add you. Choose “Nobody” and each of them invites you instead, for you to accept or not.':
+    'Sizi yalnızca bağlantınız olan kişiler ekleyebilir. “Hiç kimse”yi seçerseniz her biri sizi eklemek yerine davet eder, kabul edip etmemek size kalır.',
+  'Who can add you': 'Sizi kim ekleyebilir',
+  'Nobody: they invite you': 'Hiç kimse: davet ederler',
+  'A photo from someone you’re not connected with. Tap to see it.':
+    'Bağlantınız olmayan birinden bir fotoğraf. Görmek için dokunun.',
+  'A photo from someone you’re not connected with. Accept to see it.':
+    'Bağlantınız olmayan birinden bir fotoğraf. Görmek için isteği kabul edin.',
+  'Tap to see': 'Görmek için dokunun',
+  'Accept to see': 'Görmek için kabul edin',
 };

@@ -78,6 +78,7 @@ import type {
   ImportChatView,
   InboxAllResponse,
   InboxResponse,
+  InvitationAnsweredResponse,
   InviteAcceptView,
   InviteOpenResponse,
   InviteResponse,
@@ -91,6 +92,7 @@ import type {
   JoinView,
   LiveCallsResponse,
   MeetingGuestResponse,
+  MembersAddedResponse,
   MemoryView,
   MessageIdsResponse,
   MessageResponse,
@@ -433,7 +435,7 @@ export const endpoints = {
     api.patch<ConversationResponse>(`/conversations/${id}`, patch),
   // Running a group (PRD §56): who's in it, and who runs it.
   addToGroup: (id: string, userIds: string[]) =>
-    api.post<OkResponse>(`/conversations/${id}/members`, { userIds }),
+    api.post<MembersAddedResponse>(`/conversations/${id}/members`, { userIds }),
   removeFromGroup: (id: string, userId: string) =>
     api.del<OkResponse>(`/conversations/${id}/members/${userId}`),
   setGroupRole: (id: string, userId: string, role: 'admin' | 'member') =>
@@ -516,7 +518,11 @@ export const endpoints = {
   updateSpace: (id: string, body: { name?: string; kind?: SpaceKind; purpose?: string | null }) =>
     api.patch<SpaceResponse>(`/spaces/${id}`, body),
   addToSpace: (id: string, userIds: string[]) =>
-    api.post<OkResponse>(`/spaces/${id}/members`, { userIds }),
+    api.post<MembersAddedResponse>(`/spaces/${id}/members`, { userIds }),
+  // Invitations to a group or a space (M16 B4): listed on Attention, answered here.
+  acceptInvitation: (id: string) =>
+    api.post<InvitationAnsweredResponse>(`/invitations/${id}/accept`, {}),
+  declineInvitation: (id: string) => api.post<OkResponse>(`/invitations/${id}/decline`, {}),
   removeFromSpace: (id: string, userId: string) =>
     api.del<OkResponse>(`/spaces/${id}/members/${userId}`),
   setSpaceRole: (id: string, userId: string, role: 'admin' | 'member') =>

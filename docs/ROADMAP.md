@@ -1997,9 +1997,23 @@ graph) and the number that will show it; one that sharpens none is hygiene and s
       the age where the person lives, audited without the date. Verified with `reports.test.ts`
       (5), `moderation`, `business`, `apps`, `updates`, `orgs`, `privacy-upkeep`, `columns`, the
       migrations lint and the full gate.
-- [ ] B, the rest: "who can add me" with acceptance for minors; request caps and blurred request
-      media; the vault key from the environment and encrypted dumps; a visitor's report from a
-      page, a suspended account's reason, appeal and export; age assurance phase 1
+- [x] B4. Asked before being added (2026-10-18), the condition WhatsApp and Telegram already meet:
+      "Who can add you" (`privacy.groupAdds`: your connections, or nobody: they invite you), and
+      under 18 asked first wherever a group or a space holds people they're not connected with
+      (R29, R97 (3)); an invitation (`place_invites`, migration 0100, seven days, one pending per
+      person and place) shows the place, its kind, its size and who asked, waits on Attention
+      (riding `GET /attention`, no request of its own; its notification opens there), and lets
+      them in through `addToGroup` or `addToSpace` with the invitation claimed under the place's
+      lock and its inviter still running it; a decline tells nobody; someone blocked either way is
+      answered as invited and never reached (a block now stops being added, as it should have);
+      an organization's own team goes straight into its spaces; where nobody under 18 may be at
+      all (a meeting's guests, a link open to anyone) one is refused, never invited (an invitation
+      they could never accept). Message requests: twenty new ones
+      a day (`REQUESTS_PER_DAY`, `429 requests_today`; one already started reopens freely), and a
+      request's photos come blurred until tapped (under 18, until accepted). Verified with
+      `place-invites.test.ts` (7), the catalogs in every language and the full gate.
+- [ ] B, the rest: the vault key from the environment and encrypted dumps; a visitor's report from
+      a page, a suspended account's reason, appeal and export; age assurance phase 1
       (`age_assurance` levels, `AgeProvider` behind a signed webhook, the paid, organization and
       stranger triggers, the privacy page and the DPA).
 - [ ] ⛔ B, the owner's: an age-assurance provider (Agemin or another) with retention terms, a DPA
@@ -4000,6 +4014,9 @@ graph) and the number that will show it; one that sharpens none is hygiene and s
   journeys, safety, reliability, performance, intelligence, mail and calendar, chat, integrations,
   business and code integrity; the matrix against WhatsApp, Signal, Slack, Calendly and Workspace;
   an age-assurance design; the integration framework mapped to the code; plan M16 (A–H).
+- 2026-10-18 — M16 B4: asked before being added: "Who can add you", minors asked where strangers
+  are, invitations on Attention, blocks honoured by adds, twenty new message requests a day, a
+  request's photos blurred. B3 went live after its own gate; B1 and B2 verified on cai.me.
 - 2026-10-18 — M16 B3: reports that hold up: what the reporter saw kept with the report, a child's
   safety first, closed reports gone after their time, an organization suspended by the operator
   (nobody new finds it, nobody writes as it or to it, its apps refused, lifted whole), a date of

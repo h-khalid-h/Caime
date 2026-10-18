@@ -1493,7 +1493,16 @@ appointment from a catalog).
   retention, making admins) is `ownsOrg` (`orgs.ts`). Anything new that checks a role calls one
   of these, never `me.role` by hand; outside core a role is compared only to label it. Anyone
   comes into a group only through `addToGroup` (`lib/group-members.ts`: the members route and a
-  join link), which mirrors its topics and tells them (`tellTopics`). The app's panel is
+  join link), which mirrors its topics and tells them (`tellTopics`). Someone its owner or admins
+  add (making a group or a space, or adding to one) goes first through `whoMustBeAsked`
+  (`lib/place-invites.ts`, M16 B4: their `privacy.groupAdds`, under 18 any stranger there, a
+  block either way answered as invited and never reached) and is invited rather than put in
+  (`invitePeople`, `place_invites`), coming in by `answerPlaceInvite` through the same
+  `addToGroup` or `addToSpace`; where nobody under 18 may be at all (a meeting's guests, a link
+  open to anyone) one is refused first (`assertNoMinorWhereNoneMay`), never invited. A new way
+  for someone running a place to put a person in does the same, and a way they choose themselves
+  (a join link, an ask) needs none. Invitations ride on
+  `GET /attention` (`AttentionHomeResponse.invitations`, `invites.changed` refreshes it). The app's panel is
   `features/conversation/GroupPeople.tsx` (loaded with the details).
 - Organizations' updates (PRD §59): `lib/updates.ts` and `modules/updates.ts`, in tables of their
   own (`org_updates`, `org_follows`), never conversations: nothing about following may reach the

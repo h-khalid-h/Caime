@@ -23,6 +23,7 @@ import {
 } from '@caime/core';
 import type {
   ConversationResponse,
+  MembersAddedResponse,
   OkResponse,
   SpaceResponse,
   SpacesResponse,
@@ -38,6 +39,7 @@ import { badRequest, forbidden, notFound } from '../lib/errors';
 import { recordEvent } from '../lib/events';
 import { orgById, orgSeat } from '../lib/orgs';
 import { personViewsFor } from '../lib/people-batch';
+import { assertNoMinorWhereNoneMay, invitePeople, whoMustBeAsked } from '../lib/place-invites';
 import { activeRelationships, relationshipView } from '../lib/relations';
 import { activeMembers, createSpaceConversation, tellSpace } from '../lib/space-conversations';
 import { addToSpace, offerWhoTheyKnowIn, removeFromSpace, summaries } from '../lib/space-members';
@@ -58,8 +60,9 @@ async function assertConnected(
   userId: string,
   ids: string[],
   orgId: string | null = null,
-) {
-  if (ids.length === 0) return;
+): Promise<Set<string>> {
+  const team = new Set<string>();
+  if (ids.length === 0) return team;
   const rows = await ctx.db
     .selectFrom('connection_sides as s')
     .innerJoin('connections as c', 'c.id', 's.connection_id')
@@ -70,7 +73,7 @@ async function assertConnected(
     .execute();
   const allowed = new Set(rows.map((r) => r.other_id));
   if (orgId) {
-    const team = await ctx.db
+    const seats = await ctx.db
       .selectFrom('org_members as m')
       .innerJoin('users as u', 'u.id', 'm.user_id')
       .select('m.user_id')
@@ -79,7 +82,10 @@ async function assertConnected(
       .where('u.kind', '=', 'human')
       .where('m.user_id', 'in', ids)
       .execute();
-    for (const m of team) allowed.add(m.user_id);
+    for (const m of seats) {
+      allowed.add(m.user_id);
+      team.add(m.user_id);
+    }
   }
   if (ids.some((id) => !allowed.has(id)))
     throw badRequest(
@@ -87,6 +93,8 @@ async function assertConnected(
         ? tr('You can add people on the organization’s team, or people you’re connected with.')
         : tr('You can add people you’re connected with.'),
     );
+  // An organization's own team, put in its own spaces by whoever runs it: their work (R43).
+  return team;
 }
 
 /** Someone's spaces: all of them, one, or an organization's (R43). */
@@ -277,7 +285,17 @@ export async function spaceRoutes(app: FastifyInstance, ctx: AppContext) {
       if (!seat || !canManageOrg(seat.role))
         throw forbidden(tr('Only the organization’s owner and admins start its spaces.'));
     }
-    await assertConnected(ctx, auth.userId, memberIds, body.orgId ?? null);
+    const team = await assertConnected(ctx, auth.userId, memberIds, body.orgId ?? null);
+    // Whoever says to ask first, or would be under 18 among people they don't know, is invited
+    // once it's made rather than put in (M16 B4); an organization's team goes straight in.
+    const asked = await whoMustBeAsked(
+      ctx.db,
+      null,
+      memberIds.filter((u) => !team.has(u)),
+      auth.userId,
+      ctx.now(),
+    );
+    const putIn = memberIds.filter((u) => !asked.ask.has(u));
     const spaceId = uuidv7();
     const generalId = uuidv7();
     await ctx.db.transaction().execute(async (trx) => {
@@ -296,7 +314,7 @@ export async function spaceRoutes(app: FastifyInstance, ctx: AppContext) {
         .insertInto('space_members')
         .values([
           { space_id: spaceId, user_id: auth.userId, role: 'owner', added_by: auth.userId },
-          ...memberIds.map((u) => ({
+          ...putIn.map((u) => ({
             space_id: spaceId,
             user_id: u,
             role: 'member' as const,
@@ -319,7 +337,7 @@ export async function spaceRoutes(app: FastifyInstance, ctx: AppContext) {
         .insertInto('participants')
         .values([
           { conversation_id: generalId, user_id: auth.userId, role: 'owner' },
-          ...memberIds.map((u) => ({
+          ...putIn.map((u) => ({
             conversation_id: generalId,
             user_id: u,
             role: 'member' as const,
@@ -329,14 +347,20 @@ export async function spaceRoutes(app: FastifyInstance, ctx: AppContext) {
       await recordEvent(trx, 'space.created', auth.userId, { spaceId, kind: body.kind });
     });
     await sendSystem(ctx, generalId, auth.userId, 'space_created', { title: body.name });
-    await ctx.bus.publish([auth.userId, ...memberIds], {
+    await ctx.bus.publish([auth.userId, ...putIn], {
       type: 'conversation.created',
       data: { conversationId: generalId },
     });
     await tellSpace(ctx, spaceId);
-    offerWhoTheyKnow(spaceId, [auth.userId, ...memberIds]);
+    offerWhoTheyKnow(spaceId, [auth.userId, ...putIn]);
+    await invitePeople(
+      ctx,
+      { kind: 'space', id: spaceId },
+      [...asked.ask].filter((u) => !asked.silent.has(u)),
+      auth.userId,
+    );
     reply.status(201);
-    return { space: await spaceView(ctx, auth.userId, spaceId) };
+    return { space: await spaceView(ctx, auth.userId, spaceId), invited: [...asked.ask] };
   });
 
   app.get('/spaces/:id', async (req): Promise<SpaceResponse> => {
@@ -383,7 +407,7 @@ export async function spaceRoutes(app: FastifyInstance, ctx: AppContext) {
     return { space: await spaceView(ctx, auth.userId, id) };
   });
 
-  app.post('/spaces/:id/members', async (req): Promise<OkResponse> => {
+  app.post('/spaces/:id/members', async (req): Promise<MembersAddedResponse> => {
     const auth = requireAuth(req);
     const { id } = parse(idParam, req.params);
     const body = parse(MembersBody, req.body);
@@ -393,10 +417,27 @@ export async function spaceRoutes(app: FastifyInstance, ctx: AppContext) {
     ctx.limiter.hit(`space-add:${auth.userId}`, ctx.config.isTest ? 1000 : 60, 3_600_000);
     const current = new Set((await activeMembers(ctx, id)).map((m) => m.user_id));
     const adding = [...new Set(body.userIds)].filter((u) => !current.has(u));
-    if (adding.length === 0) return { ok: true };
-    await assertConnected(ctx, auth.userId, adding, space.org_id);
-    await addToSpace(ctx, id, adding, auth.userId);
-    return { ok: true };
+    if (adding.length === 0) return { ok: true, added: [], invited: [] };
+    const team = await assertConnected(ctx, auth.userId, adding, space.org_id);
+    await assertNoMinorWhereNoneMay(ctx.db, { kind: 'space', id }, adding, ctx.now());
+    // Asked rather than put in where their setting or their age says so (M16 B4); an
+    // organization's own team goes straight into its spaces.
+    const asked = await whoMustBeAsked(
+      ctx.db,
+      { kind: 'space', id },
+      adding.filter((u) => !team.has(u)),
+      auth.userId,
+      ctx.now(),
+    );
+    const putIn = adding.filter((u) => !asked.ask.has(u));
+    await addToSpace(ctx, id, putIn, auth.userId);
+    await invitePeople(
+      ctx,
+      { kind: 'space', id },
+      [...asked.ask].filter((u) => !asked.silent.has(u)),
+      auth.userId,
+    );
+    return { ok: true, added: putIn, invited: [...asked.ask] };
   });
 
   app.delete('/spaces/:id/members/:userId', async (req): Promise<OkResponse> => {

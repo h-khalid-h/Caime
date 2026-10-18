@@ -2656,4 +2656,43 @@ export const arB: Catalog = {
   'Caime has suspended {name}': 'علّق Caime {name}',
   'Until it’s lifted, nothing is written as it or to it, its page answers as nobody’s and its apps can’t act. Its conversations stay to read.':
     'إلى أن يُرفع التعليق: لا كتابة باسمها ولا إليها، وتظهر صفحتها كأنها لا تخص أحدًا، ولا تعمل تطبيقاتها. تبقى محادثاتها للقراءة.',
+  '{name} invited you to “{place}”': 'دعوة من {name} إلى «{place}»',
+  'You’re invited to “{place}”': 'دعوة إلى «{place}»',
+  'A group of {n} people': {
+    zero: 'مجموعة بلا أحد',
+    one: 'مجموعة من شخص واحد',
+    two: 'مجموعة من شخصين',
+    few: 'مجموعة من {n} أشخاص',
+    many: 'مجموعة من {n} شخصًا',
+    other: 'مجموعة من {n} شخص',
+  },
+  'A space of {n} people': {
+    zero: 'مساحة بلا أحد',
+    one: 'مساحة من شخص واحد',
+    two: 'مساحة من شخصين',
+    few: 'مساحة من {n} أشخاص',
+    many: 'مساحة من {n} شخصًا',
+    other: 'مساحة من {n} شخص',
+  },
+  'Asked {n} people to join': {
+    zero: 'لم تُرسل دعوة لأحد',
+    one: 'أُرسلت دعوة إلى شخص واحد',
+    two: 'أُرسلت دعوة إلى شخصين',
+    few: 'أُرسلت دعوة إلى {n} أشخاص',
+    many: 'أُرسلت دعوة إلى {n} شخصًا',
+    other: 'أُرسلت دعوة إلى {n} شخص',
+  },
+  'Groups and spaces': 'المجموعات والمساحات',
+  'Under 18, you’re asked first whenever a group or a space holds people you’re not connected with.':
+    'دون 18 عامًا، يُطلب رأيك أولًا كلما كان في المجموعة أو المساحة من لا تربطك به صلة.',
+  'Only people you’re connected with can add you. Choose “Nobody” and each of them invites you instead, for you to accept or not.':
+    'لا يضيفك إلا من تربطك بهم صلة. باختيار «لا أحد» يرسل لك كلٌّ منهم دعوة بدل الإضافة، والقبول لك.',
+  'Who can add you': 'من يمكنه إضافتك',
+  'Nobody: they invite you': 'لا أحد: تصلك دعوة',
+  'A photo from someone you’re not connected with. Tap to see it.':
+    'صورة من شخص لا تربطك به صلة. اضغط لرؤيتها.',
+  'A photo from someone you’re not connected with. Accept to see it.':
+    'صورة من شخص لا تربطك به صلة. اقبل الطلب لرؤيتها.',
+  'Tap to see': 'اضغط للرؤية',
+  'Accept to see': 'اقبل للرؤية',
 };

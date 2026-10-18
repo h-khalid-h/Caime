@@ -32,6 +32,17 @@ export type Audience =
 
 export type MessageRequestsFrom = 'everyone' | 'shared_connections' | 'nobody';
 
+/**
+ * Who puts someone in a group or a space without asking (M16 B4): their connections who run it
+ * (`connections`, as WhatsApp's "my contacts"), or nobody, each add an invitation (`ask`). Under
+ * 18 (R29) anyone is asked first wherever someone there isn't a connection of theirs.
+ */
+export const GROUP_ADDS = ['connections', 'ask'] as const;
+export type GroupAdds = (typeof GROUP_ADDS)[number];
+
+/** New message requests someone may start in a day (M16 B4): reaching out, never a flood. */
+export const REQUESTS_PER_DAY = 20;
+
 export interface PrivacySettings {
   fields: Record<PrivacyField, Audience>;
   discoverByHandle: boolean;
@@ -39,6 +50,7 @@ export interface PrivacySettings {
   /** Found by a phone number they proved theirs (R91), from someone's contacts or search. */
   discoverByPhone: boolean;
   messageRequests: MessageRequestsFrom;
+  groupAdds: GroupAdds;
 }
 
 export interface Viewer {
@@ -92,6 +104,7 @@ export function defaultPrivacy(opts: { minor: boolean }): PrivacySettings {
     // R29 too, and only a number they proved theirs (R91) ever finds them.
     discoverByPhone: !opts.minor,
     messageRequests: opts.minor ? 'shared_connections' : 'everyone',
+    groupAdds: 'connections',
   };
 }
 

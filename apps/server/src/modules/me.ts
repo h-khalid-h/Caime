@@ -277,6 +277,7 @@ export async function meRoutes(app: FastifyInstance, ctx: AppContext) {
       discoverByEmail: body.discoverByEmail ?? current.discoverByEmail,
       discoverByPhone: body.discoverByPhone ?? current.discoverByPhone,
       messageRequests: body.messageRequests ?? current.messageRequests,
+      groupAdds: body.groupAdds ?? current.groupAdds,
     };
     // Protections for under-18 accounts are rules, not defaults (R29): what's saved is clamped.
     const saved = minorOf(user, now) ? clampForMinor(next) : next;

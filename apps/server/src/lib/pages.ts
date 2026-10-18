@@ -17,6 +17,7 @@ import {
 } from '@caime/core/accounts';
 import type { SitePage } from '@caime/core/api';
 import { LAW_MINIMUM_AGES } from '@caime/core/countries';
+import { REQUESTS_PER_DAY } from '@caime/core/privacy';
 import type { SubProcessor } from '@caime/core/processors';
 import { FACE, THEME_VARS, type } from './page-style';
 import { KEPT_DAYS } from './retention';
@@ -394,7 +395,8 @@ forgotten; the people who joined through it stay your connections. An organizati
 to its team, with the address it was sent to, is kept the same way once it ran out, was taken back
 or was used; whoever joined through it stays on the team. A link to join a group or a space is
 kept the same way once it ran out or was taken back; whoever joined through it stays in it. An ask
-to join is kept the same way once it was answered or taken back. A
+to join is kept the same way once it was answered or taken back, and so is an invitation to a
+group or a space once it was answered or ran out (who asked you is never in it). A
 notification is kept for
 ${span(KEPT_DAYS.notifications)}, then goes.</li>
 ${
@@ -707,7 +709,14 @@ you turn off Show <em>name</em> the context. Caime may suggest one, and says why
 until you accept it.</li>
 <li><strong>Message requests.</strong> A first message from someone you&rsquo;re not connected
 with waits in Requests, silently, and they can send one until you answer. Reading it or declining
-it never tells them: to them it stays unanswered. Replying accepts it.</li>
+it never tells them: to them it stays unanswered. Replying accepts it. Its photos come blurred
+until you tap one (under 18, until you accept), and nobody starts more than ${REQUESTS_PER_DAY}
+new requests a day.</li>
+<li><strong>Who can add you.</strong> Only people you&rsquo;re connected with can add you to a group
+or a space. Choose Nobody (You &rarr; Privacy) and they invite you instead: the invitation waits on
+Attention, and you&rsquo;re in only if you say yes. Under 18, you&rsquo;re always asked first where
+the group or space holds people you&rsquo;re not connected with. Someone you blocked can&rsquo;t
+add or invite you.</li>
 </ul>
 
 <h2>Conversations</h2>

@@ -1470,4 +1470,8 @@ export const turkishServer: Catalog = {
   'This organization is suspended, so nothing is posted for now.':
     'Bu kuruluş askıya alındı, bu yüzden şimdilik bir şey paylaşılmıyor.',
   'This report isn’t about an organization.': 'Bu şikâyet bir kuruluşla ilgili değil.',
+  'Join it, or not, from Attention.': 'Katılıp katılmamak size kalmış: Öncelikli ekranından.',
+  'That invitation isn’t open any more.': 'Bu davet artık açık değil.',
+  'That’s {n} message requests today. Try again tomorrow, or connect with them first.':
+    'Bugün {n} mesaj isteği oldu. Yarın yeniden deneyin ya da önce bağlantı kurun.',
 };

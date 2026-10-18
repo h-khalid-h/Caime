@@ -110,6 +110,7 @@ export function privacyOf(
     // Off where it was never said (R91): a number finds only someone who said it may.
     discoverByPhone: p.discoverByPhone ?? false,
     messageRequests: p.messageRequests ?? fallback.messageRequests,
+    groupAdds: p.groupAdds ?? fallback.groupAdds,
   };
   // Under 18, whatever is stored (R29): nothing to everyone, never found by an address.
   return minor ? clampForMinor(settings) : settings;

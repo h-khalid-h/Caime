@@ -49,6 +49,10 @@ import { toast } from '@/ui/Toast';
 
 // An iPhone's or an iPad's browser tab, which nothing can notify (H7): the card says how, and
 // decides the rest itself (`homeScreenHint`), loaded only there.
+/** Invitations to a group or a space (M16 B4): loaded only while there's one to answer. */
+const InvitationsCard = lazyPart(() =>
+  import('@/features/invitations/InvitationsCard').then((m) => m.InvitationsCard),
+);
 const HomeScreenCard = lazyPart(() =>
   import('@/features/push/HomeScreenCard').then((m) => m.HomeScreenCard),
 );
@@ -410,6 +414,9 @@ export function AttentionHome() {
             {loading ? ' ' : homeSummary(needs.length)}
           </Text>
         </View>
+        {home.data?.invitations?.length ? (
+          <InvitationsCard invitations={home.data.invitations} />
+        ) : null}
         <RecoveryCodesCard />
         {appleTab ? <HomeScreenCard /> : null}
         <TeamInboxes />

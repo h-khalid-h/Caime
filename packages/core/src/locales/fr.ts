@@ -4459,4 +4459,31 @@ export const fr: Catalog = {
   'Caime has suspended {name}': 'Caime a suspendu {name}',
   'Until it’s lifted, nothing is written as it or to it, its page answers as nobody’s and its apps can’t act. Its conversations stay to read.':
     'Tant que ce n’est pas levé, rien n’est écrit en son nom ni à son attention, sa page ne mène à personne et ses applications ne peuvent pas agir. Ses conversations restent à lire.',
+  '{name} invited you to “{place}”': '{name} vous invite dans « {place} »',
+  'You’re invited to “{place}”': 'Une invitation pour « {place} »',
+  'A group of {n} people': {
+    one: 'Un groupe de {n} personne',
+    other: 'Un groupe de {n} personnes',
+  },
+  'A space of {n} people': {
+    one: 'Un espace de {n} personne',
+    other: 'Un espace de {n} personnes',
+  },
+  'Asked {n} people to join': {
+    one: '{n} personne invitée à rejoindre',
+    other: '{n} personnes invitées à rejoindre',
+  },
+  'Groups and spaces': 'Groupes et espaces',
+  'Under 18, you’re asked first whenever a group or a space holds people you’re not connected with.':
+    'Avant 18 ans, on vous demande d’abord votre accord dès qu’un groupe ou un espace compte des personnes avec qui vous n’êtes pas en contact.',
+  'Only people you’re connected with can add you. Choose “Nobody” and each of them invites you instead, for you to accept or not.':
+    'Seules les personnes avec qui vous êtes en contact peuvent vous ajouter. Choisissez « Personne » et chacune vous invite plutôt, pour que vous acceptiez ou non.',
+  'Who can add you': 'Qui peut vous ajouter',
+  'Nobody: they invite you': 'Personne : on vous invite',
+  'A photo from someone you’re not connected with. Tap to see it.':
+    'Une photo d’une personne avec qui vous n’êtes pas en contact. Touchez pour la voir.',
+  'A photo from someone you’re not connected with. Accept to see it.':
+    'Une photo d’une personne avec qui vous n’êtes pas en contact. Acceptez pour la voir.',
+  'Tap to see': 'Touchez pour voir',
+  'Accept to see': 'Acceptez pour voir',
 };
