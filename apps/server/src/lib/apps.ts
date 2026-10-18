@@ -191,8 +191,11 @@ export function checkWebhookUrl(raw: string, allowPrivate: boolean): string {
   return url.toString();
 }
 
-/** A DNS lookup that refuses private answers, so a public name can't point inside. */
-function safeLookup(allowPrivate: boolean): LookupFunction {
+/**
+ * A DNS lookup that refuses private answers, so a public name can't point inside: every
+ * request to an address someone else chose (a webhook, a link's page) connects through it.
+ */
+export function safeLookup(allowPrivate: boolean): LookupFunction {
   return (hostname, options, callback) => {
     lookup(hostname, { ...options, all: true }, (err, addresses) => {
       if (err) return callback(err, '', 0);

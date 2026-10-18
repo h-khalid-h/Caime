@@ -221,6 +221,11 @@ export function createMetrics(pool: pg.Pool) {
       'caime_message_effects_total',
       'Message effects the sweep replayed or gave up on, by outcome.',
     ),
+    // Link previews (M16 E4c): a page read, found kept, saying nothing, failing or refused.
+    linkPreviews: new Counter(
+      'caime_link_previews_total',
+      'Link previews asked for, by outcome (read, kept, none, failed, refused).',
+    ),
     mail: new Counter(
       'caime_mail_total',
       'Mail received and sent (R75), by direction and outcome.',

@@ -567,6 +567,21 @@ export interface AssetsResponse {
 }
 
 /**
+ * What a link's page says of itself (M16 E4c), read once by the server: its title, a line of
+ * description, the site's name, and Caime's own small copy of its picture (`imageUrl`, served
+ * by Caime, so the reader's device never asks the site). Null on a message without one.
+ */
+export interface LinkPreviewView {
+  url: string;
+  title: string | null;
+  description: string | null;
+  siteName: string | null;
+  imageUrl: string | null;
+  imageWidth: number | null;
+  imageHeight: number | null;
+}
+
+/**
  * The group's message a private reply answers (M16 E3b), read again for whoever reads it:
  * `preview` (and its seq and writer) only while they may still read it there, so none of the
  * group's words are kept in the chat. `title` is the group's name, null once they've left it.
@@ -632,6 +647,8 @@ export interface MessageView {
   } | null;
   /** A group's message this answers privately (M16 E3b). */
   privateReply: PrivateReplyView | null;
+  /** The first link's page, as the server read it (M16 E4c). */
+  link: LinkPreviewView | null;
   forwarded: boolean;
   urgent: boolean;
   isQuestion: boolean;
@@ -2990,6 +3007,11 @@ export interface ConversationResponse {
 export interface ConversationIdResponse {
   conversationId: string;
 }
+/** A link's page for the composer, before it's sent (M16 E4c); null when it says nothing. */
+export interface LinkPreviewResponse {
+  preview: LinkPreviewView | null;
+}
+
 export interface MessageResponse {
   message: MessageView;
 }

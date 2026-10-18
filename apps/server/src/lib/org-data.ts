@@ -21,6 +21,7 @@ import { audit } from './audit';
 import { tellSaved } from './automations';
 import { bookingOf, catalogOf, orderingOf, paymentsOf } from './booking';
 import { dropUnusedFiles, removeStored, type StoredKeys } from './files';
+import { previewIdOf, previewUrl } from './link-preview-views';
 import { insertSystemMessage, messageViews, participantsOf } from './messages';
 import { forgetNotificationsOf, tellForgotten } from './notify';
 import { placesOwnedBy } from './places';
@@ -36,11 +37,15 @@ export interface Erased {
   conversation_id: string | null;
 }
 
+type ErasedRow = Omit<Erased, 'what'> & { what: Erased['what'] | 'link' };
+
 /**
  * Erase the messages `due` selects (a query of their ids): body, payload, entities, sealed
  * envelope and pin go; so do their assets, files, album photos, what anyone saved of them, the
  * words of what Caime offered from them and their mail copy; an open order among them gives
- * back the stock it took (R60). Returns who had saved something ('saved'), each message gone
+ * back the stock it took (R60), and the page read for its link's preview goes (M16 E4c: kept
+ * by its address alone, so another message with that link reads it again when it's next sent).
+ * Returns who had saved something ('saved'), each message gone
  * ('gone'), each host given stock back ('stock') and each file they pointed at ('file'), which
  * the caller hands to `dropErasedFiles` in the same transaction; notifications showing their
  * words are forgotten by the caller (`forgetNotificationsOf`), which needs the ids.
@@ -50,8 +55,14 @@ export async function eraseMessagesWhere(
   due: RawBuilder<unknown>,
   now: Date,
 ): Promise<Erased[]> {
-  const done = await sql<Erased>`
+  const done = await sql<ErasedRow>`
     with due as (${due}),
+    -- Read before the update below (one snapshot for the whole statement): each one's first link.
+    linked as (
+      select distinct m.entities->'links'->0->>'url' as url
+      from messages m join due on m.id = due.id
+      where m.entities->'links'->0->>'url' is not null
+    ),
     gone as (
       update messages m set deleted_at = ${now}, body = null, payload = '{}',
         entities = '{}', sealed = null, pinned_at = null, pinned_by = null
@@ -92,8 +103,15 @@ export async function eraseMessagesWhere(
       union select file_id from album_gone
     ) f where file_id is not null
     union all
+    select 'link', url, null from linked
+    union all
     select 'gone', id::text, conversation_id::text from gone`.execute(trx);
-  return done.rows;
+  const previews = done.rows.flatMap((r) => {
+    const url = r.what === 'link' ? previewUrl(r.id) : null;
+    return url ? [previewIdOf(url)] : [];
+  });
+  if (previews.length) await trx.deleteFrom('link_previews').where('id', 'in', previews).execute();
+  return done.rows.filter((r): r is Erased => r.what !== 'link');
 }
 
 /**

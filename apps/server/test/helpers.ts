@@ -43,6 +43,7 @@ export async function createTestApp(
     WORKERS: 'false',
     BACKUP_ENABLED: 'false',
     PROVIDER_HEALTH_ENABLED: 'false',
+    LINK_PREVIEWS: 'false',
     ...env,
   });
   let queries = 0;

@@ -94,6 +94,7 @@ import type {
   JoinRequestsResponse,
   JoinResponse,
   JoinView,
+  LinkPreviewResponse,
   LiveCallsResponse,
   MeetingGuestResponse,
   MembersAddedResponse,
@@ -233,6 +234,8 @@ export interface SendBody {
   replyToId?: string | null;
   /** Reply privately (M16 E3b): the group's message this answers. */
   privateReplyTo?: { conversationId: string; messageId: string };
+  /** False when its link's card was taken off before sending (M16 E4c). */
+  linkPreview?: boolean;
   fileIds?: string[];
   urgent?: boolean;
   mentions?: string[];
@@ -461,6 +464,8 @@ export const endpoints = {
     api.get<MessagesPage>(`/conversations/${id}/messages${q(params)}`),
   send: (conversationId: string, body: SendBody) =>
     api.post<MessageResponse>(`/conversations/${conversationId}/messages`, body),
+  /** A link's card before it's sent (M16 E4c), read once by the server for everyone. */
+  linkPreview: (url: string) => api.get<LinkPreviewResponse>(`/links/preview${q({ url })}`),
   /** A topic of a one-to-one or a group (PRD §58): the conversation it is. */
   /** A chat brought over from WhatsApp (R45): lands as a topic with that person. */
   importChat: (body: {

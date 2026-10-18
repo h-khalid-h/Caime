@@ -8,6 +8,7 @@ import type {
 import { listTitle, messagePreview } from '@caime/core/format';
 import { tr, trn } from '@caime/core/i18n';
 import { isLargeGroup } from '@caime/core/large-group';
+import { firstLinkIn } from '@caime/core/link-text';
 import { SUBJECT_MAX, subjectFromText } from '@caime/core/mail';
 import { mentionAt, mentionCandidates, mentionedIn, mentionText } from '@caime/core/mentions';
 import { isSystemKind } from '@caime/core/system-ids';
@@ -73,6 +74,7 @@ import { Text } from '@/ui/Text';
 import { TextField } from '@/ui/TextField';
 import { toast } from '@/ui/Toast';
 import { useCardAction } from './cardActions';
+import { LinkCard } from './LinkCard';
 import { mailBound, topicsFor } from './topics';
 
 /** The recorder loads when the microphone is pressed, never before (the audio module). */
@@ -123,6 +125,8 @@ const PAD = (MIN_H - LINE) / 2;
 const MAX_LINES = { phone: 5, desktop: 8 };
 /** The round buttons beside the box: as tall as it, with a finger's reach around them. */
 const SIDE = 40;
+/** A link's card is asked for once the typing has stayed on it this long (M16 E4c). */
+const LINK_SETTLE_MS = 600;
 
 export const Composer = forwardRef<ComposerHandle, ComposerProps>(function Composer(
   {
@@ -215,6 +219,27 @@ export const Composer = forwardRef<ComposerHandle, ComposerProps>(function Compo
   // A group's message being answered here privately (M16 E3b), taken from its sheet: never in a
   // private chat, whose words the server never has.
   const privateDraft = usePrivateReply((s) => (s.draft?.in === id && !privately ? s.draft : null));
+  // The first link being written and its page's card, read once by the server (M16 E4c):
+  // never in a private conversation, whose words the server never sees. Asked once the typing
+  // has settled on it, and taken off by its ×, which the message then says.
+  const writtenLink = !privately && !editing ? firstLinkIn(text) : null;
+  const [settledLink, setSettledLink] = useState<string | null>(null);
+  useEffect(() => {
+    const timer = setTimeout(() => setSettledLink(writtenLink), LINK_SETTLE_MS);
+    return () => clearTimeout(timer);
+  }, [writtenLink]);
+  const [linkOff, setLinkOff] = useState<string | null>(null);
+  const cardFor =
+    settledLink !== null && settledLink === writtenLink && settledLink !== linkOff
+      ? settledLink
+      : null;
+  const linkCard = useQuery({
+    queryKey: qk.linkPreview(cardFor ?? ''),
+    queryFn: () => endpoints.linkPreview(cardFor ?? ''),
+    enabled: cardFor !== null,
+    staleTime: Number.POSITIVE_INFINITY,
+    retry: false,
+  });
   // Seen as private here, and now said not to be: nothing is written from here in the clear.
   const downgraded = privately && conversation.privacyClass !== 'private';
   // This browser, until one of theirs approves it, can't write here.
@@ -368,6 +393,7 @@ export const Composer = forwardRef<ComposerHandle, ComposerProps>(function Compo
         body,
         replyToId: replyTo?.id ?? null,
         ...(mentions.length ? { mentions } : {}),
+        ...(writtenLink !== null && writtenLink === linkOff ? { linkPreview: false } : {}),
         ...(privateDraft && into === id
           ? {
               privateReplyTo: {
@@ -400,6 +426,7 @@ export const Composer = forwardRef<ComposerHandle, ComposerProps>(function Compo
     );
     if (privateDraft && into === id) usePrivateReply.getState().set(null);
     setText('');
+    setLinkOff(null);
     setHeight(MIN_H);
     setCaret(0);
     setSettled(null);
@@ -425,6 +452,8 @@ export const Composer = forwardRef<ComposerHandle, ComposerProps>(function Compo
     replyingText,
     privately,
     privateDraft,
+    writtenLink,
+    linkOff,
     mentionable,
     people,
     asksSubject,
@@ -677,6 +706,11 @@ export const Composer = forwardRef<ComposerHandle, ComposerProps>(function Compo
   return (
     <View style={{ backgroundColor: t.c.surface, borderTopWidth: 1, borderTopColor: t.c.border }}>
       {banner}
+      {cardFor !== null && linkCard.data?.preview ? (
+        <View style={{ paddingHorizontal: 12, paddingTop: 4 }} testID="composer-link-preview">
+          <LinkCard link={linkCard.data.preview} onRemove={() => setLinkOff(cardFor)} />
+        </View>
+      ) : null}
       {offered && Platform.OS !== 'ios' ? (
         <Text
           accessibilityLiveRegion="polite"

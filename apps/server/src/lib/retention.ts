@@ -6,7 +6,8 @@
  * words) 30 days, and what of it names nobody a little over a year, for the product's metrics
  * (they look back up to 365 days); copies of what was sent to an organization's apps, 30 days
  * (or the organization's own retention, if shorter); a report, with what was kept of what it
- * reported, half a year after it's closed (a year for a child's safety);
+ * reported, half a year after it's closed (a year for a child's safety); a link's page as Caime
+ * read it for a preview, 30 days from when it was read;
  * and a handle someone let go of is held from everyone a year, then forgotten (lib/handles.ts).
  */
 import { CLOSED_ORG_EXPORT_DAYS } from '@caime/core/api';
@@ -43,6 +44,8 @@ export const KEPT_DAYS = {
    * account keeps its standing (what it found, how and when) after the row is gone.
    */
   ageChecks: 365,
+  /** A link's page as Caime read it (M16 E4c), by its address's hash: read again after this. */
+  linkPreviews: 30,
 } as const;
 
 /** The day of `at` as Caime keeps days ('YYYY-MM-DD', UTC). */
@@ -190,6 +193,13 @@ export async function sweepRecords(ctx: AppContext): Promise<void> {
     ctx,
     sql`delete from age_checks where id in (select id from age_checks
       where created_at < ${before(KEPT_DAYS.ageChecks)}
+      limit ${LOT} for update skip locked)`,
+  );
+  // A link's page (M16 E4c) once its month is up: read again the next time it's sent.
+  await inLots(
+    ctx,
+    sql`delete from link_previews where id in (select id from link_previews
+      where fetched_at < ${before(KEPT_DAYS.linkPreviews)}
       limit ${LOT} for update skip locked)`,
   );
   // A passkey ceremony nobody finished (R36): its challenge is no use after its few minutes.

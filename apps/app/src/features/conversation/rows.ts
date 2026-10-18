@@ -61,6 +61,8 @@ export function pendingAsMessage(item: OutboxItem, me: string): MessageView {
     mentions: item.body.mentions ?? [],
     replyTo: item.replyTo,
     privateReply: item.privateReply ?? null,
+    // The page's card comes with the server's echo, read by then if the composer showed it.
+    link: null,
     forwarded: false,
     urgent: Boolean(item.body.urgent),
     isQuestion: false,

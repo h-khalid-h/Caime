@@ -68,6 +68,7 @@ import { assertSealedForEveryone } from './e2ee';
 import { AppError, badRequest, forbidden, notFound } from './errors';
 import { recordEvent } from './events';
 import { cardStartAt, customCardFor } from './kits';
+import { previewIdsOf, previewView, readyPreviews } from './link-preview-views';
 import { isBlockedEitherWay, shareAConnection, viewerRelation } from './relations';
 import { type ShareToPay, shareToPay } from './splits';
 import { hostWithStock, takeStock, tellStockChanged } from './stock';
@@ -212,110 +213,123 @@ export async function messageViews(
       }),
     ),
   ];
-  const [reactions, files, replies, votes, senders, albums, mails, answered] = await Promise.all([
-    db
-      .selectFrom('reactions')
-      .selectAll()
-      .where('message_id', 'in', ids)
-      .orderBy('created_at')
-      .execute(),
-    db
-      .selectFrom('message_files')
-      .innerJoin('files', 'files.id', 'message_files.file_id')
-      .select([
-        'message_files.message_id',
-        'message_files.position',
-        'files.id',
-        'files.name',
-        'files.mime',
-        'files.size',
-        'files.kind',
-        'files.width',
-        'files.height',
-        'files.duration_ms',
-        'files.thumb_key',
-      ])
-      .where('message_files.message_id', 'in', ids)
-      .orderBy('message_files.position')
-      .execute(),
-    replyIds.length
-      ? db.selectFrom('messages').select(MESSAGE_COLUMNS).where('id', 'in', replyIds).execute()
-      : Promise.resolve([] as Message[]),
-    db.selectFrom('poll_votes').selectAll().where('message_id', 'in', ids).execute(),
-    senderIds.length
-      ? db.selectFrom('users').select(['id', 'kind']).where('id', 'in', senderIds).execute()
-      : Promise.resolve([] as Array<{ id: string; kind: string }>),
-    // Each album's photos, newest first: the card shows how many and the latest few.
-    albumIds.length
-      ? db
-          .selectFrom('album_photos as a')
-          .innerJoin('files', 'files.id', 'a.file_id')
-          .select([
-            'a.message_id',
-            'files.id',
-            'files.name',
-            'files.mime',
-            'files.size',
-            'files.kind',
-            'files.width',
-            'files.height',
-            'files.duration_ms',
-            'files.thumb_key',
-          ])
-          .where('a.message_id', 'in', albumIds)
-          .orderBy('a.created_at', 'desc')
-          .orderBy('a.file_id', 'desc')
-          .execute()
-      : Promise.resolve([]),
-    // What a mail message was on the wire (R75), only where one is in the batch.
-    rows.some((m) => m.channel === 'mail')
-      ? db
-          .selectFrom('mail_messages')
-          .select([
-            'message_id',
-            'direction',
-            'subject',
-            'from_address',
-            'to_address',
-            'delivery',
-            'delivery_at',
-            'signature',
-            'seen_at',
-            'opened_at',
-          ])
-          // Whether there's HTML to show as sent, never the HTML itself with every view.
-          .select(sql<boolean>`html is not null`.as('has_html'))
-          .where('message_id', 'in', ids)
-          .execute()
-      : Promise.resolve([] as MailViewRow[]),
-    // Only what they may read there now: in it, there for everyone, not hidden for them.
-    privateIds.length
-      ? db
-          .selectFrom('messages as m')
-          .innerJoin('conversations as c', 'c.id', 'm.conversation_id')
-          .innerJoin('participants as p', (j) =>
-            j
-              .onRef('p.conversation_id', '=', 'm.conversation_id')
-              .on('p.user_id', '=', viewerId)
-              .on('p.left_at', 'is', null),
-          )
-          .select([
-            'm.id',
-            'm.seq',
-            'm.sender_id',
-            'm.kind',
-            'm.body',
-            'm.payload',
-            'm.deleted_at',
-            'm.sealed',
-            'm.expires_at',
-            'c.title',
-          ])
-          .where('m.id', 'in', privateIds)
-          .where(notHiddenFor(viewerId, 'm.id'))
-          .execute()
-      : Promise.resolve([]),
-  ]);
+  // The first link's page (M16 E4c), by its address, where a message in the batch has one.
+  const linkIds = previewIdsOf(rows);
+  const [reactions, files, replies, votes, senders, albums, mails, answered, links] =
+    await Promise.all([
+      db
+        .selectFrom('reactions')
+        .selectAll()
+        .where('message_id', 'in', ids)
+        .orderBy('created_at')
+        .execute(),
+      db
+        .selectFrom('message_files')
+        .innerJoin('files', 'files.id', 'message_files.file_id')
+        .select([
+          'message_files.message_id',
+          'message_files.position',
+          'files.id',
+          'files.name',
+          'files.mime',
+          'files.size',
+          'files.kind',
+          'files.width',
+          'files.height',
+          'files.duration_ms',
+          'files.thumb_key',
+        ])
+        .where('message_files.message_id', 'in', ids)
+        .orderBy('message_files.position')
+        .execute(),
+      replyIds.length
+        ? db.selectFrom('messages').select(MESSAGE_COLUMNS).where('id', 'in', replyIds).execute()
+        : Promise.resolve([] as Message[]),
+      db.selectFrom('poll_votes').selectAll().where('message_id', 'in', ids).execute(),
+      senderIds.length
+        ? db.selectFrom('users').select(['id', 'kind']).where('id', 'in', senderIds).execute()
+        : Promise.resolve([] as Array<{ id: string; kind: string }>),
+      // Each album's photos, newest first: the card shows how many and the latest few.
+      albumIds.length
+        ? db
+            .selectFrom('album_photos as a')
+            .innerJoin('files', 'files.id', 'a.file_id')
+            .select([
+              'a.message_id',
+              'files.id',
+              'files.name',
+              'files.mime',
+              'files.size',
+              'files.kind',
+              'files.width',
+              'files.height',
+              'files.duration_ms',
+              'files.thumb_key',
+            ])
+            .where('a.message_id', 'in', albumIds)
+            .orderBy('a.created_at', 'desc')
+            .orderBy('a.file_id', 'desc')
+            .execute()
+        : Promise.resolve([]),
+      // What a mail message was on the wire (R75), only where one is in the batch.
+      rows.some((m) => m.channel === 'mail')
+        ? db
+            .selectFrom('mail_messages')
+            .select([
+              'message_id',
+              'direction',
+              'subject',
+              'from_address',
+              'to_address',
+              'delivery',
+              'delivery_at',
+              'signature',
+              'seen_at',
+              'opened_at',
+            ])
+            // Whether there's HTML to show as sent, never the HTML itself with every view.
+            .select(sql<boolean>`html is not null`.as('has_html'))
+            .where('message_id', 'in', ids)
+            .execute()
+        : Promise.resolve([] as MailViewRow[]),
+      // Only what they may read there now: in it, there for everyone, not hidden for them.
+      privateIds.length
+        ? db
+            .selectFrom('messages as m')
+            .innerJoin('conversations as c', 'c.id', 'm.conversation_id')
+            .innerJoin('participants as p', (j) =>
+              j
+                .onRef('p.conversation_id', '=', 'm.conversation_id')
+                .on('p.user_id', '=', viewerId)
+                .on('p.left_at', 'is', null),
+            )
+            .select([
+              'm.id',
+              'm.seq',
+              'm.sender_id',
+              'm.kind',
+              'm.body',
+              'm.payload',
+              'm.deleted_at',
+              'm.sealed',
+              'm.expires_at',
+              'c.title',
+            ])
+            .where('m.id', 'in', privateIds)
+            .where(notHiddenFor(viewerId, 'm.id'))
+            .execute()
+        : Promise.resolve([]),
+      readyPreviews(
+        db,
+        [...linkIds.values()].map((l) => l.id),
+      ),
+    ]);
+  const previews = new Map(links.map((row) => [row.id, row]));
+  const linkOf = (messageId: string) => {
+    const link = linkIds.get(messageId);
+    const row = link ? previews.get(link.id) : undefined;
+    return link && row ? previewView(row, link.url) : null;
+  };
   // Bots and agents say so wherever their messages go (R16).
   const automatedSenders = new Set(
     senders.filter((u) => u.kind !== 'human' && u.kind !== 'provisional').map((u) => u.id),
@@ -387,6 +401,7 @@ export async function messageViews(
             preview: readable ? messagePreview(source) : null,
           }
         : null,
+      link: linkOf(m.id),
       forwarded: m.forwarded_from_id !== null,
       sentVia: m.sent_via,
       channel: m.channel,
@@ -1065,6 +1080,9 @@ export async function sendMessage(
     else if (body.kind === 'location') payload = parse(LocationPayload, body.payload);
   }
   if (privateReply) payload = { privateReply };
+  // Its link's card taken off before sending (M16 E4c): the sender's choice, kept on the text.
+  if (body.kind === 'text' && body.linkPreview === false && analysis?.links.length)
+    payload = { ...(payload as Record<string, unknown>), noPreview: true };
   let kitMode: Mode | null = null;
   // Its id, now: a repeating meeting's first time names its series by it (R58).
   const id = uuidv7();

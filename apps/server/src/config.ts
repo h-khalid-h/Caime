@@ -191,6 +191,14 @@ const Env = z.object({
    */
   WEBHOOKS_ALLOW_PRIVATE: bool.default(false),
   /**
+   * Link previews (M16 E4c): the server reads the page of the first link in a text sent in a
+   * conversation that isn't private, once per address, and keeps its title, description and a
+   * small copy of its picture for thirty days. Off, no page is ever asked for.
+   */
+  LINK_PREVIEWS: bool.default(true),
+  /** Let link previews read private and loopback addresses. For tests only, as for webhooks. */
+  LINK_PREVIEWS_ALLOW_PRIVATE: bool.default(false),
+  /**
    * The operator's token for /v1/admin (setting plans, product metrics). Without it those routes
    * don't exist. Long and random: it can change anyone's plan.
    */

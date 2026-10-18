@@ -4659,4 +4659,5 @@ export const fr: Catalog = {
     'Une vidéo d’une personne avec qui vous n’êtes pas en contact. Touchez pour la voir.',
   'A video from someone you’re not connected with. Accept to see it.':
     'Une vidéo d’une personne avec qui vous n’êtes pas en contact. Acceptez pour la voir.',
+  'Remove the link preview': 'Retirer l’aperçu du lien',
 };

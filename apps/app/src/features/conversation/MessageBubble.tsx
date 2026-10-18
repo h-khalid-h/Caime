@@ -50,6 +50,7 @@ import { Forward, ReplyArrow } from '@/ui/directional';
 import { Pressable } from '@/ui/Pressable';
 import { Text } from '@/ui/Text';
 import { toast } from '@/ui/Toast';
+import { LinkCard } from './LinkCard';
 import { PollBody } from './PollBody';
 
 /** The player loads with the first voice note shown, never before (the audio module). */
@@ -1085,6 +1086,17 @@ export const MessageBubble = memo(function MessageBubble({
               {reply}
               {privateQuote}
               {content}
+              {/* Its first link's page (M16 E4c), never veiled words' or a stranger's unseen. */}
+              {m.link && !deleted && !veiled ? (
+                <LinkCard
+                  link={m.link}
+                  mine={mine}
+                  fg={fg}
+                  onPress={() => open(m.link?.url ?? '')}
+                  onLongPress={hold}
+                  testID="link-preview"
+                />
+              ) : null}
               {translation && !deleted ? (
                 <TranslationBlock id={m.id} value={translation} fg={fg} meta={meta} />
               ) : null}

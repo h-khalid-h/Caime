@@ -2928,4 +2928,5 @@ export const arB: Catalog = {
     'فيديو من شخص لا تربطك به صلة. اضغط لرؤيته.',
   'A video from someone you’re not connected with. Accept to see it.':
     'فيديو من شخص لا تربطك به صلة. اقبل الطلب لرؤيته.',
+  'Remove the link preview': 'إزالة معاينة الرابط',
 };

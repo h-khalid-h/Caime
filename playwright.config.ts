@@ -13,6 +13,7 @@ import {
   MAIL_STUB,
   MAIL_WEBHOOK_SECRET,
   METRICS_TOKEN,
+  WEB_STUB,
 } from './e2e/helpers';
 
 // Going offline and routing reach the service worker's own requests too, so a test that says
@@ -123,6 +124,12 @@ export default defineConfig({
           },
         },
         {
+          command: 'node e2e/web-stub.mjs',
+          url: `${WEB_STUB}/health`,
+          reuseExistingServer: !process.env.CI,
+          env: { PORT: new URL(WEB_STUB).port },
+        },
+        {
           command: 'node --enable-source-maps apps/server/dist/server.js',
           url: `${BASE}/v1/readyz`,
           reuseExistingServer: !process.env.CI,
@@ -191,6 +198,8 @@ export default defineConfig({
             AGEMIN_API_URL: AGEMIN_STUB,
             AGEMIN_VERIFY_URL: AGEMIN_STUB,
             AGE_CHECK_TRIGGERS: '',
+            // Link previews (M16 E4c) read the site stand-in on this machine, by its local name.
+            LINK_PREVIEWS_ALLOW_PRIVATE: 'true',
           },
         },
       ],

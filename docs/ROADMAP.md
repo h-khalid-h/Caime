@@ -2739,6 +2739,37 @@ graph) and the number that will show it; one that sharpens none is hygiene and s
       the HEIC and file tests on the shared box reader, the catalogs in four languages,
       `e2e/chat-features.spec.ts` (a canvas recorded as WebM in the browser, sent from a phone,
       playing for both, "🎥 Video" in Chats), and the full gate.
+- [x] E4c. Link previews, read once on the server (2026-10-18, review §7). The first link of a text
+      in a conversation that isn't private gets a card: the page's title, a line of description,
+      its site and Caime's own small copy of its picture. The server reads each address once and
+      keeps what it said for 30 days by the SHA-256 of the address (`link_previews`, migration
+      0124, expand only), never the address, the sender or the conversation, so a link sent to a
+      group of a hundred, or a thousand times, is one request to the site, and the site sees
+      Caime ask, never who sent it or who read it (the picture comes from Caime). The composer
+      shows the card once the typing settles on a link, and its × sends the message without one.
+      Never for a suspicious first link (a card would make it look trusted), for mail (a link
+      there may tell its sender it was opened), for a sealed message or a notice. A request goes
+      only where a webhook may: http(s) on their own ports, no private, loopback or link-local
+      address in the name or any answer for it, each of three redirects checked again, a
+      6-second deadline each for the page and its picture, 512 KB of a page read to the end of
+      its head and 5 MB of a picture, no SVG, the picture made a 960-px WebP under the image
+      semaphore. Erasing a message drops its link's card, the daily sweep old ones; a person's
+      messages read at most 60 pages in ten minutes, the composer 30 a minute. What it costs:
+      one request and one resize per new address a month on the server, a row of a few dozen KB
+      for a month in the database, a WebP of a few dozen KB per card on a device, and nothing
+      for a link already read. Verified: `link-previews.test.ts` (read once and told to the
+      conversation as one view, the picture served by Caime at 960 × 504 and to nobody signed
+      out, the same link elsewhere carded from the start without asking again, nothing kept that
+      names the link; a redirect followed, gzip unpacked, windows-1256 read, an icon kept as no
+      picture; a page that says nothing kept as nothing and asked once, a busy one kept as
+      nothing at all and asked again; a link taken off or suspicious never queued, a forged
+      payload refused; the composer's card filling the cache the message reads; an edit's new
+      link carded and its card dropped by deleting the message; a month's card swept and read
+      again; the addresses that may never be asked, the first-link rule, the page reader),
+      `link-text.test.ts` (the composer's first link is the server's), the catalogs in four
+      languages, `e2e/link-previews.spec.ts` (the card above the composer, in both people's
+      bubbles with its picture from Caime, taken off before sending, and the site asked by the
+      server alone, once for the page and once for the picture), and the full gate.
 - [ ] F. Mail, calendar, meetings: CC and reply-all as people on the topic; unverified mail shown
       under Notices, never dropped; a follow-up allowance to new addresses; invitations arriving
       by mail become cards; cards travel by mail; "Suggest another time" with guest invitations
@@ -4360,6 +4391,11 @@ graph) and the number that will show it; one that sharpens none is hygiene and s
   journeys, safety, reliability, performance, intelligence, mail and calendar, chat, integrations,
   business and code integrity; the matrix against WhatsApp, Signal, Slack, Calendly and Workspace;
   an age-assurance design; the integration framework mapped to the code; plan M16 (A–H).
+- 2026-10-18 — M16 E4c: link previews, each page read once by the server and kept 30 days by
+  its address's hash; shown in the composer (taken off by its ×) and in the bubble, the picture
+  from Caime, so no site learns who sent or read a link. E4 is whole.
+- 2026-10-18 — E2E: six races in the E1–E3 specs closed where each starts (the cache a second tab
+  saved, a hover's grace, the Chats row beside the bubble, a read never seen), the batch on main.
 - 2026-10-18 — M16 E4b: videos picked with photos, played in the bubble, "🎥 Video" where they're
   named, and every MP4, QuickTime file and recording cleared of where it was filmed.
 - 2026-10-18 — M16 E4a: voice notes with their bars (measured as recorded, pressed along, read by a

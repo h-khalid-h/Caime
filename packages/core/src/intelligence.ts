@@ -17,6 +17,7 @@ import { FR_PAID, FR_PAY, FR_PLAN, FR_TRACK, readFrench } from './intelligence-f
 import { firstDateIn, removeRanges } from './intelligence-shared';
 import { readTurkish, TR_PAID, TR_PAY, TR_PLAN, TR_TRACK } from './intelligence-tr';
 import { latinLanguage } from './latin-language';
+import { LINK_IN_TEXT, linkEnd } from './link-text';
 import { parseWhen, type WhenMatch, type WhenOptions } from './when';
 
 export { type Amount, extractAmounts } from './amounts';
@@ -462,8 +463,8 @@ function toAction(
 
 export function extractLinks(text: string): LinkEntity[] {
   const out: LinkEntity[] = [];
-  for (const m of text.matchAll(/\bhttps?:\/\/[^\s<>"'`]+|\bwww\.[^\s<>"'`]+/gi)) {
-    const url = m[0].replace(/[.,;:!?)\]}'"]+$/, '');
+  for (const m of text.matchAll(LINK_IN_TEXT)) {
+    const url = linkEnd(m[0]);
     let host = '';
     try {
       host = new URL(url.startsWith('http') ? url : `https://${url}`).hostname.toLowerCase();

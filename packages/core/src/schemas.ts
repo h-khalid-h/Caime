@@ -1299,6 +1299,9 @@ export const RestoreDeviceBody = z.object({ introduction: Signature }).strict();
 /** One of my devices approves another of mine: its signature over the new one's introduction. */
 export const ApproveDeviceBody = z.object({ introduction: Signature }).strict();
 
+/** A link being written, for the composer's card (M16 E4c): an address, never a page's worth. */
+export const LinkPreviewQuery = z.object({ url: z.string().trim().min(1).max(2048) });
+
 export const SendMessageBody = z
   .object({
     clientId: z.string().min(8).max(64),
@@ -1308,6 +1311,8 @@ export const SendMessageBody = z
     body: z.string().max(10_000).nullable().optional(),
     payload: z.unknown().optional(),
     replyToId: z.string().uuid().nullable().optional(),
+    /** False when the sender took the link's preview off before sending (M16 E4c). */
+    linkPreview: z.boolean().optional(),
     /** Reply privately (M16 E3b): a group's message, answered in the chat of two people in it. */
     privateReplyTo: z
       .object({ conversationId: z.string().uuid(), messageId: z.string().uuid() })

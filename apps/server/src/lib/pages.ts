@@ -184,7 +184,11 @@ on the device you&rsquo;re writing on. Where a photo or a video was taken, and i
 details, are removed before anyone sees it: a JPEG, PNG or WebP photo is made again without them,
 and a HEIC photo, an MP4 or QuickTime video or a recording has them cleared where they are; one
 that can&rsquo;t be read for certain isn&rsquo;t kept at all. Other files, GIFs and WebM videos
-among them, are kept as you send them, with anything they carry.</li>
+among them, are kept as you send them, with anything they carry. The first link in a message
+you write in a conversation that isn&rsquo;t private is opened once by Caime&rsquo;s server, to
+show the title, the description and the picture its page gives itself: the site sees Caime ask,
+never you or anyone you sent it to, and their devices get the picture from Caime. You can take
+the preview off before sending; a link in a private conversation or in mail is never opened.</li>
 <li><strong>Private conversations.</strong> What each message says is sealed on your device, and
 the server keeps only envelopes it can&rsquo;t open. It still knows who is in the conversation,
 what it&rsquo;s called and what it&rsquo;s for, who sent each message and when, which message it
@@ -423,6 +427,9 @@ deleted); reactions to it stay. Decisions and actions made from a message and co
 forwarded stay, and so does the copy made for an organization&rsquo;s apps of one that
 disappeared, for ${span(KEPT_DAYS.appDeliveries)} or the organization&rsquo;s own time if that&rsquo;s
 shorter.</li>
+<li>What a link&rsquo;s page said of itself, read for its preview, is kept for
+${span(KEPT_DAYS.linkPreviews)} by a code made from the link, without the link, who sent it or
+where, and goes sooner with a message that disappears or is deleted for everyone.</li>
 <li>Security records are kept for ${span(KEPT_DAYS.securityRecords)}, and a device&rsquo;s sign-in
 for ${span(KEPT_DAYS.endedSignIns)} after it ended. The log of what you do, without the words, is
 kept for ${span(KEPT_DAYS.activity)}, and copies of what you send an organization, made for its

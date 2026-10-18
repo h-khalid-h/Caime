@@ -30,6 +30,7 @@ import { busyUntilFor } from './calendar';
 import { isGroupTopic } from './conversations';
 import { asReader, inReader, readersOf } from './i18n';
 import { enqueue, registerPeriodic } from './jobs';
+import { queueLinkPreview } from './link-previews';
 import { queueMailOut } from './mail-out';
 import { analyseText, messagePreview } from './messages';
 import { runNotificationHooks, withLivePush } from './notify';
@@ -214,6 +215,8 @@ async function effectsOf(ctx: AppContext, message: Message, read: Analysis | nul
   // A notice (R75) is read, not acted on: nobody is told, nothing in it is anyone's promise or
   // request, and nothing goes back.
   if (conversation.notice) return;
+  // The first link's page, read once on the server for everyone in it (M16 E4c).
+  await queueLinkPreview(ctx, message);
   // Cai or a Caime Friend (R67): what's written to one is answered by it, and nothing else
   // happens; what it writes tells nobody (it never needs anyone) and promises nothing.
   if (conversation.kind === 'direct') {
@@ -295,6 +298,8 @@ export async function afterEdit(
   message: Message,
   analysis: Analysis | null,
 ): Promise<void> {
+  // A link it now carries gets its page, as a sent one does (M16 E4c).
+  await queueLinkPreview(ctx, message);
   if (!analysis || !message.sender_id || message.forwarded_from_id) return;
   const conversation = await ctx.db
     .selectFrom('conversations')

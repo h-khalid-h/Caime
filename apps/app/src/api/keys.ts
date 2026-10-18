@@ -57,6 +57,8 @@ export const qk = {
   generalInvite: ['invites', 'general'] as const,
   contactAccounts: ['contact-accounts'] as const,
   invite: (token: string) => ['invite', token] as const,
+  /** A link's card in the composer (M16 E4c), by its address. */
+  linkPreview: (url: string) => ['link-preview', url] as const,
   /** A paid Pay card's receipt (R62). */
   receipt: (messageId: string) => ['receipt', messageId] as const,
   /** A meeting guest's link (R84): the meeting, and theirs once they've taken it. */

@@ -4478,4 +4478,5 @@ export const turkish: Catalog = {
     'Bağlantınız olmayan birinden bir video. Görmek için dokunun.',
   'A video from someone you’re not connected with. Accept to see it.':
     'Bağlantınız olmayan birinden bir video. Görmek için isteği kabul edin.',
+  'Remove the link preview': 'Bağlantı önizlemesini kaldır',
 };

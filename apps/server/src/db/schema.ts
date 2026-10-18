@@ -539,6 +539,24 @@ export interface FilesTable {
   created_at: Generated<Date>;
 }
 
+/**
+ * What a link's page says of itself (M16 E4c), by the SHA-256 of the link's address (`id`; the
+ * address itself isn't kept): read once by the server for a link sent in a conversation that
+ * isn't private, kept for thirty days. `none` when the page said nothing worth a card. Its
+ * picture is Caime's own small JPEG of it.
+ */
+export interface LinkPreviewsTable {
+  id: string;
+  status: 'ready' | 'none';
+  title: string | null;
+  description: string | null;
+  site_name: string | null;
+  image: Buffer | null;
+  image_width: number | null;
+  image_height: number | null;
+  fetched_at: Timestamp;
+}
+
 /** A message as mail carried it (R75): its ids for threading, who it was between, how far one sent got. */
 export interface MailMessagesTable {
   message_id: string;
@@ -1459,6 +1477,7 @@ export interface Database {
   conversations: ConversationsTable;
   participants: ParticipantsTable;
   messages: MessagesTable;
+  link_previews: LinkPreviewsTable;
   reactions: ReactionsTable;
   files: FilesTable;
   message_files: MessageFilesTable;

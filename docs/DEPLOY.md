@@ -217,6 +217,8 @@ BACKUP_KEEP_DAYS=30
 # --- Health of the providers, hourly (R78); webhooks only to public https addresses
 PROVIDER_HEALTH_ENABLED=true
 WEBHOOKS_ALLOW_PRIVATE=false
+# Link previews (M16 E4c), on unless set false; never LINK_PREVIEWS_ALLOW_PRIVATE in production
+LINK_PREVIEWS=true
 
 # --- Voice notes into words, after the owner's bake-off (docs/SPEECH.md)
 # SPEECH_PROVIDER=<openai or elevenlabs>

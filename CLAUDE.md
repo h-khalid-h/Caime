@@ -1002,6 +1002,21 @@ appointment from a catalog).
 - Outbound requests to addresses someone else chose (webhooks) go through `postWebhook`: https,
   no private addresses (checked on the URL and on every DNS answer), one deadline for the whole
   exchange. Test them with `WEBHOOKS_ALLOW_PRIVATE=true` and a local server.
+- Link previews (M16 E4c, `lib/link-previews.ts`, `lib/link-preview-views.ts`,
+  `modules/links.ts`): a text's first link (core `link-text.ts`, the one reading `extractLinks`
+  and the composer share) has its page read once by the server and kept 30 days in
+  `link_previews` by the SHA-256 of its address (`previewIdOf`), never the address, the sender
+  or the conversation; `messageViews` looks a batch's up in one query (`MessageView.link`),
+  `effectsOf` and `afterEdit` call `queueLinkPreview` (nothing while a fresh one is kept; the
+  `links.preview` job reads, keeps and publishes `message.updated` as a transcript does), the
+  composer asks `GET /links/preview` once the typing settles, and its × sends `linkPreview:
+  false` (`payload.noPreview`, the server's to write). Never a suspicious first link, mail, a
+  sealed message or a notice. A request goes only where a webhook may (`linkTarget`,
+  `safeLookup`, each redirect checked again, a deadline, byte caps, no SVG), and the picture
+  through `images.run` as a 960-px WebP, served by `/links/:id/image` so no reader's device asks
+  the site; `eraseMessagesWhere` drops an erased message's preview, the daily sweep old ones.
+  Tests run with `LINK_PREVIEWS=false` unless they're about it (`LINK_PREVIEWS_ALLOW_PRIVATE`
+  reaches a local stand-in; the E2E's is `e2e/web-stub.mjs`).
 - Taking a message down for everyone or an update back goes through `lib/moderation.ts`
   (`removeForEveryone`, `takeBackUpdate`): the sender's delete, the poster's take-back and the
   operator's review (R49, `/admin/reports`, `modules/admin.ts`) all run the same code, so a
