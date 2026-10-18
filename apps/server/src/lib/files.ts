@@ -17,6 +17,7 @@ import { stripHeifDetails } from './heif';
 import { IMAGE_PIXELS_MAX, images, makeRenditions } from './renditions';
 import { sniffFile } from './sniff';
 import type { Storage } from './storage';
+import { stripVideoDetails } from './video-details';
 
 export type FileRow = Selectable<FilesTable>;
 
@@ -25,6 +26,9 @@ const REENCODE = new Set(['image/jpeg', 'image/png', 'image/webp']);
 function keyFor(id: string, now: Date): string {
   return `files/${now.getUTCFullYear()}/${String(now.getUTCMonth() + 1).padStart(2, '0')}/${id}`;
 }
+
+/** The kinds laid out as boxes (MP4, QuickTime, an MPEG-4 recording), whose details are cleared. */
+const ISO_MEDIA = new Set(['video/mp4', 'video/quicktime', 'audio/mp4']);
 
 /**
  * What a file written to a `tmp/` key becomes: sniffed for what it is, a photo cleaned and given
@@ -54,6 +58,19 @@ export async function finalizeFile(
     if (unsure) {
       await storage.remove(tempKey);
       throw badRequest(tr('That photo couldn’t be read, so it wasn’t sent. Try another.'));
+    }
+  }
+  // A video keeps where it was filmed in its movie box, and so may a phone's recording: cleared
+  // where it sits (M16 E4b), and one that can't be read for certain is never kept as it came.
+  if (ISO_MEDIA.has(sniffed.mime)) {
+    const { unsure } = await stripVideoDetails(storage.path(tempKey));
+    if (unsure) {
+      await storage.remove(tempKey);
+      throw badRequest(
+        sniffed.kind === 'video'
+          ? tr('That video couldn’t be read, so it wasn’t sent. Try another.')
+          : tr('That recording couldn’t be read, so it wasn’t sent. Try another.'),
+      );
     }
   }
   if (sniffed.kind === 'image' && sniffed.mime !== 'image/gif' && sniffed.mime !== 'image/heic') {

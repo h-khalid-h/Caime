@@ -180,10 +180,11 @@ share, cards (a meeting, an order, a poll) and your votes, and reactions, with w
 person has received and read, so Caime can show them to the people they&rsquo;re for. A live
 location keeps only its latest point, which stays in the conversation. What you start typing is
 kept as a draft, so it&rsquo;s there on your other devices too; in a private conversation it stays
-on the device you&rsquo;re writing on. Where a photo was taken, and its other hidden details, are
-removed from JPEG, PNG and WebP photos before anyone sees them. Other files, videos and GIFs
-among them, and photos in other formats such as HEIC, are kept as you send them, with any location
-they carry.</li>
+on the device you&rsquo;re writing on. Where a photo or a video was taken, and its other hidden
+details, are removed before anyone sees it: a JPEG, PNG or WebP photo is made again without them,
+and a HEIC photo, an MP4 or QuickTime video or a recording has them cleared where they are; one
+that can&rsquo;t be read for certain isn&rsquo;t kept at all. Other files, GIFs and WebM videos
+among them, are kept as you send them, with anything they carry.</li>
 <li><strong>Private conversations.</strong> What each message says is sealed on your device, and
 the server keeps only envelopes it can&rsquo;t open. It still knows who is in the conversation,
 what it&rsquo;s called and what it&rsquo;s for, who sent each message and when, which message it
@@ -530,8 +531,8 @@ live${lawAges(f.minimumAge) ? `, and ${lawAges(f.minimumAge)}, whose law asks a 
 can&rsquo;t send you a connection or message request unless you share a connection. Nor can they
 open your profile, unless one of you asked the other to connect or you&rsquo;re in a conversation
 together. An adult&rsquo;s invite link connects you only with someone you know through someone.</li>
-<li>You can&rsquo;t share a location, whether a place or where you are right now. A video, or a
-photo in a format such as HEIC, still carries where it was taken.</li>
+<li>You can&rsquo;t share a location, whether a place or where you are right now. A file kept as
+it was sent (a GIF, a WebM video, a document) still carries whatever it holds.</li>
 <li>You can start a conversation only with an organization that has verified who it is, and an
 organization never writes to you first. It&rsquo;s told you&rsquo;re under 18, and its AI agent
 never answers you. Its apps still can, and what they write is marked Automated.</li>

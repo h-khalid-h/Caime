@@ -2922,4 +2922,10 @@ export const arB: Catalog = {
   'Forward 5 seconds': 'تقديم 5 ثوانٍ',
   'Back 5 seconds': 'رجوع 5 ثوانٍ',
   'Playback speed: {rate}': 'سرعة التشغيل: {rate}',
+  'Play video': 'تشغيل الفيديو',
+  'Photos and videos': 'صور وفيديوهات',
+  'A video from someone you’re not connected with. Tap to see it.':
+    'فيديو من شخص لا تربطك به صلة. اضغط لرؤيته.',
+  'A video from someone you’re not connected with. Accept to see it.':
+    'فيديو من شخص لا تربطك به صلة. اقبل الطلب لرؤيته.',
 };

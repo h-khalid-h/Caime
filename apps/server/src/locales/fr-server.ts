@@ -1563,4 +1563,8 @@ export const frServer: Catalog = {
     'Une réponse privée s’écrit dans une conversation à deux.',
   'That message can’t be answered privately here.':
     'Ce message ne peut pas recevoir de réponse privée ici.',
+  'That video couldn’t be read, so it wasn’t sent. Try another.':
+    'Cette vidéo n’a pas pu être lue, elle n’a donc pas été envoyée. Essayez-en une autre.',
+  'That recording couldn’t be read, so it wasn’t sent. Try another.':
+    'Cet enregistrement n’a pas pu être lu, il n’a donc pas été envoyé. Essayez-en un autre.',
 };

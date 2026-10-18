@@ -1055,7 +1055,10 @@ export async function sendMessage(
   // what a voice note carries is bounded. A card's is built below from its fields.
   if (!opts.serverPayload && !opts.trusted) {
     if (body.kind === 'voice') payload = parse(VoicePayload, body.payload ?? {});
-    else if (body.kind === 'media' || body.kind === 'file') payload = {};
+    else if (body.kind === 'media')
+      // A message of videos alone says so, from the files themselves (M16 E4b).
+      payload = files.length > 0 && files.every((f) => f.kind === 'video') ? { video: true } : {};
+    else if (body.kind === 'file') payload = {};
     else if (body.kind === 'sticker') payload = parse(StickerPayload, body.payload);
     else if (body.kind === 'contact') payload = parse(ContactPayload, body.payload);
     else if (body.kind === 'poll') payload = parse(PollPayload, body.payload);

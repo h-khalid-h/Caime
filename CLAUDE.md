@@ -1880,7 +1880,15 @@ appointment from a catalog).
   becomes a JPEG where the device reads one (`needsJpeg`; an iPhone's picker hands over JPEG,
   `Compatible`), and a shrink that fails sends the original. A HEIC that reaches the server has
   its Exif and XMP items zeroed in place (`stripHeifDetails`, `lib/heif.ts`: the server reads no
-  HEVC; an unreadable container is refused), so no photo keeps where it was taken. The shrinking itself (`photoShrink.ts`,
+  HEVC; an unreadable container is refused), so no photo keeps where it was taken; an MP4, a
+  QuickTime file or an MPEG-4 recording has every `udta` and `meta` box of its movie and tracks,
+  and XMP beside it, made a zeroed `free` box of the same size (`stripVideoDetails`,
+  `lib/video-details.ts`, M16 E4b; both read boxes through `lib/boxes.ts`), so no video keeps
+  where it was filmed and every offset stays true; one that can't be read is refused. A video
+  plays in its bubble on the web (`features/media/VideoTile.web.tsx`, the browser's player by
+  byte ranges) and opens in a phone's own player (`VideoTile.tsx`, `openFile`), veiled from a
+  stranger as a photo is; a message of videos alone is marked `payload.video` by the server
+  from its files, which core `messagePreview` reads ("🎥 Video"). The shrinking itself (`photoShrink.ts`,
   `photoShrink.web.ts`) loads when there's a photo to shrink; the picker stays static, since a
   browser opens a file chooser only inside the tap. The server's own cap and metadata strip stay.
 - The characters' vector builders (`@caime/brand/characters`) load the first time a `Character`

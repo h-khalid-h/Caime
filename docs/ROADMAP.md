@@ -2721,6 +2721,24 @@ graph) and the number that will show it; one that sharpens none is hygiene and s
       says never heard), the catalogs in four languages, `e2e/voice.spec.ts` (bars kept from the
       fake microphone, a press halfway along, 1.5×, played through and back at its start), and
       the full gate.
+- [x] E4b. Videos, with no place they were filmed (2026-10-18, review §7). Photos and videos are
+      picked together; a video plays where it is in the bubble on the web (the browser's own
+      player, streamed by byte ranges, only its first frame and length loaded before it's
+      played), opens in the phone's own player there, is veiled from a stranger as a photo is,
+      and reads "🎥 Video" in Chats, notifications and quotes (the server marks a message of
+      videos alone from its files). A phone's video kept where it was filmed and the camera's
+      make in its movie box; every `udta` and `meta` box of the movie and its tracks, and XMP
+      beside it, is now a zeroed `free` box of the same size (`video-details.ts`), so nothing
+      moves and the picture and sound are untouched, and one that can't be read for certain is
+      refused, as an unreadable HEIC is. The privacy page had said HEIC photos and videos keep
+      their location; it now says what's cleaned and what's kept as sent (GIFs, WebM, other
+      files). Verified: `video-details.test.ts` (an Android and an iPhone layout cleared, the
+      movie found after the picture, XMP beside it, nothing changed where nothing is kept,
+      unsure of a file without a movie or cut short; uploaded as an MP4, a QuickTime file and a
+      recording with nothing kept, a broken one refused; a video message marked and previewed),
+      the HEIC and file tests on the shared box reader, the catalogs in four languages,
+      `e2e/chat-features.spec.ts` (a canvas recorded as WebM in the browser, sent from a phone,
+      playing for both, "🎥 Video" in Chats), and the full gate.
 - [ ] F. Mail, calendar, meetings: CC and reply-all as people on the topic; unverified mail shown
       under Notices, never dropped; a follow-up allowance to new addresses; invitations arriving
       by mail become cards; cards travel by mail; "Suggest another time" with guest invitations
@@ -4342,6 +4360,8 @@ graph) and the number that will show it; one that sharpens none is hygiene and s
   journeys, safety, reliability, performance, intelligence, mail and calendar, chat, integrations,
   business and code integrity; the matrix against WhatsApp, Signal, Slack, Calendly and Workspace;
   an age-assurance design; the integration framework mapped to the code; plan M16 (A–H).
+- 2026-10-18 — M16 E4b: videos picked with photos, played in the bubble, "🎥 Video" where they're
+  named, and every MP4, QuickTime file and recording cleared of where it was filmed.
 - 2026-10-18 — M16 E4a: voice notes with their bars (measured as recorded, pressed along, read by a
   screen reader in five-second steps), 1.5× and 2×, and every client payload kept as its kind
   reads it; the startup chunk back to 448.4 KB (the Actions row out of `__common`).

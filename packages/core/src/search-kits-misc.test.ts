@@ -5,6 +5,7 @@ import {
   formatWhen,
   initials,
   joinNames,
+  messagePreview,
   overdueAt,
   textDirection,
 } from './format';
@@ -234,6 +235,12 @@ describe('format', () => {
     expect(formatWhen('2026-09-19T15:00:00Z', now, tz)).toBe('on Sat');
     expect(formatWhen('2026-08-01T15:00:00Z', now, tz)).toBe('on Aug 1');
     expect(formatWhen('2025-08-01T15:00:00Z', now, tz)).toBe('on Aug 1, 2025');
+  });
+  it('a message of videos says it’s a video (M16 E4b)', () => {
+    const m = { kind: 'media', body: null, payload: { video: true }, deleted: false };
+    expect(messagePreview(m)).toBe('🎥 Video');
+    expect(messagePreview({ ...m, body: 'At the river' })).toBe('🎥 At the river');
+    expect(messagePreview({ ...m, payload: {} })).toBe('📷 Photo');
   });
   it('last seen, as a conversation’s head says it (M16 E3)', () => {
     expect(lastSeenLine('2026-09-23T13:59:30Z', now, tz)).toBe('Last seen just now');

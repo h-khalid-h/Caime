@@ -1495,4 +1495,8 @@ export const turkishServer: Catalog = {
   'A private reply is written in a chat between two people.':
     'Özel yanıt iki kişilik bir sohbette yazılır.',
   'That message can’t be answered privately here.': 'Bu mesaja burada özelden yanıt verilemez.',
+  'That video couldn’t be read, so it wasn’t sent. Try another.':
+    'Bu video okunamadığı için gönderilmedi. Başka bir tane deneyin.',
+  'That recording couldn’t be read, so it wasn’t sent. Try another.':
+    'Bu kayıt okunamadığı için gönderilmedi. Başka bir tane deneyin.',
 };

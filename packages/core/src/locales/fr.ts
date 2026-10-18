@@ -4653,4 +4653,10 @@ export const fr: Catalog = {
   'Forward 5 seconds': 'Avancer de 5 secondes',
   'Back 5 seconds': 'Reculer de 5 secondes',
   'Playback speed: {rate}': 'Vitesse de lecture : {rate}',
+  'Play video': 'Lire la vidéo',
+  'Photos and videos': 'Photos et vidéos',
+  'A video from someone you’re not connected with. Tap to see it.':
+    'Une vidéo d’une personne avec qui vous n’êtes pas en contact. Touchez pour la voir.',
+  'A video from someone you’re not connected with. Accept to see it.':
+    'Une vidéo d’une personne avec qui vous n’êtes pas en contact. Acceptez pour la voir.',
 };

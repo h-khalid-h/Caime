@@ -1550,4 +1550,8 @@ export const arServer: Catalog = {
   'A private reply is written in a chat between two people.':
     'يُكتب الرد الخاص في محادثة بين شخصين.',
   'That message can’t be answered privately here.': 'لا يمكن الرد على هذه الرسالة بشكل خاص هنا.',
+  'That video couldn’t be read, so it wasn’t sent. Try another.':
+    'تعذّرت قراءة هذا الفيديو، لذا لم يُرسل. جرّب فيديو آخر.',
+  'That recording couldn’t be read, so it wasn’t sent. Try another.':
+    'تعذّرت قراءة هذا التسجيل، لذا لم يُرسل. جرّب تسجيلًا آخر.',
 };

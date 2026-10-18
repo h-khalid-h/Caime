@@ -528,15 +528,20 @@ export const Composer = forwardRef<ComposerHandle, ComposerProps>(function Compo
 
   const pickPhotos = async () => {
     const res = await pickFromLibrary({
-      mediaTypes: ['images'],
+      mediaTypes: ['images', 'videos'],
       allowsMultipleSelection: true,
       selectionLimit: 10,
       quality: 0.9,
     });
     if (res.canceled) return;
-    // Shrunk on the device first (lib/photoSize.ts): a phone's photo is far bigger than shown.
+    // A photo is shrunk on the device first (lib/photoSize.ts): a phone's is far bigger than
+    // shown. A video goes as it is (M16 E4b); the server clears where it was filmed.
     await sendFiles(
-      await Promise.all(res.assets.map((a, i) => photoToUpload(a, `photo-${i + 1}.jpg`))),
+      await Promise.all(
+        res.assets.map((a, i) =>
+          photoToUpload(a, a.type === 'video' ? `video-${i + 1}.mp4` : `photo-${i + 1}.jpg`),
+        ),
+      ),
       'media',
     );
   };
@@ -952,7 +957,7 @@ export const Composer = forwardRef<ComposerHandle, ComposerProps>(function Compo
           ) : null}
           <ListRow
             icon={ImageIcon}
-            title={tr('Photos')}
+            title={tr('Photos and videos')}
             subtitle={tr('Location data is removed before anyone sees them')}
             onPress={fromSheet(() => void pickPhotos())}
             testID="attach-photos"

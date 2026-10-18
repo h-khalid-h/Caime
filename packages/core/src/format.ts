@@ -529,12 +529,18 @@ export function messagePreview(m: {
     title?: unknown;
     label?: unknown;
     live?: unknown;
+    video?: unknown;
   };
   switch (m.kind) {
     case 'text':
       return previewText(m.body ?? '');
-    case 'media':
-      return m.body ? `📷 ${previewText(m.body, 80)}` : `📷 ${tr('Photo')}`;
+    case 'media': {
+      // The server marks a message of videos alone (M16 E4b).
+      const mark = payload.video === true ? '🎥' : '📷';
+      return m.body
+        ? `${mark} ${previewText(m.body, 80)}`
+        : `${mark} ${payload.video === true ? tr('Video') : tr('Photo')}`;
+    }
     case 'file':
       return m.body ? `📎 ${previewText(m.body, 80)}` : `📎 ${tr('File')}`;
     case 'voice':

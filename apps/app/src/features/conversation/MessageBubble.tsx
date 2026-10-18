@@ -56,6 +56,8 @@ import { PollBody } from './PollBody';
 const VoiceNote = lazy(() =>
   import('@/features/voice/parts').then((m) => ({ default: m.VoiceNote })),
 );
+/** A video's player loads with the first video shown (M16 E4b). */
+const VideoTile = lazy(() => import('@/features/media/VideoTile'));
 
 export type Delivery = 'queued' | 'sending' | 'failed' | 'sent' | 'delivered' | 'read';
 
@@ -641,7 +643,9 @@ export const MessageBubble = memo(function MessageBubble({
     // Photos open full screen in Caime (R88); anything no screen can draw (a HEIC from a
     // browser that couldn't turn it into a JPEG) is a file to open, never a broken picture.
     const photos = m.files.filter(drawable);
-    const others = m.files.filter((f) => !drawable(f));
+    // A video plays where it is (M16 E4b); veiled from a stranger as a photo is.
+    const videos = m.files.filter((f) => f.kind === 'video');
+    const others = m.files.filter((f) => !drawable(f) && f.kind !== 'video');
     content = (
       <View style={{ gap: 6 }}>
         <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 4 }}>
@@ -715,6 +719,51 @@ export const MessageBubble = memo(function MessageBubble({
             );
           })}
         </View>
+        {videos.map((f) =>
+          veiled ? (
+            <Pressable
+              key={f.id}
+              accessibilityRole="button"
+              accessibilityLabel={
+                veil === 'tap'
+                  ? tr('A video from someone you’re not connected with. Tap to see it.')
+                  : tr('A video from someone you’re not connected with. Accept to see it.')
+              }
+              onPress={() => veil === 'tap' && setUnveiled(true)}
+              onLongPress={hold}
+              delayLongPress={300}
+              style={{
+                width: 240,
+                height: 135,
+                borderRadius: t.radii.sm,
+                backgroundColor: t.c.surfaceMuted,
+                alignItems: 'center',
+                justifyContent: 'center',
+              }}
+              testID="message-video-veiled"
+            >
+              <Text variant="captionStrong">
+                {veil === 'tap' ? tr('Tap to see') : tr('Accept to see')}
+              </Text>
+            </Pressable>
+          ) : (
+            <Suspense
+              key={f.id}
+              fallback={
+                <View
+                  style={{
+                    width: 240,
+                    height: 135,
+                    borderRadius: t.radii.sm,
+                    backgroundColor: t.c.surfaceMuted,
+                  }}
+                />
+              }
+            >
+              <VideoTile file={f} width={240} onHold={hold} />
+            </Suspense>
+          ),
+        )}
         {others.map((f) => (
           <FileRow key={f.id} f={f} fg={fg} meta={meta} mine={mine} onHold={hold} />
         ))}

@@ -4472,4 +4472,10 @@ export const turkish: Catalog = {
   'Forward 5 seconds': '5 saniye ileri',
   'Back 5 seconds': '5 saniye geri',
   'Playback speed: {rate}': 'Oynatma hızı: {rate}',
+  'Play video': 'Videoyu oynat',
+  'Photos and videos': 'Fotoğraflar ve videolar',
+  'A video from someone you’re not connected with. Tap to see it.':
+    'Bağlantınız olmayan birinden bir video. Görmek için dokunun.',
+  'A video from someone you’re not connected with. Accept to see it.':
+    'Bağlantınız olmayan birinden bir video. Görmek için isteği kabul edin.',
 };
