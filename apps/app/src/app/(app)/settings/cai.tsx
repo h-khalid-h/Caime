@@ -25,6 +25,7 @@ import { Group, SettingsPage } from '@/features/settings/SettingsPage';
 import { savePrefs } from '@/features/settings/savePrefs';
 import { useLanguage } from '@/lib/languageState';
 import { useNow, useUserClock } from '@/lib/time';
+import { putAnswer } from '@/state/cache';
 import { useMe } from '@/state/session';
 import { usePrefs } from '@/theme/prefs';
 import { useTheme } from '@/theme/theme';
@@ -165,7 +166,7 @@ export default function CaiSettings() {
   const forget = (kind?: CaiLearnedView['kind']) =>
     run(
       kind ?? 'all',
-      async () => qc.setQueryData(qk.cai, await endpoints.caiForget(kind)),
+      async () => putAnswer(qc, qk.cai, await endpoints.caiForget(kind)),
       tr('Forgotten.'),
     );
   const stop = (taskId: string) =>

@@ -40,6 +40,7 @@ import { handleLink } from '@/lib/config';
 import { openLink } from '@/lib/links';
 import { shareLink } from '@/lib/share';
 import { toggled } from '@/lib/toggled';
+import { putAnswer } from '@/state/cache';
 import { useSession } from '@/state/session';
 import { useTheme } from '@/theme/theme';
 import { Avatar } from '@/ui/Avatar';
@@ -195,7 +196,7 @@ export function OrgScreen({
   }, [write, book, slug, org, canWrite, qc]);
 
   const put = (o: OrgView) => {
-    qc.setQueryData(qk.org(handle), { org: o });
+    putAnswer(qc, qk.org(handle), { org: o });
     void qc.invalidateQueries({ queryKey: qk.orgs });
   };
   const reload = () => {

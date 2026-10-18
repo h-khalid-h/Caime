@@ -15,6 +15,7 @@ import { View } from 'react-native';
 import { endpoints } from '@/api/endpoints';
 import { qk } from '@/api/keys';
 import { leaveFor } from '@/lib/links';
+import { putAnswer } from '@/state/cache';
 import { useTheme } from '@/theme/theme';
 import { Button } from '@/ui/Button';
 import { Card } from '@/ui/Card';
@@ -107,7 +108,7 @@ export function OrgCheckout({ org }: { org: OrgView }) {
               loading={busy}
               onPress={() =>
                 void run(async () =>
-                  qc.setQueryData(qk.orgCheckout(org.id), await endpoints.refreshCheckout(org.id)),
+                  putAnswer(qc, qk.orgCheckout(org.id), await endpoints.refreshCheckout(org.id)),
                 )
               }
               testID="org-checkout-refresh"

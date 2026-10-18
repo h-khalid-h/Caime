@@ -14,6 +14,7 @@ import { useRef, useState } from 'react';
 import { type LayoutChangeEvent, ScrollView, View } from 'react-native';
 import { useOrg } from '@/api/hooks';
 import { qk } from '@/api/keys';
+import { putAnswer } from '@/state/cache';
 import { useTheme } from '@/theme/theme';
 import { Card } from '@/ui/Card';
 import { Back } from '@/ui/directional';
@@ -62,7 +63,7 @@ export function OrgSetupScreen({ handle }: { handle: string }) {
     if (y !== undefined) scroll.current?.scrollTo({ y: Math.max(0, y - 8), animated: true });
   };
   const put = (o: OrgView) => {
-    qc.setQueryData(qk.org(handle), { org: o });
+    putAnswer(qc, qk.org(handle), { org: o });
     void qc.invalidateQueries({ queryKey: qk.orgs });
   };
   const back = (

@@ -4,7 +4,7 @@
  */
 import type { RealtimeEvent } from '@caime/core/api';
 import { isLargeGroup } from '@caime/core/large-group';
-import type { QueryClient } from '@tanstack/react-query';
+import type { QueryClient, QueryKey } from '@tanstack/react-query';
 import { endpoints } from '@/api/endpoints';
 import { qk } from '@/api/keys';
 import { onCallEvent, onGroupCallEvent } from '@/features/calls/calls';
@@ -21,20 +21,28 @@ import {
 import { useLive } from '@/state/live';
 import { useOutbox } from '@/state/outbox';
 
-const pending = new Map<string, ReturnType<typeof setTimeout>>();
+const pending = new Map<string, { timer: ReturnType<typeof setTimeout>; ms: number }>();
 
-/** Collapse bursts: many events for one key within the window cause one refetch. */
+/**
+ * Collapse bursts: many asks for one key within the window run it once, a moment after the last.
+ * A slower ask never puts off a sooner one already waiting (a message that moves the inbox is read
+ * again within its second even when an ordinary one follows it), and a key is always the same
+ * work: an invalidation's key is its query's (M16 D3).
+ */
 function soon(key: string, fn: () => void, ms = 400): void {
-  const existing = pending.get(key);
-  if (existing) clearTimeout(existing);
-  pending.set(
-    key,
-    setTimeout(() => {
+  const waiting = pending.get(key);
+  if (waiting && waiting.ms < ms) return;
+  if (waiting) clearTimeout(waiting.timer);
+  pending.set(key, {
+    ms,
+    timer: setTimeout(() => {
       pending.delete(key);
       fn();
     }, ms),
-  );
+  });
 }
+
+const keyOf = (key: QueryKey) => JSON.stringify(key);
 
 const deliveredAcks = new Map<string, number>();
 /** Conversations this device's person left here: nothing more is said to the server about them. */
@@ -51,11 +59,16 @@ export function leftConversation(conversationId: string): void {
   deliveredAcks.delete(conversationId);
   for (const key of [
     `delivered:${conversationId}`,
-    JSON.stringify(qk.conversation(conversationId)),
-    JSON.stringify(qk.memory(conversationId)),
+    ...[
+      qk.conversation(conversationId),
+      qk.memory(conversationId),
+      qk.assets(conversationId),
+      qk.pins(conversationId),
+      qk.messages(conversationId),
+    ].map(keyOf),
   ]) {
-    const timer = pending.get(key);
-    if (timer) clearTimeout(timer);
+    const waiting = pending.get(key);
+    if (waiting) clearTimeout(waiting.timer);
     pending.delete(key);
   }
 }
@@ -76,21 +89,20 @@ function ackDelivered(conversationId: string, seq: number): void {
 }
 
 export function applyEvent(qc: QueryClient, event: RealtimeEvent, me: string): void {
-  const invalidate = (key: readonly unknown[], debounceKey = JSON.stringify(key)) =>
-    soon(debounceKey, () => void qc.invalidateQueries({ queryKey: key }));
+  /** Asked again a moment later, once however many events ask (`qk`'s keys only). */
+  const invalidate = (key: QueryKey, ms?: number) =>
+    soon(keyOf(key), () => void qc.invalidateQueries({ queryKey: key }), ms);
   // The calendar and an organization's bookings read cards: asked again, once, a moment later.
-  const calendarChanged = () =>
-    soon(
-      'calendar',
-      () => {
-        void qc.invalidateQueries({ queryKey: qk.allCalendars });
-        void qc.invalidateQueries({ queryKey: qk.allOrgCalendars });
-        void qc.invalidateQueries({ queryKey: qk.allOrgOrders });
-        void qc.invalidateQueries({ queryKey: qk.allSlots });
-        void qc.invalidateQueries({ queryKey: qk.attentionHome });
-      },
-      1200,
-    );
+  const calendarChanged = () => {
+    for (const key of [
+      qk.allCalendars,
+      qk.allOrgCalendars,
+      qk.allOrgOrders,
+      qk.allSlots,
+      qk.attentionHome,
+    ])
+      invalidate(key, 1200);
+  };
 
   switch (event.type) {
     case 'call.ringing':
@@ -98,7 +110,7 @@ export function applyEvent(qc: QueryClient, event: RealtimeEvent, me: string): v
     case 'call.signal':
       onCallEvent(event);
       // Over: it's in the call history now.
-      if (event.type === 'call.updated' && event.data.state === 'ended') invalidate(['calls']);
+      if (event.type === 'call.updated' && event.data.state === 'ended') invalidate(qk.allCalls);
       return;
     case 'devices.changed':
       // Someone's devices for private conversations changed (mine too: one of mine may be
@@ -111,7 +123,8 @@ export function applyEvent(qc: QueryClient, event: RealtimeEvent, me: string): v
     case 'groupcall.updated':
     case 'groupcall.signal':
       onGroupCallEvent(event);
-      if (event.type === 'groupcall.updated' && event.data.state === 'ended') invalidate(['calls']);
+      if (event.type === 'groupcall.updated' && event.data.state === 'ended')
+        invalidate(qk.allCalls);
       return;
     case 'message.created': {
       const m = event.data;
@@ -124,7 +137,7 @@ export function applyEvent(qc: QueryClient, event: RealtimeEvent, me: string): v
       // A group of many (M16 D2b): nobody's ticks are shown there, so nothing says it arrived,
       // and its every message is no reason for hundreds of devices to read their inboxes again.
       const crowd = item !== null && isLargeGroup(item.kind, item.memberCount);
-      if (!item) invalidate(qk.inbox, 'inbox');
+      if (!item) invalidate(qk.inbox);
       else {
         // The patch carries the row (preview, unread, order). What it can't know is a move
         // between sections, which only a message to me can make (a mention, a question or a
@@ -134,32 +147,15 @@ export function applyEvent(qc: QueryClient, event: RealtimeEvent, me: string): v
         // A crowd's patch stands until the next read.
         const asks = (m.isQuestion || m.isRequest) && (!crowd || m.replyTo?.senderId === me);
         const moves = !mine && (m.mentions.includes(me) || asks);
-        if (moves || !crowd)
-          soon(
-            'inbox',
-            () => void qc.invalidateQueries({ queryKey: qk.inbox }),
-            moves ? 1200 : 15_000,
-          );
+        if (moves || !crowd) invalidate(qk.inbox, moves ? 1200 : 15_000);
       }
       if (!mine && !crowd) ackDelivered(m.conversationId, m.seq);
       // Dates, amounts, open items and what's shared are read from messages: refresh them.
-      soon(
-        `memory:${m.conversationId}`,
-        () => {
-          void qc.invalidateQueries({ queryKey: qk.memory(m.conversationId) });
-          void qc.invalidateQueries({ queryKey: qk.assets(m.conversationId) });
-        },
-        1500,
-      );
+      invalidate(qk.memory(m.conversationId), 1500);
+      invalidate(qk.assets(m.conversationId), 1500);
       // A space shows its conversations' unread counts: refresh whichever space is on screen.
-      soon(
-        'spaces',
-        () => {
-          void qc.invalidateQueries({ queryKey: qk.spaces });
-          void qc.invalidateQueries({ queryKey: qk.allSpaces });
-        },
-        1500,
-      );
+      invalidate(qk.spaces, 1500);
+      invalidate(qk.allSpaces, 1500);
       // A dated card (a meeting, an appointment) is on the calendar (R51).
       if (m.kind === 'kit') calendarChanged();
       return;
@@ -172,8 +168,8 @@ export function applyEvent(qc: QueryClient, event: RealtimeEvent, me: string): v
       // A card that moved (a meeting accepted, cancelled) changes what's coming up.
       if (event.data.kind === 'kit') {
         const id = event.data.conversationId;
-        soon(`memory:${id}`, () => void qc.invalidateQueries({ queryKey: qk.memory(id) }), 800);
-        soon('spaces', () => void qc.invalidateQueries({ queryKey: qk.allSpaces }), 800);
+        invalidate(qk.memory(id), 800);
+        invalidate(qk.allSpaces, 800);
         calendarChanged();
       }
       return;
@@ -189,7 +185,7 @@ export function applyEvent(qc: QueryClient, event: RealtimeEvent, me: string): v
         reactions: [],
         deletedAt: new Date().toISOString(),
       }));
-      invalidate(qk.inbox, 'inbox');
+      invalidate(qk.inbox);
       // What it shared, and what was read from it, go with it; a dated card leaves the calendar.
       invalidate(qk.memory(event.data.conversationId));
       invalidate(qk.assets(event.data.conversationId));
@@ -201,7 +197,7 @@ export function applyEvent(qc: QueryClient, event: RealtimeEvent, me: string): v
       return;
     case 'message.hidden':
       removeMessage(qc, event.data.conversationId, event.data.id);
-      invalidate(qk.inbox, 'inbox');
+      invalidate(qk.inbox);
       invalidate(qk.memory(event.data.conversationId));
       invalidate(qk.assets(event.data.conversationId));
       invalidate(qk.pins(event.data.conversationId));
@@ -271,7 +267,7 @@ export function applyEvent(qc: QueryClient, event: RealtimeEvent, me: string): v
           },
         };
       });
-      if (userId === me) invalidate(qk.inbox, 'inbox');
+      if (userId === me) invalidate(qk.inbox);
       return;
     }
     case 'typing':
@@ -288,8 +284,8 @@ export function applyEvent(qc: QueryClient, event: RealtimeEvent, me: string): v
     case 'conversation.created':
     case 'conversation.updated': {
       const id = typeof event.data.conversationId === 'string' ? event.data.conversationId : null;
-      invalidate(qk.inbox, 'inbox');
-      invalidate(qk.inboxAll, 'inbox-all');
+      // The inbox's one list is under its key (`qk.inboxAll` too).
+      invalidate(qk.inbox);
       if (id) {
         invalidate(qk.conversation(id));
         invalidate(qk.memory(id));
@@ -301,49 +297,49 @@ export function applyEvent(qc: QueryClient, event: RealtimeEvent, me: string): v
     case 'connection.removed':
     case 'block.changed':
       invalidate(qk.connections);
-      invalidate(['requests'], 'requests');
-      invalidate(['person'], 'person');
-      invalidate(qk.inbox, 'inbox');
+      invalidate(qk.allRequests);
+      invalidate(qk.allPeople);
+      invalidate(qk.inbox);
       // An organization blocked or unblocked: its page, your conversation with it, and whether
       // you follow its updates change.
-      invalidate(['org'], 'org');
-      invalidate(['conversation'], 'conversation');
-      if (event.type === 'block.changed') invalidate(['updates'], 'updates');
+      invalidate(qk.allOrgs);
+      invalidate(qk.allConversationViews);
+      if (event.type === 'block.changed') invalidate(qk.allUpdates);
       return;
     case 'connection.request':
     case 'connection.request.resolved':
-      invalidate(['requests'], 'requests');
-      invalidate(['person'], 'person');
+      invalidate(qk.allRequests);
+      invalidate(qk.allPeople);
       return;
     case 'relationship.changed':
     case 'relationship.shared':
       invalidate(qk.connections);
-      invalidate(['person'], 'person');
-      invalidate(['relationship-history'], 'relationship-history');
-      invalidate(['conversation'], 'conversation');
-      invalidate(qk.inbox, 'inbox');
+      invalidate(qk.allPeople);
+      invalidate(qk.allRelationshipHistory);
+      invalidate(qk.allConversationViews);
+      invalidate(qk.inbox);
       // Which rule applies to them follows how you know them, and what Caime offered is
       // answered once you've said.
-      invalidate(['policy-for'], 'policy-for');
-      invalidate(['suggestions'], 'suggestions');
+      invalidate(qk.allPoliciesFor);
+      invalidate(qk.allSuggestions);
       return;
     case 'policies.changed':
       invalidate(qk.policies);
-      invalidate(['policy-for'], 'policy-for');
-      invalidate(qk.inbox, 'inbox');
+      invalidate(qk.allPoliciesFor);
+      invalidate(qk.inbox);
       // A person's page says what they see of you.
-      invalidate(['person'], 'person');
+      invalidate(qk.allPeople);
       return;
     case 'saved.changed':
-      invalidate(qk.saved, 'saved');
+      invalidate(qk.saved);
       return;
     case 'automations.changed':
       invalidate(qk.automations);
       // A collection an automation saves to is listed before anything is in it.
-      invalidate(qk.saved, 'saved');
+      invalidate(qk.saved);
       return;
     case 'updates.changed':
-      invalidate(['updates'], 'updates');
+      invalidate(qk.allUpdates);
       return;
     case 'apps.changed':
       // An app let in or out, an account connected (R90), the calendar feed, a listing changed or reviewed (M15): Connected,
@@ -352,62 +348,61 @@ export function applyEvent(qc: QueryClient, event: RealtimeEvent, me: string): v
       invalidate(qk.accounts);
       invalidate(qk.oauthApps);
       invalidate(qk.calendarFeed);
-      invalidate(qk.allDirectory, 'directory');
-      invalidate(qk.allOrgListings, 'org-listings');
+      invalidate(qk.allDirectory);
+      invalidate(qk.allOrgListings);
       return;
     case 'booking.changed':
       // A host's offer saved (hours, catalog, ordering, ways to be paid) on another device.
       if (event.data.orgId === null) invalidate(qk.myBooking);
       else {
-        invalidate(qk.allOrgs, 'orgs');
+        invalidate(qk.allOrgs);
         // The door's Book link follows the catalog (C2a).
-        invalidate(qk.allOrgDoors, 'org-doors');
+        invalidate(qk.allOrgDoors);
       }
-      invalidate(qk.allSlots, 'slots');
+      invalidate(qk.allSlots);
       return;
     case 'invites.changed':
       // Asked into a group or a space, or an invitation answered on another device (M16 B4):
       // Attention carries them.
-      invalidate(qk.attentionHome, 'attention-home');
+      invalidate(qk.attentionHome);
       return;
     case 'join.asked':
       // Someone asked through a link to a place this person runs, or an ask was answered on
       // another device (C3h): who waits, and how many each link let in, read again.
-      invalidate(qk.allJoinRequests, 'join-requests');
-      invalidate(qk.allJoinLinks, 'join-links');
+      invalidate(qk.allJoinRequests);
+      invalidate(qk.allJoinLinks);
       return;
     case 'suggestion.created':
     case 'suggestion.resolved':
-      invalidate(['suggestions'], 'suggestions');
+      invalidate(qk.allSuggestions);
       return;
     case 'space.updated': {
       const id = typeof event.data.spaceId === 'string' ? event.data.spaceId : null;
-      invalidate(qk.spaces, 'spaces');
-      if (id) invalidate(qk.space(id), `space:${id}`);
+      invalidate(qk.spaces);
+      if (id) invalidate(qk.space(id));
       return;
     }
     case 'space.removed': {
       const id = typeof event.data.spaceId === 'string' ? event.data.spaceId : null;
       if (id) qc.removeQueries({ queryKey: qk.space(id) });
-      invalidate(qk.spaces, 'spaces');
-      invalidate(qk.inbox, 'inbox');
-      invalidate(qk.inboxAll, 'inbox-all');
+      invalidate(qk.spaces);
+      invalidate(qk.inbox);
       return;
     }
     case 'task.created':
     case 'task.updated':
     case 'task.deleted':
-      invalidate(['tasks'], 'tasks');
-      invalidate(qk.attentionHome, 'attention-home');
+      invalidate(qk.allTasks);
+      invalidate(qk.attentionHome);
       // The open conversation's line above the composer counts its actions (R66).
-      invalidate(qk.allConversationViews, 'conversation-views');
-      invalidate(['memory'], 'memory');
-      invalidate(qk.inbox, 'inbox');
+      invalidate(qk.allConversationViews);
+      invalidate(qk.allMemory);
+      invalidate(qk.inbox);
       return;
     case 'decision.created':
     case 'decision.updated':
-      invalidate(['decisions'], 'decisions');
-      invalidate(['memory'], 'memory');
+      invalidate(qk.allDecisions);
+      invalidate(qk.allMemory);
       return;
     case 'notifications.read': {
       invalidate(qk.notifications);
@@ -430,8 +425,8 @@ export function applyEvent(qc: QueryClient, event: RealtimeEvent, me: string): v
     case 'business.updated': {
       // A thread moved (a customer wrote, someone took it, it was resolved): the team's views.
       const id = typeof event.data.threadId === 'string' ? event.data.threadId : null;
-      invalidate(['org-inbox'], 'org-inbox');
-      invalidate(qk.businessSummary, 'business-summary');
+      invalidate(qk.allOrgInboxes);
+      invalidate(qk.businessSummary);
       if (id) invalidate(qk.conversation(id));
       else {
         // No thread: the team itself changed (someone joined, through an invite too, or left):

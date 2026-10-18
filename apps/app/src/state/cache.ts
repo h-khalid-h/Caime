@@ -30,6 +30,24 @@ export function patchCache<T>(
     void qc.invalidateQueries({ queryKey: key, exact: true, refetchType: 'none' });
 }
 
+/** `patchCache` over every query under a prefix (each list of actions, each conversation's memory). */
+export function patchCaches<T>(
+  qc: QueryClient,
+  prefix: QueryKey,
+  updater: (data: T | undefined) => T | undefined,
+): void {
+  for (const [key] of qc.getQueriesData<T>({ queryKey: prefix })) patchCache<T>(qc, key, updater);
+}
+
+/**
+ * The server's own answer to what this device just asked (the organization saved, the session
+ * made): fresh as of now, so it's kept as fetched. A change worked out on the device, live or
+ * optimistic, is `patchCache`'s; nothing writes the cache past these two (M16 D3).
+ */
+export function putAnswer<T>(qc: QueryClient, key: QueryKey, answer: T): void {
+  qc.setQueryData<T>(key, answer);
+}
+
 const bySeq = (a: MessageView, b: MessageView) => a.seq - b.seq;
 
 /** Oldest first, across every loaded page (page 0 is the newest chunk). */

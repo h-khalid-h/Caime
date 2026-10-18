@@ -269,10 +269,16 @@ appointment from a catalog).
   down on, so a layout that changes when the pointer arrives makes the first press on anything
   inside it miss (the voice note's play button found this; the fix is in `MessageBubble`).
 - Hold the socket in E2E with `page.routeWebSocket` to test what happens before it connects.
-- Write live changes into the query cache with `patchCache` (`state/cache.ts`), never a bare
-  `setQueryData`: a bare write marks the data fresh, and a restored copy then never refetches.
+- Write a change worked out on the device (live or optimistic) into the query cache with
+  `patchCache` (`state/cache.ts`; `patchCaches` for every query under a prefix), and the server's
+  own answer to what the device asked with `putAnswer`, never a bare `setQueryData`: a bare write
+  marks the data fresh, and a restored copy then never refetches (`keys.test.ts` fails on one).
   Every query key is `qk`'s (`api/keys.ts`; a prefix for a kind is `qk.allTasks` and friends),
-  never an array written where it's used: `keys.test.ts` fails on one. Anything that floats
+  never an array written where it's used: `keys.test.ts` fails on one, in an invalidation too.
+  `realtime/apply.ts` asks again by those keys alone, each debounced under its own query key, so
+  a key is always one piece of work, and a slower ask never puts off a sooner one waiting
+  (`apply.test.ts`); a prefix already covers what's under it (`qk.inbox` is the inbox's one list),
+  so an event never invalidates both, which would send a second request that cancels the first. Anything that floats
   over the page casts the theme's shadow through `lifted(t.c.shadow, y, blur)` (`ui/shadow.ts`),
   never a `shadowColor` of its own.
 - A sheet whose content depends on the state that closes it should keep the last content while

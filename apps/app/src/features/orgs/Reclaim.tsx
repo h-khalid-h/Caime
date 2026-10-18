@@ -11,6 +11,7 @@ import { useState } from 'react';
 import { View } from 'react-native';
 import { endpoints } from '@/api/endpoints';
 import { qk } from '@/api/keys';
+import { putAnswer } from '@/state/cache';
 import { Button } from '@/ui/Button';
 import { Card } from '@/ui/Card';
 import { CopyRow } from '@/ui/CopyRow';
@@ -64,7 +65,7 @@ export function ReclaimCard({ closed }: { closed: ClosedOrgView }) {
               onPress={() =>
                 void run(async () => {
                   const { org } = await endpoints.checkReclaim(closed.id);
-                  qc.setQueryData(qk.org(org.handle), { org });
+                  putAnswer(qc, qk.org(org.handle), { org });
                   void qc.invalidateQueries({ queryKey: qk.orgs });
                   toast(tr('{name} is yours again', { name: org.name }));
                   router.replace({ pathname: '/o/[handle]', params: { handle: org.handle } });

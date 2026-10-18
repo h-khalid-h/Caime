@@ -15,6 +15,7 @@ import { endpoints } from '@/api/endpoints';
 import { qk } from '@/api/keys';
 import { queryClient } from '@/api/queryClient';
 import { toast } from '@/ui/Toast';
+import { patchCaches } from './cache';
 
 export interface NewTask {
   title: string;
@@ -167,10 +168,10 @@ function showStatus(taskId: string, status: 'open' | 'done'): void {
         ? { ...t, status, completedAt: status === 'done' ? new Date().toISOString() : null }
         : t,
     );
-  queryClient.setQueriesData<TasksResponse>({ queryKey: qk.allTasks }, (data) =>
+  patchCaches<TasksResponse>(queryClient, qk.allTasks, (data) =>
     data?.tasks.some((t) => t.id === taskId) ? { ...data, tasks: change(data.tasks) } : data,
   );
-  queryClient.setQueriesData<MemoryView>({ queryKey: qk.allMemory }, (data) =>
+  patchCaches<MemoryView>(queryClient, qk.allMemory, (data) =>
     data?.openItems.some((t) => t.id === taskId)
       ? { ...data, openItems: change(data.openItems) }
       : data,

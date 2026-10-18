@@ -4525,4 +4525,5 @@ export const fr: Catalog = {
     'Votre vérification arrive. Elle s’affichera ici dans un instant.',
   'A big group: only what’s for you alerts you':
     'Un grand groupe : seul ce qui vous concerne vous alerte',
+  '{length} undone': '{length} annulées',
 };

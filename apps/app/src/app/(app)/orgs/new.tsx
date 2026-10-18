@@ -13,6 +13,7 @@ import { qk } from '@/api/keys';
 import { CountryField } from '@/features/geo/CountryField';
 import { ORG_ICONS } from '@/features/orgs/kinds';
 import { ReclaimCard } from '@/features/orgs/Reclaim';
+import { putAnswer } from '@/state/cache';
 import { useMe } from '@/state/session';
 import { Button } from '@/ui/Button';
 import { ChoiceChips } from '@/ui/Chip';
@@ -114,7 +115,7 @@ export default function NewOrganization() {
         ...(about.trim() ? { about: about.trim() } : {}),
         ...(website.trim() ? { website: website.trim() } : {}),
       });
-      qc.setQueryData(qk.org(org.handle), { org });
+      putAnswer(qc, qk.org(org.handle), { org });
       void qc.invalidateQueries({ queryKey: qk.orgs });
       router.replace({ pathname: '/o/[handle]', params: { handle: org.handle } });
     } catch (e) {

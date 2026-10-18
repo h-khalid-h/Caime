@@ -20,6 +20,7 @@ import { qk } from '@/api/keys';
 import { AutomationSheet } from '@/features/settings/AutomationSheet';
 import { RuleFor } from '@/features/settings/RuleFor';
 import { Group, SettingsPage } from '@/features/settings/SettingsPage';
+import { patchCache } from '@/state/cache';
 import { useMe } from '@/state/session';
 import { useTheme } from '@/theme/theme';
 import { Button } from '@/ui/Button';
@@ -75,7 +76,7 @@ function AutomationRow({ a, onOpen }: { a: AutomationView; onOpen: () => void })
   // As it's saved, here or on another device; turned here, it shows at once.
   const flip = async (enabled: boolean) => {
     const show = (on: boolean) =>
-      qc.setQueryData<{ automations: AutomationView[] }>(qk.automations, (old) =>
+      patchCache<{ automations: AutomationView[] }>(qc, qk.automations, (old) =>
         old
           ? {
               ...old,

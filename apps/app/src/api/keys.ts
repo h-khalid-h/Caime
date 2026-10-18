@@ -160,4 +160,9 @@ export const qk = {
   allOrgOrders: ['org-orders'] as const,
   allSlots: ['slots'] as const,
   allPoliciesFor: ['policy-for'] as const,
+  /** Every list of calls (an ended call is in each of them). */
+  allCalls: ['calls'] as const,
+  /** Requests both ways. */
+  allRequests: ['requests'] as const,
+  allRelationshipHistory: ['relationship-history'] as const,
 };

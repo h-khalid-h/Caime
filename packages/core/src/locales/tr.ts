@@ -4345,4 +4345,5 @@ export const turkish: Catalog = {
     'Doğrulamanız yolda. Birazdan burada görünür.',
   'A big group: only what’s for you alerts you':
     'Büyük bir grup: yalnızca sizinle ilgili olanlar uyarı verir',
+  '{length} undone': '{length} geri alındı',
 };

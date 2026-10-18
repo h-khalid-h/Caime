@@ -24,6 +24,7 @@ import { readToken, writeToken } from '@/lib/secure';
 import { realtime } from '@/realtime/client';
 import { prefsPending } from '@/state/prefsPending';
 import { DEFAULT_PREFS, usePrefs } from '@/theme/prefs';
+import { patchCache, putAnswer } from './cache';
 import { useDrafts } from './drafts';
 import { keepUser, keptId, keptUser } from './kept';
 import { useLive } from './live';
@@ -97,9 +98,10 @@ export const useSession = create<SessionState>((set, get) => ({
       return;
     }
     if (user) {
-      // Render now; confirm in the background.
+      // Render now; confirm in the background (the copy kept on the device is no fresher than
+      // the rest of the restored cache).
       set({ status: 'signedIn', user });
-      queryClient.setQueryData(qk.me, { user });
+      patchCache(queryClient, qk.me, () => ({ user }));
       realtime.start(user.id);
       void get().refresh();
       return;
@@ -112,7 +114,7 @@ export const useSession = create<SessionState>((set, get) => ({
       }
       await remember(res.user);
       adoptPreferences(res.user);
-      queryClient.setQueryData(qk.me, { user: res.user });
+      putAnswer(queryClient, qk.me, { user: res.user });
       set({ status: 'signedIn', user: res.user });
       realtime.start(res.user.id);
     } catch {
@@ -127,7 +129,7 @@ export const useSession = create<SessionState>((set, get) => ({
     }
     await remember(res.user);
     adoptPreferences(res.user);
-    queryClient.setQueryData(qk.me, { user: res.user });
+    putAnswer(queryClient, qk.me, { user: res.user });
     set({
       status: 'signedIn',
       user: res.user,
@@ -138,7 +140,7 @@ export const useSession = create<SessionState>((set, get) => ({
 
   setUser: (user) => {
     set({ user });
-    queryClient.setQueryData(qk.me, { user });
+    putAnswer(queryClient, qk.me, { user });
     void remember(user);
   },
 

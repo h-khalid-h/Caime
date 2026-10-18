@@ -11,6 +11,7 @@ import { qk } from '@/api/keys';
 import { OrgMark } from '@/features/orgs/kinds';
 import { SPACE_ICONS } from '@/features/spaces/kinds';
 import { toggled } from '@/lib/toggled';
+import { putAnswer } from '@/state/cache';
 import { useSession } from '@/state/session';
 import { Button } from '@/ui/Button';
 import { ChoiceChips } from '@/ui/Chip';
@@ -76,7 +77,7 @@ export default function NewSpace() {
         memberIds: [...picked],
         ...(org ? { orgId: org.id } : {}),
       });
-      qc.setQueryData(qk.space(space.id), { space });
+      putAnswer(qc, qk.space(space.id), { space });
       void qc.invalidateQueries({ queryKey: qk.spaces });
       if (org) void qc.invalidateQueries({ queryKey: qk.orgSpaces(org.id) });
       // Whoever says to be asked first comes in by saying yes (M16 B4).

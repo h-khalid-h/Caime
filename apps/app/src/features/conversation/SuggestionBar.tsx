@@ -14,6 +14,7 @@ import { endpoints } from '@/api/endpoints';
 import { useSuggestions } from '@/api/hooks';
 import { qk } from '@/api/keys';
 import { useUserClock } from '@/lib/time';
+import { patchCache } from '@/state/cache';
 import { useTheme } from '@/theme/theme';
 import { Button } from '@/ui/Button';
 import { Pressable } from '@/ui/Pressable';
@@ -83,6 +84,30 @@ export function SuggestionBar({ conversationId }: { conversationId: string }) {
     void qc.invalidateQueries({ queryKey: qk.memory(conversationId) });
     void qc.invalidateQueries({ queryKey: qk.inbox });
   };
+  /** Why something couldn't be done, as the server or the client said it. */
+  const why = (e: unknown) => (e instanceof Error ? e.message : tr('One step couldn’t be done.'));
+  /**
+   * Takes back what "Do all" made (M16 D3): what couldn't be (changed since, or no network) says
+   * why, and only what was taken back is counted.
+   */
+  const undoAll = async (ids: string[], kept: number) => {
+    const settled = await Promise.allSettled(ids.map((id) => endpoints.undoSuggestion(id)));
+    const refused = settled.flatMap((r) => (r.status === 'rejected' ? [r.reason] : []));
+    const undone = ids.length - refused.length;
+    if (undone)
+      toast(
+        kept
+          ? tr('{length} undone; {a}', {
+              length: undone,
+              a: trn(kept, 'a decision stays', '{n} decisions stay'),
+            })
+          : refused.length
+            ? tr('{length} undone', { length: undone })
+            : tr('Undone'),
+      );
+    if (refused.length) toast(why(refused[0]), { tone: 'danger' });
+    refresh();
+  };
   const accept = async () => {
     setBusy(true);
     try {
@@ -112,23 +137,10 @@ export function SuggestionBar({ conversationId }: { conversationId: string }) {
       const kept = done.length - undoable.length;
       if (done.length)
         toast(tr('{length} done', { length: done.length }), {
-          action: {
-            label: tr('Undo'),
-            onPress: () => {
-              void Promise.all(undoable.map((id) => endpoints.undoSuggestion(id).catch(() => {})))
-                .then(() => {
-                  toast(
-                    kept
-                      ? tr('{length} undone; {a}', {
-                          length: undoable.length,
-                          a: trn(kept, 'a decision stays', '{n} decisions stay'),
-                        })
-                      : tr('Undone'),
-                  );
-                })
-                .finally(refresh);
-            },
-          },
+          // Decisions stay, as ones recorded by hand do: Undo is offered for what it can take back.
+          action: undoable.length
+            ? { label: tr('Undo'), onPress: () => void undoAll(undoable, kept) }
+            : undefined,
         });
       if (failed) toast(failed.error ?? tr('One step couldn’t be done.'), { tone: 'danger' });
       const opened = done.find((r) => r.accepted?.type === 'conversation');
@@ -143,12 +155,13 @@ export function SuggestionBar({ conversationId }: { conversationId: string }) {
   };
   const dismissAll = async () => {
     const ids = new Set(list.map((x) => x.id));
-    qc.setQueryData(
-      qk.suggestions(conversationId),
-      (d: { suggestions: SuggestionView[] } | undefined) =>
-        d ? { suggestions: d.suggestions.filter((x) => !ids.has(x.id)) } : d,
+    patchCache<{ suggestions: SuggestionView[] }>(qc, qk.suggestions(conversationId), (d) =>
+      d ? { suggestions: d.suggestions.filter((x) => !ids.has(x.id)) } : d,
     );
-    await Promise.all(list.map((x) => endpoints.dismissSuggestion(x.id).catch(() => {})));
+    const settled = await Promise.allSettled(list.map((x) => endpoints.dismissSuggestion(x.id)));
+    // What couldn't be put away comes back with the refresh, and says why.
+    const refused = settled.find((r) => r.status === 'rejected');
+    if (refused) toast(why(refused.reason), { tone: 'danger' });
     refresh();
   };
   const label = list.some((x) => x.payload.source === 'ai') ? tr(AI_LABEL) : tr('Suggestions');
@@ -230,12 +243,15 @@ export function SuggestionBar({ conversationId }: { conversationId: string }) {
       </>
     );
   const dismiss = async () => {
-    qc.setQueryData(
-      qk.suggestions(conversationId),
-      (d: { suggestions: SuggestionView[] } | undefined) =>
-        d ? { suggestions: d.suggestions.filter((x) => x.id !== s.id) } : d,
+    patchCache<{ suggestions: SuggestionView[] }>(qc, qk.suggestions(conversationId), (d) =>
+      d ? { suggestions: d.suggestions.filter((x) => x.id !== s.id) } : d,
     );
-    await endpoints.dismissSuggestion(s.id).catch(() => {});
+    try {
+      await endpoints.dismissSuggestion(s.id);
+    } catch (e) {
+      // It comes back with the refresh, and says why.
+      toast(why(e), { tone: 'danger' });
+    }
     refresh();
   };
   const oneLabel = s.payload.source === 'ai' ? tr(AI_LABEL) : tr('Suggestion');

@@ -2527,6 +2527,25 @@ graph) and the number that will show it; one that sharpens none is hygiene and s
       themselves. Verified: `transcript.test.ts`, `system-accounts.test.ts` (a PIN deleted for
       oneself never reaches the model), core `meetings.test.ts` (when a card ends),
       `about.test.ts` (the address without its slash), and the full gate.
+- [x] D3b. Live events by their keys (2026-10-18, review §10): `realtime/apply.ts` asks again
+      only by `qk`'s keys, where 23 were written by hand (calls, requests and relationship history
+      given prefixes of their own), each debounced under its query's own key, so a key is always
+      one piece of work: a card's update had replaced a message's waiting refresh of what the
+      conversation shares, and a space's update the refresh of the space on screen. A slower ask
+      never puts off a sooner one, where a mention followed within a second by an ordinary message
+      had its inbox read put off by a quarter-minute. A conversation made or changed, and a space
+      removed, read the inbox once where they read it twice (the second invalidation of the same
+      list cancelled the first's request and sent another), and leaving a conversation drops
+      every refresh waiting for it. The cache is written only through `state/cache.ts`: a change
+      worked out on the device (an action ticked, an automation switched, a suggestion put away,
+      the account kept on the device) through `patchCache` or `patchCaches`, the server's answer
+      through `putAnswer`, and `keys.test.ts` fails on a bare `setQueryData` or on a key written by
+      hand. "Do all"'s Undo counts only what it took back and says why one couldn't be, where it
+      said "Undone" whatever happened, and is offered only when there's something to take back;
+      putting suggestions away says so when it fails. Verified: `apply.test.ts` (a burst read once,
+      a sooner read never put off, nothing said of a crowd's messages, a conversation left
+      forgotten, a connection's and a card's refreshes by `qk`'s keys), `keys.test.ts`, and the
+      full gate.
 - [ ] E. Chat polish: distinct read ticks with a contrast test; the English leaks and a scanner
       that flags any word-bearing literal; quoted replies with the author and a jump, swipe to
       reply; message info and who reacted; video as a message, voice notes with a waveform, speed
@@ -4155,6 +4174,9 @@ graph) and the number that will show it; one that sharpens none is hygiene and s
   journeys, safety, reliability, performance, intelligence, mail and calendar, chat, integrations,
   business and code integrity; the matrix against WhatsApp, Signal, Slack, Calendly and Workspace;
   an age-assurance design; the integration framework mapped to the code; plan M16 (A–H).
+- 2026-10-18 — M16 D3b: live events refresh by `qk`'s keys alone, a sooner refresh never put off,
+  the inbox read once per change where it was read twice; the cache written only through its two
+  helpers; "Do all"'s Undo honest about what it couldn't take back.
 - 2026-10-18 — M16 D3a: one rule for what a person may read of a conversation (Cai's model no
   longer reads what someone deleted for themselves), one transcript, one end for a card, words cut
   by character, LIKE escaped, the public address trimmed once. D2b verified on cai.me.

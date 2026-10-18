@@ -9,6 +9,7 @@ import { endpoints } from '@/api/endpoints';
 import { useMyBooking } from '@/api/hooks';
 import { qk } from '@/api/keys';
 import { SettingsPage } from '@/features/settings/SettingsPage';
+import { putAnswer } from '@/state/cache';
 import { useMe } from '@/state/session';
 import { lazyPart } from '@/ui/Lazy';
 import { SkeletonRows } from '@/ui/Skeleton';
@@ -43,7 +44,7 @@ export function MyBookings() {
             offer={q.data}
             save={async (next) => {
               const saved = await endpoints.setMyBooking(next);
-              qc.setQueryData(qk.myBooking, saved);
+              putAnswer(qc, qk.myBooking, saved);
               void qc.invalidateQueries({ queryKey: qk.me });
               void qc.invalidateQueries({ queryKey: qk.allSlots });
             }}
