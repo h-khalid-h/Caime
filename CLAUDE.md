@@ -931,7 +931,18 @@ appointment from a catalog).
   `orgsOf`), and nothing is written as it or to it (`sendMessage` and
   `startCustomerConversation` answer `409 org_suspended`, the agent stays quiet, no update is
   posted or told, `resolveApiToken` refuses its apps): a new way to show an organization or to
-  write as one checks it too.
+  write as one checks it too. A visitor's report (M16 B6, `lib/visitor-reports.ts`,
+  `modules/public-report.ts`) is the visitor-page shape: `reportSection` (`page-parts.ts`) at the
+  end of a person's, an organization's, an item's and a collection's page (`publicPageFor` gives
+  those the `report` state), a form to `POST /v1/public/report` naming the page by its own fields
+  (`visitorReportTarget`), a redirect back (`?reported=1`, `?report-error=`); the report reasons
+  are core's `REPORT_REASON_CHOICES`, the app's sheet's too. A suspended account is refused by
+  `suspendedRefusal` (`lib/suspension.ts`) on every way in, with its reason and, after a proof
+  (the password, a passkey), a sealed claim that opens `POST /suspension/appeal` and
+  `/suspension/export` and nothing else; a new way in throws the same refusal, and nothing makes a
+  session for a suspended account. An appeal is decided by `decideAppeal`, the lift in its
+  transaction. What waits on the operator is counted at scrape (`caime_moderation_waiting`): a new
+  queue for the operator joins it.
 - Anything that writes into a conversation (send, edit, react, vote, move a card, type) calls
   `assertCanWrite` (`apps/server/src/lib/blocks.ts`) first: blocks between people and a
   customer's block of an organization both stop at it. New write routes do the same, with a

@@ -44,9 +44,10 @@ import {
   takeChallenge,
 } from '../lib/passkeys';
 import { clientInfo, createSession, passwordTry } from '../lib/sessions';
+import { suspendedRefusal } from '../lib/suspension';
 import { meView } from '../lib/users';
 import { parse } from '../lib/validate';
-import { requireAuth, suspended } from '../plugins/auth';
+import { requireAuth } from '../plugins/auth';
 
 const tooLate = () =>
   new AppError(400, 'passkey_failed', tr('That took too long. Try your passkey again.'));
@@ -221,6 +222,7 @@ export async function passkeyRoutes(app: FastifyInstance, ctx: AppContext) {
               'u.kind',
               'u.deleted_at',
               'u.suspended_at',
+              'u.suspended_reason',
             ])
             .where('p.id', '=', response.id)
             .executeTakeFirst()
@@ -256,7 +258,12 @@ export async function passkeyRoutes(app: FastifyInstance, ctx: AppContext) {
     if (!checked?.verified) throw await refused();
     // Once only: the same answer sent again (or twice at once) finds its challenge spent.
     if (!(await spendSigninChallenge(ctx, challenge, issued))) throw tooLate();
-    if (found.suspended_at) throw suspended();
+    if (found.suspended_at)
+      throw await suspendedRefusal(
+        ctx,
+        { id: found.user_id, suspended_reason: found.suspended_reason },
+        true,
+      );
     await ctx.db
       .updateTable('passkeys')
       .set({

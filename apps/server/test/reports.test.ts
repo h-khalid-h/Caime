@@ -232,8 +232,9 @@ describe('reports that hold up (M16 B3)', () => {
     const done = await op('POST', `/v1/admin/reports/${report.id}/suspend-org`);
     expect(done.statusCode).toBe(200);
     expect(done.json().report).toMatchObject({ status: 'actioned', org: { suspended: true } });
+    // Said as what the report was for, in words its team reads (M16 B6), never a report's id.
     expect((await noor.get(`/v1/orgs/${org.id}`)).org.suspension.reason).toBe(
-      `Report ${report.id}: scam`,
+      'Reported for: A scam. Caime looked and upheld the report.',
     );
     // A report about a person names no organization to suspend.
     await noor.post('/v1/reports', { userId: sam.user.id, reason: 'spam' });

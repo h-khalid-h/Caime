@@ -14,7 +14,7 @@ export interface Mail {
   subject: string;
   text: string;
   /** What kind of mail, for the log: never the subject, which carries a code. */
-  kind?: 'verification' | 'reset' | 'invitation' | 'address' | 'booking';
+  kind?: 'verification' | 'reset' | 'invitation' | 'address' | 'booking' | 'report' | 'appeal';
   /** A calendar invitation (R84), sent as its own part so mail apps offer Accept and Decline. */
   icalEvent?: { method: 'REQUEST' | 'CANCEL'; content: string };
   /** Who it's from when not `EMAIL_FROM`: Cai's own address, for a meeting's invitations (R86). */
@@ -113,6 +113,82 @@ export function resetMail(to: string, name: string, link: string): Mail {
       "If it wasn't, ignore this: your password stays as it is, and the link dies on its own.",
       '',
       'Caime',
+    ].join('\n'),
+  };
+}
+
+/**
+ * A visitor's report received (M16 B6, the DSA's Art. 16(4)): what they reported and that someone
+ * reads it; the decision follows by `visitorReportDecisionMail`.
+ */
+export function visitorReportReceiptMail(to: string, name: string | null, page: string): Mail {
+  return {
+    to,
+    kind: 'report',
+    subject: 'We received your report',
+    text: [
+      name ? `Hi ${name},` : 'Hi,',
+      '',
+      `Thanks for telling us about ${page}.`,
+      '',
+      'Someone at Caime reads every report. We will write to you at this address when we have',
+      'decided what to do about it.',
+      '',
+      'Caime',
+    ].join('\n'),
+  };
+}
+
+/** What became of a visitor's report (M16 B6, Art. 16(5)), and how to say it was wrong. */
+export function visitorReportDecisionMail(
+  to: string,
+  name: string | null,
+  page: string,
+  acted: boolean,
+): Mail {
+  return {
+    to,
+    kind: 'report',
+    subject: 'About your report',
+    text: [
+      name ? `Hi ${name},` : 'Hi,',
+      '',
+      `We looked at what you reported on ${page}.`,
+      '',
+      acted
+        ? 'We acted on it. We do not say what was done, to protect everyone involved.'
+        : 'We decided not to act on it: as we read it, it does not break the rules people agree to on Caime.',
+      '',
+      'If you think we got it wrong, reply to this email and say why: someone else will look again.',
+      '',
+      'Caime',
+    ].join('\n'),
+  };
+}
+
+/** An appeal decided (M16 B6, Art. 20): lifted, or upheld with the operator's note. */
+export function appealDecisionMail(
+  to: string,
+  name: string,
+  lifted: boolean,
+  note: string | null,
+): Mail {
+  return {
+    to,
+    kind: 'appeal',
+    subject: lifted ? 'Your Caime account is back' : 'About your appeal',
+    text: [
+      `Hi ${name},`,
+      '',
+      lifted
+        ? 'We looked at your appeal and lifted the suspension: you can sign in again.'
+        : 'We looked at your appeal and the suspension stands.',
+      ...(note ? ['', note] : []),
+      '',
+      lifted
+        ? 'Caime'
+        : 'You can still download your data from the sign-in screen. If you disagree, you may also take it to a certified out-of-court dispute settlement body, or to a court.',
+      ...(lifted ? [] : ['', 'Caime']),
     ].join('\n'),
   };
 }

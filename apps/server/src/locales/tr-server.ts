@@ -1474,4 +1474,26 @@ export const turkishServer: Catalog = {
   'That invitation isn’t open any more.': 'Bu davet artık açık değil.',
   'That’s {n} message requests today. Try again tomorrow, or connect with them first.':
     'Bugün {n} mesaj isteği oldu. Yarın yeniden deneyin ya da önce bağlantı kurun.',
+  'This account is suspended. You can appeal, and download your data.':
+    'Bu hesap askıya alındı. İtiraz edebilir ve verilerinizi indirebilirsiniz.',
+  'That took too long, or the account isn’t suspended any more. Sign in again.':
+    'Bu çok uzun sürdü ya da hesap artık askıda değil. Yeniden oturum açın.',
+  'Too many reports from here just now. Try again in an hour.':
+    'Az önce buradan çok fazla bildirim geldi. Bir saat sonra yeniden deneyin.',
+  'Give your name and an email address we can write to (not needed for a child’s safety).':
+    'Adınızı ve size yazabileceğimiz bir e-posta adresini girin (bir çocuğun güvenliği için gerekmez).',
+  'Say what’s wrong in a few words.': 'Sorunu birkaç kelimeyle anlatın.',
+  'Tick the box to say what you wrote is accurate.':
+    'Yazdıklarınızın doğru olduğunu belirtmek için kutuyu işaretleyin.',
+  'Thanks. Someone at Caime reads every report; if you left your email, we’ll write to you there when it’s decided.':
+    'Teşekkürler. Caime’de her bildirimi biri okur; e-postanızı bıraktıysanız karar verildiğinde size oradan yazacağız.',
+  'What you saw': 'Gördüğünüz',
+  'I believe what I wrote here is accurate and complete.':
+    'Burada yazdıklarımın doğru ve eksiksiz olduğuna inanıyorum.',
+  'Send the report': 'Bildirimi gönder',
+  'Your name and email are needed, unless it’s about a child’s safety. Caime writes to you when it has decided.':
+    'Bir çocuğun güvenliğiyle ilgili değilse adınız ve e-postanız gerekir. Caime karar verdiğinde size yazar.',
+  'Report this page': 'Bu sayfayı bildir',
+  'That appeal': 'Bu itiraz',
+  'That appeal was decided already.': 'Bu itiraz zaten karara bağlandı.',
 };

@@ -1833,6 +1833,11 @@ export interface ReportView {
   details: string | null;
   createdAt: string;
   reporter: { id: string; handle: string; displayName: string } | null;
+  /**
+   * A visitor's report from a page (M16 B6): who wrote it without an account and where they're
+   * told of the decision (both may be null for a child's safety), and the page it came from.
+   */
+  visitor: { name: string | null; email: string | null; page: string | null } | null;
   person: { id: string; handle: string; displayName: string; suspended: boolean } | null;
   org: { id: string; handle: string; name: string; suspended: boolean } | null;
   /** When it was actioned or dismissed; its evidence is kept a while after (M16 B3). */
@@ -3293,6 +3298,38 @@ export interface DeviceRemovedResponse {
 
 export interface ReportsResponse {
   reports: ReportView[];
+}
+/** A suspended account's appeal (M16 B6), as the operator reads it. */
+export interface AppealView {
+  id: string;
+  person: { id: string; handle: string; displayName: string; suspended: boolean };
+  /** What the operator recorded when suspending them, as they were shown it. */
+  reason: string | null;
+  body: string;
+  createdAt: string;
+  decidedAt: string | null;
+  outcome: 'lifted' | 'upheld' | null;
+  note: string | null;
+}
+export interface AppealsResponse {
+  appeals: AppealView[];
+}
+export interface AppealResponse {
+  appeal: AppealView;
+}
+/** An appeal sent from a suspended sign-in (M16 B6): `already` when one was waiting. */
+export interface AppealSentResponse {
+  ok: true;
+  already: boolean;
+}
+/** A person's export (lib/export.ts) as the file holds it: its shape is the file's. */
+export type AccountExportFile = Record<string, unknown>;
+/** What a suspended account's sign-in refusal carries (M16 B6), on `ApiError.details`. */
+export interface SuspendedDetails {
+  /** The operator's reason, as they recorded it. */
+  reason: string | null;
+  /** Opens the appeal and the export for thirty minutes, after a proof of the password. */
+  claim: string | null;
 }
 export interface ReportResponse {
   report: ReportView;

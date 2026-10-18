@@ -53,13 +53,13 @@ test('a visitor books from the item page with a code, and the team sees the requ
   await page.goto(`/o/nile.pb.${suffix}/cleaning`);
   await expect(visible(page, 'Book a time')).toBeVisible();
   const email = `ana.pb.${suffix}@example.com`;
-  const slots = page.locator('input[name="slot"]');
+  const slots = page.locator('#book input[name="slot"]');
   expect(await slots.count()).toBeGreaterThan(0);
   const chosen = (await slots.first().getAttribute('value')) as string;
   await slots.first().check();
-  await page.locator('input[name="name"]').fill('Ana Costa');
-  await page.locator('input[name="email"]').fill(email);
-  await page.locator('input[name="adult"]').check();
+  await page.locator('#book input[name="name"]').fill('Ana Costa');
+  await page.locator('#book input[name="email"]').fill(email);
+  await page.locator('#book input[name="adult"]').check();
   await page.locator('#book button[type="submit"]').click();
   await expect(visible(page, 'Check your email')).toBeVisible();
   await expect(page).toHaveURL(/[?&]code=/);
@@ -73,7 +73,7 @@ test('a visitor books from the item page with a code, and the team sees the requ
       return code;
     })
     .toMatch(/^\d{6}$/);
-  await page.locator('input[name="code"]').fill(code);
+  await page.locator('#book input[name="code"]').fill(code);
   await page.locator('#book button[type="submit"]').click();
   await expect(visible(page, /Nile Dental confirms in your conversation/)).toBeVisible();
   await expect(page).toHaveURL(/[?&]booked=/);
@@ -196,12 +196,12 @@ test('a visitor books a person’s lesson from their page, and confirming it ans
   await page.goto(`/@lina.pb.${suffix}/lesson`);
   await expect(visible(page, 'Book a time')).toBeVisible();
   const email = `omar.pb.${suffix}@example.com`;
-  const slots = page.locator('input[name="slot"]');
+  const slots = page.locator('#book input[name="slot"]');
   const chosen = (await slots.first().getAttribute('value')) as string;
   await slots.first().check();
-  await page.locator('input[name="name"]').fill('Omar Visitor');
-  await page.locator('input[name="email"]').fill(email);
-  await page.locator('input[name="adult"]').check();
+  await page.locator('#book input[name="name"]').fill('Omar Visitor');
+  await page.locator('#book input[name="email"]').fill(email);
+  await page.locator('#book input[name="adult"]').check();
   await page.locator('#book button[type="submit"]').click();
   await expect(visible(page, 'Check your email')).toBeVisible();
   let code = '';
@@ -211,7 +211,7 @@ test('a visitor books a person’s lesson from their page, and confirming it ans
       return code;
     })
     .toMatch(/^\d{6}$/);
-  await page.locator('input[name="code"]').fill(code);
+  await page.locator('#book input[name="code"]').fill(code);
   await page.locator('#book button[type="submit"]').click();
   await expect(visible(page, /Lina Haddad confirms in your conversation/)).toBeVisible();
 

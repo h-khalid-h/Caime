@@ -1497,10 +1497,30 @@ export const ReportBody = z.object({
 export const REPORT_STATUSES = ['open', 'reviewing', 'actioned', 'dismissed'] as const;
 /** The operator moving a report along (R49). */
 export const ReportStatusBody = z.object({ status: z.enum(REPORT_STATUSES) });
-/** The operator suspending an account, or lifting it (R49). */
-export const SuspensionBody = z.object({
-  suspended: z.boolean(),
-  reason: z.string().trim().max(500).optional(),
+/**
+ * The operator suspending an account, or lifting it (R49): a suspension says why (M16 B6, the
+ * DSA's statement of reasons), in words the person will read.
+ */
+export const SuspensionBody = z
+  .object({
+    suspended: z.boolean(),
+    reason: z.string().trim().max(500).optional(),
+  })
+  .refine((b) => !b.suspended || (b.reason ?? '').length >= 10, {
+    message: msg('Say why, in words they’ll read.'),
+    path: ['reason'],
+  });
+/** A suspended account's appeal, through the claim its sign-in was refused with (M16 B6). */
+export const AppealBody = z.object({
+  claim: z.string().min(16).max(2048),
+  text: z.string().trim().min(10, msg('Say in a few words why you think it’s wrong.')).max(2000),
+});
+/** A suspended account's copy of its data, through the same claim (M16 B6). */
+export const SuspensionClaimBody = z.object({ claim: z.string().min(16).max(2048) });
+/** The operator deciding an appeal (M16 B6): the suspension lifted, or upheld with a note. */
+export const AppealDecisionBody = z.object({
+  decision: z.enum(['lift', 'uphold']),
+  note: z.string().trim().max(1000).optional(),
 });
 /** The operator correcting a date of birth (the privacy page's "write to us", M16 B3). */
 export const BirthDateBody = z.object({ birthDate: Day });

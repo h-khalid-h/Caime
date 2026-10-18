@@ -28,6 +28,23 @@ export async function metricsRoutes(app: FastifyInstance, ctx: AppContext) {
     ctx.metrics.jobsQueued.set({}, q?.queued ?? 0);
     ctx.metrics.jobsDead.set({}, q?.dead ?? 0);
     ctx.metrics.jobsOldestSeconds.set({}, Math.max(0, q?.oldest ?? 0));
+    // What waits on the operator (R49, M16 B6): open reports, a child's safety apart, and appeals.
+    const waiting = await sql<{ kind: string; waiting: number; oldest: number }>`
+      select 'report' as kind, count(*)::int as waiting,
+        coalesce(extract(epoch from (now() - min(created_at))), 0)::int as oldest
+      from reports where closed_at is null
+      union all
+      select 'child_safety', count(*)::int,
+        coalesce(extract(epoch from (now() - min(created_at))), 0)::int
+      from reports where closed_at is null and reason = 'child_safety'
+      union all
+      select 'appeal', count(*)::int,
+        coalesce(extract(epoch from (now() - min(created_at))), 0)::int
+      from appeals where decided_at is null`.execute(ctx.db);
+    for (const w of waiting.rows) {
+      ctx.metrics.moderationWaiting.set({ kind: w.kind }, w.waiting);
+      ctx.metrics.moderationOldestSeconds.set({ kind: w.kind }, Math.max(0, w.oldest));
+    }
     return reply
       .header('content-type', 'text/plain; version=0.0.4; charset=utf-8')
       .header('cache-control', 'no-store')

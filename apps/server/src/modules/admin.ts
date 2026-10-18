@@ -5,6 +5,7 @@
  * the same 404 as a route that was never there.
  */
 import {
+  AppealDecisionBody,
   AppListingReviewBody,
   BirthDateBody,
   Handle,
@@ -20,6 +21,8 @@ import {
 import type {
   AdminJobsResponse,
   AdminPersonResponse,
+  AppealResponse,
+  AppealsResponse,
   AppListingReviewResponse,
   AppListingsResponse,
   AuditChainResponse,
@@ -35,6 +38,7 @@ import type {
 } from '@caime/core/api';
 import { tr } from '@caime/core/i18n';
 import { LISTING_CHECKS } from '@caime/core/marketplace';
+import { REPORT_REASON_CHOICES } from '@caime/core/report-reasons';
 import type { FastifyInstance, FastifyRequest } from 'fastify';
 import { sql } from 'kysely';
 import { z } from 'zod';
@@ -53,6 +57,8 @@ import { AppError, badRequest, conflict, mailUnavailable, notFound } from '../li
 import { handleHeld, handleTaken, releaseHandle } from '../lib/handles';
 import { retryJob, troubledJobs } from '../lib/jobs';
 import {
+  appealViews,
+  decideAppeal,
   endAllAccess,
   removeForEveryone,
   reportViews,
@@ -109,6 +115,37 @@ export async function adminRoutes(app: FastifyInstance, ctx: AppContext) {
       metadata: { status, count: reports.length, operator: by },
     });
     return { reports };
+  });
+
+  /** Suspended accounts' appeals (M16 B6): waiting first, oldest first. Looking is kept too. */
+  app.get('/admin/appeals', async (req): Promise<AppealsResponse> => {
+    const by = operator(req);
+    const { waiting, limit } = parse(
+      z.object({
+        waiting: z.enum(['0', '1']).default('1'),
+        limit: z.coerce.number().int().min(1).max(200).default(100),
+      }),
+      req.query,
+    );
+    const appeals = await appealViews(ctx, { waiting: waiting === '1', limit });
+    await audit(ctx.db, {
+      actorId: null,
+      action: 'admin.appeals_viewed',
+      metadata: { count: appeals.length, operator: by },
+    });
+    return { appeals };
+  });
+
+  /** An appeal decided: the suspension lifted, or upheld with a note; the person is mailed. */
+  app.post('/admin/appeals/:id', async (req): Promise<AppealResponse> => {
+    const by = operator(req);
+    const { id } = parse(z.object({ id: z.string().uuid() }), req.params);
+    const body = parse(AppealDecisionBody, req.body);
+    const decided = await decideAppeal(ctx, id, body.decision, body.note ?? null, by);
+    const [appeal] = await appealViews(ctx, { waiting: false, limit: 1, id });
+    if (!appeal) throw notFound(tr('That appeal'));
+    if (!decided) throw conflict('appeal_decided', tr('That appeal was decided already.'));
+    return { appeal };
   });
 
   const reportParam = z.object({ id: z.string().uuid() });
@@ -323,13 +360,26 @@ export async function adminRoutes(app: FastifyInstance, ctx: AppContext) {
     return { ok: true };
   });
 
+  /**
+   * The reason a suspension from a report gives the person (M16 B6, the DSA's statement of
+   * reasons): the operator's own words when they wrote some, else what the report was for.
+   */
+  const reasonFrom = (report: ReportView, written: string | undefined): string => {
+    if (written && written.trim().length >= 10) return written.trim().slice(0, 500);
+    const label =
+      REPORT_REASON_CHOICES.find((c) => c.value === report.reason)?.label ?? 'Something else';
+    return `Reported for: ${label}. Caime looked and upheld the report.`;
+  };
+  const SuspendFromReport = z.object({ reason: z.string().trim().max(500).optional() });
+
   /** The reported person suspended, from the report: it's actioned. */
   app.post('/admin/reports/:id/suspend', async (req): Promise<ReportResponse> => {
     const by = operator(req);
     const { id } = parse(reportParam, req.params);
+    const { reason } = parse(SuspendFromReport, req.body ?? {});
     const report = await oneReport(id);
     if (!report.person) throw badRequest(tr('This report isn’t about a person.'));
-    await setSuspended(ctx, report.person.id, true, `Report ${id}: ${report.reason}`, by);
+    await setSuspended(ctx, report.person.id, true, reasonFrom(report, reason), by);
     await settleReport(ctx, id, 'actioned');
     return { report: await oneReport(id) };
   });
@@ -340,7 +390,8 @@ export async function adminRoutes(app: FastifyInstance, ctx: AppContext) {
     const { id } = parse(reportParam, req.params);
     const report = await oneReport(id);
     if (!report.org) throw badRequest(tr('This report isn’t about an organization.'));
-    await setOrgSuspended(ctx, report.org.id, true, `Report ${id}: ${report.reason}`, by);
+    const { reason } = parse(SuspendFromReport, req.body ?? {});
+    await setOrgSuspended(ctx, report.org.id, true, reasonFrom(report, reason), by);
     await settleReport(ctx, id, 'actioned');
     return { report: await oneReport(id) };
   });

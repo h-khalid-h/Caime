@@ -1,4 +1,4 @@
-import type { ReportEvidenceView, ReportView } from '@caime/core';
+import type { AppealView, ReportEvidenceView, ReportView } from '@caime/core';
 import { tr } from '@caime/core';
 import { type Insertable, sql, type Transaction } from 'kysely';
 import type { AppContext } from '../context';
@@ -9,6 +9,7 @@ import { audit } from './audit';
 import { tellSaved } from './automations';
 import { queueCalendarPush } from './calendar-push';
 import { disconnectAllAccounts } from './connected-accounts';
+import { appealDecisionMail, visitorReportDecisionMail } from './email';
 import { recordEvent } from './events';
 import { removeStored } from './files';
 import { notHiddenFor, participantsOf } from './messages';
@@ -147,6 +148,9 @@ export async function reportViews(
       'r.details',
       'r.created_at',
       'r.closed_at',
+      'r.visitor_name',
+      'r.visitor_email',
+      'r.page',
       'reporter.id as reporter_id',
       'reporter.handle as reporter_handle',
       'reporter.display_name as reporter_name',
@@ -222,6 +226,7 @@ export async function reportViews(
       r.reporter_id && r.reporter_handle && r.reporter_name
         ? { id: r.reporter_id, handle: r.reporter_handle, displayName: r.reporter_name }
         : null,
+    visitor: r.page ? { name: r.visitor_name, email: r.visitor_email, page: r.page } : null,
     person:
       r.person_id && r.person_handle && r.person_name
         ? {
@@ -464,7 +469,7 @@ export async function settleReport(
 ): Promise<void> {
   const before = await ctx.db
     .selectFrom('reports')
-    .select(['status', 'reporter_id'])
+    .select(['status', 'reporter_id', 'visitor_name', 'visitor_email', 'page'])
     .where('id', '=', reportId)
     .executeTakeFirst();
   if (!before) return;
@@ -479,7 +484,17 @@ export async function settleReport(
     })
     .where('id', '=', reportId)
     .execute();
-  if (!settled || wasSettled || !before.reporter_id) return;
+  if (!settled || wasSettled) return;
+  // A visitor who left an address hears what became of it, once (M16 B6, the DSA's Art. 16(5)).
+  const mail = ctx.mail;
+  if (!before.reporter_id && before.visitor_email && before.page && mail) {
+    const to = before.visitor_email;
+    const page = `${ctx.config.PUBLIC_URL.replace(/\/+$/, '')}${before.page}`;
+    ctx.defer('email.report', () =>
+      mail.send(visitorReportDecisionMail(to, before.visitor_name, page, status === 'actioned')),
+    );
+  }
+  if (!before.reporter_id) return;
   await notify(ctx, {
     userId: before.reporter_id,
     kind: 'report',
@@ -492,4 +507,113 @@ export async function settleReport(
     data: { reportId },
     delivery: 'silent',
   });
+}
+
+/** Appeals as the operator reads them (M16 B6): the waiting ones first, oldest first. */
+export async function appealViews(
+  ctx: AppContext,
+  where: { waiting: boolean; limit: number; id?: string },
+): Promise<AppealView[]> {
+  let q = ctx.db
+    .selectFrom('appeals as a')
+    .innerJoin('users as u', 'u.id', 'a.user_id')
+    .select([
+      'a.id',
+      'a.body',
+      'a.created_at',
+      'a.decided_at',
+      'a.outcome',
+      'a.note',
+      'u.id as user_id',
+      'u.handle',
+      'u.display_name',
+      'u.suspended_at',
+      'u.suspended_reason',
+    ])
+    .orderBy(sql`a.decided_at is null`, 'desc')
+    .orderBy('a.created_at', 'asc')
+    .limit(where.limit);
+  if (where.waiting) q = q.where('a.decided_at', 'is', null);
+  if (where.id) q = q.where('a.id', '=', where.id);
+  const rows = await q.execute();
+  return rows.map((r) => ({
+    id: r.id,
+    person: {
+      id: r.user_id,
+      handle: r.handle,
+      displayName: r.display_name,
+      suspended: r.suspended_at !== null,
+    },
+    reason: r.suspended_reason,
+    body: r.body,
+    createdAt: r.created_at.toISOString(),
+    decidedAt: r.decided_at?.toISOString() ?? null,
+    outcome: r.outcome,
+    note: r.note,
+  }));
+}
+
+/**
+ * An appeal decided (M16 B6): lifting ends the suspension as the operator's lift does; upholding
+ * keeps it. Either way the person is mailed, once, and the decision is in the audit log with the
+ * operator's name. False when it was decided already.
+ */
+export async function decideAppeal(
+  ctx: AppContext,
+  id: string,
+  decision: 'lift' | 'uphold',
+  note: string | null,
+  operator: string,
+): Promise<boolean> {
+  // The decision and what it lifts land together: never an appeal that says lifted beside an
+  // account still suspended.
+  const decided = await ctx.db.transaction().execute(async (trx) => {
+    const row = await trx
+      .updateTable('appeals')
+      .set({
+        decided_at: ctx.now(),
+        outcome: decision === 'lift' ? 'lifted' : 'upheld',
+        note,
+      })
+      .where('id', '=', id)
+      .where('decided_at', 'is', null)
+      .returning('user_id')
+      .executeTakeFirst();
+    if (!row) return null;
+    if (decision === 'lift') {
+      await trx
+        .updateTable('users')
+        .set({ suspended_at: null, suspended_reason: null, updated_at: ctx.now() })
+        .where('id', '=', row.user_id)
+        .execute();
+      await audit(trx, {
+        actorId: null,
+        action: 'moderation.unsuspended',
+        target: row.user_id,
+        metadata: { operator },
+      });
+    }
+    await audit(trx, {
+      actorId: null,
+      action: decision === 'lift' ? 'moderation.appeal_lifted' : 'moderation.appeal_upheld',
+      target: row.user_id,
+      metadata: { appealId: id, operator },
+    });
+    return row;
+  });
+  if (!decided) return false;
+  ctx.metrics.appeals.inc({ outcome: decision === 'lift' ? 'lifted' : 'upheld' });
+  const person = await ctx.db
+    .selectFrom('users')
+    .select(['email', 'display_name'])
+    .where('id', '=', decided.user_id)
+    .executeTakeFirst();
+  const mail = ctx.mail;
+  if (person?.email && mail) {
+    const to = person.email;
+    ctx.defer('email.appeal', () =>
+      mail.send(appealDecisionMail(to, person.display_name, decision === 'lift', note)),
+    );
+  }
+  return true;
 }

@@ -9,6 +9,7 @@ import type { AddressKind } from '@caime/core/addresses';
 
 import type {
   AboutView,
+  AccountExportFile,
   AccountFilesResponse,
   AccountStartResponse,
   AgentTryView,
@@ -19,6 +20,7 @@ import type {
   AiStatusView,
   AiTranslationView,
   AlbumResponse,
+  AppealSentResponse,
   AssetsResponse,
   AssetView,
   AttentionHomeResponse,
@@ -265,6 +267,10 @@ export const endpoints = {
     client: 'web' | 'native';
     deviceName?: string;
   }) => api.post<AuthResponse>('/auth/login', body),
+  /** A suspended account's appeal and its data (M16 B6), through its sign-in refusal's claim. */
+  appealSuspension: (body: { claim: string; text: string }) =>
+    api.post<AppealSentResponse>('/suspension/appeal', body),
+  suspendedExport: (claim: string) => api.post<AccountExportFile>('/suspension/export', { claim }),
   logout: () => api.post<OkResponse>('/auth/logout'),
   session: () => api.get<SessionResponse>('/auth/session'),
   sessions: () => api.get<SessionsResponse>('/auth/sessions'),

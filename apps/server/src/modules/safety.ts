@@ -209,6 +209,7 @@ export async function safetyRoutes(app: FastifyInstance, ctx: AppContext) {
         updateId: body.updateId,
       });
     });
+    ctx.metrics.reports.inc({ from: 'person', reason: body.reason });
     reply.status(201);
     return {
       ok: true,

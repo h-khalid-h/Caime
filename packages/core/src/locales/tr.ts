@@ -4306,4 +4306,15 @@ export const turkish: Catalog = {
     'Bağlantınız olmayan birinden bir fotoğraf. Görmek için isteği kabul edin.',
   'Tap to see': 'Görmek için dokunun',
   'Accept to see': 'Görmek için kabul edin',
+  'Say in a few words why you think it’s wrong.':
+    'Neden yanlış olduğunu düşündüğünüzü birkaç kelimeyle yazın.',
+  'This account is suspended.': 'Bu hesap askıya alındı.',
+  'No reason was recorded.': 'Bir neden kaydedilmedi.',
+  'Your appeal is with Caime. You’ll hear back by email.':
+    'İtirazınız Caime’de. Yanıt e-postayla gelecek.',
+  'Your appeal is already with Caime. You’ll hear back by email.':
+    'İtirazınız zaten Caime’de. Yanıt e-postayla gelecek.',
+  'Why it’s wrong': 'Neden yanlış',
+  'Send appeal': 'İtirazı gönder',
+  'Say why, in words they’ll read.': 'Nedenini, okuyacakları sözcüklerle yazın.',
 };

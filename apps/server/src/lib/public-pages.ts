@@ -66,6 +66,7 @@ import {
   icon,
   offerCard,
   pageFoot,
+  reportSection,
   SHEET_STYLE,
   section,
   topBar,
@@ -104,6 +105,7 @@ import { publicFacts } from './system-accounts';
 import { liveTeamInvite } from './team-invites';
 import { clip } from './text';
 import { avatarUrl, minorOf, privacyOf } from './users';
+import { type VisitorReportState, visitorReportState } from './visitor-reports';
 
 type Q = Kysely<Database>;
 
@@ -124,6 +126,8 @@ export const NOBODY = {
 
 export interface PublicPerson {
   kind: 'person';
+  /** A visitor's report of the page (M16 B6): its form's state. */
+  report?: VisitorReportState;
   id: string;
   handle: string;
   displayName: string;
@@ -144,6 +148,7 @@ export interface PublicPerson {
 }
 export interface PublicOrg {
   kind: 'org';
+  report?: VisitorReportState;
   org: OrgRef;
   about: string | null;
   website: string | null;
@@ -237,6 +242,8 @@ export interface PublicItemPage {
   kind: 'item';
   host: PublicPerson | PublicOrg;
   item: PublicItem;
+  /** A visitor's report of the page (M16 B6): its form's state. */
+  report?: VisitorReportState;
   /**
    * Booking before an account (R97 (1)): the week's open times and the form, the code step or
    * the booked notice, on an organization's bookable public item; null where the page offers
@@ -249,6 +256,7 @@ export interface PublicCollectionPage {
   host: PublicPerson | PublicOrg;
   collection: PublicCollection;
   items: PublicItem[];
+  report?: VisitorReportState;
 }
 /** An invite link's page (R1): who invites, the context they chose to show, their line. */
 export interface PublicInvite {
@@ -527,6 +535,31 @@ export async function publicPageFor(
   path: string,
   now: Date,
   search: URLSearchParams = new URLSearchParams(),
+): Promise<PublicPage> {
+  const page = await pageAt(ctx, path, now, search);
+  // Anyone may report a page about someone (M16 B6): its form's state rides on the page.
+  return page.kind === 'person' ||
+    page.kind === 'org' ||
+    page.kind === 'item' ||
+    page.kind === 'collection'
+    ? { ...page, report: visitorReportState(search) }
+    : page;
+}
+
+/** Whom an item's or a collection's page is about, for its report form. */
+const reportAbout = (
+  host: PublicPerson | PublicOrg,
+  slug: string,
+): { kind: 'person' | 'org'; handle: string; slug: string } =>
+  host.kind === 'org'
+    ? { kind: 'org', handle: host.org.handle, slug }
+    : { kind: 'person', handle: host.handle, slug };
+
+async function pageAt(
+  ctx: AppContext,
+  path: string,
+  now: Date,
+  search: URLSearchParams,
 ): Promise<PublicPage> {
   const db = ctx.db;
   if (path === '/') return { kind: 'landing' };
@@ -980,6 +1013,7 @@ export function renderPublic(
     ${payRow(page)}
   </dl>`,
   )}
+  ${page.report ? reportSection(page.report, { kind: 'person', handle: page.handle }, currentTranslator().language) : ''}
   ${pageFoot(tr(PROMISE), wordmark(18))}
 </main>`,
       };
@@ -1054,6 +1088,7 @@ export function renderPublic(
     ${payRow(page)}
   </dl>`,
   )}
+  ${page.report ? reportSection(page.report, { kind: 'org', handle: o.handle }, currentTranslator().language) : ''}
   ${pageFoot(tr(PROMISE), wordmark(18))}
 </main>`,
       };
@@ -1104,6 +1139,7 @@ export function renderPublic(
     </div>
     ${actionBar(host, item, path, Boolean(page.booking))}
   </div>
+  ${page.report ? reportSection(page.report, reportAbout(host, item.slug), currentTranslator().language) : ''}
   ${pageFoot(tr(PROMISE), wordmark(18))}
 </main>`,
       };
@@ -1152,6 +1188,7 @@ export function renderPublic(
     <div class="actions">${bookLink(items, hostPath(host), name)}</div>
   </section>
   ${offerSections({ ...host, collections: [] }, items)}
+  ${page.report ? reportSection(page.report, reportAbout(host, collection.slug), currentTranslator().language) : ''}
   ${pageFoot(tr(PROMISE), wordmark(18))}
 </main>`,
       };

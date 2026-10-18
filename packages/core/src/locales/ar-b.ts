@@ -2695,4 +2695,14 @@ export const arB: Catalog = {
     'صورة من شخص لا تربطك به صلة. اقبل الطلب لرؤيتها.',
   'Tap to see': 'اضغط للرؤية',
   'Accept to see': 'اقبل للرؤية',
+  'Say in a few words why you think it’s wrong.': 'اذكر ببضع كلمات سبب الاعتراض.',
+  'This account is suspended.': 'هذا الحساب موقوف.',
+  'No reason was recorded.': 'لم يُسجَّل سبب.',
+  'Your appeal is with Caime. You’ll hear back by email.':
+    'الاعتراض لدى Caime، والرد يصل بالبريد الإلكتروني.',
+  'Your appeal is already with Caime. You’ll hear back by email.':
+    'الاعتراض لدى Caime بالفعل، والرد يصل بالبريد الإلكتروني.',
+  'Why it’s wrong': 'سبب الاعتراض',
+  'Send appeal': 'إرسال الاعتراض',
+  'Say why, in words they’ll read.': 'اذكر السبب بكلمات واضحة، فهي ما سيُعرض.',
 };

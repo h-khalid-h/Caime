@@ -36,6 +36,8 @@ export const KEPT_DAYS = {
   closedReports: 180,
   /** A report about a child's safety once it's closed: a year, should anyone lawfully ask. */
   childSafetyReports: 365,
+  /** A suspended account's appeal once decided (M16 B6), as long as a closed report. */
+  decidedAppeals: 180,
 } as const;
 
 /** The day of `at` as Caime keeps days ('YYYY-MM-DD', UTC). */
@@ -169,6 +171,13 @@ export async function sweepRecords(ctx: AppContext): Promise<void> {
     sql`delete from reports where id in (select id from reports
       where closed_at < ${before(KEPT_DAYS.childSafetyReports)}
          or (closed_at < ${before(KEPT_DAYS.closedReports)} and reason <> 'child_safety')
+      limit ${LOT} for update skip locked)`,
+  );
+  // An appeal once decided (M16 B6): half a year, as a closed report; a waiting one stays.
+  await inLots(
+    ctx,
+    sql`delete from appeals where id in (select id from appeals
+      where decided_at < ${before(KEPT_DAYS.decidedAppeals)}
       limit ${LOT} for update skip locked)`,
   );
   // A passkey ceremony nobody finished (R36): its challenge is no use after its few minutes.

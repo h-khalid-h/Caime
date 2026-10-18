@@ -1,3 +1,4 @@
+import type { SuspendedDetails } from '@caime/core/api';
 import { tr } from '@caime/core/i18n';
 import { router } from 'expo-router';
 import { useRef, useState } from 'react';
@@ -9,14 +10,29 @@ import { deviceInfo } from '@/features/auth/device';
 import { isWeb } from '@/lib/config';
 import { useSession } from '@/state/session';
 import { Button } from '@/ui/Button';
+import { lazyPart } from '@/ui/Lazy';
 import { Pressable } from '@/ui/Pressable';
 import { Text } from '@/ui/Text';
 import { TextField } from '@/ui/TextField';
+
+// A suspended account's reason, appeal and data (M16 B6): loaded only when a sign-in says so.
+const Suspended = lazyPart(() => import('@/features/auth/Suspended').then((m) => m.Suspended));
+
+/** The refusal's reason and claim, when a sign-in was refused as suspended. */
+function suspendedOf(err: unknown): SuspendedDetails | null {
+  if (!(err instanceof ApiError) || err.code !== 'suspended') return null;
+  const d = (err.details ?? {}) as Partial<SuspendedDetails>;
+  return {
+    reason: typeof d.reason === 'string' ? d.reason : null,
+    claim: typeof d.claim === 'string' ? d.claim : null,
+  };
+}
 
 export default function SignIn() {
   const [identifier, setIdentifier] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState<string | null>(null);
+  const [suspended, setSuspended] = useState<SuspendedDetails | null>(null);
   const [busy, setBusy] = useState(false);
   const passwordRef = useRef<TextInput>(null);
 
@@ -27,6 +43,7 @@ export default function SignIn() {
     }
     setBusy(true);
     setError(null);
+    setSuspended(null);
     try {
       const { client, deviceName } = deviceInfo();
       const res = await endpoints.login({
@@ -37,6 +54,8 @@ export default function SignIn() {
       });
       await useSession.getState().signedIn(res);
     } catch (err) {
+      const stopped = suspendedOf(err);
+      if (stopped) return setSuspended(stopped);
       setError(
         err instanceof ApiError && err.code === 'rate_limited'
           ? tr('Too many tries. Wait a few minutes and try again.')
@@ -56,6 +75,8 @@ export default function SignIn() {
       const res = await signInWithPasskey(deviceInfo());
       await useSession.getState().signedIn(res);
     } catch (err) {
+      const stopped = suspendedOf(err);
+      if (stopped) return setSuspended(stopped);
       const { passkeyProblem } = await import('@/features/auth/passkeys');
       setError(passkeyProblem(err));
     } finally {
@@ -96,6 +117,7 @@ export default function SignIn() {
           testID="signin-password"
         />
       </View>
+      {suspended ? <Suspended reason={suspended.reason} claim={suspended.claim} /> : null}
       {error ? (
         <Text
           variant="bodyStrong"

@@ -80,6 +80,16 @@ blockquote.reported{border-inline-start-color:var(--danger)}
 </div>
 <div id="note" role="status" aria-live="polite"></div>
 <div id="list"></div>
+<h1>Appeals</h1>
+<p class="meta">Suspended accounts that say it's wrong (M16 B6). Lifting ends the suspension; upholding keeps it. Either way they're mailed, with your note.</p>
+<div class="row">
+<select id="appeal-status">
+<option value="1">Waiting</option>
+<option value="0">All</option>
+</select>
+<button id="load-appeals">Load appeals</button>
+</div>
+<div id="appeals"></div>
 </main>
 <script src="/admin/reports.js"></script>
 </body>
@@ -107,7 +117,12 @@ const SCRIPT = `(() => {
     el.className = 'card';
     el.dataset.id = r.id;
     const who = r.person ? '@' + esc(r.person.handle) + ' (' + esc(r.person.displayName) + ')' : r.org ? esc(r.org.name) + ' (@' + esc(r.org.handle) + ')' : 'nobody in particular';
-    const by = r.reporter ? '@' + esc(r.reporter.handle) : 'someone gone';
+    // A visitor's report from a page (M16 B6) names who wrote and where, when they said.
+    const by = r.reporter
+      ? '@' + esc(r.reporter.handle)
+      : r.visitor
+        ? 'a visitor' + (r.visitor.name || r.visitor.email ? ' (' + esc([r.visitor.name, r.visitor.email].filter(Boolean).join(', ')) + ')' : '') + ' on <a href="' + esc(r.visitor.page) + '">' + esc(r.visitor.page) + '</a>'
+        : 'someone gone';
     let what = '';
     // What the reporter saw when they reported it, kept whatever was deleted since (M16 B3).
     if (r.evidence && r.evidence.length) {
@@ -152,14 +167,22 @@ const SCRIPT = `(() => {
     if (!b) return;
     const id = b.closest('.card').dataset.id;
     const act = b.dataset.act;
-    if (act === 'suspend' && !confirm('Every session, token and app of theirs ends now, and they can’t sign in until you lift it. Go ahead?')) return;
-    if (act === 'suspend-org' && !confirm('Nobody writes as it or to it, its page answers as nobody’s and its apps’ tokens stop, until you lift it. Go ahead?')) return;
+    // A suspension says why, in words they'll read (M16 B6): blank gives what the report was for.
+    let why;
+    if (act === 'suspend' || act === 'suspend-org') {
+      why = prompt(act === 'suspend'
+        ? 'Every session, token and app of theirs ends now, and they can’t sign in until you lift it. Why, in words they’ll read? (Blank: what the report was for.)'
+        : 'Nobody writes as it or to it, its page answers as nobody’s and its apps’ tokens stop, until you lift it. Why, in words they’ll read? (Blank: what the report was for.)', '');
+      if (why === null) return;
+    }
     if ((act === 'remove-message' || act === 'remove-update') && !confirm('For everyone, at once, and for good. Go ahead?')) return;
     b.disabled = true;
     try {
-      const { report } = act === 'remove-message' || act === 'remove-update' || act === 'suspend' || act === 'suspend-org'
-        ? await call('POST', '/admin/reports/' + id + '/' + act)
-        : await call('PATCH', '/admin/reports/' + id, { status: act });
+      const { report } = act === 'suspend' || act === 'suspend-org'
+        ? await call('POST', '/admin/reports/' + id + '/' + act, why && why.trim() ? { reason: why.trim() } : {})
+        : act === 'remove-message' || act === 'remove-update'
+          ? await call('POST', '/admin/reports/' + id + '/' + act)
+          : await call('PATCH', '/admin/reports/' + id, { status: act });
       b.closest('.card').replaceWith(card(report));
       note.textContent = 'Done.';
     } catch (e) {
@@ -167,6 +190,49 @@ const SCRIPT = `(() => {
       b.disabled = false;
     }
   });
+  const appeals = $('appeals'), appealStatus = $('appeal-status');
+  function appealCard(a) {
+    const el = document.createElement('div');
+    el.className = 'card';
+    el.dataset.id = a.id;
+    el.innerHTML =
+      '<div><span class="status">' + esc(a.outcome || 'waiting') + '</span> <strong>@' + esc(a.person.handle) + '</strong> (' + esc(a.person.displayName) + ')' + (a.person.suspended ? '' : ' · <span class="meta">not suspended now</span>') + '</div>' +
+      '<div class="meta">Appealed ' + esc(when(a.createdAt)) + (a.decidedAt ? ' · decided ' + esc(when(a.decidedAt)) : '') + '</div>' +
+      '<div class="meta then">The reason they were shown</div><blockquote>' + (a.reason ? esc(a.reason) : '<em>None recorded.</em>') + '</blockquote>' +
+      '<div class="meta then">What they say</div><blockquote>' + esc(a.body) + '</blockquote>' +
+      (a.note ? '<div class="meta then">Your note</div><blockquote>' + esc(a.note) + '</blockquote>' : '') +
+      (a.decidedAt ? '' : '<div class="actions"><button class="quiet" data-decide="lift">Lift the suspension</button><button class="danger" data-decide="uphold">Uphold it</button></div>');
+    return el;
+  }
+  async function loadAppeals() {
+    note.textContent = 'Loading…';
+    try {
+      const { appeals: rows } = await call('GET', '/admin/appeals?waiting=' + appealStatus.value + '&limit=100');
+      appeals.replaceChildren(...rows.map(appealCard));
+      note.textContent = rows.length ? rows.length + ' appeal' + (rows.length === 1 ? '' : 's') : '';
+      if (!rows.length) appeals.innerHTML = '<p class="empty">No appeals.</p>';
+    } catch (e) {
+      note.textContent = e.message;
+    }
+  }
+  appeals.addEventListener('click', async (ev) => {
+    const b = ev.target.closest('button[data-decide]');
+    if (!b) return;
+    const id = b.closest('.card').dataset.id;
+    const decision = b.dataset.decide;
+    const text = prompt(decision === 'lift' ? 'They can sign in again at once. A note for them (optional):' : 'The suspension stands. A note for them (optional, they’ll read it):', '');
+    if (text === null) return;
+    b.disabled = true;
+    try {
+      const { appeal } = await call('POST', '/admin/appeals/' + id, text.trim() ? { decision, note: text.trim() } : { decision });
+      b.closest('.card').replaceWith(appealCard(appeal));
+      note.textContent = 'Done.';
+    } catch (e) {
+      note.textContent = e.message;
+      b.disabled = false;
+    }
+  });
+  $('load-appeals').addEventListener('click', loadAppeals);
   $('load').addEventListener('click', load);
   token.addEventListener('keydown', (e) => { if (e.key === 'Enter') load(); });
   if (token.value) load();

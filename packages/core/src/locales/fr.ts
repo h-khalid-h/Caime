@@ -4486,4 +4486,15 @@ export const fr: Catalog = {
     'Une photo d’une personne avec qui vous n’êtes pas en contact. Acceptez pour la voir.',
   'Tap to see': 'Touchez pour voir',
   'Accept to see': 'Acceptez pour voir',
+  'Say in a few words why you think it’s wrong.':
+    'Dites en quelques mots pourquoi vous pensez que c’est une erreur.',
+  'This account is suspended.': 'Ce compte est suspendu.',
+  'No reason was recorded.': 'Aucune raison n’a été indiquée.',
+  'Your appeal is with Caime. You’ll hear back by email.':
+    'Votre recours est entre les mains de Caime. Vous recevrez la réponse par e-mail.',
+  'Your appeal is already with Caime. You’ll hear back by email.':
+    'Votre recours est déjà entre les mains de Caime. Vous recevrez la réponse par e-mail.',
+  'Why it’s wrong': 'Pourquoi c’est une erreur',
+  'Send appeal': 'Envoyer le recours',
+  'Say why, in words they’ll read.': 'Dites pourquoi, avec des mots que la personne lira.',
 };

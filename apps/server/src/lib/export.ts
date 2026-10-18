@@ -153,6 +153,7 @@ export async function buildExport(ctx: AppContext, me: string, now: Date) {
     joinLinks,
     joinRequests,
     placeInvitations,
+    appeals,
     mailCopies,
     externalBusy,
     calendarPushes,
@@ -992,6 +993,14 @@ export async function buildExport(ctx: AppContext, me: string, now: Date) {
       .orderBy('created_at')
       .orderBy('id')
       .execute(),
+    // Their appeals of a suspension (M16 B6): what they wrote, and what was decided, with the
+    // operator's note to them; never which operator.
+    db
+      .selectFrom('appeals')
+      .select(['body', 'created_at', 'decided_at', 'outcome', 'note'])
+      .where('user_id', '=', me)
+      .orderBy('created_at')
+      .execute(),
     // What Caime keeps of their messages that went or came as mail (R75): the envelope and how
     // far it got, never the HTML (shown only in its sandbox), and nothing of a message erased.
     db
@@ -1522,6 +1531,13 @@ export async function buildExport(ctx: AppContext, me: string, now: Date) {
       at: r.created_at.toISOString(),
       decidedAt: iso(r.decided_at),
       outcome: r.outcome,
+    })),
+    appeals: appeals.map((a) => ({
+      text: a.body,
+      at: a.created_at.toISOString(),
+      decidedAt: iso(a.decided_at),
+      outcome: a.outcome,
+      note: a.note,
     })),
     meetingInvitations: meetingInvitations.map((g) => ({
       meetingSpaceId: g.conversation_id,

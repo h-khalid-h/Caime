@@ -1541,4 +1541,26 @@ export const frServer: Catalog = {
   'That invitation isn’t open any more.': 'Cette invitation n’est plus ouverte.',
   'That’s {n} message requests today. Try again tomorrow, or connect with them first.':
     'Cela fait {n} demandes de message aujourd’hui. Réessayez demain, ou entrez d’abord en contact.',
+  'This account is suspended. You can appeal, and download your data.':
+    'Ce compte est suspendu. Vous pouvez faire appel et télécharger vos données.',
+  'That took too long, or the account isn’t suspended any more. Sign in again.':
+    'C’était trop long, ou le compte n’est plus suspendu. Connectez-vous à nouveau.',
+  'Too many reports from here just now. Try again in an hour.':
+    'Trop de signalements depuis ici à l’instant. Réessayez dans une heure.',
+  'Give your name and an email address we can write to (not needed for a child’s safety).':
+    'Indiquez votre nom et une adresse e-mail où vous écrire (inutile pour la sécurité d’un enfant).',
+  'Say what’s wrong in a few words.': 'Dites ce qui ne va pas en quelques mots.',
+  'Tick the box to say what you wrote is accurate.':
+    'Cochez la case pour confirmer que ce que vous avez écrit est exact.',
+  'Thanks. Someone at Caime reads every report; if you left your email, we’ll write to you there when it’s decided.':
+    'Merci. Chez Caime, quelqu’un lit chaque signalement ; si vous avez laissé votre e-mail, nous vous y écrirons une fois la décision prise.',
+  'What you saw': 'Ce que vous avez vu',
+  'I believe what I wrote here is accurate and complete.':
+    'Je crois que ce que j’ai écrit ici est exact et complet.',
+  'Send the report': 'Envoyer le signalement',
+  'Your name and email are needed, unless it’s about a child’s safety. Caime writes to you when it has decided.':
+    'Votre nom et votre e-mail sont nécessaires, sauf s’il s’agit de la sécurité d’un enfant. Caime vous écrit une fois sa décision prise.',
+  'Report this page': 'Signaler cette page',
+  'That appeal': 'Ce recours',
+  'That appeal was decided already.': 'Ce recours a déjà été tranché.',
 };

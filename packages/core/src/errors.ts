@@ -20,6 +20,7 @@ export const ERROR_CODES = [
   'already_requested',
   'already_subscribed',
   'already_verified',
+  'appeal_decided',
   'awaiting_acceptance',
   'backup_running',
   'bad_request',

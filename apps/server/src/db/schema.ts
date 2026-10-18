@@ -832,6 +832,21 @@ export interface ReportsTable {
   created_at: Generated<Date>;
   /** Actioned or dismissed (M16 B3): its time to be kept counts from here. */
   closed_at: Generated<Date | null>;
+  /** A visitor's report from a page (M16 B6): who, where to tell them, and the page. */
+  visitor_name: Generated<string | null>;
+  visitor_email: Generated<string | null>;
+  page: Generated<string | null>;
+}
+
+/** A suspended account's appeal (M16 B6): one open at a time, decided by the operator. */
+export interface AppealsTable {
+  id: string;
+  user_id: string;
+  body: string;
+  created_at: Generated<Date>;
+  decided_at: NullableTimestamp;
+  outcome: 'lifted' | 'upheld' | null;
+  note: string | null;
 }
 
 /** What a report held as its reporter saw it (M16 B3), gone with the report. */
@@ -1401,6 +1416,7 @@ export interface Database {
   join_links: JoinLinksTable;
   join_requests: JoinRequestsTable;
   place_invites: PlaceInvitesTable;
+  appeals: AppealsTable;
   custom_roles: CustomRolesTable;
   relationships: RelationshipsTable;
   relationship_events: RelationshipEventsTable;

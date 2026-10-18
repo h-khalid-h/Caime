@@ -206,6 +206,13 @@ your role and title; and the organizations you follow.</li>
 you made it: the message you reported and up to four before it in that conversation, each with its
 sender&rsquo;s name (never a private conversation&rsquo;s, and never one you had deleted for
 yourself), or the update you reported.</li>
+<li><strong>A report from a page, without an account</strong> (a person&rsquo;s or an
+organization&rsquo;s page, an item or a collection): what you chose and wrote, the page, and the
+name and email address you gave (neither is asked about a child&rsquo;s safety). Caime writes to
+that address twice: to say the report arrived, and to say what was decided.</li>
+<li><strong>An appeal</strong>, if your account is suspended: signing in shows you why, and lets you
+appeal and download your data. Caime keeps what you wrote and what was decided, with the note the
+person who decided it wrote to you, and mails you the decision.</li>
 <li><strong>Your devices.</strong> Each one you&rsquo;re signed in on, with the network address and
 browser it signed in from and when it was last used; its address for notifications, if you turned
 them on; and, for private conversations, its public keys.</li>
@@ -429,7 +436,8 @@ accounting law requires, also after you delete your account. Reports are kept so
 run Caime can look into them: what a report holds stays with it whatever is deleted afterwards,
 until it&rsquo;s closed and for ${span(KEPT_DAYS.closedReports)} after
 (${span(KEPT_DAYS.childSafetyReports)} for a report about a child&rsquo;s safety), and then goes
-with it.</li>
+with it; the name and address of someone who reported a page without an account go with it too. An
+appeal is kept until it&rsquo;s decided and for ${span(KEPT_DAYS.decidedAppeals)} after.</li>
 <li>When you delete your account, it goes at once, with your profile, devices, connections, how
 you describe people, rules, automations, suggestions, actions, notifications, what you saved, and
 your reactions and poll votes. Messages you sent stay in other people&rsquo;s conversations, shown
@@ -636,7 +644,7 @@ Deleting it ends Pro at once; an organization&rsquo;s Business plan goes on for 
 Spaces, groups and organizations you run pass to someone in them; an organization with no one else
 on its team closes, and its plan ends with it. We may suspend or close an account that
 breaks these terms, and we&rsquo;ll tell you why unless the law or someone&rsquo;s safety stops
-us. If we ever close Caime, or your access to it for any other reason, we&rsquo;ll give you 30
+us; signing in then shows you why, lets you appeal, and lets you download your data. If we ever close Caime, or your access to it for any other reason, we&rsquo;ll give you 30
 days&rsquo; notice by email, with your data there to download until then and any time paid for
 and not used returned.</p>
 

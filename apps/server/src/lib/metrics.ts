@@ -173,6 +173,25 @@ export function createMetrics(pool: pg.Pool) {
       'caime_public_writes_total',
       'Messages to an organization before an account, by outcome (a code sent, written, or why not).',
     ),
+    // Notice and action (R49, M16 B6): reports made, by who made them and why, and appeals of a
+    // suspension, by step, so an alert can say one is waiting.
+    reports: new Counter(
+      'caime_reports_total',
+      'Reports made, by who made them (person, visitor) and their reason.',
+    ),
+    appeals: new Counter(
+      'caime_appeals_total',
+      'Appeals of a suspension, by outcome (made, lifted, upheld).',
+    ),
+    // Set as /metrics is scraped: what waits on the operator, and for how long.
+    moderationWaiting: new Gauge(
+      'caime_moderation_waiting',
+      'What waits on the operator, by kind (report, child_safety, appeal).',
+    ),
+    moderationOldestSeconds: new Gauge(
+      'caime_moderation_oldest_seconds',
+      'How long the longest-waiting report or appeal has waited, by kind.',
+    ),
     // People onto a team (M16 C3a, C3b): by an invite, or by an address at its verified domain.
     teamJoins: new Counter(
       'caime_team_joins_total',

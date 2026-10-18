@@ -1531,4 +1531,24 @@ export const arServer: Catalog = {
   'That invitation isn’t open any more.': 'هذه الدعوة لم تعد قائمة.',
   'That’s {n} message requests today. Try again tomorrow, or connect with them first.':
     'بلغت طلبات المراسلة اليوم حدّها ({n}). حاول غدًا، أو تواصل أولًا.',
+  'This account is suspended. You can appeal, and download your data.':
+    'هذا الحساب موقوف. يمكن الاعتراض وتنزيل البيانات.',
+  'That took too long, or the account isn’t suspended any more. Sign in again.':
+    'استغرق ذلك وقتًا طويلًا، أو لم يعد الحساب موقوفًا. سجّل الدخول من جديد.',
+  'Too many reports from here just now. Try again in an hour.':
+    'بلاغات كثيرة من هنا للتو. حاول مجددًا بعد ساعة.',
+  'Give your name and an email address we can write to (not needed for a child’s safety).':
+    'اكتب الاسم وعنوان بريد إلكتروني للمراسلة (لا حاجة لهما في بلاغ عن سلامة طفل).',
+  'Say what’s wrong in a few words.': 'اذكر المشكلة ببضع كلمات.',
+  'Tick the box to say what you wrote is accurate.': 'ضع علامة في المربع لتأكيد دقة ما كُتب.',
+  'Thanks. Someone at Caime reads every report; if you left your email, we’ll write to you there when it’s decided.':
+    'شكرًا. في Caime من يقرأ كل بلاغ؛ وإن تُرك بريد إلكتروني فسيصل إليه الرد حين يُتخذ القرار.',
+  'What you saw': 'ما شوهد',
+  'I believe what I wrote here is accurate and complete.': 'أعتقد أن ما كتبته هنا دقيق وكامل.',
+  'Send the report': 'إرسال البلاغ',
+  'Your name and email are needed, unless it’s about a child’s safety. Caime writes to you when it has decided.':
+    'الاسم والبريد الإلكتروني مطلوبان، إلا في بلاغ عن سلامة طفل. ويصل رد Caime حين يُتخذ القرار.',
+  'Report this page': 'الإبلاغ عن هذه الصفحة',
+  'That appeal': 'ذلك الاعتراض',
+  'That appeal was decided already.': 'اتُّخذ قرار في ذلك الاعتراض بالفعل.',
 };

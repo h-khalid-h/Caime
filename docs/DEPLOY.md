@@ -713,6 +713,12 @@ groups:
       # The audit log's chain broken at its daily check (R78): a row changed, removed or put in.
       - alert: CaimeAuditChainBroken
         expr: caime_audit_chain_ok == 0
+      # Someone waits on the operator (R49, M16 B6): a report or an appeal unread for a day, and a
+      # report about a child's safety at once.
+      - alert: CaimeModerationWaiting
+        expr: caime_moderation_oldest_seconds > 86400
+      - alert: CaimeChildSafetyReport
+        expr: caime_moderation_waiting{kind="child_safety"} > 0
       # AI spend (docs/RESOURCES.md): tokens an hour across every feature; set the line where
       # the bill would surprise you (input and output priced apart, so watch both directions).
       - alert: CaimeAiSpend
@@ -806,6 +812,19 @@ to four before it, as they stood then, beside the message as it is now, so a rep
 its sender deletes it; a report about a child's safety is listed first. A closed report (actioned
 or dismissed) is deleted with what it held after 180 days, a child's safety after a year.
 
+Anyone may report a person's or an organization's page, an item or a collection without an
+account (M16 B6): the form folded at the page's end posts to `POST /v1/public/report` and lands
+in the same list with the visitor's name, address and page beside it (`visitor`); Caime mails
+them a receipt, and the decision once the report is closed. A suspension says why: the page asks
+for the reason (left blank, it's what the report was for), and the JSON routes take `reason`, ten
+characters at least. Someone suspended who signs in sees that reason, may send one appeal at a
+time and may download their data; appeals are on the same page (Appeals), or as JSON. Lifting one
+lifts the suspension in the same step, upholding keeps it; either way the person is mailed, with
+the note if there is one. `/metrics` says what waits (`caime_moderation_waiting{kind}` and
+`caime_moderation_oldest_seconds{kind}`, kinds `report`, `child_safety` and `appeal`) and counts
+reports and appeals as they come (`caime_reports_total{from,reason}`,
+`caime_appeals_total{outcome}`).
+
 ```sh
 # An organization suspended from its report (POST …/reports/:id/suspend-org), or by its handle:
 # nobody writes as it or to it, its page and handle answer as nobody's to anyone new, its apps'
@@ -818,6 +837,16 @@ curl -X PUT -H "Authorization: Bearer $ADMIN_TOKEN" -H 'content-type: applicatio
 # operator, never the date.
 curl -X PUT -H "Authorization: Bearer $ADMIN_TOKEN" -H 'content-type: application/json' \
   -d '{"birthDate": "2009-04-02"}' https://caime.example.com/v1/admin/people/noor/birth-date
+# A person suspended with the reason they'll read when they next sign in.
+curl -X PUT -H "Authorization: Bearer $ADMIN_TOKEN" -H 'content-type: application/json' \
+  -d '{"suspended": true, "reason": "Sent the same advert to dozens of strangers."}' \
+  https://caime.example.com/v1/admin/people/noor/suspension
+# Appeals waiting (waiting=0 lists decided ones too), then one decided: lift or uphold, with an
+# optional note the person reads. 409 `appeal_decided` if it already was.
+curl -H "Authorization: Bearer $ADMIN_TOKEN" 'https://caime.example.com/v1/admin/appeals?waiting=1'
+curl -X POST -H "Authorization: Bearer $ADMIN_TOKEN" -H 'content-type: application/json' \
+  -d '{"decision": "uphold", "note": "Three of the people you wrote to reported it."}' \
+  https://caime.example.com/v1/admin/appeals/<id>
 ```
 
 ## Someone locked out

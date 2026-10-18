@@ -64,9 +64,10 @@ import { endAllAccess } from '../lib/moderation';
 import { sendResetLink } from '../lib/reset';
 import { clearSessionCookie } from '../lib/session-cookie';
 import { clientInfo, createSession, endSessions, passwordTry } from '../lib/sessions';
+import { suspendedRefusal } from '../lib/suspension';
 import { meView, oldEnoughIn, seedDefaults, tooYoung, workweekFor } from '../lib/users';
 import { parse } from '../lib/validate';
-import { requireAuth, suspended, tokenFrom } from '../plugins/auth';
+import { requireAuth, tokenFrom } from '../plugins/auth';
 
 /**
  * New recovery codes in place of the old, all under one salt: made one set at a time for an
@@ -289,7 +290,8 @@ export async function authRoutes(app: FastifyInstance, ctx: AppContext) {
       .where('deleted_at', 'is', null)
       .executeTakeFirst();
     const ok = await verifyPassword(body.password, user?.password_hash ?? (await decoyHash()));
-    if (ok && user?.suspended_at) throw suspended();
+    // Suspended (R49): told why, with a claim that opens an appeal and their data (M16 B6).
+    if (ok && user?.suspended_at) throw await suspendedRefusal(ctx, user, true);
     // Bots act only through their app's token, never a session (R16).
     if (!user || !ok || user.kind !== 'human') {
       await audit(ctx.db, {

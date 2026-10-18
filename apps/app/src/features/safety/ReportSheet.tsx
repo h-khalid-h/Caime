@@ -5,7 +5,8 @@
  * for. A message goes with the few before it, kept as the reporter sees them (M16 B3).
  */
 
-import { msg, tr, trAll } from '@caime/core/i18n';
+import { tr, trAll } from '@caime/core/i18n';
+import { REPORT_REASON_CHOICES } from '@caime/core/report-reasons';
 import { useState } from 'react';
 import { View } from 'react-native';
 import { endpoints } from '@/api/endpoints';
@@ -17,31 +18,7 @@ import { TextField } from '@/ui/TextField';
 import { toast } from '@/ui/Toast';
 import { type Reason, useReport } from './report';
 
-const REASONS: Array<{ value: Reason; label: string; detail: string }> = [
-  { value: 'spam', label: msg('Spam'), detail: msg('Ads, or the same message again and again') },
-  { value: 'scam', label: msg('A scam'), detail: msg('Asking for money, a password or a code') },
-  {
-    value: 'harassment',
-    label: msg('Harassment or bullying'),
-    detail: msg('Threats, insults, hounding'),
-  },
-  {
-    value: 'impersonation',
-    label: msg('Pretending to be someone'),
-    detail: msg('A person or organization they aren’t'),
-  },
-  {
-    value: 'inappropriate',
-    label: msg('Inappropriate'),
-    detail: msg('Violence, sexual content, hate'),
-  },
-  {
-    value: 'child_safety',
-    label: msg('A child’s safety'),
-    detail: msg('Someone under 18 at risk, or sexual content involving a child'),
-  },
-  { value: 'other', label: msg('Something else'), detail: msg('Say what below') },
-];
+const REASONS = REPORT_REASON_CHOICES;
 
 export function ReportSheet() {
   const { target, name } = useReport();

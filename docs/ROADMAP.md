@@ -2028,10 +2028,28 @@ graph) and the number that will show it; one that sharpens none is hygiene and s
       byte, and the full gate. ⛔ The owner sets `VAULT_KEY` and `BACKUP_KEY` in EasyPanel, each kept
       in a password manager too (DEPLOY.md, "Keys apart from the data"); until then the database
       holds its key and dumps are plain.
-- [ ] B, the rest: a visitor's report from a page, a suspended account's reason, appeal and
-      export; age assurance phase 1
-      (`age_assurance` levels, `AgeProvider` behind a signed webhook, the paid, organization and
-      stranger triggers, the privacy page and the DPA).
+- [x] B6. Notice and action for everyone (2026-10-18), the DSA's Art. 16, 17 and 20 and the first
+      thing a regulator or a parent checks: anyone reports a person's or an organization's page, an
+      item or a collection from the page itself (a form folded at its end, no script, no account:
+      `POST /v1/public/report` in its own plugin, five an hour from one network and three a day from
+      one address, the page named by its own fields, a few words, a name and an address unless it's
+      about a child's safety, a statement of good faith), kept as a report with whom to tell
+      (migration 0102), who is mailed a receipt and, once it's closed, the decision; a suspension
+      says why (ten characters at least; from a report, what it was for); a suspended sign-in, after
+      the password or the passkey alone, answers with that reason and a claim
+      (`serverKey('suspension.claim')`, thirty minutes) that opens an appeal (one open at a time)
+      and the person's export, never a session; the operator lifts or upholds on `/admin/reports`
+      or `POST /admin/appeals/:id`, the lift and the decision in one transaction, the person mailed
+      with the note; a decided appeal is kept 180 days and is in the export; `/metrics` says what
+      waits on the operator (`caime_moderation_waiting`, `caime_moderation_oldest_seconds`, a
+      child's safety apart) and counts reports and appeals, with two alerts in DEPLOY. The reasons
+      are one list in core (`REPORT_REASON_CHOICES`) for the app's sheet and the page's form.
+      Verified with `visitor-reports.test.ts` (8), `reports.test.ts`, `metrics.test.ts`, the
+      catalogs in every language, the E2E `safety.spec.ts` (a visitor on a phone reports an
+      organization's page and gets both mails from the SMTP stand-in; a suspended person signs in,
+      reads why, appeals, downloads their data, and signs in once it's lifted) and the full gate.
+- [ ] B7. Age assurance phase 1: `age_assurance` levels, `AgeProvider` behind a signed webhook,
+      the paid, organization and stranger triggers, the privacy page and the DPA.
 - [ ] ⛔ B, the owner's: an age-assurance provider (Agemin or another) with retention terms, a DPA
       and the NIST result; the penetration test.
 - [x] C1a. Booking before an account (2026-10-17): an organization's bookable public item's page
@@ -4030,6 +4048,9 @@ graph) and the number that will show it; one that sharpens none is hygiene and s
   journeys, safety, reliability, performance, intelligence, mail and calendar, chat, integrations,
   business and code integrity; the matrix against WhatsApp, Signal, Slack, Calendly and Workspace;
   an age-assurance design; the integration framework mapped to the code; plan M16 (A–H).
+- 2026-10-18 — M16 B6: notice and action for everyone: a report from any public page without an
+  account, answered by mail; a suspension says why, and a suspended person appeals and downloads
+  their data; what waits on the operator is on /metrics. B4 verified on cai.me.
 - 2026-10-18 — M16 B5: keys apart from the data: VAULT_KEY seals connected accounts' tokens and
   the database's key goes once nothing it opens is left; BACKUP_KEY encrypts every dump before it's
   kept or copied, with a tool to turn one back; ⛔ both values are the owner's to set.

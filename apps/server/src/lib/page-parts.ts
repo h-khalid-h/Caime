@@ -5,8 +5,15 @@
  * a page runs right to left as it is; nothing here runs a script.
  */
 import { tr } from '@caime/core/i18n';
+import { REPORT_REASON_CHOICES } from '@caime/core/report-reasons';
 import { FACE, px, type } from './page-style';
 import { esc } from './site-pages';
+import {
+  REPORT_DETAILS_MAX,
+  REPORT_DETAILS_MIN,
+  type VisitorReportRefusal,
+  type VisitorReportState,
+} from './visitor-reports';
 
 /** Lucide's drawings (ISC), as the app's icons are, for the eye alone. */
 const ICONS = {
@@ -108,6 +115,49 @@ export function pageFoot(promise: string, wordmark: string): string {
   return `<footer class="pagefoot"><a class="wordmark" href="/" aria-label="${esc(tr('Caime'))}">${wordmark}</a><p>${esc(promise)}</p><p><a href="/sign-up">${esc(tr('Make your own page on {site}', { site: 'Caime' }))}</a> · <a href="/privacy">${esc(tr('Privacy'))}</a> · <a href="/terms">${esc(tr('Terms'))}</a></p></footer>`;
 }
 
+const reportRefusal = (r: VisitorReportRefusal): string =>
+  r === 'too_many'
+    ? tr('Too many reports from here just now. Try again in an hour.')
+    : r === 'contact'
+      ? tr('Give your name and an email address we can write to (not needed for a child’s safety).')
+      : r === 'details'
+        ? tr('Say what’s wrong in a few words.')
+        : tr('Tick the box to say what you wrote is accurate.');
+
+/**
+ * Anyone may report a page about someone (M16 B6, the DSA's notice and action): a form folded
+ * at the page's end, opened by `?report`, posted to `/v1/public/report`, which answers back to
+ * the page. No script: a `<details>`, radios and a checkbox.
+ */
+export function reportSection(
+  state: VisitorReportState,
+  about: { kind: 'person' | 'org'; handle: string; slug?: string },
+  language: string,
+): string {
+  const hidden =
+    `<input type="hidden" name="kind" value="${about.kind}">` +
+    `<input type="hidden" name="handle" value="${esc(about.handle)}">` +
+    `<input type="hidden" name="slug" value="${esc(about.slug ?? '')}">` +
+    `<input type="hidden" name="lang" value="${esc(language)}">`;
+  const body = state.sent
+    ? `<p class="notice ok" role="status">${esc(tr('Thanks. Someone at Caime reads every report; if you left your email, we’ll write to you there when it’s decided.'))}</p>`
+    : `${state.error ? `<p class="notice" role="alert">${esc(reportRefusal(state.error))}</p>` : ''}
+<form class="form" method="post" action="/v1/public/report">${hidden}
+<fieldset class="day"><legend>${esc(tr('What’s wrong'))}</legend><div class="fields">
+${REPORT_REASON_CHOICES.map((c) => `<label class="check"><input type="radio" name="reason" value="${c.value}" required><span>${esc(tr(c.label))}</span></label>`).join('\n')}
+</div></fieldset>
+<div class="fields">
+<label class="field">${esc(tr('What you saw'))}<textarea name="details" minlength="${REPORT_DETAILS_MIN}" maxlength="${REPORT_DETAILS_MAX}" required dir="auto"></textarea></label>
+<label class="field">${esc(tr('Your name'))}<input name="name" maxlength="80" autocomplete="name"></label>
+<label class="field">${esc(tr('Email'))}<input type="email" name="email" maxlength="254" autocomplete="email"></label>
+<label class="check"><input type="checkbox" name="statement" value="on" required><span>${esc(tr('I believe what I wrote here is accurate and complete.'))}</span></label>
+</div>
+<button class="btn" type="submit">${esc(tr('Send the report'))}</button>
+<p class="how">${esc(tr('Your name and email are needed, unless it’s about a child’s safety. Caime writes to you when it has decided.'))}</p></form>`;
+  return `<details class="formcard report" id="report"${state.open || state.sent ? ' open' : ''}><summary>${esc(tr('Report this page'))}</summary>
+${body}</details>`;
+}
+
 /** The visitor pages' look (R95), beside the site's and the entry screens'. */
 export const SHEET_STYLE = `
 .pub-sheet{max-width:720px;padding:0 20px 40px;line-height:1.5}
@@ -202,4 +252,7 @@ export const SHEET_STYLE = `
 .pub-sheet .notice{margin:0;padding:12px 14px;border-radius:${px.radius('md')};background:var(--surface-muted);${type('message')};color:var(--text)}
 .pub-sheet .notice a{color:var(--primary)}
 .pub-sheet .notice.ok{border:1px solid var(--border)}
+.pub-sheet details.report{margin-top:24px}
+.pub-sheet details.report summary{cursor:pointer;${type('label')};color:var(--text-secondary);min-height:${px.touch};display:flex;align-items:center}
+.pub-sheet details.report:not([open]){padding:4px 20px;background:transparent}
 `;
