@@ -1865,12 +1865,12 @@ export interface ProductMetricsView {
     /** Sign-ups through a person's link, per person active in the window. */
     kFactor: number | null;
     /**
-     * The door that needs no account (R97 (1), REVIEW §14 advantage 3): bookings made from an
-     * organization's page before an account in the window, and of the people who first booked
-     * that way 30 to 60 days ago, those who made an account with the same address within thirty
-     * days of it.
+     * The door that needs no account (R97 (1), REVIEW §14 advantage 3): bookings made and
+     * messages written from a page before an account in the window, and of the people who first
+     * came through it either way 30 to 60 days ago, those who made an account with the same
+     * address within thirty days of it.
      */
-    door: { booked: number; joined: Rate };
+    door: { booked: number; written: number; joined: Rate };
     /**
      * Join links (M16 C3e): made and joined through in the window, the joins by an account made
      * for the link (`newPeople`, the number that shows a group moving over), and the asks through

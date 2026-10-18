@@ -1509,4 +1509,25 @@ export const frServer: Catalog = {
   'This link can’t add them to it.': 'Ce lien ne peut pas ajouter cette personne.',
   'You’re in “{place}”': 'Vous êtes dans « {place} »',
   'Your ask to join was accepted.': 'Votre demande a été acceptée.',
+  'Sign in to message {name}': 'Connectez-vous pour écrire à {name}',
+  'Writing without an account isn’t available here yet. Join {site} to message {name}.':
+    'Écrire sans compte n’est pas encore possible ici. Rejoignez {site} pour écrire à {name}.',
+  'That can’t be sent from here.': 'Cela ne peut pas être envoyé d’ici.',
+  'Write your message, up to {n} characters.': 'Écrivez votre message, {n} caractères au plus.',
+  'That took too long. Write your message again.':
+    'Cela a pris trop de temps. Écrivez à nouveau votre message.',
+  'That code has run out. Send your message again for a new one.':
+    'Ce code a expiré. Envoyez à nouveau votre message pour en recevoir un nouveau.',
+  'Your message is with {name}.': 'Votre message a été transmis à {name}.',
+  'Their answer comes to {email} by email. Reply to it to write to them again.':
+    'La réponse arrivera à {email} par e-mail ; il suffit d’y répondre pour écrire à nouveau.',
+  'To read their answer, join {site} free with {email}: your conversation will be there.':
+    'Pour lire la réponse, rejoignez {site} gratuitement avec {email} : votre conversation y sera.',
+  'A six-digit code went to {email}. Type it to send your message to {name}.':
+    'Un code à six chiffres a été envoyé à {email}. Saisissez-le pour envoyer votre message à {name}.',
+  'Change what I wrote': 'Modifier mon message',
+  'A code goes to your email; your message goes once you type it here. {name} answers by email: no account needed.':
+    'Un code arrive dans votre e-mail ; votre message part dès que vous le saisissez ici. {name} répond par e-mail : aucun compte nécessaire.',
+  'A code goes to your email; your message goes once you type it here. Join {site} with that address to read the answer.':
+    'Un code arrive dans votre e-mail ; votre message part dès que vous le saisissez ici. Rejoignez {site} avec cette adresse pour lire la réponse.',
 };

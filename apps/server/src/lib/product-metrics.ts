@@ -173,20 +173,26 @@ export async function productMetrics(ctx: AppContext, days: number): Promise<Pro
     where kind = 'human' and deleted_at is null and created_at > ${from} and created_at <= ${to}
   `);
 
-  // Booking before an account (R97 (1)): its messages are the ones its route sent (their
-  // client id says so), read through the senders it could be, people who were or still are
-  // provisional, so the scan is that handful's messages by the sender index, never the table.
-  const door = await q<{ booked: number; cohort: number; joined: number }>(sql`
+  // Booking and writing before an account (R97 (1)): their messages are the ones their routes
+  // sent (the client id says which), read through the senders they could be, people who were or
+  // still are provisional, so the scan is that handful's messages by the sender index, never the
+  // table.
+  const door = await q<{ booked: number; written: number; cohort: number; joined: number }>(sql`
     with s as (select id, claimed_at from users where kind = 'provisional' or claimed_at is not null),
     b as (
       select m.sender_id, min(m.created_at) as first_at,
-        count(*) filter (where m.created_at > ${from} and m.created_at <= ${to})::int as in_window
+        count(*) filter (where m.client_id like 'public-book:%'
+          and m.created_at > ${from} and m.created_at <= ${to})::int as in_window,
+        count(*) filter (where m.client_id like 'public-write:%'
+          and m.created_at > ${from} and m.created_at <= ${to})::int as written
       from s join messages m on m.sender_id = s.id
-      where m.client_id like 'public-book:%' and m.created_at > ${from < ago(60) ? from : ago(60)}
+      where (m.client_id like 'public-book:%' or m.client_id like 'public-write:%')
+        and m.created_at > ${from < ago(60) ? from : ago(60)}
       group by m.sender_id
     )
     select
       coalesce((select sum(in_window) from b), 0)::int as booked,
+      coalesce((select sum(written) from b), 0)::int as written,
       (select count(*)::int from b where first_at > ${ago(60)} and first_at <= ${ago(30)}) as cohort,
       (select count(*)::int from b join s on s.id = b.sender_id
         where b.first_at > ${ago(60)} and b.first_at <= ${ago(30)}
@@ -303,7 +309,11 @@ export async function productMetrics(ctx: AppContext, days: number): Promise<Pro
         engagement.people > 0
           ? Math.round((invites.via_people / engagement.people) * 1000) / 1000
           : null,
-      door: { booked: door.booked, joined: rate(door.joined, door.cohort) },
+      door: {
+        booked: door.booked,
+        written: door.written,
+        joined: rate(door.joined, door.cohort),
+      },
       joinLinks: {
         made: joinLinks.made,
         joined: joinLinks.joined,

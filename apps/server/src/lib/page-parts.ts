@@ -180,24 +180,25 @@ export const SHEET_STYLE = `
 .pub-sheet .how{margin-top:8px}
 }
 [dir=rtl] .pub-sheet .hero h1,[dir=rtl] .pub-sheet .item-main h1{letter-spacing:0}
-.pub-sheet .book{display:flex;flex-direction:column;gap:14px;padding:20px;border:1px solid var(--border);border-radius:${px.radius('lg')};background:var(--surface)}
-.pub-sheet .book h2{${type('headline')};color:var(--ink);margin:0}
-.pub-sheet .book .form{display:flex;flex-direction:column;gap:16px}
-.pub-sheet .book .day{border:0;padding:0;margin:0;min-width:0}
-.pub-sheet .book legend{${type('captionStrong')};color:var(--text-secondary);padding:0;margin-bottom:8px}
-.pub-sheet .book .times{display:flex;flex-wrap:wrap;gap:8px}
-.pub-sheet .book .time{position:relative;display:inline-flex}
-.pub-sheet .book .time input{position:absolute;inset:0;margin:0;opacity:0}
-.pub-sheet .book .time span{display:inline-flex;align-items:center;min-height:${px.height('md')};padding:0 14px;border:1px solid var(--border);border-radius:${px.radius('pill')};${type('label')};color:var(--text);background:var(--surface-muted)}
-.pub-sheet .book .time input:checked+span{background:var(--primary);color:var(--on-primary);border-color:var(--primary)}
-.pub-sheet .book .time input:focus-visible+span{outline:2px solid var(--primary);outline-offset:2px}
-.pub-sheet .book .pager{display:flex;gap:16px;margin:0;${type('label')}}
-.pub-sheet .book .fields{display:flex;flex-direction:column;gap:12px}
-.pub-sheet .book .field{display:flex;flex-direction:column;gap:6px;${type('captionStrong')};color:var(--text-secondary)}
-.pub-sheet .book .field input{box-sizing:border-box;width:100%;height:${px.height('field')};border:1px solid var(--border);border-radius:${px.radius('md')};background:var(--surface);padding:0 14px;${type('message')};color:var(--text)}
-.pub-sheet .book .check{display:flex;align-items:center;gap:10px;${type('message')};color:var(--text)}
-.pub-sheet .book .check input{width:20px;height:20px;margin:0;accent-color:var(--primary)}
-.pub-sheet .book button.btn{border:0;cursor:pointer;align-self:flex-start}
+.pub-sheet .formcard{display:flex;flex-direction:column;gap:14px;padding:20px;border:1px solid var(--border);border-radius:${px.radius('lg')};background:var(--surface)}
+.pub-sheet .formcard h2{${type('headline')};color:var(--ink);margin:0}
+.pub-sheet .formcard .form{display:flex;flex-direction:column;gap:16px}
+.pub-sheet .formcard .day{border:0;padding:0;margin:0;min-width:0}
+.pub-sheet .formcard legend{${type('captionStrong')};color:var(--text-secondary);padding:0;margin-bottom:8px}
+.pub-sheet .formcard .times{display:flex;flex-wrap:wrap;gap:8px}
+.pub-sheet .formcard .time{position:relative;display:inline-flex}
+.pub-sheet .formcard .time input{position:absolute;inset:0;margin:0;opacity:0}
+.pub-sheet .formcard .time span{display:inline-flex;align-items:center;min-height:${px.height('md')};padding:0 14px;border:1px solid var(--border);border-radius:${px.radius('pill')};${type('label')};color:var(--text);background:var(--surface-muted)}
+.pub-sheet .formcard .time input:checked+span{background:var(--primary);color:var(--on-primary);border-color:var(--primary)}
+.pub-sheet .formcard .time input:focus-visible+span{outline:2px solid var(--primary);outline-offset:2px}
+.pub-sheet .formcard .pager{display:flex;gap:16px;margin:0;${type('label')}}
+.pub-sheet .formcard .fields{display:flex;flex-direction:column;gap:12px}
+.pub-sheet .formcard .field{display:flex;flex-direction:column;gap:6px;${type('captionStrong')};color:var(--text-secondary)}
+.pub-sheet .formcard .field input{box-sizing:border-box;width:100%;height:${px.height('field')};border:1px solid var(--border);border-radius:${px.radius('md')};background:var(--surface);padding:0 14px;${type('message')};color:var(--text)}
+.pub-sheet .formcard .field textarea{box-sizing:border-box;width:100%;min-height:132px;resize:vertical;border:1px solid var(--border);border-radius:${px.radius('md')};background:var(--surface);padding:12px 14px;${type('message')};color:var(--text)}
+.pub-sheet .formcard .check{display:flex;align-items:center;gap:10px;${type('message')};color:var(--text)}
+.pub-sheet .formcard .check input{width:20px;height:20px;margin:0;accent-color:var(--primary)}
+.pub-sheet .formcard button.btn{border:0;cursor:pointer;align-self:flex-start}
 .pub-sheet .notice{margin:0;padding:12px 14px;border-radius:${px.radius('md')};background:var(--surface-muted);${type('message')};color:var(--text)}
 .pub-sheet .notice a{color:var(--primary)}
 .pub-sheet .notice.ok{border:1px solid var(--border)}

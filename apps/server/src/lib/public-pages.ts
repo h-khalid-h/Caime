@@ -80,6 +80,12 @@ import {
   visitorBookingState,
 } from './public-booking';
 import {
+  type VisitorWriteState,
+  visitorWriteState,
+  WRITE_MAX,
+  type WriteRefusal,
+} from './public-write';
+import {
   esc,
   explorerStyle,
   LANDING_DESCRIPTION,
@@ -149,6 +155,12 @@ export interface PublicOrg {
   items: PublicItem[];
   collections: PublicCollection[];
   pays: PaymentKind[];
+  /**
+   * Writing before an account (R97 (1), M16 C1d): the form, the code step or the sent notice on
+   * its own page; null where the page offers only joining (no mailer, or the organization as an
+   * item's host).
+   */
+  write: VisitorWriteState | null;
 }
 /** A catalog item as a visitor reads it: nothing of who does it. */
 export type PublicItem = Pick<
@@ -347,6 +359,7 @@ async function publicOrgFrom(db: Q, o: Organization): Promise<PublicOrg> {
     places: await orgPlacesFor({ db }, o.id, null),
     ...publicCatalog(o, await stockFor(db, o.id, catalogOf(o).items)),
     pays: publicPays(o),
+    write: null,
   };
 }
 
@@ -551,7 +564,8 @@ export async function publicPageFor(
     const row = await orgRowByHandle(db, handle);
     if (!row) return slug ? { kind: 'app' } : { kind: 'missing' };
     const o = await publicOrgFrom(db, row);
-    if (!slug) return o;
+    // A visitor writes to it from its page, the door's three fields first (R97 (1)).
+    if (!slug) return { ...o, write: await visitorWriteState(ctx, o.org, search) };
     const shelf = shelfPage(o, slug);
     if (!shelf) return { kind: 'app' };
     // A visitor books an organization's item from its page (R97 (1)).
@@ -565,7 +579,10 @@ export async function publicPageFor(
   const [o, person] = await Promise.all([publicOrg(db, handle), publicPerson(db, handle, now)]);
   const host = o ?? person;
   if (!host) return { kind: 'missing' };
-  if (!slug) return host;
+  if (!slug)
+    return host.kind === 'org'
+      ? { ...host, write: await visitorWriteState(ctx, host.org, search) }
+      : host;
   const shelf = shelfPage(host, slug);
   if (!shelf) return { kind: 'missing' };
   if (shelf.kind !== 'item') return shelf;
@@ -964,6 +981,10 @@ export function renderPublic(
       };
     }
     case 'org': {
+      // Writing without an account (R97 (1)): the door's three fields lead the page when they came
+      // by it or are partway through; otherwise the form waits below what the organization offers.
+      const write = page.write;
+      const writeLeads = write !== null && (write.step !== 'write' || write.lead);
       const o = page.org;
       const facts = [
         o.verified && o.verifiedDomain
@@ -1005,9 +1026,15 @@ export function renderPublic(
     <h1>${esc(o.name)}</h1>
     <p class="who"><bdi>@${esc(o.handle)}</bdi>${o.verified && o.verifiedDomain ? verifiedMark(o.verifiedDomain) : ''}<span class="mono">${esc(tr('an organization on {site}', { site: SITE_NAME }))}</span></p>
     ${page.about ? `<p class="lead">${esc(page.about)}</p>` : ''}
-    <div class="actions">${bookLink(page.items, `/o/${o.handle}`, o.name)}${payLink(page, `/o/${o.handle}`, page.items.length > 0)}<a class="btn${page.items.length || page.pays.length ? ' quiet' : ''}" href="${wayIn('sign-up', doorPath(o.handle))}">${icon('message', 18)}${esc(tr('Message {name} on {site}', { name: o.name, site: SITE_NAME }))}</a></div>
+    <div class="actions">${bookLink(page.items, `/o/${o.handle}`, o.name)}${payLink(page, `/o/${o.handle}`, page.items.length > 0)}${
+      write
+        ? `<a class="btn${page.items.length || page.pays.length ? ' quiet' : ''}" href="#write">${icon('message', 18)}${esc(tr('Message {name}', { name: o.name }))}</a>`
+        : `<a class="btn${page.items.length || page.pays.length ? ' quiet' : ''}" href="${wayIn('sign-up', doorPath(o.handle))}">${icon('message', 18)}${esc(tr('Message {name} on {site}', { name: o.name, site: SITE_NAME }))}</a>`
+    }</div>
   </section>
+  ${write && writeLeads ? writeSection(o, write) : ''}
   ${offerSections(page)}
+  ${write && !writeLeads ? writeSection(o, write) : ''}
   ${section(tr('Where'), page.places.length ? `<ul class="cards">${page.places.map(placeCard).join('')}</ul>` : '')}
   ${section(
     sentence(tr('about')),
@@ -1622,14 +1649,14 @@ function bookingSection(
     reason ? `<p class="notice" role="alert">${refusalLine(reason, path)}</p>` : '';
   if (booking.step === 'booked') {
     const when = whenLabel(booking.at, booking.timeZone);
-    return `<section class="book" id="book" aria-labelledby="book-title"><h2 id="book-title">${esc(tr('Booked'))}</h2>
+    return `<section class="formcard" id="book" aria-labelledby="book-title"><h2 id="book-title">${esc(tr('Booked'))}</h2>
 <p class="notice ok">${esc(tr('{item}, {when}. {name} confirms in your conversation.', { item: item.name, when, name }))}</p>
 <p class="how">${esc(tr('To follow it, join {site} free with {email}: your booking will be there.', { site: SITE_NAME, email: booking.email }))}</p>
 <p><a class="btn" href="${esc(wayIn('sign-up', path))}">${esc(tr('Join {site}', { site: SITE_NAME }))}</a></p></section>`;
   }
   if (booking.step === 'code') {
     const when = whenLabel(booking.at, booking.timeZone);
-    return `<section class="book" id="book" aria-labelledby="book-title"><h2 id="book-title">${esc(tr('Check your email'))}</h2>
+    return `<section class="formcard" id="book" aria-labelledby="book-title"><h2 id="book-title">${esc(tr('Check your email'))}</h2>
 <p class="lead">${esc(tr('A six-digit code went to {email}. Type it to book {item}, {when}.', { email: booking.email, item: item.name, when }))}</p>
 ${notice(booking.error)}
 <form class="form" method="post" action="/v1/public/book/confirm">${hidden}<input type="hidden" name="claim" value="${esc(booking.claim)}">
@@ -1655,7 +1682,7 @@ ${notice(booking.error)}
     slots.previous || slots.next
       ? `<p class="pager">${slots.previous ? `<a href="${esc(`${path}?from=${slots.previous}`)}#book">${esc(tr('Earlier'))}</a>` : ''}${slots.next ? `<a href="${esc(`${path}?from=${slots.next}`)}#book">${esc(tr('Later'))}</a>` : ''}</p>`
       : '';
-  return `<section class="book" id="book" aria-labelledby="book-title"><h2 id="book-title">${esc(tr('Book a time'))}</h2>
+  return `<section class="formcard" id="book" aria-labelledby="book-title"><h2 id="book-title">${esc(tr('Book a time'))}</h2>
 ${notice(booking.error)}
 <form class="form" method="post" action="/v1/public/book">${hidden}
 ${days}${pager}
@@ -1666,6 +1693,107 @@ ${days}${pager}
 </div>
 <button class="btn" type="submit">${esc(tr('Book'))}</button>
 <p class="how">${esc(tr('A code goes to your email; the time is yours once you type it here. Nothing is kept before that.'))}</p></form></section>`;
+}
+
+/** Why a visitor's message stopped, in the page's words; a known account is sent to sign in. */
+function writeRefusalLine(reason: WriteRefusal, o: OrgRef): string {
+  const site = SITE_NAME;
+  switch (reason) {
+    case 'account':
+      return `${esc(tr('That address has a {site} account.', { site }))} <a href="${esc(wayIn('sign-in', doorPath(o.handle)))}">${esc(tr('Sign in to message {name}', { name: o.name }))}</a>`;
+    case 'no_mail':
+      return esc(
+        tr('Writing without an account isn’t available here yet. Join {site} to message {name}.', {
+          site,
+          name: o.name,
+        }),
+      );
+    case 'not_open':
+      return esc(tr('That can’t be sent from here.'));
+    case 'message':
+      return esc(tr('Write your message, up to {n} characters.', { n: WRITE_MAX }));
+    case 'expired':
+      return esc(tr('That took too long. Write your message again.'));
+    case 'wrong_code':
+      return esc(tr('That code isn’t right. Check the email again.'));
+    case 'code_expired':
+      return esc(tr('That code has run out. Send your message again for a new one.'));
+    case 'too_many':
+      return esc(tr('Too many tries for now. Try again in an hour.'));
+    case 'adult':
+      return esc(
+        tr(
+          'Under 18, you can message organizations that have verified who they are. {name} hasn’t yet.',
+          { name: o.name },
+        ),
+      );
+  }
+}
+
+/**
+ * Writing before an account on an organization's page (R97 (1), M16 C1d): a name, an address and
+ * the message (and the age box where the organization hasn't proved who it is, R29), posted to
+ * `/v1/public/write`; then the code, posted to `/v1/public/write/confirm`; then the notice that
+ * it went and where the answer comes: by mail where Caime Mail carries the team's words, else to
+ * whoever joins with the address (R93). No script: every step is a page.
+ */
+function writeSection(o: OrgRef, write: VisitorWriteState): string {
+  const language = currentTranslator().language;
+  const path = `/o/${o.handle}`;
+  const hidden =
+    `<input type="hidden" name="org" value="${esc(o.handle)}">` +
+    `<input type="hidden" name="lang" value="${esc(language)}">`;
+  const notice = (reason: WriteRefusal | null) =>
+    reason ? `<p class="notice" role="alert">${writeRefusalLine(reason, o)}</p>` : '';
+  if (write.step === 'written') {
+    return `<section class="formcard" id="write" aria-labelledby="write-title"><h2 id="write-title">${esc(tr('Sent'))}</h2>
+<p class="notice ok" role="status">${esc(tr('Your message is with {name}.', { name: o.name }))}</p>
+<p class="how">${esc(
+      write.repliesByMail
+        ? tr('Their answer comes to {email} by email. Reply to it to write to them again.', {
+            email: write.email,
+          })
+        : tr(
+            'To read their answer, join {site} free with {email}: your conversation will be there.',
+            {
+              site: SITE_NAME,
+              email: write.email,
+            },
+          ),
+    )}</p>
+<p><a class="btn${write.repliesByMail ? ' quiet' : ''}" href="${esc(wayIn('sign-up', doorPath(o.handle)))}">${esc(tr('Join {site}', { site: SITE_NAME }))}</a></p></section>`;
+  }
+  if (write.step === 'code') {
+    return `<section class="formcard" id="write" aria-labelledby="write-title"><h2 id="write-title">${esc(tr('Check your email'))}</h2>
+<p class="lead">${esc(tr('A six-digit code went to {email}. Type it to send your message to {name}.', { email: write.email, name: o.name }))}</p>
+${notice(write.error)}
+<form class="form" method="post" action="/v1/public/write/confirm">${hidden}<input type="hidden" name="claim" value="${esc(write.claim)}">
+<div class="fields"><label class="field">${esc(tr('Code'))}<input name="code" inputmode="numeric" pattern="[0-9]{6}" maxlength="6" autocomplete="one-time-code" required></label></div>
+<button class="btn" type="submit">${esc(tr('Send'))}</button>
+<p class="how"><a href="${esc(`${path}?write-again=${encodeURIComponent(write.claim)}`)}#write">${esc(tr('Change what I wrote'))}</a></p></form></section>`;
+  }
+  const before = write.prefill;
+  return `<section class="formcard" id="write" aria-labelledby="write-title"><h2 id="write-title">${esc(tr('Write to {name}', { name: o.name }))}</h2>
+${notice(write.error)}
+<form class="form" method="post" action="/v1/public/write">${hidden}
+<div class="fields">
+<label class="field">${esc(tr('Your name'))}<input name="name" maxlength="80" autocomplete="name" required value="${esc(before?.name ?? '')}"></label>
+<label class="field">${esc(tr('Email'))}<input type="email" name="email" maxlength="254" autocomplete="email" required value="${esc(before?.email ?? '')}"></label>
+<label class="field">${esc(tr('Message'))}<textarea name="message" maxlength="${WRITE_MAX}" required dir="auto">${esc(before?.body ?? '')}</textarea></label>
+${write.asksAge ? `<label class="check"><input type="checkbox" name="adult" value="on" required><span>${esc(tr('I’m 18 or over'))}</span></label>` : ''}
+</div>
+<button class="btn" type="submit">${esc(tr('Send'))}</button>
+<p class="how">${esc(
+    write.repliesByMail
+      ? tr(
+          'A code goes to your email; your message goes once you type it here. {name} answers by email: no account needed.',
+          { name: o.name },
+        )
+      : tr(
+          'A code goes to your email; your message goes once you type it here. Join {site} with that address to read the answer.',
+          { site: SITE_NAME },
+        ),
+  )} <a href="${esc(wayIn('sign-in', doorPath(o.handle)))}">${esc(tr('Sign in to message {name}', { name: o.name }))}</a></p></form></section>`;
 }
 
 /** A place on a page (R92, R95) as a card: its name, its address in the reader's language, a map. */

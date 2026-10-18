@@ -107,7 +107,12 @@ handful of people who were or are provisional, and their messages by the sender 
 before a confirmed one (C1c) costs one job row and one mail, and only for a booker without an
 account whose booking was confirmed a day and a half or more ahead; the job reads the card and
 two rows again when it runs. A person's page books the same way, at the same cost, with one more
-row read for the person behind the handle. Closed days (C2a) cost nothing new: the slots skip
+row read for the person behind the handle. Writing before an account (C1d) costs a page view
+nothing beyond the page (the form is markup; a step's claim is opened in memory), a message one
+code mail and the rows any customer's first message writes, and the team's answer one mail out
+through the provider, as any answer to someone reached by mail; the first one reads the
+customer's last words once for its subject. The daily sweep's added day costs nothing (one more
+condition on the same delete). Closed days (C2a) cost nothing new: the slots skip
 them in the same walk. The door is asked again each time it's shown (one row read and a code of
 a short link, milliseconds), since its Book link follows the catalog. A team invite (C3a) is one
 row, and one mail when it's sent to an address; opening and accepting it are a handful of

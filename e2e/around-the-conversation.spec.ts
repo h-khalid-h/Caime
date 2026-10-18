@@ -134,12 +134,12 @@ test.describe
       await page.getByTestId('composer-send').click();
       await expect(visible(page, 'Offline. 1 message will go when you’re back.')).toBeVisible();
       await expect(
-        page.getByLabel(/Sent from the tunnel, .*(queued|sending)$/).filter({ visible: true }),
+        page.getByLabel(/Sent from the tunnel, .*Sending$/).filter({ visible: true }),
       ).toBeVisible();
       await alexContext.setOffline(false);
       await expect(visible(noor.page, 'Sent from the tunnel')).toBeVisible();
       await expect(
-        page.getByLabel(/Sent from the tunnel, .*(sent|delivered|read)$/).filter({ visible: true }),
+        page.getByLabel(/Sent from the tunnel, .*(Sent|Delivered|Read)$/).filter({ visible: true }),
       ).toBeVisible();
       await expect(page.getByText(/^Offline\./).filter({ visible: true })).toHaveCount(0);
       // While offline the browser logs the failed requests; nothing else may go wrong.
@@ -813,10 +813,15 @@ test.describe
       await visitor.waitForTimeout(1500);
       await expect(visitor).toHaveURL(new RegExp(`/o/${handle.replaceAll('.', '\\.')}$`));
       await expect(visitor.locator('#static')).toBeVisible();
-      // Its way in leads to sign-up; the app remembers this page and comes back to it after.
+      // Its way in is the form on the page, no account needed (R97 (1)); signing in comes back
+      // to the door, which the app remembers.
       await expect(
-        visitor.getByRole('link', { name: `Message Nile Dental ${stamp} on Caime` }),
-      ).toHaveAttribute('href', `/sign-up?link=${encodeURIComponent(`/o/${handle}?write`)}`);
+        visitor.getByRole('link', { name: `Message Nile Dental ${stamp}`, exact: true }),
+      ).toHaveAttribute('href', '#write');
+      await expect(visitor.locator('#write textarea[name="message"]')).toBeVisible();
+      await expect(
+        visitor.getByRole('link', { name: `Sign in to message Nile Dental ${stamp}` }),
+      ).toHaveAttribute('href', `/sign-in?link=${encodeURIComponent(`/o/${handle}?write`)}`);
       await expect(visitor.locator('#root')).toBeHidden();
       await visiting.close();
       expect(await (await page.request.get('/sitemap.xml')).text()).toContain(`/o/${handle}<`);
@@ -3176,7 +3181,7 @@ test.describe
       // Sent first: until then it's the copy waiting to go, which the sent one replaces. The
       // bubble itself (the chat list's preview says the same words).
       const bubble = page
-        .getByLabel(/Middlemarch in October, then Beloved, .*(sent|delivered|read)$/)
+        .getByLabel(/Middlemarch in October, then Beloved, .*(Sent|Delivered|Read)$/)
         .filter({ visible: true });
       await expect(bubble).toBeVisible();
       await bubble.hover();
@@ -3232,7 +3237,7 @@ test.describe
       await page.getByTestId('composer-input').fill('Reading list: https://books.example.org/list');
       await page.getByTestId('composer-send').click();
       await expect(
-        page.getByLabel(/Reading list: .*, (sent|delivered|read)$/).filter({ visible: true }),
+        page.getByLabel(/Reading list: .*, (Sent|Delivered|Read)$/).filter({ visible: true }),
       ).toBeVisible();
       await page.getByTestId('open-shared').filter({ visible: true }).click();
       await expect(page.getByRole('tab', { name: 'Links, 1' })).toHaveAttribute(
@@ -3284,7 +3289,7 @@ test.describe
       await phone.screenshot({ path: 'e2e/screenshots/phone-group-details.png' });
       await phone.getByRole('button', { name: 'Close panel' }).click();
       await expect(
-        phone.getByLabel(/mentions you, @Alex Chen can you pick the next one\?/).filter({
+        phone.getByLabel(/Mentions you, @Alex Chen can you pick the next one\?/).filter({
           visible: true,
         }),
       ).toBeVisible();

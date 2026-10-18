@@ -159,8 +159,9 @@ async function send(ctx: AppContext, payload: Record<string, unknown>): Promise<
   const rfcId = uuidv4();
   const footer = [
     // The first mail Caime ever sends an address that never wrote to it (R93) says who wrote
-    // and how to answer.
-    !known && conversation.kind === 'direct'
+    // and how to answer: a person writing from Caime, or an organization answering someone who
+    // wrote or booked on its page before an account (R97 (1)).
+    !known
       ? `${from.name} wrote this on Caime, from ${from.address}. Reply to this mail to answer: your reply reaches them there.`
       : null,
     `Open in Caime: ${await seenLink(ctx, rfcId)}`,
@@ -168,10 +169,27 @@ async function send(ctx: AppContext, payload: Record<string, unknown>): Promise<
   ].filter(Boolean);
   const opening = `\n\n--\n${footer.join('\n')}`;
   const body = m.body ?? '';
+  // An organization's first mail to someone who wrote on its page (R97 (1)) answers what they
+  // wrote, as a reply to a mail of theirs would: their words' first line is the subject.
+  const opener =
+    !latest && conversation.kind === 'business'
+      ? ((
+          await ctx.db
+            .selectFrom('messages')
+            .select('body')
+            .where('conversation_id', '=', m.conversation_id)
+            .where('sender_id', '=', to.id)
+            .where('kind', '=', 'text')
+            .where('deleted_at', 'is', null)
+            .orderBy('seq', 'desc')
+            .executeTakeFirst()
+        )?.body ?? null)
+      : null;
   const subject =
     (conversation.title &&
       (latest ? `Re: ${bareSubject(conversation.title)}` : conversation.title)) ||
     replySubject(latest?.subject) ||
+    replySubject(opener ? subjectFromText(opener) : null) ||
     subjectFromText(body) ||
     `A message from ${from.name}`;
   const attachments = await attachmentsOf(ctx, m.id);
@@ -371,20 +389,26 @@ export async function applyMailEvents(ctx: AppContext, events: DeliveryEvent[]):
  */
 export async function sweepProvisional(ctx: AppContext): Promise<void> {
   const since = new Date(ctx.now().getTime() - PROVISIONAL_KEEP_MS);
+  // In no conversation for a day at least: a visitor between a page's code and its confirmation
+  // (R97 (1)) is in none yet, and the sweep must not take them from under the code.
+  const settled = new Date(ctx.now().getTime() - 24 * 3_600_000);
   await ctx.db
     .deleteFrom('users')
     .where('kind', '=', 'provisional')
     .where((eb) =>
       eb.or([
-        eb.not(
-          eb.exists(
-            eb
-              .selectFrom('participants as p')
-              .select('p.user_id')
-              .whereRef('p.user_id', '=', 'users.id')
-              .where('p.left_at', 'is', null),
+        eb.and([
+          eb('created_at', '<', settled),
+          eb.not(
+            eb.exists(
+              eb
+                .selectFrom('participants as p')
+                .select('p.user_id')
+                .whereRef('p.user_id', '=', 'users.id')
+                .where('p.left_at', 'is', null),
+            ),
           ),
-        ),
+        ]),
         eb.and([
           eb('created_at', '<', since),
           eb.not(

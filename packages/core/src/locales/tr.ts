@@ -4271,4 +4271,6 @@ export const turkish: Catalog = {
     'İçinde 18 yaşından küçük biri var; bu yüzden herkesi siz ya da bir yönetici kabul eder.',
   'You or an admin let them in, one by one.': 'Onları tek tek siz ya da bir yönetici kabul eder.',
   'asks first': 'önce istek',
+  Forwarded: 'İletildi',
+  '{emoji} {count}, including you': '{emoji} {count}, siz dahil',
 };

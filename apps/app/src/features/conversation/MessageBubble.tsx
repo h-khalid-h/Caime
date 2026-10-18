@@ -1,7 +1,13 @@
 import { palette } from '@caime/brand/tokens';
 import type { FileView, MessageMailView, MessageView } from '@caime/core/api';
 import { AI_LABEL } from '@caime/core/assist';
-import { formatBytes, formatClock, formatDuration, systemText } from '@caime/core/format';
+import {
+  formatBytes,
+  formatClock,
+  formatDuration,
+  messagePreview,
+  systemText,
+} from '@caime/core/format';
 import { tr } from '@caime/core/i18n';
 import { imageFor } from '@caime/core/renditions';
 import { CAI_ID } from '@caime/core/system-ids';
@@ -52,6 +58,12 @@ const VoiceNote = lazy(() =>
 
 export type Delivery = 'queued' | 'sending' | 'failed' | 'sent' | 'delivered' | 'read';
 
+/**
+ * The emoji an inbox preview opens with ("📷 Photo", core's `messagePreview`), which a screen
+ * reader would read out.
+ */
+const LEADING_EMOJI = /^(?:📷|📎|🎙|📍|👤|📊)\uFE0F? /u;
+
 export interface BubbleProps {
   m: MessageView;
   mine: boolean;
@@ -92,20 +104,40 @@ function DeliveryIcon({
       {icon}
     </View>
   );
+  const word = deliveryWord(delivery);
   switch (delivery) {
     case 'queued':
     case 'sending':
-      return mark(tr('Sending'), <Clock size={12} color={color} />);
+      return mark(word, <Clock size={12} color={color} />);
     case 'failed':
-      return mark(tr('Not sent'), <CircleAlert size={13} color="#FFFFFF" />);
+      return mark(word, <CircleAlert size={13} color="#FFFFFF" />);
     case 'sent':
-      return mark(tr('Sent'), <Check size={13} color={color} />);
+      return mark(word, <Check size={13} color={color} />);
     case 'delivered':
-      return mark(tr('Delivered'), <CheckCheck size={13} color={color} />);
+      return mark(word, <CheckCheck size={13} color={color} />);
     case 'read':
-      return mark(tr('Read'), <CheckCheck size={13} color={readColor} />);
+      return mark(word, <CheckCheck size={13} color={readColor} />);
     default:
       return null;
+  }
+}
+
+/** Where a message of one's own is, in words: its mark's and the bubble's for a screen reader. */
+function deliveryWord(delivery: Delivery | undefined): string {
+  switch (delivery) {
+    case 'queued':
+    case 'sending':
+      return tr('Sending');
+    case 'failed':
+      return tr('Not sent');
+    case 'sent':
+      return tr('Sent');
+    case 'delivered':
+      return tr('Delivered');
+    case 'read':
+      return tr('Read');
+    default:
+      return '';
   }
 }
 
@@ -694,17 +726,27 @@ export const MessageBubble = memo(function MessageBubble({
   // Cai's offer of a follow-up (R68), sent or changed only by the reader's tap.
   const followUp = (m.payload as { followUp?: FollowUpPayload } | null)?.followUp;
 
+  // What a screen reader says of the bubble, every word in the reader's language: a photo, a
+  // card or a voice note without words reads as its preview does in the inbox, less the emoji.
   const accessibleText = [
-    mine ? 'You' : (senderName ?? ''),
-    forMe ? 'mentions you' : '',
-    m.pinnedAt && !deleted ? 'pinned' : '',
-    m.forwarded && !deleted ? 'forwarded' : '',
+    mine ? tr('You') : (senderName ?? ''),
+    forMe ? tr('Mentions you') : '',
+    m.pinnedAt && !deleted ? tr('Pinned') : '',
+    m.forwarded && !deleted ? tr('Forwarded') : '',
     m.automated ? (m.aiAgent ? tr('AI agent') : tr('Automated')) : '',
     m.sentVia ? tr('sent via {sentVia}', { sentVia: m.sentVia }) : '',
     m.mail ? mailLine(m.mail, true) : '',
-    deleted ? tr('Message deleted') : (text ?? opened.note ?? sticker?.label ?? m.kind),
+    deleted
+      ? tr('Message deleted')
+      : text ||
+        opened.note ||
+        (sticker ? tr(sticker.label) : '') ||
+        messagePreview({ kind: m.kind, body: null, payload: m.payload, deleted: false }).replace(
+          LEADING_EMOJI,
+          '',
+        ),
     time,
-    delivery && mine ? delivery : '',
+    mine ? deliveryWord(delivery) : '',
   ]
     .filter(Boolean)
     .join(', ');
@@ -859,7 +901,11 @@ export const MessageBubble = memo(function MessageBubble({
             <Pressable
               key={re.emoji}
               accessibilityRole="button"
-              accessibilityLabel={`${re.emoji} ${re.count}${re.mine ? ', including you' : ''}`}
+              accessibilityLabel={
+                re.mine
+                  ? tr('{emoji} {count}, including you', { emoji: re.emoji, count: re.count })
+                  : `${re.emoji} ${re.count}`
+              }
               accessibilityState={{ selected: re.mine }}
               onPress={() => onReact?.(m, re.emoji)}
               style={{

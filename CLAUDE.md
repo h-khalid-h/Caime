@@ -194,7 +194,18 @@ appointment from a catalog).
   and product metrics' `growth.door` reads bookings made this way (their client id is
   `public-book:…`) and, of the people who first booked 30 to 60 days ago, those who joined within
   thirty days (`users.claimed_at`). Anything new a visitor may do from a page follows this shape: a
-  page state, a form, a redirect, a sealed claim.
+  page state, a form, a redirect, a sealed claim. Writing to an organization before an account
+  (C1d, `lib/public-write.ts`, `modules/public-write.ts`) is that shape on its own page:
+  `PublicOrg.write` from `visitorWriteState` (the form leads the page on `?write`, the door's
+  link and QR), `POST /v1/public/write` and `/confirm` answering at `#write` with `?write-code=`,
+  `?write-again=` (a code spent by tries hands the words back), `?written=` or `?write-error=`,
+  the words in a sealed claim (`serverKey('public.write')`), the message posted as the
+  provisional person through `startCustomerConversation` and `sendMessage` (client id
+  `public-write:…`, counted in `growth.door.written`); the team's answer reaches them by Caime
+  Mail's mail out (`repliesByMail`; the page says which), whose first mail in a business thread
+  takes the customer's own first line as its subject. A code's mail says what it's for
+  (`sendEmailCode(…, 'visitor')`), the forms on a visitor's page share the `formcard` style, and
+  the daily sweep leaves a provisional person in no conversation alone for its first day.
 - Jobs (`lib/jobs.ts`): a job that fails its last attempt is dead (`dead_at`), out of the due
   index, counted on `caime_jobs_dead`, listed with its last error and never its payload at
   `GET /v1/admin/jobs`, and given its attempts back by `retryJob` (`POST …/retry`); never delete

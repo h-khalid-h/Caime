@@ -180,6 +180,16 @@ the inviter once (and keeps it only as a fingerprint), and whoever opens it join
 alone. A guest may keep the meeting as a Caime account of their own: the account is that guest, so
 the meeting and what was said in it stay theirs, and the guest&rsquo;s sign-ins end then, on every
 device.</li>
+<li><strong>Booking or writing before an account.</strong> On an organization&rsquo;s page, or a
+person&rsquo;s bookable item, someone who isn&rsquo;t on Caime can book a time or write a message
+with a name and an email address. Caime keeps the address and the name to send a six-digit code
+there; what they chose or wrote is kept nowhere until the code comes back (it rides, sealed, in the
+page&rsquo;s own address, for fifteen minutes), and an address whose code never came back is
+removed within two days. With the code, the booking or the message is kept as that address&rsquo;s,
+seen by the organization or the person it went to, in one conversation with them; their answers
+reach the address by email where Caime carries mail, and a reply to that email comes back into the
+same conversation. Signing up with the address makes all of it theirs; an address that has been
+silent for a year is removed, and its words stay with whoever they went to.</li>
 <li><strong>What Caime works out for you.</strong> In conversations that aren&rsquo;t private,
 Caime notes the dates, amounts, links, email addresses, phone numbers, reference numbers (an order,
 an invoice, a ticket), topics (such as Project Atlas), questions and requests in each message. From these, and from a team, a space or a work email domain you share with someone,

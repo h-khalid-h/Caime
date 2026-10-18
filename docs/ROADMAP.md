@@ -2009,9 +2009,38 @@ graph) and the number that will show it; one that sharpens none is hygiene and s
       `public-booking.spec.ts` (a visitor books Lina's lesson from her page, Lina confirms it on
       the card in the app, the request banner goes and the visitor's confirmation arrives). Live
       through production's mailer (Postmark).
-- [ ] C1d. "Message before an account" at an organization's door the same way (the reply reaches
-      the visitor by mail only with Caime Mail on, said so on the page); a phone number proven by
-      WhatsApp code as the address where `WHATSAPP_*` is set; three fields on a link arrival.
+- [x] C1d. A message before an account at an organization's door (2026-10-18): its page, and the
+      door's link and QR (`?write`, where the form leads the page: three fields on a link
+      arrival), take a name, an address and the message (up to 1,000 characters; "I'm 18 or over"
+      only where the organization hasn't proved who it is, R29). The address proves itself by the
+      six-digit code (`sendEmailCode`, whose mail now says that without it nothing is booked or
+      sent), what was written riding between the steps as a sealed claim
+      (`serverKey('public.write')`, fifteen minutes; a code spent by tries hands it back to the
+      form), and the message lands in the Business inbox as the provisional person's
+      (`startCustomerConversation`, `sendMessage`, its effects run: the team told, the agent
+      asked), twice being once (a `public-write:` client id; a claim posted again is answered as
+      written). The team's answer reaches the visitor by mail from the organization's address
+      where Caime Mail is on, threaded on what they wrote and saying how to answer, and their reply
+      comes back into the same conversation; the page says so, or, without Caime Mail, that
+      joining with the address shows it. Joining with the address (by its code, §2 H1) makes the
+      conversation theirs, and onboarding comes back through the door into it. An account's
+      address is sent to sign in, never mailed; without a mailer the page offers sign-up as
+      before. The daily sweep leaves a provisional person in no conversation alone for a day, so
+      it never takes a visitor from under their code (booking's too). Counted on
+      `caime_public_writes_total{outcome}` and `growth.door.written`, whose joined share now counts
+      whoever first came through the door either way. Verified with `public-write.test.ts` (9: the
+      page and the door's order, the code, the inbox, the team told, twice once, the answer by
+      mail and the reply back, an account refused unmailed, the age where asked, a code spent by
+      tries, a claim run out, no mailer, no Caime Mail, the counts, the claim by sign-up), the E2E
+      `public-write.spec.ts` (a visitor on a phone writes from the door with the code from the
+      mail stand-in, 0.5 s of server time to the message; the team answers in the app and the mail
+      goes out from the organization's address) and `door.spec.ts` (the funnel: the door, the
+      message without an account, joining with the same address, onboarding into the
+      conversation, which holds the page's message, and writing on from the app). Not built: a
+      phone number proven by WhatsApp code as the address, since nothing could answer it (Meta
+      lets a business send only approved templates to a phone that hasn't written to its own
+      WhatsApp number within a day), so a visitor by phone would hear nothing back; it waits for an
+      organization's own WhatsApp number as a connector (block G).
 - [x] C2a. The business front door, first part (2026-10-18): days a host is closed (holidays, a
       week away) are kept with the hours (`BookingHours.closed`, `from`/`to` on its clock, a note,
       fifty at most) and skipped by core `openSlots` at every branch and for every night of a stay
@@ -2279,7 +2308,7 @@ graph) and the number that will show it; one that sharpens none is hygiene and s
       where it's shown. The condition of the switch (a community moves over without strangers
       walking in, and a school or a family can use links at all), not an advantage: its number is
       `growth.joinLinks.asked` beside `joined`.
-- [ ] C2–C3. The rest of the front door: none left but C1d (a message before an account).
+- [x] C2–C3. The rest of the front door: all built, C1d (a message before an account) the last.
 - [ ] D. Performance and integrity: the aliased `selectAll` guard and its eleven sites; people
       lists through `personViewsFor` with a scale ceiling; `participants.last_sent_seq` for the
       inbox; a large-group mode and one transcript view; a `defer` semaphore and gauge; bus payload
@@ -3916,6 +3945,14 @@ graph) and the number that will show it; one that sharpens none is hygiene and s
   journeys, safety, reliability, performance, intelligence, mail and calendar, chat, integrations,
   business and code integrity; the matrix against WhatsApp, Signal, Slack, Calendly and Workspace;
   an age-assurance design; the integration framework mapped to the code; plan M16 (A–H).
+- 2026-10-18 — M16 C1d: an organization's page, and its door's link and QR, take a message from
+  anyone with a name and an address proven by its code, into the Business inbox; the team's
+  answer goes back by mail from the organization's address, and the reply comes back into the
+  same conversation; joining with the address later makes it theirs. Block C is done but the
+  phone by WhatsApp code (why above). The bubble's screen-reader words (You, Mentions you,
+  Pinned, Forwarded, where it is, a photo or a card without words) and a reaction's "including
+  you" read in the reader's language (block E's English leaks, in part). C3g live on cai.me
+  (`f7079a6`: the iPhone `.zip` reader in the served bundle).
 - 2026-10-18 — M16 C3h: a join link may have each person ask first, the owner or an admin letting
   them in or not; such a link may stand where someone under 18 is, who may ask where an adult
   connection or a verified organization runs the place. C3f live on cai.me (`a27d078`: the keep

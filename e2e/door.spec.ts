@@ -1,10 +1,11 @@
 /**
  * An organization's own door (R53): its page is the link a clinic puts on the door and the
- * receipt. Someone new who opens it signs up and lands in the conversation, as an invite's
- * guest does; the team sees the link and its QR code on the organization's page.
+ * receipt. Someone new who opens it writes there without an account (R97 (1)), and joining with
+ * the same address later lands them in that conversation, as an invite's guest does; the team
+ * sees the link and its QR code on the organization's page.
  */
 import { type BrowserContext, expect, test } from '@playwright/test';
-import { apiSignUp, CLIENT, newPerson, visible } from './helpers';
+import { apiSignUp, CLIENT, mailsTo, newPerson, visible } from './helpers';
 
 const stamp = Math.random().toString(36).slice(2, 7);
 const handle = `nile.door.${stamp}`;
@@ -48,7 +49,7 @@ test.describe
       await owner.close();
     });
 
-    test('a visitor who opens it lands in the conversation and writes, with nothing more to tap', async ({
+    test('a visitor writes from the door without an account, then joins and goes on from the app', async ({
       browser,
     }) => {
       const phone = await browser.newContext({
@@ -57,36 +58,67 @@ test.describe
       });
       const { page, errors } = await newPerson(phone);
       const customer = `salma.door.${stamp}`;
+      const email = `${customer}@example.com`;
       const started = Date.now();
-      // The public page, without the app: who it is, and whether it's verified, before writing.
-      await page.goto(`/o/${handle}`);
+      // The door as the QR at the front desk opens it: the page without the app, who it is and
+      // whether it's verified, and the three fields first (R97 (1)).
+      await page.goto(`/o/${handle}?write`);
       await expect(page.locator('#static')).toBeVisible();
       await expect(visible(page, `Nile Dental ${stamp}`)).toBeVisible();
       await expect(visible(page, 'Not yet')).toBeVisible();
       expect(await page.locator('script[src]').count()).toBe(0);
-      await page.getByRole('link', { name: `Message Nile Dental ${stamp} on Caime` }).click();
+      await page.locator('#write input[name="name"]').fill('Salma Customer');
+      await page.locator('#write input[name="email"]').fill(email);
+      await page
+        .locator('#write textarea[name="message"]')
+        .fill('Hello, do you have a slot this week?');
+      await page.locator('#write input[name="adult"]').check();
+      await page.locator('#write button[type="submit"]').click();
+      await expect(visible(page, 'Check your email')).toBeVisible();
+      const codeMail = async (after: number) => {
+        let code = '';
+        await expect
+          .poll(async () => {
+            const codes = (await mailsTo(email)).filter((m) => /^\d{6} /.test(m.subject));
+            code = codes.length > after ? (codes.at(-1)?.subject.slice(0, 6) ?? '') : '';
+            return code;
+          })
+          .toMatch(/^\d{6}$/);
+        return code;
+      };
+      await page.locator('#write input[name="code"]').fill(await codeMail(0));
+      await page.locator('#write button[type="submit"]').click();
+      await expect(visible(page, `Your message is with Nile Dental ${stamp}.`)).toBeVisible();
+      const doorToMessage = Date.now() - started;
+      const measured = `${(doorToMessage / 1000).toFixed(1)} s from opening the door to the first message sent, without an account`;
+      test.info().annotations.push({ type: 'door-to-message', description: measured });
+      console.log(`door-to-message: ${measured}`);
+      expect(doorToMessage).toBeLessThan(60_000);
+
+      // Joining with the same address keeps it (R93): the code sent to it, then onboarding comes
+      // back through the door, straight to its last step (R56), and into the conversation.
+      await page.getByRole('link', { name: 'Join Caime' }).click();
       await page.waitForURL(/\/sign-up\?link=%2Fo%2F/);
       await page.getByTestId('signup-name').fill('Salma Customer');
       await page.getByTestId('signup-handle').fill(customer);
-      await page.getByTestId('signup-email').fill(`${customer}@example.com`);
+      await page.getByTestId('signup-email').fill(email);
       await page.getByTestId('signup-password').fill('a long enough passphrase');
       await page.getByTestId('signup-birth-date').fill('1990-12-31');
       await expect(page.getByText('Available')).toBeVisible();
       await page.getByTestId('signup-submit').click();
+      const codeField = page.getByTestId('signup-email-code');
+      await expect(codeField).toBeVisible();
+      await codeField.fill(await codeMail(1));
+      await page.getByTestId('signup-submit').click();
       await page.waitForURL('**/onboarding');
-      // Came through the door: straight to the last step (R56).
       await expect(visible(page, `You came here to write to Nile Dental ${stamp}`)).toBeVisible();
       await page.getByTestId('onboarding-link').click();
-      // Straight into the conversation: no page in between, no second tap.
       await page.waitForURL(/\/c\/[0-9a-f-]+$/);
-      await page.getByTestId('composer-input').fill('Hello, do you have a slot this week?');
-      await page.getByTestId('composer-send').click();
+      // What they wrote on the page is there, theirs, and they go on from the app.
       await expect(visible(page, 'Hello, do you have a slot this week?')).toBeVisible();
-      const doorToMessage = Date.now() - started;
-      const measured = `${(doorToMessage / 1000).toFixed(1)} s from opening the door to the first message sent`;
-      test.info().annotations.push({ type: 'door-to-message', description: measured });
-      console.log(`door-to-message: ${measured}`);
-      expect(doorToMessage).toBeLessThan(60_000);
+      await page.getByTestId('composer-input').fill('Thursday afternoon would suit me.');
+      await page.getByTestId('composer-send').click();
+      await expect(visible(page, 'Thursday afternoon would suit me.')).toBeVisible();
       await page.screenshot({
         path: 'e2e/screenshots/phone-door-conversation.png',
         animations: 'disabled',
@@ -95,7 +127,10 @@ test.describe
       const url = page.url();
       await page.goto(`/o/${handle}?write`);
       await page.waitForURL(url);
-      expect(errors).toEqual([]);
+      // Sign-up's first answer is the expected 409 that asks for the address's code.
+      expect(errors.filter((e) => !/409 POST .*\/v1\/auth\/signup|status of 409/.test(e))).toEqual(
+        [],
+      );
       await phone.close();
     });
   });

@@ -214,7 +214,7 @@ describe('product metrics (PRD §82–83)', () => {
       viaOrganizations: 1,
       kFactor: 0.333,
       // Nobody booked from a page here (public-booking.test.ts measures the door).
-      door: { booked: 0, joined: { count: 0, of: 0, rate: null } },
+      door: { booked: 0, written: 0, joined: { count: 0, of: 0, rate: null } },
       // Nor made a join link (join-links.test.ts measures them).
       joinLinks: { made: 0, joined: 0, newPeople: 0, asked: 0 },
       // Nor had a meeting's guest (guest-keep.test.ts measures them).

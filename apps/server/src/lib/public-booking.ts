@@ -237,7 +237,7 @@ export async function startVisitorBooking(
       .set({ display_name: name })
       .where('id', '=', person.id)
       .execute();
-  await sendEmailCode(ctx, person.id, email, name);
+  await sendEmailCode(ctx, person.id, email, name, 'visitor');
   const claim: BookingClaim = {
     v: 2,
     hostKind: visitorHost.kind,
@@ -391,5 +391,7 @@ export async function visitorBookingState(
   }
   const slots = await publicSlotsFor(ctx, visitorHost, item, search.get('from'));
   if (!slots) return null;
-  return { step: 'pick', slots, error: booked || code ? 'expired' : error };
+  // A booking already made says nothing more once its claim runs out; a code's step that ran out
+  // says so.
+  return { step: 'pick', slots, error: code ? 'expired' : error };
 }

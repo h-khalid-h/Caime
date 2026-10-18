@@ -1,15 +1,15 @@
 /**
  * Six digits to an address, to prove it's the person's (R48): kept hashed in `email_codes` under
  * the person's id, a day, ten tries counted in the database, a new one in place of the last.
- * Sign-up's confirmation and booking before an account (R97, block C) both prove an address this
- * way, so the rules live here once. The mail itself goes after the response (`ctx.defer`), never
+ * Sign-up's confirmation, and booking or writing before an account (R97, block C), all prove an
+ * address this way, so the rules live here once. The mail itself goes after the response (`ctx.defer`), never
  * through the job queue.
  */
 import { randomInt, timingSafeEqual } from 'node:crypto';
 import { tr } from '@caime/core/i18n';
 import type { AppContext } from '../context';
 import { hashToken } from './crypto';
-import { verificationMail } from './email';
+import { type CodePurpose, verificationMail } from './email';
 import { AppError } from './errors';
 
 export const CODE_LIFE_MS = 24 * 3_600_000;
@@ -21,6 +21,7 @@ export async function sendEmailCode(
   userId: string,
   email: string,
   name: string,
+  purpose: CodePurpose = 'signup',
 ): Promise<void> {
   if (!ctx.mail) return;
   const code = String(randomInt(0, 1_000_000)).padStart(6, '0');
@@ -35,7 +36,7 @@ export async function sendEmailCode(
     )
     .execute();
   const mail = ctx.mail;
-  ctx.defer('email.code', () => mail.send(verificationMail(email, name, code)));
+  ctx.defer('email.code', () => mail.send(verificationMail(email, name, code, purpose)));
 }
 
 /**

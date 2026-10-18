@@ -1443,4 +1443,24 @@ export const turkishServer: Catalog = {
   'This link can’t add them to it.': 'Bu bağlantı bu kişiyi ekleyemez.',
   'You’re in “{place}”': '“{place}” içindesiniz',
   'Your ask to join was accepted.': 'Katılma isteğiniz kabul edildi.',
+  'Sign in to message {name}': '{name} ile yazışmak için giriş yapın',
+  'Writing without an account isn’t available here yet. Join {site} to message {name}.':
+    'Hesapsız yazmak burada henüz mümkün değil. {name} ile yazışmak için {site}’e katılın.',
+  'That can’t be sent from here.': 'Bu buradan gönderilemez.',
+  'Write your message, up to {n} characters.': 'Mesajınızı yazın, en fazla {n} karakter.',
+  'That took too long. Write your message again.': 'Bu çok uzun sürdü. Mesajınızı yeniden yazın.',
+  'That code has run out. Send your message again for a new one.':
+    'Bu kodun süresi doldu. Yeni bir kod için mesajınızı yeniden gönderin.',
+  'Your message is with {name}.': 'Mesajınız iletildi: {name}.',
+  'Their answer comes to {email} by email. Reply to it to write to them again.':
+    'Yanıt {email} adresine e-postayla gelir; o e-postayı yanıtlayarak yeniden yazabilirsiniz.',
+  'To read their answer, join {site} free with {email}: your conversation will be there.':
+    'Yanıtı okumak için {email} ile {site}’e ücretsiz katılın: konuşmanız orada olacak.',
+  'A six-digit code went to {email}. Type it to send your message to {name}.':
+    '{email} adresine altı haneli bir kod gönderildi. Kodu yazınca mesajınız gönderilir: {name}.',
+  'Change what I wrote': 'Yazdığımı değiştir',
+  'A code goes to your email; your message goes once you type it here. {name} answers by email: no account needed.':
+    'E-postanıza bir kod gelir; kodu buraya yazdığınızda mesajınız gönderilir. {name} e-postayla yanıtlar: hesap gerekmez.',
+  'A code goes to your email; your message goes once you type it here. Join {site} with that address to read the answer.':
+    'E-postanıza bir kod gelir; kodu buraya yazdığınızda mesajınız gönderilir. Yanıtı okumak için bu adresle {site}’e katılın.',
 };

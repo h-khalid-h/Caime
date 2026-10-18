@@ -60,8 +60,19 @@ export function fromAddress(emailFrom: string): string {
   return (m?.[1] ?? emailFrom).trim();
 }
 
+/**
+ * Why a code went to an address: signing up, or a visitor booking or writing on a page before
+ * an account (R97 (1)), whose mail says that nothing happens without the code.
+ */
+export type CodePurpose = 'signup' | 'visitor';
+
 // The texts stay ASCII, so they travel as plain 7-bit text (and the end-to-end stub reads them).
-export function verificationMail(to: string, name: string, code: string): Mail {
+export function verificationMail(
+  to: string,
+  name: string,
+  code: string,
+  purpose: CodePurpose = 'signup',
+): Mail {
   return {
     to,
     kind: 'verification',
@@ -71,8 +82,15 @@ export function verificationMail(to: string, name: string, code: string): Mail {
       '',
       `Your code to confirm this address is ${code}. It works for a day.`,
       '',
-      "If you didn't sign up for Caime, someone typed your address by mistake: nothing else",
-      'will be sent, and the account can be deleted from its Settings by whoever made it.',
+      ...(purpose === 'visitor'
+        ? [
+            "If you didn't book or write to anyone on Caime, someone typed your address by",
+            'mistake: without the code nothing is booked or sent, and nothing else will be.',
+          ]
+        : [
+            "If you didn't sign up for Caime, someone typed your address by mistake: nothing else",
+            'will be sent, and the account can be deleted from its Settings by whoever made it.',
+          ]),
       '',
       'Caime',
     ].join('\n'),

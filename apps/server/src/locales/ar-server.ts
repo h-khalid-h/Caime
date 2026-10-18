@@ -1500,4 +1500,24 @@ export const arServer: Catalog = {
   'This link can’t add them to it.': 'لا يمكن لهذا الرابط إضافة هذا الشخص.',
   'You’re in “{place}”': 'تم الانضمام إلى «{place}»',
   'Your ask to join was accepted.': 'تم قبول طلب الانضمام.',
+  'Sign in to message {name}': 'سجّل الدخول لمراسلة {name}',
+  'Writing without an account isn’t available here yet. Join {site} to message {name}.':
+    'المراسلة بلا حساب غير متاحة هنا بعد. انضم إلى {site} لمراسلة {name}.',
+  'That can’t be sent from here.': 'لا يمكن إرسال هذا من هنا.',
+  'Write your message, up to {n} characters.': 'اكتب رسالتك، بحدّ أقصى {n} حرف.',
+  'That took too long. Write your message again.': 'طال الوقت أكثر من اللازم. اكتب رسالتك من جديد.',
+  'That code has run out. Send your message again for a new one.':
+    'انتهت صلاحية هذا الرمز. أرسل رسالتك من جديد للحصول على رمز جديد.',
+  'Your message is with {name}.': 'وصلت رسالتك إلى {name}.',
+  'Their answer comes to {email} by email. Reply to it to write to them again.':
+    'يصلك الردّ على {email} بالبريد الإلكتروني، والردّ عليه يصل إلى المحادثة نفسها.',
+  'To read their answer, join {site} free with {email}: your conversation will be there.':
+    'لقراءة الردّ، انضم إلى {site} مجانًا بالعنوان {email}: المحادثة في انتظارك هناك.',
+  'A six-digit code went to {email}. Type it to send your message to {name}.':
+    'أُرسل رمز من ستة أرقام إلى {email}. اكتبه لإرسال رسالتك إلى {name}.',
+  'Change what I wrote': 'تعديل ما كتبتُه',
+  'A code goes to your email; your message goes once you type it here. {name} answers by email: no account needed.':
+    'يصلك رمز على بريدك؛ وتُرسَل رسالتك حين تكتبه هنا. يأتي ردّ {name} بالبريد الإلكتروني، بلا حاجة إلى حساب.',
+  'A code goes to your email; your message goes once you type it here. Join {site} with that address to read the answer.':
+    'يصلك رمز على بريدك؛ وتُرسَل رسالتك حين تكتبه هنا. انضم إلى {site} بهذا العنوان لقراءة الردّ.',
 };

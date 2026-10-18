@@ -2642,4 +2642,6 @@ export const arB: Catalog = {
   'You or an admin let them in, one by one.':
     'يكون قبولهم منك أو من أحد المشرفين، واحدًا تلو الآخر.',
   'asks first': 'بالطلب أولًا',
+  Forwarded: 'مُعاد توجيهها',
+  '{emoji} {count}, including you': '{emoji} {count}، منها تفاعلك',
 };

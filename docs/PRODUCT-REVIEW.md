@@ -1920,7 +1920,10 @@ with its reason, so it isn't proposed again without new facts.
   PRD: (1) *A customer books, orders or messages before they have an account.* Public slots on
   the page; a booking by name and email or phone, confirmed by a code, as a provisional person
   claimed later (the meeting guests' mechanism); three fields on a link arrival. Sign-up stays
-  the way to keep things, never the way in. (2) *Age is a level, not a date.* `self_declared`,
+  the way to keep things, never the way in (built in M16 C1a to C1d: booking from a page, and a
+  message from an organization's page or door whose answer goes back by mail; ordering before an
+  account and a phone proven by WhatsApp code are not built yet, the second because nothing could
+  answer it until an organization's own WhatsApp number is a connector). (2) *Age is a level, not a date.* `self_declared`,
   `estimated_adult`/`estimated_minor` (a face estimate by a provider, verdict and band kept, never
   an image or template) and `document_verified`; asked only where a risk calls for it (money,
   organizations, strangers, guests, outside mail, a report that names an age), demanded where a

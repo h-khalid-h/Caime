@@ -4445,4 +4445,6 @@ export const fr: Catalog = {
     'Une personne de moins de 18 ans en fait partie : vous ou un administrateur acceptez chaque personne.',
   'You or an admin let them in, one by one.': 'Vous ou un administrateur les acceptez un par un.',
   'asks first': 'sur demande',
+  Forwarded: 'Transféré',
+  '{emoji} {count}, including you': '{emoji} {count}, dont vous',
 };
