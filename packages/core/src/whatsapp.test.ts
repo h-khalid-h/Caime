@@ -54,6 +54,33 @@ describe('a WhatsApp export', () => {
     expect([c.at.getMonth(), c.at.getDate(), c.at.getHours()]).toEqual([2, 25, 12]);
   });
 
+  it('leaves out what iOS writes under a name as WhatsApp’s own: the group’s, or the other person’s', () => {
+    const group = [
+      '[13/03/2024, 09:01:02] Family: ‎Messages and calls are end-to-end encrypted. No one outside of this chat, not even WhatsApp, can read or listen to them.',
+      '‎[13/03/2024, 09:01:02] Family: ‎Noor Haddad created group “Family”',
+      '‎[13/03/2024, 09:01:05] Family: ‎Noor Haddad added Omar Farouk',
+      '[13/03/2024, 09:02:11] Noor Haddad: Who’s bringing what on Friday?',
+      '[13/03/2024, 09:03:40] Omar Farouk: The grill: and charcoal',
+      '‎[13/03/2024, 09:04:00] Omar Farouk: ‎image omitted',
+      '[13/03/2024, 09:05:00] Noor Haddad: Note: ‎the gate code is 4411',
+    ].join('\n');
+    const chat = parseWhatsApp(group);
+    // The group's name is nobody's: only people are authors, and its lines aren't messages.
+    expect(chat.authors).toEqual(['Noor Haddad', 'Omar Farouk']);
+    expect(chat.messages.map((m) => m.text)).toEqual([
+      'Who’s bringing what on Friday?',
+      'The grill: and charcoal',
+      'Note: the gate code is 4411',
+    ]);
+    expect([chat.system, chat.mediaOmitted]).toEqual([3, 1]);
+    // A one-to-one's notice is written under the other person's name.
+    const pair = parseWhatsApp(
+      '[3/12/24, 2:05:07 PM] Alex Chen: ‎Messages and calls are end-to-end encrypted.\n[3/12/24, 2:06:00 PM] Alex Chen: Hi',
+    );
+    expect(pair.messages.map((m) => m.text)).toEqual(['Hi']);
+    expect(pair.system).toBe(1);
+  });
+
   it('guesses day first when every date fits both, unless told otherwise', () => {
     const text = '01/02/2024, 10:00 - Noor Haddad: hi\n02/02/2024, 10:00 - Alex Chen: hey';
     const guessed = parseWhatsApp(text);

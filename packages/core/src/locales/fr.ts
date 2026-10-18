@@ -1430,8 +1430,6 @@ export const fr: Catalog = {
     'Ce que vous et {name} vous êtes dit là-bas, gardé comme sujet ici. Visible par vous deux seulement.',
   'Bring it over': 'Importer',
   'Choose the file': 'Choisir le fichier',
-  'In WhatsApp, open the chat, then More › Export chat › Without media. Save the text file somewhere you can pick it from here. Photos and files don’t come along; the words do, dated as they were written.':
-    'Dans WhatsApp, ouvrez la discussion, puis Plus › Exporter la discussion › Sans fichiers multimédias. Enregistrez le fichier texte à un endroit accessible d’ici. Les photos et fichiers ne suivent pas ; les mots, si, datés comme ils ont été écrits.',
   'No messages were found in it. Is it the exported chat?':
     'Aucun message n’y a été trouvé. Est-ce bien la discussion exportée ?',
   '{toLocaleString} messages, {text}{and}': '{toLocaleString} messages, {text}{and}',
@@ -4417,4 +4415,13 @@ export const fr: Catalog = {
   'Make it your own Caime account, free: the meeting, its people and what was said stay yours.':
     'Faites-en votre propre compte Caime, gratuit : la réunion, ses participants et ce qui s’y est dit restent à vous.',
   'Keep this': 'La garder',
+  'Bring over a WhatsApp group': 'Importer un groupe WhatsApp',
+  'No chat was found in that file. Is it the exported chat?':
+    'Aucune discussion n’a été trouvée dans ce fichier. Est-ce bien la discussion exportée ?',
+  'What was said in the WhatsApp group, kept as a topic of “{title}”. Everyone in it sees it.':
+    'Ce qui s’est dit dans le groupe WhatsApp, gardé comme sujet de « {title} ». Tous ses membres le voient.',
+  'In WhatsApp, open the chat, then Export chat, without media. A phone saves a text file, an iPhone a .zip: pick either here as it is. Photos and files don’t come along; the words do, dated as they were written.':
+    'Dans WhatsApp, ouvrez la discussion, puis Exporter la discussion, sans fichiers multimédias. Un téléphone enregistre un fichier texte, un iPhone un .zip : choisissez l’un ou l’autre ici tel quel. Les photos et fichiers ne suivent pas ; les mots, si, datés comme ils ont été écrits.',
+  'Who the others are here': 'Qui sont les autres ici',
+  'Not in this group: keep the name': 'Pas dans ce groupe : garder le nom',
 };

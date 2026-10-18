@@ -12,23 +12,42 @@ import { useSession } from '@/state/session';
 import { useTheme } from '@/theme/theme';
 import { Button } from '@/ui/Button';
 import { ChoiceList } from '@/ui/ChoiceList';
+import { ChoiceSheet } from '@/ui/ChoiceSheet';
 import { Sheet } from '@/ui/Sheet';
 import { Text } from '@/ui/Text';
 import { TextField } from '@/ui/TextField';
 import { toast } from '@/ui/Toast';
+import { chatFromZip, isZipFile } from './chatFile';
+
+/** Where an export comes over: beside a one-to-one, or into a group whoever brings it runs. */
+export type ImportInto =
+  | { kind: 'direct'; userId: string; name: string }
+  | {
+      kind: 'group';
+      conversationId: string;
+      title: string;
+      /** Everyone in the group but whoever brings it over. */
+      members: Array<{ userId: string; name: string }>;
+    };
+
+/** A name kept as itself (nobody here), as the group's "who's who" offers it. */
+const KEEP_NAME = 'name';
 
 /**
  * Bringing a WhatsApp chat over (R45). The person exports the chat on their phone ("Export
- * chat", without media), picks the file here, says which name in it is theirs, and it lands as
- * a topic with the other person, dated as written, every message marked as imported. The file
- * is read on this device: the server sees the lines, not the file, and only once it's confirmed.
+ * chat", without media: a text file, or on an iPhone a .zip, unzipped here), picks it, says which
+ * name in it is theirs, and it lands as a topic with the other person, dated as written, every
+ * message marked as imported. A group's export (M16 C3g) comes into a group they run the same way,
+ * each other name taken as one of its people (matched by name, changeable) or kept as the name
+ * alone. The file is read on this device: the server sees the lines, not the file, and only once
+ * it's confirmed.
  */
 export function WhatsAppImport({
-  other,
+  into,
   onClose,
   onDone,
 }: {
-  other: { userId: string; name: string };
+  into: ImportInto;
   onClose: () => void;
   onDone: (conversationId: string) => void;
 }) {
@@ -40,55 +59,94 @@ export function WhatsAppImport({
   const [fileName, setFileName] = useState('');
   const [dayFirst, setDayFirst] = useState<boolean | undefined>(undefined);
   const [mine, setMine] = useState<string | null>(null);
+  // Who each other name in a group's export is, where it was changed from the match by name.
+  const [taken, setTaken] = useState<Record<string, string>>({});
   const [title, setTitle] = useState('WhatsApp');
   const [busy, setBusy] = useState(false);
   const chat: WhatsAppChat | null = text === null ? null : parseWhatsApp(text, { dayFirst });
+  const forGroup = into.kind === 'group';
   // Their own name in the file, if it reads like the one they use here.
   const guess =
     chat && me
       ? (chat.authors.find((a) => a.toLowerCase() === me.displayName.toLowerCase()) ??
-        (chat.authors.length === 2
-          ? chat.authors.find((a) => a.toLowerCase() !== other.name.toLowerCase())
+        (!forGroup && chat.authors.length === 2
+          ? chat.authors.find((a) => a.toLowerCase() !== into.name.toLowerCase())
           : undefined) ??
         null)
       : null;
   const chosen = mine ?? guess;
-  const theirs = chat && chosen ? otherAuthor(chat, chosen) : null;
+  const theirs = chat && chosen && !forGroup ? otherAuthor(chat, chosen) : null;
+  // A group's other names: someone in it whose name reads the same, else the name kept.
+  const whoIs = (author: string): string => {
+    if (taken[author]) return taken[author];
+    if (!forGroup) return KEEP_NAME;
+    const same = into.members.find((m) => m.name.toLowerCase() === author.toLowerCase());
+    return same?.userId ?? KEEP_NAME;
+  };
 
   const pick = async () => {
     const res = await DocumentPicker.getDocumentAsync({
       multiple: false,
       copyToCacheDirectory: true,
-      type: ['text/plain', 'text/*'],
+      type: ['text/plain', 'text/*', 'application/zip', 'application/x-zip-compressed'],
     });
     if (res.canceled) return;
     const asset = res.assets[0];
     if (!asset) return;
     try {
       const blob = (asset as { file?: Blob }).file;
-      const read = blob ? await blob.text() : await (await fetch(asset.uri)).text();
+      const read = isZipFile(asset.name, asset.mimeType)
+        ? await chatFromZip(
+            new Uint8Array(
+              blob ? await blob.arrayBuffer() : await (await fetch(asset.uri)).arrayBuffer(),
+            ),
+          )
+        : blob
+          ? await blob.text()
+          : await (await fetch(asset.uri)).text();
+      if (read === null) {
+        toast(tr('No chat was found in that file. Is it the exported chat?'), { tone: 'danger' });
+        return;
+      }
       setText(read);
       setFileName(asset.name);
       setMine(null);
+      setTaken({});
     } catch {
       toast(tr('That file couldn’t be read.'), { tone: 'danger' });
     }
   };
 
   const bring = async () => {
-    if (!chat || !chosen) return;
+    if (!chat || !chosen || !me) return;
     setBusy(true);
     try {
-      const { conversationId, imported } = await endpoints.importChat({
-        userId: other.userId,
-        source: 'whatsapp',
-        title: title.trim() || undefined,
-        messages: chat.messages.slice(-IMPORT_MAX_MESSAGES).map((m) => ({
-          at: m.at.toISOString(),
-          mine: m.author === chosen,
-          text: m.text,
-        })),
-      });
+      const lines = chat.messages.slice(-IMPORT_MAX_MESSAGES);
+      const { conversationId, imported } =
+        into.kind === 'group'
+          ? await endpoints.importGroupChat(into.conversationId, {
+              source: 'whatsapp',
+              title: title.trim() || undefined,
+              authors: chat.authors.map((a) => {
+                const who = a === chosen ? me.id : whoIs(a);
+                return { name: a, userId: who === KEEP_NAME ? null : who };
+              }),
+              messages: lines.map((m) => ({
+                at: m.at.toISOString(),
+                author: chat.authors.indexOf(m.author),
+                text: m.text,
+              })),
+            })
+          : await endpoints.importChat({
+              userId: into.userId,
+              source: 'whatsapp',
+              title: title.trim() || undefined,
+              messages: lines.map((m) => ({
+                at: m.at.toISOString(),
+                mine: m.author === chosen,
+                text: m.text,
+              })),
+            });
       void qc.invalidateQueries({ queryKey: qk.inbox });
       toast(
         tr('{toLocaleString} messages brought over', {
@@ -107,18 +165,26 @@ export function WhatsAppImport({
   const days = (d: Date) => d.toLocaleDateString(locale, { dateStyle: 'medium' });
   const first = chat?.messages[0]?.at;
   const last = chat?.messages[chat.messages.length - 1]?.at;
-  const group = chat ? chat.authors.length > 2 : false;
+  const group = chat && !forGroup ? chat.authors.length > 2 : false;
   const nothing = chat ? chat.messages.length === 0 : false;
-  const ready = !!chat && !!chosen && !!theirs && !group && !nothing;
+  const ready = !!chat && !!chosen && (forGroup || !!theirs) && !group && !nothing;
+  const others = chat && chosen ? chat.authors.filter((a) => a !== chosen) : [];
 
   return (
     <Sheet
       open
       onClose={onClose}
-      title={tr('Bring over a WhatsApp chat')}
-      subtitle={tr('What you and {name} said there, kept as a topic here. Only you two see it.', {
-        name: other.name,
-      })}
+      title={forGroup ? tr('Bring over a WhatsApp group') : tr('Bring over a WhatsApp chat')}
+      subtitle={
+        into.kind === 'group'
+          ? tr(
+              'What was said in the WhatsApp group, kept as a topic of “{title}”. Everyone in it sees it.',
+              { title: into.title },
+            )
+          : tr('What you and {name} said there, kept as a topic here. Only you two see it.', {
+              name: into.name,
+            })
+      }
       footer={
         <Button
           label={chat ? tr('Bring it over') : tr('Choose the file')}
@@ -135,7 +201,7 @@ export function WhatsAppImport({
         {!chat ? (
           <Text variant="body" color="textSecondary">
             {tr(
-              'In WhatsApp, open the chat, then More › Export chat › Without media. Save the text file somewhere you can pick it from here. Photos and files don’t come along; the words do, dated as they were written.',
+              'In WhatsApp, open the chat, then Export chat, without media. A phone saves a text file, an iPhone a .zip: pick either here as it is. Photos and files don’t come along; the words do, dated as they were written.',
             )}
           </Text>
         ) : (
@@ -181,11 +247,11 @@ export function WhatsAppImport({
                 </Text>
               ) : null}
             </View>
-            {group ? (
+            {group && into.kind === 'direct' ? (
               <Text variant="body" color="danger" testID="import-group">
                 {tr(
                   'This export has {length} names in it: it’s a group. Bring over a chat with {name} alone.',
-                  { length: chat.authors.length, name: other.name },
+                  { length: chat.authors.length, name: into.name },
                 )}
               </Text>
             ) : !nothing ? (
@@ -198,9 +264,34 @@ export function WhatsAppImport({
                   options={chat.authors.map((a) => ({
                     value: a,
                     label: a,
-                    detail: a === chosen ? tr('You') : tr('{name} here', { name: other.name }),
+                    detail:
+                      a === chosen
+                        ? tr('You')
+                        : into.kind === 'direct'
+                          ? tr('{name} here', { name: into.name })
+                          : undefined,
                   }))}
                 />
+                {into.kind === 'group' && others.length > 0 ? (
+                  <View style={{ gap: 4 }} testID="import-who">
+                    <Text variant="overline" color="textSecondary">
+                      {tr('Who the others are here')}
+                    </Text>
+                    {others.map((a, i) => (
+                      <ChoiceSheet
+                        key={a}
+                        label={a}
+                        value={whoIs(a)}
+                        onChange={(v) => setTaken((was) => ({ ...was, [a]: v }))}
+                        options={[
+                          ...into.members.map((m) => ({ value: m.userId, label: m.name })),
+                          { value: KEEP_NAME, label: tr('Not in this group: keep the name') },
+                        ]}
+                        testID={`import-who-${i}`}
+                      />
+                    ))}
+                  </View>
+                ) : null}
                 {chat.ambiguous ? (
                   <ChoiceList
                     label={tr('How its dates read')}

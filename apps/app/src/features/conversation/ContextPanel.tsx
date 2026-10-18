@@ -1,7 +1,7 @@
 import type { ConversationView, TaskView } from '@caime/core/api';
 import { formatDue, retentionText } from '@caime/core/format';
 import { tr } from '@caime/core/i18n';
-import { canChangeDisappearing } from '@caime/core/permissions';
+import { canChangeDisappearing, canEditConversation } from '@caime/core/permissions';
 import { useQueryClient } from '@tanstack/react-query';
 import { router } from 'expo-router';
 import Calendar from 'lucide-react-native/icons/calendar';
@@ -23,12 +23,13 @@ import { taskWho } from '@/features/actions/TaskRow';
 import { AssistTools } from '@/features/assist/AssistTools';
 import { useAiReady } from '@/features/assist/ready';
 import { ComingUpList } from '@/features/common/comingUpLazy';
-import { WhatsAppImport } from '@/features/import/WhatsAppImport';
+import { type ImportInto, WhatsAppImport } from '@/features/import/WhatsAppImport';
 import { OrgMark, VerifiedLine } from '@/features/orgs/kinds';
 import { handleLine } from '@/features/people/handleLine';
 import { openCheckedLink } from '@/lib/links';
 import { openFile } from '@/lib/openFile';
 import { useNow, useUserClock } from '@/lib/time';
+import { useSession } from '@/state/session';
 import { usePendingTasks, useTaskOutbox } from '@/state/taskOutbox';
 import { useTheme } from '@/theme/theme';
 import { Avatar } from '@/ui/Avatar';
@@ -478,9 +479,28 @@ function Topics({
   const [name, setName] = useState('');
   const [busy, setBusy] = useState(false);
   const [importing, setImporting] = useState(false);
+  const meId = useSession((s) => s.user?.id);
   const where = topicsFor(conversation);
   if (!where) return null;
   const other = conversation.other;
+  // Where a WhatsApp export may come over: beside a one-to-one with someone connected (not one
+  // reached by email alone), or into this group by whoever runs it, never a private one (its
+  // words are sealed for its people's devices).
+  const into: ImportInto | null =
+    where === 'direct' && other && conversation.connected === true
+      ? { kind: 'direct', userId: other.userId, name: other.person.displayName }
+      : where === 'group' &&
+          conversation.privacyClass !== 'private' &&
+          canEditConversation(conversation.kind, conversation.me.role)
+        ? {
+            kind: 'group',
+            conversationId: conversation.id,
+            title: conversation.title,
+            members: conversation.participants
+              .filter((p) => p.userId !== meId)
+              .map((p) => ({ userId: p.userId, name: p.person.displayName })),
+          }
+        : null;
   // A view kept from before topics were listed has none.
   const topics = conversation.topics ?? [];
   const start = async () => {
@@ -529,10 +549,11 @@ function Topics({
           {tr('Start a topic')}
         </Text>
       </Pressable>
-      {where === 'direct' && other ? (
-        // A chat from before Caime (R45), brought over from WhatsApp as a topic with this person;
-        // the file is read on this device. Its sheet stays in this route's chunk: split out, what
-        // they share (the picker, Choice) would move into __common, which loads first.
+      {into ? (
+        // A chat from before Caime (R45), brought over from WhatsApp as a topic with this person,
+        // or a group's into a group they run (M16 C3g); the file is read on this device. Its
+        // sheet stays in this route's chunk: split out, what they share (the picker, Choice)
+        // would move into __common, which loads first.
         <Pressable
           accessibilityRole="button"
           onPress={() => setImporting(true)}
@@ -541,13 +562,15 @@ function Topics({
         >
           <FileText size={14} color={t.c.accentStrong} />
           <Text variant="captionStrong" color="link">
-            {tr('Bring over a WhatsApp chat')}
+            {into.kind === 'group'
+              ? tr('Bring over a WhatsApp group')
+              : tr('Bring over a WhatsApp chat')}
           </Text>
         </Pressable>
       ) : null}
-      {importing && other ? (
+      {importing && into ? (
         <WhatsAppImport
-          other={{ userId: other.userId, name: other.person.displayName }}
+          into={into}
           onClose={() => setImporting(false)}
           onDone={(id) => {
             setImporting(false);

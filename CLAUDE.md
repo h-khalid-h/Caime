@@ -1759,7 +1759,16 @@ appointment from a catalog).
   the past: every imported message carries `payload.imported = {source, by}`, and anything that
   reads message bodies for meaning (effects, AI, attention) may leave those alone. The app shows
   "Imported ·" from that field and offers the sheet (`features/import/`, imported statically by
-  the conversation route: split out, it cost 0.8 KB of `__common`) only where topics are.
+  the conversation route: split out, it cost 0.8 KB of `__common`) only where topics are. A
+  group's export (M16 C3g) lands through `POST /conversations/:id/import` in a group its owner or
+  an admin runs (never private, a topic or a space's): each name is one of its people now, or the
+  importer's line with `payload.imported.author`, which `rows.ts` (`importedAuthor`) draws and
+  reads out as that name's, never as theirs. A topic made for an import is
+  `createTopicConversation(…, { forImport: true })`: always new (a group's topic of the same name
+  is refused, never reused) and without its opening line; `land` writes after the topic's
+  `last_seq` under its row lock. An iPhone's `.zip` is unzipped on the device by `chatFile.ts`
+  (fflate, pinned, loaded only for a zip, the text alone inflated), and iOS's own lines (a mark
+  after the name's colon) are WhatsApp's, never a message.
 - Speech to text (PRD §46, docs/SPEECH.md): one interface in `lib/speech.ts` (`SpeechToText`,
   `speechFor(config)`), a provider chosen by `SPEECH_PROVIDER` with its key, each adapter one
   multipart call over fetch (never an SDK). `lib/transcribe.ts` owns the rules: `afterMessage`

@@ -219,6 +219,8 @@ describe('product metrics (PRD §82–83)', () => {
       joinLinks: { made: 0, joined: 0, newPeople: 0 },
       // Nor had a meeting's guest (guest-keep.test.ts measures them).
       guests: { joined: 0, kept: 0 },
+      // Nor brought a chat over (import.test.ts measures them).
+      imports: { chats: 0, groups: 0, messages: 0 },
     });
     expect(m.value).toEqual({
       tasksFromMessages: 2,

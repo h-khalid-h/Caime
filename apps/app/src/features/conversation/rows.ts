@@ -19,6 +19,21 @@ export type Row =
 
 const GROUP_MS = 4 * 60_000;
 
+/**
+ * The name a group's line was written under on WhatsApp, where whoever brought it over took that
+ * name as nobody here (M16 C3g): the line is drawn as that name's, never as theirs.
+ */
+export const importedAuthor = (m: MessageView): string | null => {
+  const imported = (m.payload as { imported?: { author?: unknown } } | null)?.imported;
+  return typeof imported?.author === 'string' ? imported.author : null;
+};
+
+/** Who a line reads as: someone here, or a name a WhatsApp group brought (never mixed up). */
+const writer = (m: MessageView) => {
+  const author = importedAuthor(m);
+  return author ? `imported:${author}` : m.senderId;
+};
+
 /** An outbox item drawn as a message: it's on screen the moment it's written (ADR-8). */
 export function pendingAsMessage(item: OutboxItem, me: string): MessageView {
   return {
@@ -122,11 +137,13 @@ export function buildRows(opts: {
       rows.push({ type: 'day', key: `day-${m.id}`, label: day });
       lastDay = day;
     }
+    const author = importedAuthor(m);
+    const mine = m.senderId === me && !author;
     if (
       !markedUnread &&
       unreadFrom !== null &&
       m.seq >= unreadFrom &&
-      m.senderId !== me &&
+      !mine &&
       m.seq !== Number.MAX_SAFE_INTEGER
     ) {
       rows.push({ type: 'unread', key: 'unread' });
@@ -134,13 +151,13 @@ export function buildRows(opts: {
     }
     const sameAsPrev =
       prev &&
-      prev.senderId === m.senderId &&
+      writer(prev) === writer(m) &&
       prev.kind !== 'system' &&
       Date.parse(m.createdAt) - Date.parse(prev.createdAt) < GROUP_MS &&
       formatDayHeading(prev.createdAt, now, timeZone, locale) === day;
     const sameAsNext =
       next &&
-      next.senderId === m.senderId &&
+      writer(next) === writer(m) &&
       next.kind !== 'system' &&
       Date.parse(next.createdAt) - Date.parse(m.createdAt) < GROUP_MS &&
       formatDayHeading(next.createdAt, now, timeZone, locale) === day;
@@ -148,11 +165,11 @@ export function buildRows(opts: {
       type: 'message',
       key: m.clientId ?? m.id,
       m,
-      mine: m.senderId === me,
+      mine,
       first: !sameAsPrev,
       last: !sameAsNext,
-      delivery,
-      senderName: isGroup && m.senderId ? (names.get(m.senderId) ?? null) : null,
+      delivery: mine ? delivery : undefined,
+      senderName: author ?? (isGroup && m.senderId ? (names.get(m.senderId) ?? null) : null),
     });
   }
   return rows.reverse();

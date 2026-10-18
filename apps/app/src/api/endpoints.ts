@@ -450,6 +450,16 @@ export const endpoints = {
     title?: string;
     messages: Array<{ at: string; mine: boolean; text: string }>;
   }) => api.post<ImportChatView>('/conversations/import', body),
+  /** A WhatsApp group brought over into a group one runs (M16 C3g), as a topic of it. */
+  importGroupChat: (
+    conversationId: string,
+    body: {
+      source: 'whatsapp';
+      title?: string;
+      authors: Array<{ name: string; userId: string | null }>;
+      messages: Array<{ at: string; author: number; text: string }>;
+    },
+  ) => api.post<ImportChatView>(`/conversations/${conversationId}/import`, body),
   startTopic: (conversationId: string, title: string) =>
     api.post<ConversationIdResponse>(`/conversations/${conversationId}/topics`, { title }),
   /** A new text, and who it mentions (in a group), or a private message sealed again. */

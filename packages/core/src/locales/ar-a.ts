@@ -1495,8 +1495,6 @@ export const arA: Catalog = {
     'ما قلتماه أنت و{name} هناك، محفوظ كموضوع هنا. لا يراه غيركما.',
   'Bring it over': 'انقلها',
   'Choose the file': { toWoman: 'اختاري الملف', toMan: 'اختر الملف', other: 'اختر الملف' },
-  'In WhatsApp, open the chat, then More › Export chat › Without media. Save the text file somewhere you can pick it from here. Photos and files don’t come along; the words do, dated as they were written.':
-    'في واتساب، افتح المحادثة، ثم المزيد › تصدير الدردشة › بدون وسائط. احفظ الملف النصي حيث يمكنك اختياره من هنا. لا تُنقل الصور والملفات؛ تُنقل الكلمات مؤرخةً كما كُتبت.',
   'No messages were found in it. Is it the exported chat?':
     'لم يُعثر على رسائل فيه. هل هذه هي المحادثة المصدَّرة؟',
   '{toLocaleString} messages, {text}{and}': 'عدد الرسائل: {toLocaleString}، {text}{and}',

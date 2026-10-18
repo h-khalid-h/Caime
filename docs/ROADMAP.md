@@ -2216,8 +2216,40 @@ graph) and the number that will show it; one that sharpens none is hygiene and s
       is `growth.guests` (guests who came in by their link, and of guests, who made it their account).
       Not built: keeping a guest's meeting with an address that already has messages waiting (its
       history and the guest's in one account; refused for now).
-- [ ] C2–C3. The rest of the front door: a join link's approval; the importer's groups and
-      `.zip`.
+- [x] C3g. WhatsApp's groups and an iPhone's `.zip` into the importer (2026-10-18, review §1
+      H5's other half: a group came over one message at a time, and the `.zip` an iPhone exports
+      couldn't be picked). The importer takes the `.zip` as it is, unzipped on the device (fflate
+      0.8.3, pinned, the release that fixed GHSA-px8p-9vwx-vf98; loaded only when a zip is picked,
+      inflating the text alone, never the photos beside it), and a group's export comes into a
+      group its owner or an admin runs, as a topic everyone in the group reads: each name in it is
+      one of the group's people where they say so (matched by name, changed on one row each), or
+      stays a name on the line of whoever brought it (`payload.imported.author`, drawn and read
+      out as that name's, never as theirs). WhatsApp's own lines in an iPhone's export, written
+      under the group's name (or the other person's, in a one-to-one) with a mark before their
+      words, stay behind: found on the way, a one-to-one from an iPhone brought its encryption
+      notice over as the other person's first message. A topic made for an import is always new (a
+      group's topic of the same name is otherwise the one topic, and the past would land in the
+      middle of what's said there: refused, to be named otherwise), and its lines follow whatever
+      the topic holds, under its row's lock. Never a private group (its words are sealed for its
+      people's devices), a topic, a space's conversation, or a group the importer doesn't run; a
+      name is taken only as someone in the group now. Nothing is notified, suggested or read from
+      the past, as in R45; and a one-to-one reached by email alone is no longer offered an import
+      the server refuses (connections only, as it always was). Verified with `import.test.ts` (4 more: a topic of the group with
+      everyone in it, names taken or kept, nobody told; refused for a member who doesn't run it, a
+      name taken as someone outside it, a line naming no name, a one-to-one, a stranger; the
+      product metrics' `growth.imports`; a second export under a topic's name refused, the first
+      left as it was, and one named otherwise landing apart), `whatsapp.test.ts` (an iPhone's own
+      lines, a group's and a one-to-one's), `chatFile.test.ts` (the zip's `_chat.txt`, another
+      text file, nothing, bytes that aren't a zip), `rows.test.ts` (a kept name's lines as that
+      name's run) and the E2E `whatsapp-group.spec.ts` (an iPhone's zip into a group: five
+      messages from four names, the group's own lines left out, Omar matched, Kim chosen, Uncle
+      Sami kept as his name, each line read out as its writer's for Noor and for Kim). The startup
+      chunk 448.8 KB (unchanged); the conversation route's chunk 84.3 KB (83.1 before) and the
+      unzipper 12.3 KB, loaded with a zip. The condition of the switch (a group's history comes
+      with it), not an advantage: its number is `growth.imports` (chats and groups brought over,
+      and their lines).
+- [ ] C2–C3. The rest of the front door: a join link's approval (and with it R97 (3): someone
+      under 18 let in on an adult's acceptance).
 - [ ] D. Performance and integrity: the aliased `selectAll` guard and its eleven sites; people
       lists through `personViewsFor` with a scale ceiling; `participants.last_sent_seq` for the
       inbox; a large-group mode and one transcript view; a `defer` semaphore and gauge; bus payload
@@ -3854,6 +3886,11 @@ graph) and the number that will show it; one that sharpens none is hygiene and s
   journeys, safety, reliability, performance, intelligence, mail and calendar, chat, integrations,
   business and code integrity; the matrix against WhatsApp, Signal, Slack, Calendly and Workspace;
   an age-assurance design; the integration framework mapped to the code; plan M16 (A–H).
+- 2026-10-18 — M16 C3g: the WhatsApp importer takes an iPhone's `.zip` as it is and a group's
+  export into a group its owner or an admin runs, each name taken as one of its people or kept as
+  a name; an iPhone's own lines (the encryption notice, who added whom) no longer come over as
+  someone's messages. C3e and C3b live on cai.me (`e4ddb3d`: a dead `/g/` link's page, the join
+  route answering).
 - 2026-10-18 — M16 C3f: a meeting's guest keeps the meeting as their own account in one tap from
   its page; a guest's sessions no longer outlive a claim of their row. CI on `2710524` had failed
   on a join link spec's sent line matching the list's preview too (fixed in `5eb72bd`).

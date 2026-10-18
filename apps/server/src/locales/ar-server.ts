@@ -1485,4 +1485,10 @@ export const arServer: Catalog = {
   'Keeping a meeting is for people over 18.': 'الاحتفاظ باجتماع لمن تجاوزوا 18 عامًا.',
   'Messages are waiting for this address on Caime. Keep the meeting with another address.':
     'لهذا العنوان رسائل بانتظاره على Caime. الاحتفاظ بالاجتماع ممكن بعنوان آخر.',
+  'A WhatsApp group comes over into a group of its own.': 'تُنقل مجموعة واتساب إلى مجموعة مستقلة.',
+  'Only its owner and admins bring a chat over.': 'نقل المحادثات لمالكها ومشرفيها فقط.',
+  'Every message names one of the names.': 'كل رسالة تحمل أحد الأسماء.',
+  'Everyone a name is taken as is someone in this group.': 'كل اسم يُنسب إلى شخص في هذه المجموعة.',
+  'This group has a topic called “{title}” already. Name this one otherwise.':
+    'في هذه المجموعة موضوع باسم “{title}” من قبل. يلزم اسم آخر لهذا الموضوع.',
 };

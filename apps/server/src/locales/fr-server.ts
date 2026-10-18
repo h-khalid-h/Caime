@@ -1490,4 +1490,13 @@ export const frServer: Catalog = {
   'Keeping a meeting is for people over 18.': 'Garder une réunion est réservé aux plus de 18 ans.',
   'Messages are waiting for this address on Caime. Keep the meeting with another address.':
     'Des messages attendent cette adresse sur Caime. Gardez la réunion avec une autre adresse.',
+  'A WhatsApp group comes over into a group of its own.':
+    'Un groupe WhatsApp s’importe dans un groupe à part entière.',
+  'Only its owner and admins bring a chat over.':
+    'Seuls son propriétaire et ses administrateurs importent une discussion.',
+  'Every message names one of the names.': 'Chaque message renvoie à l’un des noms.',
+  'Everyone a name is taken as is someone in this group.':
+    'Chaque nom attribué l’est à quelqu’un de ce groupe.',
+  'This group has a topic called “{title}” already. Name this one otherwise.':
+    'Ce groupe a déjà un sujet nommé « {title} ». Donnez un autre nom à celui-ci.',
 };

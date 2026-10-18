@@ -1424,4 +1424,13 @@ export const turkishServer: Catalog = {
   'Keeping a meeting is for people over 18.': 'Toplantı saklamak 18 yaş üstü kişiler içindir.',
   'Messages are waiting for this address on Caime. Keep the meeting with another address.':
     'Bu adres için Caime’de bekleyen mesajlar var. Toplantıyı başka bir adresle saklayın.',
+  'A WhatsApp group comes over into a group of its own.':
+    'WhatsApp grubu kendine ait bir gruba aktarılır.',
+  'Only its owner and admins bring a chat over.':
+    'Sohbeti yalnızca sahibi ve yöneticileri aktarabilir.',
+  'Every message names one of the names.': 'Her mesaj adlardan birini gösterir.',
+  'Everyone a name is taken as is someone in this group.':
+    'Bir adın eşlendiği herkes bu gruptan biri olmalı.',
+  'This group has a topic called “{title}” already. Name this one otherwise.':
+    'Bu grupta “{title}” adında bir konu zaten var. Bu konuya başka bir ad verin.',
 };

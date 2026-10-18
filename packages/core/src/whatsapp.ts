@@ -7,7 +7,9 @@
  *   US        3/12/24, 2:05 PM - Noor Haddad: On my way
  *
  * A line that doesn't start with a date continues the message before it. A dated line with no
- * "Name: " is WhatsApp's own ("Messages and calls are end-to-end encrypted", "Noor added Alex").
+ * "Name: " is WhatsApp's own ("Messages and calls are end-to-end encrypted", "Noor added Alex"),
+ * and so is one iOS writes under a name with a left-to-right mark before its words (the other
+ * person's name in a one-to-one, the group's in a group: "Family: ‎Noor added Omar").
  * Photos and files aren't in the text: they're "<Media omitted>" (Android) or "image omitted"
  * (iOS), counted here so the person is told what didn't come along. Nothing here is a fact
  * about anyone: what's imported says where it came from on every message (payload.imported).
@@ -50,6 +52,16 @@ const MEDIA =
 
 /** Direction and format marks phones leave in the file, and the narrow space iOS puts before AM. */
 const MARKS = /[‎‏‪-‮⁦-⁩]/g;
+
+/**
+ * iOS's sign of WhatsApp's own line: a left-to-right mark straight after the name's colon. Nobody
+ * types one there, so it's kept past the marks' removal as a private-use stand-in (`OWN`).
+ */
+const OWN_MARK = /(:\s)\u200E/;
+const OWN = '\uE000';
+const OWN_ALL = /\uE000/g;
+
+const clean = (line: string) => line.replace(MARKS, '').replace(/ | /g, ' ');
 
 interface Header {
   a: number;
@@ -126,13 +138,12 @@ function dateOf(h: Header, dayFirst: boolean): Date | null {
 
 /** Read an export. `dayFirst` is what the person chose when the file didn't say. */
 export function parseWhatsApp(text: string, options: { dayFirst?: boolean } = {}): WhatsAppChat {
-  const lines = text.replace(MARKS, '').replace(/ | /g, ' ').split(/\r?\n/);
   const headers: Header[] = [];
   const raw: Array<{ h: Header | null; line: string }> = [];
-  for (const line of lines) {
-    const h = header(line);
+  for (const line of text.split(/\r?\n/)) {
+    const h = header(clean(line.replace(OWN_MARK, `$1${OWN}`)));
     if (h) headers.push(h);
-    raw.push({ h, line });
+    raw.push({ h, line: clean(line) });
   }
   const { dayFirst, ambiguous } = decideDayFirst(headers, options.dayFirst);
 
@@ -162,9 +173,15 @@ export function parseWhatsApp(text: string, options: { dayFirst?: boolean } = {}
       continue;
     }
     const author = (who[1] ?? '').trim();
-    const body = who[2] ?? '';
+    const said = who[2] ?? '';
+    const body = said.replace(OWN_ALL, '');
     if (MEDIA.test(body.trim())) {
       mediaOmitted++;
+      current = 'system';
+      continue;
+    }
+    if (said.startsWith(OWN)) {
+      system++;
       current = 'system';
       continue;
     }

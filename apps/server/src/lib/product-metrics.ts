@@ -216,6 +216,16 @@ export async function productMetrics(ctx: AppContext, days: number): Promise<Pro
         where u.claimed_at > ${from} and u.claimed_at <= ${to}) as kept
   `);
 
+  // Chats brought over from WhatsApp (R45, M16 C3g): one-to-ones and groups, and their lines.
+  const imports = await q<{ chats: number; groups: number; messages: number }>(sql`
+    select
+      count(*) filter (where not (payload->>'group')::boolean)::int as chats,
+      count(*) filter (where (payload->>'group')::boolean)::int as groups,
+      coalesce(sum((payload->>'count')::int), 0)::int as messages
+    from domain_events
+    where type = 'chat.imported' and created_at > ${from} and created_at <= ${to}
+  `);
+
   const suggestions = await q<{ accepted: number; decided: number }>(sql`
     select count(*) filter (where status = 'accepted')::int as accepted,
       count(*) filter (where status in ('accepted', 'dismissed'))::int as decided
@@ -295,6 +305,7 @@ export async function productMetrics(ctx: AppContext, days: number): Promise<Pro
       door: { booked: door.booked, joined: rate(door.joined, door.cohort) },
       joinLinks: { made: joinLinks.made, joined: joinLinks.joined, newPeople: joinLinks.fresh },
       guests: { joined: guests.joined, kept: guests.kept },
+      imports: { chats: imports.chats, groups: imports.groups, messages: imports.messages },
     },
     ai: {
       calls: ai.reduce((n, r) => n + r.n, 0),

@@ -22,6 +22,7 @@ export type EventType =
   | 'space.member_added'
   | 'space.member_left'
   | 'conversation.created'
+  | 'chat.imported'
   | 'message.sent'
   | 'message.edited'
   | 'message.deleted'

@@ -1095,6 +1095,45 @@ export const ImportChatBody = z.object({
     .max(IMPORT_MAX_MESSAGES),
 });
 
+/** How many names a group's export may carry: everyone a WhatsApp group can hold, with room. */
+export const IMPORT_MAX_AUTHORS = 1024;
+
+/**
+ * A WhatsApp group brought over (M16 C3g), into a group whoever brings it runs, as a topic of it:
+ * each name in the export taken as one of the group's people (`userId`) or kept as the name
+ * alone, and each message naming one of them by its place in `authors`.
+ */
+export const ImportGroupChatBody = z.object({
+  source: z.literal('whatsapp'),
+  /** The topic's name; "WhatsApp" if left out. */
+  title: z.string().trim().min(1).max(80).optional(),
+  authors: z
+    .array(
+      z.object({
+        name: z.string().trim().min(1).max(120),
+        /** Someone in the group now, as whoever brings it says; null keeps the name alone. */
+        userId: z.string().uuid().nullable(),
+      }),
+    )
+    .min(1)
+    .max(IMPORT_MAX_AUTHORS),
+  messages: z
+    .array(
+      z.object({
+        at: z.string().datetime({ offset: true }),
+        /** Which of `authors` wrote it. */
+        author: z
+          .number()
+          .int()
+          .min(0)
+          .max(IMPORT_MAX_AUTHORS - 1),
+        text: z.string().min(1).max(IMPORT_MAX_TEXT),
+      }),
+    )
+    .min(1, msg('Nothing to import.'))
+    .max(IMPORT_MAX_MESSAGES),
+});
+
 export const UpdateConversationBody = z
   .object({
     title: z.string().trim().min(1).max(80).optional(),

@@ -2607,4 +2607,17 @@ export const arB: Catalog = {
   'Make it your own Caime account, free: the meeting, its people and what was said stay yours.':
     'حساب Caime خاص بك، مجانًا: يبقى لك الاجتماع ومن فيه وما قيل فيه.',
   'Keep this': 'الاحتفاظ به',
+  'Bring over a WhatsApp group': {
+    toWoman: 'انقلي مجموعة من واتساب',
+    toMan: 'انقل مجموعة من واتساب',
+    other: 'انقل مجموعة من واتساب',
+  },
+  'No chat was found in that file. Is it the exported chat?':
+    'لم يُعثر على محادثة في هذا الملف. هل هو المحادثة المُصدَّرة؟',
+  'What was said in the WhatsApp group, kept as a topic of “{title}”. Everyone in it sees it.':
+    'ما قيل في مجموعة واتساب، محفوظ كموضوع في «{title}». يراه كل من فيها.',
+  'In WhatsApp, open the chat, then Export chat, without media. A phone saves a text file, an iPhone a .zip: pick either here as it is. Photos and files don’t come along; the words do, dated as they were written.':
+    'في واتساب، افتح المحادثة، ثم تصدير الدردشة، بدون وسائط. يحفظ الهاتف ملفًا نصيًا ويحفظ آيفون ملف ‎.zip: اختر أيًّا منهما هنا كما هو. لا تُنقل الصور والملفات؛ تُنقل الكلمات مؤرخةً كما كُتبت.',
+  'Who the others are here': 'من هم الآخرون هنا',
+  'Not in this group: keep the name': 'ليس في هذه المجموعة: يبقى الاسم',
 };

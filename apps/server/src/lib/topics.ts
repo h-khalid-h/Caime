@@ -63,19 +63,30 @@ export async function assertCanStartTopic(
   ctx.limiter.hit(`topic:${userId}`, ctx.config.isTest ? 1000 : 20, 3_600_000);
 }
 
+/** How a topic is made, past its title and privacy. */
+interface TopicOptions {
+  /**
+   * Made to hold a chat brought over (R45, M16 C3g): a group's is always a new topic, never one
+   * already there by that name (the past would land in the middle of what's said there), and it
+   * opens with what's brought, since the import closes with its own line.
+   */
+  forImport?: boolean;
+}
+
 export async function createTopicConversation(
   ctx: AppContext,
   userId: string,
   parentId: string,
   title: string,
   privacy: 'standard' | 'private' = 'standard',
+  opts: TopicOptions = {},
 ) {
   const { conversation } = await membership(ctx, userId, parentId);
   // In a space, a topic that keeps coming up in General becomes a conversation for everyone.
   if (conversation.space_id && conversation.is_general && privacy === 'standard')
     return createSpaceConversation(ctx, userId, conversation.space_id, { title, everyone: true });
   if (conversation.kind === 'group' && !conversation.space_id)
-    return createGroupTopic(ctx, userId, conversation.parent_id ?? conversation.id, title);
+    return createGroupTopic(ctx, userId, conversation.parent_id ?? conversation.id, title, opts);
   if (conversation.kind !== 'direct' || !conversation.direct_key)
     throw badRequest(tr('Topics branch off a one-to-one, a group, or a space’s General.'));
   const members = await participantsOf(ctx.db, parentId);
@@ -119,6 +130,7 @@ async function createGroupTopic(
   userId: string,
   groupId: string,
   title: string,
+  opts: TopicOptions,
 ): Promise<string> {
   const name = title.trim();
   const made = await ctx.db.transaction().execute(async (trx) => {
@@ -136,6 +148,12 @@ async function createGroupTopic(
       .where('kind', '=', 'group')
       .where(sql`lower(title)`, '=', sql`lower(${name})`)
       .executeTakeFirst();
+    if (same && opts.forImport)
+      throw badRequest(
+        tr('This group has a topic called “{title}” already. Name this one otherwise.', {
+          title: name,
+        }),
+      );
     if (same) return { id: same.id, group, fresh: false };
     const id = uuidv7();
     await trx
@@ -160,10 +178,11 @@ async function createGroupTopic(
     .select('display_name')
     .where('id', '=', userId)
     .executeTakeFirstOrThrow();
-  await sendSystem(ctx, made.id, userId, 'topic_created', {
-    title: made.group.title,
-    by: by.display_name,
-  });
+  if (!opts.forImport)
+    await sendSystem(ctx, made.id, userId, 'topic_created', {
+      title: made.group.title,
+      by: by.display_name,
+    });
   await sendSystem(ctx, groupId, userId, 'topic_started', {
     title: name,
     by: by.display_name,

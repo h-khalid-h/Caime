@@ -131,7 +131,13 @@ claim is sealed by the server and kept by no one (one read of the guest's row to
 when sign-up takes it), the account is the guest's own row updated in sign-up's transaction, and
 ending the guest's sessions is one update; the guest page's block is in its route's chunk, the
 sign-up screen reads what it's handed through a dynamic import only when `?keep=1` says so, and the
-startup chunk grew 0.1 KB (448.8 KB: the conversation-link reader onboarding uses).
+startup chunk grew 0.1 KB (448.8 KB: the conversation-link reader onboarding uses). A WhatsApp
+group brought over (C3g) costs the server what a one-to-one's does (an insert per 500 lines in one
+transaction, under the topic's row lock) and one indexed read more, of who in the group its names
+are taken as; nothing is notified or read for meaning, and no AI is asked. On the device, an
+iPhone's `.zip` is unzipped there: the unzipper is a 12.3 KB gzip chunk fetched only when a zip is
+picked, and it inflates the export's text alone, never its photos. The startup chunk is unchanged
+(448.8 KB); the conversation route's chunk grew 1.2 KB (84.3 KB: the group's "who's who" rows).
 
 ## What a change says
 

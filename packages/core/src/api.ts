@@ -1863,6 +1863,11 @@ export interface ProductMetricsView {
      * signing up with it), the number that shows a meeting bringing someone in.
      */
     guests: { joined: number; kept: number };
+    /**
+     * Chats brought over from WhatsApp (R45, M16 C3g) in the window: one-to-ones, groups, and how
+     * many messages came with them, the number that shows a group moving over with its past.
+     */
+    imports: { chats: number; groups: number; messages: number };
   };
   ai: { calls: number; ok: number; byFeature: Record<string, { ok: number; other: number }> };
   business: {
