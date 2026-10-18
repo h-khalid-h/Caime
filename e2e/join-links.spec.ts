@@ -6,7 +6,7 @@
  * in, asks before joining and lands in its General.
  */
 import { expect, test } from '@playwright/test';
-import { apiSignUp, CLIENT } from './helpers';
+import { apiSignUp, CLIENT, visible } from './helpers';
 
 test('a group made with nobody brings someone new in through its link', async ({ browser }) => {
   const suffix = Date.now().toString(36);
@@ -35,9 +35,8 @@ test('a group made with nobody brings someone new in through its link', async ({
   await expect(page.getByText('You made a link to join').filter({ visible: true })).toBeVisible();
   await page.getByTestId('composer-input').fill('First up: Dune, then Middlemarch');
   await page.getByTestId('composer-send').click();
-  await expect(
-    page.getByText('First up: Dune, then Middlemarch').filter({ visible: true }),
-  ).toBeVisible();
+  // The line, and on a desktop the list's row beside it: either says it was sent.
+  await expect(visible(page, 'First up: Dune, then Middlemarch')).toBeVisible();
 
   // Someone new: the page says where it leads and how many are in it, without the app or names.
   const fresh = await browser.newContext({
@@ -69,9 +68,7 @@ test('a group made with nobody brings someone new in through its link', async ({
 
   // In it, in one tap, reading what was said before they came.
   await visitor.waitForURL((u) => u.pathname === `/c/${id}`);
-  await expect(
-    visitor.getByText('First up: Dune, then Middlemarch').filter({ visible: true }),
-  ).toBeVisible();
+  await expect(visible(visitor, 'First up: Dune, then Middlemarch')).toBeVisible();
   // Its owner sees them come in, without a reload (the line, the list's row and the live region
   // for a screen reader all say so).
   await expect(
