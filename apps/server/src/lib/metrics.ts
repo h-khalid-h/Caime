@@ -151,6 +151,11 @@ export function createMetrics(pool: pg.Pool) {
       'caime_public_bookings_total',
       'Bookings before an account, by outcome (a code sent, booked, or why not).',
     ),
+    // People onto a team (M16 C3a, C3b): by an invite, or by an address at its verified domain.
+    teamJoins: new Counter(
+      'caime_team_joins_total',
+      'People who joined a team, by how (invite, domain).',
+    ),
     // Join links (M16 C3e): made, and joined through, by group or space.
     joinLinks: new Counter(
       'caime_join_links_total',

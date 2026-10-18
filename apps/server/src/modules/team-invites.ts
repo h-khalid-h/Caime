@@ -172,6 +172,7 @@ export async function teamInviteRoutes(app: FastifyInstance, ctx: AppContext) {
     const added = await seatOnTeam(ctx, org.id, [auth.userId], invite.role, invite.created_by);
     if (added.length === 0) return { orgId: org.id, handle: org.handle, already: true };
     await spendTeamInvite(ctx, invite);
+    ctx.metrics.teamJoins.inc({ by: 'invite' });
     await audit(ctx.db, {
       actorId: auth.userId,
       action: 'org.members_added',

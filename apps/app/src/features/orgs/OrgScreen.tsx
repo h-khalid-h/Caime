@@ -131,6 +131,7 @@ export function OrgScreen({
   const [blocking, setBlocking] = useState(false);
   const [busy, setBusy] = useState(false);
   const [starting, setStarting] = useState(false);
+  const [joiningTeam, setJoiningTeam] = useState(false);
   const [editing, setEditing] = useState(false);
   const locale = useSession((s) => s.user?.locale) ?? 'en';
   const countries = useCountries(locale).data?.countries;
@@ -217,6 +218,23 @@ export function OrgScreen({
       return false;
     } finally {
       setBusy(false);
+    }
+  };
+
+  // Onto its team by an address at its verified domain (M16 C3b), then its inbox, as an invite
+  // lands there.
+  const joinTeam = async (orgId: string) => {
+    setJoiningTeam(true);
+    try {
+      const res = await endpoints.joinOrgByDomain(orgId);
+      void qc.invalidateQueries({ queryKey: qk.orgs });
+      void qc.invalidateQueries({ queryKey: qk.businessSummary });
+      void qc.invalidateQueries({ queryKey: qk.org(handle) });
+      router.replace({ pathname: '/o/[handle]/inbox', params: { handle: res.handle } });
+    } catch (e) {
+      toast((e as Error).message, { tone: 'danger' });
+    } finally {
+      setJoiningTeam(false);
     }
   };
 
@@ -483,6 +501,45 @@ export function OrgScreen({
             </View>
           )}
         </View>
+
+        {/* Their address at its verified domain lets them onto its team (M16 C3b). */}
+        {!org.myRole && (org.joinableAs || org.joinOnceConfirmed) ? (
+          <View style={{ paddingHorizontal: 16, paddingBottom: 12 }} testID="org-join-team">
+            <Card>
+              <View style={{ gap: 8 }}>
+                <Text variant="bodyStrong">{tr('Join {org}’s team', { org: org.name })}</Text>
+                <Text variant="caption" color="textSecondary">
+                  {org.joinableAs
+                    ? tr(
+                        'Your address {address} lets you in, as a team member: its conversations with customers will be in your Business inbox.',
+                        { address: org.joinableAs },
+                      )
+                    : tr(
+                        'Confirm {address} first: an address at its domain lets you join its team.',
+                        {
+                          address: org.joinOnceConfirmed ?? '',
+                        },
+                      )}
+                </Text>
+                {org.joinableAs ? (
+                  <Button
+                    label={tr('Join the team')}
+                    loading={joiningTeam}
+                    onPress={() => void joinTeam(org.id)}
+                    testID="org-join-team-button"
+                  />
+                ) : (
+                  <Button
+                    label={tr('Confirm your address')}
+                    variant="secondary"
+                    onPress={() => router.push('/settings/security')}
+                    testID="org-confirm-address"
+                  />
+                )}
+              </View>
+            </Card>
+          </View>
+        ) : null}
 
         {org.myRole ? (
           <View style={{ paddingHorizontal: 16, paddingBottom: 12 }}>

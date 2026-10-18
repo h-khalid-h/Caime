@@ -22,6 +22,7 @@ import type { Kysely } from 'kysely';
 import type { AppContext } from '../context';
 import type { Database, OwnAddressesTable } from '../db/schema';
 import { hashToken } from './crypto';
+import { offerTeamByDomain } from './domain-join';
 import { AppError, badRequest, conflict, mailUnavailable, notFound } from './errors';
 import { whatsappFor } from './whatsapp';
 
@@ -226,6 +227,9 @@ export async function verifyAddress(
       .where('id', '=', id)
       .returning(COLUMNS)
       .executeTakeFirstOrThrow();
+    // An address at a verified organization's domain may let them onto its team (M16 C3b).
+    if (done.kind === 'email')
+      ctx.defer('team-domain', () => offerTeamByDomain(ctx, userId, done.value));
     return addressView(done);
   } catch (err) {
     // Two people proving the same number at once: the unique index lets one through.

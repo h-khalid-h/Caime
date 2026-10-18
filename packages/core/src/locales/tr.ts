@@ -4220,4 +4220,12 @@ export const turkish: Catalog = {
   'You came to join a group: it opens next. Find others by @handle or email any time.':
     'Bir gruba katılmak için geldiniz: şimdi açılacak. Başkalarını istediğiniz zaman @kullanıcıadı veya e-postayla bulun.',
   '{by} made a link to join': 'Katılma bağlantısı oluşturan: {by}',
+  'Your address {address} lets you in, as a team member: its conversations with customers will be in your Business inbox.':
+    '{address} adresiniz ekip üyesi olarak katılmanızı sağlar: müşterilerle konuşmaları İşletme gelen kutunuzda olacak.',
+  'Confirm {address} first: an address at its domain lets you join its team.':
+    'Önce {address} adresini doğrulayın: alan adındaki bir adres ekibine katılmayı sağlar.',
+  'Anyone with a confirmed address at {domain} may join the team':
+    '{domain} alan adında doğrulanmış adresi olan herkes ekibe katılabilir',
+  'They join as team members. Anyone you remove stays off it until you or an invite bring them back.':
+    'Ekip üyesi olarak katılırlar. Çıkardığınız kişi, siz ya da bir davet geri getirene kadar dışarıda kalır.',
 };

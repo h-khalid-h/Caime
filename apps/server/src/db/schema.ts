@@ -970,6 +970,8 @@ export interface OrganizationsTable {
   last_owner_id: Generated<string | null>;
   /** Closed, and what was its alone deleted (DPA §12): when. */
   cleared_at: NullableTimestamp;
+  /** Anyone with a proven address at its verified domain may join its team (M16 C3b). */
+  domain_join: Generated<boolean>;
   created_at: Generated<Date>;
   updated_at: Generated<Date>;
 }
@@ -989,6 +991,8 @@ export interface OrgMembersTable {
   added_by: string | null;
   joined_at: Generated<Date>;
   left_at: NullableTimestamp;
+  /** Taken off the team by its owner or an admin (M16 C3b): never back by their address alone. */
+  removed_at: NullableTimestamp;
 }
 
 export interface BusinessThreadsTable {
@@ -1550,6 +1554,7 @@ export const ORG_COLUMNS = [
   'succeeded_by',
   'last_owner_id',
   'cleared_at',
+  'domain_join',
   'created_at',
   'updated_at',
 ] as const satisfies ReadonlyArray<

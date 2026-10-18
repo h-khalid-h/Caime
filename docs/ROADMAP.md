@@ -2163,8 +2163,33 @@ graph) and the number that will show it; one that sharpens none is hygiene and s
       and R97 (3)'s way to let someone under 18 in on an adult's acceptance: until it comes, a
       link refuses them, stricter than R97 asks), and the importer's groups and iPhone `.zip`
       (H5's other half).
-- [ ] C2–C3. The rest of the front door: domain auto-join for a verified organization (C3b);
-      "Keep this" on the guest page; a join link's approval; the importer's groups and `.zip`.
+- [x] C3b. Onto a verified organization's team by an address at its domain (2026-10-18, review
+      §1 H3's last part: staff joined only by an invite each). Its owner or an admin turns it on
+      from the setup screen's verified card ("Anyone with a confirmed address at niledental.com
+      may join the team"); from then, anyone with a confirmed address there sees "Join Nile
+      Dental's team" on its page and is in its Business inbox with one tap, as a team member,
+      through the one way onto a team (`seatOnTeam`: the plan's room, threads joined, the team
+      told). An address counts once proven: the sign-in once its code came back, or one added and
+      proved (R91); a sign-in still waiting for its code is asked to confirm first, and whoever
+      proves an address there hears they may join, the notice opening the page. Teams stay for
+      adults (R29); someone the team took off (`org_members.removed_at`, never set by leaving)
+      comes back only by a manager or an invite, which clears it; a domain claimed and never
+      proven, the switch off or the domain let go lets nobody in. The audit names the join
+      `byDomain`, never the address, its managers hear who came in, and
+      `caime_team_joins_total{by}` counts joins by invite and by domain. Verified with
+      `domain-join.test.ts` (9: off until a manager turns it on, an agent can't; one tap as a team
+      member, twice once, the owner told, the audit without the address, the counter; a sign-in
+      waiting for its code asked first, then told and offered; an added address only once
+      proven; under 18 refused, a lookalike domain not the domain; removed stays off until an
+      invite, leaving isn't removal; off, or the domain let go, lets nobody in; the plan's room;
+      an unverified domain takes nobody; the page three reads more for someone not on the team,
+      only where it takes people) and the E2E `domain-join.spec.ts` (the owner turns it
+      on from the setup screen; someone new signs up with an address there, confirms its code,
+      finds the card on the page and lands in the inbox, on the team as an agent). Advantages 2
+      and 4: the whole team on one identity each at one price, without an invite per person; the
+      number is joins by domain (`caime_team_joins_total{by="domain"}`, the audit's `byDomain`).
+- [ ] C2–C3. The rest of the front door: "Keep this" on the guest page; a join link's approval;
+      the importer's groups and `.zip`.
 - [ ] D. Performance and integrity: the aliased `selectAll` guard and its eleven sites; people
       lists through `personViewsFor` with a scale ceiling; `participants.last_sent_seq` for the
       inbox; a large-group mode and one transcript view; a `defer` semaphore and gauge; bus payload
@@ -3801,6 +3826,9 @@ graph) and the number that will show it; one that sharpens none is hygiene and s
   journeys, safety, reliability, performance, intelligence, mail and calendar, chat, integrations,
   business and code integrity; the matrix against WhatsApp, Signal, Slack, Calendly and Workspace;
   an age-assurance design; the integration framework mapped to the code; plan M16 (A–H).
+- 2026-10-18 — M16 C3b: a verified organization may let anyone with a confirmed address at its
+  domain onto its team in one tap, without an invite each; someone it removed comes back only by
+  a manager or an invite.
 - 2026-10-18 — M16 C3e: join links for groups and spaces. Its owner or admins post one where
   its people already are; whoever opens it reads where it leads without the app, signs up and
   joins in one tap, reading what was said before; adults only, none where anyone is under 18,

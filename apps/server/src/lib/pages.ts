@@ -254,6 +254,10 @@ something about your health: that is sensitive data, and it is the organization&
 after, under its own duties to you; ${f.legalName} only stores and delivers it on the
 organization&rsquo;s instructions, never reads it for anything of its own, and never uses it to
 train a model.</li>
+<li><strong>An organization at your address&rsquo;s domain.</strong> If an organization proved it
+controls the domain of an address you confirmed, and lets people with an address there join its
+team, Caime tells you, and joining is yours to choose. Once you join, its team sees you on it,
+never which address let you in.</li>
 <li><strong>Apps you let in</strong> do only what you allowed. Remove one in You &rarr; Connected
 apps; what it already has stays with it.</li>
 <li><strong>Companies that help run Caime</strong>, each only for what it does for Caime. The same

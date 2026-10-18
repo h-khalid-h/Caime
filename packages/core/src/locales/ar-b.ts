@@ -2584,4 +2584,12 @@ export const arB: Catalog = {
   'You came to join a group: it opens next. Find others by @handle or email any time.':
     'الانضمام إلى مجموعة يأتي تاليًا. البحث عن آخرين بالمعرّف @ أو البريد متاح في أي وقت.',
   '{by} made a link to join': 'رابط للانضمام: {by}',
+  'Your address {address} lets you in, as a team member: its conversations with customers will be in your Business inbox.':
+    'عنوانك {address} يتيح لك الانضمام عضوًا في الفريق: محادثاته مع العملاء تظهر في صندوق الأعمال.',
+  'Confirm {address} first: an address at its domain lets you join its team.':
+    'يلزم تأكيد {address} أولًا: عنوان في نطاقها يتيح الانضمام إلى فريقها.',
+  'Anyone with a confirmed address at {domain} may join the team':
+    'الانضمام إلى الفريق متاح لكل من لديه عنوان مؤكَّد في {domain}',
+  'They join as team members. Anyone you remove stays off it until you or an invite bring them back.':
+    'الانضمام بصفة عضو في الفريق. من تزيله يبقى خارجه حتى تعيده أنت أو دعوة.',
 };

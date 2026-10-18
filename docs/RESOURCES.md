@@ -121,7 +121,12 @@ nothing polls, no job runs, and spent ones go with the same retention pass. A li
 people; past about a hundred, each message in a group costs what block D's large-group mode is
 there to cut, so that mode is owed before links fill groups that far. On the device,
 the link panel loads with a group's or a space's Add sheet (or the sheet a group just made opens
-on), and the accept screen is its own route, neither in the first download.
+on), and the accept screen is its own route, neither in the first download. Joining a team by domain (C3b)
+is one boolean on the organization and a timestamp on a seat; the organization's page reads up to
+three indexed rows more for someone not on its team, and only where its domain takes people; a
+join is the seat's own transaction; proving an address looks the organization up once by its
+domain's unique index, after the response. Nothing polls, and nothing fans out to everyone at a
+domain when the switch is turned on.
 
 ## What a change says
 

@@ -1874,6 +1874,11 @@ export const UpdateOrgBody = z
     avatarFileId: z.string().uuid().nullable().optional(),
     /** How long it keeps its customers' conversations (R54), 1–3650 days; null keeps them. Its owner's. */
     retentionDays: z.number().int().min(1).max(3650).nullable().optional(),
+    /**
+     * Anyone with a proven address at its verified domain may join its team (M16 C3b), as a team
+     * member, without an invite.
+     */
+    joinByDomain: z.boolean().optional(),
   })
   .strict()
   .refine((b) => Object.keys(b).length > 0, msg('Nothing to change.'));

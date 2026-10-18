@@ -67,6 +67,7 @@ import {
 } from '../lib/booking';
 import { leaveThreads, orgAvatarUrl } from '../lib/business';
 import { disconnect } from '../lib/checkout';
+import { domainStanding, takesByDomain } from '../lib/domain-join';
 import { qrPath } from '../lib/door';
 import { AppError, badRequest, conflict, forbidden, notFound } from '../lib/errors';
 import { currencyOf, currentZone, defaultZoneOf, isCountry } from '../lib/geo';
@@ -200,13 +201,18 @@ async function orgView(ctx: AppContext, viewerId: string, org: Organization): Pr
           verified: org.verified_at !== null,
           verifiedAt: org.verified_at?.toISOString() ?? null,
           record: verificationRecord(org.domain, org.verify_token),
+          joinByDomain: org.domain_join,
         }
       : null;
   const plan = seat && canManageOrg(seat.role) ? await orgPlanView(ctx, org.id) : null;
-  const [blockedByMe, agent, places] = await Promise.all([
+  const [blockedByMe, agent, places, standing] = await Promise.all([
     orgBlocked(ctx.db, viewerId, org.id),
     activeAgent(ctx, org.id),
     orgPlacesFor(ctx, org.id, viewerId),
+    // Someone not on it, where its domain lets people in (M16 C3b): whether theirs does.
+    seat || !takesByDomain(org)
+      ? { joinableAs: null, joinOnceConfirmed: null }
+      : domainStanding(ctx.db, org, viewerId, ctx.now()),
   ]);
   return {
     ...summary,
@@ -247,6 +253,8 @@ async function orgView(ctx: AppContext, viewerId: string, org: Organization): Pr
     payable: !seat && methodsFor(paymentsOf(org), { isConnected: true, spheres: [] }).length > 0,
     payments: seat && canManageOrg(seat.role) ? paymentsOf(org) : null,
     retentionDays: org.retention_days,
+    joinableAs: standing.joinableAs,
+    joinOnceConfirmed: standing.joinOnceConfirmed,
   };
 }
 
@@ -533,6 +541,14 @@ export async function orgRoutes(app: FastifyInstance, ctx: AppContext) {
         metadata: { retentionDays: body.retentionDays },
       });
     }
+    // Who its domain lets onto the team (M16 C3b): its owner's and admins' to say.
+    if (body.joinByDomain !== undefined && body.joinByDomain !== current.domain_join)
+      await audit(ctx.db, {
+        actorId: auth.userId,
+        action: 'org.domain_join_set',
+        target: id,
+        metadata: { on: body.joinByDomain },
+      });
     // Its logo is an image of the person's own upload, as a profile photo is (modules/me.ts).
     if (body.avatarFileId) {
       const file = await ctx.db
@@ -557,6 +573,7 @@ export async function orgRoutes(app: FastifyInstance, ctx: AppContext) {
           : {}),
         ...(body.foundedYear !== undefined ? { founded_year: body.foundedYear } : {}),
         ...(body.avatarFileId !== undefined ? { avatar_file_id: body.avatarFileId } : {}),
+        ...(body.joinByDomain !== undefined ? { domain_join: body.joinByDomain } : {}),
         updated_at: ctx.now(),
       })
       .where('id', '=', id)
@@ -695,7 +712,11 @@ export async function orgRoutes(app: FastifyInstance, ctx: AppContext) {
     await ctx.db.transaction().execute(async (trx) => {
       await trx
         .updateTable('org_members')
-        .set(closing ? { left_at: now } : { left_at: now, role: 'agent' })
+        .set({
+          ...(closing ? { left_at: now } : { left_at: now, role: 'agent' }),
+          // Taken off by whoever runs it (M16 C3b): back only by a manager or an invite.
+          ...(leaving ? {} : { removed_at: now }),
+        })
         .where('org_id', '=', id)
         .where('user_id', '=', userId)
         .execute();

@@ -73,6 +73,7 @@ import { connectionRoutes } from './modules/connections';
 import { contactRoutes } from './modules/contacts';
 import { conversationRoutes } from './modules/conversations';
 import { directoryRoutes } from './modules/directory';
+import { domainJoinRoutes } from './modules/domain-join';
 import { e2eeRoutes } from './modules/e2ee';
 import { fileRoutes } from './modules/files';
 import { groupCallRoutes } from './modules/group-calls';
@@ -347,6 +348,7 @@ export async function buildApp(config: Config, options: BuildOptions = {}): Prom
       await spaceRoutes(v1, ctx);
       await orgRoutes(v1, ctx);
       await teamInviteRoutes(v1, ctx);
+      await domainJoinRoutes(v1, ctx);
       await joinLinkRoutes(v1, ctx);
       await handleRoutes(v1, ctx);
       await businessRoutes(v1, ctx);

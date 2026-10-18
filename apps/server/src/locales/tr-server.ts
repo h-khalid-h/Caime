@@ -1412,4 +1412,10 @@ export const turkishServer: Catalog = {
   'an invitation to a group': 'bir grup daveti',
   'Sign up or sign in, then join: you read what was said there before you came, and its people see your name.':
     'Kaydolun ya da giriş yapın, sonra katılın: siz gelmeden önce orada söylenenleri okursunuz; oradakiler de adınızı görür.',
+  'You can join {org}’s team': '{org} ekibine katılabilirsiniz',
+  'Your address at {domain} lets you in.': '{domain} alan adındaki adresiniz bunu sağlar.',
+  'Confirm your address first: it’s what lets you join.':
+    'Önce adresinizi doğrulayın: katılmayı sağlayan odur.',
+  'No address of yours lets you join this team.':
+    'Adreslerinizden hiçbiri bu ekibe katılmayı sağlamıyor.',
 };

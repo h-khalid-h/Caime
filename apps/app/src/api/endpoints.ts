@@ -113,6 +113,7 @@ import type {
   OrgDoorView,
   OrgExportView,
   OrgInsightsResponse,
+  OrgJoinResponse,
   OrgListingsResponse,
   OrgOrdersView,
   OrgReclaimView,
@@ -549,6 +550,8 @@ export const endpoints = {
     api.get<TeamInviteOpenResponse>(`/team-invites/${encodeURIComponent(token)}`),
   acceptTeamInvite: (token: string) =>
     api.post<TeamInviteAcceptResponse>(`/team-invites/${encodeURIComponent(token)}/accept`),
+  /** Onto a verified organization's team by a proven address at its domain (M16 C3b). */
+  joinOrgByDomain: (orgId: string) => api.post<OrgJoinResponse>(`/orgs/${orgId}/join`),
   /**
    * Join links (M16 C3e): a group's or a space's own (made, listed, taken back by its owner and
    * admins), and one opened by whoever has it, and accepted.

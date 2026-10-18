@@ -4394,4 +4394,12 @@ export const fr: Catalog = {
   'You came to join a group: it opens next. Find others by @handle or email any time.':
     'Vous êtes ici pour rejoindre un groupe : il s’ouvre ensuite. Trouvez d’autres personnes par @identifiant ou e-mail à tout moment.',
   '{by} made a link to join': 'Lien pour rejoindre : {by}',
+  'Your address {address} lets you in, as a team member: its conversations with customers will be in your Business inbox.':
+    'Votre adresse {address} vous permet d’entrer, comme membre de l’équipe : ses conversations avec les clients seront dans votre boîte Entreprise.',
+  'Confirm {address} first: an address at its domain lets you join its team.':
+    'Confirmez d’abord {address} : une adresse à son domaine permet de rejoindre son équipe.',
+  'Anyone with a confirmed address at {domain} may join the team':
+    'Toute personne ayant une adresse confirmée à {domain} peut rejoindre l’équipe',
+  'They join as team members. Anyone you remove stays off it until you or an invite bring them back.':
+    'Elles la rejoignent comme membres. Une personne retirée n’y revient que par vous ou par une invitation.',
 };

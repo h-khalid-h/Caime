@@ -62,6 +62,7 @@ export type AuditAction =
   | 'org.exported'
   | 'org.conversation_erased'
   | 'org.retention_set'
+  | 'org.domain_join_set'
   | 'org.reclaim_started'
   | 'org.reclaimed'
   | 'org.deleted'

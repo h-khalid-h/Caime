@@ -1474,4 +1474,9 @@ export const arServer: Catalog = {
   'an invitation to a group': 'دعوة إلى مجموعة',
   'Sign up or sign in, then join: you read what was said there before you came, and its people see your name.':
     'التسجيل أو الدخول، ثم الانضمام: ما قيل فيها قبل وصولك يظهر لك، واسمك يظهر لمن فيها.',
+  'You can join {org}’s team': 'الانضمام إلى فريق {org} متاح لك',
+  'Your address at {domain} lets you in.': 'عنوانك في {domain} يتيح لك ذلك.',
+  'Confirm your address first: it’s what lets you join.':
+    'يلزم تأكيد عنوانك أولًا: هو ما يتيح الانضمام.',
+  'No address of yours lets you join this team.': 'لا عنوان لك يتيح الانضمام إلى هذا الفريق.',
 };

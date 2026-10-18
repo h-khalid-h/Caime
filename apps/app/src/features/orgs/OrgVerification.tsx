@@ -1,6 +1,7 @@
 /**
  * Verify the domain (PRD §55): one TXT record, then "Check now". Shown on the organization's
- * setup screen (R57) to its owner and admins.
+ * setup screen (R57) to its owner and admins. Once verified, its addresses may let staff onto the
+ * team without an invite each (M16 C3b).
  */
 import type { OrgView } from '@caime/core/api';
 import { tr } from '@caime/core/i18n';
@@ -12,6 +13,7 @@ import { useTheme } from '@/theme/theme';
 import { Button } from '@/ui/Button';
 import { Card } from '@/ui/Card';
 import { CopyRow } from '@/ui/CopyRow';
+import { SwitchRow } from '@/ui/SwitchRow';
 import { Text } from '@/ui/Text';
 import { TextField } from '@/ui/TextField';
 import { toast } from '@/ui/Toast';
@@ -38,6 +40,17 @@ export function OrgVerification({ org, refresh }: { org: OrgView; refresh: (o: O
       setBusy(null);
     }
   };
+  const [joining, setJoining] = useState(false);
+  const joinByDomain = async (on: boolean) => {
+    setJoining(true);
+    try {
+      refresh((await endpoints.updateOrg(org.id, { joinByDomain: on })).org);
+    } catch (e) {
+      toast((e as Error).message, { tone: 'danger' });
+    } finally {
+      setJoining(false);
+    }
+  };
   const d = org.domain;
   if (d?.verified && !changing)
     return (
@@ -59,6 +72,21 @@ export function OrgVerification({ org, refresh }: { org: OrgView; refresh: (o: O
             name: org.name,
           })}
         </Text>
+        {/* Staff join by their work address, no invite each (M16 C3b). */}
+        <View style={{ marginTop: 8 }}>
+          <SwitchRow
+            label={tr('Anyone with a confirmed address at {domain} may join the team', {
+              domain: d.name,
+            })}
+            detail={tr(
+              'They join as team members. Anyone you remove stays off it until you or an invite bring them back.',
+            )}
+            value={d.joinByDomain}
+            disabled={joining}
+            onChange={(on) => void joinByDomain(on)}
+            testID="org-join-by-domain"
+          />
+        </View>
       </Card>
     );
   if (!d || changing)

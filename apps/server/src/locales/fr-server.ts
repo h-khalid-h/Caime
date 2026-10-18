@@ -1477,4 +1477,10 @@ export const frServer: Catalog = {
   'an invitation to a group': 'une invitation dans un groupe',
   'Sign up or sign in, then join: you read what was said there before you came, and its people see your name.':
     'Inscrivez-vous ou connectez-vous, puis rejoignez : vous lisez ce qui s’y est dit avant votre arrivée, et ses membres voient votre nom.',
+  'You can join {org}’s team': 'Vous pouvez rejoindre l’équipe de {org}',
+  'Your address at {domain} lets you in.': 'Votre adresse à {domain} vous le permet.',
+  'Confirm your address first: it’s what lets you join.':
+    'Confirmez d’abord votre adresse : c’est elle qui permet de rejoindre l’équipe.',
+  'No address of yours lets you join this team.':
+    'Aucune de vos adresses ne permet de rejoindre cette équipe.',
 };

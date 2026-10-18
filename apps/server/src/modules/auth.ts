@@ -44,6 +44,7 @@ import {
   recoverySalt,
   verifyPassword,
 } from '../lib/crypto';
+import { offerTeamByDomain } from '../lib/domain-join';
 import { sendEmailCode, spendEmailCode } from '../lib/email-codes';
 import {
   AppError,
@@ -422,6 +423,8 @@ export async function authRoutes(app: FastifyInstance, ctx: AppContext) {
       action: 'auth.email_verified',
       ...clientInfo(req),
     });
+    // An address at a verified organization's domain may let them onto its team (M16 C3b).
+    ctx.defer('team-domain', () => offerTeamByDomain(ctx, auth.userId, user.email));
     return { user: meView(user, ctx.now(), ctx.config) };
   });
 

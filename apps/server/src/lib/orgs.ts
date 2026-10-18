@@ -92,6 +92,8 @@ export async function seatOnTeam(
         .onConflict((oc) =>
           oc.columns(['org_id', 'user_id']).doUpdateSet({
             left_at: null,
+            // Brought back by a manager or an invite: their address counts again (M16 C3b).
+            removed_at: null,
             role,
             added_by: addedBy,
             joined_at: ctx.now(),

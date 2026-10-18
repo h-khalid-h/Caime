@@ -384,8 +384,12 @@ appointment from a catalog).
   spent by its use. Anyone joins a team only through `seatOnTeam` (`lib/orgs.ts`: under the
   organization's row, the plan's room checked in that transaction, threads joined, the team told
   with a `business.updated` that names no thread, which the app reads as "the team changed");
-  the members route and an invite both call it, and anything new that puts someone on a team
-  does too. `managerSeat` lives beside it. Invites are in `buildOrgExport`, deleted by
+  the members route, an invite and an address at its verified domain (M16 C3b,
+  `lib/domain-join.ts`, `modules/domain-join.ts`: `organizations.domain_join`, turned on from
+  `OrgVerification`; `domainStanding` says whether a proven address lets someone in, offered on
+  the organization's page and told by `offerTeamByDomain` when an address is proven; someone the
+  team removed, `org_members.removed_at`, comes back only by a manager or an invite, which
+  `seatOnTeam` clears) all call it, and anything new that puts someone on a team does too. `managerSeat` lives beside it. Invites are in `buildOrgExport`, deleted by
   `clearClosedOrg`, and swept after `KEPT_DAYS.spentInvites` as invite links are.
 - Join links (M16 C3e, `lib/join-links.ts`, `modules/join-links.ts`): a group's or a space's
   owner or admins make a link (`g_…`, shown once, kept as its hash, masked in the log, open core

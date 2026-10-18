@@ -1236,6 +1236,11 @@ export interface OrgDomainView {
   verifiedAt: string | null;
   /** The TXT record that proves it. */
   record: { name: string; type: 'TXT'; value: string };
+  /**
+   * Anyone with a proven address at it joins the team without an invite (M16 C3b), once it's
+   * verified; someone the team removed never comes back this way.
+   */
+  joinByDomain: boolean;
 }
 
 export interface OrgView extends OrgSummaryView {
@@ -1268,6 +1273,13 @@ export interface OrgView extends OrgSummaryView {
   retentionDays: number | null;
   /** Its address at Caime's mail domain (R75): for its team where mail is on, else null. */
   mailAddress: string | null;
+  /**
+   * The viewer's proven address at its verified domain, when that lets them join its team now
+   * (M16 C3b): an adult not on it, never removed from it. Null otherwise.
+   */
+  joinableAs: string | null;
+  /** Their sign-in address at that domain, not confirmed yet: confirming it lets them join. */
+  joinOnceConfirmed: string | null;
 }
 
 /**
@@ -1424,6 +1436,12 @@ export interface TeamInviteOpenResponse {
   invite: TeamInviteOpenView;
 }
 export interface TeamInviteAcceptResponse {
+  orgId: string;
+  handle: string;
+  already: boolean;
+}
+/** On a verified organization's team by an address at its domain (M16 C3b). */
+export interface OrgJoinResponse {
   orgId: string;
   handle: string;
   already: boolean;
