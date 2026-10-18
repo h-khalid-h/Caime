@@ -25,7 +25,7 @@ import { finalizeFile, storeFile } from '../lib/files';
 import { fileView } from '../lib/messages';
 import { requireOperator } from '../lib/operator';
 import { orgSeat } from '../lib/orgs';
-import { assertStorage } from '../lib/plans';
+import { assertStorage, lockStorage } from '../lib/plans';
 import { NOBODY } from '../lib/public-pages';
 import { viewerRelation } from '../lib/relations';
 import { type Storage, storageFor } from '../lib/storage';
@@ -214,23 +214,27 @@ export async function fileRoutes(app: FastifyInstance, ctx: AppContext) {
       }),
       req.body,
     );
-    await assertStorage(ctx, auth.userId, body.size);
     const id = uuidv7();
-    await ctx.db
-      .insertInto('files')
-      .values({
-        id,
-        owner_id: auth.userId,
-        storage_key: `tmp/${id}`,
-        name: body.name,
-        mime: body.mime,
-        size: body.size,
-        kind: 'other',
-        duration_ms: body.durationMs ?? null,
-        status: 'uploading',
-        created_at: ctx.now(),
-      })
-      .execute();
+    // Counted and added one at a time for each person (M16 H1): two at once never both fit.
+    await ctx.db.transaction().execute(async (trx) => {
+      await lockStorage(trx, auth.userId);
+      await assertStorage(ctx, auth.userId, body.size, trx);
+      await trx
+        .insertInto('files')
+        .values({
+          id,
+          owner_id: auth.userId,
+          storage_key: `tmp/${id}`,
+          name: body.name,
+          mime: body.mime,
+          size: body.size,
+          kind: 'other',
+          duration_ms: body.durationMs ?? null,
+          status: 'uploading',
+          created_at: ctx.now(),
+        })
+        .execute();
+    });
     reply.status(201).header('upload-offset', '0');
     return { id, offset: 0 };
   });

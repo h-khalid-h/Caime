@@ -2020,12 +2020,22 @@ export interface ProductMetricsView {
 
 /** Your own plan: what it includes, and what you've used of it. */
 export interface PlanUsageView {
+  /** What your allowances come from: your own plan, or a seat's that includes more (M16 H1). */
   plan: Plan;
   allowance: PersonAllowance;
   used: { aiToday: number; storageBytes: number; automations: number };
   /** When the next AI assist is available again, once today's are used up. */
   aiNextAt: string | null;
   upgradeUrl: string | null;
+  /** The organization whose seat includes it, when it's more than your own plan. */
+  via: PlanSeatView | null;
+}
+
+/** A seat on an organization's team that includes a plan for its person (M16 H1). */
+export interface PlanSeatView {
+  orgId: string;
+  name: string;
+  plan: OrgPlan;
 }
 
 /** A space in the list (PRD §40). */

@@ -81,6 +81,49 @@ export const ORG_ALLOWANCES: Readonly<Record<OrgPlan, OrgAllowance>> = {
   },
 };
 
+/**
+ * Organizations on the Free plan one person may run as owner at once (M16 H1): each comes with
+ * an AI agent's daily answers, a cost Caime carries. Moving one to Business, or closing one,
+ * makes room; nothing already running is ever stopped.
+ */
+export const FREE_ORGS_PER_OWNER = 3;
+
+/** What a seat on an organization's team includes for its person (PRD §84). */
+export const SEAT_PLANS: Readonly<Record<OrgPlan, Plan | null>> = {
+  free: null,
+  business: 'business',
+  enterprise: 'enterprise',
+};
+
+/** How much a person's plan includes, to compare two: a Business seat includes what Pro does. */
+const INCLUDES: Readonly<Record<Plan, number>> = {
+  personal: 0,
+  pro: 1,
+  business: 1,
+  enterprise: 2,
+};
+
+/**
+ * The plan someone's allowances come from (M16 H1): their own, or a seat's where it includes
+ * more. `seats` are the plans of the open organizations whose team they're on; `seat` is the
+ * index of the one it came from, or null when it's their own.
+ */
+export function planWithSeats(
+  own: Plan,
+  seats: readonly OrgPlan[],
+): { plan: Plan; seat: number | null } {
+  let plan = own;
+  let seat: number | null = null;
+  for (const [i, s] of seats.entries()) {
+    const p = SEAT_PLANS[s];
+    if (p && INCLUDES[p] > INCLUDES[plan]) {
+      plan = p;
+      seat = i;
+    }
+  }
+  return { plan, seat };
+}
+
 export const PLAN_NAMES: Readonly<Record<Plan | OrgPlan, string>> = {
   personal: 'Personal',
   pro: 'Pro',

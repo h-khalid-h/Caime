@@ -115,6 +115,7 @@ describe('plans (PRD §84, R23)', () => {
       used: { aiToday: 0, storageBytes: 0, automations: 0 },
       aiNextAt: null,
       upgradeUrl: PLANS_URL,
+      via: null,
     });
   });
 
@@ -231,5 +232,95 @@ describe('plans (PRD §84, R23)', () => {
     });
     expect(kept.statusCode).toBe(201);
     expect((await lina.get('/v1/me/plan')).used.storageBytes).toBe(5 * GB - 1000 + 600 + 800);
+  });
+
+  it('a seat on a Business team includes Pro, for as long as it lasts (M16 H1)', async () => {
+    // Omar is on Tiles Co's team, on Personal of his own.
+    expect(await omar.get('/v1/me/plan')).toMatchObject({ plan: 'personal', via: null });
+    expect((await omar.req('GET', '/v1/me/insights?days=30')).statusCode).toBe(403);
+    await operator('/v1/admin/orgs/tiles.co/plan', { plan: 'business' });
+    expect(await omar.get('/v1/me/plan')).toMatchObject({
+      plan: 'business',
+      allowance: { aiPerDay: 200, storageBytes: 100 * GB, automations: 50, insights: true },
+      via: { orgId, name: 'Tiles Co', plan: 'business' },
+    });
+    // What it includes is what's checked: relationship insights are Pro's.
+    expect((await omar.req('GET', '/v1/me/insights?days=30')).statusCode).toBe(200);
+    // His own plan stays his: nothing he pays for changed.
+    expect((await omar.get('/v1/me')).user.plan).toBe('personal');
+    // Leaving the team ends what came with it.
+    await omar.req('DELETE', `/v1/orgs/${orgId}/members/${omar.user.id}`);
+    expect(await omar.get('/v1/me/plan')).toMatchObject({ plan: 'personal', via: null });
+    expect((await omar.req('GET', '/v1/me/insights?days=30')).statusCode).toBe(403);
+    await operator('/v1/admin/orgs/tiles.co/plan', { plan: 'free' });
+  });
+
+  it('an owner runs three free organizations at once; Business makes room, never two at once (M16 H1)', async () => {
+    const make = (handle: string) =>
+      noor.req('POST', '/v1/orgs', { country: 'EG', name: handle, handle, kind: 'shop' });
+    // Tiles Co is the first.
+    expect((await make('tiles.two')).statusCode).toBe(201);
+    expect((await make('tiles.three')).statusCode).toBe(201);
+    const fourth = await make('tiles.four');
+    expect(fourth.statusCode).toBe(403);
+    expect(fourth.json().error).toMatchObject({
+      code: 'plan_limit',
+      message:
+        'You run 3 organizations on the Free plan already. Move one to Business, or close one, to start another.',
+      details: { upgradeUrl: PLANS_URL, nextPlan: 'business' },
+    });
+    // Someone else's count is their own.
+    expect(
+      (
+        await omar.req('POST', '/v1/orgs', {
+          country: 'EG',
+          name: 'Omar Tiles',
+          handle: 'omar.tiles',
+          kind: 'shop',
+        })
+      ).statusCode,
+    ).toBe(201);
+    // One moved to Business makes room for one more, even asked for twice at once.
+    await operator('/v1/admin/orgs/tiles.co/plan', { plan: 'business' });
+    const both = await Promise.all([make('tiles.four'), make('tiles.five')]);
+    expect(both.map((r) => r.statusCode).sort()).toEqual([201, 403]);
+    await operator('/v1/admin/orgs/tiles.co/plan', { plan: 'free' });
+  });
+
+  it('room is counted where it’s taken: two apps at once never both fit (M16 H1)', async () => {
+    const { orgs } = await noor.get('/v1/orgs');
+    const two = orgs.find((o: { handle: string }) => o.handle === 'tiles.two');
+    const both = await Promise.all([
+      noor.req('POST', `/v1/orgs/${two.id}/apps`, { name: 'One', scopes: [] }),
+      noor.req('POST', `/v1/orgs/${two.id}/apps`, { name: 'Two', scopes: [] }),
+    ]);
+    expect(both.map((r) => r.statusCode).sort()).toEqual([201, 403]);
+    expect((await noor.get(`/v1/orgs/${two.id}/apps`)).apps).toHaveLength(1);
+  });
+
+  it('two uploads begun at once never both fit (M16 H1)', async () => {
+    // Lina (Pro, 100 GB) is left room for one more 100 MB file, not two.
+    const MB = 1024 ** 2;
+    const used = (await lina.get('/v1/me/plan')).used.storageBytes;
+    await t.ctx.db
+      .insertInto('files')
+      .values({
+        id: uuidv7(),
+        owner_id: lina.user.id,
+        storage_key: 'files/archive',
+        name: 'archive.zip',
+        mime: 'application/zip',
+        size: 100 * GB - used - 150 * MB,
+        kind: 'other',
+        status: 'ready',
+      })
+      .execute();
+    const both = await Promise.all(
+      ['a.mov', 'b.mov'].map((name) =>
+        lina.req('POST', '/v1/uploads', { name, mime: 'video/quicktime', size: 100 * MB }),
+      ),
+    );
+    expect(both.map((r) => r.statusCode).sort()).toEqual([201, 403]);
+    expect((await lina.get('/v1/me/plan')).used.storageBytes).toBe(100 * GB - 50 * MB);
   });
 });

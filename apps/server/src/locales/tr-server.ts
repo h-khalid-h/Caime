@@ -227,13 +227,11 @@ export const turkishServer: Catalog = {
   'everything else': 'diğer her şey',
   'connections, attention, memory, spaces, calls, private conversations':
     'bağlantılar, dikkat, hafıza, alanlar, aramalar, özel konuşmalar',
-  Pro: 'Pro',
   'how your relationships are going, from your own messages, for you only':
     'ilişkileriniz nasıl gidiyor: kendi mesajlarınızdan, yalnızca size özel',
   team: 'ekip',
   'how fast the team answers, who is waiting, what is open':
     'ekip ne kadar hızlı yanıt veriyor, kim bekliyor, ne açık',
-  Enterprise: 'Enterprise',
   'Talk to us': 'Bize ulaşın',
   included: 'dahil',
   'The rules': 'Kurallar',
@@ -1499,4 +1497,11 @@ export const turkishServer: Catalog = {
   Memory: 'Hafıza',
   'That action': 'Bu eylem',
   'Choose how you know them from the list.': 'Onu nereden tanıdığınızı listeden seçin.',
+  'You’re on {plan} already.': 'Zaten {plan} planındasınız.',
+  'It’s on {plan} already.': 'Zaten {plan} planında.',
+  'You run {count} on the {plan} plan already. Move one to {next}, or close one, to start another.':
+    'Zaten {plan} planında {count} yönetiyorsunuz. Başka birini başlatmak için birini {next} planına taşıyın ya da birini kapatın.',
+  'an owner': 'bir kuruluş sahibi',
+  'runs up to {count} on the {plan} plan at once; those on {next} don’t count.':
+    'aynı anda {plan} planında en fazla {count} yönetir; {next} planındakiler sayılmaz.',
 };

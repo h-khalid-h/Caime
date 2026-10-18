@@ -468,7 +468,9 @@ describe('reserved handles (R35)', () => {
   it('two given one handle at once, a person and an organization, leave it with one', async () => {
     const pairs = await Promise.all(
       ['support', 'security', 'staff'].map(async (handle, i) => {
-        const { org } = await noor.post('/v1/orgs', {
+        // Each its own owner's: an owner runs three free organizations at once (M16 H1).
+        const owner = await signup(t, { displayName: `Race Owner ${i}` });
+        const { org } = await owner.post('/v1/orgs', {
           country: 'EE',
           name: `Race ${i}`,
           handle: `race.org${i}`,

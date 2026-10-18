@@ -2814,6 +2814,26 @@ graph) and the number that will show it; one that sharpens none is hygiene and s
       tags and fields; tax invoices (counsel); booking and revenue analytics; intake forms as
       cards; a files place per person and space with scoped share links and Office previews; a
       €/user cost model in RESOURCES.md.
+- [x] H1. Plans that hold up (2026-10-18, review §9, PRODUCT-REVIEW R100; advantage 4, flat pricing
+      for an organization). A seat on a Business or Enterprise team now includes what Pro or
+      Enterprise does for its person while the seat lasts: AI assists, files, automations and
+      relationship insights read their plan with their seats (one query, `effectivePlan`), Settings
+      · Plan says "Included with Tiles Co's Business plan.", the settings row names the
+      organization, and nothing is billed or sold over it. An owner runs at most three
+      organizations on the Free plan at once, counted under their lock as one is made or taken
+      back; one moved to Business, or closed, makes room, and the pricing page says so. A plan's
+      room for an app, a conversation the team starts and a resumable upload is counted inside the
+      transaction that takes it, under the organization's row or the person's lock, so two at once
+      never both pass at the limit. The pricing page names paid plans by their product names
+      (French read "Entreprise" for Business beside "Enterprise"), and billing's "You're on Pro
+      already." was English in every language. Not done: a direct upload still checks before its
+      row is written (at most one file over, as before), and a free organization's agent still
+      answers on the top model (the light model for free organizations waits for the cost model).
+      Verified: `plans.test.ts` (a seat's plan, its insights and its end; the cap's refusal, another
+      owner's count their own, a Business one making room and two asked at once taking one; two
+      apps at once, two uploads at once), `business-start.test.ts` (the day's last start to one of
+      two asked at once), `billing.test.ts`, core `plans.test.ts` (`planWithSeats`), the catalogs in
+      four languages and the server's, and the full gate.
 - [ ] ⛔ H, the owner's: a smaller paid tier; WhatsApp Business in the inbox and reminders by
       WhatsApp or SMS (Meta's approval); Stripe Connect live with local currencies.
 - [ ] R98, after C: places as a context for spaces (PRODUCT-REVIEW R98): `spaces.place` from
@@ -4410,6 +4430,9 @@ graph) and the number that will show it; one that sharpens none is hygiene and s
   journeys, safety, reliability, performance, intelligence, mail and calendar, chat, integrations,
   business and code integrity; the matrix against WhatsApp, Signal, Slack, Calendly and Workspace;
   an age-assurance design; the integration framework mapped to the code; plan M16 (A–H).
+- 2026-10-18 — M16 H1: plans that hold up: a Business seat includes Pro for its person, an owner
+  runs three free organizations at once, and a plan's room is counted inside the transaction that
+  takes it (two at once never both pass).
 - 2026-10-18 — M16 E5: one vocabulary: "Find people" for every way to find and connect, "Needs
   you" for the Chats filter, an organization called one ("Business" only the plan, the inbox and
   the badge), Plan a meeting, Poll and Place as rows of their own, and no "kit", "task",

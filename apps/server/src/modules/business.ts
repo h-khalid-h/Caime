@@ -51,7 +51,7 @@ import { messageViews, participantsOf, sendMessage } from '../lib/messages';
 import { notify } from '../lib/notify';
 import { orgOrders } from '../lib/orders';
 import { orgById, orgSeat } from '../lib/orgs';
-import { assertStartRoom } from '../lib/plans';
+import { assertStartRoom, lockOrgRow } from '../lib/plans';
 import { isBlockedEitherWay } from '../lib/relations';
 import { minorOf, privacyOf } from '../lib/users';
 import { parse } from '../lib/validate';
@@ -263,11 +263,14 @@ export async function businessRoutes(app: FastifyInstance, ctx: AppContext) {
             name: target.display_name,
           }),
         );
+      // A fast refusal first; counted again under the organization's row as it starts (M16 H1).
       await assertStartRoom(ctx, id, auth.userId);
       const fresh = uuidv7();
       const team = await teamOf(ctx.db, id);
       try {
         await ctx.db.transaction().execute(async (trx) => {
+          await lockOrgRow(trx, id);
+          await assertStartRoom(ctx, id, auth.userId, trx);
           await trx
             .insertInto('conversations')
             .values({ id: fresh, kind: 'business', org_id: id, created_by: auth.userId })

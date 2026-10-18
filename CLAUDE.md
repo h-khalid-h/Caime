@@ -1682,7 +1682,13 @@ A sphere is said as how you know someone, never "sphere".
   (`DeviceNotRegistered` drops the token), never a `quiet` replacement (Expo can't swap what a
   phone shows), `EXPO_PUSH_URL` only for the tests' stand-in.
 - Plans: what each includes is in `packages/core/src/plans.ts`, and it's checked only in
-  `apps/server/src/lib/plans.ts`, where something is added. Never count the wedge (R23). Pro
+  `apps/server/src/lib/plans.ts`, where something is added. Never count the wedge (R23). A
+  person's allowances read `effectivePlan` (their own plan with their seats, core `planWithSeats`:
+  a Business seat includes what Pro does), never `users.plan` alone, which is what they pay for.
+  Room is counted inside the transaction that takes it, under the organization's row
+  (`lockOrgRow`) or the person's lock (`lockStorage`), a fast refusal before it where that saves
+  work; an owner runs at most `FREE_ORGS_PER_OWNER` free organizations (`assertOrgRoom`, in every
+  path that makes one) (R100). Pro
   sells its depth (R47): relationship insights (`lib/insights.ts` `personInsights`, the
   viewer's own one-to-ones only, names through `personViewsFor`) and automations by plan
   (`assertAutomationRoom`, under the person's lock, `AUTOMATIONS_MAX` the ceiling). A test

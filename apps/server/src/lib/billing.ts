@@ -200,8 +200,10 @@ export async function billingView(
   const included =
     !sub && now && now.plan !== basePlan(payer)
       ? 'userId' in payer
-        ? `You’re on ${PLAN_NAMES[now.plan as keyof typeof PLAN_NAMES]} already.`
-        : `It’s on ${PLAN_NAMES[now.plan as keyof typeof PLAN_NAMES]} already.`
+        ? tr('You’re on {plan} already.', {
+            plan: PLAN_NAMES[now.plan as keyof typeof PLAN_NAMES],
+          })
+        : tr('It’s on {plan} already.', { plan: PLAN_NAMES[now.plan as keyof typeof PLAN_NAMES] })
       : null;
   return {
     enabled: enabled && offered.length > 0,

@@ -20,7 +20,7 @@ import Sparkles from 'lucide-react-native/icons/sparkles';
 import UserRound from 'lucide-react-native/icons/user-round';
 import Zap from 'lucide-react-native/icons/zap';
 import { Platform, ScrollView, View } from 'react-native';
-import { useOrgs } from '@/api/hooks';
+import { useMyPlan, useOrgs } from '@/api/hooks';
 import { useShortcutsSheet } from '@/features/shell/shortcutsSheet';
 import { useSession } from '@/state/session';
 import { useTheme } from '@/theme/theme';
@@ -157,6 +157,8 @@ export function SettingsMenu({ pane }: { pane?: boolean }) {
   const pathname = usePathname();
   // The teams you're on, by name: the row says where it goes before it's opened.
   const teams = (useOrgs().data?.orgs ?? []).map((o) => o.name);
+  // What your allowances come from (M16 H1): yours, or a team's seat that includes more.
+  const plan = useMyPlan().data;
   const named = listed(teams.slice(0, 3));
   const more = teams.length - 3;
   if (!user) return null;
@@ -229,7 +231,11 @@ export function SettingsMenu({ pane }: { pane?: boolean }) {
             icon={Gauge}
             title={tr('Plan')}
             subtitle={
-              user.plan === 'personal' ? tr('Personal · free forever') : PLAN_NAMES[user.plan]
+              plan?.via
+                ? [PLAN_NAMES[plan.plan], plan.via.name].join(' · ')
+                : (plan?.plan ?? user.plan) === 'personal'
+                  ? tr('Personal · free forever')
+                  : PLAN_NAMES[plan?.plan ?? user.plan]
             }
             chevron={!pane}
             selected={pane && pathname === '/settings/plan'}

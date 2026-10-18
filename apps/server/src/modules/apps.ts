@@ -44,7 +44,7 @@ import { audit } from '../lib/audit';
 import { joinThreads, leaveThreads } from '../lib/business';
 import { forbidden, notFound } from '../lib/errors';
 import { orgById, orgSeat } from '../lib/orgs';
-import { assertAppRoom } from '../lib/plans';
+import { assertAppRoom, lockOrgRow } from '../lib/plans';
 import { parse } from '../lib/validate';
 import { requireAuth } from '../plugins/auth';
 
@@ -175,6 +175,7 @@ export async function appRoutes(app: FastifyInstance, ctx: AppContext) {
     const body = parse(CreateOrgAppBody, req.body);
     await manager(auth.userId, id);
     ctx.limiter.hit(`apps:${auth.userId}`, ctx.config.isTest ? 1000 : 10, 3_600_000);
+    // A fast refusal first; counted again under the organization's row as it's added (M16 H1).
     await assertAppRoom(ctx, id);
     const url = webhook(body.webhookUrl);
     const appId = uuidv7();
@@ -182,6 +183,8 @@ export async function appRoutes(app: FastifyInstance, ctx: AppContext) {
     const token = newApiToken();
     const secret = newWebhookSecret();
     await ctx.db.transaction().execute(async (trx) => {
+      await lockOrgRow(trx, id);
+      await assertAppRoom(ctx, id, trx);
       // A bot can never sign in: its address can't receive mail and no password matches '!'.
       await trx
         .insertInto('users')

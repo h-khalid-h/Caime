@@ -201,13 +201,11 @@ export const arServer: Catalog = {
   'everything else': 'كل ما عدا ذلك',
   'connections, attention, memory, spaces, calls, private conversations':
     'التواصل، والانتباه، والذاكرة، والمساحات، والمكالمات، والمحادثات الخاصة',
-  Pro: 'Pro',
   'how your relationships are going, from your own messages, for you only':
     'كيف تسير علاقاتك، من رسائلك أنت، لك وحدك',
   team: 'الفريق',
   'how fast the team answers, who is waiting, what is open':
     'سرعة إجابة الفريق، ومن ينتظر، وما هو مفتوح',
-  Enterprise: 'Enterprise',
   'Talk to us': 'تحدث إلينا',
   included: 'مشمولة',
   'The rules': 'القواعد',
@@ -1554,4 +1552,11 @@ export const arServer: Catalog = {
   Memory: 'الذاكرة',
   'That action': 'ذلك الإجراء',
   'Choose how you know them from the list.': 'اختر كيف تعرفهم من القائمة.',
+  'You’re on {plan} already.': 'أنت على خطة {plan} بالفعل.',
+  'It’s on {plan} already.': 'إنها على خطة {plan} بالفعل.',
+  'You run {count} on the {plan} plan already. Move one to {next}, or close one, to start another.':
+    'لديك {count} على خطة {plan} بالفعل. انقل واحدة إلى {next} أو أغلق واحدة لتبدأ أخرى.',
+  'an owner': 'المالك',
+  'runs up to {count} on the {plan} plan at once; those on {next} don’t count.':
+    'يدير حتى {count} على خطة {plan} في الوقت نفسه، ولا تُحسب التي على {next}.',
 };

@@ -2027,3 +2027,19 @@ with its reason, so it isn't proposed again without new facts.
   per space or per organization (a seat already says who someone is to an organization, R43), and
   a nickname anyone sets for themselves per viewer (the viewer's own nickname for someone stays
   theirs, PRD §11).
+- **R100 (2026-10-18) Plans that hold up.** The review of 2026-10-17 (§9, M16 H) found the plans'
+  promises partly unkept: "a Business seat includes everything Pro does" was done by nothing, how
+  many organizations one person makes was unbounded (each free one with its agent's 50 answers a
+  day), and a plan's room for apps, the team's starts and files was checked before the transaction
+  that took it, so two at once could both pass at the limit. *Decided:* a person's allowances read
+  their plan with their seats (`planWithSeats`: a seat on an open Business team includes what Pro
+  does, an Enterprise seat what Enterprise does, never less than their own), shown as "Included
+  with {organization}'s {plan} plan" and never billed; an owner runs at most three organizations
+  on the Free plan at once (`FREE_ORGS_PER_OWNER`; one moved to Business, or closed, makes room;
+  nothing running is ever stopped), checked wherever one is made or taken back; and room is
+  counted where it's taken, under the organization's row or the person's lock, in the
+  transaction that adds. *Why:* flat pricing for an organization (advantage 4) holds only while
+  the free tier's cost is bounded and the paid seat gives its people what it promised; a race
+  that lets two in at the limit is a promise broken by timing. *Declined:* counting paid
+  organizations against the cap, a cap that removes or stops anything already running, and a
+  price per seat.

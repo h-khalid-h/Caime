@@ -4652,4 +4652,5 @@ export const fr: Catalog = {
     'Transition {number} : elle va vers un autre état de la carte.',
   'Choose how you know them before a role or an organization.':
     'Choisissez d’abord d’où vous vous connaissez, puis un rôle ou une organisation.',
+  'Included with {name}’s {plan} plan.': 'Inclus avec le forfait {plan} de {name}.',
 };

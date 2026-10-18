@@ -9,6 +9,8 @@ import {
   PERSON_ALLOWANCES,
   PERSON_PLANS,
   PLAN_NAMES,
+  planWithSeats,
+  SEAT_PLANS,
 } from './plans';
 
 describe('plans', () => {
@@ -69,5 +71,24 @@ describe('plans', () => {
     expect(formatSoon('2026-09-23T16:00:00Z', now, 'Asia/Tokyo', 'en')).toMatch(
       /^tomorrow at 1:00/,
     );
+  });
+
+  it('a seat on a Business or Enterprise team includes Pro or more, never less than your own (M16 H1)', () => {
+    expect(planWithSeats('personal', [])).toEqual({ plan: 'personal', seat: null });
+    expect(planWithSeats('personal', ['free'])).toEqual({ plan: 'personal', seat: null });
+    expect(planWithSeats('personal', ['free', 'business'])).toEqual({ plan: 'business', seat: 1 });
+    // Pro already includes what a Business seat does: it stays theirs.
+    expect(planWithSeats('pro', ['business'])).toEqual({ plan: 'pro', seat: null });
+    expect(planWithSeats('pro', ['business', 'enterprise'])).toEqual({
+      plan: 'enterprise',
+      seat: 1,
+    });
+    expect(planWithSeats('enterprise', ['business'])).toEqual({ plan: 'enterprise', seat: null });
+    // What a seat includes is at least what Pro does.
+    for (const p of Object.values(SEAT_PLANS))
+      if (p)
+        expect(PERSON_ALLOWANCES[p].aiPerDay).toBeGreaterThanOrEqual(
+          PERSON_ALLOWANCES.pro.aiPerDay,
+        );
   });
 });

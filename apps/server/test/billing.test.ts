@@ -35,7 +35,8 @@ const checkout = (c: Client, body: object) => c.req('POST', '/v1/billing/checkou
 const PRO = { plan: 'pro', interval: 'month' };
 /** The Checkout session a checkout asked Stripe for, by its URL. */
 const sessionOf = (url: string) => url.split('/').pop() as string;
-const planOf = async (c: Client) => (await c.get('/v1/me/plan')).plan as string;
+// The plan someone pays for: a seat on a Business team includes more without billing (M16 H1).
+const planOf = async (c: Client) => (await c.get('/v1/me')).user.plan as string;
 const planOfOrg = async (id: string) =>
   (
     await t.ctx.db

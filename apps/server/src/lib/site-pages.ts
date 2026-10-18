@@ -34,7 +34,12 @@ import {
 } from '@caime/core/i18n';
 import { numberFormat } from '@caime/core/locale';
 import { APP_SCREENSHOTS_MAX } from '@caime/core/marketplace';
-import { ORG_ALLOWANCES, PERSON_ALLOWANCES } from '@caime/core/plans';
+import {
+  FREE_ORGS_PER_OWNER,
+  ORG_ALLOWANCES,
+  PERSON_ALLOWANCES,
+  PLAN_NAMES,
+} from '@caime/core/plans';
 import { KEPT_DAYS } from './retention';
 
 export const SITE_NAME = 'Caime';
@@ -771,7 +776,7 @@ ${main}
           ],
         ],
       )}
-      ${plan('pro', tr('Pro'), priceLine(facts.prices, 'pro'), [
+      ${plan('pro', PLAN_NAMES.pro, priceLine(facts.prices, 'pro'), [
         [tr('AI assist'), esc(aDay(p.pro.aiPerDay, 'actions'))],
         [tr('files'), esc(gb(p.pro.storageBytes))],
         [tr('automations'), n(p.pro.automations)],
@@ -791,7 +796,7 @@ ${main}
         [tr('writing first'), esc(aDay(o.free.startsPerDay, 'conversations'))],
         [tr('AI agent'), esc(aDay(o.free.agentRepliesPerDay, 'answers'))],
       ])}
-      ${plan('business', tr('Business'), priceLine(facts.prices, 'business'), [
+      ${plan('business', PLAN_NAMES.business, priceLine(facts.prices, 'business'), [
         [tr('team'), esc(people(o.business.teamSize))],
         [tr('apps'), n(o.business.apps)],
         [tr('writing first'), esc(aDay(o.business.startsPerDay, 'conversations'))],
@@ -800,7 +805,7 @@ ${main}
       ])}
       ${plan(
         'enterprise',
-        tr('Enterprise'),
+        PLAN_NAMES.enterprise,
         `<a href="mailto:${esc(facts.contactEmail)}">${esc(tr('Talk to us'))}</a>`,
         [
           [tr('team'), esc(people(o.enterprise.teamSize))],
@@ -840,6 +845,18 @@ ${main}
         ),
       ],
       [tr('a seat'), esc(tr('on a Business or Enterprise team includes everything Pro does.'))],
+      [
+        tr('an owner'),
+        esc(
+          tr('runs up to {count} on the {plan} plan at once; those on {next} don’t count.', {
+            count: trn(FREE_ORGS_PER_OWNER, 'one organization', '{n} organizations', {
+              n: n(FREE_ORGS_PER_OWNER),
+            }),
+            plan: tr('Free'),
+            next: PLAN_NAMES.business,
+          }),
+        ),
+      ],
     ])}
   </section>
   <section class="hero">

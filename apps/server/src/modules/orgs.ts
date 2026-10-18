@@ -95,7 +95,7 @@ import {
 } from '../lib/orgs';
 import { personViewsFor } from '../lib/people-batch';
 import { orgPlacesFor } from '../lib/places';
-import { assertInsights, orgPlanView } from '../lib/plans';
+import { assertInsights, assertOrgRoom, orgPlanView } from '../lib/plans';
 import { VISITOR } from '../lib/public-booking';
 import { doorPath } from '../lib/public-pages';
 import { viewerRelation } from '../lib/relations';
@@ -306,6 +306,8 @@ export async function orgRoutes(app: FastifyInstance, ctx: AppContext) {
     await ctx.db
       .transaction()
       .execute(async (trx) => {
+        // How many free ones one person runs is bounded (M16 H1): each has an agent's answers.
+        await assertOrgRoom(ctx, auth.userId, trx);
         await trx
           .insertInto('organizations')
           .values({
@@ -1007,6 +1009,8 @@ export async function orgRoutes(app: FastifyInstance, ctx: AppContext) {
       );
     const newId = uuidv7();
     await ctx.db.transaction().execute(async (trx) => {
+      // Taken back, it starts on the Free plan, so it counts as one more free one (M16 H1).
+      await assertOrgRoom(ctx, auth.userId, trx);
       // The closed one lets go of the domain (verified at it once at a time), the new one takes
       // it and the handle, and the closed one then points at the new one.
       await trx

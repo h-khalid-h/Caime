@@ -229,13 +229,11 @@ export const frServer: Catalog = {
   'everything else': 'tout le reste',
   'connections, attention, memory, spaces, calls, private conversations':
     'contacts, attention, mémoire, espaces, appels, conversations privées',
-  Pro: 'Pro',
   'how your relationships are going, from your own messages, for you only':
     'comment vont vos relations, d’après vos propres messages, pour vous uniquement',
   team: 'équipe',
   'how fast the team answers, who is waiting, what is open':
     'la rapidité de réponse de l’équipe, qui attend, ce qui est ouvert',
-  Enterprise: 'Enterprise',
   'Talk to us': 'Contactez-nous',
   included: 'inclus',
   'The rules': 'Les règles',
@@ -1567,4 +1565,11 @@ export const frServer: Catalog = {
   Memory: 'Mémoire',
   'That action': 'Cette action',
   'Choose how you know them from the list.': 'Choisissez d’où vous vous connaissez dans la liste.',
+  'You’re on {plan} already.': 'Vous avez déjà le forfait {plan}.',
+  'It’s on {plan} already.': 'Elle a déjà le forfait {plan}.',
+  'You run {count} on the {plan} plan already. Move one to {next}, or close one, to start another.':
+    'Vous gérez déjà {count} avec le forfait {plan}. Passez-en une à {next} ou fermez-en une pour en créer une autre.',
+  'an owner': 'un propriétaire',
+  'runs up to {count} on the {plan} plan at once; those on {next} don’t count.':
+    'gère jusqu’à {count} avec le forfait {plan} à la fois ; celles sur {next} ne comptent pas.',
 };

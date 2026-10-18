@@ -4,6 +4,7 @@
  * one place that counts usage against it. Nothing here gates the wedge.
  */
 import {
+  FREE_ORGS_PER_OWNER,
   formatBytes,
   formatSoon,
   nextOrgPlan,
@@ -13,14 +14,16 @@ import {
   PERSON_ALLOWANCES,
   PLAN_NAMES,
   type Plan,
+  type PlanSeatView,
   type PlanUsageView,
+  planWithSeats,
   safeLocale,
 } from '@caime/core';
 import { tr, trn } from '@caime/core/i18n';
 import { type Kysely, sql, type Transaction } from 'kysely';
 import type { AppContext } from '../context';
 import type { Database } from '../db/schema';
-import { AppError } from './errors';
+import { AppError, notFound } from './errors';
 
 type Q = Kysely<Database> | Transaction<Database>;
 
@@ -33,13 +36,103 @@ function limit(ctx: AppContext, message: string, extra: Record<string, unknown> 
   return new AppError(403, 'plan_limit', message, { upgradeUrl: upgrade(ctx), ...extra });
 }
 
-async function planOf(ctx: AppContext, userId: string): Promise<Plan> {
-  const row = await ctx.db
-    .selectFrom('users')
-    .select('plan')
-    .where('id', '=', userId)
+/**
+ * Someone's plan as their allowances read it (M16 H1): their own, or what a seat on an open
+ * organization's team includes where that's more (a Business seat includes everything Pro
+ * does), with the organization it comes from. One query: their seats on paid plans.
+ */
+export async function effectivePlan(
+  ctx: AppContext,
+  userId: string,
+  db: Q = ctx.db,
+): Promise<{ plan: Plan; via: PlanSeatView | null }> {
+  const rows = await db
+    .selectFrom('users as u')
+    .leftJoin('org_members as m', (j) =>
+      j.onRef('m.user_id', '=', 'u.id').on('m.left_at', 'is', null),
+    )
+    .leftJoin('organizations as o', (j) =>
+      j
+        .onRef('o.id', '=', 'm.org_id')
+        .on('o.archived_at', 'is', null)
+        .on('o.suspended_at', 'is', null)
+        .on('o.plan', '<>', 'free'),
+    )
+    .select(['u.plan', 'o.id as org_id', 'o.name as org_name', 'o.plan as org_plan'])
+    .where('u.id', '=', userId)
+    .execute();
+  const own = rows[0]?.plan;
+  if (!own) throw notFound(tr('That person'));
+  const seats = rows.flatMap((r) =>
+    r.org_id && r.org_name && r.org_plan
+      ? [{ orgId: r.org_id, name: r.org_name, plan: r.org_plan }]
+      : [],
+  );
+  const { plan, seat } = planWithSeats(
+    own,
+    seats.map((s) => s.plan),
+  );
+  return { plan, via: seat === null ? null : (seats[seat] ?? null) };
+}
+
+/**
+ * Holds an open organization's row for the rest of the transaction, so what's counted against
+ * its plan (apps, the team's starts) is counted once at a time (M16 H1).
+ */
+export async function lockOrgRow(trx: Transaction<Database>, orgId: string): Promise<void> {
+  const open = await trx
+    .selectFrom('organizations')
+    .select('id')
+    .where('id', '=', orgId)
+    .where('archived_at', 'is', null)
+    .forNoKeyUpdate()
+    .executeTakeFirst();
+  if (!open) throw notFound(tr('That organization'));
+}
+
+/** One person's files counted against their storage one addition at a time (M16 H1). */
+export async function lockStorage(trx: Transaction<Database>, userId: string): Promise<void> {
+  await sql`select pg_advisory_xact_lock(hashtext(${`storage:${userId}`}))`.execute(trx);
+}
+
+/**
+ * Room for one more organization on the Free plan run by this owner (M16 H1): counted under the
+ * person's lock in the transaction that makes it, so two at once never pass together. Only free
+ * ones count; one on Business, or closed, makes room.
+ */
+export async function assertOrgRoom(
+  ctx: AppContext,
+  userId: string,
+  trx: Transaction<Database>,
+): Promise<void> {
+  await sql`select pg_advisory_xact_lock(hashtext(${`orgs-owned:${userId}`}))`.execute(trx);
+  const { n } = await trx
+    .selectFrom('org_members as m')
+    .innerJoin('organizations as o', 'o.id', 'm.org_id')
+    .select(sql<number>`count(*)::int`.as('n'))
+    .where('m.user_id', '=', userId)
+    .where('m.role', '=', 'owner')
+    .where('m.left_at', 'is', null)
+    .where('o.archived_at', 'is', null)
+    .where('o.plan', '=', 'free')
     .executeTakeFirstOrThrow();
-  return row.plan;
+  if (n < FREE_ORGS_PER_OWNER) return;
+  throw limit(
+    ctx,
+    tr(
+      'You run {count} on the {plan} plan already. Move one to {next}, or close one, to start another.',
+      {
+        count: trn(FREE_ORGS_PER_OWNER, 'one organization', '{n} organizations'),
+        plan: PLAN_NAMES.free,
+        next: PLAN_NAMES.business,
+      },
+    ),
+    { nextPlan: 'business' },
+  );
+}
+
+async function planOf(ctx: AppContext, userId: string, db: Q = ctx.db): Promise<Plan> {
+  return (await effectivePlan(ctx, userId, db)).plan;
 }
 
 /** Successful AI assists in the last 24 hours, and when the oldest of them stops counting. */
@@ -56,8 +149,8 @@ async function aiUsage(ctx: AppContext, userId: string) {
 }
 
 /** What someone's files take up: finished uploads, and those under way at their full size. */
-async function storageUsed(ctx: AppContext, userId: string): Promise<number> {
-  const row = await ctx.db
+async function storageUsed(ctx: AppContext, userId: string, db: Q = ctx.db): Promise<number> {
+  const row = await db
     .selectFrom('files')
     .select(sql<string>`coalesce(sum(size), 0)::text`.as('bytes'))
     .where('owner_id', '=', userId)
@@ -69,17 +162,18 @@ async function storageUsed(ctx: AppContext, userId: string): Promise<number> {
 export async function assertAiAllowance(ctx: AppContext, userId: string): Promise<void> {
   const me = await ctx.db
     .selectFrom('users')
-    .select(['plan', 'locale', 'time_zone'])
+    .select(['locale', 'time_zone'])
     .where('id', '=', userId)
     .executeTakeFirstOrThrow();
-  const { aiPerDay } = PERSON_ALLOWANCES[me.plan];
+  const plan = await planOf(ctx, userId);
+  const { aiPerDay } = PERSON_ALLOWANCES[plan];
   const { used, oldest } = await aiUsage(ctx, userId);
   if (used < aiPerDay) return;
   const nextAt = oldest ? new Date(oldest.getTime() + DAY_MS) : null;
   const ready = nextAt
     ? ` ${tr('The next one is ready {when}.', { when: formatSoon(nextAt.toISOString(), ctx.now(), me.time_zone, safeLocale(me.locale)) })}`
     : '';
-  const next = nextPersonPlan(me.plan);
+  const next = nextPersonPlan(plan);
   const more = next
     ? ` ${tr('{plan} includes {n} a day.', { plan: PLAN_NAMES[next], n: PERSON_ALLOWANCES[next].aiPerDay })}`
     : '';
@@ -92,11 +186,19 @@ export async function assertAiAllowance(ctx: AppContext, userId: string): Promis
   );
 }
 
-/** Room for `adding` more bytes of someone's files. */
-export async function assertStorage(ctx: AppContext, userId: string, adding: number) {
-  const plan = await planOf(ctx, userId);
+/**
+ * Room for `adding` more bytes of someone's files; `db` is the transaction that adds them, under
+ * the person's `lockStorage`, where there is one.
+ */
+export async function assertStorage(
+  ctx: AppContext,
+  userId: string,
+  adding: number,
+  db: Q = ctx.db,
+) {
+  const plan = await planOf(ctx, userId, db);
   const { storageBytes } = PERSON_ALLOWANCES[plan];
-  const used = await storageUsed(ctx, userId);
+  const used = await storageUsed(ctx, userId, db);
   if (used + adding <= storageBytes) return;
   const next = nextPersonPlan(plan);
   const more = next
@@ -133,8 +235,8 @@ async function teamSize(ctx: AppContext, orgId: string, db: Q = ctx.db): Promise
   return row.n;
 }
 
-async function appCount(ctx: AppContext, orgId: string): Promise<number> {
-  const row = await ctx.db
+async function appCount(ctx: AppContext, orgId: string, db: Q = ctx.db): Promise<number> {
+  const row = await db
     .selectFrom('org_apps')
     .select(sql<number>`count(*)::int`.as('n'))
     .where('org_id', '=', orgId)
@@ -168,10 +270,14 @@ export async function assertTeamRoom(
   );
 }
 
-export async function assertAppRoom(ctx: AppContext, orgId: string) {
-  const org = await orgPlanRow(ctx, orgId);
+/**
+ * Room for one more app; `db` is the transaction that adds it, holding the organization's row
+ * (`lockOrgRow`), so two at once never pass together.
+ */
+export async function assertAppRoom(ctx: AppContext, orgId: string, db: Q = ctx.db) {
+  const org = await orgPlanRow(ctx, orgId, db);
   const { apps } = ORG_ALLOWANCES[org.plan];
-  if ((await appCount(ctx, orgId)) < apps) return;
+  if ((await appCount(ctx, orgId, db)) < apps) return;
   const next = nextOrgPlan(org.plan);
   const more = next
     ? ` ${tr('{plan} includes {n}.', { plan: PLAN_NAMES[next], n: ORG_ALLOWANCES[next].apps })}`
@@ -188,8 +294,8 @@ export async function assertAppRoom(ctx: AppContext, orgId: string) {
 }
 
 /** Conversations the team started in the last 24 hours, and when the oldest stops counting. */
-async function teamStarts(ctx: AppContext, orgId: string) {
-  const row = await ctx.db
+async function teamStarts(ctx: AppContext, orgId: string, db: Q = ctx.db) {
+  const row = await db
     .selectFrom('business_threads')
     .select([sql<number>`count(*)::int`.as('n'), sql<Date | null>`min(created_at)`.as('oldest')])
     .where('org_id', '=', orgId)
@@ -199,11 +305,19 @@ async function teamStarts(ctx: AppContext, orgId: string) {
   return { used: row.n, oldest: row.oldest };
 }
 
-/** Room for the team to start one more conversation today (R14); `userId` reads the time. */
-export async function assertStartRoom(ctx: AppContext, orgId: string, userId: string) {
-  const org = await orgPlanRow(ctx, orgId);
+/**
+ * Room for the team to start one more conversation today (R14); `userId` reads the time, and
+ * `db` is the transaction that starts it, holding the organization's row (`lockOrgRow`).
+ */
+export async function assertStartRoom(
+  ctx: AppContext,
+  orgId: string,
+  userId: string,
+  db: Q = ctx.db,
+) {
+  const org = await orgPlanRow(ctx, orgId, db);
   const { startsPerDay } = ORG_ALLOWANCES[org.plan];
-  const { used, oldest } = await teamStarts(ctx, orgId);
+  const { used, oldest } = await teamStarts(ctx, orgId, db);
   if (used < startsPerDay) return;
   const me = await ctx.db
     .selectFrom('users')
@@ -292,7 +406,7 @@ async function automationsCount(ctx: AppContext, userId: string): Promise<number
 }
 
 export async function planUsage(ctx: AppContext, userId: string): Promise<PlanUsageView> {
-  const plan = await planOf(ctx, userId);
+  const { plan, via } = await effectivePlan(ctx, userId);
   const allowance = PERSON_ALLOWANCES[plan];
   const [ai, storageBytes, automations] = await Promise.all([
     aiUsage(ctx, userId),
@@ -308,6 +422,7 @@ export async function planUsage(ctx: AppContext, userId: string): Promise<PlanUs
         ? new Date(ai.oldest.getTime() + DAY_MS).toISOString()
         : null,
     upgradeUrl: upgrade(ctx),
+    via,
   };
 }
 

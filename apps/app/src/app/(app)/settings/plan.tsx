@@ -112,6 +112,14 @@ export default function PlanSettings() {
                 'Everything in Personal, with relationship insights, more automations, more AI assist and more room for files.',
               )}
         </Text>
+        {p.via ? (
+          <Text variant="body" color="textSecondary" testID="plan-via">
+            {tr('Included with {name}’s {plan} plan.', {
+              name: p.via.name,
+              plan: PLAN_NAMES[p.via.plan],
+            })}
+          </Text>
+        ) : null}
       </View>
 
       <Group title={tr('What you’re using')}>

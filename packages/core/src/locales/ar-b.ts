@@ -2933,4 +2933,5 @@ export const arB: Catalog = {
     'النقلة {number}: تنتهي عند حالة أخرى من حالات البطاقة.',
   'Choose how you know them before a role or an organization.':
     'اختر أولًا كيف تعرفهم، ثم الدور أو المؤسسة.',
+  'Included with {name}’s {plan} plan.': 'ضمن خطة {plan} لدى {name}.',
 };

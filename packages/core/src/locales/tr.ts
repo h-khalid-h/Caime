@@ -4471,4 +4471,5 @@ export const turkish: Catalog = {
     'Geçiş {number}: kartın başka bir durumuna gider.',
   'Choose how you know them before a role or an organization.':
     'Bir rol veya kuruluş için önce onu nereden tanıdığınızı seçin.',
+  'Included with {name}’s {plan} plan.': '{name} kuruluşunun {plan} planına dahil.',
 };

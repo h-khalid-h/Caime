@@ -239,4 +239,37 @@ describe('an organization writes to someone first (R14)', () => {
     t.clock.advance(24 * 3_600_000 + 60_000);
     expect((await start(omar, next.user.handle, 'Your results are ready.')).statusCode).toBe(201);
   });
+
+  it('the last start of the day goes to one of two asked for at once (M16 H1)', async () => {
+    // Counted under the organization's row as each starts, so the plan's 20 hold.
+    const used = (await noor.get(`/v1/orgs/${orgId}`)).org.plan.used.startsToday;
+    for (let i = used; i < 19; i++) {
+      const id = uuidv7();
+      await t.ctx.db
+        .insertInto('conversations')
+        .values({ id, kind: 'business', org_id: orgId, created_by: omar.user.id })
+        .execute();
+      await t.ctx.db
+        .insertInto('business_threads')
+        .values({
+          conversation_id: id,
+          org_id: orgId,
+          customer_id: null,
+          started_by_team: true,
+          created_at: t.ctx.now(),
+          updated_at: t.ctx.now(),
+        })
+        .execute();
+    }
+    const [one, two] = [
+      await signup(t, { displayName: 'First Asked' }),
+      await signup(t, { displayName: 'Second Asked' }),
+    ];
+    const both = await Promise.all([
+      start(omar, one.user.handle, 'Your results are ready.'),
+      start(omar, two.user.handle, 'Your results are ready.'),
+    ]);
+    expect(both.map((r) => r.statusCode).sort()).toEqual([201, 403]);
+    expect((await noor.get(`/v1/orgs/${orgId}`)).org.plan.used.startsToday).toBe(20);
+  });
 });
