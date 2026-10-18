@@ -11,16 +11,7 @@ import { useTheme } from '@/theme/theme';
 import { IconButton } from '@/ui/IconButton';
 import { Pressable } from '@/ui/Pressable';
 import { Text } from '@/ui/Text';
-
-/** Who the task is between, from the reader's side; null when it's only theirs. */
-export function taskWho(task: TaskView): string | null {
-  if (task.direction === 'asked_me')
-    return tr('{displayName} asked you', { displayName: task.owner.displayName });
-  if (task.direction === 'mine') return null;
-  return task.assignee.id
-    ? tr('Waiting on {displayName}', { displayName: task.assignee.displayName })
-    : tr('Waiting on a deleted account');
-}
+import { taskWho } from './taskWho';
 
 export const TaskRow = memo(function TaskRow({
   task,

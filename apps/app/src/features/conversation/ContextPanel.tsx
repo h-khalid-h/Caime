@@ -19,7 +19,7 @@ import { ScrollView, View } from 'react-native';
 import { endpoints } from '@/api/endpoints';
 import { useMemory } from '@/api/hooks';
 import { qk } from '@/api/keys';
-import { taskWho } from '@/features/actions/TaskRow';
+import { taskWho } from '@/features/actions/taskWho';
 import { AssistTools } from '@/features/assist/AssistTools';
 import { useAiReady } from '@/features/assist/ready';
 import { ComingUpList } from '@/features/common/comingUpLazy';
