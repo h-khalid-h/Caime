@@ -987,7 +987,6 @@ export const turkish: Catalog = {
   'Only you see how you’ve labelled {displayName}':
     '{displayName} kişisini nasıl etiketlediğinizi yalnızca siz görürsünüz',
   'This is the beginning of your conversation.': 'Bu, konuşmanızın başlangıcı.',
-  'New messages': 'Yeni mesajlar',
   'Jump to the newest message': 'En yeni mesaja atla',
   '{name} closed on Caime. What was sent here stays to read; find it again to start a new conversation.':
     '{name} artık Caime’de değil. Burada gönderilenler okunabilir kalır; yeni bir konuşma başlatmak için yeniden bulun.',
@@ -4449,4 +4448,14 @@ export const turkish: Catalog = {
   'delivered to': 'iletilenler',
   'not delivered yet': 'henüz iletilmedi',
   'Replying to yourself': 'Kendinize yanıt',
+  '{n} unread messages': { one: '{n} okunmamış mesaj', other: '{n} okunmamış mesaj' },
+  'Jump to the newest message: {n} new below': {
+    one: 'En yeni mesaja atla: aşağıda {n} yeni mesaj',
+    other: 'En yeni mesaja atla: aşağıda {n} yeni mesaj',
+  },
+  'Last seen just now': 'Son görülme az önce',
+  'Last seen today at {time}': 'Son görülme bugün {time}',
+  'Last seen yesterday at {time}': 'Son görülme dün {time}',
+  'Last seen {weekday} at {time}': 'Son görülme {weekday} {time}',
+  'Last seen {date}': 'Son görülme {date}',
 };

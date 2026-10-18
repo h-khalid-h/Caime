@@ -17,9 +17,12 @@ export type Row =
       senderName: string | null;
       /** Who wrote the message this one answers, as the reader knows them ("You" for their own). */
       replyName: string | null;
+      /** Its day, as its separator says it: what the date pill shows over it (M16 E3). */
+      day: string;
     }
   | { type: 'day'; key: string; label: string }
-  | { type: 'unread'; key: string };
+  /** Where the unread start, and how many there are (M16 E3). */
+  | { type: 'unread'; key: string; count: number };
 
 const GROUP_MS = 4 * 60_000;
 
@@ -178,6 +181,18 @@ export function buildRows(opts: {
   const rows: Row[] = [];
   let lastDay = '';
   let markedUnread = false;
+  // What the unread line counts: others' messages from it on, never one's own or a line about it.
+  const unreadCount =
+    unreadFrom === null
+      ? 0
+      : messages.filter(
+          (m) =>
+            m.seq >= unreadFrom &&
+            m.senderId !== me &&
+            m.kind !== 'system' &&
+            !importedAuthor(m) &&
+            m.seq !== Number.MAX_SAFE_INTEGER,
+        ).length;
   for (let i = 0; i < all.length; i++) {
     const { m, delivery } = all[i]!;
     const prev = all[i - 1]?.m;
@@ -196,7 +211,7 @@ export function buildRows(opts: {
       !mine &&
       m.seq !== Number.MAX_SAFE_INTEGER
     ) {
-      rows.push({ type: 'unread', key: 'unread' });
+      rows.push({ type: 'unread', key: 'unread', count: unreadCount });
       markedUnread = true;
     }
     const sameAsPrev =
@@ -225,6 +240,7 @@ export function buildRows(opts: {
         : m.replyTo.senderId === me
           ? tr('You')
           : (names.get(m.replyTo.senderId) ?? null),
+      day,
     });
   }
   return rows.reverse();

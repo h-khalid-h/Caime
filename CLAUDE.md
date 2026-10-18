@@ -303,6 +303,14 @@ appointment from a catalog).
   reached by mail left to the mail line, a group of many says nothing), never a screen of their
   own; a reaction chip's hold opens that sheet. A phone answers a bubble swiped toward the
   reading direction's end (`SwipeToReply`, nothing on the web, where the hover's Reply does it).
+  Reading (M16 E3a): a conversation opens at its first unread (`UNREAD_JUMP_MAX`, older pages
+  loaded down to it), the unread line counts others' messages (`buildRows`), the jump button
+  counts what came after the bottom was last seen (`seenUpTo`, moved only by being at the
+  bottom), and the date pill reads each row's `day` from `onViewableItemsChanged`; emoji alone
+  are core `emojiOnly`, mentions marked by core `mentionSpans` over the words as shown (a private
+  message's as opened) for the ids the message names, and a chat's "Last seen" is core
+  `lastSeenLine` over `PersonView.lastSeenAt`, never shown where that's null and fetched again
+  when the other person leaves while it's open; nothing else polls for it.
 - Fonts: on the web the faces are WOFF2 in `apps/app/public/fonts`, written there with the
   shell's `caime-fonts` block in `index.html` by `pnpm fonts` (`scripts/web-fonts.mjs`, from
   Fontsource's cuts; OFL beside them), never by hand: the brand's two families by weight, `Inter`

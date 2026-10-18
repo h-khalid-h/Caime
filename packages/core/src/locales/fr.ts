@@ -1036,7 +1036,6 @@ export const fr: Catalog = {
   'Only you see how you’ve labelled {displayName}':
     'Personne d’autre que vous ne voit comment vous avez étiqueté {displayName}',
   'This is the beginning of your conversation.': 'C’est le début de votre conversation.',
-  'New messages': 'Nouveaux messages',
   'Jump to the newest message': 'Aller au message le plus récent',
   '{name} closed on Caime. What was sent here stays to read; find it again to start a new conversation.':
     '{name} a cessé son activité sur Caime. Ce qui a été envoyé ici reste lisible ; retrouvez-la pour commencer une nouvelle conversation.',
@@ -4630,4 +4629,14 @@ export const fr: Catalog = {
   'delivered to': 'remis à',
   'not delivered yet': 'pas encore remis',
   'Replying to yourself': 'Réponse à vous-même',
+  '{n} unread messages': { one: '{n} message non lu', other: '{n} messages non lus' },
+  'Jump to the newest message: {n} new below': {
+    one: 'Aller au message le plus récent : {n} nouveau plus bas',
+    other: 'Aller au message le plus récent : {n} nouveaux plus bas',
+  },
+  'Last seen just now': 'Dernière connexion à l’instant',
+  'Last seen today at {time}': 'Dernière connexion aujourd’hui à {time}',
+  'Last seen yesterday at {time}': 'Dernière connexion hier à {time}',
+  'Last seen {weekday} at {time}': 'Dernière connexion {weekday} à {time}',
+  'Last seen {date}': 'Dernière connexion le {date}',
 };

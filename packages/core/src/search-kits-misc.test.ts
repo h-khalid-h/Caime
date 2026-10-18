@@ -5,6 +5,7 @@ import {
   formatWhen,
   initials,
   joinNames,
+  lastSeenLine,
   overdueAt,
   textDirection,
 } from './format';
@@ -233,6 +234,15 @@ describe('format', () => {
     expect(formatWhen('2026-09-19T15:00:00Z', now, tz)).toBe('on Sat');
     expect(formatWhen('2026-08-01T15:00:00Z', now, tz)).toBe('on Aug 1');
     expect(formatWhen('2025-08-01T15:00:00Z', now, tz)).toBe('on Aug 1, 2025');
+  });
+  it('last seen, as a conversation’s head says it (M16 E3)', () => {
+    expect(lastSeenLine('2026-09-23T13:59:30Z', now, tz)).toBe('Last seen just now');
+    expect(lastSeenLine('2026-09-23T11:00:00Z', now, tz)).toBe('Last seen today at 7:00 AM');
+    expect(lastSeenLine('2026-09-22T15:00:00Z', now, tz)).toBe('Last seen yesterday at 11:00 AM');
+    expect(lastSeenLine('2026-09-19T15:00:00Z', now, tz)).toBe('Last seen Saturday at 11:00 AM');
+    expect(lastSeenLine('2026-08-01T15:00:00Z', now, tz)).toBe('Last seen August 1');
+    expect(lastSeenLine('2025-08-01T15:00:00Z', now, tz)).toBe('Last seen August 1, 2025');
+    expect(lastSeenLine('not a date', now, tz)).toBe('');
   });
   it('due dates', () => {
     expect(formatDue('2026-09-24T13:00:00Z', now, tz)).toBe('Tomorrow');

@@ -10,6 +10,11 @@ const TYPING_MS = 6000;
 interface LiveState {
   typing: Record<string, Record<string, number>>;
   presence: Record<string, PresenceState>;
+  /**
+   * When someone seen online here went away (M16 E3): fresher than the "last seen" their profile
+   * came with, which a conversation's head would otherwise say for someone gone a minute ago.
+   */
+  awayAt: Record<string, number>;
   /** `delayed`: no socket after a few tries, so what's new is fetched every so often instead. */
   connection: 'idle' | 'connecting' | 'delayed' | 'open' | 'offline';
   openConversationId: string | null;
@@ -24,6 +29,7 @@ interface LiveState {
 export const useLive = create<LiveState>((set) => ({
   typing: {},
   presence: {},
+  awayAt: {},
   connection: 'idle',
   openConversationId: null,
   setTyping: (conversationId, userId) =>
@@ -39,10 +45,22 @@ export const useLive = create<LiveState>((set) => ({
       delete current[userId];
       return { typing: { ...s.typing, [conversationId]: current } };
     }),
-  setPresence: (userId, state) => set((s) => ({ presence: { ...s.presence, [userId]: state } })),
+  setPresence: (userId, state) =>
+    set((s) => {
+      // An event is sent as presence changes: one that says they're gone says it happened now.
+      const gone = (p: PresenceState | undefined) => p === 'away' || p === 'offline';
+      return {
+        presence: { ...s.presence, [userId]: state },
+        awayAt:
+          gone(state) && !gone(s.presence[userId])
+            ? { ...s.awayAt, [userId]: Date.now() }
+            : s.awayAt,
+      };
+    }),
   setConnection: (connection) => set({ connection }),
   setOpenConversation: (openConversationId) => set({ openConversationId }),
-  reset: () => set({ typing: {}, presence: {}, connection: 'idle', openConversationId: null }),
+  reset: () =>
+    set({ typing: {}, presence: {}, awayAt: {}, connection: 'idle', openConversationId: null }),
 }));
 
 /** User ids currently typing in a conversation (expired entries drop out on the next tick). */

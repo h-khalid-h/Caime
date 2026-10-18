@@ -2667,11 +2667,27 @@ graph) and the number that will show it; one that sharpens none is hygiene and s
       up to a hundred says who read it, who has it and who doesn't yet, counted as the ticks are
       (reading withheld says "delivered", someone reached by mail is left to the mail line). On a
       phone a message swiped toward the reading direction's end (right, or left in Arabic) is
-      answered; built, not yet tried on a phone. Verified:
+      answered; built, not yet tried on a phone. E1's delete for everyone now says so in its Chats
+      row at once too (its Undo window had left the words there). Verified:
       `rows.test.ts` (who has it, the cases that say nothing, the quote's names), the catalogs in
       four languages, `e2e/honest-chat.spec.ts` (the quote's names both ways and the jump, the
       banner's own sentence, a hold on a reaction naming both, a group message read once the other
       opened it), and the full gate.
+- [x] E3a. Reading a conversation (2026-10-18, review §7's partials and missing). A conversation
+      with unread messages opens at the first of them, their count on the line ("30 unread
+      messages", it said "New messages"), older pages loaded down to it; past 150 it opens at the
+      newest, where Cai's catch-up is offered. The jump button counts others' messages below what
+      was last seen at the bottom. A pill over the list says the day of what's at the top while it
+      scrolls. One to three emoji alone are drawn big, without a bubble (core `emojiOnly`). The
+      names a message mentions are marked where they're written, the reader's own most (core
+      `mentionSpans`, the same reading as `mentionedIn`). A chat's head says when the other person
+      was last here ("Last seen today at 14:05", core `lastSeenLine`: whole sentences, no gender),
+      only as their privacy shows it and asked again when they leave while it's open. Verified: `emoji.test.ts`, `mentions.test.ts`, the format tests, `rows.test.ts`, the catalogs
+      in four languages, `e2e/reading-flow.spec.ts` (opened at the first of 30 with the count,
+      the jump button's 30, the pill, a big 👍, a mention of the reader marked, "Last seen just
+      now" once the other closed their tab), and the full gate.
+- [ ] E3b. Mark as unread; reply privately from a group (a quote across conversations the
+      server checks both people may read).
 - [ ] F. Mail, calendar, meetings: CC and reply-all as people on the topic; unverified mail shown
       under Notices, never dropped; a follow-up allowance to new addresses; invitations arriving
       by mail become cards; cards travel by mail; "Suggest another time" with guest invitations
@@ -4293,6 +4309,8 @@ graph) and the number that will show it; one that sharpens none is hygiene and s
   journeys, safety, reliability, performance, intelligence, mail and calendar, chat, integrations,
   business and code integrity; the matrix against WhatsApp, Signal, Slack, Calendly and Workspace;
   an age-assurance design; the integration framework mapped to the code; plan M16 (A–H).
+- 2026-10-18 — M16 E3a: reading a conversation: opened at the first unread with their count, the
+  jump button's count, a date pill, big emoji, mentions marked, last seen in a chat's head.
 - 2026-10-18 — M16 E2: replies and reactions: a quote names whose words it quotes and goes to
   them, a hold on a reaction names who, one's own group message says who read it, and a swipe
   answers on a phone (built, not yet tried on one).

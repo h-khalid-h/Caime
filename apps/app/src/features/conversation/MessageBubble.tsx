@@ -1,5 +1,6 @@
 import type { FileView, MessageMailView, MessageView } from '@caime/core/api';
 import { AI_LABEL } from '@caime/core/assist';
+import { emojiOnly } from '@caime/core/emoji';
 import {
   formatBytes,
   formatClock,
@@ -8,6 +9,7 @@ import {
   systemText,
 } from '@caime/core/format';
 import { listed, tr } from '@caime/core/i18n';
+import { type Mentionable, type MentionSpan, mentionSpans } from '@caime/core/mentions';
 import { imageFor } from '@caime/core/renditions';
 import { CAI_ID } from '@caime/core/system-ids';
 import { Image } from 'expo-image';
@@ -22,7 +24,7 @@ import FileText from 'lucide-react-native/icons/file-text';
 import Languages from 'lucide-react-native/icons/languages';
 import Pin from 'lucide-react-native/icons/pin';
 import UserRound from 'lucide-react-native/icons/user-round';
-import { lazy, memo, type ReactNode, Suspense, useEffect, useRef, useState } from 'react';
+import { lazy, memo, type ReactNode, Suspense, useEffect, useMemo, useRef, useState } from 'react';
 import { Platform, View } from 'react-native';
 import { mediaHeaders, mediaUrl } from '@/api/client';
 import { Character } from '@/brand/Character';
@@ -40,7 +42,7 @@ import { LocationBody } from '@/features/location/LocationBody';
 import { drawable, showPhotos } from '@/features/media/viewer';
 import { stickerById } from '@/features/stickers/pack';
 import { durationOf, transcriptOf } from '@/features/voice/transcript';
-import { linkify, openLink, opensWithEnter } from '@/lib/links';
+import { linkify, openLink, opensWithEnter, type TextPart } from '@/lib/links';
 import { openFile } from '@/lib/openFile';
 import { useSession } from '@/state/session';
 import { useTheme } from '@/theme/theme';
@@ -62,6 +64,35 @@ export type Delivery = 'queued' | 'sending' | 'failed' | 'sent' | 'delivered' | 
  * reader would read out.
  */
 const LEADING_EMOJI = /^(?:📷|📎|🎙|📍|👤|📊)\uFE0F? /u;
+
+/** How big a message of emoji alone is drawn (M16 E3): one biggest, three still large. */
+const BIG_EMOJI_SIZE = [0, 52, 44, 36];
+
+/** A plain part of a message's words, cut where it names someone (M16 E3); links stay whole. */
+function cutAtMentions(
+  part: TextPart,
+  spans: MentionSpan[],
+): Array<TextPart & { mention?: string }> {
+  if (part.url || spans.length === 0) return [part];
+  const end = part.start + part.text.length;
+  const out: Array<TextPart & { mention?: string }> = [];
+  let at = part.start;
+  for (const s of spans) {
+    if (s.end <= at || s.start >= end) continue;
+    const from = Math.max(s.start, at);
+    const to = Math.min(s.end, end);
+    if (from > at)
+      out.push({ text: part.text.slice(at - part.start, from - part.start), start: at });
+    out.push({
+      text: part.text.slice(from - part.start, to - part.start),
+      start: from,
+      mention: s.userId,
+    });
+    at = to;
+  }
+  if (at < end) out.push({ text: part.text.slice(at - part.start), start: at });
+  return out;
+}
 
 export interface BubbleProps {
   m: MessageView;
@@ -94,6 +125,8 @@ export interface BubbleProps {
   veil?: 'tap' | 'accept';
   /** The conversation shown, and whether it's private (R18): messages open only as its. */
   where: { conversationId: string; private: boolean };
+  /** Its people, for the names a message mentions to be marked where they're written (M16 E3). */
+  mentionables?: Mentionable[];
 }
 
 /**
@@ -333,6 +366,7 @@ export const MessageBubble = memo(function MessageBubble({
   inertLinks = false,
   veil,
   where,
+  mentionables,
 }: BubbleProps) {
   const t = useTheme();
   // Seen on a tap, for this message, while it's shown (M16 B4).
@@ -345,6 +379,15 @@ export const MessageBubble = memo(function MessageBubble({
   const opened = useOpened(m, where);
   const text = m.sealed || where.private ? opened.text : m.body;
   const replyText = useReplyPreview(m.replyTo, where, opened.replyTo);
+  // The names it mentions, marked where they're written: only the people the message itself
+  // says it mentions, read from the words as shown (a private message's as opened here).
+  const spans = useMemo(
+    () =>
+      text && m.mentions.length && mentionables
+        ? mentionSpans(text, mentionables).filter((s) => m.mentions.includes(s.userId))
+        : [],
+    [text, m.mentions, mentionables],
+  );
   // Hover actions (web) sit beside the bubble, not inside it: a pressable inside another ends
   // the outer one's hover, which took the buttons away just as the pointer reached them. Moving
   // from the bubble to the buttons gets a moment's grace.
@@ -372,11 +415,25 @@ export const MessageBubble = memo(function MessageBubble({
   const forMe = !mine && !deleted && meId !== null && m.mentions.includes(meId);
   // Kit cards sit on a neutral card on both sides, so their buttons read the same everywhere.
   const card = m.kind === 'kit' && !deleted && delivery !== 'failed';
+  // Emoji alone (M16 E3): drawn big and on the page, as every messenger does; never one that
+  // answers, was forwarded, came by mail, failed or has a translation under it.
+  const big =
+    !deleted &&
+    m.kind === 'text' &&
+    text &&
+    !m.replyTo &&
+    !m.forwarded &&
+    !m.mail &&
+    !translation &&
+    delivery !== 'failed'
+      ? emojiOnly(text)
+      : 0;
   const bg =
     delivery === 'failed' ? t.c.danger : card ? t.c.surface : mine ? t.bubble.bg : t.c.bubbleOther;
   const fg =
     delivery === 'failed' ? '#FFFFFF' : card ? t.c.text : mine ? t.bubble.fg : t.c.onBubbleOther;
-  const meta = delivery === 'failed' ? '#FFFFFF' : card || !mine ? t.c.textTertiary : t.bubble.meta;
+  const meta =
+    delivery === 'failed' ? '#FFFFFF' : card || big || !mine ? t.c.textTertiary : t.bubble.meta;
   const sticker =
     m.kind === 'sticker' && !deleted
       ? stickerById((m.payload as { sticker?: string }).sticker)
@@ -465,24 +522,42 @@ export const MessageBubble = memo(function MessageBubble({
       .catch(() => openLink(url, true));
   const words = text ? (
     <Text variant="message" color={fg} selectable={Platform.OS === 'web'} auto={text}>
-      {linkify(text).map((part) =>
-        part.url && !inertLinks ? (
-          <Text
-            key={`${part.start}`}
-            variant="message"
-            color={mine ? fg : t.c.link}
-            style={{ textDecorationLine: 'underline' }}
-            onPress={() => open(part.url ?? '')}
-            onLongPress={hold}
-            accessibilityRole="link"
-            {...opensWithEnter(() => open(part.url ?? ''))}
-          >
-            {part.text}
-          </Text>
-        ) : (
-          part.text
-        ),
-      )}
+      {linkify(text)
+        .flatMap((part) => cutAtMentions(part, spans))
+        .map((part) =>
+          part.url && !inertLinks ? (
+            <Text
+              key={`${part.start}`}
+              variant="message"
+              color={mine ? fg : t.c.link}
+              style={{ textDecorationLine: 'underline' }}
+              onPress={() => open(part.url ?? '')}
+              onLongPress={hold}
+              accessibilityRole="link"
+              {...opensWithEnter(() => open(part.url ?? ''))}
+            >
+              {part.text}
+            </Text>
+          ) : part.mention ? (
+            // Someone named (M16 E3): stronger, and the reader's own name marked as theirs.
+            <Text
+              key={`${part.start}`}
+              variant="message"
+              weight={600}
+              color={mine ? fg : t.c.accentStrong}
+              style={
+                part.mention === meId && !mine
+                  ? { backgroundColor: t.c.accentSoft, borderRadius: 4 }
+                  : undefined
+              }
+              testID={part.mention === meId ? 'mention-you' : 'mention'}
+            >
+              {part.text}
+            </Text>
+          ) : (
+            part.text
+          ),
+        )}
     </Text>
   ) : null;
   // A mail's signature (R75), folded under its words so a thread reads as a chat.
@@ -776,8 +851,8 @@ export const MessageBubble = memo(function MessageBubble({
       {mine ? (
         <DeliveryIcon
           delivery={delivery}
-          color={delivery === 'failed' ? meta : card ? t.c.textTertiary : t.bubble.tick}
-          readColor={card ? t.c.text : t.bubble.fg}
+          color={delivery === 'failed' ? meta : card || big ? t.c.textTertiary : t.bubble.tick}
+          readColor={card || big ? t.c.text : t.bubble.fg}
         />
       ) : null}
     </View>
@@ -883,6 +958,22 @@ export const MessageBubble = memo(function MessageBubble({
                 {/* A bot's sticker says it's a bot's too (R16). */}
                 {m.automated ? `${m.aiAgent ? tr('AI agent') : tr('Automated')} · ${time}` : time}
               </Text>
+            </View>
+          ) : big ? (
+            <View
+              style={{ alignItems: mine ? 'flex-end' : 'flex-start' }}
+              testID="message-big-emoji"
+            >
+              <Text
+                style={{
+                  fontSize: BIG_EMOJI_SIZE[big],
+                  lineHeight: (BIG_EMOJI_SIZE[big] ?? 36) * 1.2,
+                }}
+                maxFontSizeMultiplier={1.2}
+              >
+                {text}
+              </Text>
+              {metaRow}
             </View>
           ) : (
             <View

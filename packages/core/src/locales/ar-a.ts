@@ -1092,7 +1092,6 @@ export const arA: Catalog = {
     'محادثة عمل: فريق {name} يجيب باسم {name}.',
   'Only you see how you’ve labelled {displayName}': 'لا يرى غيرك كيف صنّفت {displayName}',
   'This is the beginning of your conversation.': 'هذه بداية محادثتكما.',
-  'New messages': 'رسائل جديدة',
   'Jump to the newest message': 'الانتقال إلى أحدث رسالة',
   '{name} closed on Caime. What was sent here stays to read; find it again to start a new conversation.':
     'أُغلقت {name} على Caime. ما أُرسل هنا يبقى للقراءة؛ ابحث عنها مجددًا لبدء محادثة جديدة.',

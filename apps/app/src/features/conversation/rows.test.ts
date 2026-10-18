@@ -148,3 +148,25 @@ describe('replies and who has a message (M16 E2)', () => {
     expect(names).toEqual(['You', 'Nile Dental']);
   });
 });
+
+describe('reading where the unread start (M16 E3)', () => {
+  it('counts the unread line as others’ messages from it on, and gives each row its day', () => {
+    const from = (seq: number, senderId: string, kind = 'text') =>
+      ({ ...line(seq, `2024-05-01T18:0${seq}:00.000Z`, {}), senderId, kind }) as MessageView;
+    const rows = buildRows({
+      messages: [from(1, 'a'), from(2, ME), from(3, 'a'), from(4, 'a', 'system'), from(5, 'b')],
+      pending: [],
+      conversation: undefined,
+      me: ME,
+      unreadFrom: 2,
+      now: new Date('2024-05-01T20:00:00.000Z'),
+      timeZone: 'UTC',
+      locale: 'en-GB',
+    });
+    const unread = rows.find((r) => r.type === 'unread');
+    expect(unread?.type === 'unread' ? unread.count : null).toBe(2);
+    expect(
+      rows.flatMap((r) => (r.type === 'message' ? [r.day] : [])).every((d) => d === 'Today'),
+    ).toBe(true);
+  });
+});

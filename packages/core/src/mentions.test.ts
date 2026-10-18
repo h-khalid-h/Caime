@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { mentionAt, mentionCandidates, mentionedIn, mentionText } from './mentions';
+import { mentionAt, mentionCandidates, mentionedIn, mentionSpans, mentionText } from './mentions';
 
 const people = [
   { userId: 'al', displayName: 'Al', handle: 'al.b' },
@@ -86,5 +86,37 @@ describe('mentions (PRD §20)', () => {
     expect(mentionedIn('@田中さん、お願いします', names)).toEqual(['tanaka']);
     // Without its accent, a name still finds the one person it could be.
     expect(mentionedIn('@jose ruiz, thanks', people)).toEqual(['jose']);
+  });
+});
+
+describe('where a message names someone (M16 E3)', () => {
+  it('marks each name it mentions, the longer where one starts another', () => {
+    const text = 'Thanks @Al Smith and @noor, not sam@al.b';
+    expect(mentionSpans(text, people)).toEqual([
+      { start: 7, end: 16, userId: 'als' },
+      { start: 21, end: 26, userId: 'noor' },
+    ]);
+    expect(text.slice(7, 16)).toBe('@Al Smith');
+  });
+
+  it('marks a name written without its accents, as it was written', () => {
+    const text = 'Ask @jose ruiz first';
+    const [span] = mentionSpans(text, people);
+    expect(span?.userId).toBe('jose');
+    expect(text.slice(span?.start, span?.end)).toBe('@jose ruiz');
+  });
+
+  it('marks nobody for a name two people share, or a name nobody here has', () => {
+    const twins = [...people, { userId: 'noor2', displayName: 'Noor Haddad', handle: 'nh' }];
+    expect(mentionSpans('Hi @Noor Haddad', twins)).toEqual([]);
+    expect(mentionSpans('Hi @Somebody', people)).toEqual([]);
+    expect(mentionSpans('Hi @Noor', [])).toEqual([]);
+  });
+
+  it('agrees with who the message mentions', () => {
+    const text = '@Al and @Al Smith, @José Ruiz';
+    expect(mentionedIn(text, people).sort()).toEqual(
+      [...new Set(mentionSpans(text, people).map((s) => s.userId))].sort(),
+    );
   });
 });

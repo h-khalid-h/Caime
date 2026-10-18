@@ -1,6 +1,12 @@
 import type { MessageView } from '@caime/core/api';
 import { GROUP_CALL_MAX } from '@caime/core/calls';
-import { contextLine, formatDue, messagePreview, retentionText } from '@caime/core/format';
+import {
+  contextLine,
+  formatDue,
+  lastSeenLine,
+  messagePreview,
+  retentionText,
+} from '@caime/core/format';
 import { tr, trn } from '@caime/core/i18n';
 import { canRemoveOthersMessages } from '@caime/core/permissions';
 import { canPin } from '@caime/core/pins';
@@ -23,6 +29,7 @@ import {
   KeyboardAvoidingView,
   Platform,
   View,
+  type ViewToken,
 } from 'react-native';
 import { ApiError } from '@/api/client';
 import { endpoints } from '@/api/endpoints';
@@ -89,6 +96,18 @@ import { SuggestionBar } from './SuggestionBar';
 import { SwipeToReply } from './SwipeToReply';
 import { TypingIndicator, useTypingNames } from './TypingIndicator';
 import { mailBound } from './topics';
+
+/**
+ * Past this many unread, a conversation opens at its newest with the count on its line (M16 E3):
+ * loading back to the first of them would fetch page after page, and Cai's catch-up is offered.
+ */
+const UNREAD_JUMP_MAX = 150;
+
+/** How long the date pill stays once the list is still (M16 E3). */
+const PILL_MS = 1500;
+
+/** Enough of a row showing for its day to be the one the pill says. */
+const VIEWABLE = { itemVisiblePercentThreshold: 10 };
 
 /** Shown only when a first load fails, so loaded then (M16 E1): kept out of the first download. */
 const LoadFailed = lazyPart(() => import('@/ui/LoadFailed').then((m) => m.LoadFailed));
@@ -158,12 +177,47 @@ export function ConversationScreen({
   const [actionsFor, setActionsFor] = useState<MessageView | null>(null);
   const [forwarding, setForwarding] = useState<MessageView | null>(null);
   const [atBottom, setAtBottom] = useState(true);
+  // The day of what's at the top, said over the list while it scrolls (M16 E3).
+  const [pillDay, setPillDay] = useState<string | null>(null);
+  const [scrolling, setScrolling] = useState(false);
+  const still = useRef<ReturnType<typeof setTimeout> | null>(null);
+  useEffect(
+    () => () => {
+      if (still.current) clearTimeout(still.current);
+    },
+    [],
+  );
+  const onViewableItemsChanged = useRef(
+    ({ viewableItems }: { viewableItems: ViewToken<Row>[] }) => {
+      // The list is inverted: what's at the top of the screen is the row furthest down the data.
+      let top: Row | null = null;
+      let at = -1;
+      for (const v of viewableItems)
+        if (v.index !== null && v.index > at) {
+          at = v.index;
+          top = v.item;
+        }
+      if (top?.type === 'message') setPillDay(top.day);
+      else if (top?.type === 'day') setPillDay(top.label);
+    },
+  ).current;
   const composer = useRef<ComposerHandle>(null);
   const list = useRef<FlatList<Row>>(null);
   const typingNames = useTypingNames(conversation);
   const presence = useLive((s) =>
     conversation?.other ? s.presence[conversation.other.userId] : undefined,
   );
+  // Seen going away while this device watched: fresher than the profile's "last seen" (M16 E3).
+  const awayAt = useLive((s) =>
+    conversation?.other ? s.awayAt[conversation.other.userId] : undefined,
+  );
+  // Gone while on screen: the head asks again when they were last here, as their privacy says,
+  // rather than guessing it from a presence it may show without the time (M16 E3). One request a
+  // departure, for the conversation open.
+  useEffect(() => {
+    if (presence === 'offline' || presence === 'away')
+      void qc.invalidateQueries({ queryKey: qk.conversation(id) });
+  }, [presence, id, qc]);
 
   useEffect(() => setPanel(wide), [wide]);
 
@@ -198,11 +252,14 @@ export function ConversationScreen({
   if (readUpTo.current.id !== id) readUpTo.current = { id, seq: 0 };
   const unreadFrom = useRef<number | null>(null);
   const unreadAtOpen = useRef(0);
+  // The newest message seen at the bottom: what's newer and others' is what the jump button counts.
+  const seenUpTo = useRef(0);
   const settledFor = useRef<string | null>(null);
   if (conversation && settledFor.current !== id) {
     unreadFrom.current =
       conversation.lastSeq > conversation.me.lastReadSeq ? conversation.me.lastReadSeq + 1 : null;
     unreadAtOpen.current = Math.max(0, conversation.lastSeq - conversation.me.lastReadSeq);
+    seenUpTo.current = conversation.me.lastReadSeq;
     if (conv.isFetchedAfterMount || readUpTo.current.seq > 0) settledFor.current = id;
   }
   const aiReady = useAiReady(conversation);
@@ -255,6 +312,16 @@ export function ConversationScreen({
   }, [messages, me.id, conversation]);
   const [focus, setFocus] = useState<number | null>(focusSeq ?? null);
   const [marked, setMarked] = useState<number | null>(null);
+  // Who a message here may name, for the bubble to mark them where they're written (M16 E3).
+  const mentionables = useMemo(
+    () =>
+      conversation?.participants.map((p) => ({
+        userId: p.userId,
+        displayName: p.person.displayName,
+        handle: p.person.handle,
+      })),
+    [conversation?.participants],
+  );
   const rows = useMemo(
     () =>
       buildRows({
@@ -294,6 +361,42 @@ export function ConversationScreen({
     const timer = setTimeout(() => setMarked(null), 2500);
     return () => clearTimeout(timer);
   }, [marked]);
+
+  // Opened with unread messages (M16 E3): at the first of them, its line at the top, as a
+  // messenger opens, once; older pages load down to it. Opened at a message (search, a pin) or
+  // with more than a long read's worth, it opens where it was asked, or at the newest.
+  const openedAtUnread = useRef<string | null>(null);
+  // Opened at the first unread and not at the bottom since: what's below is still to be seen.
+  const jumped = useRef(false);
+  const newestSeq = messages[messages.length - 1]?.seq ?? 0;
+  const newestShown = useRef(newestSeq);
+  newestShown.current = newestSeq;
+  useEffect(() => {
+    if (openedAtUnread.current === id || settledFor.current !== id || !msgs.data) return;
+    const from = unreadFrom.current;
+    if (focusSeq || from === null || unreadAtOpen.current > UNREAD_JUMP_MAX) {
+      openedAtUnread.current = id;
+      jumped.current = false;
+      return;
+    }
+    if ((messages[0]?.seq ?? 0) > from && msgs.hasNextPage) {
+      if (!msgs.isFetchingNextPage) void msgs.fetchNextPage();
+      return;
+    }
+    openedAtUnread.current = id;
+    const index = rows.findIndex((r) => r.type === 'unread');
+    jumped.current = index >= 0;
+    if (index < 0) return;
+    requestAnimationFrame(() =>
+      list.current?.scrollToIndex({ index, viewPosition: 1, animated: false }),
+    );
+  }, [id, focusSeq, msgs, messages, rows]);
+
+  // At the bottom, everything there is seen: the jump button counts only what came after.
+  useEffect(() => {
+    if (atBottom && !jumped.current && openedAtUnread.current === id)
+      seenUpTo.current = Math.max(seenUpTo.current, newestSeq);
+  }, [atBottom, newestSeq, id]);
 
   // This conversation is on screen: arriving messages here are read, not unread.
   useFocusEffect(
@@ -406,6 +509,17 @@ export function ConversationScreen({
           next: gathered.dates[0] ? formatDue(gathered.dates[0].at, now, timeZone, locale) : null,
         })
       : null;
+  // When they were last here (M16 E3), only where their privacy shows it (the server's null
+  // otherwise) and only while they aren't here now; seen going away here, that moment.
+  const shownPresence = other ? (presence ?? other.person.presence) : null;
+  const lastSeenAt =
+    other?.person.lastSeenAt &&
+    (shownPresence === 'away' || shownPresence === 'offline' || !shownPresence)
+      ? Math.max(Date.parse(other.person.lastSeenAt) || 0, awayAt ?? 0)
+      : 0;
+  const lastSeen = lastSeenAt
+    ? lastSeenLine(new Date(lastSeenAt).toISOString(), now, timeZone, locale)
+    : '';
   // A topic goes by its own name; a group's says which group it's of (PRD §58).
   const heading = conversation?.topic ?? conversation?.title ?? '';
   const ofGroup = conversation?.topic && conversation.kind === 'group' ? conversation.title : null;
@@ -429,7 +543,9 @@ export function ConversationScreen({
               ? other.person.trust.label
               : (presence ?? other.person.presence) === 'online'
                 ? [tr('Online'), other.relationship?.label].filter(Boolean).join(' · ')
-                : (other.relationship?.label ?? handleOf(other.person))
+                : lastSeen
+                  ? [lastSeen, other.relationship?.label].filter(Boolean).join(' · ')
+                  : (other.relationship?.label ?? handleOf(other.person))
             : conversation
               ? [
                   ofGroup,
@@ -675,8 +791,8 @@ export function ConversationScreen({
           }}
         >
           <View style={{ flex: 1, height: 1, backgroundColor: t.c.accent }} />
-          <Text variant="captionStrong" color="accentStrong">
-            {tr('New messages')}
+          <Text variant="captionStrong" color="accentStrong" testID="unread-line">
+            {trn(item.count, '{n} unread message', '{n} unread messages')}
           </Text>
           <View style={{ flex: 1, height: 1, backgroundColor: t.c.accent }} />
         </View>
@@ -707,11 +823,18 @@ export function ConversationScreen({
           // A request's photos come veiled (M16 B4): a tap shows them, under 18 accepting does.
           veil={conversation?.request === 'incoming' ? (me.minor ? 'accept' : 'tap') : undefined}
           where={where}
+          mentionables={mentionables}
         />
       </SwipeToReply>
     );
   };
 
+  // Others' messages newer than the bottom last seen: what the jump button says (M16 E3).
+  const below = atBottom
+    ? 0
+    : messages.filter(
+        (m) => m.seq > seenUpTo.current && m.senderId !== me.id && m.kind !== 'system',
+      ).length;
   const body = (
     <View style={{ flex: 1, backgroundColor: t.c.canvas }}>
       <ConnectionBanner />
@@ -744,78 +867,124 @@ export function ConversationScreen({
       >
         {announce}
       </Text>
-      <FlatList
-        ref={list}
-        inverted
-        data={rows}
-        keyExtractor={(r) => r.key}
-        renderItem={renderItem}
-        ListHeaderComponent={<TypingIndicator names={typingNames} />}
-        ListFooterComponent={
-          // The list turns its header and footer the right way up itself.
-          msgs.isError && !msgs.data ? (
-            <LoadFailed
-              title={tr('These messages couldn’t load')}
-              error={msgs.error}
-              onRetry={() => void msgs.refetch()}
-              testID="conversation-load-failed"
-            />
-          ) : (
-            start
-          )
-        }
-        ListEmptyComponent={
-          // A new connection with nothing said yet (PRD §87). The list is inverted, so what it
-          // shows when empty is turned back the right way up.
-          conversation &&
-          msgs.data &&
-          conversation.kind === 'direct' &&
-          conversation.isGeneral &&
-          conversation.other &&
-          conversation.connected === true &&
-          !conversation.request &&
-          !privately ? (
-            <View style={{ transform: [{ scaleY: -1 }] }}>
-              <FirstWords
-                conversation={conversation}
-                onPick={(line) => composer.current?.insert(line)}
+      <View style={{ flex: 1 }}>
+        <FlatList
+          ref={list}
+          inverted
+          data={rows}
+          keyExtractor={(r) => r.key}
+          renderItem={renderItem}
+          ListHeaderComponent={<TypingIndicator names={typingNames} />}
+          ListFooterComponent={
+            // The list turns its header and footer the right way up itself.
+            msgs.isError && !msgs.data ? (
+              <LoadFailed
+                title={tr('These messages couldn’t load')}
+                error={msgs.error}
+                onRetry={() => void msgs.refetch()}
+                testID="conversation-load-failed"
               />
+            ) : (
+              start
+            )
+          }
+          ListEmptyComponent={
+            // A new connection with nothing said yet (PRD §87). The list is inverted, so what it
+            // shows when empty is turned back the right way up.
+            conversation &&
+            msgs.data &&
+            conversation.kind === 'direct' &&
+            conversation.isGeneral &&
+            conversation.other &&
+            conversation.connected === true &&
+            !conversation.request &&
+            !privately ? (
+              <View style={{ transform: [{ scaleY: -1 }] }}>
+                <FirstWords
+                  conversation={conversation}
+                  onPick={(line) => composer.current?.insert(line)}
+                />
+              </View>
+            ) : null
+          }
+          onEndReached={() => {
+            if (msgs.hasNextPage && !msgs.isFetchingNextPage) void msgs.fetchNextPage();
+          }}
+          onEndReachedThreshold={0.4}
+          onScrollToIndexFailed={(info) => {
+            // Not measured yet: get near it, then aim again once the rows around it have rendered.
+            list.current?.scrollToOffset({
+              offset: info.averageItemLength * info.index,
+              animated: false,
+            });
+            setTimeout(
+              () =>
+                list.current?.scrollToIndex({
+                  index: info.index,
+                  viewPosition: 0.5,
+                  animated: false,
+                }),
+              120,
+            );
+          }}
+          onScroll={(e) => {
+            const bottom = e.nativeEvent.contentOffset.y < 120;
+            setAtBottom(bottom);
+            if (bottom) {
+              jumped.current = false;
+              seenUpTo.current = Math.max(seenUpTo.current, newestShown.current);
+            }
+            setScrolling(true);
+            if (still.current) clearTimeout(still.current);
+            still.current = setTimeout(() => setScrolling(false), PILL_MS);
+          }}
+          onViewableItemsChanged={onViewableItemsChanged}
+          viewabilityConfig={VIEWABLE}
+          scrollEventThrottle={64}
+          keyboardDismissMode="interactive"
+          keyboardShouldPersistTaps="handled"
+          initialNumToRender={24}
+          windowSize={11}
+          maintainVisibleContentPosition={{ minIndexForVisible: 1 }}
+          contentContainerStyle={{ paddingVertical: 8 }}
+        />
+        {scrolling && !atBottom && pillDay ? (
+          // The day of what's at the top while it scrolls (M16 E3), over the list, never in its way.
+          <View
+            pointerEvents="none"
+            style={{ position: 'absolute', top: 8, start: 0, end: 0, alignItems: 'center' }}
+          >
+            <View
+              style={{
+                backgroundColor: t.c.surface,
+                borderRadius: t.radii.lg,
+                paddingHorizontal: 12,
+                paddingVertical: 4,
+                borderWidth: 1,
+                borderColor: t.c.border,
+                ...lifted(t.c.shadow, 1, 6),
+              }}
+              testID="date-pill"
+            >
+              <Text variant="captionStrong" color="textSecondary">
+                {pillDay}
+              </Text>
             </View>
-          ) : null
-        }
-        onEndReached={() => {
-          if (msgs.hasNextPage && !msgs.isFetchingNextPage) void msgs.fetchNextPage();
-        }}
-        onEndReachedThreshold={0.4}
-        onScrollToIndexFailed={(info) => {
-          // Not measured yet: get near it, then aim again once the rows around it have rendered.
-          list.current?.scrollToOffset({
-            offset: info.averageItemLength * info.index,
-            animated: false,
-          });
-          setTimeout(
-            () =>
-              list.current?.scrollToIndex({
-                index: info.index,
-                viewPosition: 0.5,
-                animated: false,
-              }),
-            120,
-          );
-        }}
-        onScroll={(e) => setAtBottom(e.nativeEvent.contentOffset.y < 120)}
-        scrollEventThrottle={64}
-        keyboardDismissMode="interactive"
-        keyboardShouldPersistTaps="handled"
-        initialNumToRender={24}
-        windowSize={11}
-        maintainVisibleContentPosition={{ minIndexForVisible: 1 }}
-        contentContainerStyle={{ paddingVertical: 8 }}
-      />
+          </View>
+        ) : null}
+      </View>
       {!atBottom ? (
         <Pressable
           accessibilityRole="button"
-          accessibilityLabel={tr('Jump to the newest message')}
+          accessibilityLabel={
+            below
+              ? trn(
+                  below,
+                  'Jump to the newest message: {n} new below',
+                  'Jump to the newest message: {n} new below',
+                )
+              : tr('Jump to the newest message')
+          }
           onPress={() => list.current?.scrollToOffset({ offset: 0, animated: true })}
           style={{
             position: 'absolute',
@@ -833,6 +1002,28 @@ export function ConversationScreen({
           }}
         >
           <ChevronDown size={20} color={t.c.textSecondary} />
+          {below ? (
+            // What came since the bottom was last seen, others' only (M16 E3).
+            <View
+              style={{
+                position: 'absolute',
+                top: -6,
+                end: -4,
+                minWidth: 20,
+                height: 20,
+                borderRadius: 10,
+                paddingHorizontal: 5,
+                backgroundColor: t.c.accent,
+                alignItems: 'center',
+                justifyContent: 'center',
+              }}
+              testID="jump-count"
+            >
+              <Text variant="captionStrong" color={t.c.onAccent} maxFontSizeMultiplier={1.2}>
+                {below > 99 ? '99+' : String(below)}
+              </Text>
+            </View>
+          ) : null}
         </Pressable>
       ) : null}
     </View>

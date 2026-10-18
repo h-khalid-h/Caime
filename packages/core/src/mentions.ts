@@ -86,45 +86,93 @@ export function mentionText(person: Mentionable, people: Mentionable[]): string 
 
 type Named = { id: string; exact: string; folded: string };
 
+/** What "@…" was read as: whose name (null when several people have it), and how it was written. */
+type Hit = { id: string | null; name: string; form: 'exact' | 'folded' };
+
 /**
  * Who "@…" names, compared one way: the longest name it starts with, when one person has it.
- * Undefined when nobody's does; null when several people's do, which names none of them.
+ * Undefined when nobody's does; an id of null when several people's do, which names none of them.
  */
-function named(rest: string, names: Named[], form: 'exact' | 'folded'): string | null | undefined {
+function named(rest: string, names: Named[], form: 'exact' | 'folded'): Hit | undefined {
   const hay = form === 'exact' ? exact(rest) : fold(rest);
   let longest = 0;
+  let name = '';
   const ids = new Set<string>();
   for (const n of names) {
-    const name = n[form];
-    if (name.length < longest || !hay.startsWith(name) || !endsAt(hay, name.length)) continue;
-    if (name.length > longest) ids.clear();
-    longest = name.length;
+    const candidate = n[form];
+    if (candidate.length < longest || !hay.startsWith(candidate) || !endsAt(hay, candidate.length))
+      continue;
+    if (candidate.length > longest) ids.clear();
+    longest = candidate.length;
+    name = candidate;
     ids.add(n.id);
   }
-  if (ids.size > 1) return null;
-  return ids.size ? [...ids][0] : undefined;
+  if (ids.size === 0) return undefined;
+  return { id: ids.size > 1 ? null : ([...ids][0] ?? null), name, form };
 }
+
+const namesOf = (people: Mentionable[]): Named[] =>
+  people.flatMap((p) =>
+    [p.displayName, p.handle ?? '']
+      .map((n) => n.trim())
+      .filter(Boolean)
+      .map((n) => ({ id: p.userId, exact: exact(n), folded: fold(n) })),
+  );
+
+/** As written first ("@Zoë" is Zoë, not Zoe), then without accents ("@jose" is José). */
+const hitAt = (rest: string, names: Named[]): Hit | undefined =>
+  named(rest, names, 'exact') ?? named(rest, names, 'folded');
 
 /**
  * Who a message's text mentions: where one name starts another ("@Al Smith"), the longer; as
  * written first ("@Zoë" is Zoë, not Zoe), then without accents ("@jose" is José).
  */
 export function mentionedIn(text: string, people: Mentionable[]): string[] {
-  const names: Named[] = people.flatMap((p) =>
-    [p.displayName, p.handle ?? '']
-      .map((n) => n.trim())
-      .filter(Boolean)
-      .map((n) => ({ id: p.userId, exact: exact(n), folded: fold(n) })),
-  );
-  const found = new Set<string>();
-  const parts = text.split('@');
-  for (let i = 1; i < parts.length; i++) {
-    const before = parts[i - 1] ?? '';
-    if (before && WORDISH.test(before.charAt(before.length - 1))) continue;
-    const rest = parts.slice(i).join('@');
-    const asWritten = named(rest, names, 'exact');
-    const id = asWritten === undefined ? named(rest, names, 'folded') : asWritten;
-    if (id) found.add(id);
+  return [...new Set(mentionSpans(text, people).map((s) => s.userId))];
+}
+
+/** How many of the text's own characters a name read in one form takes ("ﬁ" folds to two). */
+function writtenLength(rest: string, hit: Hit): number {
+  const form = hit.form === 'exact' ? exact : fold;
+  const from = Math.max(1, hit.name.length - 2);
+  for (let k = from; k <= Math.min(rest.length, hit.name.length + 4); k++)
+    if (form(rest.slice(0, k)) === hit.name) return k;
+  return Math.min(rest.length, hit.name.length);
+}
+
+export interface MentionSpan {
+  /** Where its "@" is in the text. */
+  start: number;
+  /** Just past the name. */
+  end: number;
+  userId: string;
+}
+
+/**
+ * Where a message's text names someone (M16 E3): each "@name" that mentions one person, as the
+ * span a bubble marks, read as `mentionedIn` reads them.
+ */
+export function mentionSpans(text: string, people: Mentionable[]): MentionSpan[] {
+  const names = namesOf(people);
+  const spans: MentionSpan[] = [];
+  if (names.length === 0) return spans;
+  let at = text.indexOf('@');
+  while (at !== -1) {
+    const next = at + 1;
+    if (at > 0 && WORDISH.test(text.charAt(at - 1))) {
+      at = text.indexOf('@', next);
+      continue;
+    }
+    const rest = text.slice(next);
+    // A name several people have names none of them.
+    const hit = hitAt(rest, names);
+    if (!hit?.id) {
+      at = text.indexOf('@', next);
+      continue;
+    }
+    const end = next + writtenLength(rest, hit);
+    spans.push({ start: at, end, userId: hit.id });
+    at = text.indexOf('@', end);
   }
-  return [...found];
+  return spans;
 }
