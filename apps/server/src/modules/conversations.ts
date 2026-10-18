@@ -14,6 +14,7 @@ import {
   canChangeGroupRole,
   canRemoveFromGroup,
   handsOverOnLeaving,
+  isLargeGroup,
   MembersBody,
   PRIVATE_GROUP_MAX,
   REQUESTS_PER_DAY,
@@ -679,17 +680,25 @@ export async function conversationRoutes(app: FastifyInstance, ctx: AppContext) 
     const body = parse(ReceiptsBody, req.body);
     // A device that hasn't heard yet that its person left (or was removed) may still say what
     // arrived: that's nothing to do now, and nothing to refuse. Anyone never in it is refused.
-    const gone = await ctx.db
+    // How many are in it comes with the same look (M16 D2b), for a group of many.
+    const here = await ctx.db
       .selectFrom('participants')
-      .select('left_at')
+      .select([
+        sql<boolean>`coalesce(bool_or(user_id = ${auth.userId} and left_at is not null), false)`.as(
+          'gone',
+        ),
+        sql<number>`count(*) filter (where left_at is null)::int`.as('present'),
+      ])
       .where('conversation_id', '=', id)
-      .where('user_id', '=', auth.userId)
-      .where('left_at', 'is not', null)
-      .executeTakeFirst();
-    if (gone) return { ok: true };
+      .executeTakeFirstOrThrow();
+    if (here.gone) return { ok: true };
     const { conversation, me } = await membership(ctx, auth.userId, id);
     const last = Number(conversation.last_seq);
     const read = body.read !== undefined ? Math.min(body.read, last) : undefined;
+    // A group of many shows nobody's ticks (M16 D2b): what arrived is nobody's news there, and
+    // what's read is the reader's own (their unread count, their notification, their devices).
+    const crowd = isLargeGroup(conversation.kind, here.present);
+    if (crowd && read === undefined) return { ok: true };
     const delivered = Math.max(body.delivered ?? 0, read ?? 0);
     const patch: Record<string, number> = {};
     if (read !== undefined && read > Number(me.last_read_seq)) patch.last_read_seq = read;
@@ -723,6 +732,19 @@ export async function conversationRoutes(app: FastifyInstance, ctx: AppContext) 
         seq: String(patch.last_read_seq),
       });
     }
+    const event = (readSeq: number | null) => ({
+      type: 'receipts',
+      data: {
+        conversationId: id,
+        userId: auth.userId,
+        readSeq,
+        deliveredSeq: patch.last_delivered_seq ?? null,
+      },
+    });
+    if (crowd) {
+      await ctx.bus.publish([auth.userId], event(patch.last_read_seq ?? null));
+      return { ok: true };
+    }
     // A message's ticks are its sender's to see, so an ack is news to whoever sent what it newly
     // covers (one query, bounded by the ack) and to the reader's own devices, never to a whole
     // group: a hundred people reading costs a hundred events, not ten thousand.
@@ -746,15 +768,6 @@ export async function conversationRoutes(app: FastifyInstance, ctx: AppContext) 
       .where('m.sender_id', '!=', auth.userId)
       .where('p.left_at', 'is', null)
       .execute();
-    const event = (readSeq: number | null) => ({
-      type: 'receipts',
-      data: {
-        conversationId: id,
-        userId: auth.userId,
-        readSeq,
-        deliveredSeq: patch.last_delivered_seq ?? null,
-      },
-    });
     const others = senders.map((s) => s.sender_id as string);
     // A request not yet answered, or declined, tells its sender nothing, not even that it arrived
     // (R14): only the reader's own devices hear of it.
@@ -797,10 +810,12 @@ export async function conversationRoutes(app: FastifyInstance, ctx: AppContext) 
   app.post('/conversations/:id/typing', async (req): Promise<OkResponse> => {
     const auth = requireAuth(req);
     const { id } = parse(z.object({ id: z.string().uuid() }), req.params);
-    await membership(ctx, auth.userId, id);
+    const { conversation } = await membership(ctx, auth.userId, id);
     await assertCanWrite(ctx, id, auth.userId);
     ctx.limiter.hit(`typing:${auth.userId}:${id}`, 30, 60_000);
     const members = await participantsOf(ctx.db, id);
+    // Nobody is seen typing in a group of many (M16 D2b), as on the socket.
+    if (isLargeGroup(conversation.kind, members.length)) return { ok: true };
     await ctx.bus.publish(
       members.filter((m) => m.user_id !== auth.userId).map((m) => m.user_id),
       { type: 'typing', data: { conversationId: id, userId: auth.userId } },

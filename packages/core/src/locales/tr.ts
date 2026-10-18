@@ -4343,4 +4343,6 @@ export const turkish: Catalog = {
     'Doğrulama bir yanıt vermedi. Yeniden deneyebilirsiniz.',
   'Your check is on its way. It shows here in a moment.':
     'Doğrulamanız yolda. Birazdan burada görünür.',
+  'A big group: only what’s for you alerts you':
+    'Büyük bir grup: yalnızca sizinle ilgili olanlar uyarı verir',
 };

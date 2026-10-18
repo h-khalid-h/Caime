@@ -2731,4 +2731,5 @@ export const arB: Catalog = {
     'لم يُعطِ التحقق جوابًا. يمكن المحاولة مجددًا.',
   'Your check is on its way. It shows here in a moment.':
     'نتيجة التحقق في الطريق، وتظهر هنا بعد لحظات.',
+  'A big group: only what’s for you alerts you': 'مجموعة كبيرة: لا ينبّهك إلا ما يخصّك',
 };

@@ -3,7 +3,7 @@
  * authenticates with its session cookie during the upgrade; native sends {type:"auth", token}
  * as its first frame. Events arrive from the bus, which spans every server instance.
  */
-import { canSee, resolvePolicy, type Sphere } from '@caime/core';
+import { canSee, isLargeGroup, LARGE_GROUP, resolvePolicy, type Sphere } from '@caime/core';
 import type { FastifyInstance } from 'fastify';
 import type { WebSocket } from 'ws';
 import { z } from 'zod';
@@ -326,6 +326,16 @@ export async function realtimeRoutes(app: FastifyInstance, ctx: AppContext): Pro
           .where('left_at', 'is', null)
           .where('user_id', '<>', userId)
           .execute();
+        // Nobody is seen typing in a group of many (M16 D2b): a tick every few seconds, to
+        // hundreds of devices, for each person writing.
+        if (members.length >= LARGE_GROUP) {
+          const c = await ctx.db
+            .selectFrom('conversations')
+            .select('kind')
+            .where('id', '=', msg.conversationId)
+            .executeTakeFirst();
+          if (c && isLargeGroup(c.kind, members.length + 1)) return;
+        }
         await ctx.bus.publish(
           members.map((m) => m.user_id),
           { type: 'typing', data: { conversationId: msg.conversationId, userId } },

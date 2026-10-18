@@ -144,6 +144,45 @@ describe('decideNotification', () => {
   });
 });
 
+describe('in a crowd (M16 D2b)', () => {
+  // A stranger in a group of many: nobody's rule but the defaults, which alert to everything.
+  const nobody = resolvePolicy(policies, { sphere: null });
+  const crowd = { now: nyWorkday10am, timeZone: tz, crowd: true };
+
+  it('waits in the inbox unless it is for them, urgent, or the group is a priority', () => {
+    expect(
+      decideNotification(nobody, { kind: 'message' }, { ...crowd, crowd: false }).deliver,
+    ).toBe('push');
+    expect(decideNotification(nobody, { kind: 'message' }, crowd)).toMatchObject({
+      deliver: 'silent',
+      level: 'activity',
+      reason: 'A big group: only what’s for you alerts you',
+    });
+    for (const kind of ['mention', 'reply', 'question', 'request'] as const)
+      expect(decideNotification(nobody, { kind }, crowd).deliver).toBe('push');
+    expect(
+      decideNotification(
+        nobody,
+        { kind: 'message' },
+        { ...crowd, conversationPriority: 'priority' },
+      ).deliver,
+    ).toBe('push');
+    const allowsUrgent = { ...nobody, allowUrgent: true };
+    expect(decideNotification(allowsUrgent, { kind: 'message', urgent: true }, crowd).deliver).toBe(
+      'push',
+    );
+    // Not held for later either: a crowd's chatter at night is no alert in the morning.
+    const quiet = { days: [0, 1, 2, 3, 4, 5, 6], start: '20:00', end: '07:00' };
+    expect(
+      decideNotification(
+        nobody,
+        { kind: 'message' },
+        { ...crowd, now: nyWorkday9pm, quietHours: quiet },
+      ).deliver,
+    ).toBe('silent');
+  });
+});
+
 describe('in a meeting (R51)', () => {
   const manager = resolvePolicy(policies, { sphere: 'work', role: 'manager' });
   const family = resolvePolicy(policies, { sphere: 'family' });

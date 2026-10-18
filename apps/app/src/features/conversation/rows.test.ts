@@ -46,3 +46,31 @@ describe('a WhatsApp group brought over (M16 C3g)', () => {
     ]);
   });
 });
+
+describe('a group of many (M16 D2b)', () => {
+  it('draws one tick, whoever has read, where nothing tells the sender', () => {
+    const people = (n: number) =>
+      Array.from({ length: n }, (_, i) => ({
+        userId: i === 0 ? ME : `p${i}`,
+        role: i === 0 ? 'owner' : 'member',
+        person: { id: i === 0 ? ME : `p${i}`, displayName: `Person ${i}` },
+        readSeq: 1,
+        deliveredSeq: 1,
+      }));
+    const conversation = (n: number) =>
+      ({ kind: 'group', business: null, participants: people(n) }) as never;
+    const delivery = (n: number) =>
+      buildRows({
+        messages: [line(1, '2024-05-01T18:00:00.000Z', {})],
+        pending: [],
+        conversation: conversation(n),
+        me: ME,
+        unreadFrom: null,
+        now: new Date('2024-05-02T09:00:00.000Z'),
+        timeZone: 'UTC',
+        locale: 'en-GB',
+      }).flatMap((r) => (r.type === 'message' ? [r.delivery] : []))[0];
+    expect(delivery(100)).toBe('read');
+    expect(delivery(101)).toBe('sent');
+  });
+});

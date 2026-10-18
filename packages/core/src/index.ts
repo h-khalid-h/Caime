@@ -31,6 +31,7 @@ export * from './imports';
 export * from './intelligence';
 export * from './kit-cards';
 export * from './kits';
+export * from './large-group';
 export * from './locale';
 export * from './location';
 export * from './marketplace';

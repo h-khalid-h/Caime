@@ -269,6 +269,12 @@ export interface NotificationContext {
   busyUntil?: string | null;
   /** The sender's sphere: only the professional spheres are held by a meeting. */
   sphere?: Sphere | null;
+  /**
+   * A group past a hundred people (`isLargeGroup`), and the sender is nobody the recipient
+   * knows: no relationship, no connection (M16 D2b, R97 (3)). What isn't for them waits in the
+   * inbox.
+   */
+  crowd?: boolean;
 }
 
 export interface NotificationDecision {
@@ -356,6 +362,11 @@ export function decideNotification(
   if (level === 'urgency') return push(tr('{who}urgent, allowed to break through', { who }));
 
   if (ctx.muted) return silent('Muted conversation');
+  // A crowd (M16 D2b): someone they don't know writing to everyone waits in the inbox. What's for
+  // them (a mention, a reply, a question or a request to them) alerts as anywhere, and so does
+  // everything in a group they made a priority; so do the people they know, by their own rules.
+  if (ctx.crowd && level === 'activity' && ctx.conversationPriority !== 'priority')
+    return silent(tr('A big group: only what’s for you alerts you'));
   if (
     ctx.quietHours &&
     isWithinSchedule(ctx.quietHours, ctx.now, ctx.timeZone) &&

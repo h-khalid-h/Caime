@@ -1,5 +1,6 @@
 import type { ConversationView, MessageView } from '@caime/core/api';
 import { formatDayHeading } from '@caime/core/format';
+import { isLargeGroup } from '@caime/core/large-group';
 import type { OutboxItem } from '@/state/outbox';
 import type { Delivery } from './MessageBubble';
 
@@ -82,6 +83,9 @@ function deliveryOf(
     if (business.readSeq !== null && business.readSeq >= m.seq) return 'read';
     return business.deliveredSeq >= m.seq ? 'delivered' : 'sent';
   }
+  // A group of many shows no ticks (M16 D2b): nothing tells the sender who has it.
+  if (conversation && isLargeGroup(conversation.kind, conversation.participants.length))
+    return 'sent';
   // For the team, only the customer's side counts, not each other's.
   const others =
     conversation?.participants.filter(

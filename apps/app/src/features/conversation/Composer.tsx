@@ -7,6 +7,7 @@ import type {
 } from '@caime/core/api';
 import { listTitle } from '@caime/core/format';
 import { tr, trn } from '@caime/core/i18n';
+import { isLargeGroup } from '@caime/core/large-group';
 import { SUBJECT_MAX, subjectFromText } from '@caime/core/mail';
 import { mentionAt, mentionCandidates, mentionedIn, mentionText } from '@caime/core/mentions';
 import { isSystemKind } from '@caime/core/system-ids';
@@ -146,6 +147,8 @@ export const Composer = forwardRef<ComposerHandle, ComposerProps>(function Compo
   // what's being written stays on this device (never mirrored to the account, nor kept).
   const privately = where.private;
   const caimes = isSystemKind(conversation.other?.person.kind);
+  // Nobody is seen typing in a group of many (M16 D2b), so nothing says it.
+  const crowd = isLargeGroup(conversation.kind, conversation.participants.length);
   const stored = useDrafts((s) => (privately ? s.local[id] : s.drafts[id]));
   const [text, setText] = useState(
     () => stored ?? (privately ? '' : (conversation.me.draft ?? '')),
@@ -307,7 +310,7 @@ export const Composer = forwardRef<ComposerHandle, ComposerProps>(function Compo
     setText(v);
     if (privately) useDrafts.getState().setLocal(id, v);
     else useDrafts.getState().set(id, v);
-    if (v.trim()) realtime.typing(id);
+    if (v.trim() && !crowd) realtime.typing(id);
   };
 
   const send = useCallback(async () => {

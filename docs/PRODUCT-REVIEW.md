@@ -1932,7 +1932,12 @@ with its reason, so it isn't proposed again without new facts.
   space and group join links: the on-ramp WhatsApp groups and Slack teams need, with acceptance
   where a minor would meet strangers (built in M16 C3h: a link may ask, each person let in by an
   adult who runs the place; someone under 18 asks only where a verified organization or an adult
-  connection of theirs runs it, as R98 (3) has it, and never through a link that lets people in). (4) *Automations are recipes that belong to a conversation
+  connection of theirs runs it, as R98 (3) has it, and never through a link that lets people in).
+  A group past a hundred is a crowd (M16 D2b): nobody's ticks, nobody seen typing, and what
+  someone a member doesn't know says to everyone waits in that member's inbox, while a mention,
+  a reply, a question or a request to them, the people they know and a group they made a
+  priority still alert them. Where WhatsApp mutes a big group whole and Slack pushes only
+  mentions, Caime keeps who matters to each person. (4) *Automations are recipes that belong to a conversation
   or a space* (R19): a message, a card posted or moved, a task due, no reply in N hours or a time
   of day; conditions as the save-to-collection rule has them; actions that are Cai's suggestions
   by default (R12), a task, a reminder, assign or escalate, or a signed delivery. (5) *The

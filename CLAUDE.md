@@ -1680,11 +1680,28 @@ appointment from a catalog).
 - Telling a conversation's people about a message goes through `notifyRecipients`
   (`lib/message-effects.ts`): `prepareFor` reads what the whole set needs (settings, rules,
   relationships with the sender, `identitiesShownTo`, `loadPoliciesFor`, `activeConnectionIds`,
-  the open notifications) in six queries, then each recipient is written in their language four
-  at a time (`eachLimit`, `lib/batch.ts`); one conversation's `afterMessage` runs after its
-  previous message's (`inOrder`), so a burst consolidates. A new thing told to every member joins `prepareFor`,
-  never a query of its own per member; anything else that writes to many (a sweep, a fan-out)
-  goes through `eachLimit`, never a bare `Promise.all` over people. Whether people may see a read
+  the open notifications) in six queries and `readersOf` (`lib/i18n.ts`) their languages in one,
+  each one's notification is decided and worded in memory in their language (`notificationFor`
+  inside `inReader`), and `writeNotifications` writes the set at once (M16 D2b): one insert for
+  what's new, one `update … from (values …)` for what a burst adds to, a thousand rows a
+  statement, one event per set of the same words (`tellInSets`: an id only for a set of one),
+  the devices to push to found once (`withLivePush`) and pushed four at a time. The same at a
+  hundred and fifty people as at three hundred (`large-group.test.ts`); only `busyUntilFor`, for
+  whoever turned on holding while busy, is a query each. One conversation's `afterMessage` runs
+  after its previous message's (`inOrder`), so a burst consolidates. A new thing told to every
+  member joins `prepareFor` and `notificationFor`, never a query or a write of its own per
+  member; anything else that writes to many (a sweep, a fan-out) goes through `eachLimit`, never
+  a bare `Promise.all` over people. A group of many (core `isLargeGroup`, past `LARGE_GROUP`: a
+  group or a broadcast of more than a hundred) is a crowd: nobody's ticks (the receipts route
+  writes nothing for what arrived and tells a read to the reader's devices alone, counting who's
+  in it with its first look; the app sends no delivered acks and draws one tick), nobody typing (the
+  socket and the route drop it; the composer sends none), no trailing inbox read on each
+  message (`realtime/apply.ts` patches the row; only a message that names or answers the reader
+  reads it again), and in a group (not a broadcast) what someone a member doesn't know says to
+  everyone waits in their inbox (`decideNotification`'s `crowd`: no relationship and no
+  connection, not a mention, a reply, a question or request to them, not urgent, not a group
+  they made a priority). A new per-person event or ack in a group reads `isLargeGroup` first.
+  Whether people may see a read
   position is `readReceiptsVisibleTo` for them all at once (the conversation view, the receipts
   route; `readReceiptVisibleTo` is the one-person form of it), and a receipts event goes to
   whoever sent what it newly covers and the reader's own devices, never a whole group; someone

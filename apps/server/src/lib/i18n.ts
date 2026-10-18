@@ -229,17 +229,14 @@ export async function languageOf(ctx: AppContext, userId: string): Promise<Inter
   return (await readerOf(ctx, userId)).language;
 }
 
-/** The languages of many people at once (a fan-out): one query for whoever isn't cached. */
-export async function languagesOf(
-  ctx: AppContext,
-  userIds: string[],
-): Promise<Map<string, InterfaceLanguage>> {
+/** How to write to many people at once (a fan-out): one query for whoever isn't cached. */
+export async function readersOf(ctx: AppContext, userIds: string[]): Promise<Map<string, Reader>> {
   const now = Date.now();
-  const out = new Map<string, InterfaceLanguage>();
+  const out = new Map<string, Reader>();
   const missing: string[] = [];
   for (const id of new Set(userIds)) {
     const hit = known.get(id, now);
-    if (hit) out.set(id, hit.language);
+    if (hit) out.set(id, hit);
     else missing.push(id);
   }
   if (missing.length) {
@@ -251,10 +248,28 @@ export async function languagesOf(
     for (const user of rows) {
       const reader = readerOfAccount(user);
       keep(user.id, reader, now);
-      out.set(user.id, reader.language);
+      out.set(user.id, reader);
     }
   }
   return out;
+}
+
+/** The languages of many people at once (a fan-out): one query for whoever isn't cached. */
+export async function languagesOf(
+  ctx: AppContext,
+  userIds: string[],
+): Promise<Map<string, InterfaceLanguage>> {
+  const readers = await readersOf(ctx, userIds);
+  return new Map([...readers].map(([id, reader]) => [id, reader.language]));
+}
+
+/**
+ * Run `work` as `reader` reads (`asReader` for someone already looked up, `readersOf`): what a
+ * fan-out writes for each of many, with no query of its own.
+ */
+export function inReader<T>(reader: Reader | undefined, work: () => T): T {
+  const r = reader ?? NOBODY;
+  return inLanguage(r.language, work, r.variety, r.gender);
 }
 
 /** Their account changed what it says: the next thing written to them looks again. */

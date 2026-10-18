@@ -187,12 +187,13 @@ export function removeMessage(qc: QueryClient, conversationId: string, id: strin
   });
 }
 
+/** Patch one conversation's row in the inbox; the row as it now is, or null if it isn't there. */
 function patchItems(
   qc: QueryClient,
   conversationId: string,
   fn: (item: InboxItemView) => InboxItemView,
-): boolean {
-  let found = false;
+): InboxItemView | null {
+  let found: InboxItemView | null = null;
   patchCache<InboxAllResponse>(qc, qk.inboxAll, (data) => {
     if (!data) return data;
     return {
@@ -200,8 +201,8 @@ function patchItems(
       conversations: data.conversations
         .map((i) => {
           if (i.id !== conversationId) return i;
-          found = true;
-          return fn(i);
+          found = fn(i);
+          return found;
         })
         .sort(
           (a, b) =>
@@ -213,12 +214,15 @@ function patchItems(
   return found;
 }
 
-/** Show a new message in the inbox row right away; the refetch that follows re-sections it. */
+/**
+ * Show a new message in the inbox row right away; the refetch that follows re-sections it. The
+ * row as patched, or null when the inbox doesn't hold the conversation yet.
+ */
 export function applyMessageToInbox(
   qc: QueryClient,
   m: MessageView,
   opts: { mine: boolean; reading: boolean },
-): boolean {
+): InboxItemView | null {
   return patchItems(qc, m.conversationId, (item) => ({
     ...item,
     lastMessage: {

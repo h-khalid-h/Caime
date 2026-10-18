@@ -6,8 +6,9 @@ import { type Client, createTestApp, signup, type TestApp } from './helpers';
 /**
  * A message to a big group (docs/RESOURCES.md): what telling every member costs, in queries and
  * time, and whom an ack reaches. FANOUT_MEMBERS sets the size (80 in CI; larger runs by hand,
- * the numbers in RESOURCES). The checks are ceilings with room: per member, a handful of
- * queries; per ack, the senders it covers, never the whole group.
+ * the numbers in RESOURCES; past LARGE_GROUP a group is a crowd, whose acks reach nobody else,
+ * `large-group.test.ts`). The checks are ceilings with room: telling them, a fixed number of
+ * queries however many they are (M16 D2b); per ack, the senders it covers, never the whole group.
  */
 const MEMBERS = Number(process.env.FANOUT_MEMBERS ?? 80);
 
@@ -47,7 +48,7 @@ afterAll(async () => {
 });
 
 describe('a message to a big group', () => {
-  it(`tells ${MEMBERS - 1} members in a handful of queries each, and says how long it took`, async () => {
+  it(`tells ${MEMBERS - 1} members in a fixed number of queries, and says how long it took`, async () => {
     const before = t.queries();
     const started = performance.now();
     await noor.post(`/v1/conversations/${group}/messages`, {
@@ -67,9 +68,10 @@ describe('a message to a big group', () => {
       `fan-out to ${MEMBERS - 1}: ${queries} queries (${(queries / (MEMBERS - 1)).toFixed(1)} per member), ${ms} ms`,
     );
     expect(Number(told.n)).toBe(MEMBERS - 1);
-    // What's left per member is their own notification, its event and its push lookup: the
-    // settings, rules, relationships, identities and open notifications were read once for all.
-    expect(queries).toBeLessThan((MEMBERS - 1) * 5 + 40);
+    // Nothing per member (M16 D2b): their settings, rules, relationships, identities, languages
+    // and open notifications read once for all, their notifications written in one statement,
+    // the devices to push to looked up once (34 measured for 79, as for 303 in a crowd).
+    expect(queries).toBeLessThan(45);
   });
 
   it('an ack reaches whoever sent what it covers, and the reader’s own devices, not the group', async () => {

@@ -3,6 +3,7 @@
  * signal events invalidate the queries they affect (refetched once, debounced).
  */
 import type { RealtimeEvent } from '@caime/core/api';
+import { isLargeGroup } from '@caime/core/large-group';
 import type { QueryClient } from '@tanstack/react-query';
 import { endpoints } from '@/api/endpoints';
 import { qk } from '@/api/keys';
@@ -119,21 +120,28 @@ export function applyEvent(qc: QueryClient, event: RealtimeEvent, me: string): v
       upsertMessage(qc, m);
       const reading = useLive.getState().openConversationId === m.conversationId;
       if (m.senderId) useLive.getState().clearTyping(m.conversationId, m.senderId);
-      const known = applyMessageToInbox(qc, m, { mine, reading });
-      if (!known) invalidate(qk.inbox, 'inbox');
+      const item = applyMessageToInbox(qc, m, { mine, reading });
+      // A group of many (M16 D2b): nobody's ticks are shown there, so nothing says it arrived,
+      // and its every message is no reason for hundreds of devices to read their inboxes again.
+      const crowd = item !== null && isLargeGroup(item.kind, item.memberCount);
+      if (!item) invalidate(qk.inbox, 'inbox');
       else {
         // The patch carries the row (preview, unread, order). What it can't know is a move
         // between sections, which only a message to me can make (a mention, a question or a
-        // request): that is read again soon, and the rest in one trailing read a quarter-minute
-        // on, since the inbox is the heaviest read there is (docs/RESOURCES.md).
-        const moves = !mine && (m.mentions.includes(me) || m.isQuestion || m.isRequest);
-        soon(
-          'inbox',
-          () => void qc.invalidateQueries({ queryKey: qk.inbox }),
-          moves ? 1200 : 15_000,
-        );
+        // request; in a crowd a question or request only when it answers me, as the server
+        // reads a group): that is read again soon, and the rest in one trailing read a
+        // quarter-minute on, since the inbox is the heaviest read there is (docs/RESOURCES.md).
+        // A crowd's patch stands until the next read.
+        const asks = (m.isQuestion || m.isRequest) && (!crowd || m.replyTo?.senderId === me);
+        const moves = !mine && (m.mentions.includes(me) || asks);
+        if (moves || !crowd)
+          soon(
+            'inbox',
+            () => void qc.invalidateQueries({ queryKey: qk.inbox }),
+            moves ? 1200 : 15_000,
+          );
       }
-      if (!mine) ackDelivered(m.conversationId, m.seq);
+      if (!mine && !crowd) ackDelivered(m.conversationId, m.seq);
       // Dates, amounts, open items and what's shared are read from messages: refresh them.
       soon(
         `memory:${m.conversationId}`,

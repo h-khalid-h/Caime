@@ -8,6 +8,7 @@ import {
   decideNotification,
   detectEmergingTopic,
   firstName,
+  isLargeGroup,
   type NotificationKind,
   type RelationshipPolicy,
   resolvePolicy,
@@ -17,6 +18,7 @@ import {
   systemAccountOf,
   tr,
   trn,
+  uuidv7,
 } from '@caime/core';
 import { sql } from 'kysely';
 import type { AppContext } from '../context';
@@ -26,11 +28,11 @@ import { runAutomations } from './automations';
 import { eachLimit } from './batch';
 import { busyUntilFor } from './calendar';
 import { isGroupTopic } from './conversations';
-import { asReader } from './i18n';
+import { asReader, inReader, readersOf } from './i18n';
 import { enqueue, registerPeriodic } from './jobs';
 import { queueMailOut } from './mail-out';
 import { analyseText, messagePreview } from './messages';
-import { notify } from './notify';
+import { runNotificationHooks, withLivePush } from './notify';
 import {
   activeConnectionIds,
   activeRelationships,
@@ -253,6 +255,9 @@ async function effectsOf(ctx: AppContext, message: Message, read: Analysis | nul
   }
   const addressed = (userId: string) =>
     conversation.kind === 'direct' || message.mentions.includes(userId) || replyToSender === userId;
+  // A group of many (M16 D2b): a stranger's word to everyone waits in each inbox. Never a
+  // broadcast, whose every post is for everyone in it.
+  const crowd = conversation.kind === 'group' && isLargeGroup(conversation.kind, members.length);
 
   await Promise.all([
     notifyRecipients(
@@ -265,6 +270,7 @@ async function effectsOf(ctx: AppContext, message: Message, read: Analysis | nul
         addressed: addressed(r.user_id),
         isReplyToThem: replyToSender === r.user_id,
       })),
+      { crowd },
     ),
     suggest(ctx, conversation, message, analysis, sender, recipients, addressed),
     detectTopic(ctx, conversation, message),
@@ -427,8 +433,10 @@ async function notifyBusiness(
     );
 }
 
-/** How many recipients are written to at once: a group's message never floods the pool. */
+/** How many people's devices are pushed to at once: a group's message never floods the pool. */
 const FANOUT_CONCURRENCY = 4;
+/** The most rows one statement writes: a group of thousands is a few statements. */
+const WRITE_BATCH = 1000;
 
 interface Target {
   recipient: Recipient;
@@ -440,14 +448,22 @@ interface NotifyOpts {
   context?: string;
   /** An edit named them: news of its own, never counted as another message in a burst. */
   edited?: boolean;
+  /**
+   * A group past a hundred people (`isLargeGroup`, M16 D2b): what someone the recipient doesn't
+   * know says to everyone waits in their inbox (`decideNotification`'s `crowd`).
+   */
+  crowd?: boolean;
 }
 
 /**
  * Tell a set of recipients about one message. What they all need (their settings and rules,
  * their relationship with the sender, how the sender shows themselves to each, the
- * conversation's title, their open notification of it) is read once for the whole set, in a
- * handful of queries, and then each is written in their own language (R54), a few at a time
- * (convention 14): a group of eighty costs eighty notifications, not eighty of everything.
+ * conversation's title, their open notification of it, their languages) is read once for the
+ * whole set, in a handful of queries; each one's notification is then decided and worded in
+ * memory, in their own language (R54), and the set is written at once (M16 D2b): one insert for
+ * what's new, one update for what a burst adds to, an event for each set of the same words, and
+ * the devices to push to found once. A group of five hundred costs a few statements, not five
+ * hundred of everything (convention 14).
  */
 async function notifyRecipients(
   ctx: AppContext,
@@ -458,18 +474,34 @@ async function notifyRecipients(
   opts: NotifyOpts = {},
 ): Promise<void> {
   if (!targets.length) return;
-  const prepared = await prepareFor(
-    ctx,
-    conversation,
-    sender,
-    targets.map((t) => t.recipient.user_id),
-    opts,
+  const ids = targets.map((t) => t.recipient.user_id);
+  const [prepared, readers] = await Promise.all([
+    prepareFor(ctx, conversation, sender, ids, opts),
+    readersOf(ctx, ids),
+  ]);
+  const now = ctx.now();
+  // In a meeting, and asked for work to wait (R51): looked up only for whoever asked, one query
+  // each, a few at a time.
+  const busy = new Map<string, Date | null>();
+  const holding = ids.filter(
+    (id) =>
+      (prepared.users.get(id)?.preferences as { holdWhileBusy?: boolean } | null)?.holdWhileBusy,
   );
-  await eachLimit(targets, FANOUT_CONCURRENCY, (target) =>
-    asReader(ctx, target.recipient.user_id, () =>
-      writeForRecipient(ctx, conversation, message, sender, target, prepared, opts),
-    ),
-  );
+  await eachLimit(holding, FANOUT_CONCURRENCY, async (id) => {
+    busy.set(id, await busyUntilFor(ctx, id, now));
+  });
+  const told = targets.flatMap((target) => {
+    const userId = target.recipient.user_id;
+    const one = inReader(readers.get(userId), () =>
+      notificationFor(conversation, message, sender, target, prepared, {
+        ...opts,
+        now,
+        busyUntil: busy.get(userId) ?? null,
+      }),
+    );
+    return one ? [one] : [];
+  });
+  await writeNotifications(ctx, conversation, told, now);
 }
 
 /** Everything a set of recipients shares, loaded once (see `notifyRecipients`). */
@@ -576,17 +608,39 @@ interface Sender {
   labelled?: 'agent' | 'automated';
 }
 
-async function writeForRecipient(
-  ctx: AppContext,
+/** One person's notification of a message, decided and worded, waiting to be written. */
+interface Told {
+  userId: string;
+  /** The open notification a burst adds this message to, or null for a new one. */
+  into: string | null;
+  kind: string;
+  level: 'activity' | 'attention' | 'urgency';
+  title: string;
+  body: string | null;
+  data: Record<string, unknown>;
+  /** What a device is told when a burst adds to its notification (the data, as before). */
+  told: Record<string, unknown>;
+  quotes: string[];
+  count: number;
+  delivery: 'push' | 'silent' | 'held';
+  holdUntil: Date | null;
+  reason: string;
+}
+
+/**
+ * Decide and word one recipient's notification, in their language (run inside their reader's
+ * scope): nothing is read or written here, so a group's is a loop in memory.
+ */
+function notificationFor(
   conversation: Conversation,
   message: Message,
   sender: Sender,
   { recipient, addressed, isReplyToThem }: Target,
   p: Prepared,
-  opts: NotifyOpts,
-): Promise<void> {
+  opts: NotifyOpts & { now: Date; busyUntil: Date | null },
+): Told | null {
   const user = p.users.get(recipient.user_id);
-  if (!user) return;
+  if (!user) return null;
   const policies = p.policies.get(recipient.user_id) ?? [];
   const rels = p.relationships.get(recipient.user_id) ?? [];
   // Named as the sender shows themselves to this person (PRD §35), on a lock screen too; an
@@ -611,12 +665,7 @@ async function writeForRecipient(
         : message.is_question && addressed
           ? 'question'
           : 'message';
-  const now = ctx.now();
-  // In a meeting, and asked for work to wait (R51): looked up only then, one query.
-  const holdWhileBusy = Boolean(
-    (user.preferences as { holdWhileBusy?: boolean } | null)?.holdWhileBusy,
-  );
-  const busyUntil = holdWhileBusy ? await busyUntilFor(ctx, recipient.user_id, now) : null;
+  const now = opts.now;
   // A request they haven't accepted, or declined, never interrupts them (R14).
   const pendingRequest =
     recipient.request_state === 'pending' || recipient.request_state === 'declined';
@@ -638,8 +687,10 @@ async function writeForRecipient(
           quietHours:
             (user.quiet_hours as { days: number[]; start: string; end: string } | null) ?? null,
           relationshipLabel: rels[0] ? relationshipView(rels[0]).label : null,
-          busyUntil: busyUntil?.toISOString() ?? null,
+          busyUntil: opts.busyUntil?.toISOString() ?? null,
           sphere: (rels[0]?.sphere as Sphere | undefined) ?? null,
+          // Someone they know is heard in a crowd by their own rules (M16 D2b).
+          crowd: Boolean(opts.crowd) && !rels.length && !connectionId,
         },
       );
 
@@ -656,7 +707,6 @@ async function writeForRecipient(
       : (conversation.title ?? tr('Group'));
   const preview =
     conversation.privacy_class === 'private' ? tr('New message') : messagePreview(message);
-  const groupKey = `conv:${conversation.id}`;
   const existing = opts.edited ? undefined : p.existing.get(recipient.user_id);
 
   const data = {
@@ -686,41 +736,174 @@ async function writeForRecipient(
             context,
           },
         );
-    await ctx.db
-      .updateTable('notifications')
-      .set({
-        count,
-        level,
-        title,
-        body: salient ? preview : existing.body,
-        data: JSON.stringify({ ...data, salient: salient && kind !== 'message' }),
-        quotes,
-        delivery: decision.deliver === 'push' ? 'push' : existing.delivery,
-        hold_until: decision.holdUntil ? new Date(decision.holdUntil) : existing.hold_until,
-        reason: decision.reason,
-        updated_at: now,
-      })
-      .where('id', '=', existing.id)
-      .execute();
-    await ctx.bus.publish([recipient.user_id], {
-      type: 'notification.updated',
-      data: { id: existing.id, count, title, level, body: salient ? preview : existing.body, data },
-    });
-    return;
+    return {
+      userId: recipient.user_id,
+      into: existing.id,
+      kind: existing.kind,
+      level,
+      title,
+      body: salient ? preview : existing.body,
+      data: { ...data, salient: salient && kind !== 'message' },
+      told: data,
+      quotes,
+      count,
+      delivery: decision.deliver === 'push' ? 'push' : existing.delivery,
+      holdUntil: decision.holdUntil ? new Date(decision.holdUntil) : existing.hold_until,
+      reason: decision.reason,
+    };
   }
-  await notify(ctx, {
+  return {
     userId: recipient.user_id,
+    into: null,
     kind: pendingRequest ? 'message_request' : kind,
     level: decision.level,
     title: isGroup ? `${senderName} · ${groupTitle}` : `${senderName}${context}`,
     body: preview,
     data: { ...data, salient: kind !== 'message' },
+    told: { ...data, salient: kind !== 'message' },
     quotes: [message.id],
-    groupKey,
+    count: 1,
     delivery: decision.deliver,
     holdUntil: decision.holdUntil ? new Date(decision.holdUntil) : null,
     reason: decision.reason,
-  });
+  };
+}
+
+/**
+ * Write what was decided for a set of people (M16 D2b): the new in one insert and what a burst
+ * adds to in one update, a thousand rows a statement; each set of devices told the same words
+ * hears one event (with the notification's id when it's one person's, else none, and their list
+ * refreshes); the devices to push to are found once, and only what's new and meant to alert is
+ * pushed, as before.
+ */
+async function writeNotifications(
+  ctx: AppContext,
+  conversation: Conversation,
+  told: Told[],
+  now: Date,
+): Promise<void> {
+  const groupKey = `conv:${conversation.id}`;
+  const fresh = told.filter((t) => !t.into).map((t) => ({ ...t, id: uuidv7() }));
+  const added = told.filter((t) => t.into);
+  for (let i = 0; i < fresh.length; i += WRITE_BATCH)
+    await ctx.db
+      .insertInto('notifications')
+      .values(
+        fresh.slice(i, i + WRITE_BATCH).map((t) => ({
+          id: t.id,
+          user_id: t.userId,
+          kind: t.kind,
+          level: t.level,
+          title: t.title,
+          body: t.body,
+          data: t.data,
+          quotes: t.quotes,
+          group_key: groupKey,
+          delivery: t.delivery,
+          hold_until: t.holdUntil,
+          reason: t.reason,
+        })),
+      )
+      .execute();
+  for (let i = 0; i < added.length; i += WRITE_BATCH) {
+    const rows = added.slice(i, i + WRITE_BATCH).map(
+      (t) =>
+        sql`(${t.into}::uuid, ${t.count}::int, ${t.level}::text, ${t.title}::text, ${t.body}::text,
+          ${JSON.stringify(t.data)}::jsonb, ${t.quotes}::uuid[], ${t.delivery}::text,
+          ${t.holdUntil}::timestamptz, ${t.reason}::text)`,
+    );
+    await sql`
+      update notifications as n
+      set count = v.count, level = v.level, title = v.title, body = v.body, data = v.data,
+          quotes = v.quotes, delivery = v.delivery, hold_until = v.hold_until, reason = v.reason,
+          updated_at = ${now}
+      from (values ${sql.join(rows)})
+        as v (id, count, level, title, body, data, quotes, delivery, hold_until, reason)
+      where n.id = v.id
+    `.execute(ctx.db);
+  }
+  await tellInSets(
+    ctx,
+    'notification.created',
+    fresh.map((t) => ({
+      userId: t.userId,
+      id: t.id,
+      words: { kind: t.kind, level: t.level, title: t.title, body: t.body, data: t.told },
+    })),
+  );
+  await tellInSets(
+    ctx,
+    'notification.updated',
+    added.map((t) => ({
+      userId: t.userId,
+      id: t.into as string,
+      words: { count: t.count, title: t.title, level: t.level, body: t.body, data: t.told },
+    })),
+  );
+  const pushing = fresh.filter((t) => t.delivery === 'push');
+  // Devices for many are looked up at once; for a few, each push looks up its own.
+  const live =
+    pushing.length > FANOUT_CONCURRENCY
+      ? await withLivePush(
+          ctx,
+          pushing.map((t) => t.userId),
+        )
+      : null;
+  await eachLimit(
+    pushing.filter((t) => !live || live.has(t.userId)),
+    FANOUT_CONCURRENCY,
+    (t) =>
+      runNotificationHooks(ctx, t.id, {
+        userId: t.userId,
+        kind: t.kind,
+        level: t.level,
+        title: t.title,
+        body: t.body,
+        data: t.data,
+        quotes: t.quotes,
+        groupKey,
+        delivery: t.delivery,
+        holdUntil: t.holdUntil,
+        reason: t.reason,
+      }),
+  );
+}
+
+/**
+ * One event for each set of people told the same words (their language, the name the sender
+ * shows them, a burst's count): a group of five hundred hears a handful, not five hundred. Only
+ * a set of one carries its notification's id.
+ */
+async function tellInSets(
+  ctx: AppContext,
+  type: 'notification.created' | 'notification.updated',
+  told: Array<{
+    userId: string;
+    id: string;
+    words: {
+      kind?: string;
+      count?: number;
+      level: 'activity' | 'attention' | 'urgency';
+      title: string;
+      body: string | null;
+      data: Record<string, unknown>;
+    };
+  }>,
+): Promise<void> {
+  const sets = new Map<string, typeof told>();
+  for (const t of told) {
+    const key = JSON.stringify(t.words);
+    const set = sets.get(key);
+    if (set) set.push(t);
+    else sets.set(key, [t]);
+  }
+  for (const set of sets.values()) {
+    const first = set[0] as (typeof told)[number];
+    await ctx.bus.publish(
+      set.map((t) => t.userId),
+      { type, data: { id: set.length === 1 ? first.id : null, ...first.words } },
+    );
+  }
 }
 
 /**
