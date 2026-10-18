@@ -17,6 +17,9 @@ export const qk = {
   org: (handle: string) => ['org', handle] as const,
   orgSpaces: (id: string) => ['org-spaces', id] as const,
   orgDoor: (id: string) => ['org-door', id] as const,
+  /** Its open team invites (M16 C3a), and one opened by its link. */
+  teamInvites: (orgId: string) => ['team-invites', orgId] as const,
+  teamInvite: (token: string) => ['team-invite', token] as const,
   orgCheckout: (id: string) => ['org-checkout', id] as const,
   orgInbox: (orgId: string, view: string) => ['org-inbox', orgId, view] as const,
   orgInsights: (orgId: string, days: number) => ['org-insights', orgId, days] as const,
@@ -140,6 +143,8 @@ export const qk = {
   allOrgListings: ['org-listings'] as const,
   allOrgInboxes: ['org-inbox'] as const,
   allOrgDoors: ['org-door'] as const,
+  /** Every organization's open team invites (M16 C3a). */
+  allTeamInvites: ['team-invites'] as const,
   allUpdates: ['updates'] as const,
   allCalendars: ['calendar'] as const,
   allOrgCalendars: ['org-calendar'] as const,

@@ -363,7 +363,9 @@ kept for ${span(KEPT_DAYS.activity)}, and copies of what you send an organizatio
 apps, for ${span(KEPT_DAYS.appDeliveries)}. Counts that name nobody are kept a little longer than
 a year.</li>
 <li>An invite link that ran out or was taken back is kept for ${span(KEPT_DAYS.spentInvites)}, then
-forgotten; the people who joined through it stay your connections. A notification is kept for
+forgotten; the people who joined through it stay your connections. An organization&rsquo;s invite
+to its team, with the address it was sent to, is kept the same way once it ran out, was taken back
+or was used; whoever joined through it stays on the team. A notification is kept for
 ${span(KEPT_DAYS.notifications)}, then goes.</li>
 ${
   f.mailDomain

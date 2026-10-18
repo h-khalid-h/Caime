@@ -2029,9 +2029,42 @@ graph) and the number that will show it; one that sharpens none is hygiene and s
       the E2E `front-door.spec.ts` (closed days added in the setup leave the item page without
       times that day; the door shows the Book link and code; Start free signs a new owner up and
       lands them on `/orgs/new`).
+- [x] C3a. Team invites by link and by email (2026-10-18, review §1 H3: staff couldn't be
+      invited, only added once connected): an organization's owner or admins make a link to share,
+      or send one to an address (`POST /orgs/:id/invites`; an admin only from the owner; fifty open
+      at once; `TEAM_INVITE_DAYS`, fourteen), list and take them back (`GET`, `DELETE
+      …/invites/:id`), from the team's Add sheet (`TeamInvites.tsx`, above the people they're
+      connected with). The token is shown once and kept as its hash (`org_invites`, migration
+      0094), masked in the log; whoever has a link opens `/t/<token>` (a visitor's page from the
+      page parts: whose team, who asks, the role, Join or Sign in, both carrying the link), and
+      signed in, the accept screen (`t/[token]`) asks before joining, since the team's customer
+      conversations come with it; someone who signed up through it joins in one tap on
+      onboarding's last step and lands in the team's Business inbox. One sent to an address is for
+      whoever proves it (the sign-in address once confirmed, or one added and proven, R91; anyone
+      else is told it's for another address, never which) and is spent by its use; a link counts
+      its uses until it runs out. Everyone joins through `seatOnTeam` (`lib/orgs.ts`, which the
+      members route uses too): under the organization's row, so two at once never pass the plan's
+      room together and a closed one takes nobody; the team hears it (`business.updated` without a
+      thread refreshes its page live), and whoever invited is told. Invites are in the
+      organization's export and go when it's cleared; spent ones are swept after
+      `KEPT_DAYS.spentInvites`, as invite links are (the privacy page says so). Sharpens
+      advantages 2 and 4 (a clinic brings its whole team, each on their own one identity, at one
+      price) and adoption (review §1 H3). Verified with `team-invites.test.ts` (made, listed
+      without the token, the hash alone kept; the visitor's page; opened and accepted, the
+      customer's earlier conversation in the new member's inbox, twice is once, the use counted,
+      the inviter told, the audit naming the invite; taken back, run out and swept; who may make
+      and for whom, admins only from the owner, never under 18, the plan's room with nothing spent
+      on a refusal; an address mailed once, refused to anyone else and to the address's owner until
+      confirmed, accepted after, spent; an address proven later; no mailer, no sending but links
+      still; a closed organization's invites dead, in its export, gone when it's cleared),
+      `log.test.ts`, `phoneBar.test.ts`, and the E2E `team-invites.spec.ts` (the owner makes a
+      link in the Add sheet; someone new reads the page without the app, signs up through it,
+      joins in one tap on onboarding and lands in the Business inbox; the owner's team list shows
+      them without a reload). Mailing an invite live needs `SMTP_URL` (⛔ the owner's); links work
+      without it.
 - [ ] C2–C3. The rest of the front door ("For me / For my organization" for whoever signs up
-      directly, a checklist that moves past DNS); team invites by link and email with domain
-      auto-join; space and group join links; invite-first sharing, and WhatsApp or SMS first on a
+      directly, a checklist that moves past DNS); domain auto-join for a verified organization
+      (C3b); space and group join links; invite-first sharing, and WhatsApp or SMS first on a
       browser without a contact picker; "Copy guest link"; the iPhone "Add to Home Screen" card;
       an expired-invite page; "Keep this" on the guest page.
 - [ ] D. Performance and integrity: the aliased `selectAll` guard and its eleven sites; people
@@ -3670,6 +3703,11 @@ graph) and the number that will show it; one that sharpens none is hygiene and s
   journeys, safety, reliability, performance, intelligence, mail and calendar, chat, integrations,
   business and code integrity; the matrix against WhatsApp, Signal, Slack, Calendly and Workspace;
   an age-assurance design; the integration framework mapped to the code; plan M16 (A–H).
+- 2026-10-18 — M16 C3a: team invites by link and by email. An owner or admin hands out a link
+  (or sends one to an address) from the team's Add sheet; whoever opens it reads whose team it is
+  without the app, signs up through it and joins in one tap; an emailed one is for whoever proves
+  that address. One path onto a team (`seatOnTeam`) under the organization's row. C2a live on
+  cai.me (`9930faa`).
 - 2026-10-18 — M16 C2a: closed days (holidays) kept with the hours and skipped by the slots
   everywhere; the Book link and its code beside the door; "Start free" on the page for
   organizations lands a new owner on starting theirs through onboarding. With it, a group call's

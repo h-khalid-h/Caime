@@ -116,6 +116,14 @@ export async function sweepRecords(ctx: AppContext): Promise<void> {
       where coalesce(revoked_at, expires_at) < ${before(KEPT_DAYS.spentInvites)}
       limit ${LOT} for update skip locked)`,
   );
+  // A team invite (M16 C3a) the same way, the address it was sent to with it: run out, taken
+  // back or spent (a spent one is taken back as it's used).
+  await inLots(
+    ctx,
+    sql`delete from org_invites where id in (select id from org_invites
+      where least(coalesce(revoked_at, expires_at), expires_at) < ${before(KEPT_DAYS.spentInvites)}
+      limit ${LOT} for update skip locked)`,
+  );
   // A passkey ceremony nobody finished (R36): its challenge is no use after its few minutes.
   await inLots(
     ctx,

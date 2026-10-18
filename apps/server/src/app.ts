@@ -105,6 +105,7 @@ import { safetyRoutes } from './modules/safety';
 import { searchRoutes } from './modules/search';
 import { spaceRoutes } from './modules/spaces';
 import { suggestionRoutes } from './modules/suggestions';
+import { teamInviteRoutes } from './modules/team-invites';
 import { tokenRoutes } from './modules/tokens';
 import { updateRoutes } from './modules/updates';
 import { registerWorkers } from './modules/workers';
@@ -344,6 +345,7 @@ export async function buildApp(config: Config, options: BuildOptions = {}): Prom
       await searchRoutes(v1, ctx);
       await spaceRoutes(v1, ctx);
       await orgRoutes(v1, ctx);
+      await teamInviteRoutes(v1, ctx);
       await handleRoutes(v1, ctx);
       await businessRoutes(v1, ctx);
       await updateRoutes(v1, ctx);

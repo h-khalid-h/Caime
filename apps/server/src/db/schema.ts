@@ -228,6 +228,20 @@ export interface InvitesTable {
   created_at: Generated<Date>;
 }
 
+/** An organization's team invite (M16 C3a, migration 0094): a hashed token, a role, maybe an address. */
+export interface OrgInvitesTable {
+  id: string;
+  org_id: string;
+  token_hash: Buffer;
+  role: Defaulted<'agent' | 'admin'>;
+  email: string | null;
+  created_by: string | null;
+  uses: Defaulted<number>;
+  expires_at: Date;
+  revoked_at: NullableTimestamp;
+  created_at: Generated<Date>;
+}
+
 export interface CustomRolesTable {
   id: string;
   user_id: string;
@@ -1317,6 +1331,7 @@ export interface Database {
   connection_sides: ConnectionSidesTable;
   connection_requests: ConnectionRequestsTable;
   invites: InvitesTable;
+  org_invites: OrgInvitesTable;
   custom_roles: CustomRolesTable;
   relationships: RelationshipsTable;
   relationship_events: RelationshipEventsTable;

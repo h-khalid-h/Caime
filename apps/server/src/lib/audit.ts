@@ -66,6 +66,8 @@ export type AuditAction =
   | 'org.reclaimed'
   | 'org.deleted'
   | 'org.members_added'
+  | 'org.invite_made'
+  | 'org.invite_revoked'
   | 'org.member_removed'
   | 'org.left'
   | 'org.verified'

@@ -174,6 +174,7 @@ export async function registerWeb(app: FastifyInstance, ctx: AppContext): Promis
         page.kind === 'item' ||
         page.kind === 'collection' ||
         page.kind === 'invite' ||
+        page.kind === 'team-invite' ||
         page.kind === 'landing') &&
         !req.cookies?.[SESSION_COOKIE]);
     if (visitor) html = html.replace(/<script\b[^>]*\bsrc=[^>]*><\/script>\s*/g, '');

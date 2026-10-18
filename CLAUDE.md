@@ -371,6 +371,19 @@ appointment from a catalog).
   `lib/paths.ts` recognizes it, the `i/[token]` route accepts). A person's export lists their
   links; the privacy page says so. Under 18 (R29): an adult the inviter doesn't know through
   someone gets `status: 'requested'` (a request the inviter decides on), never a connection.
+- Team invites (M16 C3a, `lib/team-invites.ts`, `modules/team-invites.ts`): an owner or admin
+  makes a link (or sends one to an address, mailed after the response) from the team's Add sheet
+  (`features/orgs/TeamInvites.tsx`); its token (`t_…`) is shown once and kept as its hash, masked
+  in the log, open for core `TEAM_INVITE_DAYS`. `/t/<token>` is a visitor's page
+  (`publicTeamInvite`), `teamInviteIn` (`lib/paths.ts`) reads it, the `t/[token]` route asks before
+  joining, and onboarding joins someone who came through it in one tap. One sent to an address is
+  for whoever proves it (`addressedTo`: the sign-in address once confirmed, or a proven one) and is
+  spent by its use. Anyone joins a team only through `seatOnTeam` (`lib/orgs.ts`: under the
+  organization's row, the plan's room checked in that transaction, threads joined, the team told
+  with a `business.updated` that names no thread, which the app reads as "the team changed");
+  the members route and an invite both call it, and anything new that puts someone on a team
+  does too. `managerSeat` lives beside it. Invites are in `buildOrgExport`, deleted by
+  `clearClosedOrg`, and swept after `KEPT_DAYS.spentInvites` as invite links are.
 - Reserved handles (R35) are `RESERVED_HANDLES` and `isReservedHandle` beside `Handle` in
   `packages/core/src/schemas.ts`: the product's names (also inside other handles), its
   characters, staff words, and the names of its pages, top-level screens and web-root files. A

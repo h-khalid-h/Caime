@@ -4,8 +4,11 @@
  * calendar feed's address is what lets a calendar read it, so it's masked.
  */
 const CALENDAR_FEED = /\/calendar\/cal_[^/]*$/;
-/** An invite's token is the only key to it (R1): `/i/<token>`, `/v1/invites/<token>[/accept]`. */
-const INVITE_TOKEN = /\/(i|invites)\/[^/]{16,}(?=\/|$)/;
+/**
+ * An invite's token is the only key to it (R1): `/i/<token>`, `/v1/invites/<token>[/accept]`; a
+ * team invite's too (M16 C3a): `/t/<token>`, `/v1/team-invites/<token>[/accept]`.
+ */
+const INVITE_TOKEN = /\/(i|invites|t|team-invites)\/[^/]{16,}(?=\/|$)/;
 /** A meeting guest's link is their way in (R84): `/j/<token>`, `/v1/join/<token>`. */
 const GUEST_TOKEN = /\/(j|join)\/[^/]{16,}(?=\/|$)/;
 /** A mail's "Open in Caime" link (R75): `/v1/mail/seen/<token>`. */

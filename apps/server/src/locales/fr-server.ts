@@ -22,7 +22,6 @@ export const frServer: Catalog = {
   'Join {name} on {site}{context}: sign up in half a minute and you’re connected.':
     'Rejoignez {name} sur {site}{context} : inscrivez-vous en une demi-minute et vous êtes en contact.',
   'an invitation': 'une invitation',
-  from: 'de',
   about: 'sujet',
   'to join': 'pour rejoindre',
   'Sign up in half a minute and you’re connected with {name}, no app to install.':
@@ -1371,7 +1370,6 @@ export const frServer: Catalog = {
     'Ce numéro appartient à quelqu’un d’autre sur Caime.',
   'Phone numbers can’t be proven here yet. Try again later.':
     'Les numéros de téléphone ne peuvent pas encore être prouvés ici. Réessayez plus tard.',
-  'That doesn’t look like an email address.': 'Cela ne ressemble pas à une adresse e-mail.',
   'Write the number with its country code, like +20 101 234 5678.':
     'Écrivez le numéro avec l’indicatif du pays, comme +20 101 234 5678.',
   'That’s already yours.': 'C’est déjà à vous.',
@@ -1451,4 +1449,12 @@ export const frServer: Catalog = {
   'Your earlier booking here is still waiting for an answer. Join {site} with the same address to follow it.':
     'Votre réservation précédente ici attend encore une réponse. Rejoignez {site} avec la même adresse pour la suivre.',
   'They’ve left that call.': 'Cette personne a quitté l’appel.',
+  '{n} invites are open: take one back first.':
+    '{n} invitations sont ouvertes : retirez-en une d’abord.',
+  '{name} joined {org}’s team': '{name} a rejoint l’équipe de {org}',
+  'a team invitation': 'une invitation dans une équipe',
+  'The address it was sent to, alone': 'Seule l’adresse à laquelle elle a été envoyée',
+  'Whoever has this link': 'Quiconque a ce lien',
+  'Sign up or sign in, then join: its conversations with customers are in your Business inbox, no app to install.':
+    'Inscrivez-vous ou connectez-vous, puis rejoignez-la : ses conversations avec les clients sont dans votre boîte Entreprise, sans application à installer.',
 };

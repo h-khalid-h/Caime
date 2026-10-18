@@ -33,6 +33,20 @@ describe('what a request says of itself in the log', () => {
     expect(requestForLog({ method: 'GET', url: '/i/short' }).url).toBe('/i/short');
   });
 
+  it('never a team invite’s token, which puts whoever has it on a team (M16 C3a)', () => {
+    const token = `t_${'Qm9vay1hLXRhYmxl'.repeat(2)}LWZvci10d28Ab`;
+    expect(requestForLog({ method: 'GET', url: `/t/${token}?lang=ar` }).url).toBe('/t/…');
+    expect(requestForLog({ method: 'GET', url: `/v1/team-invites/${token}` }).url).toBe(
+      '/v1/team-invites/…',
+    );
+    expect(requestForLog({ method: 'POST', url: `/v1/team-invites/${token}/accept` }).url).toBe(
+      '/v1/team-invites/…/accept',
+    );
+    // The team's own list of them names no token.
+    const list = '/v1/orgs/0d6c1a9e-1111-4222-8333-444455556666/invites';
+    expect(requestForLog({ method: 'GET', url: list }).url).toBe(list);
+  });
+
   it('never a meeting guest’s link, which is their way in (R84)', () => {
     const token = 'cmg_Qm9vay1hLXRhYmxlLWZvci10d28';
     expect(requestForLog({ method: 'GET', url: `/j/${token}` }).url).toBe('/j/…');

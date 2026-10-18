@@ -158,6 +158,10 @@ import type {
   TaskResponse,
   TasksResponse,
   TaxonomyResponse,
+  TeamInviteAcceptResponse,
+  TeamInviteMadeResponse,
+  TeamInviteOpenResponse,
+  TeamInvitesResponse,
   ThreadResponse,
   TimeZonesView,
   UrlResponse,
@@ -528,6 +532,17 @@ export const endpoints = {
     api.patch<OrgResponse>(`/orgs/${id}`, body),
   addToOrg: (id: string, userIds: string[]) =>
     api.post<OkResponse>(`/orgs/${id}/members`, { userIds }),
+  /** Team invites (M16 C3a): the team's own, a new one (by link or to an address), taken back. */
+  teamInvites: (id: string) => api.get<TeamInvitesResponse>(`/orgs/${id}/invites`),
+  makeTeamInvite: (id: string, body: { role: 'agent' | 'admin'; email?: string }) =>
+    api.post<TeamInviteMadeResponse>(`/orgs/${id}/invites`, body),
+  revokeTeamInvite: (id: string, inviteId: string) =>
+    api.del<OkResponse>(`/orgs/${id}/invites/${inviteId}`),
+  /** One opened by whoever has its link, and accepted. */
+  openTeamInvite: (token: string) =>
+    api.get<TeamInviteOpenResponse>(`/team-invites/${encodeURIComponent(token)}`),
+  acceptTeamInvite: (token: string) =>
+    api.post<TeamInviteAcceptResponse>(`/team-invites/${encodeURIComponent(token)}/accept`),
   removeFromOrg: (id: string, userId: string) =>
     api.del<OkResponse>(`/orgs/${id}/members/${userId}`),
   updateOrgMember: (

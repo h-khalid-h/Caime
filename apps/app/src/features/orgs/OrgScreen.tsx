@@ -69,6 +69,8 @@ import { setupNextLine } from './setupSteps';
 const PlacesSpec = lazyPart(() => import('@/features/places/parts').then((m) => m.PlacesSpec));
 
 /** Loaded when it's shown: shared by several screens, needed by none at first. */
+// Inviting someone new (M16 C3a), loaded with the team's Add sheet.
+const TeamInvites = lazyPart(() => import('./TeamInvites').then((m) => m.TeamInvites));
 const PeoplePicker = lazyPart(() =>
   import('@/features/people/PeoplePicker').then((m) => m.PeoplePicker),
 );
@@ -759,7 +761,7 @@ export function OrgScreen({
           setPicked(new Set());
         }}
         title={tr('Add to the team')}
-        subtitle={tr('People you’re connected with, over 18. They answer for the organization.')}
+        subtitle={tr('They answer for the organization, over 18.')}
         footer={
           <Button
             label={
@@ -809,6 +811,10 @@ export function OrgScreen({
                 })}
           </Text>
         ) : null}
+        <TeamInvites orgId={org.id} orgName={org.name} owner={ownsOrg(org.myRole)} />
+        <Text variant="bodyStrong" style={{ paddingBottom: 8 }}>
+          {tr('Or add people you’re connected with')}
+        </Text>
         <PeoplePicker
           picked={picked}
           exclude={onTeam}

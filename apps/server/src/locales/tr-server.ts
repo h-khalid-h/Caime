@@ -19,7 +19,6 @@ export const turkishServer: Catalog = {
   'Join {name} on {site}{context}: sign up in half a minute and you’re connected.':
     '{name}{context} sizi {site} üzerinde bekliyor: yarım dakikada kaydolun, bağlantınız hazır olsun.',
   'an invitation': 'bir davet',
-  from: 'kimden',
   about: 'konu',
   'to join': 'katılım',
   'Sign up in half a minute and you’re connected with {name}, no app to install.':
@@ -1310,7 +1309,6 @@ export const turkishServer: Catalog = {
   'That number belongs to someone else on Caime.': 'Bu numara Caime’de başka birine ait.',
   'Phone numbers can’t be proven here yet. Try again later.':
     'Telefon numaraları burada henüz kanıtlanamıyor. Daha sonra yeniden deneyin.',
-  'That doesn’t look like an email address.': 'Bu bir e-posta adresine benzemiyor.',
   'Write the number with its country code, like +20 101 234 5678.':
     'Numarayı ülke koduyla yazın, örneğin +20 101 234 5678.',
   'That’s already yours.': 'Bu zaten sizin.',
@@ -1388,4 +1386,11 @@ export const turkishServer: Catalog = {
   'Your earlier booking here is still waiting for an answer. Join {site} with the same address to follow it.':
     'Buradaki önceki rezervasyonunuz hâlâ yanıt bekliyor. Takip etmek için aynı adresle {site} hesabı açın.',
   'They’ve left that call.': 'Bu kişi aramadan ayrıldı.',
+  '{n} invites are open: take one back first.': '{n} davet açık: önce birini geri alın.',
+  '{name} joined {org}’s team': '{name}, {org} ekibine katıldı',
+  'a team invitation': 'bir ekip daveti',
+  'The address it was sent to, alone': 'Yalnızca gönderildiği adres',
+  'Whoever has this link': 'Bu bağlantıya sahip olan herkes',
+  'Sign up or sign in, then join: its conversations with customers are in your Business inbox, no app to install.':
+    'Kaydolun ya da giriş yapın, ardından katılın: müşterilerle konuşmaları İşletme gelen kutunuzda, yüklenecek uygulama yok.',
 };

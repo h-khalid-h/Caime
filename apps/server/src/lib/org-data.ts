@@ -214,87 +214,95 @@ export async function buildOrgExport(
     .where('id', '=', orgId)
     .executeTakeFirstOrThrow();
   const closedAt = org.archived_at;
-  const [team, threads, checkout, listings, agent, apps, cards, updates] = await Promise.all([
-    // Its team now; closed, as it stood when it closed (every seat ended at that moment).
-    db
-      .selectFrom('org_members as m')
-      .innerJoin('users as u', 'u.id', 'm.user_id')
-      .select(['m.user_id', 'u.display_name', 'm.role', 'm.joined_at', 'u.kind'])
-      .where('m.org_id', '=', orgId)
-      .where((eb) => (closedAt ? eb('m.left_at', '=', closedAt) : eb('m.left_at', 'is', null)))
-      .execute(),
-    db
-      .selectFrom('business_threads as t')
-      .innerJoin('conversations as c', 'c.id', 't.conversation_id')
-      .leftJoin('users as u', 'u.id', 't.customer_id')
-      .leftJoin('organizations as fo', 'fo.id', 't.customer_org_id')
-      .select([
-        't.conversation_id',
-        't.customer_id',
-        't.resolved_at',
-        't.started_by_team',
-        't.erased_at',
-        'c.created_at',
-        'u.display_name as customer_name',
-        'u.handle as customer_handle',
-        'fo.id as for_org_id',
-        'fo.name as for_org_name',
-        'fo.handle as for_org_handle',
-      ])
-      .where('t.org_id', '=', orgId)
-      .orderBy('c.created_at')
-      .execute(),
-    // Its own checkout account (R65): the provider's id, never a key (Caime holds none).
-    db
-      .selectFrom('org_checkout')
-      .select(['provider', 'account_id', 'livemode', 'charges_enabled', 'connected_at'])
-      .where('org_id', '=', orgId)
-      .executeTakeFirst(),
-    // The apps published under it (R74), and where each listing stands.
-    db
-      .selectFrom('oauth_clients as a')
-      .innerJoin('users as d', 'd.id', 'a.owner_id')
-      .select([
-        'a.name',
-        'a.tagline',
-        'a.category',
-        'a.listed_at',
-        'a.reviewed_at',
-        'a.declined_reason',
-        'd.display_name as developer_name',
-        'd.handle as developer_handle',
-      ])
-      .where('a.org_id', '=', orgId)
-      .where('a.revoked_at', 'is', null)
-      .orderBy('a.created_at')
-      .execute(),
-    db
-      .selectFrom('org_agents')
-      .select(['knowledge', 'paused_at', 'created_at'])
-      .where('org_id', '=', orgId)
-      .executeTakeFirst(),
-    // Its own apps, stopped ones too (closing stops them all): never a token or a secret.
-    db
-      .selectFrom('org_apps')
-      .select(['id', 'name', 'scopes', 'webhook_url', 'events', 'created_at', 'revoked_at'])
-      .where('org_id', '=', orgId)
-      .orderBy('created_at')
-      .execute(),
-    db
-      .selectFrom('app_kits')
-      .select(['app_id', 'definition'])
-      .where('org_id', '=', orgId)
-      .orderBy('created_at')
-      .orderBy('key')
-      .execute(),
-    db
-      .selectFrom('org_updates')
-      .select(['id', 'body', 'created_at', 'edited_at'])
-      .where('org_id', '=', orgId)
-      .where('deleted_at', 'is', null)
-      .orderBy('created_at')
-      .execute(),
-  ]);
+  const [team, threads, checkout, listings, agent, apps, cards, updates, invites] =
+    await Promise.all([
+      // Its team now; closed, as it stood when it closed (every seat ended at that moment).
+      db
+        .selectFrom('org_members as m')
+        .innerJoin('users as u', 'u.id', 'm.user_id')
+        .select(['m.user_id', 'u.display_name', 'm.role', 'm.joined_at', 'u.kind'])
+        .where('m.org_id', '=', orgId)
+        .where((eb) => (closedAt ? eb('m.left_at', '=', closedAt) : eb('m.left_at', 'is', null)))
+        .execute(),
+      db
+        .selectFrom('business_threads as t')
+        .innerJoin('conversations as c', 'c.id', 't.conversation_id')
+        .leftJoin('users as u', 'u.id', 't.customer_id')
+        .leftJoin('organizations as fo', 'fo.id', 't.customer_org_id')
+        .select([
+          't.conversation_id',
+          't.customer_id',
+          't.resolved_at',
+          't.started_by_team',
+          't.erased_at',
+          'c.created_at',
+          'u.display_name as customer_name',
+          'u.handle as customer_handle',
+          'fo.id as for_org_id',
+          'fo.name as for_org_name',
+          'fo.handle as for_org_handle',
+        ])
+        .where('t.org_id', '=', orgId)
+        .orderBy('c.created_at')
+        .execute(),
+      // Its own checkout account (R65): the provider's id, never a key (Caime holds none).
+      db
+        .selectFrom('org_checkout')
+        .select(['provider', 'account_id', 'livemode', 'charges_enabled', 'connected_at'])
+        .where('org_id', '=', orgId)
+        .executeTakeFirst(),
+      // The apps published under it (R74), and where each listing stands.
+      db
+        .selectFrom('oauth_clients as a')
+        .innerJoin('users as d', 'd.id', 'a.owner_id')
+        .select([
+          'a.name',
+          'a.tagline',
+          'a.category',
+          'a.listed_at',
+          'a.reviewed_at',
+          'a.declined_reason',
+          'd.display_name as developer_name',
+          'd.handle as developer_handle',
+        ])
+        .where('a.org_id', '=', orgId)
+        .where('a.revoked_at', 'is', null)
+        .orderBy('a.created_at')
+        .execute(),
+      db
+        .selectFrom('org_agents')
+        .select(['knowledge', 'paused_at', 'created_at'])
+        .where('org_id', '=', orgId)
+        .executeTakeFirst(),
+      // Its own apps, stopped ones too (closing stops them all): never a token or a secret.
+      db
+        .selectFrom('org_apps')
+        .select(['id', 'name', 'scopes', 'webhook_url', 'events', 'created_at', 'revoked_at'])
+        .where('org_id', '=', orgId)
+        .orderBy('created_at')
+        .execute(),
+      db
+        .selectFrom('app_kits')
+        .select(['app_id', 'definition'])
+        .where('org_id', '=', orgId)
+        .orderBy('created_at')
+        .orderBy('key')
+        .execute(),
+      db
+        .selectFrom('org_updates')
+        .select(['id', 'body', 'created_at', 'edited_at'])
+        .where('org_id', '=', orgId)
+        .where('deleted_at', 'is', null)
+        .orderBy('created_at')
+        .execute(),
+      // The invites it handed out (M16 C3a), by link or to an address: never a token's hash.
+      db
+        .selectFrom('org_invites')
+        .select(['role', 'email', 'uses', 'created_at', 'expires_at', 'revoked_at'])
+        .where('org_id', '=', orgId)
+        .orderBy('created_at')
+        .execute(),
+    ]);
   const roleOf = new Map(team.map((m) => [m.user_id, m]));
   const conversations: OrgExportView['conversations'] = [];
   let count = 0;
@@ -456,6 +464,14 @@ export async function buildOrgExport(
         role: m.role,
         since: m.joined_at.toISOString(),
       })),
+    invites: invites.map((i) => ({
+      role: i.role,
+      email: i.email,
+      uses: i.uses,
+      createdAt: i.created_at.toISOString(),
+      expiresAt: i.expires_at.toISOString(),
+      revokedAt: i.revoked_at?.toISOString() ?? null,
+    })),
     conversations,
   };
 }
@@ -509,6 +525,7 @@ export async function clearClosedOrg(ctx: AppContext, orgId: string): Promise<bo
       .items.map((i) => i.photoFileId)
       .filter((id): id is string => typeof id === 'string');
     await trx.deleteFrom('org_members').where('org_id', '=', orgId).execute();
+    await trx.deleteFrom('org_invites').where('org_id', '=', orgId).execute();
     await trx.deleteFrom('org_agents').where('org_id', '=', orgId).execute();
     await trx.deleteFrom('places').where('org_id', '=', orgId).execute();
     // Its apps' tokens, deliveries and kinds of card go with them; their bots' messages stay in

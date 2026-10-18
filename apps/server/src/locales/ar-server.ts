@@ -342,7 +342,6 @@ export const arServer: Catalog = {
   'Join {name} on {site}{context}: sign up in half a minute and you’re connected.':
     'انضم إلى {name} على {site}{context}: سجّل في نصف دقيقة وتكونان على تواصل.',
   'an invitation': 'دعوة',
-  from: 'من',
   'to join': 'للانضمام',
   'Sign up in half a minute and you’re connected with {name}, no app to install.':
     'سجّل في نصف دقيقة وتكون على تواصل مع {name}، دون تثبيت أي تطبيق.',
@@ -1376,7 +1375,6 @@ export const arServer: Catalog = {
   'That number belongs to someone else on Caime.': 'هذا الرقم لشخص آخر على Caime.',
   'Phone numbers can’t be proven here yet. Try again later.':
     'لا يمكن إثبات أرقام الهواتف هنا بعد. حاول لاحقًا.',
-  'That doesn’t look like an email address.': 'لا يبدو هذا عنوان بريد إلكتروني.',
   'Write the number with its country code, like +20 101 234 5678.':
     'اكتب الرقم مع رمز الدولة، مثل ‎+20 101 234 5678.',
   'That’s already yours.': 'هذا لك بالفعل.',
@@ -1451,4 +1449,11 @@ export const arServer: Catalog = {
   'Your earlier booking here is still waiting for an answer. Join {site} with the same address to follow it.':
     'حجزك السابق هنا لا يزال بانتظار الرد. انضم إلى {site} بالعنوان نفسه لتتابعه.',
   'They’ve left that call.': 'انتهت المكالمة لهذا الجهاز.',
+  '{n} invites are open: take one back first.': '{n} دعوة مفتوحة: يلزم سحب واحدة أولًا.',
+  '{name} joined {org}’s team': 'انضمام {name} إلى فريق {org}',
+  'a team invitation': 'دعوة إلى فريق',
+  'The address it was sent to, alone': 'العنوان الذي أُرسلت إليه وحده',
+  'Whoever has this link': 'كل من لديه هذا الرابط',
+  'Sign up or sign in, then join: its conversations with customers are in your Business inbox, no app to install.':
+    'إنشاء حساب أو تسجيل الدخول، ثم الانضمام: محادثاتها مع العملاء في صندوق الأعمال، دون تثبيت أي تطبيق.',
 };

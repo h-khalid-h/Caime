@@ -109,7 +109,12 @@ account whose booking was confirmed a day and a half or more ahead; the job read
 two rows again when it runs. A person's page books the same way, at the same cost, with one more
 row read for the person behind the handle. Closed days (C2a) cost nothing new: the slots skip
 them in the same walk. The door is asked again each time it's shown (one row read and a code of
-a short link, milliseconds), since its Book link follows the catalog.
+a short link, milliseconds), since its Book link follows the catalog. A team invite (C3a) is one
+row, and one mail when it's sent to an address; opening and accepting it are a handful of
+indexed reads and the seat's own transaction, the same one adding someone always ran (now under
+the organization's row, so the plan's room is read once inside it); nothing polls, no job runs,
+and spent ones go with the retention sweep's existing pass. On the device, the invite panel loads
+with the team's Add sheet and the accept screen is its own route, neither in the first download.
 
 ## What a change says
 

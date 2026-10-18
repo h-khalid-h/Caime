@@ -414,6 +414,13 @@ export function applyEvent(qc: QueryClient, event: RealtimeEvent, me: string): v
       invalidate(['org-inbox'], 'org-inbox');
       invalidate(qk.businessSummary, 'business-summary');
       if (id) invalidate(qk.conversation(id));
+      else {
+        // No thread: the team itself changed (someone joined, through an invite too, or left):
+        // its page, the organizations someone is on, and the invites still open.
+        invalidate(qk.allOrgs);
+        invalidate(qk.orgs);
+        invalidate(qk.allTeamInvites);
+      }
       return;
     }
   }

@@ -2473,4 +2473,53 @@ export const arB: Catalog = {
   'You came to answer customers as your organization: start it next, then your door, hours and team. Find people by @handle or email any time.':
     'الردّ على العملاء باسم مؤسستك يبدأ بإنشائها، ثم بابها ومواعيدها وفريقها. البحث عن الناس بالمعرّف @ أو البريد متاح في أي وقت.',
   'Start your organization': 'إنشاء مؤسستك',
+  from: 'من',
+  'That doesn’t look like an email address.': 'لا يبدو هذا عنوان بريد إلكتروني.',
+  'You’re on {org}’s team': 'ضمن فريق {org} الآن',
+  'This invite has run out, or was taken back. Ask whoever sent it for a new one.':
+    'انتهت مدة هذه الدعوة أو سُحبت. يمكن طلب دعوة جديدة ممن أرسلها.',
+  '{name} invites you to {org}’s team': 'دعوة من {name} إلى فريق {org}',
+  'Join {org}’s team': 'الانضمام إلى فريق {org}',
+  'To answer its customers with the team, and run it with its owner.':
+    'للرد على عملائها مع الفريق، وإدارتها مع مالكها.',
+  'To answer its customers with the team.': 'للرد على عملائها مع الفريق.',
+  organization: 'المؤسسة',
+  '{name} · verified': '{name} · موثّقة',
+  role: 'الدور',
+  'open until': 'صالحة حتى',
+  'You’re on {org}’s team already.': 'ضمن فريق {org} بالفعل.',
+  'Open the Business inbox': 'فتح صندوق الأعمال',
+  'This invite was sent to another address: sign in with it, or add it to your account.':
+    'أُرسلت هذه الدعوة إلى عنوان آخر: يمكن تسجيل الدخول به، أو إضافته إلى حسابك.',
+  'Confirm your address first: the invite was sent to it.':
+    'يلزم تأكيد عنوانك أولًا: إليه أُرسلت الدعوة.',
+  'Confirm your address': 'تأكيد عنوانك',
+  'Join the team': 'الانضمام إلى الفريق',
+  'Sent to {email}': 'أُرسلت إلى {email}',
+  'Taken back: its link opens nothing now': 'سُحبت: رابطها لا يفتح شيئًا الآن',
+  'Invite someone new': 'دعوة شخص جديد',
+  'A link to share, or one sent to their address: whoever accepts joins {name}’s team, over 18. It stays open {n} days.':
+    'رابط للمشاركة، أو دعوة تُرسل إلى عنوان الشخص: من يقبلها ينضم إلى فريق {name}، لمن تجاوز 18 عامًا. تبقى صالحة {n} يومًا.',
+  'Their email, to send it': 'البريد الإلكتروني لإرسال الدعوة',
+  'Leave it empty for a link to share.': 'يُترك فارغًا للحصول على رابط للمشاركة.',
+  'Send the invite': 'إرسال الدعوة',
+  'Make a link': 'إنشاء رابط',
+  'Join {name}’s team on Caime': 'دعوة للانضمام إلى فريق {name} على Caime',
+  'A link to share': 'رابط للمشاركة',
+  'joined {n} times': {
+    zero: 'لم ينضم بها أحد',
+    one: 'انضم بها شخص واحد',
+    two: 'انضم بها شخصان',
+    few: 'انضم بها {n} أشخاص',
+    many: 'انضم بها {n} شخصًا',
+    other: 'انضم بها {n} شخص',
+  },
+  'open until {day}': 'صالحة حتى {day}',
+  'Take back': 'سحب الدعوة',
+  'You came to join {org}’s team: its conversations with customers will be in your Business inbox. Find people by @handle or email any time.':
+    'الانضمام إلى فريق {org} يضع محادثاتها مع العملاء في صندوق الأعمال. البحث عن الناس بالمعرّف @ أو البريد متاح في أي وقت.',
+  'You came to join a team: its conversations with customers will be in your Business inbox. Find people by @handle or email any time.':
+    'الانضمام إلى فريق يضع محادثاته مع العملاء في صندوق الأعمال. البحث عن الناس بالمعرّف @ أو البريد متاح في أي وقت.',
+  'They answer for the organization, over 18.': 'الرد باسم المؤسسة، لمن تجاوز 18 عامًا.',
+  'Or add people you’re connected with': 'أو إضافة أشخاص بينك وبينهم تواصل',
 };

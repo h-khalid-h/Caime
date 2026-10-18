@@ -1378,6 +1378,58 @@ export interface OrgDoorView {
 }
 
 /**
+ * A team invite as its organization's owner and admins see it (M16 C3a): never its token, which
+ * is shown once, when it's made.
+ */
+export interface TeamInviteView {
+  id: string;
+  role: 'agent' | 'admin';
+  /** The address it was sent to, or null for a link to share. */
+  email: string | null;
+  uses: number;
+  expiresAt: string;
+  createdAt: string;
+}
+export interface TeamInvitesResponse {
+  invites: TeamInviteView[];
+}
+/** A new team invite and its link, shown this once. */
+export interface TeamInviteMadeResponse {
+  invite: TeamInviteView;
+  url: string;
+}
+/** What a team invite offers whoever opens it signed in. */
+export interface TeamInviteOpenView {
+  org: {
+    id: string;
+    name: string;
+    handle: string;
+    kind: OrgKind;
+    avatarUrl: string | null;
+    verified: boolean;
+  };
+  role: 'agent' | 'admin';
+  /** Who made it, by the name they show. */
+  invitedBy: string | null;
+  /** Already on the team: accepting changes nothing. */
+  onTeam: boolean;
+  /**
+   * Whom it's for: anyone with the link; an address this account proved its own; an address of
+   * this account's not yet confirmed; or an address that isn't this account's (never named).
+   */
+  addressed: 'anyone' | 'you' | 'unconfirmed' | 'elsewhere';
+  expiresAt: string;
+}
+export interface TeamInviteOpenResponse {
+  invite: TeamInviteOpenView;
+}
+export interface TeamInviteAcceptResponse {
+  orgId: string;
+  handle: string;
+  already: boolean;
+}
+
+/**
  * An organization's export of its own conversations (R54): everything it is the controller of,
  * nothing of its people's own. The team by name; a customer named once per conversation.
  */
@@ -1468,6 +1520,15 @@ export interface OrgExportView {
   }>;
   /** Its team (as it stood when it closed, for a closed one). */
   team: Array<{ userId: string; displayName: string; role: string; since: string }>;
+  /** Its team invites (M16 C3a), taken back and spent ones too: never a token. */
+  invites: Array<{
+    role: 'agent' | 'admin';
+    email: string | null;
+    uses: number;
+    createdAt: string;
+    expiresAt: string;
+    revokedAt: string | null;
+  }>;
   conversations: Array<{
     conversationId: string;
     customer: { userId: string; displayName: string; handle: string } | null;
@@ -2841,7 +2902,7 @@ export interface CollectionRenamedResponse {
  * them in `apple-app-site-association` and the app's Android intent filters carry the same ones
  * (`app.config.ts`, held to this list by `appLinks.test.ts`).
  */
-export const APP_LINK_PREFIXES = ['/@', '/o/', '/c/', '/i/', '/s/', '/p/'] as const;
+export const APP_LINK_PREFIXES = ['/@', '/o/', '/c/', '/i/', '/t/', '/s/', '/p/'] as const;
 
 /** The phone apps' ids, as `app.json` names them (held to it by `appLinks.test.ts`). */
 export const APP_IDS = { ios: 'me.cai.app', android: 'me.cai.app' } as const;

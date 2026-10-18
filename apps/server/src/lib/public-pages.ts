@@ -21,6 +21,7 @@ import {
   itemPhotoPath,
   methodsFor,
   normalizeHandle,
+  ORG_ROLE_LABELS,
   PAYMENT_KIND_LABELS,
   SPHERE_DEFS,
   type Sphere,
@@ -90,6 +91,7 @@ import {
 import { sitemaps } from './sitemap-cache';
 import { stockFor, withStock } from './stock';
 import { publicFacts } from './system-accounts';
+import { liveTeamInvite } from './team-invites';
 import { clip } from './text';
 import { avatarUrl, minorOf, privacyOf } from './users';
 
@@ -241,6 +243,18 @@ export interface PublicInvite {
   context: string | null;
   note: string | null;
 }
+/**
+ * A team invite's page (M16 C3a): the organization, who asks and in what role, and the ways in;
+ * one sent to an address says it's for that address alone, never which.
+ */
+export interface PublicTeamInvite {
+  kind: 'team-invite';
+  org: OrgRef;
+  role: 'agent' | 'admin';
+  inviter: string | null;
+  addressed: boolean;
+  expiresAt: string;
+}
 export type PublicPage =
   | { kind: 'landing' }
   /** A page of the site about Caime (site-pages.ts): everyone's, signed in or not. */
@@ -252,6 +266,7 @@ export type PublicPage =
   | PublicItemPage
   | PublicCollectionPage
   | PublicInvite
+  | PublicTeamInvite
   | { kind: 'missing' }
   | { kind: 'app' }
   /**
@@ -412,6 +427,38 @@ export async function publicInvite(db: Q, token: string, now: Date): Promise<Pub
   };
 }
 
+/** A team invite's page while it's open and its organization is (M16 C3a). */
+export async function publicTeamInvite(
+  ctx: AppContext,
+  token: string,
+): Promise<PublicTeamInvite | null> {
+  const invite = await liveTeamInvite(ctx, token);
+  if (!invite) return null;
+  const org = await ctx.db
+    .selectFrom('organizations')
+    .select(['id', 'name', 'handle', 'kind', 'domain', 'verified_at', 'country', 'avatar_file_id'])
+    .where('id', '=', invite.org_id)
+    .where('archived_at', 'is', null)
+    .executeTakeFirst();
+  if (!org) return null;
+  const inviter = invite.created_by
+    ? await ctx.db
+        .selectFrom('users')
+        .select('display_name')
+        .where('id', '=', invite.created_by)
+        .where('deleted_at', 'is', null)
+        .executeTakeFirst()
+    : undefined;
+  return {
+    kind: 'team-invite',
+    org: orgRef(org),
+    role: invite.role,
+    inviter: inviter?.display_name ?? null,
+    addressed: invite.email !== null,
+    expiresAt: invite.expires_at.toISOString(),
+  };
+}
+
 /** The page a path is, for whoever isn't signed in. */
 export async function publicPageFor(
   ctx: AppContext,
@@ -432,6 +479,8 @@ export async function publicPageFor(
     return { kind: 'site', page: site as SiteOnlyPage };
   const invite = /^\/i\/([^/?#]+)$/.exec(path);
   if (invite) return (await publicInvite(db, invite[1] ?? '', now)) ?? { kind: 'missing' };
+  const team = /^\/t\/([^/?#]+)$/.exec(path);
+  if (team) return (await publicTeamInvite(ctx, team[1] ?? '')) ?? { kind: 'missing' };
   const at = /^\/@([^/?#]+)(?:\/([^/?#]+))?$/.exec(path);
   const org = /^\/o\/([^/?#]+)(?:\/([^/?#]+))?$/.exec(path);
   const raw = safeDecode((at ?? org)?.[1] ?? '');
@@ -1079,6 +1128,51 @@ export function renderPublic(
   ${pageFoot(tr(PROMISE), wordmark(18))}
 </main>`,
       };
+    case 'team-invite': {
+      const org = page.org.name;
+      const title = page.inviter
+        ? tr('{name} invites you to {org}’s team', { name: page.inviter, org })
+        : tr('Join {org}’s team', { org });
+      const lead =
+        page.role === 'admin'
+          ? tr('To answer its customers with the team, and run it with its owner.')
+          : tr('To answer its customers with the team.');
+      return {
+        status: 200,
+        lang: currentTranslator().language,
+        head: meta({
+          title: `${title} · ${SITE_NAME}`,
+          description: `${lead} ${tr(PROMISE)}`,
+          image: page.org.avatarUrl ? `${publicUrl}${page.org.avatarUrl}` : null,
+          index: false,
+          canonical: false,
+        }),
+        body: `
+<main class="pub pub-sheet" ${langAttrs()}>
+  ${topBar(wayIn('sign-in', path), wordmark(22))}
+  <section class="hero hero-center">
+    ${avatar({ name: org, src: page.org.avatarUrl, size: 96, shape: 'mark' })}
+    <p class="kicker"><span class="mono">${esc(tr('a team invitation'))}</span></p>
+    <h1>${esc(title)}</h1>
+    <p class="lead">${esc(lead)}</p>
+    <p class="who"><bdi>@${esc(page.org.handle)}</bdi>${page.org.verified ? verifiedMark(page.org.verifiedDomain) : ''}</p>
+    <div class="actions"><a class="btn" href="${wayIn('sign-up', path)}">${esc(tr('Join {org}’s team', { org }))}</a><a class="btn quiet" href="${wayIn('sign-in', path)}">${esc(tr('Sign in'))}</a></div>
+  </section>
+  ${section(
+    sentence(tr('about')),
+    `<dl class="spec">
+    <div>${label(tr('organization'))}<dd>${esc(org)}</dd></div>
+    ${page.inviter ? `<div>${label(tr('from'))}<dd>${esc(page.inviter)}</dd></div>` : ''}
+    <div>${label(tr('role'))}<dd>${esc(tr(ORG_ROLE_LABELS[page.role]))}</dd></div>
+    <div>${label(tr('for'))}<dd>${esc(page.addressed ? tr('The address it was sent to, alone') : tr('Whoever has this link'))}</dd></div>
+    <div>${label(tr('open until'))}<dd>${esc(dayLabel(page.expiresAt.slice(0, 10), 'UTC'))}</dd></div>
+    <div>${label(tr('to join'))}<dd>${esc(tr('Sign up or sign in, then join: its conversations with customers are in your Business inbox, no app to install.'))}</dd></div>
+  </dl>`,
+  )}
+  ${pageFoot(tr(PROMISE), wordmark(18))}
+</main>`,
+      };
+    }
     case 'missing':
       return {
         status: 404,

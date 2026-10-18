@@ -1771,8 +1771,6 @@ export const turkish: Catalog = {
   'It won’t be able to write to you, and your conversation with it closes. Unblock it here whenever you like.':
     'Size yazamayacak ve onunla konuşmanız kapanacak. Engeli istediğiniz zaman buradan kaldırabilirsiniz.',
   'Add to the team': 'Ekibe ekle',
-  'People you’re connected with, over 18. They answer for the organization.':
-    'Bağlı olduğunuz 18 yaş üstü kişiler. Kuruluş adına yanıt verirler.',
   'Room for {room} more': '{room} kişilik daha yer var',
   'Added {n} to the team': 'Ekibe {n} kişi eklendi',
   'The team is full on the {plan} plan ({n} people).': '{plan} planında ekip dolu ({n} kişi).',
@@ -4119,4 +4117,50 @@ export const turkish: Catalog = {
   'You came to answer customers as your organization: start it next, then your door, hours and team. Find people by @handle or email any time.':
     'Müşterilere kuruluşunuz adına yanıt vermek için geldiniz: şimdi onu oluşturun, ardından kapısını, saatlerini ve ekibini. İnsanları istediğiniz zaman @kullanıcı adı ya da e-postayla bulun.',
   'Start your organization': 'Kuruluşunuzu oluşturun',
+  from: 'kimden',
+  'That doesn’t look like an email address.': 'Bu bir e-posta adresine benzemiyor.',
+  'You’re on {org}’s team': '{org} ekibindesiniz',
+  'This invite has run out, or was taken back. Ask whoever sent it for a new one.':
+    'Bu davetin süresi doldu ya da geri alındı. Gönderen kişiden yenisini isteyin.',
+  '{name} invites you to {org}’s team': '{name} sizi {org} ekibine davet ediyor',
+  'Join {org}’s team': '{org} ekibine katılın',
+  'To answer its customers with the team, and run it with its owner.':
+    'Müşterilerine ekiple birlikte yanıt vermek ve onu sahibiyle birlikte yönetmek için.',
+  'To answer its customers with the team.': 'Müşterilerine ekiple birlikte yanıt vermek için.',
+  organization: 'kuruluş',
+  '{name} · verified': '{name} · doğrulanmış',
+  role: 'rol',
+  'open until': 'geçerlilik',
+  'You’re on {org}’s team already.': 'Zaten {org} ekibindesiniz.',
+  'Open the Business inbox': 'İşletme gelen kutusunu aç',
+  'This invite was sent to another address: sign in with it, or add it to your account.':
+    'Bu davet başka bir adrese gönderildi: o adresle giriş yapın ya da onu hesabınıza ekleyin.',
+  'Confirm your address first: the invite was sent to it.':
+    'Önce adresinizi doğrulayın: davet o adrese gönderildi.',
+  'Confirm your address': 'Adresinizi doğrulayın',
+  'Join the team': 'Ekibe katılın',
+  'Sent to {email}': '{email} adresine gönderildi',
+  'Taken back: its link opens nothing now': 'Geri alındı: bağlantısı artık hiçbir şey açmıyor',
+  'Invite someone new': 'Yeni birini davet edin',
+  'A link to share, or one sent to their address: whoever accepts joins {name}’s team, over 18. It stays open {n} days.':
+    'Paylaşılacak bir bağlantı ya da kişinin adresine gönderilen bir davet: kabul eden, 18 yaşını doldurmuşsa {name} ekibine katılır. {n} gün açık kalır.',
+  'Their email, to send it': 'Göndermek için e-posta adresi',
+  'Leave it empty for a link to share.': 'Paylaşılacak bir bağlantı için boş bırakın.',
+  'Send the invite': 'Daveti gönder',
+  'Make a link': 'Bağlantı oluştur',
+  'Join {name}’s team on Caime': 'Caime’de {name} ekibine katılın',
+  'A link to share': 'Paylaşılacak bir bağlantı',
+  'joined {n} times': {
+    one: '{n} kez kullanıldı',
+    other: '{n} kez kullanıldı',
+  },
+  'open until {day}': '{day} tarihine kadar geçerli',
+  'Take back': 'Daveti geri al',
+  'You came to join {org}’s team: its conversations with customers will be in your Business inbox. Find people by @handle or email any time.':
+    '{org} ekibine katılmak için geldiniz: müşterilerle konuşmaları İşletme gelen kutunuzda olacak. İnsanları istediğiniz zaman @kullanıcı adı ya da e-postayla bulun.',
+  'You came to join a team: its conversations with customers will be in your Business inbox. Find people by @handle or email any time.':
+    'Bir ekibe katılmak için geldiniz: müşterilerle konuşmaları İşletme gelen kutunuzda olacak. İnsanları istediğiniz zaman @kullanıcı adı ya da e-postayla bulun.',
+  'They answer for the organization, over 18.':
+    'Kuruluş adına yanıt verirler; 18 yaşını doldurmuş olmaları gerekir.',
+  'Or add people you’re connected with': 'Ya da bağlantıda olduğunuz kişileri ekleyin',
 };

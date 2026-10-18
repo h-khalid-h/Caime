@@ -102,3 +102,8 @@ export function doorIn(path: string | null | undefined): string | null {
 export function inviteIn(path: string | null | undefined): string | null {
   return path?.match(/^\/i\/([A-Za-z0-9_-]{16,64})$/)?.[1] ?? null;
 }
+
+/** The token of a team invite (`/t/<token>`, M16 C3a), or null. */
+export function teamInviteIn(path: string | null | undefined): string | null {
+  return path?.match(/^\/t\/(t_[A-Za-z0-9_-]{43})$/)?.[1] ?? null;
+}

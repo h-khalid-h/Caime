@@ -1836,8 +1836,6 @@ export const fr: Catalog = {
   'It won’t be able to write to you, and your conversation with it closes. Unblock it here whenever you like.':
     'Elle ne pourra plus vous écrire, et votre conversation avec elle se ferme. Débloquez-la ici quand vous voulez.',
   'Add to the team': 'Ajouter à l’équipe',
-  'People you’re connected with, over 18. They answer for the organization.':
-    'Vos contacts de plus de 18 ans. Ils répondent pour l’organisation.',
   'Room for {room} more': 'Place pour {room} de plus',
   'Added {n} to the team': 'Ajouts à l’équipe : {n}',
   'The team is full on the {plan} plan ({n} people).':
@@ -4294,4 +4292,50 @@ export const fr: Catalog = {
   'You came to answer customers as your organization: start it next, then your door, hours and team. Find people by @handle or email any time.':
     'Vous êtes venu répondre aux clients au nom de votre organisation : créez-la maintenant, puis sa porte, ses horaires et son équipe. Trouvez des gens par @identifiant ou e-mail à tout moment.',
   'Start your organization': 'Créer votre organisation',
+  from: 'de',
+  'That doesn’t look like an email address.': 'Cela ne ressemble pas à une adresse e-mail.',
+  'You’re on {org}’s team': 'Vous faites partie de l’équipe de {org}',
+  'This invite has run out, or was taken back. Ask whoever sent it for a new one.':
+    'Cette invitation a expiré ou a été retirée. Demandez-en une nouvelle à la personne qui l’a envoyée.',
+  '{name} invites you to {org}’s team': '{name} vous invite dans l’équipe de {org}',
+  'Join {org}’s team': 'Rejoindre l’équipe de {org}',
+  'To answer its customers with the team, and run it with its owner.':
+    'Pour répondre à ses clients avec l’équipe, et la gérer avec son propriétaire.',
+  'To answer its customers with the team.': 'Pour répondre à ses clients avec l’équipe.',
+  organization: 'organisation',
+  '{name} · verified': '{name} · vérifiée',
+  role: 'rôle',
+  'open until': 'valable jusqu’au',
+  'You’re on {org}’s team already.': 'Vous faites déjà partie de l’équipe de {org}.',
+  'Open the Business inbox': 'Ouvrir la boîte Entreprise',
+  'This invite was sent to another address: sign in with it, or add it to your account.':
+    'Cette invitation a été envoyée à une autre adresse : connectez-vous avec celle-ci, ou ajoutez-la à votre compte.',
+  'Confirm your address first: the invite was sent to it.':
+    'Confirmez d’abord votre adresse : l’invitation y a été envoyée.',
+  'Confirm your address': 'Confirmer votre adresse',
+  'Join the team': 'Rejoindre l’équipe',
+  'Sent to {email}': 'Envoyée à {email}',
+  'Taken back: its link opens nothing now': 'Retirée : son lien n’ouvre plus rien',
+  'Invite someone new': 'Inviter une nouvelle personne',
+  'A link to share, or one sent to their address: whoever accepts joins {name}’s team, over 18. It stays open {n} days.':
+    'Un lien à partager, ou une invitation envoyée à son adresse : la personne qui l’accepte rejoint l’équipe de {name}, à partir de 18 ans. Elle reste valable {n} jours.',
+  'Their email, to send it': 'Son e-mail, pour l’envoyer',
+  'Leave it empty for a link to share.': 'Laissez vide pour un lien à partager.',
+  'Send the invite': 'Envoyer l’invitation',
+  'Make a link': 'Créer un lien',
+  'Join {name}’s team on Caime': 'Rejoignez l’équipe de {name} sur Caime',
+  'A link to share': 'Un lien à partager',
+  'joined {n} times': {
+    one: 'utilisée une fois',
+    other: 'utilisée {n} fois',
+  },
+  'open until {day}': 'valable jusqu’au {day}',
+  'Take back': 'Retirer',
+  'You came to join {org}’s team: its conversations with customers will be in your Business inbox. Find people by @handle or email any time.':
+    'Vous êtes ici pour rejoindre l’équipe de {org} : ses conversations avec les clients seront dans votre boîte Entreprise. Trouvez des gens par @identifiant ou e-mail à tout moment.',
+  'You came to join a team: its conversations with customers will be in your Business inbox. Find people by @handle or email any time.':
+    'Vous êtes ici pour rejoindre une équipe : ses conversations avec les clients seront dans votre boîte Entreprise. Trouvez des gens par @identifiant ou e-mail à tout moment.',
+  'They answer for the organization, over 18.':
+    'Ces personnes répondent au nom de l’organisation, à partir de 18 ans.',
+  'Or add people you’re connected with': 'Ou ajoutez des personnes avec qui vous êtes en contact',
 };

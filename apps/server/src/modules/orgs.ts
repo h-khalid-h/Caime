@@ -65,7 +65,7 @@ import {
   paymentsOf,
   withoutProviders,
 } from '../lib/booking';
-import { joinThreads, leaveThreads, orgAvatarUrl } from '../lib/business';
+import { leaveThreads, orgAvatarUrl } from '../lib/business';
 import { disconnect } from '../lib/checkout';
 import { qrPath } from '../lib/door';
 import { AppError, badRequest, conflict, forbidden, notFound } from '../lib/errors';
@@ -83,21 +83,23 @@ import {
 import {
   closedOrgById,
   closeOrg,
+  managerSeat,
   newVerifyToken,
   orgById,
   orgSeat,
   orgSpacesOf,
+  seatOnTeam,
 } from '../lib/orgs';
 import { personViewsFor } from '../lib/people-batch';
 import { orgPlacesFor } from '../lib/places';
-import { assertInsights, assertTeamRoom, orgPlanView } from '../lib/plans';
+import { assertInsights, orgPlanView } from '../lib/plans';
 import { VISITOR } from '../lib/public-booking';
 import { doorPath } from '../lib/public-pages';
 import { viewerRelation } from '../lib/relations';
 import { forgetSitemaps } from '../lib/sitemap-cache';
 import { addToSpace, orgSpaceViews, removeFromSpace } from '../lib/space-members';
 import { itemsWithStock } from '../lib/stock';
-import { suggestFromPlace, withdrawPlaceOffers } from '../lib/suggest';
+import { withdrawPlaceOffers } from '../lib/suggest';
 import { escapeLike } from '../lib/text';
 import { endFollowsOf } from '../lib/updates';
 import { countryDerived, minorOf, personView } from '../lib/users';
@@ -257,14 +259,6 @@ async function adult(ctx: AppContext, userIds: string[]): Promise<boolean> {
   return rows.length === userIds.length && rows.every((u) => !minorOf(u, ctx.now()));
 }
 
-async function managerSeat(ctx: AppContext, userId: string, orgId: string) {
-  const seat = await orgSeat(ctx.db, userId, orgId);
-  if (!seat) throw notFound(tr('That organization'));
-  if (!canManageOrg(seat.role))
-    throw forbidden(tr('Only the organization’s owner and admins can.'));
-  return seat;
-}
-
 export async function orgRoutes(app: FastifyInstance, ctx: AppContext) {
   const idParam = z.object({ id: z.string().uuid() });
   const memberParam = z.object({ id: z.string().uuid(), userId: z.string().uuid() });
@@ -420,7 +414,7 @@ export async function orgRoutes(app: FastifyInstance, ctx: AppContext) {
       .where('id', '=', id)
       .executeTakeFirst();
     if (!org) throw notFound(tr('That organization'));
-    if (!org.archived_at) await managerSeat(ctx, auth.userId, id);
+    if (!org.archived_at) await managerSeat(ctx.db, auth.userId, id);
     else if (!closedExportOpenTo(org, auth.userId, ctx.now()))
       throw notFound(tr('That organization'));
     ctx.limiter.hit(`org-export:${id}`, ctx.config.isTest ? 1000 : 3, 3_600_000);
@@ -485,7 +479,7 @@ export async function orgRoutes(app: FastifyInstance, ctx: AppContext) {
       req.params,
     );
     await orgById(ctx.db, id);
-    await managerSeat(ctx, auth.userId, id);
+    await managerSeat(ctx.db, auth.userId, id);
     const result = await eraseBusinessConversation(ctx, id, conversationId, auth.userId);
     if (result === null) throw notFound(tr('That conversation'));
     await audit(ctx.db, {
@@ -502,7 +496,7 @@ export async function orgRoutes(app: FastifyInstance, ctx: AppContext) {
     const { id } = parse(idParam, req.params);
     const body = parse(UpdateOrgBody, req.body);
     const current = await orgById(ctx.db, id);
-    await managerSeat(ctx, auth.userId, id);
+    await managerSeat(ctx.db, auth.userId, id);
     if (body.country !== undefined && !isCountry(body.country))
       throw badRequest(tr('Choose where it’s based.'));
     // Its own time zone (R76), by the name it has now; null takes its country's again.
@@ -590,7 +584,7 @@ export async function orgRoutes(app: FastifyInstance, ctx: AppContext) {
       req.params,
     );
     await orgById(ctx.db, id);
-    await managerSeat(ctx, auth.userId, id);
+    await managerSeat(ctx.db, auth.userId, id);
     const space = await ctx.db
       .selectFrom('spaces')
       .select('id')
@@ -625,7 +619,7 @@ export async function orgRoutes(app: FastifyInstance, ctx: AppContext) {
       req.query,
     );
     await orgById(ctx.db, id);
-    await managerSeat(ctx, auth.userId, id);
+    await managerSeat(ctx.db, auth.userId, id);
     await assertInsights(ctx, id);
     return { insights: await orgInsights(ctx, id, days) };
   });
@@ -635,7 +629,7 @@ export async function orgRoutes(app: FastifyInstance, ctx: AppContext) {
     const { id } = parse(idParam, req.params);
     const body = parse(OrgMembersBody, req.body);
     await orgById(ctx.db, id);
-    const seat = await managerSeat(ctx, auth.userId, id);
+    const seat = await managerSeat(ctx.db, auth.userId, id);
     if (body.role === 'admin' && !ownsOrg(seat.role))
       throw forbidden(tr('Only the owner makes admins.'));
     const current = new Set((await team(ctx, id)).map((m) => m.user_id));
@@ -653,39 +647,13 @@ export async function orgRoutes(app: FastifyInstance, ctx: AppContext) {
     if (new Set(connected.map((c) => c.other_id)).size !== adding.length)
       throw badRequest(tr('You can add people you’re connected with.'));
     if (!(await adult(ctx, adding))) throw forbidden(tr('Teams are for people over 18.'));
-    await assertTeamRoom(ctx, id, adding.length);
-    for (const userId of adding)
-      await ctx.db
-        .insertInto('org_members')
-        .values({ org_id: id, user_id: userId, role: body.role, added_by: auth.userId })
-        .onConflict((oc) =>
-          oc.columns(['org_id', 'user_id']).doUpdateSet({
-            left_at: null,
-            role: body.role,
-            added_by: auth.userId,
-            joined_at: ctx.now(),
-          }),
-        )
-        .execute();
-    // The team answers every one of the organization's conversations.
-    for (const userId of adding) await joinThreads(ctx.db, id, userId);
-    await ctx.bus.publish(adding, { type: 'business.updated', data: { orgId: id } });
-    // Teammates who know each other may be colleagues: offered to each, never decided (PRD §12).
-    ctx.defer('suggest-teammates', async () => {
-      const org = await orgById(ctx.db, id);
-      const people = (await team(ctx, id)).filter((m) => m.kind === 'human').map((m) => m.user_id);
-      await suggestFromPlace(
-        ctx,
-        { kind: 'org', id, name: org.name, verified: org.verified_at !== null },
-        adding,
-        people,
-      );
-    });
+    const added = await seatOnTeam(ctx, id, adding, body.role, auth.userId);
+    if (added.length === 0) return { ok: true };
     await audit(ctx.db, {
       actorId: auth.userId,
       action: 'org.members_added',
       target: id,
-      metadata: { userIds: adding },
+      metadata: { userIds: added },
     });
     return { ok: true };
   });
@@ -785,7 +753,7 @@ export async function orgRoutes(app: FastifyInstance, ctx: AppContext) {
     const { id, userId } = parse(memberParam, req.params);
     const body = parse(OrgMemberBody, req.body);
     await orgById(ctx.db, id);
-    const seat = await managerSeat(ctx, auth.userId, id);
+    const seat = await managerSeat(ctx.db, auth.userId, id);
     const target = (await team(ctx, id)).find((m) => m.user_id === userId);
     if (!target) throw notFound(tr('That person on the team'));
     if (target.kind !== 'human')
@@ -810,7 +778,7 @@ export async function orgRoutes(app: FastifyInstance, ctx: AppContext) {
     const { id } = parse(idParam, req.params);
     const body = parse(OrgDomainBody, req.body);
     const org = await orgById(ctx.db, id);
-    await managerSeat(ctx, auth.userId, id);
+    await managerSeat(ctx.db, auth.userId, id);
     const domain = normalizeDomain(body.domain);
     if (!domain) throw badRequest(tr('Enter a domain like datac.com.'));
     const holder = await ctx.db
@@ -836,7 +804,7 @@ export async function orgRoutes(app: FastifyInstance, ctx: AppContext) {
     const auth = requireAuth(req);
     const { id } = parse(idParam, req.params);
     const org = await orgById(ctx.db, id);
-    await managerSeat(ctx, auth.userId, id);
+    await managerSeat(ctx.db, auth.userId, id);
     ctx.limiter.hit(`org-verify:${id}`, ctx.config.isTest ? 1000 : 10, 60_000);
     if (!org.domain || !org.verify_token) throw badRequest(tr('Add your domain first.'));
     if (!org.verified_at) {
@@ -1034,7 +1002,7 @@ export async function orgRoutes(app: FastifyInstance, ctx: AppContext) {
     const auth = requireAuth(req);
     const { id } = parse(idParam, req.params);
     await orgById(ctx.db, id);
-    await managerSeat(ctx, auth.userId, id);
+    await managerSeat(ctx.db, auth.userId, id);
     await ctx.db
       .updateTable('organizations')
       .set({ domain: null, verify_token: null, verified_at: null, updated_at: ctx.now() })

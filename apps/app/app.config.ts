@@ -13,7 +13,7 @@
 import type { ConfigContext, ExpoConfig } from 'expo/config';
 
 /** Core's `APP_LINK_PREFIXES`, which this file can't import (`appLinks.test.ts` holds them equal). */
-export const APP_LINK_PATHS = ['/@', '/o/', '/c/', '/i/', '/s/', '/p/'] as const;
+export const APP_LINK_PATHS = ['/@', '/o/', '/c/', '/i/', '/t/', '/s/', '/p/'] as const;
 
 /** The domain a build's links and passkeys belong to: the API's, when it's https. */
 export function linkedHost(apiUrl: string | undefined): string | null {

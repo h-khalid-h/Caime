@@ -17,9 +17,12 @@ import {
   safeLocale,
 } from '@caime/core';
 import { tr, trn } from '@caime/core/i18n';
-import { sql } from 'kysely';
+import { type Kysely, sql, type Transaction } from 'kysely';
 import type { AppContext } from '../context';
+import type { Database } from '../db/schema';
 import { AppError } from './errors';
+
+type Q = Kysely<Database> | Transaction<Database>;
 
 const DAY_MS = 86_400_000;
 
@@ -109,8 +112,8 @@ export async function assertStorage(ctx: AppContext, userId: string, adding: num
   );
 }
 
-async function orgPlanRow(ctx: AppContext, orgId: string) {
-  return ctx.db
+async function orgPlanRow(ctx: AppContext, orgId: string, db: Q = ctx.db) {
+  return db
     .selectFrom('organizations')
     .select(['name', 'plan'])
     .where('id', '=', orgId)
@@ -118,8 +121,8 @@ async function orgPlanRow(ctx: AppContext, orgId: string) {
 }
 
 /** People on a team: an app's bot is on it, but isn't counted. */
-async function teamSize(ctx: AppContext, orgId: string): Promise<number> {
-  const row = await ctx.db
+async function teamSize(ctx: AppContext, orgId: string, db: Q = ctx.db): Promise<number> {
+  const row = await db
     .selectFrom('org_members as m')
     .innerJoin('users as u', 'u.id', 'm.user_id')
     .select(sql<number>`count(*)::int`.as('n'))
@@ -140,10 +143,16 @@ async function appCount(ctx: AppContext, orgId: string): Promise<number> {
   return row.n;
 }
 
-export async function assertTeamRoom(ctx: AppContext, orgId: string, adding: number) {
-  const org = await orgPlanRow(ctx, orgId);
+/** Room on the team for `adding` more people; `db` is the transaction that adds them, if any. */
+export async function assertTeamRoom(
+  ctx: AppContext,
+  orgId: string,
+  adding: number,
+  db: Q = ctx.db,
+) {
+  const org = await orgPlanRow(ctx, orgId, db);
   const { teamSize: room } = ORG_ALLOWANCES[org.plan];
-  if ((await teamSize(ctx, orgId)) + adding <= room) return;
+  if ((await teamSize(ctx, orgId, db)) + adding <= room) return;
   const next = nextOrgPlan(org.plan);
   const more = next
     ? ` ${tr('{plan} has room for {n}.', { plan: PLAN_NAMES[next], n: ORG_ALLOWANCES[next].teamSize })}`

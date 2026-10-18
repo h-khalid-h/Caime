@@ -1856,8 +1856,6 @@ export const arA: Catalog = {
   'It won’t be able to write to you, and your conversation with it closes. Unblock it here whenever you like.':
     'لن تستطيع الكتابة لك، وتُغلق محادثتك معها. ألغِ حظرها هنا متى شئت.',
   'Add to the team': 'إضافة إلى الفريق',
-  'People you’re connected with, over 18. They answer for the organization.':
-    'أشخاص تتواصل معهم ممن تجاوزوا 18. يجيبون باسم المؤسسة.',
   'Room for {room} more': 'متسع لـ {room} آخرين',
   'Added {n} to the team': 'أُضيف {n} إلى الفريق',
   'Room for {room} more on the {PLAN_NAMES} plan.': 'متسع لـ {room} آخرين في خطة {PLAN_NAMES}.',

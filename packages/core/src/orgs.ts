@@ -46,6 +46,9 @@ export const ORG_ROLES = ['owner', 'admin', 'agent'] as const;
 export type OrgRole = (typeof ORG_ROLES)[number];
 
 /** "Agent" is the data model's word; people read "Team". */
+/** How long a team invite stays open (M16 C3a): the server holds it to this, the app says it. */
+export const TEAM_INVITE_DAYS = 14;
+
 export const ORG_ROLE_LABELS: Record<OrgRole, string> = {
   owner: msg('Owner'),
   admin: msg('Admin'),

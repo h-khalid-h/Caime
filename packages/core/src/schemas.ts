@@ -1879,6 +1879,22 @@ export const OrgMembersBody = z
   })
   .strict();
 
+/**
+ * A team invite (M16 C3a): the role it gives (admin only from the owner), and an address to send
+ * it to, or none for a link to share.
+ */
+export const TeamInviteBody = z
+  .object({
+    role: z.enum(['admin', 'agent']).default('agent'),
+    email: z
+      .string()
+      .trim()
+      .email(msg('That doesn’t look like an email address.'))
+      .max(254)
+      .optional(),
+  })
+  .strict();
+
 export const OrgMemberBody = z
   .object({
     role: z.enum(['admin', 'agent']).optional(),

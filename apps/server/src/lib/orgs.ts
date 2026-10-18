@@ -4,14 +4,17 @@
  */
 import { randomBytes } from 'node:crypto';
 import type { OrgRef } from '@caime/core';
-import { nextOwner } from '@caime/core';
+import { canManageOrg, nextOwner } from '@caime/core';
 import { tr } from '@caime/core/i18n';
 import type { Kysely, Transaction } from 'kysely';
+import type { AppContext } from '../context';
 import type { Database, Organization, OrgMember } from '../db/schema';
-import { orgRef } from './business';
-import { notFound } from './errors';
+import { joinThreads, orgRef } from './business';
+import { forbidden, notFound } from './errors';
 import { releaseHandle } from './handles';
+import { assertTeamRoom } from './plans';
 import { forgetSitemaps } from './sitemap-cache';
+import { suggestFromPlace } from './suggest';
 
 type Q = Kysely<Database> | Transaction<Database>;
 
@@ -37,6 +40,91 @@ export async function orgSeat(db: Q, userId: string, orgId: string): Promise<Org
       .where('left_at', 'is', null)
       .executeTakeFirst()) ?? null
   );
+}
+
+/** Your place on the team when it lets you run it (the owner or an admin); refused otherwise. */
+export async function managerSeat(db: Q, userId: string, orgId: string): Promise<OrgMember> {
+  const seat = await orgSeat(db, userId, orgId);
+  if (!seat) throw notFound(tr('That organization'));
+  if (!canManageOrg(seat.role))
+    throw forbidden(tr('Only the organization’s owner and admins can.'));
+  return seat;
+}
+
+/**
+ * People onto an open organization's team, in the role given: the one way anyone joins one (an
+ * owner or admin adding the people they know, an invite accepted; M16 C3a). Under the
+ * organization's row, so two at once never pass its plan's room together and one that closed
+ * meanwhile takes nobody; from then on they answer every one of its conversations, and
+ * teammates who know each other are offered as colleagues (PRD §12). Returns who was added
+ * (not who was on it already); the caller audits it.
+ */
+export async function seatOnTeam(
+  ctx: AppContext,
+  orgId: string,
+  userIds: string[],
+  role: 'agent' | 'admin',
+  addedBy: string | null,
+): Promise<string[]> {
+  const { adding, team } = await ctx.db.transaction().execute(async (trx) => {
+    const open = await trx
+      .selectFrom('organizations')
+      .select('id')
+      .where('id', '=', orgId)
+      .where('archived_at', 'is', null)
+      .forNoKeyUpdate()
+      .executeTakeFirst();
+    if (!open) throw notFound(tr('That organization'));
+    const seated = await trx
+      .selectFrom('org_members')
+      .select('user_id')
+      .where('org_id', '=', orgId)
+      .where('left_at', 'is', null)
+      .execute();
+    const current = new Set(seated.map((m) => m.user_id));
+    const fresh = [...new Set(userIds)].filter((u) => !current.has(u));
+    if (fresh.length === 0) return { adding: fresh, team: [...current] };
+    await assertTeamRoom(ctx, orgId, fresh.length, trx);
+    for (const userId of fresh) {
+      await trx
+        .insertInto('org_members')
+        .values({ org_id: orgId, user_id: userId, role, added_by: addedBy })
+        .onConflict((oc) =>
+          oc.columns(['org_id', 'user_id']).doUpdateSet({
+            left_at: null,
+            role,
+            added_by: addedBy,
+            joined_at: ctx.now(),
+          }),
+        )
+        .execute();
+      // The team answers every one of the organization's conversations.
+      await joinThreads(trx, orgId, userId);
+    }
+    return { adding: fresh, team: [...current, ...fresh] };
+  });
+  if (adding.length === 0) return adding;
+  // Without a thread: the team itself changed, and every one of it sees who's on it now.
+  await ctx.bus.publish(team, { type: 'business.updated', data: { orgId } });
+  // Teammates who know each other may be colleagues: offered to each, never decided (PRD §12).
+  ctx.defer('suggest-teammates', async () => {
+    const org = await orgById(ctx.db, orgId);
+    const people = await ctx.db
+      .selectFrom('org_members as m')
+      .innerJoin('users as u', 'u.id', 'm.user_id')
+      .select('m.user_id')
+      .where('m.org_id', '=', orgId)
+      .where('m.left_at', 'is', null)
+      .where('u.kind', '=', 'human')
+      .execute();
+    await suggestFromPlace(
+      ctx,
+      { kind: 'org', id: orgId, name: org.name, verified: org.verified_at !== null },
+      adding,
+      people.map((m) => m.user_id),
+    );
+  });
+  return adding;
 }
 
 /**
