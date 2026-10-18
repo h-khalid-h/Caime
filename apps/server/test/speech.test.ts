@@ -186,7 +186,18 @@ describe('a voice note into words (PRD §46)', () => {
 
   it('never sends a private conversation’s note, nor one longer than a voice note', async () => {
     const before = requests.length;
-    const long = await voiceNote(ana, convo, 11 * 60_000);
+    // Longer than a voice note can be, it isn't sent as one (M16 E4)…
+    const file = await upload(ana, 'note.wav', 'audio/wav', wav(), 11 * 60_000);
+    const said = (durationMs: number) =>
+      ana.req('POST', `/v1/conversations/${convo}/messages`, {
+        clientId: uuidv4(),
+        kind: 'voice',
+        fileIds: [file.id],
+        payload: { durationMs },
+      });
+    expect((await said(11 * 60_000)).statusCode).toBe(400);
+    // …and one whose recording is longer than it says is judged by the recording, never heard.
+    const long = (await said(2_000)).json().message as { id: string };
     await work();
     expect((await read(ana, long.id)).body).toBeNull();
     expect(requests.length).toBe(before);

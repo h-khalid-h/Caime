@@ -2918,4 +2918,8 @@ export const arB: Catalog = {
   'That message can’t be shown here any more.': 'لم يعد بالإمكان عرض هذه الرسالة هنا.',
   'Replying privately to {name} in {group}': 'رد خاص على {name} في {group}',
   'Replying privately': 'رد خاص',
+  'Voice note position': 'موضع التشغيل في الرسالة الصوتية',
+  'Forward 5 seconds': 'تقديم 5 ثوانٍ',
+  'Back 5 seconds': 'رجوع 5 ثوانٍ',
+  'Playback speed: {rate}': 'سرعة التشغيل: {rate}',
 };

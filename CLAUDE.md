@@ -2011,6 +2011,13 @@ appointment from a catalog).
   `features/voice/Recorder.tsx` and plays in `VoiceNote.tsx`, both loaded lazily (the audio
   module stays out of the startup chunk); the E2E stand-in answers `/v1/audio/transcriptions`
   with fixed words. Recording a call (R52) uses this interface when it comes, never a second one.
+  The recorder meters as it goes and sends the note's bars (core `voice.ts`: `waveformOf`, at
+  most `WAVEFORM_BARS`), drawn and pressed along in `VoiceNoteView` with the speeds of
+  `PLAYBACK_RATES` (M16 E4). What a client's message carries is what its kind reads
+  (`sendMessage`: `VoicePayload`, `StickerPayload`, `ContactPayload`, `PollPayload`,
+  `LocationPayload`, nothing for a photo or a file, nothing for a text): a mark Caime writes on a
+  message (a transcript, an import, a private reply) is never taken from a device, and a new
+  field a device sends joins its kind's schema there.
 - Natural-language search (R17): `GET /search` runs the rules (`parseSearchQuery`; a time at the
   end, "last week", "in March", "2025", is `query.period`, the days to search, split off first by
   `splitPeriod` and filtered on the server, never read as a person; a bare month is the nearest

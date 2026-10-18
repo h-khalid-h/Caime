@@ -1,5 +1,6 @@
 import { formatDuration } from '@caime/core/format';
 import { tr } from '@caime/core/i18n';
+import { levelBar, VOICE_MAX_MS, WAVEFORM_TOP, waveformOf } from '@caime/core/voice';
 import {
   RecordingPresets,
   requestRecordingPermissionsAsync,
@@ -19,11 +20,46 @@ import { IconButton } from '@/ui/IconButton';
 import { Text } from '@/ui/Text';
 import { toast } from '@/ui/Toast';
 
-/** The longest voice note: the server transcribes up to this, and a longer one is a recording. */
-export const VOICE_MAX_MS = 10 * 60_000;
+/** The recorder's own preset, measuring how loud it hears as it goes (M16 E4). */
+const METERED = { ...RecordingPresets.HIGH_QUALITY, isMeteringEnabled: true };
+/** The most bars the recorder shows of what it's hearing now. */
+const LIVE_BARS = 40;
 
 export interface Recorded extends LocalFile {
   durationMs: number;
+  /** The note's bars (M16 E4); none where the recorder measured nothing. */
+  waveform: number[];
+}
+
+/** Bars as the recorder draws them: the newest at the end, as many as fit. */
+function Bars({ bars, color }: { bars: number[]; color: string }) {
+  return (
+    <View
+      style={{
+        flex: 1,
+        height: 24,
+        flexDirection: 'row',
+        alignItems: 'center',
+        justifyContent: 'flex-end',
+        gap: 2,
+        overflow: 'hidden',
+      }}
+      testID="voice-recorder-bars"
+    >
+      {bars.map((bar, i) => (
+        <View
+          // biome-ignore lint/suspicious/noArrayIndexKey: a bar is its place in the recording
+          key={i}
+          style={{
+            width: 3,
+            height: 3 + Math.round((bar / WAVEFORM_TOP) * 21),
+            borderRadius: 1.5,
+            backgroundColor: color,
+          }}
+        />
+      ))}
+    </View>
+  );
 }
 
 /**
@@ -39,11 +75,19 @@ export default function Recorder({
   onCancel: () => void;
 }) {
   const t = useTheme();
-  const recorder = useAudioRecorder(RecordingPresets.HIGH_QUALITY);
-  const state = useAudioRecorderState(recorder, 250);
+  const recorder = useAudioRecorder(METERED);
+  const state = useAudioRecorderState(recorder, 100);
   const [phase, setPhase] = useState<'asking' | 'recording' | 'stopped' | 'denied'>('asking');
   const startedAt = useRef<number | null>(null);
   const [lengthMs, setLengthMs] = useState(0);
+  // How loud it heard, a level each tenth of a second while recording (dBFS), for the bars.
+  const levels = useRef<number[]>([]);
+  const metering = state.metering;
+  const heardAt = state.durationMillis;
+  useEffect(() => {
+    if (phase === 'recording' && typeof metering === 'number' && heardAt > 0)
+      levels.current.push(metering);
+  }, [phase, metering, heardAt]);
 
   // The callbacks as the latest render gave them, so the effects below run once each.
   const onCancelRef = useRef(onCancel);
@@ -114,6 +158,7 @@ export default function Recorder({
       name: `voice-${stamp}.${web ? 'webm' : 'm4a'}`,
       mime: web ? 'audio/webm' : 'audio/mp4',
       durationMs: lengthMs,
+      waveform: waveformOf(levels.current),
     });
   };
 
@@ -165,6 +210,11 @@ export default function Recorder({
         <Text variant="body" testID="voice-elapsed">
           {phase === 'asking' ? tr('Starting…') : formatDuration(shown)}
         </Text>
+        {phase === 'recording' ? (
+          <Bars bars={levels.current.slice(-LIVE_BARS).map(levelBar)} color={t.c.textSecondary} />
+        ) : phase === 'stopped' ? (
+          <Bars bars={waveformOf(levels.current, LIVE_BARS)} color={t.c.textSecondary} />
+        ) : null}
         <Text variant="caption" color="textSecondary">
           {phase === 'recording' ? tr('Recording') : phase === 'stopped' ? tr('Ready to send') : ''}
         </Text>

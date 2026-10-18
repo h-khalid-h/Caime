@@ -4649,4 +4649,8 @@ export const fr: Catalog = {
   'That message can’t be shown here any more.': 'Ce message ne peut plus être affiché ici.',
   'Replying privately to {name} in {group}': 'Réponse privée à {name} dans {group}',
   'Replying privately': 'Réponse privée',
+  'Voice note position': 'Position dans le message vocal',
+  'Forward 5 seconds': 'Avancer de 5 secondes',
+  'Back 5 seconds': 'Reculer de 5 secondes',
+  'Playback speed: {rate}': 'Vitesse de lecture : {rate}',
 };

@@ -738,6 +738,7 @@ export const MessageBubble = memo(function MessageBubble({
           <VoiceNote
             url={audio.url}
             durationMs={durationOf(m.payload, audio.durationMs)}
+            payload={m.payload}
             fg={fg}
             meta={meta}
             mine={mine}

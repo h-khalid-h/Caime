@@ -2702,6 +2702,25 @@ graph) and the number that will show it; one that sharpens none is hygiene and s
       message, and said as where-not-what once deleted or left), the catalogs in four languages
       and the server's, `e2e/reading-flow.spec.ts` (the dot until opened; answered privately from
       a group, quoted in the chat, and back to the message), and the full gate.
+- [x] E4a. Voice notes with a shape (2026-10-18, review §7). A voice note shows what its recorder
+      heard: the recorder measures how loud it is as it goes (expo-audio's metering, in a browser
+      and on a phone) and sends up to 48 bars with the note (core `voice.ts`), drawn live while
+      recording, once stopped, and in the bubble, played and unplayed in the bubble's own colours.
+      A press anywhere along them goes there; a screen reader steps five seconds (a slider with
+      "Forward 5 seconds"), the keyboard's arrows too, the way the reading runs. While it plays
+      it offers 1.5× and 2× with the pitch kept, and the next note starts at the speed chosen
+      last. The server now keeps of any client's payload only what its kind reads (L9, past text:
+      a voice note's length and bars within their bounds, a sticker's, a contact's, a poll's, a
+      place's, nothing for a photo or a file), so no device writes the marks Caime puts on a
+      message (a transcript's "Suggested by Cai", an import, a private reply); a private reply is
+      a text's alone, and a forward of one is its words without its group's quote. Built for
+      phones, not yet tried on one. Verified: `voice.test.ts`, `voice-payload.test.ts` (bars
+      kept, forged marks dropped, bars and lengths a note can't have refused, a file keeping
+      none, a forward keeping Caime's own), `reading.test.ts` (a forwarded private reply),
+      `speech.test.ts` (a note longer than one refused, one whose recording is longer than it
+      says never heard), the catalogs in four languages, `e2e/voice.spec.ts` (bars kept from the
+      fake microphone, a press halfway along, 1.5×, played through and back at its start), and
+      the full gate.
 - [ ] F. Mail, calendar, meetings: CC and reply-all as people on the topic; unverified mail shown
       under Notices, never dropped; a follow-up allowance to new addresses; invitations arriving
       by mail become cards; cards travel by mail; "Suggest another time" with guest invitations
@@ -4323,6 +4342,9 @@ graph) and the number that will show it; one that sharpens none is hygiene and s
   journeys, safety, reliability, performance, intelligence, mail and calendar, chat, integrations,
   business and code integrity; the matrix against WhatsApp, Signal, Slack, Calendly and Workspace;
   an age-assurance design; the integration framework mapped to the code; plan M16 (A–H).
+- 2026-10-18 — M16 E4a: voice notes with their bars (measured as recorded, pressed along, read by a
+  screen reader in five-second steps), 1.5× and 2×, and every client payload kept as its kind
+  reads it; the startup chunk back to 448.4 KB (the Actions row out of `__common`).
 - 2026-10-18 — M16 E3b: mark as unread (a dot until it's read) and reply privately from a group
   (quoted as each reader may read it, nothing copied). Block E's reading flow done.
 - 2026-10-18 — M16 E3a: reading a conversation: opened at the first unread with their count, the

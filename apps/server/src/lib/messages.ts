@@ -10,6 +10,7 @@ import {
   assessLink,
   BookingAskBody,
   type BookingAskInput,
+  ContactPayload,
   canPostTo,
   type FileView,
   initialKitState,
@@ -27,15 +28,18 @@ import {
   type PaysShare,
   type PayTo,
   type PlacedOrder,
+  PollPayload,
   payDirection,
   prepareKitFields,
   type SealedMessage,
   type SendMessageBodyT,
   ShareAskBody,
+  StickerPayload,
   messagePreview as sharedPreview,
   shareOut,
   systemAccountOf,
   uuidv7,
+  VoicePayload,
 } from '@caime/core';
 import { currencyOfCountry } from '@caime/core/countries';
 import { tr } from '@caime/core/i18n';
@@ -176,8 +180,9 @@ function albumOf(
 
 /** The group's message a private reply answers (M16 E3b), as the server wrote it on send. */
 function privateReplyOf(
-  m: Pick<Message, 'payload'>,
+  m: Pick<Message, 'kind' | 'payload'>,
 ): { conversationId: string; messageId: string } | null {
+  if (m.kind !== 'text') return null;
   const ref = (m.payload as { privateReply?: { conversationId?: unknown; messageId?: unknown } })
     ?.privateReply;
   return ref && typeof ref.conversationId === 'string' && typeof ref.messageId === 'string'
@@ -1045,6 +1050,17 @@ export async function sendMessage(
     (typeof payload !== 'object' || payload === null || Object.keys(payload).length > 0)
   )
     throw badRequest(tr('A text message carries no payload.'));
+  // Any other kind keeps what it reads of what a client sent, nothing more (L9, M16 E4): no
+  // client writes the marks Caime puts on a message (a transcript, an import, a private reply), and
+  // what a voice note carries is bounded. A card's is built below from its fields.
+  if (!opts.serverPayload && !opts.trusted) {
+    if (body.kind === 'voice') payload = parse(VoicePayload, body.payload ?? {});
+    else if (body.kind === 'media' || body.kind === 'file') payload = {};
+    else if (body.kind === 'sticker') payload = parse(StickerPayload, body.payload);
+    else if (body.kind === 'contact') payload = parse(ContactPayload, body.payload);
+    else if (body.kind === 'poll') payload = parse(PollPayload, body.payload);
+    else if (body.kind === 'location') payload = parse(LocationPayload, body.payload);
+  }
   if (privateReply) payload = { privateReply };
   let kitMode: Mode | null = null;
   // Its id, now: a repeating meeting's first time names its series by it (R58).

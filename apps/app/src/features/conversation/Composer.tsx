@@ -444,7 +444,10 @@ export const Composer = forwardRef<ComposerHandle, ComposerProps>(function Compo
         kind: 'voice',
         body: null,
         fileIds: [uploaded.id],
-        payload: { durationMs: file.durationMs },
+        payload: {
+          durationMs: file.durationMs,
+          ...(file.waveform.length ? { waveform: file.waveform } : {}),
+        },
         replyToId: replyTo?.id ?? null,
       });
       onClearReply();

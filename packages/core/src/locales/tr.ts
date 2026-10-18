@@ -4468,4 +4468,8 @@ export const turkish: Catalog = {
   'That message can’t be shown here any more.': 'Bu mesaj artık burada gösterilemiyor.',
   'Replying privately to {name} in {group}': '{group} grubundaki {name} kişisine özelden yanıt',
   'Replying privately': 'Özelden yanıt',
+  'Voice note position': 'Sesli mesajdaki konum',
+  'Forward 5 seconds': '5 saniye ileri',
+  'Back 5 seconds': '5 saniye geri',
+  'Playback speed: {rate}': 'Oynatma hızı: {rate}',
 };

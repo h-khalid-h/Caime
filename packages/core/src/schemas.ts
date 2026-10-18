@@ -65,6 +65,7 @@ import {
 } from './rules';
 import { SPACE_KINDS } from './spaces';
 import { SPHERES } from './taxonomy';
+import { VOICE_MAX_MS, WAVEFORM_BARS, WAVEFORM_TOP } from './voice';
 
 /**
  * A handle as it's kept (lowercase). A reserved one passes here: the server refuses it where it
@@ -1143,7 +1144,15 @@ export const UpdateConversationBody = z
   })
   .strict();
 
-const StickerPayload = z.object({ pack: z.string().max(40), sticker: z.string().max(40) });
+export const StickerPayload = z.object({ pack: z.string().max(40), sticker: z.string().max(40) });
+/**
+ * What a voice note says of itself (M16 E4): how long its recorder heard, and the bars it drew as it
+ * went (`voice.ts`). Its words are Caime's to write (a transcript), never the sender's.
+ */
+export const VoicePayload = z.object({
+  durationMs: z.number().min(0).max(VOICE_MAX_MS).optional(),
+  waveform: z.array(z.number().int().min(0).max(WAVEFORM_TOP)).max(WAVEFORM_BARS).optional(),
+});
 /**
  * A place: where someone is (coordinates, and how sure the device was, in metres), or a place by
  * name to look up ("Café Riche, Downtown"). Never live: one moment, shared on purpose.
@@ -1178,7 +1187,7 @@ export const LiveLocationUpdate = z
   })
   .strict();
 
-const ContactPayload = z.union([
+export const ContactPayload = z.union([
   z.object({ userId: z.string().uuid() }),
   z.object({
     name: z.string().max(80),

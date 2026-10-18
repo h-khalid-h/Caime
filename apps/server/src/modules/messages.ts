@@ -1285,11 +1285,13 @@ export async function messageRoutes(app: FastifyInstance, ctx: AppContext) {
       .execute();
     // One copy for each, known by where it goes: sent again after an answer that never came, or
     // with another conversation added, each still arrives once.
+    // A private reply's quote of its group (M16 E3b) stays with it: the copy is its words.
+    const { privateReply: _quote, ...payload } = (m.payload ?? {}) as Record<string, unknown>;
     const copy = (conversationId: string) => ({
       clientId: `${body.clientId}:${conversationId}`,
       kind,
       body: m.body,
-      payload: m.payload,
+      payload,
       fileIds: files.map((f) => f.file_id),
     });
     // Every one checked first, with all that sending there would check (blocks, a message request

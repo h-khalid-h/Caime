@@ -172,4 +172,23 @@ describe('reply privately (M16 E3b)', () => {
     );
     expect(left.privateReply).toMatchObject({ title: null, preview: null, senderId: null });
   });
+
+  it('forwards as its words, never with the quote of its group', async () => {
+    // Between two people still in it (Alex has left by now).
+    const linaChat = (
+      await noor.post('/v1/conversations', { kind: 'direct', userId: lina.user.id })
+    ).conversation.id;
+    const reply = await send(noor, linaChat, 'Cake is on me', {
+      privateReplyTo: { conversationId: group, messageId: asked.id },
+    });
+    expect(reply.privateReply).toMatchObject({ title: 'Book club' });
+    const res = await noor.post(`/v1/messages/${reply.id}/forward`, {
+      conversationIds: [chat],
+      clientId: uuidv4(),
+    });
+    const copy = (await alex.get(`/v1/conversations/${chat}/messages`)).messages.find(
+      (m: { id: string }) => m.id === res.messageIds[0],
+    );
+    expect(copy).toMatchObject({ body: 'Cake is on me', forwarded: true, privateReply: null });
+  });
 });
