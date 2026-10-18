@@ -85,7 +85,7 @@ async function checkSources(
 async function visibleTask(ctx: AppContext, me: string, id: string): Promise<Task> {
   const t = await ctx.db.selectFrom('tasks').selectAll().where('id', '=', id).executeTakeFirst();
   if (!t || (t.owner_id !== me && !(t.shared && t.assignee_id === me)))
-    throw notFound(tr('That task'));
+    throw notFound(tr('That action'));
   return t;
 }
 

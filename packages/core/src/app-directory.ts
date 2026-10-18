@@ -40,7 +40,7 @@ export const APP_PROVIDES_LABELS: Record<AppProvides, string> = {
 export const APP_CATEGORY_LABELS: Record<AppCategory, string> = {
   automation: msg('Automation'),
   calendars: msg('Calendars'),
-  tasks: msg('Tasks and notes'),
+  tasks: msg('Actions and notes'),
   money: msg('Money'),
   health: msg('Health'),
   travel: msg('Travel'),

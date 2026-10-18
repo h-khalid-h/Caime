@@ -554,7 +554,7 @@ const tasks: Rule[1] = (m, out) => {
     scope: 'tasks',
     person,
     text: '',
-    interpretation: person ? tr('Tasks with {person}', { person: person }) : tr('Your tasks'),
+    interpretation: person ? tr('Actions with {person}', { person }) : tr('Your actions'),
   };
 };
 

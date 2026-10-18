@@ -137,7 +137,7 @@ export function ConnectSheet({
       </View>
       {draft ? (
         <SwitchRow
-          label={tr('Show {name} the context', { name })}
+          label={tr('Tell {name} how you know them', { name })}
           detail={tr('They’ll see “{label}”, not your label, so they know who’s asking.', {
             label: [tr(SPHERE_DEFS[draft.sphere].label), draft.orgName].filter(Boolean).join(' · '),
           })}

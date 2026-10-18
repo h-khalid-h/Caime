@@ -35,7 +35,6 @@ export const arA: Catalog = {
   'Everyone you know, in the right place': 'كل من تعرفهم، كلٌّ في مكانه',
   'Pick someone to see how you know them, what’s open between you, and everything you’ve shared.':
     'اختر شخصًا لترى كيف تعرفه، وما المفتوح بينكما، وكل ما تشاركتماه.',
-  'Connect with someone': 'تواصل مع شخص',
   'A place for each group': 'مكان لكل مجموعة',
   'Pick a space to see its conversations and its people, or start one for a family, a team, a project or a club.':
     'اختر مساحة لترى محادثاتها وأفرادها، أو ابدأ واحدة لعائلة أو فريق أو مشروع أو نادٍ.',
@@ -226,7 +225,6 @@ export const arA: Catalog = {
   'No requests': 'لا طلبات',
   'When someone wants to connect, you’ll see who they are and how they know you here. Share your link, and the first one is yours to answer.':
     'عندما يريد أحدٌ التواصل معك، ترى هنا هويته وكيف يعرفك. شارك رابطك، وسيكون أول طلب بانتظار ردك.',
-  'Find people or share your link': 'ابحث عن أشخاص أو شارك رابطك',
   'Want to connect': 'يريدون التواصل',
   'You asked': 'أنت طلبت',
   'Accept without a label': 'قبول بلا تصنيف',
@@ -1027,7 +1025,6 @@ export const arA: Catalog = {
   Cards: 'البطاقات',
   'From {name}': 'من {name}',
   Yours: 'لك',
-  'A business conversation. Its team answers as {name}.': 'محادثة عمل. فريقها يجيب باسم {name}.',
   'See its profile': 'عرض ملفها',
   'A customer of {name}. They see {name}, not who on the team answers.':
     'عميل لدى {name}. يرى العميل {name}، لا من يجيب من الفريق.',
@@ -1050,7 +1047,6 @@ export const arA: Catalog = {
   Document: 'مستند',
   Link: 'رابط',
   'Photos, files and links': 'الصور والملفات والروابط',
-  Memory: 'الذاكرة',
   'Promises, questions, dates and decisions from this conversation will gather here, so nothing gets lost in the scroll.':
     'الوعود والأسئلة والمواعيد والقرارات من هذه المحادثة تتجمع هنا، فلا يضيع شيء في التمرير.',
   'Topics · {count}': 'الموضوعات · {count}',
@@ -1077,8 +1073,6 @@ export const arA: Catalog = {
   'This conversation isn’t available': 'هذه المحادثة غير متاحة',
   'typing…': 'جارٍ الكتابة…',
   'Private · end to end encrypted': 'خاصة · مشفّرة من طرف إلى طرف',
-  'Business · Verified · {verifiedDomain}': 'أعمال · موثّقة · {verifiedDomain}',
-  'Business · Not verified yet': 'أعمال · لم تُوثَّق بعد',
   'Customer of {name}': 'عميل لدى {name}',
   'Voice call {displayName}': 'مكالمة صوتية مع {displayName}',
   'Video call {displayName}': 'مكالمة فيديو مع {displayName}',
@@ -1088,8 +1082,6 @@ export const arA: Catalog = {
   'About this private conversation': 'عن هذه المحادثة الخاصة',
   'Hide details': 'إخفاء التفاصيل',
   'Show details': 'إظهار التفاصيل',
-  'A business conversation: {name}’s team answers as {name}.':
-    'محادثة عمل: فريق {name} يجيب باسم {name}.',
   'Only you see how you’ve labelled {displayName}': 'لا يرى غيرك كيف صنّفت {displayName}',
   'This is the beginning of your conversation.': 'هذه بداية محادثتكما.',
   'Jump to the newest message': 'الانتقال إلى أحدث رسالة',
@@ -1112,7 +1104,6 @@ export const arA: Catalog = {
   'Reply as {name}': 'الرد باسم {name}',
   'Good to have you here, {first}.': 'سعداء بوجودك هنا، {first}.',
   'What are you working on this week?': 'على ماذا تعمل هذا الأسبوع؟',
-  'Shall we keep our threads here from now on?': 'هل نتراسل هنا من الآن فصاعدًا؟',
   'Hey {first}! We’re on Caime now.': 'أهلًا {first}! نحن على Caime الآن.',
   'How have you been?': 'كيف حالك؟',
   'What’s new with you?': 'ما الجديد عندك؟',
@@ -1491,7 +1482,6 @@ export const arA: Catalog = {
   Chats: 'الدردشات',
   'New conversation': 'محادثة جديدة',
   'Show conversations': 'إظهار المحادثات',
-  'Attention · {needsYou}': 'الاهتمام · {needsYou}',
   Attention: 'الاهتمام',
   'Nothing needs you right now. Enjoy it.': 'لا شيء يحتاجك الآن. استمتع.',
   'Say hello to someone': 'ألقِ التحية على أحد',
@@ -1513,8 +1503,6 @@ export const arA: Catalog = {
     toMan: 'ابحث في أشخاصك',
     other: 'ابحث في أشخاصك',
   },
-  'Connect with someone new': 'تواصل مع شخص جديد',
-  'Find people by @handle or email': 'ابحث عن الأشخاص بالمعرّف أو البريد',
   'For a family, a team, a project or a club': 'لعائلة أو فريق أو مشروع أو نادٍ',
   'No one by that name yet.': 'لا أحد بهذا الاسم بعد.',
   'Your connections will show here.': 'من تتواصل معهم سيظهرون هنا.',
@@ -1850,7 +1838,6 @@ export const arA: Catalog = {
   'Send request': 'إرسال الطلب',
   'How you know them': 'كيف تعرفهم',
   'Optional. {name} never sees your label.': 'اختياري. تصنيفك لا يظهر لـ {name} أبدًا.',
-  'Show {name} the context': 'أظهر لـ {name} السياق',
   'Add a note (optional)': {
     toWoman: 'أضيفي ملاحظة (اختياري)',
     toMan: 'أضف ملاحظة (اختياري)',
@@ -1874,7 +1861,6 @@ export const arA: Catalog = {
   'Make the link': { toWoman: 'أنشئي الرابط', toMan: 'أنشئ الرابط', other: 'أنشئ الرابط' },
   'How you’ll know them': 'كيف ستعرفهم',
   'Optional. They never see your label.': 'اختياري. لا يرون تصنيفك أبدًا.',
-  'Show them the context': 'أظهر لهم السياق',
   'A line for them (optional)': 'سطر لهم (اختياري)',
   'Hi, it’s…': 'مرحبًا، معك…',
   'Links you’ve made': 'الروابط التي أنشأتها',

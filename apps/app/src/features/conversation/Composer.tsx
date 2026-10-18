@@ -6,7 +6,7 @@ import type {
   MessageView,
 } from '@caime/core/api';
 import { listTitle, messagePreview } from '@caime/core/format';
-import { tr, trn } from '@caime/core/i18n';
+import { msg, tr, trn } from '@caime/core/i18n';
 import { isLargeGroup } from '@caime/core/large-group';
 import { firstLinkIn } from '@caime/core/link-text';
 import { SUBJECT_MAX, subjectFromText } from '@caime/core/mail';
@@ -127,6 +127,15 @@ const MAX_LINES = { phone: 5, desktop: 8 };
 const SIDE = 40;
 /** A link's card is asked for once the typing has stayed on it this long (M16 E4c). */
 const LINK_SETTLE_MS = 600;
+/**
+ * The cards anyone reaches for, offered as plain rows beside a photo and a file, each by its
+ * plain name (M16 E5); every other card stays under Cards.
+ */
+const PLAIN_KITS: Partial<Record<KitChoice, string>> = {
+  meeting: msg('Plan a meeting'),
+  location: msg('Place'),
+  poll: msg('Poll'),
+};
 
 export const Composer = forwardRef<ComposerHandle, ComposerProps>(function Composer(
   {
@@ -205,6 +214,8 @@ export const Composer = forwardRef<ComposerHandle, ComposerProps>(function Compo
   const aiReady = useAiReady(conversation);
   const me = useMe();
   const kits = kitsOffered(conversation, me.minor);
+  const plainKits = kits.filter((k) => PLAIN_KITS[k.id as KitChoice]);
+  const cardKits = kits.filter((k) => !PLAIN_KITS[k.id as KitChoice]);
   // With a customer, the team also has the organization's own kinds of card, made by its apps.
   const own = useQuery({
     queryKey: qk.conversationKits(id),
@@ -1017,7 +1028,17 @@ export const Composer = forwardRef<ComposerHandle, ComposerProps>(function Compo
               testID={`attach-drive-${a.provider}`}
             />
           ))}
-          {kits.length || own?.length ? (
+          {plainKits.map((k) => (
+            <ListRow
+              key={k.id}
+              icon={KIT_ICONS[k.id as KitChoice]}
+              title={tr(PLAIN_KITS[k.id as KitChoice] ?? k.name)}
+              subtitle={tr(k.description)}
+              testID={`kit-option-${k.id}`}
+              onPress={fromSheet(() => setKit(k.id as KitChoice))}
+            />
+          ))}
+          {cardKits.length || own?.length ? (
             <>
               <Text
                 variant="overline"
@@ -1026,7 +1047,7 @@ export const Composer = forwardRef<ComposerHandle, ComposerProps>(function Compo
               >
                 {tr('Cards')}
               </Text>
-              {kits.map((k) => (
+              {cardKits.map((k) => (
                 <ListRow
                   key={k.id}
                   icon={KIT_ICONS[k.id as KitChoice]}

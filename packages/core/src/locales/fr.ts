@@ -39,7 +39,6 @@ export const fr: Catalog = {
   'Everyone you know, in the right place': 'Toutes vos connaissances, chacune à sa place',
   'Pick someone to see how you know them, what’s open between you, and everything you’ve shared.':
     'Choisissez quelqu’un pour voir d’où vous vous connaissez, ce qui est en cours entre vous et tout ce que vous avez partagé.',
-  'Connect with someone': 'Entrer en contact avec quelqu’un',
   'A place for each group': 'Une place pour chaque groupe',
   'Pick a space to see its conversations and its people, or start one for a family, a team, a project or a club.':
     'Choisissez un espace pour voir ses conversations et ses membres, ou créez-en un pour une famille, une équipe, un projet ou un club.',
@@ -215,7 +214,6 @@ export const fr: Catalog = {
   'No requests': 'Aucune demande',
   'When someone wants to connect, you’ll see who they are and how they know you here. Share your link, and the first one is yours to answer.':
     'Quand quelqu’un veut entrer en contact, vous verrez ici qui c’est et d’où cette personne vous connaît. Partagez votre lien : la première demande attend votre réponse.',
-  'Find people or share your link': 'Trouver des personnes ou partager votre lien',
   'Want to connect': 'Veulent entrer en contact',
   'You asked': 'Vos demandes',
   'Accept without a label': 'Accepter sans étiquette',
@@ -972,8 +970,6 @@ export const fr: Catalog = {
   Cards: 'Cartes',
   'From {name}': 'De {name}',
   Yours: 'À vous',
-  'A business conversation. Its team answers as {name}.':
-    'Une conversation professionnelle. Son équipe répond en tant que {name}.',
   'See its profile': 'Voir son profil',
   'A customer of {name}. They see {name}, not who on the team answers.':
     'Client de {name}. Cette personne voit {name}, pas qui répond dans l’équipe.',
@@ -992,7 +988,6 @@ export const fr: Catalog = {
   Document: 'Document',
   Link: 'Lien',
   'Photos, files and links': 'Photos, fichiers et liens',
-  Memory: 'Mémoire',
   'Promises, questions, dates and decisions from this conversation will gather here, so nothing gets lost in the scroll.':
     'Les promesses, questions, dates et décisions de cette conversation se rassembleront ici, pour que rien ne se perde dans le fil.',
   'Topics · {count}': 'Sujets · {count}',
@@ -1019,8 +1014,6 @@ export const fr: Catalog = {
   'This conversation isn’t available': 'Cette conversation n’est pas disponible',
   'typing…': 'écrit…',
   'Private · end to end encrypted': 'Privée · chiffrée de bout en bout',
-  'Business · Verified · {verifiedDomain}': 'Entreprise · Vérifiée · {verifiedDomain}',
-  'Business · Not verified yet': 'Entreprise · Pas encore vérifiée',
   'Customer of {name}': 'Client de {name}',
   Online: 'En ligne',
   'Voice call {displayName}': 'Appeler {displayName} en vocal',
@@ -1031,8 +1024,6 @@ export const fr: Catalog = {
   'About this private conversation': 'À propos de cette conversation privée',
   'Hide details': 'Masquer les détails',
   'Show details': 'Afficher les détails',
-  'A business conversation: {name}’s team answers as {name}.':
-    'Une conversation professionnelle : l’équipe de {name} répond en tant que {name}.',
   'Only you see how you’ve labelled {displayName}':
     'Personne d’autre que vous ne voit comment vous avez étiqueté {displayName}',
   'This is the beginning of your conversation.': 'C’est le début de votre conversation.',
@@ -1055,7 +1046,6 @@ export const fr: Catalog = {
   'Reply as {name}': 'Répondre en tant que {name}',
   'Good to have you here, {first}.': 'Un plaisir de vous voir ici, {first}.',
   'What are you working on this week?': 'Sur quoi travaillez-vous cette semaine ?',
-  'Shall we keep our threads here from now on?': 'On garde nos échanges ici désormais ?',
   'Hey {first}! We’re on Caime now.': 'Salut {first} ! On est sur Caime maintenant.',
   'How have you been?': 'Comment allez-vous ?',
   'What’s new with you?': 'Quoi de neuf chez vous ?',
@@ -1421,12 +1411,7 @@ export const fr: Catalog = {
   Business: 'Entreprise',
   Chats: 'Discussions',
   'New conversation': 'Nouvelle conversation',
-  'Attention · {needsYou}': 'Attention · {needsYou}',
   Attention: 'Attention',
-  'Attention, {n} need you': {
-    one: 'Attention, {n} a besoin de vous',
-    other: 'Attention, {n} ont besoin de vous',
-  },
   'Nothing needs you right now. Enjoy it.': 'Rien n’a besoin de vous pour l’instant. Profitez-en.',
   'Say hello to someone': 'Dites bonjour à quelqu’un',
   'Connect with the people you talk to. Caime keeps family, friends and work each in the right place.':
@@ -1443,8 +1428,6 @@ export const fr: Catalog = {
   'Muted until {when}': 'En sourdine jusqu’à {when}',
   'Until a day and time…': 'Jusqu’à un jour et une heure…',
   'Search your people': 'Rechercher dans votre entourage',
-  'Connect with someone new': 'Entrer en contact avec quelqu’un de nouveau',
-  'Find people by @handle or email': 'Trouver des personnes par @identifiant ou e-mail',
   'For a family, a team, a project or a club': 'Pour une famille, une équipe, un projet ou un club',
   'No one by that name yet.': 'Personne de ce nom pour l’instant.',
   'Your connections will show here.': 'Vos contacts apparaîtront ici.',
@@ -1827,7 +1810,6 @@ export const fr: Catalog = {
   'Send request': 'Envoyer la demande',
   'How you know them': 'D’où vous vous connaissez',
   'Optional. {name} never sees your label.': 'Facultatif. {name} ne voit jamais votre étiquette.',
-  'Show {name} the context': 'Montrer le contexte à {name}',
   'Add a note (optional)': 'Ajouter un mot (facultatif)',
   'Hi {name}, it’s…': 'Bonjour {name}, c’est…',
   '{name} can accept, decline or ignore. Declining is silent.':
@@ -1848,7 +1830,6 @@ export const fr: Catalog = {
   'How you’ll know them': 'Ce que cette personne sera pour vous',
   'Optional. They never see your label.':
     'Facultatif. Cette personne ne voit jamais votre étiquette.',
-  'Show them the context': 'Lui montrer le contexte',
   'A line for them (optional)': 'Un mot pour cette personne (facultatif)',
   'Hi, it’s…': 'Bonjour, c’est…',
   'Links you’ve made': 'Liens que vous avez créés',
@@ -1899,7 +1880,6 @@ export const fr: Catalog = {
   '{title} until {clock}': '{title} jusqu’à {clock}',
   conversation: 'conversation',
   'last {when}': 'dernier {when}',
-  context: 'contexte',
   shared: 'partagé',
   '{n} files': {
     one: '{n} fichier',
@@ -2433,10 +2413,6 @@ export const fr: Catalog = {
   '{what}: required is true or false.': '{what} : required vaut true ou false.',
   '{what}: each choice once.': '{what} : chaque choix une fois.',
   '{what}: only options have choices.': '{what} : seules les options ont des choix.',
-  'A kit’s key is 2 to 40 lowercase letters, digits or _, from a letter.':
-    'La clé d’un kit fait 2 à 40 lettres minuscules, chiffres ou _, et commence par une lettre.',
-  'The kit has no “{name}”.': 'Le kit n’a pas de « {name} ».',
-  'The kit’s key is the one in its address.': 'La clé du kit est celle de son adresse.',
   'Its icon is one of {icons}.': 'Son icône est l’une de {icons}.',
   'Each field has a key of its own.': 'Chaque champ a sa propre clé.',
   'Each field has a label of its own.': 'Chaque champ a son propre libellé.',
@@ -2449,10 +2425,6 @@ export const fr: Catalog = {
   'Each state has an id of its own.': 'Chaque état a son propre id.',
   'Each state has a label of its own.': 'Chaque état a son propre libellé.',
   'Move {number}': 'Transition {number}',
-  'Move {number}: it goes from one of the kit’s states.':
-    'Transition {number} : elle part d’un des états du kit.',
-  'Move {number}: it goes to another of the kit’s states.':
-    'Transition {number} : elle va vers un autre état du kit.',
   'Move {number}: from {from} to {to} is there already.':
     'Transition {number} : de {from} vers {to} existe déjà.',
   'Move {number}: who is organization, customer or anyone.':
@@ -2686,8 +2658,6 @@ export const fr: Catalog = {
   '“{text}” from {person}': '« {text} » de {person}',
   'Decisions about “{topic}”': 'Décisions à propos de « {topic} »',
   'All decisions': 'Toutes les décisions',
-  'Tasks with {person}': 'Tâches avec {person}',
-  'Your tasks': 'Vos tâches',
   'Conversations about “{topic}”': 'Conversations à propos de « {topic} »',
   'People you classified as {label}': 'Personnes que vous avez classées comme {label}',
   'Everything matching “{query}”': 'Tout ce qui correspond à « {query} »',
@@ -3426,7 +3396,6 @@ export const fr: Catalog = {
   'What you wait for': 'Ce que vous attendez',
   'How you know someone': 'Comment vous connaissez quelqu’un',
   'Possible duplicates': 'Doublons possibles',
-  Contexts: 'Contextes',
   '{n} taken': { one: '{n} accepté', other: '{n} acceptés' },
   '{n} passed on': { one: '{n} écarté', other: '{n} écartés' },
   'Standard Arabic': 'Arabe standard',
@@ -3537,7 +3506,6 @@ export const fr: Catalog = {
     'La politique de confidentialité doit être à une adresse https.',
   'Save the listing': 'Enregistrer la fiche',
   Calendars: 'Calendriers',
-  'Tasks and notes': 'Tâches et notes',
   Money: 'Argent',
   Health: 'Santé',
   Travel: 'Voyage',
@@ -4586,7 +4554,6 @@ export const fr: Catalog = {
   'You left the space': 'Vous avez quitté l’espace',
   'Update taken back': 'Actualité retirée',
   'Update changed': 'Actualité modifiée',
-  'The kit': 'La carte',
   'Its description': 'Sa description',
   'Your reminder': 'Votre rappel',
   'Muted conversation': 'Conversation en sourdine',
@@ -4596,8 +4563,6 @@ export const fr: Catalog = {
   'Shortened link hides where it goes': 'Un lien raccourci cache sa destination',
   'Unusually many subdomains': 'Un nombre inhabituel de sous-domaines',
   'Not encrypted (http)': 'Non chiffré (http)',
-  'A role or organization needs a sphere.':
-    'Un rôle ou une organisation demande d’abord d’où vous vous connaissez.',
   'All files': 'Tous les fichiers',
   'All PDFs': 'Tous les PDF',
   'All documents': 'Tous les documents',
@@ -4660,4 +4625,31 @@ export const fr: Catalog = {
   'A video from someone you’re not connected with. Accept to see it.':
     'Une vidéo d’une personne avec qui vous n’êtes pas en contact. Acceptez pour la voir.',
   'Remove the link preview': 'Retirer l’aperçu du lien',
+  'By @handle, email or your contacts': 'Par @identifiant, e-mail ou vos contacts',
+  'Needs you · {count}': 'À traiter · {count}',
+  'Plan a meeting': 'Planifier une réunion',
+  'Actions with {person}': 'Actions avec {person}',
+  'Your actions': 'Vos actions',
+  'Remembered here': 'Retenu ici',
+  'What conversations are about': 'Ce dont parlent les conversations',
+  'working on': 'en cours',
+  'Tell {name} how you know them': 'Dire à {name} comment vous vous connaissez',
+  'Say how you know them': 'Dire comment vous vous connaissez',
+  'Verified business · {verifiedDomain}': 'Organisation vérifiée · {verifiedDomain}',
+  'Organization · Not verified yet': 'Organisation · Pas encore vérifiée',
+  'A conversation with an organization: its team answers as {name}.':
+    'Une conversation avec une organisation : son équipe répond en tant que {name}.',
+  'Shall we keep our conversations here from now on?': 'On garde nos échanges ici désormais ?',
+  'Actions and notes': 'Actions et notes',
+  'A card’s key is 2 to 40 lowercase letters, digits or _, from a letter.':
+    'La clé d’une carte fait 2 à 40 lettres minuscules, chiffres ou _, et commence par une lettre.',
+  'The card': 'La carte',
+  'The card has no “{name}”.': 'La carte n’a pas de « {name} ».',
+  'The card’s key is the one in its address.': 'La clé de la carte est celle de son adresse.',
+  'Move {number}: it goes from one of the card’s states.':
+    'Transition {number} : elle part d’un des états de la carte.',
+  'Move {number}: it goes to another of the card’s states.':
+    'Transition {number} : elle va vers un autre état de la carte.',
+  'Choose how you know them before a role or an organization.':
+    'Choisissez d’abord d’où vous vous connaissez, puis un rôle ou une organisation.',
 };

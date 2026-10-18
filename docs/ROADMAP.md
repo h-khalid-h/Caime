@@ -2629,7 +2629,7 @@ graph) and the number that will show it; one that sharpens none is hygiene and s
       routes gone, the fill taking each default identity's line once and never over one said), `public-pages.test.ts` (the row and `jobTitle`, gone when kept for
       connections), the naming cases rewritten in `messaging`, `group-calls`,
       `relationship-profile` and `privacy-upkeep`, the scale ceilings, and the full gate.
-- [ ] E. Chat polish: distinct read ticks with a contrast test; the English leaks and a scanner
+- [x] E. Chat polish: distinct read ticks with a contrast test; the English leaks and a scanner
       that flags any word-bearing literal; quoted replies with the author and a jump, swipe to
       reply; message info and who reacted; video as a message, voice notes with a waveform, speed
       and scrub; link previews fetched once on the server for non-private chats; a sticky date
@@ -2770,6 +2770,25 @@ graph) and the number that will show it; one that sharpens none is hygiene and s
       languages, `e2e/link-previews.spec.ts` (the card above the composer, in both people's
       bubbles with its picture from Caime, taken off before sending, and the site asked by the
       server alone, once for the page and once for the picture), and the full gate.
+- [x] E5. One vocabulary (2026-10-18, review §7 M and §10). A thing has one name where people
+      read it. "Find people" is `/connect`'s title and every way to it (People's button, Requests,
+      the Chats "+" sheet, which says "By @handle, email or your contacts"); the Chats filter is
+      "Needs you" with its count, since "Attention" is Home's own name; an organization is called
+      one (its chip in Chats says "Organization" until it's verified, then "Verified business";
+      a conversation's head "Verified business · its domain" or "Organization · Not verified
+      yet"; its first lines "A conversation with an organization"), and "Business" is only the
+      plan, the inbox and the badge; Search reads "Your actions" and "Actions with {person}". A
+      plan, a poll and a place are rows of their own in the composer's sheet beside a photo and
+      a file ("Plan a meeting", "Poll", "Place"), every other card under Cards. Words a new
+      person wouldn't know are said plainly: the conversation panel's "Memory" is "Remembered
+      here", Cai's "Contexts" is "What conversations are about", a profile's "context" is
+      "working on", connecting's "Show the context" is "Say how you know them", Discover's to-do
+      apps are "Actions and notes", and no refusal says "kit", "task" or "sphere" any more (a
+      card, an action, how you know them; an app's own kinds of card included). An organization
+      of the kind "Something else" was named in English in every language; it's "Organization"
+      in each. Verified: the catalogs in four languages and the server's (nothing missing, nothing
+      left over), `custom-kits.test.ts`, the i18n tests, `e2e/around-the-conversation.spec.ts`
+      (a verified organization's head and its chip in Chats), and the full gate.
 - [ ] F. Mail, calendar, meetings: CC and reply-all as people on the topic; unverified mail shown
       under Notices, never dropped; a follow-up allowance to new addresses; invitations arriving
       by mail become cards; cards travel by mail; "Suggest another time" with guest invitations
@@ -4391,6 +4410,10 @@ graph) and the number that will show it; one that sharpens none is hygiene and s
   journeys, safety, reliability, performance, intelligence, mail and calendar, chat, integrations,
   business and code integrity; the matrix against WhatsApp, Signal, Slack, Calendly and Workspace;
   an age-assurance design; the integration framework mapped to the code; plan M16 (A–H).
+- 2026-10-18 — M16 E5: one vocabulary: "Find people" for every way to find and connect, "Needs
+  you" for the Chats filter, an organization called one ("Business" only the plan, the inbox and
+  the badge), Plan a meeting, Poll and Place as rows of their own, and no "kit", "task",
+  "sphere", "Memory" or "Contexts" left where people read. E is whole.
 - 2026-10-18 — The appointment form keeps the slot picker's room while a host's slots are asked
   for: the free "When" it showed meanwhile was swapped for the picker, which moved "Repeats"
   from under a tap (the full run found it). The link card's spec reads an address of its own

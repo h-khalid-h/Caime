@@ -953,7 +953,7 @@ export const PolicyBody = z.object({
     })
     .refine(
       (s) => s.sphere || s.connectionId || (!s.role && !s.orgId),
-      msg('A role or organization needs a sphere.'),
+      msg('Choose how you know them before a role or an organization.'),
     ),
   settings: PolicySettingsSchema,
 });

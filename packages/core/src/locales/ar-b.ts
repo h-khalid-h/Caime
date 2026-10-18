@@ -65,10 +65,6 @@ export const arB: Catalog = {
   '{what}: required is true or false.': '{what}: required إما true أو false.',
   '{what}: each choice once.': '{what}: كل خيار مرة واحدة.',
   '{what}: only options have choices.': '{what}: الخيارات للحقول من نوع options فقط.',
-  'A kit’s key is 2 to 40 lowercase letters, digits or _, from a letter.':
-    'مفتاح البطاقة من 2 إلى 40 حرفًا صغيرًا أو رقمًا أو _، يبدأ بحرف.',
-  'The kit has no “{name}”.': 'ليس في البطاقة «{name}».',
-  'The kit’s key is the one in its address.': 'مفتاح البطاقة هو الذي في عنوانها.',
   'Its icon is one of {icons}.': 'أيقونتها واحدة من {icons}.',
   'Each field has a key of its own.': 'لكل حقل مفتاحه الخاص.',
   'Each field has a label of its own.': 'لكل حقل تسميته الخاصة.',
@@ -81,10 +77,6 @@ export const arB: Catalog = {
   'Each state has an id of its own.': 'لكل حالة معرّفها الخاص.',
   'Each state has a label of its own.': 'لكل حالة تسميتها الخاصة.',
   'Move {number}': 'النقلة {number}',
-  'Move {number}: it goes from one of the kit’s states.':
-    'النقلة {number}: تبدأ من إحدى حالات البطاقة.',
-  'Move {number}: it goes to another of the kit’s states.':
-    'النقلة {number}: تنتهي عند حالة أخرى من حالات البطاقة.',
   'Move {number}: from {from} to {to} is there already.':
     'النقلة {number}: من {from} إلى {to} موجودة بالفعل.',
   'Move {number}: who is organization, customer or anyone.':
@@ -294,8 +286,6 @@ export const arB: Catalog = {
   '“{text}” from {person}': '«{text}» من {person}',
   'Decisions about “{topic}”': 'قرارات عن «{topic}»',
   'All decisions': 'كل القرارات',
-  'Tasks with {person}': 'المهام مع {person}',
-  'Your tasks': 'مهامك',
   'Conversations about “{topic}”': 'محادثات عن «{topic}»',
   'People you classified as {label}': 'من صنّفتهم {label}',
   'Everything matching “{query}”': 'كل ما يطابق «{query}»',
@@ -704,14 +694,6 @@ export const arB: Catalog = {
   Sky: 'سماوي',
   Mint: 'نعناعي',
   Sunshine: 'شمسي',
-  'Attention, {n} need you': {
-    zero: 'الاهتمام، لا شيء يحتاجك',
-    one: 'الاهتمام، واحدة تحتاجك',
-    two: 'الاهتمام، اثنتان تحتاجانك',
-    few: 'الاهتمام، {n} تحتاجك',
-    many: 'الاهتمام، {n} تحتاجك',
-    other: 'الاهتمام، {n} تحتاجك',
-  },
   '{label}, {n} need you': {
     zero: '{label}، لا شيء يحتاجك',
     one: '{label}، واحدة تحتاجك',
@@ -739,7 +721,6 @@ export const arB: Catalog = {
   '{title} until {clock}': '{title} حتى {clock}',
   conversation: 'المحادثة',
   'last {when}': 'آخرها {when}',
-  context: 'السياق',
   shared: 'المشترك',
   '{n} files': {
     zero: 'لا ملفات',
@@ -1438,7 +1419,6 @@ export const arB: Catalog = {
   'What you wait for': 'ما تنتظره',
   'How you know someone': 'كيف تعرف شخصًا ما',
   'Possible duplicates': 'تكرارات محتملة',
-  Contexts: 'السياقات',
   '{n} taken': {
     zero: 'لا قبول',
     one: 'قُبل واحد',
@@ -1580,7 +1560,6 @@ export const arB: Catalog = {
   'The privacy policy must be at an https address.': 'يجب أن تكون سياسة الخصوصية على عنوان https.',
   'Save the listing': { toWoman: 'احفظي الإدراج', toMan: 'احفظ الإدراج', other: 'احفظ الإدراج' },
   Calendars: 'التقويمات',
-  'Tasks and notes': 'المهام والملاحظات',
   Money: 'المال',
   Health: 'الصحة',
   Travel: 'السفر',
@@ -2829,7 +2808,6 @@ export const arB: Catalog = {
   'You left the space': 'غادرت المساحة',
   'Update taken back': 'سُحب التحديث',
   'Update changed': 'عُدّل التحديث',
-  'The kit': 'البطاقة',
   'Its description': 'وصفها',
   'Your reminder': 'تذكيرك',
   'Muted conversation': 'محادثة مكتومة',
@@ -2839,7 +2817,6 @@ export const arB: Catalog = {
   'Shortened link hides where it goes': 'رابط مختصر يخفي وجهته',
   'Unusually many subdomains': 'نطاقات فرعية كثيرة على غير العادة',
   'Not encrypted (http)': 'غير مشفّر (http)',
-  'A role or organization needs a sphere.': 'الدور أو المؤسسة يحتاج إلى نوع العلاقة.',
   'All files': 'كل الملفات',
   'All PDFs': 'كل ملفات PDF',
   'All documents': 'كل المستندات',
@@ -2929,4 +2906,31 @@ export const arB: Catalog = {
   'A video from someone you’re not connected with. Accept to see it.':
     'فيديو من شخص لا تربطك به صلة. اقبل الطلب لرؤيته.',
   'Remove the link preview': 'إزالة معاينة الرابط',
+  'By @handle, email or your contacts': 'بالمعرّف أو البريد أو من جهات اتصالك',
+  'Needs you · {count}': 'يحتاجك · {count}',
+  'Plan a meeting': 'ترتيب اجتماع',
+  'Actions with {person}': 'الإجراءات مع {person}',
+  'Your actions': 'إجراءاتك',
+  'Remembered here': 'ما يُحفَظ هنا',
+  'What conversations are about': 'ما تدور حوله المحادثات',
+  'working on': 'ما تعملان عليه',
+  'Tell {name} how you know them': 'إظهار صلتكما لـ {name}',
+  'Say how you know them': 'إظهار صلتكما',
+  'Verified business · {verifiedDomain}': 'جهة أعمال موثّقة · {verifiedDomain}',
+  'Organization · Not verified yet': 'مؤسسة · لم تُوثَّق بعد',
+  'A conversation with an organization: its team answers as {name}.':
+    'محادثة مع مؤسسة: فريقها يجيب باسم {name}.',
+  'Shall we keep our conversations here from now on?': 'هل نتراسل هنا من الآن فصاعدًا؟',
+  'Actions and notes': 'الإجراءات والملاحظات',
+  'A card’s key is 2 to 40 lowercase letters, digits or _, from a letter.':
+    'مفتاح البطاقة من 2 إلى 40 حرفًا صغيرًا أو رقمًا أو _، يبدأ بحرف.',
+  'The card': 'البطاقة',
+  'The card has no “{name}”.': 'ليس في البطاقة «{name}».',
+  'The card’s key is the one in its address.': 'مفتاح البطاقة هو الذي في عنوانها.',
+  'Move {number}: it goes from one of the card’s states.':
+    'النقلة {number}: تبدأ من إحدى حالات البطاقة.',
+  'Move {number}: it goes to another of the card’s states.':
+    'النقلة {number}: تنتهي عند حالة أخرى من حالات البطاقة.',
+  'Choose how you know them before a role or an organization.':
+    'اختر أولًا كيف تعرفهم، ثم الدور أو المؤسسة.',
 };

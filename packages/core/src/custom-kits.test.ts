@@ -75,7 +75,7 @@ describe('an app’s own kit', () => {
 
   it('is kept as plain data: what it doesn’t know, it refuses', () => {
     expect(refusal('prescription', change({ render: '<b>x</b>' }))).toBe(
-      'The kit has no “render”.',
+      'The card has no “render”.',
     );
     expect(refusal('prescription', change({ key: 'other' }))).toMatch(/key is the one/);
     expect(
@@ -142,13 +142,13 @@ describe('an app’s own kit', () => {
         'prescription',
         change({ moves: [{ from: 'preparing', to: 'gone', label: 'Go', who: 'anyone' }] }),
       ),
-    ).toMatch(/to another of the kit’s states/);
+    ).toMatch(/to another of the card’s states/);
     expect(
       refusal(
         'prescription',
         change({ moves: [{ from: 'ready', to: 'ready', label: 'Again', who: 'anyone' }] }),
       ),
-    ).toMatch(/to another of the kit’s states/);
+    ).toMatch(/to another of the card’s states/);
     expect(
       refusal(
         'prescription',

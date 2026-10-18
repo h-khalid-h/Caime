@@ -182,11 +182,12 @@ export function InboxList({ pane }: { pane?: boolean }) {
           wrap={desktop}
           options={[
             {
+              // What needs you first, then the rest (M16 E5): "Attention" is Home's own name.
               value: 'attention',
-              label: needsYou ? tr('Attention · {needsYou}', { needsYou }) : tr('Attention'),
+              label: needsYou ? tr('Needs you · {count}', { count: needsYou }) : tr('Needs you'),
               accessibilityLabel: needsYou
-                ? trn(needsYou, 'Attention, {n} needs you', 'Attention, {n} need you')
-                : tr('Attention'),
+                ? trn(needsYou, '{n} needs you', '{n} need you')
+                : tr('Needs you'),
               testID: 'inbox-attention',
             },
             { value: 'all', label: tr('All'), testID: 'inbox-all' },

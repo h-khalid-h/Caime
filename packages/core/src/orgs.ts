@@ -39,7 +39,7 @@ export const ORG_KIND_LABELS: Record<OrgKind, string> = {
 
 /** The kind as a profile says it: "Something else" is a choice, not a name. */
 export function orgKindName(kind: OrgKind): string {
-  return kind === 'other' ? 'Organization' : tr(ORG_KIND_LABELS[kind]);
+  return kind === 'other' ? tr('Organization') : tr(ORG_KIND_LABELS[kind]);
 }
 
 export const ORG_ROLES = ['owner', 'admin', 'agent'] as const;

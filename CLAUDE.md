@@ -142,7 +142,9 @@ names both. **Account** is your Caime account; an email or phone you add is an *
 Google or Microsoft account you connect is a **connected account**. A business **thread** is the
 Business inbox's; a mail thread is a **topic**. **Space**, **group** and **topic** as PRD §56 has
 them; **meeting** (proposed, accepted), **appointment** (requested, confirmed), **booking** (an
-appointment from a catalog).
+appointment from a catalog). **Find people** is the one name for finding and connecting
+(`/connect` and every way to it); the Chats filter is **Needs you**, since **Attention** is Home's.
+A sphere is said as how you know someone, never "sphere".
 
 ## Working notes
 

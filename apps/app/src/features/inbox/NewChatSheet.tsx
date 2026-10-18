@@ -42,8 +42,8 @@ export function NewChatSheet({ open, onClose }: { open: boolean; onClose: () => 
       <View style={{ marginHorizontal: -20 }}>
         <ListRow
           icon={UserPlus}
-          title={tr('Connect with someone new')}
-          subtitle={tr('Find people by @handle or email')}
+          title={tr('Find people')}
+          subtitle={tr('By @handle, email or your contacts')}
           onPress={() => {
             onClose();
             router.push('/connect');

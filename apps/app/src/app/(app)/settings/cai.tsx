@@ -49,7 +49,7 @@ const SUGGESTION_KIND_LABELS: Record<SuggestionKind, string> = {
   topic: msg('Topics'),
   relationship: msg('How you know someone'),
   duplicate: msg('Possible duplicates'),
-  context: msg('Contexts'),
+  context: msg('What conversations are about'),
 };
 
 /** Each Arabic Cai and the Caime Friends can speak (R72), as the setting names it. */

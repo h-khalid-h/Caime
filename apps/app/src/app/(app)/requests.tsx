@@ -168,7 +168,7 @@ export default function Requests() {
             )}
             action={
               <Button
-                label={tr('Find people or share your link')}
+                label={tr('Find people')}
                 variant="secondary"
                 onPress={() => router.navigate('/connect')}
                 testID="requests-connect"

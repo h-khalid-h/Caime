@@ -581,7 +581,7 @@ function PersonPage({ id, book = null, slug = null }: PersonScreenProps) {
                   },
                   p.summary.contexts.length
                     ? {
-                        label: tr('context'),
+                        label: tr('working on'),
                         value: listed(p.summary.contexts.map((c) => c.title)),
                       }
                     : null,

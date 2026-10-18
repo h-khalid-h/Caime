@@ -539,7 +539,6 @@ export const turkishServer: Catalog = {
   'That message': 'Bu mesaj',
   'That job': 'Bu iş',
   'That context': 'Bu bağlam',
-  'That task': 'Bu görev',
   'You can’t assign this person.': 'Bu kişiyi atayamazsınız.',
   'You can ask people you’re connected with.':
     'Yalnızca bağlantınız olan kişilerden bir şey isteyebilirsiniz.',
@@ -791,7 +790,6 @@ export const turkishServer: Catalog = {
   'Only an app’s token does this.': 'Bunu yalnızca bir uygulamanın belirteci yapar.',
   'An app has up to {perApp} kinds of card. Remove one to make another.':
     'Bir uygulamanın en fazla {perApp} kart türü olur. Başkasını oluşturmak için birini kaldırın.',
-  'That kit': 'Bu kart türü',
   'That isn’t one of an app’s cards.': 'Bu bir uygulamanın kartlarından biri değil.',
   'An app changes only its own cards.': 'Bir uygulama yalnızca kendi kartlarını değiştirir.',
   'Choose a time zone from the list.': 'Listeden bir saat dilimi seçin.',
@@ -830,7 +828,6 @@ export const turkishServer: Catalog = {
   'That rule': 'Bu kural',
   'There’s a rule for them already: change that one.':
     'Bunun için zaten bir kural var: onu değiştirin.',
-  'Unknown sphere.': 'Bilinmeyen çevre.',
   '“{role}” isn’t a {sphere} role. Use a custom role instead.':
     '“{role}” bir {sphere} rolü değil. Bunun yerine özel bir rol kullanın.',
   'Choose a role or write your own, not both.':
@@ -1499,4 +1496,7 @@ export const turkishServer: Catalog = {
     'Bu video okunamadığı için gönderilmedi. Başka bir tane deneyin.',
   'That recording couldn’t be read, so it wasn’t sent. Try another.':
     'Bu kayıt okunamadığı için gönderilmedi. Başka bir tane deneyin.',
+  Memory: 'Hafıza',
+  'That action': 'Bu eylem',
+  'Choose how you know them from the list.': 'Onu nereden tanıdığınızı listeden seçin.',
 };

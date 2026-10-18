@@ -133,7 +133,7 @@ export async function kitRoutes(app: FastifyInstance, ctx: AppContext) {
       .where('key', '=', key)
       .returning('id')
       .executeTakeFirst();
-    if (!gone) throw notFound(tr('That kit'));
+    if (!gone) throw notFound(tr('That card'));
     await audit(ctx.db, {
       actorId: auth.userId,
       action: 'app.kit_removed',

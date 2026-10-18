@@ -36,7 +36,6 @@ export const turkish: Catalog = {
   'Everyone you know, in the right place': 'Tanıdığınız herkes, doğru yerde',
   'Pick someone to see how you know them, what’s open between you, and everything you’ve shared.':
     'Birini seçin; onu nereden tanıdığınızı, aranızda açık olanları ve paylaştığınız her şeyi görün.',
-  'Connect with someone': 'Biriyle bağlantı kurun',
   'A place for each group': 'Her grup için bir yer',
   'Pick a space to see its conversations and its people, or start one for a family, a team, a project or a club.':
     'Konuşmalarını ve kişilerini görmek için bir alan seçin ya da bir aile, ekip, proje veya kulüp için yeni bir alan oluşturun.',
@@ -207,7 +206,6 @@ export const turkish: Catalog = {
   'No requests': 'İstek yok',
   'When someone wants to connect, you’ll see who they are and how they know you here. Share your link, and the first one is yours to answer.':
     'Biri bağlanmak istediğinde kim olduğunu ve sizi nereden tanıdığını burada göreceksiniz. Bağlantınızı paylaşın; ilk isteği siz yanıtlarsınız.',
-  'Find people or share your link': 'Kişi bulun ya da bağlantınızı paylaşın',
   'Want to connect': 'Bağlanmak isteyenler',
   'You asked': 'Gönderdiğiniz istekler',
   'Accept without a label': 'Etiketsiz kabul et',
@@ -924,8 +922,6 @@ export const turkish: Catalog = {
   Cards: 'Kartlar',
   'From {name}': 'Sağlayan: {name}',
   Yours: 'Sizin',
-  'A business conversation. Its team answers as {name}.':
-    'Bir iş konuşması. Ekibi {name} olarak yanıtlar.',
   'See its profile': 'Profilini gör',
   'A customer of {name}. They see {name}, not who on the team answers.':
     '{name} müşterisi. Ekipten kimin yanıtladığını değil, {name} adını görür.',
@@ -944,7 +940,6 @@ export const turkish: Catalog = {
   Document: 'Belge',
   Link: 'Bağlantı',
   'Photos, files and links': 'Fotoğraflar, dosyalar ve bağlantılar',
-  Memory: 'Hafıza',
   'Promises, questions, dates and decisions from this conversation will gather here, so nothing gets lost in the scroll.':
     'Bu konuşmadaki sözler, sorular, tarihler ve kararlar burada toplanır; böylece hiçbir şey kaydırırken kaybolmaz.',
   'Topics · {count}': 'Konular · {count}',
@@ -970,8 +965,6 @@ export const turkish: Catalog = {
   'This conversation isn’t available': 'Bu konuşma kullanılamıyor',
   'typing…': 'yazıyor…',
   'Private · end to end encrypted': 'Özel · uçtan uca şifreli',
-  'Business · Verified · {verifiedDomain}': 'İşletme · Doğrulanmış · {verifiedDomain}',
-  'Business · Not verified yet': 'İşletme · Henüz doğrulanmadı',
   'Customer of {name}': '{name} müşterisi',
   Online: 'Çevrimiçi',
   'Voice call {displayName}': 'Sesli ara: {displayName}',
@@ -982,8 +975,6 @@ export const turkish: Catalog = {
   'About this private conversation': 'Bu özel konuşma hakkında',
   'Hide details': 'Ayrıntıları gizle',
   'Show details': 'Ayrıntıları göster',
-  'A business conversation: {name}’s team answers as {name}.':
-    'Bir iş konuşması: {name} ekibi {name} olarak yanıtlar.',
   'Only you see how you’ve labelled {displayName}':
     '{displayName} kişisini nasıl etiketlediğinizi yalnızca siz görürsünüz',
   'This is the beginning of your conversation.': 'Bu, konuşmanızın başlangıcı.',
@@ -1005,8 +996,6 @@ export const turkish: Catalog = {
   'Reply as {name}': '{name} olarak yanıtla',
   'Good to have you here, {first}.': 'Aramızda olmanız güzel, {first}.',
   'What are you working on this week?': 'Bu hafta ne üzerinde çalışıyorsunuz?',
-  'Shall we keep our threads here from now on?':
-    'Bundan sonra yazışmalarımızı burada mı sürdürelim?',
   'Hey {first}! We’re on Caime now.': 'Selam {first}! Artık Caime’deyiz.',
   'How have you been?': 'Nasılsınız?',
   'What’s new with you?': 'Sizde ne var ne yok?',
@@ -1362,12 +1351,7 @@ export const turkish: Catalog = {
   Business: 'İşletme',
   Chats: 'Sohbetler',
   'New conversation': 'Yeni konuşma',
-  'Attention · {needsYou}': 'Öncelikli · {needsYou}',
   Attention: 'Öncelikli',
-  'Attention, {n} need you': {
-    one: 'Öncelikli, {n} konuşma sizi bekliyor',
-    other: 'Öncelikli, {n} konuşma sizi bekliyor',
-  },
   'Nothing needs you right now. Enjoy it.': 'Şu anda sizi bekleyen bir şey yok. Tadını çıkarın.',
   'Say hello to someone': 'Birine merhaba deyin',
   'Connect with the people you talk to. Caime keeps family, friends and work each in the right place.':
@@ -1384,8 +1368,6 @@ export const turkish: Catalog = {
   'Muted until {when}': 'Şu zamana kadar sessizde: {when}',
   'Until a day and time…': 'Bir gün ve saate kadar…',
   'Search your people': 'Kişilerinizi arayın',
-  'Connect with someone new': 'Yeni biriyle bağlantı kurun',
-  'Find people by @handle or email': 'Kişileri @kullanıcıadı veya e-postayla bulun',
   'For a family, a team, a project or a club': 'Bir aile, ekip, proje veya kulüp için',
   'No one by that name yet.': 'Bu adda henüz kimse yok.',
   'Your connections will show here.': 'Bağlantılarınız burada görünecek.',
@@ -1762,7 +1744,6 @@ export const turkish: Catalog = {
   'Send request': 'İstek gönder',
   'How you know them': 'Onu nereden tanıdığınız',
   'Optional. {name} never sees your label.': 'İsteğe bağlı. {name} etiketinizi asla görmez.',
-  'Show {name} the context': '{name} kişisine bağlamı göster',
   'Add a note (optional)': 'Not ekle (isteğe bağlı)',
   'Hi {name}, it’s…': 'Merhaba {name}, ben…',
   '{name} can accept, decline or ignore. Declining is silent.':
@@ -1782,7 +1763,6 @@ export const turkish: Catalog = {
   'Make the link': 'Bağlantıyı oluştur',
   'How you’ll know them': 'Onu nereden tanıdığınız',
   'Optional. They never see your label.': 'İsteğe bağlı. Etiketinizi asla görmezler.',
-  'Show them the context': 'Onlara bağlamı göster',
   'A line for them (optional)': 'Onlara bir not (isteğe bağlı)',
   'Hi, it’s…': 'Merhaba, ben…',
   'Links you’ve made': 'Oluşturduğunuz bağlantılar',
@@ -1827,7 +1807,6 @@ export const turkish: Catalog = {
   '{title} until {clock}': '{clock} saatine kadar {title}',
   conversation: 'konuşma',
   'last {when}': 'son {when}',
-  context: 'bağlam',
   shared: 'paylaşılan',
   '{n} files': { one: '{n} dosya', other: '{n} dosya' },
   '{n} links': { one: '{n} bağlantı', other: '{n} bağlantı' },
@@ -2325,10 +2304,6 @@ export const turkish: Catalog = {
   '{what}: each choice once.': '{what}: her seçenek yalnızca bir kez yazılmalı.',
   '{what}: only options have choices.':
     '{what}: yalnızca options türündeki alanların seçenekleri olur.',
-  'A kit’s key is 2 to 40 lowercase letters, digits or _, from a letter.':
-    'Bir kitin anahtarı, harfle başlayan 2–40 küçük harf, rakam veya _ karakteridir.',
-  'The kit has no “{name}”.': 'Kitte “{name}” yok.',
-  'The kit’s key is the one in its address.': 'Kitin anahtarı, adresindeki anahtardır.',
   'Its icon is one of {icons}.': 'Simgesi şunlardan biridir: {icons}.',
   'Each field has a key of its own.': 'Her alanın kendi anahtarı vardır.',
   'Each field has a label of its own.': 'Her alanın kendi etiketi vardır.',
@@ -2341,10 +2316,6 @@ export const turkish: Catalog = {
   'Each state has an id of its own.': 'Her durumun kendi kimliği vardır.',
   'Each state has a label of its own.': 'Her durumun kendi etiketi vardır.',
   'Move {number}': 'Geçiş {number}',
-  'Move {number}: it goes from one of the kit’s states.':
-    'Geçiş {number}: kitin durumlarından birinden çıkar.',
-  'Move {number}: it goes to another of the kit’s states.':
-    'Geçiş {number}: kitin başka bir durumuna gider.',
   'Move {number}: from {from} to {to} is there already.':
     'Geçiş {number}: {from} → {to} zaten var.',
   'Move {number}: who is organization, customer or anyone.':
@@ -2577,8 +2548,6 @@ export const turkish: Catalog = {
   '“{text}” from {person}': '“{text}”, gönderen: {person}',
   'Decisions about “{topic}”': '“{topic}” hakkındaki kararlar',
   'All decisions': 'Tüm kararlar',
-  'Tasks with {person}': '{person} ile ilgili görevler',
-  'Your tasks': 'Görevleriniz',
   'Conversations about “{topic}”': '“{topic}” hakkındaki konuşmalar',
   'People you classified as {label}': '{label} olarak sınıflandırdığınız kişiler',
   'Everything matching “{query}”': '“{query}” ile eşleşen her şey',
@@ -3275,7 +3244,6 @@ export const turkish: Catalog = {
   'What you wait for': 'Beklediğiniz şeyler',
   'How you know someone': 'Birini nereden tanıdığınız',
   'Possible duplicates': 'Olası kopyalar',
-  Contexts: 'Bağlamlar',
   '{n} taken': { one: '{n} kabul', other: '{n} kabul' },
   '{n} passed on': { one: '{n} geçildi', other: '{n} geçildi' },
   'Standard Arabic': 'Standart Arapça',
@@ -3383,7 +3351,6 @@ export const turkish: Catalog = {
     'Gizlilik politikası bir https adresinde olmalı.',
   'Save the listing': 'Listelemeyi kaydet',
   Calendars: 'Takvimler',
-  'Tasks and notes': 'Görevler ve notlar',
   Money: 'Para',
   Health: 'Sağlık',
   Travel: 'Seyahat',
@@ -4405,7 +4372,6 @@ export const turkish: Catalog = {
   'You left the space': 'Alandan ayrıldınız',
   'Update taken back': 'Güncelleme geri alındı',
   'Update changed': 'Güncelleme değiştirildi',
-  'The kit': 'Kart',
   'Its description': 'Açıklaması',
   'Your reminder': 'Hatırlatıcınız',
   'Muted conversation': 'Sessize alınmış konuşma',
@@ -4415,8 +4381,6 @@ export const turkish: Catalog = {
   'Shortened link hides where it goes': 'Kısaltılmış bağlantı nereye gittiğini gizliyor',
   'Unusually many subdomains': 'Alışılmadık sayıda alt alan adı',
   'Not encrypted (http)': 'Şifrelenmemiş (http)',
-  'A role or organization needs a sphere.':
-    'Bir rol veya kuruluş için önce nereden tanıdığınızı seçin.',
   'All files': 'Tüm dosyalar',
   'All PDFs': 'Tüm PDF’ler',
   'All documents': 'Tüm belgeler',
@@ -4479,4 +4443,32 @@ export const turkish: Catalog = {
   'A video from someone you’re not connected with. Accept to see it.':
     'Bağlantınız olmayan birinden bir video. Görmek için isteği kabul edin.',
   'Remove the link preview': 'Bağlantı önizlemesini kaldır',
+  'By @handle, email or your contacts': '@kullanıcıadı, e-posta veya kişileriniz ile',
+  'Needs you · {count}': 'Sizi bekleyenler · {count}',
+  'Plan a meeting': 'Toplantı planla',
+  'Actions with {person}': '{person} ile eylemler',
+  'Your actions': 'Eylemleriniz',
+  'Remembered here': 'Burada hatırlananlar',
+  'What conversations are about': 'Konuşmaların konusu',
+  'working on': 'üzerinde çalışılanlar',
+  'Tell {name} how you know them': '{name} kişisine onu nereden tanıdığınızı söyleyin',
+  'Say how you know them': 'Onu nereden tanıdığınızı söyleyin',
+  'Verified business · {verifiedDomain}': 'Doğrulanmış işletme · {verifiedDomain}',
+  'Organization · Not verified yet': 'Kuruluş · Henüz doğrulanmadı',
+  'A conversation with an organization: its team answers as {name}.':
+    'Bir kuruluşla konuşma: ekibi {name} olarak yanıtlar.',
+  'Shall we keep our conversations here from now on?':
+    'Bundan sonra yazışmalarımızı burada mı sürdürelim?',
+  'Actions and notes': 'Eylemler ve notlar',
+  'A card’s key is 2 to 40 lowercase letters, digits or _, from a letter.':
+    'Bir kartın anahtarı, harfle başlayan 2–40 küçük harf, rakam veya _ karakteridir.',
+  'The card': 'Kart',
+  'The card has no “{name}”.': 'Kartta “{name}” yok.',
+  'The card’s key is the one in its address.': 'Kartın anahtarı, adresindeki anahtardır.',
+  'Move {number}: it goes from one of the card’s states.':
+    'Geçiş {number}: kartın durumlarından birinden çıkar.',
+  'Move {number}: it goes to another of the card’s states.':
+    'Geçiş {number}: kartın başka bir durumuna gider.',
+  'Choose how you know them before a role or an organization.':
+    'Bir rol veya kuruluş için önce onu nereden tanıdığınızı seçin.',
 };

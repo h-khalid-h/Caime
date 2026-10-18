@@ -134,7 +134,9 @@ function BusinessCard({
         </Text>
         <VerifiedLine org={org} />
         <Text variant="caption" color="textSecondary" align="center">
-          {tr('A business conversation. Its team answers as {name}.', { name: org.name })}
+          {tr('A conversation with an organization: its team answers as {name}.', {
+            name: org.name,
+          })}
         </Text>
         <Text variant="captionStrong" color="link">
           {tr('See its profile')}
@@ -436,7 +438,7 @@ export function ContextPanel({
               </Section>
             ) : null}
             {!m.openItems.length && !m.decisions.length && !m.dates.length ? (
-              <Section title={tr('Memory')}>
+              <Section title={tr('Remembered here')}>
                 <View style={{ flexDirection: 'row', gap: 8 }}>
                   <CircleCheck size={16} color={t.c.textTertiary} />
                   <Text variant="caption" color="textSecondary" style={{ flex: 1 }}>

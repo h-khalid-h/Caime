@@ -1059,7 +1059,7 @@ test.describe
       await customer.goto(`/@${handle}`);
       await customer.getByTestId('org-message').click();
       await expect(
-        visible(customer, `Business · Verified · niledental-${stamp}.example`),
+        visible(customer, `Verified business · niledental-${stamp}.example`),
       ).toBeVisible();
       await customer.getByTestId('composer-input').fill('Can I book a cleaning on Thursday?');
       await customer.getByTestId('composer-send').click();
@@ -1086,7 +1086,7 @@ test.describe
       await customer.screenshot({ path: 'e2e/screenshots/phone-business-customer.png' });
       await customer.goto('/chats');
       await expect(visible(customer, orgName)).toBeVisible();
-      await expect(visible(customer, 'Business')).toBeVisible();
+      await expect(visible(customer, 'Verified business')).toBeVisible();
 
       // Alex, on the team too, finds it in the inbox, not among their own chats.
       const phone = alex.page;

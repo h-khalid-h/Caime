@@ -555,7 +555,6 @@ export const frServer: Catalog = {
   'That message': 'Ce message',
   'That job': 'Cette tâche',
   'That context': 'Ce contexte',
-  'That task': 'Cette tâche',
   'You can’t assign this person.': 'Vous ne pouvez pas assigner cette personne.',
   'You can ask people you’re connected with.':
     'Vous pouvez demander aux personnes avec qui vous êtes en contact.',
@@ -824,7 +823,6 @@ export const frServer: Catalog = {
   'Only an app’s token does this.': 'Seul le jeton d’une application fait cela.',
   'An app has up to {perApp} kinds of card. Remove one to make another.':
     'Une application a jusqu’à {perApp} types de carte. Retirez-en un pour en créer un autre.',
-  'That kit': 'Ce kit',
   'That isn’t one of an app’s cards.': 'Ce n’est pas l’une des cartes d’une application.',
   'An app changes only its own cards.': 'Une application ne modifie que ses propres cartes.',
   'Choose a time zone from the list.': 'Choisissez un fuseau horaire dans la liste.',
@@ -866,7 +864,6 @@ export const frServer: Catalog = {
   'That rule': 'Cette règle',
   'There’s a rule for them already: change that one.':
     'Il y a déjà une règle pour cette personne : modifiez celle-là.',
-  'Unknown sphere.': 'Cercle inconnu.',
   '“{role}” isn’t a {sphere} role. Use a custom role instead.':
     '« {role} » n’est pas un rôle du cercle {sphere}. Utilisez plutôt un rôle personnalisé.',
   'Choose a role or write your own, not both.':
@@ -1567,4 +1564,7 @@ export const frServer: Catalog = {
     'Cette vidéo n’a pas pu être lue, elle n’a donc pas été envoyée. Essayez-en une autre.',
   'That recording couldn’t be read, so it wasn’t sent. Try another.':
     'Cet enregistrement n’a pas pu être lu, il n’a donc pas été envoyé. Essayez-en un autre.',
+  Memory: 'Mémoire',
+  'That action': 'Cette action',
+  'Choose how you know them from the list.': 'Choisissez d’où vous vous connaissez dans la liste.',
 };

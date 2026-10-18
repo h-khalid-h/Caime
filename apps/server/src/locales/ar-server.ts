@@ -558,7 +558,6 @@ export const arServer: Catalog = {
   'That message': 'تلك الرسالة',
   'That job': 'تلك المهمة',
   'That context': 'ذلك السياق',
-  'That task': 'تلك المهمة',
   'You can’t assign this person.': 'لا يمكنك إسناد هذا الشخص.',
   'You can ask people you’re connected with.': 'يمكنك الطلب فقط ممن بينك وبينهم تواصل.',
   'A request goes to someone else.': 'يُوجَّه الطلب إلى شخص غيرك.',
@@ -797,7 +796,6 @@ export const arServer: Catalog = {
   'Only an app’s token does this.': 'رمز تطبيق وحده يفعل هذا.',
   'An app has up to {perApp} kinds of card. Remove one to make another.':
     'يتسع التطبيق لـ {perApp} من أنواع البطاقات على الأكثر. أزل نوعًا لتنشئ آخر.',
-  'That kit': 'تلك البطاقة',
   'That isn’t one of an app’s cards.': 'تلك ليست من بطاقات تطبيق.',
   'An app changes only its own cards.': 'لا يغيّر التطبيق إلا بطاقاته.',
   'Choose a time zone from the list.': 'اختر منطقة زمنية من القائمة.',
@@ -832,7 +830,6 @@ export const arServer: Catalog = {
   'Start taking it back first.': 'ابدأ استعادتها أولًا.',
   'That rule': 'تلك القاعدة',
   'There’s a rule for them already: change that one.': 'هناك قاعدة لهذا الشخص بالفعل: عدّلها هي.',
-  'Unknown sphere.': 'دائرة غير معروفة.',
   '“{role}” isn’t a {sphere} role. Use a custom role instead.':
     '«{role}» ليس دورًا في دائرة {sphere}. استخدم دورًا مخصصًا بدلًا من ذلك.',
   'Choose a role or write your own, not both.': 'اختر دورًا أو اكتب دورك، لا الاثنين معًا.',
@@ -1554,4 +1551,7 @@ export const arServer: Catalog = {
     'تعذّرت قراءة هذا الفيديو، لذا لم يُرسل. جرّب فيديو آخر.',
   'That recording couldn’t be read, so it wasn’t sent. Try another.':
     'تعذّرت قراءة هذا التسجيل، لذا لم يُرسل. جرّب تسجيلًا آخر.',
+  Memory: 'الذاكرة',
+  'That action': 'ذلك الإجراء',
+  'Choose how you know them from the list.': 'اختر كيف تعرفهم من القائمة.',
 };

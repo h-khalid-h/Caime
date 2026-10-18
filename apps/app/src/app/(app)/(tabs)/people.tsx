@@ -18,7 +18,7 @@ export default function People() {
         )}
         action={
           <Button
-            label={tr('Connect with someone')}
+            label={tr('Find people')}
             icon={UserPlus}
             onPress={() => router.push('/connect')}
           />

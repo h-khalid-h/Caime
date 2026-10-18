@@ -184,10 +184,11 @@ export const ConversationRow = memo(function ConversationRow({
                 style={{ flexDirection: 'row', alignItems: 'center', gap: 6, flexWrap: 'wrap' }}
               >
                 {item.org ? (
-                  // Business is visibly business (R15), and says whether that's proven.
+                  // An organization is visibly one (R15), and says whether that's proven: "Verified
+                  // business" is the badge, and the thing is an organization (M16 E5).
                   <Chip
                     size="sm"
-                    label={item.org.verified ? tr('Verified business') : tr('Business')}
+                    label={item.org.verified ? tr('Verified business') : tr('Organization')}
                     icon={item.org.verified ? BadgeCheck : Briefcase}
                     tone={item.org.verified ? 'success' : 'neutral'}
                   />

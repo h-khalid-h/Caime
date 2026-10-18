@@ -198,7 +198,7 @@ export function InviteSheet({ open, onClose }: { open: boolean; onClose: () => v
       </View>
       {draft ? (
         <SwitchRow
-          label={tr('Show them the context')}
+          label={tr('Say how you know them')}
           detail={tr(
             'The page they open says “{label}”, not your label, so they know who’s asking.',
             {

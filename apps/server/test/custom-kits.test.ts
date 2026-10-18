@@ -166,7 +166,7 @@ describe('an app’s own kinds of card (PRD §74, §86)', () => {
       moves: [{ from: 'preparing', to: 'shipped', label: 'Ship', who: 'organization' }],
     });
     expect(wrong.statusCode).toBe(400);
-    expect(wrong.json().error.message).toBe('Move 1: it goes to another of the kit’s states.');
+    expect(wrong.json().error.message).toBe('Move 1: it goes to another of the card’s states.');
 
     // Its owners see what it has made, on the app's sheet.
     const { apps: views } = await noor.get(`/v1/orgs/${orgId}/apps`);

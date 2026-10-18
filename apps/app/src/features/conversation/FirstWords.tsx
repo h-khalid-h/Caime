@@ -34,7 +34,7 @@ export function FirstWords({
     ? [
         tr('Good to have you here, {first}.', { first }),
         tr('What are you working on this week?'),
-        tr('Shall we keep our threads here from now on?'),
+        tr('Shall we keep our conversations here from now on?'),
       ]
     : [
         tr('Hey {first}! We’re on Caime now.', { first }),

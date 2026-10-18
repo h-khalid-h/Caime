@@ -166,7 +166,7 @@ export default function Connect() {
             onPress={() => (router.canGoBack() ? router.back() : router.replace('/people'))}
           />
         }
-        title={tr('Connect')}
+        title={tr('Find people')}
       />
       <View style={{ padding: 16, gap: 8, maxWidth: 640, width: '100%', alignSelf: 'center' }}>
         <TextField

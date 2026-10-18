@@ -213,7 +213,7 @@ export function PeopleList({ pane }: { pane?: boolean }) {
           />
           <IconButton
             icon={UserPlus}
-            label={tr('Connect with someone')}
+            label={tr('Find people')}
             tone="primary"
             size={20}
             onPress={() => router.push('/connect')}
@@ -300,7 +300,7 @@ export function PeopleList({ pane }: { pane?: boolean }) {
           )}
           action={
             <Button
-              label={tr('Connect with someone')}
+              label={tr('Find people')}
               icon={UserPlus}
               onPress={() => router.push('/connect')}
             />

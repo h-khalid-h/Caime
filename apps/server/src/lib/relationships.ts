@@ -40,7 +40,7 @@ export function validateRole(
   role: string | null | undefined,
   roleLabel: string | null | undefined,
 ) {
-  if (!isSphere(sphere)) throw badRequest(tr('Unknown sphere.'));
+  if (!isSphere(sphere)) throw badRequest(tr('Choose how you know them from the list.'));
   if (role && !findRole(sphere, role))
     throw badRequest(
       tr('“{role}” isn’t a {sphere} role. Use a custom role instead.', {

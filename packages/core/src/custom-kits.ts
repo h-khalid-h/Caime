@@ -218,15 +218,15 @@ export function parseCustomKit(
   try {
     if (typeof key !== 'string' || !KIT_KEY.test(key))
       throw new Invalid(
-        tr('A kit’s key is 2 to 40 lowercase letters, digits or _, from a letter.'),
+        tr('A card’s key is 2 to 40 lowercase letters, digits or _, from a letter.'),
       );
-    const k = object(input, tr('The kit'));
+    const k = object(input, tr('The card'));
     const known = new Set(['key', 'name', 'description', 'icon', 'fields', 'states', 'moves']);
     known.add('adultsOnly');
     for (const name of Object.keys(k))
-      if (!known.has(name)) throw new Invalid(tr('The kit has no “{name}”.', { name }));
+      if (!known.has(name)) throw new Invalid(tr('The card has no “{name}”.', { name }));
     if (k.key !== undefined && k.key !== key)
-      throw new Invalid(tr('The kit’s key is the one in its address.'));
+      throw new Invalid(tr('The card’s key is the one in its address.'));
     const icon = (k.icon ?? 'clipboard-list') as CustomKitIcon;
     if (!CUSTOM_KIT_ICONS.includes(icon))
       throw new Invalid(tr('Its icon is one of {icons}.', { icons: listed(CUSTOM_KIT_ICONS) }));
@@ -267,11 +267,11 @@ export function parseCustomKit(
       const m = object(v, tr('Move {number}', { number: i + 1 }));
       if (typeof m.from !== 'string' || !ids.has(m.from))
         throw new Invalid(
-          tr('Move {number}: it goes from one of the kit’s states.', { number: i + 1 }),
+          tr('Move {number}: it goes from one of the card’s states.', { number: i + 1 }),
         );
       if (typeof m.to !== 'string' || !ids.has(m.to) || m.to === m.from)
         throw new Invalid(
-          tr('Move {number}: it goes to another of the kit’s states.', { number: i + 1 }),
+          tr('Move {number}: it goes to another of the card’s states.', { number: i + 1 }),
         );
       if (pairs.has(`${m.from}>${m.to}`))
         throw new Invalid(

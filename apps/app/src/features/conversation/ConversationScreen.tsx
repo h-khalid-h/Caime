@@ -570,8 +570,8 @@ export function ConversationScreen({
           ? // Writing for an organization of theirs (R64): who they are here comes first.
             tr('As {name}', { name: business.asOrg.name })
           : org.verified
-            ? tr('Business · Verified · {verifiedDomain}', { verifiedDomain: org.verifiedDomain })
-            : tr('Business · Not verified yet')
+            ? tr('Verified business · {verifiedDomain}', { verifiedDomain: org.verifiedDomain })
+            : tr('Organization · Not verified yet')
         : thread && org
           ? tr('Customer of {name}', { name: org.name })
           : other
@@ -740,7 +740,9 @@ export function ConversationScreen({
             </Text>
             <VerifiedLine org={org} />
             <Text variant="caption" color="textTertiary" align="center">
-              {tr('A business conversation: {name}’s team answers as {name}.', { name: org.name })}
+              {tr('A conversation with an organization: its team answers as {name}.', {
+                name: org.name,
+              })}
             </Text>
             {business?.asOrg ? (
               <Text variant="caption" color="textSecondary" align="center" testID="writing-as-line">
