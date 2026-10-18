@@ -19,9 +19,9 @@ import {
   type WebhookEvent,
 } from '@caime/core';
 import { tr } from '@caime/core/i18n';
-import { sql } from 'kysely';
+import { type Kysely, sql, type Transaction } from 'kysely';
 import type { AppContext } from '../context';
-import type { OrgApp } from '../db/schema';
+import type { Database, OrgApp } from '../db/schema';
 import { hashToken } from './crypto';
 import { badRequest } from './errors';
 import { enqueue, registerJob } from './jobs';
@@ -287,6 +287,27 @@ export async function queueDelivery(
     .execute();
   await enqueue(ctx, 'webhook_delivery', { deliveryId: id }, { maxAttempts: WEBHOOK_ATTEMPTS });
   return id;
+}
+
+/**
+ * What an organization's apps were sent of a customer conversation's words, gone with the words
+ * (M16 B2): its deliveries (all of them, or those of `messageIds`) leave the delivery log, but
+ * those that say only ids (a message deleted, the conversation erased), which an app needs to
+ * drop its own copies. A pending one is let go: its job finds no row and stops.
+ */
+export async function forgetDeliveries(
+  trx: Kysely<Database> | Transaction<Database>,
+  conversationId: string,
+  messageIds?: string[],
+): Promise<void> {
+  if (messageIds && !messageIds.length) return;
+  let q = trx
+    .deleteFrom('webhook_deliveries')
+    // The index's own expression (migration 0098), so it finds them without the table.
+    .where(sql<string>`payload->'data'->>'conversationId'`, '=', conversationId)
+    .where('event', 'not in', ['message.deleted', 'conversation.erased']);
+  if (messageIds) q = q.where(sql<string>`payload->'data'->'message'->>'id'`, 'in', messageIds);
+  await q.execute();
 }
 
 /**

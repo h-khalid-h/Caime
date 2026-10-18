@@ -314,7 +314,13 @@ appointment from a catalog).
   is dropped there, once. Retention is `organizations.retention_days`, applied by
   `applyOrgRetention` to what's there and by `retentionFor` (`lib/messages.ts`) to each new
   message as the shorter of it and the conversation's own; nothing else writes `expires_at` for
-  a business message. Who processes data is `packages/core/src/processors.ts` plus
+  a business message. `eraseMessagesWhere` is also what a delete for everyone runs
+  (`removeForEveryone`, M16 B2), and it names the files its messages pointed at: every caller
+  hands them to `dropErasedFiles` in its transaction and `removeStored` after it commits, so
+  nothing erased leaves bytes behind; a removal or an erasure in a customer conversation calls
+  `forgetDeliveries` (`lib/apps.ts`, by the payload's `conversationId` through its index) so the
+  apps' delivery log keeps none of the words, and the retention sweep keeps no delivery past
+  the organization's own retention. Who processes data is `packages/core/src/processors.ts` plus
   `processorsFor(config)` on the server (`HOSTING_PROVIDER` names the host, `EDGE_PROVIDER` the
   network in front of it, `SMTP_HOST_PROVIDERS` the company behind a mail host): a new provider
   joins the list, and the privacy page renders it; never prose about a company anywhere else.

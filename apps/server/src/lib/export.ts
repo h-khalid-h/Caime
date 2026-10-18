@@ -24,6 +24,36 @@ import { itemsWithStock } from './stock';
 import { meView } from './users';
 
 const iso = (d: Date | null | undefined) => (d ? d.toISOString() : null);
+
+interface MailCopy {
+  direction: 'in' | 'out';
+  from_address: string;
+  to_address: string;
+  subject: string | null;
+  signature: string | null;
+  delivery: 'sent' | 'delivered' | 'bounced' | null;
+  delivery_at: Date | null;
+  seen_at: Date | null;
+  opened_at: Date | null;
+  track_opens: boolean;
+}
+
+/** A message's mail envelope as its sender reads it (R75): who, the subject, how far it got. */
+function mailFacts(c: MailCopy | undefined) {
+  if (!c) return null;
+  return {
+    direction: c.direction,
+    from: c.from_address,
+    to: c.to_address,
+    subject: c.subject,
+    signature: c.signature,
+    delivery: c.delivery,
+    deliveryAt: iso(c.delivery_at),
+    seenAt: iso(c.seen_at),
+    openedAt: iso(c.opened_at),
+    opensTracked: c.track_opens,
+  };
+}
 const fileUrl = (id: string) => `/v1/files/${id}`;
 type Payload = Record<string, unknown>;
 
@@ -122,6 +152,10 @@ export async function buildExport(ctx: AppContext, me: string, now: Date) {
     meetingInvitations,
     joinLinks,
     joinRequests,
+    mailCopies,
+    externalBusy,
+    calendarPushes,
+    reclaims,
   ] = await Promise.all([
     // An organization's page is public; whose link a person followed is only counted (R29: it
     // could name someone under 18, or someone who can't be found).
@@ -948,7 +982,51 @@ export async function buildExport(ctx: AppContext, me: string, now: Date) {
       .orderBy('created_at')
       .orderBy('id')
       .execute(),
+    // What Caime keeps of their messages that went or came as mail (R75): the envelope and how
+    // far it got, never the HTML (shown only in its sandbox), and nothing of a message erased.
+    db
+      .selectFrom('mail_messages as mm')
+      .innerJoin('messages as m', 'm.id', 'mm.message_id')
+      .select([
+        'mm.message_id',
+        'mm.direction',
+        'mm.from_address',
+        'mm.to_address',
+        'mm.subject',
+        'mm.signature',
+        'mm.delivery',
+        'mm.delivery_at',
+        'mm.seen_at',
+        'mm.opened_at',
+        'mm.track_opens',
+      ])
+      .where('m.sender_id', '=', me)
+      .where('m.deleted_at', 'is', null)
+      .execute(),
+    // The busy times read from their connected calendars (R90): start and end, nothing else.
+    db
+      .selectFrom('external_busy')
+      .select(['start_at', 'end_at'])
+      .where('user_id', '=', me)
+      .orderBy('start_at')
+      .execute(),
+    // What Caime wrote into their connected calendars (R96): when, and whether it shows busy.
+    db
+      .selectFrom('calendar_pushes')
+      .select(['uid', 'start_at', 'end_at', 'holds', 'pushed_at'])
+      .where('user_id', '=', me)
+      .orderBy('start_at')
+      .execute(),
+    // A closed organization they set out to take back by its domain (R42): never the token.
+    db
+      .selectFrom('org_reclaims as r')
+      .innerJoin('organizations as o', 'o.id', 'r.org_id')
+      .select(['o.name', 'o.handle', 'r.created_at'])
+      .where('r.user_id', '=', me)
+      .orderBy('r.created_at')
+      .execute(),
   ]);
+  const mailOf = new Map(mailCopies.map((c) => [c.message_id, c]));
   const person = (name: string | null, handle: string | null) =>
     name === null ? null : { displayName: name, handle };
   const masks = await masksFor(ctx, me, [...new Set(messages.map((m) => m.conversation_id))]);
@@ -1078,9 +1156,10 @@ export async function buildExport(ctx: AppContext, me: string, now: Date) {
       };
     }),
     // The invite links you made (R1): how you'd know whoever joins, what they're shown, and how
-    // many joined, never who (they're among your connections, and their side is their own).
+    // many joined, never who (they're among your connections, and their side is their own), and
+    // never the link itself: a file passed on would connect whoever holds it (the app shows it).
     inviteLinks: invites.map((i) => ({
-      url: `${ctx.config.PUBLIC_URL.replace(/\/+$/, '')}/i/${i.token}`,
+      endsWith: i.token.slice(-4),
       yourDescription: i.relationship,
       sharedContext: i.context_sphere
         ? { sphere: i.context_sphere, orgName: i.context_org_name }
@@ -1157,6 +1236,7 @@ export async function buildExport(ctx: AppContext, me: string, now: Date) {
       editedAt: iso(m.edited_at),
       deletedAt: iso(m.deleted_at),
       disappearsAt: iso(m.expires_at),
+      mail: mailFacts(mailOf.get(m.id)),
     })),
     yourItemsOnOthersChecklists: theirChecklists.flatMap((m) => {
       const items = ((m.payload.fields as Payload | undefined)?.items ?? []) as Array<Payload>;
@@ -1591,6 +1671,24 @@ export async function buildExport(ctx: AppContext, me: string, now: Date) {
       uses: a.uses,
       connectedAt: a.created_at.toISOString(),
       calendarReadAt: iso(a.synced_at),
+    })),
+    // The busy times read from those calendars (start and end alone), and what Caime wrote into
+    // them: each meeting or appointment by its calendar id, when, and whether it shows busy.
+    busyFromYourCalendars: externalBusy.map((b) => ({
+      start: b.start_at.toISOString(),
+      end: b.end_at.toISOString(),
+    })),
+    writtenToYourCalendars: calendarPushes.map((p) => ({
+      event: p.uid,
+      start: p.start_at.toISOString(),
+      end: p.end_at.toISOString(),
+      showsBusy: p.holds,
+      writtenAt: p.pushed_at.toISOString(),
+    })),
+    // A closed organization you set out to take back by proving its domain (R42).
+    reclaims: reclaims.map((r) => ({
+      organization: { name: r.name, handle: r.handle },
+      at: r.created_at.toISOString(),
     })),
     // The email addresses and phone numbers you added as yours (R91), and how each was proven.
     ownAddresses: ownAddresses.map((a) => ({

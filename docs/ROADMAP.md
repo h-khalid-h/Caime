@@ -1964,10 +1964,26 @@ graph) and the number that will show it; one that sharpens none is hygiene and s
       `trust.test.ts` (5), `meeting-guests.test.ts`, `mail.test.ts` (the day's limit hit before a
       held address is refused), core `privacy-safety.test.ts` (the clamp), `invites.test.ts` and
       the full gate.
+- [x] B2. What's deleted is gone (2026-10-18), the condition for a clinic's compliance officer (DPA
+      §8, erasure on request): a message deleted for everyone runs the one statement a
+      disappearance and an erasure run (`eraseMessagesWhere`), so its mail copy's envelope goes
+      too (subject, sender address, HTML, signature: the delete left them); the files only those
+      messages pointed at go with their bytes once the transaction commits (`dropErasedFiles`,
+      `removeStored`; a forward, another album or an avatar keeps its file), for all three; a
+      removal or an erasure in a customer conversation takes what the organization's apps were
+      sent of those words from their delivery log (`forgetDeliveries`, by the payload's
+      conversation through an index built concurrently, migration 0098), leaving the deliveries
+      that say a message was deleted or the conversation erased; deliveries are kept no longer
+      than the organization's own retention. The export carries a message's mail envelope, the
+      busy times read from connected calendars and what Caime wrote into them, a reclaim, and an
+      invite link's last four characters only (a file passed on connected whoever held it). The
+      privacy page and the DPA draft say each. Verified with `erasure.test.ts` (7), `org-data`,
+      `privacy-upkeep`, `account`, `messaging`, `mail`, `files`, `business`, `apps`,
+      `dpa-draft`, the migrations lint and the full gate.
 - [ ] B, the rest: "who can add me" with acceptance for minors; request caps and blurred request
       media; reports with a snapshot, a child-safety reason, held content, organization suspension
-      and a date-of-birth tool; the mail copy cleared on delete, file bytes and delivery copies on
-      erasure; the vault key from the environment and encrypted dumps; age assurance phase 1
+      and a date-of-birth tool; the vault key from the environment and encrypted dumps; age
+      assurance phase 1
       (`age_assurance` levels, `AgeProvider` behind a signed webhook, the paid, organization and
       stranger triggers, the privacy page and the DPA).
 - [ ] ⛔ B, the owner's: an age-assurance provider (Agemin or another) with retention terms, a DPA
@@ -3968,6 +3984,11 @@ graph) and the number that will show it; one that sharpens none is hygiene and s
   journeys, safety, reliability, performance, intelligence, mail and calendar, chat, integrations,
   business and code integrity; the matrix against WhatsApp, Signal, Slack, Calendly and Workspace;
   an age-assurance design; the integration framework mapped to the code; plan M16 (A–H).
+- 2026-10-18 — M16 B2: a message deleted for everyone, disappeared or erased leaves no copy:
+  its mail envelope, the files only it held (bytes and all) and what an organization's apps were
+  sent of it go; app deliveries keep no longer than the organization's retention; the export
+  carries mail envelopes, calendar times and reclaims, and no live invite link. C1d live on
+  cai.me (`0067d29`: every organization's page carries "Message …" and its form).
 - 2026-10-18 — M16 B1, safety and trust's first slice: writing to an address by email counts
   against the day before anything is said of it and refuses someone's address without naming
   them (H2; what still differs is in SECURITY); an adult's invite link no longer connects someone

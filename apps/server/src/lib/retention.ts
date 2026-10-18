@@ -4,7 +4,8 @@
  * network address and browser) a year; a sign-in that ended, 30 days after it ended; the log of
  * what happens (a message sent, a connection made, an AI feature used: by account, never the
  * words) 30 days, and what of it names nobody a little over a year, for the product's metrics
- * (they look back up to 365 days); copies of what was sent to an organization's apps, 30 days;
+ * (they look back up to 365 days); copies of what was sent to an organization's apps, 30 days
+ * (or the organization's own retention, if shorter);
  * and a handle someone let go of is held from everyone a year, then forgotten (lib/handles.ts).
  */
 import { CLOSED_ORG_EXPORT_DAYS } from '@caime/core/api';
@@ -108,6 +109,17 @@ export async function sweepRecords(ctx: AppContext): Promise<void> {
     sql`delete from webhook_deliveries where id in (select id from webhook_deliveries
       where created_at < ${before(KEPT_DAYS.appDeliveries)}
       limit ${LOT} for update skip locked)`,
+  );
+  // An organization that keeps its customers' words for less than that keeps what its apps were
+  // sent of them no longer either (R54, M16 B2): its own retention, from when each was sent.
+  await inLots(
+    ctx,
+    sql`delete from webhook_deliveries where id in (select d.id from webhook_deliveries d
+      join org_apps a on a.id = d.app_id
+      join organizations o on o.id = a.org_id
+      where o.retention_days is not null
+        and d.created_at < ${new Date(now)}::timestamptz - make_interval(days => o.retention_days)
+      limit ${LOT} for update of d skip locked)`,
   );
   // A handle whose hold is over is anyone's already (lib/handles.ts): nothing more is kept of it.
   await inLots(

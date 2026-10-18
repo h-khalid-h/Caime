@@ -7,6 +7,7 @@ import { sql } from 'kysely';
 import { tellSaved } from '../lib/automations';
 import { eachLimit } from '../lib/batch';
 import { offerFollowUp } from '../lib/cai';
+import { removeStored } from '../lib/files';
 import { enqueue, registerJob, registerPeriodic } from '../lib/jobs';
 import { participantsOf } from '../lib/messages';
 import {
@@ -16,7 +17,7 @@ import {
   runNotificationHooks,
   tellForgotten,
 } from '../lib/notify';
-import { eraseMessagesWhere, sweepClosedOrgs } from '../lib/org-data';
+import { dropErasedFiles, eraseMessagesWhere, sweepClosedOrgs } from '../lib/org-data';
 import {
   activeRelationships,
   isBlockedEitherWay,
@@ -25,6 +26,7 @@ import {
 } from '../lib/relations';
 import { sweepRecords } from '../lib/retention';
 import { tellStockChanged } from '../lib/stock';
+import { storageFor } from '../lib/storage';
 
 /** How many due reminders or held notifications one pass of a sweep takes. */
 export const SWEEP_BATCH = 200;
@@ -242,7 +244,7 @@ export function registerWorkers(): void {
       const told = new Map<string, number>();
       const members = new Map<string, string[]>();
       for (;;) {
-        const { done, forgotten } = await ctx.db.transaction().execute(async (trx) => {
+        const { done, forgotten, stored } = await ctx.db.transaction().execute(async (trx) => {
           // The same statement an erasure runs (lib/org-data.ts): what goes with a message is
           // decided once.
           const done = await eraseMessagesWhere(
@@ -254,8 +256,14 @@ export function registerWorkers(): void {
             ctx.now(),
           );
           const gone = done.filter((r) => r.what === 'gone').map((r) => r.id);
-          return { done, forgotten: await forgetNotificationsOf(trx, gone) };
+          return {
+            done,
+            forgotten: await forgetNotificationsOf(trx, gone),
+            // The files only they pointed at go too, bytes and all (M16 B2).
+            stored: await dropErasedFiles(trx, done),
+          };
         });
+        await removeStored(ctx, storageFor(ctx.config), stored, 'disappeared');
         // Whoever had saved something of it sees their lists without it, on every device.
         await tellSaved(
           ctx,

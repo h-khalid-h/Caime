@@ -16,11 +16,11 @@ import { sql } from 'kysely';
 import type { AppContext } from '../context';
 import type { Database } from '../db/schema';
 import { listingState } from './app-directory';
-import { emitWebhook } from './apps';
+import { emitWebhook, forgetDeliveries } from './apps';
 import { audit } from './audit';
 import { tellSaved } from './automations';
 import { bookingOf, catalogOf, orderingOf, paymentsOf } from './booking';
-import { dropUnusedFiles, removeStored } from './files';
+import { dropUnusedFiles, removeStored, type StoredKeys } from './files';
 import { insertSystemMessage, messageViews, participantsOf } from './messages';
 import { forgetNotificationsOf, tellForgotten } from './notify';
 import { placesOwnedBy } from './places';
@@ -31,18 +31,19 @@ import { storageFor } from './storage';
 type Q = Kysely<Database> | Transaction<Database>;
 
 export interface Erased {
-  what: 'saved' | 'gone' | 'stock';
+  what: 'saved' | 'gone' | 'stock' | 'file';
   id: string;
   conversation_id: string | null;
 }
 
 /**
  * Erase the messages `due` selects (a query of their ids): body, payload, entities, sealed
- * envelope and pin go; so do their assets, files, album photos, what anyone saved of them, and
- * the words of what Caime offered from them; an open order among them gives back the stock it
- * took (R60). Returns who had saved something ('saved'), each message gone ('gone') and each
- * host given stock back ('stock'); notifications showing their words are forgotten by the
- * caller (`forgetNotificationsOf`), which needs the ids.
+ * envelope and pin go; so do their assets, files, album photos, what anyone saved of them, the
+ * words of what Caime offered from them and their mail copy; an open order among them gives
+ * back the stock it took (R60). Returns who had saved something ('saved'), each message gone
+ * ('gone'), each host given stock back ('stock') and each file they pointed at ('file'), which
+ * the caller hands to `dropErasedFiles` in the same transaction; notifications showing their
+ * words are forgotten by the caller (`forgetNotificationsOf`), which needs the ids.
  */
 export async function eraseMessagesWhere(
   trx: Q,
@@ -57,9 +58,15 @@ export async function eraseMessagesWhere(
       from due where m.id = due.id
       returning m.id, m.conversation_id
     ),
-    assets_gone as (delete from assets where message_id in (select id from gone)),
-    files_gone as (delete from message_files where message_id in (select id from gone)),
-    album_gone as (delete from album_photos where message_id in (select id from gone)),
+    assets_gone as (
+      delete from assets where message_id in (select id from gone) returning file_id
+    ),
+    files_gone as (
+      delete from message_files where message_id in (select id from gone) returning file_id
+    ),
+    album_gone as (
+      delete from album_photos where message_id in (select id from gone) returning file_id
+    ),
     saved_gone as (
       delete from saved_items where message_id in (select id from gone) returning user_id
     ),
@@ -80,8 +87,25 @@ export async function eraseMessagesWhere(
     union all
     select distinct 'stock', host_id::text, null from stock_taken
     union all
+    select distinct 'file', file_id::text, null from (
+      select file_id from assets_gone union select file_id from files_gone
+      union select file_id from album_gone
+    ) f where file_id is not null
+    union all
     select 'gone', id::text, conversation_id::text from gone`.execute(trx);
   return done.rows;
+}
+
+/**
+ * The files erased messages pointed at that nothing else points at now (a forward, another
+ * album and an avatar keep theirs): their rows go in `trx`, and the caller removes their bytes
+ * once it commits (`removeStored`), so a removal, a disappearance and an erasure leave none.
+ */
+export function dropErasedFiles(trx: Q, rows: Erased[]): Promise<StoredKeys[]> {
+  return dropUnusedFiles(
+    trx,
+    rows.filter((r) => r.what === 'file').map((r) => r.id),
+  );
 }
 
 /**
@@ -96,35 +120,42 @@ export async function eraseBusinessConversation(
   byUserId: string,
 ): Promise<{ erased: number } | null> {
   const now = ctx.now();
-  const { rows, forgotten, customerId } = await ctx.db.transaction().execute(async (trx) => {
-    const thread = await trx
-      .selectFrom('business_threads as t')
-      .innerJoin('organizations as o', 'o.id', 't.org_id')
-      .select(['t.conversation_id', 't.customer_id', 'o.name as org_name'])
-      .where('t.conversation_id', '=', conversationId)
-      .where('t.org_id', '=', orgId)
-      .forUpdate('t')
-      .executeTakeFirst();
-    if (!thread) return { rows: null, forgotten: [], orgName: null, customerId: null };
-    const rows = await eraseMessagesWhere(
-      trx,
-      sql`select id from messages where conversation_id = ${conversationId} and deleted_at is null`,
-      now,
-    );
-    await trx
-      .updateTable('business_threads')
-      .set({ erased_at: now, erased_by: byUserId, updated_at: now })
-      .where('conversation_id', '=', conversationId)
-      .execute();
-    const gone = rows.filter((r) => r.what === 'gone').map((r) => r.id);
-    return {
-      rows,
-      forgotten: await forgetNotificationsOf(trx, gone),
-      orgName: thread.org_name,
-      customerId: thread.customer_id,
-    };
-  });
+  const { rows, forgotten, customerId, stored } = await ctx.db
+    .transaction()
+    .execute(async (trx) => {
+      const thread = await trx
+        .selectFrom('business_threads as t')
+        .innerJoin('organizations as o', 'o.id', 't.org_id')
+        .select(['t.conversation_id', 't.customer_id', 'o.name as org_name'])
+        .where('t.conversation_id', '=', conversationId)
+        .where('t.org_id', '=', orgId)
+        .forUpdate('t')
+        .executeTakeFirst();
+      if (!thread)
+        return { rows: null, forgotten: [], orgName: null, customerId: null, stored: [] };
+      const rows = await eraseMessagesWhere(
+        trx,
+        sql`select id from messages where conversation_id = ${conversationId} and deleted_at is null`,
+        now,
+      );
+      await trx
+        .updateTable('business_threads')
+        .set({ erased_at: now, erased_by: byUserId, updated_at: now })
+        .where('conversation_id', '=', conversationId)
+        .execute();
+      // What its apps were sent of its words goes from their delivery log too (M16 B2).
+      await forgetDeliveries(trx, conversationId);
+      const gone = rows.filter((r) => r.what === 'gone').map((r) => r.id);
+      return {
+        rows,
+        forgotten: await forgetNotificationsOf(trx, gone),
+        orgName: thread.org_name,
+        customerId: thread.customer_id,
+        stored: await dropErasedFiles(trx, rows),
+      };
+    });
   if (!rows) return null;
+  await removeStored(ctx, storageFor(ctx.config), stored, 'erased conversation');
   await tellSaved(
     ctx,
     rows.filter((r) => r.what === 'saved').map((r) => r.id),

@@ -374,15 +374,17 @@ updates and its team&rsquo;s notes on its conversations.</li>
 <li>In a conversation with disappearing messages, each message is emptied within about an hour of
 its time being up: the setting when it was sent, counted from then, so a change to the setting
 applies only to messages sent after it. It then shows as &ldquo;Message deleted&rdquo;:
-its words, card and links go, its files leave the conversation, and the notifications about it
-go too. A message you delete for everyone goes the same way at once; reactions to it stay.
-Decisions and actions made from a message, copies someone forwarded and, for
-${span(KEPT_DAYS.appDeliveries)}, the copy made for an organization&rsquo;s apps, stay. Its files stay
-stored for whoever sent them until they delete their account.</li>
+its words, card and links go, and its files with them unless a copy someone forwarded still
+holds them, as do the notifications about it. A message you delete for everyone goes the same way
+at once, and so does what an organization&rsquo;s apps were sent of it (they&rsquo;re told it was
+deleted); reactions to it stay. Decisions and actions made from a message and copies someone
+forwarded stay, and so does the copy made for an organization&rsquo;s apps of one that
+disappeared, for ${span(KEPT_DAYS.appDeliveries)} or the organization&rsquo;s own time if that&rsquo;s
+shorter.</li>
 <li>Security records are kept for ${span(KEPT_DAYS.securityRecords)}, and a device&rsquo;s sign-in
 for ${span(KEPT_DAYS.endedSignIns)} after it ended. The log of what you do, without the words, is
 kept for ${span(KEPT_DAYS.activity)}, and copies of what you send an organization, made for its
-apps, for ${span(KEPT_DAYS.appDeliveries)}. Counts that name nobody are kept a little longer than
+apps, for ${span(KEPT_DAYS.appDeliveries)} (or the organization&rsquo;s own time, if shorter). Counts that name nobody are kept a little longer than
 a year.</li>
 <li>An invite link that ran out or was taken back is kept for ${span(KEPT_DAYS.spentInvites)}, then
 forgotten; the people who joined through it stay your connections. An organization&rsquo;s invite

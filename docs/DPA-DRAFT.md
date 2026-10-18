@@ -160,12 +160,15 @@ The Organization answers its customers' requests itself, from its inbox, with th
   of their own from Settings, the Organization's messages to them included.
 - **Erasure:** the Organization erases a customer's conversation at that customer's request
   (`DELETE /orgs/:id/conversations/:id`): every message in it is emptied (words, cards, links,
-  files, album photos, what anyone saved of it, the suggestions drafted from it and the
-  notifications that showed them), the customer reads a line from the Organization saying so, and
-  the audit log keeps when and by whom. It cannot be undone.
+  files with their stored bytes where nothing else uses them, album photos, what anyone saved of
+  it, the suggestions drafted from it, its mail copy's envelope and the notifications that showed
+  them), what the Organization's apps were sent of it leaves their delivery log (only that it was
+  erased stays, so each app drops its own copy), the customer reads a line from the Organization
+  saying so, and the audit log keeps when and by whom. It cannot be undone.
 - **Retention:** the Organization's owner sets how long its conversations are kept, from 1 to
   3,650 days, or as long as the account exists; the time applies to what is there and to what is
-  sent from then on, and the customer is told where they write.
+  sent from then on, and to the copies its apps were sent (kept 30 days at most), and the
+  customer is told where they write.
 - **Objection and restriction:** a customer blocks the Organization, which stops every write both
   ways; a customer under 18 cannot be written to first.
 - **Rectification:** a customer corrects their own name and profile; what was written in a

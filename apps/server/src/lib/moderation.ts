@@ -1,19 +1,23 @@
 import type { ReportView } from '@caime/core';
 import { tr } from '@caime/core';
+import { sql } from 'kysely';
 import type { AppContext } from '../context';
 import type { Message } from '../db/schema';
 import { builtinCountsChanged } from './app-directory';
-import { emitWebhook } from './apps';
+import { emitWebhook, forgetDeliveries } from './apps';
 import { audit } from './audit';
-import { dropSaved, tellSaved } from './automations';
+import { tellSaved } from './automations';
 import { queueCalendarPush } from './calendar-push';
 import { disconnectAllAccounts } from './connected-accounts';
 import { recordEvent } from './events';
+import { removeStored } from './files';
 import { participantsOf } from './messages';
 import { forgetNotificationsOf, notify, tellForgotten } from './notify';
 import { revokeGrantsOf } from './oauth';
+import { dropErasedFiles, eraseMessagesWhere } from './org-data';
 import { endSessions } from './sessions';
-import { giveBackStock, tellStockChanged } from './stock';
+import { tellStockChanged } from './stock';
+import { storageFor } from './storage';
 import { retellUpdate, tellUpdatesChanged } from './updates';
 
 /**
@@ -31,59 +35,36 @@ export async function removeForEveryone(
   m: Pick<Message, 'id' | 'conversation_id' | 'pinned_at'>,
   actorId: string | null,
 ): Promise<void> {
-  const { savers, forgotten, restocked, dated } = await ctx.db
-    .transaction()
-    .execute(async (trx) => {
-      // An open order taken down gives back what it took (R60): the card's lock first, as its
-      // cancel takes them, so the two wait on each other in one order and only one gives it back.
-      const [locked] = await trx
-        .selectFrom('messages')
-        .select(['id', 'card_start_at'])
-        .where('id', '=', m.id)
-        .forUpdate()
-        .execute();
-      const restocked = await giveBackStock(trx, [m.id], ctx.now());
-      await trx
-        .updateTable('messages')
-        .set({
-          deleted_at: ctx.now(),
-          body: null,
-          payload: '{}',
-          entities: '{}',
-          sealed: null,
-          // Gone for everyone, it's pinned for nobody.
-          pinned_at: null,
-          pinned_by: null,
-        })
-        .where('id', '=', m.id)
-        .execute();
-      // Whoever saved it no longer has it (PRD §69).
-      const savers = await dropSaved(trx, [m.id]);
-      await trx.deleteFrom('assets').where('message_id', '=', m.id).execute();
-      await trx.deleteFrom('message_files').where('message_id', '=', m.id).execute();
-      await trx.deleteFrom('album_photos').where('message_id', '=', m.id).execute();
-      // What Caime offered from it: an offer still open closes, and none keeps its words.
-      await trx
-        .updateTable('suggestions')
-        .set({ status: 'expired', resolved_at: ctx.now() })
-        .where('message_id', '=', m.id)
-        .where('status', '=', 'pending')
-        .execute();
-      await trx
-        .updateTable('suggestions')
-        .set({ title: '', rationale: '', payload: '{}', due_text: null })
-        .where('message_id', '=', m.id)
-        .execute();
-      await recordEvent(trx, 'message.deleted', actorId, { messageId: m.id });
-      // Nobody keeps its words in a notification either.
-      return {
-        savers,
-        forgotten: await forgetNotificationsOf(trx, [m.id]),
-        restocked,
-        dated: Boolean(locked?.card_start_at),
-      };
-    });
-  await tellStockChanged(ctx, restocked);
+  const { rows, forgotten, dated, stored } = await ctx.db.transaction().execute(async (trx) => {
+    // An open order taken down gives back what it took (R60): the card's lock first, as its
+    // cancel takes them, so the two wait on each other in one order and only one gives it back.
+    const [locked] = await trx
+      .selectFrom('messages')
+      .select(['id', 'card_start_at'])
+      .where('id', '=', m.id)
+      .forUpdate()
+      .execute();
+    // What goes with a message is decided once, the statement a disappearance and an erasure
+    // run (lib/org-data.ts): its words and pin, its files, what anyone saved of it (PRD §69),
+    // the words of what Caime offered from it, its mail copy, and an open order's stock.
+    const rows = await eraseMessagesWhere(trx, sql`select ${m.id}::uuid as id`, ctx.now());
+    // What an organization's apps were sent of it leaves their delivery log too (M16 B2).
+    await forgetDeliveries(trx, m.conversation_id, [m.id]);
+    await recordEvent(trx, 'message.deleted', actorId, { messageId: m.id });
+    // Nobody keeps its words in a notification either.
+    return {
+      rows,
+      forgotten: await forgetNotificationsOf(trx, [m.id]),
+      dated: Boolean(locked?.card_start_at),
+      stored: await dropErasedFiles(trx, rows),
+    };
+  });
+  await removeStored(ctx, storageFor(ctx.config), stored, 'removed for everyone');
+  const savers = rows.filter((r) => r.what === 'saved').map((r) => r.id);
+  await tellStockChanged(
+    ctx,
+    rows.filter((r) => r.what === 'stock').map((r) => r.id),
+  );
   // A dated card gone leaves its people's own calendars too (R96).
   if (dated)
     await queueCalendarPush(
