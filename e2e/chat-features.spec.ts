@@ -216,6 +216,55 @@ test.describe
       expect([...noor.errors, ...alex.errors]).toEqual([]);
     });
 
+    test('a video sent from the phone plays where it is, and Chats says it’s a video (M16 E4b)', async () => {
+      const { page } = noor;
+      await page.goto(`/c/${convo}`);
+      await alex.page.goto(`/c/${convo}`);
+      // A second of a real video, made by the browser itself: a canvas recorded as WebM.
+      const bytes = await page.evaluate(async () => {
+        const canvas = document.createElement('canvas');
+        canvas.width = 64;
+        canvas.height = 48;
+        const g = canvas.getContext('2d');
+        if (!g) throw new Error('no canvas');
+        const recorder = new MediaRecorder(canvas.captureStream(10), { mimeType: 'video/webm' });
+        const chunks: Blob[] = [];
+        recorder.ondataavailable = (e) => chunks.push(e.data);
+        const stopped = new Promise((done) => {
+          recorder.onstop = done;
+        });
+        recorder.start();
+        for (let i = 0; i < 10; i++) {
+          g.fillStyle = `hsl(${i * 36}, 80%, 50%)`;
+          g.fillRect(0, 0, 64, 48);
+          await new Promise((done) => setTimeout(done, 100));
+        }
+        recorder.stop();
+        await stopped;
+        return Array.from(new Uint8Array(await new Blob(chunks).arrayBuffer()));
+      });
+      await page.getByTestId('composer-attach').filter({ visible: true }).click();
+      await expect(page.getByTestId('attach-photos')).toContainText('Photos and videos');
+      const chooser = page.waitForEvent('filechooser');
+      await page.getByTestId('attach-photos').click();
+      await (await chooser).setFiles([
+        { name: 'river.webm', mimeType: 'video/webm', buffer: Buffer.from(bytes) },
+      ]);
+      // It plays where it is, for both of them, from Caime's own address.
+      for (const p of [page, alex.page]) {
+        const video = p.getByTestId('message-video').filter({ visible: true }).last();
+        await expect(video).toBeVisible({ timeout: 20_000 });
+        await expect(video).toHaveAttribute('src', /\/v1\/files\//);
+        await expect
+          .poll(() => video.evaluate((v: HTMLVideoElement) => v.readyState), { timeout: 15_000 })
+          .toBeGreaterThan(0);
+      }
+      // Chats says what it is.
+      await alex.page.goto('/chats');
+      await expect(alex.page.getByText('🎥 Video').filter({ visible: true }).first()).toBeVisible();
+      expect([...noor.errors, ...alex.errors]).toEqual([]);
+    });
+
     test('a photo taken with the camera, a file and a sticker arrive too', async () => {
       const { page } = noor;
       // The camera: on a phone's browser, the camera's own chooser.

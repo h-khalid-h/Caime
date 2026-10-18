@@ -60,11 +60,32 @@ test.describe
       await expect(visible(page, 'Hi Noor, the contract is signed.')).toBeVisible({
         timeout: 20_000,
       });
-      // Then it plays (pressed once the bubble has settled: a press during its slide-in is
-      // cancelled by the pointer moving, as any real one would be).
+      // Its bars, as its recorder heard the fake microphone's tone, are kept with it (M16 E4).
+      const kept = (await (
+        await noorCtx.request.get(`/v1/conversations/${convo}/messages?limit=10`, {
+          headers: CLIENT,
+        })
+      ).json()) as { messages: Array<{ kind: string; payload: { waveform?: number[] } }> };
+      const bars = kept.messages.find((m) => m.kind === 'voice')?.payload.waveform ?? [];
+      expect(bars.length).toBeGreaterThan(4);
+      // Pressed once the bubble has settled (a press during its slide-in is cancelled by the
+      // pointer moving, as any real one would be): halfway along its bars, it's there.
       await page.waitForTimeout(600);
+      const wave = note.getByTestId('voice-wave');
+      const box = await wave.boundingBox();
+      if (!box) throw new Error('no bars');
+      await page.mouse.click(box.x + box.width * 0.5, box.y + box.height / 2);
+      await expect(note.getByTestId('voice-length')).toHaveText(/^0:0[12] \/ 0:0[2-3]$/);
+      await expect(wave).toHaveAttribute('aria-valuenow', /^[12]$/);
+      // One and a half times as fast, then twice, as the speed is pressed.
+      const speed = note.getByTestId('voice-speed');
+      await speed.click();
+      await expect(speed).toHaveText('1.5×');
+      await expect(speed).toHaveAccessibleName('Playback speed: 1.5×');
+      // Then it plays from there, and once through, it's back at its start.
       await note.getByTestId('voice-play').click();
       await expect(note.getByRole('button', { name: 'Pause' })).toBeVisible({ timeout: 10_000 });
+      await expect(note.getByTestId('voice-length')).toHaveText(/^0:0[2-3]$/, { timeout: 15_000 });
       await expect(
         page.getByTestId('voice-transcript').filter({ visible: true }).first(),
       ).toContainText('Transcript · Suggested by Cai');
