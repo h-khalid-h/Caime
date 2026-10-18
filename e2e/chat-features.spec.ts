@@ -262,6 +262,8 @@ test.describe
       // Chats says what it is.
       await alex.page.goto('/chats');
       await expect(alex.page.getByText('🎥 Video').filter({ visible: true }).first()).toBeVisible();
+      // Back in the conversation, where the tests after this one look.
+      await alex.page.goto(`/c/${convo}`);
       expect([...noor.errors, ...alex.errors]).toEqual([]);
     });
 

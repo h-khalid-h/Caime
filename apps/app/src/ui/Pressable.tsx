@@ -55,6 +55,20 @@ function ariaOf(
   return aria;
 }
 
+/**
+ * It drops accessibilityValue too, so a slider (a voice note's position) said no value: say it as
+ * ARIA, its words included.
+ */
+function valueAriaOf(v: RNPressableProps['accessibilityValue']) {
+  if (!v || Platform.OS !== 'web') return {};
+  const aria: Record<string, number | string> = {};
+  if (v.min !== undefined) aria['aria-valuemin'] = v.min;
+  if (v.max !== undefined) aria['aria-valuemax'] = v.max;
+  if (v.now !== undefined) aria['aria-valuenow'] = v.now;
+  if (v.text !== undefined) aria['aria-valuetext'] = v.text;
+  return aria;
+}
+
 export type KeyEvent = {
   key?: string;
   repeat?: boolean;
@@ -103,6 +117,7 @@ export function Pressable({
     <RNPressable
       {...rest}
       {...ariaOf(rest.accessibilityRole, rest.accessibilityState)}
+      {...valueAriaOf(rest.accessibilityValue)}
       {...spacePresses(
         rest.accessibilityRole,
         rest.disabled ?? rest.accessibilityState?.disabled,

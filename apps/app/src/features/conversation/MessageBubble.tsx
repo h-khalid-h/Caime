@@ -71,6 +71,12 @@ const LEADING_EMOJI = /^(?:📷|📎|🎙|📍|👤|📊)\uFE0F? /u;
 /** How big a message of emoji alone is drawn (M16 E3): one biggest, three still large. */
 const BIG_EMOJI_SIZE = [0, 52, 44, 36];
 
+interface HoverOwner {
+  end: () => void;
+}
+/** The bubble whose hover actions show (web): one at a time. */
+let hovering: HoverOwner | null = null;
+
 /** A plain part of a message's words, cut where it names someone (M16 E3); links stay whole. */
 function cutAtMentions(
   part: TextPart,
@@ -396,21 +402,36 @@ export const MessageBubble = memo(function MessageBubble({
   );
   // Hover actions (web) sit beside the bubble, not inside it: a pressable inside another ends
   // the outer one's hover, which took the buttons away just as the pointer reached them. Moving
-  // from the bubble to the buttons gets a moment's grace.
+  // from the bubble to the buttons gets a moment's grace; moving onto another bubble ends it at
+  // once, so one bubble's actions show at a time.
   const [hover, setHover] = useState(false);
   const hideHover = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const self = useRef<HoverOwner | null>(null);
+  self.current ??= {
+    end: () => {
+      if (hideHover.current) clearTimeout(hideHover.current);
+      hideHover.current = null;
+      setHover(false);
+    },
+  };
   const hoverIn = () => {
     if (hideHover.current) clearTimeout(hideHover.current);
     hideHover.current = null;
+    if (hovering && hovering !== self.current) hovering.end();
+    hovering = self.current;
     setHover(true);
   };
   const hoverOut = () => {
     if (hideHover.current) clearTimeout(hideHover.current);
-    hideHover.current = setTimeout(() => setHover(false), 150);
+    hideHover.current = setTimeout(() => {
+      setHover(false);
+      if (hovering === self.current) hovering = null;
+    }, 150);
   };
   useEffect(
     () => () => {
       if (hideHover.current) clearTimeout(hideHover.current);
+      if (hovering === self.current) hovering = null;
     },
     [],
   );
