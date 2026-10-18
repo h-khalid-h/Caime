@@ -1442,4 +1442,9 @@ export const arServer: Catalog = {
   'Book a time': 'احجز وقتًا',
   'A code goes to your email; the time is yours once you type it here. Nothing is kept before that.':
     'يصلك رمز على بريدك؛ ويصبح الوقت لك حين تكتبه هنا. لا يُحفظ شيء قبل ذلك.',
+  // A provisional person's history claimed only with the address's code (H1).
+  'Messages are waiting for this address on Caime, and this Caime can’t send the code that proves it’s yours yet. Use another address, or try again later.':
+    'لهذا العنوان رسائل بانتظاره على Caime، ولا يستطيع Caime هذا بعدُ إرسال الرمز الذي يثبت أنه لك. استخدم عنوانًا آخر، أو حاول لاحقًا.',
+  'Messages are waiting for this address on Caime. We sent it a six-digit code: type it here to bring them into your account.':
+    'لهذا العنوان رسائل بانتظاره على Caime. أرسلنا إليه رمزًا من ستة أرقام: اكتبه هنا لتُضاف الرسائل إلى حسابك.',
 };

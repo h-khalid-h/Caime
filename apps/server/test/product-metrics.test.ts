@@ -213,6 +213,8 @@ describe('product metrics (PRD §82–83)', () => {
       invited: { count: 2, of: 4, rate: 0.5 },
       viaOrganizations: 1,
       kFactor: 0.333,
+      // Nobody booked from a page here (public-booking.test.ts measures the door).
+      door: { booked: 0, joined: { count: 0, of: 0, rate: null } },
     });
     expect(m.value).toEqual({
       tasksFromMessages: 2,

@@ -11,6 +11,7 @@ import { isReservedHandle, uuidv7 } from '@caime/core';
 import type { InjectOptions } from 'fastify';
 import { sql } from 'kysely';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
+import { memoryMailer } from '../src/lib/email';
 import { runDueJobs } from '../src/lib/jobs';
 import { STAFF_ADDRESSES } from '../src/lib/mail-in';
 import { sweepProvisional } from '../src/lib/mail-out';
@@ -22,6 +23,8 @@ const DOMAIN = 'caime.test';
 const SECRET = 'a-webhook-secret-of-length';
 
 let t: TestApp;
+// The codes that prove an address (H1) go out by SMTP, apart from Caime Mail's provider.
+const smtp = memoryMailer();
 let stub: Server;
 let sends: Array<Record<string, unknown>> = [];
 let refuseNext = false;
@@ -187,15 +190,18 @@ beforeAll(async () => {
   });
   await new Promise<void>((done) => stub.listen(0, '127.0.0.1', done));
   const { port } = stub.address() as AddressInfo;
-  t = await createTestApp({
-    METRICS_TOKEN: 'test-metrics-token',
-    MAIL_DOMAIN: DOMAIN,
-    MAIL_PROVIDER: 'postmark',
-    MAIL_PROVIDER_TOKEN: 'test-postmark-token',
-    MAIL_WEBHOOK_SECRET: SECRET,
-    MAIL_BASE_URL: `http://127.0.0.1:${port}`,
-    MAIL_STAFF_HANDLE: 'noor.mail',
-  });
+  t = await createTestApp(
+    {
+      METRICS_TOKEN: 'test-metrics-token',
+      MAIL_DOMAIN: DOMAIN,
+      MAIL_PROVIDER: 'postmark',
+      MAIL_PROVIDER_TOKEN: 'test-postmark-token',
+      MAIL_WEBHOOK_SECRET: SECRET,
+      MAIL_BASE_URL: `http://127.0.0.1:${port}`,
+      MAIL_STAFF_HANDLE: 'noor.mail',
+    },
+    { mail: smtp },
+  );
   // The internet the mail came through: each sender domain's DKIM key, SPF and DMARC.
   t.ctx.dns = mailDns();
   noor = await signup(t, {
@@ -604,13 +610,56 @@ describe('a stranger writes in', () => {
     expect(jobs.done_at).not.toBeNull();
   });
 
-  it('signing up with the address claims the person: the same row, the history theirs', async () => {
+  it('signing up with the address claims the person once the address is proven: the same row, the history theirs', async () => {
+    const ask = {
+      email: 'sara@partner.example',
+      password: 'correct horse battery',
+      displayName: 'Sara Haddad',
+      handle: 'sara.haddad',
+      birthDate: '1990-01-01',
+      country: 'EG',
+      timeZone: 'Africa/Cairo',
+      locale: 'en-US',
+      client: 'native',
+    };
+    // Whoever types the address is asked for the code sent to it (review 2026-10-17 §2 H1):
+    // nothing is claimed, nobody signed in, until it comes back.
+    const asked = await t.app.inject({ method: 'POST', url: '/v1/auth/signup', payload: ask });
+    expect(asked.statusCode).toBe(409);
+    expect(asked.json().error.code).toBe('email_code_needed');
+    await t.ctx.flush();
+    const code = /^(\d{6}) /.exec(
+      smtp.outbox.filter((m) => m.to === ask.email).at(-1)?.subject ?? '',
+    )?.[1];
+    expect(code).toMatch(/^\d{6}$/);
+    const stillProvisional = await t.ctx.db
+      .selectFrom('users')
+      .select('kind')
+      .where('id', '=', sender)
+      .executeTakeFirstOrThrow();
+    expect(stillProvisional.kind).toBe('provisional');
+    const wrong = await t.app.inject({
+      method: 'POST',
+      url: '/v1/auth/signup',
+      payload: { ...ask, emailCode: code === '000000' ? '111111' : '000000' },
+    });
+    expect(wrong.statusCode).toBe(400);
+    expect(wrong.json().error.code).toBe('wrong_code');
     const sara = await signup(t, {
       displayName: 'Sara Haddad',
       handle: 'sara.haddad',
       email: 'sara@partner.example',
+      emailCode: code as string,
     });
     expect(sara.user.id).toBe(sender);
+    // Proven by the code: confirmed, and when it was claimed kept.
+    const claimed = await t.ctx.db
+      .selectFrom('users')
+      .select(['email_verified_at', 'claimed_at'])
+      .where('id', '=', sender)
+      .executeTakeFirstOrThrow();
+    expect(claimed.email_verified_at).not.toBeNull();
+    expect(claimed.claimed_at).not.toBeNull();
     expect(sara.user.kind).toBe('human');
     expect(sara.user.handle).toBe('sara.haddad');
     expect(sara.user.mailAddress).toBe('sara.haddad@caime.test');

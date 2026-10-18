@@ -112,6 +112,8 @@ export async function signup(
     country: string;
     locale: string;
     timeZone: string;
+    /** The six digits sent to an address with a provisional person's history (H1). */
+    emailCode: string;
   }> = {},
 ): Promise<Client> {
   counter++;
@@ -131,6 +133,7 @@ export async function signup(
       timeZone: patch.timeZone ?? 'America/New_York',
       locale: patch.locale ?? 'en-US',
       client: 'native',
+      ...(patch.emailCode ? { emailCode: patch.emailCode } : {}),
     },
   });
   if (res.statusCode !== 201) throw new Error(`signup failed ${res.statusCode}: ${res.body}`);

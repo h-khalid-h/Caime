@@ -510,14 +510,12 @@ describe('the readable web (R44)', () => {
       /^<aside class="actionbar" aria-label="Book"><div class="sum"><strong>EGP\s?1,500/,
     );
     expect(bar).toContain('<span>60 min</span>');
-    // A visitor books on the page itself (R97 (1)): the bar points at the form, which posts
-    // with no script; joining stays the way in at the top.
-    expect(bar).toContain('<a class="btn" href="#book">Book</a>');
+    // This Caime sends no mail, so nothing could prove a visitor's address: no form on the page
+    // (R97 (1); public-booking.test.ts has the one with a mailer), and Book goes through joining.
     expect(bar).toContain(
-      'Pick a time below. No account needed; Nile Dental confirms in a conversation.',
+      'You pick a time with Nile Dental in a conversation. Joining Caime is free.',
     );
-    expect(page.body).toContain('<section class="book" id="book"');
-    expect(page.body).toContain('action="/v1/public/book"');
+    expect(page.body).not.toContain('id="book"');
     expect(page.body).toContain('<span class="av av-mark av-letters" aria-hidden="true"');
     expect(page.body).toContain('>ND</span>');
     expect(page.body).toContain('<h2 class="overline">More from Nile Dental</h2>');

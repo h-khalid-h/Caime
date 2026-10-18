@@ -14,7 +14,7 @@ export interface Mail {
   subject: string;
   text: string;
   /** What kind of mail, for the log: never the subject, which carries a code. */
-  kind?: 'verification' | 'reset' | 'invitation' | 'address';
+  kind?: 'verification' | 'reset' | 'invitation' | 'address' | 'booking';
   /** A calendar invitation (R84), sent as its own part so mail apps offer Accept and Decline. */
   icalEvent?: { method: 'REQUEST' | 'CANCEL'; content: string };
   /** Who it's from when not `EMAIL_FROM`: Cai's own address, for a meeting's invitations (R86). */
@@ -52,6 +52,12 @@ export function memoryMailer(): Mailer & { outbox: Mail[] } {
     },
     async verify() {},
   };
+}
+
+/** The address `EMAIL_FROM` names (`Caime <hello@cai.me>` is `hello@cai.me`). */
+export function fromAddress(emailFrom: string): string {
+  const m = /<([^>]+)>/.exec(emailFrom);
+  return (m?.[1] ?? emailFrom).trim();
 }
 
 // The texts stay ASCII, so they travel as plain 7-bit text (and the end-to-end stub reads them).

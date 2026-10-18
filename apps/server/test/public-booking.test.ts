@@ -8,6 +8,7 @@ import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { memoryMailer } from '../src/lib/email';
+import { productMetrics } from '../src/lib/product-metrics';
 import { CLAIM_MS, openClaim, sealClaim } from '../src/lib/public-booking';
 import { type Client, createTestApp, signup, type TestApp } from './helpers';
 
@@ -267,7 +268,7 @@ describe('booking before an account (R97 (1))', () => {
     t.clock.advance(-(CLAIM_MS + 1000));
   });
 
-  it('without a mailer the page says booking without an account isn’t available here', async () => {
+  it('without a mailer the page offers no form, only joining, and a post is refused', async () => {
     const plainDir = shell();
     const plain = await createTestApp({ WEB_DIR: plainDir, PUBLIC_URL: 'https://caime.example' });
     try {
@@ -316,12 +317,173 @@ describe('booking before an account (R97 (1))', () => {
         }).toString(),
       });
       expect(paramOf(res.headers.location as string, 'book-error')).toBe('no_mail');
-      const html = (await plain.app.inject({ url: '/o/plain.booking/visit?book-error=no_mail' }))
-        .body;
-      expect(html).toContain('isn’t available here yet');
+      // Nothing proves an address here, so the page never offers a form that could only end
+      // in "not available": its Book goes the way it went before, through joining.
+      const html = (await plain.app.inject({ url: '/o/plain.booking/visit' })).body;
+      expect(html).not.toContain('id="book"');
+      expect(html).not.toContain('action="/v1/public/book"');
+      expect(html).toContain('/sign-in?link=');
     } finally {
       await plain.close();
       rmSync(plainDir, { recursive: true, force: true });
+    }
+  });
+});
+
+/** A visitor books a time from the page, through the code, as a customer without an account. */
+async function bookAsVisitor(name: string, email: string, slot: string): Promise<void> {
+  const start = await form('/v1/public/book', {
+    host: HANDLE,
+    item: 'cleaning',
+    slot,
+    name,
+    email,
+    adult: 'on',
+  });
+  const claim = paramOf(start.headers.location as string, 'code');
+  expect(claim, String(start.headers.location)).toBeTruthy();
+  await t.ctx.flush();
+  const done = await form('/v1/public/book/confirm', {
+    host: HANDLE,
+    item: 'cleaning',
+    claim: claim as string,
+    code: codeFor(email),
+  });
+  expect(paramOf(done.headers.location as string, 'booked')).toBe(claim);
+  await t.ctx.flush();
+}
+
+/** The team's view of the card a customer sent, by the customer's name. */
+async function cardOf(customer: string): Promise<{ id: string; conversationId: string }> {
+  const inbox = await noor.get(`/v1/orgs/${orgId}/inbox`);
+  const thread = inbox.threads.find((th: any) => th.customer?.displayName === customer);
+  expect(thread, customer).toBeDefined();
+  const messages = await noor.get(`/v1/conversations/${thread.conversationId}/messages`);
+  const card = messages.messages.find((m: any) => m.kind === 'kit');
+  return { id: card.id, conversationId: thread.conversationId };
+}
+
+describe('after booking before an account (C1b)', () => {
+  it('the team confirms and the booker hears by mail with the event; a cancel takes it off', async () => {
+    await bookAsVisitor('Bea Lima', 'bea@example.com', '2026-10-21T07:00:00.000Z');
+    const card = await cardOf('Bea Lima');
+    const before = mail.outbox.length;
+    expect(
+      (await noor.req('POST', `/v1/messages/${card.id}/kit`, { to: 'confirmed' })).statusCode,
+    ).toBe(200);
+    await t.ctx.flush();
+    const confirmed = mail.outbox.slice(before).find((m) => m.to === 'bea@example.com');
+    expect(confirmed?.kind).toBe('booking');
+    expect(confirmed?.subject).toBe('Confirmed: Cleaning with Nile Dental');
+    // The time on the host's clock, as the page showed it, and the way into the conversation.
+    expect(confirmed?.text).toMatch(/Wednesday,? 21 October 2026 at 10:00 \(Africa\/Cairo\)/);
+    expect(confirmed?.text).toContain(
+      `https://caime.example/sign-up?link=${encodeURIComponent(`/c/${card.conversationId}`)}`,
+    );
+    expect(confirmed?.text).toContain('Hi Bea,');
+    // Nothing of the team in it (R15): the organization speaks.
+    expect(confirmed?.text).not.toContain('Noor');
+    expect(confirmed?.icalEvent?.method).toBe('REQUEST');
+    expect(confirmed?.icalEvent?.content).toContain('METHOD:REQUEST');
+    expect(confirmed?.icalEvent?.content).toContain(`UID:appointment-${card.id}@caime`);
+    expect(confirmed?.icalEvent?.content).toContain('DTSTART:20261021T070000Z');
+    expect(confirmed?.icalEvent?.content).toContain('DTEND:20261021T073000Z');
+    const middle = mail.outbox.length;
+    expect(
+      (await noor.req('POST', `/v1/messages/${card.id}/kit`, { to: 'cancelled' })).statusCode,
+    ).toBe(200);
+    await t.ctx.flush();
+    const cancelled = mail.outbox.slice(middle).find((m) => m.to === 'bea@example.com');
+    expect(cancelled?.subject).toBe('Cancelled: Cleaning with Nile Dental');
+    expect(cancelled?.icalEvent?.method).toBe('CANCEL');
+    expect(cancelled?.icalEvent?.content).toContain('STATUS:CANCELLED');
+    expect(cancelled?.icalEvent?.content).toContain('SEQUENCE:1');
+    // Each step was counted by its outcome, from a fixed set.
+    expect(t.ctx.metrics.publicBookings.get({ outcome: 'code_sent' })).toBeGreaterThanOrEqual(2);
+    expect(t.ctx.metrics.publicBookings.get({ outcome: 'booked' })).toBeGreaterThanOrEqual(2);
+    expect(t.ctx.metrics.publicBookings.get({ outcome: 'wrong_code' })).toBeGreaterThanOrEqual(1);
+    expect(t.ctx.metrics.publicBookings.get({ outcome: 'account' })).toBeGreaterThanOrEqual(1);
+  });
+
+  it('a customer with an account is told in Caime, never by mail', async () => {
+    const karim = await signup(t, { displayName: 'Karim Adel', country: 'EG' });
+    const { conversationId } = await karim.post(`/v1/orgs/${orgId}/conversations`);
+    await karim.post(`/v1/conversations/${conversationId}/messages`, {
+      clientId: 'karim-booking-0001',
+      kind: 'kit',
+      payload: {
+        kit: 'appointment',
+        fields: { title: 'Cleaning', start: { at: '2026-10-21T07:30:00.000Z', hasTime: true } },
+        booking: { itemId: 'cleaning' },
+      },
+    });
+    await t.ctx.flush();
+    const card = await cardOf('Karim Adel');
+    const before = mail.outbox.filter((m) => m.to === karim.user.email).length;
+    await noor.req('POST', `/v1/messages/${card.id}/kit`, { to: 'confirmed' });
+    await t.ctx.flush();
+    expect(mail.outbox.filter((m) => m.to === karim.user.email)).toHaveLength(before);
+  });
+
+  it('signing up with a booker’s address asks its code, and the booking comes with the account', async () => {
+    const ask = {
+      email: 'ana@example.com',
+      password: 'correct horse battery',
+      displayName: 'Ana Costa',
+      handle: 'ana.costa',
+      birthDate: '1992-04-03',
+      country: 'EG',
+      timeZone: 'Africa/Cairo',
+      locale: 'en-US',
+      client: 'native',
+    };
+    const provisional = await t.ctx.db
+      .selectFrom('users')
+      .select(['id', 'kind'])
+      .where('email', '=', ask.email)
+      .executeTakeFirstOrThrow();
+    expect(provisional.kind).toBe('provisional');
+    // Typing the address claims nothing: the code goes to it (review 2026-10-17 §2 H1).
+    const asked = await t.app.inject({ method: 'POST', url: '/v1/auth/signup', payload: ask });
+    expect(asked.statusCode).toBe(409);
+    expect(asked.json().error.code).toBe('email_code_needed');
+    expect(asked.json().token).toBeUndefined();
+    await t.ctx.flush();
+    const code = codeFor(ask.email);
+    const wrong = await t.app.inject({
+      method: 'POST',
+      url: '/v1/auth/signup',
+      payload: { ...ask, emailCode: code === '000000' ? '111111' : '000000' },
+    });
+    expect(wrong.json().error.code).toBe('wrong_code');
+    const ana = await signup(t, {
+      displayName: ask.displayName,
+      handle: ask.handle,
+      email: ask.email,
+      birthDate: ask.birthDate,
+      country: 'EG',
+      timeZone: 'Africa/Cairo',
+      emailCode: code,
+    });
+    expect(ana.user.id).toBe(provisional.id);
+    expect(ana.user.kind).toBe('human');
+    // Their booking with Nile Dental is theirs, in their own inbox.
+    const theirs = await cardOf('Ana Costa');
+    const inbox = await ana.get('/v1/inbox?view=all');
+    expect(inbox.conversations.some((i: any) => i.id === theirs.conversationId)).toBe(true);
+    // The door's numbers (REVIEW §14, advantage 3): two bookings before an account this week.
+    const now = await productMetrics(t.ctx, 7);
+    expect(now.growth.door.booked).toBe(2);
+    // A month on, of the two who first booked that way 30 to 60 days back, one joined within
+    // thirty days of it.
+    const was = t.ctx.now();
+    t.clock.set(new Date(was.getTime() + 31 * 86_400_000).toISOString());
+    try {
+      const later = await productMetrics(t.ctx, 30);
+      expect(later.growth.door.booked).toBe(0);
+      expect(later.growth.door.joined).toMatchObject({ count: 1, of: 2 });
+    } finally {
+      t.clock.set(was.toISOString());
     }
   });
 });

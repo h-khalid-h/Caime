@@ -1379,4 +1379,9 @@ export const turkishServer: Catalog = {
   'Book a time': 'Bir saat ayırtın',
   'A code goes to your email; the time is yours once you type it here. Nothing is kept before that.':
     'E-postanıza bir kod gelir; kodu buraya yazdığınızda saat sizindir. Öncesinde hiçbir şey saklanmaz.',
+  // A provisional person's history claimed only with the address's code (H1).
+  'Messages are waiting for this address on Caime, and this Caime can’t send the code that proves it’s yours yet. Use another address, or try again later.':
+    'Bu adres için Caime’de bekleyen mesajlar var ve bu Caime, adresin size ait olduğunu kanıtlayan kodu henüz gönderemiyor. Başka bir adres kullanın ya da daha sonra yeniden deneyin.',
+  'Messages are waiting for this address on Caime. We sent it a six-digit code: type it here to bring them into your account.':
+    'Bu adres için Caime’de bekleyen mesajlar var. Adrese altı haneli bir kod gönderdik: mesajları hesabınıza almak için kodu buraya yazın.',
 };

@@ -86,6 +86,7 @@ test('a visitor books from the item page with a code, and the team sees the requ
   expect(inbox.ok(), await inbox.text()).toBe(true);
   type Thread = { conversationId: string; customer?: { displayName?: string } };
   type Card = {
+    id: string;
     kind: string;
     senderId: string;
     payload: { kit: string; state: string; fields: { start: { at: string } } };
@@ -107,6 +108,50 @@ test('a visitor books from the item page with a code, and the team sees the requ
   // The time is held: the page no longer offers it.
   await page.goto(`/o/nile.pb.${suffix}/cleaning`);
   await expect(page.locator(`input[name="slot"][value="${chosen}"]`)).toHaveCount(0);
+
+  // The team confirms: the booker, who has no device on Caime, hears by mail (C1b).
+  const moved = await team.request.post(`/v1/messages/${card?.id}/kit`, {
+    headers: CLIENT,
+    data: { to: 'confirmed' },
+  });
+  expect(moved.ok(), await moved.text()).toBe(true);
+  await expect
+    .poll(async () => (await mailsTo(email)).map((m) => m.subject))
+    .toContain('Confirmed: Cleaning with Nile Dental');
+  const confirmation = (await mailsTo(email)).find((m) => m.subject.startsWith('Confirmed:'));
+  expect(confirmation?.text).toContain('Nile Dental confirmed your booking');
+  expect(confirmation?.text).toContain('/sign-up?link=');
+
+  // The booker joins with the same address: the form asks for the code sent to it before the
+  // booking comes with the account (review 2026-10-17 §2 H1), and then it's theirs.
+  const codesSoFar = (await mailsTo(email)).filter((m) => /^\d{6} /.test(m.subject)).length;
+  await page.goto('/sign-up');
+  await page.getByTestId('signup-name').fill('Ana Costa');
+  await page.getByTestId('signup-handle').fill(`ana.pb.${suffix}`);
+  await page.getByTestId('signup-email').fill(email);
+  await page.getByTestId('signup-password').fill('a long enough passphrase');
+  await page.getByTestId('signup-birth-date').fill('1990-12-31');
+  await expect(page.getByText('Available')).toBeVisible();
+  await page.getByTestId('signup-submit').click();
+  const codeField = page.getByTestId('signup-email-code');
+  await expect(codeField).toBeVisible();
+  await expect(visible(page, /Messages are waiting for this address on Caime/)).toBeVisible();
+  let claimCode = '';
+  await expect
+    .poll(async () => {
+      const codes = (await mailsTo(email)).filter((m) => /^\d{6} /.test(m.subject));
+      claimCode = codes.length > codesSoFar ? (codes.at(-1)?.subject.slice(0, 6) ?? '') : '';
+      return claimCode;
+    })
+    .toMatch(/^\d{6}$/);
+  await codeField.fill(claimCode);
+  await page.getByTestId('signup-submit').click();
+  await page.waitForURL((url) => !url.pathname.startsWith('/sign-up'));
+  const mine = await page.request.get('/v1/inbox?view=all', { headers: CLIENT });
+  expect(mine.ok(), await mine.text()).toBe(true);
+  const conversations = ((await mine.json()) as { conversations: Array<{ id: string }> })
+    .conversations;
+  expect(conversations.map((c) => c.id)).toContain(thread?.conversationId);
   await visitor.close();
   await team.close();
 });

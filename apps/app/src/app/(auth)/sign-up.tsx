@@ -36,7 +36,14 @@ import { Sheet } from '@/ui/Sheet';
 import { Text } from '@/ui/Text';
 import { TextField } from '@/ui/TextField';
 
-type Field = 'displayName' | 'handle' | 'email' | 'password' | 'birthDate' | 'country';
+type Field =
+  | 'displayName'
+  | 'handle'
+  | 'email'
+  | 'emailCode'
+  | 'password'
+  | 'birthDate'
+  | 'country';
 
 /** Nobody is older than this, and the day is one that's come. */
 const OLDEST_YEARS = 120;
@@ -60,6 +67,10 @@ export default function SignUp() {
     { value: 'none' as const, label: tr('Prefer not to say') },
   ];
   const [email, setEmail] = useState('');
+  // An address with messages already waiting is claimed only with the six digits sent to it
+  // (review 2026-10-17 §2 H1): what the server said when it asked, and what's typed.
+  const [codeAsked, setCodeAsked] = useState<string | null>(null);
+  const [emailCode, setEmailCode] = useState('');
   const [password, setPassword] = useState('');
   const [birthDate, setBirthDate] = useState<string | null>(null);
   const [country, setCountry] = useState<string | null>(null);
@@ -138,7 +149,7 @@ export default function SignUp() {
   const today = dayOf(new Date());
   const oldest = yearsBefore(today, OLDEST_YEARS);
 
-  const validate = (): boolean => {
+  const validate = (resend = false): boolean => {
     const next: typeof errors = {};
     next.displayName = displayNameError(displayName) ?? undefined;
     next.handle =
@@ -153,12 +164,17 @@ export default function SignUp() {
         ? tr('Enter the day you were born.')
         : undefined;
     next.country = country ? undefined : tr('Choose where you live.');
+    next.emailCode =
+      codeAsked && !resend && !/^\d{6}$/.test(emailCode.trim())
+        ? tr('Enter the six digits from the email.')
+        : undefined;
     setErrors(next);
     return !Object.values(next).some(Boolean);
   };
 
-  const submit = async () => {
-    if (!validate()) return;
+  // `resend` sends the form without the code, so the server mails a fresh one and asks again.
+  const submit = async (resend = false) => {
+    if (!validate(resend)) return;
     setBusy(true);
     setErrors({});
     try {
@@ -173,9 +189,18 @@ export default function SignUp() {
         ...device,
         // Whose @handle link brought them, counted for the operator and told to nobody.
         ...(handleIn(peekLink()) ? { invite: handleIn(peekLink()) ?? undefined } : {}),
+        ...(codeAsked && !resend ? { emailCode: emailCode.trim() } : {}),
       });
       await useSession.getState().signedIn(res);
     } catch (err) {
+      if (err instanceof ApiError && err.code === 'email_code_needed') {
+        // Everything else was right: the code field appears under the address, and the same
+        // button finishes once it's typed.
+        setCodeAsked(err.message);
+        setEmailCode('');
+        setErrors({});
+        return;
+      }
       if (err instanceof ApiError) {
         const fields = err.fieldErrors();
         const mapped: typeof errors = {};
@@ -188,7 +213,10 @@ export default function SignUp() {
           'country',
         ] as const)
           if (fields[key]) mapped[key] = fields[key];
-        if (err.code === 'email_taken') mapped.email = err.message;
+        if (err.code === 'email_taken' || err.code === 'email_unprovable')
+          mapped.email = err.message;
+        else if (err.code === 'wrong_code' || err.code === 'code_expired')
+          mapped.emailCode = err.message;
         else if (err.code === 'handle_taken') mapped.handle = err.message;
         else if (err.code === 'too_young') mapped.birthDate = err.message;
         else if (!Object.keys(mapped).length) mapped.form = err.message;
@@ -311,7 +339,14 @@ export default function SignUp() {
           ref={refs.email}
           label={tr('Email')}
           value={email}
-          onChangeText={setEmail}
+          onChangeText={(v) => {
+            setEmail(v);
+            // Another address asks again: a code proves one address only.
+            if (codeAsked) {
+              setCodeAsked(null);
+              setEmailCode('');
+            }
+          }}
           autoCapitalize="none"
           autoComplete="email"
           keyboardType="email-address"
@@ -322,6 +357,31 @@ export default function SignUp() {
           hint={tr('For signing in. Hidden from others unless you choose otherwise.')}
           testID="signup-email"
         />
+        {codeAsked ? (
+          <>
+            <TextField
+              label={tr('Code from the email')}
+              value={emailCode}
+              onChangeText={(v) => setEmailCode(v.replace(/\D/g, '').slice(0, 6))}
+              keyboardType="number-pad"
+              autoComplete="one-time-code"
+              textContentType="oneTimeCode"
+              maxLength={6}
+              error={errors.emailCode}
+              hint={codeAsked}
+              testID="signup-email-code"
+            />
+            {/* A code that ran out, or never came: the form again without it mails a fresh one. */}
+            <Button
+              label={tr('Send a new code')}
+              variant="secondary"
+              size="sm"
+              disabled={busy}
+              onPress={() => void submit(true)}
+              testID="signup-resend-code"
+            />
+          </>
+        ) : null}
         <TextField
           ref={refs.password}
           label={tr('Password')}
@@ -405,7 +465,7 @@ export default function SignUp() {
         size="lg"
         block
         loading={busy}
-        onPress={submit}
+        onPress={() => void submit()}
         testID="signup-submit"
       />
       <Text variant="caption" color="textSecondary" align="center">

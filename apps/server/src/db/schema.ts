@@ -39,6 +39,8 @@ export interface UsersTable {
   id: string;
   email: string;
   email_verified_at: NullableTimestamp;
+  /** When a provisional person (R75, R84, R97) became this account by proving the address. */
+  claimed_at: NullableTimestamp;
   handle: string;
   /** What the handle reads as, for lookalikes (migration 0088, core `handleSkeleton`). */
   handle_skeleton: GeneratedAlways<string | null>;
@@ -1457,6 +1459,7 @@ export const USER_COLUMNS = [
   'id',
   'email',
   'email_verified_at',
+  'claimed_at',
   'handle_skeleton',
   'handle',
   'password_hash',

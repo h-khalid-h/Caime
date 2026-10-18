@@ -1442,4 +1442,9 @@ export const frServer: Catalog = {
   'Book a time': 'Réserver un horaire',
   'A code goes to your email; the time is yours once you type it here. Nothing is kept before that.':
     'Un code arrive dans votre e-mail ; l’horaire est à vous dès que vous le saisissez ici. Rien n’est conservé avant.',
+  // A provisional person's history claimed only with the address's code (H1).
+  'Messages are waiting for this address on Caime, and this Caime can’t send the code that proves it’s yours yet. Use another address, or try again later.':
+    'Des messages attendent cette adresse sur Caime, et ce Caime ne peut pas encore envoyer le code qui prouve qu’elle est à vous. Utilisez une autre adresse, ou réessayez plus tard.',
+  'Messages are waiting for this address on Caime. We sent it a six-digit code: type it here to bring them into your account.':
+    'Des messages attendent cette adresse sur Caime. Nous lui avons envoyé un code à six chiffres : saisissez-le ici pour les retrouver dans votre compte.',
 };

@@ -23,6 +23,7 @@ import { queueCalendarPush } from './calendar-push';
 import { membership } from './conversation-views';
 import { lockConversation } from './conversations';
 import { hashToken, newToken } from './crypto';
+import { fromAddress } from './email';
 import { AppError, badRequest, forbidden, mailUnavailable, notFound } from './errors';
 import { meetingUid, onOccurrencePosted, queueNextTime } from './meeting-series';
 import { queueMeetingStart } from './meeting-start';
@@ -51,12 +52,6 @@ interface MeetingPayload {
 }
 
 const ADDRESS = /^[^\s@:;,"<>]+@[^\s@:;,"<>]+\.[^\s@:;,"<>]+$/;
-
-/** The address `EMAIL_FROM` names. */
-function fromAddress(emailFrom: string): string {
-  const m = /<([^>]+)>/.exec(emailFrom);
-  return (m?.[1] ?? emailFrom).trim();
-}
 
 /**
  * Who a meeting's invitation comes from (R86): Cai, at its own address on Caime's mail domain,

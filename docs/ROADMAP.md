@@ -1938,8 +1938,8 @@ graph) and the number that will show it; one that sharpens none is hygiene and s
 - [ ] ⛔ A, the owner's: the support address answered (the `@caime` organization made, `hello@`
       landing in its inbox), the alert receiver's account, the Sentry project, the bucket for
       backups (`BACKUP_S3_*`).
-- [ ] B. Safety and trust: a provisional person's history moved only after the emailed code; the
-      address oracle closed; the invite rule both ways for minors; `GET /people/:id` gated and a
+- [ ] B. Safety and trust (a provisional person's history moved only after the emailed code is
+      done, in C1b): the address oracle closed; the invite rule both ways for minors; `GET /people/:id` gated and a
       minor's fields clamped; the read-receipt timing leak; "who can add me" with acceptance for
       minors; the guest's age answer honoured; request caps and blurred request media; reports
       with a snapshot, a child-safety reason, held content, organization suspension and a
@@ -1972,11 +1972,28 @@ graph) and the number that will show it; one that sharpens none is hygiene and s
       Sharpens advantage 3 (the door link that needs no account) and the customer side of 2
       (REVIEW §14); its numbers, bookings per door link and bookers who join within thirty days,
       are counted from C1b on (`caime_public_bookings_total`, the booker's `claimed_at`).
-- [ ] C1b. The confirmation reaching the booker: an email when the team confirms or moves the
-      card (`afterCardMove` for a provisional customer, through `ctx.mail`, with the time and the
-      sign-up link that claims the address); booking from a person's public items; a phone number
-      proven by WhatsApp code as the address; "message before an account" at the door the same
-      way; three fields on a link arrival.
+- [x] C1b. The booker told, and the claim proven (2026-10-18): signing up with an address that
+      has a provisional person's history (mail, a meeting's guest, a booking made before an
+      account) claims it only with the code sent to that address (B's first item, pulled forward
+      because C1a made that history real: `email_code_needed`, `emailCode`, `spendEmailCode`; the
+      claim sets `email_verified_at` and `users.claimed_at`, migration 0093; without a mailer
+      `email_unprovable`, never a claim), and the app's sign-up shows the code field under the
+      address when asked; a provisional booker hears by mail when the team confirms or cancels
+      (`mailProvisionalBooker` from `afterCardMove`: the time on the clinic's clock, an ICS
+      invitation or cancellation under the appointment's event id, the link that claims the
+      address), a customer with an account only in Caime; the page offers no form where this
+      Caime can't send mail; advantage 3's numbers are counted (`caime_public_bookings_total` by
+      outcome; product metrics' `growth.door`: bookings made this way, and bookers who joined within
+      thirty days). Verified with `public-booking.test.ts` (the mail and its event on confirm and
+      cancel, none for an account, the counter, the proven claim and its refusals, the door's
+      numbers a month on, no form without a mailer), `mail.test.ts` (the mail claim now proven),
+      `product-metrics.test.ts`, `public-pages.test.ts`, and the E2E `public-booking.spec.ts` (the
+      team confirms, the booker's mail arrives, the booker signs up in the browser, is asked the
+      code, and the booking is in the new account). Live it needs `SMTP_URL` (⛔ the owner's).
+- [ ] C1c. Booking from a person's public items; a phone number proven by WhatsApp code as the
+      address; "message before an account" at the door the same way; a reminder by mail the day
+      before for a provisional booker (no-shows are a clinic's cost); three fields on a link
+      arrival.
 - [ ] C2–C3. The business front door (`/business` to `/orgs/new`, "For me / For my organization"
       in onboarding, a checklist that moves past DNS, a Book link and QR beside the door, "block
       time" and holidays); team invites by link and email with domain auto-join; space and group
@@ -3619,6 +3636,12 @@ graph) and the number that will show it; one that sharpens none is hygiene and s
   journeys, safety, reliability, performance, intelligence, mail and calendar, chat, integrations,
   business and code integrity; the matrix against WhatsApp, Signal, Slack, Calendly and Workspace;
   an age-assurance design; the integration framework mapped to the code; plan M16 (A–H).
+- 2026-10-18 — M16 C1b: the claim of a provisional person's history needs the address's code
+  (review §2 H1, pulled forward from B since C1a made that history real); a provisional booker
+  hears by mail with a calendar invitation when the clinic confirms or cancels; no booking form
+  where this Caime can't send mail; advantage 3's numbers counted (`caime_public_bookings_total`,
+  product metrics' door). A1–A3 and R98 live on cai.me (`9cc277a`); the tested image is published
+  at `ghcr.io/h-khalid-h/caime` and pulls without a login.
 - 2026-10-17 — M16 C1a: booking before an account. A visitor books an organization's public item
   from its page: the week's times, a name and an address, a code, the appointment request from
   their provisional self; every step is the page, nothing kept before the code. Needs `SMTP_URL`

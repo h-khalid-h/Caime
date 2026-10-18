@@ -178,8 +178,17 @@ appointment from a catalog).
   `lib/email-codes.ts` (`sendEmailCode`, `spendEmailCode`, shared with sign-up's confirmation);
   the booking is `startCustomerConversation` and `sendMessage` as the provisional person, so
   `bookingFor` checks the time under the host's lock as for anyone. A known account's address is
-  refused as `account` and never mailed (R93); without `ctx.mail` the page says so. Anything new a
-  visitor may do from a page follows this shape: a page state, a form, a redirect, a sealed claim.
+  refused as `account` and never mailed (R93); without `ctx.mail` the page offers no form at all
+  (`visitorBookingState` is null) and a direct post is refused `no_mail`. A provisional booker has
+  no device to be told on, so `afterCardMove` mails them when the team confirms or cancels
+  (`mailProvisionalBooker`, `lib/booking-mail.ts`: the time on the host's clock, an ICS invitation
+  or cancellation under the appointment's `meetingUid`, the sign-up link that claims the address);
+  a customer with an account hears in Caime only. Each step is counted on
+  `caime_public_bookings_total{outcome}` (`code_sent`, `booked`, or a `VisitorRefusal`), and
+  product metrics' `growth.door` reads bookings made this way (their client id is `public-book:…`)
+  and, of the people who first booked 30 to 60 days ago, those who joined within thirty days
+  (`users.claimed_at`). Anything new a visitor may do from a page follows this shape: a page
+  state, a form, a redirect, a sealed claim.
 - Jobs (`lib/jobs.ts`): a job that fails its last attempt is dead (`dead_at`), out of the due
   index, counted on `caime_jobs_dead`, listed with its last error and never its payload at
   `GET /v1/admin/jobs`, and given its attempts back by `retryJob` (`POST …/retry`); never delete
@@ -1135,7 +1144,13 @@ appointment from a catalog).
   email is (`personByAddress`, else the provisional person made once); inbound mail, a meeting's
   guests and `openMailConversation` (writing to an address from Search or Connect, a message
   request from one's own Caime address) all ask it, never an insert of their own. An address that
-  is someone's on Caime is refused as taken, never mailed behind them.
+  is someone's on Caime is refused as taken, never mailed behind them. Signing up with an address
+  that has a provisional person claims it (the same row, its history theirs) only with the code
+  sent to that address (review 2026-10-17 §2 H1): `POST /auth/signup` answers 409
+  `email_code_needed` and sends it (three an hour to one address), the form shows the code field
+  and sends `emailCode`, `spendEmailCode` checks it, and the claim sets `email_verified_at` and
+  `claimed_at`; without `ctx.mail` it's 409 `email_unprovable`, never a claim. A new way to become
+  a provisional person's account goes through the same proof.
 - An organization's AI agent is `lib/agent.ts`: a customer's message reaches it through
   `onCustomerMessage` (registered by `registerAgentJob`, so `lib/business.ts` never imports it),
   which queues the `agent.reply` job three seconds out. The job checks the thread is still its

@@ -320,6 +320,12 @@ export const SignupBody = z.object({
   deviceName: z.string().max(80).optional(),
   /** The @handle whose link brought them here, a person's or an organization's (PRD §82). */
   invite: z.string().max(200).optional(),
+  /**
+   * The six digits sent to the address (review 2026-10-17 §2 H1): asked for only when the address
+   * already has a provisional person's history (mail, a meeting, a booking made before an
+   * account), which is claimed by whoever proves the address and nobody else.
+   */
+  emailCode: z.string().max(12).optional(),
 });
 
 /**

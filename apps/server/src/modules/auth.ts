@@ -112,10 +112,36 @@ export async function authRoutes(app: FastifyInstance, ctx: AppContext) {
     if (existing && existing.kind !== 'provisional') {
       throw conflict('email_taken', tr('That email already has an account. Sign in instead?'));
     }
-    // Someone who wrote in by mail before signing up (R75) claims that provisional person:
-    // the same row, so the conversations they're already in are theirs the moment they're in.
+    // Someone who wrote in by mail, was a meeting's guest or booked before an account (R75, R84,
+    // R97) claims that provisional person: the same row, so the conversations they're already in
+    // are theirs the moment they're in.
     const claiming = existing?.kind === 'provisional' ? existing.id : null;
     await assertHandleAvailable(ctx.db, body.handle, now);
+    // That history goes only to whoever proves the address (review 2026-10-17 §2 H1): the six
+    // digits sent to it, asked for once everything else on the form is right. Without a mailer
+    // nothing can prove it, and the form says so rather than handing it over.
+    if (claiming) {
+      if (!body.emailCode) {
+        if (!ctx.mail)
+          throw new AppError(
+            409,
+            'email_unprovable',
+            tr(
+              'Messages are waiting for this address on Caime, and this Caime can’t send the code that proves it’s yours yet. Use another address, or try again later.',
+            ),
+          );
+        ctx.limiter.hit(`signup-code:${body.email}`, ctx.config.isTest ? 1000 : 3, 3_600_000);
+        await sendEmailCode(ctx, claiming, body.email, body.displayName);
+        throw new AppError(
+          409,
+          'email_code_needed',
+          tr(
+            'Messages are waiting for this address on Caime. We sent it a six-digit code: type it here to bring them into your account.',
+          ),
+        );
+      }
+      await spendEmailCode(ctx, claiming, body.emailCode.trim());
+    }
     const id = claiming ?? uuidv7();
     const locale = safeLocale(body.locale);
     const workweek = workweekFor(body.country);
@@ -162,9 +188,11 @@ export async function authRoutes(app: FastifyInstance, ctx: AppContext) {
           invited_by_org: inviterOrg?.id ?? null,
         };
         if (claiming)
+          // The address is proven by the code just spent: confirmed, and when it was claimed kept
+          // for the one number that asks (product metrics' door: bookers who joined).
           await trx
             .updateTable('users')
-            .set({ ...account, kind: 'human', email_verified_at: null })
+            .set({ ...account, kind: 'human', email_verified_at: now, claimed_at: now })
             .where('id', '=', id)
             .where('kind', '=', 'provisional')
             .execute();
@@ -192,8 +220,9 @@ export async function authRoutes(app: FastifyInstance, ctx: AppContext) {
     const codes = await storeRecoveryCodes(ctx, id);
     const token = await createSession(ctx, req, reply, id, body.client, body.deviceName);
     await audit(ctx.db, { actorId: id, action: 'auth.signup', ...clientInfo(req) });
-    // A code to confirm the address, when mail can go out (R48); nothing waits on it.
-    if (ctx.mail) await sendEmailCode(ctx, id, body.email, body.displayName);
+    // A code to confirm the address, when mail can go out (R48); nothing waits on it. A claim
+    // proved it already.
+    if (ctx.mail && !claiming) await sendEmailCode(ctx, id, body.email, body.displayName);
     const user = await ctx.db
       .selectFrom('users')
       .select(USER_COLUMNS)

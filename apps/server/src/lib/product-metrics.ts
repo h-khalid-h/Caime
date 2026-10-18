@@ -173,6 +173,26 @@ export async function productMetrics(ctx: AppContext, days: number): Promise<Pro
     where kind = 'human' and deleted_at is null and created_at > ${from} and created_at <= ${to}
   `);
 
+  // Booking before an account (R97 (1)): its messages are the ones its route sent (their
+  // client id says so), read through the senders it could be, people who were or still are
+  // provisional, so the scan is that handful's messages by the sender index, never the table.
+  const door = await q<{ booked: number; cohort: number; joined: number }>(sql`
+    with s as (select id, claimed_at from users where kind = 'provisional' or claimed_at is not null),
+    b as (
+      select m.sender_id, min(m.created_at) as first_at,
+        count(*) filter (where m.created_at > ${from} and m.created_at <= ${to})::int as in_window
+      from s join messages m on m.sender_id = s.id
+      where m.client_id like 'public-book:%' and m.created_at > ${from < ago(60) ? from : ago(60)}
+      group by m.sender_id
+    )
+    select
+      coalesce((select sum(in_window) from b), 0)::int as booked,
+      (select count(*)::int from b where first_at > ${ago(60)} and first_at <= ${ago(30)}) as cohort,
+      (select count(*)::int from b join s on s.id = b.sender_id
+        where b.first_at > ${ago(60)} and b.first_at <= ${ago(30)}
+          and s.claimed_at is not null and s.claimed_at <= b.first_at + interval '30 days') as joined
+  `);
+
   const suggestions = await q<{ accepted: number; decided: number }>(sql`
     select count(*) filter (where status = 'accepted')::int as accepted,
       count(*) filter (where status in ('accepted', 'dismissed'))::int as decided
@@ -249,6 +269,7 @@ export async function productMetrics(ctx: AppContext, days: number): Promise<Pro
         engagement.people > 0
           ? Math.round((invites.via_people / engagement.people) * 1000) / 1000
           : null,
+      door: { booked: door.booked, joined: rate(door.joined, door.cohort) },
     },
     ai: {
       calls: ai.reduce((n, r) => n + r.n, 0),

@@ -1710,6 +1710,13 @@ export interface ProductMetricsView {
     viaOrganizations: number;
     /** Sign-ups through a person's link, per person active in the window. */
     kFactor: number | null;
+    /**
+     * The door that needs no account (R97 (1), REVIEW §14 advantage 3): bookings made from an
+     * organization's page before an account in the window, and of the people who first booked
+     * that way 30 to 60 days ago, those who made an account with the same address within thirty
+     * days of it.
+     */
+    door: { booked: number; joined: Rate };
   };
   ai: { calls: number; ok: number; byFeature: Record<string, { ok: number; other: number }> };
   business: {

@@ -100,7 +100,10 @@ week's slots (`openSlotsFor` over the host's bookings in the window, no calendar
 visitor's view: `fresh: false`) and nothing kept; per booking, one code mail and the same rows a
 customer's own booking writes. A visitor's device gets a page with no script, as every public
 page. The limits (thirty starts an hour from an address, three codes an hour to one email) bound
-what a stranger's form can cost.
+what a stranger's form can cost. Telling a provisional booker costs one mail per confirm or
+cancel (with a calendar part a few hundred bytes long), sent after the response; a customer with
+an account costs nothing more than before. The door's numbers in product metrics read only the
+handful of people who were or are provisional, and their messages by the sender index.
 
 ## What a change says
 

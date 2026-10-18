@@ -21,6 +21,7 @@ import { tr } from '@caime/core/i18n';
 import { cardAsks } from '@caime/core/kit-states';
 import type { AppContext } from '../context';
 import type { Message } from '../db/schema';
+import { mailProvisionalBooker } from './booking-mail';
 import { queueBrief } from './briefs';
 import type { CustomerMask } from './business';
 import { queueCalendarPush } from './calendar-push';
@@ -68,6 +69,10 @@ export async function afterCardMove(
   if (card.kit === 'meeting' || card.kit === 'appointment') await queueCalendarPush(ctx, members);
   // The organization's apps hear who moved it, unless one of them did (PRD §74).
   if (business) await tellCardApp(ctx, m, business, actorId, 'kit.moved', { from, to });
+  // A customer who booked before an account has no device to be told on: confirmed or
+  // cancelled reaches them by mail, with the event for their calendar (R97 (1), C1b).
+  if (card.kit === 'appointment' && business && (to === 'confirmed' || to === 'cancelled'))
+    await mailProvisionalBooker(ctx, moved, business, to);
   const mover = await ctx.db
     .selectFrom('users')
     .select('display_name')

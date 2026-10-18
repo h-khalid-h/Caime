@@ -308,6 +308,9 @@ export async function visitorBookingState(
   itemId: string,
   search: URLSearchParams,
 ): Promise<VisitorBookingState | null> {
+  // Without a mailer nothing proves the address: the page offers joining, never a form that
+  // could only end in "not available here".
+  if (!ctx.mail) return null;
   const host = orgHost(org);
   const item = host.items.find((i) => i.id === itemId);
   if (!item || !isBooked(item) || !host.hours) return null;

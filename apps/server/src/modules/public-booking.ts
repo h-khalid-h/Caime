@@ -82,8 +82,10 @@ export async function publicBookingRoutes(app: FastifyInstance, ctx: AppContext)
       const org = await orgRowByHandle(ctx.db, form.host);
       if (!org) throw notFound(tr('That organization'));
       const slug = catalogOf(org).items.find((i) => i.id === form.item)?.slug ?? form.item;
-      const refused = (reason: VisitorRefusal) =>
-        back(reply, org.handle, slug, { 'book-error': reason }, form.lang);
+      const refused = (reason: VisitorRefusal) => {
+        ctx.metrics.publicBookings.inc({ outcome: reason });
+        return back(reply, org.handle, slug, { 'book-error': reason }, form.lang);
+      };
       // Without an account nobody says their age: the box stands for it (R29).
       if (form.adult !== 'on') return refused('adult');
       try {
@@ -100,6 +102,7 @@ export async function publicBookingRoutes(app: FastifyInstance, ctx: AppContext)
         email: form.email,
       });
       if (started.kind === 'refused') return refused(started.reason);
+      ctx.metrics.publicBookings.inc({ outcome: 'code_sent' });
       return back(reply, org.handle, slug, { code: started.claim }, form.lang);
     });
 
@@ -109,16 +112,24 @@ export async function publicBookingRoutes(app: FastifyInstance, ctx: AppContext)
       const org = await orgRowByHandle(ctx.db, form.host);
       if (!org) throw notFound(tr('That organization'));
       const slug = catalogOf(org).items.find((i) => i.id === form.item)?.slug ?? form.item;
+      const counted = (outcome: VisitorRefusal | 'booked') =>
+        ctx.metrics.publicBookings.inc({ outcome });
       try {
         hourly(`public-book-confirm:ip:${req.ip}`, STARTS_AN_HOUR);
       } catch (err) {
-        if (err instanceof AppError && err.code === 'rate_limited')
+        if (err instanceof AppError && err.code === 'rate_limited') {
+          counted('too_many');
           return back(reply, org.handle, slug, { 'book-error': 'too_many' }, form.lang);
+        }
         throw err;
       }
       const claim = await openClaim(ctx, form.claim);
-      if (!claim) return back(reply, org.handle, slug, { 'book-error': 'expired' }, form.lang);
+      if (!claim) {
+        counted('expired');
+        return back(reply, org.handle, slug, { 'book-error': 'expired' }, form.lang);
+      }
       const done = await confirmVisitorBooking(ctx, org, claim, form.code.trim());
+      counted(done.kind === 'booked' ? 'booked' : done.reason);
       if (done.kind === 'refused') {
         // A wrong code is tried again on the same claim; anything else starts over.
         const again = done.reason === 'wrong_code' || done.reason === 'code_expired';

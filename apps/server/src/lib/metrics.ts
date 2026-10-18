@@ -146,6 +146,11 @@ export function createMetrics(pool: pg.Pool) {
     ),
     realtime: new Gauge('caime_realtime_connections', 'Open realtime connections.'),
     messages: new Counter('caime_messages_total', 'Messages sent, by kind.'),
+    // Booking before an account (R97 (1)): each step's outcome, refusals by their reason.
+    publicBookings: new Counter(
+      'caime_public_bookings_total',
+      'Bookings before an account, by outcome (a code sent, booked, or why not).',
+    ),
     // The outbox (A3): what the sweep did about effects the fast path never finished.
     effects: new Counter(
       'caime_message_effects_total',
