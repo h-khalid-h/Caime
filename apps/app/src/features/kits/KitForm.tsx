@@ -52,7 +52,7 @@ import { SwitchRow } from '@/ui/SwitchRow';
 import { Text } from '@/ui/Text';
 import { TextField } from '@/ui/TextField';
 import { exampleAmount, parseNumber } from './amounts';
-import { SlotPicker } from './SlotPicker';
+import { SlotPicker, SlotPickerHolder } from './SlotPicker';
 
 // Places to fill a card from (R92): loaded with the form's first place field, never at start.
 const PlaceChips = lazyPart(() => import('@/features/places/parts').then((m) => m.PlaceChips));
@@ -463,6 +463,13 @@ export function KitForm({
     quantity,
   );
   const slots = slotsQ.data ?? null;
+  // While a booking host's slots are asked for, "When" keeps their room (M16 E5), unless the
+  // organization is known to take none.
+  const slotsComing =
+    appointment &&
+    host !== null &&
+    slotsQ.isLoading &&
+    !(conversation.business && orgQ.data && !orgQ.data.org.booking);
   const [slot, setSlot] = useState<string | null>(null);
   const price = item?.price
     ? formatAmount(item.price.value * quantity, item.price.currency, locale)
@@ -1227,6 +1234,8 @@ export function KitForm({
                 timeZone={timeZone}
                 locale={locale}
               />
+            ) : field.key === 'start' && slotsComing ? (
+              <SlotPickerHolder key={field.key} label={tr(field.label)} />
             ) : (
               <TextField
                 key={field.key}

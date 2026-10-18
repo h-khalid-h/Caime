@@ -267,7 +267,9 @@ appointment from a catalog).
   it takes no room there (a bubble's Reply and React are `position: absolute` over the margin):
   React Native Web cancels a press whose pointer comes up on a different element than it went
   down on, so a layout that changes when the pointer arrives makes the first press on anything
-  inside it miss (the voice note's play button found this; the fix is in `MessageBubble`).
+  inside it miss (the voice note's play button found this; the fix is in `MessageBubble`), and a
+  part that arrives later holds its room while it's asked for (the card form's
+  `SlotPickerHolder`), or what's under it moves from under a tap.
 - Hold the socket in E2E with `page.routeWebSocket` to test what happens before it connects.
 - Write a change worked out on the device (live or optimistic) into the query cache with
   `patchCache` (`state/cache.ts`; `patchCaches` for every query under a prefix), and the server's

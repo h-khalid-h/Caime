@@ -33,7 +33,9 @@ test('a link’s card is read once by the server, shown before sending, and take
   const page = lina.page;
   await page.goto(`/c/${convo}`);
   // A name the safety reading trusts, on this machine: the server may read it in this run alone.
-  const url = `${WEB_STUB.replace('127.0.0.1', 'localhost')}/menu`;
+  // An address of this run's own, since the server keeps what a page said for a month and the
+  // database outlives a run.
+  const url = `${WEB_STUB.replace('127.0.0.1', 'localhost')}/menu?run=${suffix}`;
   const input = page.getByTestId('composer-input').filter({ visible: true });
   await input.fill(`Dinner here tonight? ${url}`);
   const writing = page.getByTestId('composer-link-preview').filter({ visible: true });

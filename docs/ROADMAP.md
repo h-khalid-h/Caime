@@ -4391,6 +4391,10 @@ graph) and the number that will show it; one that sharpens none is hygiene and s
   journeys, safety, reliability, performance, intelligence, mail and calendar, chat, integrations,
   business and code integrity; the matrix against WhatsApp, Signal, Slack, Calendly and Workspace;
   an age-assurance design; the integration framework mapped to the code; plan M16 (A–H).
+- 2026-10-18 — The appointment form keeps the slot picker's room while a host's slots are asked
+  for: the free "When" it showed meanwhile was swapped for the picker, which moved "Repeats"
+  from under a tap (the full run found it). The link card's spec reads an address of its own
+  each run, since the server keeps a page's card for a month and the database outlives a run.
 - 2026-10-18 — M16 E4c: link previews, each page read once by the server and kept 30 days by
   its address's hash; shown in the composer (taken off by its ×) and in the bubble, the picture
   from Caime, so no site learns who sent or read a link. E4 is whole.

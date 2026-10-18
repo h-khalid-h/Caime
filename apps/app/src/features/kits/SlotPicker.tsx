@@ -7,8 +7,16 @@ import { formatClock, formatDayHeading } from '@caime/core/format';
 import { tr } from '@caime/core/i18n';
 import { useMemo, useState } from 'react';
 import { ScrollView, View } from 'react-native';
+import { useTheme } from '@/theme/theme';
 import { ChoiceChips } from '@/ui/Chip';
 import { Text } from '@/ui/Text';
+
+/** As tall as the days of slots get before they scroll. */
+const SLOTS_MAX_H = 260;
+/** A slot's chip, as `ChoiceChips` draws it. */
+const CHIP_H = 34;
+const HELD_DAYS = [0, 1];
+const HELD_CHIPS = [0, 1, 2, 3, 4, 5];
 
 export function SlotPicker({
   slots,
@@ -39,7 +47,7 @@ export function SlotPicker({
   return (
     <View style={{ gap: 10 }} testID="slot-picker">
       <Text variant="label">{tr('When · {slotMinutes} min', { slotMinutes })}</Text>
-      <ScrollView style={{ maxHeight: 260 }} nestedScrollEnabled>
+      <ScrollView style={{ maxHeight: SLOTS_MAX_H }} nestedScrollEnabled>
         <View style={{ gap: 10 }}>
           {days.map(([day, times]) => (
             <View key={day} style={{ gap: 6 }}>
@@ -62,6 +70,47 @@ export function SlotPicker({
           ))}
         </View>
       </ScrollView>
+    </View>
+  );
+}
+
+/**
+ * The picker's room while a host's slots are asked for (M16 E5): a free field swapped for the
+ * picker once they came moved everything under it, so a tap on what came next (a card's
+ * "Repeats") landed on nothing.
+ */
+export function SlotPickerHolder({ label }: { label: string }) {
+  const t = useTheme();
+  return (
+    <View style={{ gap: 10 }} testID="slot-picker-holder">
+      <Text variant="label">{label}</Text>
+      <View
+        accessible
+        accessibilityRole="progressbar"
+        accessibilityLabel={tr('Loading')}
+        style={{ height: SLOTS_MAX_H, gap: 10, overflow: 'hidden' }}
+      >
+        {HELD_DAYS.map((day) => (
+          <View key={day} style={{ gap: 6 }}>
+            <View
+              style={{ width: 96, height: 12, borderRadius: 6, backgroundColor: t.c.surfaceMuted }}
+            />
+            <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8 }}>
+              {HELD_CHIPS.map((i) => (
+                <View
+                  key={i}
+                  style={{
+                    width: 76,
+                    height: CHIP_H,
+                    borderRadius: CHIP_H / 2,
+                    backgroundColor: t.c.surfaceMuted,
+                  }}
+                />
+              ))}
+            </View>
+          </View>
+        ))}
+      </View>
     </View>
   );
 }
