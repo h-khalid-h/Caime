@@ -6,6 +6,7 @@
  */
 import {
   AppListingReviewBody,
+  BirthDateBody,
   Handle,
   type HandleView,
   isReservedHandle,
@@ -55,6 +56,7 @@ import {
   endAllAccess,
   removeForEveryone,
   reportViews,
+  setOrgSuspended,
   setSuspended,
   settleReport,
   takeBackUpdate,
@@ -67,6 +69,7 @@ import { productMetrics } from '../lib/product-metrics';
 import { checkProviders, providersView } from '../lib/provider-health';
 import { sendResetLink } from '../lib/reset';
 import { forgetSitemaps } from '../lib/sitemap-cache';
+import { oldEnoughIn, tooYoung } from '../lib/users';
 import { parse } from '../lib/validate';
 
 const PAYING = (plan: string) =>
@@ -329,6 +332,77 @@ export async function adminRoutes(app: FastifyInstance, ctx: AppContext) {
     await setSuspended(ctx, report.person.id, true, `Report ${id}: ${report.reason}`, by);
     await settleReport(ctx, id, 'actioned');
     return { report: await oneReport(id) };
+  });
+
+  /** The reported organization suspended, from the report (M16 B3): it's actioned. */
+  app.post('/admin/reports/:id/suspend-org', async (req): Promise<ReportResponse> => {
+    const by = operator(req);
+    const { id } = parse(reportParam, req.params);
+    const report = await oneReport(id);
+    if (!report.org) throw badRequest(tr('This report isn’t about an organization.'));
+    await setOrgSuspended(ctx, report.org.id, true, `Report ${id}: ${report.reason}`, by);
+    await settleReport(ctx, id, 'actioned');
+    return { report: await oneReport(id) };
+  });
+
+  /**
+   * An organization suspended, or lifted (M16 B3): nothing written as it or to it, its page and
+   * handle nobody's to anyone new, its apps' tokens refused, its updates stopped; nothing of it
+   * goes, and lifting brings it all back. Its team sees the reason.
+   */
+  app.put('/admin/orgs/:handle/suspension', async (req): Promise<OkResponse> => {
+    const by = operator(req);
+    const { handle } = parse(handleParam, req.params);
+    const body = parse(SuspensionBody, req.body);
+    const org = await ctx.db
+      .selectFrom('organizations')
+      .select('id')
+      .where('handle', '=', handle.toLowerCase().replace(/^@/, ''))
+      .where('archived_at', 'is', null)
+      .executeTakeFirst();
+    if (!org) throw notFound(tr('That organization'));
+    await setOrgSuspended(ctx, org.id, body.suspended, body.reason ?? null, by);
+    return { ok: true };
+  });
+
+  /**
+   * A date of birth corrected at its owner's request (the privacy page's "write to us", M16 B3):
+   * a real day, never one under the age Caime asks where they live (suspend instead), kept out
+   * of the audit log, and the under-18 rules follow at once (`privacyOf` reads it on every
+   * request).
+   */
+  app.put('/admin/people/:handle/birth-date', async (req): Promise<OkResponse> => {
+    const by = operator(req);
+    const { handle } = parse(handleParam, req.params);
+    const { birthDate } = parse(BirthDateBody, req.body);
+    const person = await ctx.db
+      .selectFrom('users')
+      .select(['id', 'country', 'time_zone'])
+      .where('handle', '=', handle.toLowerCase().replace(/^@/, ''))
+      .where('kind', '=', 'human')
+      .where('deleted_at', 'is', null)
+      .executeTakeFirst();
+    if (!person) throw notFound(tr('That person'));
+    const day = new Date(`${birthDate}T00:00:00Z`);
+    if (Number.isNaN(day.getTime()) || day.toISOString().slice(0, 10) !== birthDate)
+      throw badRequest(tr('Enter a date like 1990-05-17.'));
+    if (
+      !oldEnoughIn(ctx.config.MINIMUM_AGE, person.country, birthDate, ctx.now(), person.time_zone)
+    )
+      throw tooYoung(ctx.config.MINIMUM_AGE, person.country);
+    await ctx.db
+      .updateTable('users')
+      .set({ birth_date: birthDate })
+      .where('id', '=', person.id)
+      .execute();
+    await audit(ctx.db, {
+      actorId: null,
+      action: 'moderation.birth_date',
+      target: person.id,
+      metadata: { operator: by },
+    });
+    await ctx.bus.publish([person.id], { type: 'me.updated', data: { id: person.id } });
+    return { ok: true };
   });
 
   // The audit log's chain (R78): the newest rows recomputed and relinked, the head to note down.

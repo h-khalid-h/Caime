@@ -1980,10 +1980,26 @@ graph) and the number that will show it; one that sharpens none is hygiene and s
       privacy page and the DPA draft say each. Verified with `erasure.test.ts` (7), `org-data`,
       `privacy-upkeep`, `account`, `messaging`, `mail`, `files`, `business`, `apps`,
       `dpa-draft`, the migrations lint and the full gate.
+- [x] B3. Reports that hold up (2026-10-18), the condition for a school, a parent and a regulator:
+      a report keeps what its reporter saw when they made it (`report_evidence`, in the report's
+      own transaction: the reported message and up to four before it, each with its sender's name
+      then, never a sealed one or one deleted or hidden for the reporter, an imported one marked;
+      or the update's words), so it's judged after its sender deletes it, and the review page
+      shows it beside the message as it is now; a child's safety is a reason (`child_safety`, in
+      every language, with a line to call the emergency number) and is listed first; a closed
+      report (`closed_at`) goes with what it held after 180 days, a year for a child's safety. An
+      organization suspended (migration 0099, from a report or `PUT /admin/orgs/:handle/suspension`)
+      answers as nobody's to anyone new (page, handle, id, search, sitemap; `409 org_suspended` for
+      a new conversation), vouches for nobody, is written in by nobody, posts and tells no update,
+      its agent stays quiet and its apps' tokens answer 401; its customers and team keep what they
+      have to read, its team sees why, and lifting it brings everything back. A date of birth is
+      corrected by the operator (`PUT /admin/people/:handle/birth-date`): a real day, never under
+      the age where the person lives, audited without the date. Verified with `reports.test.ts`
+      (5), `moderation`, `business`, `apps`, `updates`, `orgs`, `privacy-upkeep`, `columns`, the
+      migrations lint and the full gate.
 - [ ] B, the rest: "who can add me" with acceptance for minors; request caps and blurred request
-      media; reports with a snapshot, a child-safety reason, held content, organization suspension
-      and a date-of-birth tool; the vault key from the environment and encrypted dumps; age
-      assurance phase 1
+      media; the vault key from the environment and encrypted dumps; a visitor's report from a
+      page, a suspended account's reason, appeal and export; age assurance phase 1
       (`age_assurance` levels, `AgeProvider` behind a signed webhook, the paid, organization and
       stranger triggers, the privacy page and the DPA).
 - [ ] ⛔ B, the owner's: an age-assurance provider (Agemin or another) with retention terms, a DPA
@@ -3984,6 +4000,10 @@ graph) and the number that will show it; one that sharpens none is hygiene and s
   journeys, safety, reliability, performance, intelligence, mail and calendar, chat, integrations,
   business and code integrity; the matrix against WhatsApp, Signal, Slack, Calendly and Workspace;
   an age-assurance design; the integration framework mapped to the code; plan M16 (A–H).
+- 2026-10-18 — M16 B3: reports that hold up: what the reporter saw kept with the report, a child's
+  safety first, closed reports gone after their time, an organization suspended by the operator
+  (nobody new finds it, nobody writes as it or to it, its apps refused, lifted whole), a date of
+  birth corrected by the operator. B1 and B2 went out together (one CI run for both).
 - 2026-10-18 — M16 B2: a message deleted for everyone, disappeared or erased leaves no copy:
   its mail envelope, the files only it held (bytes and all) and what an organization's apps were
   sent of it go; app deliveries keep no longer than the organization's retention; the export

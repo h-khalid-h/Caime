@@ -5,7 +5,8 @@
  * what happens (a message sent, a connection made, an AI feature used: by account, never the
  * words) 30 days, and what of it names nobody a little over a year, for the product's metrics
  * (they look back up to 365 days); copies of what was sent to an organization's apps, 30 days
- * (or the organization's own retention, if shorter);
+ * (or the organization's own retention, if shorter); a report, with what was kept of what it
+ * reported, half a year after it's closed (a year for a child's safety);
  * and a handle someone let go of is held from everyone a year, then forgotten (lib/handles.ts).
  */
 import { CLOSED_ORG_EXPORT_DAYS } from '@caime/core/api';
@@ -31,6 +32,10 @@ export const KEPT_DAYS = {
    * (DPA §12, lib/org-data.ts `clearClosedOrg`).
    */
   closedOrgExport: CLOSED_ORG_EXPORT_DAYS,
+  /** A report once it's closed (actioned or dismissed, M16 B3), its evidence with it. */
+  closedReports: 180,
+  /** A report about a child's safety once it's closed: a year, should anyone lawfully ask. */
+  childSafetyReports: 365,
 } as const;
 
 /** The day of `at` as Caime keeps days ('YYYY-MM-DD', UTC). */
@@ -148,6 +153,15 @@ export async function sweepRecords(ctx: AppContext): Promise<void> {
     ctx,
     sql`delete from join_requests where id in (select id from join_requests
       where decided_at < ${before(KEPT_DAYS.spentInvites)}
+      limit ${LOT} for update skip locked)`,
+  );
+  // A report once closed, and what was kept of what it reported with it (M16 B3, cascading):
+  // half a year, a year for a child's safety. An open report stays, however old.
+  await inLots(
+    ctx,
+    sql`delete from reports where id in (select id from reports
+      where closed_at < ${before(KEPT_DAYS.childSafetyReports)}
+         or (closed_at < ${before(KEPT_DAYS.closedReports)} and reason <> 'child_safety')
       limit ${LOT} for update skip locked)`,
   );
   // A passkey ceremony nobody finished (R36): its challenge is no use after its few minutes.

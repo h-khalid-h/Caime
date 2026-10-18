@@ -146,6 +146,7 @@ import type {
   RecoveryCodesResponse,
   RelationshipHistoryView,
   RelationshipResponse,
+  ReportedResponse,
   RequestAcceptedResponse,
   SavedCollectionsResponse,
   SavedItemsResponse,
@@ -1035,7 +1036,14 @@ export const endpoints = {
     /** An organization, or one of its updates (with its orgId). */
     orgId?: string;
     updateId?: string;
-    reason: 'spam' | 'scam' | 'harassment' | 'impersonation' | 'inappropriate' | 'other';
+    reason:
+      | 'spam'
+      | 'scam'
+      | 'harassment'
+      | 'impersonation'
+      | 'inappropriate'
+      | 'child_safety'
+      | 'other';
     details?: string;
-  }) => api.post<OkResponse>('/reports', body),
+  }) => api.post<ReportedResponse>('/reports', body),
 };

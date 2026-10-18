@@ -69,6 +69,7 @@ export const ERROR_CODES = [
   'org_blocked',
   'org_closed',
   'org_open',
+  'org_suspended',
   'passkey_failed',
   'paying',
   'phone_taken',

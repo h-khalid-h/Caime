@@ -4273,4 +4273,16 @@ export const turkish: Catalog = {
   'asks first': 'önce istek',
   Forwarded: 'İletildi',
   '{emoji} {count}, including you': '{emoji} {count}, siz dahil',
+  'A child’s safety': 'Bir çocuğun güvenliği',
+  'Someone under 18 at risk, or sexual content involving a child':
+    '18 yaşından küçük biri tehlikede ya da bir çocuğu içeren cinsel içerik',
+  'If a child is in danger right now, call your local emergency number first.':
+    'Bir çocuk şu anda tehlikedeyse önce yerel acil durum numarasını arayın.',
+  'The team sees this message and the few before it as you see them now, even if they’re deleted later.':
+    'Ekip bu mesajı ve ondan önceki birkaç mesajı şu an sizin gördüğünüz gibi görür, sonradan silinseler bile.',
+  'Caime has suspended {name} for now. What was sent here stays to read.':
+    'Caime, {name} adlı kuruluşu şimdilik askıya aldı. Burada gönderilenler okunmak üzere kalıyor.',
+  'Caime has suspended {name}': 'Caime, {name} adlı kuruluşu askıya aldı',
+  'Until it’s lifted, nothing is written as it or to it, its page answers as nobody’s and its apps can’t act. Its conversations stay to read.':
+    'Askı kalkana kadar onun adına ya da ona bir şey yazılmaz, sayfası kimseye ait değilmiş gibi görünür ve uygulamaları işlem yapamaz. Konuşmaları okunmak üzere kalır.',
 };

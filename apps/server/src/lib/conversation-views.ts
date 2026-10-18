@@ -311,6 +311,7 @@ export async function conversationView(
           thread: null,
           closed,
           orgClosed: org.archived_at !== null,
+          orgSuspended: org.suspended_at !== null,
           retentionDays: org.retention_days,
         };
       } else {
@@ -327,6 +328,7 @@ export async function conversationView(
           thread: view ?? null,
           closed,
           orgClosed: org.archived_at !== null,
+          orgSuspended: org.suspended_at !== null,
           retentionDays: org.retention_days,
         };
       }

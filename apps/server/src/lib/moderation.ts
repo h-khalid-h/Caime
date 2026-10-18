@@ -1,8 +1,8 @@
-import type { ReportView } from '@caime/core';
+import type { ReportEvidenceView, ReportView } from '@caime/core';
 import { tr } from '@caime/core';
-import { sql } from 'kysely';
+import { type Insertable, sql, type Transaction } from 'kysely';
 import type { AppContext } from '../context';
-import type { Message } from '../db/schema';
+import type { Database, Message, ReportEvidenceTable } from '../db/schema';
 import { builtinCountsChanged } from './app-directory';
 import { emitWebhook, forgetDeliveries } from './apps';
 import { audit } from './audit';
@@ -11,11 +11,12 @@ import { queueCalendarPush } from './calendar-push';
 import { disconnectAllAccounts } from './connected-accounts';
 import { recordEvent } from './events';
 import { removeStored } from './files';
-import { participantsOf } from './messages';
+import { notHiddenFor, participantsOf } from './messages';
 import { forgetNotificationsOf, notify, tellForgotten } from './notify';
 import { revokeGrantsOf } from './oauth';
 import { dropErasedFiles, eraseMessagesWhere } from './org-data';
 import { endSessions } from './sessions';
+import { forgetSitemaps } from './sitemap-cache';
 import { tellStockChanged } from './stock';
 import { storageFor } from './storage';
 import { retellUpdate, tellUpdatesChanged } from './updates';
@@ -145,6 +146,7 @@ export async function reportViews(
       'r.reason',
       'r.details',
       'r.created_at',
+      'r.closed_at',
       'reporter.id as reporter_id',
       'reporter.handle as reporter_handle',
       'reporter.display_name as reporter_name',
@@ -155,6 +157,7 @@ export async function reportViews(
       'o.id as org_id',
       'o.handle as org_handle',
       'o.name as org_name',
+      'o.suspended_at as org_suspended_at',
       'm.id as message_id',
       'm.conversation_id as message_conversation_id',
       'm.kind as message_kind',
@@ -168,17 +171,53 @@ export async function reportViews(
       'u.body as update_body',
       'u.deleted_at as update_deleted_at',
     ])
+    // A child's safety first while it's open (M16 B3), then the newest.
+    .orderBy(
+      sql`case when r.reason = 'child_safety' and r.status in ('open', 'reviewing') then 0 else 1 end`,
+    )
     .orderBy('r.created_at', 'desc')
     .limit(where.limit);
   if (where.status !== 'all') q = q.where('r.status', '=', where.status);
   if (where.id) q = q.where('r.id', '=', where.id);
   const rows = await q.execute();
+  // What each held as its reporter saw it, in one query for the page.
+  const kept = rows.length
+    ? await ctx.db
+        .selectFrom('report_evidence')
+        .selectAll()
+        .where(
+          'report_id',
+          'in',
+          rows.map((r) => r.id),
+        )
+        .orderBy('report_id')
+        .orderBy('position')
+        .execute()
+    : [];
+  const evidence = new Map<string, ReportEvidenceView[]>();
+  for (const e of kept)
+    evidence.set(e.report_id, [
+      ...(evidence.get(e.report_id) ?? []),
+      {
+        messageId: e.message_id,
+        senderId: e.sender_id,
+        senderName: e.sender_name,
+        kind: e.kind,
+        body: e.body,
+        sentAt: e.sent_at.toISOString(),
+        reported: e.reported,
+        imported: e.imported,
+      },
+    ]);
+  const evidenceOf = (reportId: string): ReportEvidenceView[] => evidence.get(reportId) ?? [];
   return rows.map((r) => ({
     id: r.id,
     status: r.status,
     reason: r.reason,
     details: r.details,
     createdAt: r.created_at.toISOString(),
+    closedAt: r.closed_at?.toISOString() ?? null,
+    evidence: evidenceOf(r.id),
     reporter:
       r.reporter_id && r.reporter_handle && r.reporter_name
         ? { id: r.reporter_id, handle: r.reporter_handle, displayName: r.reporter_name }
@@ -194,7 +233,12 @@ export async function reportViews(
         : null,
     org:
       r.org_id && r.org_handle && r.org_name
-        ? { id: r.org_id, handle: r.org_handle, name: r.org_name }
+        ? {
+            id: r.org_id,
+            handle: r.org_handle,
+            name: r.org_name,
+            suspended: r.org_suspended_at !== null,
+          }
         : null,
     message:
       r.message_id && r.message_conversation_id && r.message_kind && r.message_created_at
@@ -218,6 +262,120 @@ export async function reportViews(
         }
       : null,
   }));
+}
+
+/** How many messages before the reported one go with a report, as its reporter saw them. */
+export const EVIDENCE_BEFORE = 4;
+
+/**
+ * What the reporter saw when they reported it (M16 B3), kept with the report whatever is deleted
+ * since: the reported message and up to `EVIDENCE_BEFORE` before it in its conversation, those
+ * the reporter could see (never one deleted, hidden for them or sealed: a private message's
+ * words are nobody's to keep), each with its sender's name then; or the reported update's words.
+ */
+export async function keepEvidence(
+  trx: Transaction<Database>,
+  reportId: string,
+  reporterId: string,
+  target: { messageId?: string; updateId?: string },
+): Promise<void> {
+  const rows: Insertable<ReportEvidenceTable>[] = [];
+  if (target.messageId) {
+    const reported = await trx
+      .selectFrom('messages')
+      .select(['id', 'conversation_id', 'seq'])
+      .where('id', '=', target.messageId)
+      .executeTakeFirst();
+    if (reported) {
+      const around = await trx
+        .selectFrom('messages as m')
+        .leftJoin('users as u', 'u.id', 'm.sender_id')
+        .select(['m.id', 'm.sender_id', 'u.display_name', 'm.kind', 'm.body', 'm.created_at'])
+        .select(sql<boolean>`(m.payload -> 'imported') is not null`.as('imported'))
+        .where('m.conversation_id', '=', reported.conversation_id)
+        .where('m.seq', '<=', reported.seq)
+        .where('m.deleted_at', 'is', null)
+        .where('m.sealed', 'is', null)
+        .where(notHiddenFor(reporterId, 'm.id'))
+        .orderBy('m.seq', 'desc')
+        .limit(EVIDENCE_BEFORE + 1)
+        .execute();
+      for (const [position, m] of around.reverse().entries())
+        rows.push({
+          report_id: reportId,
+          position,
+          message_id: m.id,
+          sender_id: m.sender_id,
+          sender_name: m.display_name,
+          kind: m.kind,
+          body: m.body,
+          sent_at: m.created_at,
+          reported: m.id === reported.id,
+          imported: m.imported,
+        });
+    }
+  } else if (target.updateId) {
+    const update = await trx
+      .selectFrom('org_updates')
+      .select(['id', 'body', 'created_at'])
+      .where('id', '=', target.updateId)
+      .where('deleted_at', 'is', null)
+      .executeTakeFirst();
+    if (update)
+      rows.push({
+        report_id: reportId,
+        position: 0,
+        message_id: null,
+        sender_id: null,
+        sender_name: null,
+        kind: 'update',
+        body: update.body,
+        sent_at: update.created_at,
+        reported: true,
+      });
+  }
+  if (rows.length) await trx.insertInto('report_evidence').values(rows).execute();
+}
+
+/**
+ * An organization suspended by the operator, or lifted (M16 B3): nothing written as it or to it
+ * (`sendMessage`, a new customer conversation, its updates), its page and handle answer as
+ * nobody's, its apps' tokens are refused and its agent says nothing; nothing of it is removed,
+ * and lifting it brings all of it back. Its team is told the organization changed.
+ */
+export async function setOrgSuspended(
+  ctx: AppContext,
+  orgId: string,
+  suspended: boolean,
+  reason: string | null,
+  operator: string,
+): Promise<void> {
+  await ctx.db
+    .updateTable('organizations')
+    .set(
+      suspended
+        ? { suspended_at: ctx.now(), suspended_reason: reason }
+        : { suspended_at: null, suspended_reason: null },
+    )
+    .where('id', '=', orgId)
+    .execute();
+  await audit(ctx.db, {
+    actorId: null,
+    action: suspended ? 'moderation.org_suspended' : 'moderation.org_unsuspended',
+    target: orgId,
+    metadata: { ...(reason ? { reason } : {}), operator },
+  });
+  forgetSitemaps();
+  const team = await ctx.db
+    .selectFrom('org_members')
+    .select('user_id')
+    .where('org_id', '=', orgId)
+    .where('left_at', 'is', null)
+    .execute();
+  await ctx.bus.publish(
+    team.map((m) => m.user_id),
+    { type: 'business.updated', data: { orgId } },
+  );
 }
 
 /**
@@ -310,9 +468,17 @@ export async function settleReport(
     .where('id', '=', reportId)
     .executeTakeFirst();
   if (!before) return;
-  await ctx.db.updateTable('reports').set({ status }).where('id', '=', reportId).execute();
   const settled = status === 'actioned' || status === 'dismissed';
   const wasSettled = before.status === 'actioned' || before.status === 'dismissed';
+  // Closed, its time to be kept starts (M16 B3); opened again, it stops.
+  await ctx.db
+    .updateTable('reports')
+    .set({
+      status,
+      closed_at: settled ? (wasSettled ? sql`coalesce(closed_at, ${ctx.now()})` : ctx.now()) : null,
+    })
+    .where('id', '=', reportId)
+    .execute();
   if (!settled || wasSettled || !before.reporter_id) return;
   await notify(ctx, {
     userId: before.reporter_id,

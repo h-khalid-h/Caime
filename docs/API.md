@@ -25,7 +25,9 @@ Authorization: Bearer cai_…
 
 Requests are rate-limited to 600 a minute per token. A route the token can't use answers
 `403 token_route`; a missing permission answers `403 token_scope`; a revoked or unknown token
-answers `401`.
+answers `401`, and so does every token of an organization while Caime has suspended it (its team
+sees why on its page). While it's suspended, nothing is written in its conversations, by anyone:
+a write answers `409 org_suspended`.
 
 ## Permissions and routes
 

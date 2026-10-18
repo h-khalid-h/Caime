@@ -55,6 +55,9 @@ button.danger{background:var(--danger-soft);color:var(--danger);border-color:var
 .meta{font-size:.85rem;opacity:.75}
 blockquote{margin:8px 0;padding:8px 12px;border-inline-start:3px solid var(--border-strong);white-space:pre-wrap;word-break:break-word}
 .status{display:inline-block;padding:2px 8px;border-radius:999px;font-size:.8rem;background:var(--surface-muted);color:var(--ink)}
+.urgent{color:var(--danger)}
+blockquote.reported{border-inline-start-color:var(--danger)}
+.then{margin-top:10px}
 .actions{display:flex;gap:6px;flex-wrap:wrap;margin-top:10px}
 .empty{opacity:.7;padding:24px 0}
 #note{min-height:1.4em;font-size:.9rem}
@@ -63,7 +66,7 @@ blockquote{margin:8px 0;padding:8px 12px;border-inline-start:3px solid var(--bor
 <body>
 <main>
 <h1>Reports</h1>
-<p class="meta">What people reported, newest first. The operator's token stays in this tab, and every action here is in the audit log.</p>
+<p class="meta">What people reported, newest first, a child's safety before the rest. The operator's token stays in this tab, and every action here is in the audit log.</p>
 <div class="row">
 <input id="token" type="password" placeholder="Operator token" autocomplete="off">
 <select id="status">
@@ -106,11 +109,18 @@ const SCRIPT = `(() => {
     const who = r.person ? '@' + esc(r.person.handle) + ' (' + esc(r.person.displayName) + ')' : r.org ? esc(r.org.name) + ' (@' + esc(r.org.handle) + ')' : 'nobody in particular';
     const by = r.reporter ? '@' + esc(r.reporter.handle) : 'someone gone';
     let what = '';
-    if (r.message) what += '<blockquote>' + (r.message.removed ? '<em>Removed.</em>' : r.message.sealed ? '<em>A private message: sealed, not readable here.</em>' : r.message.body ? esc(r.message.body) : '<em>A ' + esc(r.message.kind) + ' with no words.</em>') + '</blockquote>';
-    if (r.update) what += '<blockquote>' + (r.update.removed ? '<em>Taken back.</em>' : esc(r.update.body)) + '</blockquote>';
+    // What the reporter saw when they reported it, kept whatever was deleted since (M16 B3).
+    if (r.evidence && r.evidence.length) {
+      what += '<div class="meta then">As they saw it when they reported it</div>';
+      for (const e of r.evidence)
+        what += '<blockquote' + (e.reported ? ' class="reported"' : '') + '><div class="meta">' + esc(e.senderName || 'Someone') + ' · ' + esc(when(e.sentAt)) + (e.reported ? ' · reported' : '') + (e.imported ? ' · imported from another app' : '') + '</div>' + (e.body ? esc(e.body) : '<em>A ' + esc(e.kind) + ' with no words.</em>') + '</blockquote>';
+    }
+    if (r.message) what += '<div class="meta then">The message now</div><blockquote>' + (r.message.removed ? '<em>Removed.</em>' : r.message.sealed ? '<em>A private message: sealed, not readable here.</em>' : r.message.body ? esc(r.message.body) : '<em>A ' + esc(r.message.kind) + ' with no words.</em>') + '</blockquote>';
+    if (r.update) what += '<div class="meta then">The update now</div><blockquote>' + (r.update.removed ? '<em>Taken back.</em>' : esc(r.update.body)) + '</blockquote>';
+    const reason = r.reason === 'child_safety' ? '<strong class="urgent">A child’s safety</strong>' : '<strong>' + esc(r.reason) + '</strong>';
     el.innerHTML =
-      '<div><span class="status">' + esc(r.status) + '</span> <strong>' + esc(r.reason) + '</strong> · about ' + who + '</div>' +
-      '<div class="meta">Reported by ' + by + ' · ' + esc(when(r.createdAt)) + (r.message ? ' · message in conversation ' + esc(r.message.conversationId) : '') + '</div>' +
+      '<div><span class="status">' + esc(r.status) + '</span> ' + reason + ' · about ' + who + '</div>' +
+      '<div class="meta">Reported by ' + by + ' · ' + esc(when(r.createdAt)) + (r.closedAt ? ' · closed ' + esc(when(r.closedAt)) : '') + (r.message ? ' · message in conversation ' + esc(r.message.conversationId) : '') + '</div>' +
       (r.details ? '<p>' + esc(r.details) + '</p>' : '') + what +
       '<div class="actions">' +
       '<button class="quiet" data-act="reviewing">Reviewing</button>' +
@@ -119,6 +129,7 @@ const SCRIPT = `(() => {
       (r.message && !r.message.removed ? '<button class="danger" data-act="remove-message">Remove the message for everyone</button>' : '') +
       (r.update && !r.update.removed ? '<button class="danger" data-act="remove-update">Take the update back</button>' : '') +
       (r.person && !r.person.suspended ? '<button class="danger" data-act="suspend">Suspend @' + esc(r.person.handle) + '</button>' : r.person ? '<span class="meta">Suspended.</span>' : '') +
+      (r.org && !r.org.suspended ? '<button class="danger" data-act="suspend-org">Suspend ' + esc(r.org.name) + '</button>' : r.org ? '<span class="meta">Organization suspended.</span>' : '') +
       '</div>';
     return el;
   }
@@ -142,10 +153,11 @@ const SCRIPT = `(() => {
     const id = b.closest('.card').dataset.id;
     const act = b.dataset.act;
     if (act === 'suspend' && !confirm('Every session, token and app of theirs ends now, and they can’t sign in until you lift it. Go ahead?')) return;
+    if (act === 'suspend-org' && !confirm('Nobody writes as it or to it, its page answers as nobody’s and its apps’ tokens stop, until you lift it. Go ahead?')) return;
     if ((act === 'remove-message' || act === 'remove-update') && !confirm('For everyone, at once, and for good. Go ahead?')) return;
     b.disabled = true;
     try {
-      const { report } = act === 'remove-message' || act === 'remove-update' || act === 'suspend'
+      const { report } = act === 'remove-message' || act === 'remove-update' || act === 'suspend' || act === 'suspend-org'
         ? await call('POST', '/admin/reports/' + id + '/' + act)
         : await call('PATCH', '/admin/reports/' + id, { status: act });
       b.closest('.card').replaceWith(card(report));

@@ -815,6 +815,22 @@ export interface ReportsTable {
   details: string | null;
   status: Defaulted<'open' | 'reviewing' | 'actioned' | 'dismissed'>;
   created_at: Generated<Date>;
+  /** Actioned or dismissed (M16 B3): its time to be kept counts from here. */
+  closed_at: Generated<Date | null>;
+}
+
+/** What a report held as its reporter saw it (M16 B3), gone with the report. */
+export interface ReportEvidenceTable {
+  report_id: string;
+  position: number;
+  message_id: string | null;
+  sender_id: string | null;
+  sender_name: string | null;
+  kind: string;
+  body: string | null;
+  sent_at: Date;
+  reported: Defaulted<boolean>;
+  imported: Defaulted<boolean>;
 }
 
 export interface DomainEventsTable {
@@ -987,6 +1003,9 @@ export interface OrganizationsTable {
   cleared_at: NullableTimestamp;
   /** Anyone with a proven address at its verified domain may join its team (M16 C3b). */
   domain_join: Generated<boolean>;
+  /** Suspended by the operator (M16 B3): since when, and why, said to its team. */
+  suspended_at: Generated<Date | null>;
+  suspended_reason: Generated<string | null>;
   created_at: Generated<Date>;
   updated_at: Generated<Date>;
 }
@@ -1404,6 +1423,7 @@ export interface Database {
   oauth_codes: OAuthCodesTable;
   oauth_tokens: OAuthTokensTable;
   reports: ReportsTable;
+  report_evidence: ReportEvidenceTable;
   domain_events: DomainEventsTable;
   jobs: JobsTable;
   periodic_runs: PeriodicRunsTable;
@@ -1571,6 +1591,8 @@ export const ORG_COLUMNS = [
   'last_owner_id',
   'cleared_at',
   'domain_join',
+  'suspended_at',
+  'suspended_reason',
   'created_at',
   'updated_at',
 ] as const satisfies ReadonlyArray<

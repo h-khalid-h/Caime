@@ -29,6 +29,28 @@ export async function orgById(db: Q, orgId: string): Promise<Organization> {
   return org;
 }
 
+/**
+ * Whether a suspended organization (M16 B3) is hidden from `viewerId`: to anyone new it answers
+ * as nobody's, while its team and the customers already writing to it keep what they have.
+ */
+export async function hiddenBySuspension(
+  db: Q,
+  org: Pick<Organization, 'id' | 'suspended_at'>,
+  viewerId: string,
+): Promise<boolean> {
+  if (!org.suspended_at) return false;
+  const [seat, thread] = await Promise.all([
+    orgSeat(db, viewerId, org.id),
+    db
+      .selectFrom('business_threads')
+      .select('conversation_id')
+      .where('org_id', '=', org.id)
+      .where('customer_id', '=', viewerId)
+      .executeTakeFirst(),
+  ]);
+  return !seat && !thread;
+}
+
 /** Your place on the team, or null when you aren't on it. */
 export async function orgSeat(db: Q, userId: string, orgId: string): Promise<OrgMember | null> {
   return (
@@ -144,6 +166,8 @@ export async function verifiedOrgNames(db: Q, userIds: string[]): Promise<Map<st
     .where('m.left_at', 'is', null)
     .where('o.verified_at', 'is not', null)
     .where('o.archived_at', 'is', null)
+    // A suspended organization vouches for nobody while it is (M16 B3).
+    .where('o.suspended_at', 'is', null)
     .orderBy('m.joined_at')
     .execute();
   const out = new Map<string, string>();
@@ -151,7 +175,10 @@ export async function verifiedOrgNames(db: Q, userIds: string[]): Promise<Map<st
   return out;
 }
 
-/** The open organizations someone is on the team of (R43), as they joined them. */
+/**
+ * The open organizations someone is on the team of (R43), as they joined them, shown on their
+ * profile: never one suspended (M16 B3).
+ */
 export async function orgsOf(db: Q, userId: string): Promise<OrgRef[]> {
   const rows = await db
     .selectFrom('org_members as m')
@@ -160,6 +187,7 @@ export async function orgsOf(db: Q, userId: string): Promise<OrgRef[]> {
     .where('m.user_id', '=', userId)
     .where('m.left_at', 'is', null)
     .where('o.archived_at', 'is', null)
+    .where('o.suspended_at', 'is', null)
     .orderBy('m.joined_at')
     .execute();
   return rows.map(orgRef);

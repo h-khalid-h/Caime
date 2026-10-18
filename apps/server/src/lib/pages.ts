@@ -201,7 +201,10 @@ conversation.</li>
 <li><strong>Your settings.</strong> Rules for who reaches you and when, privacy settings,
 automations and what you&rsquo;ve saved; the spaces and organization teams you&rsquo;re in, with
 your role and title; and the organizations you follow.</li>
-<li><strong>Reports you make</strong>: who or what you reported, and why.</li>
+<li><strong>Reports you make</strong>: who or what you reported, and why, with what you saw when
+you made it: the message you reported and up to four before it in that conversation, each with its
+sender&rsquo;s name (never a private conversation&rsquo;s, and never one you had deleted for
+yourself), or the update you reported.</li>
 <li><strong>Your devices.</strong> Each one you&rsquo;re signed in on, with the network address and
 browser it signed in from and when it was last used; its address for notifications, if you turned
 them on; and, for private conversations, its public keys.</li>
@@ -421,7 +424,10 @@ else. Only the handle and the days are kept, never whose it was, and then it&rsq
 forgotten. An organization keeps its handle, even once it has closed.</li>
 <li>Billing records (your plan, what it cost and Stripe&rsquo;s reference to you) are kept as
 accounting law requires, also after you delete your account. Reports are kept so the people who
-run Caime can look into them.</li>
+run Caime can look into them: what a report holds stays with it whatever is deleted afterwards,
+until it&rsquo;s closed and for ${span(KEPT_DAYS.closedReports)} after
+(${span(KEPT_DAYS.childSafetyReports)} for a report about a child&rsquo;s safety), and then goes
+with it.</li>
 <li>When you delete your account, it goes at once, with your profile, devices, connections, how
 you describe people, rules, automations, suggestions, actions, notifications, what you saved, and
 your reactions and poll votes. Messages you sent stay in other people&rsquo;s conversations, shown

@@ -541,6 +541,29 @@ export function OrgScreen({
           </View>
         ) : null}
 
+        {/* Caime suspended it (M16 B3): its team reads that, why, and what stays. */}
+        {org.suspension ? (
+          <View style={{ paddingHorizontal: 16, paddingBottom: 12 }} testID="org-suspended">
+            <Card>
+              <View style={{ gap: 6 }}>
+                <Text variant="bodyStrong" color="danger">
+                  {tr('Caime has suspended {name}', { name: org.name })}
+                </Text>
+                <Text variant="caption" color="textSecondary">
+                  {tr(
+                    'Until it’s lifted, nothing is written as it or to it, its page answers as nobody’s and its apps can’t act. Its conversations stay to read.',
+                  )}
+                </Text>
+                {org.suspension.reason ? (
+                  <Text variant="caption" color="textSecondary" testID="org-suspended-reason">
+                    {tr('Why: {reason}', { reason: org.suspension.reason })}
+                  </Text>
+                ) : null}
+              </View>
+            </Card>
+          </View>
+        ) : null}
+
         {org.myRole ? (
           <View style={{ paddingHorizontal: 16, paddingBottom: 12 }}>
             <Card padded={false}>

@@ -1467,6 +1467,21 @@ export const PushSubscriptionBody = z.discriminatedUnion('kind', [
   z.object({ kind: z.literal('expo'), token: z.string().min(10).max(200) }),
 ]);
 
+/**
+ * What's wrong, as the report sheet offers it (R49); a child's safety (M16 B3) goes first in the
+ * operator's list and its evidence is kept longest.
+ */
+export const REPORT_REASONS = [
+  'spam',
+  'scam',
+  'harassment',
+  'impersonation',
+  'inappropriate',
+  'child_safety',
+  'other',
+] as const;
+export type ReportReason = (typeof REPORT_REASONS)[number];
+
 export const ReportBody = z.object({
   userId: z.string().uuid().optional(),
   messageId: z.string().uuid().optional(),
@@ -1474,7 +1489,7 @@ export const ReportBody = z.object({
   /** An organization (from its page), or one of its updates (with its orgId). */
   orgId: z.string().uuid().optional(),
   updateId: z.string().uuid().optional(),
-  reason: z.enum(['spam', 'scam', 'harassment', 'impersonation', 'inappropriate', 'other']),
+  reason: z.enum(REPORT_REASONS),
   details: z.string().trim().max(2000).optional(),
 });
 
@@ -1486,6 +1501,8 @@ export const SuspensionBody = z.object({
   suspended: z.boolean(),
   reason: z.string().trim().max(500).optional(),
 });
+/** The operator correcting a date of birth (the privacy page's "write to us", M16 B3). */
+export const BirthDateBody = z.object({ birthDate: Day });
 export const ReportsQuery = z.object({
   status: z.enum([...REPORT_STATUSES, 'all']).default('open'),
   limit: z.coerce.number().int().min(1).max(200).default(50),

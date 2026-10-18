@@ -363,6 +363,7 @@ export async function agentReply(ctx: AppContext, payload: Record<string, unknow
       'o.country as org_country',
       'o.plan',
       'o.archived_at',
+      'o.suspended_at',
       'o.booking',
       'o.booking_items',
       'o.ordering',
@@ -378,7 +379,14 @@ export async function agentReply(ctx: AppContext, payload: Record<string, unknow
     .where('t.resolved_at', 'is', null)
     .where('t.agent_handed_over_at', 'is', null)
     .executeTakeFirst();
-  if (!thread?.customer_id || thread.archived_at || thread.privacy_class === 'private') return;
+  // A closed or suspended organization's agent says nothing (R42, M16 B3).
+  if (
+    !thread?.customer_id ||
+    thread.archived_at ||
+    thread.suspended_at ||
+    thread.privacy_class === 'private'
+  )
+    return;
   const agent = await activeAgent(ctx, thread.org_id);
   if (!agent) return;
   const customer = await ctx.db

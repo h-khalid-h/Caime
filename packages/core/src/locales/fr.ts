@@ -4447,4 +4447,16 @@ export const fr: Catalog = {
   'asks first': 'sur demande',
   Forwarded: 'Transféré',
   '{emoji} {count}, including you': '{emoji} {count}, dont vous',
+  'A child’s safety': 'La sécurité d’un enfant',
+  'Someone under 18 at risk, or sexual content involving a child':
+    'Une personne de moins de 18 ans en danger, ou un contenu sexuel impliquant un enfant',
+  'If a child is in danger right now, call your local emergency number first.':
+    'Si un enfant est en danger en ce moment, appelez d’abord le numéro d’urgence local.',
+  'The team sees this message and the few before it as you see them now, even if they’re deleted later.':
+    'L’équipe voit ce message et les quelques messages précédents tels que vous les voyez maintenant, même s’ils sont supprimés ensuite.',
+  'Caime has suspended {name} for now. What was sent here stays to read.':
+    'Caime a suspendu {name} pour le moment. Ce qui a été envoyé ici reste à lire.',
+  'Caime has suspended {name}': 'Caime a suspendu {name}',
+  'Until it’s lifted, nothing is written as it or to it, its page answers as nobody’s and its apps can’t act. Its conversations stay to read.':
+    'Tant que ce n’est pas levé, rien n’est écrit en son nom ni à son attention, sa page ne mène à personne et ses applications ne peuvent pas agir. Ses conversations restent à lire.',
 };

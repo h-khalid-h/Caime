@@ -186,7 +186,10 @@ agreement and in docs/SECURITY.md, and answers to the Organization's questions t
 
 Beyond the Organization's setting: ended sign-ins are kept 30 days, security records a year, a
 handle someone let go of a year (held from everyone, with nothing of whose it was), backups 30
-days. Deleting an account removes its data at once except what the law requires to keep: billing
+days. What a report holds (the reported message and up to four before it, as the person who
+reported it saw them) is the Operator's own record for keeping Caime safe: it is kept until the
+report is closed and 180 days after, a year for a report about a child's safety, whatever the
+Organization's setting, and read by the Operator's safety team alone. Deleting an account removes its data at once except what the law requires to keep: billing
 and accounting records for seven years (Estonia's Accounting Act, § 12), and security records for
 their span.
 

@@ -2,7 +2,7 @@
  * Reporting a person, a message, an organization or one of its updates: what's wrong, chosen
  * from what Caime's safety team acts on, and anything else they should know. Opened from
  * anywhere with `report(target, name)` (report.ts); one sheet, loaded the first time it's asked
- * for.
+ * for. A message goes with the few before it, kept as the reporter sees them (M16 B3).
  */
 
 import { msg, tr, trAll } from '@caime/core/i18n';
@@ -34,6 +34,11 @@ const REASONS: Array<{ value: Reason; label: string; detail: string }> = [
     value: 'inappropriate',
     label: msg('Inappropriate'),
     detail: msg('Violence, sexual content, hate'),
+  },
+  {
+    value: 'child_safety',
+    label: msg('A child’s safety'),
+    detail: msg('Someone under 18 at risk, or sexual content involving a child'),
   },
   { value: 'other', label: msg('Something else'), detail: msg('Say what below') },
 ];
@@ -107,6 +112,18 @@ export function ReportSheet() {
         {reason === 'other' && !details.trim() ? (
           <Text variant="caption" color="textTertiary">
             {tr('Say what happened, so the team knows what to look at.')}
+          </Text>
+        ) : null}
+        {reason === 'child_safety' ? (
+          <Text variant="caption" color="textSecondary" testID="report-danger">
+            {tr('If a child is in danger right now, call your local emergency number first.')}
+          </Text>
+        ) : null}
+        {target?.messageId ? (
+          <Text variant="caption" color="textTertiary" testID="report-evidence">
+            {tr(
+              'The team sees this message and the few before it as you see them now, even if they’re deleted later.',
+            )}
           </Text>
         ) : null}
       </View>

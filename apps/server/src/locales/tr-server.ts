@@ -1465,4 +1465,9 @@ export const turkishServer: Catalog = {
     '18 yaşından küçükken bir bağlantı sizi yalnızca birisi aracılığıyla tanıdığınız biriyle bağlar. {name} ile ikinizin de tanıdığı biri aracılığıyla bağlantı kurun.',
   'That address can’t be written to by email from here. If they’re on Caime, find them there.':
     'Bu adrese buradan e-postayla yazılamaz. Caime’deyse orada bulun.',
+  'This organization is suspended, so nothing is written here for now.':
+    'Bu kuruluş askıya alındı, bu yüzden şimdilik buraya bir şey yazılmıyor.',
+  'This organization is suspended, so nothing is posted for now.':
+    'Bu kuruluş askıya alındı, bu yüzden şimdilik bir şey paylaşılmıyor.',
+  'This report isn’t about an organization.': 'Bu şikâyet bir kuruluşla ilgili değil.',
 };

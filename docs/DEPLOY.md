@@ -797,6 +797,25 @@ suspended (every way in closes; `PUT /v1/admin/people/:handle/suspension` with
 `{"suspended": false}` lifts it), each written to the audit log. The same is available as JSON (`GET /v1/admin/reports?status=open`, `PATCH
 /v1/admin/reports/:id`, `POST /v1/admin/reports/:id/remove-message`, `…/remove-update`).
 
+Each report shows what its reporter saw when they made it (M16 B3): the reported message and up
+to four before it, as they stood then, beside the message as it is now, so a report holds up after
+its sender deletes it; a report about a child's safety is listed first. A closed report (actioned
+or dismissed) is deleted with what it held after 180 days, a child's safety after a year.
+
+```sh
+# An organization suspended from its report (POST …/reports/:id/suspend-org), or by its handle:
+# nobody writes as it or to it, its page and handle answer as nobody's to anyone new, its apps'
+# tokens are refused; its team sees the reason. {"suspended": false} lifts it.
+curl -X PUT -H "Authorization: Bearer $ADMIN_TOKEN" -H 'content-type: application/json' \
+  -d '{"suspended": true, "reason": "Selling counterfeit goods"}' \
+  https://caime.example.com/v1/admin/orgs/nile.dental/suspension
+# A date of birth corrected at its owner's request (from their account's own address): a real
+# day, never under the age Caime asks where they live (suspend instead); the audit log names the
+# operator, never the date.
+curl -X PUT -H "Authorization: Bearer $ADMIN_TOKEN" -H 'content-type: application/json' \
+  -d '{"birthDate": "2009-04-02"}' https://caime.example.com/v1/admin/people/noor/birth-date
+```
+
 ## Someone locked out
 
 A person who writes in with no password, no device and no recovery code is helped with the same

@@ -313,14 +313,18 @@ export type PublicPage =
 export type EntryScreen = 'welcome' | 'sign-in' | 'sign-up';
 export const ENTRY_SCREENS: readonly EntryScreen[] = ['welcome', 'sign-in', 'sign-up'];
 
-/** An open organization's public face, by handle. */
-/** An open organization by handle, with its catalog (the public pages are the catalog's readers). */
+/**
+ * An open organization by handle, with its catalog (the public pages are the catalog's readers):
+ * never one suspended (M16 B3), whose pages answer as nobody's, as a visitor's booking and
+ * writing do.
+ */
 export async function orgRowByHandle(db: Q, handle: string): Promise<Organization | null> {
   const o = await db
     .selectFrom('organizations')
     .selectAll()
     .where('handle', '=', handle)
     .where('archived_at', 'is', null)
+    .where('suspended_at', 'is', null)
     .executeTakeFirst();
   return o ?? null;
 }
@@ -2069,6 +2073,7 @@ export async function sitemapXml(db: Q, publicUrl: string, pagesHere: string[]):
     .selectFrom('organizations')
     .select(['handle', 'updated_at', 'booking', 'booking_items', 'ordering', 'collections'])
     .where('archived_at', 'is', null)
+    .where('suspended_at', 'is', null)
     .where('verified_at', 'is not', null)
     .orderBy('created_at')
     .limit(50_000)

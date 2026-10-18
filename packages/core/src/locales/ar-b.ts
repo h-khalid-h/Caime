@@ -2644,4 +2644,16 @@ export const arB: Catalog = {
   'asks first': 'بالطلب أولًا',
   Forwarded: 'مُعاد توجيهها',
   '{emoji} {count}, including you': '{emoji} {count}، منها تفاعلك',
+  'A child’s safety': 'سلامة طفل',
+  'Someone under 18 at risk, or sexual content involving a child':
+    'شخص دون 18 عامًا في خطر، أو محتوى جنسي يخص طفلًا',
+  'If a child is in danger right now, call your local emergency number first.':
+    'إن كان طفل في خطر الآن، فاتصل برقم الطوارئ المحلي أولًا.',
+  'The team sees this message and the few before it as you see them now, even if they’re deleted later.':
+    'يرى الفريق هذه الرسالة والرسائل القليلة التي قبلها كما تظهر لك الآن، حتى لو حُذفت لاحقًا.',
+  'Caime has suspended {name} for now. What was sent here stays to read.':
+    'علّق Caime {name} مؤقتًا. ما أُرسل هنا يبقى للقراءة.',
+  'Caime has suspended {name}': 'علّق Caime {name}',
+  'Until it’s lifted, nothing is written as it or to it, its page answers as nobody’s and its apps can’t act. Its conversations stay to read.':
+    'إلى أن يُرفع التعليق: لا كتابة باسمها ولا إليها، وتظهر صفحتها كأنها لا تخص أحدًا، ولا تعمل تطبيقاتها. تبقى محادثاتها للقراءة.',
 };

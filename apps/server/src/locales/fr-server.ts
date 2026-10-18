@@ -1532,4 +1532,9 @@ export const frServer: Catalog = {
     'Avant 18 ans, un lien ne vous relie qu’à quelqu’un que vous connaissez par une autre personne. Demandez à {name} de passer par une personne que vous connaissez tous les deux.',
   'That address can’t be written to by email from here. If they’re on Caime, find them there.':
     'On ne peut pas écrire à cette adresse par e-mail d’ici. Si la personne est sur Caime, trouvez-la là-bas.',
+  'This organization is suspended, so nothing is written here for now.':
+    'Cette organisation est suspendue : rien ne s’écrit ici pour le moment.',
+  'This organization is suspended, so nothing is posted for now.':
+    'Cette organisation est suspendue : rien n’est publié pour le moment.',
+  'This report isn’t about an organization.': 'Ce signalement ne concerne pas une organisation.',
 };

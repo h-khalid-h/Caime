@@ -84,6 +84,7 @@ import {
 import {
   closedOrgById,
   closeOrg,
+  hiddenBySuspension,
   managerSeat,
   newVerifyToken,
   orgById,
@@ -217,6 +218,11 @@ async function orgView(ctx: AppContext, viewerId: string, org: Organization): Pr
   return {
     ...summary,
     createdAt: org.created_at.toISOString(),
+    // Suspended by Caime (M16 B3): its team is told since when and why.
+    suspension:
+      seat && org.suspended_at
+        ? { at: org.suspended_at.toISOString(), reason: org.suspended_reason }
+        : null,
     places,
     members,
     domain,
@@ -340,6 +346,8 @@ export async function orgRoutes(app: FastifyInstance, ctx: AppContext) {
       .selectFrom('organizations')
       .selectAll()
       .where('archived_at', 'is', null)
+      // Never found while suspended (M16 B3).
+      .where('suspended_at', 'is', null)
       .where((eb) =>
         eb.or([
           eb('handle', '=', term.toLowerCase()),
@@ -368,14 +376,17 @@ export async function orgRoutes(app: FastifyInstance, ctx: AppContext) {
       .where('handle', '=', handle.replace(/^@/, '').toLowerCase())
       .where('archived_at', 'is', null)
       .executeTakeFirst();
-    if (!org) throw notFound(tr('That organization'));
+    if (!org || (await hiddenBySuspension(ctx.db, org, auth.userId)))
+      throw notFound(tr('That organization'));
     return { org: await orgView(ctx, auth.userId, org) };
   });
 
   app.get('/orgs/:id', async (req): Promise<OrgResponse> => {
     const auth = requireAuth(req);
     const { id } = parse(idParam, req.params);
-    return { org: await orgView(ctx, auth.userId, await orgById(ctx.db, id)) };
+    const org = await orgById(ctx.db, id);
+    if (await hiddenBySuspension(ctx.db, org, auth.userId)) throw notFound(tr('That organization'));
+    return { org: await orgView(ctx, auth.userId, org) };
   });
 
   /**

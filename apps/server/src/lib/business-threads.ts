@@ -54,6 +54,18 @@ export async function startCustomerConversation(
       .execute();
     return { conversationId: existing.conversation_id, created: false };
   }
+  // Nobody new starts one with a suspended organization (M16 B3); one already there stays to read.
+  const standing = await ctx.db
+    .selectFrom('organizations')
+    .select('suspended_at')
+    .where('id', '=', org.id)
+    .executeTakeFirst();
+  if (standing?.suspended_at)
+    throw new AppError(
+      409,
+      'org_suspended',
+      tr('This organization is suspended, so nothing is written here for now.'),
+    );
   ctx.limiter.hit(`business-start:${customer.id}`, ctx.config.isTest ? 1000 : 20, 3_600_000);
   const conversationId = uuidv7();
   const team = await teamOf(ctx.db, org.id);

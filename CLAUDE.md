@@ -922,6 +922,16 @@ appointment from a catalog).
   (`removeForEveryone`, `takeBackUpdate`): the sender's delete, the poster's take-back and the
   operator's review (R49, `/admin/reports`, `modules/admin.ts`) all run the same code, so a
   new consequence of a removal (something else that keeps a message's words) goes there once.
+  A report keeps what its reporter saw (M16 B3, `keepEvidence` in the report's transaction:
+  never a sealed message or one hidden for them), and the daily sweep deletes a closed one after
+  `KEPT_DAYS.closedReports` (`childSafetyReports` for a child's safety). An organization the
+  operator suspended (`organizations.suspended_at`, `setOrgSuspended`) answers as nobody's to
+  anyone new (`hiddenBySuspension` on the routes that show it, `orgRowByHandle` for every
+  visitor's page, the search and the sitemap), vouches for nobody (`verifiedOrgNames`,
+  `orgsOf`), and nothing is written as it or to it (`sendMessage` and
+  `startCustomerConversation` answer `409 org_suspended`, the agent stays quiet, no update is
+  posted or told, `resolveApiToken` refuses its apps): a new way to show an organization or to
+  write as one checks it too.
 - Anything that writes into a conversation (send, edit, react, vote, move a card, type) calls
   `assertCanWrite` (`apps/server/src/lib/blocks.ts`) first: blocks between people and a
   customer's block of an organization both stop at it. New write routes do the same, with a

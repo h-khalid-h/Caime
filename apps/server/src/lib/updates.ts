@@ -83,10 +83,12 @@ async function fanOut(ctx: AppContext, p: Record<string, unknown>): Promise<void
       'o.name',
       'o.handle',
       'o.archived_at',
+      'o.suspended_at',
     ])
     .where('u.id', '=', updateId)
     .executeTakeFirst();
-  if (!u || u.deleted_at || u.archived_at) return;
+  // Nobody is told of a closed or suspended organization's update (M16 B3).
+  if (!u || u.deleted_at || u.archived_at || u.suspended_at) return;
   const told = await ctx.db
     .selectFrom('org_follows as f')
     .select('f.user_id')

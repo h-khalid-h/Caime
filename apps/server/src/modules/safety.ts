@@ -11,6 +11,7 @@ import { endCallsBetween } from '../lib/calls';
 import { withdrawDuplicatesOf } from '../lib/duplicates';
 import { badRequest, notFound } from '../lib/errors';
 import { leaveGroupCallsWith } from '../lib/group-calls';
+import { keepEvidence } from '../lib/moderation';
 import { pairKey } from '../lib/relations';
 import { parse } from '../lib/validate';
 import { requireAuth } from '../plugins/auth';
@@ -185,20 +186,29 @@ export async function safetyRoutes(app: FastifyInstance, ctx: AppContext) {
             .executeTakeFirst()
         : undefined;
     if (body.userId && !person && !speaker) throw notFound(tr('That person'));
-    await ctx.db
-      .insertInto('reports')
-      .values({
-        id: uuidv7(),
-        reporter_id: auth.userId,
-        target_user_id: person?.id ?? null,
-        message_id: body.messageId ?? null,
-        conversation_id: body.conversationId ?? null,
-        org_id: body.orgId ?? speaker?.id ?? null,
-        update_id: body.updateId ?? null,
-        reason: body.reason,
-        details: body.details ?? null,
-      })
-      .execute();
+    // What the reporter saw goes with the report (M16 B3), so it can be judged after its sender
+    // deletes it.
+    await ctx.db.transaction().execute(async (trx) => {
+      const id = uuidv7();
+      await trx
+        .insertInto('reports')
+        .values({
+          id,
+          reporter_id: auth.userId,
+          target_user_id: person?.id ?? null,
+          message_id: body.messageId ?? null,
+          conversation_id: body.conversationId ?? null,
+          org_id: body.orgId ?? speaker?.id ?? null,
+          update_id: body.updateId ?? null,
+          reason: body.reason,
+          details: body.details ?? null,
+        })
+        .execute();
+      await keepEvidence(trx, id, auth.userId, {
+        messageId: body.messageId,
+        updateId: body.updateId,
+      });
+    });
     reply.status(201);
     return {
       ok: true,

@@ -76,7 +76,10 @@ export interface AppAuth {
 
 const TOUCH_EVERY_MS = 5 * 60_000;
 
-/** The app a token belongs to, if it's live: the token, the app and its bot all still there. */
+/**
+ * The app a token belongs to, if it's live: the token, the app and its bot all still there, and
+ * its organization open and not suspended (M16 B3: refused until Caime lifts it).
+ */
 export async function resolveApiToken(ctx: AppContext, token: string): Promise<AppAuth | null> {
   const row = await ctx.db
     .selectFrom('api_tokens as k')
@@ -87,6 +90,7 @@ export async function resolveApiToken(ctx: AppContext, token: string): Promise<A
     .where('k.revoked_at', 'is', null)
     .where('a.revoked_at', 'is', null)
     .where('o.archived_at', 'is', null)
+    .where('o.suspended_at', 'is', null)
     .executeTakeFirst();
   if (!row?.bot_user_id) return null;
   if (!row.last_used_at || ctx.now().getTime() - row.last_used_at.getTime() > TOUCH_EVERY_MS)

@@ -156,6 +156,13 @@ export async function updateRoutes(app: FastifyInstance, ctx: AppContext) {
         : undefined;
     const earlier = await again();
     if (earlier) return { update: updateView(earlier, ref, await postedByOf(by)) };
+    // Nothing is posted as a suspended organization (M16 B3).
+    if (org.suspended_at)
+      throw new AppError(
+        409,
+        'org_suspended',
+        tr('This organization is suspended, so nothing is posted for now.'),
+      );
     ctx.limiter.hit(`org-updates:${id}`, ctx.config.isTest ? 1000 : 30, 3_600_000);
     const row = await ctx.db
       .insertInto('org_updates')

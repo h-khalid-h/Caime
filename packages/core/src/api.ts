@@ -1046,6 +1046,8 @@ export interface ConversationBusinessView {
   closed: boolean;
   /** The organization closed (R42): what was sent stays to read, and nothing more is written. */
   orgClosed: boolean;
+  /** Caime suspended the organization (M16 B3): to read, and nothing written until it's lifted. */
+  orgSuspended: boolean;
   /** How long the organization keeps this conversation (R54), in days; null keeps it. Said to the customer. */
   retentionDays: number | null;
 }
@@ -1245,6 +1247,11 @@ export interface OrgDomainView {
 
 export interface OrgView extends OrgSummaryView {
   createdAt: string;
+  /**
+   * Suspended by Caime (M16 B3), for its team: since when and why. Nothing is written as it or
+   * to it, its page answers as nobody's and its apps' tokens are refused until it's lifted.
+   */
+  suspension: { at: string; reason: string | null } | null;
   /** Its places this viewer may see (R92): all of them, with who sees each, for its team. */
   places: PlaceView[];
   /** Its team, for the people on it. */
@@ -1796,7 +1803,14 @@ export interface ReportView {
   createdAt: string;
   reporter: { id: string; handle: string; displayName: string } | null;
   person: { id: string; handle: string; displayName: string; suspended: boolean } | null;
-  org: { id: string; handle: string; name: string } | null;
+  org: { id: string; handle: string; name: string; suspended: boolean } | null;
+  /** When it was actioned or dismissed; its evidence is kept a while after (M16 B3). */
+  closedAt: string | null;
+  /**
+   * What the reporter saw when they reported it (M16 B3): the reported message and up to four
+   * before it, each with its sender's name then, or the update's words; kept with the report.
+   */
+  evidence: ReportEvidenceView[];
   /** The message, as it is now: no words once removed, and none of a sealed one. */
   message: {
     id: string;
@@ -1814,6 +1828,20 @@ export interface ReportView {
     imported: boolean;
   } | null;
   update: { id: string; body: string | null; removed: boolean } | null;
+}
+
+/** One thing a report holds as it was (M16 B3): never a sealed message's words. */
+export interface ReportEvidenceView {
+  messageId: string | null;
+  senderId: string | null;
+  senderName: string | null;
+  kind: string;
+  body: string | null;
+  sentAt: string;
+  /** The message reported itself, among those around it. */
+  reported: boolean;
+  /** Brought over from another app (R45): the importer's file's words, not the sender's here. */
+  imported: boolean;
 }
 
 /** A share: how many of how many, and the rate when there are any. */

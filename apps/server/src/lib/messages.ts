@@ -785,7 +785,7 @@ export async function sendMessage(
   if (conversation.kind === 'business' && conversation.org_id) {
     const org = await ctx.db
       .selectFrom('organizations')
-      .select('archived_at')
+      .select(['archived_at', 'suspended_at'])
       .where('id', '=', conversation.org_id)
       .executeTakeFirst();
     // A closed organization's conversation is read-only, for its customer and anyone else (R42).
@@ -796,6 +796,13 @@ export async function sendMessage(
         tr(
           'This organization closed, so nothing more is written here. Find it again to start a new conversation.',
         ),
+      );
+    // A suspended one's too, both ways, until Caime lifts it (M16 B3): kept, never written to.
+    if (org.suspended_at)
+      throw new AppError(
+        409,
+        'org_suspended',
+        tr('This organization is suspended, so nothing is written here for now.'),
       );
     // Its customer blocked it: closed both ways until they unblock (PRD §55).
     await assertCanWrite(ctx, conversationId, senderId);

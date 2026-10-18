@@ -1522,4 +1522,9 @@ export const arServer: Catalog = {
     'دون 18 عامًا، يصلك الرابط بمن تعرفه عن طريق شخص آخر فقط. اطلب من {name} أن يتواصل معك عن طريق شخص تعرفانه كلاكما.',
   'That address can’t be written to by email from here. If they’re on Caime, find them there.':
     'لا يمكن مراسلة هذا العنوان بالبريد الإلكتروني من هنا. إن كان صاحبه على Caime فابحث عنه هناك.',
+  'This organization is suspended, so nothing is written here for now.':
+    'هذه المؤسسة معلّقة، فلا كتابة هنا في الوقت الحالي.',
+  'This organization is suspended, so nothing is posted for now.':
+    'هذه المؤسسة معلّقة، فلا نشر في الوقت الحالي.',
+  'This report isn’t about an organization.': 'هذا البلاغ لا يخص مؤسسة.',
 };

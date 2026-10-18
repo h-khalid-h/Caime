@@ -31,6 +31,10 @@ describe('the draft data processing agreement', () => {
     expect(KEPT_DAYS.securityRecords).toBe(365);
     expect(KEPT_DAYS.heldHandles).toBe(365);
     expect(doc).toContain('security records a year');
+    // What a report holds (M16 B3), the operator's own record past the organization's setting.
+    expect(KEPT_DAYS.closedReports).toBe(180);
+    expect(KEPT_DAYS.childSafetyReports).toBe(365);
+    expect(doc).toContain('report is closed and 180 days after, a year for a report about a child');
     // The API's own bounds for an organization's retention (schemas.ts).
     expect(doc).toContain('from 1 to\n  3,650 days');
     // The export's rate limit (modules/orgs.ts), and how passwords are kept (lib/crypto.ts).
