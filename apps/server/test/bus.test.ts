@@ -1,3 +1,4 @@
+import { uuidv4 } from '@caime/core';
 import { sql } from 'kysely';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import type { BusMessage } from '../src/lib/bus';
@@ -47,5 +48,41 @@ describe('bus', () => {
     expect(t.ctx.pool.totalCount).toBeLessThanOrEqual(20);
     off();
     offReconnect();
+  });
+
+  it('carries a long list of recipients in messages that fit, never through a table', async () => {
+    const bus = t.ctx.bus;
+    const heard: BusMessage[] = [];
+    const off = bus.subscribe((m) => heard.push(m));
+    const large = async () =>
+      Number(
+        (
+          await sql<{
+            n: string;
+          }>`select count(*) as n from domain_events where type = 'realtime.large'`.execute(
+            t.ctx.db,
+          )
+        ).rows[0]!.n,
+      );
+    const before = await large();
+    // A typing tick in a group of five hundred (M16 D2a): the list, not the event, is long.
+    const ids = Array.from({ length: 500 }, () => uuidv4());
+    const event = { type: 'typing', data: { conversationId: uuidv4(), userId: uuidv4() } };
+    await bus.publish(ids, event);
+    const reached = () => heard.filter((m) => m.event.type === 'typing').flatMap((m) => m.userIds);
+    await until(() => reached().length >= ids.length, 5_000, 'every recipient');
+    expect(new Set(reached())).toEqual(new Set(ids));
+    const parts = heard.filter((m) => m.event.type === 'typing');
+    // Three of at most 7,000 bytes each, where one row in domain_events was written and read.
+    expect(parts.length).toBe(3);
+    for (const p of parts) expect(p.event).toEqual(event);
+    expect(await large()).toBe(before);
+    // An event too large by itself still travels by reference, whole.
+    const big = { type: 'test.big', data: { text: 'ق'.repeat(5000) } };
+    await bus.publish([ids[0]!], big);
+    await until(() => heard.some((m) => m.event.type === 'test.big'), 5_000, 'the large event');
+    expect(heard.find((m) => m.event.type === 'test.big')?.event).toEqual(big);
+    expect(await large()).toBe(before + 1);
+    off();
   });
 });

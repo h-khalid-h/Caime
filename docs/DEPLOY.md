@@ -719,6 +719,11 @@ groups:
         expr: caime_moderation_oldest_seconds > 86400
       - alert: CaimeChildSafetyReport
         expr: caime_moderation_waiting{kind="child_safety"} > 0
+      # Work after a response backing up on an instance (M16 D2a): eight run at once and the rest
+      # wait in order, so a queue that stays long means effects and mails running late.
+      - alert: CaimeDeferredBacklog
+        expr: caime_deferred{state="waiting"} > 200
+        for: 5m
       # AI spend (docs/RESOURCES.md): tokens an hour across every feature; set the line where
       # the bill would surprise you (input and output priced apart, so watch both directions).
       - alert: CaimeAiSpend

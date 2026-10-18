@@ -31,6 +31,7 @@ import { registerCaiJobs } from './lib/cai';
 import { registerCalendarPush } from './lib/calendar-push';
 import { registerCallSweep } from './lib/calls';
 import { canonicalLocation } from './lib/canonical-host';
+import { deferredQueue } from './lib/deferred';
 import { createMailer, type Mailer } from './lib/email';
 import { AppError } from './lib/errors';
 import { registerAccountSync } from './lib/external-busy';
@@ -171,7 +172,9 @@ export async function buildApp(config: Config, options: BuildOptions = {}): Prom
   // A business conversation's customer hears the organization, never who on its team (R15).
   bus.transform = businessRealtime({ db: database.db });
 
-  const pending = new Set<Promise<unknown>>();
+  const metrics = createMetrics(database.pool);
+  // Work after a response, a few at a time on this instance (M16 D2a).
+  const deferred = deferredQueue({ log: app.log, metrics, isTest: config.isTest });
   const dnsServers = config.DNS_SERVERS?.split(',')
     .map((x) => x.trim())
     .filter(Boolean);
@@ -183,7 +186,7 @@ export async function buildApp(config: Config, options: BuildOptions = {}): Prom
     pool: database.pool,
     bus,
     limiter: new RateLimiter(),
-    metrics: createMetrics(database.pool),
+    metrics,
     ai: createAiAssist(config),
     speech: speechFor(config),
     age: ageProviderFor(config),
@@ -203,18 +206,8 @@ export async function buildApp(config: Config, options: BuildOptions = {}): Prom
     },
     log: app.log,
     now: options.now ?? (() => new Date()),
-    defer(label, work) {
-      const p: Promise<unknown> = work()
-        .catch((err) => {
-          app.log.error({ err }, `deferred ${label} failed`);
-          if (config.isTest) console.error(`deferred ${label} failed`, err);
-        })
-        .finally(() => pending.delete(p));
-      pending.add(p);
-    },
-    async flush() {
-      while (pending.size) await Promise.all([...pending]);
-    },
+    defer: deferred.defer,
+    flush: deferred.flush,
   };
 
   await app.register(cookie);

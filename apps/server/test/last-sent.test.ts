@@ -1,3 +1,4 @@
+import { readFileSync } from 'node:fs';
 import { uuidv4 } from '@caime/core';
 import { sql } from 'kysely';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
@@ -121,11 +122,18 @@ describe('where each person last wrote (M16 D1)', () => {
       t.ctx.db,
     );
     const before = await lastSent(ab, ana.user.id);
-    // As if these were here before the column: then the migration's own procedure.
+    // As if these were here before the column: then the migration's own procedure, made again
+    // from its file (0107 dropped it once 0106 had run it a second time) and dropped after.
     await sql`update participants set last_sent_seq = 0 where conversation_id = ${c}::uuid and user_id <> ${ahead}::uuid`.execute(
       t.ctx.db,
     );
+    const migration = readFileSync(
+      new URL('../src/db/migrations/0104_participants_last_sent.sql', import.meta.url),
+      'utf8',
+    );
+    await sql.raw(migration).execute(t.ctx.db);
     await sql.raw('call fill_participants_last_sent()').execute(t.ctx.db);
+    await sql.raw('drop procedure fill_participants_last_sent()').execute(t.ctx.db);
     const rows = (
       await sql<{ handle: string; last_sent_seq: string }>`
         select u.handle, p.last_sent_seq from participants p join users u on u.id = p.user_id

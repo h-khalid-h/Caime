@@ -1,7 +1,8 @@
 /**
  * Realtime fan-out across server instances through Postgres LISTEN/NOTIFY (ADR-5). Every
  * instance, including the sender, receives every message and delivers to the sockets it holds.
- * Payloads over the NOTIFY limit travel by reference to `domain_events`.
+ * A message over the NOTIFY limit for its many recipients is split into several that fit (M16
+ * D2a); only an event too large by itself travels by reference to `domain_events`.
  *
  * The listening connection is the one thing here that can be lost (a database restart, a
  * failover): it is made again with a backoff that never gives up while the bus is open (review
@@ -182,15 +183,39 @@ export class Bus {
   }
 
   private async send(msg: BusMessage): Promise<void> {
-    let payload = JSON.stringify(msg);
     // NOTIFY's limit is in bytes: an Arabic payload is longer than its character count.
-    if (Buffer.byteLength(payload, 'utf8') > MAX_INLINE) {
-      const row = await this.pool.query<{ id: string }>(
-        `insert into domain_events (type, payload) values ('realtime.large', $1) returning id`,
-        [msg],
-      );
-      payload = JSON.stringify({ ref: row.rows[0]!.id });
+    if (Buffer.byteLength(JSON.stringify(msg), 'utf8') <= MAX_INLINE) {
+      await this.notify(JSON.stringify(msg));
+      return;
     }
+    // Long because of whom it's for (a typing tick in a group of five hundred): the recipients
+    // are split across messages that each fit, the event in every one (M16 D2a). Only an event
+    // too large by itself travels by reference, as one row every instance reads back.
+    const base = Buffer.byteLength(JSON.stringify({ userIds: [], event: msg.event }), 'utf8');
+    if (base + 64 <= MAX_INLINE) {
+      let ids: string[] = [];
+      let size = base;
+      for (const id of msg.userIds) {
+        const more = Buffer.byteLength(JSON.stringify(id), 'utf8') + 1;
+        if (ids.length && size + more > MAX_INLINE) {
+          await this.notify(JSON.stringify({ userIds: ids, event: msg.event }));
+          ids = [];
+          size = base;
+        }
+        ids.push(id);
+        size += more;
+      }
+      if (ids.length) await this.notify(JSON.stringify({ userIds: ids, event: msg.event }));
+      return;
+    }
+    const row = await this.pool.query<{ id: string }>(
+      `insert into domain_events (type, payload) values ('realtime.large', $1) returning id`,
+      [msg],
+    );
+    await this.notify(JSON.stringify({ ref: row.rows[0]!.id }));
+  }
+
+  private async notify(payload: string): Promise<void> {
     await this.pool.query('select pg_notify($1, $2)', [CHANNEL, payload]);
   }
 

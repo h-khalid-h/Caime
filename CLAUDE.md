@@ -82,7 +82,9 @@ These are rules, not preferences.
    `-- contracts after <sha>`, the commit already in production that stopped reading it; a
    backfill of a big table (`BIG_TABLES` in the script) is a procedure that updates a batch and
    commits it in a loop, called from a `-- no-transaction` file, never a bare `update` over the
-   table; an index on a big table is built `concurrently`.
+   table; an index on a big table is built `concurrently`. Every foreign key leads an index
+   (`fk-indexes.test.ts`): a new one brings its index in the same release, or deleting what it
+   points at scans the table whole.
 8. **Never assume gender or age.** Copy uses names, not pronouns; gender is never inferred (R27).
    A person may say it (R81: `users.gender`, null by default, its own privacy field), and then
    the words take its form where the language has one: what's said *to* them through `tr`
@@ -147,7 +149,9 @@ appointment from a catalog).
 - The container's health check is `/v1/healthz` (the process answers); `/v1/readyz` is for the
   uptime check and says the database answers *and* this instance hears the bus (`lib/bus.ts`
   listens again with backoff for as long as it's open, destroys the lost client, and tells the
-  hub, which sends every socket a `resync` so the client catches up). Every connection starts
+  hub, which sends every socket a `resync` so the client catches up; a message too long for a
+  NOTIFY because of its recipients is split across several, and only an event too large by
+  itself goes through `domain_events`). Every connection starts
   with `statement_timeout` 30 s and `idle_in_transaction_session_timeout` 60 s (`db/pool.ts`):
   anything longer is a job, never a request. Every answer carries `x-request-id`, and a 500's
   `details.requestId` is the line to find in the log. A gauge a periodic task fills (the last
@@ -216,7 +220,10 @@ appointment from a catalog).
   `runPeriodic` (the tests' direct runner) claims nothing. Anything that decodes an image goes
   through `images.run` (`lib/renditions.ts`, two at a time, never nested) with
   `limitInputPixels: IMAGE_PIXELS_MAX`; a backup's copy is streamed (`s3PutStream`), and nothing
-  reads a whole file into memory to send it.
+  reads a whole file into memory to send it. Work after a response is `ctx.defer`
+  (`lib/deferred.ts`, M16 D2a): at most `DEFER_CONCURRENCY` at once on an instance, the rest
+  waiting in order, `caime_deferred{state}` and failures by label on `/metrics`; a label is a
+  name written in the code, and what must survive a restart is a job, never a defer.
 - Kill a local server by port (`lsof -ti tcp:8787 | xargs kill`), never `pkill -f` with a
   pattern: it matches the shell running the command.
 - Biome reformats files: after `biome check --write`, re-read before scripted edits, and run it

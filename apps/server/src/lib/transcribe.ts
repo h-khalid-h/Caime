@@ -133,15 +133,16 @@ async function transcribe(ctx: AppContext, payload: Record<string, unknown>): Pr
     .returning(MESSAGE_COLUMNS)
     .executeTakeFirst();
   if (!updated) return;
+  // One view, as its sender sees it, to everyone (M16 D2a): each device works out its own parts
+  // of a message.updated (its reactions, its votes), and the bus masks a customer's copy. Before,
+  // a group's voice note built the view once a member.
   const members = (await participantsOf(ctx.db, m.conversation_id)).map((p) => p.user_id);
-  for (const userId of members) {
-    const [view] = await messageViews(ctx.db, [updated], userId);
-    if (view)
-      await ctx.bus.publish([userId], {
-        type: 'message.updated',
-        data: { ...view, clientId: null },
-      });
-  }
+  const [view] = await messageViews(ctx.db, [updated], m.sender_id);
+  if (view)
+    await ctx.bus.publish(members, {
+      type: 'message.updated',
+      data: { ...view, clientId: null },
+    });
 }
 
 /** The whole file, from wherever this Caime keeps files, never past the cap. */

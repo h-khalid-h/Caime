@@ -2471,6 +2471,24 @@ graph) and the number that will show it; one that sharpens none is hygiene and s
       5,000-message conversation never written in, needing me, the inbox at 17 queries for 301
       conversations), `import.test.ts`, and the full gate. The fill runs once more with D2's
       migration, for anything the old container wrote while this one started.
+- [x] D2a. Work after a response bounded, the bus without a table for a crowd, every foreign key
+      indexed (2026-10-18, review §4 M, §6 M): `ctx.defer` runs eight at once on an instance and
+      the rest wait their turn in order (`lib/deferred.ts`; it started everything at once against
+      the pool the requests share), with `caime_deferred{state}` and failures by label on
+      `/metrics` and a DEPLOY alert for a backlog. A bus message too long for a NOTIFY because of
+      whom it's for is split across several that fit: a typing tick to 500 people is three
+      messages, where it wrote a row to `domain_events` that every instance read back; only an
+      event too large by itself still goes by reference. Every foreign key now leads an index:
+      fifty-three didn't (thirty-four to people, `messages.pinned_by` among them, so an account's
+      deletion scanned every message; `hidden_messages.message_id`, so an erasure scanned what
+      people hid), forty in one migration and thirteen on big tables built concurrently, a file
+      each; `fk-indexes.test.ts` holds every new key to an index. A transcribed voice note is
+      told once, one view to everyone, where a group built it once a member. The fill of
+      `last_sent_seq` ran again for the deploy window and its procedure is gone. Verified:
+      `deferred.test.ts`, `bus.test.ts` (500 recipients in three messages, no row; a large event
+      whole by reference), `fk-indexes.test.ts`, `speech.test.ts` (the transcript told once to
+      both), `last-sent.test.ts` (the procedure made again from its migration), the migrations
+      lint and the full gate.
 - [ ] E. Chat polish: distinct read ticks with a contrast test; the English leaks and a scanner
       that flags any word-bearing literal; quoted replies with the author and a jump, swipe to
       reply; message info and who reacted; video as a message, voice notes with a waveform, speed
@@ -4099,6 +4117,8 @@ graph) and the number that will show it; one that sharpens none is hygiene and s
   journeys, safety, reliability, performance, intelligence, mail and calendar, chat, integrations,
   business and code integrity; the matrix against WhatsApp, Signal, Slack, Calendly and Workspace;
   an age-assurance design; the integration framework mapped to the code; plan M16 (A–H).
+- 2026-10-18 — M16 D2a: work after a response eight at a time with a gauge; a crowd's bus message
+  split rather than written to a table; every foreign key indexed (53 weren't), held by a test.
 - 2026-10-18 — M16 D1: whole rows only where they're the point (a guard over the syntax tree
   that found seventeen reads the old one passed), people lists at a fixed cost (274 queries for 30
   connections → 12), and where someone last wrote kept on their row for the inbox.

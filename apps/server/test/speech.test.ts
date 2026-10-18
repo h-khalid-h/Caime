@@ -8,8 +8,9 @@ import { createServer, type Server } from 'node:http';
 import type { AddressInfo } from 'node:net';
 import { uuidv4 } from '@caime/core';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
+import type { BusMessage } from '../src/lib/bus';
 import { runDueJobs } from '../src/lib/jobs';
-import { type Client, createTestApp, signup, type TestApp } from './helpers';
+import { type Client, createTestApp, signup, type TestApp, until } from './helpers';
 
 type Reply = { status: number; json: unknown };
 const replies: Reply[] = [];
@@ -134,9 +135,21 @@ describe('a voice note into words (PRD §46)', () => {
     });
     const sent = await voiceNote(ana, convo);
     expect(sent.body).toBeNull();
+    const heard: BusMessage[] = [];
+    const off = t.ctx.bus.subscribe((msg) => heard.push(msg));
     await work();
     const m = await read(ben, sent.id);
     expect(m.body).toBe('Hi Ben, the contract is signed.');
+    // Told to both at once, one view for everyone (M16 D2a), never built once a member.
+    const told = () =>
+      heard.filter(
+        (h) =>
+          h.event.type === 'message.updated' && (h.event.data as { id?: string }).id === sent.id,
+      );
+    await until(() => told().length > 0, 5_000, 'the transcript told');
+    off();
+    expect(told()).toHaveLength(1);
+    expect([...told()[0]!.userIds].sort()).toEqual([ana.user.id, ben.user.id].sort());
     expect(m.payload.transcript).toMatchObject({ language: 'en', by: 'openai' });
     // The request carried the key and the audio, and nothing of the person.
     const req = requests.at(-1)!;

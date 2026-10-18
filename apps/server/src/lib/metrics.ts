@@ -188,6 +188,15 @@ export function createMetrics(pool: pg.Pool) {
       'caime_age_checks_total',
       'Age checks begun and answered, by provider and outcome (started, adult, minor, failed).',
     ),
+    // Work after a response (M16 D2a): what runs and waits on this instance, and what failed.
+    deferred: new Gauge(
+      'caime_deferred',
+      'Work after a response on this instance, by state (running, waiting).',
+    ),
+    deferredFailed: new Counter(
+      'caime_deferred_failed_total',
+      'Work after a response that failed, by its label (a name in the code).',
+    ),
     // Set as /metrics is scraped: what waits on the operator, and for how long.
     moderationWaiting: new Gauge(
       'caime_moderation_waiting',
