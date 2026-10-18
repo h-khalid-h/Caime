@@ -346,6 +346,11 @@ function PersonPage({ id, book = null, slug = null }: PersonScreenProps) {
           <Text variant="title" align="center" auto>
             {person.displayName}
           </Text>
+          {person.headline ? (
+            <Text variant="body" align="center" auto testID="person-headline">
+              {person.headline}
+            </Text>
+          ) : null}
           <Text variant="body" color="textSecondary" align="center">
             {handleOf(person)}
             {person.pronouns ? ` · ${person.pronouns}` : ''}
@@ -381,7 +386,11 @@ function PersonPage({ id, book = null, slug = null }: PersonScreenProps) {
                 <Pressable
                   key={o.id}
                   accessibilityRole="link"
-                  accessibilityLabel={`${o.name}, ${o.verified ? 'verified' : 'organization'}`}
+                  accessibilityLabel={
+                    o.verified
+                      ? tr('{name}, verified organization', { name: o.name })
+                      : tr('{name}, organization', { name: o.name })
+                  }
                   onPress={() =>
                     router.navigate({ pathname: '/o/[handle]', params: { handle: o.handle } })
                   }

@@ -14,8 +14,8 @@ const MESSAGES = Number(process.env.INBOX_MESSAGES ?? 40);
  * walking a conversation's messages backwards, the whole of this one at every look.
  */
 const NEVER_WROTE = Number(process.env.INBOX_NEVER_WROTE ?? 5000);
-/** What the inbox may cost in queries, however many conversations it lists (17 measured). */
-const INBOX_QUERIES = 18;
+/** What the inbox may cost in queries, however many conversations it lists (15 measured). */
+const INBOX_QUERIES = 16;
 
 let t: TestApp;
 let noor: Client;

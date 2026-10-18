@@ -1,23 +1,18 @@
 /**
- * The account owner's profile, preferences, privacy and identities (PRD §34, §35).
+ * The account owner's profile, preferences and privacy (PRD §34).
  */
 import {
   clampForMinor,
   Handle,
-  IdentityBody,
   type PlanUsageView,
   PrivacyBody,
   safeLocale,
   UpdateMeBody,
-  uuidv7,
 } from '@caime/core';
 import type {
   HandleAvailabilityResponse,
   HandleCandidatesResponse,
-  IdentitiesResponse,
-  IdResponse,
   MeResponse,
-  OkResponse,
   PersonInsightsResponse,
   PrivacyResponse,
   UserResponse,
@@ -36,7 +31,7 @@ import type { AppContext } from '../context';
 import type { UserUpdate } from '../db/schema';
 import { USER_COLUMNS } from '../db/schema';
 import { scheduleBrief, scheduleDigest } from '../lib/cai';
-import { badRequest, notFound } from '../lib/errors';
+import { badRequest } from '../lib/errors';
 import { currentZone, isCountry } from '../lib/geo';
 import {
   assertHandleAvailable,
@@ -128,6 +123,7 @@ export async function meRoutes(app: FastifyInstance, ctx: AppContext) {
       patch.handle = body.handle;
     }
     if (body.bio !== undefined) patch.bio = body.bio;
+    if (body.headline !== undefined) patch.headline = body.headline || null;
     if (body.pronouns !== undefined) patch.pronouns = body.pronouns;
     // Said, never guessed (R81): the form of what's written to them, from the next line on.
     if (body.gender !== undefined) patch.gender = body.gender;
@@ -222,17 +218,6 @@ export async function meRoutes(app: FastifyInstance, ctx: AppContext) {
       // The handle they had is held from everyone, so their links never open someone else.
       if (patch.handle !== undefined && patch.handle !== was.handle.toLowerCase())
         await releaseHandle(trx, was.handle, ctx.now());
-      // People see someone by the identity they're shown (lib/users.ts identityShownTo): the
-      // personal one is the profile's own name, so it's renamed with it. One given a name of its
-      // own keeps it.
-      if (patch.display_name !== undefined && patch.display_name !== was.display_name)
-        await trx
-          .updateTable('identities')
-          .set({ display_name: patch.display_name })
-          .where('user_id', '=', auth.userId)
-          .where('kind', '=', 'personal')
-          .where('display_name', '=', was.display_name)
-          .execute();
       if (!weekMoved) return;
       // The rules that keep to the work week move with it (work, customers, professionals):
       // those whose days are the week it was. A rule with days of its own keeps them.
@@ -362,110 +347,5 @@ export async function meRoutes(app: FastifyInstance, ctx: AppContext) {
       suggestion: candidates.slice(1).find(free) ?? null,
       ...(closedOrg ? { closedOrg } : {}),
     };
-  });
-
-  // --- Identities (PRD §35): how I appear to different people ---------------------------------
-
-  app.get('/me/identities', async (req): Promise<IdentitiesResponse> => {
-    const auth = requireAuth(req);
-    const rows = await ctx.db
-      .selectFrom('identities')
-      .selectAll()
-      .where('user_id', '=', auth.userId)
-      .orderBy('is_default', 'desc')
-      .orderBy('created_at')
-      .execute();
-    return {
-      identities: rows.map((i) => ({
-        id: i.id,
-        kind: i.kind,
-        displayName: i.display_name,
-        headline: i.headline,
-        orgName: i.org_name,
-        isDefault: i.is_default,
-      })),
-    };
-  });
-
-  app.post('/me/identities', async (req, reply): Promise<IdResponse> => {
-    const auth = requireAuth(req);
-    const body = parse(IdentityBody, req.body);
-    const count = await ctx.db
-      .selectFrom('identities')
-      .select(ctx.db.fn.countAll<number>().as('n'))
-      .where('user_id', '=', auth.userId)
-      .executeTakeFirstOrThrow();
-    if (Number(count.n) >= 10) throw badRequest(tr('You can have up to 10 identities.'));
-    const id = uuidv7();
-    await ctx.db.transaction().execute(async (trx) => {
-      if (body.isDefault)
-        await trx
-          .updateTable('identities')
-          .set({ is_default: false })
-          .where('user_id', '=', auth.userId)
-          .execute();
-      await trx
-        .insertInto('identities')
-        .values({
-          id,
-          user_id: auth.userId,
-          kind: body.kind,
-          display_name: body.displayName,
-          headline: body.headline ?? null,
-          org_name: body.orgName ?? null,
-          is_default: body.isDefault ?? false,
-        })
-        .execute();
-    });
-    reply.status(201);
-    return { id };
-  });
-
-  app.patch('/me/identities/:id', async (req): Promise<OkResponse> => {
-    const auth = requireAuth(req);
-    const { id } = parse(z.object({ id: z.string().uuid() }), req.params);
-    const body = parse(IdentityBody.partial(), req.body);
-    const existing = await ctx.db
-      .selectFrom('identities')
-      .selectAll()
-      .where('id', '=', id)
-      .where('user_id', '=', auth.userId)
-      .executeTakeFirst();
-    if (!existing) throw notFound(tr('That identity'));
-    await ctx.db.transaction().execute(async (trx) => {
-      if (body.isDefault)
-        await trx
-          .updateTable('identities')
-          .set({ is_default: false })
-          .where('user_id', '=', auth.userId)
-          .execute();
-      await trx
-        .updateTable('identities')
-        .set({
-          kind: body.kind ?? existing.kind,
-          display_name: body.displayName ?? existing.display_name,
-          headline: body.headline !== undefined ? body.headline : existing.headline,
-          org_name: body.orgName !== undefined ? body.orgName : existing.org_name,
-          is_default: body.isDefault ?? existing.is_default,
-        })
-        .where('id', '=', id)
-        .execute();
-    });
-    return { ok: true };
-  });
-
-  app.delete('/me/identities/:id', async (req): Promise<OkResponse> => {
-    const auth = requireAuth(req);
-    const { id } = parse(z.object({ id: z.string().uuid() }), req.params);
-    const existing = await ctx.db
-      .selectFrom('identities')
-      .selectAll()
-      .where('id', '=', id)
-      .where('user_id', '=', auth.userId)
-      .executeTakeFirst();
-    if (!existing) throw notFound(tr('That identity'));
-    if (existing.is_default) throw badRequest(tr('Make another identity your default first.'));
-    await ctx.db.deleteFrom('identities').where('id', '=', id).execute();
-    return { ok: true };
   });
 }

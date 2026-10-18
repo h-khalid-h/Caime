@@ -44,7 +44,6 @@ import {
 import { spaceConversationTitle, spaceRefs } from './spaces';
 import { createSuggestion } from './suggest';
 import { queueTranscription } from './transcribe';
-import { identitiesShownTo, identityShownTo, type ShownIdentity } from './users';
 
 const BURST_WINDOW_MS = 10 * 60_000;
 const LEVEL_RANK = { activity: 0, attention: 1, urgency: 2 } as const;
@@ -510,8 +509,6 @@ interface Prepared {
   policies: Map<string, RelationshipPolicy[]>;
   /** Each recipient's active relationships with the sender, primary first. */
   relationships: Map<string, Relationship[]>;
-  /** How the sender shows themselves to each (PRD §35). */
-  shown: Map<string, ShownIdentity | null>;
   /** The sender's active connection with each, for a rule just for them (PRD §68). */
   connectionIds: Map<string, string>;
   /** Each recipient's open notification of this conversation within the burst window. */
@@ -543,7 +540,7 @@ async function prepareFor(
   userIds: string[],
   opts: NotifyOpts,
 ): Promise<Prepared> {
-  const [users, policies, rels, shown, connectionIds, open, spaces, parent] = await Promise.all([
+  const [users, policies, rels, connectionIds, open, spaces, parent] = await Promise.all([
     ctx.db
       .selectFrom('users')
       .select(['id', 'time_zone', 'quiet_hours', 'preferences'])
@@ -559,7 +556,6 @@ async function prepareFor(
       .orderBy('is_primary', 'desc')
       .orderBy('created_at', 'asc')
       .execute(),
-    identitiesShownTo(ctx, sender.id, userIds),
     conversation.kind === 'direct'
       ? new Map<string, string>()
       : activeConnectionIds(ctx.db, sender.id, userIds),
@@ -593,7 +589,6 @@ async function prepareFor(
     users: new Map(users.map((u) => [u.id, u])),
     policies,
     relationships,
-    shown,
     connectionIds,
     existing,
     space: conversation.space_id ? spaces?.get(conversation.space_id) : undefined,
@@ -643,15 +638,14 @@ function notificationFor(
   if (!user) return null;
   const policies = p.policies.get(recipient.user_id) ?? [];
   const rels = p.relationships.get(recipient.user_id) ?? [];
-  // Named as the sender shows themselves to this person (PRD §35), on a lock screen too; an
-  // organization speaking in its own conversation keeps its name.
-  const shown = p.shown.get(recipient.user_id) ?? null;
   // A rule just for the sender holds wherever they write: in a group too, by their connection.
   const connectionId =
     conversation.kind === 'direct'
       ? conversation.connection_id
       : (p.connectionIds.get(recipient.user_id) ?? null);
-  const named = shown?.displayName ?? sender.display_name;
+  // Named by their one name (R99), on a lock screen too; an organization speaking in its own
+  // conversation keeps its name.
+  const named = sender.display_name;
   const senderName = sender.labelled
     ? `${named} (${sender.labelled === 'agent' ? tr('AI agent') : tr('automated')})`
     : named;
@@ -1036,19 +1030,12 @@ async function suggest(
   const forWhom = recipients.filter(
     (r) => r.request_state !== 'pending' && r.request_state !== 'declined' && addressed(r.user_id),
   );
-  // Said with the name the sender shows each person (PRD §35): looked up once for them all.
-  const shownTo = await identitiesShownTo(
-    ctx,
-    sender.id,
-    forWhom.map((r) => r.user_id),
-  );
   for (const r of forWhom) {
     // Strangers' messages (pending requests) don't create work for you (R14).
-    const shown = shownTo.get(r.user_id) ?? null;
     await asReader(ctx, r.user_id, async () => {
       const theirs = suggestFromAnalysis(analysis, {
         senderIsMe: false,
-        senderName: firstName(shown?.displayName ?? sender.display_name),
+        senderName: firstName(sender.display_name),
       });
       for (const s of theirs) {
         // "I'll send it Thursday" answering my request: the waiting item, now with a date.
@@ -1177,10 +1164,9 @@ async function suggestBusiness(
     // What they asked of the team, or promised it: for whoever has the thread.
     if (thread.assignee_id) {
       const assignee = thread.assignee_id;
-      const shown = await identityShownTo(ctx, customerId, assignee);
       await draftsFor(
         assignee,
-        { senderIsMe: false, senderName: firstName(shown?.displayName ?? sender.display_name) },
+        { senderIsMe: false, senderName: firstName(sender.display_name) },
         (s) => file(assignee, s, { subject: customerId, decidedBy: customerId }),
       );
     }

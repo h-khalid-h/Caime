@@ -2778,4 +2778,9 @@ export const arB: Catalog = {
     many: '{n} آخرين',
     other: '{n} آخرين',
   },
+  'What you do (optional)': 'عملك (اختياري)',
+  'Dentist at Nile Dental': 'طب الأسنان في Nile Dental',
+  'Who sees it is up to you, under Privacy: Work details.':
+    'من يراه أمرٌ لك، في الخصوصية: تفاصيل العمل.',
+  '{name}, verified organization': '{name}، مؤسسة موثّقة',
 };

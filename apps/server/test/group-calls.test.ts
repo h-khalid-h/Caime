@@ -1051,29 +1051,15 @@ describe('group calls (PRD §47)', () => {
     }
   });
 
-  it('everyone is named as they show themselves to whoever sees the call', async () => {
-    // Sam shows Omar his work identity.
-    const identity = (
-      await sam.post('/v1/me/identities', { kind: 'professional', displayName: 'Dr. S. Rivera' })
-    ).id;
-    const connection = await t.ctx.db
-      .selectFrom('connection_sides')
-      .select('connection_id')
-      .where('owner_id', '=', sam.user.id)
-      .where('other_id', '=', omar.user.id)
-      .executeTakeFirstOrThrow();
-    await sam.patch(`/v1/connections/${connection.connection_id}`, { identityId: identity });
+  it('everyone is named by their one name, the same to whoever sees the call (M16 D4d)', async () => {
     const id = (await start(sam)).json().call.id;
-    expect((await aboutCall(omar, id))[0].title).toBe('Dr. S. Rivera is calling Trip');
+    expect((await aboutCall(omar, id))[0].title).toBe('Sam Rivera is calling Trip');
     expect((await aboutCall(noor, id))[0].title).toBe('Sam Rivera is calling Trip');
-    expect((await omar.get('/v1/group-calls/live')).call.startedBy.displayName).toBe(
-      'Dr. S. Rivera',
-    );
+    expect((await omar.get('/v1/group-calls/live')).call.startedBy.displayName).toBe('Sam Rivera');
     const inIt = (await join(omar, id)).json().call;
     expect(inIt.members.find((m: any) => m.person.id === sam.user.id).person.displayName).toBe(
-      'Dr. S. Rivera',
+      'Sam Rivera',
     );
-    expect((await noor.get('/v1/group-calls/live')).call.startedBy.displayName).toBe('Sam Rivera');
     await leave(omar, id);
     await leave(sam, id, 'sam-tab-1');
     // A 1:1 call too: its ring, and the call as Omar sees it.
@@ -1086,15 +1072,14 @@ describe('group calls (PRD §47)', () => {
     const ring = ((await omar.get('/v1/notifications')).notifications as any[]).find(
       (n) => n.data?.callId === direct,
     );
-    expect(ring.title).toBe('Dr. S. Rivera is calling');
-    expect((await omar.get('/v1/calls/live')).call.caller.displayName).toBe('Dr. S. Rivera');
+    expect(ring.title).toBe('Sam Rivera is calling');
+    expect((await omar.get('/v1/calls/live')).call.caller.displayName).toBe('Sam Rivera');
     await sam.post(`/v1/calls/${direct}/end`, {});
     await t.ctx.flush();
     const missed = ((await omar.get('/v1/notifications')).notifications as any[]).find(
       (n) => n.data?.callId === direct && n.title.startsWith('Missed'),
     );
-    expect(missed?.body).toBe('from Dr. S. Rivera');
-    await sam.patch(`/v1/connections/${connection.connection_id}`, { identityId: null });
+    expect(missed?.body).toBe('from Sam Rivera');
   });
 
   it('who turned it down, missed it, or was never rung is nobody else’s business', async () => {

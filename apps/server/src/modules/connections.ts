@@ -109,15 +109,6 @@ export async function connectionRoutes(app: FastifyInstance, ctx: AppContext) {
     if (recentDecline)
       throw new AppError(429, 'recently_declined', tr('You can send another request later.'));
 
-    if (body.identityId) {
-      const owned = await ctx.db
-        .selectFrom('identities')
-        .select('id')
-        .where('id', '=', body.identityId)
-        .where('user_id', '=', auth.userId)
-        .executeTakeFirst();
-      if (!owned) throw badRequest(tr('Choose one of your identities.'));
-    }
     const id = uuidv7();
     await ctx.db.transaction().execute(async (trx) => {
       await trx
@@ -129,7 +120,6 @@ export async function connectionRoutes(app: FastifyInstance, ctx: AppContext) {
           note: body.note ?? null,
           context_sphere: body.context?.sphere ?? null,
           context_org_name: body.context?.orgName ?? null,
-          from_identity_id: body.identityId ?? null,
           pending_relationship: body.relationship ? JSON.stringify(body.relationship) : null,
         })
         .execute();
@@ -392,15 +382,6 @@ export async function connectionRoutes(app: FastifyInstance, ctx: AppContext) {
       .where('owner_id', '=', auth.userId)
       .executeTakeFirst();
     if (!side) throw notFound(tr('That connection'));
-    if (body.identityId) {
-      const owned = await ctx.db
-        .selectFrom('identities')
-        .select('id')
-        .where('id', '=', body.identityId)
-        .where('user_id', '=', auth.userId)
-        .executeTakeFirst();
-      if (!owned) throw badRequest(tr('Choose one of your identities.'));
-    }
     await ctx.db
       .updateTable('connection_sides')
       .set({
@@ -409,7 +390,6 @@ export async function connectionRoutes(app: FastifyInstance, ctx: AppContext) {
         ...(body.attention !== undefined ? { attention: body.attention } : {}),
         ...(body.mutedUntil !== undefined ? { muted_until: body.mutedUntil } : {}),
         ...(body.archived !== undefined ? { archived_at: body.archived ? ctx.now() : null } : {}),
-        ...(body.identityId !== undefined ? { identity_id: body.identityId } : {}),
       })
       .where('connection_id', '=', id)
       .where('owner_id', '=', auth.userId)

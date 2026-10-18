@@ -4539,4 +4539,9 @@ export const fr: Catalog = {
     one: '{n} autre',
     other: '{n} autres',
   },
+  'What you do (optional)': 'Ce que vous faites (facultatif)',
+  'Dentist at Nile Dental': 'Dentiste chez Nile Dental',
+  'Who sees it is up to you, under Privacy: Work details.':
+    'Qui le voit dépend de vous, dans Confidentialité : Détails professionnels.',
+  '{name}, verified organization': '{name}, organisation vérifiée',
 };

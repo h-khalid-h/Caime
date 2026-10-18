@@ -10,7 +10,7 @@ import type { Catalog } from '@caime/core/i18n';
 export const frServer: Catalog = {
   '{name} is on {site}.': '{name} est sur {site}.',
   'a person on {site}': 'une personne sur {site}',
-  headline: 'titre',
+  work: 'activité',
   with: 'chez',
   'Message {name} on {site}': 'Écrire à {name} sur {site}',
   'Verified · {domain}': 'Vérifiée · {domain}',
@@ -688,7 +688,6 @@ export const frServer: Catalog = {
   '{name} isn’t accepting requests from people they don’t know yet.':
     '{name} n’accepte pas encore de demandes de personnes inconnues.',
   'You can send another request later.': 'Vous pourrez envoyer une autre demande plus tard.',
-  'Choose one of your identities.': 'Choisissez l’une de vos identités.',
   'That request': 'Cette demande',
   'That connection': 'Ce contact',
   'That merged connection': 'Ce contact fusionné',
@@ -830,9 +829,6 @@ export const frServer: Catalog = {
   'An app changes only its own cards.': 'Une application ne modifie que ses propres cartes.',
   'Choose a time zone from the list.': 'Choisissez un fuseau horaire dans la liste.',
   'Choose an image you uploaded.': 'Choisissez une image que vous avez téléversée.',
-  'You can have up to 10 identities.': 'Vous pouvez avoir jusqu’à 10 identités.',
-  'That identity': 'Cette identité',
-  'Make another identity your default first.': 'Définissez d’abord une autre identité par défaut.',
   'Apps are made by people over 18.':
     'Les applications sont créées par des personnes de plus de 18 ans.',
   'You have {max} apps. Remove one first.': 'Vous avez {max} applications. Retirez-en une d’abord.',

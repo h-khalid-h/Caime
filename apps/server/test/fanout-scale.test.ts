@@ -68,9 +68,9 @@ describe('a message to a big group', () => {
       `fan-out to ${MEMBERS - 1}: ${queries} queries (${(queries / (MEMBERS - 1)).toFixed(1)} per member), ${ms} ms`,
     );
     expect(Number(told.n)).toBe(MEMBERS - 1);
-    // Nothing per member (M16 D2b): their settings, rules, relationships, identities, languages
-    // and open notifications read once for all, their notifications written in one statement,
-    // the devices to push to looked up once (34 measured for 79, as for 303 in a crowd).
+    // Nothing per member (M16 D2b): their settings, rules, relationships, languages and open
+    // notifications read once for all, their notifications written in one statement, the devices
+    // to push to looked up once (32 measured for 79, 31 for 303 in a crowd).
     expect(queries).toBeLessThan(45);
   });
 

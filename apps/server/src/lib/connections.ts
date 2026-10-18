@@ -16,7 +16,6 @@ export async function formConnection(
   trx: Transaction<Database>,
   a: string,
   b: string,
-  opts: { requesterIdentityId?: string | null },
 ): Promise<{ connectionId: string; conversationId: string }> {
   const { low, high } = pairKey(a, b);
   const existing = await trx
@@ -50,7 +49,6 @@ export async function formConnection(
         connection_id: connectionId,
         owner_id: owner!,
         other_id: other!,
-        identity_id: owner === a ? (opts.requesterIdentityId ?? null) : null,
       })
       .onConflict((oc) => oc.columns(['connection_id', 'owner_id']).doNothing())
       .execute();
@@ -142,9 +140,7 @@ export async function acceptRequest(
       .set({ status: 'accepted', responded_at: ctx.now() })
       .where('id', '=', requestId)
       .execute();
-    result = await formConnection(trx, request.from_user, userId, {
-      requesterIdentityId: request.from_identity_id,
-    });
+    result = await formConnection(trx, request.from_user, userId);
     const theirs = request.pending_relationship as RelationshipInputT | null;
     if (theirs) {
       await createRelationship(trx, ctx, request.from_user, userId, theirs, {

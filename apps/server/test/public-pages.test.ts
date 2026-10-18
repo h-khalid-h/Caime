@@ -139,6 +139,17 @@ describe('the readable web (R44)', () => {
     expect(r.body).toContain('<meta name="caime-page" content="person">');
     const mine = await visit('/@noor', { cookie: `caime_session=${noor.token}` });
     expect(mine.body).toContain('entry-abc.js');
+    // What they do, one line for everyone (M16 D4d), while Work details shows it to everyone.
+    await noor.req('PATCH', '/v1/me', { headline: 'Dentist at Nile Dental' });
+    const working = (await visit('/@noor')).body;
+    expect(working).toContain('<dt class="mono">Work</dt><dd>Dentist at Nile Dental</dd>');
+    expect(working).toContain('"jobTitle":"Dentist at Nile Dental"');
+    await noor.req('PUT', '/v1/me/privacy', {
+      fields: { identityDetails: { kind: 'connections' } },
+    });
+    expect((await visit('/@noor')).body).not.toContain('Dentist at Nile Dental');
+    await noor.req('PUT', '/v1/me/privacy', { fields: { identityDetails: { kind: 'everyone' } } });
+    await noor.req('PATCH', '/v1/me', { headline: null });
     // Their bio kept for connections: not on the page; a JSON-LD script is still a script, so
     // nothing of theirs can close it.
     await noor.req('PUT', '/v1/me/privacy', { fields: { bio: { kind: 'connections' } } });

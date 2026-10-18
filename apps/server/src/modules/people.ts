@@ -5,14 +5,24 @@
 import type { ConnectionStateView, PersonProfileView } from '@caime/core';
 import {
   ADULT_AGE,
+  CONTACTS_MATCH_MAX,
+  ContactsMatchBody,
   canSee,
   isBooked,
   isOrdered,
   methodsFor,
   resolvePolicy,
   rhythmOf,
+  toInternational,
   visibleCollections,
 } from '@caime/core';
+import { addressValue } from '@caime/core/addresses';
+import type {
+  ContactMatchView,
+  ContactsMatchResponse,
+  PeopleSearchResponse,
+} from '@caime/core/api';
+import { tr } from '@caime/core/i18n';
 import type { FastifyInstance } from 'fastify';
 import { sql } from 'kysely';
 import { z } from 'zod';
@@ -23,6 +33,8 @@ import { busyNow } from '../lib/calendar';
 import { notFound } from '../lib/errors';
 import { notHiddenFor, readableBy } from '../lib/messages';
 import { orgsOf } from '../lib/orgs';
+import { personViewsFor } from '../lib/people-batch';
+import { personPlacesFor } from '../lib/places';
 import {
   activeRelationships,
   between,
@@ -37,20 +49,7 @@ import {
 } from '../lib/relations';
 import { itemsWithStock } from '../lib/stock';
 import { escapeLike } from '../lib/text';
-import { identityShownTo, minorOf, personView, privacyOf } from '../lib/users';
-
-export { identityShownTo };
-
-import { CONTACTS_MATCH_MAX, ContactsMatchBody, toInternational } from '@caime/core';
-import { addressValue } from '@caime/core/addresses';
-import type {
-  ContactMatchView,
-  ContactsMatchResponse,
-  PeopleSearchResponse,
-} from '@caime/core/api';
-import { tr } from '@caime/core/i18n';
-import { personViewsFor } from '../lib/people-batch';
-import { personPlacesFor } from '../lib/places';
+import { minorOf, personView, privacyOf } from '../lib/users';
 import { parse } from '../lib/validate';
 import { requireAuth } from '../plugins/auth';
 
@@ -346,10 +345,9 @@ export async function peopleRoutes(app: FastifyInstance, ctx: AppContext) {
       .where('deleted_at', 'is', null)
       .executeTakeFirst();
     if (!user) throw notFound(tr('That person'));
-    const [relation, b, identity, mine] = await Promise.all([
+    const [relation, b, mine] = await Promise.all([
       viewerRelation(ctx.db, id, auth.userId),
       between(ctx.db, auth.userId, id),
-      identityShownTo(ctx, id, auth.userId),
       id === auth.userId ? Promise.resolve([]) : activeRelationships(ctx.db, auth.userId, [id]),
     ]);
     // Being blocked by them looks exactly like not existing.
@@ -633,7 +631,7 @@ export async function peopleRoutes(app: FastifyInstance, ctx: AppContext) {
     // Their places this viewer may see (R92), by their rules for them.
     const places = user.kind === 'human' ? await personPlacesFor(ctx, user, auth.userId) : [];
     return {
-      person: personView(user, relation, now, identity),
+      person: personView(user, relation, now),
       organizations,
       places,
       booking,

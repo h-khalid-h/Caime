@@ -681,7 +681,10 @@ contact discovery. Rules can apply by relationship sphere.
 Caime separates **account identity** (the person's Caime account), **profile identity** (how
 they appear), **professional identity** (their professional representation) and **organization
 identity** (their relationship with an organization). Example: *Hassan Khalid* (personal) ·
-*Hassan* (profile) · *Hassan Khalid — DATA C CEO* (professional/organization).
+*Hassan* (profile) · *Hassan Khalid — DATA C CEO* (professional/organization). Refined
+(PRODUCT-REVIEW R99): one face per person, the same name and photo to everyone, with one line
+about what they do shown by the privacy field Work details; organization identity is the
+organization's page and the person's seat on its team (R43).
 
 ## 36. Organization Layer
 
@@ -689,7 +692,7 @@ Organizations can have verified profiles. A business can create: organization pr
 employees; departments; customer relationships; vendor relationships; communication channels;
 automated services. An organization's profile carries its logo, its kind, where it's based and
 the year it began; its spaces are its own (§40, PRODUCT-REVIEW R43), and it never owns a
-person's record: a person's relationships and identities stay theirs (§10, §35).
+person's record: a person's relationships and profile stay theirs (§10, §35).
 
 ## 37. Caime Business
 

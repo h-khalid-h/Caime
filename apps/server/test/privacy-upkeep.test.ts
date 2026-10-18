@@ -1,4 +1,3 @@
-import { readFileSync } from 'node:fs';
 import { uuidv4, uuidv7 } from '@caime/core';
 import { sql } from 'kysely';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
@@ -68,27 +67,6 @@ describe('what Caime keeps, and for how long', () => {
     expect((await alex.get(`/v1/people/${noor.user.id}`)).person.displayName).toBe('Noor H.');
     // Their conversation is named for her as she is now, too.
     expect((await alex.get(`/v1/conversations/${convo}`)).conversation.title).toBe('Noor H.');
-    // An identity given a name of its own keeps it, whatever it's called and whatever its kind.
-    const other = (kind: 'personal' | 'professional', name: string) =>
-      t.ctx.db
-        .insertInto('identities')
-        .values({ id: uuidv7(), user_id: noor.user.id, kind, display_name: name })
-        .execute();
-    await other('personal', 'Noor at home');
-    await other('professional', 'Noor H.');
-    await noor.patch('/v1/me', { displayName: 'Noor' });
-    const names = await t.ctx.db
-      .selectFrom('identities')
-      .select(['kind', 'display_name', 'is_default'])
-      .where('user_id', '=', noor.user.id)
-      .orderBy('kind')
-      .orderBy('display_name')
-      .execute();
-    expect(names).toEqual([
-      { kind: 'personal', display_name: 'Noor', is_default: true },
-      { kind: 'personal', display_name: 'Noor at home', is_default: false },
-      { kind: 'professional', display_name: 'Noor H.', is_default: false },
-    ]);
   });
 
   it('keeps the name people see as the profile’s, when two devices rename it at once', async () => {
@@ -101,52 +79,13 @@ describe('what Caime keeps, and for how long', () => {
       .select('display_name')
       .where('id', '=', noor.user.id)
       .executeTakeFirstOrThrow();
-    const shown = await t.ctx.db
-      .selectFrom('identities')
-      .select('display_name')
-      .where('user_id', '=', noor.user.id)
-      .where('kind', '=', 'personal')
-      .where('is_default', '=', true)
-      .executeTakeFirstOrThrow();
-    expect(shown.display_name).toBe(user.display_name);
-  });
-
-  it('resyncs, once, the names renames left behind, and only the profile’s own', async () => {
-    // As renames before this left them: Alex's shown name is still the one he signed up with.
-    const shown = (userId: string) =>
-      t.ctx.db
-        .updateTable('identities')
-        .where('user_id', '=', userId)
-        .where('is_default', '=', true);
-    await shown(alex.user.id).set({ display_name: 'Alex at sign-up' }).execute();
-    const home = uuidv7();
-    await t.ctx.db
-      .insertInto('identities')
-      .values({ id: home, user_id: alex.user.id, kind: 'personal', display_name: 'Alex at home' })
-      .execute();
-    // Sam is shown by a work identity with a name of its own.
-    const sam = await signup(t, { displayName: 'Sam Rivera' });
-    await shown(sam.user.id).set({ kind: 'professional', display_name: 'Sam at Acme' }).execute();
-    const file = readFileSync(
-      new URL('../src/db/migrations/0032_privacy_upkeep.sql', import.meta.url),
-      'utf8',
+    // One face (M16 D4d): whichever rename landed last is the name everyone sees.
+    expect((await alex.get(`/v1/people/${noor.user.id}`)).person.displayName).toBe(
+      user.display_name,
     );
-    const resync = file.match(/update identities[\s\S]*?;/)?.[0];
-    expect(resync).toBeDefined();
-    await sql.raw(resync as string).execute(t.ctx.db);
-    const names = await t.ctx.db
-      .selectFrom('identities')
-      .select(['user_id', 'kind', 'is_default', 'display_name'])
-      .where('user_id', 'in', [alex.user.id, sam.user.id])
-      .orderBy('user_id')
-      .orderBy('is_default', 'desc')
-      .execute();
-    expect(names).toEqual([
-      { user_id: alex.user.id, kind: 'personal', is_default: true, display_name: 'Alex Kim' },
-      { user_id: alex.user.id, kind: 'personal', is_default: false, display_name: 'Alex at home' },
-      { user_id: sam.user.id, kind: 'professional', is_default: true, display_name: 'Sam at Acme' },
-    ]);
-    await t.ctx.db.deleteFrom('identities').where('id', '=', home).execute();
+    expect((await alex.get(`/v1/conversations/${convo}`)).conversation.title).toBe(
+      user.display_name,
+    );
   });
 
   it('takes the notifications about a message deleted for everyone with it', async () => {

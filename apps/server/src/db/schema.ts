@@ -60,6 +60,8 @@ export interface UsersTable {
   plan_source: Defaulted<PlanSource>;
   avatar_file_id: string | null;
   bio: string | null;
+  /** A line about what they do (M16 D4: from their default identity, which goes). */
+  headline: string | null;
   pronouns: string | null;
   /** How they said Caime should refer to them (R81), or null: never guessed. */
   gender: Gender | null;
@@ -1605,6 +1607,7 @@ export const USER_COLUMNS = [
   'plan_source',
   'avatar_file_id',
   'bio',
+  'headline',
   'pronouns',
   'gender',
   'status_text',

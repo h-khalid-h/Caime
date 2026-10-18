@@ -414,18 +414,7 @@ export async function publicPerson(db: Q, handle: string, now: Date): Promise<Pu
   const privacy = privacyOf(u, now);
   if (!privacy.discoverByHandle) return null;
   const see = (field: Parameters<typeof canSee>[1]) => canSee(privacy, field, NOBODY);
-  // The headline and the organizations are two reads that need only the person: together.
-  const [identity, organizations] = see('identityDetails')
-    ? await Promise.all([
-        db
-          .selectFrom('identities')
-          .select(['headline'])
-          .where('user_id', '=', u.id)
-          .where('is_default', '=', true)
-          .executeTakeFirst(),
-        orgsOf(db, u.id),
-      ])
-    : [null, []];
+  const organizations = see('identityDetails') ? await orgsOf(db, u.id) : [];
   return {
     kind: 'person',
     id: u.id,
@@ -434,7 +423,7 @@ export async function publicPerson(db: Q, handle: string, now: Date): Promise<Pu
     avatarUrl: see('profilePhoto') ? avatarUrl(u) : null,
     // Cai's and a friend's words are keys, said in the reader's language as the page renders.
     bio: own ? own.about : see('bio') ? u.bio : null,
-    headline: identity?.headline ?? null,
+    headline: see('identityDetails') ? u.headline : null,
     organizations,
     ...publicCatalog(u, await stockFor(db, u.id, catalogOf(u).items)),
     pays: publicPays(u),
@@ -1010,7 +999,7 @@ export function renderPublic(
     sentence(tr('about')),
     `<dl class="spec">
     <div>${label(tr('handle'))}<dd>@${esc(p.handle)}</dd></div>
-    ${p.headline ? `<div>${label(tr('headline'))}<dd>${esc(p.headline)}</dd></div>` : ''}
+    ${p.headline ? `<div>${label(tr('work'))}<dd>${esc(p.headline)}</dd></div>` : ''}
     ${p.organizations.length ? `<div>${label(tr('with'))}<dd>${listed(p.organizations.map((o) => `<a href="/o/${esc(o.handle)}">${esc(o.name)}</a>`))}</dd></div>` : ''}
     ${payRow(page)}
   </dl>`,

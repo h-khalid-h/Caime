@@ -32,7 +32,7 @@ Legend: `[x]` done and verified · `[~]` in progress or partial (note says what 
 
 - [x] Config, logging, errors, health, migrations under advisory lock
 - [x] Auth: sign-up, sign-in, sessions (cookie + bearer), CSRF header, recovery codes, age gate
-- [x] Profiles and identities, people search with privacy and age rules
+- [x] Profiles (one face per person, R99), people search with privacy and age rules
 - [x] Connections, requests with context, relationships (versioned, private, shared), history
 - [x] Suggestions (relationship signals), custom roles, policies
 
@@ -621,7 +621,8 @@ outperforming the alternatives is reach and operations. In the order the review 
       one-to-ones, for them only: connections by sphere, active against the time before, closest,
       gone quiet, reply times both ways, who writes first, when they write), automations counted
       by plan (5, then 50), the plan screen saying so, insights locked with the reason on Personal
-      (`insights.test.ts`, E2E). Not sold: identities (not built), history (the wedge), search
+      (`insights.test.ts`, E2E). Not sold: several faces (decided against, R99), history (the
+      wedge), search (free, R23).
 - [x] Network bootstrap (P1): a WhatsApp export brought over as a topic of the one-to-one (R45:
       read on the device, who's who chosen, dated as written, every message marked imported,
       both have read it, nothing notified or inferred; `whatsapp.test.ts`, `import.test.ts`,
@@ -2438,7 +2439,7 @@ graph) and the number that will show it; one that sharpens none is hygiene and s
       walking in, and a school or a family can use links at all), not an advantage: its number is
       `growth.joinLinks.asked` beside `joined`.
 - [x] C2–C3. The rest of the front door: all built, C1d (a message before an account) the last.
-- [ ] D. Performance and integrity: the aliased `selectAll` guard and its eleven sites; people
+- [x] D. Performance and integrity: the aliased `selectAll` guard and its eleven sites; people
       lists through `personViewsFor` with a scale ceiling; `participants.last_sent_seq` for the
       inbox; a large-group mode and one transcript view; a `defer` semaphore and gauge; bus payload
       chunking; the user foreign-key indexes; one `cardEnd`, one `truncate`, `escapeLike`
@@ -2609,6 +2610,25 @@ graph) and the number that will show it; one that sharpens none is hygiene and s
       the server's alone. Verified: `provider-consent.test.ts` (each link's parameters, the secret
       never in one, a state read under its own label and key only, before its deadline and
       untouched), `contact-accounts.test.ts`, `connected-accounts.test.ts`, and the full gate.
+- [x] D4d. One face per person (2026-10-18, review §4 and §10, R99): identities (a name and a
+      headline a person could show one connection and not another) had routes and no screen, and
+      every list of people, notification and call paid to name people through them. Decided and
+      done: a person's name and photo are the same to everyone; what they do is `users.headline`
+      (migration 0121 adds it with a fill from the default identities a batch at a time, 0122
+      runs the fill), set in Settings · Profile ("What you do"), drawn under their name on their
+      profile and as "Work" on their visitor page (`jobTitle` in its JSON-LD), shown only where
+      Work details lets it be. The identities routes, `identityId` on a request and a connection,
+      `identitiesShownTo` and the per-viewer names in conversation views, profiles,
+      notifications, calls and suggestions are gone: connections cost 10 queries (from 12),
+      requests 8 (10), a people search 13 (15), the inbox of 301 conversations 15 (17) and a
+      message to 79 people 32 (34), with the ceilings tightened to hold it (14 for people's lists,
+      16 for the inbox); the table stays for the export until a later release drops it.
+      An organization's chip on a profile is named for a screen reader in the reader's language
+      (it said "verified" in English). Verified: `account.test.ts` (the line set, trimmed,
+      cleared to nothing, too long refused, shown to a stranger, hidden by Work details, the old
+      routes gone, the fill taking each default identity's line once and never over one said), `public-pages.test.ts` (the row and `jobTitle`, gone when kept for
+      connections), the naming cases rewritten in `messaging`, `group-calls`,
+      `relationship-profile` and `privacy-upkeep`, the scale ceilings, and the full gate.
 - [ ] E. Chat polish: distinct read ticks with a contrast test; the English leaks and a scanner
       that flags any word-bearing literal; quoted replies with the author and a jump, swipe to
       reply; message info and who reacted; video as a message, voice notes with a waveform, speed
@@ -4237,6 +4257,8 @@ graph) and the number that will show it; one that sharpens none is hygiene and s
   journeys, safety, reliability, performance, intelligence, mail and calendar, chat, integrations,
   business and code integrity; the matrix against WhatsApp, Signal, Slack, Calendly and Workspace;
   an age-assurance design; the integration framework mapped to the code; plan M16 (A–H).
+- 2026-10-18 — M16 D4d: one face per person (R99): a line about what you do, shown by Work
+  details, in place of identities nobody could set; block D (performance and integrity) done.
 - 2026-10-18 — M16 D4c: one consent pipeline for contacts and connected accounts (the link, the
   sealed state, the code's trade, the landing), each use keeping its own return address.
 - 2026-10-18 — M16 D4b: placeholders named for what they hold (124 sentences), every sentence

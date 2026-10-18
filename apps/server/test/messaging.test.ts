@@ -366,19 +366,9 @@ describe('notifications (PRD §31–§33)', () => {
     t.clock.set('2026-09-23T14:00:00Z');
   });
 
-  it('names the sender as they show themselves to each person, on a lock screen too (PRD §35)', async () => {
+  it('names the sender by their one name, on a lock screen too (M16 D4d)', async () => {
     const ivy = await signup(t, { displayName: 'Ivy Marsh' });
     const c = await connect(ivy, sarah);
-    const identity = (
-      await ivy.post('/v1/me/identities', { kind: 'professional', displayName: 'Dr. I. Marsh' })
-    ).id;
-    const side = await t.ctx.db
-      .selectFrom('connection_sides')
-      .select('connection_id')
-      .where('owner_id', '=', ivy.user.id)
-      .where('other_id', '=', sarah.user.id)
-      .executeTakeFirstOrThrow();
-    await ivy.patch(`/v1/connections/${side.connection_id}`, { identityId: identity });
     await send(ivy, c, 'Can you send me the scan by Friday?');
     await t.ctx.flush();
     const [n] = await t.ctx.db
@@ -387,9 +377,8 @@ describe('notifications (PRD §31–§33)', () => {
       .where('user_id', '=', sarah.user.id)
       .where('group_key', '=', `conv:${c}`)
       .execute();
-    expect(n?.title).toBe('Dr. I. Marsh');
-    // What it suggests says so too (who asked, who promised): never the name she keeps for
-    // everyone else.
+    expect(n?.title).toBe('Ivy Marsh');
+    // What it suggests names her the same way (who asked, who promised).
     await send(ivy, c, 'I will send you the report by Friday.');
     await t.ctx.flush();
     const suggestions = await t.ctx.db
@@ -399,8 +388,7 @@ describe('notifications (PRD §31–§33)', () => {
       .where('conversation_id', '=', c)
       .execute();
     expect(suggestions.length).toBeGreaterThan(0);
-    expect(JSON.stringify(suggestions)).toContain('Dr.');
-    expect(JSON.stringify(suggestions)).not.toContain('Ivy');
+    expect(JSON.stringify(suggestions)).toContain('Ivy');
     // Another message within the burst keeps the same name.
     await send(ivy, c, 'Thanks!');
     await t.ctx.flush();
@@ -410,7 +398,7 @@ describe('notifications (PRD §31–§33)', () => {
       .where('user_id', '=', sarah.user.id)
       .where('group_key', '=', `conv:${c}`)
       .executeTakeFirstOrThrow();
-    expect(burst.title).toBe('Dr. I. Marsh sent 3 messages');
+    expect(burst.title).toBe('Ivy Marsh sent 3 messages');
   });
 
   it('reading the conversation clears its notification', async () => {

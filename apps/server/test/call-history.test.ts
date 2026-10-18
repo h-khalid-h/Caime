@@ -152,28 +152,6 @@ describe('call history (PRD §47)', () => {
     expect((await sam.req('GET', '/v1/calls/history?limit=500')).statusCode).toBe(400);
   });
 
-  it('names each person as they show themselves to whoever asks', async () => {
-    const identity = (
-      await sam.post('/v1/me/identities', { kind: 'professional', displayName: 'Dr. S. Rivera' })
-    ).id;
-    const side = await t.ctx.db
-      .selectFrom('connection_sides')
-      .select('connection_id')
-      .where('owner_id', '=', sam.user.id)
-      .where('other_id', '=', noor.user.id)
-      .executeTakeFirstOrThrow();
-    await sam.patch(`/v1/connections/${side.connection_id}`, { identityId: identity });
-    const [, group] = (await history(noor)).calls;
-    expect(group.with.map((p: any) => p.displayName)).toEqual(['Dr. S. Rivera']);
-    // Omar, who knows him by his own name, sees that.
-    const [, missed] = (await history(omar)).calls;
-    expect(missed.with.map((p: any) => p.displayName).sort()).toEqual([
-      'Noor Haddad',
-      'Sam Rivera',
-    ]);
-    await sam.patch(`/v1/connections/${side.connection_id}`, { identityId: null });
-  });
-
   it('someone out of the group sees only their own place in its calls; someone added, only who was there with them', async () => {
     const pia = await signup(t, { displayName: 'Pia Berg' });
     await connect(noor, pia);

@@ -144,8 +144,9 @@ change or dismiss.
 
 - **R23 — The wedge is free forever.** Relationships, attention, waiting, basic search and sync
   are never paywalled; charging for them would stop adoption at the wedge. Pro sells AI,
-  automation, advanced rules, multiple identities and storage. Business sells the inbox, routing,
-  organization identities, analytics and integrations. Plans are entitlements in the data model
+  automation, advanced rules and storage (several identities were decided against: one face per
+  person, R99). Business sells the inbox, routing, the organization's own page and seats,
+  analytics and integrations. Plans are entitlements in the data model
   from day one; billing is an integration (see R25).
 
 ## 13. Additions the PRD implies but does not state
@@ -207,8 +208,8 @@ to feel right to each of them.
   by default).
 - **R32 — One product, every use case, through the model, not modes.** Families, friends,
   freelancers, clinics, schools, shops and support teams use the same primitives: relationships
-  and policies decide attention and privacy, identities separate personal from professional,
-  Spaces hold communities, and the Business inbox serves teams. No persona needs a different app.
+  and policies decide attention and privacy, the relationship and the privacy fields separate
+  personal from professional (one face per person, R99), Spaces hold communities, and the Business inbox serves teams. No persona needs a different app.
 
 ## 16. Brand
 
@@ -326,7 +327,7 @@ with its reason, so it isn't proposed again without new facts.
   shown (§35, privacy's "identityDetails"): the same rule as "Verified at", now with a way to
   the organization's page.
   What it doesn't do: an organization never *owns a person's record*. A relationship is the
-  definer's (§10), a person's professional identity is theirs to show or hide (§35, R27), and the
+  definer's (§10), a person's work details are theirs to show or hide (§35, R27, R99), and the
   organization's side of a person is its Business inbox thread and its team seat, nothing more;
   someone on three teams is three seats, not three people. An **action of the organization's**
   (a task in a customer's conversation the team must do, held by whoever holds the thread) is
@@ -408,8 +409,9 @@ with its reason, so it isn't proposed again without new facts.
   nobody else. On Personal the screen says what it would show and where Pro is (a `403
   plan_limit` with `nextPlan`). **Automations** are counted by plan (Personal keeps 5, Pro 50,
   `AUTOMATIONS_MAX` the most any plan allows); a lower plan removes none. AI assists and files
-  stay as they were. What Pro doesn't sell, and why: several identities (not built; the wedge's
-  privacy model already gives each relationship its own face, R2), history beyond a year (taking
+  stay as they were. What Pro doesn't sell, and why: several identities (decided against, R99: one
+  face per person, and what each relationship sees is the privacy fields', R2), history beyond a
+  year (taking
   history away is taking the wedge away), search (free, R23).
 
 - **R48 — Email, at last.** R25 listed transactional email as built to the integration point;
@@ -2002,3 +2004,26 @@ with its reason, so it isn't proposed again without new facts.
   `join_rule`, the organization's updates on its page and the page listing: small. *Costs:* no
   query per member or per message; a join request is a row; the point is the owner's own, taken
   once.
+- **R99 (2026-10-18) One face per person, and a line about what they do.** The review of
+  2026-10-17 (§4, M16 D4) found PRD §35's identities half there: a table of names and headlines a
+  person could show one connection and not another, routes to make them, and every list of people,
+  every notification and every call naming people through them, with no screen anywhere to set one
+  (the app never read `PersonView.identity`) and a roadmap that called them both built and not
+  built. *Decided:* one face. A person is their name, photo and handle to everyone who may see them
+  at all; what they do is one line of their own, `users.headline` ("What you do" in Settings ·
+  Profile, under their name on their profile, "Work" on their visitor page, `jobTitle` in its
+  JSON-LD), shown only where the privacy field Work details (`identityDetails`) lets it be, as the
+  organizations they're with already were. What each relationship sees is the privacy fields' and
+  the relationship's (R2, ADR-10), never a second name. *Why:* a name that differs by viewer is
+  what impersonation and confusion are made of (two people in one group seeing two names for the
+  same member, a mention or a search that finds one name and not the other), a person who wants to
+  keep work apart already keeps it apart by the relationship (spheres, attention, the privacy
+  fields, R19, R27), and the cost was real: two lookups in every list of people
+  (`personViewsFor`), one in every fan-out of a message (`prepareFor`), one in every call and
+  profile. Organization identity (§35's fourth) is the organization's own page and its team seat,
+  as R43 has it. *Kept:* the `identities` table and the `identity_id` columns stay, read by a
+  person's export alone, until a later release drops them (expand first, convention 7); existing
+  headlines moved onto `users.headline` (migration 0121's batched fill, 0122). *Declined:* a face
+  per space or per organization (a seat already says who someone is to an organization, R43), and
+  a nickname anyone sets for themselves per viewer (the viewer's own nickname for someone stays
+  theirs, PRD §11).

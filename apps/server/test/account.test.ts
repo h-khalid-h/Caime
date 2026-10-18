@@ -1215,50 +1215,54 @@ describe('your data', () => {
   });
 });
 
-describe('identities (PRD §35)', () => {
-  it('are made, changed, made the default and removed, each one the person’s own', async () => {
-    const hassan = await signup(t, { displayName: 'Hassan Identities' });
-    const sarah = await signup(t, { displayName: 'Sarah Identities' });
-    const made = await hassan.post('/v1/me/identities', {
-      kind: 'professional',
-      displayName: 'H. Khalid',
-      headline: 'Founder',
-    });
-    expect(made.id).toMatch(/^[0-9a-f-]{36}$/);
-    const changed = await hassan.req('PATCH', `/v1/me/identities/${made.id}`, {
-      displayName: 'Hassan K.',
-      isDefault: true,
-    });
-    expect(changed.statusCode, changed.body).toBe(200);
-    const listed = (await hassan.get('/v1/me/identities')).identities;
-    expect(listed.find((i: { id: string }) => i.id === made.id)).toMatchObject({
-      displayName: 'Hassan K.',
-      headline: 'Founder',
-      isDefault: true,
-    });
-    expect(listed.filter((i: { isDefault: boolean }) => i.isDefault)).toHaveLength(1);
-    // Someone else's: not found, as if it weren't there.
-    expect(
-      (await sarah.req('PATCH', `/v1/me/identities/${made.id}`, { headline: 'x' })).statusCode,
-    ).toBe(404);
-    expect((await sarah.req('DELETE', `/v1/me/identities/${made.id}`)).statusCode).toBe(404);
-    // The default stays until another takes its place.
-    const kept = await hassan.req('DELETE', `/v1/me/identities/${made.id}`);
-    expect([kept.statusCode, kept.json().error.message]).toEqual([
+describe('one face, and a line about what you do (M16 D4d)', () => {
+  it('is the person’s own line, the same to everyone Work details lets see it', async () => {
+    const hassan = await signup(t, { displayName: 'Hassan Headline' });
+    const sarah = await signup(t, { displayName: 'Sarah Headline' });
+    expect((await hassan.patch('/v1/me', { headline: '  Founder at Caime  ' })).user.headline).toBe(
+      'Founder at Caime',
+    );
+    // One face: a stranger sees the same name and line as anyone.
+    const seen = (await sarah.get(`/v1/people/${hassan.user.id}`)).person;
+    expect([seen.displayName, seen.headline]).toEqual(['Hassan Headline', 'Founder at Caime']);
+    // Work details to nobody: the line leaves the profile (and the visitor's page, in
+    // public-pages.test.ts).
+    await hassan.req('PUT', '/v1/me/privacy', { fields: { identityDetails: { kind: 'nobody' } } });
+    expect((await sarah.get(`/v1/people/${hassan.user.id}`)).person.headline).toBeNull();
+    // Their own view keeps it; cleared, it's nothing, never an empty line.
+    expect((await hassan.get('/v1/me')).user.headline).toBe('Founder at Caime');
+    expect((await hassan.patch('/v1/me', { headline: '   ' })).user.headline).toBeNull();
+    expect((await hassan.req('PATCH', '/v1/me', { headline: 'x'.repeat(121) })).statusCode).toBe(
       400,
-      'Make another identity your default first.',
-    ]);
-    const other = await hassan.post('/v1/me/identities', {
-      kind: 'personal',
-      displayName: 'Hassan',
-      isDefault: true,
-    });
-    expect(other.id).toBeDefined();
-    expect((await hassan.req('DELETE', `/v1/me/identities/${made.id}`)).statusCode).toBe(200);
-    expect(
-      (await hassan.get('/v1/me/identities')).identities.map((i: { id: string }) => i.id),
-    ).not.toContain(made.id);
-    expect((await hassan.req('DELETE', `/v1/me/identities/${made.id}`)).statusCode).toBe(404);
+    );
+    // A face per person is gone (PRD §35, decided in M16 D4d).
+    expect((await hassan.req('GET', '/v1/me/identities')).statusCode).toBe(404);
+  });
+
+  it('takes the line from each default identity once, never over one already said', async () => {
+    const lina = await signup(t, { displayName: 'Lina Fill' });
+    const omar = await signup(t, { displayName: 'Omar Fill' });
+    await omar.patch('/v1/me', { headline: 'Said by Omar' });
+    for (const [who, headline] of [
+      [lina, 'Teacher at Al Noor'],
+      [omar, 'Left behind'],
+    ] as const)
+      await t.ctx.db
+        .insertInto('identities')
+        .values({
+          id: uuidv4(),
+          user_id: who.user.id,
+          kind: 'professional',
+          display_name: who.user.displayName,
+          headline,
+          is_default: true,
+        })
+        .execute();
+    // Migration 0122's call, a batch at a time; run twice, as a cut-short run would be.
+    await sql`call fill_users_headline()`.execute(t.ctx.db);
+    await sql`call fill_users_headline()`.execute(t.ctx.db);
+    expect((await lina.get('/v1/me')).user.headline).toBe('Teacher at Al Noor');
+    expect((await omar.get('/v1/me')).user.headline).toBe('Said by Omar');
   });
 });
 

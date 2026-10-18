@@ -21,59 +21,40 @@ export async function personViewsFor(
   const out = new Map<string, PersonView>();
   if (ids.length === 0) return out;
   const now = ctx.now();
-  const [users, blocks, connections, theirRels, policies, sides, defaults, verified] =
-    await Promise.all([
-      ctx.db.selectFrom('users').select(USER_COLUMNS).where('id', 'in', ids).execute(),
-      ctx.db
-        .selectFrom('blocks')
-        .selectAll()
-        .where((eb) =>
-          eb.or([
-            eb.and([eb('blocker_id', '=', viewerId), eb('blocked_id', 'in', ids)]),
-            eb.and([eb('blocked_id', '=', viewerId), eb('blocker_id', 'in', ids)]),
-          ]),
-        )
-        .execute(),
-      ctx.db
-        .selectFrom('connections')
-        .select(['id', 'user_a', 'user_b'])
-        .where('status', '=', 'active')
-        .where((eb) =>
-          eb.or([
-            eb.and([eb('user_a', '=', viewerId), eb('user_b', 'in', ids)]),
-            eb.and([eb('user_b', '=', viewerId), eb('user_a', 'in', ids)]),
-          ]),
-        )
-        .execute(),
-      ctx.db
-        .selectFrom('relationships')
-        .selectAll()
-        .where('owner_id', 'in', ids)
-        .where('subject_id', '=', viewerId)
-        .where('status', '=', 'active')
-        .orderBy('is_primary', 'desc')
-        .execute(),
-      ctx.db.selectFrom('relationship_policies').selectAll().where('user_id', 'in', ids).execute(),
-      ctx.db
-        .selectFrom('connection_sides')
-        .innerJoin('identities', 'identities.id', 'connection_sides.identity_id')
-        .select([
-          'connection_sides.owner_id',
-          'identities.display_name',
-          'identities.headline',
-          'identities.org_name',
-        ])
-        .where('connection_sides.owner_id', 'in', ids)
-        .where('connection_sides.other_id', '=', viewerId)
-        .execute(),
-      ctx.db
-        .selectFrom('identities')
-        .select(['user_id', 'display_name', 'headline', 'org_name'])
-        .where('user_id', 'in', ids)
-        .where('is_default', '=', true)
-        .execute(),
-      verifiedOrgNames(ctx.db, ids),
-    ]);
+  const [users, blocks, connections, theirRels, policies, verified] = await Promise.all([
+    ctx.db.selectFrom('users').select(USER_COLUMNS).where('id', 'in', ids).execute(),
+    ctx.db
+      .selectFrom('blocks')
+      .selectAll()
+      .where((eb) =>
+        eb.or([
+          eb.and([eb('blocker_id', '=', viewerId), eb('blocked_id', 'in', ids)]),
+          eb.and([eb('blocked_id', '=', viewerId), eb('blocker_id', 'in', ids)]),
+        ]),
+      )
+      .execute(),
+    ctx.db
+      .selectFrom('connections')
+      .select(['id', 'user_a', 'user_b'])
+      .where('status', '=', 'active')
+      .where((eb) =>
+        eb.or([
+          eb.and([eb('user_a', '=', viewerId), eb('user_b', 'in', ids)]),
+          eb.and([eb('user_b', '=', viewerId), eb('user_a', 'in', ids)]),
+        ]),
+      )
+      .execute(),
+    ctx.db
+      .selectFrom('relationships')
+      .selectAll()
+      .where('owner_id', 'in', ids)
+      .where('subject_id', '=', viewerId)
+      .where('status', '=', 'active')
+      .orderBy('is_primary', 'desc')
+      .execute(),
+    ctx.db.selectFrom('relationship_policies').selectAll().where('user_id', 'in', ids).execute(),
+    verifiedOrgNames(ctx.db, ids),
+  ]);
   const byId = new Map<string, UserRow>(users.map((u) => [u.id, u]));
   // Each list read once into a map: a person's row is found, never searched for.
   const connectionOf = new Map(connections.map((c) => [pairKey(c.user_a, c.user_b).key, c]));
@@ -82,8 +63,6 @@ export async function personViewsFor(
   const policiesOf = new Map<string, typeof policies>();
   for (const p of policies) policiesOf.set(p.user_id, [...(policiesOf.get(p.user_id) ?? []), p]);
   const blockedIds = new Set(blocks.flatMap((b) => [b.blocker_id, b.blocked_id]));
-  const sideOf = new Map(sides.map((s) => [s.owner_id, s]));
-  const defaultOf = new Map(defaults.map((d) => [d.user_id, d]));
   for (const id of ids) {
     const u = byId.get(id);
     if (!u) continue;
@@ -115,14 +94,7 @@ export async function personViewsFor(
       sharesConversation: opts.sharesConversation ?? true,
       verifiedOrgName: verified.get(id) ?? null,
     };
-    const side = sideOf.get(id);
-    const def = defaultOf.get(id);
-    const identity = side
-      ? { displayName: side.display_name, headline: side.headline, orgName: side.org_name }
-      : def
-        ? { displayName: def.display_name, headline: def.headline, orgName: def.org_name }
-        : null;
-    out.set(id, personView(u, relation, now, identity));
+    out.set(id, personView(u, relation, now));
   }
   return out;
 }

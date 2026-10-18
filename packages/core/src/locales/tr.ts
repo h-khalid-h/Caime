@@ -4359,4 +4359,9 @@ export const turkish: Catalog = {
     one: '{n} kişi daha',
     other: '{n} kişi daha',
   },
+  'What you do (optional)': 'Ne iş yaptığınız (isteğe bağlı)',
+  'Dentist at Nile Dental': 'Nile Dental’da diş hekimi',
+  'Who sees it is up to you, under Privacy: Work details.':
+    'Kimin göreceğini Gizlilik bölümünde, İş bilgileri altında siz belirlersiniz.',
+  '{name}, verified organization': '{name}, doğrulanmış kuruluş',
 };

@@ -285,25 +285,16 @@ export async function suggestFromPlace(
 ): Promise<void> {
   const everyone = [...new Set([...newcomers, ...members])];
   if (!newcomers.length || everyone.length < 2 || !offerOf(place, '')) return;
-  // Each way of each pair: the one who'd be offered, and who they'd be offered about, named as
-  // they show themselves to the one offered (their identity for them, else their default: as
-  // personViewsFor does).
+  // Each way of each pair: the one who'd be offered, and who they'd be offered about, by name.
   const pairs = await ctx.db
     .selectFrom('connection_sides as s')
     .innerJoin('connections as c', 'c.id', 's.connection_id')
     .innerJoin('users as u', 'u.id', 's.other_id')
     .innerJoin('users as ow', 'ow.id', 's.owner_id')
-    .leftJoin('connection_sides as t', (j) =>
-      j.onRef('t.connection_id', '=', 's.connection_id').onRef('t.owner_id', '=', 's.other_id'),
-    )
-    .leftJoin('identities as ti', 'ti.id', 't.identity_id')
-    .leftJoin('identities as di', (j) =>
-      j.onRef('di.user_id', '=', 's.other_id').on('di.is_default', '=', true),
-    )
     .select([
       's.owner_id',
       's.other_id',
-      sql<string>`coalesce(ti.display_name, di.display_name, u.display_name)`.as('shown'),
+      'u.display_name as shown',
       'ow.preferences as owner_preferences',
     ])
     .where('c.status', '=', 'active')

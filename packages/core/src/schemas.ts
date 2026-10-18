@@ -777,6 +777,8 @@ export const UpdateMeBody = z
     handle: Handle.optional(),
     bio: z.string().trim().max(280).nullable().optional(),
     pronouns: z.string().trim().max(40).nullable().optional(),
+    /** A line about what they do, shown by their Work details setting (M16 D4). */
+    headline: z.string().trim().max(120).nullable().optional(),
     gender: z.enum(['woman', 'man', 'other']).nullable().optional(),
     statusText: z.string().trim().max(80).nullable().optional(),
     // One whole emoji, as the app's picker gives it (emoji.ts).
@@ -855,14 +857,6 @@ export const PrivacyBody = z
   })
   .strict();
 
-export const IdentityBody = z.object({
-  kind: z.enum(['personal', 'professional', 'organization']),
-  displayName: DisplayName,
-  headline: z.string().trim().max(120).nullable().optional(),
-  orgName: z.string().trim().max(120).nullable().optional(),
-  isDefault: z.boolean().optional(),
-});
-
 // --- Relationships ---------------------------------------------------------------------------
 
 export const RelationshipInput = z.object({
@@ -888,7 +882,6 @@ export const ConnectionRequestBody = z.object({
     .optional(),
   /** How I classify them, applied when they accept. Private to me. */
   relationship: RelationshipInput.optional(),
-  identityId: z.string().uuid().optional(),
 });
 
 export const AcceptRequestBody = z.object({
@@ -913,7 +906,6 @@ export const UpdateConnectionBody = z
     attention: z.enum(['auto', 'priority', 'normal', 'quiet']).optional(),
     mutedUntil: z.string().datetime().nullable().optional(),
     archived: z.boolean().optional(),
-    identityId: z.string().uuid().nullable().optional(),
   })
   .strict();
 

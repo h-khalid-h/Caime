@@ -1551,6 +1551,12 @@ appointment from a catalog).
   registers with `resume: true` to take its device up again; a browser forgets them. Anything
   that lists a person's devices to seal for includes the recovery device; anything that picks a
   sender excludes it.
+- One face per person (R99, M16 D4d): a person's name, photo and handle are the same to everyone
+  who may see them; what they do is `users.headline` (Settings · Profile), on `PersonView.headline`,
+  the profile and the visitor page wherever the privacy field `identityDetails` (Work details)
+  lets it show, as the organizations they're with are. Nothing names someone differently to
+  different viewers: the `identities` table and the `identity_id` columns are read by the export
+  alone until a later release drops them, and nothing new reads or writes them.
 - Possible duplicates (PRD §51): `lib/duplicates.ts` offers them, from what the viewer sees only
   (`sameness`: a two-word name alone is 0.6, under `OFFER_AT`; a place or a nickname they share
   makes the offer);
@@ -1715,8 +1721,8 @@ appointment from a catalog).
   text; `metrics.test.ts` scrapes after real traffic and checks for them.
 - Telling a conversation's people about a message goes through `notifyRecipients`
   (`lib/message-effects.ts`): `prepareFor` reads what the whole set needs (settings, rules,
-  relationships with the sender, `identitiesShownTo`, `loadPoliciesFor`, `activeConnectionIds`,
-  the open notifications) in six queries and `readersOf` (`lib/i18n.ts`) their languages in one,
+  relationships with the sender, `loadPoliciesFor`, `activeConnectionIds`, the open
+  notifications) in five queries and `readersOf` (`lib/i18n.ts`) their languages in one,
   each one's notification is decided and worded in memory in their language (`notificationFor`
   inside `inReader`), and `writeNotifications` writes the set at once (M16 D2b): one insert for
   what's new, one `update … from (values …)` for what a burst adds to, a thousand rows a

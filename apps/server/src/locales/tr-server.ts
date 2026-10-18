@@ -7,7 +7,7 @@ import type { Catalog } from '@caime/core/i18n';
 export const turkishServer: Catalog = {
   '{name} is on {site}.': '{name}, {site} kullanıyor.',
   'a person on {site}': 'bir {site} kullanıcısı',
-  headline: 'başlık',
+  work: 'iş',
   with: 'kuruluşlar',
   'Message {name} on {site}': '{site} üzerinden {name} ile yazışın',
   'Verified · {domain}': 'Doğrulanmış · {domain}',
@@ -665,7 +665,6 @@ export const turkishServer: Catalog = {
   '{name} isn’t accepting requests from people they don’t know yet.':
     '{name} henüz tanımadığı kişilerden istek kabul etmiyor.',
   'You can send another request later.': 'Daha sonra başka bir istek gönderebilirsiniz.',
-  'Choose one of your identities.': 'Kimliklerinizden birini seçin.',
   'That request': 'Bu istek',
   'That connection': 'Bu bağlantı',
   'That merged connection': 'Bu birleştirilmiş bağlantı',
@@ -797,9 +796,6 @@ export const turkishServer: Catalog = {
   'An app changes only its own cards.': 'Bir uygulama yalnızca kendi kartlarını değiştirir.',
   'Choose a time zone from the list.': 'Listeden bir saat dilimi seçin.',
   'Choose an image you uploaded.': 'Yüklediğiniz bir resmi seçin.',
-  'You can have up to 10 identities.': 'En fazla 10 kimliğiniz olabilir.',
-  'That identity': 'Bu kimlik',
-  'Make another identity your default first.': 'Önce başka bir kimliği varsayılanınız yapın.',
   'Apps are made by people over 18.': 'Uygulamaları yalnızca 18 yaş üstü kişiler oluşturabilir.',
   'You have {max} apps. Remove one first.': '{max} uygulamanız var. Önce birini kaldırın.',
   'That app isn’t registered with Caime.': 'Bu uygulama Caime’ye kayıtlı değil.',

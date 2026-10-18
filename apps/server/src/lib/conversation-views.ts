@@ -176,8 +176,7 @@ export async function conversationView(
   for (const r of rels) if (!relOf.has(r.subject_id)) relOf.set(r.subject_id, r);
   const participants = members.flatMap((m) => {
     const rel = relOf.get(m.id);
-    const person =
-      m.id === userId ? (myself ? personView(m, myself, now, null) : null) : views.get(m.id);
+    const person = m.id === userId ? (myself ? personView(m, myself, now) : null) : views.get(m.id);
     if (!person) return [];
     // A request they haven't answered, or declined, tells nobody else anything of it (R14): not
     // that it arrived, nor that it was read.

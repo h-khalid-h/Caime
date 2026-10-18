@@ -12,7 +12,7 @@ import { type Client, createTestApp, signup, type TestApp } from './helpers';
 const FEW = 3;
 const MANY = 30;
 /** What any of these lists may cost, whoever asks: the session's, the list's and the people's. */
-const CEILING = 16;
+const CEILING = 14;
 
 let t: TestApp;
 let few: Client;

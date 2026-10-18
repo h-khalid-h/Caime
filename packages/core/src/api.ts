@@ -111,6 +111,8 @@ export interface MeView {
   plan: Plan;
   avatarUrl: string | null;
   bio: string | null;
+  /** A line about what they do (M16 D4), shown by their Work details setting. */
+  headline: string | null;
   pronouns: string | null;
   /** How they said Caime should refer to them (R81), or null: never guessed. */
   gender: Gender | null;
@@ -153,7 +155,8 @@ export interface PersonView {
   statusEmoji: string | null;
   presence: PresenceState | null;
   lastSeenAt: string | null;
-  identity: { headline: string | null; orgName: string | null } | null;
+  /** A line about what they do, where their Work details setting shows it to the viewer. */
+  headline: string | null;
   trust: Trust;
 }
 
@@ -2860,18 +2863,6 @@ export interface HandleAvailabilityResponse {
   suggestion: string | null;
   /** A closed organization's, verified: proving its domain again takes it back (R42). */
   closedOrg?: ClosedOrgView;
-}
-/** How I appear to different people (PRD §35). */
-export interface IdentityView {
-  id: string;
-  kind: string;
-  displayName: string;
-  headline: string | null;
-  orgName: string | null;
-  isDefault: boolean;
-}
-export interface IdentitiesResponse {
-  identities: IdentityView[];
 }
 export interface SessionsResponse {
   sessions: DeviceSessionView[];

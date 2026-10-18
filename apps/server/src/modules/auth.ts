@@ -236,16 +236,6 @@ export async function authRoutes(app: FastifyInstance, ctx: AppContext) {
             .insertInto('users')
             .values({ id, ...account })
             .execute();
-        await trx
-          .insertInto('identities')
-          .values({
-            id: uuidv7(),
-            user_id: id,
-            kind: 'personal',
-            display_name: body.displayName,
-            is_default: true,
-          })
-          .execute();
         await seedDefaults(trx, id, workweek);
         await recordEvent(trx, 'user.created', id, { userId: id });
       })

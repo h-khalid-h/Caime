@@ -43,6 +43,7 @@ export default function Profile() {
   const [displayName, setDisplayName] = useState(me.displayName);
   const [handle, setHandle] = useState(me.handle);
   const [bio, setBio] = useState(me.bio ?? '');
+  const [headline, setHeadline] = useState(me.headline ?? '');
   const [pronouns, setPronouns] = useState(me.pronouns ?? '');
   const [gender, setGender] = useState<Gender | 'none'>(me.gender ?? 'none');
   const [statusEmoji, setStatusEmoji] = useState(me.statusEmoji ?? '');
@@ -65,6 +66,7 @@ export default function Profile() {
       const res = await endpoints.updateMe({
         displayName: displayName.trim(),
         ...(normalizeHandle(handle) !== me.handle ? { handle: normalizeHandle(handle) } : {}),
+        headline: headline.trim() || null,
         bio: bio.trim() || null,
         pronouns: pronouns.trim() || null,
         gender: gender === 'none' ? null : gender,
@@ -165,6 +167,17 @@ export default function Profile() {
             onChangeText={setDisplayName}
             error={errors.displayName}
             autoCapitalize="words"
+          />
+          {/* One line about what they do, the same to everyone who may see it (M16 D4d). */}
+          <TextField
+            label={tr('What you do (optional)')}
+            value={headline}
+            onChangeText={setHeadline}
+            error={errors.headline}
+            maxLength={120}
+            placeholder={tr('Dentist at Nile Dental')}
+            hint={tr('Who sees it is up to you, under Privacy: Work details.')}
+            testID="headline"
           />
           <TextField
             label={tr('Handle')}

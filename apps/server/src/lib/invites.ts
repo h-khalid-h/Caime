@@ -241,7 +241,6 @@ export async function acceptInvite(
             note: null,
             context_sphere: null,
             context_org_name: null,
-            from_identity_id: null,
             pending_relationship: null,
             created_at: now,
           })
@@ -328,7 +327,6 @@ async function standingRequest(
       note: invite.note,
       context_sphere: invite.context_sphere,
       context_org_name: invite.context_org_name,
-      from_identity_id: null,
       pending_relationship: invite.relationship ? JSON.stringify(invite.relationship) : null,
       created_at: ctx.now(),
     })

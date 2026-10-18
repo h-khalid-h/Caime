@@ -22,7 +22,6 @@ import { countryFacts, defaultWorkweek } from '@caime/core/countries';
 import { tr } from '@caime/core/i18n';
 import type { Kysely, Transaction } from 'kysely';
 import type { Config } from '../config';
-import type { AppContext } from '../context';
 import type { Database, User, UserRow } from '../db/schema';
 import { AppError } from './errors';
 import { currencyOf } from './geo';
@@ -181,6 +180,7 @@ export function meView(
     plan: user.plan,
     avatarUrl: avatarUrl(user),
     bio: user.bio,
+    headline: user.headline,
     pronouns: user.pronouns,
     gender: user.gender,
     statusText: user.status_text,
@@ -220,12 +220,7 @@ export function presenceOf(
   return active ? 'online' : 'offline';
 }
 
-export function personView(
-  user: UserRow,
-  viewer: ViewerRelation,
-  now: Date,
-  identity?: { displayName: string; headline: string | null; orgName: string | null } | null,
-): PersonView {
+export function personView(user: UserRow, viewer: ViewerRelation, now: Date): PersonView {
   const privacy = privacyOf(user, now);
   const v = { ...viewer };
   const see = (field: Parameters<typeof canSee>[1]) => canSee(privacy, field, v);
@@ -233,7 +228,7 @@ export function personView(
   return {
     id: user.id,
     handle: user.handle,
-    displayName: identity?.displayName ?? user.display_name,
+    displayName: user.display_name,
     kind: user.kind,
     avatarUrl: see('profilePhoto') ? avatarUrl(user) : null,
     bio: see('bio') ? user.bio : null,
@@ -246,10 +241,7 @@ export function personView(
       see('lastSeen') && user.last_active_at && user.presence !== 'invisible'
         ? user.last_active_at.toISOString()
         : null,
-    identity:
-      identity && see('identityDetails')
-        ? { headline: identity.headline, orgName: identity.orgName }
-        : null,
+    headline: see('identityDetails') ? user.headline : null,
     trust: trustFor({
       known: viewer.isConnected || Boolean(viewer.sharesConversation),
       emailVerified: user.email_verified_at !== null,
@@ -292,71 +284,4 @@ export function workweekFor(country: string | null): number[] {
 export function countryDerived(country: string | null) {
   const f = countryFacts(country);
   return { weekStart: f.weekStart, weekend: f.weekend, hour12: f.hour12, payKinds: f.payKinds };
-}
-
-/**
- * How someone appears to one other person: the identity they chose for that connection, else their
- * default one (PRD §35). Null when they have neither.
- */
-export async function identityShownTo(
-  ctx: Pick<AppContext, 'db'>,
-  ownerId: string,
-  viewerId: string,
-): Promise<ShownIdentity | null> {
-  return (await identitiesShownTo(ctx, ownerId, [viewerId])).get(viewerId) ?? null;
-}
-
-export interface ShownIdentity {
-  displayName: string;
-  headline: string | null;
-  orgName: string | null;
-}
-
-/**
- * How someone appears to each of several people (a group they wrote to), in two queries for
- * them all: the identity chosen for each connection, else the default one once.
- */
-export async function identitiesShownTo(
-  ctx: Pick<AppContext, 'db'>,
-  ownerId: string,
-  viewerIds: string[],
-): Promise<Map<string, ShownIdentity | null>> {
-  const out = new Map<string, ShownIdentity | null>();
-  if (!viewerIds.length) return out;
-  const sides = await ctx.db
-    .selectFrom('connection_sides')
-    .innerJoin('identities', 'identities.id', 'connection_sides.identity_id')
-    .select([
-      'connection_sides.other_id',
-      'identities.display_name',
-      'identities.headline',
-      'identities.org_name',
-    ])
-    .where('connection_sides.owner_id', '=', ownerId)
-    .where('connection_sides.other_id', 'in', viewerIds)
-    .execute();
-  const chosen = new Map(sides.map((s) => [s.other_id, s]));
-  const fallback =
-    chosen.size < viewerIds.length
-      ? await ctx.db
-          .selectFrom('identities')
-          .select(['display_name', 'headline', 'org_name'])
-          .where('user_id', '=', ownerId)
-          .where('is_default', '=', true)
-          .executeTakeFirst()
-      : undefined;
-  for (const id of viewerIds) {
-    const identity = chosen.get(id) ?? fallback;
-    out.set(
-      id,
-      identity
-        ? {
-            displayName: identity.display_name,
-            headline: identity.headline,
-            orgName: identity.org_name,
-          }
-        : null,
-    );
-  }
-  return out;
 }

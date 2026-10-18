@@ -432,28 +432,17 @@ describe('how Caime thinks you know someone (PRD §12)', () => {
     await sol.post(`/v1/suggestions/${first.id}/dismiss`);
     await rae.post('/v1/spaces', { name: 'Cousins', kind: 'family', memberIds: [sol.user.id] });
     expect(await offers(sol, rae)).toEqual([]);
-    // Samira shows herself to Ana as Sam Haddad: Caime's reasons name Sam, as she asks to
+    // Caime's reasons name Samira as everyone sees her (one face, M16 D4d), as she asks to
     // connect and later.
     const samira = await signup(t, { displayName: 'Samira Khoury', email: 'samira@gmail.com' });
-    const identity = (
-      await samira.post('/v1/me/identities', { kind: 'professional', displayName: 'Sam Haddad' })
-    ).id;
     const asked = await samira.post('/v1/connections/requests', {
       toUserId: ana.user.id,
-      identityId: identity,
       context: { sphere: 'professional' },
     });
     await ana.post(`/v1/connections/requests/${asked.requestId}/accept`, {});
     const [described] = await offers(ana, samira);
-    expect(described.rationale).toMatch(/^Sam Haddad described how you know each other/);
+    expect(described.rationale).toMatch(/^Samira Khoury described how you know each other/);
     await ana.post(`/v1/suggestions/${described.id}/dismiss`);
-    const side = await t.ctx.db
-      .selectFrom('connection_sides')
-      .select('connection_id')
-      .where('owner_id', '=', samira.user.id)
-      .where('other_id', '=', ana.user.id)
-      .executeTakeFirstOrThrow();
-    await samira.patch(`/v1/connections/${side.connection_id}`, { identityId: identity });
     const clinic = (
       await ana.post('/v1/orgs', {
         country: 'EG',
@@ -464,8 +453,8 @@ describe('how Caime thinks you know someone (PRD §12)', () => {
     ).org.id;
     await ana.post(`/v1/orgs/${clinic}/members`, { userIds: [samira.user.id] });
     const [toAna] = await offers(ana, samira);
-    expect(toAna.rationale).toBe('You and Sam Haddad are both on Clinic’s team in Caime.');
-    // Samira, who shows Ana nothing but herself, reads Ana's own name.
+    expect(toAna.rationale).toBe('You and Samira Khoury are both on Clinic’s team in Caime.');
+    // Samira reads Ana's own name.
     expect((await offers(samira, ana))[0].rationale).toBe(
       'You and Ana Profile are both on Clinic’s team in Caime.',
     );
