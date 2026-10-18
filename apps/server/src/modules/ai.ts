@@ -26,7 +26,7 @@ import {
   AiTranslateBody,
   firstFutureWhen,
   firstName,
-  messagePreview,
+  previewText,
   resolvePolicy,
   systemText,
   writtenIn,
@@ -43,8 +43,10 @@ import { runAi } from '../lib/ai-run';
 import { maskFor, maskId, maskPayload } from '../lib/business';
 import { membership } from '../lib/conversation-views';
 import { AppError, notFound } from '../lib/errors';
+import { readableBy } from '../lib/messages';
 import { activeRelationships, loadPolicies, policyTargetFor } from '../lib/relations';
 import { createSuggestion, suggestionView } from '../lib/suggest';
+import { transcriptClock, transcriptText, wordsFor } from '../lib/transcript';
 import { minorOf } from '../lib/users';
 import { parse } from '../lib/validate';
 import { requireAuth } from '../plugins/auth';
@@ -63,41 +65,7 @@ interface Line {
   at: Date;
 }
 
-const quoted = (s: string, max = 100) => {
-  const one = s.replace(/\s+/g, ' ').trim();
-  return `“${one.length > max ? `${one.slice(0, max - 1).trimEnd()}…` : one}”`;
-};
-
-/** "Wed 23 Sep 14:05" and "Wednesday 23 September 2026", the same on every ICU version. */
-function clock(timeZone: string) {
-  const parts = (options: Intl.DateTimeFormatOptions) => {
-    const f = new Intl.DateTimeFormat('en-US', { ...options, timeZone });
-    return (d: Date) =>
-      Object.fromEntries(f.formatToParts(d).map((p) => [p.type, p.value])) as Record<
-        string,
-        string
-      >;
-  };
-  const short = parts({
-    weekday: 'short',
-    day: 'numeric',
-    month: 'short',
-    hour: '2-digit',
-    minute: '2-digit',
-    hourCycle: 'h23',
-  });
-  const long = parts({ weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' });
-  return {
-    time: (d: Date) => {
-      const p = short(d);
-      return `${p.weekday} ${p.day} ${p.month} ${p.hour}:${p.minute}`;
-    },
-    day: (d: Date) => {
-      const p = long(d);
-      return `${p.weekday} ${p.day} ${p.month} ${p.year}`;
-    },
-  };
-}
+const quoted = (s: string, max = 100) => `“${previewText(s, max)}”`;
 
 export async function aiRoutes(app: FastifyInstance, ctx: AppContext) {
   const person = (userId: string) =>
@@ -154,18 +122,7 @@ export async function aiRoutes(app: FastifyInstance, ctx: AppContext) {
       .selectFrom('messages')
       .select(MESSAGE_COLUMNS)
       .where('conversation_id', '=', conversationId)
-      .where('deleted_at', 'is', null)
-      .where((eb) =>
-        eb.not(
-          eb.exists(
-            eb
-              .selectFrom('hidden_messages')
-              .select('message_id')
-              .whereRef('hidden_messages.message_id', '=', 'messages.id')
-              .where('hidden_messages.user_id', '=', viewerId),
-          ),
-        ),
-      )
+      .where(readableBy(viewerId, ctx.now()))
       .orderBy('seq', 'desc')
       .limit(TRANSCRIPT_MESSAGES)
       .execute()) as Message[];
@@ -183,7 +140,7 @@ export async function aiRoutes(app: FastifyInstance, ctx: AppContext) {
           ).map((u) => [u.id, u.display_name])
         : [],
     );
-    const { time } = clock(timeZone);
+    const { time } = transcriptClock(timeZone);
     // Newest first until the budget is spent, then numbered oldest first.
     const kept: Array<{ m: Message; text: string; speaker: string }> = [];
     let budget = TRANSCRIPT_CHARS;
@@ -191,9 +148,7 @@ export async function aiRoutes(app: FastifyInstance, ctx: AppContext) {
       const text =
         m.kind === 'system'
           ? systemText(mask ? maskPayload(m.payload, mask) : m.payload, viewerId)
-          : m.kind === 'text'
-            ? (m.body ?? '').slice(0, MESSAGE_CHARS)
-            : messagePreview({ kind: m.kind, body: m.body, payload: m.payload, deleted: false });
+          : wordsFor(m, MESSAGE_CHARS);
       if (!text.trim()) continue;
       const speaker =
         m.kind === 'system'
@@ -220,15 +175,14 @@ export async function aiRoutes(app: FastifyInstance, ctx: AppContext) {
     const isNew = (k: (typeof kept)[number]) =>
       Number(k.m.seq) > lastReadSeq && k.m.sender_id !== viewerId && k.m.kind !== 'system';
     const firstNew = kept.findIndex(isNew);
-    const text = kept
-      .map((k, i) => {
-        const reply = k.m.reply_to_id ? lineOf.get(k.m.reply_to_id) : undefined;
-        const body = k.text.replace(/\r?\n/g, ' ⏎ ');
-        return `[${i + 1}] ${time(k.m.created_at)} · ${k.speaker}: ${
-          reply ? `(replying to [${reply}]) ` : ''
-        }${body}`;
-      })
-      .join('\n');
+    const text = transcriptText(
+      kept.map((k) => ({
+        at: time(k.m.created_at),
+        who: k.speaker,
+        replyTo: k.m.reply_to_id ? lineOf.get(k.m.reply_to_id) : undefined,
+        words: k.text,
+      })),
+    );
     return {
       transcript: { text, newFrom: firstNew >= 0 ? firstNew + 1 : null },
       lines,
@@ -236,7 +190,7 @@ export async function aiRoutes(app: FastifyInstance, ctx: AppContext) {
     };
   }
 
-  const today = (timeZone: string) => clock(timeZone).day(ctx.now());
+  const today = (timeZone: string) => transcriptClock(timeZone).day(ctx.now());
 
   app.get('/ai', async (req): Promise<AiStatusView> => {
     const auth = requireAuth(req);
@@ -275,17 +229,7 @@ export async function aiRoutes(app: FastifyInstance, ctx: AppContext) {
       )
       .select(['messages.conversation_id', 'messages.body', 'messages.deleted_at'])
       .where('messages.id', '=', body.messageId)
-      .where((eb) =>
-        eb.not(
-          eb.exists(
-            eb
-              .selectFrom('hidden_messages')
-              .select('message_id')
-              .whereRef('hidden_messages.message_id', '=', 'messages.id')
-              .where('hidden_messages.user_id', '=', auth.userId),
-          ),
-        ),
-      )
+      .where(readableBy(auth.userId, ctx.now()))
       .executeTakeFirst();
     if (!message || message.deleted_at || !message.body?.trim()) throw notFound(tr('That message'));
     await readable(auth.userId, message.conversation_id);

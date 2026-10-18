@@ -383,7 +383,7 @@ export async function startCheckout(
             'Your plan starts as soon as you pay. In the EU you may withdraw within 14 days by writing to {email}, and you pay only for the days it was on. Terms: {terms}',
             {
               email: ctx.config.CONTACT_EMAIL,
-              terms: `${ctx.config.PUBLIC_URL.replace(/\/+$/, '')}/terms`,
+              terms: `${ctx.config.PUBLIC_URL}/terms`,
             },
           ),
         },

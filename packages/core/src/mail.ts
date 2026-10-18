@@ -3,6 +3,7 @@
  * thread is a topic named by its subject without the replies' prefixes, and a first mail nobody
  * gave a subject takes its first line: the composer offers it, the server sends it.
  */
+import { truncate } from './format';
 
 /** A topic's name, and so a subject, is at most this long. */
 export const SUBJECT_MAX = 120;
@@ -30,9 +31,7 @@ export function subjectFromText(text: string): string | null {
     .map((l) => l.trim())
     .find((l) => l.length);
   if (!line) return null;
-  return line.length > SUBJECT_LINE_MAX
-    ? `${line.slice(0, SUBJECT_LINE_MAX - 1).trimEnd()}…`
-    : line;
+  return truncate(line, SUBJECT_LINE_MAX);
 }
 
 /** The subject an answer carries: the thread's, under one "Re:"; null without a subject to answer. */

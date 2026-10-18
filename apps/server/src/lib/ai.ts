@@ -18,6 +18,7 @@ import {
   BOOKING_CAPACITY_MAX,
   ORDER_LINES_MAX,
   type RewriteStyle,
+  truncate,
   VARIETY_NAMES,
 } from '@caime/core';
 import { countryFacts } from '@caime/core/countries';
@@ -26,7 +27,6 @@ import { FILE_KINDS, SEARCH_SCOPES, type SearchUnderstanding } from '@caime/core
 import { SPHERES } from '@caime/core/taxonomy';
 import { z } from 'zod';
 import type { Config } from '../config';
-import { clip } from './text';
 
 /** Why a model call gave nothing to show. The routes turn these into plain sentences. */
 export type AiFailure = 'declined' | 'busy' | 'unavailable';
@@ -561,9 +561,9 @@ export function createAiAssist(config: Config): AiAssist | null {
       const items = parsed.items
         .map((i) => ({
           kind: i.kind,
-          title: clip(i.title.trim().replace(/\s+/g, ' '), 120),
+          title: truncate(i.title.trim().replace(/\s+/g, ' '), 120),
           who: i.who?.trim() || null,
-          due: i.due?.trim() ? clip(i.due.trim(), 80) : null,
+          due: i.due?.trim() ? truncate(i.due.trim(), 80) : null,
           line: Math.round(i.line),
         }))
         .filter((i) => i.title.length > 0)
@@ -613,7 +613,7 @@ export function createAiAssist(config: Config): AiAssist | null {
       if (!answer) throw new AiError('unavailable', 'empty', usage);
       return {
         value: {
-          answer: clip(answer, 2000),
+          answer: truncate(answer, 2000),
           sources: [...new Set(parsed.sources.map((n) => Math.round(n)))],
         },
         usage,
@@ -708,14 +708,14 @@ export function createAiAssist(config: Config): AiAssist | null {
       if (reply.stop_reason === 'refusal') throw new AiError('declined', undefined, usage);
       if (reply.stop_reason === 'max_tokens') throw new AiError('unavailable', 'max_tokens', usage);
       const parsed = reply.parsed_output;
-      const message = parsed ? clip(unquote(parsed.message).trim(), 1500) : '';
+      const message = parsed ? truncate(unquote(parsed.message).trim(), 1500) : '';
       if (!parsed || !message) throw new AiError('unavailable', 'unparsed', usage);
       return {
         value: {
           action: parsed.action,
           message,
           bookAt: parsed.bookAt?.trim() || null,
-          bookFor: parsed.bookFor ? clip(parsed.bookFor.trim(), 80) || null : null,
+          bookFor: parsed.bookFor ? truncate(parsed.bookFor.trim(), 80) || null : null,
           bookItem: parsed.bookItem?.trim() || null,
           // An order's lines as the model gave them, bounded; the server checks each against the
           // catalog and the stock as it would anyone's (R60).

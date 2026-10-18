@@ -160,7 +160,7 @@ export async function connectedAccountRoutes(app: FastifyInstance, ctx: AppConte
     if (row.provider !== 'google' || !googlePickerOn(ctx.config)) throw notFound(tr('That picker'));
     if (!row.uses.includes('files')) throw forbidden(tr('Turn on Files for this account first.'));
     const ticket = await pickerTicket(ctx, auth.userId, row.id, back);
-    const base = ctx.config.PUBLIC_URL.replace(/\/+$/, '');
+    const base = ctx.config.PUBLIC_URL;
     return { url: `${base}/v1/accounts/google/picker?${new URLSearchParams({ t: ticket })}` };
   });
 

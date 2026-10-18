@@ -6,7 +6,9 @@
  * on Caime is told to sign in instead: their invitation waits there as a request. A link is good
  * until it's replaced by a newer invitation, the guest is removed, or a day after the meeting.
  */
+
 import { tr } from '@caime/core/i18n';
+import { cardEndMs } from '@caime/core/meetings';
 import type { AppContext } from '../context';
 import { hashToken } from './crypto';
 import { notFound } from './errors';
@@ -64,13 +66,18 @@ export async function guestLink(ctx: AppContext, token: string): Promise<GuestLi
     state?: string;
     title?: string;
     fields?: { title?: unknown; start?: { at?: string }; durationMinutes?: unknown };
+    booking?: { endAt?: string | null } | null;
   };
   if (p.state !== 'accepted') throw gone();
   const at = new Date(String(p.fields?.start?.at));
   if (Number.isNaN(at.getTime())) throw gone();
-  const asked = Number(p.fields?.durationMinutes);
-  const durationMinutes = Number.isFinite(asked) && asked > 0 ? asked : 60;
-  const endsAt = new Date(at.getTime() + durationMinutes * 60_000 + GUEST_GRACE_MS);
+  // Its end by core's one rule (M16 D3): a booked stay's nights, not an hour from its start.
+  const end = cardEndMs(at.getTime(), {
+    durationMinutes: p.fields?.durationMinutes,
+    booking: p.booking,
+  });
+  const durationMinutes = Math.round((end - at.getTime()) / 60_000);
+  const endsAt = new Date(end + GUEST_GRACE_MS);
   if (ctx.now() > endsAt) throw gone();
   return {
     guestRowId: row.id,

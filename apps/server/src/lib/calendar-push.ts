@@ -156,7 +156,7 @@ export async function planEvents(
     .where('id', '=', userId)
     .executeTakeFirst();
   const zone = me?.time_zone || 'UTC';
-  const base = ctx.config.PUBLIC_URL.replace(/\/+$/, '');
+  const base = ctx.config.PUBLIC_URL;
   return asReader(ctx, userId, async () => {
     const out = new Map<string, PlanEvent>();
     for (const card of cards) {

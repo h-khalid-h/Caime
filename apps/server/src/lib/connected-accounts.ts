@@ -59,13 +59,13 @@ export function accountsOffered(ctx: Pick<AppContext, 'config'>): AccountProvide
 
 /** Where the provider returns: the address each client is registered with, beside R89's. */
 export function accountRedirectUri(ctx: Pick<AppContext, 'config'>, p: AccountProvider): string {
-  return `${ctx.config.PUBLIC_URL.replace(/\/+$/, '')}/v1/accounts/${p}/back`;
+  return `${ctx.config.PUBLIC_URL}/v1/accounts/${p}/back`;
 }
 
 function landing(ctx: AppContext, back: 'web' | 'app'): string {
   return back === 'app'
     ? `${APP_SCHEME}://${ACCOUNT_RETURN_PATH}`
-    : `${ctx.config.PUBLIC_URL.replace(/\/+$/, '')}/${ACCOUNT_RETURN_PATH}`;
+    : `${ctx.config.PUBLIC_URL}/${ACCOUNT_RETURN_PATH}`;
 }
 
 interface Asked {

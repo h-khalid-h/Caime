@@ -35,8 +35,7 @@ const contextOf = (i: Pick<Invite, 'context_sphere' | 'context_org_name'>) =>
       }
     : null;
 
-const inviteUrl = (ctx: AppContext, token: string) =>
-  `${ctx.config.PUBLIC_URL.replace(/\/+$/, '')}/i/${token}`;
+const inviteUrl = (ctx: AppContext, token: string) => `${ctx.config.PUBLIC_URL}/i/${token}`;
 
 /** A URL-safe token nobody guesses: 128 bits. */
 export const newInviteToken = () => randomBytes(16).toString('base64url');

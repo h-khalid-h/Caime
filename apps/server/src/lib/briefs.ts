@@ -7,31 +7,26 @@
  * For work, customers, vendors and professionals, never family or friends; never from a private
  * conversation; nothing written anywhere but the reader's own notification, in their language.
  */
-import { type BriefView, KITS, type Sphere, tr, trn } from '@caime/core';
+import { type BriefView, KITS, type Sphere, tr, trn, truncate } from '@caime/core';
 import { initiativeOf, tellsBeforeMeetings } from '@caime/core/initiative';
 import { AGREED_STATES as AGREED } from '@caime/core/kit-states';
 import { SPACE_KIND_DEFS, type SpaceKind } from '@caime/core/spaces';
 import { sql } from 'kysely';
 import type { AppContext } from '../context';
 import { MESSAGE_COLUMNS, type Message } from '../db/schema';
-import { visibleTasksSql } from './task-visibility';
-import { clip } from './text';
-import { TtlCache } from './ttl-cache';
-
-/** What the reader deleted for themselves stays deleted: never in their brief, nor the model's. */
-const notHiddenBy = (userId: string, idRef: 'messages.id' | 'm.id') =>
-  sql<boolean>`not exists (select 1 from hidden_messages h where h.message_id = ${sql.ref(idRef)} and h.user_id = ${userId})`;
-
 import { languageName } from './ai';
 import { runAi } from './ai-run';
 import { customerMask, maskFor } from './business';
 import { membership } from './conversation-views';
 import { AppError } from './errors';
 import { enqueue, registerJob } from './jobs';
-import { messagePreview } from './messages';
+import { messagePreview, readableBy } from './messages';
 import { notify } from './notify';
 import { assertAiAllowance } from './plans';
 import { activeRelationships } from './relations';
+import { visibleTasksSql } from './task-visibility';
+import { transcriptClock, transcriptText, wordsFor } from './transcript';
+import { TtlCache } from './ttl-cache';
 import { minorOf } from './users';
 
 export const BRIEF_LEAD_MS = 60 * 60_000;
@@ -338,8 +333,8 @@ export async function briefFor(
       .select(MESSAGE_COLUMNS)
       .where('conversation_id', '=', card.conversation_id)
       .where('is_question', '=', true)
-      .where('deleted_at', 'is', null)
-      .where(notHiddenBy(userId, 'messages.id'))
+      // What the reader may read (`readableBy`): never what they deleted for themselves.
+      .where(readableBy(userId, ctx.now()))
       .where('created_at', '>=', since)
       .where((eb) => eb.or([eb('sender_id', 'is', null), eb('sender_id', '<>', userId)]))
       .orderBy('seq', 'desc')
@@ -351,8 +346,7 @@ export async function briefFor(
       .innerJoin('files as f', 'f.id', 'mf.file_id')
       .select(['f.id', 'f.name', 'f.kind'])
       .where('m.conversation_id', '=', card.conversation_id)
-      .where('m.deleted_at', 'is', null)
-      .where(notHiddenBy(userId, 'm.id'))
+      .where(readableBy(userId, ctx.now(), 'm'))
       .where('m.created_at', '>=', since)
       .orderBy('m.seq', 'desc')
       .limit(EACH)
@@ -362,7 +356,7 @@ export async function briefFor(
       .select(sql<number>`count(*)::int`.as('n'))
       .where('conversation_id', '=', card.conversation_id)
       .where('kind', 'not in', ['system', 'kit'])
-      .where('deleted_at', 'is', null)
+      .where(readableBy(userId, ctx.now()))
       .where('created_at', '>=', since)
       .executeTakeFirstOrThrow(),
   ]);
@@ -371,7 +365,7 @@ export async function briefFor(
     .filter((m) => Number(m.seq) > myLast)
     .map((m) => ({
       messageId: m.id,
-      preview: clip(messagePreview(m), 120),
+      preview: truncate(messagePreview(m), 120),
       at: m.created_at.toISOString(),
     }));
   const brief: BriefView = {
@@ -443,8 +437,7 @@ async function summaryFor(
     .selectFrom('messages')
     .select(MESSAGE_COLUMNS)
     .where('conversation_id', '=', card.conversation_id)
-    .where('deleted_at', 'is', null)
-    .where(notHiddenBy(userId, 'messages.id'))
+    .where(readableBy(userId, ctx.now()))
     .where('kind', '<>', 'system')
     .where('created_at', '>=', since)
     .orderBy('seq', 'desc')
@@ -462,19 +455,22 @@ async function summaryFor(
         .execute()
     ).map((u) => [u.id, u.display_name]),
   );
-  const lines = rows.reverse().map((m, i) => {
-    const who =
+  // As every model reads a conversation (`lib/transcript.ts`): with each line's time on the
+  // reader's clock, as the catch-up's prompt says its lines are.
+  const { time } = transcriptClock(me.time_zone || 'UTC');
+  const lines = rows.reverse().map((m) => ({
+    at: time(m.created_at),
+    who:
       m.sender_id === userId
         ? 'You'
         : mask && m.sender_id !== mask.customerId
           ? mask.orgName
-          : (names.get(m.sender_id ?? '') ?? 'Someone');
-    const text = (m.kind === 'text' ? (m.body ?? '') : messagePreview(m)).replace(/\s+/g, ' ');
-    return `[${i + 1}] ${who}: ${clip(text.trim(), 400)}`;
-  });
+          : (names.get(m.sender_id ?? '') ?? 'Someone'),
+    words: wordsFor(m, 400),
+  }));
   const text = await runAi(ctx, 'brief', userId, () =>
     ai.catchUp({
-      transcript: { text: lines.join('\n'), newFrom: null },
+      transcript: { text: transcriptText(lines), newFrom: null },
       language: languageName(me.locale.split('-')[0] || 'en'),
       today: ctx.now().toISOString().slice(0, 10),
     }),

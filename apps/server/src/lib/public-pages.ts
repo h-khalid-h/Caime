@@ -30,6 +30,7 @@ import {
   type SystemKind,
   stockLine,
   systemAccountOf,
+  truncate,
 } from '@caime/core';
 import { MARKETING_PAGES, type PlaceView } from '@caime/core/api';
 import {
@@ -104,7 +105,6 @@ import { sitemaps } from './sitemap-cache';
 import { stockFor, withStock } from './stock';
 import { publicFacts } from './system-accounts';
 import { liveTeamInvite } from './team-invites';
-import { clip } from './text';
 import { avatarUrl, minorOf, privacyOf } from './users';
 import { type VisitorReportState, visitorReportState } from './visitor-reports';
 
@@ -951,7 +951,7 @@ export function renderPublic(
           }
         : page;
       const line = [p.headline, p.organizations[0]?.name].filter(Boolean).join(' · ');
-      const description = clip(
+      const description = truncate(
         p.bio ?? line ?? tr('{name} is on {site}.', { name: p.displayName, site: SITE_NAME }),
         200,
       );
@@ -1031,7 +1031,7 @@ export function renderPublic(
           : null,
         page.foundedYear ? tr('Since {year}', { year: page.foundedYear }) : null,
       ].filter(Boolean);
-      const description = clip(
+      const description = truncate(
         page.about ??
           `${tr('{name} is on {site}.', { name: o.name, site: SITE_NAME })} ${facts.join(' · ')}`.trim(),
         200,
@@ -1098,7 +1098,7 @@ export function renderPublic(
       const { host, item } = page;
       const name = hostName(host);
       const shelf = host.collections.find((c) => c.id === item.collectionId) ?? null;
-      const description = clip(
+      const description = truncate(
         item.description ?? `${item.name} · ${itemLine(item)} · ${name}`,
         200,
       );
@@ -1154,7 +1154,7 @@ export function renderPublic(
         lang: currentTranslator().language,
         head: meta({
           title: `${collection.name} · ${name} · ${SITE_NAME}`,
-          description: clip(collection.description ?? items.map((i) => i.name).join(', '), 200),
+          description: truncate(collection.description ?? items.map((i) => i.name).join(', '), 200),
           image: image ? `${publicUrl}${image}` : null,
           index: true,
           ld: {

@@ -11,6 +11,7 @@
  */
 
 import { type Amount, extractAmounts } from './amounts';
+import { truncate } from './format';
 import { tr } from './i18n';
 import { FR_PAID, FR_PAY, FR_PLAN, FR_TRACK, readFrench } from './intelligence-fr';
 import { firstDateIn, removeRanges } from './intelligence-shared';
@@ -710,8 +711,7 @@ function lowerFirst(s: string): string {
 }
 
 function quote(s: string): string {
-  const t = s.trim();
-  return t.length > 90 ? `“${t.slice(0, 87)}…”` : `“${t}”`;
+  return `“${truncate(s.trim(), 90)}”`;
 }
 
 /**

@@ -140,7 +140,7 @@ export async function checkoutRoutes(app: FastifyInstance, ctx: AppContext) {
         target: done.orgId,
       });
     }
-    const web = ctx.config.PUBLIC_URL.replace(/\/+$/, '');
+    const web = ctx.config.PUBLIC_URL;
     return reply.redirect(
       done.handle
         ? `${web}/o/${done.handle}/setup?checkout=${done.connected ? 'connected' : 'failed'}`

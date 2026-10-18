@@ -429,7 +429,7 @@ export async function orgRoutes(app: FastifyInstance, ctx: AppContext) {
     const { id } = parse(idParam, req.params);
     const org = await orgById(ctx.db, id);
     if (!(await orgSeat(ctx.db, auth.userId, id))) throw notFound(tr('That organization'));
-    const base = ctx.config.PUBLIC_URL.replace(/\/+$/, '');
+    const base = ctx.config.PUBLIC_URL;
     const url = `${base}${doorPath(org.handle)}`;
     // Beside the door, the way to book (C2a): what a visitor may book from a page, as its page
     // shows it (one item: its own page with the times; more: the organization's, listing them).

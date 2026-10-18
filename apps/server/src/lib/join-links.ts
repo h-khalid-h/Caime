@@ -47,7 +47,7 @@ export const targetOf = (l: Pick<Link, 'conversation_id' | 'space_id'>): JoinTar
     : { kind: 'space', id: l.space_id as string };
 
 export const joinLinkUrl = (ctx: AppContext, token: string) =>
-  `${ctx.config.PUBLIC_URL.replace(/\/+$/, '')}/g/${token}`;
+  `${ctx.config.PUBLIC_URL}/g/${token}`;
 
 export function joinLinkView(l: Link, by: string | null): JoinLinkView {
   return {

@@ -45,7 +45,7 @@ export async function ageRoutes(app: FastifyInstance, ctx: AppContext) {
     ctx.limiter.hit(`age-return:${req.ip}`, ctx.config.isTest ? 1000 : 30, 3_600_000);
     const q = parse(ReturnQuery, req.query);
     const target = await ageReturnTarget(ctx, q.ref);
-    const base = ctx.config.PUBLIC_URL.replace(/\/+$/, '');
+    const base = ctx.config.PUBLIC_URL;
     const land = (back: 'web' | 'app', state: AgeReturnState) =>
       reply
         .header('cache-control', 'no-store')

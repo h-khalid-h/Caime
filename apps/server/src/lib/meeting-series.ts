@@ -10,10 +10,12 @@
  * write (they left, or a block), the series ends quietly; the calendar stops looking ahead a
  * day after a time with no next one.
  */
+
 import type { AppointmentBooking, MessageView } from '@caime/core';
 import { formatWhenAt } from '@caime/core/format';
 import { tr } from '@caime/core/i18n';
 import { safeLocale } from '@caime/core/locale';
+import { cardEndMs } from '@caime/core/meetings';
 import { isRepeat, type Repeat } from '@caime/core/repeat';
 import {
   isDay,
@@ -42,8 +44,6 @@ const NEXT_JOB = 'meeting.next';
  * it ends: a stop pressed in the last moment is written before the next is looked for.
  */
 export const NEXT_AFTER_MS = 60_000;
-/** A meeting whose length isn't known holds an hour, as the calendar takes it. */
-const DEFAULT_MINUTES = 60;
 
 interface MeetingPayload {
   kit?: string;
@@ -99,14 +99,11 @@ export function meetingUid(
   return series ? `${kit}-${series.id}-${series.n}@caime` : `${kit}-${messageId}@caime`;
 }
 
+/** When a time ends, by core's one rule (`cardEndMs`); null without a start. */
 function endOf(p: MeetingPayload): number | null {
   const at = p.fields?.start?.at ? Date.parse(p.fields.start.at) : Number.NaN;
   if (!Number.isFinite(at)) return null;
-  // A booked appointment ends as it was booked (its length, its nights).
-  const booked = p.booking?.endAt ? Date.parse(p.booking.endAt) : Number.NaN;
-  if (Number.isFinite(booked) && booked > at) return booked;
-  const minutes = Number(p.fields?.durationMinutes);
-  return at + (Number.isFinite(minutes) && minutes > 0 ? minutes : DEFAULT_MINUTES) * 60_000;
+  return cardEndMs(at, { durationMinutes: p.fields?.durationMinutes, booking: p.booking });
 }
 
 /** Queued when a repeating meeting is accepted, and for each time posted: the next, at its end. */

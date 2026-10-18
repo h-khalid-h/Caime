@@ -24,7 +24,7 @@
  *   anything else is dropped without a bounce, since a bounce says the address exists.
  */
 import { createHash } from 'node:crypto';
-import { isReservedHandle, SendMessageBody, SYSTEM_ACCOUNTS } from '@caime/core';
+import { isReservedHandle, SendMessageBody, SYSTEM_ACCOUNTS, truncate } from '@caime/core';
 import { bareSubject } from '@caime/core/mail';
 import { mailText } from '@caime/core/mail-text';
 import { CAI_MAIL } from '@caime/core/meetings';
@@ -401,7 +401,7 @@ async function deliver(
       mime: 'text/plain',
       name: `${bareSubject(mail.subject) ?? 'message'}.txt`,
     });
-    text = `${text.slice(0, MESSAGE_MAX - 1).trimEnd()}…`;
+    text = truncate(text, MESSAGE_MAX);
   }
   for (const a of mail.attachments.slice(0, FILES_MAX - fileIds.length)) await keep(a);
   if (!text && !fileIds.length) return;

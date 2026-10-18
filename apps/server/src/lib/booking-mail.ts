@@ -9,8 +9,10 @@
  * confirmation goes after the response (`ctx.defer`), the reminder from its job, whose payload
  * holds ids alone. A customer with an account is told in Caime as anyone is.
  */
+
 import { firstName } from '@caime/core/format';
 import { buildInvitation } from '@caime/core/ics';
+import { cardEndMs } from '@caime/core/meetings';
 import { seriesOf } from '@caime/core/series';
 import type { AppContext } from '../context';
 import { MESSAGE_COLUMNS, type Message } from '../db/schema';
@@ -50,7 +52,7 @@ interface AppointmentPayload {
   kit?: string;
   state?: string;
   title?: string;
-  fields?: { title?: string; start?: { at?: string } };
+  fields?: { title?: string; start?: { at?: string }; durationMinutes?: unknown };
   booking?: { name?: string; endAt?: string | null; where?: string | null; hostId?: string };
 }
 
@@ -125,8 +127,7 @@ async function bookedFor(ctx: AppContext, m: Message): Promise<Booked | null> {
     host = person.display_name;
     zone = bookingOf(person)?.timeZone || person.time_zone || 'UTC';
   }
-  const ends = p.booking?.endAt ? new Date(p.booking.endAt) : null;
-  const base = ctx.config.PUBLIC_URL.replace(/\/+$/, '');
+  const base = ctx.config.PUBLIC_URL;
   const name = firstName(customer.display_name);
   return {
     to: customer.email,
@@ -134,7 +135,12 @@ async function bookedFor(ctx: AppContext, m: Message): Promise<Booked | null> {
     host,
     what: String(p.booking?.name || p.fields?.title || p.title || 'Your booking').slice(0, 120),
     start,
-    end: ends && !Number.isNaN(ends.getTime()) ? ends : new Date(start.getTime() + 30 * 60_000),
+    end: new Date(
+      cardEndMs(start.getTime(), {
+        booking: p.booking,
+        durationMinutes: p.fields?.durationMinutes,
+      }),
+    ),
     zone,
     where: p.booking?.where ?? null,
     link: `${base}/sign-up?link=${encodeURIComponent(`/c/${m.conversation_id}`)}`,

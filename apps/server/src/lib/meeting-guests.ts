@@ -14,7 +14,7 @@ import { GROUP_CALL_MAX } from '@caime/core/calls';
 import { firstName } from '@caime/core/format';
 import { tr } from '@caime/core/i18n';
 import { buildInvitation } from '@caime/core/ics';
-import { CAI_MAIL, meetingVenue } from '@caime/core/meetings';
+import { CAI_MAIL, cardEndMs, meetingVenue } from '@caime/core/meetings';
 import { seriesOf } from '@caime/core/series';
 import { type Kysely, sql, type Transaction } from 'kysely';
 import type { AppContext } from '../context';
@@ -42,6 +42,7 @@ interface MeetingPayload {
   state?: string;
   title?: string;
   movedTo?: { conversationId: string; messageId: string };
+  booking?: { endAt?: string | null } | null;
   fields?: {
     title?: unknown;
     start?: { at?: string; hasTime?: boolean };
@@ -85,9 +86,9 @@ function meetingOk(ctx: AppContext, m: Message): MeetingPayload {
   if (p.state !== 'accepted') throw badRequest(tr('A meeting takes guests once it’s agreed.'));
   if (meetingVenue(p.fields?.place) !== 'caime' || p.fields?.start?.hasTime === false)
     throw badRequest(tr('Only a meeting held on Caime, at a time, takes guests.'));
-  const at = p.fields?.start?.at ? Date.parse(p.fields.start.at) : Number.NaN;
-  if (!Number.isFinite(at) || at < ctx.now().getTime() - 60 * 60_000)
-    throw badRequest(tr('That meeting is over.'));
+  // Over once it has ended, by its own length (M16 D3), never an hour after it began.
+  const end = endOf(p);
+  if (end === null || end < ctx.now().getTime()) throw badRequest(tr('That meeting is over.'));
   return p;
 }
 
@@ -323,12 +324,11 @@ async function spaceFor(
   return { conversationId: spaceId, messageId: copy.id };
 }
 
-/** When a meeting ends: its start and its length, else an hour; null without a start. */
+/** When a meeting ends, by core's one rule (`cardEndMs`); null without a start. */
 function endOf(p: MeetingPayload): number | null {
   const at = p.fields?.start?.at ? Date.parse(p.fields.start.at) : Number.NaN;
   if (!Number.isFinite(at)) return null;
-  const minutes = Number(p.fields?.durationMinutes);
-  return at + (Number.isFinite(minutes) && minutes > 0 ? minutes : 60) * 60_000;
+  return cardEndMs(at, { durationMinutes: p.fields?.durationMinutes, booking: p.booking });
 }
 
 /**
@@ -359,7 +359,7 @@ async function mintGuestLink(
       }),
     )
     .execute();
-  return `${ctx.config.PUBLIC_URL.replace(/\/+$/, '')}/j/${token}`;
+  return `${ctx.config.PUBLIC_URL}/j/${token}`;
 }
 
 /** A guest's own link, minted, and the time's calendar invitation with it by mail. */
@@ -377,7 +377,7 @@ async function sendInvitation(
   const { inviter, space, guest, p } = input;
   const link = await mintGuestLink(ctx, inviter.id, space.messageId, guest.id);
   const start = new Date(String(p.fields?.start?.at));
-  const end = new Date(endOf(p) ?? start.getTime() + 60 * 60_000);
+  const end = new Date(endOf(p) ?? start.getTime());
   const title = String(p.title || p.fields?.title || 'Meeting').slice(0, 120);
   const sender = invitationSender(ctx.config, inviter.name);
   const ics = buildInvitation({

@@ -181,6 +181,19 @@ describe('Cai (R67)', () => {
     expect((await answered(hassan, cai)).at(-1).body).toMatch(/I can always tell you/);
   });
 
+  it('reads the model nothing the person deleted for themselves (M16 D3)', async () => {
+    const pin = (await send(hassan, cai, 'My bank PIN is 4321')).message;
+    await answered(hassan, cai);
+    await hassan.del(`/v1/messages/${pin.id}?forEveryone=false`);
+    replies.push('Noted.');
+    const before = requests.length;
+    await send(hassan, cai, 'What did I tell you a moment ago?');
+    await answered(hassan, cai);
+    const content = requests[before].messages[0].content as string;
+    expect(content).toContain('What did I tell you a moment ago?');
+    expect(content).not.toContain('4321');
+  });
+
   it('never asks the model for someone under 18', async () => {
     const id = (await open(teen, CAI_ID)).conversation.id;
     expect((await messages(teen, id))[0].body).not.toContain('AI assist');

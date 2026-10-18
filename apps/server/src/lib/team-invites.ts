@@ -24,7 +24,7 @@ export const TEAM_TOKEN = /^t_[A-Za-z0-9_-]{43}$/;
 type Invite = Selectable<OrgInvitesTable>;
 
 export const teamInviteUrl = (ctx: AppContext, token: string) =>
-  `${ctx.config.PUBLIC_URL.replace(/\/+$/, '')}/t/${token}`;
+  `${ctx.config.PUBLIC_URL}/t/${token}`;
 
 export function teamInviteView(i: Invite): TeamInviteView {
   return {

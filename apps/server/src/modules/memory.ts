@@ -16,8 +16,9 @@ import { canEditConversation, contextEditable, contextVisible } from '../lib/con
 import { membership } from '../lib/conversation-views';
 import { forbidden, notFound } from '../lib/errors';
 import { recordEvent } from '../lib/events';
-import { fileUrl, notHiddenFor, participantsOf } from '../lib/messages';
+import { fileUrl, notHiddenFor, participantsOf, readableBy } from '../lib/messages';
 import { taskViews } from '../lib/tasks';
+import { escapeLike } from '../lib/text';
 import { aheadWindow, cardsAhead, upcomingView } from '../lib/upcoming';
 import { parse } from '../lib/validate';
 import { requireAuth } from '../plugins/auth';
@@ -132,7 +133,7 @@ export async function memoryRoutes(app: FastifyInstance, ctx: AppContext) {
           ),
         ]),
       )
-      .$if(Boolean(q), (qb) => qb.where('x.title', 'ilike', `%${q}%`))
+      .$if(Boolean(q), (qb) => qb.where('x.title', 'ilike', `%${escapeLike(q ?? '')}%`))
       .orderBy('x.updated_at', 'desc')
       .limit(100)
       .execute();
@@ -269,8 +270,7 @@ export async function memoryRoutes(app: FastifyInstance, ctx: AppContext) {
         .selectFrom('messages')
         .select(['id', 'entities', 'created_at', 'sender_id'])
         .where('conversation_id', '=', id)
-        .where('deleted_at', 'is', null)
-        .where(notHiddenFor(auth.userId, 'messages.id'))
+        .where(readableBy(auth.userId, now))
         .orderBy('seq', 'desc')
         .limit(300)
         .execute(),
@@ -291,7 +291,7 @@ export async function memoryRoutes(app: FastifyInstance, ctx: AppContext) {
           ),
         ])
         .where('conversation_id', '=', id)
-        .where('deleted_at', 'is', null)
+        .where(readableBy(auth.userId, now))
         .where('kind', '<>', 'system')
         .executeTakeFirstOrThrow(),
       // What the group has gathered, counted whole (the lists above show only the latest).

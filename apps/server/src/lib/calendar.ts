@@ -4,6 +4,7 @@
  * appointments in its customer conversations, for its team. Caime stays the record: the
  * calendar shows what conversations and actions hold, and changes nothing.
  */
+
 import type {
   AppointmentBooking,
   CalendarItemView,
@@ -13,6 +14,7 @@ import type {
   TaskView,
 } from '@caime/core';
 import { HELD_APPOINTMENT_STATES } from '@caime/core/kit-states';
+import { cardEndMs } from '@caime/core/meetings';
 import { isRepeat } from '@caime/core/repeat';
 import { isDay, occurrencesBetween, seriesAgreed, seriesOf, timesAYear } from '@caime/core/series';
 import { sql } from 'kysely';
@@ -24,23 +26,18 @@ import { personViewsFor } from './people-batch';
 import { activeRelationships, relationshipView } from './relations';
 import { cardsAhead, dueCards, SERIES_ENDED_MS } from './upcoming';
 
-/** A meeting without a length holds an hour. */
-const MEETING_MINUTES = 60;
-
 /**
- * How long a card holds: as booked (R58), as its field says, else an hour. The app's calendar
- * and the feed both read it (review 2026-10-09 M16), so a booking ends at the same minute in each.
+ * How long a card holds, by core's one rule (`cardEndMs`: as booked, as its field says, else an
+ * hour). The app's calendar and the feed both read it (review 2026-10-09 M16), so a booking ends
+ * at the same minute in each.
  */
 export function minutesOf(c: {
   at: Date;
   durationMinutes: number | null;
   booking: AppointmentBooking | null;
 }) {
-  if (c.booking?.endAt) {
-    const m = Math.round((new Date(c.booking.endAt).getTime() - c.at.getTime()) / 60_000);
-    if (Number.isFinite(m) && m > 0) return m;
-  }
-  return c.durationMinutes ?? MEETING_MINUTES;
+  const at = c.at.getTime();
+  return Math.round((cardEndMs(at, c) - at) / 60_000);
 }
 const MAX_ITEMS = 500;
 const dayOf = (at: Date) => new Date(Math.floor(at.getTime() / 86_400_000) * 86_400_000);

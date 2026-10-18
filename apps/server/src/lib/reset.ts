@@ -27,6 +27,6 @@ export async function sendResetLink(
       expires_at: new Date(ctx.now().getTime() + RESET_LIFE_MS),
     })
     .execute();
-  const link = `${ctx.config.PUBLIC_URL.replace(/\/+$/, '')}/reset?token=${token}`;
+  const link = `${ctx.config.PUBLIC_URL}/reset?token=${token}`;
   ctx.defer('email.reset', () => mail.send(resetMail(user.email, user.display_name, link)));
 }

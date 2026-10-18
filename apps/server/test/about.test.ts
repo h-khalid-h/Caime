@@ -324,6 +324,9 @@ describe('About, and Caime’s own privacy, terms and help pages', () => {
 
   it('takes only an http(s) address for each, a name, and an email address', () => {
     const env = { DATABASE_URL: 'postgres://caime@localhost/caime', PUBLIC_URL: `${BASE}/` };
+    // The origin is said without its trailing slash once loaded (M16 D3), so a link built from it
+    // is never `//path`, wherever it's built.
+    expect(loadConfig(env).PUBLIC_URL).toBe(BASE);
     expect(loadConfig(env).aboutLinks).toEqual({
       privacyUrl: `${BASE}/privacy`,
       termsUrl: `${BASE}/terms`,

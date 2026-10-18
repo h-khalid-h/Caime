@@ -1,6 +1,8 @@
 import { describe, expect, it } from 'vitest';
 import {
+  CARD_MINUTES,
   calendarAction,
+  cardEndMs,
   JOIN_EARLY_MS,
   JOIN_LATE_MS,
   joinOpen,
@@ -132,5 +134,23 @@ describe('a meeting in the calendar (R83)', () => {
   });
   it('joins at the card, in its conversation', () => {
     expect(joinPath('c-1', 42, 'm-1')).toBe('/c/c-1?seq=42&join=m-1');
+  });
+});
+
+describe('when a card ends (M16 D3)', () => {
+  const at = Date.parse('2026-10-20T10:00:00Z');
+  it('is the booking’s own end, else its length, else an hour, never past a day', () => {
+    // A stay booked for two nights ends when it was booked to, whatever the card says.
+    const stay = { booking: { endAt: '2026-10-22T10:00:00Z' }, durationMinutes: 30 };
+    expect(cardEndMs(at, stay)).toBe(Date.parse('2026-10-22T10:00:00Z'));
+    // A booking's end that isn't after its start is no end.
+    expect(cardEndMs(at, { booking: { endAt: '2026-10-20T09:00:00Z' }, durationMinutes: 90 })).toBe(
+      at + 90 * 60_000,
+    );
+    expect(cardEndMs(at, { durationMinutes: 45 })).toBe(at + 45 * 60_000);
+    expect(CARD_MINUTES).toBe(60);
+    for (const durationMinutes of [undefined, null, 0, -5, 'soon', Number.NaN])
+      expect(cardEndMs(at, { durationMinutes })).toBe(at + 60 * 60_000);
+    expect(cardEndMs(at, { durationMinutes: 10_000 })).toBe(at + 24 * 60 * 60_000);
   });
 });

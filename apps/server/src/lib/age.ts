@@ -96,7 +96,7 @@ export async function startAgeCheck(
     })
     .execute();
   ctx.metrics.ageChecks.inc({ provider: provider.id, outcome: 'started' });
-  const base = ctx.config.PUBLIC_URL.replace(/\/+$/, '');
+  const base = ctx.config.PUBLIC_URL;
   return provider.startUrl(
     id,
     (end) => `${base}/v1/age/return?ref=${id}&end=${end}`,

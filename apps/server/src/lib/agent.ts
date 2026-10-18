@@ -39,17 +39,20 @@ import { onCustomerMessage, publishThread, threadViews } from './business';
 import { recordEvent } from './events';
 import { inLanguage, languageOf } from './i18n';
 import { enqueue, registerJob } from './jobs';
-import { messagePreview } from './messages';
+import { readableBy } from './messages';
 import { notify } from './notify';
 import { bookablePlaceLines } from './places';
 import { agentRepliesToday } from './plans';
 import { postAs } from './post-as';
 import { stockFor, withStock } from './stock';
+import { transcriptText, wordsFor } from './transcript';
 import { minorOf } from './users';
 
 /** How long it waits after a customer writes, so a message sent in three parts is read whole. */
 export const AGENT_DELAY_MS = 3000;
 const TRANSCRIPT_MESSAGES = 20;
+/** Each message's words, at most: a customer's long letter is read, not all of a pasted file. */
+const MESSAGE_CHARS = 1500;
 /** How far ahead, and how many, of the open slots the agent may offer (R51). */
 const AGENT_SLOT_DAYS = 14;
 const AGENT_SLOTS = 8;
@@ -185,7 +188,8 @@ async function transcriptFor(
     ])
     .where('m.conversation_id', '=', conversationId)
     .where('m.kind', '<>', 'system')
-    .where('m.deleted_at', 'is', null)
+    // There for everyone and not past its time (`readableBy`; nothing is hidden for an agent).
+    .where(readableBy(agentId, ctx.now(), 'm'))
     .orderBy('m.seq', 'desc')
     .limit(TRANSCRIPT_MESSAGES)
     .execute();
@@ -194,22 +198,22 @@ async function transcriptFor(
   const opens = (m: (typeof rows)[number]) =>
     m.sender_id === agentId &&
     (m.payload as { introduction?: unknown } | null)?.introduction === true;
-  const said = rows.reverse();
-  const lines = said.map((m, i) => {
-    const who =
+  const lines = rows.reverse().map((m) => ({
+    who:
       m.sender_id === customerId
         ? 'Customer'
         : m.sender_id === agentId
           ? 'You'
           : m.sender_kind === 'human'
             ? 'Team'
-            : 'Automated';
-    const body = opens(m) ? (m.body ?? '').split('\n').slice(1).join('\n') : (m.body ?? '');
-    const text = (m.kind === 'text' ? body : messagePreview(m)).replace(/\s+/g, ' ');
-    return { who, line: `[${i + 1}] ${who}: ${text.trim()}` };
-  });
+            : 'Automated',
+    words: wordsFor(
+      opens(m) ? { ...m, body: (m.body ?? '').split('\n').slice(1).join('\n') } : m,
+      MESSAGE_CHARS,
+    ),
+  }));
   return {
-    text: lines.map((l) => l.line).join('\n'),
+    text: transcriptText(lines),
     introduced: lines.some((l) => l.who === 'You'),
   };
 }

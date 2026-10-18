@@ -76,14 +76,14 @@ export function contactApiOrigins(config: Config): string[] {
 
 /** Where the provider returns: the address each client is registered with. */
 export function contactRedirectUri(config: Config, account: ContactAccount): string {
-  return `${config.PUBLIC_URL.replace(/\/+$/, '')}/v1/contacts/accounts/${account}/back`;
+  return `${config.PUBLIC_URL}/v1/contacts/accounts/${account}/back`;
 }
 
 /** Where the person lands again: the web app's Connect screen, or the phone app's. */
 function returnTo(config: Config, back: 'web' | 'app'): string {
   return back === 'app'
     ? `${APP_SCHEME}://${CONTACT_RETURN_PATH}`
-    : `${config.PUBLIC_URL.replace(/\/+$/, '')}/${CONTACT_RETURN_PATH}`;
+    : `${config.PUBLIC_URL}/${CONTACT_RETURN_PATH}`;
 }
 
 interface ConsentState {

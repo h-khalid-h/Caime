@@ -26,7 +26,10 @@ const Env = z.object({
   NODE_ENV: z.enum(['development', 'test', 'production']).default('development'),
   PORT: z.coerce.number().int().positive().default(8787),
   HOST: z.string().default('0.0.0.0'),
-  /** Public origin, e.g. https://caime.example.com — used for cookies, links and web push. */
+  /**
+   * Public origin, e.g. https://caime.example.com — used for cookies, links and web push. Said
+   * without a trailing slash once loaded, so a link is `${PUBLIC_URL}/path` everywhere.
+   */
   PUBLIC_URL: z.string().url().default('http://localhost:8787'),
   /**
    * The commit this build is (A3): the image's `CAIME_VERSION` build argument, which CI sets to
@@ -406,7 +409,9 @@ export function loadConfig(env: NodeJS.ProcessEnv = process.env): Config {
       `Invalid configuration:\n  AGE_CHECK_TRIGGERS: ${unknownTrigger} isn't one of ${AGE_TRIGGERS.join(', ')}`,
     );
   const vaultKey = key32(c.VAULT_KEY);
-  const own = (page: string) => `${c.PUBLIC_URL.replace(/\/+$/, '')}/${page}`;
+  // The public origin without a trailing slash, once: every link is `${PUBLIC_URL}/path`.
+  const publicUrl = c.PUBLIC_URL.replace(/\/+$/, '');
+  const own = (page: string) => `${publicUrl}/${page}`;
   const list = (v: string) =>
     v
       .split(',')
@@ -414,6 +419,7 @@ export function loadConfig(env: NodeJS.ProcessEnv = process.env): Config {
       .filter(Boolean);
   return {
     ...c,
+    PUBLIC_URL: publicUrl,
     corsOrigins: list(c.CORS_ORIGINS),
     stunUrls: list(c.STUN_URLS),
     turnUrls: c.TURN_SECRET ? list(c.TURN_URLS) : [],

@@ -870,7 +870,8 @@ appointment from a catalog).
   reuses (`reuseExistingServer`) with the old bundle's shell in memory, so every screen stays
   blank: kill them by port before running again.
 - Links to Caime are built from `WEB_URL` in the app (`lib/config.ts`, from the API's address) and
-  `PUBLIC_URL` on the server, never a hardcoded domain. Pages answer on `PUBLIC_URL`'s name alone
+  `PUBLIC_URL` on the server, never a hardcoded domain; `loadConfig` gives `PUBLIC_URL` without
+  a trailing slash, so `${PUBLIC_URL}/…` is a link whole, never trimmed where it's used. Pages answer on `PUBLIC_URL`'s name alone
   (`lib/canonical-host.ts`, an `onRequest` hook first in `app.ts`): a page on any other name the
   service has goes there with a 301; `/v1`, `/metrics` and `/.well-known/` answer on every name
   (a new path machines call joins `MACHINE_PATHS`), and loopback names and addresses are left be. A path
@@ -1722,7 +1723,10 @@ appointment from a catalog).
   0067, `cardStartAt` in `lib/kits.ts`, written on send; a test that inserts a card by hand
   writes it too): a meeting's or an appointment's start, a Pay card's or an invoice's due day
   (M14, midnight UTC of the date). The calendar, the slots, the briefs and search read cards by
-  it, never `payload->'fields'->'start'`; `lib/upcoming.ts` is the one reader of a person's
+  it, never `payload->'fields'->'start'`, and when one ends is core `cardEndMs` (`meetings.ts`:
+  its booking's end, else its minutes up to a day, else `CARD_MINUTES`), for every reader of an
+  end (the calendar, the join window, the guests, a series, the slots, a booker's mail), never
+  a default of its own; `lib/upcoming.ts` is the one reader of a person's
   cards (`visibleCards`: `cardsAhead` for what's planned, `dueCards` for what's owed, the same
   visibility and the team member's "theirs to do"), and `calendarItems`, the ICS and Cai's
   coming-up list all take both, so a new dated card joins there once. A card that asks (core
@@ -1740,12 +1744,24 @@ appointment from a catalog).
   of its own: the business masks, the readers' languages, the relay credentials, a brief's
   summaries and the sitemap (`lib/sitemap-cache.ts`, ten minutes, forgotten by an offer saved,
   a domain verified or let go and an organization closed; a test that changes those past the
-  routes calls `forgetSitemaps()`). Two things three modules each wrote their own of are
-  `lib/text.ts` (`clip`, `escapeLike`), and a card's agreed state is core's `AGREED_STATES`.
+  routes calls `forgetSitemaps()`). What someone typed goes into a LIKE pattern through
+  `escapeLike` (`lib/text.ts`); words cut to a length are core's `truncate` (by character, never
+  half of one: M16 D3), or `previewText` on one line, never a `.slice` of someone's words shown
+  or handed to a model; and a card's agreed state is core's `AGREED_STATES`.
 - A message is selected with `.select(MESSAGE_COLUMNS)` (`db/schema.ts`), never `selectAll()`,
   which shipped its tsvector with every row: `messaging.test.ts` holds the list to the table's
   columns and `select-all.test.ts` the source to the rule (`returning(MESSAGE_COLUMNS)` after
-  an update too), so a new column joins the list. A sweep over due rows
+  an update too), so a new column joins the list. What a person may read of a conversation is
+  `readableBy(userId, now, alias)` (`lib/messages.ts`: not deleted, not expired, not hidden for
+  them, M16 D3): every reader that shows messages to a person or hands them to a model for one
+  (Cai and the friends, catch-up, ask, translate, the brief, search, the profile's memory, their
+  cards, pins, the agent) puts it in its `where`, and a new one does too (the messages page
+  keeps a deleted message's tombstone, so it reads the hidden and expired parts alone). A
+  conversation as a model reads it is `lib/transcript.ts` (`wordsFor`: a text, a caption or a
+  voice note's words whole, else what the message is; `transcriptText`, numbered lines with
+  what each replies to; `transcriptClock`, the reader's own clock), for Cai and the friends,
+  catch-up and ask, the brief and the agent: a new feature that hands a model a conversation
+  builds its lines there. A sweep over due rows
   (reminders, held notifications) takes `SWEEP_BATCH` at a time and runs `background: true`,
   so nothing holds the job loop; a check per item in a loop (the AI actions route) is a query
   for the set first. Every model call's usage carries `cacheReadTokens` and

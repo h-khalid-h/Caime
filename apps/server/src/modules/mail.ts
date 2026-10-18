@@ -64,7 +64,7 @@ export async function mailRoutes(app: FastifyInstance, ctx: AppContext) {
   app.get('/mail/seen/:token', async (req, reply) => {
     const { token } = req.params as { token: string };
     if (token.length <= 120) await seenByLink(ctx, token);
-    return reply.redirect(`${ctx.config.PUBLIC_URL.replace(/\/+$/, '')}/sign-up`, 302);
+    return reply.redirect(`${ctx.config.PUBLIC_URL}/sign-up`, 302);
   });
 
   app.post('/mail/events/:provider', async (req): Promise<MailEventsResponse> => {

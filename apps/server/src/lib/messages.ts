@@ -141,6 +141,18 @@ export function notHiddenFor(userId: string, column: string) {
   return sql<SqlBool>`not exists (select 1 from hidden_messages h where h.message_id = ${sql.ref(column)} and h.user_id = ${userId})`;
 }
 
+/**
+ * A message a person may read (M16 D3): there for everyone (not deleted), not one they deleted
+ * for themselves, and not past its time (a disappearing message the hourly sweep hasn't reached
+ * yet). The one condition every reader that gathers a person's words puts in its `where` (search,
+ * Cai and the friends, a brief, the memory, a profile, the calendar); `alias` is the messages
+ * table as the query names it.
+ */
+export function readableBy(userId: string, now: Date, alias = 'messages') {
+  const col = (c: string) => sql.ref(`${alias}.${c}`);
+  return sql<SqlBool>`(${col('deleted_at')} is null and (${col('expires_at')} is null or ${col('expires_at')} > ${now}) and ${notHiddenFor(userId, `${alias}.id`)})`;
+}
+
 export function messagePreview(
   m: Pick<Message, 'kind' | 'body' | 'payload' | 'deleted_at'>,
 ): string {

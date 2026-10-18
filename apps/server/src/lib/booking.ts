@@ -8,6 +8,7 @@
  * (`AppointmentBooking`), fixed then: the item's name, length, how many, the price, and, for
  * the team alone, who does it.
  */
+
 import {
   type AppointmentBooking,
   type BookingAskInput,
@@ -36,6 +37,7 @@ import {
   withSlugs,
   zonedParts,
 } from '@caime/core';
+import { cardEndMs } from '@caime/core/meetings';
 import type { AppContext } from '../context';
 import type { Organization, User } from '../db/schema';
 import { humanTeam } from './booking-team';
@@ -228,15 +230,19 @@ interface Held {
   booking: AppointmentBooking | null;
 }
 
-/** When a card that holds a slot ends: as booked, else a slot of the hours. */
+/**
+ * When a card that holds a slot ends: core's one rule (`cardEndMs`), where a card that says no
+ * length holds one slot of the hours.
+ */
 function endOf(
   hours: BookingHours,
   at: Date,
   booking: AppointmentBooking | null,
   minutes: number | null,
 ) {
-  if (booking?.endAt) return new Date(booking.endAt);
-  return new Date(at.getTime() + (minutes ?? hours.slotMinutes) * 60_000);
+  return new Date(
+    cardEndMs(at.getTime(), { booking, durationMinutes: minutes ?? hours.slotMinutes }),
+  );
 }
 
 /** Everything the host has that holds a slot in the window. */

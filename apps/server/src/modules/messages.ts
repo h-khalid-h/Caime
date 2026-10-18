@@ -82,6 +82,7 @@ import {
   messageViews,
   notHiddenFor,
   participantsOf,
+  readableBy,
   sendMessage,
 } from '../lib/messages';
 import { removeForEveryone } from '../lib/moderation';
@@ -102,17 +103,10 @@ export async function messageRoutes(app: FastifyInstance, ctx: AppContext) {
       .selectFrom('messages')
       .select(MESSAGE_COLUMNS)
       .where('conversation_id', '=', id)
-      .where((eb) =>
-        eb.not(
-          eb.exists(
-            eb
-              .selectFrom('hidden_messages')
-              .select('message_id')
-              .whereRef('hidden_messages.message_id', '=', 'messages.id')
-              .where('hidden_messages.user_id', '=', auth.userId),
-          ),
-        ),
-      );
+      // Never one deleted for oneself; one deleted for everyone stays, as a mark in its place. A
+      // disappearing message is gone at its time, not when the hourly sweep reaches it (M16 D3).
+      .where(notHiddenFor(auth.userId, 'messages.id'))
+      .where((eb) => eb.or([eb('expires_at', 'is', null), eb('expires_at', '>', ctx.now())]));
     if (q.after !== undefined)
       query = query.where('seq', '>', String(q.after)).orderBy('seq', 'asc');
     else if (q.around !== undefined)
@@ -1041,19 +1035,8 @@ export async function messageRoutes(app: FastifyInstance, ctx: AppContext) {
       .select(MESSAGE_COLUMNS)
       .where('conversation_id', '=', id)
       .where('pinned_at', 'is not', null)
-      .where('deleted_at', 'is', null)
-      // One they deleted for themselves stays out of their sight here too.
-      .where((eb) =>
-        eb.not(
-          eb.exists(
-            eb
-              .selectFrom('hidden_messages')
-              .select('message_id')
-              .whereRef('hidden_messages.message_id', '=', 'messages.id')
-              .where('hidden_messages.user_id', '=', auth.userId),
-          ),
-        ),
-      )
+      // One they deleted for themselves stays out of their sight here too (`readableBy`).
+      .where(readableBy(auth.userId, ctx.now()))
       .orderBy('pinned_at', 'desc')
       .limit(PINNED_MAX)
       .execute();

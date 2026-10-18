@@ -117,7 +117,7 @@ export async function calendarEvents(
   const now = ctx.now();
   const from = new Date(now.getTime() - PAST_MS);
   const until = new Date(now.getTime() + AHEAD_MS);
-  const base = ctx.config.PUBLIC_URL.replace(/\/$/, '');
+  const base = ctx.config.PUBLIC_URL;
   const where = (conversationId: string | null) =>
     conversationId ? `${base}/c/${conversationId}` : `${base}/actions`;
   // Open actions with a due date that are theirs to see: their own, and what they were asked,
@@ -541,7 +541,7 @@ export async function calendarRoutes(app: FastifyInstance, ctx: AppContext) {
     await audit(ctx.db, { actorId: auth.userId, action: 'calendar.feed_created', ip: req.ip });
     builtinCountsChanged(ctx);
     await ctx.bus.publish([auth.userId], { type: 'apps.changed', data: { app: 'calendar' } });
-    const base = ctx.config.PUBLIC_URL.replace(/\/$/, '');
+    const base = ctx.config.PUBLIC_URL;
     return { feed: feedView(row), url: `${base}/v1/calendar/${token}.ics` };
   });
 

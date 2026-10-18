@@ -97,7 +97,7 @@ export async function connectUrl(
     client_id: ctx.config.STRIPE_CONNECT_CLIENT_ID,
     scope: 'read_write',
     state: token,
-    redirect_uri: `${ctx.config.PUBLIC_URL.replace(/\/+$/, '')}/v1/checkout/stripe/return`,
+    redirect_uri: `${ctx.config.PUBLIC_URL}/v1/checkout/stripe/return`,
     stripe_user: { business_name: org.name },
   })}`;
 }
@@ -347,7 +347,7 @@ export async function openCheckout(
   if (!units || !amount?.currency) throw badRequest(tr('This card has no amount to pay by card.'));
   const currency = amount.currency.toLowerCase();
   const s = stripe(ctx, account.accountId)!;
-  const web = ctx.config.PUBLIC_URL.replace(/\/+$/, '');
+  const web = ctx.config.PUBLIC_URL;
   const back = `${web}/c/${m.conversation_id}`;
   const name =
     card.fields?.note?.slice(0, 200) || tr('Payment to {name}', { name: card.payTo.name ?? '' });

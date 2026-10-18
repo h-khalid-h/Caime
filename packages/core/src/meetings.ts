@@ -18,8 +18,26 @@ export const CAI_MAIL = 'assistant';
 export const JOIN_EARLY_MS = 10 * 60_000;
 /** And stays open this long after its planned end, since meetings run over. */
 export const JOIN_LATE_MS = 30 * 60_000;
-/** A meeting whose length isn't known is taken as this long, as the calendar takes it. */
-const DEFAULT_MINUTES = 60;
+/** A card whose length isn't known is taken as this long, wherever its end is read. */
+export const CARD_MINUTES = 60;
+
+/**
+ * When a meeting or an appointment ends (M16 D3), the one rule every reader takes: a booking's
+ * own end (a catalog item's length, a stay's nights), else the minutes its card says it lasts (a
+ * day at most: what a device sent is never trusted), else an hour. `at` is its start (epoch ms);
+ * a booking's end that isn't after its start is no end.
+ */
+export function cardEndMs(
+  at: number,
+  card: { durationMinutes?: unknown; booking?: { endAt?: unknown } | null },
+): number {
+  const endAt = card.booking?.endAt;
+  const booked = typeof endAt === 'string' ? Date.parse(endAt) : Number.NaN;
+  if (Number.isFinite(booked) && booked > at) return booked;
+  const asked = Number(card.durationMinutes);
+  const minutes = Number.isFinite(asked) && asked > 0 ? Math.min(asked, 24 * 60) : CARD_MINUTES;
+  return at + minutes * 60_000;
+}
 
 const CAIME = /^(on\s+)?ca[iı]me$/i;
 // A web address, with or without its scheme (meet.google.com/abc-defg-hij, zoom.us/j/123): one
@@ -57,9 +75,7 @@ export function joinOpen(start: unknown, durationMinutes: unknown, now: Date): b
   if (s.hasTime === false || typeof s.at !== 'string') return false;
   const at = Date.parse(s.at);
   if (!Number.isFinite(at)) return false;
-  const asked = Number(durationMinutes);
-  const minutes = Number.isFinite(asked) && asked > 0 ? Math.min(asked, 24 * 60) : DEFAULT_MINUTES;
-  return windowOpen(at, at + minutes * 60_000, now);
+  return windowOpen(at, cardEndMs(at, { durationMinutes }), now);
 }
 
 /** What a meeting card offers beyond its moves: Join when held here, Open when held elsewhere. */
@@ -111,7 +127,7 @@ export function calendarAction(
   if (venue !== 'caime' || !item.hasTime) return null;
   const at = Date.parse(item.at);
   if (!Number.isFinite(at)) return null;
-  const end = item.endAt ? Date.parse(item.endAt) : at + DEFAULT_MINUTES * 60_000;
+  const end = item.endAt ? Date.parse(item.endAt) : cardEndMs(at, {});
   return windowOpen(at, Number.isFinite(end) ? end : at, now) ? 'join' : null;
 }
 

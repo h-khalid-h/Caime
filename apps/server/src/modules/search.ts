@@ -13,6 +13,7 @@ import {
   MATCH_START,
   type ParsedQuery,
   parseSearchQuery,
+  previewText,
   SearchAnswerBody,
   SearchOutcomeBody,
   SearchQuery,
@@ -31,12 +32,12 @@ import { maskId, masksFor } from '../lib/business';
 import { titleWithGroup } from '../lib/conversations';
 import { AppError } from '../lib/errors';
 import { recordEvent } from '../lib/events';
-import { fileView, notHiddenFor } from '../lib/messages';
+import { fileView, notHiddenFor, readableBy } from '../lib/messages';
 import { personViewsFor } from '../lib/people-batch';
 import { assertAiAllowance } from '../lib/plans';
 import { relationshipView } from '../lib/relations';
 import { taskViews } from '../lib/tasks';
-import { clip } from '../lib/text';
+import { escapeLike } from '../lib/text';
 import { TtlCache } from '../lib/ttl-cache';
 import { minorOf } from '../lib/users';
 import { parse } from '../lib/validate';
@@ -44,9 +45,8 @@ import { requireAuth } from '../plugins/auth';
 
 const SNIPPET_MARKS = MATCH_START + MATCH_END;
 
-/** A card's start, as prepareKitFields keeps it (an ISO time, compared as text). */
-
-const like = (s: string) => `%${s.replace(/[\\%_]/g, (c) => `\\${c}`)}%`;
+/** Anywhere in a field, what's typed taken literally (its `%` and `_` too). */
+const like = (s: string) => `%${escapeLike(s)}%`;
 
 /**
  * The words typed as a prefix tsquery: `'contr':* & 'invoic':*`, each word quoted so nothing in
@@ -78,7 +78,7 @@ async function resolvePeople(ctx: AppContext, me: string, name: string): Promise
       eb.or([
         eb('u.display_name', 'ilike', like(name)),
         eb('s.nickname', 'ilike', like(name)),
-        sql<boolean>`u.handle::text ilike ${`${name.replace(/^@/, '')}%`}`,
+        sql<boolean>`u.handle::text ilike ${`${escapeLike(name.replace(/^@/, ''))}%`}`,
       ]),
     )
     .where((eb) =>
@@ -136,7 +136,7 @@ export async function runSearch(
             eb('s.nickname', 'ilike', like(text)),
             eb('r.org_name', 'ilike', like(text)),
             eb('r.role_label', 'ilike', like(text)),
-            sql<boolean>`u.handle::text ilike ${`${text.replace(/^@/, '')}%`}`,
+            sql<boolean>`u.handle::text ilike ${`${escapeLike(text.replace(/^@/, ''))}%`}`,
           ]),
         ),
       )
@@ -260,9 +260,9 @@ export async function runSearch(
             : sql<string>`left(coalesce(m.body, m.payload->>'title', ''), 140)`.as('snippet'),
         ])
         .where('p.left_at', 'is', null)
-        .where('m.deleted_at', 'is', null)
-        // A message deleted for oneself is gone from one's own search too.
-        .where(notHiddenFor(me, 'm.id'))
+        // What the searcher may read (`readableBy`): a message deleted for oneself is gone from
+        // one's own search too, and a disappearing one once its time has come.
+        .where(readableBy(me, ctx.now(), 'm'))
         .where('c.privacy_class', '=', 'standard')
         .where('m.kind', '<>', 'system')
         // Words as prefixes against the GIN index ("contr" finds "contract"); only a query too
@@ -603,7 +603,7 @@ function when(iso: string, timeZone: string, withTime = true): string {
 }
 
 /** On one line, cut at `max`. */
-const oneLine = (s: string, max: number) => clip(s.replace(/\s+/g, ' ').trim(), max);
+const oneLine = previewText;
 
 /**
  * "Ask Cai" in Search (R66, R17): a question answered from what search finds in the asker's own

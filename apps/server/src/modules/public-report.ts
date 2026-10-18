@@ -96,7 +96,7 @@ export async function publicReportRoutes(app: FastifyInstance, ctx: AppContext) 
       const mail = ctx.mail;
       if (checked.email && mail) {
         const to = checked.email;
-        const url = `${ctx.config.PUBLIC_URL.replace(/\/+$/, '')}${found.page}`;
+        const url = `${ctx.config.PUBLIC_URL}${found.page}`;
         ctx.defer('email.report', () => mail.send(visitorReportReceiptMail(to, checked.name, url)));
       }
       return back(reply, found.page, { reported: '1' }, form.lang);

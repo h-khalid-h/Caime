@@ -489,7 +489,7 @@ export async function settleReport(
   const mail = ctx.mail;
   if (!before.reporter_id && before.visitor_email && before.page && mail) {
     const to = before.visitor_email;
-    const page = `${ctx.config.PUBLIC_URL.replace(/\/+$/, '')}${before.page}`;
+    const page = `${ctx.config.PUBLIC_URL}${before.page}`;
     ctx.defer('email.report', () =>
       mail.send(visitorReportDecisionMail(to, before.visitor_name, page, status === 'actioned')),
     );

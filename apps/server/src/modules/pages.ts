@@ -41,7 +41,7 @@ export function sitePageAt(url: string): SitePage | null {
 
 export async function pageRoutes(app: FastifyInstance, ctx: AppContext) {
   const { config } = ctx;
-  const base = config.PUBLIC_URL.replace(/\/+$/, '');
+  const base = config.PUBLIC_URL;
   const ownHost = new URL(base).hostname.toLowerCase();
   const set = (u: string | undefined) => (u ? new URL(u) : null);
   const there: Record<SitePage, URL | null> = {

@@ -16,6 +16,7 @@ import { isRepeat, type Repeat } from '@caime/core/repeat';
 import { isDay, occurrencesBetween, seriesAgreed, seriesOf, timesAYear } from '@caime/core/series';
 import { sql } from 'kysely';
 import type { AppContext } from '../context';
+import { readableBy } from './messages';
 
 export type CardKit = 'meeting' | 'appointment';
 export type DueKit = 'payment_request' | 'invoice';
@@ -29,7 +30,7 @@ const ASKED: Record<CardKit, string> = { meeting: 'proposed', appointment: 'requ
  * customer and assignee, and a booking's provider, once the rows are read (`theirsToDo`).
  */
 function visibleCards(
-  ctx: Pick<AppContext, 'db'>,
+  ctx: Pick<AppContext, 'db' | 'now'>,
   userId: string,
   opts: { from: Date; until: Date; limit: number; conversationIds?: string[] },
 ) {
@@ -55,7 +56,9 @@ function visibleCards(
         't.assignee_id',
       ])
       .where('m.kind', '=', 'kit')
-      .where('m.deleted_at', 'is', null)
+      // What the person may read (`readableBy`): never a card they deleted for themselves, nor
+      // one whose time to disappear has come.
+      .where(readableBy(userId, ctx.now(), 'm'))
       .$if(Boolean(opts.conversationIds), (qb) =>
         qb.where('m.conversation_id', 'in', opts.conversationIds ?? []),
       )
@@ -72,16 +75,6 @@ function visibleCards(
             eb(sql`m.payload->'booking'->>'hostId'`, '=', userId),
           ]),
         ]),
-      )
-      .where(({ not, exists, selectFrom }) =>
-        not(
-          exists(
-            selectFrom('hidden_messages as h')
-              .select('h.message_id')
-              .whereRef('h.message_id', '=', 'm.id')
-              .where('h.user_id', '=', userId),
-          ),
-        ),
       )
       // When it is, as it's kept (always an ISO time, so compared as text): only what's in the
       // window, soonest first, however long ago each was planned.
@@ -180,7 +173,7 @@ function cardAhead(row: CardRow, payload: CardPayload, kit: CardKit, at: Date): 
 }
 
 export async function cardsAhead(
-  ctx: Pick<AppContext, 'db'>,
+  ctx: Pick<AppContext, 'db' | 'now'>,
   userId: string,
   opts: {
     from: Date;
@@ -239,7 +232,7 @@ export const SERIES_ENDED_MS = 86_400_000;
  * sees an organization's repeating appointment as they see its latest time (theirs to do).
  */
 async function seriesAhead(
-  ctx: Pick<AppContext, 'db'>,
+  ctx: Pick<AppContext, 'db' | 'now'>,
   userId: string,
   opts: { from: Date; until: Date; limit: number; conversationIds?: string[]; now: Date },
 ): Promise<CardAhead[]> {
@@ -327,7 +320,7 @@ export interface CardDue {
  * day doesn't hold. The same visibility as `cardsAhead`.
  */
 export async function dueCards(
-  ctx: Pick<AppContext, 'db'>,
+  ctx: Pick<AppContext, 'db' | 'now'>,
   userId: string,
   opts: { from: Date; until: Date; limit: number; conversationIds?: string[] },
 ): Promise<CardDue[]> {

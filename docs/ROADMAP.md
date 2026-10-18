@@ -2509,6 +2509,24 @@ graph) and the number that will show it; one that sharpens none is hygiene and s
       person is heard), `fanout-scale.test.ts` (a fixed ceiling), core `policy.test.ts` and
       `large-group.test.ts`, the app's `rows.test.ts` (one tick past a hundred), and the full
       gate.
+- [x] D3a. One reading of a conversation (2026-10-18, review §10's fragments): what a person may
+      read is one rule, `readableBy` (not deleted, not expired, not hidden for them), in every
+      reader that shows messages or hands them to a model (Cai and the friends, catch-up, ask,
+      translate, the brief, search, the profile's memory, their cards, pins, the agent): Cai's
+      transcript had read the model what someone deleted for themselves, and now doesn't. A
+      conversation as a model reads it is one builder (`lib/transcript.ts`: a voice note's words
+      and a caption whole, a line's reply named, the reader's own clock), so the brief's summary
+      now has the times the catch-up had. When a card ends is one rule (core `cardEndMs`: its
+      booking's end, else its minutes, else an hour), where the booker's mail had said half an
+      hour and the guests and the series read no booking's end. Words cut to a length are cut by
+      character (core `truncate`, never a lone half of an emoji) in the transcripts (the agent's
+      now holds each message to 1,500 characters, where a pasted file went whole), previews,
+      search's snippets, what a model answers and a mail's subject; what
+      someone types into search and memory's contexts is escaped for LIKE (a `%` no longer finds
+      everything); `PUBLIC_URL` is trimmed once, in `loadConfig`, where 27 places trimmed it
+      themselves. Verified: `transcript.test.ts`, `system-accounts.test.ts` (a PIN deleted for
+      oneself never reaches the model), core `meetings.test.ts` (when a card ends),
+      `about.test.ts` (the address without its slash), and the full gate.
 - [ ] E. Chat polish: distinct read ticks with a contrast test; the English leaks and a scanner
       that flags any word-bearing literal; quoted replies with the author and a jump, swipe to
       reply; message info and who reacted; video as a message, voice notes with a waveform, speed
@@ -4137,6 +4155,9 @@ graph) and the number that will show it; one that sharpens none is hygiene and s
   journeys, safety, reliability, performance, intelligence, mail and calendar, chat, integrations,
   business and code integrity; the matrix against WhatsApp, Signal, Slack, Calendly and Workspace;
   an age-assurance design; the integration framework mapped to the code; plan M16 (A–H).
+- 2026-10-18 — M16 D3a: one rule for what a person may read of a conversation (Cai's model no
+  longer reads what someone deleted for themselves), one transcript, one end for a card, words cut
+  by character, LIKE escaped, the public address trimmed once. D2b verified on cai.me.
 - 2026-10-18 — M16 D2b: a group past a hundred is a crowd: no acks, no typing, the inbox patched,
   and a stranger's word to everyone waits in each inbox while what's for you still alerts; every
   group's notifications written at once (80 members: 267 queries → 34).

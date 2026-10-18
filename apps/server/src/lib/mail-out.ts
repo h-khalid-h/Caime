@@ -274,7 +274,7 @@ async function attachmentsOf(ctx: AppContext, messageId: string): Promise<MailAt
 
 /** The mail's link back to Caime (R75): opening it says the mail was seen. */
 async function seenLink(ctx: AppContext, rfcId: string): Promise<string> {
-  const base = ctx.config.PUBLIC_URL.replace(/\/+$/, '');
+  const base = ctx.config.PUBLIC_URL;
   return `${base}/v1/mail/seen/${rfcId}.${await seenMac(ctx, rfcId)}`;
 }
 

@@ -45,10 +45,11 @@ import { AppError } from './errors';
 import { asReader, inLanguage, readerOf } from './i18n';
 import { registerJob } from './jobs';
 import { SYSTEM_REPLY_JOB } from './message-effects';
-import { messagePreview } from './messages';
+import { readableBy } from './messages';
 import { assertAiAllowance } from './plans';
 import { postAs } from './post-as';
 import { visibleTasksSql } from './task-visibility';
+import { transcriptText, wordsFor } from './transcript';
 import { cardsAhead, dueCards } from './upcoming';
 import { minorOf } from './users';
 
@@ -557,18 +558,18 @@ async function transcriptOf(ctx: AppContext, conversationId: string, personId: s
     .selectFrom('messages')
     .select(['sender_id', 'kind', 'body', 'payload', 'deleted_at'])
     .where('conversation_id', '=', conversationId)
-    .where('deleted_at', 'is', null)
+    // What the person may read (M16 D3): what they deleted for themselves never reaches the model.
+    .where(readableBy(personId, ctx.now()))
     .where('kind', '<>', 'system')
     .orderBy('seq', 'desc')
     .limit(TRANSCRIPT_MESSAGES)
     .execute();
-  return rows
-    .reverse()
-    .map((m, i) => {
-      const text = (m.kind === 'text' ? (m.body ?? '') : messagePreview(m)).replace(/\s+/g, ' ');
-      return `[${i + 1}] ${m.sender_id === personId ? 'Person' : as}: ${text.trim().slice(0, 600)}`;
-    })
-    .join('\n');
+  return transcriptText(
+    rows.reverse().map((m) => ({
+      who: m.sender_id === personId ? 'Person' : as,
+      words: wordsFor(m, 600),
+    })),
+  );
 }
 
 export interface Open {

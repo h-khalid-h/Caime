@@ -7,6 +7,7 @@
  */
 
 import { asciiDigits } from './digits';
+import { previewText } from './format';
 import { tr } from './i18n';
 import { findRole, relationshipFromWord, SPHERES, type Sphere } from './taxonomy';
 
@@ -790,11 +791,6 @@ export interface SearchUnderstanding {
   interpretation: string;
 }
 
-const clip = (s: string, max: number) => {
-  const one = s.replace(/\s+/g, ' ').trim();
-  return one.length > max ? `${one.slice(0, max - 1).trimEnd()}…` : one;
-};
-
 /**
  * A model's understanding as a query the server runs: every value checked against what Caime
  * knows (a sphere and role from the taxonomy, a scope and file kind from the lists), anything
@@ -808,12 +804,12 @@ export function fromUnderstanding(raw: string, u: SearchUnderstanding): ParsedQu
   const scope = (SEARCH_SCOPES as readonly string[]).includes(u.scope) ? u.scope : 'all';
   const fileKind = (FILE_KINDS as readonly string[]).includes(u.fileKind ?? '') ? u.fileKind : null;
   const interpretation =
-    clip(u.interpretation, 120) || tr('Everything matching “{q}”', { q: clean(raw) });
+    previewText(u.interpretation, 120) || tr('Everything matching “{q}”', { q: clean(raw) });
   return {
     raw,
     scope,
-    text: clip(u.text, 200),
-    person: u.person ? clip(u.person, 80) : null,
+    text: previewText(u.text, 200),
+    person: u.person ? previewText(u.person, 80) : null,
     relationship: sphere ? (role ? { sphere, role } : { sphere }) : null,
     fileKind,
     period: null,

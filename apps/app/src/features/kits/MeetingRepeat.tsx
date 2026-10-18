@@ -3,8 +3,10 @@
  * repeating", which ends the series with it (the server takes it only before the time ends);
  * a time where it was stopped says so. How often it repeats is the card's own line ("Repeats").
  */
+
 import type { MessageView } from '@caime/core/api';
 import { tr } from '@caime/core/i18n';
+import { cardEndMs } from '@caime/core/meetings';
 import { isRepeat } from '@caime/core/repeat';
 import { seriesAgreed } from '@caime/core/series';
 import { useQueryClient } from '@tanstack/react-query';
@@ -25,16 +27,12 @@ interface RepeatPayload {
   fields?: Record<string, unknown> | null;
 }
 
-/** When a time ends: as booked, else its start and its length, else an hour; null without a start. */
+/** When a time ends, by core's one rule (`cardEndMs`, as the server reads it); null without a start. */
 function endOf(card: RepeatPayload): number | null {
-  const fields = card.fields;
-  const start = fields?.start as { at?: unknown } | undefined;
+  const start = card.fields?.start as { at?: unknown } | undefined;
   const at = typeof start?.at === 'string' ? Date.parse(start.at) : Number.NaN;
   if (!Number.isFinite(at)) return null;
-  const booked = card.booking?.endAt ? Date.parse(card.booking.endAt) : Number.NaN;
-  if (Number.isFinite(booked) && booked > at) return booked;
-  const minutes = Number(fields?.durationMinutes);
-  return at + (Number.isFinite(minutes) && minutes > 0 ? minutes : 60) * 60_000;
+  return cardEndMs(at, { durationMinutes: card.fields?.durationMinutes, booking: card.booking });
 }
 
 export function MeetingRepeat({ m, card }: { m: MessageView; card: RepeatPayload }) {
