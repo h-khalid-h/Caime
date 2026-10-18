@@ -37,6 +37,7 @@ import { sql } from 'kysely';
 import { z } from 'zod';
 import type { AppContext } from '../context';
 import { USER_COLUMNS } from '../db/schema';
+import { assertAgeChecked } from '../lib/age';
 import { tellSaved } from '../lib/automations';
 import { assertCanWrite } from '../lib/blocks';
 import { canEditConversation, contextEditable, contextVisible } from '../lib/contexts';
@@ -82,6 +83,8 @@ async function assertRequestRoom(ctx: AppContext, senderId: string, targetId: st
     .where('is_general', '=', true)
     .executeTakeFirst();
   if (open) return;
+  // Writing first to someone you're not connected with (M16 B7): checked first, where asked.
+  await assertAgeChecked(ctx, senderId, 'stranger');
   const started = await ctx.db
     .selectFrom('conversations as c')
     .innerJoin('participants as p', 'p.conversation_id', 'c.id')

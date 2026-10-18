@@ -32,6 +32,7 @@ export type AuditAction =
   | 'moderation.org_unsuspended'
   | 'moderation.birth_date'
   | 'moderation.unsuspended'
+  | 'age.checked'
   | 'moderation.appealed'
   | 'moderation.appeal_lifted'
   | 'moderation.appeal_upheld'

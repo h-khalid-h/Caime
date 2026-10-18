@@ -8,6 +8,7 @@ import { defineConfig, devices } from '@playwright/test';
 import {
   ACCOUNTS_STUB,
   ADMIN_TOKEN,
+  AGEMIN_STUB,
   DNS_STUB,
   MAIL_STUB,
   MAIL_WEBHOOK_SECRET,
@@ -113,6 +114,15 @@ export default defineConfig({
           env: { PORT: new URL(ACCOUNTS_STUB).port },
         },
         {
+          command: 'node e2e/agemin-stub.mjs',
+          url: `${AGEMIN_STUB}/health`,
+          reuseExistingServer: !process.env.CI,
+          env: {
+            PORT: new URL(AGEMIN_STUB).port,
+            WEBHOOK_URL: `${BASE}/v1/age/webhook/agemin`,
+          },
+        },
+        {
           command: 'node --enable-source-maps apps/server/dist/server.js',
           url: `${BASE}/v1/readyz`,
           reuseExistingServer: !process.env.CI,
@@ -173,6 +183,14 @@ export default defineConfig({
             MICROSOFT_CLIENT_SECRET: 'microsoft-e2e-secret',
             MICROSOFT_LOGIN_BASE: ACCOUNTS_STUB,
             MICROSOFT_GRAPH_API: ACCOUNTS_STUB,
+            // Age checks (M16 B7) through Agemin's stand-in, its key read from its API; no
+            // trigger asks, since every other spec starts organizations and writes first.
+            AGE_PROVIDER: 'agemin',
+            AGEMIN_ASSET_ID: 'ast_e2e',
+            AGEMIN_SECRET_KEY: 'age_sk_e2e_0123456789',
+            AGEMIN_API_URL: AGEMIN_STUB,
+            AGEMIN_VERIFY_URL: AGEMIN_STUB,
+            AGE_CHECK_TRIGGERS: '',
           },
         },
       ],

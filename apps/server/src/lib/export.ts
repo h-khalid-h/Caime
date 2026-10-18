@@ -154,6 +154,7 @@ export async function buildExport(ctx: AppContext, me: string, now: Date) {
     joinRequests,
     placeInvitations,
     appeals,
+    ageChecks,
     mailCopies,
     externalBusy,
     calendarPushes,
@@ -1001,6 +1002,22 @@ export async function buildExport(ctx: AppContext, me: string, now: Date) {
       .where('user_id', '=', me)
       .orderBy('created_at')
       .execute(),
+    // The checks of their age (M16 B7): who checked, when, and what it found; never an image,
+    // which Caime never had.
+    db
+      .selectFrom('age_checks')
+      .select([
+        'provider',
+        'trigger',
+        'created_at',
+        'finished_at',
+        'outcome',
+        'method',
+        'confidence',
+      ])
+      .where('user_id', '=', me)
+      .orderBy('created_at')
+      .execute(),
     // What Caime keeps of their messages that went or came as mail (R75): the envelope and how
     // far it got, never the HTML (shown only in its sandbox), and nothing of a message erased.
     db
@@ -1538,6 +1555,15 @@ export async function buildExport(ctx: AppContext, me: string, now: Date) {
       decidedAt: iso(a.decided_at),
       outcome: a.outcome,
       note: a.note,
+    })),
+    ageChecks: ageChecks.map((c) => ({
+      provider: c.provider,
+      askedFor: c.trigger,
+      at: c.created_at.toISOString(),
+      answeredAt: iso(c.finished_at),
+      outcome: c.outcome,
+      method: c.method,
+      confidence: c.confidence,
     })),
     meetingInvitations: meetingInvitations.map((g) => ({
       meetingSpaceId: g.conversation_id,

@@ -1010,6 +1010,35 @@ anything is sealed with a key that's gone:
         expr: caime_vault_sealed{key="unopenable"} > 0
 ```
 
+## Age checks
+
+Caime can ask someone to check their age before something whose risk calls for it (M16 B7,
+REVIEW 2026-10-17 §3): starting an organization (`org`), selling something for a price or taking
+cards (`paid`), and writing first to someone they're not connected with (`stranger`). The check
+happens on the provider's own page (a selfie, or a document); Caime keeps whether it found them
+18 or over, how, how sure the provider was and when, never a picture. Under 18 by a check, the
+account is under 18 for a year whatever date of birth it gave, unless a document says otherwise;
+someone under 18 by their own date of birth is never asked. Nothing changes until it's set:
+
+```sh
+AGE_PROVIDER=agemin
+AGEMIN_ASSET_ID=ast_...           # the asset's public key, from Agemin's dashboard
+AGEMIN_SECRET_KEY=age_sk_live_... # its private key: the lookup by reference
+AGEMIN_WEBHOOK_PUBLIC_KEY=...     # optional: the PEM its notices are signed with (\n for line breaks)
+AGE_CHECK_TRIGGERS=org,paid,stranger
+```
+
+In Agemin's dashboard, add the webhook `https://cai.me/v1/age/webhook/agemin` for
+`age.verification.approved` and `age.verification.rejected`: the notice says what every attempt
+found (a retry that reads older never lifts an under-18), and the person's return
+(`/v1/age/return`) asks Agemin by reference too, so either alone is enough to apply the answer
+once. `pnpm --filter @caime/server check-env` refuses `AGE_PROVIDER` without its two keys, and a
+trigger it doesn't know. `/metrics` counts checks begun and answered
+(`caime_age_checks_total{provider,outcome}`), and the hourly provider probe reads a reference
+nobody made (`caime_provider_up{provider="age"}`). ⛔ Before setting it, the owner signs Agemin's
+terms and DPA and confirms where it processes and that it deletes each picture after the check
+(the DPA draft names the provider; the privacy page names it once it's set).
+
 ## What the proxy needn't do
 
 The server sends the web app's hashed scripts precompressed (Brotli 11 or gzip 9, made at build

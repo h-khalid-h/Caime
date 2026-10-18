@@ -4497,4 +4497,30 @@ export const fr: Catalog = {
   'Why it’s wrong': 'Pourquoi c’est une erreur',
   'Send appeal': 'Envoyer le recours',
   'Say why, in words they’ll read.': 'Dites pourquoi, avec des mots que la personne lira.',
+  'Before you start an organization, Caime asks you to check your age once.':
+    'Avant de créer une organisation, Caime vous demande de vérifier votre âge une fois.',
+  'Before you sell something for a price, Caime asks you to check your age once.':
+    'Avant de vendre quelque chose à un prix, Caime vous demande de vérifier votre âge une fois.',
+  'Before you write first to someone you’re not connected with, Caime asks you to check your age once.':
+    'Avant d’écrire en premier à quelqu’un avec qui vous n’êtes pas en contact, Caime vous demande de vérifier votre âge une fois.',
+  'Check your age': 'Vérifier votre âge',
+  'It takes a minute on the age-check provider’s own page: a selfie, or a document if you’d rather. Caime learns whether you’re 18 or over, never the picture.':
+    'Cela prend une minute, sur la page même du prestataire de vérification d’âge : un selfie, ou une pièce d’identité si vous préférez. Caime apprend si vous avez 18 ans ou plus, jamais la photo.',
+  'The last check found you’re under 18. If that’s wrong, check again with a document.':
+    'Selon la dernière vérification, vous avez moins de 18 ans. Si c’est une erreur, vérifiez à nouveau avec une pièce d’identité.',
+  'Check my age': 'Vérifier mon âge',
+  'Not checked': 'Non vérifié',
+  '18 or over, by a document': '18 ans ou plus, par une pièce d’identité',
+  '18 or over, by an estimate': '18 ans ou plus, par estimation',
+  'Under 18 until {date}': 'Moins de 18 ans jusqu’au {date}',
+  'Your age': 'Votre âge',
+  'Checked when you ask, or when Caime asks before something that needs it. Caime never gets the picture.':
+    'Vérifié quand vous le demandez, ou quand Caime le demande avant quelque chose qui l’exige. Caime ne reçoit jamais la photo.',
+  'Age check': 'Vérification de l’âge',
+  'Checked: you’re 18 or over.': 'Vérifié : vous avez 18 ans ou plus.',
+  'The check found you’re under 18.': 'Selon la vérification, vous avez moins de 18 ans.',
+  'The check didn’t give an answer. You can try again.':
+    'La vérification n’a pas donné de réponse. Vous pouvez réessayer.',
+  'Your check is on its way. It shows here in a moment.':
+    'Votre vérification arrive. Elle s’affichera ici dans un instant.',
 };

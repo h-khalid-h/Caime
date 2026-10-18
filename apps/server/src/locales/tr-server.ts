@@ -1496,4 +1496,9 @@ export const turkishServer: Catalog = {
   'Report this page': 'Bu sayfayı bildir',
   'That appeal': 'Bu itiraz',
   'That appeal was decided already.': 'Bu itiraz zaten karara bağlandı.',
+  'Age checks aren’t available here.': 'Yaş doğrulaması burada kullanılamıyor.',
+  'Before this, Caime asks you to check your age once. It takes a minute.':
+    'Bundan önce Caime yaşınızı bir kez doğrulamanızı ister. Bir dakika sürer.',
+  'That’s as many age checks as a day allows. Try again tomorrow.':
+    'Bir günde izin verilen yaş doğrulaması sayısına ulaştınız. Yarın yeniden deneyin.',
 };

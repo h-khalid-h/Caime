@@ -107,6 +107,7 @@ async function mayBeAsked(
     suspended_at: Date | null;
     birth_date: string | null;
     time_zone: string;
+    age_minor_until: Date | null;
   },
 ): Promise<boolean> {
   if (person.deleted_at || person.suspended_at) return false;
@@ -437,7 +438,7 @@ async function guestRoom(ctx: AppContext, actorId: string, messageId: string) {
     throw forbidden(tr('Guests join meetings agreed in a chat or a group.'));
   const actor = await ctx.db
     .selectFrom('users')
-    .select(['display_name', 'email', 'birth_date', 'time_zone'])
+    .select(['display_name', 'email', 'birth_date', 'time_zone', 'age_minor_until'])
     .where('id', '=', actorId)
     .executeTakeFirstOrThrow();
   // Under 18 (R29): never someone a stranger to them, by their hand.

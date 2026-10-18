@@ -4317,4 +4317,30 @@ export const turkish: Catalog = {
   'Why it’s wrong': 'Neden yanlış',
   'Send appeal': 'İtirazı gönder',
   'Say why, in words they’ll read.': 'Nedenini, okuyacakları sözcüklerle yazın.',
+  'Before you start an organization, Caime asks you to check your age once.':
+    'Bir kuruluş oluşturmadan önce Caime yaşınızı bir kez doğrulamanızı ister.',
+  'Before you sell something for a price, Caime asks you to check your age once.':
+    'Bir şeyi bir fiyatla satmadan önce Caime yaşınızı bir kez doğrulamanızı ister.',
+  'Before you write first to someone you’re not connected with, Caime asks you to check your age once.':
+    'Bağlantınız olmayan birine ilk siz yazmadan önce Caime yaşınızı bir kez doğrulamanızı ister.',
+  'Check your age': 'Yaşınızı doğrulayın',
+  'It takes a minute on the age-check provider’s own page: a selfie, or a document if you’d rather. Caime learns whether you’re 18 or over, never the picture.':
+    'Yaş doğrulama sağlayıcısının kendi sayfasında bir dakika sürer: bir özçekim ya da isterseniz bir belge. Caime yalnızca 18 yaşında ya da daha büyük olup olmadığınızı öğrenir, fotoğrafı asla görmez.',
+  'The last check found you’re under 18. If that’s wrong, check again with a document.':
+    'Son doğrulamaya göre 18 yaşından küçüksünüz. Bu yanlışsa bir belgeyle yeniden doğrulayın.',
+  'Check my age': 'Yaşımı doğrula',
+  'Not checked': 'Doğrulanmadı',
+  '18 or over, by a document': '18 yaş ve üzeri, belgeyle',
+  '18 or over, by an estimate': '18 yaş ve üzeri, tahminle',
+  'Under 18 until {date}': '{date} tarihine kadar 18 yaşından küçük',
+  'Your age': 'Yaşınız',
+  'Checked when you ask, or when Caime asks before something that needs it. Caime never gets the picture.':
+    'Siz istediğinizde ya da Caime gerektiren bir şeyden önce istediğinde doğrulanır. Caime fotoğrafı asla almaz.',
+  'Age check': 'Yaş doğrulaması',
+  'Checked: you’re 18 or over.': 'Doğrulandı: 18 yaşında ya da daha büyüksünüz.',
+  'The check found you’re under 18.': 'Doğrulamaya göre 18 yaşından küçüksünüz.',
+  'The check didn’t give an answer. You can try again.':
+    'Doğrulama bir yanıt vermedi. Yeniden deneyebilirsiniz.',
+  'Your check is on its way. It shows here in a moment.':
+    'Doğrulamanız yolda. Birazdan burada görünür.',
 };

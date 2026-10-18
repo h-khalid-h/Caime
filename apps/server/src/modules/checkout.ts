@@ -15,6 +15,7 @@ import type { FastifyInstance } from 'fastify';
 import { z } from 'zod';
 import type { AppContext } from '../context';
 import { MESSAGE_COLUMNS } from '../db/schema';
+import { assertAgeChecked } from '../lib/age';
 import { audit } from '../lib/audit';
 import { refusedByStripe } from '../lib/billing';
 import { assertCanWrite } from '../lib/blocks';
@@ -66,10 +67,12 @@ export async function checkoutRoutes(app: FastifyInstance, ctx: AppContext) {
     if (!checkoutAvailable(ctx)) throw notFound(tr('Paying by card here'));
     const me = await ctx.db
       .selectFrom('users')
-      .select(['birth_date', 'time_zone'])
+      .select(['birth_date', 'time_zone', 'age_minor_until'])
       .where('id', '=', auth.userId)
       .executeTakeFirstOrThrow();
     if (minorOf(me, ctx.now())) throw forbidden(tr('Payments are set by someone 18 or over.'));
+    // Taking cards is selling (M16 B7): its owner checked first, where asked.
+    await assertAgeChecked(ctx, auth.userId, 'paid');
     ctx.limiter.hit(`checkout-connect:${auth.userId}`, ctx.config.isTest ? 1000 : 10, 3_600_000);
     const org = await orgById(ctx.db, id);
     return { url: await connectUrl(ctx, org, auth.userId) };

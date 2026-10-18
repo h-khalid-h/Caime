@@ -13,6 +13,7 @@ import { View } from 'react-native';
 import { endpoints } from '@/api/endpoints';
 import { qk } from '@/api/keys';
 import { Passkeys } from '@/features/account/Passkeys';
+import { AgeStatus } from '@/features/age/AgeStatus';
 import { PrivateDevices, RecoveryKey } from '@/features/e2ee/parts';
 import { saveOrgExport } from '@/features/orgs/orgExport';
 import { Group, SettingsPage } from '@/features/settings/SettingsPage';
@@ -168,6 +169,7 @@ export default function Security() {
       <PrivateDevices />
       <RecoveryKey />
       <EmailStatus />
+      <AgeStatus />
       <Group title={tr('Password')}>
         <View style={{ padding: 16, gap: 12 }}>
           <TextField

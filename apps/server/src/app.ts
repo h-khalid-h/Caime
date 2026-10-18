@@ -16,6 +16,7 @@ import type { Config } from './config';
 import type { AppContext } from './context';
 import { migrate } from './db/migrate';
 import { createDb } from './db/pool';
+import { ageProviderFor } from './lib/age-provider';
 import { registerAgentJob } from './lib/agent';
 import { createAiAssist } from './lib/ai';
 import { registerWebhookJob } from './lib/apps';
@@ -58,6 +59,7 @@ import { connectedAccountRoutes } from './modules/accounts';
 import { actionRoutes } from './modules/actions';
 import { addressRoutes } from './modules/addresses';
 import { adminRoutes } from './modules/admin';
+import { ageRoutes } from './modules/age';
 import { agentRoutes } from './modules/agents';
 import { aiRoutes } from './modules/ai';
 import { appLinkRoutes } from './modules/app-links';
@@ -184,6 +186,7 @@ export async function buildApp(config: Config, options: BuildOptions = {}): Prom
     metrics: createMetrics(database.pool),
     ai: createAiAssist(config),
     speech: speechFor(config),
+    age: ageProviderFor(config),
     mail: options.mail ?? createMailer(config, app.log),
     mailProvider: mailProviderFor(config),
     dns: {
@@ -359,6 +362,7 @@ export async function buildApp(config: Config, options: BuildOptions = {}): Prom
       await joinLinkRoutes(v1, ctx);
       await placeInviteRoutes(v1, ctx);
       await suspensionRoutes(v1, ctx);
+      await ageRoutes(v1, ctx);
       await handleRoutes(v1, ctx);
       await businessRoutes(v1, ctx);
       await updateRoutes(v1, ctx);

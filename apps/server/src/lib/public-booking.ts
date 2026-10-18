@@ -279,7 +279,7 @@ export async function confirmVisitorBooking(
   }
   const person = await ctx.db
     .selectFrom('users')
-    .select(['id', 'kind', 'birth_date', 'time_zone'])
+    .select(['id', 'kind', 'birth_date', 'time_zone', 'age_minor_until'])
     .where('id', '=', claim.personId)
     .executeTakeFirst();
   if (person?.kind !== 'provisional') return { kind: 'refused', reason: 'account' };

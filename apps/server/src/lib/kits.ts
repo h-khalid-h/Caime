@@ -77,7 +77,7 @@ export async function customCardFor(
   if (def.adultsOnly) {
     const people = await ctx.db
       .selectFrom('users')
-      .select(['birth_date', 'time_zone'])
+      .select(['birth_date', 'time_zone', 'age_minor_until'])
       .where('id', 'in', args.memberIds)
       .execute();
     if (people.some((u) => minorOf(u, ctx.now())))
@@ -211,7 +211,7 @@ export async function tellCardApp(
   if (!told.length) return;
   const customer = await ctx.db
     .selectFrom('users')
-    .select(['id', 'display_name', 'handle', 'birth_date', 'time_zone'])
+    .select(['id', 'display_name', 'handle', 'birth_date', 'time_zone', 'age_minor_until'])
     .where('id', '=', mask.customerId)
     .executeTakeFirst();
   const body = {

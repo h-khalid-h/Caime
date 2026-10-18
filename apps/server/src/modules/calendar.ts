@@ -34,6 +34,7 @@ import { joinPath, meetingVenue } from '@caime/core/meetings';
 import type { FastifyInstance, FastifyReply } from 'fastify';
 import { z } from 'zod';
 import type { AppContext } from '../context';
+import { assertAgeChecked } from '../lib/age';
 import { builtinCountsChanged } from '../lib/app-directory';
 import { audit } from '../lib/audit';
 import {
@@ -353,7 +354,7 @@ export async function calendarRoutes(app: FastifyInstance, ctx: AppContext) {
   async function adultViewer(userId: string): Promise<boolean> {
     const me = await ctx.db
       .selectFrom('users')
-      .select(['birth_date', 'time_zone'])
+      .select(['birth_date', 'time_zone', 'age_minor_until'])
       .where('id', '=', userId)
       .executeTakeFirstOrThrow();
     return !minorOf(me, ctx.now());
@@ -413,11 +414,14 @@ export async function calendarRoutes(app: FastifyInstance, ctx: AppContext) {
         'payments',
         'birth_date',
         'time_zone',
+        'age_minor_until',
       ])
       .where('id', '=', auth.userId)
       .executeTakeFirstOrThrow();
     const kept = catalogFrom(body, catalogOf(me).collections, body.booking);
     assertItemsFit(personHost(me), kept.items, new Set(), !minorOf(me, ctx.now()));
+    // Selling something for a price (M16 B7): checked first, where asked.
+    if (kept.items.some((item) => item.price)) await assertAgeChecked(ctx, auth.userId, 'paid');
     await assertPlacesFit(ctx, personHost(me), kept.items, body.booking);
     assertPaymentsFit(personHost(me), body.payments, !minorOf(me, ctx.now()));
     await assertItemPhotos(ctx, auth.userId, kept.items, catalogOf(me).items);
@@ -511,7 +515,7 @@ export async function calendarRoutes(app: FastifyInstance, ctx: AppContext) {
     const auth = requireAuth(req);
     const me = await ctx.db
       .selectFrom('users')
-      .select(['birth_date', 'time_zone'])
+      .select(['birth_date', 'time_zone', 'age_minor_until'])
       .where('id', '=', auth.userId)
       .executeTakeFirstOrThrow();
     if (minorOf(me, ctx.now())) throw forbidden(tr('Calendars are for people over 18.'));
@@ -564,7 +568,7 @@ export async function calendarRoutes(app: FastifyInstance, ctx: AppContext) {
     const feed = await ctx.db
       .selectFrom('calendar_feeds as f')
       .innerJoin('users as u', 'u.id', 'f.user_id')
-      .select(['f.user_id', 'f.last_read_at', 'u.time_zone', 'u.birth_date'])
+      .select(['f.user_id', 'f.last_read_at', 'u.time_zone', 'u.birth_date', 'u.age_minor_until'])
       .where('f.token_hash', '=', hash)
       .where('u.deleted_at', 'is', null)
       .executeTakeFirst();

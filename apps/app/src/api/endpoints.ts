@@ -6,12 +6,14 @@
 import type { PersonalScope } from '@caime/core/access';
 import type { AccountProvider, AccountUse } from '@caime/core/accounts';
 import type { AddressKind } from '@caime/core/addresses';
+import type { AgeTrigger } from '@caime/core/age-assurance';
 
 import type {
   AboutView,
   AccountExportFile,
   AccountFilesResponse,
   AccountStartResponse,
+  AgeCheckStartResponse,
   AgentTryView,
   AiActionsView,
   AiAnswerView,
@@ -271,6 +273,11 @@ export const endpoints = {
   appealSuspension: (body: { claim: string; text: string }) =>
     api.post<AppealSentResponse>('/suspension/appeal', body),
   suspendedExport: (claim: string) => api.post<AccountExportFile>('/suspension/export', { claim }),
+  /** A check of one's age (M16 B7): the provider's page for it, and what asked for it. */
+  startAgeCheck: (back: 'web' | 'app', trigger: AgeTrigger | null) =>
+    api.post<AgeCheckStartResponse>(`/me/age-check${trigger ? `?trigger=${trigger}` : ''}`, {
+      back,
+    }),
   logout: () => api.post<OkResponse>('/auth/logout'),
   session: () => api.get<SessionResponse>('/auth/session'),
   sessions: () => api.get<SessionsResponse>('/auth/sessions'),

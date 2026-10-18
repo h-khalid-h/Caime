@@ -183,6 +183,11 @@ export function createMetrics(pool: pg.Pool) {
       'caime_appeals_total',
       'Appeals of a suspension, by outcome (made, lifted, upheld).',
     ),
+    // Age assurance (M16 B7): checks begun, and what they found, by provider.
+    ageChecks: new Counter(
+      'caime_age_checks_total',
+      'Age checks begun and answered, by provider and outcome (started, adult, minor, failed).',
+    ),
     // Set as /metrics is scraped: what waits on the operator, and for how long.
     moderationWaiting: new Gauge(
       'caime_moderation_waiting',

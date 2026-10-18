@@ -204,7 +204,7 @@ export async function oauthRoutes(app: FastifyInstance, ctx: AppContext) {
     const body = parse(CreateOAuthAppBody, req.body);
     const me = await ctx.db
       .selectFrom('users')
-      .select(['birth_date', 'time_zone'])
+      .select(['birth_date', 'time_zone', 'age_minor_until'])
       .where('id', '=', auth.userId)
       .executeTakeFirstOrThrow();
     if (minorOf(me, ctx.now())) throw forbidden(tr('Apps are made by people over 18.'));
@@ -458,7 +458,7 @@ export async function oauthRoutes(app: FastifyInstance, ctx: AppContext) {
     }
     const me = await ctx.db
       .selectFrom('users')
-      .select(['birth_date', 'time_zone'])
+      .select(['birth_date', 'time_zone', 'age_minor_until'])
       .where('id', '=', auth.userId)
       .executeTakeFirstOrThrow();
     if (minorOf(me, ctx.now())) throw forbidden(tr('Apps act for people over 18.'));

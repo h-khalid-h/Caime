@@ -1,4 +1,5 @@
 export * from './access';
+export * from './age-assurance';
 export * from './agents';
 export * from './api';
 export * from './app-directory';

@@ -73,7 +73,7 @@ export async function minorMayAsk(
   if (!owner || owner === userId) return false;
   const person = await db
     .selectFrom('users')
-    .select(['kind', 'birth_date', 'time_zone'])
+    .select(['kind', 'birth_date', 'time_zone', 'age_minor_until'])
     .where('id', '=', owner)
     .where('deleted_at', 'is', null)
     .executeTakeFirst();
@@ -243,7 +243,7 @@ export async function claimJoinRequest(
       throw forbidden(tr('It’s full: {n} people are in it.', { n: JOIN_LINK_ROOM }));
     const person = await trx
       .selectFrom('users')
-      .select(['kind', 'birth_date', 'time_zone'])
+      .select(['kind', 'birth_date', 'time_zone', 'age_minor_until'])
       .where('id', '=', row.user_id)
       .where('deleted_at', 'is', null)
       .executeTakeFirst();

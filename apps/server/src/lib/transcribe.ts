@@ -62,7 +62,15 @@ async function transcribe(ctx: AppContext, payload: Record<string, unknown>): Pr
   if (!m || m.deleted_at || m.sealed || m.kind !== 'voice' || m.body || !m.sender_id) return;
   const sender = await ctx.db
     .selectFrom('users')
-    .select(['id', 'ai_enabled', 'birth_date', 'time_zone', 'locale', 'preferences'])
+    .select([
+      'id',
+      'ai_enabled',
+      'birth_date',
+      'time_zone',
+      'age_minor_until',
+      'locale',
+      'preferences',
+    ])
     .where('id', '=', m.sender_id)
     .executeTakeFirst();
   if (!sender?.ai_enabled || isMinor(sender.birth_date, ctx.now(), sender.time_zone)) return;

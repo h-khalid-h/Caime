@@ -16,6 +16,8 @@ export const SMTP_STUB = `http://127.0.0.1:${Number(process.env.E2E_SMTP_STUB_PO
 export const MAIL_STUB = `http://127.0.0.1:${Number(process.env.E2E_MAIL_STUB_PORT ?? 8798)}`;
 /** Google's and Microsoft's stand-in (e2e/accounts-stub.mjs): consent, tokens, contacts (R89). */
 export const ACCOUNTS_STUB = `http://127.0.0.1:${Number(process.env.E2E_ACCOUNTS_STUB_PORT ?? 8794)}`;
+/** Agemin's stand-in (M16 B7): its page, its signed notice, the lookup Caime makes. */
+export const AGEMIN_STUB = `http://127.0.0.1:${Number(process.env.E2E_AGEMIN_STUB_PORT ?? 8793)}`;
 
 /** What the mail stand-in (e2e/smtp-stub.mjs) received for an address, oldest first. */
 export async function mailsTo(

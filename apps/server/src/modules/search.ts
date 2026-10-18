@@ -569,7 +569,7 @@ async function understandWithAi(
   if (hit) return hit;
   const me = await ctx.db
     .selectFrom('users')
-    .select(['ai_enabled', 'birth_date', 'time_zone'])
+    .select(['ai_enabled', 'birth_date', 'time_zone', 'age_minor_until'])
     .where('id', '=', userId)
     .executeTakeFirst();
   if (!me?.ai_enabled || minorOf(me, ctx.now())) return null;

@@ -99,7 +99,7 @@ export async function myPlaces(ctx: AppContext, userId: string): Promise<PlaceVi
 /** A person's places this viewer may see, by the owner's rules for them. */
 export async function personPlacesFor(
   ctx: AppContext,
-  owner: { id: string; birth_date: string | null; time_zone: string },
+  owner: { id: string; birth_date: string | null; time_zone: string; age_minor_until: Date | null },
   viewerId: string,
 ): Promise<PlaceView[]> {
   if (owner.id === viewerId) return myPlaces(ctx, viewerId);
@@ -244,7 +244,13 @@ export async function conversationPlaces(
   ctx: AppContext,
   userId: string,
   conversation: { id: string; kind: string; org_id: string | null },
-  others: Array<{ id: string; display_name: string; birth_date: string | null; time_zone: string }>,
+  others: Array<{
+    id: string;
+    display_name: string;
+    birth_date: string | null;
+    time_zone: string;
+    age_minor_until: Date | null;
+  }>,
 ): Promise<ConversationPlacesResponse> {
   const mine = await myPlaces(ctx, userId);
   const theirs: ConversationPlacesResponse['theirs'] = [];

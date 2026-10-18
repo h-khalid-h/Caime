@@ -7,11 +7,13 @@
 import { SITE_PAGES, type SitePage } from '@caime/core/api';
 import type { FastifyInstance } from 'fastify';
 import type { AppContext } from '../context';
+import { AGE_PROVIDER_NAMES } from '../lib/age-provider';
 import { mailOn } from '../lib/mail-address';
 import { shellFaces } from '../lib/page-style';
 import { renderPage } from '../lib/pages';
 import { processorsFor } from '../lib/processors';
 import { PERMISSIONS_POLICY } from '../lib/public-pages';
+import { ageChecksOn } from '../lib/users';
 
 /** A page is its own text and styles: no script, nothing loaded from anywhere, never framed. */
 export const PAGE_CSP = [
@@ -93,6 +95,10 @@ export async function pageRoutes(app: FastifyInstance, ctx: AppContext) {
           ? 'other'
           : 'none',
       relay: config.cloudflareTurn ? 'cloudflare' : config.turnUrls.length > 0 ? 'own' : 'none',
+      ageChecks:
+        config.AGE_PROVIDER && ageChecksOn(config)
+          ? { provider: AGE_PROVIDER_NAMES[config.AGE_PROVIDER], triggers: config.ageTriggers }
+          : null,
     });
     app.get(`/${name}`, async (req, reply) => {
       const away = there[name];

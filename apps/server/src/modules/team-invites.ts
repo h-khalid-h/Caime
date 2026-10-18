@@ -156,7 +156,7 @@ export async function teamInviteRoutes(app: FastifyInstance, ctx: AppContext) {
       return { orgId: org.id, handle: org.handle, already: true };
     const me = await ctx.db
       .selectFrom('users')
-      .select(['kind', 'display_name', 'birth_date', 'time_zone'])
+      .select(['kind', 'display_name', 'birth_date', 'time_zone', 'age_minor_until'])
       .where('id', '=', auth.userId)
       .executeTakeFirstOrThrow();
     // Teams are for people (an app's bot joins through its app), and for adults (R29).

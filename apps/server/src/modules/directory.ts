@@ -39,7 +39,7 @@ async function withoutConnectForMinors(
 ): Promise<DirectoryAppView[]> {
   const me = await ctx.db
     .selectFrom('users')
-    .select(['birth_date', 'time_zone'])
+    .select(['birth_date', 'time_zone', 'age_minor_until'])
     .where('id', '=', userId)
     .executeTakeFirstOrThrow();
   if (!minorOf(me, ctx.now())) return apps;

@@ -33,7 +33,7 @@ export async function handleRoutes(app: FastifyInstance, ctx: AppContext) {
 
     const user = await ctx.db
       .selectFrom('users')
-      .select(['id', 'handle', 'birth_date', 'time_zone', 'privacy'])
+      .select(['id', 'handle', 'birth_date', 'time_zone', 'age_minor_until', 'privacy'])
       .where('handle', '=', wanted)
       .where('deleted_at', 'is', null)
       // Suspended (R49): not to be found by anyone new; those in touch still see them.
@@ -51,7 +51,7 @@ export async function handleRoutes(app: FastifyInstance, ctx: AppContext) {
       throw nobody();
     const me = await ctx.db
       .selectFrom('users')
-      .select(['birth_date', 'time_zone'])
+      .select(['birth_date', 'time_zone', 'age_minor_until'])
       .where('id', '=', auth.userId)
       .executeTakeFirstOrThrow();
     const now = ctx.now();

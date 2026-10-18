@@ -1563,4 +1563,9 @@ export const frServer: Catalog = {
   'Report this page': 'Signaler cette page',
   'That appeal': 'Ce recours',
   'That appeal was decided already.': 'Ce recours a déjà été tranché.',
+  'Age checks aren’t available here.': 'La vérification de l’âge n’est pas disponible ici.',
+  'Before this, Caime asks you to check your age once. It takes a minute.':
+    'Avant cela, Caime vous demande de vérifier votre âge une fois. Cela prend une minute.',
+  'That’s as many age checks as a day allows. Try again tomorrow.':
+    'C’est le nombre de vérifications d’âge qu’une journée permet. Réessayez demain.',
 };

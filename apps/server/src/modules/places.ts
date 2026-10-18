@@ -32,7 +32,7 @@ export async function placeRoutes(app: FastifyInstance, ctx: AppContext) {
     const { places } = parse(PlacesBody, req.body);
     const me = await ctx.db
       .selectFrom('users')
-      .select(['birth_date', 'time_zone'])
+      .select(['birth_date', 'time_zone', 'age_minor_until'])
       .where('id', '=', auth.userId)
       .executeTakeFirstOrThrow();
     return {
@@ -61,7 +61,7 @@ export async function placeRoutes(app: FastifyInstance, ctx: AppContext) {
     const people = others.length
       ? await ctx.db
           .selectFrom('users')
-          .select(['id', 'display_name', 'birth_date', 'time_zone'])
+          .select(['id', 'display_name', 'birth_date', 'time_zone', 'age_minor_until'])
           .where('id', 'in', others)
           .where('kind', '=', 'human')
           .where('deleted_at', 'is', null)

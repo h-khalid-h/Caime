@@ -88,7 +88,7 @@ export async function joinLinkRoutes(app: FastifyInstance, ctx: AppContext) {
       const t: JoinTarget = { kind, id };
       const me = await ctx.db
         .selectFrom('users')
-        .select(['kind', 'display_name', 'birth_date', 'time_zone'])
+        .select(['kind', 'display_name', 'birth_date', 'time_zone', 'age_minor_until'])
         .where('id', '=', auth.userId)
         .executeTakeFirstOrThrow();
       // Whoever lets strangers in is an adult person (R29), as a guest's inviter is.
@@ -149,7 +149,7 @@ export async function joinLinkRoutes(app: FastifyInstance, ctx: AppContext) {
       await assertRunsTarget(ctx.db, t, auth.userId);
       const me = await ctx.db
         .selectFrom('users')
-        .select(['kind', 'birth_date', 'time_zone'])
+        .select(['kind', 'birth_date', 'time_zone', 'age_minor_until'])
         .where('id', '=', auth.userId)
         .executeTakeFirstOrThrow();
       if (me.kind !== 'human' || minorOf(me, ctx.now()))
@@ -270,7 +270,7 @@ export async function joinLinkRoutes(app: FastifyInstance, ctx: AppContext) {
       return { asked: false, conversationId, spaceId, already: true };
     const me = await ctx.db
       .selectFrom('users')
-      .select(['kind', 'birth_date', 'time_zone', 'created_at', 'display_name'])
+      .select(['kind', 'birth_date', 'time_zone', 'age_minor_until', 'created_at', 'display_name'])
       .where('id', '=', auth.userId)
       .executeTakeFirstOrThrow();
     // Someone let in by a link is a stranger to the people there (R29): adults alone, and the

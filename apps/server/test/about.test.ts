@@ -175,9 +175,20 @@ describe('About, and Caime’s own privacy, terms and help pages', () => {
       mailDomain: null,
       stun: 'google',
       relay: 'none',
+      ageChecks: null,
     };
     const privacy = (over: Partial<PageFacts>) =>
       read(renderPage('privacy', { ...facts, ...over }));
+    // Age checks (M16 B7) are said only where a provider is set, with when Caime asks.
+    expect(privacy({})).not.toContain('Age checks');
+    const checks = privacy({
+      ageChecks: { provider: 'Bynn Intelligence (Agemin)', triggers: ['org', 'stranger'] },
+    });
+    expect(checks).toContain(
+      'Before you start an organization or write first to someone you&rsquo;re not connected with, Caime may ask you to check your age once, with Bynn Intelligence (Agemin), on its own page',
+    );
+    expect(checks).toContain('the picture never reaches Caime');
+    expect(checks).toContain('Each check is kept a year');
     expect(privacy({})).toContain('a public server that tells a device its own (Google&rsquo;s).');
     expect(privacy({})).not.toContain('relay');
     expect(privacy({ stun: 'other' })).toContain('a public server that tells a device its own.');

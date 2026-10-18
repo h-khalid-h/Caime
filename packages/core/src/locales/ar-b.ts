@@ -2705,4 +2705,30 @@ export const arB: Catalog = {
   'Why it’s wrong': 'سبب الاعتراض',
   'Send appeal': 'إرسال الاعتراض',
   'Say why, in words they’ll read.': 'اذكر السبب بكلمات واضحة، فهي ما سيُعرض.',
+  'Before you start an organization, Caime asks you to check your age once.':
+    'قبل إنشاء مؤسسة، يطلب Caime التحقق من العمر مرة واحدة.',
+  'Before you sell something for a price, Caime asks you to check your age once.':
+    'قبل بيع شيء بسعر، يطلب Caime التحقق من العمر مرة واحدة.',
+  'Before you write first to someone you’re not connected with, Caime asks you to check your age once.':
+    'قبل المبادرة بمراسلة شخص لا تربطك به صلة، يطلب Caime التحقق من العمر مرة واحدة.',
+  'Check your age': 'التحقق من العمر',
+  'It takes a minute on the age-check provider’s own page: a selfie, or a document if you’d rather. Caime learns whether you’re 18 or over, never the picture.':
+    'يستغرق ذلك دقيقة على صفحة مزوّد التحقق من العمر نفسه: صورة سيلفي، أو وثيقة لمن يفضّلها. يعرف Caime إن كان العمر 18 عامًا أو أكثر فقط، ولا يرى الصورة أبدًا.',
+  'The last check found you’re under 18. If that’s wrong, check again with a document.':
+    'وجد آخر تحقق أن العمر دون 18 عامًا. إن كان ذلك خطأً، تحقّق مجددًا بوثيقة.',
+  'Check my age': 'التحقق من عمري',
+  'Not checked': 'دون تحقق',
+  '18 or over, by a document': '18 عامًا أو أكثر، بوثيقة',
+  '18 or over, by an estimate': '18 عامًا أو أكثر، بتقدير',
+  'Under 18 until {date}': 'دون 18 عامًا حتى {date}',
+  'Your age': 'العمر',
+  'Checked when you ask, or when Caime asks before something that needs it. Caime never gets the picture.':
+    'يجري التحقق عند الطلب، أو حين يطلبه Caime قبل أمر يحتاجه. لا تصل الصورة إلى Caime أبدًا.',
+  'Age check': 'التحقق من العمر',
+  'Checked: you’re 18 or over.': 'تم التحقق: العمر 18 عامًا أو أكثر.',
+  'The check found you’re under 18.': 'وجد التحقق أن العمر دون 18 عامًا.',
+  'The check didn’t give an answer. You can try again.':
+    'لم يُعطِ التحقق جوابًا. يمكن المحاولة مجددًا.',
+  'Your check is on its way. It shows here in a moment.':
+    'نتيجة التحقق في الطريق، وتظهر هنا بعد لحظات.',
 };

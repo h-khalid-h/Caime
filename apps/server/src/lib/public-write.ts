@@ -186,7 +186,7 @@ export async function confirmVisitorWrite(
   }
   const person = await ctx.db
     .selectFrom('users')
-    .select(['id', 'kind', 'birth_date', 'time_zone'])
+    .select(['id', 'kind', 'birth_date', 'time_zone', 'age_minor_until'])
     .where('id', '=', claim.personId)
     .executeTakeFirst();
   // Someone who joined with the address meanwhile writes from their account.

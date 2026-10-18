@@ -38,6 +38,11 @@ export const KEPT_DAYS = {
   childSafetyReports: 365,
   /** A suspended account's appeal once decided (M16 B6), as long as a closed report. */
   decidedAppeals: 180,
+  /**
+   * A check of someone's age (M16 B7): a year, as long as an under-18 outcome holds; the
+   * account keeps its standing (what it found, how and when) after the row is gone.
+   */
+  ageChecks: 365,
 } as const;
 
 /** The day of `at` as Caime keeps days ('YYYY-MM-DD', UTC). */
@@ -178,6 +183,13 @@ export async function sweepRecords(ctx: AppContext): Promise<void> {
     ctx,
     sql`delete from appeals where id in (select id from appeals
       where decided_at < ${before(KEPT_DAYS.decidedAppeals)}
+      limit ${LOT} for update skip locked)`,
+  );
+  // A check of someone's age (M16 B7): its row after a year; the standing stays on the account.
+  await inLots(
+    ctx,
+    sql`delete from age_checks where id in (select id from age_checks
+      where created_at < ${before(KEPT_DAYS.ageChecks)}
       limit ${LOT} for update skip locked)`,
   );
   // A passkey ceremony nobody finished (R36): its challenge is no use after its few minutes.

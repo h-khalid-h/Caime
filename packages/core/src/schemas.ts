@@ -1524,6 +1524,8 @@ export const AppealDecisionBody = z.object({
 });
 /** The operator correcting a date of birth (the privacy page's "write to us", M16 B3). */
 export const BirthDateBody = z.object({ birthDate: Day });
+/** A check of one's age begun (M16 B7): where to come back to, the web app or the phone's. */
+export const AgeCheckStartBody = z.object({ back: z.enum(['web', 'app']).default('web') });
 export const ReportsQuery = z.object({
   status: z.enum([...REPORT_STATUSES, 'all']).default('open'),
   limit: z.coerce.number().int().min(1).max(200).default(50),

@@ -226,7 +226,7 @@ export async function keptApartFrom(
       .execute(),
     db
       .selectFrom('users')
-      .select(['id', 'birth_date', 'time_zone'])
+      .select(['id', 'birth_date', 'time_zone', 'age_minor_until'])
       .where('id', 'in', [userId, ...ids])
       .execute(),
     db
@@ -604,7 +604,7 @@ export async function leaveGroupCallsAfterDisconnect(
 ) {
   const people = await ctx.db
     .selectFrom('users')
-    .select(['id', 'birth_date', 'time_zone'])
+    .select(['id', 'birth_date', 'time_zone', 'age_minor_until'])
     .where('id', 'in', [removerId, otherId])
     .execute();
   if (people.some((u) => minorOf(u, ctx.now()))) await leaveGroupCallsWith(ctx, removerId, otherId);

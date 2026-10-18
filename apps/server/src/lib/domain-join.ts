@@ -49,7 +49,7 @@ export async function domainStanding(
   const [me, seat] = await Promise.all([
     db
       .selectFrom('users')
-      .select(['kind', 'email', 'email_verified_at', 'birth_date', 'time_zone'])
+      .select(['kind', 'email', 'email_verified_at', 'birth_date', 'time_zone', 'age_minor_until'])
       .where('id', '=', userId)
       .where('deleted_at', 'is', null)
       .executeTakeFirst(),

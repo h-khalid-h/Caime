@@ -15,6 +15,7 @@ import {
   ACCOUNT_FRESH_SECONDS,
   ACCOUNT_SYNC_MINUTES,
 } from '@caime/core/accounts';
+import type { AgeTrigger } from '@caime/core/age-assurance';
 import type { SitePage } from '@caime/core/api';
 import { LAW_MINIMUM_AGES } from '@caime/core/countries';
 import { REQUESTS_PER_DAY } from '@caime/core/privacy';
@@ -49,6 +50,8 @@ export interface PageFacts {
   relay: 'own' | 'cloudflare' | 'none';
   /** The shell's font declarations (`shellFaces`), so these pages draw in Caime's faces too. */
   faces: string;
+  /** Who checks ages here and where Caime asks (M16 B7), or null where nobody is asked. */
+  ageChecks: { provider: string; triggers: readonly AgeTrigger[] } | null;
 }
 
 /** When each page last changed in what it says. */
@@ -91,6 +94,27 @@ function lawAges(minimumAge: number): string {
 
 /** A number of days as the pages say it. */
 const span = (days: number) => (days === 365 ? 'a year' : `${days} days`);
+
+/** Where Caime checks ages (M16 B7): when it asks, what the provider sees, what Caime keeps. */
+function ageChecksSaid(a: NonNullable<PageFacts['ageChecks']>): string {
+  const when = [
+    a.triggers.includes('org') ? 'start an organization' : null,
+    a.triggers.includes('paid') ? 'sell something for a price' : null,
+    a.triggers.includes('stranger')
+      ? 'write first to someone you&rsquo;re not connected with'
+      : null,
+  ].filter(Boolean);
+  const asked = when.length
+    ? `Before you ${when.length > 1 ? `${when.slice(0, -1).join(', ')} or ${when.at(-1)}` : when[0]}, Caime may ask you to check your age once`
+    : 'You may check your age if you want to (Caime asks nobody to)';
+  return `<p><strong>Age checks.</strong> ${asked}, with ${escapeHtml(a.provider)}, on its own page:
+you take a selfie there, or show a document. ${escapeHtml(a.provider)} tells Caime only whether
+you&rsquo;re 18 or over, whether it estimated or read a document, how sure it was and when; the
+picture never reaches Caime. If it finds you&rsquo;re under 18, the rules above are yours for a
+year, whatever date of birth you gave, unless a document says otherwise; a face that reads older
+the next time changes nothing. Someone under 18 by their date of birth is never asked.</p>
+`;
+}
 
 function privacy(f: PageFacts, mail: string): string {
   const calls =
@@ -212,7 +236,13 @@ name and email address you gave (neither is asked about a child&rsquo;s safety).
 that address twice: to say the report arrived, and to say what was decided.</li>
 <li><strong>An appeal</strong>, if your account is suspended: signing in shows you why, and lets you
 appeal and download your data. Caime keeps what you wrote and what was decided, with the note the
-person who decided it wrote to you, and mails you the decision.</li>
+person who decided it wrote to you, and mails you the decision.</li>${
+    f.ageChecks
+      ? `
+<li><strong>A check of your age</strong>, if you make one (see Children): whether it found you
+18 or over or under, whether by an estimate or a document, how sure ${escapeHtml(f.ageChecks.provider)} said it was, and when. Each check is kept a year; what it found stays on your account. Never the picture.</li>`
+      : ''
+  }
 <li><strong>Your devices.</strong> Each one you&rsquo;re signed in on, with the network address and
 browser it signed in from and when it was last used; its address for notifications, if you turned
 them on; and, for private conversations, its public keys.</li>
@@ -514,7 +544,7 @@ is shown to everyone, whatever was set before: your connections at most.</li>
 <li>Someone over 18 in a conversation with you can still use AI assist on it, and an
 organization&rsquo;s apps get what you write to it.</li>
 </ul>
-
+${f.ageChecks ? ageChecksSaid(f.ageChecks) : ''}
 <h2>Security</h2>
 <p>Passwords are kept as salted scrypt hashes, and passkeys as their public keys alone, for
 the domain Caime is on. Sign-in sessions, recovery codes, access tokens,

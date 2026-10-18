@@ -59,7 +59,7 @@ export async function whoMustBeAsked(
   const [users, blocked] = await Promise.all([
     db
       .selectFrom('users')
-      .select(['id', 'privacy', 'birth_date', 'time_zone'])
+      .select(['id', 'privacy', 'birth_date', 'time_zone', 'age_minor_until'])
       .where('id', 'in', ids)
       .execute(),
     db

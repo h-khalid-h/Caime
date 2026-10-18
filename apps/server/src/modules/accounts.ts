@@ -64,7 +64,7 @@ export async function connectedAccountRoutes(app: FastifyInstance, ctx: AppConte
   const adult = async (userId: string) => {
     const me = await ctx.db
       .selectFrom('users')
-      .select(['birth_date', 'time_zone'])
+      .select(['birth_date', 'time_zone', 'age_minor_until'])
       .where('id', '=', userId)
       .executeTakeFirstOrThrow();
     if (minorOf(me, ctx.now())) throw forbidden(tr('Accounts are connected by people over 18.'));

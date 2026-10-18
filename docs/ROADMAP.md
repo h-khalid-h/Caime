@@ -2048,8 +2048,34 @@ graph) and the number that will show it; one that sharpens none is hygiene and s
       catalogs in every language, the E2E `safety.spec.ts` (a visitor on a phone reports an
       organization's page and gets both mails from the SMTP stand-in; a suspended person signs in,
       reads why, appeals, downloads their data, and signs in once it's lifted) and the full gate.
-- [ ] B7. Age assurance phase 1: `age_assurance` levels, `AgeProvider` behind a signed webhook,
-      the paid, organization and stranger triggers, the privacy page and the DPA.
+- [x] B7. Age assurance, phase 1 (2026-10-18), REVIEW §3: a check of someone's age as Caime keeps
+      it (`users.age_check`, its method, when, and `age_minor_until`; `age_checks` per check, a
+      year; migration 0103), by core's rules (`nextAgeStanding`: a document wins, under 18 by a
+      check holds a year whatever was declared, a face retried that reads older lifts nothing),
+      read by every under-18 rule (`minorOf`, compiler-held at each of its readers, and people
+      search's SQL); the provider behind one interface (`lib/age-provider.ts`, Agemin first, from
+      its published API: its page `verify.agemin.com/start/<asset>` with a reference and the three
+      return addresses, the lookup by reference with the secret key, the RS256 notice in
+      `X-Bynn-Signature` whose signed copy alone is read, a health probe); `POST /me/age-check`,
+      `GET /age/return` (asks the provider, never the address), `POST /age/webhook/agemin`, applied
+      once whichever lands first; the triggers (`AGE_CHECK_TRIGGERS`: starting an organization,
+      pricing an offer or taking cards, a first message request or mail to an outside address),
+      `403 age_check_needed` only where a provider is set and never for someone under 18 by their
+      own date of birth; the app's sheet (opened by any refused call) and Settings · Security's
+      row, on the web and on phones (the system's sign-in sheet back to `caime://age-checked`);
+      the processors list, the privacy page (said only where a provider is set), the DPA, the
+      export. Verified with `age.test.ts` (11: no provider changes nothing, the config refused
+      without keys; the organization asked for, the provider's page carrying nothing but a
+      reference, the notice applied once and audited; the return read back by reference with the
+      key, landing on the web or the phone; a forged notice and an unknown reference; under 18 for
+      a year, a retried face, a document; a spoof; the hold lapsing and the sweep; three a day;
+      the export; the triggers and where they're off), `about.test.ts`, `dpa-draft.test.ts`, the
+      E2E `age-check.spec.ts` (from Settings to the stand-in's page and back, 18 or over and
+      under), the catalogs in every language and the full gate. ⛔ The owner chooses the provider
+      and signs its terms and DPA (retention, region, the NIST result), then sets `AGE_PROVIDER`
+      and its keys and the webhook in its dashboard (DEPLOY, "Age checks"); until then nobody is
+      asked. Phase 2: a country's law demanding a level, the report that names an age, minors
+      searching for minors, "Age checked" as a privacy field.
 - [ ] ⛔ B, the owner's: an age-assurance provider (Agemin or another) with retention terms, a DPA
       and the NIST result; the penetration test.
 - [x] C1a. Booking before an account (2026-10-17): an organization's bookable public item's page
@@ -4048,6 +4074,10 @@ graph) and the number that will show it; one that sharpens none is hygiene and s
   journeys, safety, reliability, performance, intelligence, mail and calendar, chat, integrations,
   business and code integrity; the matrix against WhatsApp, Signal, Slack, Calendly and Workspace;
   an age-assurance design; the integration framework mapped to the code; plan M16 (A–H).
+- 2026-10-18 — M16 B7: age assurance, phase 1: a check on the provider's own page (Agemin first,
+  from its published API), heard by its signed notice and by the return, the stricter reading
+  applied to every under-18 rule, asked before an organization, a sale or a first message to a
+  stranger where a provider is set; ⛔ the provider's contract is the owner's.
 - 2026-10-18 — M16 B6: notice and action for everyone: a report from any public page without an
   account, answered by mail; a suspension says why, and a suspended person appeals and downloads
   their data; what waits on the operator is on /metrics. B4 verified on cai.me.

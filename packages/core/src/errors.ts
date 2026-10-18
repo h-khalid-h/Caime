@@ -8,6 +8,8 @@
  */
 export const ERROR_CODES = [
   'account_reconnect',
+  'age_check_needed',
+  'age_check_unavailable',
   'ai_adults_only',
   'ai_busy',
   'ai_declined',

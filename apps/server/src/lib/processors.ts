@@ -5,9 +5,11 @@
 
 import { EDGE, HOSTING, SUB_PROCESSORS, type SubProcessor } from '@caime/core/processors';
 import type { Config } from '../config';
+import { AGE_PROVIDER_NAMES } from './age-provider';
 import { mailOn } from './mail-address';
 import { MAIL_PROVIDER_NAMES, SMTP_HOST_PROVIDERS } from './mail-provider';
 import { SPEECH_PROVIDER_NAMES } from './speech';
+import { ageChecksOn } from './users';
 
 /** Who sends Caime's mail: the company behind a known SMTP host, else the host itself. */
 function mailSender(url: string | undefined): string | null {
@@ -44,6 +46,8 @@ export function processorsFor(config: Config): SubProcessor[] {
       list.push(p);
     if (p.id === 'mail-in' && mailOn(config) && config.MAIL_PROVIDER)
       list.push({ ...p, name: MAIL_PROVIDER_NAMES[config.MAIL_PROVIDER] });
+    if (p.id === 'age' && config.AGE_PROVIDER && ageChecksOn(config))
+      list.push({ ...p, name: AGE_PROVIDER_NAMES[config.AGE_PROVIDER] });
   }
   return list;
 }

@@ -15,7 +15,12 @@ import { minorOf } from './users';
 
 export async function startCustomerConversation(
   ctx: AppContext,
-  customer: { id: string; birth_date: string | null; time_zone: string },
+  customer: {
+    id: string;
+    birth_date: string | null;
+    time_zone: string;
+    age_minor_until: Date | null;
+  },
   org: Pick<Organization, 'id' | 'name' | 'verified_at'>,
   asOrgId: string | null,
 ): Promise<{ conversationId: string; created: boolean }> {

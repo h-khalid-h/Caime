@@ -85,7 +85,7 @@ export async function peopleRoutes(app: FastifyInstance, ctx: AppContext) {
     ctx.limiter.hit(`people-match:${auth.userId}`, ctx.config.isTest ? 1000 : 30, 3_600_000);
     const me = await ctx.db
       .selectFrom('users')
-      .select(['birth_date', 'time_zone'])
+      .select(['birth_date', 'time_zone', 'age_minor_until'])
       .where('id', '=', auth.userId)
       .executeTakeFirstOrThrow();
     const now = ctx.now();
@@ -106,7 +106,7 @@ export async function peopleRoutes(app: FastifyInstance, ctx: AppContext) {
       .leftJoin('connections as c', (j) =>
         j.onRef('c.id', '=', 's.connection_id').on('c.status', '=', 'active'),
       )
-      .select(['u.id', 'u.email', 'u.birth_date', 'u.time_zone', 'u.privacy'])
+      .select(['u.id', 'u.email', 'u.birth_date', 'u.time_zone', 'u.age_minor_until', 'u.privacy'])
       .select(sql<boolean>`c.id is not null`.as('is_connection'))
       .where((eb) =>
         eb.or([
@@ -197,7 +197,7 @@ export async function peopleRoutes(app: FastifyInstance, ctx: AppContext) {
     ctx.limiter.hit(`people-search:${auth.userId}`, ctx.config.isTest ? 1000 : 120, 60_000);
     const me = await ctx.db
       .selectFrom('users')
-      .select(['birth_date', 'time_zone', 'country'])
+      .select(['birth_date', 'time_zone', 'age_minor_until', 'country'])
       .where('id', '=', auth.userId)
       .executeTakeFirstOrThrow();
     const now = ctx.now();
@@ -285,8 +285,14 @@ export async function peopleRoutes(app: FastifyInstance, ctx: AppContext) {
         qb.where((eb) =>
           eb.or([
             sql<boolean>`c.id is not null`,
-            eb('u.birth_date', 'is', null),
-            sql<boolean>`u.birth_date <= (${now}::timestamptz at time zone 'UTC')::date + 1 - ${`${ADULT_AGE} years`}::interval`,
+            eb.and([
+              // Nobody a check of their age said is under 18 while it holds (M16 B7).
+              sql<boolean>`(u.age_minor_until is null or u.age_minor_until <= ${now})`,
+              eb.or([
+                eb('u.birth_date', 'is', null),
+                sql<boolean>`u.birth_date <= (${now}::timestamptz at time zone 'UTC')::date + 1 - ${`${ADULT_AGE} years`}::interval`,
+              ]),
+            ]),
           ]),
         ),
       )
@@ -363,7 +369,7 @@ export async function peopleRoutes(app: FastifyInstance, ctx: AppContext) {
       if (user.suspended_at || unfindable) throw notFound(tr('That person'));
       const viewer = await ctx.db
         .selectFrom('users')
-        .select(['birth_date', 'time_zone'])
+        .select(['birth_date', 'time_zone', 'age_minor_until'])
         .where('id', '=', auth.userId)
         .executeTakeFirstOrThrow();
       if (!minorOf(viewer, now)) throw notFound(tr('That person'));
@@ -581,7 +587,7 @@ export async function peopleRoutes(app: FastifyInstance, ctx: AppContext) {
     // may book the hours alone where there's no catalog (as a customer books an organization's).
     const viewer = await ctx.db
       .selectFrom('users')
-      .select(['birth_date', 'time_zone'])
+      .select(['birth_date', 'time_zone', 'age_minor_until'])
       .where('id', '=', auth.userId)
       .executeTakeFirstOrThrow();
     const host = personHost(user);

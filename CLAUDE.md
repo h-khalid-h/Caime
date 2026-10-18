@@ -943,6 +943,19 @@ appointment from a catalog).
   session for a suspended account. An appeal is decided by `decideAppeal`, the lift in its
   transaction. What waits on the operator is counted at scrape (`caime_moderation_waiting`): a new
   queue for the operator joins it.
+- Age checks (M16 B7, `lib/age.ts`, `lib/age-provider.ts`, `modules/age.ts`, core
+  `age-assurance.ts`): a provider behind one interface (`AgeProvider`: its page's address for a
+  reference, the lookup by reference, its signed notice, a ping), Agemin first; Caime keeps the
+  outcome, the method, the confidence and the date, never a picture. What a check found is
+  applied by `applyAgeResult` alone (the notice and the return both call it; applying twice
+  changes nothing) through core `nextAgeStanding`, and it reaches every under-18 rule through
+  `minorOf`, which reads `age_minor_until`: a new reader of `minorOf` selects it beside
+  `birth_date` and `time_zone` (the compiler says so), and a new SQL rule about minors reads it
+  too. Where something new should be asked for first, it calls `assertAgeChecked(ctx, userId,
+  trigger)` with a trigger in core `AGE_TRIGGERS` (a new one joins that list and the privacy
+  page's `ageChecksSaid`); it answers `403 age_check_needed` only where a provider is set and the
+  trigger is on, never for someone under 18 by their own date of birth, and the app's client
+  opens the sheet (`features/age/`) for any such refusal.
 - Anything that writes into a conversation (send, edit, react, vote, move a card, type) calls
   `assertCanWrite` (`apps/server/src/lib/blocks.ts`) first: blocks between people and a
   customer's block of an organization both stop at it. New write routes do the same, with a

@@ -1,6 +1,7 @@
 import { Redirect, router, Slot, Stack, usePathname } from 'expo-router';
 import { useEffect, useState } from 'react';
 import { View } from 'react-native';
+import { useAgeCheck } from '@/features/age/ageCheck';
 import { ScreenError } from '@/features/common/ScreenError';
 import { LiveLocationSharer } from '@/features/location/LiveLocationSharer';
 import { useReport } from '@/features/safety/report';
@@ -91,6 +92,7 @@ export default function AppLayout() {
         <KeyboardShortcuts />
         <LiveLocationSharer />
         <ReportLayer />
+        <AgeCheckLayer />
       </>
     );
   return (
@@ -109,6 +111,7 @@ export default function AppLayout() {
       <KeyboardShortcuts />
       <LiveLocationSharer />
       <ReportLayer />
+      <AgeCheckLayer />
     </>
   );
 }
@@ -160,6 +163,20 @@ const KeyboardShortcuts = lazyPart(() =>
 const LazyReportSheet = lazyPart(() =>
   import('@/features/safety/ReportSheet').then((m) => m.ReportSheet),
 );
+/** The age-check sheet (M16 B7), loaded the first time a call or Settings asks for one. */
+const LazyAgeCheckSheet = lazyPart(() =>
+  import('@/features/age/AgeCheckSheet').then((m) => m.AgeCheckSheet),
+);
+
+function AgeCheckLayer() {
+  const asked = useAgeCheck((s) => s.asked !== null);
+  const [wanted, setWanted] = useState(false);
+  useEffect(() => {
+    if (asked) setWanted(true);
+  }, [asked]);
+  return wanted || asked ? <LazyAgeCheckSheet /> : null;
+}
+
 function ReportLayer() {
   const asked = useReport((s) => s.target !== null);
   const [wanted, setWanted] = useState(false);

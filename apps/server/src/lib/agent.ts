@@ -391,7 +391,7 @@ export async function agentReply(ctx: AppContext, payload: Record<string, unknow
   if (!agent) return;
   const customer = await ctx.db
     .selectFrom('users')
-    .select(['birth_date', 'time_zone', 'locale', 'display_name'])
+    .select(['birth_date', 'time_zone', 'age_minor_until', 'locale', 'display_name'])
     .where('id', '=', thread.customer_id)
     .executeTakeFirst();
   // A person answers anyone under 18 (R29).

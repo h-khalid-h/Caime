@@ -1551,4 +1551,9 @@ export const arServer: Catalog = {
   'Report this page': 'الإبلاغ عن هذه الصفحة',
   'That appeal': 'ذلك الاعتراض',
   'That appeal was decided already.': 'اتُّخذ قرار في ذلك الاعتراض بالفعل.',
+  'Age checks aren’t available here.': 'التحقق من العمر غير متاح هنا.',
+  'Before this, Caime asks you to check your age once. It takes a minute.':
+    'قبل ذلك، يطلب Caime التحقق من العمر مرة واحدة. يستغرق ذلك دقيقة.',
+  'That’s as many age checks as a day allows. Try again tomorrow.':
+    'هذا أقصى عدد لعمليات التحقق من العمر في اليوم. حاول مجددًا غدًا.',
 };

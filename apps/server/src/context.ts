@@ -4,6 +4,7 @@ import type pg from 'pg';
 import type { Config } from './config';
 import type { Database } from './db/schema';
 import type { PersonGrant } from './lib/access';
+import type { AgeProvider } from './lib/age-provider';
 import type { AiAssist } from './lib/ai';
 import type { Bus } from './lib/bus';
 import type { Mailer } from './lib/email';
@@ -25,6 +26,8 @@ export interface AppContext {
   ai: AiAssist | null;
   /** Speech to text for voice notes (docs/SPEECH.md), or null: nothing is transcribed. */
   speech: SpeechToText | null;
+  /** Who checks an age when Caime asks (M16 B7), or null: nobody is asked. */
+  age: AgeProvider | null;
   /** DNS TXT lookups for domain verification (tests stand in for them). */
   dns: TxtResolver;
   /** Mail out (R48), when the operator set SMTP_URL; null says so to the routes. */

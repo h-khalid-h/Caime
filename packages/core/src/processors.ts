@@ -111,4 +111,12 @@ export const SUB_PROCESSORS: readonly SubProcessor[] = [
       'The phone number you add and the code. No message of yours is read, from WhatsApp or anywhere.',
     when: 'configured',
   },
+  {
+    id: 'age',
+    name: 'The age-check provider the operator sets',
+    does: 'Checks someone’s age when Caime asks for it, on its own page: an estimate from a selfie, or a document.',
+    receives:
+      'Only when you check your age: the picture you take on its page (your face, or your document) and a reference that names nothing of you. It tells Caime whether you’re 18 or over, how it checked and how sure it was; the picture never reaches Caime.',
+    when: 'configured',
+  },
 ] as const;

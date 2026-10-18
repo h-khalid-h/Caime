@@ -3,6 +3,7 @@
  * filtered by the owner's privacy rules and the owner's classification of the viewer).
  */
 import {
+  type AgeCheckView,
   canSee,
   clampForMinor,
   defaultPolicies,
@@ -20,6 +21,7 @@ import {
 import { countryFacts, defaultWorkweek } from '@caime/core/countries';
 import { tr } from '@caime/core/i18n';
 import type { Kysely, Transaction } from 'kysely';
+import type { Config } from '../config';
 import type { AppContext } from '../context';
 import type { Database, User, UserRow } from '../db/schema';
 import { AppError } from './errors';
@@ -60,8 +62,16 @@ export function tooYoung(minimumAge: number, country: string | null | undefined)
   );
 }
 
-/** Under 18 (R29), from the date of birth where they are: select `birth_date` and `time_zone`. */
-export function minorOf(user: Pick<User, 'birth_date' | 'time_zone'>, now: Date): boolean {
+/**
+ * Under 18 (R29): by the date of birth where they are, or by a check of their age that said so
+ * while it holds (M16 B7: the stricter reading wins). Select `birth_date`, `time_zone` and
+ * `age_minor_until`.
+ */
+export function minorOf(
+  user: Pick<User, 'birth_date' | 'time_zone' | 'age_minor_until'>,
+  now: Date,
+): boolean {
+  if (user.age_minor_until && user.age_minor_until.getTime() > now.getTime()) return true;
   return isMinor(user.birth_date, now, user.time_zone);
 }
 
@@ -74,7 +84,7 @@ export async function anyMinor(
   if (!userIds.length) return false;
   const people = await db
     .selectFrom('users')
-    .select(['birth_date', 'time_zone'])
+    .select(['birth_date', 'time_zone', 'age_minor_until'])
     // A meeting's guest who didn't say they're 18 or over on its page (R85 (3)) is taken at their
     // word: their age is the one thing a guest says of themselves.
     .select((eb) =>
@@ -95,7 +105,7 @@ export async function anyMinor(
 }
 
 export function privacyOf(
-  user: Pick<User, 'privacy' | 'birth_date' | 'time_zone'>,
+  user: Pick<User, 'privacy' | 'birth_date' | 'time_zone' | 'age_minor_until'>,
   now: Date,
 ): PrivacySettings {
   const minor = minorOf(user, now);
@@ -124,7 +134,31 @@ export function avatarUrl(user: Pick<User, 'id' | 'avatar_file_id'>): string | n
 
 export type { MeView, PersonView };
 
-export function meView(user: UserRow, now: Date, config: MailConfig): MeView {
+/** Whether this Caime checks ages (M16 B7): a provider and its keys are set. */
+export function ageChecksOn(
+  config: Pick<Config, 'AGE_PROVIDER' | 'AGEMIN_ASSET_ID' | 'AGEMIN_SECRET_KEY'>,
+): boolean {
+  return Boolean(config.AGE_PROVIDER && config.AGEMIN_ASSET_ID && config.AGEMIN_SECRET_KEY);
+}
+
+/** A check of someone's age as they read it (M16 B7), or null while never checked. */
+export function ageCheckView(
+  user: Pick<User, 'age_check' | 'age_check_method' | 'age_checked_at' | 'age_minor_until'>,
+): AgeCheckView | null {
+  if (!user.age_check || !user.age_check_method || !user.age_checked_at) return null;
+  return {
+    outcome: user.age_check,
+    method: user.age_check_method,
+    checkedAt: user.age_checked_at.toISOString(),
+    holdsUntil: user.age_minor_until?.toISOString() ?? null,
+  };
+}
+
+export function meView(
+  user: UserRow,
+  now: Date,
+  config: MailConfig & Pick<Config, 'AGE_PROVIDER' | 'AGEMIN_ASSET_ID' | 'AGEMIN_SECRET_KEY'>,
+): MeView {
   return {
     id: user.id,
     email: user.email,
@@ -157,6 +191,8 @@ export function meView(user: UserRow, now: Date, config: MailConfig): MeView {
     aiEnabled: user.ai_enabled,
     onboarded: user.onboarded_at !== null,
     recoveryCodesSeen: user.recovery_codes_seen_at !== null,
+    ageCheck: ageCheckView(user),
+    ageCheckOffered: ageChecksOn(config) && user.kind === 'human',
     createdAt: user.created_at.toISOString(),
   };
 }

@@ -285,7 +285,15 @@ async function hello(ctx: AppContext, userId: string, account: SystemAccount, id
 export const person = (ctx: AppContext, userId: string) =>
   ctx.db
     .selectFrom('users')
-    .select(['id', 'display_name', 'birth_date', 'time_zone', 'locale', 'ai_enabled'])
+    .select([
+      'id',
+      'display_name',
+      'birth_date',
+      'time_zone',
+      'age_minor_until',
+      'locale',
+      'ai_enabled',
+    ])
     .where('id', '=', userId)
     .executeTakeFirstOrThrow();
 export type Person = Awaited<ReturnType<typeof person>>;

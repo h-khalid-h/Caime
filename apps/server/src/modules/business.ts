@@ -175,7 +175,7 @@ export async function businessRoutes(app: FastifyInstance, ctx: AppContext) {
     }
     const me = await ctx.db
       .selectFrom('users')
-      .select(['id', 'birth_date', 'time_zone'])
+      .select(['id', 'birth_date', 'time_zone', 'age_minor_until'])
       .where('id', '=', auth.userId)
       .executeTakeFirstOrThrow();
     const started = await startCustomerConversation(ctx, me, org, asOrgId ?? null);

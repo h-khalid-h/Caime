@@ -68,6 +68,13 @@ export function setUnauthorizedHandler(handler: () => void): void {
   onUnauthorized = handler;
 }
 
+let onAgeCheck: ((trigger: string | null) => void) | null = null;
+
+/** What happens when the server asks for a check of one's age first (M16 B7): its sheet opens. */
+export function setAgeCheckHandler(handler: (trigger: string | null) => void): void {
+  onAgeCheck = handler;
+}
+
 export interface RequestOptions {
   body?: unknown;
   headers?: Record<string, string>;
@@ -127,6 +134,10 @@ export async function request<T>(
     if (res.status === 409 && e.code === 'wrong_account') onWrongAccount?.();
     // Suspended by the operator (R49): out, and told why by the message that came with it.
     if (res.status === 403 && e.code === 'suspended' && path !== '/auth/login') onUnauthorized?.();
+    if (res.status === 403 && e.code === 'age_check_needed') {
+      const trigger = e.details?.trigger;
+      onAgeCheck?.(typeof trigger === 'string' ? trigger : null);
+    }
     throw new ApiError(
       res.status,
       e.code ?? 'internal',

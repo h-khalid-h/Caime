@@ -10,6 +10,7 @@ import { tr } from '@caime/core/i18n';
 import type { AppContext } from '../context';
 import { USER_COLUMNS, type UserRow } from '../db/schema';
 import { personByAddress } from './addresses';
+import { assertAgeChecked } from './age';
 import { ensureDirectConversation } from './conversations';
 import { AppError, badRequest, conflict, forbidden } from './errors';
 import { mailOn } from './mail-address';
@@ -86,7 +87,7 @@ export async function openMailConversation(
     throw badRequest(tr('That’s a Caime address. Find them by their handle.'));
   const me = await ctx.db
     .selectFrom('users')
-    .select(['birth_date', 'time_zone'])
+    .select(['birth_date', 'time_zone', 'age_minor_until'])
     .where('id', '=', userId)
     .executeTakeFirstOrThrow();
   if (minorOf(me, ctx.now()))
@@ -118,12 +119,15 @@ export async function openMailConversation(
       .where('direct_key', '=', pairKey(userId, known.id).key)
       .where('is_general', '=', true)
       .executeTakeFirst());
-  if (!already)
+  if (!already) {
+    // Writing first to someone outside Caime (M16 B7): checked first, where asked.
+    await assertAgeChecked(ctx, userId, 'stranger');
     ctx.limiter.hit(
       `mail-start:${userId}`,
       ctx.config.isTest ? 1000 : NEW_ADDRESSES_A_DAY,
       86_400_000,
     );
+  }
   if (holder) throw taken();
   const person = await personForAddress(ctx, address, name?.trim() || address);
   // Someone signed up with it, or proved it theirs, a moment ago.

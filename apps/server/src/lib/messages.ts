@@ -358,6 +358,7 @@ async function catalogHostFor(
     id: string;
     birth_date: string | null;
     time_zone: string;
+    age_minor_until: Date | null;
     booking: unknown;
     booking_items: unknown;
     ordering: unknown;
@@ -558,7 +559,7 @@ export async function assertCanMessage(
       .executeTakeFirst(),
     ctx.db
       .selectFrom('users')
-      .select(['birth_date', 'time_zone'])
+      .select(['birth_date', 'time_zone', 'age_minor_until'])
       .where('id', '=', senderId)
       .executeTakeFirstOrThrow(),
   ]);
@@ -912,6 +913,7 @@ export async function sendMessage(
       'workweek',
       'country',
       'birth_date',
+      'age_minor_until',
       'booking',
       'booking_items',
       'ordering',
@@ -991,7 +993,7 @@ export async function sendMessage(
     const assertAllAdults = async (refusal: string) => {
       const people = await ctx.db
         .selectFrom('users')
-        .select(['birth_date', 'time_zone'])
+        .select(['birth_date', 'time_zone', 'age_minor_until'])
         .where(
           'id',
           'in',

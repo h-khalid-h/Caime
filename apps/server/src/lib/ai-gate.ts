@@ -15,7 +15,7 @@ export async function aiGate(ctx: AppContext, userId: string) {
   if (!ai) throw new AppError(503, 'ai_unavailable', tr('AI assist isn’t set up on this server.'));
   const me = await ctx.db
     .selectFrom('users')
-    .select(['ai_enabled', 'birth_date', 'locale', 'time_zone', 'workweek'])
+    .select(['ai_enabled', 'birth_date', 'locale', 'time_zone', 'age_minor_until', 'workweek'])
     .where('id', '=', userId)
     .executeTakeFirstOrThrow();
   if (minorOf(me, ctx.now()))

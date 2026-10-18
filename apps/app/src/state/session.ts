@@ -9,6 +9,7 @@ import { Platform } from 'react-native';
 import { create } from 'zustand';
 import {
   ApiError,
+  setAgeCheckHandler,
   setAuthToken,
   setExpectedUser,
   setUnauthorizedHandler,
@@ -17,6 +18,7 @@ import {
 import { endpoints } from '@/api/endpoints';
 import { qk } from '@/api/keys';
 import { CACHE_VERSION, persister, queryClient } from '@/api/queryClient';
+import { askAgeCheck } from '@/features/age/ageCheck';
 import { setReaderGender } from '@/lib/i18n';
 import { readToken, writeToken } from '@/lib/secure';
 import { realtime } from '@/realtime/client';
@@ -197,6 +199,11 @@ setUnauthorizedHandler(() => {
   if (useSession.getState().status === 'signedIn')
     void useSession.getState().signOut({ remote: false });
 });
+
+// A call refused until the person checks their age (M16 B7) opens the sheet that says why.
+setAgeCheckHandler((trigger) =>
+  askAgeCheck(trigger === 'org' || trigger === 'paid' || trigger === 'stranger' ? trigger : 'self'),
+);
 
 // Every call says whose account this is (api/client.ts), from the moment it's known.
 useSession.subscribe((s) => setExpectedUser(s.status === 'signedIn' ? (s.user?.id ?? null) : null));

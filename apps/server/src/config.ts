@@ -2,6 +2,7 @@
  * Server configuration from the environment. Every variable is listed in `.env.example`.
  * Optional integrations switch on when their variables are present (CLAUDE.md, "Credentials").
  */
+import { AGE_TRIGGERS, type AgeTrigger } from '@caime/core/age-assurance';
 import { z } from 'zod';
 import { parseOperatorTokens } from './lib/operator';
 import { key32 } from './lib/vault';
@@ -340,6 +341,22 @@ const Env = z.object({
     .string()
     .regex(/^\d{6,20}$/)
     .optional(),
+  /**
+   * Age assurance (M16 B7, lib/age-provider.ts): who checks an age when Caime asks for one, its
+   * keys, and where Caime asks (`AGE_CHECK_TRIGGERS`, a comma list of `org`, `paid` and
+   * `stranger`; all three unless set). Off without the provider and its keys: then nobody is
+   * asked and nothing changes. Agemin's asset id is its public key's, the secret its private
+   * key's (`age_sk_…`), and its notices are signed with the public key Agemin publishes, set
+   * here (PEM, line breaks as `\n` where the panel takes one line) or read from its API.
+   */
+  AGE_PROVIDER: z.enum(['agemin']).optional(),
+  AGEMIN_ASSET_ID: z.string().min(4).optional(),
+  AGEMIN_SECRET_KEY: z.string().min(8).optional(),
+  AGEMIN_WEBHOOK_PUBLIC_KEY: z.string().min(64).optional(),
+  /** Other endpoints for Agemin (the local stand-ins the tests run). */
+  AGEMIN_API_URL: z.string().url().default('https://api.agemin.com'),
+  AGEMIN_VERIFY_URL: z.string().url().default('https://verify.agemin.com'),
+  AGE_CHECK_TRIGGERS: z.string().default('org,paid,stranger'),
 });
 
 export type Config = z.infer<typeof Env> & {
@@ -352,6 +369,8 @@ export type Config = z.infer<typeof Env> & {
   vaultKeys: { current: Buffer; previous: Buffer | null } | null;
   /** BACKUP_KEY as bytes, or null where backups are kept plain. */
   backupKey: Buffer | null;
+  /** Where Caime asks for a check of someone's age, when a provider is set (M16 B7). */
+  ageTriggers: AgeTrigger[];
   isProduction: boolean;
   isTest: boolean;
   /** The commit this build is (`CAIME_VERSION`), or `unknown`. */
@@ -374,6 +393,18 @@ export function loadConfig(env: NodeJS.ProcessEnv = process.env): Config {
     throw new Error(
       'Invalid configuration:\n  VAULT_KEY_PREVIOUS: only beside a VAULT_KEY, the key that seals now',
     );
+  if (c.AGE_PROVIDER && !(c.AGEMIN_ASSET_ID && c.AGEMIN_SECRET_KEY))
+    throw new Error(
+      'Invalid configuration:\n  AGE_PROVIDER: needs AGEMIN_ASSET_ID and AGEMIN_SECRET_KEY beside it',
+    );
+  const ageTriggers = c.AGE_CHECK_TRIGGERS.split(',')
+    .map((t) => t.trim())
+    .filter(Boolean);
+  const unknownTrigger = ageTriggers.find((t) => !(AGE_TRIGGERS as readonly string[]).includes(t));
+  if (unknownTrigger)
+    throw new Error(
+      `Invalid configuration:\n  AGE_CHECK_TRIGGERS: ${unknownTrigger} isn't one of ${AGE_TRIGGERS.join(', ')}`,
+    );
   const vaultKey = key32(c.VAULT_KEY);
   const own = (page: string) => `${c.PUBLIC_URL.replace(/\/+$/, '')}/${page}`;
   const list = (v: string) =>
@@ -392,6 +423,7 @@ export function loadConfig(env: NodeJS.ProcessEnv = process.env): Config {
         : null,
     vaultKeys: vaultKey ? { current: vaultKey, previous: key32(c.VAULT_KEY_PREVIOUS) } : null,
     backupKey: key32(c.BACKUP_KEY),
+    ageTriggers: ageTriggers as AgeTrigger[],
     isProduction: c.NODE_ENV === 'production',
     isTest: c.NODE_ENV === 'test',
     version: c.CAIME_VERSION,

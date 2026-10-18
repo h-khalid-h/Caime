@@ -103,7 +103,7 @@ export async function aiRoutes(app: FastifyInstance, ctx: AppContext) {
   const person = (userId: string) =>
     ctx.db
       .selectFrom('users')
-      .select(['ai_enabled', 'birth_date', 'locale', 'time_zone', 'workweek'])
+      .select(['ai_enabled', 'birth_date', 'locale', 'time_zone', 'age_minor_until', 'workweek'])
       .where('id', '=', userId)
       .executeTakeFirstOrThrow();
 

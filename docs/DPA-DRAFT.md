@@ -153,6 +153,7 @@ sub-processor does (the GDPR's Article 28(2) and (4)).
 | Cloudflare, Inc. | Relays calls that can’t connect directly between two devices. | Both devices’ network addresses, and the call’s media still encrypted end to end. | When configured, during a call |
 | The email provider the operator sets (SMTP), on cai.me ActiveCampaign, LLC (Postmark) | Sends Caime’s mail: a confirmation code, a password reset link. | An email address and the message, which carries no conversation. | When configured |
 | Meta Platforms (WhatsApp Business Platform) | Sends the one-time code that proves a phone number is a person’s own, over WhatsApp (PRODUCT-REVIEW R91). | The phone number added and the code; no message is read, from WhatsApp or anywhere. | When configured |
+| The age-check provider the operator sets (`AGE_PROVIDER`: Bynn Intelligence (Agemin); M16 B7) | Checks a person’s age when Caime asks for one, on its own page: an estimate from a selfie, or a document. | Only when a person checks their age: the picture they take on its page and a reference that names nothing of them. It tells Caime whether they’re 18 or over, how it checked and how sure it was; the picture never reaches Caime, which keeps the outcome, the method, the provider and the date. | When configured, and only for a person who checks |
 
 ## 8. Assisting with data subjects' rights
 
@@ -253,7 +254,10 @@ standard contractual clauses incorporated in its Data Processing Addendum; Strip
 United States), ActiveCampaign, LLC (Postmark, United States) and Meta Platforms, Inc. (WhatsApp,
 United States) under the Data Privacy Framework
 where certified, else the standard contractual clauses in their terms (⛔ the owner confirms each
-on the Framework's list before the provider is turned on). A copy of each safeguard is available
+on the Framework's list before the provider is turned on). The age-check provider is turned on
+only once its terms say where it processes, that it deletes each picture after the check and
+keeps no template, and its own data processing agreement is signed (⛔ the owner's, before
+`AGE_PROVIDER` is set). A copy of each safeguard is available
 from `CONTACT_EMAIL`. An Organization outside the EEA (in Egypt, Saudi Arabia or the UAE) receives
 its customers' data from the Operator under the European Commission's standard contractual
 clauses, Module 4 (processor to controller), incorporated in this agreement by reference; its own

@@ -167,7 +167,7 @@ export async function kitRoutes(app: FastifyInstance, ctx: AppContext) {
     const people = await ctx.db
       .selectFrom('participants as p')
       .innerJoin('users as u', 'u.id', 'p.user_id')
-      .select(['u.birth_date', 'u.time_zone'])
+      .select(['u.birth_date', 'u.time_zone', 'u.age_minor_until'])
       .where('p.conversation_id', '=', id)
       .where('p.left_at', 'is', null)
       .execute();

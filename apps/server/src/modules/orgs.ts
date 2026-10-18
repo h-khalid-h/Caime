@@ -50,6 +50,7 @@ import { z } from 'zod';
 import type { AppContext } from '../context';
 import type { Organization } from '../db/schema';
 import { USER_COLUMNS } from '../db/schema';
+import { assertAgeChecked } from '../lib/age';
 import { activeAgent } from '../lib/agent';
 import { audit } from '../lib/audit';
 import { tellSaved } from '../lib/automations';
@@ -267,7 +268,7 @@ async function orgView(ctx: AppContext, viewerId: string, org: Organization): Pr
 async function adult(ctx: AppContext, userIds: string[]): Promise<boolean> {
   const rows = await ctx.db
     .selectFrom('users')
-    .select(['birth_date', 'time_zone'])
+    .select(['birth_date', 'time_zone', 'age_minor_until'])
     .where('id', 'in', userIds)
     .execute();
   return rows.length === userIds.length && rows.every((u) => !minorOf(u, ctx.now()));
@@ -283,6 +284,8 @@ export async function orgRoutes(app: FastifyInstance, ctx: AppContext) {
     ctx.limiter.hit(`org:${auth.userId}`, ctx.config.isTest ? 1000 : 5, 3_600_000);
     if (!(await adult(ctx, [auth.userId])))
       throw forbidden(tr('Organizations are for people over 18.'));
+    // Who runs an organization speaks for it to strangers (M16 B7): checked first, where asked.
+    await assertAgeChecked(ctx, auth.userId, 'org');
     await assertHandleAvailable(ctx.db, body.handle, ctx.now());
     if (!isCountry(body.country)) throw badRequest(tr('Choose where it’s based.'));
     const id = uuidv7();
@@ -916,6 +919,7 @@ export async function orgRoutes(app: FastifyInstance, ctx: AppContext) {
     ctx.limiter.hit(`org-reclaim:${auth.userId}`, ctx.config.isTest ? 1000 : 5, 3_600_000);
     if (!(await adult(ctx, [auth.userId])))
       throw forbidden(tr('Organizations are for people over 18.'));
+    await assertAgeChecked(ctx, auth.userId, 'org');
     const org = await closedOrgById(ctx.db, id);
     if (!org.domain || !org.verified_at)
       throw conflict(

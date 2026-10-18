@@ -7,6 +7,7 @@
 import type { z } from 'zod';
 import type { AccountProvider, AccountState, AccountUse } from './accounts';
 import type { AddressKind, AddressMethod } from './addresses';
+import type { AgeMethod, AgeOutcome } from './age-assurance';
 import type { AgentAction } from './agents';
 import type { AppCategory, AppProvides, ListingState } from './app-directory';
 import type { ApiScope, WebhookEvent } from './apps';
@@ -122,7 +123,20 @@ export interface MeView {
   onboarded: boolean;
   /** They said their recovery codes are saved (R56); until then the app keeps asking, once per screen. */
   recoveryCodesSeen: boolean;
+  /** What a check of their age found (M16 B7), or null: never checked. Theirs alone to see. */
+  ageCheck: AgeCheckView | null;
+  /** Whether this Caime checks ages at all (a provider is set): Settings' row and the sheet. */
+  ageCheckOffered: boolean;
   createdAt: string;
+}
+
+/** What a check of someone's age found (M16 B7): its outcome, how, and when; never an image. */
+export interface AgeCheckView {
+  outcome: AgeOutcome;
+  method: AgeMethod;
+  checkedAt: string;
+  /** Until when an under-18 outcome holds (a year from the check); null for 18 or over. */
+  holdsUntil: string | null;
 }
 
 export interface PersonView {
@@ -3321,6 +3335,11 @@ export interface AppealResponse {
 export interface AppealSentResponse {
   ok: true;
   already: boolean;
+}
+
+/** A check of one's age begun (M16 B7): the provider's page to open, for this check alone. */
+export interface AgeCheckStartResponse {
+  url: string;
 }
 /** A person's export (lib/export.ts) as the file holds it: its shape is the file's. */
 export type AccountExportFile = Record<string, unknown>;

@@ -430,7 +430,7 @@ async function summaryFor(
   if (cached !== undefined) return cached;
   const me = await ctx.db
     .selectFrom('users')
-    .select(['ai_enabled', 'birth_date', 'time_zone', 'locale'])
+    .select(['ai_enabled', 'birth_date', 'time_zone', 'age_minor_until', 'locale'])
     .where('id', '=', userId)
     .executeTakeFirstOrThrow();
   if (!me.ai_enabled || minorOf(me, ctx.now())) return null;

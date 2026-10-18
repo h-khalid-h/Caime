@@ -19,6 +19,7 @@ import { backupBucket } from './backup';
 /** The last probes, shared by every instance (`lib/gauges.ts` reads them on scrape). */
 export const PROVIDERS_SETTING = 'providers.last';
 
+import { AGE_PROVIDER_NAMES } from './age-provider';
 import { cloudflareIceRequest } from './calls';
 import { expoPush } from './expo-push';
 import { registerPeriodic } from './jobs';
@@ -43,6 +44,7 @@ export const PROVIDERS = [
   'backup-s3',
   'dns',
   'whatsapp',
+  'age',
 ] as const;
 export type ProviderId = (typeof PROVIDERS)[number];
 
@@ -92,6 +94,8 @@ export function providerProbes(ctx: AppContext): ProviderProbe[] {
       name: SPEECH_PROVIDER_NAMES[speech.provider],
       check: () => speech.ping(),
     });
+  const age = ctx.age;
+  if (age) probes.push({ id: 'age', name: AGE_PROVIDER_NAMES[age.id], check: () => age.ping() });
   const whatsapp = whatsappFor(config);
   if (whatsapp)
     probes.push({ id: 'whatsapp', name: 'WhatsApp (Meta)', check: () => whatsapp.ping() });

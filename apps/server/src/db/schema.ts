@@ -88,6 +88,14 @@ export interface UsersTable {
   /** Suspended by the operator (R49): every way in closed until lifted; nothing removed. */
   suspended_at: NullableTimestamp;
   suspended_reason: string | null;
+  /**
+   * What a check of their age found (M16 B7): 18 or over or under, how, when, and until when an
+   * under-18 outcome holds (`minorOf` reads that); null while never checked.
+   */
+  age_check: 'adult' | 'minor' | null;
+  age_check_method: 'estimate' | 'document' | null;
+  age_checked_at: NullableTimestamp;
+  age_minor_until: NullableTimestamp;
   created_at: Generated<Date>;
   updated_at: Generated<Date>;
   deleted_at: NullableTimestamp;
@@ -849,6 +857,21 @@ export interface AppealsTable {
   note: string | null;
 }
 
+/** A check of someone's age begun (M16 B7), with what the provider answered; never an image. */
+export interface AgeChecksTable {
+  id: string;
+  user_id: string;
+  provider: string;
+  back: 'web' | 'app';
+  trigger: string | null;
+  created_at: Generated<Date>;
+  finished_at: NullableTimestamp;
+  outcome: 'adult' | 'minor' | 'failed' | null;
+  method: 'estimate' | 'document' | null;
+  confidence: string | null;
+  error: string | null;
+}
+
 /** What a report held as its reporter saw it (M16 B3), gone with the report. */
 export interface ReportEvidenceTable {
   report_id: string;
@@ -1417,6 +1440,7 @@ export interface Database {
   join_requests: JoinRequestsTable;
   place_invites: PlaceInvitesTable;
   appeals: AppealsTable;
+  age_checks: AgeChecksTable;
   custom_roles: CustomRolesTable;
   relationships: RelationshipsTable;
   relationship_events: RelationshipEventsTable;
@@ -1592,6 +1616,10 @@ export const USER_COLUMNS = [
   'invited_by_org',
   'suspended_at',
   'suspended_reason',
+  'age_check',
+  'age_check_method',
+  'age_checked_at',
+  'age_minor_until',
   'created_at',
   'updated_at',
   'deleted_at',

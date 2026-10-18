@@ -333,7 +333,7 @@ export async function recordBusinessMessage(
   if (!thread) return;
   const sender = await ctx.db
     .selectFrom('users')
-    .select(['kind', 'display_name', 'handle', 'birth_date', 'time_zone'])
+    .select(['kind', 'display_name', 'handle', 'birth_date', 'time_zone', 'age_minor_until'])
     .where('id', '=', senderId)
     .executeTakeFirst();
   // A bot's or an agent's message never moves a thread; a person's does, reached by mail (R75) or not.
@@ -499,7 +499,7 @@ export async function threadViews(
     customerIds.length
       ? ctx.db
           .selectFrom('users')
-          .select(['id', 'birth_date', 'time_zone'])
+          .select(['id', 'birth_date', 'time_zone', 'age_minor_until'])
           .where('id', 'in', customerIds)
           .execute()
       : Promise.resolve([]),

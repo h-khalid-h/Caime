@@ -32,7 +32,7 @@ export async function tokenRoutes(app: FastifyInstance, ctx: AppContext) {
   async function assertMayMake(userId: string) {
     const me = await ctx.db
       .selectFrom('users')
-      .select(['birth_date', 'time_zone'])
+      .select(['birth_date', 'time_zone', 'age_minor_until'])
       .where('id', '=', userId)
       .executeTakeFirstOrThrow();
     if (minorOf(me, ctx.now())) throw forbidden(tr('Access tokens are for people over 18.'));

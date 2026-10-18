@@ -38,7 +38,7 @@ export async function billingRoutes(app: FastifyInstance, ctx: AppContext) {
   async function payerFor(userId: string, orgId?: string) {
     const me = await ctx.db
       .selectFrom('users')
-      .select(['display_name', 'email', 'birth_date', 'time_zone'])
+      .select(['display_name', 'email', 'birth_date', 'time_zone', 'age_minor_until'])
       .where('id', '=', userId)
       .executeTakeFirstOrThrow();
     const minor = minorOf(me, ctx.now());
