@@ -41,9 +41,7 @@ const why = (error: AccountReturnError, name: string) =>
     ? tr('{name} wasn’t connected: the permission wasn’t given.', { name })
     : error === 'expired'
       ? tr('That connection took too long. Connect again.')
-      : error === 'adults'
-        ? tr('Accounts are connected by people over 18.')
-        : tr('{name} didn’t answer. Try again in a moment.', { name });
+      : tr('{name} didn’t answer. Try again in a moment.', { name });
 
 /** Says what a return came to: a claim redeemed, or why there's none. */
 async function finish(r: AccountReturn, done: () => void) {

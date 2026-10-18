@@ -144,7 +144,7 @@ export const ACCOUNT_FRESH_SECONDS = 60;
 
 /** Where a connection's consent returns in the app: Settings · Apps, with what happened. */
 export const ACCOUNT_RETURN_PATH = 'settings/apps';
-export const ACCOUNT_RETURN_ERRORS = ['denied', 'failed', 'expired', 'adults'] as const;
+export const ACCOUNT_RETURN_ERRORS = ['denied', 'failed', 'expired'] as const;
 export type AccountReturnError = (typeof ACCOUNT_RETURN_ERRORS)[number];
 
 /** What the consent's return says: a claim to redeem signed in, or why there's none. */

@@ -2219,7 +2219,6 @@ export const arB: Catalog = {
     'يُعثر على الأشخاص في Caime بعنوان بريدهم، وليس لأي من جهات الاتصال هذه عنوان. ادعهم أدناه.',
   '{name} wasn’t connected: the permission wasn’t given.': 'لم يُربط {name}: لم يُمنح الإذن.',
   'That connection took too long. Connect again.': 'استغرق الربط وقتًا طويلًا. اربطه من جديد.',
-  'Accounts are connected by people over 18.': 'ربط الحسابات لمن تجاوز 18 عامًا.',
   '{name} didn’t answer. Try again in a moment.': 'لم يُجب {name}. حاول بعد قليل.',
   'The account': 'الحساب',
   '{email} is connected. Its calendar is read in a moment.':

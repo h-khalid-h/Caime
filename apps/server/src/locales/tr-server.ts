@@ -1495,4 +1495,5 @@ export const turkishServer: Catalog = {
     'Bir günde izin verilen yaş doğrulaması sayısına ulaştınız. Yarın yeniden deneyin.',
   '{monthly}, or {yearly}': '{monthly} veya {yearly}',
   '{free}, always': '{free}, her zaman',
+  'Accounts are connected by people over 18.': 'Hesapları 18 yaşını geçenler bağlar.',
 };

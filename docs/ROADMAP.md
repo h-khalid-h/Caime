@@ -2596,6 +2596,19 @@ graph) and the number that will show it; one that sharpens none is hygiene and s
       translation naming a placeholder its English doesn't fill, and on an Arabic string kept in
       both halves. Verified: `i18n-sentences.test.ts`, `i18n-catalog.test.ts`, `server-i18n.test.ts`,
       `duplicates.test.ts`, the startup chunk at 449.7 KB (0.1 KB less), and the full gate.
+- [x] D4c. One consent pipeline (2026-10-18, review §10): contacts from an account (R89) and a
+      connected account (R90) asked Google and Microsoft through two copies of the same steps, so
+      a fix to one missed the other. Both now go through `lib/provider-consent.ts`: the providers'
+      clients, the consent link (an hour online for contacts, a refresh token offline for a
+      connection, the account chosen every time), the state sealed with a server key under each
+      use's own label and read back only before its deadline (the Google picker's ticket too),
+      the code traded under one deadline, and the landing on the web or the phone. Each keeps its
+      own return address, as the providers have them registered, so nothing changes for the
+      owner's clients or for a consent under way at a deploy. A return that said "adults", which
+      nothing sent (the start refuses someone under 18 before any consent), is gone, its words
+      the server's alone. Verified: `provider-consent.test.ts` (each link's parameters, the secret
+      never in one, a state read under its own label and key only, before its deadline and
+      untouched), `contact-accounts.test.ts`, `connected-accounts.test.ts`, and the full gate.
 - [ ] E. Chat polish: distinct read ticks with a contrast test; the English leaks and a scanner
       that flags any word-bearing literal; quoted replies with the author and a jump, swipe to
       reply; message info and who reacted; video as a message, voice notes with a waveform, speed
@@ -4224,6 +4237,8 @@ graph) and the number that will show it; one that sharpens none is hygiene and s
   journeys, safety, reliability, performance, intelligence, mail and calendar, chat, integrations,
   business and code integrity; the matrix against WhatsApp, Signal, Slack, Calendly and Workspace;
   an age-assurance design; the integration framework mapped to the code; plan M16 (A–H).
+- 2026-10-18 — M16 D4c: one consent pipeline for contacts and connected accounts (the link, the
+  sealed state, the code's trade, the landing), each use keeping its own return address.
 - 2026-10-18 — M16 D4b: placeholders named for what they hold (124 sentences), every sentence
   whole, lists in the reader's own comma and "and" (Arabic had read an English "and"); a sheet
   on the web leaves at once, so what's typed right after it closes is never lost.

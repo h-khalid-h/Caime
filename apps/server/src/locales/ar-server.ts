@@ -1550,4 +1550,5 @@ export const arServer: Catalog = {
     'هذا أقصى عدد لعمليات التحقق من العمر في اليوم. حاول مجددًا غدًا.',
   '{monthly}, or {yearly}': '{monthly}، أو {yearly}',
   '{free}, always': '{free}، دائمًا',
+  'Accounts are connected by people over 18.': 'ربط الحسابات لمن تجاوز 18 عامًا.',
 };

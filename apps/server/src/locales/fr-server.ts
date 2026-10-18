@@ -1562,4 +1562,5 @@ export const frServer: Catalog = {
     'C’est le nombre de vérifications d’âge qu’une journée permet. Réessayez demain.',
   '{monthly}, or {yearly}': '{monthly}, ou {yearly}',
   '{free}, always': '{free}, toujours',
+  'Accounts are connected by people over 18.': 'Les comptes se connectent à partir de 18 ans.',
 };

@@ -4024,7 +4024,6 @@ export const fr: Catalog = {
     '{name} n’a pas été connecté : l’autorisation n’a pas été donnée.',
   'That connection took too long. Connect again.':
     'La connexion a pris trop de temps. Connectez-le à nouveau.',
-  'Accounts are connected by people over 18.': 'Les comptes se connectent à partir de 18 ans.',
   '{name} didn’t answer. Try again in a moment.':
     '{name} n’a pas répondu. Réessayez dans un instant.',
   'The account': 'Le compte',

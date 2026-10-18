@@ -1,7 +1,7 @@
 /**
  * A person's Google or Microsoft account, connected for the uses they turn on (R90). The
- * provider's clients are the ones R89 reads contacts with (`contactClient`), so the owner
- * registers one client per provider. Unlike R89's one hour, a connection renews itself: its
+ * consent is the pipeline R89's contacts use (`lib/provider-consent.ts`: one client per provider,
+ * registered with both return addresses). Unlike R89's one hour, a connection renews itself: its
  * refresh token is sealed with a server key, bound to the connection's id (`lib/vault.ts`), and
  * the access it renews lives in memory only, never in a row or a log.
  *
@@ -23,22 +23,28 @@ import {
   readsEveryCalendar,
   usesGranted,
 } from '@caime/core/accounts';
-import { APP_SCHEME, type ConnectedAccountView } from '@caime/core/api';
+import type { ConnectedAccountView } from '@caime/core/api';
 import { tr } from '@caime/core/i18n';
 import type { AppContext } from '../context';
 import type { ConnectedAccountsTable } from '../db/schema';
 import { withdrawPlans } from './calendar-push';
-import { contactClient } from './contact-accounts';
 import { AppError, badRequest, notFound } from './errors';
+import {
+  CONSENT_MS,
+  consentLink,
+  landingFor,
+  openState,
+  PROVIDER_MS,
+  postForm,
+  providerClient,
+  providersOn,
+  refusedAs,
+  sealState,
+  tradeCode,
+} from './provider-consent';
 import { serverKey } from './server-keys';
 import { TtlCache } from './ttl-cache';
-import { seal, unseal } from './vault';
 import { openSecret, sealSecret } from './vault-keys';
-
-/** How long a consent may take, and its claim be redeemed in. */
-const CLAIM_MS = 10 * 60_000;
-/** One deadline for any exchange with a provider. */
-const PROVIDER_MS = 10_000;
 
 type Row = Pick<
   ConnectedAccountsTable,
@@ -54,18 +60,12 @@ type Row = Pick<
 > & { created_at: Date; synced_at: Date | null };
 
 export function accountsOffered(ctx: Pick<AppContext, 'config'>): AccountProvider[] {
-  return (['google', 'microsoft'] as const).filter((p) => contactClient(ctx.config, p));
+  return providersOn(ctx.config);
 }
 
 /** Where the provider returns: the address each client is registered with, beside R89's. */
 export function accountRedirectUri(ctx: Pick<AppContext, 'config'>, p: AccountProvider): string {
   return `${ctx.config.PUBLIC_URL}/v1/accounts/${p}/back`;
-}
-
-function landing(ctx: AppContext, back: 'web' | 'app'): string {
-  return back === 'app'
-    ? `${APP_SCHEME}://${ACCOUNT_RETURN_PATH}`
-    : `${ctx.config.PUBLIC_URL}/${ACCOUNT_RETURN_PATH}`;
 }
 
 interface Asked {
@@ -93,21 +93,6 @@ const claimLabel = (p: AccountProvider) => `caime account claim v1 ${p}`;
 export const refreshLabel = (id: string) => `caime account refresh v1 ${id}`;
 const stateKey = (ctx: AppContext) => serverKey(ctx, 'accounts.state');
 
-function sealJson(key: Buffer, value: unknown, label: string): string {
-  return seal(key, Buffer.from(JSON.stringify(value)), label).toString('base64url');
-}
-
-function openJson<T>(key: Buffer, raw: string | undefined, label: string): T | null {
-  if (!raw || !/^[A-Za-z0-9_-]+$/.test(raw)) return null;
-  const plain = unseal(key, Buffer.from(raw, 'base64url'), label);
-  if (!plain) return null;
-  try {
-    return JSON.parse(plain.toString()) as T;
-  } catch {
-    return null;
-  }
-}
-
 /** The provider's consent link for the uses asked, with who asked sealed in its state. */
 export async function accountConsentUrl(
   ctx: AppContext,
@@ -115,47 +100,20 @@ export async function accountConsentUrl(
   p: AccountProvider,
   ask: { uses: AccountUse[]; back: 'web' | 'app' },
 ): Promise<string> {
-  const client = contactClient(ctx.config, p);
+  const client = providerClient(ctx.config, p);
   if (!client) throw notFound(tr('That account'));
   const asked: Asked = {
     u: userId,
     uses: ask.uses,
     b: ask.back,
-    e: ctx.now().getTime() + CLAIM_MS,
+    e: ctx.now().getTime() + CONSENT_MS,
   };
-  const q = new URLSearchParams({
-    client_id: client.id,
-    redirect_uri: accountRedirectUri(ctx, p),
-    response_type: 'code',
-    scope: accountScopes(p, ask.uses).join(' '),
-    state: sealJson(await stateKey(ctx), asked, stateLabel(p)),
+  return consentLink(client, p, {
+    redirect: accountRedirectUri(ctx, p),
+    scopes: accountScopes(p, ask.uses),
+    state: sealState(await stateKey(ctx), asked, stateLabel(p)),
+    offline: true,
   });
-  if (p === 'google') {
-    // A refresh token only comes with `offline` and a consent shown again.
-    q.set('access_type', 'offline');
-    q.set('prompt', 'consent select_account');
-    q.set('include_granted_scopes', 'true');
-  } else {
-    q.set('response_mode', 'query');
-    q.set('prompt', 'select_account');
-  }
-  return `${client.authorize}?${q}`;
-}
-
-async function postForm(
-  url: string,
-  form: Record<string, string>,
-): Promise<{ status: number; body: Record<string, unknown> }> {
-  const res = await fetch(url, {
-    method: 'POST',
-    headers: { 'content-type': 'application/x-www-form-urlencoded', accept: 'application/json' },
-    body: new URLSearchParams(form),
-    signal: AbortSignal.timeout(PROVIDER_MS),
-  });
-  return {
-    status: res.status,
-    body: (await res.json().catch(() => ({}))) as Record<string, unknown>,
-  };
 }
 
 /** Who the account is, by its access: the provider's id for it and its address. */
@@ -190,37 +148,31 @@ export async function finishAccountConsent(
   p: AccountProvider,
   query: { code?: string; state?: string; error?: string },
 ): Promise<string> {
-  const asked = openJson<Asked>(await stateKey(ctx), query.state, stateLabel(p));
-  const fresh = asked && typeof asked.e === 'number' && asked.e > ctx.now().getTime();
+  const asked = openState<Asked>(await stateKey(ctx), query.state, stateLabel(p), ctx.now());
   const to = (b: 'web' | 'app', q: Record<string, string>) =>
-    `${landing(ctx, b)}#${new URLSearchParams({ account: p, ...q })}`;
-  if (!asked || !fresh) return to('web', { error: 'expired' satisfies AccountReturnError });
+    `${landingFor(ctx.config, b, ACCOUNT_RETURN_PATH)}#${new URLSearchParams({ account: p, ...q })}`;
+  if (!asked) return to('web', { error: 'expired' satisfies AccountReturnError });
   const fail = (error: AccountReturnError) => to(asked.b, { error });
-  const client = contactClient(ctx.config, p);
-  if (!client || query.error || !query.code)
-    return fail(query.error === 'access_denied' ? 'denied' : 'failed');
+  const client = providerClient(ctx.config, p);
+  if (!client || query.error || !query.code) return fail(refusedAs(query.error));
+  const tokens = await tradeCode(ctx, p, client, {
+    code: query.code,
+    redirect: accountRedirectUri(ctx, p),
+    scopes: accountScopes(p, asked.uses),
+    what: 'accounts',
+  });
+  if (!tokens) return fail('failed');
+  // A connection renews itself, so one without a refresh token isn't one.
+  if (!tokens.refresh) {
+    ctx.log.warn({ provider: p }, 'accounts: no refresh token came');
+    return fail('failed');
+  }
+  // Google lets each permission be unticked; Microsoft's consent is all or nothing, and its
+  // answer names the permissions without their resource, so it's read as asked.
+  const uses = p === 'google' ? usesGranted(p, asked.uses, tokens.scopes) : asked.uses;
+  if (uses.length === 0) return fail('denied');
   try {
-    const form: Record<string, string> = {
-      client_id: client.id,
-      client_secret: client.secret,
-      code: query.code,
-      redirect_uri: accountRedirectUri(ctx, p),
-      grant_type: 'authorization_code',
-    };
-    if (p === 'microsoft') form.scope = accountScopes(p, asked.uses).join(' ');
-    const { status, body } = await postForm(client.token, form);
-    const access = typeof body.access_token === 'string' ? body.access_token : null;
-    const refresh = typeof body.refresh_token === 'string' ? body.refresh_token : null;
-    if (status !== 200 || !access || !refresh) {
-      ctx.log.warn({ provider: p, status, refresh: Boolean(refresh) }, 'accounts: no connection');
-      return fail('failed');
-    }
-    const scopes = typeof body.scope === 'string' ? body.scope.split(' ').filter(Boolean) : [];
-    // Google lets each permission be unticked; Microsoft's consent is all or nothing, and its
-    // answer names the permissions without their resource, so it's read as asked.
-    const uses = p === 'google' ? usesGranted(p, asked.uses, scopes) : asked.uses;
-    if (uses.length === 0) return fail('denied');
-    const who = await whoIs(ctx, p, access);
+    const who = await whoIs(ctx, p, tokens.access);
     if (!who) return fail('failed');
     const claim: Claim = {
       u: asked.u,
@@ -228,11 +180,11 @@ export async function finishAccountConsent(
       sub: who.sub,
       email: who.email,
       uses,
-      scopes,
-      refresh,
-      e: ctx.now().getTime() + CLAIM_MS,
+      scopes: tokens.scopes,
+      refresh: tokens.refresh,
+      e: ctx.now().getTime() + CONSENT_MS,
     };
-    return to(asked.b, { claim: sealJson(await stateKey(ctx), claim, claimLabel(p)) });
+    return to(asked.b, { claim: sealState(await stateKey(ctx), claim, claimLabel(p)) });
   } catch (err) {
     ctx.log.warn(
       { provider: p, err: (err as Error).name },
@@ -279,8 +231,8 @@ export async function redeemAccountClaim(
   p: AccountProvider,
   raw: string,
 ): Promise<ConnectedAccountView> {
-  const claim = openJson<Claim>(await stateKey(ctx), raw, claimLabel(p));
-  if (!claim || claim.p !== p || claim.e <= ctx.now().getTime())
+  const claim = openState<Claim>(await stateKey(ctx), raw, claimLabel(p), ctx.now());
+  if (!claim || claim.p !== p)
     throw badRequest(tr('That connection took too long. Connect again.'));
   if (claim.u !== userId)
     throw new AppError(403, 'forbidden', tr('That connection was started by someone else.'));
@@ -390,7 +342,7 @@ const accessCache = new TtlCache<string, string>(10_000, 50 * 60_000);
 export async function accessFor(ctx: AppContext, account: Row): Promise<string | null> {
   const cached = accessCache.get(account.id, ctx.now().getTime());
   if (cached) return cached;
-  const client = contactClient(ctx.config, account.provider);
+  const client = providerClient(ctx.config, account.provider);
   const refresh = await openRefresh(ctx, account);
   if (!client || !refresh) {
     await markAccount(ctx, account.id, 'reconnect');
@@ -514,14 +466,14 @@ export async function pickerTicket(
     b: back,
     e: ctx.now().getTime() + PICKER_MS,
   };
-  return sealJson(await stateKey(ctx), ticket, pickerLabel);
+  return sealState(await stateKey(ctx), ticket, pickerLabel);
 }
 
 export async function openPickerTicket(
   ctx: AppContext,
   raw: string | undefined,
 ): Promise<{ userId: string; accountId: string; back: 'web' | 'app' } | null> {
-  const t = openJson<PickerTicket>(await stateKey(ctx), raw, pickerLabel);
-  if (!t || typeof t.e !== 'number' || t.e <= ctx.now().getTime()) return null;
+  const t = openState<PickerTicket>(await stateKey(ctx), raw, pickerLabel, ctx.now());
+  if (!t) return null;
   return { userId: t.u, accountId: t.a, back: t.b === 'app' ? 'app' : 'web' };
 }

@@ -3859,7 +3859,6 @@ export const turkish: Catalog = {
     'Caime’de kişiler e-posta adresleriyle bulunur ve bu kişilerin hiçbirinin adresi yok. Onları aşağıdan davet edin.',
   '{name} wasn’t connected: the permission wasn’t given.': '{name} bağlanmadı: izin verilmedi.',
   'That connection took too long. Connect again.': 'Bağlantı çok uzun sürdü. Yeniden bağlayın.',
-  'Accounts are connected by people over 18.': 'Hesapları 18 yaşını geçenler bağlar.',
   '{name} didn’t answer. Try again in a moment.': '{name} yanıt vermedi. Birazdan yeniden deneyin.',
   'The account': 'Hesap',
   '{email} is connected. Its calendar is read in a moment.':

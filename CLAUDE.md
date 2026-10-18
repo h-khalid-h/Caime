@@ -1091,7 +1091,10 @@ appointment from a catalog).
   never saved; a number typed in People search finds the same way) (`modules/people.ts`: the
   search route's rules, `personViewsFor(…, { sharesConversation: false })`, one `betweenMany`
   for every match's state), a page at a time. An account's consent is `lib/contact-accounts.ts`
-  behind `modules/contacts.ts`: the server writes the provider's link with its state sealed by
+  behind `modules/contacts.ts`, on the one consent pipeline connections use too
+  (`lib/provider-consent.ts`, M16 D4: `providerClient`, `consentLink`, `sealState` and
+  `openState`, `tradeCode`, `landingFor`; each use keeps its own return address, server key and
+  label, registered with the providers as they are): the server writes the provider's link with its state sealed by
   `serverKey(ctx, 'contacts.state')` (`lib/server-keys.ts`, which the passkeys' key is too),
   trades the code for an access that renews nothing, seals it to the device's key (core
   `contact-seal.ts`, the account's name bound in) and returns to one of two fixed places
@@ -1106,12 +1109,13 @@ appointment from a catalog).
   only if they have none), which onboarding's "Share your link" sends too, never the bare
   `/@handle`; where the browser reads no contacts (`localSource` null: a desktop, an iPhone) the
   sheet opens with `openInviteWays` (WhatsApp, and a text on a phone) above the accounts. A new source is a mapper in core and a row in
-  the sheet; a new provider joins `CONTACT_ACCOUNTS`, its scopes and lists, `contactClient`, the
+  the sheet; a new provider joins `CONTACT_ACCOUNTS`, its scopes and lists, `providerClient`, the
   E2E stand-in (`e2e/accounts-stub.mjs`) and the privacy page.
 - Connected accounts (R90, `lib/connected-accounts.ts`, `modules/accounts.ts`, core
   `accounts.ts`): one row per person, provider and the provider's own id, used for what
   `ACCOUNT_USES` lists, asking `accountScopes` (identity plus each use's narrowest). The consent
-  returns a claim sealed with `serverKey('accounts.state')` naming who asked, redeemed signed in
+  (`lib/provider-consent.ts`, the contacts' pipeline, offline for a refresh token) returns a
+  claim sealed with `serverKey('accounts.state')` naming who asked, redeemed signed in
   (`POST /me/accounts/:provider/claim`, another person's claim is 403); the refresh token is
   sealed through `lib/vault-keys.ts` (M16 B5: `sealSecret` with `VAULT_KEY` from the environment,
   the value naming its key by id in `refresh_kid`, else the database's own `accounts.vault`;
