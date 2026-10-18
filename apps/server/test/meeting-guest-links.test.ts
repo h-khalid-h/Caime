@@ -1,7 +1,7 @@
 /**
- * A guest by link (review 2026-10-17 §1 H6): where Caime can't send mail (production, until its
- * owner sets SMTP), or for someone better reached on WhatsApp, the inviter names a guest and gets
- * their link, shown once, to send themselves. The guest is a provisional person of their own with
+ * A guest by link (review 2026-10-17 §1 H6): for someone better reached on WhatsApp, or where an
+ * instance can't send mail, the inviter names a guest and gets their link, shown once, to send
+ * themselves. The guest is a provisional person of their own with
  * no address, whose only conversation is the meeting's space: nobody's address, and nothing
  * anyone wrote to one, is behind a link someone else was handed.
  */
@@ -39,7 +39,7 @@ async function agreed(title: string, conversationId = convo) {
 }
 
 beforeAll(async () => {
-  // No mailer: as production is until SMTP_URL is set.
+  // No mailer: the link is the way in where an instance can't send mail.
   t = await createTestApp();
   t.clock.set('2026-10-20T08:00:00Z');
   ana = await signup(t, { displayName: 'Ana Host' });

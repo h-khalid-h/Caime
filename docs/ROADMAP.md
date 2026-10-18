@@ -662,7 +662,7 @@ outperforming the alternatives is reach and operations. In the order the review 
       invitation with their own link, Accept and Decline coming back by mail; the link proves the
       address (a code on a second device, a code and the lobby without a link); a guest session
       scoped to the meeting; consent and the age question on the join page; "Keep it" to claim.
-      ⛔ Caime Mail on in production (R83 (4) decided in R85)
+      Caime Mail is on in production by 2026-10-18 (R83 (4) decided in R85)
       [x] Join and Open on the meeting card: where it's held from the kit's own Where (core
       `meetingVenue`: empty or "Caime" here, a web address on another service, anything else
       in person); Join from ten minutes before to half an hour after its planned end (`joinOpen`,
@@ -758,8 +758,8 @@ outperforming the alternatives is reach and operations. In the order the review 
       numbers with consent on both sides. Everything else in it (reading other apps'
       notifications, auto-replies in the person's name, an Android hub) is declined for good
 - [x] Email (R48): the address confirmed with six digits, a forgotten password reset by a link,
-      through `SMTP_URL` (`email.test.ts`, E2E with `e2e/smtp-stub.mjs`) ⛔ an SMTP account on
-      production: until then nothing is sent and recovery codes are the way back
+      through `SMTP_URL` (`email.test.ts`, E2E with `e2e/smtp-stub.mjs`); production sends
+      through Postmark's SMTP, set by the owner on 2026-10-14
 - [x] Moderation (R49): the operator's `/admin/reports` over `GET`/`PATCH /v1/admin/reports`,
       the reported message removed for everyone or the update taken back through the same code
       as their owners', the person suspended and the suspension lifted (`moderation.test.ts`), the
@@ -1967,8 +1967,8 @@ graph) and the number that will show it; one that sharpens none is hygiene and s
       the provisional customer with nothing of the team on any page, the time held after, the
       claim sealed and run out, a taken time, a known account, the age box, no mailer),
       `public-pages.test.ts`, `server-i18n.test.ts`, and the E2E `public-booking.spec.ts` (a
-      visitor books with the SMTP stand-in's code; the team finds the request). Live, it needs
-      `SMTP_URL` on the service (⛔ the owner's; the page says "join to book" without it).
+      visitor books with the SMTP stand-in's code; the team finds the request). Live, production has
+      the mailer it needs (Postmark's SMTP; an instance without one says "join to book").
       Sharpens advantage 3 (the door link that needs no account) and the customer side of 2
       (REVIEW §14); its numbers, bookings per door link and bookers who join within thirty days,
       are counted from C1b on (`caime_public_bookings_total`, the booker's `claimed_at`).
@@ -1989,7 +1989,7 @@ graph) and the number that will show it; one that sharpens none is hygiene and s
       numbers a month on, no form without a mailer), `mail.test.ts` (the mail claim now proven),
       `product-metrics.test.ts`, `public-pages.test.ts`, and the E2E `public-booking.spec.ts` (the
       team confirms, the booker's mail arrives, the booker signs up in the browser, is asked the
-      code, and the booking is in the new account). Live it needs `SMTP_URL` (⛔ the owner's).
+      code, and the booking is in the new account). Live through production's mailer (Postmark).
 - [x] C1c. The day before, and a professional's own page (2026-10-18): advantage 3 says "a
       professional's one link shows times, books, later reminds", and now it does both. A confirmed
       booking whose customer booked before an account is recalled by mail the day before
@@ -2007,8 +2007,8 @@ graph) and the number that will show it; one that sharpens none is hygiene and s
       person's page, its form, the request in their inbox, the confirm answering it, the mail; one
       request at a time; no form for someone who takes no requests; never a minor), and the E2E
       `public-booking.spec.ts` (a visitor books Lina's lesson from her page, Lina confirms it on
-      the card in the app, the request banner goes and the visitor's confirmation arrives). Live,
-      it needs `SMTP_URL` (⛔ the owner's).
+      the card in the app, the request banner goes and the visitor's confirmation arrives). Live
+      through production's mailer (Postmark).
 - [ ] C1d. "Message before an account" at an organization's door the same way (the reply reaches
       the visitor by mail only with Caime Mail on, said so on the page); a phone number proven by
       WhatsApp code as the address where `WHATSAPP_*` is set; three fields on a link arrival.
@@ -2060,8 +2060,8 @@ graph) and the number that will show it; one that sharpens none is hygiene and s
       `log.test.ts`, `phoneBar.test.ts`, and the E2E `team-invites.spec.ts` (the owner makes a
       link in the Add sheet; someone new reads the page without the app, signs up through it,
       joins in one tap on onboarding and lands in the Business inbox; the owner's team list shows
-      them without a reload). Mailing an invite live needs `SMTP_URL` (⛔ the owner's); links work
-      without it.
+      them without a reload). Production mails invites through Postmark; links work on an
+      instance without a mailer too.
 - [x] C2b. The front door's first steps, the rest (2026-10-18, review §1 H2, H4): someone who
       signs up directly sets up their organization from onboarding's last step ("Set up my
       organization", beside finding people), as whoever came from the page for organizations
@@ -2078,8 +2078,9 @@ graph) and the number that will show it; one that sharpens none is hygiene and s
       onboarding) and `around-the-conversation.spec.ts` (a new organization's row says "Next: set
       bookable hours", verified or not).
 - [x] C3c. A guest by link, and a page for an invite that isn't open (2026-10-18, review §1 H6
-      and M): meeting guests couldn't be invited where Caime can't send mail (production, until
-      `SMTP_URL`), and the organizer never had the link to send. Now the guest sheet makes a link
+      and M): meeting guests were invited by mail alone, and the organizer never had the link to
+      send, for someone better reached on WhatsApp or wherever an instance has no mailer. Now the
+      guest sheet makes a link
       for a guest named by the inviter ("Make a link instead"), shown once with Copy and Share, to
       send on WhatsApp or anywhere; the guest is a provisional person of their own with no
       address (`LINK_GUEST_DOMAIN`, `guest.invalid`), whose only conversation is the meeting's
@@ -3759,6 +3760,17 @@ graph) and the number that will show it; one that sharpens none is hygiene and s
   journeys, safety, reliability, performance, intelligence, mail and calendar, chat, integrations,
   business and code integrity; the matrix against WhatsApp, Signal, Slack, Calendly and Workspace;
   an age-assurance design; the integration framework mapped to the code; plan M16 (A–H).
+- 2026-10-18 — Correction: production has sent mail through Postmark's SMTP since the owner set
+  `SMTP_URL` on 2026-10-14 (logged that day), so the ⛔ "needs `SMTP_URL`" this log and C1a–C1c,
+  C3a and C3c carried since was wrong when written. Checked from here without a credential: the
+  service's variables (`SMTP_URL`, `EMAIL_FROM`, Caime Mail's `MAIL_PROVIDER` and `MAIL_DOMAIN`
+  set, its token and webhook secret present), the live privacy page naming Postmark for sending
+  Caime's mail and for receiving mail to Caime addresses, `POST /v1/auth/reset` answering with a
+  mailer (200, not 503) for an address with no account, and `cai.me`'s MX at
+  `inbound.postmarkapp.com` and Return-Path (`pm-bounces`) at `pm.mtasv.net`, under DMARC
+  `p=reject` with strict alignment. A delivery itself is seen in Postmark's Activity (the owner's);
+  mail from an address at `cai.me` rests on its DKIM being verified there, since strict DMARC
+  rejects anything else.
 - 2026-10-18 — M16 C3d: onboarding shares the general invite link (it connects at once, one per
   person, the contacts sheet's too); where a browser can't read contacts, WhatsApp and a text
   come first; an iPhone's browser tab is told how to get notifications. C2b live on cai.me

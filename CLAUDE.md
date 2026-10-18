@@ -1832,7 +1832,9 @@ billing with Stripe, possible duplicates in People, and organizations' updates.
 It runs on EasyPanel at https://cai.me (the old address, https://caime.datac.com, kept on the
 service for webhooks and feeds, and its default domain, https://caishy-caishy.0hqwb7.easypanel.host;
 `docs/DEPLOY.md`, "Going live on cai.me"), billing included, on the live
-Stripe account (tell its owner before changing anything there: it's live). Caime has not
+Stripe account (tell its owner before changing anything there: it's live), and mail through
+Postmark both ways (codes, resets and invitations by SMTP; Caime Mail's addresses received and
+answered). Caime has not
 launched: that instance is the owner's own, with no public users yet, so a release is judged by
 the code's rules (CI green, migrations expand first), never by a launch's stakes; sessions in this
 environment have `EASYPANEL_URL` and `EASYPANEL_API_TOKEN` (never print them). Calls go through Cloudflare's TURN relay when they can't connect directly

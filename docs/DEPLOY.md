@@ -66,9 +66,10 @@ The order matters: every step leaves Caime working. What each costs is in `docs/
 3. **The service's environment** (`PUBLIC_URL=https://cai.me` is set; checked 2026-10-13: the
    landing page's canonical is `https://cai.me/`). `SMTP_URL` from step 5, then redeploy. The
    sender, the contact and the push subject are Caime's own defaults (`Caime <hello@cai.me>`,
-   `hello@cai.me`, `mailto:hello@cai.me`): a reply to a code reaches the staff address, so no
-   `EMAIL_FROM` is set. Leave `MAIL_DOMAIN` and `MAIL_PROVIDER` unset: Caime Mail stays off
-   (below). Check: `/.well-known/oauth-authorization-server` says `"issuer":"https://cai.me"`.
+   `hello@cai.me`, `mailto:hello@cai.me`): a reply to a code reaches the staff address, so
+   `EMAIL_FROM` isn't needed (the owner has set it anyway: checked by name on 2026-10-18).
+   Caime Mail's variables came after this step (below). Check:
+   `/.well-known/oauth-authorization-server` says `"issuer":"https://cai.me"`.
 4. **Stripe (live: the owner's).** Webhooks: *edit* the existing endpoint's URL to
    `https://cai.me/v1/billing/webhook` (a new endpoint would get a new signing secret; done by
    the owner, 2026-10-14), then send a test event: 200. Connect, when an organization's own
@@ -124,9 +125,9 @@ The order matters: every step leaves Caime working. What each costs is in `docs/
     `HOSTING_PROVIDER` set to the new region. Before launch, while there's nothing to migrate
     but the owner's own test data, it's an afternoon; after, a maintenance window.
 
-Caime Mail (below) is the next step, not part of this one: turning it on takes Postmark Pro and
-moves `cai.me`'s MX from Cloudflare to Postmark, so the staff addresses are routed by Caime
-itself from then on (`MAIL_STAFF_HANDLE`).
+Caime Mail (below) came after it, and is on in production by 2026-10-18: it took Postmark Pro
+and moved `cai.me`'s MX from Cloudflare to Postmark, so the staff addresses are routed by Caime
+itself (`MAIL_STAFF_HANDLE`).
 
 ### The service's environment, in full (2026-10-14)
 
@@ -384,7 +385,14 @@ A card is marked paid only from what Stripe says when the server asks it (the pa
 or the webhook naming the card), never from an event's own copy. Disconnecting asks Stripe to
 forget Caime's access (`/oauth/deauthorize`).
 
-### Caime Mail (R75) ⛔ not turned on in production
+### Caime Mail (R75), on in production
+
+On by 2026-10-18, checked from a session without a credential: `MAIL_DOMAIN`, `MAIL_PROVIDER`,
+`MAIL_PROVIDER_TOKEN`, `MAIL_WEBHOOK_SECRET` and `MAIL_STAFF_HANDLE` on the service, the privacy
+page naming Postmark as the receiver of mail to Caime addresses (it does only while
+`MAIL_DOMAIN` and `MAIL_PROVIDER` are both set), and `cai.me`'s MX at `inbound.postmarkapp.com`.
+What only the owner sees: the inbound and events webhooks in Postmark (steps 2 and 4 below) and
+`POST /v1/admin/providers/check` showing `smtp` and `mail-in` up.
 
 Every handle is an address at `MAIL_DOMAIN` (`noor@cai.me`), and Cai's is `assistant@cai.me`
 (R86: it sends meetings' invitations and reads only the answers to them), received and sent
@@ -770,9 +778,9 @@ WEBHOOKS_ALLOW_PRIVATE=false
 DNS_SERVERS=1.1.1.1,8.8.8.8
 ```
 
-Still unset on purpose, each waiting on something only the operator has: `SMTP_URL` and
-`EMAIL_FROM` (an SMTP account: until then no address is confirmed and passwords are reset with
-recovery codes, R48), `EXPO_ACCESS_TOKEN` (the store builds), `TURN_SECRET` and `TURN_URLS` (a
+Set since this list was written (checked by name on 2026-10-18): `SMTP_URL` and `EMAIL_FROM`
+(Postmark's SMTP, from 2026-10-14), `EXPO_ACCESS_TOKEN`, and Caime Mail's five (below). Still
+unset on purpose, each waiting on something only the operator has: `TURN_SECRET` and `TURN_URLS` (a
 TURN server of Caime's own; Cloudflare's relay is in use), `PLANS_URL` (billing is live, so the
 app sells plans itself), `PRIVACY_URL`, `TERMS_URL` and `HELP_URL` (Caime's own pages follow
 `PUBLIC_URL`, so leaving them unset survives a change of domain), and the VAPID keys (generated
