@@ -173,10 +173,12 @@ describe('a link to a group', () => {
       invitedBy: 'Noor Haddad',
       member: false,
       expiresAt: expect.any(String),
+      approval: false,
+      asked: null,
     });
     expect(JSON.stringify(open)).not.toContain(omar.user.id);
     const joined = await karim.post(`/v1/join-links/${token}/accept`);
-    expect(joined).toEqual({ conversationId: club, spaceId: null, already: false });
+    expect(joined).toEqual({ asked: false, conversationId: club, spaceId: null, already: false });
     // In it, and in its topic, reading what was said before they came.
     expect(await inIt(club)).toContain(karim.user.id);
     expect(await inIt(topic)).toContain(karim.user.id);
@@ -190,6 +192,7 @@ describe('a link to a group', () => {
     });
     // Twice is once, and the link counts the one.
     expect(await karim.post(`/v1/join-links/${token}/accept`)).toEqual({
+      asked: false,
       conversationId: club,
       spaceId: null,
       already: true,
@@ -454,6 +457,7 @@ describe('a link to a space', () => {
     });
     const joined = await sam.post(`/v1/join-links/${made.token}/accept`);
     expect(joined).toEqual({
+      asked: false,
       conversationId: space.generalId,
       spaceId: space.id,
       already: false,

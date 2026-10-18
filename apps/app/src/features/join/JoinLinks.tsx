@@ -2,9 +2,10 @@
  * A link to join a group or a space (M16 C3e): made by its owner or admins, to post where its
  * people already are (a WhatsApp group, a class's mailing list), so they come over in one message
  * rather than each being added by someone they're connected with. Whoever opens it joins, over 18,
- * and reads what was said before; the open links are listed, each taken back with a tap. Shown in
- * the group's and the space's Add sheet, and from a group just made with nobody yet; loaded when
- * shown.
+ * and reads what was said before; or, for a link that asks (C3h), asks, and its owner or an admin
+ * lets each person in from the asks listed below. The open links are listed, each taken back with
+ * a tap. Shown in the group's and the space's Add sheet, and from a group just made with nobody
+ * yet; loaded when shown.
  */
 
 import type { JoinLinkMadeResponse } from '@caime/core/api';
@@ -24,29 +25,39 @@ import { useUserClock } from '@/lib/time';
 import { Button } from '@/ui/Button';
 import { CopyRow } from '@/ui/CopyRow';
 import { IconButton } from '@/ui/IconButton';
+import { lazyPart } from '@/ui/Lazy';
 import { ListRow } from '@/ui/ListRow';
+import { SwitchRow } from '@/ui/SwitchRow';
 import { Text } from '@/ui/Text';
 import { toast } from '@/ui/Toast';
+
+/** Who asked through a link that asks (C3h): loaded where it's shown, never with the startup. */
+const JoinRequests = lazyPart(() => import('./JoinRequests').then((m) => m.JoinRequests));
 
 export function JoinLinks({
   target,
   id,
   name,
+  asksOnly = false,
 }: {
   target: 'group' | 'space';
   id: string;
   /** The group's or the space's name, for the words a link is shared with. */
   name: string;
+  /** Someone under 18 is in it (R29): only a link where each person asks first (C3h). */
+  asksOnly?: boolean;
 }) {
   const qc = useQueryClient();
   const { timeZone, locale } = useUserClock();
   const [made, setMade] = useState<JoinLinkMadeResponse | null>(null);
+  // Whether the next link asks first (C3h): each person let in by its owner or an admin.
+  const [approval, setApproval] = useState(asksOnly);
   const open = useQuery({
     queryKey: qk.joinLinks(target, id),
     queryFn: () => endpoints.joinLinks(target, id),
   });
   const make = useMutation({
-    mutationFn: () => endpoints.makeJoinLink(target, id),
+    mutationFn: () => endpoints.makeJoinLink(target, id, approval || asksOnly),
     onSuccess: (res) => {
       void qc.invalidateQueries({ queryKey: qk.joinLinks(target, id) });
       setMade(res);
@@ -81,6 +92,18 @@ export function JoinLinks({
               )}
         </Text>
       </View>
+      <SwitchRow
+        label={tr('Each person asks first')}
+        detail={
+          asksOnly
+            ? tr('Someone under 18 is in it, so you or an admin let each person in.')
+            : tr('You or an admin let them in, one by one.')
+        }
+        value={approval || asksOnly}
+        onChange={setApproval}
+        disabled={asksOnly}
+        testID="join-link-approval"
+      />
       <Button
         label={tr('Make a link')}
         icon={Link}
@@ -110,6 +133,7 @@ export function JoinLinks({
               icon={Link}
               title={l.by ? tr('A link from {name}', { name: l.by }) : tr('A link to share')}
               subtitle={[
+                l.approval ? tr('asks first') : null,
                 l.uses ? trn(l.uses, 'joined once', 'joined {n} times') : null,
                 tr('open until {day}', {
                   day: formatDayHeading(l.expiresAt, new Date(), timeZone, locale),
@@ -130,6 +154,7 @@ export function JoinLinks({
           ))}
         </View>
       ) : null}
+      <JoinRequests target={target} id={id} />
     </View>
   );
 }

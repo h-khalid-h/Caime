@@ -273,6 +273,8 @@ export interface PublicJoinLink {
   org: OrgRef | null;
   inviter: string | null;
   expiresAt: string;
+  /** It asks (C3h): whoever comes asks, and its owner or an admin lets them in. */
+  approval: boolean;
 }
 export type PublicPage =
   | { kind: 'landing' }
@@ -498,6 +500,7 @@ export async function publicJoinLink(
     org: o.org,
     inviter: o.invitedBy,
     expiresAt: o.expiresAt,
+    approval: o.approval,
   };
 }
 
@@ -1251,7 +1254,7 @@ export function renderPublic(
     <h1>${esc(title)}</h1>
     <p class="lead" dir="auto">${esc(lead)}</p>
     ${page.org ? `<p class="who"><bdi>@${esc(page.org.handle)}</bdi>${page.org.verified ? verifiedMark(page.org.verifiedDomain) : ''}</p>` : ''}
-    <div class="actions"><a class="btn" href="${wayIn('sign-up', path)}">${esc(tr('Join “{place}”', { place }))}</a><a class="btn quiet" href="${wayIn('sign-in', path)}">${esc(tr('Sign in'))}</a></div>
+    <div class="actions"><a class="btn" href="${wayIn('sign-up', path)}">${esc(page.approval ? tr('Ask to join “{place}”', { place }) : tr('Join “{place}”', { place }))}</a><a class="btn quiet" href="${wayIn('sign-in', path)}">${esc(tr('Sign in'))}</a></div>
   </section>
   ${section(
     sentence(tr('about')),
@@ -1261,7 +1264,7 @@ export function renderPublic(
     <div>${label(tr('people'))}<dd>${esc(trn(page.memberCount, '{n} person', '{n} people'))}</dd></div>
     ${page.inviter && !page.org ? `<div>${label(tr('from'))}<dd>${esc(page.inviter)}</dd></div>` : ''}
     <div>${label(tr('open until'))}<dd>${esc(dayLabel(page.expiresAt.slice(0, 10), 'UTC'))}</dd></div>
-    <div>${label(tr('to join'))}<dd>${esc(tr('Sign up or sign in, then join: you read what was said there before you came, and its people see your name.'))}</dd></div>
+    <div>${label(tr('to join'))}<dd>${esc(page.approval ? tr('Sign up or sign in, then ask: its owner or an admin lets each person in. Once in, you read what was said there before you came.') : tr('Sign up or sign in, then join: you read what was said there before you came, and its people see your name.'))}</dd></div>
   </dl>`,
   )}
   ${pageFoot(tr(PROMISE), wordmark(18))}

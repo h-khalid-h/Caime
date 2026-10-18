@@ -1950,6 +1950,16 @@ export const TeamInviteBody = z
   })
   .strict();
 
+/**
+ * A join link (M16 C3e): open, letting in whoever opens it, or asking (C3h), each person let in
+ * by the place's owner or an admin.
+ */
+export const JoinLinkBody = z
+  .object({
+    approval: z.boolean().default(false),
+  })
+  .strict();
+
 export const OrgMemberBody = z
   .object({
     role: z.enum(['admin', 'agent']).optional(),

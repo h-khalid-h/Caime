@@ -357,6 +357,12 @@ export function applyEvent(qc: QueryClient, event: RealtimeEvent, me: string): v
       }
       invalidate(qk.allSlots, 'slots');
       return;
+    case 'join.asked':
+      // Someone asked through a link to a place this person runs, or an ask was answered on
+      // another device (C3h): who waits, and how many each link let in, read again.
+      invalidate(qk.allJoinRequests, 'join-requests');
+      invalidate(qk.allJoinLinks, 'join-links');
+      return;
     case 'suggestion.created':
     case 'suggestion.resolved':
       invalidate(['suggestions'], 'suggestions');

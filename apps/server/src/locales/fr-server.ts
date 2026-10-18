@@ -1499,4 +1499,14 @@ export const frServer: Catalog = {
     'Chaque nom attribué l’est à quelqu’un de ce groupe.',
   'This group has a topic called “{title}” already. Name this one otherwise.':
     'Ce groupe a déjà un sujet nommé « {title} ». Donnez un autre nom à celui-ci.',
+  '{name} asks to join “{place}”': '{name} demande à rejoindre « {place} »',
+  'Let them in, or not, from its people.': 'Acceptez ou non depuis la liste de ses membres.',
+  'That ask': 'Cette demande',
+  'Sign up or sign in, then ask: its owner or an admin lets each person in. Once in, you read what was said there before you came.':
+    'Inscrivez-vous ou connectez-vous, puis demandez : son propriétaire ou un administrateur accepte chaque personne. Une fois dedans, vous lisez ce qui s’y est dit avant votre arrivée.',
+  'Asks to join are answered by people 18 or over.':
+    'Les demandes sont traitées par des personnes de 18 ans ou plus.',
+  'This link can’t add them to it.': 'Ce lien ne peut pas ajouter cette personne.',
+  'You’re in “{place}”': 'Vous êtes dans « {place} »',
+  'Your ask to join was accepted.': 'Votre demande a été acceptée.',
 };

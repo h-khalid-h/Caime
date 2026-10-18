@@ -253,6 +253,21 @@ export interface JoinLinksTable {
   expires_at: Date;
   revoked_at: NullableTimestamp;
   created_at: Generated<Date>;
+  /** It asks (C3h): each person is let in by the place's owner or an admin (migration 0097). */
+  approval: Defaulted<boolean>;
+}
+
+/** Someone's ask to join through a link that asks (M16 C3h), pending until it's decided. */
+export interface JoinRequestsTable {
+  id: string;
+  link_id: string | null;
+  conversation_id: string | null;
+  space_id: string | null;
+  user_id: string;
+  created_at: Generated<Date>;
+  decided_at: NullableTimestamp;
+  decided_by: string | null;
+  outcome: 'accepted' | 'declined' | 'withdrawn' | null;
 }
 
 export interface CustomRolesTable {
@@ -1350,6 +1365,7 @@ export interface Database {
   invites: InvitesTable;
   org_invites: OrgInvitesTable;
   join_links: JoinLinksTable;
+  join_requests: JoinRequestsTable;
   custom_roles: CustomRolesTable;
   relationships: RelationshipsTable;
   relationship_events: RelationshipEventsTable;

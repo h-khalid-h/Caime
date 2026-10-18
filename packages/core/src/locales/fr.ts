@@ -4424,4 +4424,25 @@ export const fr: Catalog = {
     'Dans WhatsApp, ouvrez la discussion, puis Exporter la discussion, sans fichiers multimédias. Un téléphone enregistre un fichier texte, un iPhone un .zip : choisissez l’un ou l’autre ici tel quel. Les photos et fichiers ne suivent pas ; les mots, si, datés comme ils ont été écrits.',
   'Who the others are here': 'Qui sont les autres ici',
   'Not in this group: keep the name': 'Pas dans ce groupe : garder le nom',
+  '{name} is in': '{name} a rejoint',
+  '{name} wasn’t let in': 'Demande de {name} refusée',
+  'Asking to join': 'Demandes pour rejoindre',
+  'Let in': 'Accepter',
+  'Asked to join “{place}”': 'Demande envoyée pour rejoindre « {place} »',
+  'You asked to join. You’re in once its owner or an admin lets you in.':
+    'Demande envoyée. Vous y serez dès que son propriétaire ou un administrateur l’accepte.',
+  'Take back my ask': 'Retirer ma demande',
+  'Your ask to join wasn’t accepted. Ask whoever sent the link.':
+    'Votre demande n’a pas été acceptée. Demandez à qui vous a envoyé le lien.',
+  'Its owner or an admin lets each person in, and sees your name when you ask. Once in, you read what was said there before.':
+    'Son propriétaire ou un administrateur accepte chaque personne et voit votre nom quand vous demandez. Une fois dedans, vous lisez ce qui s’y est dit avant.',
+  'Ask to join': 'Demander à rejoindre',
+  'You came to join “{place}”: ask, and you’re in once its owner or an admin lets you in. Find others by @handle or email any time.':
+    'Vous êtes ici pour rejoindre « {place} » : demandez, et vous y serez dès que son propriétaire ou un administrateur l’accepte. Trouvez d’autres personnes par @identifiant ou e-mail à tout moment.',
+  'Ask to join “{place}”': 'Demander à rejoindre « {place} »',
+  'Each person asks first': 'Chacun demande d’abord',
+  'Someone under 18 is in it, so you or an admin let each person in.':
+    'Une personne de moins de 18 ans en fait partie : vous ou un administrateur acceptez chaque personne.',
+  'You or an admin let them in, one by one.': 'Vous ou un administrateur les acceptez un par un.',
+  'asks first': 'sur demande',
 };

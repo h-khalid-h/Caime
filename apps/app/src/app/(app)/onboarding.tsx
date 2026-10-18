@@ -1,6 +1,6 @@
 import { msg, tr } from '@caime/core/i18n';
 import { SPHERE_DEFS, type Sphere } from '@caime/core/taxonomy';
-import { useQuery } from '@tanstack/react-query';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { router } from 'expo-router';
 import { useState } from 'react';
 import { ScrollView, View } from 'react-native';
@@ -104,6 +104,7 @@ export default function Onboarding() {
     retry: false,
   });
   const teamOrg = team.data?.invite.org.name ?? null;
+  const qc = useQueryClient();
   const joining = useQuery({
     queryKey: qk.groupLink(joinToken ?? ''),
     queryFn: () => endpoints.openJoinLink(joinToken ?? ''),
@@ -111,6 +112,8 @@ export default function Onboarding() {
     retry: false,
   });
   const joinPlace = joining.data?.link.name ?? null;
+  // A link that asks (C3h): the tap asks, and its owner or an admin lets them in.
+  const joinAsks = joining.data?.link.approval === true;
   const opening = useQuery({
     queryKey: qk.conversation(conversationId ?? ''),
     queryFn: () => endpoints.conversation(conversationId ?? ''),
@@ -161,11 +164,14 @@ export default function Onboarding() {
     setBusy(true);
     try {
       const joined = await endpoints.acceptJoinLink(token).catch(() => null);
+      // Asked (C3h): the link's own screen, which opens next, reads the ask afresh.
+      if (joined?.asked) await qc.invalidateQueries({ queryKey: qk.groupLink(token) });
       const res = await endpoints.updateMe({ onboarded: true });
       const link = takeLink();
       useSession.getState().setUser(res.user);
       router.replace('/');
-      const then = joined ? `/c/${joined.conversationId}` : link;
+      // In: its conversation. Asked (C3h), or anything in the way: the link's own screen says so.
+      const then = joined && !joined.asked ? `/c/${joined.conversationId}` : link;
       if (then) setTimeout(() => router.push(then), 0);
     } catch (e) {
       toast((e as Error).message, { tone: 'danger' });
@@ -309,14 +315,19 @@ export default function Onboarding() {
                             'You came to join a team: its conversations with customers will be in your Business inbox. Find people by @handle or email any time.',
                           )
                       : joinToken
-                        ? joinPlace
+                        ? joinPlace && joinAsks
                           ? tr(
-                              'You came to join “{place}”: it opens next, with what was said there before. Find others by @handle or email any time.',
+                              'You came to join “{place}”: ask, and you’re in once its owner or an admin lets you in. Find others by @handle or email any time.',
                               { place: joinPlace },
                             )
-                          : tr(
-                              'You came to join a group: it opens next. Find others by @handle or email any time.',
-                            )
+                          : joinPlace
+                            ? tr(
+                                'You came to join “{place}”: it opens next, with what was said there before. Find others by @handle or email any time.',
+                                { place: joinPlace },
+                              )
+                            : tr(
+                                'You came to join a group: it opens next. Find others by @handle or email any time.',
+                              )
                         : conversationId
                           ? openPlace
                             ? tr(
@@ -359,9 +370,11 @@ export default function Onboarding() {
                           ? tr('Join {org}’s team', { org: teamOrg })
                           : tr('Join the team')
                         : joinToken
-                          ? joinPlace
-                            ? tr('Join “{place}”', { place: joinPlace })
-                            : tr('Join the group')
+                          ? joinPlace && joinAsks
+                            ? tr('Ask to join “{place}”', { place: joinPlace })
+                            : joinPlace
+                              ? tr('Join “{place}”', { place: joinPlace })
+                              : tr('Join the group')
                           : conversationId
                             ? openPlace
                               ? tr('Open “{place}”', { place: openPlace })

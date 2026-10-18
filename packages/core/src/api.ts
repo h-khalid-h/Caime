@@ -1459,6 +1459,8 @@ export interface JoinLinkView {
   createdAt: string;
   /** Who made it, by the name they show. */
   by: string | null;
+  /** It asks: whoever opens it asks, and its owner or an admin lets them in (C3h). */
+  approval: boolean;
 }
 export interface JoinLinksResponse {
   links: JoinLinkView[];
@@ -1486,15 +1488,32 @@ export interface JoinLinkOpenView {
   /** Already in it: opening it changes nothing. */
   member: boolean;
   expiresAt: string;
+  /** It asks: whoever opens it asks, and its owner or an admin lets them in (C3h). */
+  approval: boolean;
+  /** Their ask through it: waiting, or declined (not asked again by this link); null for none. */
+  asked: 'pending' | 'declined' | null;
 }
 export interface JoinLinkOpenResponse {
   link: JoinLinkOpenView;
 }
-export interface JoinLinkAcceptResponse {
-  /** Where to land: the group, or the space's General. */
-  conversationId: string;
-  spaceId: string | null;
-  already: boolean;
+/** In through an open link (or in already), or asked through one that asks (C3h). */
+export type JoinLinkAcceptResponse =
+  | {
+      asked: false;
+      /** Where to land: the group, or the space's General. */
+      conversationId: string;
+      spaceId: string | null;
+      already: boolean;
+    }
+  | { asked: true; state: 'pending' | 'declined' };
+/** Someone asking to join through a link that asks (C3h), as the place's owner and admins see them. */
+export interface JoinRequestView {
+  id: string;
+  person: PersonView;
+  createdAt: string;
+}
+export interface JoinRequestsResponse {
+  requests: JoinRequestView[];
 }
 
 /**
@@ -1853,10 +1872,11 @@ export interface ProductMetricsView {
      */
     door: { booked: number; joined: Rate };
     /**
-     * Join links (M16 C3e): made and joined through in the window, and the joins by an account
-     * made for the link (`newPeople`, the number that shows a group moving over).
+     * Join links (M16 C3e): made and joined through in the window, the joins by an account made
+     * for the link (`newPeople`, the number that shows a group moving over), and the asks through
+     * links that ask (C3h), each of which joins once someone who runs the place lets them in.
      */
-    joinLinks: { made: number; joined: number; newPeople: number };
+    joinLinks: { made: number; joined: number; newPeople: number; asked: number };
     /**
      * Meeting guests (R84, M16 C3f): who came in by their link in the window, and of guests, who
      * made it their account in the window (`kept`: by link keeping the meeting, or by address
@@ -2324,7 +2344,9 @@ export type RealtimeSignalType =
    */
   | 'apps.changed'
   /** A host's offer (hours, catalog, ordering, ways to be paid) was saved: `{ orgId }` or `{ orgId: null }` for their own. */
-  | 'booking.changed';
+  | 'booking.changed'
+  /** Someone asked to join a place one runs, or an ask was answered (C3h): `{ target, id }`. */
+  | 'join.asked';
 
 export type RealtimeEvent =
   | RealtimeDataEvent

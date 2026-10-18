@@ -2620,4 +2620,26 @@ export const arB: Catalog = {
     'في واتساب، افتح المحادثة، ثم تصدير الدردشة، بدون وسائط. يحفظ الهاتف ملفًا نصيًا ويحفظ آيفون ملف ‎.zip: اختر أيًّا منهما هنا كما هو. لا تُنقل الصور والملفات؛ تُنقل الكلمات مؤرخةً كما كُتبت.',
   'Who the others are here': 'من هم الآخرون هنا',
   'Not in this group: keep the name': 'ليس في هذه المجموعة: يبقى الاسم',
+  '{name} is in': 'تم قبول {name}',
+  '{name} wasn’t let in': 'لم يتم قبول {name}',
+  'Asking to join': 'طلبات الانضمام',
+  'Let in': 'قبول',
+  'Asked to join “{place}”': 'تم طلب الانضمام إلى «{place}»',
+  'You asked to join. You’re in once its owner or an admin lets you in.':
+    'تم إرسال طلب الانضمام. يتم الانضمام حين يقبله المالك أو أحد المشرفين.',
+  'Take back my ask': 'سحب الطلب',
+  'Your ask to join wasn’t accepted. Ask whoever sent the link.':
+    'لم يُقبل طلب الانضمام. يمكن سؤال من أرسل الرابط.',
+  'Its owner or an admin lets each person in, and sees your name when you ask. Once in, you read what was said there before.':
+    'المالك أو أحد المشرفين يقبل كل شخص، ويرى الاسم عند الطلب. وبعد الانضمام تُقرأ الرسائل السابقة كلها.',
+  'Ask to join': 'طلب الانضمام',
+  'You came to join “{place}”: ask, and you’re in once its owner or an admin lets you in. Find others by @handle or email any time.':
+    'طلب الانضمام إلى «{place}» يأتي تاليًا، ويتم الانضمام حين يقبله المالك أو أحد المشرفين. البحث عن آخرين بالمعرّف @ أو البريد متاح في أي وقت.',
+  'Ask to join “{place}”': 'طلب الانضمام إلى «{place}»',
+  'Each person asks first': 'يطلب كل شخص الانضمام أولًا',
+  'Someone under 18 is in it, so you or an admin let each person in.':
+    'فيه شخص دون 18 عامًا، لذا يكون قبول كل شخص منك أو من أحد المشرفين.',
+  'You or an admin let them in, one by one.':
+    'يكون قبولهم منك أو من أحد المشرفين، واحدًا تلو الآخر.',
+  'asks first': 'بالطلب أولًا',
 };

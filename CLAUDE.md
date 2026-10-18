@@ -407,7 +407,16 @@ appointment from a catalog).
   every refusal reads the same whatever its reason (R29). A new way into a group or a space goes
   through those two. An account made for a link counts as its maker's to have brought
   (`invited_by`; `growth.joinLinks`). Links are in their maker's export and swept after
-  `KEPT_DAYS.spentInvites` as invite links are.
+  `KEPT_DAYS.spentInvites` as invite links are. A link may ask (C3h, `join_links.approval`,
+  `lib/join-requests.ts`): accepting it makes an ask (`askToJoin`, one pending per person and
+  place, a declined one never asked again by that link), the owner and admins are told and list
+  asks at `…/join-requests` (`features/join/JoinRequests.tsx`, lazy everywhere: a group's people,
+  a space's people, the link panel), and letting someone in goes through `addToGroup` or
+  `addToSpace` with `claimJoinRequest` as the vouch; `join.asked` refreshes the lists. A link that
+  asks lets nobody in by itself, so it's the only kind where someone under 18 is (the panel's
+  `asksOnly`), `assertNoMinorWhileLinkOpen` counts open links alone, someone under 18 asks only
+  where `minorMayAsk` (a verified organization's space, or an owner who is an adult connection of
+  theirs), and whoever answers is an adult who runs it.
 - Reserved handles (R35) are `RESERVED_HANDLES` and `isReservedHandle` beside `Handle` in
   `packages/core/src/schemas.ts`: the product's names (also inside other handles), its
   characters, staff words, and the names of its pages, top-level screens and web-root files. A

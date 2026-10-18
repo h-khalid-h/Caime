@@ -44,6 +44,9 @@ import { toast } from '@/ui/Toast';
 
 /** Loaded when it's shown: shared by several screens, needed by none at first. */
 const JoinLinks = lazyPart(() => import('@/features/join/JoinLinks').then((m) => m.JoinLinks));
+const JoinRequests = lazyPart(() =>
+  import('@/features/join/JoinRequests').then((m) => m.JoinRequests),
+);
 const PeoplePicker = lazyPart(() =>
   import('@/features/people/PeoplePicker').then((m) => m.PeoplePicker),
 );
@@ -85,8 +88,9 @@ export function GroupPeople({
   const [busy, setBusy] = useState(false);
   const people = conversation.participants;
   const inIt = new Set(people.map((p) => p.userId));
-  // A link that lets anyone in (M16 C3e): a standalone group's, never with someone under 18 in
-  // it (R29) or a meeting's guests, offered to whoever runs it.
+  // A join link (M16 C3e): a standalone group's, never with a meeting's guests, offered to
+  // whoever runs it; with someone under 18 in it (R29), only one where each person asks first
+  // (C3h), whom an adult who runs it lets in.
   const linkable =
     manager &&
     joinLinkFits({
@@ -95,7 +99,6 @@ export function GroupPeople({
       parentId: conversation.parentId,
       spaceId: conversation.space?.id ?? null,
     }) &&
-    !conversation.hasMinor &&
     !people.some((p) => p.person.kind === 'provisional');
   const space = useSpace(spaceOf && adding ? spaceOf.id : '');
   const refresh = () => {
@@ -191,6 +194,8 @@ export function GroupPeople({
           </Text>
         </Pressable>
       ) : null}
+      {/* Who asked through a link that asks (C3h), let in or not by whoever runs it. */}
+      {linkable ? <JoinRequests target="group" id={conversation.id} /> : null}
       {people.map((p) => {
         const self = p.userId === me;
         const role = roleOf(p.role);
@@ -307,7 +312,12 @@ export function GroupPeople({
         }
       >
         {linkable ? (
-          <JoinLinks target="group" id={conversation.id} name={conversation.title} />
+          <JoinLinks
+            target="group"
+            id={conversation.id}
+            name={conversation.title}
+            asksOnly={conversation.hasMinor}
+          />
         ) : null}
         <View style={{ marginHorizontal: -4 }}>
           <PeoplePicker

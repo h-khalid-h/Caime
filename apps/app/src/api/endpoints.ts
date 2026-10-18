@@ -86,6 +86,7 @@ import type {
   JoinLinkMadeResponse,
   JoinLinkOpenResponse,
   JoinLinksResponse,
+  JoinRequestsResponse,
   JoinResponse,
   JoinView,
   LiveCallsResponse,
@@ -577,9 +578,10 @@ export const endpoints = {
     api.get<JoinLinksResponse>(
       `/${target === 'group' ? 'conversations' : 'spaces'}/${id}/join-links`,
     ),
-  makeJoinLink: (target: 'group' | 'space', id: string) =>
+  makeJoinLink: (target: 'group' | 'space', id: string, approval = false) =>
     api.post<JoinLinkMadeResponse>(
       `/${target === 'group' ? 'conversations' : 'spaces'}/${id}/join-links`,
+      { approval },
     ),
   revokeJoinLink: (target: 'group' | 'space', id: string, linkId: string) =>
     api.del<OkResponse>(
@@ -589,6 +591,23 @@ export const endpoints = {
     api.get<JoinLinkOpenResponse>(`/join-links/${encodeURIComponent(token)}`),
   acceptJoinLink: (token: string) =>
     api.post<JoinLinkAcceptResponse>(`/join-links/${encodeURIComponent(token)}/accept`),
+  /** Their ask through a link that asks (C3h), taken back while it waits. */
+  withdrawJoinAsk: (token: string) =>
+    api.del<OkResponse>(`/join-links/${encodeURIComponent(token)}/ask`),
+  /** Who asked through a place's links and waits, for its owner and admins (C3h). */
+  joinRequests: (target: 'group' | 'space', id: string) =>
+    api.get<JoinRequestsResponse>(
+      `/${target === 'group' ? 'conversations' : 'spaces'}/${id}/join-requests`,
+    ),
+  answerJoinRequest: (
+    target: 'group' | 'space',
+    id: string,
+    requestId: string,
+    answer: 'accept' | 'decline',
+  ) =>
+    api.post<OkResponse>(
+      `/${target === 'group' ? 'conversations' : 'spaces'}/${id}/join-requests/${requestId}/${answer}`,
+    ),
   removeFromOrg: (id: string, userId: string) =>
     api.del<OkResponse>(`/orgs/${id}/members/${userId}`),
   updateOrgMember: (

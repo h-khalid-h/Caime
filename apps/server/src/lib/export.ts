@@ -121,6 +121,7 @@ export async function buildExport(ctx: AppContext, me: string, now: Date) {
     customers,
     meetingInvitations,
     joinLinks,
+    joinRequests,
   ] = await Promise.all([
     // An organization's page is public; whose link a person followed is only counted (R29: it
     // could name someone under 18, or someone who can't be found).
@@ -938,6 +939,15 @@ export async function buildExport(ctx: AppContext, me: string, now: Date) {
       .orderBy('l.created_at')
       .orderBy('l.id')
       .execute(),
+    // Your asks to join through links that ask (M16 C3h): when, and how each ended; never who
+    // answered.
+    db
+      .selectFrom('join_requests')
+      .select(['conversation_id', 'created_at', 'decided_at', 'outcome'])
+      .where('user_id', '=', me)
+      .orderBy('created_at')
+      .orderBy('id')
+      .execute(),
   ]);
   const person = (name: string | null, handle: string | null) =>
     name === null ? null : { displayName: name, handle };
@@ -1408,6 +1418,13 @@ export async function buildExport(ctx: AppContext, me: string, now: Date) {
       expiresAt: l.expires_at.toISOString(),
       takenBackAt: iso(l.revoked_at),
       at: l.created_at.toISOString(),
+    })),
+    // Your asks to join (M16 C3h): to a group or a space, when, and how each ended.
+    joinRequests: joinRequests.map((r) => ({
+      to: r.conversation_id ? 'group' : 'space',
+      at: r.created_at.toISOString(),
+      decidedAt: iso(r.decided_at),
+      outcome: r.outcome,
     })),
     meetingInvitations: meetingInvitations.map((g) => ({
       meetingSpaceId: g.conversation_id,

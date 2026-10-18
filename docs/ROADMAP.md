@@ -2248,8 +2248,38 @@ graph) and the number that will show it; one that sharpens none is hygiene and s
       unzipper 12.3 KB, loaded with a zip. The condition of the switch (a group's history comes
       with it), not an advantage: its number is `growth.imports` (chats and groups brought over,
       and their lines).
-- [ ] C2–C3. The rest of the front door: a join link's approval (and with it R97 (3): someone
-      under 18 let in on an adult's acceptance).
+- [x] C3h. A join link that asks (2026-10-18, review §1 H5's optional half and R97 (3): a link let
+      in whoever opened it, and nobody under 18 at all). Making a link, its owner or an admin may
+      turn on "Each person asks first": whoever opens it then asks (the visitor's page, the link's
+      screen and onboarding's one tap all say "Ask to join"), the place's owner and admins are told
+      once ("Rana asks to join “Choir”"), and they let each person in, or not, from the group's
+      people or the space's people ("Asking to join · 1", Let in, Not now), live on every device
+      (`join.asked`). Let in, they come in through the one way into each place (`addToGroup`,
+      `addToSpace`), the ask claimed under the place's lock (two answers at once let them in
+      once), and are told "You’re in"; declined, they aren't told by a notice, the link's screen
+      says it wasn't accepted and that link takes no ask from them again (a new link may); an ask
+      is taken back while it waits. Under 18 (R29): a link that asks lets nobody in by itself, so
+      it may stand where someone under 18 is (the panel offers only that kind there), and someone
+      under 18 may ask through one only where the place is run for them by someone they may trust,
+      its organization verified or its owner an adult connection of theirs (R98 (3)); whoever
+      answers is an adult who runs it, and an open link beside it still keeps them out. Asks are
+      in the asker's export (never who answered) and swept, once answered, after
+      `KEPT_DAYS.spentInvites`; the privacy page says both. Verified with `join-requests.test.ts`
+      (14: made and said; an ask, not a join, told once, twice is once; answered only by whoever
+      runs it; let in once under two answers at once, told, the link then theirs; declined
+      untold and not again by that link, a new link a new ask; taken back; a block after asking
+      keeps them out; a place with someone
+      under 18 takes only a link that asks; under 18 asks only where an adult connection runs it,
+      or a verified organization's space; an open link beside it keeps them out; an admin under 18
+      can't answer; the export; the sweep), `join-links.test.ts` (the new shapes), `log.test.ts`,
+      `sw.test.ts` (a space's notice opens the space) and the E2E `join-asks.spec.ts` (a group
+      made with a link that asks; someone new reads "then ask" on the page, signs up, asks in one
+      tap from onboarding and sees it wait; the owner sees the ask among the group's people without
+      a reload, lets them in, and the link opens the group for them). The asks list loads apart,
+      where it's shown. The condition of the switch (a community moves over without strangers
+      walking in, and a school or a family can use links at all), not an advantage: its number is
+      `growth.joinLinks.asked` beside `joined`.
+- [ ] C2–C3. The rest of the front door: none left but C1d (a message before an account).
 - [ ] D. Performance and integrity: the aliased `selectAll` guard and its eleven sites; people
       lists through `personViewsFor` with a scale ceiling; `participants.last_sent_seq` for the
       inbox; a large-group mode and one transcript view; a `defer` semaphore and gauge; bus payload
@@ -3886,6 +3916,10 @@ graph) and the number that will show it; one that sharpens none is hygiene and s
   journeys, safety, reliability, performance, intelligence, mail and calendar, chat, integrations,
   business and code integrity; the matrix against WhatsApp, Signal, Slack, Calendly and Workspace;
   an age-assurance design; the integration framework mapped to the code; plan M16 (A–H).
+- 2026-10-18 — M16 C3h: a join link may have each person ask first, the owner or an admin letting
+  them in or not; such a link may stand where someone under 18 is, who may ask where an adult
+  connection or a verified organization runs the place. C3f live on cai.me (`a27d078`: the keep
+  route answering).
 - 2026-10-18 — M16 C3g: the WhatsApp importer takes an iPhone's `.zip` as it is and a group's
   export into a group its owner or an admin runs, each name taken as one of its people or kept as
   a name; an iPhone's own lines (the encryption notice, who added whom) no longer come over as

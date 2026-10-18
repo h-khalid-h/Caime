@@ -1491,4 +1491,13 @@ export const arServer: Catalog = {
   'Everyone a name is taken as is someone in this group.': 'كل اسم يُنسب إلى شخص في هذه المجموعة.',
   'This group has a topic called “{title}” already. Name this one otherwise.':
     'في هذه المجموعة موضوع باسم “{title}” من قبل. يلزم اسم آخر لهذا الموضوع.',
+  '{name} asks to join “{place}”': 'طلب انضمام من {name} إلى «{place}»',
+  'Let them in, or not, from its people.': 'القبول أو الرفض من قائمة الأشخاص.',
+  'That ask': 'ذلك الطلب',
+  'Sign up or sign in, then ask: its owner or an admin lets each person in. Once in, you read what was said there before you came.':
+    'إنشاء حساب أو تسجيل الدخول، ثم الطلب: يقبل المالك أو أحد المشرفين كل شخص. وبعد الانضمام تُقرأ الرسائل السابقة كلها.',
+  'Asks to join are answered by people 18 or over.': 'الرد على طلبات الانضمام لمن تجاوزوا 18 عامًا.',
+  'This link can’t add them to it.': 'لا يمكن لهذا الرابط إضافة هذا الشخص.',
+  'You’re in “{place}”': 'تم الانضمام إلى «{place}»',
+  'Your ask to join was accepted.': 'تم قبول طلب الانضمام.',
 };

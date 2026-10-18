@@ -4250,4 +4250,25 @@ export const turkish: Catalog = {
     'WhatsApp’ta sohbeti açın, ardından medya olmadan Sohbeti dışa aktar’a dokunun. Telefon bir metin dosyası, iPhone bir .zip kaydeder: ikisinden birini burada olduğu gibi seçin. Fotoğraflar ve dosyalar aktarılmaz; yazılanlar, yazıldıkları tarihle birlikte aktarılır.',
   'Who the others are here': 'Diğerleri burada kim',
   'Not in this group: keep the name': 'Bu grupta değil: adı koru',
+  '{name} is in': '{name} katıldı',
+  '{name} wasn’t let in': '{name} kabul edilmedi',
+  'Asking to join': 'Katılmak isteyenler',
+  'Let in': 'Kabul edin',
+  'Asked to join “{place}”': 'Katılma isteği gönderildi: “{place}”',
+  'You asked to join. You’re in once its owner or an admin lets you in.':
+    'Katılma isteğinizi gönderdiniz. Sahibi ya da bir yönetici kabul ettiğinde katılmış olursunuz.',
+  'Take back my ask': 'İsteğimi geri al',
+  'Your ask to join wasn’t accepted. Ask whoever sent the link.':
+    'Katılma isteğiniz kabul edilmedi. Bağlantıyı gönderene sorun.',
+  'Its owner or an admin lets each person in, and sees your name when you ask. Once in, you read what was said there before.':
+    'Sahibi ya da bir yönetici her kişiyi tek tek kabul eder ve istediğinizde adınızı görür. Katıldığınızda önceden söylenenleri okursunuz.',
+  'Ask to join': 'Katılma isteği gönderin',
+  'You came to join “{place}”: ask, and you’re in once its owner or an admin lets you in. Find others by @handle or email any time.':
+    'Katılmak için geldiniz: “{place}” için istek gönderin; sahibi ya da bir yönetici kabul ettiğinde katılmış olursunuz. Başkalarını istediğiniz zaman @kullanıcıadı veya e-postayla bulun.',
+  'Ask to join “{place}”': 'Katılma isteği gönderin: “{place}”',
+  'Each person asks first': 'Herkes önce istek gönderir',
+  'Someone under 18 is in it, so you or an admin let each person in.':
+    'İçinde 18 yaşından küçük biri var; bu yüzden herkesi siz ya da bir yönetici kabul eder.',
+  'You or an admin let them in, one by one.': 'Onları tek tek siz ya da bir yönetici kabul eder.',
+  'asks first': 'önce istek',
 };

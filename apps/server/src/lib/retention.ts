@@ -131,6 +131,13 @@ export async function sweepRecords(ctx: AppContext): Promise<void> {
       where least(coalesce(revoked_at, expires_at), expires_at) < ${before(KEPT_DAYS.spentInvites)}
       limit ${LOT} for update skip locked)`,
   );
+  // An ask to join (M16 C3h) once decided, as long again: who asked, and how it ended.
+  await inLots(
+    ctx,
+    sql`delete from join_requests where id in (select id from join_requests
+      where decided_at < ${before(KEPT_DAYS.spentInvites)}
+      limit ${LOT} for update skip locked)`,
+  );
   // A passkey ceremony nobody finished (R36): its challenge is no use after its few minutes.
   await inLots(
     ctx,

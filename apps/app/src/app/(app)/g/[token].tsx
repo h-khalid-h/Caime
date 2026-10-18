@@ -21,7 +21,9 @@ import { toast } from '@/ui/Toast';
 /**
  * A link to join a group or a space, opened signed in (M16 C3e): where it leads, how many are in
  * it, who asks, and Join, which puts this account in it and opens its conversation. Joining is
- * asked for, never done by opening the link: what was said there before comes with it.
+ * asked for, never done by opening the link: what was said there before comes with it. A link
+ * that asks (C3h) offers Ask to join instead, then says the ask waits (and takes it back), or that
+ * it wasn't accepted.
  */
 export default function JoinLink() {
   const { token = '' } = useLocalSearchParams<{ token: string }>();
@@ -38,11 +40,23 @@ export default function JoinLink() {
   const join = useMutation({
     mutationFn: () => endpoints.acceptJoinLink(token),
     onSuccess: (res) => {
+      if (res.asked) {
+        // Waiting on its owner or an admin: this screen says so from now on.
+        void qc.invalidateQueries({ queryKey: qk.groupLink(token) });
+        if (res.state === 'pending' && link)
+          toast(tr('Asked to join “{place}”', { place: link.name }));
+        return;
+      }
       void qc.invalidateQueries({ queryKey: qk.inbox });
       void qc.invalidateQueries({ queryKey: qk.spaces });
       if (!res.already && link) toast(tr('You joined “{place}”', { place: link.name }));
       open(res.conversationId);
     },
+    onError: (e) => toast((e as Error).message, { tone: 'danger' }),
+  });
+  const withdraw = useMutation({
+    mutationFn: () => endpoints.withdrawJoinAsk(token),
+    onSuccess: () => void qc.invalidateQueries({ queryKey: qk.groupLink(token) }),
     onError: (e) => toast((e as Error).message, { tone: 'danger' }),
   });
   const gone = q.isError && q.error instanceof ApiError && q.error.status === 404;
@@ -139,6 +153,39 @@ export default function JoinLink() {
                     loading={join.isPending}
                     onPress={() => join.mutate()}
                     testID="join-link-open"
+                  />
+                </>
+              ) : link.asked === 'pending' ? (
+                <>
+                  <Text variant="body" color="textSecondary" testID="join-link-asked">
+                    {tr('You asked to join. You’re in once its owner or an admin lets you in.')}
+                  </Text>
+                  <Button
+                    label={tr('Take back my ask')}
+                    variant="secondary"
+                    loading={withdraw.isPending}
+                    onPress={() => withdraw.mutate()}
+                    testID="join-link-withdraw"
+                  />
+                </>
+              ) : link.asked === 'declined' ? (
+                <Text variant="body" color="textSecondary" testID="join-link-declined">
+                  {tr('Your ask to join wasn’t accepted. Ask whoever sent the link.')}
+                </Text>
+              ) : link.approval ? (
+                <>
+                  <Text variant="caption" color="textSecondary">
+                    {tr(
+                      'Its owner or an admin lets each person in, and sees your name when you ask. Once in, you read what was said there before.',
+                    )}
+                  </Text>
+                  <Button
+                    label={tr('Ask to join')}
+                    size="lg"
+                    block
+                    loading={join.isPending}
+                    onPress={() => join.mutate()}
+                    testID="join-link-ask"
                   />
                 </>
               ) : (

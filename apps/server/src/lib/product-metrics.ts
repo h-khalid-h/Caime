@@ -195,13 +195,14 @@ export async function productMetrics(ctx: AppContext, days: number): Promise<Pro
 
   // Join links (M16 C3e): made and joined through in the window, and of those joins, how many
   // were by an account made for the link (under a day old when it joined).
-  const joinLinks = await q<{ made: number; joined: number; fresh: number }>(sql`
+  const joinLinks = await q<{ made: number; joined: number; fresh: number; asked: number }>(sql`
     select
       count(*) filter (where type = 'join_link.made')::int as made,
       count(*) filter (where type = 'join_link.joined')::int as joined,
-      count(*) filter (where type = 'join_link.joined' and (payload->>'fresh')::boolean)::int as fresh
+      count(*) filter (where type = 'join_link.joined' and (payload->>'fresh')::boolean)::int as fresh,
+      count(*) filter (where type = 'join_link.asked')::int as asked
     from domain_events
-    where type in ('join_link.made', 'join_link.joined')
+    where type in ('join_link.made', 'join_link.joined', 'join_link.asked')
       and created_at > ${from} and created_at <= ${to}
   `);
 
@@ -303,7 +304,12 @@ export async function productMetrics(ctx: AppContext, days: number): Promise<Pro
           ? Math.round((invites.via_people / engagement.people) * 1000) / 1000
           : null,
       door: { booked: door.booked, joined: rate(door.joined, door.cohort) },
-      joinLinks: { made: joinLinks.made, joined: joinLinks.joined, newPeople: joinLinks.fresh },
+      joinLinks: {
+        made: joinLinks.made,
+        joined: joinLinks.joined,
+        newPeople: joinLinks.fresh,
+        asked: joinLinks.asked,
+      },
       guests: { joined: guests.joined, kept: guests.kept },
       imports: { chats: imports.chats, groups: imports.groups, messages: imports.messages },
     },

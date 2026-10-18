@@ -138,6 +138,12 @@ are taken as; nothing is notified or read for meaning, and no AI is asked. On th
 iPhone's `.zip` is unzipped there: the unzipper is a 12.3 KB gzip chunk fetched only when a zip is
 picked, and it inflates the export's text alone, never its photos. The startup chunk is unchanged
 (448.8 KB); the conversation route's chunk grew 1.2 KB (84.3 KB: the group's "who's who" rows).
+A link that asks (C3h) keeps one row per ask (indexed by place and person, swept once answered as
+a spent link is); an ask is one insert, its owner and admins told by one notification each (a few
+people, four at a time) and one `join.asked` event; answering it is the one way in it always was,
+plus one update. The asks list is one indexed read, made only by whoever runs the place when its
+people are shown, and loads as its own 1.4 KB gzip chunk; nothing polls. The startup chunk grew
+0.1 KB (448.9 KB: the endpoints and keys), the conversation route's 0.1 KB (84.4 KB).
 
 ## What a change says
 

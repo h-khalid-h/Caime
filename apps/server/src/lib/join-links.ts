@@ -8,8 +8,10 @@
  * Whoever comes in by a link is a stranger to the people there, as a meeting's guest is, so the
  * under-18 rules (R29) are a guest's: only an adult makes one, none while anyone under 18 is in
  * it, only adults come in by one, and while one is open nobody under 18 is added by any path
- * (`assertNoMinorWhileLinkOpen`, read under the place's lock by every way in). A refusal says
- * the same words whatever the reason, so nobody learns who is under 18 or who blocked whom.
+ * (`assertNoMinorWhileLinkOpen`, read under the place's lock by every way in). A link that asks
+ * (C3h, `lib/join-requests.ts`) lets nobody in by itself: each person is an adult's decision, so
+ * it may stand where someone under 18 is, and those rules are its own. A refusal says the same
+ * words whatever the reason, so nobody learns who is under 18 or who blocked whom.
  */
 import type { JoinLinkOpenView, JoinLinkView } from '@caime/core';
 import {
@@ -54,6 +56,7 @@ export function joinLinkView(l: Link, by: string | null): JoinLinkView {
     expiresAt: l.expires_at.toISOString(),
     createdAt: l.created_at.toISOString(),
     by,
+    approval: l.approval,
   };
 }
 
@@ -180,19 +183,21 @@ const targetColumn = (t: JoinTarget): 'conversation_id' | 'space_id' =>
 
 /**
  * A new link; the token comes back this once. Under the place's lock: whoever makes it runs it
- * (the route has checked they're an adult), it takes links, nobody under 18 is in it, and fewer
- * than `JOIN_LINKS_OPEN` are open.
+ * (the route has checked they're an adult), it takes links, fewer than `JOIN_LINKS_OPEN` are
+ * open, and, for one that lets people in by itself, nobody under 18 is in it (one that asks may
+ * stand where someone is: each person it brings is let in by an adult who runs the place).
  */
 export async function makeJoinLink(
   ctx: AppContext,
   t: JoinTarget,
   byUserId: string,
+  approval = false,
 ): Promise<{ link: Link; token: string }> {
   return ctx.db.transaction().execute(async (trx) => {
     await lockTarget(trx, t);
     await assertRunsTarget(trx, t, byUserId);
     if (!(await targetFits(trx, t))) throw linksNotHere();
-    if (await anyMinor(trx, await peopleIn(trx, t), ctx.now())) throw linksNotHere();
+    if (!approval && (await anyMinor(trx, await peopleIn(trx, t), ctx.now()))) throw linksNotHere();
     const open = await trx
       .selectFrom('join_links')
       .select(sql<number>`count(*)::int`.as('n'))
@@ -213,6 +218,7 @@ export async function makeJoinLink(
         created_by: byUserId,
         expires_at: new Date(ctx.now().getTime() + JOIN_LINK_DAYS * 86_400_000),
         created_at: ctx.now(),
+        approval,
       })
       .returningAll()
       .executeTakeFirstOrThrow();
@@ -350,8 +356,9 @@ export async function blockedFromJoining(
 }
 
 /**
- * Under 18 (R29): while a link to a place is open, it lets strangers in, so nobody under 18 is
- * added to it by any path. Read under the place's lock by the group and space add paths.
+ * Under 18 (R29): while a link that lets people in by itself is open, it lets strangers in, so
+ * nobody under 18 is added to the place by any path (a link that asks lets nobody in by itself).
+ * Read under the place's lock by the group and space add paths.
  */
 export async function assertNoMinorWhileLinkOpen(
   db: Q,
@@ -364,6 +371,7 @@ export async function assertNoMinorWhileLinkOpen(
     .selectFrom('join_links')
     .select('id')
     .where(targetColumn(t), '=', t.id)
+    .where('approval', '=', false)
     .where('revoked_at', 'is', null)
     .where('expires_at', '>', now)
     .executeTakeFirst();
@@ -379,7 +387,7 @@ export async function assertNoMinorWhileLinkOpen(
 export async function joinLinkOpening(
   ctx: AppContext,
   live: { link: Link; target: JoinTarget },
-): Promise<Omit<JoinLinkOpenView, 'member'> & { people: string[] }> {
+): Promise<Omit<JoinLinkOpenView, 'member' | 'asked'> & { people: string[] }> {
   const { link, target } = live;
   const people = await peopleIn(ctx.db, target);
   const inviter = await ctx.db
@@ -423,6 +431,7 @@ export async function joinLinkOpening(
     org: org ? orgRef(org) : null,
     invitedBy: inviter?.display_name ?? null,
     expiresAt: link.expires_at.toISOString(),
+    approval: link.approval,
     people,
   };
 }

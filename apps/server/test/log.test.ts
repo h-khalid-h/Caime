@@ -56,6 +56,10 @@ describe('what a request says of itself in the log', () => {
     expect(requestForLog({ method: 'POST', url: `/v1/join-links/${token}/accept` }).url).toBe(
       '/v1/join-links/…/accept',
     );
+    // An ask taken back through a link that asks (C3h).
+    expect(requestForLog({ method: 'DELETE', url: `/v1/join-links/${token}/ask` }).url).toBe(
+      '/v1/join-links/…/ask',
+    );
     // A place's own list of them names no token.
     const list = '/v1/conversations/0d6c1a9e-1111-4222-8333-444455556666/join-links';
     expect(requestForLog({ method: 'GET', url: list }).url).toBe(list);

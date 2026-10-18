@@ -1433,4 +1433,14 @@ export const turkishServer: Catalog = {
     'Bir adın eşlendiği herkes bu gruptan biri olmalı.',
   'This group has a topic called “{title}” already. Name this one otherwise.':
     'Bu grupta “{title}” adında bir konu zaten var. Bu konuya başka bir ad verin.',
+  '{name} asks to join “{place}”': '{name}, “{place}” için katılma isteği gönderdi',
+  'Let them in, or not, from its people.': 'Kişiler listesinden kabul edin ya da etmeyin.',
+  'That ask': 'O istek',
+  'Sign up or sign in, then ask: its owner or an admin lets each person in. Once in, you read what was said there before you came.':
+    'Kaydolun ya da giriş yapın, sonra istek gönderin: sahibi ya da bir yönetici her kişiyi kabul eder. Katıldığınızda önceden söylenenleri okursunuz.',
+  'Asks to join are answered by people 18 or over.':
+    'Katılma isteklerini 18 yaş ve üzeri kişiler yanıtlar.',
+  'This link can’t add them to it.': 'Bu bağlantı bu kişiyi ekleyemez.',
+  'You’re in “{place}”': '“{place}” içindesiniz',
+  'Your ask to join was accepted.': 'Katılma isteğiniz kabul edildi.',
 };

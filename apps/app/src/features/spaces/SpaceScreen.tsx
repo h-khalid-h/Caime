@@ -49,6 +49,9 @@ import { SPACE_ICONS } from './kinds';
 
 /** Loaded when it's shown: shared by several screens, needed by none at first. */
 const JoinLinks = lazyPart(() => import('@/features/join/JoinLinks').then((m) => m.JoinLinks));
+const JoinRequests = lazyPart(() =>
+  import('@/features/join/JoinRequests').then((m) => m.JoinRequests),
+);
 const PeoplePicker = lazyPart(() =>
   import('@/features/people/PeoplePicker').then((m) => m.PeoplePicker),
 );
@@ -387,6 +390,8 @@ export function SpaceScreen({ id }: { id: string }) {
             <MemberRow key={m.userId} space={space} m={m} onManage={setManaging} />
           ))}
         </View>
+        {/* Who asked through a link that asks (C3h), let in or not by whoever runs it. */}
+        {manager ? <JoinRequests target="space" id={space.id} /> : null}
         <Text
           variant="caption"
           color="textTertiary"
@@ -487,7 +492,7 @@ export function SpaceScreen({ id }: { id: string }) {
           />
         }
       >
-        {/* A link that lets anyone in (M16 C3e), for whoever runs the space. */}
+        {/* A link that lets people in, or has them ask first (M16 C3e, C3h), for whoever runs it. */}
         {manager ? <JoinLinks target="space" id={space.id} name={space.name} /> : null}
         <View style={{ marginHorizontal: -4 }}>
           <PeoplePicker
