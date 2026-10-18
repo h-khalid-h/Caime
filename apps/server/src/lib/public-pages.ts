@@ -38,6 +38,7 @@ import {
   dirOf,
   INTERFACE_LANGUAGES,
   type InterfaceLanguage,
+  listed,
   msg,
   sentence,
   tr,
@@ -1010,7 +1011,7 @@ export function renderPublic(
     `<dl class="spec">
     <div>${label(tr('handle'))}<dd>@${esc(p.handle)}</dd></div>
     ${p.headline ? `<div>${label(tr('headline'))}<dd>${esc(p.headline)}</dd></div>` : ''}
-    ${p.organizations.length ? `<div>${label(tr('with'))}<dd>${p.organizations.map((o) => `<a href="/o/${esc(o.handle)}">${esc(o.name)}</a>`).join(', ')}</dd></div>` : ''}
+    ${p.organizations.length ? `<div>${label(tr('with'))}<dd>${listed(p.organizations.map((o) => `<a href="/o/${esc(o.handle)}">${esc(o.name)}</a>`))}</dd></div>` : ''}
     ${payRow(page)}
   </dl>`,
   )}
@@ -1411,7 +1412,7 @@ export const payPath = (pagePath: string) => `${pagePath}?pay`;
 function payRow(host: PublicPerson | PublicOrg): string {
   if (!host.pays.length) return '';
   return `<div>${label(tr('pays by'))}<dd>${esc(
-    host.pays.map((k) => tr(PAYMENT_KIND_LABELS[k])).join(', '),
+    listed(host.pays.map((k) => tr(PAYMENT_KIND_LABELS[k]))),
   )}</dd></div>`;
 }
 
@@ -1431,7 +1432,7 @@ function placeOf(host: PublicPerson | PublicOrg, i: PublicItem): PlaceView | nul
 function itemLine(i: PublicItem, at: PlaceView | null = null): string {
   return [
     i.unit === 'minutes' && i.minutes
-      ? tr('{m} min', { m: i.minutes })
+      ? tr('{minutes} min', { minutes: i.minutes })
       : i.unit === 'days'
         ? tr('per day')
         : null,
@@ -1451,13 +1452,13 @@ function optionRows(item: PublicItem): string {
     .map(
       (o) =>
         `<div><dt class="mono">${esc(o.name)}</dt><dd>${esc(
-          o.choices
-            .map((c) =>
+          listed(
+            o.choices.map((c) =>
               c.price && item.price
                 ? `${c.name} +${formatAmount(c.price, item.price.currency, currentTranslator().language)}`
                 : c.name,
-            )
-            .join(', '),
+            ),
+          ),
         )}</dd></div>`,
     )
     .join('');
@@ -1561,7 +1562,7 @@ function itemChips(host: PublicPerson | PublicOrg, i: PublicItem) {
   const at = placeOf(host, i);
   return [
     i.unit === 'minutes' && i.minutes
-      ? { icon: 'clock' as const, text: tr('{m} min', { m: i.minutes }) }
+      ? { icon: 'clock' as const, text: tr('{minutes} min', { minutes: i.minutes }) }
       : i.unit === 'days'
         ? { icon: 'clock' as const, text: tr('per day') }
         : null,
@@ -1593,7 +1594,7 @@ function actionBar(
     : tr('Free');
   const length =
     item.unit === 'minutes' && item.minutes
-      ? tr('{m} min', { m: item.minutes })
+      ? tr('{minutes} min', { minutes: item.minutes })
       : item.unit === 'days'
         ? tr('per day')
         : (stockLine(item.stock) ?? '');

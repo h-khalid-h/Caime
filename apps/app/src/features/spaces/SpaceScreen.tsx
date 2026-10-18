@@ -478,7 +478,7 @@ export function SpaceScreen({ id }: { id: string }) {
         subtitle={tr('People you’re connected with. They join General straight away.')}
         footer={
           <Button
-            label={picked.size ? tr('Add {size}', { size: picked.size }) : tr('Add')}
+            label={picked.size ? tr('Add {count}', { count: picked.size }) : tr('Add')}
             block
             size="lg"
             disabled={picked.size === 0}

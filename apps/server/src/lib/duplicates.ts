@@ -6,6 +6,7 @@
  * may keep a separate account on purpose.
  */
 
+import { joinNames } from '@caime/core/format';
 import { tr } from '@caime/core/i18n';
 import { type Kysely, sql, type Transaction } from 'kysely';
 import type { AppContext } from '../context';
@@ -192,7 +193,7 @@ export async function suggestDuplicatesOf(
                 }),
           rationale: tr(
             'Both have {reasons}. Merged, they show as one in People; both accounts and conversations stay, and you can separate them again.',
-            { reasons: best.reasons.join(tr(', and ')) },
+            { reasons: joinNames(best.reasons, best.reasons.length) },
           ),
           confidence: best.confidence,
           payload: { keep: keep.id, merge: merge.id },

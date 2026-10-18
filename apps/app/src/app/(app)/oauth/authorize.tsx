@@ -138,10 +138,15 @@ export default function Authorize() {
                 ))}
               </View>
               <Text variant="caption" color="textSecondary">
-                {tr(
-                  'Never your password, privacy or account. What it sends says “via {name}”. End it any time in You → Apps.{You}',
-                  { name: c.app.name, You: c.allowedBefore ? tr(' You let it in before.') : '' },
-                )}
+                {c.allowedBefore
+                  ? tr(
+                      'Never your password, privacy or account. What it sends says “via {name}”. End it any time in You → Apps. You let it in before.',
+                      { name: c.app.name },
+                    )
+                  : tr(
+                      'Never your password, privacy or account. What it sends says “via {name}”. End it any time in You → Apps.',
+                      { name: c.app.name },
+                    )}
               </Text>
               {minor ? (
                 <Text variant="body" testID="oauth-minor">

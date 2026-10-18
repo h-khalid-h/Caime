@@ -87,7 +87,12 @@ export function Sheet({
     <Modal
       visible={open}
       transparent
-      animationType={reduceMotion ? 'none' : phone ? 'slide' : 'fade'}
+      // On the web a sheet leaves at once: React Native Web keeps a closing Modal's focus trap
+      // through its fade, so what was typed in that moment (the next message, after "Save") was
+      // pulled back into the sheet going away and lost.
+      animationType={
+        reduceMotion || (Platform.OS === 'web' && !open) ? 'none' : phone ? 'slide' : 'fade'
+      }
       onRequestClose={onClose}
       onDismiss={Platform.OS === 'ios' ? handOn : undefined}
       statusBarTranslucent

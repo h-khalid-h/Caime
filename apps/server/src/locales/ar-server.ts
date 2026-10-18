@@ -60,7 +60,6 @@ export const arServer: Catalog = {
   'your name and handle, and may ask': 'اسمك ومعرّفك، وله أن يطلب',
   '{n} GB': '{n} غيغابايت',
   'price shown in the app': 'السعر يظهر في التطبيق',
-  ', or ': '، أو ',
   'It lands in the inbox, first if they’ve waited longest.':
     'تصل إلى صندوق الوارد، وتتصدّره إن طال انتظارها أكثر من غيرها.',
   'Lina writes to Nile Dental from the app she uses for everyone else. The team sees one conversation, its state and who has it; Lina sees the organization, never which person.':
@@ -196,7 +195,6 @@ export const arServer: Catalog = {
     'جوهر Caime لا يُحسب عليك أبدًا: من تتواصل معهم، وعلاقاتك، وما يحتاجك، وما تنتظره، والبحث والمزامنة، كلها في كل خطة. ولا تختلف الخطط إلا فيما يكلّف تشغيله مالًا، وفيما تشتريه المؤسسات.',
   'For people': 'للأفراد',
   Personal: 'شخصي',
-  ', always': '، دائمًا',
   '{n} actions a day, once you turn it on': '{n} إجراء في اليوم، متى شغّلته',
   files: 'الملفات',
   automations: 'الأتمتة',
@@ -428,7 +426,6 @@ export const arServer: Catalog = {
   '{merge} and {keep} may be the same person': 'قد يكون {merge} و{keep} الشخص نفسه',
   'Both have {reasons}. Merged, they show as one in People; both accounts and conversations stay, and you can separate them again.':
     'لكليهما {reasons}. بعد الدمج يظهران كشخص واحد في الأشخاص؛ ويبقى الحسابان والمحادثات، ويمكنك فصلهما من جديد.',
-  ', and ': '، و',
   '“{topic}” keeps coming up here. A separate topic keeps it together.':
     'يتكرر ذكر «{topic}» هنا. موضوع مستقل يجمع ما يخصه في مكان واحد.',
   'Colleague · {org}': 'زميل · {org}',
@@ -603,8 +600,8 @@ export const arServer: Catalog = {
     'في بلد الإقامة، Caime لمن بلغ {age} عامًا فأكثر.',
   'Your plan starts as soon as you pay. In the EU you may withdraw within 14 days by writing to {email}, and you pay only for the days it was on. Terms: {terms}':
     'تبدأ الخطة فور الدفع. في الاتحاد الأوروبي يمكن الانسحاب خلال 14 يومًا بالكتابة إلى {email}، ولا يُدفع إلا عن الأيام التي كانت فيها الخطة مفعّلة. الشروط: {terms}',
-  'You need to be at least {MINIMUM_AGE} to use Caime.':
-    'يجب أن يكون عمرك {MINIMUM_AGE} عامًا على الأقل لاستخدام Caime.',
+  'You need to be at least {age} to use Caime.':
+    'يجب أن يكون عمرك {age} عامًا على الأقل لاستخدام Caime.',
   'That email already has an account. Sign in instead?':
     'لهذا البريد الإلكتروني حساب بالفعل. هل تريد تسجيل الدخول بدلًا من ذلك؟',
   'That email or handle and password don’t match.':
@@ -627,8 +624,8 @@ export const arServer: Catalog = {
   'Accept the message request to save anything from it.': 'اقبل طلب المراسلة لتحفظ شيئًا منه.',
   'A line about the conversation isn’t saved.': 'السطر عن المحادثة لا يُحفظ.',
   'That file': 'ذلك الملف',
-  'You’ve saved {SAVED_MAX} things, the most there’s room for. Remove some to save more.':
-    'بلغت الحد الأقصى للمحفوظات ({SAVED_MAX}). أزل بعضها لتحفظ المزيد.',
+  'You’ve saved {max} things, the most there’s room for. Remove some to save more.':
+    'بلغت الحد الأقصى للمحفوظات ({max}). أزل بعضها لتحفظ المزيد.',
   'That saved item': 'ذلك العنصر المحفوظ',
   'An automation saves to {collection}. Change it or remove it first.':
     'هناك قاعدة أتمتة تحفظ في {collection}. عدّلها أو أزلها أولًا.',
@@ -679,8 +676,8 @@ export const arServer: Catalog = {
   'That request': 'ذلك الطلب',
   'That connection': 'ذلك التواصل',
   'That merged connection': 'ذلك التواصل المدمج',
-  'A private group holds up to {PRIVATE_GROUP_MAX} people: each message is sealed for every device in it.':
-    'تتسع المجموعة الخاصة لـ {PRIVATE_GROUP_MAX} شخصًا على الأكثر: كل رسالة تُختم لكل جهاز فيها.',
+  'A private group holds up to {max} people: each message is sealed for every device in it.':
+    'تتسع المجموعة الخاصة لـ {max} شخصًا على الأكثر: كل رسالة تُختم لكل جهاز فيها.',
   'A topic’s people are its group’s: add, remove or make admins there.':
     'أعضاء الموضوع هم أعضاء مجموعته: أضف أو أزل أو عيّن مشرفين هناك.',
   'Topics are for conversations between people.': 'الموضوعات للمحادثات بين الأشخاص.',
@@ -736,7 +733,7 @@ export const arServer: Catalog = {
   'This album is closed.': 'هذا الألبوم مغلق.',
   'Add photos you’ve uploaded.': 'أضف صورًا رفعتها.',
   'Albums take photos and videos.': 'الألبومات تقبل الصور ومقاطع الفيديو.',
-  'An album holds {ALBUM_MAX} photos.': 'يتسع الألبوم لـ {ALBUM_MAX} صورة.',
+  'An album holds {max} photos.': 'يتسع الألبوم لـ {max} صورة.',
   'That photo': 'تلك الصورة',
   'Only whoever added it, or made the album, can take it out.':
     'لا يزيلها إلا من أضافها، أو من أنشأ الألبوم.',
@@ -748,17 +745,16 @@ export const arServer: Catalog = {
   'Messages are pinned once the message request is answered.':
     'تُثبّت الرسائل بعد الرد على طلب المراسلة.',
   'Lines about the conversation aren’t pinned.': 'السطور عن المحادثة لا تُثبّت.',
-  '{PINNED_MAX} messages are pinned already, including {n} you deleted for yourself. Unpin one first.':
-    {
-      zero: 'ثُبّتت {PINNED_MAX} رسائل بالفعل. ألغِ تثبيت إحداها أولًا.',
-      one: 'ثُبّتت {PINNED_MAX} رسائل بالفعل، منها واحدة حذفتها لنفسك. ألغِ تثبيت إحداها أولًا.',
-      two: 'ثُبّتت {PINNED_MAX} رسائل بالفعل، منها اثنتان حذفتهما لنفسك. ألغِ تثبيت إحداها أولًا.',
-      few: 'ثُبّتت {PINNED_MAX} رسائل بالفعل، منها {n} حذفتها لنفسك. ألغِ تثبيت إحداها أولًا.',
-      many: 'ثُبّتت {PINNED_MAX} رسائل بالفعل، منها {n} حذفتها لنفسك. ألغِ تثبيت إحداها أولًا.',
-      other: 'ثُبّتت {PINNED_MAX} رسائل بالفعل، منها {n} حذفتها لنفسك. ألغِ تثبيت إحداها أولًا.',
-    },
-  '{PINNED_MAX} messages are pinned already. Unpin one first.':
-    'ثُبّتت {PINNED_MAX} رسائل بالفعل. ألغِ تثبيت إحداها أولًا.',
+  '{max} messages are pinned already, including {n} you deleted for yourself. Unpin one first.': {
+    zero: 'ثُبّتت {max} رسائل بالفعل. ألغِ تثبيت إحداها أولًا.',
+    one: 'ثُبّتت {max} رسائل بالفعل، منها واحدة حذفتها لنفسك. ألغِ تثبيت إحداها أولًا.',
+    two: 'ثُبّتت {max} رسائل بالفعل، منها اثنتان حذفتهما لنفسك. ألغِ تثبيت إحداها أولًا.',
+    few: 'ثُبّتت {max} رسائل بالفعل، منها {n} حذفتها لنفسك. ألغِ تثبيت إحداها أولًا.',
+    many: 'ثُبّتت {max} رسائل بالفعل، منها {n} حذفتها لنفسك. ألغِ تثبيت إحداها أولًا.',
+    other: 'ثُبّتت {max} رسائل بالفعل، منها {n} حذفتها لنفسك. ألغِ تثبيت إحداها أولًا.',
+  },
+  '{max} messages are pinned already. Unpin one first.':
+    'ثُبّتت {max} رسائل بالفعل. ألغِ تثبيت إحداها أولًا.',
   'That poll': 'ذلك الاستطلاع',
   'That option isn’t in the poll.': 'ذلك الخيار ليس في الاستطلاع.',
   'Choose one option.': 'اختر خيارًا واحدًا.',
@@ -771,8 +767,8 @@ export const arServer: Catalog = {
   'This device can’t pick up where it left off: it registers afresh.':
     'لا يستطيع هذا الجهاز المتابعة من حيث توقف: يُسجَّل من جديد.',
   'That device': 'ذلك الجهاز',
-  'Private conversations open on up to {MAX_DEVICES} devices: remove one in Settings first.':
-    'تُفتح المحادثات الخاصة على عدد محدود من الأجهزة ({MAX_DEVICES}): أزل جهازًا من الإعدادات أولًا.',
+  'Private conversations open on up to {max} devices: remove one in Settings first.':
+    'تُفتح المحادثات الخاصة على عدد محدود من الأجهزة ({max}): أزل جهازًا من الإعدادات أولًا.',
   'That device is registered already.': 'ذلك الجهاز مسجّل بالفعل.',
   'Approve it from a device that reads your private conversations already: this one doesn’t yet.':
     'وافق عليه من جهاز يقرأ محادثاتك الخاصة بالفعل: هذا الجهاز لا يقرأها بعد.',
@@ -793,8 +789,7 @@ export const arServer: Catalog = {
   'There’s a call on here already: join it.': 'ثمة مكالمة جارية هنا بالفعل: انضم إليها.',
   'Group calls are for group conversations.': 'المكالمات الجماعية لمحادثات المجموعات.',
   'You can call once you’ve joined the conversation.': 'يمكنك الاتصال بعد الانضمام إلى المحادثة.',
-  'Calls are for groups of up to {GROUP_CALL_MAX} people.':
-    'المكالمات لمجموعات من {GROUP_CALL_MAX} أشخاص على الأكثر.',
+  'Calls are for groups of up to {max} people.': 'المكالمات لمجموعات من {max} أشخاص على الأكثر.',
   'You can join once you’ve joined the conversation.': 'يمكنك الانضمام بعد الانضمام إلى المحادثة.',
   'This call is full.': 'هذه المكالمة ممتلئة.',
   'You can’t join this call.': 'لا يمكنك الانضمام إلى هذه المكالمة.',
@@ -812,8 +807,7 @@ export const arServer: Catalog = {
   'That identity': 'تلك الهوية',
   'Make another identity your default first.': 'اجعل هوية أخرى هويتك الافتراضية أولًا.',
   'Apps are made by people over 18.': 'التطبيقات يصنعها من تجاوزوا 18 عامًا.',
-  'You have {MAX_APPS} apps. Remove one first.':
-    'بلغت الحد الأقصى للتطبيقات ({MAX_APPS}). أزل واحدًا أولًا.',
+  'You have {max} apps. Remove one first.': 'بلغت الحد الأقصى للتطبيقات ({max}). أزل واحدًا أولًا.',
   'That app isn’t registered with Caime.': 'ذلك التطبيق غير مسجّل لدى Caime.',
   'That app didn’t register this return address.': 'لم يسجّل ذلك التطبيق عنوان العودة هذا.',
   'The app didn’t say what it wants to do.': 'لم يقل التطبيق ما يريد فعله.',
@@ -877,8 +871,8 @@ export const arServer: Catalog = {
   'This suggestion is missing its conversation.': 'لا يحدد هذا الاقتراح المحادثة المعنية.',
   'Accepting a {kind} suggestion isn’t supported yet.': 'قبول اقتراح من نوع {kind} غير مدعوم بعد.',
   'Access tokens are for people over 18.': 'رموز الوصول لمن تجاوزوا 18 عامًا.',
-  'You have {MAX_TOKENS} tokens. Revoke one you don’t use first.':
-    'بلغت الحد الأقصى للرموز ({MAX_TOKENS}). ألغِ أولًا رمزًا لا تستخدمه.',
+  'You have {max} tokens. Revoke one you don’t use first.':
+    'بلغت الحد الأقصى للرموز ({max}). ألغِ أولًا رمزًا لا تستخدمه.',
   'That token': 'ذلك الرمز',
   'Only the organization’s owner and admins post its updates.':
     'مالك المؤسسة ومشرفوها وحدهم ينشرون تحديثاتها.',
@@ -1554,4 +1548,6 @@ export const arServer: Catalog = {
     'قبل ذلك، يطلب Caime التحقق من العمر مرة واحدة. يستغرق ذلك دقيقة.',
   'That’s as many age checks as a day allows. Try again tomorrow.':
     'هذا أقصى عدد لعمليات التحقق من العمر في اليوم. حاول مجددًا غدًا.',
+  '{monthly}, or {yearly}': '{monthly}، أو {yearly}',
+  '{free}, always': '{free}، دائمًا',
 };

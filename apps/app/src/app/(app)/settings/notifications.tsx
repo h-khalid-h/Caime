@@ -138,8 +138,8 @@ function NewRule({
                 options={[
                   {
                     value: 'all',
-                    label: tr('All {toLowerCase}', {
-                      toLowerCase: lower(tr(SPHERE_DEFS[sphere].plural)),
+                    label: tr('All {kinds}', {
+                      kinds: lower(tr(SPHERE_DEFS[sphere].plural)),
                     }),
                   },
                   ...ROLES[sphere].map((r) => ({ value: r.id, label: tr(r.plural) })),

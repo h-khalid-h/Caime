@@ -8,7 +8,7 @@ import {
   messagePreview,
   systemText,
 } from '@caime/core/format';
-import { tr } from '@caime/core/i18n';
+import { listed, tr } from '@caime/core/i18n';
 import { imageFor } from '@caime/core/renditions';
 import { CAI_ID } from '@caime/core/system-ids';
 import { Image } from 'expo-image';
@@ -773,7 +773,7 @@ export const MessageBubble = memo(function MessageBubble({
 
   // What a screen reader says of the bubble, every word in the reader's language: a photo, a
   // card or a voice note without words reads as its preview does in the inbox, less the emoji.
-  const accessibleText = [
+  const accessibleText = listed([
     mine ? tr('You') : (senderName ?? ''),
     forMe ? tr('Mentions you') : '',
     m.pinnedAt && !deleted ? tr('Pinned') : '',
@@ -792,9 +792,7 @@ export const MessageBubble = memo(function MessageBubble({
         ),
     time,
     mine ? deliveryWord(delivery) : '',
-  ]
-    .filter(Boolean)
-    .join(', ');
+  ]);
 
   return (
     <View

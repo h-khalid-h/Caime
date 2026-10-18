@@ -1,6 +1,7 @@
 import { radii } from '@caime/brand/tokens';
 import type { CallPersonView } from '@caime/core/api';
-import { tr, trn } from '@caime/core/i18n';
+import { joinNames } from '@caime/core/format';
+import { listed, tr } from '@caime/core/i18n';
 import Mic from 'lucide-react-native/icons/mic';
 import MicOff from 'lucide-react-native/icons/mic-off';
 import Phone from 'lucide-react-native/icons/phone';
@@ -67,9 +68,7 @@ function Tile({
   return (
     <View
       testID={testID}
-      aria-label={[mine ? tr('You') : person.displayName, muted ? tr('muted') : null, note]
-        .filter(Boolean)
-        .join(', ')}
+      aria-label={listed([mine ? tr('You') : person.displayName, muted ? tr('muted') : null, note])}
       style={{
         flex: 1,
         margin: 4,
@@ -253,7 +252,7 @@ export function GroupCallLayer() {
           <Text variant="caption" style={{ color: '#FFFFFFAA' }} testID="group-call-count">
             {joined.length === 1
               ? tr('Only you so far')
-              : tr('{length} in the call', { length: joined.length })}
+              : tr('{count} in the call', { count: joined.length })}
           </Text>
         ) : null}
       </View>
@@ -275,15 +274,10 @@ export function GroupCallLayer() {
             {joined.length === 1
               ? tr('{first} is in the call', { first: first(joined[0]?.person.displayName ?? '') })
               : tr('{names} are in the call', {
-                  names:
-                    joined.length > 3
-                      ? trn(joined.length - 3, '{names} and one more', '{names} and {n} more', {
-                          names: joined
-                            .slice(0, 3)
-                            .map((m) => first(m.person.displayName))
-                            .join(', '),
-                        })
-                      : joined.map((m) => first(m.person.displayName)).join(', '),
+                  names: joinNames(
+                    joined.map((m) => first(m.person.displayName)),
+                    4,
+                  ),
                 })}
           </Text>
         </View>

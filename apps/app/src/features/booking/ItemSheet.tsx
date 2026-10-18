@@ -7,7 +7,7 @@
 import { type BookingItem, isOrdered, itemPhotoPath, stockLine } from '@caime/core/booking';
 import type { CatalogCollection } from '@caime/core/catalog';
 import { formatAmount } from '@caime/core/format';
-import { tr } from '@caime/core/i18n';
+import { listed, tr } from '@caime/core/i18n';
 import CalendarCheck from 'lucide-react-native/icons/calendar-check';
 import ShoppingBag from 'lucide-react-native/icons/shopping-bag';
 import { View } from 'react-native';
@@ -24,7 +24,7 @@ import { ItemPhoto } from './ItemPhoto';
 function line(item: BookingItem, locale: string): string {
   return [
     item.unit === 'minutes'
-      ? tr('{m} min', { m: item.minutes ?? 0 })
+      ? tr('{minutes} min', { minutes: item.minutes ?? 0 })
       : item.unit === 'days'
         ? tr('Per day')
         : null,
@@ -158,13 +158,13 @@ export function ItemSheet({
             // Its options (R60): each with its choices and what they add.
             ...(item.options ?? []).map((o) => ({
               label: o.name,
-              value: o.choices
-                .map((c) =>
+              value: listed(
+                o.choices.map((c) =>
                   c.price && item.price
                     ? `${c.name} +${formatAmount(c.price, item.price.currency, locale)}`
                     : c.name,
-                )
-                .join(', '),
+                ),
+              ),
             })),
             shelf
               ? {

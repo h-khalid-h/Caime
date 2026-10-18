@@ -89,8 +89,8 @@ export function MuteChoices({
           const until = instantOf(c, timeZone);
           onMute(
             until.toISOString(),
-            tr('Muted until {format}', {
-              format: new Intl.DateTimeFormat(locale, {
+            tr('Muted until {when}', {
+              when: new Intl.DateTimeFormat(locale, {
                 weekday: 'short',
                 day: 'numeric',
                 month: 'short',

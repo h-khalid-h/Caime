@@ -9,7 +9,7 @@ import {
   type WebhookEvent,
 } from '@caime/core/apps';
 import { formatWhen } from '@caime/core/format';
-import { msg, tr, trn } from '@caime/core/i18n';
+import { listed, msg, tr, trn } from '@caime/core/i18n';
 import { PLAN_NAMES } from '@caime/core/plans';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import Bot from 'lucide-react-native/icons/bot';
@@ -209,7 +209,7 @@ export function OrgApps({ org }: { org: OrgView }) {
   const summary = (a: OrgAppView) =>
     [
       a.scopes.includes('messages:write') ? tr('Answers customers') : tr('Reads the inbox'),
-      a.webhookUrl ? tr('Webhook to {hostOf}', { hostOf: hostOf(a.webhookUrl) }) : null,
+      a.webhookUrl ? tr('Webhook to {host}', { host: hostOf(a.webhookUrl) }) : null,
     ]
       .filter(Boolean)
       .join(' · ');
@@ -456,7 +456,7 @@ export function OrgApps({ org }: { org: OrgView }) {
             {app.kits?.length ? (
               // The kinds of card it made, which the team sends from a customer's conversation.
               <Text variant="caption" color="textSecondary" testID="org-app-kits">
-                {tr('Its cards: {cards}', { cards: app.kits.map((k) => k.name).join(', ') })}
+                {tr('Its cards: {cards}', { cards: listed(app.kits.map((k) => k.name)) })}
               </Text>
             ) : null}
             <Text variant="caption" color="textSecondary">

@@ -38,7 +38,7 @@ export function RelationshipHistory({ personId, name }: { personId: string; name
         ))}
         {events.length > FIRST ? (
           <Button
-            label={all ? tr('Show less') : tr('Show all {length}', { length: events.length })}
+            label={all ? tr('Show less') : tr('Show all {count}', { count: events.length })}
             variant="ghost"
             size="sm"
             onPress={() => setAll((v) => !v)}

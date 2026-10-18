@@ -242,6 +242,15 @@ export function lowerFirst(words: string): string {
   return words.charAt(0).toLocaleLowerCase(currentTranslator().language) + words.slice(1);
 }
 
+/**
+ * Items one after another as the reader's language separates them (M16 D4): "Cash, Card", and
+ * in Arabic with its own comma, "نقدًا، بطاقة". A list a person reads is joined here, or by
+ * `joinNames` when its last item takes "and"; never by a comma of its own.
+ */
+export function listed(items: readonly (string | null | undefined | false)[]): string {
+  return items.filter(Boolean).join(currentTranslator().language === 'ar' ? '، ' : ', ');
+}
+
 export function tr(text: string, vars?: Vars): string {
   return currentTranslator().tr(text, vars);
 }

@@ -119,7 +119,7 @@ export default function NewGroup() {
           </>
         ) : null}
         <Text variant="overline" color="textTertiary">
-          {tr('People · {size} chosen', { size: picked.size })}
+          {tr('People · {count} chosen', { count: picked.size })}
         </Text>
         <PeoplePicker picked={picked} onToggle={(id) => setPicked((p) => toggled(p, id))} />
         <Button

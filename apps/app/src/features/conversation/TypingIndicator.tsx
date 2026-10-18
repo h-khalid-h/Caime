@@ -69,7 +69,7 @@ export function TypingIndicator({ names }: { names: string[] }) {
       <Text variant="caption" color="textSecondary">
         {names.length === 1
           ? tr('{names} is typing…', { names: names[0] })
-          : tr('{joinNames} are typing…', { joinNames: joinNames(names) })}
+          : tr('{names} are typing…', { names: joinNames(names) })}
       </Text>
     </View>
   );

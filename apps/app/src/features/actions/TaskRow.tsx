@@ -122,7 +122,7 @@ export const TaskRow = memo(function TaskRow({
         <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8 }}>
           {task.dueAt ? (
             <Text variant="captionStrong" color={overdue ? 'warning' : 'textSecondary'}>
-              {overdue ? tr('Overdue · ') : ''}
+              {overdue ? `${tr('Overdue')} · ` : ''}
               {formatDue(task.dueAt, now, timeZone, locale, task.dueHasTime)}
             </Text>
           ) : null}

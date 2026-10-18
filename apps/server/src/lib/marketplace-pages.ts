@@ -22,6 +22,7 @@ import {
   directoryCursor,
   parseDirectoryCursor,
 } from '@caime/core';
+import { joinNames } from '@caime/core/format';
 import { currentTranslator, INTERFACE_LANGUAGES, tr, trn } from '@caime/core/i18n';
 import {
   type AiUse,
@@ -269,10 +270,7 @@ function byLine(p: AppPublisher, link: boolean): string {
   return p.kind === 'org' && p.verified ? `${who} · ${esc(tr('Verified'))}` : who;
 }
 
-const people = (count: number) =>
-  trn(count, '{n} person connected it', '{n} people connected it', {
-    n: count.toLocaleString(currentTranslator().language),
-  });
+const people = (count: number) => trn(count, '{n} person connected it', '{n} people connected it');
 
 /** A language's name in the page's language (Intl's own words), else its code. */
 function languageName(code: string): string {
@@ -285,16 +283,7 @@ function languageName(code: string): string {
   }
 }
 
-const listJoin = (items: string[]) => {
-  try {
-    return new Intl.ListFormat(currentTranslator().language, {
-      style: 'long',
-      type: 'conjunction',
-    }).format(items);
-  } catch {
-    return items.join(', ');
-  }
-};
+const listJoin = (items: string[]) => joinNames(items, items.length);
 
 /** A link out, safe: only the addresses a listing may hold (https, mailto). */
 const outLink = (url: string) =>

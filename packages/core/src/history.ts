@@ -51,7 +51,7 @@ export function describeRelationshipEvent(e: RelationshipEventLike, name: string
       return tr('Added {what}', { what });
     case 'changed':
       if (before && after && quoted(before) !== quoted(after))
-        return tr('{quoted} became {quoted2}', { quoted: quoted(before), quoted2: quoted(after) });
+        return tr('{before} became {after}', { before: quoted(before), after: quoted(after) });
       if (before && after && before.contextNote !== after.contextNote)
         return after.contextNote
           ? tr('Added a note to {what}', { what })

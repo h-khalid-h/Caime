@@ -82,7 +82,6 @@ export const turkishServer: Catalog = {
   'your name and handle, and may ask': 'adınızı ve kullanıcı adınızı; size istek gönderebilir',
   '{n} GB': '{n} GB',
   'price shown in the app': 'fiyat uygulamada gösterilir',
-  ', or ': ' veya ',
   'It lands in the inbox, first if they’ve waited longest.':
     'Gelen kutusuna düşer; en uzun bekleyen en üstte.',
   'Lina writes to Nile Dental from the app she uses for everyone else. The team sees one conversation, its state and who has it; Lina sees the organization, never which person.':
@@ -222,7 +221,6 @@ export const turkishServer: Catalog = {
     'Caime’yi Caime yapan hiçbir şey kotaya girmez: bağlantılar, ilişkiler, sizi bekleyenler, beklediğiniz şeyler, arama ve eşitleme her planda var. Planlar yalnızca çalıştırması para tutan özelliklerde ve kuruluşların satın aldıklarında ayrılır.',
   'For people': 'Kişiler için',
   Personal: 'Kişisel',
-  ', always': ', her zaman',
   '{n} actions a day, once you turn it on': 'açtığınızda günde {n} eylem',
   files: 'dosyalar',
   automations: 'otomasyonlar',
@@ -367,7 +365,6 @@ export const turkishServer: Catalog = {
   '{merge} and {keep} may be the same person': '{merge} ve {keep} aynı kişi olabilir',
   'Both have {reasons}. Merged, they show as one in People; both accounts and conversations stay, and you can separate them again.':
     'Ortak noktaları: {reasons}. Birleştirirseniz Kişiler’de tek kişi olarak görünürler; iki hesap da konuşmalar da kalır ve onları yeniden ayırabilirsiniz.',
-  ', and ': ' ve ',
   '{title} call': '{title} araması',
   Joined: 'Katıldınız',
   'Turned down': 'Reddettiniz',
@@ -587,8 +584,8 @@ export const turkishServer: Catalog = {
     'Yaşadığınız ülkede Caime {age} yaş ve üzerindekiler içindir.',
   'Your plan starts as soon as you pay. In the EU you may withdraw within 14 days by writing to {email}, and you pay only for the days it was on. Terms: {terms}':
     'Planınız ödeme yapar yapmaz başlar. AB’de {email} adresine yazarak 14 gün içinde cayabilirsiniz; yalnızca planın açık olduğu günlerin ücretini ödersiniz. Koşullar: {terms}',
-  'You need to be at least {MINIMUM_AGE} to use Caime.':
-    'Caime’yi kullanmak için en az {MINIMUM_AGE} yaşında olmalısınız.',
+  'You need to be at least {age} to use Caime.':
+    'Caime’yi kullanmak için en az {age} yaşında olmalısınız.',
   'That email already has an account. Sign in instead?':
     'Bu e-postayla zaten bir hesap var. Oturum açmak ister misiniz?',
   'That email or handle and password don’t match.':
@@ -612,8 +609,8 @@ export const turkishServer: Catalog = {
     'Buradan bir şey kaydetmek için mesaj isteğini kabul edin.',
   'A line about the conversation isn’t saved.': 'Konuşmanın bilgi satırları kaydedilmez.',
   'That file': 'Bu dosya',
-  'You’ve saved {SAVED_MAX} things, the most there’s room for. Remove some to save more.':
-    '{SAVED_MAX} öge kaydettiniz; sığabilecek en fazla bu. Daha fazlasını kaydetmek için bazılarını kaldırın.',
+  'You’ve saved {max} things, the most there’s room for. Remove some to save more.':
+    '{max} öge kaydettiniz; sığabilecek en fazla bu. Daha fazlasını kaydetmek için bazılarını kaldırın.',
   'That saved item': 'Bu kaydedilen öge',
   'An automation saves to {collection}. Change it or remove it first.':
     'Bir otomasyon {collection} koleksiyonuna kaydediyor. Önce onu değiştirin ya da kaldırın.',
@@ -672,8 +669,8 @@ export const turkishServer: Catalog = {
   'That request': 'Bu istek',
   'That connection': 'Bu bağlantı',
   'That merged connection': 'Bu birleştirilmiş bağlantı',
-  'A private group holds up to {PRIVATE_GROUP_MAX} people: each message is sealed for every device in it.':
-    'Özel bir grupta en fazla {PRIVATE_GROUP_MAX} kişi olabilir: her mesaj gruptaki her cihaz için ayrı ayrı mühürlenir.',
+  'A private group holds up to {max} people: each message is sealed for every device in it.':
+    'Özel bir grupta en fazla {max} kişi olabilir: her mesaj gruptaki her cihaz için ayrı ayrı mühürlenir.',
   'A topic’s people are its group’s: add, remove or make admins there.':
     'Bir konunun üyeleri, grubunun üyeleridir: kişi ekleme, çıkarma ve yönetici atama grupta yapılır.',
   'Topics are for conversations between people.': 'Konular kişiler arasındaki konuşmalar içindir.',
@@ -731,7 +728,7 @@ export const turkishServer: Catalog = {
   'This album is closed.': 'Bu albüm kapalı.',
   'Add photos you’ve uploaded.': 'Yüklediğiniz fotoğrafları ekleyin.',
   'Albums take photos and videos.': 'Albümlere yalnızca fotoğraf ve video eklenebilir.',
-  'An album holds {ALBUM_MAX} photos.': 'Bir albümde en fazla {ALBUM_MAX} fotoğraf olabilir.',
+  'An album holds {max} photos.': 'Bir albümde en fazla {max} fotoğraf olabilir.',
   'That photo': 'Bu fotoğraf',
   'Only whoever added it, or made the album, can take it out.':
     'Yalnızca onu ekleyen ya da albümü oluşturan kişi çıkarabilir.',
@@ -745,14 +742,13 @@ export const turkishServer: Catalog = {
   'Messages are pinned once the message request is answered.':
     'Mesajlar, mesaj isteği yanıtlandıktan sonra sabitlenebilir.',
   'Lines about the conversation aren’t pinned.': 'Konuşmanın bilgi satırları sabitlenmez.',
-  '{PINNED_MAX} messages are pinned already, including {n} you deleted for yourself. Unpin one first.':
-    {
-      one: 'Kendiniz için sildiğiniz {n} mesaj dahil {PINNED_MAX} mesaj zaten sabitli. Önce birinin sabitlemesini kaldırın.',
-      other:
-        'Kendiniz için sildiğiniz {n} mesaj dahil {PINNED_MAX} mesaj zaten sabitli. Önce birinin sabitlemesini kaldırın.',
-    },
-  '{PINNED_MAX} messages are pinned already. Unpin one first.':
-    '{PINNED_MAX} mesaj zaten sabitli. Önce birinin sabitlemesini kaldırın.',
+  '{max} messages are pinned already, including {n} you deleted for yourself. Unpin one first.': {
+    one: 'Kendiniz için sildiğiniz {n} mesaj dahil {max} mesaj zaten sabitli. Önce birinin sabitlemesini kaldırın.',
+    other:
+      'Kendiniz için sildiğiniz {n} mesaj dahil {max} mesaj zaten sabitli. Önce birinin sabitlemesini kaldırın.',
+  },
+  '{max} messages are pinned already. Unpin one first.':
+    '{max} mesaj zaten sabitli. Önce birinin sabitlemesini kaldırın.',
   'That poll': 'Bu anket',
   'That option isn’t in the poll.': 'Bu seçenek ankette yok.',
   'Choose one option.': 'Bir seçenek seçin.',
@@ -765,8 +761,8 @@ export const turkishServer: Catalog = {
   'This device can’t pick up where it left off: it registers afresh.':
     'Bu cihaz kaldığı yerden devam edemez: yeniden kaydedilecek.',
   'That device': 'Bu cihaz',
-  'Private conversations open on up to {MAX_DEVICES} devices: remove one in Settings first.':
-    'Özel konuşmalar en fazla {MAX_DEVICES} cihazda açılır: önce Ayarlar’dan birini kaldırın.',
+  'Private conversations open on up to {max} devices: remove one in Settings first.':
+    'Özel konuşmalar en fazla {max} cihazda açılır: önce Ayarlar’dan birini kaldırın.',
   'That device is registered already.': 'Bu cihaz zaten kayıtlı.',
   'Approve it from a device that reads your private conversations already: this one doesn’t yet.':
     'Özel konuşmalarınızı zaten okuyabilen bir cihazdan onaylayın: bu cihaz henüz okuyamıyor.',
@@ -786,8 +782,7 @@ export const turkishServer: Catalog = {
   'There’s a call on here already: join it.': 'Burada zaten süren bir arama var: katılın.',
   'Group calls are for group conversations.': 'Grup aramaları grup konuşmaları içindir.',
   'You can call once you’ve joined the conversation.': 'Konuşmaya katıldığınızda arayabilirsiniz.',
-  'Calls are for groups of up to {GROUP_CALL_MAX} people.':
-    'Aramalar en fazla {GROUP_CALL_MAX} kişilik gruplar içindir.',
+  'Calls are for groups of up to {max} people.': 'Aramalar en fazla {max} kişilik gruplar içindir.',
   'You can join once you’ve joined the conversation.':
     'Konuşmaya katıldığınızda aramaya da katılabilirsiniz.',
   'This call is full.': 'Bu arama dolu.',
@@ -806,8 +801,7 @@ export const turkishServer: Catalog = {
   'That identity': 'Bu kimlik',
   'Make another identity your default first.': 'Önce başka bir kimliği varsayılanınız yapın.',
   'Apps are made by people over 18.': 'Uygulamaları yalnızca 18 yaş üstü kişiler oluşturabilir.',
-  'You have {MAX_APPS} apps. Remove one first.':
-    '{MAX_APPS} uygulamanız var. Önce birini kaldırın.',
+  'You have {max} apps. Remove one first.': '{max} uygulamanız var. Önce birini kaldırın.',
   'That app isn’t registered with Caime.': 'Bu uygulama Caime’ye kayıtlı değil.',
   'That app didn’t register this return address.': 'Bu uygulama bu dönüş adresini kaydetmedi.',
   'The app didn’t say what it wants to do.': 'Uygulama ne yapmak istediğini söylemedi.',
@@ -884,8 +878,8 @@ export const turkishServer: Catalog = {
   'Accepting a {kind} suggestion isn’t supported yet.':
     '{kind} türündeki bir öneriyi kabul etmek henüz desteklenmiyor.',
   'Access tokens are for people over 18.': 'Erişim belirteçleri 18 yaş üstü kişiler içindir.',
-  'You have {MAX_TOKENS} tokens. Revoke one you don’t use first.':
-    '{MAX_TOKENS} belirteciniz var. Önce kullanmadığınız birini iptal edin.',
+  'You have {max} tokens. Revoke one you don’t use first.':
+    '{max} belirteciniz var. Önce kullanmadığınız birini iptal edin.',
   'That token': 'Bu belirteç',
   'Only the organization’s owner and admins post its updates.':
     'Güncellemelerini yalnızca kuruluşun sahibi ve yöneticileri paylaşır.',
@@ -1499,4 +1493,6 @@ export const turkishServer: Catalog = {
     'Bundan önce Caime yaşınızı bir kez doğrulamanızı ister. Bir dakika sürer.',
   'That’s as many age checks as a day allows. Try again tomorrow.':
     'Bir günde izin verilen yaş doğrulaması sayısına ulaştınız. Yarın yeniden deneyin.',
+  '{monthly}, or {yearly}': '{monthly} veya {yearly}',
+  '{free}, always': '{free}, her zaman',
 };

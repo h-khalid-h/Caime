@@ -98,10 +98,6 @@ export function nextOrgPlan(plan: OrgPlan): OrgPlan | null {
   return plan === 'free' ? 'business' : plan === 'business' ? 'enterprise' : null;
 }
 
-export function isOrgPlan(value: string): value is OrgPlan {
-  return (ORG_PLANS as readonly string[]).includes(value);
-}
-
 export function isPersonPlan(value: string): value is Plan {
   return (PERSON_PLANS as readonly string[]).includes(value);
 }

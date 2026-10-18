@@ -12,10 +12,11 @@ export function nextOrgPlanLine(plan: OrgPlanView): string | null {
   if (!next) return null;
   const a = ORG_ALLOWANCES[next];
   const insights = a.insights && !plan.allowance.insights;
-  return tr('{PLAN_NAMES} has room for {teamSize} people and {apps}{with}.', {
-    PLAN_NAMES: PLAN_NAMES[next],
-    teamSize: a.teamSize,
-    apps: apps(a.apps),
-    with: insights ? tr(', with insights into how fast the team answers') : '',
-  });
+  const room = { plan: PLAN_NAMES[next], count: a.teamSize, apps: apps(a.apps) };
+  return insights
+    ? tr(
+        '{plan} has room for {count} people and {apps}, with insights into how fast the team answers.',
+        room,
+      )
+    : tr('{plan} has room for {count} people and {apps}.', room);
 }

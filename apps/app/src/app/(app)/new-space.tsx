@@ -1,3 +1,4 @@
+import { joinNames } from '@caime/core/format';
 import { tr, trn } from '@caime/core/i18n';
 import { canManageOrg } from '@caime/core/orgs';
 import { SPACE_KIND_DEFS, SPACE_KINDS, type SpaceKind } from '@caime/core/spaces';
@@ -140,10 +141,10 @@ export default function NewSpace() {
                     )
                   : tr('Yours, or an organization you run.')}
               {onlyOn.length
-                ? tr(
-                    ' Only an organization’s owner and admins start its spaces, so not {join}’s.',
-                    { join: onlyOn.map((o) => o.name).join(', ') },
-                  )
+                ? ` ${tr(
+                    'Only an organization’s owner and admins start its spaces, so you can’t start one for {orgs}.',
+                    { orgs: joinNames(onlyOn.map((o) => o.name)) },
+                  )}`
                 : ''}
             </Text>
           </View>
@@ -191,8 +192,8 @@ export default function NewSpace() {
           />
           <Text variant="caption" color="textSecondary">
             {kind
-              ? tr('{tr}. Its conversations offer the cards that fit it.', {
-                  tr: tr(SPACE_KIND_DEFS[kind].hint),
+              ? tr('{hint}. Its conversations offer the cards that fit it.', {
+                  hint: tr(SPACE_KIND_DEFS[kind].hint),
                 })
               : tr('It decides which cards its conversations offer.')}
           </Text>
@@ -204,7 +205,7 @@ export default function NewSpace() {
           maxLength={280}
         />
         <Text variant="overline" color="textTertiary">
-          {tr('People · {size} chosen', { size: picked.size })}
+          {tr('People · {count} chosen', { count: picked.size })}
         </Text>
         <PeoplePicker
           picked={picked}

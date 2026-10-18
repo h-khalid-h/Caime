@@ -6,7 +6,7 @@
  */
 import type { CalendarItemView } from '@caime/core/api';
 import { formatAmount, formatClock, formatDayHeading } from '@caime/core/format';
-import { tr } from '@caime/core/i18n';
+import { listed, tr } from '@caime/core/i18n';
 import { calendarAction, meetingLink } from '@caime/core/meetings';
 import { REPEAT_CHOICES } from '@caime/core/repeat';
 import { router } from 'expo-router';
@@ -110,7 +110,7 @@ function Row({
     <View style={{ flexDirection: 'row', alignItems: 'center', paddingEnd: action ? 16 : 0 }}>
       <Pressable
         accessibilityRole="button"
-        accessibilityLabel={[item.title, when, line, state].filter(Boolean).join(', ')}
+        accessibilityLabel={listed([item.title, when, line, state])}
         onPress={() =>
           item.conversationId
             ? router.navigate({ pathname: '/c/[id]', params: { id: item.conversationId } })

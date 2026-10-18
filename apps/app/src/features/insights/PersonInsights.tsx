@@ -1,6 +1,6 @@
 import type { InsightPersonRef, PersonInsightsView, ReplyTimesView } from '@caime/core/api';
 import { formatWhen } from '@caime/core/format';
-import { tr, trn } from '@caime/core/i18n';
+import { listed, tr, trn } from '@caime/core/i18n';
 import { SPHERE_DEFS, type Sphere } from '@caime/core/taxonomy';
 import { router } from 'expo-router';
 import ChartBar from 'lucide-react-native/icons/chart-no-axes-column';
@@ -90,28 +90,25 @@ function minutes(m: number | null): string {
 }
 
 function replyLine(who: 'mine' | 'theirs', r: ReplyTimesView): string {
-  const waiting =
-    r.unanswered === 0
-      ? ''
+  const time = minutes(r.medianMinutes);
+  const { unanswered } = r;
+  // Whole phrases: who answers is part of each, never an English word put into another.
+  return [
+    who === 'mine'
+      ? tr('You answer in about {time}', { time })
+      : tr('You’re answered in about {time}', { time }),
+    tr('{withinHour} of {answered} within the hour', {
+      withinHour: r.withinHour,
+      answered: r.answered,
+    }),
+    unanswered === 0
+      ? null
       : who === 'mine'
-        ? tr(' · {unanswered} waiting on you', { unanswered: r.unanswered })
-        : tr(' · {unanswered} waiting on them', { unanswered: r.unanswered });
-  const vars = {
-    minutes: minutes(r.medianMinutes),
-    withinHour: r.withinHour,
-    answered: r.answered,
-    waiting,
-  };
-  // Whole sentences: who answers is part of each, never an English word put into another.
-  return who === 'mine'
-    ? tr(
-        'You answer in about {minutes} · {withinHour} of {answered} within the hour{waiting}',
-        vars,
-      )
-    : tr(
-        'You’re answered in about {minutes} · {withinHour} of {answered} within the hour{waiting}',
-        vars,
-      );
+        ? tr('{unanswered} waiting on you', { unanswered })
+        : tr('{unanswered} waiting on them', { unanswered }),
+  ]
+    .filter(Boolean)
+    .join(' · ');
 }
 
 function Insights({ i }: { i: PersonInsightsView }) {
@@ -141,10 +138,9 @@ function Insights({ i }: { i: PersonInsightsView }) {
           ) : null}
           <Text variant="body" color="textSecondary" testID="insights-active">
             {active.count === active.previous
-              ? tr(
-                  'You wrote with {count} of them in this time, as many as the time before.',
-                  active,
-                )
+              ? tr('You wrote with {count} of them in this time, as many as the time before.', {
+                  count: active.count,
+                })
               : active.count > active.previous
                 ? tr(
                     'You wrote with {count} of them in this time, up from {previous} the time before.',
@@ -156,12 +152,15 @@ function Insights({ i }: { i: PersonInsightsView }) {
                   )}
           </Text>
           <Text variant="body" color="textSecondary" testID="insights-messages">
-            {tr('{sent} messages from you, {received} to you ({sent2} and {received2} before).', {
-              sent: i.messages.sent,
-              received: i.messages.received,
-              sent2: i.messages.previous.sent,
-              received2: i.messages.previous.received,
-            })}
+            {tr(
+              '{sent} messages from you, {received} to you ({sentBefore} and {receivedBefore} before).',
+              {
+                sent: i.messages.sent,
+                received: i.messages.received,
+                sentBefore: i.messages.previous.sent,
+                receivedBefore: i.messages.previous.received,
+              },
+            )}
           </Text>
         </View>
       </Group>
@@ -238,8 +237,8 @@ function Insights({ i }: { i: PersonInsightsView }) {
                     {p.displayName}
                   </Text>
                   <Text variant="caption" color="textSecondary">
-                    {tr('Last {formatWhen}', {
-                      formatWhen: formatWhen(p.lastAt, now, timeZone, locale),
+                    {tr('Last {when}', {
+                      when: formatWhen(p.lastAt, now, timeZone, locale),
                     })}
                   </Text>
                 </View>
@@ -272,9 +271,11 @@ function Insights({ i }: { i: PersonInsightsView }) {
             accessibilityLabel={
               i.hours.some(Boolean)
                 ? tr('Messages by hour: {hours}', {
-                    hours: i.hours
-                      .flatMap((n, h) => (n ? [tr('{hour}h: {count}', { hour: h, count: n })] : []))
-                      .join(tr(', ')),
+                    hours: listed(
+                      i.hours.flatMap((n, h) =>
+                        n ? [tr('{hour}h: {count}', { hour: h, count: n })] : [],
+                      ),
+                    ),
                   })
                 : tr('No messages by hour yet')
             }

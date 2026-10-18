@@ -31,7 +31,9 @@ export function callDuration(seconds: number): string {
   const m = Math.round(seconds / 60);
   if (m < 60) return tr('{n} min', { n: m });
   const h = Math.floor(m / 60);
-  return m % 60 ? tr('{h} h {m} min', { h, m: m % 60 }) : tr('{n} h', { n: h });
+  return m % 60
+    ? tr('{hours} h {minutes} min', { hours: h, minutes: m % 60 })
+    : tr('{n} h', { n: h });
 }
 
 /**

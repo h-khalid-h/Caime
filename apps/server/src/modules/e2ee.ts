@@ -108,10 +108,9 @@ export async function e2eeRoutes(app: FastifyInstance, ctx: AppContext) {
       throw new AppError(
         409,
         'too_many_devices',
-        tr(
-          'Private conversations open on up to {MAX_DEVICES} devices: remove one in Settings first.',
-          { MAX_DEVICES },
-        ),
+        tr('Private conversations open on up to {max} devices: remove one in Settings first.', {
+          max: MAX_DEVICES,
+        }),
       );
     const taken = await ctx.db
       .selectFrom('e2ee_devices')

@@ -83,7 +83,7 @@ export function ChecklistCard({ m, mine }: { m: MessageView; mine: boolean }) {
           label={
             items.length && done === items.length
               ? tr('Done')
-              : tr('{done} of {length}', { done, length: items.length })
+              : tr('{done} of {count}', { done, count: items.length })
           }
           tone={items.length && done === items.length ? 'success' : 'neutral'}
           size="sm"

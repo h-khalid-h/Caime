@@ -912,9 +912,9 @@ export function ConversationScreen({
           style={{ paddingHorizontal: 16, paddingBottom: 4 }}
           testID="business-retention"
         >
-          {tr('{name} keeps this conversation for {retentionText}: messages go after that.', {
+          {tr('{name} keeps this conversation for {period}: messages go after that.', {
             name: org.name,
-            retentionText: retentionText(business.retentionDays),
+            period: retentionText(business.retentionDays),
           })}
         </Text>
       ) : null}

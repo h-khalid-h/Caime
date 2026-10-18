@@ -782,7 +782,20 @@ appointment from a catalog).
   an English word into it as a variable (`{value}` = 's', `{who}` = 'You answer'); a count is
   `trn`, and a line that names who did something passes `by` already translated (`tr('You')`)
   and is written in each catalog as "what happened: who", which reads right for "You" and for a
-  name in every language. Arabic is written for a reader of either gender (and, once they
+  name in every language. Where a sentence has two shapes (with or without "You let it in
+  before", a video call or a voice one), each shape is its own key; facts that only follow one
+  another are phrases joined by ` · ` in the code, each a key of its own. A placeholder is named
+  for what it holds (`{name}`, `{count}`, `{when}`, `{max}`), never for the code that fills it
+  (`{toLowerCase}`, `{length}`, `{PINNED_MAX}`, `{i}`); `{n}` is `trn`'s count. A list a person
+  reads is `listed` (core `i18n.ts`: the reader's comma, Arabic's "،", leaving out what's
+  empty) or `joinNames` when its last item takes "and" (Intl's lists in the reader's language,
+  British English without a serial comma, the catalog's "and" where Intl has none), never a
+  comma of its own or a translated `tr(', ')`. `i18n-sentences.test.ts` fails on a key that
+  starts or ends with a space or starts with a comma, a placeholder named by the code, one not
+  passed where the sentence is said or passed and never said (`placeholderIssues`), and a list
+  joined by hand in the app or core (`commaJoins`; what someone typed, kept as they typed it,
+  is the one exception); the catalog tests fail on a translation that names a placeholder its
+  English doesn't fill. M16 D4. Arabic is written for a reader of either gender (and, once they
   said it, in their form: R81, the `toWoman` of a `ReaderForms` entry; a new short imperative
   gets its three forms, a long sentence waits for the reviewer): the masculine imperative is the neutral
   default ("اختر", "ابدأ"), but nothing describes the reader or a third person by a gendered
@@ -1484,7 +1497,10 @@ appointment from a catalog).
   once the sheet has gone, since UIKit presents nothing from a screen still dismissing one,
   elsewhere at once inside the tap (a browser opens a file chooser only for a tap); such a sheet
   closes by `open` turning false, never by unmounting, or it never says it has gone
-  (`MessageActions` keeps its last message while it closes). Toasts
+  (`MessageActions` keeps its last message while it closes). On the web a sheet leaves at once,
+  without its fade: React Native Web keeps a closing Modal's focus trap through the fade, and
+  what was typed in that moment (the next message, after a decision's Save) went into the sheet
+  going away. Toasts
   sit at the bottom, where a thumb reaches Undo: the screen's host is `ScreenToasts`, which
   stands them off the phone's bar (`tabBarRoom` while it's shown); nothing draws a toast at the
   top.

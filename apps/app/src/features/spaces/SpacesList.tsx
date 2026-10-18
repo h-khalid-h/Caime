@@ -1,7 +1,7 @@
 import type { SpaceSummaryView } from '@caime/core/api';
 import { finds } from '@caime/core/fold';
 import { formatListTime } from '@caime/core/format';
-import { tr, trn } from '@caime/core/i18n';
+import { listed, tr, trn } from '@caime/core/i18n';
 import { SPACE_KIND_DEFS } from '@caime/core/spaces';
 import { router, usePathname } from 'expo-router';
 import LayoutGrid from 'lucide-react-native/icons/layout-grid';
@@ -34,15 +34,13 @@ function SpaceRow({ s, selected }: { s: SpaceSummaryView; selected: boolean }) {
   return (
     <Pressable
       accessibilityRole="button"
-      accessibilityLabel={[
+      accessibilityLabel={listed([
         s.name,
         tr(SPACE_KIND_DEFS[s.kind].label),
         s.org?.name ?? '',
         people,
         s.unreadCount ? trn(s.unreadCount, '{n} unread', '{n} unread') : '',
-      ]
-        .filter(Boolean)
-        .join(', ')}
+      ])}
       onPress={() => router.navigate({ pathname: '/s/[id]', params: { id: s.id } })}
       focusRadius={12}
       testID={`space-row-${s.name}`}

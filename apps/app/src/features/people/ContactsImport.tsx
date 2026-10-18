@@ -239,7 +239,6 @@ export function ContactsImport({
   const [askingAll, setAskingAll] = useState(false);
   const [link, setLink] = useState<string | null>(null);
   const body = useRef<View>(null);
-  const n = (x: number) => x.toLocaleString(locale);
 
   const accounts = useQuery({
     queryKey: qk.contactAccounts,
@@ -792,7 +791,7 @@ export function ContactsImport({
                 {listed.length > shown ? (
                   <Button
                     label={tr('Show {n} more', {
-                      n: n(Math.min(INVITE_PAGE, listed.length - shown)),
+                      n: Math.min(INVITE_PAGE, listed.length - shown),
                     })}
                     variant="secondary"
                     size="sm"

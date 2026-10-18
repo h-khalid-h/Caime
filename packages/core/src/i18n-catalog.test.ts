@@ -7,6 +7,8 @@ import { describe, expect, it } from 'vitest';
 import { collectKeys, keysFor } from '../../../scripts/i18n-keys.mjs';
 import { isGenderForms, isReaderForms } from './i18n';
 import { ar } from './locales/ar';
+import { arA } from './locales/ar-a';
+import { arB } from './locales/ar-b';
 import { fr } from './locales/fr';
 import { turkish } from './locales/tr';
 import { tagsOf } from './tagged';
@@ -54,20 +56,19 @@ describe.each([
     expect(stale).toEqual([]);
   });
 
-  it('keeps every placeholder of the English', () => {
+  it('keeps every placeholder of the English, and names none it doesn’t', () => {
     const bad: string[] = [];
     for (const [key, value] of Object.entries(ar)) {
       const wanted = new Set(key.match(/\{\w+\}/g) ?? []);
+      const plural = typeof value !== 'string';
       const forms = typeof value === 'string' ? [value] : Object.values(value);
-      for (const form of forms)
+      for (const form of forms) {
         for (const w of wanted)
-          if (
-            !form.includes(w) &&
-            !(w === '{n}' && typeof value !== 'string') &&
-            // English's article ("a" or "an"), which other languages leave out.
-            w !== '{an}'
-          )
-            bad.push(`${key} → ${form}`);
+          if (!form.includes(w) && !(w === '{n}' && plural)) bad.push(`${key} → ${form}`);
+        // A placeholder the English doesn't fill is shown as written (M16 D4).
+        for (const w of form.match(/\{\w+\}/g) ?? [])
+          if (!wanted.has(w) && !(w === '{n}' && plural)) bad.push(`${key} → ${form}`);
+      }
     }
     expect(bad).toEqual([]);
   });
@@ -82,4 +83,10 @@ describe.each([
       .map(([key]) => key);
     expect(bad).toEqual([]);
   });
+});
+
+// The app fetches Arabic in two halves side by side; a string in both is downloaded twice, and
+// the second hides the first (M16 D4: a renamed key once landed beside its twin).
+it('keeps each Arabic string in one half', () => {
+  expect(Object.keys(arA).filter((k) => k in arB)).toEqual([]);
 });

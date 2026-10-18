@@ -108,7 +108,7 @@ describe('possible duplicates (PRD §51)', () => {
       subjectUserId: second.user.id,
       payload: { keep: first.user.id, merge: second.user.id },
     });
-    expect(s.rationale).toContain('Both have the same name, and you know both from DATA C.');
+    expect(s.rationale).toContain('Both have the same name and you know both from DATA C.');
     // One word is many people's name: two Sams aren't offered.
     const sam = await signup(t, { displayName: 'Sam' });
     const sam2 = await signup(t, { displayName: 'Sam' });

@@ -7,7 +7,7 @@
  */
 import type { AssetView, ConversationView } from '@caime/core/api';
 import { formatBytes, formatDuration, formatListTime } from '@caime/core/format';
-import { msg, tr } from '@caime/core/i18n';
+import { listed, msg, tr } from '@caime/core/i18n';
 import { Image } from 'expo-image';
 import Bookmark from 'lucide-react-native/icons/bookmark';
 import FileText from 'lucide-react-native/icons/file-text';
@@ -198,9 +198,7 @@ export function SharedFiles({
                   <View key={a.id} style={{ width: '33.333%', aspectRatio: 1, padding: 2 }}>
                     <Pressable
                       accessibilityRole="imagebutton"
-                      accessibilityLabel={[what, a.file?.name, duration, line(a)]
-                        .filter(Boolean)
-                        .join(', ')}
+                      accessibilityLabel={listed([what, a.file?.name, duration, line(a)])}
                       onPress={() => openAsset(a)}
                       style={{
                         flex: 1,

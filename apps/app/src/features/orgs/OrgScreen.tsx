@@ -849,7 +849,7 @@ export function OrgScreen({
               room !== null && picked.size > room
                 ? tr('Room for {room} more', { room })
                 : picked.size
-                  ? tr('Add {size}', { size: picked.size })
+                  ? tr('Add {count}', { count: picked.size })
                   : tr('Add')
             }
             block
@@ -886,9 +886,9 @@ export function OrgScreen({
                   plan: PLAN_NAMES[org.plan.plan],
                   n: org.plan.allowance.teamSize,
                 })} ${nextOrgPlanLine(org.plan) ?? ''}`.trim()
-              : tr('Room for {room} more on the {PLAN_NAMES} plan.', {
+              : tr('Room for {room} more on the {plan} plan.', {
                   room,
-                  PLAN_NAMES: PLAN_NAMES[org.plan.plan],
+                  plan: PLAN_NAMES[org.plan.plan],
                 })}
           </Text>
         ) : null}

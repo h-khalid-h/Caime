@@ -49,7 +49,7 @@ export const arB: Catalog = {
   'Needs a reply': 'يحتاج ردًا',
   'Waiting for the customer': 'في انتظار العميل',
   'Assigned to me': 'مسندة إليّ',
-  '{h} h {m} min': '{h} س {m} د',
+  '{hours} h {minutes} min': '{hours} س {minutes} د',
   '{name} · no answer': '{name} · لا إجابة',
   '{what}: write it as text.': '{what}: اكتبه نصًا.',
   '{what}: keep it under {max} characters.': '{what}: أبقِه تحت {max} حرفًا.',
@@ -57,11 +57,11 @@ export const arB: Catalog = {
   '{what}: a list, please.': '{what}: قائمة، من فضلك.',
   '{what}: {min}, please.': '{what}: {min}، من فضلك.',
   '{what}: an object.': '{what}: كائن.',
-  'Field {i}': 'الحقل {i}',
-  'Field {i}: its key is a letter, then letters, digits or _.':
-    'الحقل {i}: مفتاحه حرف، ثم حروف أو أرقام أو _.',
+  'Field {number}': 'الحقل {number}',
+  'Field {number}: its key is a letter, then letters, digits or _.':
+    'الحقل {number}: مفتاحه حرف، ثم حروف أو أرقام أو _.',
   'Field “{key}”': 'الحقل «{key}»',
-  '{what}: its type is one of {join}.': '{what}: نوعه واحد من {join}.',
+  '{what}: its type is one of {types}.': '{what}: نوعه واحد من {types}.',
   '{what}: required is true or false.': '{what}: required إما true أو false.',
   '{what}: each choice once.': '{what}: كل خيار مرة واحدة.',
   '{what}: only options have choices.': '{what}: الخيارات للحقول من نوع options فقط.',
@@ -69,26 +69,27 @@ export const arB: Catalog = {
     'مفتاح البطاقة من 2 إلى 40 حرفًا صغيرًا أو رقمًا أو _، يبدأ بحرف.',
   'The kit has no “{name}”.': 'ليس في البطاقة «{name}».',
   'The kit’s key is the one in its address.': 'مفتاح البطاقة هو الذي في عنوانها.',
-  'Its icon is one of {join}.': 'أيقونتها واحدة من {join}.',
+  'Its icon is one of {icons}.': 'أيقونتها واحدة من {icons}.',
   'Each field has a key of its own.': 'لكل حقل مفتاحه الخاص.',
   'Each field has a label of its own.': 'لكل حقل تسميته الخاصة.',
-  'State {i}': 'الحالة {i}',
-  'State {i}: its id is lowercase letters, digits or _.':
-    'الحالة {i}: معرّفها حروف صغيرة أو أرقام أو _.',
+  'State {number}': 'الحالة {number}',
+  'State {number}: its id is lowercase letters, digits or _.':
+    'الحالة {number}: معرّفها حروف صغيرة أو أرقام أو _.',
   'State “{id}”: its tone is positive, negative or neutral.':
     'الحالة «{id}»: نبرتها positive أو negative أو neutral.',
   'State “{id}”’s label': 'تسمية الحالة «{id}»',
   'Each state has an id of its own.': 'لكل حالة معرّفها الخاص.',
   'Each state has a label of its own.': 'لكل حالة تسميتها الخاصة.',
-  'Move {i}': 'النقلة {i}',
-  'Move {i}: it goes from one of the kit’s states.': 'النقلة {i}: تبدأ من إحدى حالات البطاقة.',
-  'Move {i}: it goes to another of the kit’s states.':
-    'النقلة {i}: تنتهي عند حالة أخرى من حالات البطاقة.',
-  'Move {i}: from {from} to {to} is there already.':
-    'النقلة {i}: من {from} إلى {to} موجودة بالفعل.',
-  'Move {i}: who is organization, customer or anyone.':
-    'النقلة {i}: من يقوم بها organization أو customer أو anyone.',
-  'Move {i}’s label': 'تسمية النقلة {i}',
+  'Move {number}': 'النقلة {number}',
+  'Move {number}: it goes from one of the kit’s states.':
+    'النقلة {number}: تبدأ من إحدى حالات البطاقة.',
+  'Move {number}: it goes to another of the kit’s states.':
+    'النقلة {number}: تنتهي عند حالة أخرى من حالات البطاقة.',
+  'Move {number}: from {from} to {to} is there already.':
+    'النقلة {number}: من {from} إلى {to} موجودة بالفعل.',
+  'Move {number}: who is organization, customer or anyone.':
+    'النقلة {number}: من يقوم بها organization أو customer أو anyone.',
+  'Move {number}’s label': 'تسمية النقلة {number}',
   'From {id}, each move has a label of its own.': 'من {id}، لكل نقلة تسميتها الخاصة.',
   'adultsOnly is true or false.': 'adultsOnly إما true أو false.',
   'Send the fields to change.': {
@@ -102,9 +103,7 @@ export const arB: Catalog = {
   'Not base64.': 'ليس base64.',
   'Not a P-256 key.': 'ليس مفتاح P-256.',
   'Not a recovery key.': 'ليس مفتاح استعادة.',
-  '{join} and {names}': '{join} و{names}',
-  '{join} and {rest} others': '{join} و{rest} غيرهم',
-  '{floor} min ago': 'قبل {floor} د',
+  '{first} and {last}': '{first} و{last}',
   'Today{clock}': 'اليوم{clock}',
   'Tomorrow{clock}': 'غدًا{clock}',
   '{by} created “{title}”': 'إنشاء «{title}»: {by}',
@@ -122,7 +121,7 @@ export const arB: Catalog = {
   '{by} pinned a message': 'تثبيت رسالة: {by}',
   '{by} changed what it’s for: {purpose}': 'تغيير الغرض إلى «{purpose}»: {by}',
   '{by} took away what it’s for': 'إزالة الغرض: {by}',
-  '{by} added {joinNames}': 'إضافة {joinNames}: {by}',
+  '{by} added {names}': 'إضافة {names}: {by}',
   '{by} added people': 'إضافة أشخاص: {by}',
   '{by} removed {them}': 'إزالة {them}: {by}',
   'You own the group now': 'المجموعة لك الآن',
@@ -134,8 +133,8 @@ export const arB: Catalog = {
     'نُقلت هذه المحادثة من {from}، والناقل: {by}. ما فوق هذا السطر كُتب هناك.',
   '{by} recorded a decision: {title}': 'تسجيل قرار «{title}»: {by}',
   '{by} recorded a decision': 'تسجيل قرار: {by}',
-  '{by} set new messages to disappear after {retentionText}':
-    'ضبط الرسائل الجديدة لتختفي بعد {retentionText}: {by}',
+  '{by} set new messages to disappear after {period}':
+    'ضبط الرسائل الجديدة لتختفي بعد {period}: {by}',
   '{by} turned off disappearing messages': 'إيقاف الرسائل المختفية: {by}',
   'Conversation updated': 'حُدّثت المحادثة',
   'Encrypted message': 'رسالة مشفّرة',
@@ -145,7 +144,7 @@ export const arB: Catalog = {
   'Not lately': 'ليس مؤخرًا',
   'a label': 'تصنيفًا',
   'Added {what}': 'أُضيف {what}',
-  '{quoted} became {quoted2}': 'تغيّر {quoted} إلى {quoted2}',
+  '{before} became {after}': 'تغيّر {before} إلى {after}',
   'Added a note to {what}': 'أُضيفت ملاحظة إلى {what}',
   'Removed the note from {what}': 'أُزيلت الملاحظة من {what}',
   'Updated {what}': 'حُدّث {what}',
@@ -160,7 +159,7 @@ export const arB: Catalog = {
   'Approved {rest}': 'تمت الموافقة على {rest}',
   'Settled on {rest}': 'استقر الرأي على {rest}',
   'You wrote {quote}': 'كتبت {quote}',
-  '{senderName} will {lowerFirst}': 'وعدٌ من {senderName}: {lowerFirst}',
+  '{senderName} will {what}': 'وعدٌ من {senderName}: {what}',
   'You asked {quote}': 'سألت {quote}',
   'Sounds like a decision: {quote}': 'يبدو قرارًا: {quote}',
   'Waiting for an answer': 'في انتظار إجابة',
@@ -176,10 +175,8 @@ export const arB: Catalog = {
     toMan: 'اكتب شيئًا لإضافته.',
     other: 'اكتب شيئًا لإضافته.',
   },
-  'Keep an item under {CHECKLIST_ITEM_MAX} characters.':
-    'أبقِ العنصر تحت {CHECKLIST_ITEM_MAX} حرفًا.',
-  'A list holds {CHECKLIST_MAX_ITEMS} items.':
-    'تتسع القائمة لـ {CHECKLIST_MAX_ITEMS} عنصرًا كحد أقصى.',
+  'Keep an item under {max} characters.': 'أبقِ العنصر تحت {max} حرفًا.',
+  'A list holds {max} items.': 'تتسع القائمة لـ {max} عنصرًا كحد أقصى.',
   'That item isn’t on the list any more.': 'لم يعد ذلك العنصر في القائمة.',
   'Only whoever added it, or made the list, can change it.':
     'لا يغيّره إلا من أضافه أو من أنشأ القائمة.',
@@ -193,9 +190,8 @@ export const arB: Catalog = {
   '{label}: enter an amount.': '{label}: أدخل مبلغًا.',
   '{label}: pick one of the choices.': '{label}: اختر أحد الخيارات.',
   '{label}: one line each.': '{label}: سطر لكل عنصر.',
-  '{label}: up to {CHECKLIST_MAX_ITEMS}.': '{label}: حتى {CHECKLIST_MAX_ITEMS}.',
-  '{label}: keep each under {CHECKLIST_ITEM_MAX} characters.':
-    '{label}: أبقِ كلًّا منها تحت {CHECKLIST_ITEM_MAX} حرفًا.',
+  '{label}: up to {max}.': '{label}: حتى {max}.',
+  '{label}: keep each under {max} characters.': '{label}: أبقِ كلًّا منها تحت {max} حرفًا.',
   '{label} isn’t supported yet.': '{label} غير مدعوم بعد.',
   'That card isn’t available.': 'تلك البطاقة غير متاحة.',
   '{label} is needed.': '{label} مطلوب.',
@@ -274,7 +270,7 @@ export const arB: Catalog = {
   'Use 3–30 letters, numbers, dots or underscores.':
     'استخدم من 3 إلى 30 حرفًا أو رقمًا أو نقطة أو شرطة سفلية.',
   'Dots and underscores can’t be next to each other.': 'لا يمكن أن تتجاور النقاط والشرطات السفلية.',
-  'Use at least {PASSWORD_MIN} characters.': 'استخدم {PASSWORD_MIN} أحرف على الأقل.',
+  'Use at least {min} characters.': 'استخدم {min} أحرف على الأقل.',
   'That password is too long.': 'كلمة المرور هذه طويلة جدًا.',
   'Use a less repetitive password.': 'استخدم كلمة مرور أقل تكرارًا.',
   'Enter a valid email address.': {
@@ -287,22 +283,22 @@ export const arB: Catalog = {
   'Not a valid address': 'ليس عنوانًا صالحًا',
   'Unusual domain ending (.{tld})': 'نهاية نطاق غير معتادة (.{tld})',
   "Looks like {brand} but isn't": 'يشبه {brand} لكنه ليس هو',
-  'What {trim} asked you to do': 'ما طلبه منك {trim}',
-  'What you asked {trim} to do': 'ما طلبته من {trim}',
-  "What you're waiting for from {trim}": 'ما تنتظره من {trim}',
+  'What {person} asked you to do': 'ما طلبه منك {person}',
+  'What you asked {person} to do': 'ما طلبته من {person}',
+  "What you're waiting for from {person}": 'ما تنتظره من {person}',
   "Everything you're waiting for": 'كل ما تنتظره',
   'Links from {person}': 'روابط من {person}',
   '{what} from {person}': '{what} من {person}',
   'Files from {person}': 'ملفات من {person}',
   '{person} on “{text}”': 'ما قاله {person} عن «{text}»',
   '“{text}” from {person}': '«{text}» من {person}',
-  'Decisions about “{trim}”': 'قرارات عن «{trim}»',
+  'Decisions about “{topic}”': 'قرارات عن «{topic}»',
   'All decisions': 'كل القرارات',
-  'Tasks with {trim}': 'المهام مع {trim}',
+  'Tasks with {person}': 'المهام مع {person}',
   'Your tasks': 'مهامك',
-  'Conversations about “{trim}”': 'محادثات عن «{trim}»',
-  'People you classified as {toLowerCase}': 'من صنّفتهم {toLowerCase}',
-  'Everything matching “{q}”': 'كل ما يطابق «{q}»',
+  'Conversations about “{topic}”': 'محادثات عن «{topic}»',
+  'People you classified as {label}': 'من صنّفتهم {label}',
+  'Everything matching “{query}”': 'كل ما يطابق «{query}»',
   Family: 'العائلة',
   'Home, and the family around it': 'المنزل، والعائلة من حوله',
   Friends: 'الأصدقاء',
@@ -601,7 +597,7 @@ export const arB: Catalog = {
   '{by} erased this conversation’s messages at {them}’s request.':
     'محو رسائل هذه المحادثة بناءً على طلب {them}: {by}.',
   'Conversations stay': 'تبقى المحادثات',
-  'Conversations are kept for {retentionText}': 'تُحفظ المحادثات لمدة {retentionText}',
+  'Conversations are kept for {period}': 'تُحفظ المحادثات لمدة {period}',
   'Your customers’ data': 'بيانات عملائك',
   'Conversations with your customers are {name}’s to answer for; Caime keeps them for you. Export them, choose how long they’re kept, and erase a customer’s at their request from its thread in the inbox (More → Erase).':
     'المحادثات مع عملائك مسؤولية {name}؛ وCaime يحفظها لك. صدّرها، واختر مدة حفظها، وامحُ محادثة عميل بناءً على طلب العميل من سلسلتها في صندوق الوارد (المزيد ← محو).',
@@ -611,8 +607,8 @@ export const arB: Catalog = {
   'As long as the account exists': 'ما دام الحساب موجودًا',
   'Unless a conversation’s own disappearing setting says otherwise':
     'ما لم يقل إعداد الاختفاء الخاص بالمحادثة غير ذلك',
-  'Conversations are kept for {retentionText}; the owner sets it.':
-    'تُحفظ المحادثات لمدة {retentionText}؛ المالك هو من يحددها.',
+  'Conversations are kept for {period}; the owner sets it.':
+    'تُحفظ المحادثات لمدة {period}؛ المالك هو من يحددها.',
   'Conversations are kept as long as the account exists; the owner sets it.':
     'تُحفظ المحادثات ما دام الحساب موجودًا؛ المالك هو من يحدد ذلك.',
   'Each message goes when its time is up, as a disappearing message does, and customers see how long you keep theirs.':
@@ -625,8 +621,8 @@ export const arB: Catalog = {
   'the organization': 'المؤسسة',
   'Erase every message': 'محو كل الرسائل',
   'Every message in it goes; the customer is told': 'تُحذف كل رسائلها؛ ويصل إشعار إلى العميل',
-  '{name} keeps this conversation for {retentionText}: messages go after that.':
-    'تحفظ {name} هذه المحادثة لمدة {retentionText}، وتُحذف الرسائل بعدها.',
+  '{name} keeps this conversation for {period}: messages go after that.':
+    'تحفظ {name} هذه المحادثة لمدة {period}، وتُحذف الرسائل بعدها.',
   'Say who someone is to you, once. Everything fits from then on.':
     'قل من يكون هذا الشخص لك، مرة واحدة. وبعدها يأخذ كل شيء مكانه.',
   '“3 need you”, never “47 unread”. It says why.':
@@ -635,7 +631,7 @@ export const arB: Catalog = {
     'كل جانب من حياتك يرى ما اخترته أنت. تصنيفاتك لا يراها غيرك.',
   'What Caime does for you by itself, only as you set it up here: keeping what arrives, and reminding you when someone hasn’t answered. Who reaches you, and when, is under Notifications and priorities.':
     'ما يفعله Caime لك من تلقاء نفسه، كما تضبطه هنا فقط: حفظ ما يصل، وتذكيرك حين لا يرد أحد. أما من يصل إليك ومتى، ففي «الإشعارات والأولويات».',
-  'After {retentionText}': 'بعد {retentionText}',
+  'After {period}': 'بعد {period}',
   'New messages only; what came before keeps its time': 'الرسائل الجديدة فقط؛ ما سبق يحتفظ بمدته',
   Verified: 'تم التوثيق',
   '{n} weeks': {
@@ -674,14 +670,6 @@ export const arB: Catalog = {
   'Video call with {name}': 'مكالمة فيديو مع {name}',
   'Voice call with {name}': 'مكالمة صوتية مع {name}',
   '{from} to {to}': 'من {from} إلى {to}',
-  ', and {n} photos or files the export left out': {
-    zero: '',
-    one: '، وصورة أو ملف تركه التصدير',
-    two: '، وصورتان أو ملفان تركهما التصدير',
-    few: '، و{n} صور أو ملفات تركها التصدير',
-    many: '، و{n} صورة أو ملفًا تركها التصدير',
-    other: '، و{n} صورة أو ملف تركها التصدير',
-  },
   '{n} yours': '{n} لك',
   'You’re not in it': 'لست فيها',
   'The team is full on the {plan} plan ({n} people).': 'الفريق مكتمل في خطة {plan} (الحد: {n}).',
@@ -1254,10 +1242,6 @@ export const arB: Catalog = {
     many: '{text}، {n} صوتًا',
     other: '{text}، {n} صوت',
   },
-  'You answer in about {minutes} · {withinHour} of {answered} within the hour{waiting}':
-    'ردّك خلال {minutes} تقريبًا · {withinHour} من {answered} خلال ساعة{waiting}',
-  'You’re answered in about {minutes} · {withinHour} of {answered} within the hour{waiting}':
-    'الرد عليك خلال {minutes} تقريبًا · {withinHour} من {answered} خلال ساعة{waiting}',
   'You wrote with {count} of them in this time, as many as the time before.':
     'تراسلت مع {count} منهم في هذه الفترة، بالعدد نفسه في الفترة السابقة.',
   'You wrote with {count} of them in this time, up from {previous} the time before.':
@@ -1275,8 +1259,8 @@ export const arB: Catalog = {
   '{name} describes you as {label}. That fits.': 'وصفك لدى {name}: {label}. وهذا متّسق.',
   '{name} describes you as {label} too.': 'وصفك لدى {name}: {label} أيضًا.',
   '{name} describes you as {label}.': 'وصفك لدى {name}: {label}.',
-  'at {formatClock}': 'الساعة {formatClock}',
-  'tomorrow at {formatClock}': 'غدًا الساعة {formatClock}',
+  'at {time}': 'الساعة {time}',
+  'tomorrow at {time}': 'غدًا الساعة {time}',
   '{n} days ago': {
     zero: 'اليوم',
     one: 'قبل يوم',
@@ -1608,8 +1592,6 @@ export const arB: Catalog = {
   'Your calendar and the apps that act for you; discover more':
     'تقويمك والتطبيقات التي تتصرف نيابةً عنك؛ اكتشف المزيد',
   'Connect must send people to an https address.': 'يجب أن يرسل «اتصال» الأشخاص إلى عنوان https.',
-  'Never your password, privacy or account. What it sends says “via {name}”. End it any time in You → Apps.{You}':
-    'لا كلمة مرورك ولا خصوصيتك ولا حسابك أبدًا. ما يرسله يُكتب عليه «عبر {name}». أنهِه متى شئت من أنت ← التطبيقات.{You}',
   '{name}, {role}': '{name}، {role}',
   version: 'الإصدار',
   'the web': 'الويب',
@@ -1659,7 +1641,6 @@ export const arB: Catalog = {
     many: '{names} و{n} آخرين',
     other: '{names} و{n} آخرين',
   },
-  '{a} and {b}': '{a} و{b}',
   muted: 'مكتوم',
   'Reconnecting…': 'جارٍ إعادة الاتصال…',
   '{name} is sharing their screen': 'شاشة {name} معروضة الآن',
@@ -1706,7 +1687,7 @@ export const arB: Catalog = {
     many: '{n} شيئًا هنا',
     other: '{n} شيء هنا',
   },
-  '{label} · 1 of {length}': '{label} · 1 من {length}',
+  '{label} · 1 of {count}': '{label} · 1 من {count}',
   'The last {n} messages come over.': 'تُنقل آخر {n} رسالة.',
   '{n} unread': {
     zero: 'لا غير مقروءة',
@@ -1873,8 +1854,8 @@ export const arB: Catalog = {
   '{what}’s label': 'تسمية {what}',
   '{what}’s placeholder': 'النص الإرشادي لـ{what}',
   '{what}’s choices': 'خيارات {what}',
-  '{what}’s choice {i}': 'الخيار {i} لـ{what}',
-  '{what}’s choice {i} label': 'تسمية الخيار {i} لـ{what}',
+  '{what}’s choice {number}': 'الخيار {number} لـ{what}',
+  '{what}’s choice {number} label': 'تسمية الخيار {number} لـ{what}',
   '24 hours': '24 ساعة',
   '1 year': 'سنة واحدة',
   '{what} ended': 'انتهى {what}',
@@ -2273,7 +2254,7 @@ export const arB: Catalog = {
   Folder: 'مجلد',
   '{email} is connected.': 'تم ربط {email}.',
   'Add {use}': 'إضافة {use}',
-  'Couldn’t attach it: {e}': 'تعذّر إرفاقه: {e}',
+  'Couldn’t attach it: {error}': 'تعذّر إرفاقه: {error}',
   'Your browser blocked the window. Allow pop-ups for Caime and try again.':
     'حظر المتصفح النافذة. اسمح بالنوافذ المنبثقة لـ Caime وحاول من جديد.',
   'A file from {email}': 'ملف من {email}',
@@ -2725,7 +2706,7 @@ export const arB: Catalog = {
   'Your check is on its way. It shows here in a moment.':
     'نتيجة التحقق في الطريق، وتظهر هنا بعد لحظات.',
   'A big group: only what’s for you alerts you': 'مجموعة كبيرة: لا ينبّهك إلا ما يخصّك',
-  '{length} undone': 'تم التراجع عن {length}',
+  '{count} undone': 'تم التراجع عن {count}',
   'If {who} hasn’t answered in {inWords}': 'إن لم يجب {who} خلال {inWords}',
   'If this person hasn’t answered in {inWords}': 'إن لم يجب هذا الشخص خلال {inWords}',
   '{name} may be someone you know': 'ربما تعرف {name}',
@@ -2759,4 +2740,43 @@ export const arB: Catalog = {
   'No messages by hour yet': 'لا رسائل بحسب الساعة بعد',
   '{price} a month': '{price} شهريًا',
   '{price} a year': '{price} سنويًا',
+  'Only an organization’s owner and admins start its spaces, so you can’t start one for {orgs}.':
+    'لا يبدأ مساحاتِ مؤسسةٍ إلا مالكها ومشرفوها، لذا لا يمكنك بدء مساحة لـ {orgs}.',
+  'Never your password, privacy or account. What it sends says “via {name}”. End it any time in You → Apps.':
+    'لا كلمة مرورك ولا خصوصيتك ولا حسابك أبدًا. ما يرسله يُكتب عليه «عبر {name}». أنهِه متى شئت من أنت ← التطبيقات.',
+  'Never your password, privacy or account. What it sends says “via {name}”. End it any time in You → Apps. You let it in before.':
+    'لا كلمة مرورك ولا خصوصيتك ولا حسابك أبدًا. ما يرسله يُكتب عليه «عبر {name}». أنهِه متى شئت من أنت ← التطبيقات. سمحت له من قبل.',
+  'Video call {name}': 'مكالمة فيديو مع {name}',
+  'Voice call {name}': 'مكالمة صوتية مع {name}',
+  'Video call on · {names}': 'مكالمة فيديو جارية · {names}',
+  'Voice call on · {names}': 'مكالمة صوتية جارية · {names}',
+  'On, since {when}.': 'مفعّل، منذ {when}.',
+  'On, since {when}. This device has it.': 'مفعّل، منذ {when}. هذا الجهاز يحتفظ به.',
+  'Up from {before}': 'ارتفع من {before}',
+  'Down from {before}': 'انخفض من {before}',
+  '{plan} has room for {count} people and {apps}.': 'تتسع {plan} لـ {count} من الأشخاص و{apps}.',
+  '{plan} has room for {count} people and {apps}, with insights into how fast the team answers.':
+    'تتسع {plan} لـ {count} من الأشخاص و{apps}، مع رؤى في سرعة إجابة الفريق.',
+  '{n} photos or files the export left out': {
+    one: 'صورة أو ملف تركه التصدير',
+    two: 'صورتان أو ملفان تركهما التصدير',
+    few: '{n} صور أو ملفات تركها التصدير',
+    many: '{n} صورة أو ملفًا تركها التصدير',
+    other: '{n} صورة أو ملف تركها التصدير',
+  },
+  confirmed: 'مؤكَّد',
+  'not confirmed yet': 'غير مؤكَّد بعد',
+  '{count} yours': '{count} لك',
+  'You answer in about {time}': 'ردّك خلال {time} تقريبًا',
+  'You’re answered in about {time}': 'الرد عليك خلال {time} تقريبًا',
+  '{withinHour} of {answered} within the hour': '{withinHour} من {answered} خلال ساعة',
+  '{unanswered} waiting on you': '{unanswered} في انتظارك',
+  '{unanswered} waiting on them': '{unanswered} في انتظارهم',
+  '{n} others': {
+    one: 'واحد آخر',
+    two: 'اثنان آخران',
+    few: '{n} آخرين',
+    many: '{n} آخرين',
+    other: '{n} آخرين',
+  },
 };

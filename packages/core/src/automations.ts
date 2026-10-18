@@ -10,7 +10,7 @@
  * conversation, whose words Caime can't read, nor from a message request not yet accepted.
  */
 
-import { msg, tr } from './i18n';
+import { listed, msg, tr } from './i18n';
 import { findRole, SPHERE_DEFS, type Sphere } from './taxonomy';
 
 /** What an automation keeps: the kinds of what's shared (the asset index's). */
@@ -245,7 +245,7 @@ const orList = (items: string[]) =>
   items.length <= 1
     ? (items[0] ?? '')
     : tr('{list} or {last}', {
-        list: items.slice(0, -1).join(tr(', ')),
+        list: listed(items.slice(0, -1)),
         last: items[items.length - 1] ?? '',
       });
 

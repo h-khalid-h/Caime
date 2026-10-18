@@ -6,8 +6,8 @@
 import type { Rhythm } from './api';
 import { type CallKind, type CallOutcome, callText } from './calls';
 import { CURRENCY_DECIMALS } from './currency-data';
-import { currentTranslator, msg, numberLocale, shownNumber, tr, trn } from './i18n';
-import { dateFormat, numberFormat, safeLocale } from './locale';
+import { currentTranslator, listed, msg, numberLocale, shownNumber, tr, trn } from './i18n';
+import { dateFormat, numberFormat } from './locale';
 import { zonedParts } from './time';
 
 /** One or two letters for an avatar: "Sarah Smith" → "SS", "سارة" → "س", "李明" → "李". */
@@ -49,25 +49,28 @@ export function contextLine(c: {
     .join(' · ');
 }
 
-/** "Sarah", "Sarah and Ahmed", "Sarah, Ahmed and Lina", "Sarah, Ahmed and 3 others". */
-export function joinNames(names: string[], max = 3, locale = 'en'): string {
-  if (names.length === 0) return '';
-  if (names.length <= max) {
-    try {
-      return new Intl.ListFormat(safeLocale(locale), { style: 'long', type: 'conjunction' }).format(
-        names,
-      );
-    } catch {
-      return names.length === 1
-        ? names[0]!
-        : tr('{join} and {names}', {
-            join: names.slice(0, -1).join(', '),
-            names: names[names.length - 1],
-          });
-    }
+/**
+ * "Sarah", "Sarah and Ahmed", "Sarah, Ahmed and Lina", "Sarah, Ahmed and 3 others": names as
+ * the reader's language joins them (M16 D4: Arabic "سارة وأحمد", never an English "and" in an
+ * Arabic sentence), `max` of them at most, the rest counted.
+ */
+export function joinNames(names: string[], max = 3): string {
+  const shown =
+    names.length <= max
+      ? names
+      : [...names.slice(0, max - 1), trn(names.length - max + 1, '{n} other', '{n} others')];
+  if (shown.length < 2) return shown[0] ?? '';
+  const language = currentTranslator().language;
+  try {
+    // The interface's English is British: no comma before the "and".
+    return new Intl.ListFormat(language === 'en' ? 'en-GB' : language, {
+      style: 'long',
+      type: 'conjunction',
+    }).format(shown);
+  } catch {
+    // Where Intl has no lists (Hermes on some phones), the catalog's "and".
+    return tr('{first} and {last}', { first: listed(shown.slice(0, -1)), last: shown.at(-1) });
   }
-  const rest = names.length - (max - 1);
-  return tr('{join} and {rest} others', { join: names.slice(0, max - 1).join(', '), rest });
 }
 
 const RTL = /[֐-ࣿיִ-﷿ﹰ-﻿]/;
@@ -135,7 +138,7 @@ export function formatWhen(iso: string, now: Date, timeZone: string, locale = 'e
   const diff = now.getTime() - t.getTime();
   if (diff < 60_000 && diff > -60_000) return tr('just now');
   if (diff > 0 && diff < 3_600_000)
-    return tr('{floor} min ago', { floor: Math.floor(diff / 60_000) });
+    return tr('{minutes} min ago', { minutes: Math.floor(diff / 60_000) });
   const p = zonedParts(t, timeZone);
   const n = zonedParts(now, timeZone);
   if (sameDay(p, n)) return tr('at {clock}', { clock: formatClock(iso, timeZone, locale) });
@@ -190,8 +193,8 @@ export function formatSoon(iso: string, now: Date, timeZone: string, locale = 'e
   const formatted = formatClock(iso, timeZone, locale);
   // Whole sentences, so each language orders "tomorrow" and the time its own way.
   return today
-    ? tr('at {formatClock}', { formatClock: formatted })
-    : tr('tomorrow at {formatClock}', { formatClock: formatted });
+    ? tr('at {time}', { time: formatted })
+    : tr('tomorrow at {time}', { time: formatted });
 }
 
 /**
@@ -436,7 +439,7 @@ export function systemText(payload: unknown, viewerId?: string | null): string {
       return tr('{by} made a link to join', { by });
     case 'members_added':
       return p.names?.length
-        ? tr('{by} added {joinNames}', { by, joinNames: joinNames(p.names) })
+        ? tr('{by} added {names}', { by, names: joinNames(p.names) })
         : tr('{by} added people', { by });
     case 'member_left':
       return tr('{name} left', { name: p.name ?? by });
@@ -465,9 +468,9 @@ export function systemText(payload: unknown, viewerId?: string | null): string {
         : tr('{by} recorded a decision', { by });
     case 'retention_changed':
       return typeof p.days === 'number'
-        ? tr('{by} set new messages to disappear after {retentionText}', {
+        ? tr('{by} set new messages to disappear after {period}', {
             by,
-            retentionText: retentionText(p.days),
+            period: retentionText(p.days),
           })
         : tr('{by} turned off disappearing messages', { by });
     case 'call': {

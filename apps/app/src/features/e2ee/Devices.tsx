@@ -47,8 +47,8 @@ export function PrivateDevices() {
             title={d.recovery ? tr('Your recovery key') : (d.name ?? tr('A device'))}
             subtitle={
               d.recovery
-                ? tr('Made {formatListTime} · every private message is sealed for it too', {
-                    formatListTime: formatListTime(d.createdAt, now, timeZone, locale),
+                ? tr('Made {when} · every private message is sealed for it too', {
+                    when: formatListTime(d.createdAt, now, timeZone, locale),
                   })
                 : d.current
                   ? d.approved
@@ -58,8 +58,8 @@ export function PrivateDevices() {
                     ? tr('Waiting for you to approve it')
                     : d.unconfirmed
                       ? tr('None of your devices approved it: nothing is sealed for it')
-                      : tr('Added {formatListTime}', {
-                          formatListTime: formatListTime(d.createdAt, now, timeZone, locale),
+                      : tr('Added {when}', {
+                          when: formatListTime(d.createdAt, now, timeZone, locale),
                         })
             }
             right={

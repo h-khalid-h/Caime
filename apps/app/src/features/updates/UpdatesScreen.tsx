@@ -4,7 +4,7 @@
  */
 import type { FollowingView } from '@caime/core/api';
 import { formatListTime } from '@caime/core/format';
-import { tr, trn } from '@caime/core/i18n';
+import { listed, tr, trn } from '@caime/core/i18n';
 import { router } from 'expo-router';
 import Building from 'lucide-react-native/icons/building';
 import { FlatList, RefreshControl, View } from 'react-native';
@@ -31,16 +31,14 @@ function Row({ f }: { f: FollowingView }) {
     <Pressable
       accessibilityRole="button"
       // What the row shows, said: a button's label is all a screen reader reads of it.
-      accessibilityLabel={[
+      accessibilityLabel={listed([
         f.org.name,
         f.org.verified
           ? tr('verified, {domain}', { domain: f.org.verifiedDomain })
           : tr('not verified yet'),
         f.unread ? trn(f.unread, '{n} new', '{n} new') : null,
-        f.latest ? `${when}, ${f.latest.body.slice(0, 200)}` : tr('Nothing posted yet'),
-      ]
-        .filter(Boolean)
-        .join(', ')}
+        f.latest ? listed([when, f.latest.body.slice(0, 200)]) : tr('Nothing posted yet'),
+      ])}
       onPress={() => router.push({ pathname: '/o/[handle]', params: { handle: f.org.handle } })}
       focusRadius={12}
       testID="following-row"

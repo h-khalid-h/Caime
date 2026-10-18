@@ -59,8 +59,8 @@ function Usage({
 function proIncludes(plan: Plan = 'pro'): string {
   const a = PERSON_ALLOWANCES[plan];
   return tr(
-    'Relationship insights, {automations} automations, {aiPerDay} AI assists a day and {formatBytes} for files.',
-    { automations: a.automations, aiPerDay: a.aiPerDay, formatBytes: formatBytes(a.storageBytes) },
+    'Relationship insights, {automations} automations, {aiPerDay} AI assists a day and {storage} for files.',
+    { automations: a.automations, aiPerDay: a.aiPerDay, storage: formatBytes(a.storageBytes) },
   );
 }
 
@@ -70,9 +70,9 @@ function aiDetail(p: PlanUsageView, timeZone: string, locale: string): string {
     aiPerDay: p.allowance.aiPerDay,
   });
   if (!p.aiNextAt) return base;
-  return tr('{base}. The next one is ready {formatSoon}', {
+  return tr('{base}. The next one is ready {when}', {
     base,
-    formatSoon: formatSoon(p.aiNextAt, new Date(), timeZone, locale),
+    when: formatSoon(p.aiNextAt, new Date(), timeZone, locale),
   });
 }
 
@@ -127,9 +127,9 @@ export default function PlanSettings() {
         <Usage
           icon={HardDrive}
           title={tr('Files')}
-          detail={tr('{formatBytes} of {formatBytes2}', {
-            formatBytes: p.used.storageBytes ? formatBytes(p.used.storageBytes) : '0',
-            formatBytes2: formatBytes(p.allowance.storageBytes),
+          detail={tr('{used} of {allowed}', {
+            used: p.used.storageBytes ? formatBytes(p.used.storageBytes) : '0',
+            allowed: formatBytes(p.allowance.storageBytes),
           })}
           used={p.used.storageBytes}
           of={p.allowance.storageBytes}
@@ -139,9 +139,9 @@ export default function PlanSettings() {
         <Usage
           icon={Zap}
           title={tr('Automations')}
-          detail={tr('{automations} of {automations2}', {
-            automations: p.used.automations,
-            automations2: p.allowance.automations,
+          detail={tr('{used} of {allowed}', {
+            used: p.used.automations,
+            allowed: p.allowance.automations,
           })}
           used={p.used.automations}
           of={p.allowance.automations}
@@ -190,8 +190,8 @@ export default function PlanSettings() {
             p.upgradeUrl
               ? undefined
               : tr(
-                  '{PLAN_NAMES} can’t be bought here yet. Nothing you use today will change when it can.',
-                  { PLAN_NAMES: PLAN_NAMES[next] },
+                  '{plan} can’t be bought here yet. Nothing you use today will change when it can.',
+                  { plan: PLAN_NAMES[next] },
                 )
           }
         >
@@ -199,7 +199,7 @@ export default function PlanSettings() {
             <Text variant="body">{proIncludes(next)}</Text>
             {p.upgradeUrl ? (
               <Button
-                label={tr('See {PLAN_NAMES}', { PLAN_NAMES: PLAN_NAMES[next] })}
+                label={tr('See {plan}', { plan: PLAN_NAMES[next] })}
                 onPress={() => openLink(p.upgradeUrl ?? '')}
                 testID="plan-upgrade"
               />

@@ -64,10 +64,13 @@ export function RecoveryKey() {
       <View style={{ padding: 16, gap: 12 }} testID="private-recovery">
         <Text variant="body">
           {recovery
-            ? tr('On, since {formatListTime}.{This}', {
-                formatListTime: formatListTime(recovery.createdAt, now, timeZone, locale),
-                This: here ? tr(' This device has it.') : '',
-              })
+            ? here
+              ? tr('On, since {when}. This device has it.', {
+                  when: formatListTime(recovery.createdAt, now, timeZone, locale),
+                })
+              : tr('On, since {when}.', {
+                  when: formatListTime(recovery.createdAt, now, timeZone, locale),
+                })
             : tr('Off.')}
         </Text>
         <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8 }}>

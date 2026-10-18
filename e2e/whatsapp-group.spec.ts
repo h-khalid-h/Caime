@@ -76,7 +76,7 @@ test('a WhatsApp group from an iPhone comes into the group as a topic, each line
   // Read on this device: five messages from four people, the photo counted, the group's own
   // lines left out (its name is nobody's to choose).
   await expect(page.getByTestId('import-summary')).toContainText(
-    /5 messages, Mar 13, 2024 to Mar 14, 2024, and a photo or file the export left out/,
+    /5 messages · Mar 13, 2024 to Mar 14, 2024 · a photo or file the export left out/,
   );
   await expect(page.getByRole('radio', { name: /Noor Haddad/ })).toBeChecked();
   await expect(page.getByRole('radio', { name: /^Family/ })).toHaveCount(0);

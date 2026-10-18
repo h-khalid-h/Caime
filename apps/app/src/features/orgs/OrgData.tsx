@@ -56,8 +56,8 @@ export function OrgData({ org, refresh }: { org: OrgView; refresh: (o: OrgView) 
       toast(
         value === 'off'
           ? tr('Conversations stay')
-          : tr('Conversations are kept for {retentionText}', {
-              retentionText: retentionText(Number(value)),
+          : tr('Conversations are kept for {period}', {
+              period: retentionText(Number(value)),
             }),
       );
     } catch (e) {
@@ -113,8 +113,8 @@ export function OrgData({ org, refresh }: { org: OrgView; refresh: (o: OrgView) 
         ) : (
           <Text variant="caption" color="textSecondary">
             {org.retentionDays
-              ? tr('Conversations are kept for {retentionText}; the owner sets it.', {
-                  retentionText: retentionText(org.retentionDays),
+              ? tr('Conversations are kept for {period}; the owner sets it.', {
+                  period: retentionText(org.retentionDays),
                 })
               : tr('Conversations are kept as long as the account exists; the owner sets it.')}
           </Text>

@@ -85,7 +85,6 @@ export const frServer: Catalog = {
   'your name and handle, and may ask': 'votre nom et identifiant, et peut demander',
   '{n} GB': '{n} Go',
   'price shown in the app': 'prix affiché dans l’application',
-  ', or ': ', ou ',
   'It lands in the inbox, first if they’ve waited longest.':
     'Elle arrive dans la boîte de réception, en tête si elle attend depuis le plus longtemps.',
   'Lina writes to Nile Dental from the app she uses for everyone else. The team sees one conversation, its state and who has it; Lina sees the organization, never which person.':
@@ -224,7 +223,6 @@ export const frServer: Catalog = {
     'L’essentiel de Caime n’est jamais décompté : contacts, relations, ce qui a besoin de vous, ce que vous attendez, recherche et synchronisation sont dans chaque forfait. Les forfaits ne diffèrent que par ce qui a un coût de fonctionnement, et par ce que les organisations achètent.',
   'For people': 'Pour les particuliers',
   Personal: 'Personal',
-  ', always': ', toujours',
   '{n} actions a day, once you turn it on': '{n} actions par jour, une fois activée',
   files: 'fichiers',
   automations: 'automatisations',
@@ -370,7 +368,6 @@ export const frServer: Catalog = {
   '{merge} and {keep} may be the same person': '{merge} et {keep} sont peut-être la même personne',
   'Both have {reasons}. Merged, they show as one in People; both accounts and conversations stay, and you can separate them again.':
     'Les deux ont {reasons}. Une fois fusionnés, ils apparaissent comme une seule personne dans Personnes ; les deux comptes et conversations restent, et vous pouvez les séparer à nouveau.',
-  ', and ': ', et ',
   '{title} call': 'Appel {title}',
   Joined: 'A rejoint',
   'Turned down': 'Refusé',
@@ -608,8 +605,8 @@ export const frServer: Catalog = {
     'Là où vous vivez, Caime est réservé aux personnes de {age} ans et plus.',
   'Your plan starts as soon as you pay. In the EU you may withdraw within 14 days by writing to {email}, and you pay only for the days it was on. Terms: {terms}':
     'Votre formule démarre dès le paiement. Dans l’UE, vous pouvez vous rétracter dans les 14 jours en écrivant à {email}, et vous ne payez alors que les jours où elle était active. Conditions : {terms}',
-  'You need to be at least {MINIMUM_AGE} to use Caime.':
-    'Il faut avoir au moins {MINIMUM_AGE} ans pour utiliser Caime.',
+  'You need to be at least {age} to use Caime.':
+    'Il faut avoir au moins {age} ans pour utiliser Caime.',
   'That email already has an account. Sign in instead?':
     'Un compte existe déjà avec cet e-mail. Se connecter plutôt ?',
   'That email or handle and password don’t match.':
@@ -635,8 +632,8 @@ export const frServer: Catalog = {
   'A line about the conversation isn’t saved.':
     'Une ligne d’information sur la conversation ne s’enregistre pas.',
   'That file': 'Ce fichier',
-  'You’ve saved {SAVED_MAX} things, the most there’s room for. Remove some to save more.':
-    'Vous avez enregistré {SAVED_MAX} éléments, le maximum possible. Retirez-en pour en enregistrer d’autres.',
+  'You’ve saved {max} things, the most there’s room for. Remove some to save more.':
+    'Vous avez enregistré {max} éléments, le maximum possible. Retirez-en pour en enregistrer d’autres.',
   'That saved item': 'Cet élément enregistré',
   'An automation saves to {collection}. Change it or remove it first.':
     'Une automatisation enregistre dans {collection}. Modifiez-la ou retirez-la d’abord.',
@@ -695,8 +692,8 @@ export const frServer: Catalog = {
   'That request': 'Cette demande',
   'That connection': 'Ce contact',
   'That merged connection': 'Ce contact fusionné',
-  'A private group holds up to {PRIVATE_GROUP_MAX} people: each message is sealed for every device in it.':
-    'Un groupe privé accueille jusqu’à {PRIVATE_GROUP_MAX} personnes : chaque message est scellé pour chaque appareil qui s’y trouve.',
+  'A private group holds up to {max} people: each message is sealed for every device in it.':
+    'Un groupe privé accueille jusqu’à {max} personnes : chaque message est scellé pour chaque appareil qui s’y trouve.',
   'A topic’s people are its group’s: add, remove or make admins there.':
     'Les membres d’un sujet sont ceux de son groupe : ajoutez, retirez ou nommez des admins depuis le groupe.',
   'Topics are for conversations between people.':
@@ -758,7 +755,7 @@ export const frServer: Catalog = {
   'This album is closed.': 'Cet album est fermé.',
   'Add photos you’ve uploaded.': 'Ajoutez des photos que vous avez téléversées.',
   'Albums take photos and videos.': 'Les albums acceptent des photos et des vidéos.',
-  'An album holds {ALBUM_MAX} photos.': 'Un album contient {ALBUM_MAX} photos.',
+  'An album holds {max} photos.': 'Un album contient {max} photos.',
   'That photo': 'Cette photo',
   'Only whoever added it, or made the album, can take it out.':
     'Seule la personne qui l’a ajoutée, ou qui a créé l’album, peut la retirer.',
@@ -773,14 +770,13 @@ export const frServer: Catalog = {
     'Les messages s’épinglent une fois la demande de message traitée.',
   'Lines about the conversation aren’t pinned.':
     'Les lignes d’information sur la conversation ne s’épinglent pas.',
-  '{PINNED_MAX} messages are pinned already, including {n} you deleted for yourself. Unpin one first.':
-    {
-      one: '{PINNED_MAX} messages sont déjà épinglés, dont un que vous avez supprimé pour vous. Désépinglez-en un d’abord.',
-      other:
-        '{PINNED_MAX} messages sont déjà épinglés, dont {n} que vous avez supprimés pour vous. Désépinglez-en un d’abord.',
-    },
-  '{PINNED_MAX} messages are pinned already. Unpin one first.':
-    '{PINNED_MAX} messages sont déjà épinglés. Désépinglez-en un d’abord.',
+  '{max} messages are pinned already, including {n} you deleted for yourself. Unpin one first.': {
+    one: '{max} messages sont déjà épinglés, dont un que vous avez supprimé pour vous. Désépinglez-en un d’abord.',
+    other:
+      '{max} messages sont déjà épinglés, dont {n} que vous avez supprimés pour vous. Désépinglez-en un d’abord.',
+  },
+  '{max} messages are pinned already. Unpin one first.':
+    '{max} messages sont déjà épinglés. Désépinglez-en un d’abord.',
   'That poll': 'Ce sondage',
   'That option isn’t in the poll.': 'Cette option n’est pas dans le sondage.',
   'Choose one option.': 'Choisissez une option.',
@@ -795,8 +791,8 @@ export const frServer: Catalog = {
   'This device can’t pick up where it left off: it registers afresh.':
     'Cet appareil ne peut pas reprendre là où il s’était arrêté : il s’enregistre à nouveau.',
   'That device': 'Cet appareil',
-  'Private conversations open on up to {MAX_DEVICES} devices: remove one in Settings first.':
-    'Les conversations privées s’ouvrent sur {MAX_DEVICES} appareils au plus : retirez-en un dans les Réglages d’abord.',
+  'Private conversations open on up to {max} devices: remove one in Settings first.':
+    'Les conversations privées s’ouvrent sur {max} appareils au plus : retirez-en un dans les Réglages d’abord.',
   'That device is registered already.': 'Cet appareil est déjà enregistré.',
   'Approve it from a device that reads your private conversations already: this one doesn’t yet.':
     'Approuvez-le depuis un appareil qui lit déjà vos conversations privées : celui-ci ne le fait pas encore.',
@@ -819,8 +815,7 @@ export const frServer: Catalog = {
     'Les appels de groupe sont réservés aux conversations de groupe.',
   'You can call once you’ve joined the conversation.':
     'Vous pourrez appeler une fois dans la conversation.',
-  'Calls are for groups of up to {GROUP_CALL_MAX} people.':
-    'Les appels sont limités à {GROUP_CALL_MAX} personnes.',
+  'Calls are for groups of up to {max} people.': 'Les appels sont limités à {max} personnes.',
   'You can join once you’ve joined the conversation.':
     'Vous pourrez le rejoindre une fois dans la conversation.',
   'This call is full.': 'Cet appel est complet.',
@@ -840,8 +835,7 @@ export const frServer: Catalog = {
   'Make another identity your default first.': 'Définissez d’abord une autre identité par défaut.',
   'Apps are made by people over 18.':
     'Les applications sont créées par des personnes de plus de 18 ans.',
-  'You have {MAX_APPS} apps. Remove one first.':
-    'Vous avez {MAX_APPS} applications. Retirez-en une d’abord.',
+  'You have {max} apps. Remove one first.': 'Vous avez {max} applications. Retirez-en une d’abord.',
   'That app isn’t registered with Caime.':
     'Cette application n’est pas enregistrée auprès de Caime.',
   'That app didn’t register this return address.':
@@ -921,8 +915,8 @@ export const frServer: Catalog = {
   'Accepting a {kind} suggestion isn’t supported yet.':
     'Accepter une suggestion de type {kind} n’est pas encore pris en charge.',
   'Access tokens are for people over 18.': 'Les jetons d’accès sont réservés aux plus de 18 ans.',
-  'You have {MAX_TOKENS} tokens. Revoke one you don’t use first.':
-    'Vous avez {MAX_TOKENS} jetons. Révoquez-en d’abord un que vous n’utilisez pas.',
+  'You have {max} tokens. Revoke one you don’t use first.':
+    'Vous avez {max} jetons. Révoquez-en d’abord un que vous n’utilisez pas.',
   'That token': 'Ce jeton',
   'Only the organization’s owner and admins post its updates.':
     'Seuls le propriétaire et les admins de l’organisation publient ses actualités.',
@@ -1566,4 +1560,6 @@ export const frServer: Catalog = {
     'Avant cela, Caime vous demande de vérifier votre âge une fois. Cela prend une minute.',
   'That’s as many age checks as a day allows. Try again tomorrow.':
     'C’est le nombre de vérifications d’âge qu’une journée permet. Réessayez demain.',
+  '{monthly}, or {yearly}': '{monthly}, ou {yearly}',
+  '{free}, always': '{free}, toujours',
 };

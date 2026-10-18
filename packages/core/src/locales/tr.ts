@@ -60,8 +60,8 @@ export const turkish: Catalog = {
   '@handle, name or email': '@kullanıcıadı, ad veya e-posta',
   Organizations: 'Kuruluşlar',
   '{name}, organization': '{name}, kuruluş',
-  'No one found for “{debounced}”. They may not be on Caime yet, or they keep their profile private.':
-    '“{debounced}” için kimse bulunamadı. Henüz Caime’de olmayabilir ya da profilini gizli tutuyor olabilir.',
+  'No one found for “{query}”. They may not be on Caime yet, or they keep their profile private.':
+    '“{query}” için kimse bulunamadı. Henüz Caime’de olmayabilir ya da profilini gizli tutuyor olabilir.',
   'Invite them': 'Davet et',
   'Search by @handle or email address. People under 18 can only be found by people they already know.':
     '@kullanıcıadı veya e-posta adresiyle arayın. 18 yaş altı kişileri yalnızca zaten tanıdıkları kişiler bulabilir.',
@@ -84,7 +84,7 @@ export const turkish: Catalog = {
   'End to end encrypted: only the devices of the people in it can read it, so there’s no search, Caime AI or previews, and it’s text for now.':
     'Uçtan uca şifreli: yalnızca içindeki kişilerin cihazları okuyabilir; bu yüzden arama, Caime AI ve ön izleme yoktur ve şimdilik yalnızca metindir.',
   'Search, suggestions and Caime AI work here.': 'Arama, öneriler ve Caime AI burada çalışır.',
-  'People · {size} chosen': 'Kişiler · {size} seçildi',
+  'People · {count} chosen': 'Kişiler · {count} seçildi',
   'Create group': 'Grup oluştur',
   'Say whose space it is.': 'Alanın kime ait olduğunu seçin.',
   'Give the space a name.': 'Alana bir ad verin.',
@@ -98,16 +98,14 @@ export const turkish: Catalog = {
   'The organization’s: anyone on its team can be in it, and it stays with the organization.':
     'Kuruluşun: ekibindeki herkes içinde olabilir ve alan kuruluşta kalır.',
   'Yours, or an organization you run.': 'Sizin ya da yönettiğiniz bir kuruluşun.',
-  ' Only an organization’s owner and admins start its spaces, so not {join}’s.':
-    ' Bir kuruluşun alanlarını yalnızca sahibi ve yöneticileri oluşturabilir; bu yüzden {join} için alan oluşturamazsınız.',
   '{name}’s space: anyone on its team can be in it, and it stays with the organization.':
     '{name} alanı: ekibindeki herkes içinde olabilir ve alan kuruluşta kalır.',
   Name: 'Ad',
   'Front desk, Design team, Everyone…': 'Resepsiyon, Tasarım ekibi, Herkes…',
   'The Haddads, Design team, Book club…': 'Haddad ailesi, Tasarım ekibi, Kitap kulübü…',
   'What kind of space': 'Ne tür bir alan',
-  '{tr}. Its conversations offer the cards that fit it.':
-    '{tr}. Konuşmaları ona uyan kartları sunar.',
+  '{hint}. Its conversations offer the cards that fit it.':
+    '{hint}. Konuşmaları ona uyan kartları sunar.',
   'It decides which cards its conversations offer.':
     'Konuşmalarının hangi kartları sunacağını belirler.',
   'Nobody else is on the team yet. Add people to the team first.':
@@ -129,7 +127,6 @@ export const turkish: Catalog = {
   'Go to Caime': 'Caime’ye git',
   '{name} wants to act for you': '{name} sizin adınıza işlem yapmak istiyor',
   'It will be able to': 'Şunları yapabilecek',
-  ' You let it in before.': ' Daha önce izin vermiştiniz.',
   'Apps act for people over 18, so this one can’t act for you.':
     'Uygulamalar 18 yaş üstü kişiler adına işlem yapar; bu yüzden bu uygulama sizin adınıza işlem yapamaz.',
   Allow: 'İzin ver',
@@ -144,13 +141,11 @@ export const turkish: Catalog = {
   Friday: 'Cuma',
   Saturday: 'Cumartesi',
   'every day': 'her gün',
-  '{DAYS} to {DAYS2}': '{DAYS} – {DAYS2}',
-  ', ': ', ',
-  'step {indexOf} of {length} · {codes}': 'adım {indexOf}/{length} · {codes}',
+  'step {step} of {steps} · {what}': 'adım {step}/{steps} · {what}',
   'how Caime works': 'Caime nasıl çalışır',
   'your people': 'kişileriniz',
   Managers: 'Yöneticiler',
-  'Recovery codes: {join}': 'Kurtarma kodları: {join}',
+  'Recovery codes: {codes}': 'Kurtarma kodları: {codes}',
   'Copy the codes': 'Kodları kopyala',
   'Copied. Paste them into your password manager or notes.':
     'Kopyalandı. Parola yöneticinize veya notlarınıza yapıştırın.',
@@ -229,9 +224,9 @@ export const turkish: Catalog = {
   Decisions: 'Kararlar',
   Conversations: 'Konuşmalar',
   Conversation: 'Konuşma',
-  'Nothing on this device for “{debounced}”. Try again when you’re back online.':
-    'Bu cihazda “{debounced}” için bir şey yok. Yeniden çevrimiçi olunca tekrar deneyin.',
-  'Nothing found for “{debounced}”.': '“{debounced}” için bir şey bulunamadı.',
+  'Nothing on this device for “{query}”. Try again when you’re back online.':
+    'Bu cihazda “{query}” için bir şey yok. Yeniden çevrimiçi olunca tekrar deneyin.',
+  'Nothing found for “{query}”.': '“{query}” için bir şey bulunamadı.',
   'About Caime': 'Caime hakkında',
   'messaging that understands your relationships': 'ilişkilerinizi anlayan mesajlaşma',
   'running on': 'çalıştığı yer',
@@ -393,7 +388,7 @@ export const turkish: Catalog = {
   'Make the rule': 'Kuralı oluştur',
   'Who it’s for': 'Kimin için',
   'Of them': 'Bunlardan',
-  'All {toLowerCase}': 'Tüm {toLowerCase}',
+  'All {kinds}': 'Tüm {kinds}',
   'Its name (optional)': 'Adı (isteğe bağlı)',
   'My customers': 'Müşterilerim',
   'Notifications and priorities': 'Bildirimler ve öncelikler',
@@ -413,10 +408,10 @@ export const turkish: Catalog = {
     'İş bildirimleri bu günleri bekler. Yaşadığınız yere göre ayarlanır (Dil ve bölge); sizinki farklıysa değiştirin.',
   'Reset to Caime’s defaults': 'Caime varsayılanlarına dön',
   'Back to the defaults': 'Varsayılanlara dönüldü',
-  'Relationship insights, {automations} automations, {aiPerDay} AI assists a day and {formatBytes} for files.':
-    'İlişki içgörüleri, {automations} otomasyon, günde {aiPerDay} AI yardımı ve dosyalar için {formatBytes}.',
+  'Relationship insights, {automations} automations, {aiPerDay} AI assists a day and {storage} for files.':
+    'İlişki içgörüleri, {automations} otomasyon, günde {aiPerDay} AI yardımı ve dosyalar için {storage}.',
   '{aiToday} of {aiPerDay} in the last 24 hours': 'Son 24 saatte {aiToday}/{aiPerDay}',
-  '{base}. The next one is ready {formatSoon}': '{base}. Bir sonraki {formatSoon} hazır',
+  '{base}. The next one is ready {when}': '{base}. Bir sonraki {when} hazır',
   Plan: 'Plan',
   'Free forever: your connections, what needs you, what you’re waiting for, search and sync. No plan ever limits those.':
     'Her zaman ücretsiz: bağlantılarınız, sizi bekleyenler, beklediğiniz şeyler, arama ve eşitleme. Hiçbir plan bunları sınırlamaz.',
@@ -425,15 +420,14 @@ export const turkish: Catalog = {
   'What you’re using': 'Kullanımınız',
   'AI assist': 'AI yardımı',
   Files: 'Dosyalar',
-  '{formatBytes} of {formatBytes2}': '{formatBytes} / {formatBytes2}',
-  '{automations} of {automations2}': '{automations} / {automations2}',
+  '{used} of {allowed}': '{used} / {allowed}',
   'Included in your plan': 'Planınıza dahil',
   'Comes with {pro}': '{pro} ile gelir',
   'Who you write with most, who’s gone quiet, how fast you answer and are answered, and when you write. Yours alone.':
     'En çok kiminle yazıştığınız, kimin sessizleştiği, ne hızla yanıt verdiğiniz ve aldığınız, ne zaman yazdığınız. Yalnızca size ait.',
-  '{PLAN_NAMES} can’t be bought here yet. Nothing you use today will change when it can.':
-    '{PLAN_NAMES} henüz buradan satın alınamıyor. Alınabilir olduğunda bugün kullandığınız hiçbir şey değişmeyecek.',
-  'See {PLAN_NAMES}': '{PLAN_NAMES} planını gör',
+  '{plan} can’t be bought here yet. Nothing you use today will change when it can.':
+    '{plan} henüz buradan satın alınamıyor. Alınabilir olduğunda bugün kullandığınız hiçbir şey değişmeyecek.',
+  'See {plan}': '{plan} planını gör',
   'Profile photo': 'Profil fotoğrafı',
   'About you': 'Hakkınızda',
   Pronouns: 'Zamirler',
@@ -563,7 +557,7 @@ export const turkish: Catalog = {
   Phone: 'Telefon',
   Browser: 'Tarayıcı',
   'This device': 'Bu cihaz',
-  'Active {formatListTime}': 'Etkin: {formatListTime}',
+  'Active {when}': 'Etkin: {when}',
   'Sign out': 'Çıkış yap',
   Password: 'Parola',
   'Current password': 'Mevcut parola',
@@ -597,8 +591,6 @@ export const turkish: Catalog = {
   Email: 'E-posta',
   'Confirming it means a forgotten password can be reset by email, and that it’s yours.':
     'Doğruladığınızda unutulan parolanız e-postayla sıfırlanabilir ve adresin size ait olduğu kanıtlanır.',
-  ' · confirmed': ' · doğrulandı',
-  ' · not confirmed yet': ' · henüz doğrulanmadı',
   'Code from the email': 'E-postadaki kod',
   Confirm: 'Onayla',
   'Send a new code': 'Yeni kod gönder',
@@ -692,8 +684,7 @@ export const turkish: Catalog = {
   'What needs doing? Try “renew passport by Friday”':
     'Ne yapılacak? “Cumaya kadar pasaportu yenile” yazmayı deneyin',
   'What needs doing': 'Ne yapılacak',
-  'Due {formatDue}': 'Son tarih {formatDue}',
-  'Due {formatDue}. Change the day': 'Son tarih {formatDue}. Günü değiştir',
+  'Due {when}. Change the day': 'Son tarih {when}. Günü değiştir',
   'From “{text}”': '“{text}” mesajından',
   'Add a due date': 'Son tarih ekle',
   '{displayName} asked you': '{displayName} sizden istedi',
@@ -702,7 +693,6 @@ export const turkish: Catalog = {
   'Reopen {title}': '{title} eylemini yeniden aç',
   'Complete {title}': '{title} eylemini tamamla',
   Discard: 'Vazgeç',
-  'Overdue · ': 'Gecikmiş · ',
   Pending: 'Bekliyor',
   'Couldn’t add it: {error}': 'Eklenemedi: {error}',
   'try again': 'yeniden dene',
@@ -784,7 +774,6 @@ export const turkish: Catalog = {
   '{name} inbox, {waiting} waiting': '{name} gelen kutusu, {waiting} bekliyor',
   '{name} inbox': '{name} gelen kutusu',
   '{n} customers waiting': { one: '{n} müşteri bekliyor', other: '{n} müşteri bekliyor' },
-  ' · {mine} yours': ' · {mine} sizin',
   'You have it': 'Sizde',
   '{displayName} has it': '{displayName} üstlendi',
   'Nobody has it yet': 'Henüz kimse üstlenmedi',
@@ -842,9 +831,7 @@ export const turkish: Catalog = {
   'No answer': 'Yanıt yok',
   'Couldn’t connect': 'Bağlanamadı',
   'Group call': 'Grup araması',
-  '{Video} call {callWith}': '{Video} ara: {callWith}',
-  Video: 'Görüntülü',
-  Voice: 'Sesli',
+  Video: 'Video',
   'Which calls': 'Hangi aramalar',
   All: 'Tümü',
   Missed: 'Cevapsız',
@@ -873,7 +860,6 @@ export const turkish: Catalog = {
   'Camera off': 'Kamera kapalı',
   'Hang up': 'Kapat',
   'You’re in this call on another device.': 'Bu aramaya başka bir cihazdan katılıyorsunuz.',
-  '{Video} call on · {text}': '{Video} arama sürüyor · {text}',
   'Join here': 'Buradan katıl',
   Join: 'Katıl',
   'Group video call': 'Grup görüntülü arama',
@@ -881,7 +867,7 @@ export const turkish: Catalog = {
   '{displayName} is calling · {kindName}': '{displayName} arıyor · {kindName}',
   'Waiting for others…': 'Diğerleri bekleniyor…',
   'Only you so far': 'Şimdilik yalnızca siz',
-  '{length} in the call': 'Aramada {length} kişi',
+  '{count} in the call': 'Aramada {count} kişi',
   '{first} is in the call': '{first} aramada',
   Leave: 'Ayrıl',
   'All calls with {name}': '{name} ile tüm aramalar',
@@ -918,10 +904,10 @@ export const turkish: Catalog = {
   'Your messages are safe. Try again, and if it keeps happening, tell us what you were doing.':
     'Mesajlarınız güvende. Yeniden deneyin; sorun sürerse bize ne yaptığınızı anlatın.',
   'Go to Chats': 'Sohbetlere git',
-  '{displayName}, {indexOf} of {length}. Enter mentions them, Escape closes the list.':
-    '{displayName}, {indexOf}/{length}. Enter ile bahsedin, Escape listeyi kapatır.',
+  '{displayName}, {position} of {count}. Enter mentions them, Escape closes the list.':
+    '{displayName}, {position}/{count}. Enter ile bahsedin, Escape listeyi kapatır.',
   'Voice note': 'Sesli not',
-  'Couldn’t upload: {e}': 'Yüklenemedi: {e}',
+  'Couldn’t upload: {error}': 'Yüklenemedi: {error}',
   'Start over here instead': 'Bunun yerine burada yeniden başla',
   'Editing message': 'Mesaj düzenleniyor',
   'Replying to {replyName}': '{replyName} yanıtlanıyor',
@@ -931,7 +917,7 @@ export const turkish: Catalog = {
   'Starting…': 'Başlıyor…',
   'Share a photo, a file or a card': 'Fotoğraf, dosya veya kart paylaş',
   'Edit message': 'Mesajı düzenle',
-  'Message {listTitle}': 'Mesaj: {listTitle}',
+  'Message {title}': 'Mesaj: {title}',
   'Rewrite with Cai': 'Cai ile yeniden yaz',
   'Record a voice note': 'Sesli not kaydet',
   Stickers: 'Çıkartmalar',
@@ -943,7 +929,6 @@ export const turkish: Catalog = {
   Cards: 'Kartlar',
   'From {name}': 'Sağlayan: {name}',
   Yours: 'Sizin',
-  ' · Pending': ' · Bekliyor',
   'A business conversation. Its team answers as {name}.':
     'Bir iş konuşması. Ekibi {name} olarak yanıtlar.',
   'See its profile': 'Profilini gör',
@@ -958,7 +943,7 @@ export const turkish: Catalog = {
   'In {name} · open the space': '{name} içinde · alanı aç',
   'Right now': 'Şu anda',
   'Coming up': 'Yaklaşan',
-  'Open · {length}': 'Açık · {length}',
+  'Open · {count}': 'Açık · {count}',
   Decided: 'Kararlaştırılanlar',
   Shared: 'Paylaşılanlar',
   Document: 'Belge',
@@ -967,7 +952,7 @@ export const turkish: Catalog = {
   Memory: 'Hafıza',
   'Promises, questions, dates and decisions from this conversation will gather here, so nothing gets lost in the scroll.':
     'Bu konuşmadaki sözler, sorular, tarihler ve kararlar burada toplanır; böylece hiçbir şey kaydırırken kaybolmaz.',
-  'Topics · {length}': 'Konular · {length}',
+  'Topics · {count}': 'Konular · {count}',
   Topics: 'Konular',
   '{title}, topic': '{title}, konu',
   'Start a topic': 'Konu aç',
@@ -979,10 +964,10 @@ export const turkish: Catalog = {
   Start: 'Başlat',
   'What it’s about': 'Neyle ilgili',
   'New messages stay': 'Yeni mesajlar kalır',
-  'New messages disappear after {retentionText}': 'Yeni mesajlar {retentionText} sonra kaybolur',
+  'New messages disappear after {period}': 'Yeni mesajlar {period} sonra kaybolur',
   'Disappearing messages': 'Kaybolan mesajlar',
   Off: 'Kapalı',
-  'After {retentionText}': '{retentionText} sonra',
+  'After {period}': '{period} sonra',
   'New messages only; what came before keeps its time':
     'Yalnızca yeni mesajlar; öncekiler süresini korur',
   'New messages stay until someone deletes them': 'Yeni mesajlar biri silene kadar kalır',
@@ -1021,8 +1006,8 @@ export const turkish: Catalog = {
   'Private conversations don’t open on this device. Open Caime on your phone or in a current browser.':
     'Özel konuşmalar bu cihazda açılmaz. Caime’yi telefonunuzda ya da güncel bir tarayıcıda açın.',
   'Unblock {name}': '{name} engelini kaldır',
-  '{name} keeps this conversation for {retentionText}: messages go after that.':
-    '{name} bu konuşmayı {retentionText} saklar: mesajlar sonrasında silinir.',
+  '{name} keeps this conversation for {period}: messages go after that.':
+    '{name} bu konuşmayı {period} saklar: mesajlar sonrasında silinir.',
   'Reply as {name}': '{name} olarak yanıtla',
   'Good to have you here, {first}.': 'Aramızda olmanız güzel, {first}.',
   'What are you working on this week?': 'Bu hafta ne üzerinde çalışıyorsunuz?',
@@ -1039,7 +1024,7 @@ export const turkish: Catalog = {
   'Forwarded to {n} conversations': { one: 'İletildi', other: '{n} konuşmaya iletildi' },
   Forward: 'İlet',
   'It arrives marked as forwarded.': 'İletildi olarak işaretli ulaşır.',
-  'Send to {size}': '{size} konuşmaya gönder',
+  'Send to {count}': '{count} konuşmaya gönder',
   'Find a conversation': 'Konuşma bul',
   'Loading your conversations…': 'Konuşmalarınız yükleniyor…',
   'No conversation by that name.': 'Bu adda konuşma yok.',
@@ -1059,7 +1044,7 @@ export const turkish: Catalog = {
     '{name} içindeki kişiler. Burada yazılanları da görecekler.',
   'People you’re connected with. They’ll see what’s been written here, too.':
     'Bağlı olduğunuz kişiler. Burada yazılanları da görecekler.',
-  'Add {size}': '{size} kişi ekle',
+  'Add {count}': '{count} kişi ekle',
   'Everyone in {name} is in it already. Add people to the space first.':
     '{name} içindeki herkes zaten burada. Önce alana kişi ekleyin.',
   'See their profile': 'Profilini gör',
@@ -1145,7 +1130,7 @@ export const turkish: Catalog = {
   'Double tap and hold for actions': 'Eylemler için iki kez dokunup basılı tutun',
   React: 'Tepki ver',
   'Private message': 'Özel mesaj',
-  'Pinned, {i} of {length}': 'Sabitlenmiş, {i}/{length}',
+  'Pinned, {position} of {count}': 'Sabitlenmiş, {position}/{count}',
   'Goes to it, then shows the next one': 'Ona gider, sonra bir sonrakini gösterir',
   'Goes to it': 'Ona gider',
   'Unpin this message': 'Bu mesajın sabitlemesini kaldır',
@@ -1185,17 +1170,17 @@ export const turkish: Catalog = {
     one: 'Genellikle geçtiğiniz {n} öneri daha · Göster',
     other: 'Genellikle geçtiğiniz {n} öneri daha · Göster',
   },
-  '{length} done': '{length} tamamlandı',
-  '{length} undone; {a}': '{length} geri alındı; {a}',
+  '{count} done': '{count} tamamlandı',
+  '{count} undone; {kept}': '{count} geri alındı; {kept}',
   '{n} decisions stay': { one: '{n} karar kalır', other: '{n} karar kalır' },
   Undone: 'Geri alındı',
   'One step couldn’t be done.': 'Bir adım yapılamadı.',
-  'Suggestions: {length} things here': 'Öneriler: burada {length} öge',
+  'Suggestions: {count} things here': 'Öneriler: burada {count} öge',
   Suggestions: 'Öneriler',
   Yes: 'Evet',
   'Nothing happens until you say so; each step can be taken back after.':
     'Siz söyleyene kadar hiçbir şey olmaz; her adım sonradan geri alınabilir.',
-  'Do all {length}': '{length} adımın hepsini yap',
+  'Do all {count}': '{count} adımın hepsini yap',
   'One at a time': 'Tek tek',
   'Suggestion: {title}': 'Öneri: {title}',
   Suggestion: 'Öneri',
@@ -1204,14 +1189,14 @@ export const turkish: Catalog = {
   'You passed on {dismissed} of the last {of} like this':
     'Bunun gibi son {of} öneriden {dismissed} tanesini geçtiniz',
   '{names} is typing…': '{names} yazıyor…',
-  '{joinNames} are typing…': '{joinNames} yazıyor…',
+  '{names} are typing…': '{names} yazıyor…',
   'Merged: {shownName} is one person in People now':
     'Birleştirildi: {shownName} artık Kişiler’de tek bir kişi',
   'Kept separate. We won’t ask about them again.': 'Ayrı tutuldu. Bir daha sormayacağız.',
-  '@{handle} and @{handle2}': '@{handle} ve @{handle2}',
+  '@{handle} and @{otherHandle}': '@{handle} ve @{otherHandle}',
   Merge: 'Birleştir',
   'Keep separate': 'Ayrı tut',
-  '{length} more after these.': 'Bunlardan sonra {length} tane daha.',
+  '{count} more after these.': 'Bunlardan sonra {count} tane daha.',
   'Separated: {who} is on their own in People again':
     'Ayrıldı: {who} Kişiler’de yeniden ayrı bir kişi',
   'In People, {name} is one person with {shownName}.':
@@ -1228,14 +1213,14 @@ export const turkish: Catalog = {
     'Oturum açtığınız bir cihaz, bunlardan biriyle onaylayana kadar bekler. Bir cihazı kaldırırsanız oturumu kapanır.',
   'Your recovery key': 'Kurtarma anahtarınız',
   'A device': 'Bir cihaz',
-  'Made {formatListTime} · every private message is sealed for it too':
-    'Oluşturulma: {formatListTime} · her özel mesaj onun için de şifrelenir',
+  'Made {when} · every private message is sealed for it too':
+    'Oluşturulma: {when} · her özel mesaj onun için de şifrelenir',
   'This device · waiting for you to approve it on another':
     'Bu cihaz · başka bir cihazdan onaylamanızı bekliyor',
   'Waiting for you to approve it': 'Onaylamanızı bekliyor',
   'None of your devices approved it: nothing is sealed for it':
     'Cihazlarınızdan hiçbiri onaylamadı: onun için hiçbir şey şifrelenmez',
-  'Added {formatListTime}': 'Eklenme: {formatListTime}',
+  'Added {when}': 'Eklenme: {when}',
   Approve: 'Onayla',
   'Turn off': 'Kapat',
   'Private conversation': 'Özel konuşma',
@@ -1286,8 +1271,6 @@ export const turkish: Catalog = {
     'Tüm cihazlarınız kaybolursa yeni bir cihaz bu anahtarla özel konuşmalarınızı okur ve güvenlik kodunuz aynı kalır. Parolalarınızı sakladığınız yerde saklayın: Caime bir daha gösteremez ve onsuz hiçbir şey okuyamaz.',
   'Without one, losing every device you’re signed in on loses your private conversations for good. The key is shown once: keep it where you keep passwords.':
     'Anahtar yoksa, oturum açtığınız tüm cihazları kaybettiğinizde özel konuşmalarınızı da kalıcı olarak kaybedersiniz. Anahtar yalnızca bir kez gösterilir: parolalarınızı sakladığınız yerde saklayın.',
-  'On, since {formatListTime}.{This}': 'Açık ({formatListTime} itibarıyla).{This}',
-  ' This device has it.': ' Bu cihazda kayıtlı.',
   'Off.': 'Kapalı.',
   'Make a new key': 'Yeni anahtar oluştur',
   'Make a recovery key': 'Kurtarma anahtarı oluştur',
@@ -1362,23 +1345,16 @@ export const turkish: Catalog = {
   'Search cities or countries': 'Şehir veya ülke ara',
   'No time zone by that name.': 'Bu adda saat dilimi yok.',
   'That file couldn’t be read.': 'Bu dosya okunamadı.',
-  '{toLocaleString} messages brought over': '{toLocaleString} mesaj içe aktarıldı',
+  '{count} messages brought over': '{count} mesaj içe aktarıldı',
   'What you and {name} said there, kept as a topic here. Only you two see it.':
     '{name} ile orada konuştuklarınız burada bir konu olarak saklanır. Yalnızca ikiniz görürsünüz.',
   'Bring it over': 'İçe aktar',
   'Choose the file': 'Dosyayı seçin',
   'No messages were found in it. Is it the exported chat?':
     'İçinde mesaj bulunamadı. Dışa aktarılan sohbet bu mu?',
-  '{toLocaleString} messages, {text}{and}': '{toLocaleString} mesaj, {text}{and}',
   '{from} to {to}': '{from} – {to}',
-  ', and a photo or file the export left out':
-    ' ve dışa aktarmanın dışarıda bıraktığı bir fotoğraf veya dosya',
-  ', and {n} photos or files the export left out': {
-    one: ' ve dışa aktarmanın dışarıda bıraktığı {n} fotoğraf veya dosya',
-    other: ' ve dışa aktarmanın dışarıda bıraktığı {n} fotoğraf veya dosya',
-  },
-  'This export has {length} names in it: it’s a group. Bring over a chat with {name} alone.':
-    'Bu dışa aktarmada {length} ad var: bu bir grup. Yalnızca {name} ile olan bir sohbeti içe aktarın.',
+  'This export has {count} names in it: it’s a group. Bring over a chat with {name} alone.':
+    'Bu dışa aktarmada {count} ad var: bu bir grup. Yalnızca {name} ile olan bir sohbeti içe aktarın.',
   'Which name is you?': 'Hangi ad sizsiniz?',
   '{name} here': 'Burada {name}',
   'How its dates read': 'Tarihler nasıl yazılmış',
@@ -1412,7 +1388,7 @@ export const turkish: Catalog = {
   'Muted for a week': 'Bir haftalığına sessize alındı',
   'Until I turn it back on': 'Ben yeniden açana kadar',
   Muted: 'Sessize alındı',
-  'Muted until {format}': 'Şu zamana kadar sessizde: {format}',
+  'Muted until {when}': 'Şu zamana kadar sessizde: {when}',
   'Until a day and time…': 'Bir gün ve saate kadar…',
   'Search your people': 'Kişilerinizi arayın',
   'Connect with someone new': 'Yeni biriyle bağlantı kurun',
@@ -1442,11 +1418,9 @@ export const turkish: Catalog = {
   'Comes with Pro': 'Pro ile gelir',
   'See Pro': 'Pro planını gör',
   'Insights couldn’t load': 'İçgörüler yüklenemedi',
-  ' · {unanswered} waiting on you': ' · {unanswered} sizi bekliyor',
-  ' · {unanswered} waiting on them': ' · {unanswered} onları bekliyor',
   'Your people': 'Kişileriniz',
-  '{sent} messages from you, {received} to you ({sent2} and {received2} before).':
-    'Sizden {sent} mesaj, size {received} (öncesinde {sent2} ve {received2}).',
+  '{sent} messages from you, {received} to you ({sentBefore} and {receivedBefore} before).':
+    'Sizden {sent} mesaj, size {received} (öncesinde {sentBefore} ve {receivedBefore}).',
   Replies: 'Yanıtlar',
   Closest: 'En yakın',
   '{messages} messages · you wrote {pct}': '{messages} mesaj · {pct} sizden',
@@ -1454,7 +1428,7 @@ export const turkish: Catalog = {
   'Gone quiet': 'Sessizleşenler',
   'Connections you’d written with before this time, and not since. Whether to write is yours: Caime only shows it.':
     'Bu dönemden önce yazıştığınız, o zamandan beri yazışmadığınız bağlantılar. Yazıp yazmamak size kalmış: Caime yalnızca gösterir.',
-  'Last {formatWhen}': 'Son: {formatWhen}',
+  'Last {when}': 'Son: {when}',
   'Nobody’s gone quiet.': 'Kimse sessizleşmedi.',
   'When you write': 'Ne zaman yazdığınız',
   'Your messages by the hour of your day.': 'Mesajlarınızın günün saatlerine göre dağılımı.',
@@ -1462,11 +1436,11 @@ export const turkish: Catalog = {
     'Yalnızca sizin için, kendi bire bir konuşmalarınızdan hesaplanır. Bunu başka kimse görmez ve bunun için kimsenin yazdıkları okunmaz.',
   'Taken out of the album': 'Albümden çıkarıldı',
   Album: 'Albüm',
-  'Photo {i} of {length}': 'Fotoğraf {i}/{length}',
-  'Take photo {i} out of the album': '{i}. fotoğrafı albümden çıkar',
+  'Photo {position} of {count}': 'Fotoğraf {position}/{count}',
+  'Take photo {number} out of the album': '{number}. fotoğrafı albümden çıkar',
   'Adding a photo…': 'Fotoğraf ekleniyor…',
-  'Adding {length} photos…': '{length} fotoğraf ekleniyor…',
-  'Couldn’t add them: {e}': 'Eklenemedi: {e}',
+  'Adding {count} photos…': '{count} fotoğraf ekleniyor…',
+  'Couldn’t add them: {error}': 'Eklenemedi: {error}',
   '{n} photos': { one: '{n} fotoğraf', other: '{n} fotoğraf' },
   'See all {count} photos in {title}': '{title} albümündeki {count} fotoğrafın tümünü gör',
   'the album': 'albüm',
@@ -1475,7 +1449,7 @@ export const turkish: Catalog = {
   'Nothing was added.': 'Hiçbir şey eklenmedi.',
   'Add photos': 'Fotoğraf ekle',
   Checklist: 'Kontrol listesi',
-  '{done} of {length}': '{done}/{length}',
+  '{done} of {count}': '{done}/{count}',
   'Take “{text}” off the list': '“{text}” öğesini listeden çıkar',
   'Add an item': 'Öğe ekle',
   'Add to {title}': '{title} listesine ekle',
@@ -1503,10 +1477,10 @@ export const turkish: Catalog = {
   'Home, the office…': 'Ev, ofis…',
   'Café Riche, Downtown': 'Café Riche, Şehir merkezi',
   Question: 'Soru',
-  'Option {i}': 'Seçenek {i}',
+  'Option {number}': 'Seçenek {number}',
   'Add an option': 'Seçenek ekle',
   'People can pick more than one': 'Birden fazla seçilebilir',
-  'Item {j}': 'Öğe {j}',
+  'Item {number}': 'Öğe {number}',
   Milk: 'Süt',
   Bread: 'Ekmek',
   '{label} (optional)': '{label} (isteğe bağlı)',
@@ -1514,12 +1488,12 @@ export const turkish: Catalog = {
   'When · {slotMinutes} min': 'Ne zaman · {slotMinutes} dk',
   Split: 'Bölüşme',
   Settled: 'Ödeşildi',
-  '{settled} of {length} settled': '{settled}/{length} ödeşildi',
+  '{settled} of {count} settled': '{settled}/{count} ödeşildi',
   'Mark settled': 'Ödeşildi olarak işaretle',
   Owed: 'Borçlu',
   'Couldn’t stop it just now. Try again.': 'Şu anda durdurulamadı. Yeniden deneyin.',
-  'Sharing your location live · until {formatClock}':
-    'Konumunuz canlı paylaşılıyor · {formatClock} saatine kadar',
+  'Sharing your location live · until {time}':
+    'Konumunuz canlı paylaşılıyor · {time} saatine kadar',
   'Stop sharing your location': 'Konum paylaşımını durdur',
   'Stopping…': 'Durduruluyor…',
   Stop: 'Durdur',
@@ -1528,10 +1502,9 @@ export const turkish: Catalog = {
   'Within {accuracy} m · Open the map': '{accuracy} m içinde · Haritayı aç',
   'Open the map': 'Haritayı aç',
   'Look it up on the map': 'Haritada bak',
-  'Live until {formatClock} · updated {ago}':
-    '{formatClock} saatine kadar canlı · güncellendi: {ago}',
-  'Shared live · stopped at {formatClock}': 'Canlı paylaşıldı · durduruldu: {formatClock}',
-  'Shared live until {formatClock}': '{formatClock} saatine kadar canlı paylaşıldı',
+  'Live until {time} · updated {ago}': '{time} saatine kadar canlı · güncellendi: {ago}',
+  'Shared live · stopped at {time}': 'Canlı paylaşıldı · durduruldu: {time}',
+  'Shared live until {time}': '{time} saatine kadar canlı paylaşıldı',
   '{label}, open the map': '{label}, haritayı aç',
   'A live location': 'Canlı konum',
   'A location': 'Bir konum',
@@ -1541,16 +1514,16 @@ export const turkish: Catalog = {
   'Where they were': 'Bulunduğu yer',
   'It says it’s an AI in every message, answers only from what you tell it, and hands anything else to your team: bookings, payments, complaints, or anyone who asks for a person. It never answers anyone under 18, and never takes a conversation from a person.':
     'Her mesajında AI olduğunu belirtir, yalnızca sizin verdiğiniz bilgilerle yanıt verir ve gerisini ekibinize devreder: rezervasyonlar, ödemeler, şikâyetler ya da bir insanla görüşmek isteyen herkes. 18 yaş altındakilere asla yanıt vermez ve bir insanın yürüttüğü konuşmayı asla devralmaz.',
-  '{trim} is up to date': '{trim} güncel',
-  '{trim} answers your customers first now': '{trim} artık müşterilerinize ilk yanıtı veriyor',
+  '{name} is up to date': '{name} güncel',
+  '{name} answers your customers first now': '{name} artık müşterilerinize ilk yanıtı veriyor',
   '{name} is paused: your team answers everyone':
     '{name} duraklatıldı: ekibiniz herkese yanıt veriyor',
   '{name} answers first again': '{name} yeniden ilk yanıtı veriyor',
   'The AI agent left the team. What it wrote stays.':
     'AI temsilcisi ekipten ayrıldı. Yazdıkları kalır.',
   'Paused: your team answers everyone': 'Duraklatıldı: ekibiniz herkese yanıt veriyor',
-  'Answers first · {repliesToday} of {toLocaleString} answers in the last 24 hours':
-    'İlk yanıtı verir · son 24 saatte {repliesToday}/{toLocaleString} yanıt',
+  'Answers first · {repliesToday} of {repliesPerDay} answers in the last 24 hours':
+    'İlk yanıtı verir · son 24 saatte {repliesToday}/{repliesPerDay} yanıt',
   'Let it answer again': 'Yeniden yanıt vermesine izin ver',
   'Pause it': 'Duraklat',
   'It stays on the team, quiet, until you let it answer':
@@ -1572,7 +1545,7 @@ export const turkish: Catalog = {
   'Try it first': 'Önce deneyin',
   'Ask what a customer would': 'Bir müşterinin soracağı bir şey sorun',
   'Ask it': 'Sor',
-  '{AGENT_ACTION_LABELS} · nothing was sent': '{AGENT_ACTION_LABELS} · hiçbir şey gönderilmedi',
+  '{action} · nothing was sent': '{action} · hiçbir şey gönderilmedi',
   'Remove the AI agent': 'AI temsilcisini kaldır',
   'It leaves the team; what it wrote stays': 'Ekipten ayrılır; yazdıkları kalır',
   'Copy these now': 'Bunları şimdi kopyalayın',
@@ -1589,7 +1562,7 @@ export const turkish: Catalog = {
     'Her teslimat bir Caime-Signature başlığı taşır, t=zaman,v1=imza: “zaman.gövde” değerinin bu gizli anahtarla HMAC-SHA256’sı. İmzayı doğrulayın ve eski zaman damgalarını yok sayın.',
   'Answers customers': 'Müşterilere yanıt verir',
   'Reads the inbox': 'Gelen kutusunu okur',
-  'Webhook to {hostOf}': 'Webhook: {hostOf}',
+  'Webhook to {host}': 'Webhook: {host}',
   Apps: 'Uygulamalar',
   'Connect your helpdesk or CRM, or let a bot answer the simple questions. Each app has its own token and permissions, and a bot always tells customers it’s automated.':
     'Yardım masanızı ya da CRM’inizi bağlayın veya basit soruları bir bot yanıtlasın. Her uygulamanın kendi belirteci ve izinleri vardır ve bir bot müşterilere her zaman otomatik olduğunu söyler.',
@@ -1632,11 +1605,11 @@ export const turkish: Catalog = {
   Days: 'Günler',
   From: 'Başlangıç',
   To: 'Bitiş',
-  '{m} min': '{m} dk',
+  '{minutes} min': '{minutes} dk',
   'Bookable from': 'Ne kadar önceden',
   'Up to': 'En fazla',
   'Conversations stay': 'Konuşmalar kalır',
-  'Conversations are kept for {retentionText}': 'Konuşmalar {retentionText} saklanır',
+  'Conversations are kept for {period}': 'Konuşmalar {period} saklanır',
   'Your customers’ data': 'Müşterilerinizin verileri',
   'Conversations with your customers are {name}’s to answer for; Caime keeps them for you. Export them, choose how long they’re kept, and erase a customer’s at their request from its thread in the inbox (More → Erase).':
     'Müşterilerinizle yapılan konuşmaların sorumluluğu {name} kuruluşundadır; Caime bunları sizin için saklar. Dışa aktarabilir, ne kadar saklanacağını seçebilir ve bir müşterinin isteği üzerine konuşmasını gelen kutusundan silebilirsiniz (Daha fazla → Sil).',
@@ -1647,8 +1620,8 @@ export const turkish: Catalog = {
   'As long as the account exists': 'Hesap var olduğu sürece',
   'Unless a conversation’s own disappearing setting says otherwise':
     'Konuşmanın kendi kaybolan mesaj ayarı aksini belirtmedikçe',
-  'Conversations are kept for {retentionText}; the owner sets it.':
-    'Konuşmalar {retentionText} saklanır; sahibi belirler.',
+  'Conversations are kept for {period}; the owner sets it.':
+    'Konuşmalar {period} saklanır; sahibi belirler.',
   'Conversations are kept as long as the account exists; the owner sets it.':
     'Konuşmalar hesap var olduğu sürece saklanır; sahibi belirler.',
   'Each message goes when its time is up, as a disappearing message does, and customers see how long you keep theirs.':
@@ -1674,9 +1647,6 @@ export const turkish: Catalog = {
   'Verify your domain below, and customers who open it see “Verified” before they write.':
     'Alan adınızı aşağıda doğrulayın; bağlantıyı açan müşteriler yazmadan önce “Doğrulanmış” ibaresini görsün.',
   'Same as before': 'Öncekiyle aynı',
-  '{Up} from {before}': '{Up} (önceki: {before})',
-  Up: 'Arttı',
-  Down: 'Azaldı',
   Insights: 'İçgörüler',
   Period: 'Dönem',
   Customers: 'Müşteriler',
@@ -1690,17 +1660,13 @@ export const turkish: Catalog = {
   'Insights didn’t load. Try again in a moment.': 'İçgörüler yüklenmedi. Birazdan yeniden deneyin.',
   'The whole team’s numbers, never one person’s. Answers from an app’s bot don’t count.':
     'Tüm ekibin sayıları, asla tek bir kişinin değil. Bir uygulamanın botundan gelen yanıtlar sayılmaz.',
-  '{PLAN_NAMES} has room for {teamSize} people and {apps}{with}.':
-    '{PLAN_NAMES} planında {teamSize} kişi ve {apps} için yer var{with}.',
-  ', with insights into how fast the team answers':
-    ' ve ekibin ne hızla yanıt verdiğine dair içgörüler',
-  '{PLAN_NAMES} plan': '{PLAN_NAMES} planı',
-  '{teamSize} of {teamSize2} people · {count}': '{teamSize}/{teamSize2} kişi · {count}',
-  'People on the team: {teamSize} of {teamSize2}': 'Ekipteki kişiler: {teamSize}/{teamSize2}',
-  '{startsToday} of {toLocaleString} conversations started by the team today. Customers writing first are never counted.':
-    'Bugün ekibin başlattığı konuşmalar: {startsToday}/{toLocaleString}. Müşterinin önce yazdığı konuşmalar sayılmaz.',
-  '{agentRepliesToday} of {toLocaleString} AI agent answers in the last 24 hours. Past that, your team answers as usual.':
-    'Son 24 saatte AI temsilcisi yanıtları: {agentRepliesToday}/{toLocaleString}. Bu sınırdan sonra ekibiniz her zamanki gibi yanıt verir.',
+  '{plan} plan': '{plan} planı',
+  '{onTeam} of {teamSize} people · {apps}': '{onTeam}/{teamSize} kişi · {apps}',
+  'People on the team: {onTeam} of {teamSize}': 'Ekipteki kişiler: {onTeam}/{teamSize}',
+  '{startsToday} of {startsPerDay} conversations started by the team today. Customers writing first are never counted.':
+    'Bugün ekibin başlattığı konuşmalar: {startsToday}/{startsPerDay}. Müşterinin önce yazdığı konuşmalar sayılmaz.',
+  '{agentRepliesToday} of {agentRepliesPerDay} AI agent answers in the last 24 hours. Past that, your team answers as usual.':
+    'Son 24 saatte AI temsilcisi yanıtları: {agentRepliesToday}/{agentRepliesPerDay}. Bu sınırdan sonra ekibiniz her zamanki gibi yanıt verir.',
   '{line} It can’t be bought here yet.': '{line} Henüz buradan satın alınamıyor.',
   '{name} is verified': '{name} doğrulandı',
   Change: 'Değiştir',
@@ -1767,8 +1733,7 @@ export const turkish: Catalog = {
   'Room for {room} more': '{room} kişilik daha yer var',
   'Added {n} to the team': 'Ekibe {n} kişi eklendi',
   'The team is full on the {plan} plan ({n} people).': '{plan} planında ekip dolu ({n} kişi).',
-  'Room for {room} more on the {PLAN_NAMES} plan.':
-    '{PLAN_NAMES} planında {room} kişilik daha yer var.',
+  'Room for {room} more on the {plan} plan.': '{plan} planında {room} kişilik daha yer var.',
   'Move to the team': 'Ekip üyesi yap',
   'They stop managing the team and verification': 'Artık ekibi ve doğrulamayı yönetemez',
   'Admins add people and verify the domain': 'Yöneticiler kişi ekler ve alan adını doğrular',
@@ -1833,7 +1798,7 @@ export const turkish: Catalog = {
   'Share the invite for {label}': '{label} için daveti paylaş',
   'Take the link back': 'Bağlantıyı geri al',
   '@{handle} · add how you know them': '@{handle} · nereden tanıdığınızı ekleyin',
-  '{length} accounts': '{length} hesap',
+  '{count} accounts': '{count} hesap',
   'Not labelled yet': 'Henüz etiketlenmedi',
   '{n} connections': { one: '{n} bağlantı', other: '{n} bağlantı' },
   '{n} people want to connect': {
@@ -1893,7 +1858,7 @@ export const turkish: Catalog = {
   decided: 'kararlaştırıldı',
   History: 'Geçmiş',
   'Show less': 'Daha az göster',
-  'Show all {length}': '{length} tanesinin tümünü göster',
+  'Show all {count}': '{count} tanesinin tümünü göster',
   'Notifications are on in this browser': 'Bu tarayıcıda bildirimler açık',
   'This browser couldn’t turn them on.': 'Bu tarayıcıda bildirimler açılamadı.',
   'Notifications are off in this browser': 'Bu tarayıcıda bildirimler kapalı',
@@ -1924,7 +1889,7 @@ export const turkish: Catalog = {
     'Caime açık değilken aramaları ve mesajları duyun',
   'No subscription': 'Abonelik yok',
   'Saved. Only you see it.': 'Kaydedildi. Yalnızca siz görürsünüz.',
-  'Caime thinks {relationshipOfferText}.': 'Caime’nin tahmini: {relationshipOfferText}.',
+  'Caime thinks {offer}.': 'Caime’nin tahmini: {offer}.',
   'Only you see how you know {first}, and nothing changes until you say so.':
     '{first} kişisini nereden tanıdığınızı yalnızca siz görürsünüz ve siz söyleyene kadar hiçbir şey değişmez.',
   'Only you see this. It changes how Caime treats {name}, never what {name} sees.':
@@ -1966,7 +1931,7 @@ export const turkish: Catalog = {
   'New collection': 'Yeni koleksiyon',
   'You have {had}: it goes there.': 'Bu adda bir koleksiyonunuz var ({had}): oraya kaydedilir.',
   '{count} saved': '{count} kaydedildi',
-  'And {length} more: find them by name.': 'Ve {length} tane daha: adlarıyla arayın.',
+  'And {count} more: find them by name.': 'Ve {count} tane daha: adlarıyla arayın.',
   'None is called that yet: New collection makes it.':
     'Henüz bu adda bir koleksiyon yok: Yeni koleksiyon ile oluşturun.',
   'Already in {collection}': 'Zaten şurada: {collection}',
@@ -1996,7 +1961,7 @@ export const turkish: Catalog = {
   'In its name, or in the message it comes with. Separate them with commas.':
     'Adında ya da birlikte geldiği mesajda. Virgülle ayırın.',
   'invoice, receipt': 'fatura, fiş',
-  'Take out “{w}”': '“{w}” sözcüğünü çıkar',
+  'Take out “{word}”': '“{word}” sözcüğünü çıkar',
   'Save it to': 'Şuraya kaydet',
   'Customer Files': 'Müşteri Dosyaları',
   'Remove it': 'Kaldır',
@@ -2013,7 +1978,7 @@ export const turkish: Catalog = {
   'Shown this once: add it to your calendar now. {how}':
     'Yalnızca bu kez gösterilir: şimdi takviminize ekleyin. {how}',
   'Open in your calendar app': 'Takvim uygulamanızda aç',
-  'On since {formatWhen} · {text}': '{formatWhen} itibarıyla açık · {text}',
+  'On since {when} · {text}': '{when} itibarıyla açık · {text}',
   'not read yet': 'henüz okunmadı',
   'The address your calendar has now stops working, and you add the new one.':
     'Takviminizdeki mevcut adres çalışmaz olur; yenisini eklemeniz gerekir.',
@@ -2349,7 +2314,7 @@ export const turkish: Catalog = {
   'Renews on {when}.': '{when} tarihinde yenilenir.',
   'Renews automatically.': 'Otomatik olarak yenilenir.',
   'Assigned to me': 'Bana atanan',
-  '{h} h {m} min': '{h} sa {m} dk',
+  '{hours} h {minutes} min': '{hours} sa {minutes} dk',
   '{n} h': '{n} sa',
   '{name} · no answer': '{name} · yanıt yok',
   '{what}: write it as text.': '{what}: metin olarak yazın.',
@@ -2358,11 +2323,11 @@ export const turkish: Catalog = {
   '{what}: a list, please.': '{what}: bir liste olmalı.',
   '{what}: {min}, please.': '{what}: {min} olmalı.',
   '{what}: an object.': '{what}: bir nesne olmalı.',
-  'Field {i}': 'Alan {i}',
-  'Field {i}: its key is a letter, then letters, digits or _.':
-    'Alan {i}: anahtarı bir harfle başlamalı, ardından harf, rakam veya _ gelmeli.',
+  'Field {number}': 'Alan {number}',
+  'Field {number}: its key is a letter, then letters, digits or _.':
+    'Alan {number}: anahtarı bir harfle başlamalı, ardından harf, rakam veya _ gelmeli.',
   'Field “{key}”': '“{key}” alanı',
-  '{what}: its type is one of {join}.': '{what}: türü şunlardan biridir: {join}.',
+  '{what}: its type is one of {types}.': '{what}: türü şunlardan biridir: {types}.',
   '{what}: required is true or false.': '{what}: required true ya da false olmalı.',
   '{what}: each choice once.': '{what}: her seçenek yalnızca bir kez yazılmalı.',
   '{what}: only options have choices.':
@@ -2371,25 +2336,27 @@ export const turkish: Catalog = {
     'Bir kitin anahtarı, harfle başlayan 2–40 küçük harf, rakam veya _ karakteridir.',
   'The kit has no “{name}”.': 'Kitte “{name}” yok.',
   'The kit’s key is the one in its address.': 'Kitin anahtarı, adresindeki anahtardır.',
-  'Its icon is one of {join}.': 'Simgesi şunlardan biridir: {join}.',
+  'Its icon is one of {icons}.': 'Simgesi şunlardan biridir: {icons}.',
   'Each field has a key of its own.': 'Her alanın kendi anahtarı vardır.',
   'Each field has a label of its own.': 'Her alanın kendi etiketi vardır.',
-  'State {i}': 'Durum {i}',
-  'State {i}: its id is lowercase letters, digits or _.':
-    'Durum {i}: kimliği küçük harfler, rakamlar veya _.',
+  'State {number}': 'Durum {number}',
+  'State {number}: its id is lowercase letters, digits or _.':
+    'Durum {number}: kimliği küçük harfler, rakamlar veya _.',
   'State “{id}”: its tone is positive, negative or neutral.':
     '“{id}” durumu: tonu positive, negative ya da neutral’dır.',
   'State “{id}”’s label': '“{id}” durumunun etiketi',
   'Each state has an id of its own.': 'Her durumun kendi kimliği vardır.',
   'Each state has a label of its own.': 'Her durumun kendi etiketi vardır.',
-  'Move {i}': 'Geçiş {i}',
-  'Move {i}: it goes from one of the kit’s states.':
-    'Geçiş {i}: kitin durumlarından birinden çıkar.',
-  'Move {i}: it goes to another of the kit’s states.': 'Geçiş {i}: kitin başka bir durumuna gider.',
-  'Move {i}: from {from} to {to} is there already.': 'Geçiş {i}: {from} → {to} zaten var.',
-  'Move {i}: who is organization, customer or anyone.':
-    'Geçiş {i}: who, organization, customer ya da anyone’dır.',
-  'Move {i}’s label': 'Geçiş {i} etiketi',
+  'Move {number}': 'Geçiş {number}',
+  'Move {number}: it goes from one of the kit’s states.':
+    'Geçiş {number}: kitin durumlarından birinden çıkar.',
+  'Move {number}: it goes to another of the kit’s states.':
+    'Geçiş {number}: kitin başka bir durumuna gider.',
+  'Move {number}: from {from} to {to} is there already.':
+    'Geçiş {number}: {from} → {to} zaten var.',
+  'Move {number}: who is organization, customer or anyone.':
+    'Geçiş {number}: who, organization, customer ya da anyone’dır.',
+  'Move {number}’s label': 'Geçiş {number} etiketi',
   'From {id}, each move has a label of its own.':
     '{id} durumundan her geçişin kendi etiketi vardır.',
   'adultsOnly is true or false.': 'adultsOnly true ya da false’tur.',
@@ -2400,11 +2367,9 @@ export const turkish: Catalog = {
   'Not base64.': 'base64 değil.',
   'Not a P-256 key.': 'P-256 anahtarı değil.',
   'Not a recovery key.': 'Kurtarma anahtarı değil.',
-  '{join} and {names}': '{join} ve {names}',
-  '{join} and {rest} others': '{join} ve {rest} kişi daha',
+  '{first} and {last}': '{first} ve {last}',
   '{n}m': '{n} dk',
   Yesterday: 'Dün',
-  '{floor} min ago': '{floor} dk önce',
   'at {clock}': 'saat {clock}',
   yesterday: 'dün',
   'on {date}': '{date} tarihinde',
@@ -2429,7 +2394,7 @@ export const turkish: Catalog = {
   '{by} pinned a message': 'Mesajı sabitleyen: {by}',
   '{by} changed what it’s for: {purpose}': 'Amaç değişti: {purpose} · Değiştiren: {by}',
   '{by} took away what it’s for': 'Amacı kaldıran: {by}',
-  '{by} added {joinNames}': '{joinNames} eklendi · Ekleyen: {by}',
+  '{by} added {names}': '{names} eklendi · Ekleyen: {by}',
   '{by} added people': 'Kişi ekleyen: {by}',
   '{by} removed {them}': 'Çıkarıldı: {them} · Çıkaran: {by}',
   'You own the group now': 'Grup artık sizin',
@@ -2441,8 +2406,8 @@ export const turkish: Catalog = {
     'Bu sohbet {from} uygulamasından aktarıldı · Aktaran: {by}. Yukarıdakiler orada yazıldı.',
   '{by} recorded a decision: {title}': 'Karar kaydedildi: {title} · Kaydeden: {by}',
   '{by} recorded a decision': 'Kararı kaydeden: {by}',
-  '{by} set new messages to disappear after {retentionText}':
-    'Yeni mesajlar {retentionText} sonra kaybolacak · Ayarlayan: {by}',
+  '{by} set new messages to disappear after {period}':
+    'Yeni mesajlar {period} sonra kaybolacak · Ayarlayan: {by}',
   '{by} turned off disappearing messages': 'Kaybolan mesajları kapatan: {by}',
   'Conversation updated': 'Konuşma güncellendi',
   'Encrypted message': 'Şifreli mesaj',
@@ -2452,7 +2417,7 @@ export const turkish: Catalog = {
   'Not lately': 'Son zamanlarda değil',
   'a label': 'bir etiket',
   'Added {what}': '{what} eklendi',
-  '{quoted} became {quoted2}': '{quoted}, {quoted2} oldu',
+  '{before} became {after}': '{before}, {after} oldu',
   'Added a note to {what}': '{what} için not eklendi',
   'Removed the note from {what}': '{what} için not kaldırıldı',
   'Updated {what}': '{what} güncellendi',
@@ -2467,7 +2432,7 @@ export const turkish: Catalog = {
   'Approved {rest}': 'Onaylandı {rest}',
   'Settled on {rest}': 'Karar: {rest}',
   'You wrote {quote}': 'Siz yazdınız: {quote}',
-  '{senderName} will {lowerFirst}': '{senderName}: {lowerFirst}',
+  '{senderName} will {what}': '{senderName}: {what}',
   '{senderName} wrote {quote}': '{senderName} yazdı: {quote}',
   'You asked {quote}': 'Siz sordunuz: {quote}',
   '{senderName} asked {quote}': '{senderName} sordu: {quote}',
@@ -2493,9 +2458,8 @@ export const turkish: Catalog = {
   Rejected: 'Reddedildi',
   Shipped: 'Kargoya verildi',
   'Write something to add.': 'Eklemek için bir şey yazın.',
-  'Keep an item under {CHECKLIST_ITEM_MAX} characters.':
-    'Bir öge {CHECKLIST_ITEM_MAX} karakterden kısa olmalı.',
-  'A list holds {CHECKLIST_MAX_ITEMS} items.': 'Bir liste en fazla {CHECKLIST_MAX_ITEMS} öge alır.',
+  'Keep an item under {max} characters.': 'Bir öge {max} karakterden kısa olmalı.',
+  'A list holds {max} items.': 'Bir liste en fazla {max} öge alır.',
   'That item isn’t on the list any more.': 'Bu öğe artık listede değil.',
   'Only whoever added it, or made the list, can change it.':
     'Yalnızca onu ekleyen ya da listeyi oluşturan değiştirebilir.',
@@ -2509,9 +2473,8 @@ export const turkish: Catalog = {
   '{label}: enter an amount.': '{label}: bir tutar girin.',
   '{label}: pick one of the choices.': '{label}: seçeneklerden birini seçin.',
   '{label}: one line each.': '{label}: her biri ayrı satırda.',
-  '{label}: up to {CHECKLIST_MAX_ITEMS}.': '{label}: en fazla {CHECKLIST_MAX_ITEMS}.',
-  '{label}: keep each under {CHECKLIST_ITEM_MAX} characters.':
-    '{label}: her biri {CHECKLIST_ITEM_MAX} karakterden kısa olmalı.',
+  '{label}: up to {max}.': '{label}: en fazla {max}.',
+  '{label}: keep each under {max} characters.': '{label}: her biri {max} karakterden kısa olmalı.',
   '{label} isn’t supported yet.': '{label} henüz desteklenmiyor.',
   'That card isn’t available.': 'Bu kart kullanılamıyor.',
   '{label} is needed.': '{label} gerekli.',
@@ -2601,7 +2564,7 @@ export const turkish: Catalog = {
   'Use 3–30 letters, numbers, dots or underscores.':
     '3–30 harf, rakam, nokta veya alt çizgi kullanın.',
   'Dots and underscores can’t be next to each other.': 'Nokta ve alt çizgi yan yana olamaz.',
-  'Use at least {PASSWORD_MIN} characters.': 'En az {PASSWORD_MIN} karakter kullanın.',
+  'Use at least {min} characters.': 'En az {min} karakter kullanın.',
   'That password is too long.': 'Bu parola çok uzun.',
   'Use a less repetitive password.': 'Daha az tekrarlı bir parola kullanın.',
   'Enter a valid email address.': 'Geçerli bir e-posta adresi girin.',
@@ -2610,22 +2573,22 @@ export const turkish: Catalog = {
   'Not a valid address': 'Geçerli bir adres değil',
   'Unusual domain ending (.{tld})': 'Alışılmadık alan adı uzantısı (.{tld})',
   "Looks like {brand} but isn't": '{brand} gibi görünüyor ama değil',
-  'What {trim} asked you to do': '{trim} sizden ne yapmanızı istedi',
-  'What you asked {trim} to do': '{trim} kişisinden ne yapmasını istediniz',
-  "What you're waiting for from {trim}": '{trim} kişisinden beklediğiniz',
+  'What {person} asked you to do': '{person} sizden ne yapmanızı istedi',
+  'What you asked {person} to do': '{person} kişisinden ne yapmasını istediniz',
+  "What you're waiting for from {person}": '{person} kişisinden beklediğiniz',
   "Everything you're waiting for": 'Beklediğiniz her şey',
   'Links from {person}': 'Bağlantılar, gönderen: {person}',
   '{what} from {person}': '{what}, gönderen: {person}',
   'Files from {person}': 'Dosyalar, gönderen: {person}',
   '{person} on “{text}”': '“{text}” hakkında: {person}',
   '“{text}” from {person}': '“{text}”, gönderen: {person}',
-  'Decisions about “{trim}”': '“{trim}” hakkındaki kararlar',
+  'Decisions about “{topic}”': '“{topic}” hakkındaki kararlar',
   'All decisions': 'Tüm kararlar',
-  'Tasks with {trim}': '{trim} ile ilgili görevler',
+  'Tasks with {person}': '{person} ile ilgili görevler',
   'Your tasks': 'Görevleriniz',
-  'Conversations about “{trim}”': '“{trim}” hakkındaki konuşmalar',
-  'People you classified as {toLowerCase}': '{toLowerCase} olarak sınıflandırdığınız kişiler',
-  'Everything matching “{q}”': '“{q}” ile eşleşen her şey',
+  'Conversations about “{topic}”': '“{topic}” hakkındaki konuşmalar',
+  'People you classified as {label}': '{label} olarak sınıflandırdığınız kişiler',
+  'Everything matching “{query}”': '“{query}” ile eşleşen her şey',
   'Home, and the family around it': 'Ev ve etrafındaki aile',
   Friends: 'Arkadaşlar',
   'A circle of friends': 'Bir arkadaş çevresi',
@@ -3153,10 +3116,6 @@ export const turkish: Catalog = {
   '30 min': '30 dk',
   '45 min': '45 dk',
   '{text}, {n} votes': { one: '{text}, {n} oy', other: '{text}, {n} oy' },
-  'You answer in about {minutes} · {withinHour} of {answered} within the hour{waiting}':
-    'Yanıt süreniz yaklaşık {minutes} · {answered} yanıtın {withinHour} kadarı bir saat içinde{waiting}',
-  'You’re answered in about {minutes} · {withinHour} of {answered} within the hour{waiting}':
-    'Size yanıt süresi yaklaşık {minutes} · {answered} yanıtın {withinHour} kadarı bir saat içinde{waiting}',
   'You wrote with {count} of them in this time, as many as the time before.':
     'Bu dönemde {count} kişiyle yazıştınız; önceki dönemle aynı.',
   'You wrote with {count} of them in this time, up from {previous} the time before.':
@@ -3172,8 +3131,8 @@ export const turkish: Catalog = {
     '{name} sizi şöyle tanımlıyor: {label}. Bu uyumlu.',
   '{name} describes you as {label} too.': '{name} da sizi şöyle tanımlıyor: {label}.',
   '{name} describes you as {label}.': '{name} sizi şöyle tanımlıyor: {label}.',
-  'at {formatClock}': 'saat {formatClock}',
-  'tomorrow at {formatClock}': 'yarın saat {formatClock}',
+  'at {time}': 'saat {time}',
+  'tomorrow at {time}': 'yarın saat {time}',
   '{n} days ago': { one: '{n} gün önce', other: '{n} gün önce' },
   you: 'siz',
   someone: 'biri',
@@ -3444,8 +3403,6 @@ export const turkish: Catalog = {
     'Takvimin ve senin adına hareket eden uygulamalar; daha fazlasını keşfet',
   'Connect must send people to an https address.':
     'Bağla, insanları bir https adresine göndermeli.',
-  'Never your password, privacy or account. What it sends says “via {name}”. End it any time in You → Apps.{You}':
-    'Parolanıza, gizlilik ayarlarınıza veya hesabınıza asla erişemez. Gönderdiklerinde “{name} aracılığıyla” yazar. İstediğiniz zaman Siz → Uygulamalar bölümünden sonlandırabilirsiniz.{You}',
   '{name}, {role}': '{name}, {role}',
   version: 'sürüm',
   'the web': 'web',
@@ -3476,7 +3433,6 @@ export const turkish: Catalog = {
   'It’s yours': 'Sizde',
   '{name} has it': '{name} üstlendi',
   '{names} and {n} more': { one: '{names} ve bir tane daha', other: '{names} ve {n} tane daha' },
-  '{a} and {b}': '{a} ve {b}',
   muted: 'sessiz',
   'Reconnecting…': 'Yeniden bağlanıyor…',
   '{name} is sharing their screen': '{name} ekranını paylaşıyor',
@@ -3502,7 +3458,7 @@ export const turkish: Catalog = {
     'Yanıt vermedikçe bunu gördüğünüzü bilemez.',
   '{label} · {count}': '{label} · {count}',
   '{n} things here': { one: 'burada {n} öge', other: 'burada {n} öge' },
-  '{label} · 1 of {length}': '{label} · {length} içinden 1',
+  '{label} · 1 of {count}': '{label} · {count} içinden 1',
   'The last {n} messages come over.': 'Son {n} mesaj aktarılır.',
   '{n} unread': { one: '{n} okunmamış', other: '{n} okunmamış' },
   'Until {time}': '{time} saatine kadar',
@@ -3608,8 +3564,8 @@ export const turkish: Catalog = {
   '{what}’s label': '{what} etiketi',
   '{what}’s placeholder': '{what} yer tutucusu',
   '{what}’s choices': '{what} seçenekleri',
-  '{what}’s choice {i}': '{what} seçeneği {i}',
-  '{what}’s choice {i} label': '{what} seçeneği {i} etiketi',
+  '{what}’s choice {number}': '{what} seçeneği {number}',
+  '{what}’s choice {number} label': '{what} seçeneği {number} etiketi',
   '24 hours': '24 saat',
   '1 year': '1 yıl',
   '{what} ended': '{what} sona erdi',
@@ -3934,7 +3890,7 @@ export const turkish: Catalog = {
   Folder: 'Klasör',
   '{email} is connected.': '{email} bağlandı.',
   'Add {use}': '{use} ekle',
-  'Couldn’t attach it: {e}': 'Eklenemedi: {e}',
+  'Couldn’t attach it: {error}': 'Eklenemedi: {error}',
   'Your browser blocked the window. Allow pop-ups for Caime and try again.':
     'Tarayıcınız pencereyi engelledi. Caime için açılır pencerelere izin verip yeniden deneyin.',
   'A file from {email}': '{email} hesabından bir dosya',
@@ -4333,7 +4289,7 @@ export const turkish: Catalog = {
     'Doğrulamanız yolda. Birazdan burada görünür.',
   'A big group: only what’s for you alerts you':
     'Büyük bir grup: yalnızca sizinle ilgili olanlar uyarı verir',
-  '{length} undone': '{length} geri alındı',
+  '{count} undone': '{count} geri alındı',
   'If {who} hasn’t answered in {inWords}': '{who} {inWords} içinde yanıtlamazsa',
   'If this person hasn’t answered in {inWords}': 'Bu kişi {inWords} içinde yanıtlamazsa',
   '{name} may be someone you know': '{name} tanıdığınız biri olabilir',
@@ -4369,4 +4325,39 @@ export const turkish: Catalog = {
   'No messages by hour yet': 'Henüz saate göre mesaj yok',
   '{price} a month': 'ayda {price}',
   '{price} a year': 'yılda {price}',
+  'Only an organization’s owner and admins start its spaces, so you can’t start one for {orgs}.':
+    'Bir kuruluşun alanlarını yalnızca sahibi ve yöneticileri oluşturabilir; bu yüzden {orgs} için alan oluşturamazsınız.',
+  'Never your password, privacy or account. What it sends says “via {name}”. End it any time in You → Apps.':
+    'Parolanıza, gizlilik ayarlarınıza veya hesabınıza asla erişemez. Gönderdiklerinde “{name} aracılığıyla” yazar. İstediğiniz zaman Siz → Uygulamalar bölümünden sonlandırabilirsiniz.',
+  'Never your password, privacy or account. What it sends says “via {name}”. End it any time in You → Apps. You let it in before.':
+    'Parolanıza, gizlilik ayarlarınıza veya hesabınıza asla erişemez. Gönderdiklerinde “{name} aracılığıyla” yazar. İstediğiniz zaman Siz → Uygulamalar bölümünden sonlandırabilirsiniz. Daha önce izin vermiştiniz.',
+  'Video call {name}': 'Görüntülü ara: {name}',
+  'Voice call {name}': 'Sesli ara: {name}',
+  'Video call on · {names}': 'Görüntülü arama sürüyor · {names}',
+  'Voice call on · {names}': 'Sesli arama sürüyor · {names}',
+  'On, since {when}.': 'Açık ({when} itibarıyla).',
+  'On, since {when}. This device has it.': 'Açık ({when} itibarıyla). Bu cihazda kayıtlı.',
+  'Up from {before}': 'Arttı (önceki: {before})',
+  'Down from {before}': 'Azaldı (önceki: {before})',
+  '{plan} has room for {count} people and {apps}.':
+    '{plan} planında {count} kişi ve {apps} için yer var.',
+  '{plan} has room for {count} people and {apps}, with insights into how fast the team answers.':
+    '{plan} planında {count} kişi ve {apps} için yer var; ekibin ne kadar hızlı yanıt verdiğine dair içgörüler de sunar.',
+  '{n} photos or files the export left out': {
+    one: 'dışa aktarmanın dışarıda bıraktığı {n} fotoğraf veya dosya',
+    other: 'dışa aktarmanın dışarıda bıraktığı {n} fotoğraf veya dosya',
+  },
+  confirmed: 'doğrulandı',
+  'not confirmed yet': 'henüz doğrulanmadı',
+  '{count} yours': '{count} sizin',
+  'You answer in about {time}': 'Yanıt süreniz yaklaşık {time}',
+  'You’re answered in about {time}': 'Size yanıt süresi yaklaşık {time}',
+  '{withinHour} of {answered} within the hour':
+    '{answered} yanıtın {withinHour} kadarı bir saat içinde',
+  '{unanswered} waiting on you': '{unanswered} sizi bekliyor',
+  '{unanswered} waiting on them': '{unanswered} onları bekliyor',
+  '{n} others': {
+    one: '{n} kişi daha',
+    other: '{n} kişi daha',
+  },
 };

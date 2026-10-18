@@ -1,6 +1,6 @@
 import type { PersonProfileView, RelationshipView } from '@caime/core/api';
 import { formatClock, formatDue, formatListTime, RHYTHM_TEXT } from '@caime/core/format';
-import { lower, tr, trn } from '@caime/core/i18n';
+import { listed, lower, tr, trn } from '@caime/core/i18n';
 import { systemHandleOf } from '@caime/core/system-ids';
 import { useQueryClient } from '@tanstack/react-query';
 import { router } from 'expo-router';
@@ -573,7 +573,7 @@ function PersonPage({ id, book = null, slug = null }: PersonScreenProps) {
                   p.summary.contexts.length
                     ? {
                         label: tr('context'),
-                        value: p.summary.contexts.map((c) => c.title).join(', '),
+                        value: listed(p.summary.contexts.map((c) => c.title)),
                       }
                     : null,
                   {

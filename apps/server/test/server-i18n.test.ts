@@ -38,15 +38,18 @@ describe.each([
     expect(Object.keys(arSite).filter((k) => k in ar)).toEqual([]);
   });
 
-  it('keeps every placeholder of the English', () => {
+  it('keeps every placeholder of the English, and names none it doesn’t', () => {
     const bad: string[] = [];
     for (const [key, value] of Object.entries(arSite)) {
-      const wanted = key.match(/\{\w+\}/g) ?? [];
+      const wanted = new Set(key.match(/\{\w+\}/g) ?? []);
+      const plural = typeof value !== 'string';
       const forms = typeof value === 'string' ? [value] : Object.values(value);
-      for (const form of forms)
+      for (const form of forms) {
         for (const w of wanted)
-          if (!form.includes(w) && !(w === '{n}' && typeof value !== 'string'))
-            bad.push(`${key} → ${form}`);
+          if (!form.includes(w) && !(w === '{n}' && plural)) bad.push(`${key} → ${form}`);
+        for (const w of form.match(/\{\w+\}/g) ?? [])
+          if (!wanted.has(w) && !(w === '{n}' && plural)) bad.push(`${key} → ${form}`);
+      }
     }
     expect(bad).toEqual([]);
   });

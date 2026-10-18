@@ -3593,7 +3593,7 @@ test.describe
       });
       // Read on this device: what's in it, and who's who, before anything is sent.
       await expect(page.getByTestId('import-summary')).toContainText(
-        /3 messages, Mar 13, 2024 to Mar 14, 2024, and a photo or file the export left out/,
+        /3 messages · Mar 13, 2024 to Mar 14, 2024 · a photo or file the export left out/,
       );
       await expect(page.getByRole('radio', { name: /Noor Haddad/ })).toBeChecked();
       await expect(page.getByRole('radio', { name: /Alex Chen/ })).not.toBeChecked();

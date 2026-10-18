@@ -746,9 +746,9 @@ export function suggestFromAnalysis(
         // "Q3 report" when they named it; "Sarah will send it" when they only pointed at it;
         // "Confirm caterer" when the thing alone would lose what they'll do with it.
         title: vague
-          ? tr('{senderName} will {lowerFirst}', {
+          ? tr('{senderName} will {what}', {
               senderName: ctx.senderName,
-              lowerFirst: lowerFirst(a.commitment.title),
+              what: lowerFirst(a.commitment.title),
             })
           : waitingTitle(a.commitment),
         ...due(a.commitment),

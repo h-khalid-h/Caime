@@ -1,5 +1,5 @@
 /** Who sees one thing, as a row says it (the privacy evaluator's `Audience`). */
-import { tr } from '@caime/core/i18n';
+import { listed, tr } from '@caime/core/i18n';
 import type { Audience } from '@caime/core/privacy';
 import { SPHERE_DEFS } from '@caime/core/taxonomy';
 
@@ -14,7 +14,7 @@ export function audienceLine(a: Audience | undefined): string {
       return tr('Nobody');
     case 'spheres':
       return a.spheres.length
-        ? a.spheres.map((s) => tr(SPHERE_DEFS[s].plural)).join(', ')
+        ? listed(a.spheres.map((s) => tr(SPHERE_DEFS[s].plural)))
         : tr('Some of your people');
   }
 }

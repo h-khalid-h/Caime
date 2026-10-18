@@ -58,7 +58,7 @@ export function tooYoung(minimumAge: number, country: string | null | undefined)
     'too_young',
     age > minimumAge
       ? tr('Where you live, Caime is for people {age} and older.', { age })
-      : tr('You need to be at least {MINIMUM_AGE} to use Caime.', { MINIMUM_AGE: age }),
+      : tr('You need to be at least {age} to use Caime.', { age: age }),
   );
 }
 

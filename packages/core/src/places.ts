@@ -6,7 +6,7 @@
  * (`placeLine` into a card's "Where", an order's delivery address), never by pointing at it, so a
  * card stays true when the place changes. Pure: the app and the server read it.
  */
-import { msg, tr } from './i18n';
+import { listed, msg, tr } from './i18n';
 import { type Audience, audienceAllows, type Viewer } from './privacy';
 
 /** What a place is to its owner: a word from this list, or the owner's own name (`label`). */
@@ -95,22 +95,18 @@ const clean = (v: string | null | undefined) => (v ?? '').trim();
 export function placeLine(p: PlaceParts, countryName: (code: string) => string = (c) => c): string {
   const floor = clean(p.floor);
   const unit = clean(p.unit);
-  const floorUnit = [
+  const floorUnit = listed([
     unit ? tr('Unit {unit}', { unit }) : '',
     floor ? tr('Floor {floor}', { floor }) : '',
-  ]
-    .filter(Boolean)
-    .join(', ');
-  return [
+  ]);
+  return listed([
     floorUnit,
     clean(p.building),
     clean(p.street),
     clean(p.area),
     [clean(p.city), clean(p.postalCode)].filter(Boolean).join(' '),
     countryName(p.country),
-  ]
-    .filter(Boolean)
-    .join(', ');
+  ]);
 }
 
 /** A link that opens the point in the reader's maps (a web page anyone's browser opens). */

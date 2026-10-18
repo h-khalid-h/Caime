@@ -300,13 +300,13 @@ export function applyChecklistOp(
   if (text.length > CHECKLIST_ITEM_MAX)
     return {
       ok: false,
-      error: tr('Keep an item under {CHECKLIST_ITEM_MAX} characters.', { CHECKLIST_ITEM_MAX }),
+      error: tr('Keep an item under {max} characters.', { max: CHECKLIST_ITEM_MAX }),
     };
   if (op.op === 'add') {
     if (items.length >= CHECKLIST_MAX_ITEMS)
       return {
         ok: false,
-        error: tr('A list holds {CHECKLIST_MAX_ITEMS} items.', { CHECKLIST_MAX_ITEMS }),
+        error: tr('A list holds {max} items.', { max: CHECKLIST_MAX_ITEMS }),
       };
     const item = { id: nextItemId(items), text, done: false, doneBy: null, addedBy: actor.userId };
     return { ok: true, items: [...items, item] };
@@ -472,16 +472,16 @@ function clean(field: KitField, raw: unknown): Cleaned {
       if (!lines.length) return null;
       if (lines.length > CHECKLIST_MAX_ITEMS)
         return {
-          error: tr('{label}: up to {CHECKLIST_MAX_ITEMS}.', {
+          error: tr('{label}: up to {max}.', {
             label: field.label,
-            CHECKLIST_MAX_ITEMS,
+            max: CHECKLIST_MAX_ITEMS,
           }),
         };
       if (lines.some((l) => l.length > CHECKLIST_ITEM_MAX))
         return {
-          error: tr('{label}: keep each under {CHECKLIST_ITEM_MAX} characters.', {
+          error: tr('{label}: keep each under {max} characters.', {
             label: field.label,
-            CHECKLIST_ITEM_MAX,
+            max: CHECKLIST_ITEM_MAX,
           }),
         };
       return {
@@ -633,7 +633,7 @@ export function bookingDetails(
     label: tr('Booked'),
     value:
       booking.unit === 'minutes' && booking.minutes
-        ? `${booking.name} · ${tr('{m} min', { m: booking.minutes })}`
+        ? `${booking.name} · ${tr('{minutes} min', { minutes: booking.minutes })}`
         : booking.name,
   });
   if (booking.unit === 'days')

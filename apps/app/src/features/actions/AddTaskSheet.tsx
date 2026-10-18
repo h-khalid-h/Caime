@@ -90,13 +90,13 @@ export function AddTaskSheet({ open, onClose }: { open: boolean; onClose: () => 
           <>
             <Chip
               icon={Calendar}
-              label={tr('Due {formatDue}', {
-                formatDue: formatDue(due.at, new Date(), timeZone, locale, due.hasTime),
+              label={tr('Due {when}', {
+                when: formatDue(due.at, new Date(), timeZone, locale, due.hasTime),
               })}
               selected
               onPress={() => setChoosing(true)}
-              accessibilityLabel={tr('Due {formatDue}. Change the day', {
-                formatDue: formatDue(due.at, new Date(), timeZone, locale, due.hasTime),
+              accessibilityLabel={tr('Due {when}. Change the day', {
+                when: formatDue(due.at, new Date(), timeZone, locale, due.hasTime),
               })}
               testID="task-due"
             />

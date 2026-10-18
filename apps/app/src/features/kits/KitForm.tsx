@@ -13,7 +13,7 @@ import {
 } from '@caime/core/booking';
 import { prepareCustomFields } from '@caime/core/custom-kits';
 import { formatAmount, roundAmount } from '@caime/core/format';
-import { msg, tr } from '@caime/core/i18n';
+import { listed, msg, tr } from '@caime/core/i18n';
 import { uuidv4 } from '@caime/core/ids';
 import { CARD_KITS, type CardKitId, isCardKit, prepareKitFields } from '@caime/core/kit-cards';
 import { KITS, type KitDef, type KitField, kitsFor } from '@caime/core/kits';
@@ -758,7 +758,7 @@ export function KitForm({
             <TextField
               // biome-ignore lint/suspicious/noArrayIndexKey: options are positional while typed
               key={i}
-              label={tr('Option {i}', { i: i + 1 })}
+              label={tr('Option {number}', { number: i + 1 })}
               value={o}
               onChangeText={(v) => setOptions((all) => all.map((x, j) => (j === i ? v : x)))}
             />
@@ -867,7 +867,7 @@ export function KitForm({
                             <Stepper
                               key={l.key}
                               label={[
-                                named.ok ? named.choices.map((c) => c.name).join(', ') : i.name,
+                                named.ok ? listed(named.choices.map((c) => c.name)) : i.name,
                                 each ? formatAmount(each.value, each.currency, locale) : null,
                               ]
                                 .filter(Boolean)
@@ -1023,7 +1023,7 @@ export function KitForm({
                   <TextField
                     // biome-ignore lint/suspicious/noArrayIndexKey: items are positional while typed
                     key={j}
-                    accessibilityLabel={tr('Item {j}', { j: j + 1 })}
+                    accessibilityLabel={tr('Item {number}', { number: j + 1 })}
                     placeholder={j === 0 ? tr('Milk') : j === 1 ? tr('Bread') : ''}
                     value={o}
                     onChangeText={(v) => setOptions((all) => all.map((x, k) => (k === j ? v : x)))}
@@ -1184,7 +1184,7 @@ export function KitForm({
                     <Text variant="caption" color="textTertiary" testID="book-item-line">
                       {[
                         item.unit === 'minutes'
-                          ? tr('{m} min', { m: item.minutes ?? 0 })
+                          ? tr('{minutes} min', { minutes: item.minutes ?? 0 })
                           : tr('Per day'),
                         price ? tr('{price}, not paid through Caime', { price }) : tr('Free'),
                         branch ? tr('At {place}', { place: branchName(branch) }) : null,

@@ -209,7 +209,7 @@ describe('format', () => {
     expect(initials('  ')).toBe('?');
   });
   it('lists', () => {
-    expect(joinNames(['Sarah', 'Ahmed', 'Lina'])).toBe('Sarah, Ahmed, and Lina');
+    expect(joinNames(['Sarah', 'Ahmed', 'Lina'])).toBe('Sarah, Ahmed and Lina');
     expect(joinNames(['A', 'B', 'C', 'D', 'E'])).toBe('A, B and 3 others');
   });
   it('direction', () => {

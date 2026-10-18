@@ -14,7 +14,7 @@ import { Text } from '@/ui/Text';
 /** Against the period before, in words read at a glance: "Up from 3", "Same as before". */
 function versus(now: number, before: number): string | null {
   if (now === before) return before ? tr('Same as before') : null;
-  return tr('{Up} from {before}', { Up: now > before ? tr('Up') : tr('Down'), before });
+  return now > before ? tr('Up from {before}', { before }) : tr('Down from {before}', { before });
 }
 
 function Stat({

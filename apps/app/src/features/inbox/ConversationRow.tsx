@@ -1,6 +1,6 @@
 import type { InboxItemView } from '@caime/core/api';
 import { formatListTime, joinNames, listTitle } from '@caime/core/format';
-import { tr, trn } from '@caime/core/i18n';
+import { listed, tr, trn } from '@caime/core/i18n';
 import BadgeCheck from 'lucide-react-native/icons/badge-check';
 import BellOff from 'lucide-react-native/icons/bell-off';
 import Briefcase from 'lucide-react-native/icons/briefcase';
@@ -73,15 +73,13 @@ export const ConversationRow = memo(function ConversationRow({
       : unread
         ? 'text'
         : 'textSecondary';
-  const label = [
+  const label = listed([
     title,
     item.relationship?.label,
     reason?.label,
     unread ? trn(item.unreadCount, '{n} unread', '{n} unread') : null,
     preview,
-  ]
-    .filter(Boolean)
-    .join(', ');
+  ]);
 
   return (
     <Pressable

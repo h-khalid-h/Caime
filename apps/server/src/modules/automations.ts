@@ -406,10 +406,9 @@ export async function automationRoutes(app: FastifyInstance, ctx: AppContext) {
       if ((await savedCount(trx, auth.userId)) >= SAVED_MAX)
         throw conflict(
           'saved_full',
-          tr(
-            'You’ve saved {SAVED_MAX} things, the most there’s room for. Remove some to save more.',
-            { SAVED_MAX },
-          ),
+          tr('You’ve saved {max} things, the most there’s room for. Remove some to save more.', {
+            max: SAVED_MAX,
+          }),
         );
       return trx
         .insertInto('saved_items')

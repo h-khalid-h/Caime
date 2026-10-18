@@ -216,7 +216,7 @@ export async function oauthRoutes(app: FastifyInstance, ctx: AppContext) {
       .where('revoked_at', 'is', null)
       .execute();
     if (live.length >= MAX_APPS)
-      throw badRequest(tr('You have {MAX_APPS} apps. Remove one first.', { MAX_APPS }));
+      throw badRequest(tr('You have {max} apps. Remove one first.', { max: MAX_APPS }));
     const secret = body.confidential ? newClientSecret() : null;
     const row = await ctx.db
       .insertInto('oauth_clients')

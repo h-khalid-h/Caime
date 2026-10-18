@@ -121,7 +121,7 @@ export function PhotoViewer({ host }: { host: string }) {
                   style={{ color: themes.dark.textSecondary }}
                   testID="photo-viewer-count"
                 >
-                  {tr('{done} of {length}', { done: index + 1, length: files.length })}
+                  {tr('{done} of {count}', { done: index + 1, count: files.length })}
                 </Text>
               ) : null}
             </View>

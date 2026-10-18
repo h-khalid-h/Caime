@@ -89,8 +89,8 @@ export function OrgAgent({ org }: { org: OrgView }) {
       setOpen(false);
       toast(
         agent
-          ? tr('{trim} is up to date', { trim: name.trim() })
-          : tr('{trim} answers your customers first now', { trim: name.trim() }),
+          ? tr('{name} is up to date', { name: name.trim() })
+          : tr('{name} answers your customers first now', { name: name.trim() }),
       );
     });
   const tryIt = () =>
@@ -131,9 +131,9 @@ export function OrgAgent({ org }: { org: OrgView }) {
   const status = agent
     ? agent.paused
       ? tr('Paused: your team answers everyone')
-      : tr('Answers first · {repliesToday} of {toLocaleString} answers in the last 24 hours', {
+      : tr('Answers first · {repliesToday} of {repliesPerDay} answers in the last 24 hours', {
           repliesToday: agent.repliesToday,
-          toLocaleString: agent.repliesPerDay,
+          repliesPerDay: agent.repliesPerDay,
         })
     : null;
 
@@ -283,8 +283,8 @@ export function OrgAgent({ org }: { org: OrgView }) {
                 testID="org-agent-tried"
               >
                 <Text variant="captionStrong" color="textSecondary">
-                  {tr('{AGENT_ACTION_LABELS} · nothing was sent', {
-                    AGENT_ACTION_LABELS: tr(AGENT_ACTION_LABELS[tried.action]),
+                  {tr('{action} · nothing was sent', {
+                    action: tr(AGENT_ACTION_LABELS[tried.action]),
                   })}
                 </Text>
                 <Text variant="body">{tried.message}</Text>

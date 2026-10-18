@@ -370,10 +370,10 @@ export default function Search() {
         {nothing ? (
           <Text variant="body" color="textSecondary" align="center" style={{ padding: 24 }}>
             {local
-              ? tr('Nothing on this device for “{debounced}”. Try again when you’re back online.', {
-                  debounced,
+              ? tr('Nothing on this device for “{query}”. Try again when you’re back online.', {
+                  query: debounced,
                 })
-              : tr('Nothing found for “{debounced}”.', { debounced })}
+              : tr('Nothing found for “{query}”.', { query: debounced })}
           </Text>
         ) : null}
       </ScrollView>

@@ -52,7 +52,7 @@ export async function tokenRoutes(app: FastifyInstance, ctx: AppContext) {
       .execute();
     if (live.length >= MAX_TOKENS)
       throw badRequest(
-        tr('You have {MAX_TOKENS} tokens. Revoke one you don’t use first.', { MAX_TOKENS }),
+        tr('You have {max} tokens. Revoke one you don’t use first.', { max: MAX_TOKENS }),
       );
   }
 

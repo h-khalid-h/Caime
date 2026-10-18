@@ -97,7 +97,7 @@ export function SplitCard({ m, mine }: { m: MessageView; mine: boolean }) {
           label={
             shares.length && settled === shares.length
               ? tr('Settled')
-              : tr('{settled} of {length} settled', { settled, length: shares.length })
+              : tr('{settled} of {count} settled', { settled, count: shares.length })
           }
           tone={shares.length && settled === shares.length ? 'success' : 'neutral'}
           size="sm"

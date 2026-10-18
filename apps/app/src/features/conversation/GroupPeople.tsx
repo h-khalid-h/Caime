@@ -5,7 +5,7 @@
  * who leaves hands it on); this only offers what they allow. Loaded with the details panel.
  */
 import type { ConversationView, ParticipantView } from '@caime/core/api';
-import { tr, trn } from '@caime/core/i18n';
+import { listed, tr, trn } from '@caime/core/i18n';
 import { handsOverOnLeaving, joinLinkFits } from '@caime/core/permissions';
 import {
   canChangeSpaceRole,
@@ -214,15 +214,13 @@ export function GroupPeople({
           <Pressable
             key={p.userId}
             accessibilityRole={manageable ? 'button' : 'link'}
-            accessibilityLabel={[
+            accessibilityLabel={listed([
               self
                 ? tr('{displayName} (you)', { displayName: p.person.displayName })
                 : p.person.displayName,
               role === 'member' ? null : tr(SPACE_ROLE_LABELS[role]),
               p.relationship?.label ?? null,
-            ]
-              .filter(Boolean)
-              .join(', ')}
+            ])}
             accessibilityHint={manageable ? tr('Opens what you can do about them') : undefined}
             disabled={self}
             onPress={() => (manageable ? setManaging(p.userId) : profile(p.userId))}
@@ -297,7 +295,7 @@ export function GroupPeople({
         }
         footer={
           <Button
-            label={picked.size ? tr('Add {size}', { size: picked.size }) : tr('Add')}
+            label={picked.size ? tr('Add {count}', { count: picked.size }) : tr('Add')}
             block
             size="lg"
             disabled={picked.size === 0}

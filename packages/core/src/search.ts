@@ -473,7 +473,7 @@ const askedMe =
     person: word(m, personAt),
     direction: 'asked_me',
     text: '',
-    interpretation: tr('What {trim} asked you to do', { trim: word(m, personAt) }),
+    interpretation: tr('What {person} asked you to do', { person: word(m, personAt) }),
   });
 
 const iAsked: Rule[1] = (m, out) => ({
@@ -482,7 +482,7 @@ const iAsked: Rule[1] = (m, out) => ({
   person: word(m, 1),
   direction: 'i_asked',
   text: '',
-  interpretation: tr('What you asked {trim} to do', { trim: word(m, 1) }),
+  interpretation: tr('What you asked {person} to do', { person: word(m, 1) }),
 });
 
 const waitingOn: Rule[1] = (m, out) => ({
@@ -490,7 +490,7 @@ const waitingOn: Rule[1] = (m, out) => ({
   scope: 'waiting',
   person: word(m, 1),
   text: '',
-  interpretation: tr("What you're waiting for from {trim}", { trim: word(m, 1) }),
+  interpretation: tr("What you're waiting for from {person}", { person: word(m, 1) }),
 });
 
 const waitingAll: Rule[1] = (_m, out) => ({
@@ -519,7 +519,7 @@ const decisions: Rule[1] = (m, out) => {
     ...out,
     scope: 'decisions',
     text: about,
-    interpretation: about ? tr('Decisions about “{trim}”', { trim: about }) : tr('All decisions'),
+    interpretation: about ? tr('Decisions about “{topic}”', { topic: about }) : tr('All decisions'),
   };
 };
 
@@ -530,7 +530,7 @@ const tasks: Rule[1] = (m, out) => {
     scope: 'tasks',
     person,
     text: '',
-    interpretation: person ? tr('Tasks with {trim}', { trim: person }) : tr('Your tasks'),
+    interpretation: person ? tr('Tasks with {person}', { person: person }) : tr('Your tasks'),
   };
 };
 
@@ -538,7 +538,7 @@ const contexts: Rule[1] = (m, out) => ({
   ...out,
   scope: 'contexts',
   text: word(m, 1),
-  interpretation: tr('Conversations about “{trim}”', { trim: word(m, 1) }),
+  interpretation: tr('Conversations about “{topic}”', { topic: word(m, 1) }),
 });
 
 const from =
@@ -718,7 +718,7 @@ function parseWords(q: string, out: ParsedQuery): ParsedQuery {
       scope: fileOnly[2],
       fileKind: fileOnly[1],
       text: '',
-      interpretation: tr('All {toLowerCase}', { toLowerCase: lower(q) }),
+      interpretation: tr('All {kinds}', { kinds: lower(q) }),
     };
   }
 
@@ -731,8 +731,8 @@ function parseWords(q: string, out: ParsedQuery): ParsedQuery {
       scope: 'people',
       relationship: rel,
       text: '',
-      interpretation: tr('People you classified as {toLowerCase}', {
-        toLowerCase: lower(named),
+      interpretation: tr('People you classified as {label}', {
+        label: lower(named),
       }),
     };
   }
@@ -743,7 +743,7 @@ function parseWords(q: string, out: ParsedQuery): ParsedQuery {
     if (read) return read;
   }
 
-  return { ...out, interpretation: tr('Everything matching “{q}”', { q }) };
+  return { ...out, interpretation: tr('Everything matching “{query}”', { query: q }) };
 }
 
 /** The rules recognised nothing in it: a plain text match across everything. */
@@ -804,7 +804,8 @@ export function fromUnderstanding(raw: string, u: SearchUnderstanding): ParsedQu
   const scope = (SEARCH_SCOPES as readonly string[]).includes(u.scope) ? u.scope : 'all';
   const fileKind = (FILE_KINDS as readonly string[]).includes(u.fileKind ?? '') ? u.fileKind : null;
   const interpretation =
-    previewText(u.interpretation, 120) || tr('Everything matching “{q}”', { q: clean(raw) });
+    previewText(u.interpretation, 120) ||
+    tr('Everything matching “{query}”', { query: clean(raw) });
   return {
     raw,
     scope,

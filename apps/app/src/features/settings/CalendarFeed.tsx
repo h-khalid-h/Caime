@@ -102,8 +102,8 @@ export function CalendarFeed() {
         </View>
       ) : feed?.enabled ? (
         <Text variant="caption" color="textSecondary" testID="calendar-feed-on">
-          {tr('On since {formatWhen} · {text}', {
-            formatWhen: formatWhen(feed.createdAt ?? '', now, timeZone, locale),
+          {tr('On since {when} · {text}', {
+            when: formatWhen(feed.createdAt ?? '', now, timeZone, locale),
             text: feed.lastReadAt
               ? tr('last read {when}', { when: formatWhen(feed.lastReadAt, now, timeZone, locale) })
               : tr('not read yet'),

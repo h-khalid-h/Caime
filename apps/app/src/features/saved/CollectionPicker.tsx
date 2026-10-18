@@ -128,7 +128,7 @@ export function CollectionPicker({
       </View>
       {finding && !typed ? (
         <Text variant="caption" color="textSecondary">
-          {tr('And {length} more: find them by name.', { length: names.length - shown.length })}
+          {tr('And {count} more: find them by name.', { count: names.length - shown.length })}
         </Text>
       ) : null}
       {typed && !shown.length ? (

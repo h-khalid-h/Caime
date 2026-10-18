@@ -2572,6 +2572,30 @@ graph) and the number that will show it; one that sharpens none is hygiene and s
       field's label, where a name in it lost its capital. Verified: `i18n-case.test.ts`,
       `profile.test.ts` (the offers in English, French and Turkish), the catalogs in all four
       languages, and the full gate.
+- [x] D4b. Sentences whole, placeholders that say what they hold, lists the reader's way
+      (2026-10-18, review §10). The placeholders named after the code that filled them
+      (`{toLowerCase}`, `{length}`, `{PLAN_NAMES}`, `{teamSize2}`, `{PINNED_MAX}`, `{i}`, `{e}`)
+      are named for what they hold in 124 sentences (114 the app's, 10 the server's) and every
+      catalog, so whoever translates reads `{count}` or `{max}`. Every sentence that was glued
+      from pieces is whole: an app's consent with and without "You let it in before", the
+      recovery key with and without "This device has it", up or down, a plan with or without
+      insights, a video call or a voice one (French had read "Appel Vidéo" with its capital), a
+      WhatsApp export's facts, the comma passed through `tr(', ')` on the site, onboarding and the
+      insights, "Free, always", a price "a month, or a year". Lists read the reader's way: 48 go
+      through core `listed` (Arabic's "،") and 13 through `joinNames`, which names people in the
+      interface's language, where Arabic had read an English "and" in "who's typing" and wherever
+      people were listed, and people in a call read "A, B are in the call". A call
+      without a name says "Someone" in the reader's language, a number in the importer, the
+      contacts and the marketplace is written as the reader's language writes it, and two helpers
+      nothing read (`describeAudience`, which said "Everyone" in English, and `isOrgPlan`) are
+      gone. On the web a sheet now leaves at once: React Native Web kept a closing sheet's focus
+      trap through its fade, so what was typed in that moment (the next message, right after a
+      decision's Save) went into the sheet going away, which the group test met twice.
+      `i18n-sentences.test.ts` fails on a fragment, a placeholder named by the code, one
+      not passed or passed and never said, and a list joined by hand; the catalogs fail on a
+      translation naming a placeholder its English doesn't fill, and on an Arabic string kept in
+      both halves. Verified: `i18n-sentences.test.ts`, `i18n-catalog.test.ts`, `server-i18n.test.ts`,
+      `duplicates.test.ts`, the startup chunk at 449.7 KB (0.1 KB less), and the full gate.
 - [ ] E. Chat polish: distinct read ticks with a contrast test; the English leaks and a scanner
       that flags any word-bearing literal; quoted replies with the author and a jump, swipe to
       reply; message info and who reacted; video as a message, voice notes with a waveform, speed
@@ -4200,6 +4224,9 @@ graph) and the number that will show it; one that sharpens none is hygiene and s
   journeys, safety, reliability, performance, intelligence, mail and calendar, chat, integrations,
   business and code integrity; the matrix against WhatsApp, Signal, Slack, Calendly and Workspace;
   an age-assurance design; the integration framework mapped to the code; plan M16 (A–H).
+- 2026-10-18 — M16 D4b: placeholders named for what they hold (124 sentences), every sentence
+  whole, lists in the reader's own comma and "and" (Arabic had read an English "and"); a sheet
+  on the web leaves at once, so what's typed right after it closes is never lost.
 - 2026-10-18 — M16 D4a: a device's approval is signed in the protocol's own words, so devices
   reading different languages vouch for each other again; words lowered by the reader's own
   rules; reminders and relationship offers whole sentences in every language; numbers written as

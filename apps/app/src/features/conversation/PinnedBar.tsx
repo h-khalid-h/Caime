@@ -50,7 +50,7 @@ export function PinnedBar({
     : messagePreview({ kind: m.kind, body: m.body, payload: m.payload, deleted: false });
   const which =
     pins.length > 1
-      ? tr('Pinned, {i} of {length}', { i: i + 1, length: pins.length })
+      ? tr('Pinned, {position} of {count}', { position: i + 1, count: pins.length })
       : tr('Pinned');
   return (
     <View

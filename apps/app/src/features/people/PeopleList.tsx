@@ -1,6 +1,6 @@
 import type { ConnectionView } from '@caime/core/api';
 import { finds } from '@caime/core/fold';
-import { tr, trn } from '@caime/core/i18n';
+import { listed, tr, trn } from '@caime/core/i18n';
 import { SPHERE_DEFS, SPHERES, type Sphere } from '@caime/core/taxonomy';
 import { router, usePathname } from 'expo-router';
 import CalendarClock from 'lucide-react-native/icons/calendar-clock';
@@ -45,9 +45,7 @@ function PersonRow({
   return (
     <Pressable
       accessibilityRole="button"
-      accessibilityLabel={[c.nickname ?? c.person.displayName, primary?.label]
-        .filter(Boolean)
-        .join(', ')}
+      accessibilityLabel={listed([c.nickname ?? c.person.displayName, primary?.label])}
       onPress={() => router.navigate({ pathname: '/p/[id]', params: { id: c.person.id } })}
       focusRadius={12}
     >
@@ -88,7 +86,7 @@ function PersonRow({
               )}
               {c.also?.length ? (
                 <Text variant="caption" color="textTertiary">
-                  {tr('{length} accounts', { length: c.also.length + 1 })}
+                  {tr('{count} accounts', { count: c.also.length + 1 })}
                 </Text>
               ) : null}
             </View>

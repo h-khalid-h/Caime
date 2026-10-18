@@ -38,7 +38,7 @@ export const PASSWORD_MIN = 10;
 
 export function passwordError(value: string): string | null {
   if (value.length < PASSWORD_MIN)
-    return tr('Use at least {PASSWORD_MIN} characters.', { PASSWORD_MIN });
+    return tr('Use at least {min} characters.', { min: PASSWORD_MIN });
   if (value.length > 200) return tr('That password is too long.');
   if (new Set(value).size < 5) return tr('Use a less repetitive password.');
   return null;

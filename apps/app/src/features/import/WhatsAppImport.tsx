@@ -149,8 +149,8 @@ export function WhatsAppImport({
             });
       void qc.invalidateQueries({ queryKey: qk.inbox });
       toast(
-        tr('{toLocaleString} messages brought over', {
-          toLocaleString: imported.toLocaleString(locale),
+        tr('{count} messages brought over', {
+          count: imported,
         }),
         { tone: 'success' },
       );
@@ -221,28 +221,26 @@ export function WhatsAppImport({
               <Text variant="caption" color="textSecondary">
                 {nothing
                   ? tr('No messages were found in it. Is it the exported chat?')
-                  : tr('{toLocaleString} messages, {text}{and}', {
-                      toLocaleString: chat.messages.length.toLocaleString(locale),
-                      text:
-                        first && last
-                          ? tr('{from} to {to}', { from: days(first), to: days(last) })
-                          : '',
-                      and:
-                        chat.mediaOmitted === 1
-                          ? tr(', and a photo or file the export left out')
-                          : chat.mediaOmitted
-                            ? trn(
-                                chat.mediaOmitted,
-                                ', and {n} photo or file the export left out',
-                                ', and {n} photos or files the export left out',
-                              )
-                            : '',
-                    })}
+                  : [
+                      trn(chat.messages.length, '{n} message', '{n} messages'),
+                      first && last
+                        ? tr('{from} to {to}', { from: days(first), to: days(last) })
+                        : null,
+                      chat.mediaOmitted
+                        ? trn(
+                            chat.mediaOmitted,
+                            'a photo or file the export left out',
+                            '{n} photos or files the export left out',
+                          )
+                        : null,
+                    ]
+                      .filter(Boolean)
+                      .join(' · ')}
               </Text>
               {chat.messages.length > IMPORT_MAX_MESSAGES ? (
                 <Text variant="caption" color="textSecondary">
                   {tr('The last {n} messages come over.', {
-                    n: IMPORT_MAX_MESSAGES.toLocaleString(locale),
+                    n: IMPORT_MAX_MESSAGES,
                   })}
                 </Text>
               ) : null}
@@ -250,8 +248,8 @@ export function WhatsAppImport({
             {group && into.kind === 'direct' ? (
               <Text variant="body" color="danger" testID="import-group">
                 {tr(
-                  'This export has {length} names in it: it’s a group. Bring over a chat with {name} alone.',
-                  { length: chat.authors.length, name: into.name },
+                  'This export has {count} names in it: it’s a group. Bring over a chat with {name} alone.',
+                  { count: chat.authors.length, name: into.name },
                 )}
               </Text>
             ) : !nothing ? (

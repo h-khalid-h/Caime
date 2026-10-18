@@ -5,7 +5,7 @@
  * here touches a clock or a store. Times are the host's own, in its time zone; a slot is an
  * instant, so a booker anywhere sees it in theirs.
  */
-import { msg, tr, trn } from './i18n';
+import { listed, msg, tr, trn } from './i18n';
 import type { Sphere } from './taxonomy';
 import { addDays, weekOrder, zonedParts, zonedTimeToUtc } from './time';
 
@@ -301,12 +301,12 @@ export function placeOrder(
 
 /** "2 × Coffee (Large, Oat milk), 1 × Fries": an order in one line, for the card's summary. */
 export function orderSummary(order: Pick<PlacedOrder, 'lines'>): string {
-  return order.lines
-    .map(
+  return listed(
+    order.lines.map(
       (l) =>
-        `${l.quantity} × ${l.name}${l.choices?.length ? ` (${l.choices.map((c) => c.name).join(', ')})` : ''}`,
-    )
-    .join(', ');
+        `${l.quantity} × ${l.name}${l.choices?.length ? ` (${listed(l.choices.map((c) => c.name))})` : ''}`,
+    ),
+  );
 }
 
 /** A line's identity in an order (R60): its item and its choices, in one order. */
@@ -661,20 +661,17 @@ export function describeHours(hours: BookingHours, weekStart = 0): string {
       parts.push(
         j - i >= 2
           ? `${day(days[i])}–${day(days[j])}`
-          : days
-              .slice(i, j + 1)
-              .map((x) => day(x))
-              .join(', '),
+          : listed(days.slice(i, j + 1).map((x) => day(x))),
       );
       i = j + 1;
     }
-    return parts.join(', ');
+    return listed(parts);
   };
   const trim = (hhmm: string) => hhmm.replace(/^0/, '');
   const ranges = [...byRange].map(
     ([range, days]) => `${runs(days)} ${range.split('–').map(trim).join('–')}`,
   );
-  return `${ranges.join(', ')} · ${tr('{m} min', { m: hours.slotMinutes })}`;
+  return `${listed(ranges)} · ${tr('{minutes} min', { minutes: hours.slotMinutes })}`;
 }
 
 // Grouping by collection (R61) lives here, beside the items, so a picker that only groups

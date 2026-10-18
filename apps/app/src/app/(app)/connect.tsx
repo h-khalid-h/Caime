@@ -240,8 +240,8 @@ export default function Connect() {
                 style={{ paddingHorizontal: 24 }}
               >
                 {tr(
-                  'No one found for “{debounced}”. They may not be on Caime yet, or they keep their profile private.',
-                  { debounced },
+                  'No one found for “{query}”. They may not be on Caime yet, or they keep their profile private.',
+                  { query: debounced },
                 )}
               </Text>
               {writable ? (

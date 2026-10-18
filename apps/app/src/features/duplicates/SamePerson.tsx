@@ -87,9 +87,9 @@ function Offer({ s, all }: { s: SuggestionView; all: ConnectionView[] }) {
         <View style={{ flex: 1, minWidth: 0, gap: 2 }}>
           <Text variant="bodyStrong">{s.title}</Text>
           <Text variant="caption" color="textSecondary">
-            {tr('@{handle} and @{handle2}', {
+            {tr('@{handle} and @{otherHandle}', {
               handle: keep.person.handle,
-              handle2: merge.person.handle,
+              otherHandle: merge.person.handle,
             })}
           </Text>
         </View>
@@ -141,7 +141,7 @@ export function DuplicateOffers({ all }: { all: ConnectionView[] }) {
           ))}
           {offers.length > 3 ? (
             <Text variant="caption" color="textTertiary">
-              {tr('{length} more after these.', { length: offers.length - 3 })}
+              {tr('{count} more after these.', { count: offers.length - 3 })}
             </Text>
           ) : null}
         </View>

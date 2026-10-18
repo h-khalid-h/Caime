@@ -6,7 +6,7 @@
  * or the app, never changes a card already in a conversation.
  */
 
-import { tr } from './i18n';
+import { listed, tr } from './i18n';
 import { cleanKitFields, fieldDetails, kitStateLabel } from './kit-cards';
 import type { KitField } from './kits';
 
@@ -155,16 +155,16 @@ function object(v: unknown, what: string): Record<string, unknown> {
 }
 
 function field(v: unknown, i: number): KitField {
-  const f = object(v, tr('Field {i}', { i: i + 1 }));
+  const f = object(v, tr('Field {number}', { number: i + 1 }));
   if (typeof f.key !== 'string' || !FIELD_KEY.test(f.key))
     throw new Invalid(
-      tr('Field {i}: its key is a letter, then letters, digits or _.', { i: i + 1 }),
+      tr('Field {number}: its key is a letter, then letters, digits or _.', { number: i + 1 }),
     );
   const what = tr('Field “{key}”', { key: f.key });
   const type = f.type as KitField['type'];
   if (!(CUSTOM_KIT_FIELD_TYPES as readonly string[]).includes(type))
     throw new Invalid(
-      tr('{what}: its type is one of {join}.', { what, join: CUSTOM_KIT_FIELD_TYPES.join(', ') }),
+      tr('{what}: its type is one of {types}.', { what, types: listed(CUSTOM_KIT_FIELD_TYPES) }),
     );
   const out: KitField = {
     key: f.key,
@@ -184,7 +184,7 @@ function field(v: unknown, i: number): KitField {
       2,
       CUSTOM_KIT_LIMITS.choices,
     ).map((c, j) => {
-      const nth = tr('{what}’s choice {i}', { what, i: j + 1 });
+      const nth = tr('{what}’s choice {number}', { what, number: j + 1 });
       const choice = object(c, nth);
       const value =
         typeof choice.value === 'number' && Number.isFinite(choice.value)
@@ -194,7 +194,11 @@ function field(v: unknown, i: number): KitField {
       seen.add(String(value));
       return {
         value,
-        label: words(choice.label, tr('{what}’s choice {i} label', { what, i: j + 1 }), 40),
+        label: words(
+          choice.label,
+          tr('{what}’s choice {number} label', { what, number: j + 1 }),
+          40,
+        ),
       };
     });
   } else if (f.choices !== undefined)
@@ -225,7 +229,7 @@ export function parseCustomKit(
       throw new Invalid(tr('The kit’s key is the one in its address.'));
     const icon = (k.icon ?? 'clipboard-list') as CustomKitIcon;
     if (!CUSTOM_KIT_ICONS.includes(icon))
-      throw new Invalid(tr('Its icon is one of {join}.', { join: CUSTOM_KIT_ICONS.join(', ') }));
+      throw new Invalid(tr('Its icon is one of {icons}.', { icons: listed(CUSTOM_KIT_ICONS) }));
 
     const fields = list(k.fields, 'Fields', 1, CUSTOM_KIT_LIMITS.fields).map(field);
     if (new Set(fields.map((f) => f.key)).size !== fields.length)
@@ -237,9 +241,11 @@ export function parseCustomKit(
       throw new Invalid(tr('Each field has a label of its own.'));
 
     const states = list(k.states, 'States', 1, CUSTOM_KIT_LIMITS.states).map((v, i) => {
-      const s = object(v, tr('State {i}', { i: i + 1 }));
+      const s = object(v, tr('State {number}', { number: i + 1 }));
       if (typeof s.id !== 'string' || !STATE_ID.test(s.id))
-        throw new Invalid(tr('State {i}: its id is lowercase letters, digits or _.', { i: i + 1 }));
+        throw new Invalid(
+          tr('State {number}: its id is lowercase letters, digits or _.', { number: i + 1 }),
+        );
       const tone = (s.tone ?? 'neutral') as CustomKitState['tone'];
       if (!TONES.includes(tone))
         throw new Invalid(
@@ -258,15 +264,19 @@ export function parseCustomKit(
 
     const pairs = new Set<string>();
     const moves = list(k.moves, 'Moves', 0, CUSTOM_KIT_LIMITS.moves).map((v, i) => {
-      const m = object(v, tr('Move {i}', { i: i + 1 }));
+      const m = object(v, tr('Move {number}', { number: i + 1 }));
       if (typeof m.from !== 'string' || !ids.has(m.from))
-        throw new Invalid(tr('Move {i}: it goes from one of the kit’s states.', { i: i + 1 }));
+        throw new Invalid(
+          tr('Move {number}: it goes from one of the kit’s states.', { number: i + 1 }),
+        );
       if (typeof m.to !== 'string' || !ids.has(m.to) || m.to === m.from)
-        throw new Invalid(tr('Move {i}: it goes to another of the kit’s states.', { i: i + 1 }));
+        throw new Invalid(
+          tr('Move {number}: it goes to another of the kit’s states.', { number: i + 1 }),
+        );
       if (pairs.has(`${m.from}>${m.to}`))
         throw new Invalid(
-          tr('Move {i}: from {from} to {to} is there already.', {
-            i: i + 1,
+          tr('Move {number}: from {from} to {to} is there already.', {
+            number: i + 1,
             from: m.from,
             to: m.to,
           }),
@@ -274,11 +284,13 @@ export function parseCustomKit(
       pairs.add(`${m.from}>${m.to}`);
       const who = m.who as CustomKitSide;
       if (!SIDES.includes(who))
-        throw new Invalid(tr('Move {i}: who is organization, customer or anyone.', { i: i + 1 }));
+        throw new Invalid(
+          tr('Move {number}: who is organization, customer or anyone.', { number: i + 1 }),
+        );
       return {
         from: m.from,
         to: m.to,
-        label: words(m.label, tr('Move {i}’s label', { i: i + 1 }), 40),
+        label: words(m.label, tr('Move {number}’s label', { number: i + 1 }), 40),
         who,
       };
     });

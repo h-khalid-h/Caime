@@ -870,7 +870,7 @@ export async function messageRoutes(app: FastifyInstance, ctx: AppContext) {
       .where('message_id', '=', id)
       .executeTakeFirstOrThrow();
     if (n + files.length > ALBUM_MAX)
-      throw badRequest(tr('An album holds {ALBUM_MAX} photos.', { ALBUM_MAX }));
+      throw badRequest(tr('An album holds {max} photos.', { max: ALBUM_MAX }));
     const added = await ctx.db.transaction().execute(async (trx) => {
       const inserted = await trx
         .insertInto('album_photos')
@@ -1117,11 +1117,11 @@ export async function messageRoutes(app: FastifyInstance, ctx: AppContext) {
           hidden
             ? trn(
                 hidden,
-                '{PINNED_MAX} messages are pinned already, including one you deleted for yourself. Unpin one first.',
-                '{PINNED_MAX} messages are pinned already, including {n} you deleted for yourself. Unpin one first.',
-                { PINNED_MAX },
+                '{max} messages are pinned already, including one you deleted for yourself. Unpin one first.',
+                '{max} messages are pinned already, including {n} you deleted for yourself. Unpin one first.',
+                { max: PINNED_MAX },
               )
-            : tr('{PINNED_MAX} messages are pinned already. Unpin one first.', { PINNED_MAX }),
+            : tr('{max} messages are pinned already. Unpin one first.', { max: PINNED_MAX }),
         );
       const done = await trx
         .updateTable('messages')

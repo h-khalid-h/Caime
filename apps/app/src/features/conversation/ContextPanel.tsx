@@ -1,6 +1,6 @@
 import type { ConversationView, TaskView } from '@caime/core/api';
 import { formatDue, retentionText } from '@caime/core/format';
-import { tr } from '@caime/core/i18n';
+import { listed, tr } from '@caime/core/i18n';
 import { canChangeDisappearing, canEditConversation } from '@caime/core/permissions';
 import { useQueryClient } from '@tanstack/react-query';
 import { router } from 'expo-router';
@@ -101,7 +101,7 @@ function TaskLine({
         <Text variant="caption" color="textSecondary">
           {taskWho(task) ?? tr('Yours')}
           {task.dueAt ? ` · ${formatDue(task.dueAt, now, timeZone, locale, task.dueHasTime)}` : ''}
-          {pending ? tr(' · Pending') : ''}
+          {pending ? ` · ${tr('Pending')}` : ''}
         </Text>
       </View>
     </Pressable>
@@ -168,13 +168,13 @@ function BusinessCard({
       </Text>
       <Text variant="caption" color="textTertiary" align="center">
         {tr('Team: {names}', {
-          names: team
-            .map((p) =>
+          names: listed(
+            team.map((p) =>
               p.person.kind === 'human'
                 ? p.person.displayName
                 : tr('{name} (bot)', { name: p.person.displayName }),
-            )
-            .join(', '),
+            ),
+          ),
         })}
       </Text>
     </View>
@@ -334,7 +334,7 @@ export function ContextPanel({
               </Section>
             ) : null}
             {m.openItems.length ? (
-              <Section title={tr('Open · {length}', { length: m.openItems.length })}>
+              <Section title={tr('Open · {count}', { count: m.openItems.length })}>
                 {m.openItems.map((task) => (
                   <TaskLine
                     key={task.id}
@@ -520,7 +520,7 @@ function Topics({
   };
   return (
     <Section
-      title={topics.length ? tr('Topics · {length}', { length: topics.length }) : tr('Topics')}
+      title={topics.length ? tr('Topics · {count}', { count: topics.length }) : tr('Topics')}
     >
       {topics.map((topic) => (
         <Pressable
@@ -644,8 +644,8 @@ function Disappearing({ conversation }: { conversation: ConversationView }) {
       toast(
         value === 'off'
           ? tr('New messages stay')
-          : tr('New messages disappear after {retentionText}', {
-              retentionText: retentionText(Number(value)),
+          : tr('New messages disappear after {period}', {
+              period: retentionText(Number(value)),
             }),
       );
     } catch (e) {
@@ -658,11 +658,7 @@ function Disappearing({ conversation }: { conversation: ConversationView }) {
         // One row, like every other setting here; the choice opens over it.
         <ChoiceSheet
           label={tr('Disappearing messages')}
-          shown={
-            days === null
-              ? tr('Off')
-              : tr('After {retentionText}', { retentionText: retentionText(days) })
-          }
+          shown={days === null ? tr('Off') : tr('After {period}', { period: retentionText(days) })}
           detail={tr('New messages only; what came before keeps its time')}
           value={KEEP.includes(current) ? current : 'off'}
           onChange={(v) => void set(v)}
@@ -686,7 +682,7 @@ function Disappearing({ conversation }: { conversation: ConversationView }) {
               ? tr('Off')
               : ofGroup
                 ? tr('after {time}', { time: retentionText(days) })
-                : tr('After {retentionText}', { retentionText: retentionText(days) }),
+                : tr('After {period}', { period: retentionText(days) }),
           ]
             .filter(Boolean)
             .join(': ')}

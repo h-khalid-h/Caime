@@ -121,7 +121,7 @@ function AlbumSheet({
             <Photo
               f={ph.file}
               size={104}
-              label={tr('Photo {i} of {length}', { i: i + 1, length: photos.length })}
+              label={tr('Photo {position} of {count}', { position: i + 1, count: photos.length })}
               // Full screen in Caime (R88), the album's others a swipe away.
               onOpen={() =>
                 showPhotos(
@@ -144,7 +144,7 @@ function AlbumSheet({
                     borderRadius: t.radii.lg,
                     backgroundColor: 'rgba(0,0,0,0.55)',
                   }}
-                  label={tr('Take photo {i} out of the album', { i: i + 1 })}
+                  label={tr('Take photo {number} out of the album', { number: i + 1 })}
                   onPress={() => void remove(ph)}
                 />
               </View>
@@ -183,7 +183,7 @@ export function AlbumCard({ m, mine }: { m: MessageView; mine: boolean }) {
     setAdding(
       res.assets.length === 1
         ? tr('Adding a photo…')
-        : tr('Adding {length} photos…', { length: res.assets.length }),
+        : tr('Adding {count} photos…', { count: res.assets.length }),
     );
     try {
       const ids: string[] = [];
@@ -194,7 +194,7 @@ export function AlbumCard({ m, mine }: { m: MessageView; mine: boolean }) {
       upsertMessage(qc, (await endpoints.addToAlbum(m.id, ids)).message);
       void qc.invalidateQueries({ queryKey: qk.album(m.id) });
     } catch (e) {
-      toast(tr('Couldn’t add them: {e}', { e: (e as Error).message }), { tone: 'danger' });
+      toast(tr('Couldn’t add them: {error}', { error: (e as Error).message }), { tone: 'danger' });
     } finally {
       setAdding(null);
     }

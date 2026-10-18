@@ -100,7 +100,10 @@ export function replyTimeText(minutes: number): string {
   const m = Math.round(minutes);
   if (m < 60) return tr('{n} min', { n: m });
   const h = Math.floor(m / 60);
-  if (h < 24) return m % 60 ? tr('{h} h {m} min', { h, m: m % 60 }) : tr('{n} h', { n: h });
+  if (h < 24)
+    return m % 60
+      ? tr('{hours} h {minutes} min', { hours: h, minutes: m % 60 })
+      : tr('{n} h', { n: h });
   const d = Math.round(h / 24);
   return trn(d, '{n} day', '{n} days');
 }

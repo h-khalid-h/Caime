@@ -43,7 +43,7 @@ import {
 } from '@caime/core/catalog';
 import type { PayKindHint } from '@caime/core/countries';
 import { formatAmount } from '@caime/core/format';
-import { msg, tr, trn } from '@caime/core/i18n';
+import { listed, msg, tr, trn } from '@caime/core/i18n';
 import {
   PAYMENT_KIND_LABELS,
   PAYMENT_KINDS,
@@ -131,7 +131,7 @@ export interface BookingHostInfo {
 export function itemLine(item: BookingItem, locale: string, host: BookingHostInfo): string {
   return [
     item.unit === 'minutes'
-      ? tr('{m} min', { m: item.minutes ?? 0 })
+      ? tr('{minutes} min', { minutes: item.minutes ?? 0 })
       : item.unit === 'days'
         ? tr('Per day')
         : tr('By the piece'),
@@ -147,7 +147,7 @@ export function itemLine(item: BookingItem, locale: string, host: BookingHostInf
 export function audienceLabel(audience: BookingItem['audience'], kind: 'org' | 'person'): string {
   if (audience === 'public') return tr('Everyone');
   if (audience === 'connections') return kind === 'org' ? tr('Customers') : tr('Connections');
-  return audience.map((s) => tr(PERSON_SPHERES.find((p) => p.sphere === s)?.label ?? s)).join(', ');
+  return listed(audience.map((s) => tr(PERSON_SPHERES.find((p) => p.sphere === s)?.label ?? s)));
 }
 
 const newId = () => `i${Date.now().toString(36)}${Math.floor(Math.random() * 1e6).toString(36)}`;
@@ -424,9 +424,9 @@ export function BookingSetup({
         title={
           ordering
             ? tr('Orders: {ways}', {
-                ways: ordering.fulfilment
-                  .map((w) => (w === 'pickup' ? tr('Pickup') : tr('Delivery')))
-                  .join(', '),
+                ways: listed(
+                  ordering.fulfilment.map((w) => (w === 'pickup' ? tr('Pickup') : tr('Delivery'))),
+                ),
               })
             : tr('Orders are off')
         }
@@ -610,7 +610,10 @@ export function BookingSetup({
               label={tr('Slots every')}
               value={String(slot)}
               onChange={(m) => setSlot(SLOT_MINUTES.find((x) => String(x) === m) ?? slot)}
-              options={SLOT_MINUTES.map((m) => ({ value: String(m), label: tr('{m} min', { m }) }))}
+              options={SLOT_MINUTES.map((m) => ({
+                value: String(m),
+                label: tr('{minutes} min', { minutes: m }),
+              }))}
               testID={`${testID}-slot`}
             />
             <Text variant="caption" color="textTertiary">
@@ -1885,7 +1888,10 @@ function ItemEditor({
               label={tr('How long')}
               value={String(minutes)}
               onChange={(m) => setMinutes(SLOT_MINUTES.find((x) => String(x) === m) ?? null)}
-              options={SLOT_MINUTES.map((m) => ({ value: String(m), label: tr('{m} min', { m }) }))}
+              options={SLOT_MINUTES.map((m) => ({
+                value: String(m),
+                label: tr('{minutes} min', { minutes: m }),
+              }))}
               testID={`${testID}-minutes`}
             />
           ) : unit === 'days' ? (

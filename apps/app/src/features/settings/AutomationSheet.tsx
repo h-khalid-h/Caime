@@ -183,8 +183,8 @@ export function AutomationSheet({
               options={[
                 {
                   value: ALL,
-                  label: tr('All {toLowerCase}', {
-                    toLowerCase: lower(tr(SPHERE_DEFS[sphere as Sphere].plural)),
+                  label: tr('All {kinds}', {
+                    kinds: lower(tr(SPHERE_DEFS[sphere as Sphere].plural)),
                   }),
                 },
                 ...roles.map((r) => ({ value: r.id, label: tr(r.plural) })),
@@ -219,7 +219,7 @@ export function AutomationSheet({
                 key={w}
                 label={`${w}  ×`}
                 size="sm"
-                accessibilityLabel={tr('Take out “{w}”', { w })}
+                accessibilityLabel={tr('Take out “{word}”', { word: w })}
                 onPress={() => setWords(withoutWord(words, w))}
               />
             ))}

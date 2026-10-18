@@ -97,12 +97,12 @@ export function SuggestionBar({ conversationId }: { conversationId: string }) {
     if (undone)
       toast(
         kept
-          ? tr('{length} undone; {a}', {
-              length: undone,
-              a: trn(kept, 'a decision stays', '{n} decisions stay'),
+          ? tr('{count} undone; {kept}', {
+              count: undone,
+              kept: trn(kept, 'a decision stays', '{n} decisions stay'),
             })
           : refused.length
-            ? tr('{length} undone', { length: undone })
+            ? tr('{count} undone', { count: undone })
             : tr('Undone'),
       );
     if (refused.length) toast(why(refused[0]), { tone: 'danger' });
@@ -136,7 +136,7 @@ export function SuggestionBar({ conversationId }: { conversationId: string }) {
       const undoable = done.filter((r) => r.accepted?.type === 'task').map((r) => r.id);
       const kept = done.length - undoable.length;
       if (done.length)
-        toast(tr('{length} done', { length: done.length }), {
+        toast(tr('{count} done', { count: done.length }), {
           // Decisions stay, as ones recorded by hand do: Undo is offered for what it can take back.
           action: undoable.length
             ? { label: tr('Undo'), onPress: () => void undoAll(undoable, kept) }
@@ -170,7 +170,7 @@ export function SuggestionBar({ conversationId }: { conversationId: string }) {
       <>
         <View
           accessibilityRole="summary"
-          accessibilityLabel={tr('Suggestions: {length} things here', { length: list.length })}
+          accessibilityLabel={tr('Suggestions: {count} things here', { count: list.length })}
           testID="suggestions-card"
           style={{
             marginHorizontal: 12,
@@ -217,7 +217,7 @@ export function SuggestionBar({ conversationId }: { conversationId: string }) {
           </Text>
           <View style={{ flexDirection: 'row', gap: 8, flexWrap: 'wrap' }}>
             <Button
-              label={tr('Do all {length}', { length: list.length })}
+              label={tr('Do all {count}', { count: list.length })}
               size="sm"
               onPress={doAll}
               loading={busy}
@@ -276,7 +276,7 @@ export function SuggestionBar({ conversationId }: { conversationId: string }) {
           <Sparkles size={14} color={t.c.accentStrong} />
           <Text variant="overline" color="accentStrong" style={{ flex: 1 }}>
             {list.length > 1
-              ? tr('{label} · 1 of {length}', { label: oneLabel, length: list.length })
+              ? tr('{label} · 1 of {count}', { label: oneLabel, count: list.length })
               : oneLabel}
           </Text>
         </View>

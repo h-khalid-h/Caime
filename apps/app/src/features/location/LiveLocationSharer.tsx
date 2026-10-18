@@ -148,8 +148,8 @@ export function LiveLocationSharer() {
       >
         <MapPin size={16} color={t.c.accent} />
         <Text variant="captionStrong" color="#FFFFFF">
-          {tr('Sharing your location live · until {formatClock}', {
-            formatClock: formatClock(until, timeZone, locale),
+          {tr('Sharing your location live · until {time}', {
+            time: formatClock(until, timeZone, locale),
           })}
         </Text>
         <Pressable

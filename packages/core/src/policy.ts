@@ -5,7 +5,7 @@
  * matching policy wins, field by field.
  */
 
-import { msg, tr, trn } from './i18n';
+import { listed, msg, tr, trn } from './i18n';
 import type { Sphere } from './taxonomy';
 import { SPHERE_DEFS } from './taxonomy';
 import { isWithinSchedule, nextScheduleStart, type Schedule, workHours } from './time';
@@ -326,9 +326,11 @@ export function daysText(days: number[]): string {
     if (run && (run[run.length - 1]! + 1) % 7 === d) run.push(d);
     else runs.push([d]);
   }
-  return runs
-    .map((r) => (r.length >= 3 ? `${day(r[0]!)}–${day(r[r.length - 1]!)}` : r.map(day).join(', ')))
-    .join(', ');
+  return listed(
+    runs.map((r) =>
+      r.length >= 3 ? `${day(r[0]!)}–${day(r[r.length - 1]!)}` : listed(r.map(day)),
+    ),
+  );
 }
 
 /** "Mon–Fri 08:00–20:00", or just the hours when the schedule covers every day. */

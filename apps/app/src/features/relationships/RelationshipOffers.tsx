@@ -90,8 +90,8 @@ function OfferCard({
           <Sparkles size={18} color={t.c.accentStrong} />
           <View style={{ flex: 1, gap: 4 }}>
             <Text variant="bodyStrong" onPress={onOpen}>
-              {tr('Caime thinks {relationshipOfferText}.', {
-                relationshipOfferText: relationshipOfferText(first, offer),
+              {tr('Caime thinks {offer}.', {
+                offer: relationshipOfferText(first, offer),
               })}
             </Text>
             <Text variant="caption" color="textSecondary" testID="suggestion-sure">

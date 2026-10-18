@@ -117,7 +117,10 @@ function useMeetingRows(view: JoinView) {
       value: formatWhenAt(view.meeting.at, true, now, timeZone, locale),
       testID: 'join-when',
     },
-    { label: tr('Duration'), value: tr('{m} min', { m: view.meeting.durationMinutes }) },
+    {
+      label: tr('Duration'),
+      value: tr('{minutes} min', { minutes: view.meeting.durationMinutes }),
+    },
     view.meeting.host ? { label: tr('Invited by'), value: view.meeting.host } : null,
   ];
 }
@@ -212,14 +215,13 @@ function GuestMeeting({ view, space }: { view: JoinView; space: NonNullable<Join
     if (groupCallsSupported) void checkGroupCallIn(space.conversationId);
   }, [space.conversationId]);
   const open = joinOpen({ at: view.meeting.at, hasTime: true }, view.meeting.durationMinutes, now);
-  const { locale } = useUserClock();
   return (
     <AuthLayout kicker={tr('Meeting')} title={view.meeting.title} back={false}>
       <View style={{ gap: 16 }} testID="guest-meeting">
         <Spec
           rows={[
             ...rows,
-            people?.length ? { label: tr('With'), value: joinNames(people, 4, locale) } : null,
+            people?.length ? { label: tr('With'), value: joinNames(people, 4) } : null,
           ]}
           dense
         />

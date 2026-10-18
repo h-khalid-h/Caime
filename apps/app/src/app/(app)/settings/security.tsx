@@ -143,8 +143,8 @@ export default function Security() {
               subtitle={
                 s.current
                   ? tr('This device')
-                  : tr('Active {formatListTime}', {
-                      formatListTime: formatListTime(s.lastSeenAt, now, timeZone, locale),
+                  : tr('Active {when}', {
+                      when: formatListTime(s.lastSeenAt, now, timeZone, locale),
                     })
               }
               right={
@@ -415,8 +415,7 @@ function EmailStatus() {
     >
       <View style={{ padding: 16, gap: 12 }}>
         <Text variant="label" testID="email-status">
-          {user.email}
-          {user.emailVerified ? tr(' · confirmed') : tr(' · not confirmed yet')}
+          {`${user.email} · ${user.emailVerified ? tr('confirmed') : tr('not confirmed yet')}`}
         </Text>
         {user.emailVerified ? null : (
           <>

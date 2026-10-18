@@ -1,4 +1,4 @@
-import { msg, tr, trn } from '@caime/core/i18n';
+import { listed, msg, tr, trn } from '@caime/core/i18n';
 import { PLAN_NAMES } from '@caime/core/plans';
 import { type Href, router, usePathname } from 'expo-router';
 import Bell from 'lucide-react-native/icons/bell';
@@ -157,7 +157,7 @@ export function SettingsMenu({ pane }: { pane?: boolean }) {
   const pathname = usePathname();
   // The teams you're on, by name: the row says where it goes before it's opened.
   const teams = (useOrgs().data?.orgs ?? []).map((o) => o.name);
-  const named = teams.slice(0, 3).join(', ');
+  const named = listed(teams.slice(0, 3));
   const more = teams.length - 3;
   if (!user) return null;
   const content = (

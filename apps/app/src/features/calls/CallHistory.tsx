@@ -1,7 +1,7 @@
 import type { CallHistoryItem } from '@caime/core/api';
 import { callDuration } from '@caime/core/calls';
 import { formatListTime } from '@caime/core/format';
-import { tr } from '@caime/core/i18n';
+import { listed, tr } from '@caime/core/i18n';
 import { router } from 'expo-router';
 import Phone from 'lucide-react-native/icons/phone';
 import PhoneIncoming from 'lucide-react-native/icons/phone-incoming';
@@ -51,7 +51,7 @@ export function callSummary(c: CallHistoryItem): string {
 
 /** Who a call was with: the other person, or the group's name. */
 export const callWith = (c: CallHistoryItem) =>
-  c.group ? (c.conversationTitle ?? tr('Group call')) : (c.with[0]?.displayName ?? 'Someone');
+  c.group ? (c.conversationTitle ?? tr('Group call')) : (c.with[0]?.displayName ?? tr('Someone'));
 
 /** One call: who with, how it went and when; call them back from it. */
 export function CallRow({ call }: { call: CallHistoryItem }) {
@@ -107,7 +107,7 @@ export function CallRow({ call }: { call: CallHistoryItem }) {
             <Icon size={14} color={missed ? t.c.danger : t.c.textSecondary} />
             <Text variant="caption" color="textSecondary" numberOfLines={1} style={{ flex: 1 }}>
               {call.group && call.with.length
-                ? `${summary} · ${call.with.map((p) => p.displayName.split(' ')[0]).join(', ')}`
+                ? `${summary} · ${listed(call.with.map((p) => p.displayName.split(' ')[0] ?? ''))}`
                 : summary}
             </Text>
           </View>
@@ -119,10 +119,11 @@ export function CallRow({ call }: { call: CallHistoryItem }) {
       {canCall ? (
         <IconButton
           icon={call.kind === 'video' ? Video : Phone}
-          label={tr('{Video} call {callWith}', {
-            Video: call.kind === 'video' ? tr('Video') : tr('Voice'),
-            callWith: callWith(call),
-          })}
+          label={
+            call.kind === 'video'
+              ? tr('Video call {name}', { name: callWith(call) })
+              : tr('Voice call {name}', { name: callWith(call) })
+          }
           onPress={() =>
             void (call.group
               ? startGroupCall(call.conversationId, call.kind)

@@ -1,5 +1,5 @@
 import type { MeView } from '@caime/core/api';
-import { tr } from '@caime/core/i18n';
+import { listed, tr } from '@caime/core/i18n';
 import Check from 'lucide-react-native/icons/check';
 import KeyRound from 'lucide-react-native/icons/key-round';
 import { useState } from 'react';
@@ -102,7 +102,7 @@ export function RecoveryCodesSheet({
             style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8, justifyContent: 'center' }}
             accessible
             accessibilityRole="text"
-            accessibilityLabel={tr('Recovery codes: {join}', { join: shown.join(', ') })}
+            accessibilityLabel={tr('Recovery codes: {codes}', { codes: listed(shown) })}
           >
             {shown.map((c) => (
               <View

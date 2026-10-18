@@ -23,6 +23,7 @@ import {
   type InterfaceLanguage,
   languageFor,
   languageInSearch,
+  listed,
   lower,
   msg,
   numberLocale,
@@ -344,16 +345,17 @@ function priceLine(prices: PriceView[] | null, plan: PriceView['plan']): string 
   if (!mine.length) return `<span class="mono">${esc(tr('price shown in the app'))}</span>`;
   const month = mine.find((p) => p.interval === 'month');
   const year = mine.find((p) => p.interval === 'year');
-  return [
-    month
-      ? tr('{price} a month', {
-          price: `<strong>${esc(money(month.amount, month.currency))}</strong>`,
-        })
-      : null,
-    year ? tr('{price} a year', { price: esc(money(year.amount, year.currency)) }) : null,
-  ]
-    .filter(Boolean)
-    .join(tr(', or '));
+  const monthly = month
+    ? tr('{price} a month', {
+        price: `<strong>${esc(money(month.amount, month.currency))}</strong>`,
+      })
+    : null;
+  const yearly = year
+    ? tr('{price} a year', { price: esc(money(year.amount, year.currency)) })
+    : null;
+  return monthly && yearly
+    ? tr('{monthly}, or {yearly}', { monthly, yearly })
+    : (monthly ?? yearly ?? '');
 }
 
 /** One plan as a sheet of its own: its name, its price, what it includes. */
@@ -632,7 +634,7 @@ ${main}
           tr(
             'Every customer conversation in one place, sorted by who has waited longest, in six views: {views}.',
             {
-              views: BUSINESS_VIEWS.map((v) => lower(tr(BUSINESS_VIEW_LABELS[v]))).join(tr(', ')),
+              views: listed(BUSINESS_VIEWS.map((v) => lower(tr(BUSINESS_VIEW_LABELS[v])))),
             },
           ),
         ),
@@ -755,7 +757,7 @@ ${main}
       ${plan(
         'personal',
         tr('Personal'),
-        `<strong>${esc(tr('Free'))}</strong>${esc(tr(', always'))}`,
+        tr('{free}, always', { free: `<strong>${esc(tr('Free'))}</strong>` }),
         [
           [
             tr('AI assist'),
@@ -1021,16 +1023,16 @@ ${main}
       [
         tr('permissions'),
         tr('{scopes}: given one by one. A route the token can’t use answers 403.', {
-          scopes: [
-            'inbox:read',
-            'messages:read',
-            'messages:write',
-            'threads:write',
-            'updates',
-            'kits',
-          ]
-            .map((s) => `<code>${s}</code>`)
-            .join(tr(', ')),
+          scopes: listed(
+            [
+              'inbox:read',
+              'messages:read',
+              'messages:write',
+              'threads:write',
+              'updates',
+              'kits',
+            ].map((s) => `<code>${s}</code>`),
+          ),
         }),
       ],
       [
@@ -1038,9 +1040,11 @@ ${main}
         tr(
           '{events}. Signed, https only, no private addresses, one deadline for the whole exchange.',
           {
-            events: ['business.message', 'business.thread', 'kit.posted', 'kit.moved', 'ping']
-              .map((s) => `<code>${s}</code>`)
-              .join(tr(', ')),
+            events: listed(
+              ['business.message', 'business.thread', 'kit.posted', 'kit.moved', 'ping'].map(
+                (s) => `<code>${s}</code>`,
+              ),
+            ),
           },
         ),
       ],
@@ -1076,15 +1080,15 @@ ${main}
         tr(
           'A person makes a token for their own scripts ({scopes}). It never reaches the account itself.',
           {
-            scopes: [
-              'profile:read',
-              'messages:read',
-              'messages:write',
-              'actions:read',
-              'actions:write',
-            ]
-              .map((s) => `<code>${s}</code>`)
-              .join(tr(', ')),
+            scopes: listed(
+              [
+                'profile:read',
+                'messages:read',
+                'messages:write',
+                'actions:read',
+                'actions:write',
+              ].map((s) => `<code>${s}</code>`),
+            ),
           },
         ),
       ],

@@ -41,14 +41,12 @@ export function OrgPlan({
         <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12 }}>
           <Gauge size={20} color={t.c.textSecondary} />
           <View style={{ flex: 1, gap: 2 }}>
-            <Text variant="label">
-              {tr('{PLAN_NAMES} plan', { PLAN_NAMES: PLAN_NAMES[plan.plan] })}
-            </Text>
+            <Text variant="label">{tr('{plan} plan', { plan: PLAN_NAMES[plan.plan] })}</Text>
             <Text variant="caption" color="textSecondary">
-              {tr('{teamSize} of {teamSize2} people · {count}', {
-                teamSize: plan.used.teamSize,
-                teamSize2: plan.allowance.teamSize,
-                count: trn(plan.allowance.apps, '{used} of {n} app', '{used} of {n} apps', {
+              {tr('{onTeam} of {teamSize} people · {apps}', {
+                onTeam: plan.used.teamSize,
+                teamSize: plan.allowance.teamSize,
+                apps: trn(plan.allowance.apps, '{used} of {n} app', '{used} of {n} apps', {
                   used: plan.used.apps,
                 }),
               })}
@@ -58,26 +56,26 @@ export function OrgPlan({
         <Meter
           used={plan.used.teamSize}
           of={plan.allowance.teamSize}
-          label={tr('People on the team: {teamSize} of {teamSize2}', {
-            teamSize: plan.used.teamSize,
-            teamSize2: plan.allowance.teamSize,
+          label={tr('People on the team: {onTeam} of {teamSize}', {
+            onTeam: plan.used.teamSize,
+            teamSize: plan.allowance.teamSize,
           })}
         />
         <Text variant="caption" color="textSecondary">
           {tr(
-            '{startsToday} of {toLocaleString} conversations started by the team today. Customers writing first are never counted.',
+            '{startsToday} of {startsPerDay} conversations started by the team today. Customers writing first are never counted.',
             {
               startsToday: plan.used.startsToday,
-              toLocaleString: plan.allowance.startsPerDay,
+              startsPerDay: plan.allowance.startsPerDay,
             },
           )}
         </Text>
         <Text variant="caption" color="textSecondary" testID="org-plan-agent">
           {tr(
-            '{agentRepliesToday} of {toLocaleString} AI agent answers in the last 24 hours. Past that, your team answers as usual.',
+            '{agentRepliesToday} of {agentRepliesPerDay} AI agent answers in the last 24 hours. Past that, your team answers as usual.',
             {
               agentRepliesToday: plan.used.agentRepliesToday,
-              toLocaleString: plan.allowance.agentRepliesPerDay,
+              agentRepliesPerDay: plan.allowance.agentRepliesPerDay,
             },
           )}
         </Text>
@@ -97,7 +95,7 @@ export function OrgPlan({
         ) : null}
         {!billed && next && plan.upgradeUrl ? (
           <Button
-            label={tr('See {PLAN_NAMES}', { PLAN_NAMES: PLAN_NAMES[next] })}
+            label={tr('See {plan}', { plan: PLAN_NAMES[next] })}
             variant="secondary"
             size="sm"
             onPress={() => openLink(plan.upgradeUrl ?? '')}

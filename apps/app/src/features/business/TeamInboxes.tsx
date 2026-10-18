@@ -58,7 +58,7 @@ export function TeamInboxes() {
               {waiting
                 ? trn(waiting, '{n} customer waiting', '{n} customers waiting')
                 : tr('Nobody is waiting')}
-              {mine ? tr(' · {mine} yours', { mine }) : ''}
+              {mine ? ` · ${tr('{count} yours', { count: mine })}` : ''}
             </Text>
           </View>
           <Badge count={waiting} />

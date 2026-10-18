@@ -84,7 +84,7 @@ export function ForwardSheet({ m, onClose }: { m: MessageView; onClose: () => vo
       subtitle={tr('It arrives marked as forwarded.')}
       footer={
         <Button
-          label={picked.size ? tr('Send to {size}', { size: picked.size }) : tr('Send')}
+          label={picked.size ? tr('Send to {count}', { count: picked.size }) : tr('Send')}
           block
           size="lg"
           disabled={picked.size === 0}

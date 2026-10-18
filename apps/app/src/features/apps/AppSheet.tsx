@@ -19,7 +19,6 @@ import { CalendarFeed } from '@/features/settings/CalendarFeed';
 import { WEB_URL } from '@/lib/config';
 import { LANGUAGE_NAMES } from '@/lib/i18n';
 import { openLink } from '@/lib/links';
-import { useUserClock } from '@/lib/time';
 import { useSession } from '@/state/session';
 import { useTheme } from '@/theme/theme';
 import { Button } from '@/ui/Button';
@@ -33,7 +32,6 @@ import { PublisherLine } from './PublisherLine';
 export function AppSheet({ app, onClose }: { app: DirectoryAppView | null; onClose: () => void }) {
   // Under 18, nothing connects (R29): the server sends no address, and the sheet says why.
   const minor = useSession((s) => s.user?.minor ?? false);
-  const { locale } = useUserClock();
   const t = useTheme();
   const last = useRef(app);
   if (app) last.current = app;
@@ -92,7 +90,6 @@ export function AppSheet({ app, onClose }: { app: DirectoryAppView | null; onClo
                 what: joinNames(
                   shown.provides.map((p) => tr(APP_PROVIDES_LABELS[p])),
                   shown.provides.length,
-                  locale,
                 ),
               })}
             </Text>
@@ -137,7 +134,6 @@ export function AppSheet({ app, onClose }: { app: DirectoryAppView | null; onClo
                     value: joinNames(
                       shown.languages.map((l) => LANGUAGE_NAMES[l as InterfaceLanguage] ?? l),
                       shown.languages.length,
-                      locale,
                     ),
                   }
                 : null,

@@ -4,7 +4,6 @@
  * (docs/ARCHITECTURE.md ADR-10).
  */
 
-import { tr } from './i18n';
 import type { PrivacyPreset } from './policy';
 import type { Sphere } from './taxonomy';
 
@@ -162,17 +161,4 @@ export function readReceiptsVisible(
     canSee(owner.settings, 'readReceipts', owner.viewerAsSeenByOwner) &&
     canSee(viewer.settings, 'readReceipts', viewer.ownerAsSeenByViewer)
   );
-}
-
-export function describeAudience(audience: Audience, sphereLabel: (s: Sphere) => string): string {
-  switch (audience.kind) {
-    case 'everyone':
-      return 'Everyone';
-    case 'connections':
-      return tr('Your connections');
-    case 'spheres':
-      return audience.spheres.length ? audience.spheres.map(sphereLabel).join(', ') : 'Nobody';
-    case 'nobody':
-      return 'Nobody';
-  }
 }

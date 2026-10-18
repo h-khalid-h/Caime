@@ -1,4 +1,5 @@
-import { tr, trn } from '@caime/core/i18n';
+import { joinNames } from '@caime/core/format';
+import { tr } from '@caime/core/i18n';
 import Phone from 'lucide-react-native/icons/phone';
 import Video from 'lucide-react-native/icons/video';
 import { useEffect } from 'react';
@@ -28,7 +29,7 @@ export function GroupCallBanner({ conversationId }: { conversationId: string }) 
   const elsewhere = joined.some((m) => m.person.id === me?.id);
   const names = joined
     .filter((m) => m.person.id !== me?.id)
-    .map((m) => m.person.displayName.split(' ')[0]);
+    .map((m) => m.person.displayName.split(' ')[0] ?? m.person.displayName);
   const Icon = on.kind === 'video' ? Video : Phone;
   return (
     <View
@@ -50,17 +51,9 @@ export function GroupCallBanner({ conversationId }: { conversationId: string }) 
       <Text variant="caption" style={{ flex: 1 }} numberOfLines={2}>
         {elsewhere
           ? tr('You’re in this call on another device.')
-          : tr('{Video} call on · {text}', {
-              Video: on.kind === 'video' ? tr('Video') : tr('Voice'),
-              text:
-                names.length > 2
-                  ? trn(names.length - 2, '{names} and one more', '{names} and {n} more', {
-                      names: names.slice(0, 2).join(', '),
-                    })
-                  : names.length === 2
-                    ? tr('{a} and {b}', { a: names[0], b: names[1] })
-                    : (names[0] ?? ''),
-            })}
+          : on.kind === 'video'
+            ? tr('Video call on · {names}', { names: joinNames(names) })
+            : tr('Voice call on · {names}', { names: joinNames(names) })}
       </Text>
       <Button
         label={elsewhere ? tr('Join here') : tr('Join')}

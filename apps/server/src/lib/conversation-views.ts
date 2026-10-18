@@ -31,10 +31,9 @@ import { minorOf, personView } from '../lib/users';
 
 export const privateGroupFull = () =>
   badRequest(
-    tr(
-      'A private group holds up to {PRIVATE_GROUP_MAX} people: each message is sealed for every device in it.',
-      { PRIVATE_GROUP_MAX },
-    ),
+    tr('A private group holds up to {max} people: each message is sealed for every device in it.', {
+      max: PRIVATE_GROUP_MAX,
+    }),
   );
 
 /** Whether the person ever had a seat here, left or not. */

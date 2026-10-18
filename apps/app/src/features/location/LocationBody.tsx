@@ -65,16 +65,16 @@ export function LocationBody({
     : tr('Look it up on the map');
   const status = live
     ? on
-      ? tr('Live until {formatClock} · updated {ago}', {
-          formatClock: formatClock(live.until, timeZone, locale),
+      ? tr('Live until {time} · updated {ago}', {
+          time: formatClock(live.until, timeZone, locale),
           ago: ago(live.updatedAt, now),
         })
       : live.stoppedAt
-        ? tr('Shared live · stopped at {formatClock}', {
-            formatClock: formatClock(live.stoppedAt, timeZone, locale),
+        ? tr('Shared live · stopped at {time}', {
+            time: formatClock(live.stoppedAt, timeZone, locale),
           })
-        : tr('Shared live until {formatClock}', {
-            formatClock: formatClock(live.until, timeZone, locale),
+        : tr('Shared live until {time}', {
+            time: formatClock(live.until, timeZone, locale),
           })
     : null;
 

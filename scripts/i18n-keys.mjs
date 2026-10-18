@@ -104,6 +104,110 @@ export function casedWords() {
   return out;
 }
 
+/** The source the interface's words are said in: the app, core and the server, less tests. */
+function sourceFiles() {
+  return execSync(
+    "git ls-files --cached --others --exclude-standard 'apps/app/src/**/*.ts' 'apps/app/src/**/*.tsx' 'packages/core/src/*.ts' 'apps/server/src/**/*.ts'",
+    { cwd: root },
+  )
+    .toString()
+    .trim()
+    .split('\n')
+    .filter((f) => f && !/\.test\.tsx?$/.test(f) && !/\/locales\//.test(f));
+}
+
+/** A key glued to another: it starts or ends with a space, or starts with punctuation. */
+const FRAGMENT = /^[\s,.;:·]|\s$/;
+/** A word for what it holds: `{n}` (a count) or a camelCase word of two letters or more. */
+const NAMED = /^(?:n|[a-z][a-zA-Z]+)$/;
+/** Names the code gives a value, which say nothing to whoever translates. */
+const CODE_NAMES =
+  /^(?:length|size|join|trim|at|with|and|indexOf|debounced|tr|trn|msg|lower\w*|upper\w*|to[A-Z]\w*|format[A-Z]\w*)$/;
+const holesOf = (key) => [...key.matchAll(/\{(\w+)\}/g)].map((m) => m[1]);
+
+/**
+ * Sentences in pieces and placeholders that don't say what they hold (M16 D4), as "file:line
+ * what": a key that starts or ends with a space, or starts with a comma, is a fragment glued to
+ * another (one key per sentence, the way each language orders it); a placeholder is a word for
+ * what it holds (`{name}`, `{count}`), never the code's name for it (`{toLowerCase}`, `{length}`,
+ * `{PINNED_MAX}`, `{i}`); and where a sentence is said, every placeholder it names is passed and
+ * nothing it doesn't name (an object literal, or a constant holding one).
+ */
+export function placeholderIssues() {
+  const parser = require('@babel/parser');
+  const traverse = require('@babel/traverse').default;
+  const out = [];
+  for (const rel of sourceFiles()) {
+    const src = readFileSync(join(root, rel), 'utf8');
+    if (!/\b(tr|trn|trFor|msg)\(/.test(src)) continue;
+    const ast = parser.parse(src, { sourceType: 'module', plugins: ['typescript', 'jsx'] });
+    traverse(ast, {
+      CallExpression(path) {
+        const c = path.node.callee;
+        if (c.type !== 'Identifier') return;
+        const args = path.node.arguments;
+        const at = { tr: 0, msg: 0, trFor: 1, trn: 2 }[c.name];
+        if (at === undefined || args[at]?.type !== 'StringLiteral') return;
+        const keys = [args[at].value];
+        if (c.name === 'trn' && args[1]?.type === 'StringLiteral') keys.push(args[1].value);
+        const where = `${rel}:${path.node.loc.start.line}`;
+        for (const key of keys) {
+          if (FRAGMENT.test(key)) out.push(`${where} a fragment: ${JSON.stringify(key)}`);
+          for (const h of holesOf(key))
+            if (!NAMED.test(h) || CODE_NAMES.test(h))
+              out.push(`${where} {${h}} says what the code calls it: ${JSON.stringify(key)}`);
+        }
+        if (c.name === 'msg') return;
+        const wanted = new Set(keys.flatMap(holesOf));
+        if (c.name === 'trn') wanted.delete('n');
+        let vars = args[at + 1];
+        if (vars?.type === 'Identifier') {
+          const init = path.scope.getBinding(vars.name)?.path.node.init;
+          vars = init?.type === 'ObjectExpression' ? init : vars;
+        }
+        if (!vars) {
+          for (const h of wanted)
+            out.push(`${where} {${h}} isn't passed: ${JSON.stringify(keys[0])}`);
+          return;
+        }
+        if (vars.type !== 'ObjectExpression') return;
+        const given = new Set();
+        let spread = false;
+        for (const prop of vars.properties) {
+          if (prop.type !== 'ObjectProperty' || prop.computed) {
+            spread = true;
+            continue;
+          }
+          given.add(prop.key.type === 'Identifier' ? prop.key.name : prop.key.value);
+        }
+        if (!spread)
+          for (const h of wanted)
+            if (!given.has(h)) out.push(`${where} {${h}} isn't passed: ${JSON.stringify(keys[0])}`);
+        for (const g of given)
+          if (!wanted.has(g) && !(c.name === 'trn' && g === 'n'))
+            out.push(`${where} ${g} is passed but never said: ${JSON.stringify(keys[0])}`);
+      },
+    });
+  }
+  return out;
+}
+
+/**
+ * Lists a person reads joined by a comma of their own (M16 D4), as "file:line": core's `listed`
+ * joins with the reader's comma (Arabic's "،"), `joinNames` with their "and". The app and core.
+ */
+export function commaJoins() {
+  const out = [];
+  for (const rel of sourceFiles()) {
+    if (rel.startsWith('apps/server/')) continue;
+    const lines = readFileSync(join(root, rel), 'utf8').split('\n');
+    lines.forEach((line, i) => {
+      if (/\.join\((['"])[,،] \1\)/.test(line)) out.push(`${rel}:${i + 1}`);
+    });
+  }
+  return out;
+}
+
 /** Attributes and fields whose string a person reads. */
 const TEXT_FIELDS = new Set([
   'title',

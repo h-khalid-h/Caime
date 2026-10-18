@@ -275,10 +275,10 @@ export const Composer = forwardRef<ComposerHandle, ComposerProps>(function Compo
   // Focus stays in the text, so the picker is told to a screen reader as it changes: who Enter
   // would mention. A live region does it on the web and Android; iOS is told outright.
   const offered = chosen
-    ? tr('{displayName}, {indexOf} of {length}. Enter mentions them, Escape closes the list.', {
+    ? tr('{displayName}, {position} of {count}. Enter mentions them, Escape closes the list.', {
         displayName: chosen.displayName,
-        indexOf: options.indexOf(chosen) + 1,
-        length: options.length,
+        position: options.indexOf(chosen) + 1,
+        count: options.length,
       })
     : '';
   useEffect(() => {
@@ -458,7 +458,7 @@ export const Composer = forwardRef<ComposerHandle, ComposerProps>(function Compo
       }
       onClearReply();
     } catch (e) {
-      toast(tr('Couldn’t upload: {e}', { e: (e as Error).message }), { tone: 'danger' });
+      toast(tr('Couldn’t upload: {error}', { error: (e as Error).message }), { tone: 'danger' });
     } finally {
       setUploading(null);
     }
@@ -484,7 +484,7 @@ export const Composer = forwardRef<ComposerHandle, ComposerProps>(function Compo
       }
       onClearReply();
     } catch (e) {
-      toast(tr('Couldn’t attach it: {e}', { e: (e as Error).message }), { tone: 'danger' });
+      toast(tr('Couldn’t attach it: {error}', { error: (e as Error).message }), { tone: 'danger' });
     } finally {
       setUploading(null);
     }
@@ -747,8 +747,8 @@ export const Composer = forwardRef<ComposerHandle, ComposerProps>(function Compo
               accessibilityLabel={
                 editing
                   ? tr('Edit message')
-                  : tr('Message {listTitle}', {
-                      listTitle: listTitle({
+                  : tr('Message {title}', {
+                      title: listTitle({
                         title: conversation.title,
                         topic: conversation.topic,
                         other: conversation.other && {

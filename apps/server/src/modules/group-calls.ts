@@ -145,7 +145,7 @@ export async function groupCallRoutes(app: FastifyInstance, ctx: AppContext) {
           throw forbidden(tr('You can call once you’ve joined the conversation.'));
         if (people.length > GROUP_CALL_MAX)
           throw badRequest(
-            tr('Calls are for groups of up to {GROUP_CALL_MAX} people.', { GROUP_CALL_MAX }),
+            tr('Calls are for groups of up to {max} people.', { max: GROUP_CALL_MAX }),
           );
         if (await inACall(ctx, auth.userId, undefined, trx)) throw busy();
         if (await liveGroupCallIn(ctx, id, trx)) throw callOn();

@@ -1,4 +1,4 @@
-import { msg, tr } from '@caime/core/i18n';
+import { listed, msg, tr } from '@caime/core/i18n';
 import { SPHERE_DEFS, type Sphere } from '@caime/core/taxonomy';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { router } from 'expo-router';
@@ -46,8 +46,8 @@ function workweekText(days: number[]): string {
   const sorted = [...days].sort((a, b) => a - b);
   const contiguous = sorted.every((d, i) => i === 0 || d === (sorted[i - 1] ?? 0) + 1);
   if (contiguous && sorted.length > 2)
-    return tr('{DAYS} to {DAYS2}', { DAYS: day(sorted[0]), DAYS2: day(sorted[sorted.length - 1]) });
-  return sorted.map((d) => day(d)).join(tr(', '));
+    return tr('{from} to {to}', { from: day(sorted[0]), to: day(sorted[sorted.length - 1]) });
+  return listed(sorted.map((d) => day(d)));
 }
 
 export default function Onboarding() {
@@ -83,10 +83,10 @@ export default function Onboarding() {
   // Where they are, as a spec sheet labels it: "step 1 of 2 · how Caime works".
   const stepLine =
     steps.length > 1
-      ? tr('step {indexOf} of {length} · {codes}', {
-          indexOf: steps.indexOf(step) + 1,
-          length: steps.length,
-          codes: { rules: tr('how Caime works'), people: tr('your people') }[step],
+      ? tr('step {step} of {steps} · {what}', {
+          step: steps.indexOf(step) + 1,
+          steps: steps.length,
+          what: { rules: tr('how Caime works'), people: tr('your people') }[step],
         })
       : null;
   // Invited (R1): the last step names who, and opens the conversation they'll land in.
