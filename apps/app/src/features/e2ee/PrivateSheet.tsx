@@ -215,7 +215,7 @@ export function WaitingDevices({ on }: { on: boolean }) {
                 label={tr('Not me: sign it out')}
                 size="sm"
                 variant="secondary"
-                onPress={() => act((p) => p.removeDevice(d.id), 'Signed out.')}
+                onPress={() => act((p) => p.removeDevice(d.id), tr('Signed out.'))}
                 testID="private-deny"
               />
             </View>

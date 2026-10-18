@@ -347,7 +347,7 @@ export async function buildInbox(
             kind: last.kind,
             preview:
               r.privacy_class === 'private'
-                ? 'Encrypted message'
+                ? tr('Encrypted message')
                 : last.kind === 'system'
                   ? systemText(
                       org

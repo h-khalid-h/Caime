@@ -227,6 +227,86 @@ const TEXT_FIELDS = new Set([
   'summary',
   'kicker',
 ]);
+/**
+ * Words someone may read, wherever the string goes (M16 E1): two words, a word with an ellipsis
+ * ("Calling…"), or a word and a colon ("You: ").
+ */
+const SAYS = /[A-Za-z]{2,}(?:[ ’'][A-Za-z]+)+|[A-Za-z]{2,}…$|^[A-Z][a-z]+: ?$/;
+/** Attributes that hold code, never words. */
+const CODE_ATTRS = new Set([
+  'testID',
+  'nativeID',
+  'accessibilityRole',
+  'role',
+  'keyboardType',
+  'autoComplete',
+  'textContentType',
+  'returnKeyType',
+  'autoCapitalize',
+  'pointerEvents',
+  'resizeMode',
+  'contentFit',
+  'href',
+  'variant',
+  'color',
+  'name',
+  'id',
+  'type',
+  'mode',
+  'dir',
+  'lang',
+  'inputMode',
+  'enterKeyHint',
+]);
+/**
+ * Core's files of rules and data, read by code and never shown as the interface's words: other
+ * languages' words for the readers, patterns, names of things, and the legal page's English.
+ */
+const WORD_DATA_FILES = new Set([
+  'packages/core/src/intelligence-fr.ts',
+  'packages/core/src/intelligence-tr.ts',
+  'packages/core/src/chat-intent.ts',
+  'packages/core/src/languages.ts',
+  'packages/core/src/latin-language.ts',
+  'packages/core/src/arabic-variety.ts',
+  'packages/core/src/contacts.ts',
+  'packages/core/src/search.ts',
+  'packages/core/src/processors.ts',
+  'packages/core/src/billing.ts',
+  'packages/core/src/countries.ts',
+]);
+/** Where a string is the code's own: an import, a type, a key, a comparison, a case, a log. */
+function codePlace(path) {
+  const p = path.parentPath;
+  const n = path.node;
+  if (p.isImportDeclaration() || p.isExportNamedDeclaration() || p.isExportAllDeclaration())
+    return true;
+  if (p.isImport() || p.isImportExpression() || p.isTSLiteralType() || p.isTSEnumMember())
+    return true;
+  if ((p.isObjectProperty() || p.isClassProperty() || p.isObjectMethod()) && p.node.key === n)
+    return true;
+  if (p.isMemberExpression() && p.node.property === n) return true;
+  if (p.isJSXAttribute() && CODE_ATTRS.has(p.node.name.name)) return true;
+  if (p.isBinaryExpression() && /^(===|!==|==|!=)$/.test(p.node.operator)) return true;
+  if (p.isSwitchCase()) return true;
+  if (
+    p.isNewExpression() &&
+    p.node.callee.type === 'Identifier' &&
+    /^(Error|TypeError|RangeError|RegExp)$/.test(p.node.callee.name)
+  )
+    return true;
+  if (p.isCallExpression()) {
+    const c = p.node.callee;
+    if (
+      c.type === 'MemberExpression' &&
+      c.object.type === 'Identifier' &&
+      c.object.name === 'console'
+    )
+      return true;
+    if (c.type === 'Identifier' && c.name === 'require') return true;
+  }
+  return false;
+}
 /** Prose in a template's own text: a word beside a space, or two words. */
 const PROSE = /(^|\s)[A-Za-z’']{2,}(\s|$)|[A-Za-z]{2,}\s[A-Za-z]{2,}/;
 const WORD = /[A-Za-z]{3,}/;
@@ -306,12 +386,22 @@ export function bareLiterals() {
       },
       StringLiteral(path) {
         const v = path.node.value;
-        if (!WORDS.test(v)) return;
+        if (!WORDS.test(v) && !SAYS.test(v)) return;
         // An argument of tr/trn/msg, or a key written in a table it reads later.
         if (i18nCall(path.parent)) return;
         const where = shownIn(path);
-        if (where === 'child' || where === 'toast' || where === 'alert' || TEXT_FIELDS.has(where))
+        if (
+          WORDS.test(v) &&
+          (where === 'child' || where === 'toast' || where === 'alert' || TEXT_FIELDS.has(where))
+        ) {
           add(path.node, where, v);
+          return;
+        }
+        // Words wherever they go next (M16 E1): a variable, a helper's argument, a field's error
+        // or a call's note reach a person as surely as a JSX child, and the old rule missed every
+        // one of them ('typing…', 'Calling…', `act(…, 'Signed out.')`).
+        if (SAYS.test(v) && !WORD_DATA_FILES.has(rel) && !codePlace(path))
+          add(path.node, 'words', v);
       },
       JSXText(path) {
         const v = path.node.value.trim();

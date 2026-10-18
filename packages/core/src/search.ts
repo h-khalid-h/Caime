@@ -8,7 +8,7 @@
 
 import { asciiDigits } from './digits';
 import { previewText } from './format';
-import { lower, tr } from './i18n';
+import { lower, msg, tr } from './i18n';
 import { findRole, relationshipFromWord, SPHERES, type Sphere } from './taxonomy';
 
 export const SEARCH_SCOPES = [
@@ -405,6 +405,30 @@ const FILE_WORDS: Array<[RegExp, FileKind | null, SearchScope]> = [
 
 const fileWord = (word: string) => FILE_WORDS.find(([re]) => re.test(word.trim()));
 
+/**
+ * What Search offers to try (M16 E1), shown in the reader's language: each is read whole by the
+ * rules in every interface language (`search-languages.test.ts`), so an example never leads to a
+ * search that understood nothing ("links in work" did, in English too).
+ */
+export const SEARCH_EXAMPLES = [
+  msg('my manager'),
+  msg('files from Sarah'),
+  msg('decisions last week'),
+  msg('my customers'),
+];
+
+/** What a search for one kind of file alone reads back as (M16 E1): a whole sentence each. */
+const ALL_FILES = msg('All files');
+const ALL_OF_KIND: Partial<Record<FileKind | SearchScope, string>> = {
+  pdf: msg('All PDFs'),
+  document: msg('All documents'),
+  image: msg('All photos'),
+  video: msg('All videos'),
+  audio: msg('All voice notes'),
+  files: ALL_FILES,
+  links: msg('All links'),
+};
+
 function clean(s: string): string {
   return s
     .trim()
@@ -718,7 +742,7 @@ function parseWords(q: string, out: ParsedQuery): ParsedQuery {
       scope: fileOnly[2],
       fileKind: fileOnly[1],
       text: '',
-      interpretation: tr('All {kinds}', { kinds: lower(q) }),
+      interpretation: tr(ALL_OF_KIND[fileOnly[1] ?? fileOnly[2]] ?? ALL_FILES),
     };
   }
 

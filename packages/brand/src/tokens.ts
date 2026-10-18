@@ -142,8 +142,13 @@ export type BubbleTheme = 'plum' | 'pink' | 'lavender' | 'sky' | 'mint' | 'sunsh
 export interface BubbleColors {
   bg: string;
   fg: string;
-  /** Timestamps and ticks inside the bubble. */
+  /** Timestamps inside the bubble. */
   meta: string;
+  /**
+   * The sent and delivered ticks (M16 E1): 3:1 on the bubble, and far enough from `fg`, which the
+   * read ticks take, that read and delivered never look alike (`tokens.test.ts`).
+   */
+  tick: string;
 }
 
 /** Your own messages. Personal choice; never changes what the other person sees (BRAND.md B7). */
@@ -153,33 +158,33 @@ export const bubbleThemes: Record<
 > = {
   plum: {
     label: 'Plum',
-    light: { bg: '#5B40A0', fg: '#FFFFFF', meta: '#E1D9F2' },
-    dark: { bg: '#6A57A8', fg: '#FFFFFF', meta: '#F0EBFB' },
+    light: { bg: '#5B40A0', fg: '#FFFFFF', meta: '#E1D9F2', tick: '#AD9FCF' },
+    dark: { bg: '#6A57A8', fg: '#FFFFFF', meta: '#F0EBFB', tick: '#C2BADB' },
   },
   pink: {
     label: 'Caime Pink',
-    light: { bg: '#FF8FB1', fg: '#2B2340', meta: '#4A2340' },
-    dark: { bg: '#FF8FB1', fg: '#2B2340', meta: '#4A2340' },
+    light: { bg: '#FF8FB1', fg: '#2B2340', meta: '#4A2340', tick: '#794B6A' },
+    dark: { bg: '#FF8FB1', fg: '#2B2340', meta: '#4A2340', tick: '#794B6A' },
   },
   lavender: {
     label: 'Lavender',
-    light: { bg: '#E9D5FF', fg: '#2B2340', meta: '#4E3F6B' },
-    dark: { bg: '#E9D5FF', fg: '#2B2340', meta: '#4E3F6B' },
+    light: { bg: '#E9D5FF', fg: '#2B2340', meta: '#4E3F6B', tick: '#7F7194' },
+    dark: { bg: '#E9D5FF', fg: '#2B2340', meta: '#4E3F6B', tick: '#7F7194' },
   },
   sky: {
     label: 'Sky',
-    light: { bg: '#7DD3FC', fg: '#0B2A3F', meta: '#123E5A' },
-    dark: { bg: '#7DD3FC', fg: '#0B2A3F', meta: '#123E5A' },
+    light: { bg: '#7DD3FC', fg: '#0B2A3F', meta: '#123E5A', tick: '#3A6F8C' },
+    dark: { bg: '#7DD3FC', fg: '#0B2A3F', meta: '#123E5A', tick: '#3A6F8C' },
   },
   mint: {
     label: 'Mint',
-    light: { bg: '#A7F3D0', fg: '#0B3B2A', meta: '#15543E' },
-    dark: { bg: '#A7F3D0', fg: '#0B3B2A', meta: '#15543E' },
+    light: { bg: '#A7F3D0', fg: '#0B3B2A', meta: '#15543E', tick: '#4D8870' },
+    dark: { bg: '#A7F3D0', fg: '#0B3B2A', meta: '#15543E', tick: '#4D8870' },
   },
   sunshine: {
     label: 'Sunshine',
-    light: { bg: '#FFD166', fg: '#3A2A00', meta: '#5A4300' },
-    dark: { bg: '#FFD166', fg: '#3A2A00', meta: '#5A4300' },
+    light: { bg: '#FFD166', fg: '#3A2A00', meta: '#5A4300', tick: '#8D702B' },
+    dark: { bg: '#FFD166', fg: '#3A2A00', meta: '#5A4300', tick: '#8D702B' },
   },
 };
 

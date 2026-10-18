@@ -88,13 +88,13 @@ export function RowActions({ item, onClose }: { item: InboxItemView | null; onCl
           icon={Star}
           title={tr('Always show as important')}
           subtitle={tr('Overrides your relationship rules for this conversation')}
-          onPress={() => run({ attention: 'priority' }, 'Marked important')}
+          onPress={() => run({ attention: 'priority' }, tr('Marked important'))}
         />
       ) : (
         <ListRow
           icon={Star}
           title={tr('Use my usual rules')}
-          onPress={() => run({ attention: 'auto' }, 'Back to your usual rules')}
+          onPress={() => run({ attention: 'auto' }, tr('Back to your usual rules'))}
         />
       )}
       {item.attention !== 'quiet' ? (
@@ -102,7 +102,7 @@ export function RowActions({ item, onClose }: { item: InboxItemView | null; onCl
           icon={Zap}
           title={tr('Keep it quiet')}
           subtitle={tr('Stays out of Needs you unless someone asks you something')}
-          onPress={() => run({ attention: 'quiet' }, 'Kept quiet')}
+          onPress={() => run({ attention: 'quiet' }, tr('Kept quiet'))}
         />
       ) : null}
       {item.muted ? (

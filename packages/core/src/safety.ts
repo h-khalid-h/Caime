@@ -174,16 +174,16 @@ export function assessLink(raw: string): LinkAssessment {
     url.password ||
     /@/.test(raw.replace(/^https?:\/\//i, '').split('/')[0] ?? '')
   ) {
-    reasons.push('Hides the real address behind an @');
+    reasons.push(tr('Hides the real address behind an @'));
   }
   if (/^\d{1,3}(\.\d{1,3}){3}$/.test(host) || host.startsWith('['))
-    reasons.push('Uses a raw IP address');
+    reasons.push(tr('Uses a raw IP address'));
   if (host.split('.').some((label) => label.startsWith('xn--')))
-    reasons.push('Uses look-alike characters');
-  if (SHORTENERS.has(host)) reasons.push('Shortened link hides where it goes');
+    reasons.push(tr('Uses look-alike characters'));
+  if (SHORTENERS.has(host)) reasons.push(tr('Shortened link hides where it goes'));
   const tld = host.split('.').pop() ?? '';
   if (RISKY_TLDS.has(tld)) reasons.push(tr('Unusual domain ending (.{tld})', { tld }));
-  if (host.split('.').length > 5) reasons.push('Unusually many subdomains');
+  if (host.split('.').length > 5) reasons.push(tr('Unusually many subdomains'));
   const registrable = host.split('.').slice(-2).join('.');
   for (const brand of BRANDS) {
     const labels = host.split('.');
@@ -195,7 +195,10 @@ export function assessLink(raw: string): LinkAssessment {
       break;
     }
   }
-  if (url.protocol === 'http:') reasons.push('Not encrypted (http)');
-  const suspicious = reasons.some((r) => !r.startsWith('Not encrypted')) || reasons.length > 1;
+  // Plain http alone is worth saying but isn't suspicious; with anything else, it is. Counted, never
+  // read back from the words, which are the reader's language.
+  const plain = url.protocol === 'http:';
+  if (plain) reasons.push(tr('Not encrypted (http)'));
+  const suspicious = reasons.length > (plain ? 1 : 0);
   return { suspicious, reasons };
 }

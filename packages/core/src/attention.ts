@@ -102,10 +102,6 @@ export interface AttentionResult {
   rank: number;
 }
 
-function plural(n: number, one: string, many: string): string {
-  return n === 1 ? one : many.replace('{n}', String(n));
-}
-
 export function classifyAttention(input: AttentionInput, now: Date): AttentionResult {
   const reasons: AttentionReason[] = [];
   const at = input.lastActivityAt ? Date.parse(input.lastActivityAt) : 0;
@@ -117,7 +113,7 @@ export function classifyAttention(input: AttentionInput, now: Date): AttentionRe
   if (input.overdueToMe > 0) {
     needs.push({
       tier: 6,
-      reason: { code: 'overdue', label: plural(input.overdueToMe, 'Overdue', '{n} overdue') },
+      reason: { code: 'overdue', label: trn(input.overdueToMe, 'Overdue', '{n} overdue') },
     });
   }
   if (input.dueSoonToMe > 0)
@@ -127,7 +123,7 @@ export function classifyAttention(input: AttentionInput, now: Date): AttentionRe
       tier: 4,
       reason: {
         code: 'request_to_you',
-        label: plural(input.openRequestsToMe, 'Asked you to do something', '{n} requests for you'),
+        label: trn(input.openRequestsToMe, 'Asked you to do something', '{n} requests for you'),
       },
     });
   }
@@ -200,7 +196,7 @@ export function classifyAttention(input: AttentionInput, now: Date): AttentionRe
     if (input.waitingOnThem > 0) {
       reasons.push({
         code: 'waiting_on_them',
-        label: plural(input.waitingOnThem, 'You’re waiting on them', 'Waiting on {n} things'),
+        label: trn(input.waitingOnThem, 'You’re waiting on them', 'Waiting on {n} things'),
       });
     } else {
       reasons.push({ code: 'awaiting_reply', label: tr('Waiting for a reply') });
@@ -209,7 +205,7 @@ export function classifyAttention(input: AttentionInput, now: Date): AttentionRe
   }
 
   if (input.unreadCount > 0) {
-    reasons.push({ code: 'unread', label: plural(input.unreadCount, '1 new', '{n} new') });
+    reasons.push({ code: 'unread', label: trn(input.unreadCount, '1 new', '{n} new') });
   }
   if (waiting) reasons.push({ code: 'waiting_on_them', label: tr('You’re waiting on them') });
 

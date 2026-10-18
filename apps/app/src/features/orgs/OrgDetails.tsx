@@ -64,7 +64,7 @@ export function OrgDetailsSheet({
 
   const save = async () => {
     const next = {
-      name: name.trim() ? undefined : 'Give the organization a name.',
+      name: name.trim() ? undefined : tr('Give the organization a name.'),
       country: country ? undefined : tr('Choose where it’s based.'),
     };
     setErrors(next);

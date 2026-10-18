@@ -41,11 +41,16 @@ export async function media(kind: CallKind): Promise<{ stream: MediaStream; came
 /** Why the microphone or camera couldn't be used, and what to do about it. */
 export function mediaTrouble(e: unknown, kind: CallKind): string {
   const name = errorName(e);
-  const where = onPhone ? 'in Settings' : 'in your browser’s site settings';
   if (name === 'NotAllowedError' || name === 'SecurityError' || name === 'PermissionDeniedError')
     return kind === 'video'
-      ? tr('Allow Caime to use your camera and microphone {where}, then try again.', { where })
-      : tr('Allow Caime to use your microphone {where}, then try again.', { where });
+      ? onPhone
+        ? tr('Allow Caime to use your camera and microphone in Settings, then try again.')
+        : tr(
+            'Allow Caime to use your camera and microphone in your browser’s site settings, then try again.',
+          )
+      : onPhone
+        ? tr('Allow Caime to use your microphone in Settings, then try again.')
+        : tr('Allow Caime to use your microphone in your browser’s site settings, then try again.');
   if (name === 'NotFoundError' || name === 'OverconstrainedError')
     return tr('Caime can’t find a microphone on this device.');
   if (name === 'NotReadableError' || name === 'AbortError')

@@ -504,7 +504,7 @@ export function KitForm({
       const Location = await import('expo-location');
       const { status } = await Location.requestForegroundPermissionsAsync();
       if (status !== 'granted') {
-        setError('Caime can’t see where you are. Allow it in your settings, or type a place.');
+        setError(tr('Caime can’t see where you are. Allow it in your settings, or type a place.'));
         return;
       }
       const { coords } = await Location.getCurrentPositionAsync({
@@ -531,7 +531,7 @@ export function KitForm({
     let body: { kind: 'kit' | 'poll' | 'location'; payload: unknown };
     if (kit === 'location') {
       const label = (texts.label ?? '').trim();
-      if (!spot && !label) return setError('Share where you are, or type a place.');
+      if (!spot && !label) return setError(tr('Share where you are, or type a place.'));
       body = {
         kind: 'location',
         payload: {
@@ -543,8 +543,8 @@ export function KitForm({
     } else if (kit === 'poll') {
       const question = (texts.question ?? '').trim();
       const choices = options.map((o) => o.trim()).filter(Boolean);
-      if (!question) return setError('Ask a question.');
-      if (choices.length < 2) return setError('Add at least two options.');
+      if (!question) return setError(tr('Ask a question.'));
+      if (choices.length < 2) return setError(tr('Add at least two options.'));
       body = {
         kind: 'poll',
         payload: {
@@ -604,7 +604,7 @@ export function KitForm({
       }));
       if (picking && !lines.length) return setError(tr('Pick something to order.'));
       if (slots?.slots.length) {
-        if (!slot) return setError('Pick a time.');
+        if (!slot) return setError(tr('Pick a time.'));
         fields.start = { at: slot, hasTime: true };
       }
       if (payingShare && start?.amount) {

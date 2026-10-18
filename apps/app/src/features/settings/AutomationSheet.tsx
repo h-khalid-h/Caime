@@ -11,7 +11,7 @@ import {
   withoutWord,
   wordsFrom,
 } from '@caime/core/automations';
-import { lower, msg, tr } from '@caime/core/i18n';
+import { msg, tr } from '@caime/core/i18n';
 import { ROLES, SPHERE_DEFS, SPHERES, type Sphere } from '@caime/core/taxonomy';
 import { useQueryClient } from '@tanstack/react-query';
 import { useState } from 'react';
@@ -183,9 +183,7 @@ export function AutomationSheet({
               options={[
                 {
                   value: ALL,
-                  label: tr('All {kinds}', {
-                    kinds: lower(tr(SPHERE_DEFS[sphere as Sphere].plural)),
-                  }),
+                  label: tr('All of them'),
                 },
                 ...roles.map((r) => ({ value: r.id, label: tr(r.plural) })),
               ]}

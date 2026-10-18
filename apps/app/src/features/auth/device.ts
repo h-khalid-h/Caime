@@ -12,7 +12,7 @@ export function deviceInfo() {
     Platform.OS === 'web'
       ? tr('Web browser')
       : Platform.OS === 'ios'
-        ? 'iPhone or iPad'
+        ? tr('iPhone or iPad')
         : tr('Android device');
   return { client: clientKind, locale, timeZone: timeZone ?? undefined, deviceName };
 }

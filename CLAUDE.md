@@ -283,6 +283,19 @@ appointment from a catalog).
   never a `shadowColor` of its own.
 - A sheet whose content depends on the state that closes it should keep the last content while
   it fades (see the member sheet in `SpaceScreen`), or it fades out empty.
+- The chat says what's true (M16 E1). A place whose first load failed says so through
+  `LoadFailed` (`ui/LoadFailed.tsx`: what failed, the reason that came back, Try again; `lazyPart`ed
+  wherever it's shown, `LAZY_EVERYWHERE`: imported by three routes it sat in `__common` and took
+  the first download 0.4 KB over budget), never an
+  empty state, a first run or "the beginning of your conversation" (`isError && !data`; a
+  conversation's start shows only once its messages have loaded to it); a new list does the same.
+  A delete goes through `deleteWithUndo` (`features/conversation/deleteWithUndo.ts`): shown at
+  once, sent once the toast's Undo has passed (or as the app is left: `pagehide`, the background),
+  put back exactly by `restoreMessage` (`state/cache.ts`, into its own page by seq); a new
+  destructive action on a message takes that shape rather than a confirmation. Read and delivered
+  differ by shape and colour: sent and delivered in the bubble's `tick` token (3:1 on the bubble,
+  1.8:1 from its `fg`), read in `fg` with a heavier stroke, and on a card of one's own the
+  tertiary text and the text (`tokens.test.ts` holds both).
 - Fonts: on the web the faces are WOFF2 in `apps/app/public/fonts`, written there with the
   shell's `caime-fonts` block in `index.html` by `pnpm fonts` (`scripts/web-fonts.mjs`, from
   Fontsource's cuts; OFL beside them), never by hand: the brand's two families by weight, `Inter`
@@ -720,9 +733,13 @@ appointment from a catalog).
   without its translation or an entry nothing says (`node scripts/i18n-keys.mjs missing <lang>`
   lists them), and `i18n-literals.test.ts` fails for English shown outside `tr` (`node
   scripts/i18n-keys.mjs bare`: a template literal with prose in its own text, a template handed
-  to `tr` as its key, JSX text, a string of words as a JSX child or in a field a person reads;
-  the lines of data it allows, a header, an id, a rule's own French, are listed in the
-  test, and nothing joins that list that someone reads as the interface's words). A table of
+  to `tr` as its key, JSX text, a string of words as a JSX child or in a field a person reads,
+  and since M16 E1 any string of words anywhere in the app or core that isn't the code's own,
+  since a variable, a helper's argument or a field's error reaches a person too (`SAYS` and
+  `codePlace` in the script; core's files of rules and data are `WORD_DATA_FILES`); the lines of
+  data it allows, a header, an id, a rule's own French, are listed in the test, and nothing joins
+  that list that someone reads as the interface's words). What Search offers to try is core's
+  `SEARCH_EXAMPLES`, each read whole by the rules in every language (`search-languages.test.ts`). A table of
   labels (`ORG_ROLE_LABELS`, `SECTION_LABELS`, the scopes') is `msg()` on every entry, single
   words included, so the collector sees them. Who an automation is for is named as the person
   labelled them, "someone you call “Customer”" (`whoSends`, core `automations.ts`): no article

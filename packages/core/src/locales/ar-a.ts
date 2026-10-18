@@ -469,7 +469,6 @@ export const arA: Catalog = {
   'For everyone you know one way, or in one role': 'لكل من تعرفهم بطريقة واحدة، أو في دور واحد',
   'Make the rule': { toWoman: 'أنشئي القاعدة', toMan: 'أنشئ القاعدة', other: 'أنشئ القاعدة' },
   'Of them': 'منهم',
-  'All {kinds}': 'كل {kinds}',
   'Its name (optional)': 'اسمها (اختياري)',
   'My customers': 'عملائي',
   'Notifications and priorities': 'الإشعارات والأولويات',
@@ -979,10 +978,6 @@ export const arA: Catalog = {
   'You’re already in a call.': 'أنت في مكالمة بالفعل.',
   'Calls with {withName}': 'المكالمات مع {withName}',
   Calls: 'المكالمات',
-  'Allow Caime to use your camera and microphone {where}, then try again.':
-    'اسمح لـ Caime باستخدام الكاميرا والميكروفون {where}، ثم حاول مرة أخرى.',
-  'Allow Caime to use your microphone {where}, then try again.':
-    'اسمح لـ Caime باستخدام الميكروفون {where}، ثم حاول مرة أخرى.',
   'Caime can’t find a microphone on this device.': 'لا يجد Caime ميكروفونًا على هذا الجهاز.',
   'Another app is using your microphone. Close it, then try again.':
     'تطبيق آخر يستخدم ميكروفونك. أغلقه، ثم حاول مرة أخرى.',

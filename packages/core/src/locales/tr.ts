@@ -388,7 +388,6 @@ export const turkish: Catalog = {
   'Make the rule': 'Kuralı oluştur',
   'Who it’s for': 'Kimin için',
   'Of them': 'Bunlardan',
-  'All {kinds}': 'Tüm {kinds}',
   'Its name (optional)': 'Adı (isteğe bağlı)',
   'My customers': 'Müşterilerim',
   'Notifications and priorities': 'Bildirimler ve öncelikler',
@@ -884,10 +883,6 @@ export const turkish: Catalog = {
   'You’re already in a call.': 'Zaten bir aramadasınız.',
   'Calls with {withName}': '{withName} ile aramalar',
   Calls: 'Aramalar',
-  'Allow Caime to use your camera and microphone {where}, then try again.':
-    '{where} Caime’nin kameranızı ve mikrofonunuzu kullanmasına izin verin, sonra yeniden deneyin.',
-  'Allow Caime to use your microphone {where}, then try again.':
-    '{where} Caime’nin mikrofonunuzu kullanmasına izin verin, sonra yeniden deneyin.',
   'Caime can’t find a microphone on this device.': 'Caime bu cihazda mikrofon bulamıyor.',
   'Another app is using your microphone. Close it, then try again.':
     'Başka bir uygulama mikrofonunuzu kullanıyor. Kapatıp yeniden deneyin.',
@@ -4364,4 +4359,89 @@ export const turkish: Catalog = {
   'Who sees it is up to you, under Privacy: Work details.':
     'Kimin göreceğini Gizlilik bölümünde, İş bilgileri altında siz belirlersiniz.',
   '{name}, verified organization': '{name}, doğrulanmış kuruluş',
+  'You’re offline. Try again when you’re back.':
+    'Çevrimdışısınız. Bağlantı geri geldiğinde tekrar deneyin.',
+  'Something went wrong.': 'Bir şeyler ters gitti.',
+  'Go back to the app': 'Uygulamaya dön',
+  'Then you’ll go back to the app.': 'Ardından uygulamaya döneceksiniz.',
+  'my manager': 'yöneticim',
+  'files from Sarah': 'Sarah’dan dosyalar',
+  'decisions last week': 'kararlar geçen hafta',
+  'my customers': 'müşterilerim',
+  'All of them': 'Hepsi',
+  'Enter the email you signed up with.': 'Kaydolduğunuz e-postayı girin.',
+  'Enter your email or handle, and your password.':
+    'E-postanızı veya kullanıcı adınızı ve şifrenizi girin.',
+  'iPhone or iPad': 'iPhone veya iPad',
+  'No longer escalated': 'Artık yöneticilere iletilmiyor',
+  'The call couldn’t connect.': 'Arama bağlanamadı.',
+  'The call dropped.': 'Arama kesildi.',
+  'Missed call': 'Cevapsız arama',
+  'You’re in this call on another device now.': 'Artık bu aramadasınız, ama başka bir cihazda.',
+  'Allow Caime to use your camera and microphone in Settings, then try again.':
+    'Ayarlar’da Caime’in kameranızı ve mikrofonunuzu kullanmasına izin verin, sonra tekrar deneyin.',
+  'Allow Caime to use your camera and microphone in your browser’s site settings, then try again.':
+    'Tarayıcınızın site ayarlarında Caime’in kameranızı ve mikrofonunuzu kullanmasına izin verin, sonra tekrar deneyin.',
+  'Allow Caime to use your microphone in Settings, then try again.':
+    'Ayarlar’da Caime’in mikrofonunuzu kullanmasına izin verin, sonra tekrar deneyin.',
+  'Allow Caime to use your microphone in your browser’s site settings, then try again.':
+    'Tarayıcınızın site ayarlarında Caime’in mikrofonunuzu kullanmasına izin verin, sonra tekrar deneyin.',
+  'this message': 'bu mesaj',
+  'Your recovery key no longer works.': 'Kurtarma anahtarınız artık çalışmıyor.',
+  'Removed, and signed out.': 'Kaldırıldı ve oturumu kapatıldı.',
+  'Signed out.': 'Oturum kapatıldı.',
+  'Someone’s security code changed since you compared it: check it in this conversation’s details, then send again.':
+    'Birinin güvenlik kodu karşılaştırdığınızdan beri değişti: bu konuşmanın ayrıntılarından kontrol edin, sonra yeniden gönderin.',
+  'A device listed for someone here couldn’t be confirmed as theirs, so this wasn’t sent. Check their security code in this conversation’s details.':
+    'Buradaki birine ait görünen bir cihaz onunki olarak doğrulanamadı, bu yüzden gönderilmedi. Bu konuşmanın ayrıntılarından güvenlik kodunu kontrol edin.',
+  'You: {preview}': 'Siz: {preview}',
+  'Marked important': 'Önemli olarak işaretlendi',
+  'Back to your usual rules': 'Her zamanki kurallarınıza dönüldü',
+  'Kept quiet': 'Sessizde tutuluyor',
+  'Caime can’t see where you are. Allow it in your settings, or type a place.':
+    'Caime nerede olduğunuzu göremiyor. Ayarlarınızdan izin verin ya da bir yer yazın.',
+  'Share where you are, or type a place.': 'Nerede olduğunuzu paylaşın ya da bir yer yazın.',
+  'Ask a question.': 'Bir soru sorun.',
+  'Pick a time.': 'Bir saat seçin.',
+  'Request cancelled': 'İstek iptal edildi',
+  'You left the space': 'Alandan ayrıldınız',
+  'Update taken back': 'Güncelleme geri alındı',
+  'Update changed': 'Güncelleme değiştirildi',
+  'The kit': 'Kart',
+  'Its description': 'Açıklaması',
+  'Your reminder': 'Hatırlatıcınız',
+  'Muted conversation': 'Sessize alınmış konuşma',
+  'Hides the real address behind an @': 'Gerçek adresi bir @ arkasına gizliyor',
+  'Uses a raw IP address': 'Çıplak bir IP adresi kullanıyor',
+  'Uses look-alike characters': 'Birbirine benzeyen karakterler kullanıyor',
+  'Shortened link hides where it goes': 'Kısaltılmış bağlantı nereye gittiğini gizliyor',
+  'Unusually many subdomains': 'Alışılmadık sayıda alt alan adı',
+  'Not encrypted (http)': 'Şifrelenmemiş (http)',
+  'A role or organization needs a sphere.':
+    'Bir rol veya kuruluş için önce nereden tanıdığınızı seçin.',
+  'All files': 'Tüm dosyalar',
+  'All PDFs': 'Tüm PDF’ler',
+  'All documents': 'Tüm belgeler',
+  'All photos': 'Tüm fotoğraflar',
+  'All videos': 'Tüm videolar',
+  'All voice notes': 'Tüm sesli mesajlar',
+  'All links': 'Tüm bağlantılar',
+  '{n} overdue': {
+    one: 'Gecikmiş',
+    other: '{n} gecikmiş',
+  },
+  '{n} requests for you': {
+    one: 'Sizden bir şey yapmanızı istedi',
+    other: 'Sizden {n} şey istendi',
+  },
+  'Waiting on {n} things': {
+    one: 'Onları bekliyorsunuz',
+    other: '{n} şey bekleniyor',
+  },
+  'Deleted for everyone': 'Herkes için silindi',
+  'Deleted for you': 'Sizin için silindi',
+  'Your day couldn’t load': 'Gününüz yüklenemedi',
+  'What you’re waiting on couldn’t load': 'Beklediklerinizin listesi yüklenemedi',
+  'These messages couldn’t load': 'Bu mesajlar yüklenemedi',
+  'Your conversations couldn’t load': 'Konuşmalarınız yüklenemedi',
 };

@@ -1,5 +1,5 @@
 import type { PolicyView } from '@caime/core/api';
-import { lower, tr } from '@caime/core/i18n';
+import { tr } from '@caime/core/i18n';
 import { resolvePolicy } from '@caime/core/policy';
 import { findRole, ROLES, SPHERE_DEFS, SPHERES, type Sphere } from '@caime/core/taxonomy';
 import { workHours } from '@caime/core/time';
@@ -138,9 +138,9 @@ function NewRule({
                 options={[
                   {
                     value: 'all',
-                    label: tr('All {kinds}', {
-                      kinds: lower(tr(SPHERE_DEFS[sphere].plural)),
-                    }),
+                    // Under "Of them": a whole sentence in every language, never a plural
+                    // dropped into one ("Tous les connaissances", M16 E1).
+                    label: tr('All of them'),
                   },
                   ...ROLES[sphere].map((r) => ({ value: r.id, label: tr(r.plural) })),
                 ]}

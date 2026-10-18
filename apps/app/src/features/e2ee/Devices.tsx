@@ -81,8 +81,8 @@ export function PrivateDevices() {
                       act(
                         (p) => p.removeDevice(d.id),
                         d.recovery
-                          ? 'Your recovery key no longer works.'
-                          : 'Removed, and signed out.',
+                          ? tr('Your recovery key no longer works.')
+                          : tr('Removed, and signed out.'),
                       )
                     }
                     testID={d.recovery ? 'private-recovery-off' : 'private-device-remove'}

@@ -4,6 +4,10 @@ import { contrastRatio } from './contrast';
 import { avatarPalette, bubbleThemes, sphereStyles, themes } from './tokens';
 
 const AA = 4.5;
+/** WCAG 1.4.11: a mark that means something, against what it sits on. */
+const NON_TEXT = 3;
+/** How far apart read and delivered stand, whatever the bubble. */
+const READ_APART = 1.8;
 
 describe('contrast math', () => {
   it('matches the WCAG reference values', () => {
@@ -41,6 +45,21 @@ describe.each(['light', 'dark'] as const)('%s theme', (scheme) => {
     const b = bubbleThemes[name as keyof typeof bubbleThemes][scheme];
     expect(contrastRatio(b.fg, b.bg)).toBeGreaterThanOrEqual(AA);
     expect(contrastRatio(b.meta, b.bg)).toBeGreaterThanOrEqual(AA);
+  });
+
+  // Read and delivered (M16 E1, review 2026-10-17 §7 H1): each tick seen on its bubble (3:1, as
+  // for any mark that means something), and read never the same as delivered, whose colours were
+  // 1.04:1 apart; read is also drawn heavier, so it differs by more than colour.
+  it.each(Object.keys(bubbleThemes))('bubble theme %s tells read from delivered', (name) => {
+    const b = bubbleThemes[name as keyof typeof bubbleThemes][scheme];
+    expect(contrastRatio(b.tick, b.bg)).toBeGreaterThanOrEqual(NON_TEXT);
+    expect(contrastRatio(b.fg, b.tick)).toBeGreaterThanOrEqual(READ_APART);
+  });
+
+  it('a card of your own tells read from delivered too', () => {
+    // A card's ticks sit on the surface: delivered in the tertiary text, read in the text.
+    expect(contrastRatio(t.textTertiary, t.surface)).toBeGreaterThanOrEqual(NON_TEXT);
+    expect(contrastRatio(t.text, t.textTertiary)).toBeGreaterThanOrEqual(READ_APART);
   });
 
   it.each([...SPHERES])('sphere %s chips are readable', (sphere) => {

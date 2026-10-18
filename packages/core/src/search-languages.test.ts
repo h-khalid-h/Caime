@@ -1,9 +1,9 @@
 import { afterEach, describe, expect, it } from 'vitest';
-import { english, makeTranslator, setTranslator } from './i18n';
+import { english, makeTranslator, setTranslator, tr } from './i18n';
 import { ar } from './locales/ar';
 import { fr } from './locales/fr';
 import { turkish } from './locales/tr';
-import { isPlainText, looksLikeSentence, parseSearchQuery } from './search';
+import { isPlainText, looksLikeSentence, parseSearchQuery, SEARCH_EXAMPLES } from './search';
 
 /**
  * Search reads every interface language (convention 17): the same shapes as English, as people
@@ -169,5 +169,20 @@ describe('what a model may read, in every language', () => {
     expect(isPlainText(at('صور من سارة'))).toBe(false);
     expect(isPlainText(at('photos de la semaine dernière'))).toBe(false);
     expect(isPlainText(at("Sarah'dan fotoğraflar"))).toBe(false);
+  });
+});
+
+describe('what Search offers to try (M16 E1)', () => {
+  it.each([
+    ['en', {}],
+    ['ar', ar],
+    ['fr', fr],
+    ['tr', turkish],
+  ] as const)('is understood whole in %s, never left as words to match', (lang, catalog) => {
+    setTranslator(lang === 'en' ? english : makeTranslator(lang, catalog));
+    for (const example of SEARCH_EXAMPLES) {
+      const read = at(tr(example));
+      expect({ example, text: read.text }).toEqual({ example, text: '' });
+    }
   });
 });

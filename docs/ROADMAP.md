@@ -2636,6 +2636,27 @@ graph) and the number that will show it; one that sharpens none is hygiene and s
       pill, open at first unread, counts on the jump button, big emoji-only messages, highlighted
       mentions; honest error states with retry; one vocabulary; confirm and undo on delete; mark
       as unread, reply privately, last seen.
+- [x] E1. A chat that says what's true (2026-10-18, review §7 H1, H2, H5 and the M row). Read
+      and delivered no longer look alike: their colours had been 1.04:1 apart on the default
+      bubble; now sent and delivered take each bubble's `tick` token (3:1 on the bubble, 1.8:1
+      from its text) and read takes the text's colour with a heavier stroke, a card of one's own
+      the tertiary text and the text, held by `tokens.test.ts` for every bubble in both schemes.
+      English that showed through in the other three languages is gone: the call screen's
+      states, "typing…" and "You:" in Chats, the server's "Encrypted message", the inbox reasons
+      core counted by hand ("{n} requests for you", "{n} new"), a link's safety reasons (whose
+      "suspicious" was read back from their English words), every toast, field error and note
+      handed to a helper, the reported thing's name, a field's "not chosen", and the camera's
+      "in Settings" dropped into a sentence; the scanner that missed them now flags any string
+      of words that isn't the code's own (6 left, each data and listed). "All {kinds}" became
+      whole sentences ("All of them", "All photos"…), Search's examples come from core and are
+      each understood whole in every language ("links in work" wasn't, even in English). A first
+      load that fails says so with Try again (`LoadFailed`) on Home, Chats and a conversation,
+      never "nothing needs you", the first-run screen or "the beginning". A delete (for everyone
+      or for oneself) shows at once and offers Undo, sent only once Undo has passed, so taking it
+      back is exact. Verified: `tokens.test.ts`, `i18n-literals.test.ts` and the catalogs in four
+      languages, `search-languages.test.ts`, `cache.test.ts` (a delete undone lands in its own
+      page), `e2e/honest-chat.spec.ts` (Undo puts it back and the server still has it; past it,
+      the other side sees it deleted; a failed first load and Try again), and the full gate.
 - [ ] F. Mail, calendar, meetings: CC and reply-all as people on the topic; unverified mail shown
       under Notices, never dropped; a follow-up allowance to new addresses; invitations arriving
       by mail become cards; cards travel by mail; "Suggest another time" with guest invitations
@@ -4257,6 +4278,10 @@ graph) and the number that will show it; one that sharpens none is hygiene and s
   journeys, safety, reliability, performance, intelligence, mail and calendar, chat, integrations,
   business and code integrity; the matrix against WhatsApp, Signal, Slack, Calendly and Workspace;
   an age-assurance design; the integration framework mapped to the code; plan M16 (A–H).
+- 2026-10-18 — M16 E1: a chat that says what's true: read never looks like delivered, no English
+  showing through in the other languages (and a scanner that would see it), a failed load said
+  as one with Try again, Undo on delete. D4b verified on cai.me (the shared chunk byte for byte,
+  the pricing page's whole-sentence keys in Arabic).
 - 2026-10-18 — M16 D4d: one face per person (R99): a line about what you do, shown by Work
   details, in place of identities nobody could set; block D (performance and integrity) done.
 - 2026-10-18 — M16 D4c: one consent pipeline for contacts and connected accounts (the link, the

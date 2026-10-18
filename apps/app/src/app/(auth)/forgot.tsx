@@ -18,7 +18,7 @@ export default function Forgot() {
   const [busy, setBusy] = useState(false);
   const submit = async () => {
     if (!email.trim()) {
-      setError('Enter the email you signed up with.');
+      setError(tr('Enter the email you signed up with.'));
       return;
     }
     setBusy(true);

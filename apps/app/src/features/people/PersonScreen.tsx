@@ -291,7 +291,7 @@ function PersonPage({ id, book = null, slug = null }: PersonScreenProps) {
           act(
             'decline',
             () => endpoints.declineRequest(p.connection.requestId ?? ''),
-            'Declined. They won’t be told.',
+            tr('Declined. They won’t be told.'),
           )
         }
       />
@@ -307,7 +307,7 @@ function PersonPage({ id, book = null, slug = null }: PersonScreenProps) {
         act(
           'cancel',
           () => endpoints.cancelRequest(p.connection.requestId ?? ''),
-          'Request cancelled',
+          tr('Request cancelled'),
         )
       }
     />

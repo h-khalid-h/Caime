@@ -689,7 +689,7 @@ export function SpaceScreen({ id }: { id: string }) {
             onPress={() =>
               void (async () => {
                 if (
-                  await run(() => endpoints.removeFromSpace(space.id, me), 'You left the space')
+                  await run(() => endpoints.removeFromSpace(space.id, me), tr('You left the space'))
                 ) {
                   setLeaving(false);
                   router.replace('/spaces');

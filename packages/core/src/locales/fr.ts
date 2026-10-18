@@ -414,7 +414,6 @@ export const fr: Catalog = {
   'Make the rule': 'Créer la règle',
   'Who it’s for': 'Pour qui',
   'Of them': 'Parmi eux',
-  'All {kinds}': 'Tous les {kinds}',
   'Its name (optional)': 'Son nom (facultatif)',
   'My customers': 'Mes clients',
   'Notifications and priorities': 'Notifications et priorités',
@@ -925,10 +924,6 @@ export const fr: Catalog = {
   'You’re already in a call.': 'Vous êtes déjà en appel.',
   'Calls with {withName}': 'Appels avec {withName}',
   Calls: 'Appels',
-  'Allow Caime to use your camera and microphone {where}, then try again.':
-    'Autorisez Caime à utiliser votre caméra et votre micro {where}, puis réessayez.',
-  'Allow Caime to use your microphone {where}, then try again.':
-    'Autorisez Caime à utiliser votre micro {where}, puis réessayez.',
   'Caime can’t find a microphone on this device.': 'Caime ne trouve pas de micro sur cet appareil.',
   'Another app is using your microphone. Close it, then try again.':
     'Une autre application utilise votre micro. Fermez-la, puis réessayez.',
@@ -4544,4 +4539,90 @@ export const fr: Catalog = {
   'Who sees it is up to you, under Privacy: Work details.':
     'Qui le voit dépend de vous, dans Confidentialité : Détails professionnels.',
   '{name}, verified organization': '{name}, organisation vérifiée',
+  'You’re offline. Try again when you’re back.':
+    'Hors ligne. Réessayez quand la connexion sera revenue.',
+  'Something went wrong.': 'Une erreur est survenue.',
+  'Go back to the app': 'Revenir à l’application',
+  'Then you’ll go back to the app.': 'Vous reviendrez ensuite à l’application.',
+  'my manager': 'mon responsable',
+  'files from Sarah': 'fichiers de Sarah',
+  'decisions last week': 'décisions de la semaine dernière',
+  'my customers': 'mes clients',
+  'All of them': 'Tous',
+  'Enter the email you signed up with.': 'Saisissez l’adresse e-mail utilisée à l’inscription.',
+  'Enter your email or handle, and your password.':
+    'Saisissez votre e-mail ou votre identifiant, et votre mot de passe.',
+  'iPhone or iPad': 'iPhone ou iPad',
+  'No longer escalated': 'Ne remonte plus',
+  'The call couldn’t connect.': 'L’appel n’a pas pu se connecter.',
+  'The call dropped.': 'L’appel a été coupé.',
+  'Missed call': 'Appel manqué',
+  'You’re in this call on another device now.':
+    'Vous êtes maintenant dans cet appel sur un autre appareil.',
+  'Allow Caime to use your camera and microphone in Settings, then try again.':
+    'Autorisez Caime à utiliser votre caméra et votre micro dans Paramètres, puis réessayez.',
+  'Allow Caime to use your camera and microphone in your browser’s site settings, then try again.':
+    'Autorisez Caime à utiliser votre caméra et votre micro dans les paramètres du site de votre navigateur, puis réessayez.',
+  'Allow Caime to use your microphone in Settings, then try again.':
+    'Autorisez Caime à utiliser votre micro dans Paramètres, puis réessayez.',
+  'Allow Caime to use your microphone in your browser’s site settings, then try again.':
+    'Autorisez Caime à utiliser votre micro dans les paramètres du site de votre navigateur, puis réessayez.',
+  'this message': 'ce message',
+  'Your recovery key no longer works.': 'Votre clé de récupération ne fonctionne plus.',
+  'Removed, and signed out.': 'Retiré, et déconnecté.',
+  'Signed out.': 'Déconnecté.',
+  'Someone’s security code changed since you compared it: check it in this conversation’s details, then send again.':
+    'Le code de sécurité de quelqu’un a changé depuis votre comparaison : vérifiez-le dans les détails de cette conversation, puis renvoyez.',
+  'A device listed for someone here couldn’t be confirmed as theirs, so this wasn’t sent. Check their security code in this conversation’s details.':
+    'Un appareil indiqué pour quelqu’un ici n’a pas pu être confirmé comme le sien : ce message n’a donc pas été envoyé. Vérifiez son code de sécurité dans les détails de cette conversation.',
+  'You: {preview}': 'Vous : {preview}',
+  'Marked important': 'Marquée comme importante',
+  'Back to your usual rules': 'Retour à vos règles habituelles',
+  'Kept quiet': 'En mode calme',
+  'Caime can’t see where you are. Allow it in your settings, or type a place.':
+    'Caime ne peut pas voir où vous êtes. Autorisez-le dans vos réglages, ou saisissez un lieu.',
+  'Share where you are, or type a place.': 'Partagez où vous êtes, ou saisissez un lieu.',
+  'Ask a question.': 'Posez une question.',
+  'Pick a time.': 'Choisissez un horaire.',
+  'Request cancelled': 'Demande annulée',
+  'You left the space': 'Vous avez quitté l’espace',
+  'Update taken back': 'Actualité retirée',
+  'Update changed': 'Actualité modifiée',
+  'The kit': 'La carte',
+  'Its description': 'Sa description',
+  'Your reminder': 'Votre rappel',
+  'Muted conversation': 'Conversation en sourdine',
+  'Hides the real address behind an @': 'Cache la vraie adresse derrière un @',
+  'Uses a raw IP address': 'Utilise une adresse IP brute',
+  'Uses look-alike characters': 'Utilise des caractères qui se ressemblent',
+  'Shortened link hides where it goes': 'Un lien raccourci cache sa destination',
+  'Unusually many subdomains': 'Un nombre inhabituel de sous-domaines',
+  'Not encrypted (http)': 'Non chiffré (http)',
+  'A role or organization needs a sphere.':
+    'Un rôle ou une organisation demande d’abord d’où vous vous connaissez.',
+  'All files': 'Tous les fichiers',
+  'All PDFs': 'Tous les PDF',
+  'All documents': 'Tous les documents',
+  'All photos': 'Toutes les photos',
+  'All videos': 'Toutes les vidéos',
+  'All voice notes': 'Tous les messages vocaux',
+  'All links': 'Tous les liens',
+  '{n} overdue': {
+    one: 'En retard',
+    other: '{n} en retard',
+  },
+  '{n} requests for you': {
+    one: 'Vous a demandé quelque chose',
+    other: '{n} demandes pour vous',
+  },
+  'Waiting on {n} things': {
+    one: 'Vous attendez leur réponse',
+    other: 'En attente de {n} choses',
+  },
+  'Deleted for everyone': 'Supprimé pour tout le monde',
+  'Deleted for you': 'Supprimé pour vous',
+  'Your day couldn’t load': 'Votre journée n’a pas pu se charger',
+  'What you’re waiting on couldn’t load': 'Ce que vous attendez n’a pas pu se charger',
+  'These messages couldn’t load': 'Ces messages n’ont pas pu se charger',
+  'Your conversations couldn’t load': 'Vos conversations n’ont pas pu se charger',
 };

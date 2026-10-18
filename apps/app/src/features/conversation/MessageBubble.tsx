@@ -1,4 +1,3 @@
-import { palette } from '@caime/brand/tokens';
 import type { FileView, MessageMailView, MessageView } from '@caime/core/api';
 import { AI_LABEL } from '@caime/core/assist';
 import {
@@ -93,6 +92,10 @@ export interface BubbleProps {
   where: { conversationId: string; private: boolean };
 }
 
+/**
+ * Where one's own message is, as a mark: sent and delivered in the bubble's tick colour, read in
+ * its strongest and heavier (M16 E1), so read never looks like delivered whatever the colours.
+ */
 function DeliveryIcon({
   delivery,
   color,
@@ -121,7 +124,7 @@ function DeliveryIcon({
     case 'delivered':
       return mark(word, <CheckCheck size={13} color={color} />);
     case 'read':
-      return mark(word, <CheckCheck size={13} color={readColor} />);
+      return mark(word, <CheckCheck size={13} color={readColor} strokeWidth={2.75} />);
     default:
       return null;
   }
@@ -759,10 +762,8 @@ export const MessageBubble = memo(function MessageBubble({
       {mine ? (
         <DeliveryIcon
           delivery={delivery}
-          color={meta}
-          readColor={
-            mine && !card && t.bubble.fg === '#FFFFFF' ? palette.lightPink : t.c.accentStrong
-          }
+          color={delivery === 'failed' ? meta : card ? t.c.textTertiary : t.bubble.tick}
+          readColor={card ? t.c.text : t.bubble.fg}
         />
       ) : null}
     </View>

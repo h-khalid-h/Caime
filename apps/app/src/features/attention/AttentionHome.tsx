@@ -47,6 +47,9 @@ import { SkeletonRows } from '@/ui/Skeleton';
 import { Text } from '@/ui/Text';
 import { toast } from '@/ui/Toast';
 
+/** Shown only when a first load fails, so loaded then (M16 E1): kept out of the first download. */
+const LoadFailed = lazyPart(() => import('@/ui/LoadFailed').then((m) => m.LoadFailed));
+
 // An iPhone's or an iPad's browser tab, which nothing can notify (H7): the card says how, and
 // decides the rest itself (`homeScreenHint`), loaded only there.
 /** Invitations to a group or a space (M16 B4): loaded only while there's one to answer. */
@@ -335,6 +338,13 @@ export function AttentionHome() {
   // The bar stays above the day as it scrolls (R88): a hairline once something's under it.
   const [scrolled, onScroll] = useScrolled();
   const loading = inbox.isPending && !inbox.data;
+  // A first load that failed says so (M16 E1): "nothing needs you" would be a guess.
+  const inboxFailed = inbox.isError && !inbox.data;
+  const homeFailed = home.isError && !home.data;
+  const retry = () => {
+    void inbox.refetch();
+    void home.refetch();
+  };
 
   return (
     <Screen>
@@ -411,7 +421,7 @@ export function AttentionHome() {
             color={needs.length ? 'accentStrong' : 'textSecondary'}
             testID="home-summary"
           >
-            {loading ? ' ' : homeSummary(needs.length)}
+            {loading || inboxFailed ? ' ' : homeSummary(needs.length)}
           </Text>
         </View>
         {home.data?.invitations?.length ? (
@@ -422,6 +432,13 @@ export function AttentionHome() {
         <TeamInboxes />
         {loading ? (
           <SkeletonRows />
+        ) : inboxFailed || (homeFailed && nothing) ? (
+          <LoadFailed
+            title={tr('Your day couldn’t load')}
+            error={inbox.error ?? home.error}
+            onRetry={retry}
+            testID="home-load-failed"
+          />
         ) : alone && nothing ? (
           <EmptyState
             character="niko"
@@ -497,6 +514,15 @@ export function AttentionHome() {
                   </Pressable>
                 ) : null}
               </>
+            ) : null}
+            {homeFailed ? (
+              <LoadFailed
+                compact
+                title={tr('What you’re waiting on couldn’t load')}
+                error={home.error}
+                onRetry={() => void home.refetch()}
+                testID="home-part-failed"
+              />
             ) : null}
             {comingUp.length ? (
               <>

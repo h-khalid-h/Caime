@@ -1,7 +1,8 @@
 /**
  * English nobody translated (R54): a sentence built from fragments (`\`${n} more\``), a template
- * handed to `tr` as its key, JSX text, or a string of words shown as a child or in a field a
- * person reads. `node scripts/i18n-keys.mjs bare` lists them; what's on the list below is data
+ * handed to `tr` as its key, JSX text, a string of words shown as a child or in a field a person
+ * reads, and (M16 E1) any string of words anywhere else that isn't the code's own (an import, a
+ * key, a type, a comparison, a log), since a variable or a helper's argument reaches a person too. `node scripts/i18n-keys.mjs bare` lists them; what's on the list below is data
  * a person never reads as the interface's words (a header, an id, markup, a rule's own French,
  * an error thrown at a developer), and nothing else is.
  */
@@ -21,6 +22,19 @@ const DATA: ReadonlyArray<[file: string, text: string]> = [
   ['packages/core/src/ics.ts', 'An event needs a date or a start: {}'],
   ['packages/core/src/intelligence-fr.ts', 'revenir {}'],
   ['packages/core/src/intelligence-fr.ts', 'faire {}'],
+  // Words the code reads, never the interface's (M16 E1's wider rule): a print sheet's CSS, a
+  // socket's close reason, the system monospace's names, a drive's own name, a feed's protocol line.
+  [
+    'apps/app/src/features/kits/ReceiptSheet.tsx',
+    '@media print{body *{visibility:hidden!important}#caime-receipt,#caime-receipt *{visibility:visible!important}#caime-receipt{position:fixed;inset:0;padding:24px}}',
+  ],
+  ['apps/app/src/realtime/client.ts', 'signed out'],
+  [
+    'apps/app/src/theme/fonts.web.ts',
+    'ui-monospace, "SF Mono", Menlo, Consolas, "Liberation Mono", monospace',
+  ],
+  ['packages/core/src/accounts.ts', 'Google Drive'],
+  ['packages/core/src/ics.ts', 'PRODID:-//Caime//Calendar feed//EN'],
 ];
 
 describe('the interface’s words all go through tr', () => {

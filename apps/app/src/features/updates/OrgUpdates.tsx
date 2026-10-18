@@ -136,7 +136,7 @@ function Update({
                   block
                   size="lg"
                   onPress={() =>
-                    void run(() => endpoints.removeUpdate(u.org.id, u.id), 'Update taken back')
+                    void run(() => endpoints.removeUpdate(u.org.id, u.id), tr('Update taken back'))
                   }
                   testID="org-update-remove-confirm"
                 />
@@ -183,7 +183,7 @@ function Update({
               loading={busy}
               disabled={!editing.trim()}
               onPress={() =>
-                void run(() => endpoints.editUpdate(u.org.id, u.id, editing), 'Update changed')
+                void run(() => endpoints.editUpdate(u.org.id, u.id, editing), tr('Update changed'))
               }
             />
             <Button

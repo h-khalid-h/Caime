@@ -473,7 +473,7 @@ function onUpdated(call: GroupCallView): void {
   }
   // Taken out of it, or moved to another device.
   if (self?.state !== 'joined' || self.device !== DEVICE_ID) {
-    finish(self?.state === 'joined' ? 'You’re in this call on another device now.' : null);
+    finish(self?.state === 'joined' ? tr('You’re in this call on another device now.') : null);
     return;
   }
   store().patch({ call });

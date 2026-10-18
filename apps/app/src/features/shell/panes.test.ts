@@ -37,6 +37,7 @@ const LAZY_EVERYWHERE = [
   '@/features/people/generalInvite',
   '@/features/join/JoinLinks',
   '@/features/join/JoinRequests',
+  '@/ui/LoadFailed',
 ];
 
 const files = readdirSync(src, { recursive: true })

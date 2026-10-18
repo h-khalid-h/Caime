@@ -21,7 +21,7 @@ import { useOpened } from '@/features/e2ee/hooks';
 import { report } from '@/features/safety/report';
 import { SaveSheet } from '@/features/saved/SaveSheet';
 import { copyText } from '@/lib/clipboard';
-import { patchMessage, removeMessage } from '@/state/cache';
+import { patchMessage } from '@/state/cache';
 import { useTaskOutbox } from '@/state/taskOutbox';
 import { useTheme } from '@/theme/theme';
 import { Button } from '@/ui/Button';
@@ -33,6 +33,7 @@ import { afterSheet, Sheet } from '@/ui/Sheet';
 import { Text } from '@/ui/Text';
 import { TextField } from '@/ui/TextField';
 import { toast } from '@/ui/Toast';
+import { deleteWithUndo } from './deleteWithUndo';
 
 /** A decision's longest title (the server's). */
 const DECISION_MAX = 300;
@@ -360,33 +361,14 @@ export function MessageActions({
             subtitle={mine ? undefined : tr('As one of the group’s admins')}
             destructive
             testID="message-delete-everyone"
-            onPress={close(async () => {
-              try {
-                await endpoints.deleteMessage(m.id, true);
-                patchMessage(qc, m.conversationId, m.id, (x) => ({
-                  ...x,
-                  body: null,
-                  files: [],
-                  deletedAt: new Date().toISOString(),
-                }));
-              } catch (e) {
-                toast((e as Error).message, { tone: 'danger' });
-              }
-            })}
+            onPress={close(() => deleteWithUndo(qc, m, true))}
           />
         ) : null}
         <ListRow
           icon={Trash}
           title={tr('Delete for me')}
           destructive={!mine}
-          onPress={close(async () => {
-            try {
-              await endpoints.deleteMessage(m.id, false);
-              removeMessage(qc, m.conversationId, m.id);
-            } catch (e) {
-              toast((e as Error).message, { tone: 'danger' });
-            }
-          })}
+          onPress={close(() => deleteWithUndo(qc, m, false))}
         />
         {!mine && m.senderId ? (
           <ListRow
@@ -401,7 +383,7 @@ export function MessageActions({
                   conversationId: m.conversationId,
                   userId: m.senderId ?? undefined,
                 },
-                'this message',
+                tr('this message'),
               ),
             )}
           />

@@ -4,6 +4,7 @@
  * SearchSheet). One shell for every such field (`FieldShell`), so they all look the same.
  */
 
+import { listed, tr } from '@caime/core/i18n';
 import ChevronDown from 'lucide-react-native/icons/chevron-down';
 import type { ReactNode } from 'react';
 import { View } from 'react-native';
@@ -48,9 +49,7 @@ export function PickerField({
     <FieldShell label={label} hint={hint} error={error}>
       <Pressable
         accessibilityRole="button"
-        accessibilityLabel={`${label}, ${
-          shown ? (detail ? `${shown}, ${detail}` : shown) : 'not chosen'
-        }`}
+        accessibilityLabel={listed(shown ? [label, shown, detail] : [label, tr('not chosen')])}
         accessibilityHint={accessibilityHint}
         onPress={onOpen}
         testID={testID}

@@ -205,6 +205,31 @@ export function removeMessage(qc: QueryClient, conversationId: string, id: strin
   });
 }
 
+/**
+ * Puts back a message as it was before a delete that was undone (M16 E1): in place where it's
+ * still shown (deleted for everyone shows as deleted), else into the page whose messages run
+ * around its seq, never at the newest end.
+ */
+export function restoreMessage(qc: QueryClient, m: MessageView): void {
+  patchCache<MessagePages>(qc, qk.messages(m.conversationId), (data) => {
+    if (!data || data.pages.length === 0) return data;
+    if (data.pages.some((p) => p.messages.some((x) => x.id === m.id)))
+      return {
+        ...data,
+        pages: data.pages.map((p) => ({
+          ...p,
+          messages: p.messages.map((x) => (x.id === m.id ? m : x)),
+        })),
+      };
+    const found = data.pages.findIndex((p) => p.messages.length > 0 && p.messages[0]!.seq <= m.seq);
+    const at = found === -1 ? data.pages.length - 1 : found;
+    const pages = data.pages.slice();
+    const page = pages[at]!;
+    pages[at] = { ...page, messages: [...page.messages, m].sort(bySeq) };
+    return { ...data, pages };
+  });
+}
+
 /** Patch one conversation's row in the inbox; the row as it now is, or null if it isn't there. */
 function patchItems(
   qc: QueryClient,

@@ -1,4 +1,5 @@
 import type { ErrorCode } from '@caime/core/errors';
+import { tr } from '@caime/core/i18n';
 import { API_URL, isWeb } from '@/lib/config';
 import { useLanguage } from '@/lib/languageState';
 
@@ -26,7 +27,7 @@ export class NetworkError extends Error {
   constructor() {
     // Messages and actions wait on the device (they say so themselves); anything else needs
     // doing again.
-    super('You’re offline. Try again when you’re back.');
+    super(tr('You’re offline. Try again when you’re back.'));
   }
 }
 
@@ -141,7 +142,7 @@ export async function request<T>(
     throw new ApiError(
       res.status,
       e.code ?? 'internal',
-      e.message ?? 'Something went wrong.',
+      e.message ?? tr('Something went wrong.'),
       e.details,
     );
   }

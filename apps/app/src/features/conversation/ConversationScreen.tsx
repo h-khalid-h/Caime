@@ -89,6 +89,9 @@ import { SuggestionBar } from './SuggestionBar';
 import { TypingIndicator, useTypingNames } from './TypingIndicator';
 import { mailBound } from './topics';
 
+/** Shown only when a first load fails, so loaded then (M16 E1): kept out of the first download. */
+const LoadFailed = lazyPart(() => import('@/ui/LoadFailed').then((m) => m.LoadFailed));
+
 /** A group's join link (M16 C3e), for one just made with nobody yet: loaded when it opens. */
 const JoinLinks = lazyPart(() => import('@/features/join/JoinLinks').then((m) => m.JoinLinks));
 
@@ -567,8 +570,10 @@ export function ConversationScreen({
     </TopBar>
   );
 
+  // The beginning is said only once the messages have loaded to it (M16 E1): while they load, or
+  // when loading failed, it isn't the beginning of anything.
   const start =
-    conversation && !msgs.hasNextPage ? (
+    conversation && msgs.data && !msgs.hasNextPage ? (
       <View style={{ alignItems: 'center', gap: 8, paddingVertical: 28, paddingHorizontal: 24 }}>
         {org && !thread ? (
           <>
@@ -733,12 +738,24 @@ export function ConversationScreen({
         keyExtractor={(r) => r.key}
         renderItem={renderItem}
         ListHeaderComponent={<TypingIndicator names={typingNames} />}
-        ListFooterComponent={start}
+        ListFooterComponent={
+          // The list turns its header and footer the right way up itself.
+          msgs.isError && !msgs.data ? (
+            <LoadFailed
+              title={tr('These messages couldn’t load')}
+              error={msgs.error}
+              onRetry={() => void msgs.refetch()}
+              testID="conversation-load-failed"
+            />
+          ) : (
+            start
+          )
+        }
         ListEmptyComponent={
           // A new connection with nothing said yet (PRD §87). The list is inverted, so what it
           // shows when empty is turned back the right way up.
           conversation &&
-          !msgs.isPending &&
+          msgs.data &&
           conversation.kind === 'direct' &&
           conversation.isGeneral &&
           conversation.other &&

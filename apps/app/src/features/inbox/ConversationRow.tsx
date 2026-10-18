@@ -58,11 +58,13 @@ export const ConversationRow = memo(function ConversationRow({
   const unread = item.unreadCount > 0;
   const title = listTitle(item);
   const preview = typing
-    ? 'typing…'
+    ? tr('typing…')
     : item.draft
       ? tr('Draft: {draft}', { draft: item.draft })
       : item.lastMessage
-        ? `${item.lastMessage.mine ? 'You: ' : ''}${item.lastMessage.preview}`
+        ? item.lastMessage.mine
+          ? tr('You: {preview}', { preview: item.lastMessage.preview })
+          : item.lastMessage.preview
         : item.request === 'incoming'
           ? tr('Wants to message you')
           : tr('Say hello');

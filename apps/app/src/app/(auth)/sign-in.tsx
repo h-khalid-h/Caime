@@ -38,7 +38,7 @@ export default function SignIn() {
 
   const submit = async () => {
     if (!identifier.trim() || !password) {
-      setError('Enter your email or handle, and your password.');
+      setError(tr('Enter your email or handle, and your password.'));
       return;
     }
     setBusy(true);

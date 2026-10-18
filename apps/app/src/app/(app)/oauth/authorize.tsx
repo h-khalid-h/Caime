@@ -28,12 +28,12 @@ const PARAMS = [
 ] as const;
 
 /** Where "back" is, as someone would recognise it: a site's name, or the app itself. */
-function backName(uri: string): string {
+function backName(uri: string): string | null {
   try {
     const u = new URL(uri);
-    return /^https?:$/.test(u.protocol) ? u.host : 'the app';
+    return /^https?:$/.test(u.protocol) ? u.host : null;
   } catch {
-    return 'the app';
+    return null;
   }
 }
 
@@ -72,7 +72,7 @@ export default function Authorize() {
     }
   };
   const c = q.data;
-  const back = c ? backName(c.redirectUri) : '';
+  const back = c ? backName(c.redirectUri) : null;
   return (
     <Screen edges={['top', 'bottom']}>
       <ScrollView
@@ -168,7 +168,13 @@ export default function Authorize() {
                   />
                 )}
                 <Button
-                  label={minor ? tr('Go back to {back}', { back }) : tr('Cancel')}
+                  label={
+                    minor
+                      ? back
+                        ? tr('Go back to {back}', { back })
+                        : tr('Go back to the app')
+                      : tr('Cancel')
+                  }
                   variant={minor ? 'primary' : 'secondary'}
                   onPress={() => void decide('deny')}
                   loading={busy === 'deny'}
@@ -177,7 +183,9 @@ export default function Authorize() {
               </View>
               {minor ? null : (
                 <Text variant="caption" color="textTertiary">
-                  {tr('Then you’ll go back to {back}.', { back })}
+                  {back
+                    ? tr('Then you’ll go back to {back}.', { back })
+                    : tr('Then you’ll go back to the app.')}
                 </Text>
               )}
             </View>

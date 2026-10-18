@@ -78,11 +78,11 @@ function OneToOneCallLayer() {
         ? tr('Video call')
         : tr('Voice call')
       : phase === 'outgoing'
-        ? 'Calling…'
+        ? tr('Calling…')
         : phase === 'connecting'
-          ? 'Connecting…'
+          ? tr('Connecting…')
           : phase === 'reconnecting'
-            ? 'Reconnecting…'
+            ? tr('Reconnecting…')
             : phase === 'ended'
               ? (note ?? tr('Call ended'))
               : elapsed;

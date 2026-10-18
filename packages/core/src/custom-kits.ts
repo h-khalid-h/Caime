@@ -220,7 +220,7 @@ export function parseCustomKit(
       throw new Invalid(
         tr('A kit’s key is 2 to 40 lowercase letters, digits or _, from a letter.'),
       );
-    const k = object(input, 'The kit');
+    const k = object(input, tr('The kit'));
     const known = new Set(['key', 'name', 'description', 'icon', 'fields', 'states', 'moves']);
     known.add('adultsOnly');
     for (const name of Object.keys(k))
@@ -304,8 +304,8 @@ export function parseCustomKit(
       ok: true,
       def: {
         key,
-        name: words(k.name, 'Its name', 40),
-        description: words(k.description, 'Its description', 120, true),
+        name: words(k.name, tr('Its name'), 40),
+        description: words(k.description, tr('Its description'), 120, true),
         icon,
         fields,
         states,

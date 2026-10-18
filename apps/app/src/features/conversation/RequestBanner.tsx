@@ -63,7 +63,7 @@ export function RequestBanner({ conversation }: { conversation: ConversationView
       await endpoints.answerRequest(conversation.id, decision);
       void qc.invalidateQueries({ queryKey: qk.conversation(conversation.id) });
       void qc.invalidateQueries({ queryKey: qk.inbox });
-      if (decision === 'decline') leave('Declined. They won’t be told.');
+      if (decision === 'decline') leave(tr('Declined. They won’t be told.'));
     } catch (e) {
       toast((e as Error).message, { tone: 'danger' });
     } finally {

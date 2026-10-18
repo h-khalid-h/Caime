@@ -952,7 +952,7 @@ export const PolicyBody = z.object({
     })
     .refine(
       (s) => s.sphere || s.connectionId || (!s.role && !s.orgId),
-      'A role or organization needs a sphere.',
+      msg('A role or organization needs a sphere.'),
     ),
   settings: PolicySettingsSchema,
 });
@@ -1592,7 +1592,7 @@ const OrgWebsite = z
   .string()
   .trim()
   .max(200)
-  .url('Enter a web address like https://datac.com')
+  .url(msg('Enter a web address like https://datac.com'))
   .refine((u) => /^https?:\/\//i.test(u), msg('Enter a web address like https://datac.com'))
   .nullable();
 
@@ -2024,7 +2024,7 @@ export const StartThreadBody = z
 const WebhookUrl = z
   .string()
   .trim()
-  .url('Enter the full address, starting with https://')
+  .url(msg('Enter the full address, starting with https://'))
   .max(500)
   .refine((u) => /^https?:\/\//i.test(u), msg('Enter the full address, starting with https://'));
 

@@ -360,10 +360,10 @@ export function decideNotification(
   });
 
   // Things the user asked for themselves always arrive.
-  if (event.kind === 'reminder' || event.kind === 'task_due') return push('Your reminder');
+  if (event.kind === 'reminder' || event.kind === 'task_due') return push(tr('Your reminder'));
   if (level === 'urgency') return push(tr('{who}urgent, allowed to break through', { who }));
 
-  if (ctx.muted) return silent('Muted conversation');
+  if (ctx.muted) return silent(tr('Muted conversation'));
   // A crowd (M16 D2b): someone they don't know writing to everyone waits in the inbox. What's for
   // them (a mention, a reply, a question or a request to them) alerts as anywhere, and so does
   // everything in a group they made a priority; so do the people they know, by their own rules.

@@ -68,7 +68,7 @@ export default function Security() {
   const [codesError, setCodesError] = useState<string | null>(null);
   const [codesBusy, setCodesBusy] = useState(false);
   const makeCodes = async () => {
-    if (!codesPassword) return setCodesError('Enter your password.');
+    if (!codesPassword) return setCodesError(tr('Enter your password.'));
     setCodesBusy(true);
     setCodesError(null);
     try {
@@ -89,7 +89,7 @@ export default function Security() {
 
   const deleteAccount = async () => {
     if (!confirm) {
-      setDeleteError('Enter your password.');
+      setDeleteError(tr('Enter your password.'));
       return;
     }
     setDeleteBusy(true);

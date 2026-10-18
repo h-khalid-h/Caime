@@ -229,9 +229,9 @@ export function sentence(label: string): string {
 }
 
 /**
- * A catalog's words in lower case, as they read inside a sentence ("All {kinds}"), by the
- * reader's language's rules: Turkish "İş" is "iş", never "i̇ş" (M16 D4). Someone's own words and
- * names keep their case: only what came from `tr` goes through this.
+ * A catalog's words in lower case, as they read inside a sentence (a role in "may be your
+ * {role}"), by the reader's language's rules: Turkish "İş" is "iş", never "i̇ş" (M16 D4).
+ * Someone's own words and names keep their case: only what came from `tr` goes through this.
  */
 export function lower(words: string): string {
   return words.toLocaleLowerCase(currentTranslator().language);

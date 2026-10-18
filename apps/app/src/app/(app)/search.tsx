@@ -1,7 +1,7 @@
 import { AI_LABEL } from '@caime/core/assist';
 import { formatListTime, snippetParts } from '@caime/core/format';
 import { msg, tr, trn } from '@caime/core/i18n';
-import { looksLikeSentence, parseSearchQuery } from '@caime/core/search';
+import { looksLikeSentence, parseSearchQuery, SEARCH_EXAMPLES } from '@caime/core/search';
 import { onlineManager, useQuery, useQueryClient } from '@tanstack/react-query';
 import { router, useLocalSearchParams } from 'expo-router';
 import Building from 'lucide-react-native/icons/building';
@@ -39,13 +39,8 @@ const WriteByEmail = lazyPart(() =>
   import('@/features/people/WriteByEmail').then((m) => m.WriteByEmail),
 );
 
-const EXAMPLES = [
-  'my manager',
-  'files from Sarah',
-  'decisions last week',
-  msg('DATA C'),
-  'links in work',
-];
+/** What to try, in the reader's language (core's, each read whole in every language), and a name. */
+const EXAMPLES = [...SEARCH_EXAMPLES, msg('DATA C')];
 
 export default function Search() {
   const t = useTheme();
@@ -200,7 +195,7 @@ export default function Search() {
                   key={e}
                   variant="captionStrong"
                   color="link"
-                  onPress={() => setTerm(e)}
+                  onPress={() => setTerm(tr(e))}
                   accessibilityRole="button"
                   style={{
                     paddingHorizontal: 10,

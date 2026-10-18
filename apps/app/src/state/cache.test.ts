@@ -6,7 +6,10 @@ import {
   addSentMessage,
   flatMessages,
   type MessagePages,
+  patchMessage,
   patchPinned,
+  removeMessage,
+  restoreMessage,
   updateMessage,
   upsertMessage,
 } from './cache';
@@ -177,5 +180,40 @@ describe('a message someone else changed', () => {
     patchPinned(qc, { ...msg(9, 'Not pinned'), reactions: [] } as unknown as MessageView);
     const top = qc.getQueryData<{ messages: MessageView[] }>(qk.pins(id))?.messages ?? [];
     expect(top.map((m) => m.body)).toEqual(['Rehearsal at 6pm', 'Bus at 6']);
+  });
+});
+
+describe('a delete undone (M16 E1)', () => {
+  it('puts the message back in its own page, never at the newest end', () => {
+    const qc = new QueryClient();
+    // Two pages, the newest first: 5 and 6, then 1 to 3.
+    qc.setQueryData<MessagePages>(qk.messages(id), {
+      pages: [page(5, 6), page(1, 2, 3)],
+      pageParams: [undefined, 5],
+    });
+    removeMessage(qc, id, 'm2');
+    expect(seqs(qc)).toEqual([1, 3, 5, 6]);
+    restoreMessage(qc, msg(2));
+    expect(seqs(qc)).toEqual([1, 2, 3, 5, 6]);
+    const data = qc.getQueryData<MessagePages>(qk.messages(id));
+    expect(data?.pages.map((p) => p.messages.map((m) => m.seq))).toEqual([
+      [5, 6],
+      [1, 2, 3],
+    ]);
+  });
+
+  it('where it still shows as deleted for everyone, gives back the message as it was', () => {
+    const qc = new QueryClient();
+    qc.setQueryData<MessagePages>(qk.messages(id), {
+      pages: [page(1, 2)],
+      pageParams: [undefined],
+    });
+    patchMessage(qc, id, 'm2', (m) => ({ ...m, body: null, deletedAt: '2026-10-18T12:00:00Z' }));
+    restoreMessage(qc, msg(2));
+    const back = flatMessages(qc.getQueryData<MessagePages>(qk.messages(id))).find(
+      (m) => m.id === 'm2',
+    );
+    expect(back).toMatchObject({ body: 'm2' });
+    expect(back?.deletedAt).toBeUndefined();
   });
 });

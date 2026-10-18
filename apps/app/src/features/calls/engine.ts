@@ -194,7 +194,7 @@ function heartbeat(callId: string): void {
 function couldntConnect(): void {
   if (!relayed)
     toast(tr('One of your networks may be blocking calls. Try again on another, such as Wi-Fi.'));
-  void hangUp('The call couldn’t connect.', true);
+  void hangUp(tr('The call couldn’t connect.'), true);
 }
 
 /** Answered: the two devices find each other soon, or the call couldn't connect. */
@@ -284,7 +284,7 @@ async function connect(local: MediaStream): Promise<RTCPeerConnection> {
     } else if (state === 'disconnected') {
       store().patch({ phase: 'reconnecting' });
       // A moment's loss comes back by itself; a lasting one ends the call.
-      dropTimer = setTimeout(() => void hangUp('The call dropped.'), 15_000);
+      dropTimer = setTimeout(() => void hangUp(tr('The call dropped.')), 15_000);
     } else if (state === 'failed') {
       couldntConnect();
     }
@@ -480,7 +480,7 @@ export function onCallEvent(event: RealtimeEvent): void {
       iCalled && (call.outcome === 'declined' || call.outcome === 'missed')
         ? tr('{displayName} didn’t answer.', { displayName: call.callee.displayName })
         : !iCalled && (call.outcome === 'missed' || call.outcome === 'cancelled')
-          ? 'Missed call'
+          ? tr('Missed call')
           : null,
     );
     return;

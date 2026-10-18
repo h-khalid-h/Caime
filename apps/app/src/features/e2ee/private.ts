@@ -335,7 +335,9 @@ export async function sealText(
   if (j.held.size)
     throw refused(
       'code_changed',
-      'Someone’s security code changed since you compared it: check it in this conversation’s details, then send again.',
+      tr(
+        'Someone’s security code changed since you compared it: check it in this conversation’s details, then send again.',
+      ),
       { userIds: [...j.held] },
     );
   const people = new Set(view.people);
@@ -395,7 +397,9 @@ export async function sendPrivate(
         if (tries >= 2)
           throw refused(
             'unconfirmed_devices',
-            'A device listed for someone here couldn’t be confirmed as theirs, so this wasn’t sent. Check their security code in this conversation’s details.',
+            tr(
+              'A device listed for someone here couldn’t be confirmed as theirs, so this wasn’t sent. Check their security code in this conversation’s details.',
+            ),
           );
         given = recipientsIn(e);
       } else if (e.code === 'unknown_device' && tries < 2) {

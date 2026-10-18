@@ -40,6 +40,9 @@ import { Text } from '@/ui/Text';
 import { ConversationRow } from './ConversationRow';
 import { RowActions } from './RowActions';
 
+/** Shown only when a first load fails, so loaded then (M16 E1): kept out of the first download. */
+const LoadFailed = lazyPart(() => import('@/ui/LoadFailed').then((m) => m.LoadFailed));
+
 /** What Chats shows: what needs you first, everything, or one kind of relationship. */
 type Show = 'attention' | 'all' | Sphere;
 /** Starting a chat, loaded the first time it's asked for. */
@@ -239,6 +242,17 @@ export function InboxList({ pane }: { pane?: boolean }) {
       <>
         {header}
         <SkeletonRows />
+      </>
+    ) : q.isError && !q.data ? (
+      // A first load that failed says so (M16 E1), never the first-run screen.
+      <>
+        {header}
+        <LoadFailed
+          title={tr('Your conversations couldn’t load')}
+          error={q.error}
+          onRetry={() => void q.refetch()}
+          testID="chats-load-failed"
+        />
       </>
     ) : empty ? (
       <>

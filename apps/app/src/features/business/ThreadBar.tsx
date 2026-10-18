@@ -238,7 +238,10 @@ export function ThreadBar({
                 icon={TriangleAlert}
                 title={tr('It’s handled: stop escalating')}
                 onPress={() =>
-                  void act(() => endpoints.deescalateThread(conversation.id), 'No longer escalated')
+                  void act(
+                    () => endpoints.deescalateThread(conversation.id),
+                    tr('No longer escalated'),
+                  )
                 }
               />
             ) : resolved ? null : (

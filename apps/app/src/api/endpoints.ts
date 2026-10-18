@@ -485,8 +485,8 @@ export const endpoints = {
       `/messages/${id}`,
       typeof body === 'string' ? { body, ...(mentions ? { mentions } : {}) } : body,
     ),
-  deleteMessage: (id: string, forEveryone: boolean) =>
-    api.del<OkResponse>(`/messages/${id}${q({ forEveryone })}`),
+  deleteMessage: (id: string, forEveryone: boolean, opts: { keepalive?: boolean } = {}) =>
+    request<OkResponse>('DELETE', `/messages/${id}${q({ forEveryone })}`, opts),
   forward: (id: string, conversationIds: string[], clientId: string) =>
     api.post<MessageIdsResponse>(`/messages/${id}/forward`, { conversationIds, clientId }),
   react: (id: string, emoji: string) =>

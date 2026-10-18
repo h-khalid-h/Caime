@@ -5,7 +5,7 @@
  * the one field shell.
  */
 
-import { tr } from '@caime/core/i18n';
+import { listed, tr } from '@caime/core/i18n';
 import DateTimePicker, { DateTimePickerAndroid } from '@react-native-community/datetimepicker';
 import Calendar from 'lucide-react-native/icons/calendar';
 import { useState } from 'react';
@@ -68,7 +68,7 @@ export function DateField({
     <FieldShell label={label} hint={hint} error={error}>
       <Pressable
         accessibilityRole="button"
-        accessibilityLabel={`${label}, ${shown ?? 'not chosen'}`}
+        accessibilityLabel={listed([label, shown ?? tr('not chosen')])}
         accessibilityHint={tr('Opens a date picker')}
         onPress={choose}
         testID={testID}
