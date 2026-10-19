@@ -661,6 +661,16 @@ export function bookingDetails(
   return out;
 }
 
+/** A length in minutes: "50 min", "2 h", "2 h 15 min". */
+function lengthText(v: unknown): string {
+  const m = Math.round(Number(v));
+  if (!Number.isFinite(m) || m <= 0) return '';
+  if (m < 60) return tr('{n} min', { n: m });
+  return m % 60
+    ? tr('{hours} h {minutes} min', { hours: Math.floor(m / 60), minutes: m % 60 })
+    : tr('{n} h', { n: m / 60 });
+}
+
 /** Fields as a card's labelled lines, but those the card already says elsewhere. */
 export function fieldDetails(
   defs: readonly KitField[],
@@ -694,9 +704,16 @@ export function fieldDetails(
       case 'amount':
         value = amountText(v, opts.locale);
         break;
-      case 'options':
-        value = tr(field.choices?.find((c) => c.value === v)?.label ?? String(v));
+      case 'options': {
+        const choice = field.choices?.find((c) => c.value === v);
+        // A length no choice names (an invitation's 50 minutes, M16 F4) is said as one.
+        value = choice
+          ? tr(choice.label)
+          : field.key === 'durationMinutes'
+            ? lengthText(v)
+            : tr(String(v));
         break;
+      }
       default:
         value = asText(v);
     }

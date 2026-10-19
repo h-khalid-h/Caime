@@ -23,6 +23,8 @@ export interface MeetingCardPayload {
   title?: string;
   fields?: Record<string, unknown> | null;
   movedTo?: { conversationId: string; messageId: string } | null;
+  /** Made of an invitation from someone's calendar (M16 F4): theirs to invite people to. */
+  invitation?: unknown;
 }
 
 export function MeetingGuests({
@@ -73,7 +75,7 @@ export function MeetingGuests({
       </>
     );
   }
-  if (!where || minor || meetingVenue(card.fields?.place) !== 'caime') return null;
+  if (!where || minor || meetingVenue(card.fields?.place, card.invitation) !== 'caime') return null;
   return (
     <>
       <View key="invite" style={{ flexDirection: 'row' }}>

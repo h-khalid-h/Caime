@@ -81,7 +81,7 @@ async function clockOf(
 }
 
 /** "Tuesday 21 October 2026, 10:00 (Europe/London)": the whole time, and whose clock it's on. */
-function wholeWhen(v: unknown, zone: string, locale: string): string | null {
+export function wholeWhen(v: unknown, zone: string, locale: string): string | null {
   const w = v as { at?: unknown; hasTime?: unknown } | undefined;
   if (typeof w?.at !== 'string') return null;
   const at = new Date(w.at);

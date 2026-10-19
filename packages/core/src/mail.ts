@@ -108,7 +108,12 @@ export type NotByMail = 'kind' | 'repeats' | 'live' | 'where';
  * a mail.
  */
 export function notByMail(kind: string, payload: unknown): NotByMail | null {
-  const p = (payload ?? {}) as { kit?: unknown; fields?: Record<string, unknown>; live?: unknown };
+  const p = (payload ?? {}) as {
+    kit?: unknown;
+    fields?: Record<string, unknown>;
+    live?: unknown;
+    invitation?: unknown;
+  };
   switch (kind) {
     case 'text':
     case 'media':
@@ -120,7 +125,8 @@ export function notByMail(kind: string, payload: unknown): NotByMail | null {
     case 'kit':
       if (!(MAIL_CARDS as readonly unknown[]).includes(p.kit)) return 'kind';
       if (isRepeat(p.fields?.repeat)) return 'repeats';
-      if (p.kit === 'meeting' && meetingVenue(p.fields?.place) === 'caime') return 'where';
+      if (p.kit === 'meeting' && meetingVenue(p.fields?.place, p.invitation) === 'caime')
+        return 'where';
       return null;
     default:
       return 'kind';

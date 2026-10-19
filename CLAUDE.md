@@ -1335,8 +1335,10 @@ A sphere is said as how you know someone, never "sphere".
   so a new way a card moves calls it too, never its own notify, publish or event. A person's move
   is `moveCard` (`lib/kit-moves.ts`, M16 F3: where it stands under its lock, an order's stock and
   a share's split in that transaction, the provider picked, the request answered, then
-  `afterCardMove`), checked first by `mayMove`: the kit route and a calendar's answer by mail both
-  call them, and a new way someone moves a card does too. `tellCardApp`
+  `afterCardMove`), checked first by `mayMove`: the kit route, a calendar's answer by mail and an
+  invitation's organizer cancelling it all call them, and a new way someone moves a card does too.
+  An invitation's organizer moving its time is no move of the flow: `mail-invitations.ts` writes
+  the time under the card's lock and runs `afterCardMove` with a `label` ("New time"). `tellCardApp`
   (`lib/kits.ts`) tells an app's own card to that app alone and one of Caime's cards in a
   customer conversation to every app of the organization that listens (`kit.posted` for any
   card the team sends, `kit.moved` for any move, never what an app did itself); `cardData` is
@@ -1890,7 +1892,18 @@ A sphere is said as how you know someone, never "sphere".
   organization's), a meeting's and an appointment's with its invitation organized by the address
   it goes from, whose calendar answer `answerFromCalendar` (`lib/mail-answers.ts`, called by
   `deliverTo` for a confirmed sender, the calendar read by `lib/mail-calendar.ts`) applies
-  through `moveCard`, and a cancellation here `queueCancellation` mails with its update;
+  through `moveCard`, and a cancellation here `queueCancellation` mails with its update; M16 F4:
+  an invitation from its organizer's calendar to a person (`lib/mail-invitations.ts`:
+  `invitationIn`, then `changedInvitation` for a card it made, else `invitationCard`) is a trusted
+  meeting card from them with `payload.invitation` (uid, sequence, organizer, the address invited),
+  its client id `invite:` the event's and the address's (`invitationClientId`, the index that finds
+  it again), posted where their mail lands but never in a topic of its own (`threadFor`'s
+  `topics`), after their own words (core `invitationWords`) and files, its calendar never a file;
+  `meetingVenue(place, invitation)` never reads it as held on Caime (no Join, guests or start
+  notice: every reader passes the card's invitation, `CardAhead.invited` and
+  `CalendarItemView.invitation` for the calendar's), and the person's answer goes back as core
+  `buildReply` from their address (`queueInvitationAnswer` from `afterCardMove`, the `mail.card`
+  job's `answer`);
   `sendMessage` refuses what `notByMail` holds back to someone reached by mail, and the composer
   never offers it (`reachedByMail`); a notice, core `isNoticeMail` on the
   mail's own list, precedence and auto-submitted headers or a no-reply sender, lands through

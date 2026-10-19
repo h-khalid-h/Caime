@@ -42,6 +42,8 @@ interface MeetingPayload {
   state?: string;
   title?: string;
   movedTo?: { conversationId: string; messageId: string };
+  /** Made of an invitation from someone's calendar (M16 F4): theirs to invite people to. */
+  invitation?: unknown;
   booking?: { endAt?: string | null } | null;
   fields?: {
     title?: unknown;
@@ -84,7 +86,7 @@ function meetingOk(ctx: AppContext, m: Message): MeetingPayload {
   if (m.kind !== 'kit' || m.deleted_at || p.kit !== 'meeting')
     throw badRequest(tr('Only a meeting takes guests.'));
   if (p.state !== 'accepted') throw badRequest(tr('A meeting takes guests once it’s agreed.'));
-  if (meetingVenue(p.fields?.place) !== 'caime' || p.fields?.start?.hasTime === false)
+  if (meetingVenue(p.fields?.place, p.invitation) !== 'caime' || p.fields?.start?.hasTime === false)
     throw badRequest(tr('Only a meeting held on Caime, at a time, takes guests.'));
   // Over once it has ended, by its own length (M16 D3), never an hour after it began.
   const end = endOf(p);

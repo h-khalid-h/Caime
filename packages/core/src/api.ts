@@ -1566,6 +1566,8 @@ export interface CalendarItemView {
   /** A meeting's or an appointment's end, when it has a time. */
   endAt: string | null;
   place: string | null;
+  /** Made of an invitation from someone's calendar (M16 F4): held where they say, never here. */
+  invitation?: boolean;
   /** A meeting that repeats (R58): how often, while it still does. */
   repeat: Repeat | null;
   /**

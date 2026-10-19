@@ -1665,4 +1665,7 @@ export const arServer: Catalog = {
     'أجب من تقويمك: يصل ردّك إلى {name} على Caime.',
   'Voice note, {duration}': 'رسالة صوتية، {duration}',
   'A place': 'مكان',
+  'New time': 'موعد جديد',
+  'Accepted: {title}': 'قبول: {title}',
+  'Declined: {title}': 'اعتذار: {title}',
 };

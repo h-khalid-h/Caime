@@ -44,12 +44,17 @@ const CAIME = /^(on\s+)?ca[iı]me$/i;
 // word, a dot in its host, nothing a street address has (no spaces, no commas).
 const LINK = /^(https?:\/\/)?([a-z0-9-]+\.)+[a-z]{2,}(:\d+)?(\/\S*)?$/i;
 
-/** Where a meeting is held, from what its Where says. Never throws on what a device sent. */
-export function meetingVenue(place: unknown): MeetingVenue {
-  if (typeof place !== 'string') return 'caime';
-  const p = place.trim();
-  if (!p || CAIME.test(p)) return 'caime';
+/**
+ * Where a meeting is held, from what its Where says. Never throws on what a device sent. A card
+ * made of an invitation from someone's calendar (M16 F4, `invitation`) is held where its organizer
+ * says: on another service or at a place, never on Caime, and a Where it never said is a place
+ * nobody named (nothing to join, no guests to ask).
+ */
+export function meetingVenue(place: unknown, invitation?: unknown): MeetingVenue {
+  const p = typeof place === 'string' ? place.trim() : '';
   if (/^https?:\/\//i.test(p) || LINK.test(p)) return 'link';
+  if (invitation) return 'place';
+  if (!p || CAIME.test(p)) return 'caime';
   return 'place';
 }
 
@@ -92,6 +97,7 @@ export function meetingAction(
     state?: unknown;
     fields?: Record<string, unknown> | null;
     movedTo?: unknown;
+    invitation?: unknown;
   },
   now: Date,
 ): MeetingAction {
@@ -99,7 +105,7 @@ export function meetingAction(
   // Moved to its own space (R84): joined there, from the card's copy.
   if (card.movedTo) return null;
   const f = card.fields ?? {};
-  const venue = meetingVenue(f.place);
+  const venue = meetingVenue(f.place, card.invitation);
   if (venue === 'link') return 'open';
   if (venue === 'caime' && joinOpen(f.start, f.durationMinutes, now)) return 'join';
   return null;
@@ -118,11 +124,12 @@ export function calendarAction(
     at: string;
     endAt: string | null;
     place: string | null;
+    invitation?: boolean;
   },
   now: Date,
 ): MeetingAction {
   if (item.kind !== 'meeting' || item.state !== 'agreed') return null;
-  const venue = meetingVenue(item.place);
+  const venue = meetingVenue(item.place, item.invitation);
   if (venue === 'link') return 'open';
   if (venue !== 'caime' || !item.hasTime) return null;
   const at = Date.parse(item.at);

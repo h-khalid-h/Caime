@@ -110,6 +110,8 @@ export interface CardAhead {
   updated: Date;
   /** What it booked from a catalog (R58), if it did. */
   booking: AppointmentBooking | null;
+  /** Made of an invitation from someone's calendar (M16 F4): held where they say, never here. */
+  invited: boolean;
   /** A meeting that repeats (R58): its series and which time this is. */
   series: { id: string; n: number } | null;
   /** How often it repeats, while it still does. */
@@ -136,6 +138,7 @@ type CardPayload = {
   history?: Array<{ at?: string; state?: string }>;
   booking?: AppointmentBooking | null;
   series?: unknown;
+  invitation?: unknown;
 };
 
 type CardRow = {
@@ -166,6 +169,7 @@ function cardAhead(row: CardRow, payload: CardPayload, kit: CardKit, at: Date): 
     agreed: payload.state === AGREED[kit],
     updated: moved ? new Date(moved) : (row.edited_at ?? row.created_at),
     booking,
+    invited: Boolean(payload.invitation),
     series: series ? { id: series.id, n: series.n } : null,
     repeat: isRepeat(payload.fields?.repeat) ? payload.fields.repeat : null,
     projected: false,

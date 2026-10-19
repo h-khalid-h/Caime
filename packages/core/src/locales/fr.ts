@@ -4923,4 +4923,6 @@ export const fr: Catalog = {
     'Dites où : une personne jointe par e-mail ne peut pas rejoindre un appel sur Caime.',
   'That doesn’t travel by email: they’d never see it.':
     'Cela ne part pas par e-mail : la personne ne le verrait jamais.',
+  'Your answer goes back to the calendar that sent it.':
+    'Votre réponse revient à l’agenda qui a envoyé l’invitation.',
 };

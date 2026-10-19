@@ -24,6 +24,9 @@
  *   length ride along whole as a text file.
  * - A calendar's answer to a meeting or an appointment mailed from here (M16 F3,
  *   `mail-answers.ts`) moves that card, from the address invited alone, and isn't posted.
+ * - An invitation from its organizer's calendar to a person (M16 F4, `mail-invitations.ts`) is a
+ *   meeting card from them, where their mail lands (never a topic of its own); their later word
+ *   moves that card and isn't posted.
  * - Under 18, an address takes mail only from people the person is connected with (R29);
  *   anything else is dropped without a bounce, since a bounce says the address exists.
  */
@@ -42,6 +45,12 @@ import { storeBytes } from './files';
 import { alignedDomains, domainOf, handleOf, mailOn, senderName } from './mail-address';
 import { answerFromCalendar } from './mail-answers';
 import { authenticateMail } from './mail-auth';
+import {
+  changedInvitation,
+  type InvitationCard,
+  invitationCard,
+  invitationIn,
+} from './mail-invitations';
 import { tellSenders } from './mail-out';
 import type { InboundMail, MailAuth } from './mail-provider';
 import { afterMessage } from './message-effects';
@@ -58,6 +67,8 @@ export type InboundOutcome =
   | 'delivered'
   /** A calendar's answer to a card mailed from here, which moved the card (M16 F3). */
   | 'answered'
+  /** An invitation from its organizer's calendar, which made a card or moved its own (M16 F4). */
+  | 'invited'
   | 'duplicate'
   /** Its sender couldn't be confirmed: kept as a notice that says so (M16 F1). */
   | 'kept_unverified'
@@ -248,13 +259,22 @@ async function deliverTo(
     return 'delivered';
   }
   let conversationId: string;
+  let card: InvitationCard | null = null;
   if (target.kind === 'person') {
     const person = target.user;
     const rel = await between(ctx.db, person.id, sender.id);
     if (rel.blockedByMe || rel.blockedMe) return 'refused';
     if (minorOf(person, ctx.now()) && !rel.connected) return 'refused';
-    const notice =
-      mail.notice && !rel.connected ? await noticeFor(ctx, sender.id, person.id) : null;
+    const asNotice = mail.notice && !rel.connected;
+    // An invitation from its organizer's calendar (M16 F4): their later word moves the card it
+    // made, and a new one is a card; never one that comes as a notice.
+    const invitation = asNotice ? null : invitationIn(mail, toAddress, person.time_zone || 'UTC');
+    if (invitation) {
+      const changed = await changedInvitation(ctx, invitation, sender, person, toAddress);
+      if (changed) return changed;
+      card = invitationCard(invitation, toAddress, ctx.now());
+    }
+    const notice = asNotice ? await noticeFor(ctx, sender.id, person.id) : null;
     if (notice) conversationId = notice;
     else {
       const general = await ensureDirectConversation(ctx.db, sender.id, person.id, {
@@ -262,14 +282,15 @@ async function deliverTo(
         connectionId: rel.connectionId,
         requestFrom: rel.connected ? null : sender.id,
       });
-      conversationId = await threadFor(ctx, general.id, sender.id, person.id, mail);
+      // A card is no thread of mail: it lands where their mail is, never in a topic of its own.
+      conversationId = await threadFor(ctx, general.id, sender.id, person.id, mail, !card);
     }
   } else {
     conversationId = (await startCustomerConversation(ctx, sender, target.org, null))
       .conversationId;
   }
-  await deliver(ctx, sender, conversationId, mail, toAddress);
-  return 'delivered';
+  await deliver(ctx, sender, conversationId, mail, toAddress, { invitation: card });
+  return card ? 'invited' : 'delivered';
 }
 
 /**
@@ -347,6 +368,8 @@ async function threadFor(
   senderId: string,
   personId: string,
   mail: InboundMail,
+  /** Whether a subject of its own makes a topic (not for an invitation's card). */
+  topics = true,
 ): Promise<string> {
   const theirs = await ctx.db
     .selectFrom('participants')
@@ -370,7 +393,7 @@ async function threadFor(
     if (hit) return hit.id;
   }
   const subject = bareSubject(mail.subject);
-  if (!subject) return generalId;
+  if (!subject || !topics) return generalId;
   const topic = await ctx.db
     .selectFrom('conversations')
     .select('id')
@@ -405,17 +428,25 @@ async function seenByReply(ctx: AppContext, theirAddress: string, ourAddress: st
     );
 }
 
-/** The mail as a message: its attachments as the sender's files, its words, told live, then its effects. */
+/**
+ * The mail as a message: its attachments as the sender's files, its words, told live, then its
+ * effects. An invitation (M16 F4) is its card, after what its organizer wrote of it (with any
+ * file it came with): its calendar is the card, and the mail is kept with the card.
+ */
 async function deliver(
   ctx: AppContext,
   sender: UserRow,
   conversationId: string,
   mail: InboundMail,
   toAddress: string,
-  /** Its sender wasn't confirmed (M16 F1): it teaches nothing of the address it claims. */
-  opts: { unverified?: boolean } = {},
+  opts: {
+    /** Its sender wasn't confirmed (M16 F1): it teaches nothing of the address it claims. */
+    unverified?: boolean;
+    invitation?: InvitationCard | null;
+  } = {},
 ): Promise<void> {
   const unverified = opts.unverified ?? false;
+  const invitation = opts.invitation ?? null;
   const provider = ctx.mailProvider;
   if (!provider) return;
   const storage = storageFor(ctx.config);
@@ -446,7 +477,9 @@ async function deliver(
         .orderBy('created_at', 'desc')
         .limit(1)
         .executeTakeFirst();
-  const words = mailText(mail.text, mail.html, before?.signature ?? null);
+  const words = invitation
+    ? mailText(invitation.words ?? '', null, before?.signature ?? null)
+    : mailText(mail.text, mail.html, before?.signature ?? null);
   let text = words.body;
   if (text.length > MESSAGE_MAX) {
     // The whole mail as a file, the start of it as the message.
@@ -457,24 +490,43 @@ async function deliver(
     });
     text = truncate(text, MESSAGE_MAX);
   }
-  for (const a of mail.attachments.slice(0, FILES_MAX - fileIds.length)) await keep(a);
-  if (!text && !fileIds.length) return;
+  // An invitation's calendar is its card, never a file beside it.
+  const files = invitation ? mail.attachments.filter((a) => !isCalendarFile(a)) : mail.attachments;
+  for (const a of files.slice(0, FILES_MAX - fileIds.length)) await keep(a);
+  if (!text && !fileIds.length && !invitation) return;
   const kind = fileIds.length ? (images === fileIds.length ? 'media' : 'file') : 'text';
-  const result = await sendMessage(
-    ctx,
-    sender.id,
-    conversationId,
-    SendMessageBody.parse({
-      // The mail's own id at this address: the provider's retry, even while the first attempt
-      // still runs, is the one message (ADR-8).
-      clientId: `mail:${createHash('sha256').update(`${mail.rfcMessageId}\n${toAddress}`).digest('base64url')}`,
-      kind,
-      ...(text ? { body: text } : {}),
-      ...(fileIds.length ? { fileIds } : {}),
-    }),
-    { channel: 'mail' },
-  );
-  if (!result.created) return;
+  // The mail's own id at this address: the provider's retry, even while the first attempt still
+  // runs, is the one message (ADR-8); an invitation's card is its event's at this address.
+  const clientId = `mail:${createHash('sha256').update(`${mail.rfcMessageId}\n${toAddress}`).digest('base64url')}`;
+  const said =
+    text || fileIds.length
+      ? await sendMessage(
+          ctx,
+          sender.id,
+          conversationId,
+          SendMessageBody.parse({
+            clientId: invitation ? `${invitation.clientId}:words` : clientId,
+            kind,
+            ...(text ? { body: text } : {}),
+            ...(fileIds.length ? { fileIds } : {}),
+          }),
+          { channel: 'mail' },
+        )
+      : null;
+  const result = invitation
+    ? await sendMessage(
+        ctx,
+        sender.id,
+        conversationId,
+        SendMessageBody.parse({
+          clientId: invitation.clientId,
+          kind: 'kit',
+          payload: invitation.payload,
+        }),
+        { channel: 'mail', trusted: true },
+      )
+    : said;
+  if (!result?.created) return;
   await ctx.db
     .insertInto('mail_messages')
     .values({
@@ -498,12 +550,26 @@ async function deliver(
   // nobody confirmed says nothing of who saw what.
   if (!unverified) await seenByReply(ctx, mail.from.address, toAddress);
   // Everyone else in it hears it now, as a sent message is heard; its effects run after.
-  const [view] = await messageViews(ctx.db, [result.message], sender.id);
+  const posted = [...(said?.created && said !== result ? [said] : []), result];
+  const views = await messageViews(
+    ctx.db,
+    posted.map((r) => r.message),
+    sender.id,
+  );
   const others = (await participantsOf(ctx.db, conversationId))
     .map((p) => p.user_id)
     .filter((u) => u !== sender.id);
-  if (view && others.length)
-    await ctx.bus.publish(others, { type: 'message.created', data: { ...view, clientId: null } });
-  const { message, analysis } = result;
-  ctx.defer('after-message', () => afterMessage(ctx, message, analysis));
+  for (const view of views)
+    if (others.length)
+      await ctx.bus.publish(others, { type: 'message.created', data: { ...view, clientId: null } });
+  for (const { message, analysis } of posted)
+    ctx.defer('after-message', () => afterMessage(ctx, message, analysis));
+}
+
+/** A calendar a mail carries as a file: Gmail's `invite.ics`, a `text/calendar` part. */
+function isCalendarFile(a: { mime: string; name: string }): boolean {
+  const mime = a.mime.toLowerCase();
+  return (
+    mime.startsWith('text/calendar') || mime.startsWith('application/ics') || /\.ics$/i.test(a.name)
+  );
 }

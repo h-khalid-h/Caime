@@ -368,4 +368,109 @@ test.describe
       await expect(page.getByText(text)).toHaveCount(0);
       expect(errors).toEqual([]);
     });
+
+    test('an invitation from someone’s calendar is a card, and its Accept goes back to their calendar (M16 F4)', async () => {
+      const lina = `lina.${suffix}@outside.example`;
+      const uid = `e2e-${suffix}-invite@google.com`;
+      const stamp = (d: Date) =>
+        d
+          .toISOString()
+          .replace(/\.\d{3}Z$/, 'Z')
+          .replace(/[-:]/g, '');
+      const at = (days: number) => {
+        const d = new Date(Date.now() + days * 86_400_000);
+        d.setUTCMinutes(0, 0, 0);
+        return d;
+      };
+      // As Google Calendar mails it, from her address, signed by her domain.
+      const invitation = (sequence: number, start: Date) =>
+        [
+          'BEGIN:VCALENDAR',
+          'PRODID:-//Google Inc//Google Calendar 70.9054//EN',
+          'VERSION:2.0',
+          'METHOD:REQUEST',
+          'BEGIN:VEVENT',
+          `DTSTART:${stamp(start)}`,
+          `DTEND:${stamp(new Date(start.getTime() + 50 * 60_000))}`,
+          `ORGANIZER;CN=Lina:mailto:${lina}`,
+          `UID:${uid}`,
+          `ATTENDEE;ROLE=REQ-PARTICIPANT;PARTSTAT=NEEDS-ACTION;RSVP=TRUE:mailto:${address}`,
+          'X-GOOGLE-CONFERENCE:https://meet.google.com/xyz-abcd-efg',
+          `SEQUENCE:${sequence}`,
+          'SUMMARY:Supplier call',
+          'END:VEVENT',
+          'END:VCALENDAR',
+          '',
+        ].join('\r\n');
+      const mailOf = async (n: number, ics: string) => {
+        const messageId = `<e2e-${suffix}-invite-${n}@outside.example>`;
+        const subject = n ? 'Updated invitation: Supplier call' : 'Invitation: Supplier call';
+        const text = 'Lina has invited you to the following event.';
+        return {
+          FromFull: { Email: lina, Name: 'Lina' },
+          ToFull: [{ Email: address, Name: '' }],
+          Subject: subject,
+          MessageID: `pm-in-${suffix}-invite-${n}`,
+          TextBody: text,
+          HtmlBody: '',
+          Headers: [{ Name: 'Message-ID', Value: messageId }],
+          Attachments: [
+            {
+              Name: 'invite.ics',
+              ContentType: 'application/ics',
+              Content: Buffer.from(ics).toString('base64'),
+            },
+          ],
+          RawEmail: await rawMail({
+            from: lina,
+            fromName: 'Lina',
+            to: [address],
+            subject,
+            text,
+            messageId,
+          }),
+        };
+      };
+      const got = await post('/v1/mail/in/postmark', await mailOf(0, invitation(0, at(3))));
+      expect(got.outcomes?.[0]?.outcome).toBe('invited');
+      // Someone new: it waits among the requests, a meeting card from her.
+      await page.goto('/chats');
+      await visible(page, 'Message requests · 1').click();
+      await visible(page, 'Lina').click();
+      await page.waitForURL(/\/c\//);
+      const card = page
+        .getByTestId('kit-meeting')
+        .filter({ hasText: 'Supplier call', visible: true });
+      await expect(card).toContainText('Proposed');
+      await expect(card).toContainText('50 min');
+      await expect(card.getByTestId('kit-invitation')).toHaveText(
+        'Your answer goes back to the calendar that sent it.',
+      );
+      await card.getByRole('button', { name: 'Accept', exact: true }).click();
+      await expect(card).toContainText('Accepted');
+      // Her calendar hears it from Noor's address, in the invitation's thread.
+      await expect
+        .poll(async () => (await sent()).find((m) => m.To === lina)?.Subject ?? '')
+        .toBe('Accepted: Supplier call');
+      const mail = (await sent()).find((m) => m.To === lina) as Sent & {
+        Attachments?: Array<{ Name: string; ContentType: string; Content: string }>;
+      };
+      expect(mail.From).toBe(`Noor Post <${address}>`);
+      expect(mail.Headers.find((h) => h.Name === 'In-Reply-To')?.Value).toBe(
+        `<e2e-${suffix}-invite-0@outside.example>`,
+      );
+      const reply = mail.Attachments?.find((a) => a.Name === 'invite.ics');
+      expect(reply?.ContentType).toBe('text/calendar; method=REPLY; charset=UTF-8');
+      const ics = Buffer.from(reply?.Content ?? '', 'base64')
+        .toString('utf8')
+        .replace(/\r\n[ \t]/g, '');
+      expect(ics).toContain(`UID:${uid}`);
+      expect(ics).toContain(`PARTSTAT=ACCEPTED:mailto:${address}`);
+      // She moves it in her calendar: the same card asks again, live.
+      const moved = await post('/v1/mail/in/postmark', await mailOf(1, invitation(1, at(4))));
+      expect(moved.outcomes?.[0]?.outcome).toBe('invited');
+      await expect(card).toContainText('Proposed');
+      await expect(card.getByRole('button', { name: 'Accept', exact: true })).toBeVisible();
+      expect(errors).toEqual([]);
+    });
   });

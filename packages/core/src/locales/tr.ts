@@ -4738,4 +4738,5 @@ export const turkish: Catalog = {
     'Nerede olduğunu yazın: e-postayla ulaşılan biri Caime’deki bir aramaya katılamaz.',
   'That doesn’t travel by email: they’d never see it.':
     'Bu e-postayla gitmez: karşı taraf bunu hiç görmez.',
+  'Your answer goes back to the calendar that sent it.': 'Yanıtınız daveti gönderen takvime gider.',
 };

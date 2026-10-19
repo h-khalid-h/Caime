@@ -27,7 +27,7 @@ import type { CustomerMask } from './business';
 import { queueCalendarPush } from './calendar-push';
 import { recordEvent } from './events';
 import { tellCardApp } from './kits';
-import { queueCancellation } from './mail-out';
+import { queueCancellation, queueInvitationAnswer } from './mail-out';
 import { queueNextTime } from './meeting-series';
 import { queueMeetingStart } from './meeting-start';
 import { messageViews, participantsOf } from './messages';
@@ -36,7 +36,14 @@ import { notify } from './notify';
 export async function afterCardMove(
   ctx: AppContext,
   m: Message,
-  input: { from: string; to: string; actorId: string; business: CustomerMask | null },
+  input: {
+    from: string;
+    to: string;
+    actorId: string;
+    business: CustomerMask | null;
+    /** What the others are told happened, as a key, when it isn't the state's own name. */
+    label?: string;
+  },
 ): Promise<MessageView> {
   const { from, to, actorId, business } = input;
   const card = (m.payload ?? {}) as { kit?: string; title?: string; share?: PaysShare };
@@ -79,6 +86,8 @@ export async function afterCardMove(
   // cancellation goes by mail too, with the update that takes it off their calendar.
   if (card.kit === 'meeting' || card.kit === 'appointment')
     await queueCancellation(ctx, moved, to, actorId);
+  // An invitation from someone's calendar answered here (M16 F4): the answer goes back to it.
+  if (card.kit === 'meeting') await queueInvitationAnswer(ctx, moved, to, actorId);
   const mover = await ctx.db
     .selectFrom('users')
     .select('display_name')
@@ -97,7 +106,7 @@ export async function afterCardMove(
       kind: 'kit',
       level: userId === m.sender_id ? 'attention' : 'activity',
       title: () =>
-        `${business && !onTeam(userId) ? business.orgName : mover.display_name}: ${own ? customState({ ...own, state: to }).label : tr(kitStateLabel(to))}`,
+        `${business && !onTeam(userId) ? business.orgName : mover.display_name}: ${own ? customState({ ...own, state: to }).label : tr(input.label ?? kitStateLabel(to))}`,
       body: () => `${own ? own.label : tr(KITS[card.kit as CardKitId].name)} · ${card.title ?? ''}`,
       // A card's moves are one notification, its latest.
       groupKey: `kit:${m.id}`,

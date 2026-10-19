@@ -3261,4 +3261,5 @@ export const arB: Catalog = {
     'حدّد المكان: من يُراسَل بالبريد الإلكتروني لا يستطيع الانضمام إلى مكالمة على Caime.',
   'That doesn’t travel by email: they’d never see it.':
     'هذا لا يصل بالبريد الإلكتروني: لن يراه الطرف الآخر أبدًا.',
+  'Your answer goes back to the calendar that sent it.': 'يصل ردّك إلى التقويم الذي أرسل الدعوة.',
 };

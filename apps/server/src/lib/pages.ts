@@ -478,7 +478,10 @@ provider to say when it&rsquo;s opened, which shows its sender &ldquo;Opened, pr
 every such mail says so at its end. A card sent to someone reached by email goes as words in a
 mail, a meeting&rsquo;s or an appointment&rsquo;s with an invitation their calendar adds and
 answers; that answer, from the address invited and checked as any mail is, moves the card and is
-kept only as that move.</li>
+kept only as that move. An invitation someone&rsquo;s calendar mails to your address, from that
+address&rsquo;s own organizer, becomes a meeting card from them; your answer to it goes back to
+their calendar from your address, and their later changes move the same card; the mail itself is
+kept as any mail is.</li>
 `
     : ''
 }<li>A handle you stop using, by changing it or deleting your account, is kept from everyone for
@@ -753,7 +756,9 @@ waits under Notices, tells you nothing, asks nothing of you, and isn&rsquo;t ans
 mail Caime couldn&rsquo;t confirm came from the address it names, which says so and is never taken
 as theirs. A card you send someone reached by email goes in words, and a meeting or an
 appointment as an invitation their calendar adds: their yes or no from it moves the card here, as
-a tap would. What a mail can&rsquo;t carry (a sticker, a poll, a live location) isn&rsquo;t offered.
+a tap would. An invitation someone&rsquo;s calendar sends you is a meeting card from them: your
+Accept or Decline goes back to their calendar, and if they move it, the card asks you again. What a
+mail can&rsquo;t carry (a sticker, a poll, a live location) isn&rsquo;t offered.
 An organization&rsquo;s address lands in its inbox.</li>
 `
     : ''

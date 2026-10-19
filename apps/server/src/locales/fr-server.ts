@@ -1678,4 +1678,7 @@ export const frServer: Catalog = {
     'Répondez depuis votre agenda : votre réponse parvient à {name} sur Caime.',
   'Voice note, {duration}': 'Note vocale, {duration}',
   'A place': 'Un lieu',
+  'New time': 'Nouvel horaire',
+  'Accepted: {title}': 'Accepté : {title}',
+  'Declined: {title}': 'Refusé : {title}',
 };

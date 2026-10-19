@@ -1606,4 +1606,7 @@ export const turkishServer: Catalog = {
     'Takviminizden yanıtlayın: yanıtınız Caime üzerinden {name} ile paylaşılır.',
   'Voice note, {duration}': 'Sesli not, {duration}',
   'A place': 'Bir yer',
+  'New time': 'Yeni saat',
+  'Accepted: {title}': 'Kabul edildi: {title}',
+  'Declined: {title}': 'Reddedildi: {title}',
 };

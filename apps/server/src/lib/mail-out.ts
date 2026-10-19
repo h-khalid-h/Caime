@@ -12,14 +12,19 @@
  * swept: their row goes, their words stay with whoever they wrote to (the sender column clears).
  */
 import { createHmac, timingSafeEqual } from 'node:crypto';
-import { uuidv4 } from '@caime/core';
+import { safeLocale, uuidv4 } from '@caime/core';
+import { tr } from '@caime/core/i18n';
+import { buildReply } from '@caime/core/ics';
 import { bareSubject, notByMail, replySubject, subjectFromText } from '@caime/core/mail';
+import { cardEndMs } from '@caime/core/meetings';
 import type { AppContext } from '../context';
 import type { Conversation, Message } from '../db/schema';
 import { MESSAGE_COLUMNS } from '../db/schema';
+import { asReader } from './i18n';
 import { enqueue, registerJob, registerPeriodic } from './jobs';
 import { mailAddressOf } from './mail-address';
-import { cancellationOf, mailedAs } from './mail-cards';
+import { cancellationOf, mailedAs, wholeWhen } from './mail-cards';
+import type { CardInvitation } from './mail-invitations';
 import {
   type DeliveryEvent,
   MAIL_ATTACHMENT_MAX,
@@ -39,7 +44,9 @@ const REFERENCES_MAX = 20;
 
 export function registerMailJobs(): void {
   registerJob(MAIL_SEND_JOB, send);
-  registerJob(MAIL_CARD_JOB, sendCancellation);
+  registerJob(MAIL_CARD_JOB, (ctx, payload) =>
+    payload.what === 'answer' ? sendAnswer(ctx, payload) : sendCancellation(ctx, payload),
+  );
   registerPeriodic({
     name: 'mail.sweep',
     everyMs: 24 * 3_600_000,
@@ -359,6 +366,117 @@ async function sendCancellation(ctx: AppContext, payload: Record<string, unknown
       inReplyTo: went.rfc_message_id,
       references: [...went.references_ids, went.rfc_message_id].slice(-REFERENCES_MAX),
       attachments: said.attachments,
+      trackOpens: false,
+    });
+    ctx.metrics.mail.inc({ direction: 'out', outcome: 'sent' });
+  } catch (err) {
+    if (!(err instanceof MailRefused)) throw err;
+    ctx.metrics.mail.inc({ direction: 'out', outcome: 'refused' });
+  }
+}
+
+/**
+ * An answer given here to an invitation someone's calendar mailed this person (M16 F4): it goes
+ * to its organizer as the person's own calendar app would send it (`METHOD:REPLY`, from the
+ * address invited, in the invitation's thread), so it lands in the organizer's calendar. Only
+ * for the person's own answers (never its organizer's moves), once a move: a move made since
+ * says its own.
+ */
+export async function queueInvitationAnswer(
+  ctx: AppContext,
+  m: Pick<Message, 'id' | 'payload' | 'sender_id'>,
+  to: string,
+  actorId: string,
+): Promise<void> {
+  const p = m.payload as { invitation?: unknown; history?: unknown[] } | null;
+  if (!ctx.mailProvider || !p?.invitation || actorId === m.sender_id) return;
+  if (to !== 'accepted' && to !== 'declined' && to !== 'cancelled') return;
+  await enqueue(
+    ctx,
+    MAIL_CARD_JOB,
+    { messageId: m.id, what: 'answer', to },
+    {
+      dedupeKey: `${MAIL_CARD_JOB}:${m.id}:answer:${p.history?.length ?? 0}`,
+      maxAttempts: 6,
+    },
+  );
+}
+
+async function sendAnswer(ctx: AppContext, payload: Record<string, unknown>): Promise<void> {
+  const provider = ctx.mailProvider;
+  const domain = ctx.config.MAIL_DOMAIN;
+  const messageId = String(payload.messageId ?? '');
+  if (!provider || !domain || !messageId) return;
+  const m = await ctx.db
+    .selectFrom('messages')
+    .select(MESSAGE_COLUMNS)
+    .where('id', '=', messageId)
+    .executeTakeFirst();
+  const card = (m?.payload ?? {}) as {
+    state?: string;
+    title?: string;
+    fields?: { start?: { at?: string }; durationMinutes?: unknown };
+    invitation?: CardInvitation;
+  };
+  // Moved again since: that move says its own.
+  if (!m || m.deleted_at || !card.invitation || card.state !== payload.to) return;
+  const at = card.fields?.start?.at ? new Date(card.fields.start.at) : null;
+  if (!at || Number.isNaN(at.getTime())) return;
+  // Whoever it invited: the other person in the conversation, as they are now.
+  const person = await ctx.db
+    .selectFrom('participants as p')
+    .innerJoin('users as u', 'u.id', 'p.user_id')
+    .select(['u.id', 'u.handle', 'u.display_name', 'u.time_zone', 'u.locale'])
+    .where('p.conversation_id', '=', m.conversation_id)
+    .where('p.user_id', '<>', m.sender_id ?? '')
+    .where('u.kind', '=', 'human')
+    .executeTakeFirst();
+  const from = person ? mailAddressOf(person.handle, ctx.config) : null;
+  if (!person || !from) return;
+  const went = await ctx.db
+    .selectFrom('mail_messages')
+    .select(['rfc_message_id', 'references_ids', 'subject'])
+    .where('message_id', '=', m.id)
+    .where('direction', '=', 'in')
+    .executeTakeFirst();
+  const { invitation } = card;
+  const accepted = card.state === 'accepted';
+  const title = card.title || 'Meeting';
+  const zone = person.time_zone || 'UTC';
+  const ics = buildReply({
+    uid: invitation.uid,
+    sequence: invitation.sequence,
+    now: ctx.now(),
+    start: at,
+    end: new Date(cardEndMs(at.getTime(), card.fields ?? {})),
+    summary: title,
+    organizer: invitation.organizer,
+    attendee: { name: person.display_name, email: invitation.attendee },
+    answer: accepted ? 'ACCEPTED' : 'DECLINED',
+  });
+  // In the words of whoever answered, as their calendar would say it.
+  const said = await asReader(ctx, person.id, async () => {
+    const subject = accepted
+      ? tr('Accepted: {title}', { title })
+      : tr('Declined: {title}', { title });
+    return { subject, when: wholeWhen(card.fields?.start, zone, safeLocale(person.locale)) };
+  });
+  try {
+    await provider.send({
+      from: { address: from, name: person.display_name },
+      to: invitation.organizer.email,
+      subject: said.subject,
+      text: [said.subject, said.when].filter(Boolean).join('\n'),
+      messageId: `<${uuidv4()}@${domain}>`,
+      inReplyTo: went?.rfc_message_id ?? null,
+      references: went ? [...went.references_ids, went.rfc_message_id].slice(-REFERENCES_MAX) : [],
+      attachments: [
+        {
+          name: 'invite.ics',
+          mime: 'text/calendar; method=REPLY; charset=UTF-8',
+          bytes: Buffer.from(ics, 'utf8'),
+        },
+      ],
       trackOpens: false,
     });
     ctx.metrics.mail.inc({ direction: 'out', outcome: 'sent' });

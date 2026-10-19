@@ -173,6 +173,7 @@ export async function calendarItems(
       hasTime: c.hasTime,
       endAt: c.hasTime ? new Date(c.at.getTime() + minutes * 60_000).toISOString() : null,
       place: c.place,
+      ...(c.invited ? { invitation: true } : {}),
       repeat: c.repeat,
       projected: c.projected,
       amount: null,

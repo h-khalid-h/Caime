@@ -77,7 +77,16 @@ interface CardPayload {
   checkout?: CardCheckout | null;
   /** The split's share it pays, and whom (R62). */
   share?: PaysShare | null;
+  /** Made of an invitation from someone's calendar (M16 F4): the answer goes back to it. */
+  invitation?: unknown;
   history?: unknown[];
+}
+
+/** A long address said by its site: an invitation's Teams link runs to 300 characters (M16 F4). */
+function shortPlace(d: { key: string; label: string; value: string }) {
+  const host =
+    d.key === 'place' && d.value.length > 60 ? /^https?:\/\/([^/?#]+)/i.exec(d.value)?.[1] : null;
+  return host ? { ...d, value: host } : d;
 }
 
 /**
@@ -358,7 +367,7 @@ export function KitCard({ m, mine }: { m: MessageView; mine: boolean }) {
         tone={kitStateTone(state)}
         title={p.title ?? ''}
         details={[
-          ...kitDetails(kit, p.fields ?? {}, clock),
+          ...kitDetails(kit, p.fields ?? {}, clock).map(shortPlace),
           ...(kit === 'appointment' ? bookingDetails(p.booking, clock.locale) : []),
           ...(kit === 'order_status' ? orderDetails(p.order) : []),
         ]}
@@ -384,6 +393,11 @@ export function KitCard({ m, mine }: { m: MessageView; mine: boolean }) {
             <MeetingRepeat m={m} card={p} />
           ) : kit === 'meeting' ? (
             <>
+              {p.invitation && state === 'proposed' && !m.deletedAt ? (
+                <Text variant="caption" color="textSecondary" testID="kit-invitation">
+                  {tr('Your answer goes back to the calendar that sent it.')}
+                </Text>
+              ) : null}
               <MeetingRepeat m={m} card={p as MeetingCardPayload} />
               <MeetingGuests
                 messageId={m.id}

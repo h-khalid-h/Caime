@@ -147,6 +147,15 @@ describe('how a card reads', () => {
       { key: 'durationMinutes', label: 'Duration', value: '45 min' },
       { key: 'place', label: 'Where', value: 'Cairo Opera House' },
     ]);
+    // A length no choice names, as an invitation from someone's calendar has one (M16 F4).
+    const length = (durationMinutes: number) =>
+      kitDetails('meeting', { ...fields, durationMinutes }, opts).find(
+        (d) => d.key === 'durationMinutes',
+      )?.value;
+    expect(length(50)).toBe('50 min');
+    expect(length(120)).toBe('2 h');
+    expect(length(135)).toBe('2 h 15 min');
+    expect(length(60)).toBe('1 hour');
     const pay = {
       amount: { value: 1200, currency: 'EGP' },
       note: 'the tickets',

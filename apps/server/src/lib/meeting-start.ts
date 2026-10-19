@@ -41,7 +41,10 @@ async function meetingOf(ctx: AppContext, messageId: string): Promise<Card | nul
   if (p.kit !== 'meeting' || p.state !== 'accepted') return null;
   // Moved to its own space (R84): its copy there is the one that starts.
   if ((p as { movedTo?: unknown }).movedTo) return null;
-  if (meetingVenue(p.fields?.place) !== 'caime' || p.fields?.start?.hasTime === false) return null;
+  // An invitation from someone's calendar (M16 F4) is held where they say: nothing starts here.
+  const invitation = (p as { invitation?: unknown }).invitation;
+  if (meetingVenue(p.fields?.place, invitation) !== 'caime' || p.fields?.start?.hasTime === false)
+    return null;
   const at = p.fields?.start?.at ? new Date(p.fields.start.at) : null;
   if (!at || Number.isNaN(at.getTime())) return null;
   const title = p.title || (typeof p.fields?.title === 'string' && p.fields.title) || tr('Meeting');

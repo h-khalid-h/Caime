@@ -2884,6 +2884,52 @@ graph) and the number that will show it; one that sharpens none is hygiene and s
       move cards or mail (391 tests), `e2e/mail.spec.ts` (Connect to an address, only what travels offered, the meeting
       sent with its invitation, the calendar's yes agreeing it live), the catalogs in four
       languages, and the full gate.
+- [x] F4. Invitations arriving by mail become cards (2026-10-19, review §6: "calendar invitations
+      arrive as a bare file"; "invitations mailed to a person never become cards"; advantage 2,
+      everyone you deal with in one place, their calendars too. The number: of the invitations
+      someone's Google, Outlook or Apple calendar mails a person's address for one time ahead,
+      the share that arrives as a card that can be answered here, every one now where none did,
+      and the answer reaching the organizer's calendar where it couldn't). Such an invitation
+      (`lib/mail-invitations.ts`, read by core `readInvitation`: a zone by name, Windows' names as
+      Outlook writes them, UTC, a floating time on the person's clock, a length or an end) is a
+      meeting card from its organizer, trusted (`payload.invitation`: its event, sequence,
+      organizer and the address invited), where their mail lands and never in a topic named
+      after it, after what they wrote of it (core `invitationWords`: their calendar's own block
+      for its call and Outlook's heading left out, HTML read as lines) and the files it came
+      with, its calendar never a file; its length as it is ("50 min", "2 h", `fieldDetails`), its
+      Where the location, else the call's address (Teams' where the location only names Teams),
+      and never held on Caime (`meetingVenue(place, invitation)`: no Join, no guests, no
+      "Starting now"; the calendar and the feed say so through `CardAhead.invited` and
+      `CalendarItemView.invitation`). Its Accept or Decline here goes back to the organizer as
+      the person's calendar app would send it (core `buildReply`, `METHOD:REPLY`, from their
+      address, in the invitation's thread: `queueInvitationAnswer`, the `mail.card` job), once a
+      move; the card says where the answer goes. The organizer's later word moves the same card
+      (found by `invite:` client ids, the event's and the address's): a new time writes the time
+      under the card's lock and asks again ("New time", `afterCardMove`'s `label`), a new place or
+      name is shown quietly, a cancellation cancels it (`moveCard` as its organizer), a card they
+      called off stands again on their word, the same word again or an older one changes
+      nothing. Only what reads as theirs alone is a card: from a sender confirmed who is its
+      organizer, inviting this address, one time ahead of at most a day, in a zone Caime can
+      name, never a notice; anything else arrives as mail, its calendar a file, as before. The
+      server's own cards now carry their kit's kind of message (`KIT_MODES`), as a client's do.
+      Left: a series and a day-long event as cards, an invitation to an organization's address,
+      who else an invitation names, a room beside a call's link, and Gmail's, Outlook's and
+      Apple's handling of the reply on a real mailbox (⛔ the owner's, as F3's). Costs: one mail
+      in that makes up to two messages (the words, the card), one query by an indexed client id
+      for each invitation mail, one mail out per answer (the provider's call, under a cent);
+      nothing on devices. Verified: core `ics.test.ts` (Google's and Outlook's invitations, a
+      time in UTC, floating, a day, a length, a calendar app's path to a zone, a series, a time
+      of one, two events and an unknown zone refused, a cancellation, the words without their
+      calendar's blocks, the reply), `meetings.test.ts` (never on Caime), `kit-cards.test.ts`
+      (lengths no choice names), `mail.test.ts` (the card from its organizer after their words,
+      no topic, no file, the yes mailed back from her address in the thread, the request
+      answered, the provider's retry; a new time asks again and says so, the same and an older
+      word change nothing, the yes for the new time, a cancellation by its organizer, its
+      standing again, the no mailed back, a new place quiet; no guests, no start, the calendar's
+      flag; someone else's event, another address, a series, a day, over, longer than a day, an
+      unknown event's cancellation, unconfirmed, and a list's arriving as mail), `e2e/mail.spec.ts`
+      (an invitation as a card among the requests, its Accept mailed back as a reply, its new
+      time asking again live), the catalogs in four languages, and the full gate.
 - [ ] G. Integration framework and governed AI (REVIEW §11): credentials (key outside the
       database with a key id and re-seal, a downscoped picker token, sealed webhook secrets,
       rotation); per-use health, Google and Microsoft probes, a freshness gauge, a reconnect
@@ -5112,6 +5158,10 @@ graph) and the number that will show it; one that sharpens none is hygiene and s
   journeys, safety, reliability, performance, intelligence, mail and calendar, chat, integrations,
   business and code integrity; the matrix against WhatsApp, Signal, Slack, Calendly and Workspace;
   an age-assurance design; the integration framework mapped to the code; plan M16 (A–H).
+- 2026-10-19 — M16 F4: an invitation someone's calendar mails a person is a meeting card from its
+  organizer, answered here and back in their calendar (`METHOD:REPLY` from the person's address),
+  moved by their later word (a new time asks again, a cancellation cancels it); a series, a day,
+  someone else's event and a notice arrive as mail, as before.
 - 2026-10-19 — M16 F3: cards reach someone by email, a meeting as an invitation their calendar
   answers, the answer moving the card; what a mail can't carry isn't offered.
 - 2026-10-19 — M16 F2: someone reached by email can be followed up, a day apart and twice at

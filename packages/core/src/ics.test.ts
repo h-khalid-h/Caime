@@ -1,5 +1,15 @@
 import { describe, expect, it } from 'vitest';
-import { buildIcs, buildInvitation, foldLine, icsText, readReply } from './ics';
+import {
+  buildIcs,
+  buildInvitation,
+  buildReply,
+  foldLine,
+  icsText,
+  invitationWords,
+  isTimeZone,
+  readInvitation,
+  readReply,
+} from './ics';
 
 const now = new Date('2026-09-27T12:00:00Z');
 const unfold = (ics: string) => ics.replace(/\r\n /g, '');
@@ -212,5 +222,217 @@ describe('a guest’s answer to an invitation (R86)', () => {
     expect(readReply(reply('ACCEPTED', 'ATTENDEE;PARTSTAT=ACCEPTED:mailto:x@y.com'))).toBeNull();
     expect(readReply(reply('ACCEPTED').replace('mailto:Gus@Example.com', 'Gus'))).toBeNull();
     expect(readReply('')).toBeNull();
+  });
+});
+
+describe('an invitation from someone’s calendar (M16 F4)', () => {
+  const MARK = '-::~:~::~:~:~:~:~:~:~:~:~:~:~:~:~:~:~:~:~:~:~:~:~:~:~:~:~:~:~:~:~:~:~::~:~::-';
+  // As Google Calendar writes one: its zone defined, a Meet, its own lines in the description,
+  // an alarm of its own, the organizer among the attendees.
+  const google = (extra: string[] = [], start = 'DTSTART;TZID=Europe/London:20261021T100000') =>
+    [
+      'BEGIN:VCALENDAR',
+      'PRODID:-//Google Inc//Google Calendar 70.9054//EN',
+      'VERSION:2.0',
+      'CALSCALE:GREGORIAN',
+      'METHOD:REQUEST',
+      'BEGIN:VTIMEZONE',
+      'TZID:Europe/London',
+      'BEGIN:STANDARD',
+      'TZOFFSETFROM:+0100',
+      'TZOFFSETTO:+0000',
+      'DTSTART:19701025T020000',
+      'END:STANDARD',
+      'END:VTIMEZONE',
+      'BEGIN:VEVENT',
+      start,
+      'DTEND;TZID=Europe/London:20261021T105000',
+      'DTSTAMP:20261019T120000Z',
+      'ORGANIZER;CN=Sara Out:mailto:sara@outside.example',
+      'UID:7kukuqrfedlm2f9t2vr42q2vil@google.com',
+      'ATTENDEE;CUTYPE=INDIVIDUAL;ROLE=REQ-PARTICIPANT;PARTSTAT=ACCEPTED;RSVP=TRUE;CN=Sara Out;X-NUM-GUESTS=0:mailto:sara@outside.example',
+      'ATTENDEE;CUTYPE=INDIVIDUAL;ROLE=REQ-PARTICIPANT;PARTSTAT=NEEDS-ACTION;RSVP=TRUE;CN=noor@caime.test;X-NUM-GUESTS=0:mailto:Noor@Caime.test',
+      'X-GOOGLE-CONFERENCE:https://meet.google.com/abc-defg-hij',
+      `DESCRIPTION:Let's go over the Q3 numbers\\, bring the deck.\\n\\n${MARK}\\nJoin with Google Meet: https://meet.google.com/abc-defg-hij\\n\\nPlease do not edit this section.\\n${MARK}`,
+      'LOCATION:',
+      'SEQUENCE:0',
+      'STATUS:CONFIRMED',
+      'SUMMARY:Q3 review',
+      'TRANSP:OPAQUE',
+      'BEGIN:VALARM',
+      'ACTION:DISPLAY',
+      'DESCRIPTION:This is an event reminder',
+      'TRIGGER:-P0DT0H10M0S',
+      'END:VALARM',
+      ...extra,
+      'END:VEVENT',
+      'END:VCALENDAR',
+      '',
+    ].join('\r\n');
+  // As Outlook writes one: Windows' name for the zone, Teams named as the place.
+  const outlook = [
+    'BEGIN:VCALENDAR',
+    'METHOD:REQUEST',
+    'PRODID:Microsoft Exchange Server 2010',
+    'VERSION:2.0',
+    'BEGIN:VEVENT',
+    'ORGANIZER;CN=Sara Out:mailto:sara@outside.example',
+    'ATTENDEE;ROLE=REQ-PARTICIPANT;PARTSTAT=NEEDS-ACTION;RSVP=TRUE;CN=noor@caime.test:mailto:noor@caime.test',
+    'DESCRIPTION;LANGUAGE=en-US:Agenda below.\\n\\n______________________________________________________________________________\\nMicrosoft Teams meeting\\nJoin on your computer\\, mobile app or room device\\n',
+    'UID:040000008200E00074C5B7101A82E0080000000048F6B0B5',
+    'SUMMARY;LANGUAGE=en-US:Contract review',
+    'DTSTART;TZID=Romance Standard Time:20261022T140000',
+    'DTEND;TZID=Romance Standard Time:20261022T153000',
+    'SEQUENCE:2',
+    'LOCATION;LANGUAGE=en-US:Microsoft Teams Meeting',
+    'X-MICROSOFT-SKYPETEAMSMEETINGURL:https://teams.microsoft.com/l/meetup-join/19%3ameeting_x%40thread.v2/0',
+    'END:VEVENT',
+    'END:VCALENDAR',
+  ].join('\r\n');
+
+  it('reads Google’s: its time in its zone, its Meet as where, its organizer and guests', () => {
+    const inv = readInvitation(google(), 'Asia/Dubai');
+    expect(inv).toMatchObject({
+      method: 'REQUEST',
+      uid: '7kukuqrfedlm2f9t2vr42q2vil@google.com',
+      sequence: 0,
+      summary: 'Q3 review',
+      place: 'https://meet.google.com/abc-defg-hij',
+      hasTime: true,
+      organizer: { email: 'sara@outside.example', name: 'Sara Out' },
+      attendees: ['sara@outside.example', 'noor@caime.test'],
+    });
+    // 10:00 in London in October is 09:00 UTC; it lasts 50 minutes.
+    expect(inv?.start.toISOString()).toBe('2026-10-21T09:00:00.000Z');
+    expect(inv?.end.toISOString()).toBe('2026-10-21T09:50:00.000Z');
+    // The alarm's description is the alarm's, never the event's.
+    expect(invitationWords(inv?.description ?? null)).toBe(
+      "Let's go over the Q3 numbers, bring the deck.",
+    );
+  });
+  it('reads Outlook’s: Windows’ zone names, Teams’ address where it only says Teams', () => {
+    const inv = readInvitation(outlook, 'UTC');
+    expect(inv?.start.toISOString()).toBe('2026-10-22T12:00:00.000Z');
+    expect(inv?.end.toISOString()).toBe('2026-10-22T13:30:00.000Z');
+    expect(inv?.sequence).toBe(2);
+    expect(inv?.place).toBe(
+      'https://teams.microsoft.com/l/meetup-join/19%3ameeting_x%40thread.v2/0',
+    );
+    expect(invitationWords(inv?.description ?? null)).toBe('Agenda below.');
+  });
+  it('reads a time in UTC, a floating time on the reader’s clock, a day, and a length', () => {
+    const at = (start: string, zone = 'UTC', extra: string[] = []) =>
+      readInvitation(google(extra, start).replace(/DTEND[^\r]*\r\n/, ''), zone);
+    expect(at('DTSTART:20261021T100000Z')?.start.toISOString()).toBe('2026-10-21T10:00:00.000Z');
+    // Dubai keeps no summer time: four hours ahead all year.
+    expect(at('DTSTART:20261021T100000', 'Asia/Dubai')?.start.toISOString()).toBe(
+      '2026-10-21T06:00:00.000Z',
+    );
+    const day = at('DTSTART;VALUE=DATE:20261021', 'Asia/Dubai');
+    expect(day?.hasTime).toBe(false);
+    expect(day?.start.toISOString()).toBe('2026-10-21T05:00:00.000Z');
+    const long = at('DTSTART:20261021T100000Z', 'UTC', ['DURATION:PT45M']);
+    expect(long?.end.toISOString()).toBe('2026-10-21T10:45:00.000Z');
+    // Without an end or a length, an hour.
+    expect(at('DTSTART:20261021T100000Z')?.end.toISOString()).toBe('2026-10-21T11:00:00.000Z');
+    // A calendar app's own path to a zone.
+    expect(
+      at('DTSTART;TZID=/mozilla.org/20050126_1/Europe/London:20261021T100000')?.start.toISOString(),
+    ).toBe('2026-10-21T09:00:00.000Z');
+  });
+  it('is nothing for a series, a time of one, two events, a zone it can’t name, or no time', () => {
+    expect(readInvitation(google(['RRULE:FREQ=WEEKLY;BYDAY=WE']), 'UTC')).toBeNull();
+    expect(readInvitation(google(['RECURRENCE-ID:20261021T090000Z']), 'UTC')).toBeNull();
+    const two = google().replace(
+      'END:VCALENDAR',
+      'BEGIN:VEVENT\r\nUID:b\r\nEND:VEVENT\r\nEND:VCALENDAR',
+    );
+    expect(readInvitation(two, 'UTC')).toBeNull();
+    expect(
+      readInvitation(google([], 'DTSTART;TZID=Customized Time Zone:20261021T100000'), 'UTC'),
+    ).toBeNull();
+    expect(readInvitation(google().replace('METHOD:REQUEST', 'METHOD:PUBLISH'), 'UTC')).toBeNull();
+    expect(readInvitation(google([], 'X-NOTHING:1'), 'UTC')).toBeNull();
+    expect(readInvitation('', 'UTC')).toBeNull();
+    expect(readInvitation('BEGIN:VCALENDAR\r\nMETHOD:REQUEST', 'UTC')).toBeNull();
+  });
+  it('reads a cancellation by its event alone', () => {
+    const cancel = [
+      'BEGIN:VCALENDAR',
+      'METHOD:CANCEL',
+      'BEGIN:VEVENT',
+      'UID:7kukuqrfedlm2f9t2vr42q2vil@google.com',
+      'SEQUENCE:1',
+      'ORGANIZER;CN="Sara: Out":mailto:sara@outside.example',
+      'ATTENDEE:mailto:noor@caime.test',
+      'END:VEVENT',
+      'END:VCALENDAR',
+    ].join('\r\n');
+    expect(readInvitation(cancel, 'UTC')).toMatchObject({
+      method: 'CANCEL',
+      uid: '7kukuqrfedlm2f9t2vr42q2vil@google.com',
+      sequence: 1,
+      // A quoted name may hold a colon.
+      organizer: { email: 'sara@outside.example', name: 'Sara: Out' },
+    });
+  });
+  it('keeps what its organizer wrote, not what their calendar adds', () => {
+    expect(invitationWords(`${MARK}\nJoin with Google Meet\n${MARK}`)).toBeNull();
+    expect(invitationWords(null)).toBeNull();
+    expect(
+      invitationWords(
+        'When: Tuesday 21 October 2026 10:00-11:00.\nWhere: Microsoft Teams Meeting\n\n*~*~*~*~*~*~*~*~*~*\n\nBring the deck.',
+      ),
+    ).toBe('Bring the deck.');
+    expect(
+      invitationWords(
+        '<b>Agenda</b><br><ul><li>Numbers</li><li>Deck</li></ul><a href="https://x.example/doc">the doc</a> &amp; more',
+      ),
+    ).toBe('Agenda\n• Numbers\n• Deck\nthe doc (https://x.example/doc) & more');
+  });
+  it('knows a zone by its name', () => {
+    expect(isTimeZone('Europe/London')).toBe(true);
+    expect(isTimeZone('Mars/Olympus_Mons')).toBe(false);
+    expect(isTimeZone('')).toBe(false);
+  });
+  it('answers it as an attendee’s calendar would: their answer, for its event and sequence', () => {
+    const l = buildReply({
+      uid: '7kukuqrfedlm2f9t2vr42q2vil@google.com',
+      sequence: 2,
+      now,
+      start: new Date('2026-10-21T09:00:00Z'),
+      end: new Date('2026-10-21T09:50:00Z'),
+      summary: 'Q3 review',
+      organizer: { name: 'Sara Out', email: 'sara@outside.example' },
+      attendee: { name: 'Noor', email: 'noor@caime.test' },
+      answer: 'ACCEPTED',
+    })
+      .replace(/\r\n /g, '')
+      .split('\r\n');
+    expect(l).toEqual(
+      expect.arrayContaining([
+        'METHOD:REPLY',
+        'UID:7kukuqrfedlm2f9t2vr42q2vil@google.com',
+        'SEQUENCE:2',
+        'DTSTART:20261021T090000Z',
+        'DTEND:20261021T095000Z',
+        'ORGANIZER;CN="Sara Out":mailto:sara@outside.example',
+        'ATTENDEE;CN="Noor";PARTSTAT=ACCEPTED:mailto:noor@caime.test',
+      ]),
+    );
+    expect(readInvitation(l.join('\r\n'), 'UTC')).toBeNull();
+    expect(() =>
+      buildReply({
+        uid: 'x',
+        sequence: 0,
+        now,
+        start: now,
+        end: now,
+        summary: 'x',
+        organizer: { name: 'x', email: 'x@y.com\r\nBCC:z@w.com' },
+        attendee: { name: 'Noor', email: 'noor@caime.test' },
+        answer: 'DECLINED',
+      }),
+    ).toThrow();
   });
 });

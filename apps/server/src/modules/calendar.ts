@@ -174,7 +174,7 @@ export async function calendarEvents(
       card.kit === 'meeting' &&
       card.hasTime &&
       !card.projected &&
-      meetingVenue(card.place) === 'caime';
+      meetingVenue(card.place, card.invited) === 'caime';
     const url = here
       ? `${base}${joinPath(card.conversationId, card.seq, card.messageId)}`
       : where(card.conversationId);

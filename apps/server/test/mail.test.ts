@@ -1932,3 +1932,328 @@ describe('cards by email (M16 F3)', () => {
     expect(smtp.outbox.filter((m) => m.to === 'karim@outside.example')).toHaveLength(0);
   });
 });
+
+describe('invitations from someone’s calendar (M16 F4)', () => {
+  let noor: Client;
+  let noorId: string;
+  beforeAll(async () => {
+    noor = await signup(t, {
+      displayName: 'Noor Invite',
+      handle: 'noor.invite',
+      email: 'noor.invite@example.com',
+    });
+    noorId = (await noor.get('/v1/me')).user.id as string;
+  });
+
+  const ahead = (days: number) => new Date(t.ctx.now().getTime() + days * 86_400_000);
+  const stamp = (d: Date) =>
+    d
+      .toISOString()
+      .replace(/\.\d{3}Z$/, 'Z')
+      .replace(/[-:]/g, '');
+  const UID = 'q3review0001@google.com';
+  /** An event as Google Calendar mails it (RFC 5546), with what a test changes. */
+  const calendar = (o: {
+    method?: 'REQUEST' | 'CANCEL';
+    uid?: string;
+    sequence?: number;
+    start?: Date;
+    minutes?: number;
+    organizer?: string;
+    attendees?: string[];
+    location?: string;
+    extra?: string[];
+    day?: boolean;
+    /** Without its video call: a meeting whose Where they never said. */
+    call?: false;
+  }) => {
+    const start = o.start ?? ahead(3);
+    const end = new Date(start.getTime() + (o.minutes ?? 50) * 60_000);
+    return [
+      'BEGIN:VCALENDAR',
+      'PRODID:-//Google Inc//Google Calendar 70.9054//EN',
+      'VERSION:2.0',
+      `METHOD:${o.method ?? 'REQUEST'}`,
+      'BEGIN:VEVENT',
+      ...(o.day
+        ? [`DTSTART;VALUE=DATE:${stamp(start).slice(0, 8)}`]
+        : [`DTSTART:${stamp(start)}`, `DTEND:${stamp(end)}`]),
+      `DTSTAMP:${stamp(t.ctx.now())}`,
+      `ORGANIZER;CN=Sara Out:mailto:${o.organizer ?? 'sara@outside.example'}`,
+      `UID:${o.uid ?? UID}`,
+      ...(o.attendees ?? ['sara@outside.example', 'noor.invite@caime.test']).map(
+        (a) => `ATTENDEE;ROLE=REQ-PARTICIPANT;PARTSTAT=NEEDS-ACTION;RSVP=TRUE:mailto:${a}`,
+      ),
+      ...(o.call === false ? [] : ['X-GOOGLE-CONFERENCE:https://meet.google.com/abc-defg-hij']),
+      "DESCRIPTION:Let's go over the Q3 numbers\\, bring the deck.\\n\\n-::~:~::~:~:~:~:~:~::~:~::-\\nJoin with Google Meet: https://meet.google.com/abc-defg-hij\\n-::~:~::~:~:~:~:~:~::~:~::-",
+      ...(o.location ? [`LOCATION:${o.location}`] : []),
+      `SEQUENCE:${o.sequence ?? 0}`,
+      'SUMMARY:Q3 review',
+      ...(o.extra ?? []),
+      'END:VEVENT',
+      'END:VCALENDAR',
+      '',
+    ].join('\r\n');
+  };
+  const invite = (
+    o: Parameters<typeof calendar>[0] & {
+      from?: string;
+      messageId?: string;
+      auth?: 'pass' | 'none';
+      extraHeaders?: Array<{ Name: string; Value: string }>;
+    } = {},
+  ) =>
+    postmark({
+      from: o.from ?? 'sara@outside.example',
+      fromName: 'Sara Out',
+      to: 'noor.invite@caime.test',
+      subject: 'Invitation: Q3 review @ Wed 21 Oct 2026 10am - 10:50am (noor.invite@caime.test)',
+      text: 'Sara Out has invited you to the following event. Reply for noor.invite@caime.test.',
+      messageId: o.messageId,
+      auth: o.auth,
+      extraHeaders: o.extraHeaders,
+      attachments: [{ name: 'invite.ics', type: 'application/ics', content: calendar(o) }],
+    });
+  type Card = {
+    id: string;
+    kind: string;
+    body: string | null;
+    senderId: string | null;
+    payload: {
+      state?: string;
+      title?: string;
+      fields?: { start?: { at: string }; durationMinutes?: number; place?: string };
+      invitation?: { uid: string; sequence: number; attendee: string };
+    };
+    mail: { subject: string | null } | null;
+    files: Array<{ name: string }>;
+  };
+  const withSara = async () => {
+    const all = (await noor.get('/v1/inbox?view=all')).conversations as Array<{
+      id: string;
+      title: string;
+    }>;
+    return all.filter((c) => c.title === 'Sara Out');
+  };
+  const messagesWithSara = async () => {
+    const [c] = await withSara();
+    return (
+      (await noor.get(`/v1/conversations/${c?.id}/messages?limit=50`)).messages as Card[]
+    ).filter((m) => m.senderId !== noorId);
+  };
+  const theCard = async () => (await messagesWithSara()).find((m) => m.kind === 'kit');
+  const replyOf = (sent: Record<string, unknown> | undefined) => {
+    const a = ((sent?.Attachments ?? []) as Array<{ ContentType: string; Content: string }>)[0];
+    return {
+      type: a?.ContentType,
+      text: Buffer.from(a?.Content ?? '', 'base64')
+        .toString('utf8')
+        .replace(/\r\n[ \t]/g, ''),
+    };
+  };
+  const header = (sent: Record<string, unknown> | undefined, name: string) =>
+    ((sent?.Headers ?? []) as Array<{ Name: string; Value: string }>).find((h) => h.Name === name)
+      ?.Value;
+
+  it('is a meeting card from its organizer, after what they wrote, and a yes here goes back to their calendar', async () => {
+    const res = await inbound(await invite({ messageId: '<invite-q3-1@outside.example>' }));
+    expect(res.json().outcomes[0].outcome).toBe('invited');
+    await work();
+    // Where their mail lands: one conversation with Sara, no topic named after the invitation.
+    expect(await withSara()).toHaveLength(1);
+    const [words, card] = await messagesWithSara();
+    expect(words?.kind).toBe('text');
+    expect(words?.body).toBe("Let's go over the Q3 numbers, bring the deck.");
+    expect(card?.kind).toBe('kit');
+    expect(card?.payload).toMatchObject({
+      kit: 'meeting',
+      state: 'proposed',
+      title: 'Q3 review',
+      fields: {
+        title: 'Q3 review',
+        durationMinutes: 50,
+        place: 'https://meet.google.com/abc-defg-hij',
+      },
+      invitation: { uid: UID, sequence: 0, attendee: 'noor.invite@caime.test' },
+    });
+    // The calendar is the card, never a file beside it; the mail is the card's.
+    expect([...(words?.files ?? []), ...(card?.files ?? [])]).toHaveLength(0);
+    expect(card?.mail?.subject).toContain('Invitation: Q3 review');
+    // It asks Noor, and Noor is told of it.
+    const told = (await noor.get('/v1/notifications')).notifications as Array<{
+      title: string;
+    }>;
+    expect(told.length).toBeGreaterThan(0);
+
+    sends = [];
+    const yes = await noor.req('POST', `/v1/messages/${card?.id}/kit`, { to: 'accepted' });
+    expect(yes.statusCode).toBe(200);
+    await work();
+    expect(sends).toHaveLength(1);
+    const sent = sends[0];
+    expect(sent?.From).toBe('Noor Invite <noor.invite@caime.test>');
+    expect(sent?.To).toBe('sara@outside.example');
+    expect(sent?.Subject).toBe('Accepted: Q3 review');
+    expect(header(sent, 'In-Reply-To')).toBe('<invite-q3-1@outside.example>');
+    const reply = replyOf(sent);
+    expect(reply.type).toBe('text/calendar; method=REPLY; charset=UTF-8');
+    expect(reply.text).toContain('METHOD:REPLY');
+    expect(reply.text).toContain(`UID:${UID}`);
+    expect(reply.text).toContain('SEQUENCE:0');
+    expect(reply.text).toContain('ORGANIZER;CN="Sara Out":mailto:sara@outside.example');
+    expect(reply.text).toContain(
+      'ATTENDEE;CN="Noor Invite";PARTSTAT=ACCEPTED:mailto:noor.invite@caime.test',
+    );
+    // Agreeing to what came from someone new answered their request, as a reply would.
+    const [c] = await withSara();
+    const mine = await t.ctx.db
+      .selectFrom('participants')
+      .select('request_state')
+      .where('conversation_id', '=', c?.id as string)
+      .where('user_id', '=', noorId)
+      .executeTakeFirstOrThrow();
+    expect(mine.request_state).toBe('accepted');
+    // The same mail again, as the provider retries it, is the one card.
+    const again = await inbound(await invite({ messageId: '<invite-q3-1@outside.example>' }));
+    expect(again.json().outcomes[0].outcome).toBe('duplicate');
+  });
+
+  it('their later word moves the same card: a new time asks again, a cancellation cancels it', async () => {
+    const before = (await theCard())?.id;
+    // A new time (their calendar counts its sequence up): asked again, and Noor is told.
+    const later = ahead(4);
+    const moved = await inbound(await invite({ sequence: 1, start: later }));
+    expect(moved.json().outcomes[0].outcome).toBe('invited');
+    await work();
+    let card = await theCard();
+    expect(card?.id).toBe(before);
+    expect(card?.payload.state).toBe('proposed');
+    expect(card?.payload.fields?.start?.at).toBe(later.toISOString());
+    expect(card?.payload.invitation?.sequence).toBe(1);
+    const told = (await noor.get('/v1/notifications')).notifications as Array<{
+      title: string;
+    }>;
+    expect(told.some((n) => n.title === 'Sara Out: New time')).toBe(true);
+    // The same word again changes nothing; an older one is past.
+    expect(
+      (await inbound(await invite({ sequence: 1, start: later }))).json().outcomes[0].outcome,
+    ).toBe('duplicate');
+    expect(
+      (await inbound(await invite({ sequence: 0, start: ahead(9) }))).json().outcomes[0].outcome,
+    ).toBe('duplicate');
+    expect((await theCard())?.payload.fields?.start?.at).toBe(later.toISOString());
+    // Agreed again, for its new time: the answer says which time of theirs it answers.
+    sends = [];
+    await noor.post(`/v1/messages/${before}/kit`, { to: 'accepted' });
+    await work();
+    expect(replyOf(sends[0]).text).toContain('SEQUENCE:1');
+    // Called off by its organizer: cancelled here, said to Noor, nothing mailed back.
+    sends = [];
+    const off = await inbound(await invite({ method: 'CANCEL', sequence: 2, start: later }));
+    expect(off.json().outcomes[0].outcome).toBe('invited');
+    await work();
+    expect((await theCard())?.payload.state).toBe('cancelled');
+    expect(sends).toHaveLength(0);
+    // Their word that it stands after all asks again; Noor's no goes back as one.
+    const back = await inbound(await invite({ sequence: 3, start: later }));
+    expect(back.json().outcomes[0].outcome).toBe('invited');
+    expect((await theCard())?.payload.state).toBe('proposed');
+    await noor.post(`/v1/messages/${before}/kit`, { to: 'declined' });
+    await work();
+    expect(sends.at(-1)?.Subject).toBe('Declined: Q3 review');
+    expect(replyOf(sends.at(-1)).text).toContain('PARTSTAT=DECLINED');
+    // A new place for the same time is said where the card is; Noor's no stands.
+    const room = await inbound(await invite({ sequence: 4, start: later, location: 'Room 4' }));
+    expect(room.json().outcomes[0].outcome).toBe('invited');
+    card = await theCard();
+    expect(card?.payload.state).toBe('declined');
+    expect(card?.payload.fields?.place).toBe('Room 4');
+  });
+
+  it('is never held on Caime: no guests to ask, nothing that starts it here, and the calendar knows', async () => {
+    const res = await inbound(
+      await invite({ uid: 'placeless0001@google.com', start: ahead(5), call: false }),
+    );
+    expect(res.json().outcomes[0].outcome).toBe('invited');
+    await work();
+    const card = (await messagesWithSara()).find(
+      (m) => m.payload.invitation?.uid === 'placeless0001@google.com',
+    );
+    expect(card).toBeDefined();
+    await noor.post(`/v1/messages/${card?.id}/kit`, { to: 'accepted' });
+    await work();
+    const guests = await noor.req('POST', `/v1/messages/${card?.id}/guests`, {
+      email: 'guest@outside.example',
+      name: 'Guest',
+    });
+    expect(guests.statusCode).toBe(400);
+    const starts = await t.ctx.db
+      .selectFrom('jobs')
+      .select('id')
+      .where('kind', '=', 'meeting.start')
+      .where(sql<boolean>`payload->>'messageId' = ${card?.id as string}`)
+      .execute();
+    expect(starts).toHaveLength(0);
+    const from = ahead(4).toISOString();
+    const to = ahead(6).toISOString();
+    const items = (await noor.get(`/v1/calendar?from=${from}&to=${to}`)).items as Array<{
+      id: string;
+      invitation?: boolean;
+    }>;
+    expect(items.find((i) => i.id === card?.id)?.invitation).toBe(true);
+  });
+
+  it('only what reads as theirs alone is a card: anything else arrives as the mail it is', async () => {
+    const cardsBefore = (await messagesWithSara()).filter((m) => m.kind === 'kit').length;
+    const cases: Array<[string, Parameters<typeof invite>[0], string]> = [
+      [
+        'someone else’s event',
+        { uid: 'n1@google.com', organizer: 'boss@outside.example' },
+        'delivered',
+      ],
+      [
+        'not to this address',
+        { uid: 'n2@google.com', attendees: ['other@outside.example'] },
+        'delivered',
+      ],
+      ['a series', { uid: 'n3@google.com', extra: ['RRULE:FREQ=WEEKLY'] }, 'delivered'],
+      ['a day', { uid: 'n4@google.com', day: true }, 'delivered'],
+      ['over', { uid: 'n5@google.com', start: ahead(-2) }, 'delivered'],
+      ['longer than a day', { uid: 'n6@google.com', minutes: 26 * 60 }, 'delivered'],
+      ['an event Caime has no card of', { uid: 'n7@google.com', method: 'CANCEL' }, 'delivered'],
+      ['unconfirmed', { uid: 'n8@google.com', auth: 'none' }, 'kept_unverified'],
+    ];
+    for (const [what, o, outcome] of cases) {
+      const res = await inbound(await invite(o));
+      expect([what, res.json().outcomes[0].outcome]).toEqual([what, outcome]);
+    }
+    await work();
+    expect((await messagesWithSara()).filter((m) => m.kind === 'kit')).toHaveLength(cardsBefore);
+    // As mail, in the topic its subject names, its calendar is the file it came as.
+    const all = (await noor.get('/v1/inbox?view=all')).conversations as Array<{
+      id: string;
+      title: string;
+    }>;
+    const topic = all.find((c) => c.title.startsWith('Invitation: Q3 review'));
+    const asMail = (await noor.get(`/v1/conversations/${topic?.id}/messages?limit=50`))
+      .messages as Card[];
+    expect(asMail.some((m) => m.files.some((f) => f.name === 'invite.ics'))).toBe(true);
+    // A list's invitation to someone it isn't connected with is a notice, never a card.
+    const listed = await inbound(
+      await invite({
+        uid: 'n9@google.com',
+        from: 'events@bulk-sender.example',
+        organizer: 'events@bulk-sender.example',
+        extraHeaders: [{ Name: 'List-Unsubscribe', Value: '<mailto:off@bulk-sender.example>' }],
+      }),
+    );
+    expect(listed.json().outcomes[0].outcome).toBe('delivered');
+    const kits = await t.ctx.db
+      .selectFrom('messages')
+      .select('id')
+      .where('client_id', 'like', 'invite:%')
+      .where('kind', '=', 'kit')
+      .execute();
+    expect(kits).toHaveLength(2);
+  });
+});

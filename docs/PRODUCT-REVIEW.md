@@ -1145,7 +1145,19 @@ with its reason, so it isn't proposed again without new facts.
   takes it off their calendar; a place goes as its line and a map, a voice note as its recording.
   What a mail can't carry isn't offered there and isn't sent: a sticker, a poll, a card that asks
   for taps nobody can make in a mail, a live location, a time that repeats, a meeting held on
-  Caime. Phase 2: notices, HTML as sent in a sandbox,
+  Caime. *Built in M16 F4 (2026-10-19, review 2026-10-17 §6: "calendar invitations arrive as a
+  bare file"; "invitations mailed to a person never become cards"):* the other way round. An
+  invitation someone's Google, Outlook or Apple calendar mails to a person's address is a meeting
+  card from its organizer, where their mail lands (never a topic named after the invitation),
+  after what they wrote of it (their calendar's own block for its call left out), its length as
+  it is, its Where their location or their call's address, never "on Caime" (no Join, no guests,
+  nothing started here). Its answer in Caime goes back to the organizer's calendar from the
+  person's address, as their calendar app would send it, in the invitation's thread; the
+  organizer's later word moves the same card (a new time asks again, a called-off one is called
+  off, an older word is past). Only an invitation that reads as theirs alone becomes a card:
+  from its confirmed organizer, to this address, one time ahead of at most a day, in a zone
+  Caime can name, never a notice; a series, a day, someone else's event, an invitation to an
+  organization's address and anything else arrive as mail, as before. Phase 2: notices, HTML as sent in a sandbox,
   reply-all with CC, sending as the address from other clients, the agent by mail. Phase 3:
   sign-in with Google, Apple and Microsoft; calendar sync as apps; a verified organization
   receiving at its own domain. ⛔ Before production: the mail domain's MX at the inbound

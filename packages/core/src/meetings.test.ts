@@ -40,6 +40,31 @@ describe('where a meeting is held (R83)', () => {
       expect(meetingVenue(p)).toBe('place');
     }
   });
+  it('is never Caime for an invitation from someone’s calendar (M16 F4)', () => {
+    for (const p of [undefined, '', 'Caime', 'on caime'])
+      expect(meetingVenue(p, true)).toBe('place');
+    expect(meetingVenue('https://meet.google.com/abc-defg-hij', true)).toBe('link');
+    expect(meetingVenue('Room 4.2', { uid: 'x' })).toBe('place');
+    const card = (invitation?: unknown) => ({
+      kit: 'meeting',
+      state: 'accepted',
+      fields: { start: { at: '2026-10-13T10:00:00.000Z', hasTime: true } },
+      invitation,
+    });
+    const now = new Date('2026-10-13T10:05:00.000Z');
+    expect(meetingAction(card(), now)).toBe('join');
+    expect(meetingAction(card({ uid: 'x' }), now)).toBeNull();
+    const item = {
+      kind: 'meeting',
+      state: 'agreed',
+      hasTime: true,
+      at: '2026-10-13T10:00:00.000Z',
+      endAt: null,
+      place: null,
+    };
+    expect(calendarAction(item, now)).toBe('join');
+    expect(calendarAction({ ...item, invitation: true }, now)).toBeNull();
+  });
   it('opens a link with its scheme', () => {
     expect(meetingLink(' zoom.us/j/1 ')).toBe('https://zoom.us/j/1');
     expect(meetingLink('https://x.io/a')).toBe('https://x.io/a');

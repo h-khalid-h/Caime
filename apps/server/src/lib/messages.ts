@@ -17,6 +17,7 @@ import {
   formatSoon,
   type IntakeForm,
   initialKitState,
+  isCardKit,
   KIT_MODES,
   kitHeadline,
   kitsFor,
@@ -1416,6 +1417,10 @@ export async function sendMessage(
       ...(intake ? { form: intake } : {}),
     };
     kitMode = KIT_MODES[card.kit];
+  } else if (body.kind === 'kit' && opts.trusted) {
+    // The server's own card is the kind of message its kit is, as a client's is.
+    const kit = (payload as { kit?: unknown } | null)?.kit;
+    if (isCardKit(kit)) kitMode = KIT_MODES[kit];
   }
   // Live, a location follows its sharer until the time they chose; the server keeps the clock.
   if (body.kind === 'location') {
