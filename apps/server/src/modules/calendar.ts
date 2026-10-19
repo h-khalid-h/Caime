@@ -60,6 +60,7 @@ import { calendarItems, minutesOf, orgBookings, overdueTasks } from '../lib/cale
 import { hashToken, newToken } from '../lib/crypto';
 import { badRequest, forbidden, notFound } from '../lib/errors';
 import { meetingUid } from '../lib/meeting-series';
+import { keptFromApps } from '../lib/member-apps';
 import { formNames } from '../lib/org-forms';
 import { orgById, orgSeat } from '../lib/orgs';
 import { viewerRelation } from '../lib/relations';
@@ -126,17 +127,38 @@ export async function calendarEvents(
   // so however much is overdue, what's coming is there.
   const rows = await overdueTasks(ctx, userId, { from, until });
   const views = await taskViews(ctx, rows, userId);
+  // Meetings and appointments agreed in conversations they're still in, never one taken back.
+  // A meeting that repeats (R58) is there each time ahead, as one event a time before and after
+  // its card is posted (`meetingUid`).
+  const cards = await cardsAhead(ctx, userId, {
+    from,
+    until,
+    limit: MAX_EVENTS,
+    agreedOnly: true,
+    series: { now },
+  });
+  const owed = await dueCards(ctx, userId, { from, until, limit: MAX_EVENTS });
+  // A calendar app reads this feed for them: what an organization keeps from its team's own apps
+  // is its name and the time, never who, what, how much or where (M16 G3b).
+  const kept = await keptFromApps(ctx, userId, [
+    ...rows.map((r) => r.conversation_id),
+    ...cards.map((c) => c.conversationId),
+    ...owed.map((c) => c.conversationId),
+  ]);
+  const keptBy = (conversationId: string | null) =>
+    conversationId ? kept.get(conversationId) : undefined;
   const events: IcsEvent[] = [];
   rows.forEach((row, i) => {
     const t = views[i];
     if (!t?.dueAt) return;
     const due = new Date(t.dueAt);
     const url = where(t.conversationId);
+    const org = keptBy(t.conversationId);
     const notes = t.notes ? `${t.notes}\n\n` : '';
     events.push({
       uid: `task-${t.id}@caime`,
-      summary: taskSummary(t),
-      description: `${notes}${taskWho(t)} In Caime: ${url}`,
+      summary: org ? `Action · ${org}` : taskSummary(t),
+      description: org ? `In Caime: ${url}` : `${notes}${taskWho(t)} In Caime: ${url}`,
       url,
       ...(t.dueHasTime
         ? { start: due, end: new Date(due.getTime() + TASK_MINUTES * 60_000) }
@@ -144,16 +166,7 @@ export async function calendarEvents(
       updated: row.updated_at as Date,
     });
   });
-  // Meetings and appointments agreed in conversations they're still in, never one taken back.
-  // A meeting that repeats (R58) is there each time ahead, as one event a time before and after
-  // its card is posted (`meetingUid`).
-  for (const card of await cardsAhead(ctx, userId, {
-    from,
-    until,
-    limit: MAX_EVENTS,
-    agreedOnly: true,
-    series: { now },
-  })) {
+  for (const card of cards) {
     // A meeting held on Caime (R83) is joined from the calendar app: its address opens the
     // conversation at the card and joins it (the app checks the card first). A time still to be
     // posted has no card to join yet: it opens the conversation.
@@ -167,13 +180,14 @@ export async function calendarEvents(
       : where(card.conversationId);
     // As long as the app's calendar says (M16): as booked, as the field says, else an hour.
     const minutes = minutesOf(card);
+    const org = keptBy(card.conversationId);
     events.push({
       uid: meetingUid(card.messageId, card.series, card.kit),
-      summary: card.title,
+      summary: org ? `${KITS[card.kit].name} · ${org}` : card.title,
       description: here
         ? `${KITS[card.kit].name} on Caime. Join: ${url}`
         : `${KITS[card.kit].name}, agreed in Caime: ${url}`,
-      location: here ? 'Caime' : card.place,
+      location: here ? 'Caime' : org ? null : card.place,
       url,
       ...(card.hasTime
         ? { start: card.at, end: new Date(card.at.getTime() + minutes * 60_000) }
@@ -183,11 +197,14 @@ export async function calendarEvents(
     });
   }
   // What's owed by a day (M14): a Pay card or an invoice on its due day, all day, holding nothing.
-  for (const card of await dueCards(ctx, userId, { from, until, limit: MAX_EVENTS })) {
+  for (const card of owed) {
     const url = where(card.conversationId);
-    const what = card.amount
-      ? `${card.title}: ${formatAmount(card.amount.value, card.amount.currency)}`
-      : card.title;
+    const org = keptBy(card.conversationId);
+    const what = org
+      ? `${KITS[card.kit].name} · ${org}`
+      : card.amount
+        ? `${card.title}: ${formatAmount(card.amount.value, card.amount.currency)}`
+        : card.title;
     events.push({
       uid: `${card.kit}-${card.messageId}@caime`,
       summary: what,

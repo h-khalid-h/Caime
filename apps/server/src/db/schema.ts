@@ -1324,9 +1324,8 @@ export interface OrgAppsTable {
   previous_secret_until: NullableTimestamp;
   /**
    * The signing secret and the one before it, sealed through the vault, each with the id of the
-   * key that sealed it (0130, `lib/app-secrets.ts`). Their clear copies (`webhook_secret`,
-   * `previous_webhook_secret`) were emptied by 0134 and are read by nothing; a later release
-   * drops them.
+   * key that sealed it (0130, `lib/app-secrets.ts`). Nothing is kept in clear: the copies the
+   * releases before kept were emptied by 0134 and their columns dropped by 0136.
    */
   webhook_secret_sealed: Buffer | null;
   webhook_secret_kid: string | null;

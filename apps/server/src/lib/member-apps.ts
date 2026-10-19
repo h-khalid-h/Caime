@@ -6,8 +6,10 @@
  * where they write as its customer (R64). Their own conversations, and their side as anyone's
  * customer, stay theirs; its owner and admins are those who decide, so their own apps are their
  * choice. The conversation and action routes refuse such a request (`org_apps_closed`); the inbox,
- * search and the actions list leave those conversations out of what a token reads. A session in
- * Caime's own app is never asked: the rule is about what leaves through someone's own apps.
+ * search and the actions list leave those conversations out of what a token reads, and their own
+ * calendars (the feed, the plans written to a connected one) show their cards and actions as the
+ * organization and the time (G3b). A session in Caime's own app is never asked: the rule is about
+ * what leaves through someone's own apps.
  */
 import { tr } from '@caime/core/i18n';
 import { MANAGING_ROLES } from '@caime/core/permissions';
@@ -18,25 +20,67 @@ import { AppError } from './errors';
 type Ctx = Pick<AppContext, 'db'>;
 
 /**
- * The organizations whose conversations this request may not reach: none for a session in
- * Caime's own app, else those on whose team the person is without running it, closed to their
- * apps. One query, by the person's own seats.
+ * The organizations that keep their conversations from this person's own apps: those on whose
+ * team they are without running it, closed to their apps. One query, by the person's own seats.
  */
-export async function orgsClosedToApps(
-  ctx: Ctx,
-  auth: Pick<Auth, 'userId' | 'grant'>,
-): Promise<string[]> {
-  if (!auth.grant) return [];
+async function closedOrgsOf(ctx: Ctx, userId: string): Promise<string[]> {
   const rows = await ctx.db
     .selectFrom('org_members as m')
     .innerJoin('organizations as o', 'o.id', 'm.org_id')
     .select('o.id')
-    .where('m.user_id', '=', auth.userId)
+    .where('m.user_id', '=', userId)
     .where('m.left_at', 'is', null)
     .where('m.role', 'not in', [...MANAGING_ROLES])
     .where('o.member_apps', '=', false)
     .execute();
   return rows.map((r) => r.id);
+}
+
+/**
+ * The organizations whose conversations this request may not reach: none for a session in
+ * Caime's own app, else those that keep theirs from the person's own apps.
+ */
+export async function orgsClosedToApps(
+  ctx: Ctx,
+  auth: Pick<Auth, 'userId' | 'grant'>,
+): Promise<string[]> {
+  return auth.grant ? closedOrgsOf(ctx, auth.userId) : [];
+}
+
+/**
+ * Of these conversations, those an organization keeps from this person's own apps, with its name
+ * (M16 G3b). A calendar of theirs that Caime writes to or that reads their feed is one of their
+ * apps: what it shows of such a conversation's cards and actions is the organization and the time,
+ * never who or what. Two queries at most, one when they're on no team that keeps them.
+ */
+export async function keptFromApps(
+  ctx: Ctx,
+  userId: string,
+  conversationIds: ReadonlyArray<string | null>,
+): Promise<Map<string, string>> {
+  const ids = [...new Set(conversationIds.filter((c): c is string => Boolean(c)))];
+  if (ids.length === 0) return new Map();
+  const orgs = await closedOrgsOf(ctx, userId);
+  if (orgs.length === 0) return new Map();
+  const { rows } = await sql<{ id: string; name: string }>`
+    select cx.id, ox.name
+    from conversations cx
+    join organizations ox on ox.id = any(${orgs}::uuid[])
+    where cx.id = any(${ids}::uuid[])
+      and (
+        (cx.kind = 'business' and cx.org_id = ox.id
+          and not exists (
+            select 1 from business_threads bx
+            where bx.conversation_id = cx.id and bx.customer_id = ${userId}
+          ))
+        or cx.space_id in (select sx.id from spaces sx where sx.org_id = ox.id)
+        or exists (
+          select 1 from business_threads bx
+          where bx.conversation_id = cx.id and bx.customer_id = ${userId}
+            and bx.customer_org_id = ox.id
+        )
+      )`.execute(ctx.db);
+  return new Map(rows.map((r) => [r.id, r.name]));
 }
 
 /** Whether a conversation (an id, or a column holding one) belongs to one of `orgs` for them. */

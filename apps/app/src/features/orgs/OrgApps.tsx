@@ -306,7 +306,7 @@ export function OrgApps({ org, refresh }: { org: OrgView; refresh: (o: OrgView) 
           divider
           label={tr('Team members’ own apps may reach the organization’s conversations')}
           detail={tr(
-            'A personal token, a bridge like Zapier, or an app someone on the team connects to their own account. Off, those reach only their own conversations. The owner and admins decide for themselves.',
+            'A personal token, a bridge like Zapier, an app someone on the team connects to their own account, or their own calendar. Off, those reach only their own conversations, and a calendar shows the organization’s name and the time, never the customer or the details. The owner and admins decide for themselves.',
           )}
           value={org.memberApps ?? false}
           disabled={letting}

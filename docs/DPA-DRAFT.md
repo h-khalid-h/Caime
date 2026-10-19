@@ -103,7 +103,8 @@ What the product does today, from docs/SECURITY.md, which is checked against the
   blocks; app tokens reach a fixed set of routes with explicit permissions; personal tokens never
   reach an account itself, and a token acting for someone on the Organization's team who doesn't
   run it (their own script, a bridge, an app they let in) reaches none of the Organization's
-  conversations unless the Organization turns that on.
+  conversations unless the Organization turns that on, and until then their own calendars show
+  the Organization's bookings by its name and time alone.
 - An audit log of operator and organization actions (export, erasure, retention changes, team
   changes, closing), kept as a hash chain the database seals at each commit and verifies daily,
   so a record changed or removed after the fact shows.

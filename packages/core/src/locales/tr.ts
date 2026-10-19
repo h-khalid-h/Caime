@@ -4667,6 +4667,6 @@ export const turkish: Catalog = {
   'written {when}': '{when} yazıldı',
   'Team members’ own apps may reach the organization’s conversations':
     'Ekip üyelerinin kendi uygulamaları kuruluşun konuşmalarına erişebilir',
-  'A personal token, a bridge like Zapier, or an app someone on the team connects to their own account. Off, those reach only their own conversations. The owner and admins decide for themselves.':
-    'Kişisel bir belirteç, Zapier gibi bir köprü ya da ekipten birinin kendi hesabına bağladığı bir uygulama. Kapalıyken bunlar yalnızca o kişinin kendi konuşmalarına erişir. Sahip ve yöneticiler kendileri karar verir.',
+  'A personal token, a bridge like Zapier, an app someone on the team connects to their own account, or their own calendar. Off, those reach only their own conversations, and a calendar shows the organization’s name and the time, never the customer or the details. The owner and admins decide for themselves.':
+    'Kişisel bir belirteç, Zapier gibi bir köprü, ekipten birinin kendi hesabına bağladığı bir uygulama ya da kendi takvimi. Kapalıyken bunlar yalnızca o kişinin kendi konuşmalarına erişir; takvimde müşteri ya da ayrıntılar değil, yalnızca kuruluşun adı ve saat görünür. Sahip ve yöneticiler kendileri karar verir.',
 };

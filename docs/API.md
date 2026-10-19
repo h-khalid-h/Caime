@@ -460,8 +460,12 @@ an hour, and nothing in a calendar changes anything in Caime.
 | Done, cancelled, declined, deleted, or in a conversation you've left | Gone at the next read |
 
 Private conversations, message requests you haven't accepted and messages you deleted for
-yourself are never in it. Managing it (`GET`, `POST`, `DELETE /v1/calendar/feed`) needs you
-signed in: no token reaches it.
+yourself are never in it. On an organization's team that keeps its conversations from its
+members' own apps, what's from its conversations reads as its kind and the organization's name at
+its time ("Meeting · Nile Dental", "Action · Nile Dental"), never the customer, the card's words,
+its place or an amount; the plans Caime writes into a connected Google or Outlook calendar do the
+same. Managing it (`GET`, `POST`, `DELETE /v1/calendar/feed`) needs you signed in: no token
+reaches it.
 
 ## Not yet
 

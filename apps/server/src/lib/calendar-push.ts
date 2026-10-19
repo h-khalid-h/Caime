@@ -35,6 +35,7 @@ import {
 import { asReader } from './i18n';
 import { enqueue, registerJob, registerPeriodic } from './jobs';
 import { meetingUid } from './meeting-series';
+import { keptFromApps } from './member-apps';
 import { cardsAhead } from './upcoming';
 
 type Account = AccountRow;
@@ -139,11 +140,13 @@ export async function planEvents(
     agreedOnly: false,
     series: { now: ctx.now() },
   });
-  const who = await withWhom(
-    ctx,
-    userId,
-    cards.map((c) => c.conversationId),
-  );
+  const ids = cards.map((c) => c.conversationId);
+  // An organization that keeps its conversations from its team's own apps: its name and the time
+  // alone, never the customer's name, the card's own words or its place (M16 G3b).
+  const [who, kept] = await Promise.all([
+    withWhom(ctx, userId, ids),
+    keptFromApps(ctx, userId, ids),
+  ]);
   const me = await ctx.db
     .selectFrom('users')
     .select('time_zone')
@@ -173,9 +176,14 @@ export async function planEvents(
           ? tr(KITS[card.kit].name)
           : card.title;
       const other = who.get(card.conversationId);
+      const org = kept.get(card.conversationId);
       out.set(uid, {
         uid,
-        summary: other ? `${title} · ${other}` : title,
+        summary: org
+          ? `${tr(KITS[card.kit].name)} · ${org}`
+          : other
+            ? `${title} · ${other}`
+            : title,
         description: [
           card.agreed ? null : tr('Asked, not agreed yet.'),
           here ? tr('Join in Caime: {url}', { url }) : tr('Open in Caime: {url}', { url }),
@@ -183,7 +191,7 @@ export async function planEvents(
         ]
           .filter(Boolean)
           .join('\n\n'),
-        location: here ? 'Caime' : card.place,
+        location: here ? 'Caime' : org ? null : card.place,
         url,
         start: card.at,
         end,

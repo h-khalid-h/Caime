@@ -1113,8 +1113,12 @@ A sphere is said as how you know someone, never "sphere".
   `organizations.member_apps` (M16 G3, `lib/member-apps.ts`): a route a token reaches that reads
   or writes one conversation calls `assertOpenToApps` after its membership check, and one that
   lists them takes `orgsClosedToApps` once and filters with `openIn` (actions: `actionOpenIn`)
-  only when it names any, with a case in `member-apps.test.ts`. The owner and admins, a
-  customer's side and a session in Caime's own app are never asked.
+  only when it names any, with a case in `member-apps.test.ts`. The person's own calendars are
+  their apps too (G3b): the feed and `planEvents` ask `keptFromApps` once for what they list and
+  write such a conversation's cards and actions as the kind, the organization's name and the
+  time; anything new that hands a person's cards or actions to a calendar or service of theirs
+  does the same. The owner and admins, a customer's side and a session in Caime's own app are
+  never asked.
 - Apps (R74): Settings · Apps is `app/(app)/settings/apps.tsx` (Connected and Discover in
   `features/apps/`), never a screen per kind. Connected is `GET /me/connected-apps`
   (`ConnectedAppView`, `kind`: an OAuth grant, or a built-in that's on); Discover is

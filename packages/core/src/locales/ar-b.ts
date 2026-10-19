@@ -3170,6 +3170,6 @@ export const arB: Catalog = {
   'written {when}': 'كُتب {when}',
   'Team members’ own apps may reach the organization’s conversations':
     'وصول تطبيقات أعضاء الفريق الخاصة إلى محادثات المؤسسة',
-  'A personal token, a bridge like Zapier, or an app someone on the team connects to their own account. Off, those reach only their own conversations. The owner and admins decide for themselves.':
-    'رمز شخصي، أو جسر مثل Zapier، أو تطبيق مربوط بحساب أحد أعضاء الفريق. عند الإيقاف لا تصل إلا إلى محادثات صاحب الحساب. أما المالك والمشرفون فيقررون لأنفسهم.',
+  'A personal token, a bridge like Zapier, an app someone on the team connects to their own account, or their own calendar. Off, those reach only their own conversations, and a calendar shows the organization’s name and the time, never the customer or the details. The owner and admins decide for themselves.':
+    'رمز شخصي، أو جسر مثل Zapier، أو تطبيق أو تقويم مربوط بحساب أحد أعضاء الفريق. عند الإيقاف لا تصل هذه إلا إلى محادثات صاحب الحساب، ولا يظهر في التقويم إلا اسم المؤسسة والوقت، دون العميل أو التفاصيل. أما المالك والمشرفون فيقررون لأنفسهم.',
 };

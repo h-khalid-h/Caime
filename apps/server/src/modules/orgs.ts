@@ -67,6 +67,7 @@ import {
   withoutProviders,
 } from '../lib/booking';
 import { leaveThreads, orgAvatarUrl } from '../lib/business';
+import { queueCalendarPush } from '../lib/calendar-push';
 import { disconnect } from '../lib/checkout';
 import { domainStanding, takesByDomain } from '../lib/domain-join';
 import { qrPath } from '../lib/door';
@@ -642,6 +643,20 @@ export async function orgRoutes(app: FastifyInstance, ctx: AppContext) {
       })
       .where('id', '=', id)
       .execute();
+    // What its team's connected calendars show of it follows now, not at the hourly sweep (G3b).
+    if (body.memberApps !== undefined && body.memberApps !== current.member_apps)
+      ctx.defer('org.member-apps', async () => {
+        const team = await ctx.db
+          .selectFrom('org_members')
+          .select('user_id')
+          .where('org_id', '=', id)
+          .where('left_at', 'is', null)
+          .execute();
+        await queueCalendarPush(
+          ctx,
+          team.map((m) => m.user_id),
+        );
+      });
     return { org: await orgView(ctx, auth.userId, await orgById(ctx.db, id)) };
   });
 

@@ -36,13 +36,11 @@ async function deliver() {
   await runDueJobs(t.ctx);
   return received.at(-1);
 }
-/** What an app keeps of its secrets: sealed, and the clear copies nothing writes any more. */
+/** What an app keeps of its secrets: sealed, and nothing else. */
 const secretsOf = (appId: string) =>
   t.ctx.db
     .selectFrom('org_apps')
     .select([
-      sql<string | null>`webhook_secret`.as('clear'),
-      sql<string | null>`previous_webhook_secret`.as('previousClear'),
       'webhook_secret_sealed',
       'webhook_secret_kid',
       'previous_secret_sealed',
@@ -52,8 +50,6 @@ const secretsOf = (appId: string) =>
     .where('id', '=', appId)
     .executeTakeFirstOrThrow();
 const NOTHING_KEPT = {
-  clear: null,
-  previousClear: null,
   webhook_secret_sealed: null,
   webhook_secret_kid: null,
   previous_secret_sealed: null,
@@ -419,8 +415,13 @@ describe('webhook secrets kept sealed (M16 G1)', () => {
   it('keeps a new app’s secret sealed, never in clear, and signs with it', async () => {
     ({ id: appId, secret } = await make('Sealed Hook'));
     const kept = await secretsOf(appId);
-    expect(kept).toMatchObject({ clear: null, previousClear: null });
     expect(kept.webhook_secret_sealed).not.toBeNull();
+    // No column keeps one in clear any more (G1c).
+    const { rows } = await sql<{ column_name: string }>`
+      select column_name from information_schema.columns
+      where table_name = 'org_apps' and column_name in ('webhook_secret', 'previous_webhook_secret')
+    `.execute(t.ctx.db);
+    expect(rows).toEqual([]);
     expect(Buffer.from(kept.webhook_secret_sealed!).toString('latin1')).not.toContain(secret);
     expect(await pinged(appId)).toEqual([secret]);
   });
@@ -431,7 +432,9 @@ describe('webhook secrets kept sealed (M16 G1)', () => {
     const old = secret;
     secret = rotated.webhookSecret;
     expect(rotated.app.secretOverlapUntil).not.toBeNull();
-    expect(await secretsOf(appId)).toMatchObject({ clear: null, previousClear: null });
+    const kept = await secretsOf(appId);
+    expect(kept.previous_secret_sealed).not.toBeNull();
+    expect(Buffer.from(kept.previous_secret_sealed!).toString('latin1')).not.toContain(old);
     expect(
       (await noor.get(`/v1/orgs/${orgId}/apps`)).apps.find((a: any) => a.id === appId),
     ).toMatchObject({ secretOverlapUntil: rotated.app.secretOverlapUntil });

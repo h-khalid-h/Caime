@@ -3,9 +3,9 @@
  * so whoever reads one can speak to that app as Caime. Each is sealed by the vault's key
  * (`lib/vault-keys.ts`: VAULT_KEY, else the database's own) under a label naming its app, so it
  * opens for that app alone, and a replaced one moves to `previous` as it is. Nothing keeps one in
- * clear (G1b: the copies the release before kept beside them were emptied by migration 0134, and
- * their columns go in a later release). The vault's pass (`resealAppSecrets`) moves them to the
- * key that seals now, and forgets a replaced one past its day and a removed app's.
+ * clear (G1b, G1c: the copies the releases before kept beside them were emptied by migration 0134
+ * and their columns dropped by 0136). The vault's pass (`resealAppSecrets`) moves them to the key
+ * that seals now, and forgets a replaced one past its day and a removed app's.
  */
 import type { AppContext } from '../context';
 import type { OrgApp } from '../db/schema';

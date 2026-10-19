@@ -2847,8 +2847,11 @@ graph) and the number that will show it; one that sharpens none is hygiene and s
       secret and a replaced one sealed and never in clear, both signing for its day, never sent
       unsigned, a removed app's and a replaced one past its day forgotten, every one moved to a new
       `VAULT_KEY` at start), and the full gate.
-- [ ] G1c. The clear columns dropped (`org_apps.webhook_secret`, `previous_webhook_secret`), with
-      `-- contracts after` G1b's commit once it's in production.
+- [x] G1c. The clear columns dropped (2026-10-19): migration 0136 drops
+      `org_apps.webhook_secret` and `previous_webhook_secret`, marked `-- contracts after
+      c1076d0`, G1b's commit, which production ran first; nothing keeps a webhook secret in clear.
+      Verified: `apps.test.ts` (no such column left, a new and a replaced secret sealed and never in
+      clear), the migrations lint against `origin/production`, and the full gate.
 - [x] G2. Connected accounts that say how each use is doing (2026-10-19, review §8 H3; advantage 3,
       the door link whose bookings respect the professional's calendar, and the number that shows
       it: connections failing unseen, from any to none). The busy read and the plan push each keep
@@ -2887,14 +2890,26 @@ graph) and the number that will show it; one that sharpens none is hygiene and s
       connecting or disconnecting an account (which and for what, never its address), making,
       changing or removing an automation and setting, changing, removing or resetting a rule now
       write audit rows (what changed, never what it says or whom it's for); search's actions read
-      `visibleTasksSql` as every reader of actions does. Not done: the ICS feed and the plans
-      written to a connected calendar still carry the bookings a team member does (the
-      organization's say over those is the next G slice). Verified: `member-apps.test.ts` (refused
+      `visibleTasksSql` as every reader of actions does. Verified: `member-apps.test.ts` (refused
       and left out by default, never for Caime's app, the owner's token or the customer's, let in by
       the owner and not by a member, audited once per change, a thread written as it kept once its
       writer no longer runs it, automations' and rules' audit rows without what they say),
       `connected-accounts.test.ts` (the connect and disconnect rows, no address),
       `dpa-draft.test.ts`, the catalogs in four languages, and the full gate.
+- [x] G3b. A member's own calendars by the organization's say (2026-10-19, the rest of review §8
+      H4; the number: customers' names written into a team member's own calendar without the
+      organization's say, every booking they do before, none now). A calendar of a person's is one
+      of their apps: while an organization keeps its conversations from its team's own apps, the
+      feed and the plans written to a connected Google or Outlook calendar show its cards and
+      actions as their kind, its name and the time ("Meeting · Nile Dental", "Action · Nile
+      Dental"), never the customer's name, the card's own words, its place, an amount or an
+      action's notes (`keptFromApps`, one query more only for someone on a team that keeps them);
+      turning the switch either way queues the team's pushes at once rather than at the hourly
+      sweep, and the setup's switch says calendars too, in four languages. Caime's own calendar
+      screens are never asked. Verified: `member-apps.test.ts` (the feed and the written plans
+      without who, what or where, Caime's own calendar whole, let in and they say it again, the
+      owner's own never kept), `calendar.test.ts`, `calendar-sync.test.ts`, the catalogs, and the
+      full gate.
 - [ ] H. Business depth: a Business seat includes Pro; a cap on organizations per person; room
       checks inside the transaction; quick replies, away and greeting messages; customer notes,
       tags and fields; tax invoices (counsel); booking and revenue analytics; intake forms as
@@ -4675,6 +4690,9 @@ graph) and the number that will show it; one that sharpens none is hygiene and s
   journeys, safety, reliability, performance, intelligence, mail and calendar, chat, integrations,
   business and code integrity; the matrix against WhatsApp, Signal, Slack, Calendly and Workspace;
   an age-assurance design; the integration framework mapped to the code; plan M16 (A–H).
+- 2026-10-19 — M16 G3b and G1c: a team member's own calendars show an organization's bookings
+  by its name and time alone while it keeps its conversations from their apps; the clear webhook
+  secret columns dropped.
 - 2026-10-19 — M16 G3: an organization keeps its conversations from its team's own tokens,
   bridges and apps until its owner or an admin lets them in; accounts, automations and rules
   write audit rows.

@@ -217,6 +217,83 @@ describe('an organization’s say over its members’ own apps (M16 G3)', () => 
     expect((await omar.req('GET', `/v1/conversations/${asNile}/messages`)).statusCode).toBe(200);
   });
 
+  it('shows its cards and actions in a member’s own calendar by its name and time alone (G3b)', async () => {
+    const at = new Date(t.clock.now.getTime() + 2 * 86_400_000).toISOString();
+    const fitting = (
+      await noor.post(`/v1/conversations/${generalId}/messages`, {
+        clientId: uuidv4(),
+        kind: 'kit',
+        payload: {
+          kit: 'meeting',
+          fields: {
+            title: 'Fitting Lina’s crown',
+            start: { at, hasTime: true },
+            durationMinutes: 30,
+            place: '12 Corniche St',
+          },
+        },
+      })
+    ).message;
+    await omar.post(`/v1/messages/${fitting.id}/kit`, { to: 'accepted' });
+    const call = (
+      await omar.post('/v1/tasks', {
+        title: 'Call Lina about the crown',
+        notes: 'She prefers mornings',
+        conversationId: generalId,
+        dueAt: at,
+        dueHasTime: true,
+      })
+    ).task.id as string;
+    const { url } = await omar.post('/v1/calendar/feed');
+    const feed = async () => {
+      const res = await t.app.inject({ method: 'GET', url: new URL(url).pathname });
+      expect(res.statusCode).toBe(200);
+      return res.body.replace(/\r\n /g, '').split('\r\n');
+    };
+    const eventOf = (all: string[], uid: string) => {
+      const from = all.indexOf(`UID:${uid}`);
+      return from < 0 ? [] : all.slice(from, all.indexOf('END:VEVENT', from));
+    };
+    const meetingUid = `meeting-${fitting.id}@caime`;
+    let lines = await feed();
+    expect(eventOf(lines, meetingUid)).toEqual(
+      expect.arrayContaining(['SUMMARY:Meeting · Nile Dental']),
+    );
+    expect(eventOf(lines, `task-${call}@caime`)).toEqual(
+      expect.arrayContaining(['SUMMARY:Action · Nile Dental']),
+    );
+    for (const words of ['crown', 'Corniche', 'mornings', 'Lina'])
+      expect(lines.join('\n'), words).not.toContain(words);
+    // What Caime writes into a calendar he connects says the same.
+    const { planEvents } = await import('../src/lib/calendar-push');
+    const window = { from: t.clock.now, until: new Date(t.clock.now.getTime() + 7 * 86_400_000) };
+    expect((await planEvents(t.ctx, omar.user.id, window)).get(meetingUid)).toMatchObject({
+      summary: 'Meeting · Nile Dental',
+      location: null,
+    });
+    // In Caime itself, everything as before.
+    const inApp = await omar.get(
+      `/v1/calendar?from=${encodeURIComponent(t.clock.now.toISOString())}&to=${encodeURIComponent(window.until.toISOString())}`,
+    );
+    expect(JSON.stringify(inApp)).toContain('Fitting Lina’s crown');
+    // Let in, his calendars say what it is again; Noor's own were never kept.
+    await noor.patch(`/v1/orgs/${nileId}`, { memberApps: true });
+    lines = await feed();
+    expect(eventOf(lines, meetingUid)).toEqual(
+      expect.arrayContaining(['SUMMARY:Fitting Lina’s crown', 'LOCATION:12 Corniche St']),
+    );
+    expect(eventOf(lines, `task-${call}@caime`)).toEqual(
+      expect.arrayContaining(['SUMMARY:Call Lina about the crown']),
+    );
+    expect((await planEvents(t.ctx, omar.user.id, window)).get(meetingUid)).toMatchObject({
+      location: '12 Corniche St',
+    });
+    expect((await planEvents(t.ctx, noor.user.id, window)).get(meetingUid)?.summary).toContain(
+      'Fitting Lina’s crown',
+    );
+    await noor.patch(`/v1/orgs/${nileId}`, { memberApps: false });
+  });
+
   it('writes audit rows for automations and rules, never what they say', async () => {
     const { id } = await omar.post('/v1/automations', {
       when: { kinds: ['document'] },

@@ -4853,6 +4853,6 @@ export const fr: Catalog = {
   'written {when}': 'écrit {when}',
   'Team members’ own apps may reach the organization’s conversations':
     'Les applications personnelles des membres de l’équipe peuvent accéder aux conversations de l’organisation',
-  'A personal token, a bridge like Zapier, or an app someone on the team connects to their own account. Off, those reach only their own conversations. The owner and admins decide for themselves.':
-    'Un jeton personnel, une passerelle comme Zapier, ou une application qu’un membre de l’équipe relie à son propre compte. Désactivé, ils n’accèdent qu’aux conversations de la personne. Le propriétaire et les admins décident pour eux-mêmes.',
+  'A personal token, a bridge like Zapier, an app someone on the team connects to their own account, or their own calendar. Off, those reach only their own conversations, and a calendar shows the organization’s name and the time, never the customer or the details. The owner and admins decide for themselves.':
+    'Un jeton personnel, une passerelle comme Zapier, une application qu’un membre de l’équipe relie à son propre compte, ou son propre agenda. Désactivé, ils n’accèdent qu’aux conversations de la personne, et un agenda ne montre que le nom de l’organisation et l’heure, jamais le client ni les détails. Le propriétaire et les admins décident pour eux-mêmes.',
 };

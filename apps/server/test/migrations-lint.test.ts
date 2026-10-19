@@ -118,13 +118,15 @@ describe('the migrations lint (A3)', () => {
   });
 
   it('the migrations this release adds keep the rules', () => {
-    // Everything from A3's own (0091) on: the lint was not there for what came before.
+    // Everything from A3's own (0091) on: the lint was not there for what came before. A
+    // contraction here needs its `-- contracts after` mark; whether that commit already runs in
+    // production is `pnpm migrations:lint`'s to say, against origin/production (M16 G1c's drop).
     const dir = join(root, MIGRATIONS_DIR);
     const files = readdirSync(dir)
       .filter((f) => f.endsWith('.sql') && Number(f.slice(0, 4)) >= 91)
       .sort();
     expect(files.length).toBeGreaterThan(0);
     for (const file of files)
-      expect(lintMigration(file, readFileSync(join(dir, file), 'utf8'), never)).toEqual([]);
+      expect(lintMigration(file, readFileSync(join(dir, file), 'utf8'), always)).toEqual([]);
   });
 });
