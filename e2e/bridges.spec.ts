@@ -50,6 +50,10 @@ test.describe
       expect(shown).toBeTruthy();
       const token = shown as string;
       await expect(visible(page, /Shown this once: paste it on Zapier now/)).toBeVisible();
+      // Where a Zap's Retrieve Poll hears of each new message (M16 G5).
+      await expect(page.getByTestId('bridge-feed').filter({ visible: true })).toContainText(
+        '/v1/feed',
+      );
       await expect(page.getByTestId('bridge-open')).toBeVisible();
       await page.screenshot({ path: 'e2e/screenshots/desktop-bridge-zapier.png' });
       // What the platform does with it: a bearer on the person's routes, within what was ticked.
@@ -67,6 +71,12 @@ test.describe
       expect(made.status()).toBe(201);
       // Reading was ticked by default, writing a message wasn't; the account's own routes never.
       expect((await api.get('/v1/inbox')).status()).toBe(200);
+      const fed = await api.get('/v1/feed');
+      expect(fed.status()).toBe(200);
+      expect(await fed.json()).toMatchObject({
+        events: expect.any(Array),
+        next: expect.any(String),
+      });
       const unticked = await api.post(
         '/v1/conversations/00000000-0000-0000-0000-000000000000/messages',
         { data: { clientId: `zap-msg-${suffix}`, body: 'Not allowed' } },

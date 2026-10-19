@@ -1603,4 +1603,8 @@ export const arServer: Catalog = {
     'لا يستطيع Caime استخدامه من أجلك حتى تربطه من جديد في الإعدادات · التطبيقات.',
   'This organization keeps its conversations from its members’ own apps.':
     'تُبقي هذه المؤسسة محادثاتها بعيدًا عن التطبيقات الخاصة بأعضائها.',
+  'That cursor isn’t one this feed gave you: ask once without it.':
+    'هذا المؤشر لم يمنحك إياه هذا الموجز: اطلب مرة دونه.',
+  'The feed began again since that cursor: ask once without it.':
+    'بدأ الموجز من جديد منذ ذلك المؤشر: اطلب مرة دونه.',
 };

@@ -176,6 +176,11 @@ export function createMetrics(pool: pg.Pool) {
     ),
     realtime: new Gauge('caime_realtime_connections', 'Open realtime connections.'),
     messages: new Counter('caime_messages_total', 'Messages sent, by kind.'),
+    // A person's feed (M16 G5): reads, the newest first or after a cursor.
+    feed: new Counter(
+      'caime_feed_reads_total',
+      'Reads of a person’s feed, by mode (newest, after).',
+    ),
     // Booking before an account (R97 (1)): each step's outcome, refusals by their reason.
     publicBookings: new Counter(
       'caime_public_bookings_total',

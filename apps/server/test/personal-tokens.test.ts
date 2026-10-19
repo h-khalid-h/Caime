@@ -62,6 +62,8 @@ describe('personal access tokens (PRD §74)', () => {
     expect(JSON.stringify(tokens)).not.toContain(token);
 
     expect((await as(token, 'GET', `/v1/conversations/${convo}/messages`)).statusCode).toBe(200);
+    // What reached her, for a bridge's trigger (M16 G5).
+    expect((await as(token, 'GET', '/v1/feed')).statusCode).toBe(200);
     const sent = await as(token, 'POST', `/v1/conversations/${convo}/messages`, {
       clientId: uuidv4(),
       body: 'Reminder: the plumber comes at 10.',

@@ -2930,6 +2930,38 @@ graph) and the number that will show it; one that sharpens none is hygiene and s
       the export, written again once its card changes, a removal let go), `account-health.test.ts`,
       `calendar-sync.test.ts` (the privacy page), `connected-accounts.test.ts`, the catalogs, and
       the full gate.
+- [x] G5. What reached a person, for the bridges (2026-10-19, review §8 M and §11 step 6; the
+      condition, not an advantage (§14): Caime reaching the apps people already use. The number:
+      recipes that start on a new message, none before, since the inbox lists conversations and has
+      no "since"; now every message, none passed over, counted by `caime_feed_reads_total`). `GET /v1/feed` (`messages:read`, `PERSON_ROUTES`, the OpenAPI document, the
+      SDK's `feed()`, the MCP's `feed` tool) answers each new message in the person's conversations
+      as an event shaped like a webhook delivery (`id` the message's, `event: 'message.created'`,
+      `data`: the conversation as their inbox names it, through the title rule the two now share in
+      `lib/conversation-titles.ts`; who sent it, the organization to its customer; its words or what
+      it is; a card as a webhook says one; the `MessageView`). Without a cursor the newest first, for
+      a poller that dedupes by id; after `next`, oldest first, gap-free: each message keeps the
+      transaction that wrote it (`messages.tx`, migration 0138, no backfill) under a partial index
+      built concurrently (0139), and the feed reads only below the oldest transaction still running
+      in this database (the snapshot's running ids matched to this database's sessions, so a
+      transaction elsewhere on the server never holds it back); a page not full moves the cursor to
+      that horizon. The cursor is sealed to its person; one from beyond the database's count (a
+      backup restored into a new server) is refused, and `caime_feed_forget()` forgets the restored
+      rows' transactions (DEPLOY.md). It reads as the inbox does (never the team's side of an
+      organization's conversations, a request not yet taken, a private conversation, a line Caime
+      wrote, a chat brought over, a notice, or what was deleted, hidden or ran out; the person's own
+      only with `mine=1`), keeps G3's rule for an organization's conversations, allows sixty reads
+      a minute and counts them (`caime_feed_reads_total{mode}`). The bridge sheet shows the feed's
+      address beside the token, and Zapier's line names Retrieve Poll on it with Key `events`.
+      Costs: one eight-byte column and one index entry per message sent; a read is the horizon (a
+      snapshot and this database's sessions), one index probe per conversation of the person bounded
+      by the page, and the views of at most a hundred messages. Not done: personal webhooks (the
+      same events pushed), and kinds beyond a new message (a card moved, an action asked of them).
+      Verified: `feed.test.ts` (newest first with where and who; after a cursor, a page at a time;
+      a transaction still writing holds the feed back and nothing is lost; one in another database
+      never does; what's left out; a customer hears the organization; refused cursors; the token's
+      route and the counter; the restore procedure), `business.test.ts` (no team id or name in the
+      customer's feed), `member-apps.test.ts`, `personal-tokens.test.ts`, `sdk.test.ts`, the MCP's
+      `server.test.ts`, `openapi.test.ts`, `messaging.test.ts`, the catalogs, and the full gate.
 - [ ] H. Business depth: a Business seat includes Pro; a cap on organizations per person; room
       checks inside the transaction; quick replies, away and greeting messages; customer notes,
       tags and fields; tax invoices (counsel); booking and revenue analytics; intake forms as
@@ -4710,6 +4742,9 @@ graph) and the number that will show it; one that sharpens none is hygiene and s
   journeys, safety, reliability, performance, intelligence, mail and calendar, chat, integrations,
   business and code integrity; the matrix against WhatsApp, Signal, Slack, Calendly and Workspace;
   an age-assurance design; the integration framework mapped to the code; plan M16 (A–H).
+- 2026-10-19 — M16 G5: a person's feed of what reached them (`GET /v1/feed`), newest first or
+  after a cursor, never passing over a message still being written: the bridges' trigger on a
+  new message, with the address on the bridge sheet, the SDK's `feed()` and the MCP's `feed`.
 - 2026-10-19 — M16 G4: a plan a connected calendar refuses is that event's alone: tried three
   times, then left until it changes while the rest go in; the person, /metrics and the operator's
   new list of connections say how many wait.

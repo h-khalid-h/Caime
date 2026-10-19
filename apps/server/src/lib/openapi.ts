@@ -15,6 +15,7 @@ import {
   EditUpdateBody,
   ERROR_CODES,
   EscalateThreadBody,
+  FeedQuery,
   InboxQuery,
   KitFieldsBody,
   KitMoveBody,
@@ -200,6 +201,14 @@ const DOCS: Record<string, RouteDoc> = {
     summary: 'The person’s inbox, in its sections or as one list.',
     query: InboxQuery,
     response: 'InboxResponse',
+  },
+  'GET /v1/feed': {
+    id: 'feed',
+    summary: 'What reached the person: new messages in their conversations.',
+    description:
+      'Without after, the newest first (a poller dedupes by id); with the next a read gave, only what came since, oldest first. Gap-free: a message still being written is held back, never skipped. Their own messages only with mine=1.',
+    query: FeedQuery,
+    response: 'FeedResponse',
   },
   'GET /v1/search': {
     id: 'search',

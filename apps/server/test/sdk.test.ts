@@ -371,6 +371,11 @@ describe('@caime/sdk against the server (R39)', () => {
     // Their own inbox (a business conversation is the organization's, in its own inbox).
     const inbox = await me.myInbox();
     expect(inbox).toMatchObject({ sections: expect.any(Array), counts: expect.any(Object) });
+    // What reached them, a recipe's trigger (M16 G5): the newest first, then only what's new.
+    await t.ctx.flush();
+    const fed = await me.feed({ limit: 5 });
+    expect(fed).toMatchObject({ events: expect.any(Array), next: expect.any(String) });
+    expect((await me.feed({ after: fed.next })).events).toEqual([]);
     const found = await me.search('blue tiles');
     expect(found.understoodBy).toBe('rules');
     expect((found.results.messages ?? []).map((m) => m.conversationId)).toContain(convo);

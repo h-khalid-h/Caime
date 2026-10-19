@@ -94,6 +94,7 @@ describe('the handshake', () => {
     expect(tools.map((t) => t.name)).toEqual([
       'me',
       'inbox',
+      'feed',
       'search',
       'tasks',
       'add_task',
@@ -230,6 +231,59 @@ describe('the tools', () => {
     });
     // Nothing of the view the agent didn't need (an avatar, a privacy class) travels.
     expect(JSON.stringify(inbox)).not.toMatch(/avatarUrl|privacyClass|unreadCount/);
+  });
+
+  it('reads what reached the person, and carries on from where it left off', async () => {
+    const NEXT = 'n'.repeat(40);
+    const { seen, server } = caime((s) =>
+      s.url.includes('/v1/feed')
+        ? json(200, {
+            events: [
+              {
+                id: 'm7',
+                event: 'message.created',
+                createdAt: '2026-10-19T09:00:00.000Z',
+                data: {
+                  conversation: { id: 'c1', kind: 'direct', title: 'Omar', topic: null },
+                  from: { id: 'u2', name: 'Omar', handle: 'omar' },
+                  text: 'Can you send the deck?',
+                  card: null,
+                  message: {
+                    id: 'm7',
+                    kind: 'text',
+                    files: [],
+                    payload: {},
+                    reactions: [],
+                    body: 'Can you send the deck?',
+                  },
+                },
+              },
+            ],
+            next: NEXT,
+          })
+        : json(404, { error: { code: 'not_found', message: 'No.' } }),
+    );
+    const first = JSON.parse(text(await server.handle(ask('tools/call', { name: 'feed' }))));
+    expect(first).toEqual({
+      events: [
+        {
+          id: 'm7',
+          at: '2026-10-19T09:00:00.000Z',
+          conversation: { id: 'c1', title: 'Omar', topic: null },
+          from: { id: 'u2', name: 'Omar' },
+          text: 'Can you send the deck?',
+          kind: 'text',
+          files: 0,
+        },
+      ],
+      next: NEXT,
+    });
+    // Nothing of the message's view beyond the projection (its payload, its reactions) travels.
+    expect(JSON.stringify(first)).not.toMatch(/payload|reactions|handle/);
+    await server.handle(
+      ask('tools/call', { name: 'feed', arguments: { after: NEXT, limit: 10, mine: true } }),
+    );
+    expect(seen.at(-1)?.url).toBe(`https://caime.test/v1/feed?after=${NEXT}&limit=10&mine=1`);
   });
 
   it('writes with the arguments as given, and a sealed message’s words never leave the device', async () => {

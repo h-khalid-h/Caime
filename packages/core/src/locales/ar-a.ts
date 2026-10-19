@@ -408,8 +408,8 @@ export const arA: Catalog = {
   },
   Automation: 'الأتمتة',
   'Connect Caime to the apps on Zapier': 'اربط Caime بالتطبيقات على Zapier',
-  'In a Zap, add Webhooks by Zapier: Retrieve Poll to hear from Caime, Custom Request to act in it, each with a header “Authorization: Bearer” and the token.':
-    'في Zap، أضف Webhooks by Zapier: Retrieve Poll لتسمع من Caime، وCustom Request لتتصرف فيه، ولكلٍّ منهما ترويسة “Authorization: Bearer” ثم الرمز.',
+  'In a Zap, add Webhooks by Zapier: Retrieve Poll on the feed address with Key “events” to hear from Caime, Custom Request to act in it, each with a header “Authorization: Bearer” and the token.':
+    'في Zap، أضف Webhooks by Zapier: Retrieve Poll على عنوان الموجز مع Key “events” لتسمع من Caime، وCustom Request لتتصرف فيه، ولكلٍّ منهما ترويسة “Authorization: Bearer” ثم الرمز.',
   'Connect Caime to the apps on Make': 'اربط Caime بالتطبيقات على Make',
   'In a scenario, add HTTP: Make a request, with a header “Authorization: Bearer” and the token.':
     'في سيناريو، أضف HTTP: Make a request، مع ترويسة “Authorization: Bearer” ثم الرمز.',
@@ -425,8 +425,8 @@ export const arA: Catalog = {
     'في applet، أضف Webhooks: Make a web request، مع “Authorization: Bearer” ثم الرمز تحت Additional headers.',
   'Caime gives {name} a token of its own, so a recipe there can hear from Caime and act in it, as you and within what you allow. The token is shown once; stop it here any time.':
     'يمنح Caime منصة {name} رمزًا خاصًا بها، فتستطيع وصفة هناك أن تسمع من Caime وتتصرف فيه باسمك وضمن ما تسمح به. يُعرض الرمز مرة واحدة؛ أوقفه من هنا متى شئت.',
-  'Hear from Caime: a message arrives, something needs you, an action is due or waiting (polled from your inbox and actions).':
-    'السماع من Caime: وصول رسالة، أو أمر يحتاجك، أو إجراء حان موعده أو ينتظر (يُستطلع من صندوقك وإجراءاتك).',
+  'Hear from Caime: each new message from your feed, and what needs you or is due from your inbox and actions.':
+    'السماع من Caime: كل رسالة جديدة من موجزك، وما يحتاجك أو حان موعده من صندوقك وإجراءاتك.',
   'Act in Caime: send a message as you, add an action, finish one, search.':
     'التصرف في Caime: إرسال رسالة باسمك، وإضافة إجراء، وإنهاء إجراء، والبحث.',
   'Your conversation with it': 'محادثتك معها',

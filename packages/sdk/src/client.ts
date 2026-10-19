@@ -4,6 +4,7 @@ import type {
   BusinessInboxView,
   BusinessThreadView,
   ConversationView,
+  FeedResponse,
   GrantUserView,
   InboxResponse,
   MessagesPage,
@@ -354,6 +355,22 @@ export class Caime {
   /** `messages:read`: the person's inbox, in its sections, with what needs them first. */
   myInbox(): Promise<InboxResponse> {
     return this.call('GET', '/inbox');
+  }
+
+  /**
+   * `messages:read`: what reached the person (M16 G5), new messages in their conversations. With
+   * no `after`, the newest first; pass the `next` an answer gave as `after` and only what came
+   * since comes, oldest first, never one passed over. Their own messages only with `mine`.
+   */
+  feed(
+    opts: { after?: string; limit?: number; conversationId?: string; mine?: boolean } = {},
+  ): Promise<FeedResponse> {
+    return this.call('GET', '/feed', undefined, {
+      after: opts.after,
+      limit: opts.limit,
+      conversation: opts.conversationId,
+      ...(opts.mine ? { mine: 1 } : {}),
+    });
   }
 
   /**

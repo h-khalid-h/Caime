@@ -24,7 +24,7 @@ export const BRIDGES = [
     /** Where the person goes with the token: the editor, where a Zap is made. */
     page: 'https://zapier.com/app/zaps',
     how: msg(
-      'In a Zap, add Webhooks by Zapier: Retrieve Poll to hear from Caime, Custom Request to act in it, each with a header “Authorization: Bearer” and the token.',
+      'In a Zap, add Webhooks by Zapier: Retrieve Poll on the feed address with Key “events” to hear from Caime, Custom Request to act in it, each with a header “Authorization: Bearer” and the token.',
     ),
   },
   {
@@ -87,7 +87,7 @@ export const BRIDGE_DESCRIPTION = msg(
 );
 export const BRIDGE_USES = {
   triggers: msg(
-    'Hear from Caime: a message arrives, something needs you, an action is due or waiting (polled from your inbox and actions).',
+    'Hear from Caime: each new message from your feed, and what needs you or is due from your inbox and actions.',
   ),
   actions: msg('Act in Caime: send a message as you, add an action, finish one, search.'),
 } as const;

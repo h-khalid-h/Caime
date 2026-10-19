@@ -324,8 +324,8 @@ export const turkish: Catalog = {
   },
   Automation: 'Otomasyon',
   'Connect Caime to the apps on Zapier': 'Caime’i Zapier’daki uygulamalara bağlayın',
-  'In a Zap, add Webhooks by Zapier: Retrieve Poll to hear from Caime, Custom Request to act in it, each with a header “Authorization: Bearer” and the token.':
-    'Bir Zap’te Webhooks by Zapier ekleyin: Caime’i dinlemek için Retrieve Poll, içinde iş yapmak için Custom Request; her birine “Authorization: Bearer” üstbilgisi ve belirteç.',
+  'In a Zap, add Webhooks by Zapier: Retrieve Poll on the feed address with Key “events” to hear from Caime, Custom Request to act in it, each with a header “Authorization: Bearer” and the token.':
+    'Bir Zap’te Webhooks by Zapier ekleyin: Caime’i dinlemek için akış adresinde Key “events” ile Retrieve Poll, içinde iş yapmak için Custom Request; her birine “Authorization: Bearer” üstbilgisi ve belirteç.',
   'Connect Caime to the apps on Make': 'Caime’i Make’teki uygulamalara bağlayın',
   'In a scenario, add HTTP: Make a request, with a header “Authorization: Bearer” and the token.':
     'Bir senaryoda HTTP: Make a request ekleyin; “Authorization: Bearer” üstbilgisi ve belirteçle.',
@@ -341,8 +341,8 @@ export const turkish: Catalog = {
     'Bir applet’te Webhooks: Make a web request ekleyin; Additional headers altında “Authorization: Bearer” ve belirteç.',
   'Caime gives {name} a token of its own, so a recipe there can hear from Caime and act in it, as you and within what you allow. The token is shown once; stop it here any time.':
     'Caime, {name} için kendine ait bir belirteç verir; oradaki bir tarif Caime’i dinleyebilir ve sizin adınıza, izin verdiğiniz ölçüde onda iş yapabilir. Belirteç bir kez gösterilir; dilediğiniz zaman buradan durdurun.',
-  'Hear from Caime: a message arrives, something needs you, an action is due or waiting (polled from your inbox and actions).':
-    'Caime’i dinleyin: bir mesaj gelir, bir şey sizi bekler, bir eylemin vakti gelir ya da bekler (gelen kutunuzdan ve eylemlerinizden sorgulanır).',
+  'Hear from Caime: each new message from your feed, and what needs you or is due from your inbox and actions.':
+    'Caime’i dinleyin: her yeni mesaj akışınızdan, sizi bekleyenler ya da vakti gelenler gelen kutunuzdan ve eylemlerinizden.',
   'Act in Caime: send a message as you, add an action, finish one, search.':
     'Caime’de iş yapın: sizin adınıza mesaj gönderin, eylem ekleyin, birini bitirin, arayın.',
   'Your conversation with it': 'Onunla konuşmanız',
@@ -4673,4 +4673,5 @@ export const turkish: Catalog = {
     one: '{name} planlarınızdan birini reddetti',
     other: '{name} planlarınızdan {n} tanesini reddetti',
   },
+  'Feed address': 'Akış adresi',
 };

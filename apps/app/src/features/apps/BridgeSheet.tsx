@@ -15,6 +15,7 @@ import { useState } from 'react';
 import { View } from 'react-native';
 import { endpoints } from '@/api/endpoints';
 import { qk } from '@/api/keys';
+import { WEB_URL } from '@/lib/config';
 import { openLink } from '@/lib/links';
 import { useNow, useUserClock } from '@/lib/time';
 import { useSession } from '@/state/session';
@@ -46,6 +47,10 @@ export function BridgeSheet({ appId }: { appId: string }) {
   const [confirming, setConfirming] = useState<'replace' | 'stop' | null>(null);
   if (!bridge) return null;
   const name = bridge.name;
+  // Where a recipe hears of each new message (M16 G5): the person's feed, polled with the token.
+  const feedRow = (
+    <CopyRow label={tr('Feed address')} value={`${WEB_URL}/v1/feed`} testID="bridge-feed" />
+  );
   const changed = () => {
     void qc.invalidateQueries({ queryKey: qk.connectedApps });
     void qc.invalidateQueries({ queryKey: qk.allDirectory });
@@ -109,6 +114,7 @@ export function BridgeSheet({ appId }: { appId: string }) {
       {made ? (
         <View style={{ gap: 8 }}>
           <CopyRow label={tr('Token for {name}', { name })} value={made} testID="bridge-token" />
+          {feedRow}
           <Text variant="caption" color="textTertiary">
             {tr('Shown this once: paste it on {name} now. {how}', { name, how: tr(bridge.how) })}
           </Text>
@@ -133,6 +139,7 @@ export function BridgeSheet({ appId }: { appId: string }) {
           <Text variant="caption" color="textTertiary" testID="bridge-scopes">
             {labels(on.scopes)}
           </Text>
+          {feedRow}
         </View>
       ) : (
         <View style={{ gap: 4 }}>

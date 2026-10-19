@@ -21,6 +21,7 @@ import { sql } from 'kysely';
 import type { AppContext } from '../context';
 import { columnsOf, MESSAGE_COLUMNS } from '../db/schema';
 import { maskPayload, orgRef } from '../lib/business';
+import { conversationTitle, conversationTopic } from '../lib/conversation-titles';
 import { overdueAtSql } from '../lib/due';
 import { openIn, orgsClosedToApps } from '../lib/member-apps';
 import { messagePreview } from '../lib/messages';
@@ -31,7 +32,7 @@ import {
   policyTargetFor,
   relationshipView,
 } from '../lib/relations';
-import { spaceConversationTitle, spaceRefs } from '../lib/spaces';
+import { spaceRefs } from '../lib/spaces';
 import { visibleTasksSql } from '../lib/task-visibility';
 import { parse } from '../lib/validate';
 import { requireAuth } from '../plugins/auth';
@@ -314,25 +315,10 @@ export async function buildInbox(
     return {
       id: r.id,
       kind: r.kind,
-      title: org
-        ? asOrgs.has(r.id)
-          ? tr('{name}, for {org}', { name: org.name, org: asOrgs.get(r.id) ?? '' })
-          : org.name
-        : space
-          ? spaceConversationTitle(space, r)
-          : r.kind === 'direct'
-            ? r.is_general
-              ? (other?.displayName ?? 'Deleted account')
-              : (r.title ?? 'Topic')
-            : r.parent_id && r.kind === 'group'
-              ? (r.group_title ?? 'Group')
-              : (r.title ?? 'Group'),
+      title: conversationTitle(r, { org, asOrg: asOrgs.get(r.id) ?? null, space, other }),
       space,
       org,
-      topic:
-        (r.kind === 'direct' && !r.is_general) || (r.parent_id && r.kind === 'group')
-          ? r.title
-          : null,
+      topic: conversationTopic(r),
       isGeneral: r.is_general,
       parentId: r.parent_id,
       privacyClass: r.privacy_class,

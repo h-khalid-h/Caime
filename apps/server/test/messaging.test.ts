@@ -1645,7 +1645,7 @@ describe('a message row (REVIEW-2026-10-05, performance)', () => {
       select column_name from information_schema.columns where table_name = 'messages'
     `.execute(t.ctx.db);
     const inTable = rows.rows.map((r) => r.column_name).sort();
-    expect([...MESSAGE_COLUMNS, 'search', 'search_all'].sort()).toEqual(inTable);
+    expect([...MESSAGE_COLUMNS, 'search', 'search_all', 'tx'].sort()).toEqual(inTable);
     // No query over messages ships the vectors: `select-all.test.ts` holds the source to it.
   });
 });

@@ -149,6 +149,13 @@ describe('the business inbox (PRD §37–38, R15)', () => {
     );
     expect(item.lastMessage).toMatchObject({ senderId: orgId, mine: false });
     expect(teamNamed(JSON.stringify(item))).toBe(false);
+    // Her feed (M16 G5) hears the organization too, never who on its team wrote.
+    await t.ctx.flush();
+    const fed = (await lina.get(`/v1/feed?conversation=${convo}`)).events;
+    expect(fed.map((e: any) => e.data.from)).toEqual([
+      { id: orgId, name: 'DATA C', handle: expect.any(String) },
+    ]);
+    expect(teamNamed(JSON.stringify(fed))).toBe(false);
     expect((await aboutIt(lina)).map((n: any) => n.title)).toContain('DATA C');
     expect(teamNamed(JSON.stringify(await aboutIt(lina)))).toBe(false);
     // Reported from the message she sees, it's the organization's message, and kept as such.

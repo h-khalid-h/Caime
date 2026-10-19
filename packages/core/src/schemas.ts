@@ -558,6 +558,19 @@ export const DeliveriesQuery = z.object({
   after: z.string().uuid().optional(),
   limit: z.coerce.number().int().min(1).max(100).default(50),
 });
+/**
+ * A person's feed (M16 G5): without `after`, the newest first; with the `next` it gave, in order
+ * from there. `conversation` keeps to one of theirs; `mine=1` hands on what they sent too.
+ */
+export const FeedQuery = z.object({
+  after: z
+    .string()
+    .regex(/^[A-Za-z0-9_-]{32,512}$/)
+    .optional(),
+  limit: z.coerce.number().int().min(1).max(100).default(50),
+  conversation: z.string().uuid().optional(),
+  mine: z.enum(['0', '1']).optional(),
+});
 export const UpdatesPageQuery = z.object({
   before: z.string().uuid().optional(),
   limit: z.coerce.number().int().min(1).max(50).default(20),

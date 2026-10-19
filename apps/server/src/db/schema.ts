@@ -527,6 +527,12 @@ export interface MessagesTable {
   /** Kept at the conversation's top for everyone in it (PRD §22), and by whom. */
   pinned_at: NullableTimestamp;
   pinned_by: string | null;
+  /**
+   * The transaction that wrote it (M16 G5, migration 0138), as text: the order a person's feed
+   * hands messages on in, up to the oldest transaction still running. Written by the database
+   * alone; null for what came before the feed.
+   */
+  tx: ColumnType<string | null, never, never>;
 }
 
 export interface ReactionsTable {
@@ -1654,9 +1660,10 @@ export type Relationship = Selectable<RelationshipsTable>;
 export type Conversation = Selectable<ConversationsTable>;
 export type Participant = Selectable<ParticipantsTable>;
 /**
- * Every column of a message but `search` and `search_all`, the tsvectors only the search query reads: a message
- * is selected with these (`.select(MESSAGE_COLUMNS)`), never `selectAll()`, which shipped the
- * vector with every row read (`messaging.test.ts` holds this list to the table).
+ * Every column of a message but `search` and `search_all`, the tsvectors only the search query
+ * reads, and `tx`, the transaction only the feed orders by (M16 G5): a message is selected with
+ * these (`.select(MESSAGE_COLUMNS)`), never `selectAll()`, which shipped the vector with every row
+ * read (`messaging.test.ts` holds this list to the table).
  */
 export const MESSAGE_COLUMNS = [
   'id',
@@ -1687,8 +1694,8 @@ export const MESSAGE_COLUMNS = [
   'pinned_by',
   'card_start_at',
   'effects_at',
-] as const satisfies ReadonlyArray<Exclude<keyof MessagesTable, 'search' | 'search_all'>>;
-export type Message = Selectable<Omit<MessagesTable, 'search' | 'search_all'>>;
+] as const satisfies ReadonlyArray<Exclude<keyof MessagesTable, 'search' | 'search_all' | 'tx'>>;
+export type Message = Selectable<Omit<MessagesTable, 'search' | 'search_all' | 'tx'>>;
 export type Space = Selectable<SpacesTable>;
 export type SpaceMember = Selectable<SpaceMembersTable>;
 export type Organization = Selectable<OrganizationsTable>;

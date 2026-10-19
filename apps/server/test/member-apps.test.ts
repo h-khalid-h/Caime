@@ -59,6 +59,17 @@ const taskIds = async (token: string) =>
   ((await as(token, 'GET', '/v1/tasks?view=todo')).json().tasks as Array<{ id: string }>).map(
     (x) => x.id,
   );
+/** The conversations a feed's events are in (M16 G5), theirs too. */
+const fedFrom = async (token: string) =>
+  [
+    ...new Set(
+      (
+        (await as(token, 'GET', '/v1/feed?mine=1')).json().events as Array<{
+          data: { conversation: { id: string } };
+        }>
+      ).map((e) => e.data.conversation.id),
+    ),
+  ].sort();
 const audited = (action: string) =>
   t.ctx.db
     .selectFrom('audit_log')
@@ -127,6 +138,8 @@ describe('an organization’s say over its members’ own apps (M16 G3)', () => 
     expect(await inboxIds(omarToken)).toContain(own);
     expect((await found(omarToken, 'radiograph')).map((m) => m.conversationId)).toEqual([own]);
     expect(await taskIds(omarToken)).toEqual([ownTask]);
+    // So does his feed (M16 G5).
+    expect(await fedFrom(omarToken)).toEqual([own]);
     expect(
       (await as(omarToken, 'POST', '/v1/tasks', { title: 'Sneak', conversationId: generalId }))
         .statusCode,
@@ -149,6 +162,11 @@ describe('an organization’s say over its members’ own apps (M16 G3)', () => 
       ((await omar.get('/v1/inbox?view=all')).conversations as Array<{ id: string }>).map(
         (c) => c.id,
       ),
+    ).toContain(generalId);
+    expect(
+      (
+        (await omar.get('/v1/feed')).events as Array<{ data: { conversation: { id: string } } }>
+      ).map((e) => e.data.conversation.id),
     ).toContain(generalId);
     // Noor runs it: her apps are her choice.
     expect((await as(noorToken, 'GET', `/v1/conversations/${generalId}/messages`)).statusCode).toBe(
@@ -187,6 +205,7 @@ describe('an organization’s say over its members’ own apps (M16 G3)', () => 
       [generalId, own].sort(),
     );
     expect((await taskIds(omarToken)).sort()).toEqual([ownTask, spaceTask].sort());
+    expect(await fedFrom(omarToken)).toEqual([generalId, own].sort());
 
     // Saying the same again writes nothing; off again is written.
     await noor.patch(`/v1/orgs/${nileId}`, { memberApps: true });

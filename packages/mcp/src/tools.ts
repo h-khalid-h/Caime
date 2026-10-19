@@ -6,6 +6,7 @@
  */
 import type {
   ConversationView,
+  FeedEventView,
   InboxItemView,
   InboxResponse,
   MessageView,
@@ -83,6 +84,22 @@ const inboxView = (inbox: InboxResponse) => ({
     label: s.label,
     conversations: s.items.map(conversationLine),
   })),
+});
+
+/** One thing that reached the person: where, from whom, what it says, as a recipe reads it. */
+const eventLine = (e: FeedEventView) => ({
+  id: e.id,
+  at: e.createdAt,
+  conversation: {
+    id: e.data.conversation.id,
+    title: e.data.conversation.title,
+    topic: e.data.conversation.topic,
+  },
+  from: e.data.from ? { id: e.data.from.id, name: e.data.from.name } : null,
+  text: e.data.text,
+  kind: e.data.message.kind,
+  ...(e.data.card ? { card: e.data.card } : {}),
+  files: e.data.message.files.length,
 });
 
 const messageLine = (m: MessageView) => ({
@@ -172,6 +189,31 @@ export const TOOLS: readonly ToolDefinition[] = [
       'The person’s inbox in its sections, what needs them first: each conversation with who it is with, the relationship, and the last line. Needs messages:read.',
     inputSchema: object({}),
     run: async (c) => inboxView(await c.myInbox()),
+  },
+  {
+    name: 'feed',
+    description:
+      'What reached the person: new messages in their conversations, the newest first. Pass the next it returns as after, and only what came since comes, oldest first, never one passed over. Their own messages only with mine. Needs messages:read.',
+    inputSchema: object({
+      after: str('The next a previous call returned.', { minLength: 32, maxLength: 512 }),
+      limit: {
+        type: 'integer',
+        description: 'How many, 50 when left out.',
+        minimum: 1,
+        maximum: 100,
+      },
+      conversationId: id('conversation'),
+      mine: { type: 'boolean', description: 'Include what the person sent too.' },
+    }),
+    run: async (c, a) => {
+      const r = await c.feed({
+        ...(typeof a.after === 'string' ? { after: a.after } : {}),
+        ...(typeof a.limit === 'number' ? { limit: a.limit } : {}),
+        ...(typeof a.conversationId === 'string' ? { conversationId: a.conversationId } : {}),
+        ...(a.mine === true ? { mine: true } : {}),
+      });
+      return { events: r.events.map(eventLine), next: r.next };
+    },
   },
   {
     name: 'search',

@@ -10,6 +10,8 @@ export type {
   BusinessInboxView,
   BusinessThreadView,
   ConversationView,
+  FeedEventView,
+  FeedResponse,
   MessagesPage,
   MessageView,
   OrgUpdatesView,

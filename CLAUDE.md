@@ -1153,6 +1153,22 @@ A sphere is said as how you know someone, never "sphere".
   `UpdatesPageQuery`, `BusinessInboxQuery`, `CalendarWindowQuery`, `KitMoveBody`,
   `KitFieldsBody`), never inline in the module, and a new token-reachable route adds its `DOCS`
   entry there (`openapi.test.ts` fails on one left out).
+- A person's feed (M16 G5, `lib/feed.ts`, `modules/feed.ts`): `GET /v1/feed` hands on each new
+  message that reached someone, newest first, or oldest first after the sealed `next` it gave (the
+  bridges' trigger; the SDK's `feed()`, the MCP's `feed`). It never passes one over: a message
+  keeps the transaction that wrote it (`messages.tx`, written by the database alone and outside
+  `MESSAGE_COLUMNS`, under `messages_feed`), and the feed reads only below the oldest transaction
+  still running in this database (the snapshot's running ids matched to this database's
+  sessions; never the snapshot's own `xmin`, which waits on any database on the server), a page
+  not full moving the cursor to that horizon. It reads as the inbox does (no `agent` seat, a
+  request only once taken, no private conversation, system line, import or notice,
+  `readableBy`, the person's own only with `mine=1`) and keeps G3's `openIn`; a new kind of event
+  joins `FeedEventView.event` under the same horizon, and personal webhooks, when they come,
+  deliver the same events. What a conversation is called for its reader is `conversationTitle`
+  (`lib/conversation-titles.ts`), the inbox's and the feed's alike. Restoring a backup into a new
+  database server runs `call caime_feed_forget()` once (DEPLOY.md). A test that reads the feed
+  after a send flushes first (`t.ctx.flush()`): work after a response holds the horizon while it
+  runs.
 - Contacts (R79, R89) are one sheet, `features/people/ContactsImport.tsx` (lazy, from the Connect
   screen, first on it and on onboarding's last step through `/connect?contacts=1`), over every
   source, each read on the device into core's one list (`contact-sources.ts`: `contactListOf`,

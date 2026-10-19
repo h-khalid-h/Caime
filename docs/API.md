@@ -104,7 +104,7 @@ try {
 | `assign(id, userId \| null)`, `resolve(id)`, `reopen(id)`, `escalate(id, note)`, `stopEscalating(id)` | `POST /v1/business/:id/…`, `DELETE …/escalation` | `threads:write` |
 | `updates(orgId, { before, limit })`, `postUpdate(orgId, body)`, `editUpdate(orgId, id, body)`, `removeUpdate(orgId, id)` | `/v1/orgs/:orgId/updates` | `updates` |
 | `kits()`, `putKit(key, definition)`, `removeKit(key)`, `moveCard(messageId, to)`, `changeCard(messageId, fields)` | `/v1/kits`, `/v1/messages/:id/kit` | `kits` |
-| `person()`, `myInbox()`, `search(q, { understand })`, `tasks(view)`, `addTask(task)`, `updateTask(id, change)` | `GET /v1/me`, `GET /v1/inbox`, `GET /v1/search`, `/v1/tasks` | A personal (`cap_`) or OAuth (`cao_`) token's routes (below); `conversation`, `messages` and `send` work for a person too |
+| `person()`, `myInbox()`, `feed({ after, limit, conversationId, mine })`, `search(q, { understand })`, `tasks(view)`, `addTask(task)`, `updateTask(id, change)` | `GET /v1/me`, `GET /v1/inbox`, `GET /v1/feed`, `GET /v1/search`, `/v1/tasks` | A personal (`cap_`) or OAuth (`cao_`) token's routes (below); `conversation`, `messages` and `send` work for a person too |
 
 A refusal throws a `CaimeError` with the server's `status`, `code` and `message` (and
 `retryAfter`, in seconds, on a 429). `send` and `postUpdate` make up a `clientId` when none is
@@ -170,13 +170,14 @@ and how long it lasts (30 days, 90 days, a year, or until revoked). A token is s
 starts `cap_`. Send it as `Authorization: Bearer cap_…`; it acts as that person, and a message
 it sends shows "via" the token's name. A live token is also a row under **You → Apps →
 Connected**, beside the apps let in, and can be ended there as well. From Node, the same
-`Caime` client: `person()`, `myInbox()`, `search(q)`, `tasks(view)`, `addTask(task)`,
-`updateTask(id, change)`, with `conversation`, `messages` and `send` as for an app.
+`Caime` client: `person()`, `myInbox()`, `feed(opts)`, `search(q)`, `tasks(view)`,
+`addTask(task)`, `updateTask(id, change)`, with `conversation`, `messages` and `send` as for an
+app.
 
 | Permission | Route | What it does |
 | --- | --- | --- |
 | `profile:read` | `GET /v1/me` | Who it acts for: id, handle, name, avatar, time zone, locale (no email, privacy or plan) |
-| `messages:read` | `GET /v1/inbox`, `GET /v1/conversations/:id`, `GET /v1/conversations/:id/messages`, `GET /v1/search?q=` | Their inbox, conversations and search. A search's response says who read the query (`understoodBy`: `rules`, or `ai` when the person has AI assist on, the words needed a model and the request said the typing was done, `understand=1`, with `label` to show beside the interpretation). A time at the end ("photos from last week", "decisions in March") is the days to search (`query.period`), never a person |
+| `messages:read` | `GET /v1/inbox`, `GET /v1/feed`, `GET /v1/conversations/:id`, `GET /v1/conversations/:id/messages`, `GET /v1/search?q=` | Their inbox, what reached them (below), conversations and search. A search's response says who read the query (`understoodBy`: `rules`, or `ai` when the person has AI assist on, the words needed a model and the request said the typing was done, `understand=1`, with `label` to show beside the interpretation). A time at the end ("photos from last week", "decisions in March") is the days to search (`query.period`), never a person |
 | `messages:write` | `POST /v1/conversations/:id/messages` | Send as them: `{ "clientId": "<uuid>", "body": "…" }` |
 | `actions:read` | `GET /v1/tasks` | Their actions and what they wait for |
 | `actions:write` | `POST /v1/tasks`, `PATCH /v1/tasks/:id` | Add, change and finish actions. Send a `clientId` of your own (8 to 64 characters) with a new one and sending it again returns the same action |
@@ -189,9 +190,30 @@ An organization decides whether its team's own tokens reach its conversations (o
 owner or an admin turns on **Team members' own apps** in its setup). Until then a token acting
 for someone on its team who doesn't run it answers `403 org_apps_closed` for the team's side of
 its customer threads, its spaces' conversations and a thread written as it, and `GET /v1/inbox`,
-`GET /v1/search` and `GET /v1/tasks` leave those out rather than refusing; the person's own
+`GET /v1/feed`, `GET /v1/search` and `GET /v1/tasks` leave those out rather than refusing; the person's own
 conversations, their side as anyone's customer and the owner's and admins' own tokens are never
 kept out. The same holds for an OAuth app's tokens and a bridge's.
+
+### What reached them: `GET /v1/feed`
+
+The trigger a recipe starts on: each new message in the person's conversations, as
+`{ "events": [...], "next": "…" }`. An event is `{ id, event: "message.created", createdAt,
+data: { conversation: { id, kind, title, topic }, from: { id, name, handle }, text, card,
+message } }`: `id` is the message's (what a poller dedupes by), `text` its words or what it is
+when it has none ("📷 Photo"), `card` a card as a webhook says one, and `message` the whole
+`MessageView`. Asked without `after`, the newest first (Zapier's Retrieve Poll keeps the ids it
+has seen); pass the `next` an answer gave as `after` and only what came since comes, oldest
+first, a page of `limit` (50, at most 100) at a time, with a new `next` each time, the same one
+when nothing came. Nothing is passed over: a message still being written when the feed is read
+waits for the next read rather than being skipped, so a recipe that carries `next` from one run
+to the next hears every message once. `conversation=<id>` keeps to one of theirs; `mine=1` adds
+what they sent themselves (left out by default, or a recipe that writes back would hear itself).
+It reads as their inbox does: never a request they haven't taken, a private conversation, a line
+Caime wrote, a chat brought over, a mailing list's notice or what they deleted or hid, and in a
+customer conversation the team is the organization, never who on it wrote. `next` is opaque and
+the person's alone: another's, or one from before the feed began again (a backup restored into a
+new database), answers `400 invalid_request`, and asking once without `after` starts afresh. A
+token asks up to sixty times a minute.
 
 ### Bridges: Zapier, Make, n8n, Pipedream and IFTTT
 
@@ -202,9 +224,11 @@ own web-request step, a header `Authorization: Bearer cap_…`: Webhooks by Zapi
 Poll and Custom Request, Make's HTTP module, n8n's HTTP Request node with a Header Auth
 credential, Pipedream's HTTP Request step, IFTTT's Make a web request with Additional headers).
 One token lives per platform and person: a new one ends the old, **Stop** ends it, and the row
-under Connected shows when it was last used. A recipe polls the person's routes above (the
-inbox, the actions) and calls them; nothing is pushed to the platform yet (personal webhooks
-follow once the polling bridges are in use).
+under Connected shows when it was last used. The sheet shows the feed's address beside the
+token: a Zap's Retrieve Poll on it, with Key `events`, starts on each new message; Make, n8n and
+Pipedream keep `next` between runs and pass it back as `after`. A recipe calls the person's
+routes above to act. Nothing is pushed to the platform yet (personal webhooks follow once the
+polling bridges are in use).
 
 ## The API as a document
 
@@ -220,7 +244,7 @@ rather than hand-writing the routes; the responses' shapes are the ones in
 
 `packages/mcp` is a Model Context Protocol server over the person methods above, for an agent
 someone runs themselves (Claude Desktop, Claude Code, any MCP client): JSON-RPC over stdio and
-nine tools, `me`, `inbox`, `search`, `tasks`, `add_task`, `update_task`, `conversation`,
+ten tools, `me`, `inbox`, `feed`, `search`, `tasks`, `add_task`, `update_task`, `conversation`,
 `messages` and `send_message`, each a bounded projection of its route's answer (who a
 conversation is with and its last line, never every field of a view) and each naming the
 permission its token needs. It acts as the personal token it's given and nothing more: a

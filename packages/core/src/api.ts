@@ -847,6 +847,39 @@ export interface MessagesPage {
   hasMore: boolean;
 }
 
+/**
+ * Something that reached a person (M16 G5), as a webhook delivery says an event: a new message
+ * in one of their conversations, with where it is and who sent it as they see them.
+ */
+export interface FeedEventView {
+  /** Unique to the event, and what a poller dedupes by: a new message's is the message's id. */
+  id: string;
+  event: 'message.created';
+  createdAt: string;
+  data: {
+    conversation: {
+      id: string;
+      kind: ConversationKind;
+      /** As their inbox names it: the other person, the group, the organization; a topic's group. */
+      title: string | null;
+      topic: string | null;
+    };
+    /** Who sent it as the person sees them: to a customer, the organization (R15). */
+    from: { id: string; name: string; handle: string | null } | null;
+    /** Its words, or what it is when it has none ("📷 Photo"). */
+    text: string;
+    /** A card as a webhook says a card (its kind, fields, state, what was booked or ordered). */
+    card: Record<string, unknown> | null;
+    message: MessageView;
+  };
+}
+
+export interface FeedResponse {
+  events: FeedEventView[];
+  /** Passed back as `after`, only what came since, oldest first. */
+  next: string;
+}
+
 export interface InboxItemView {
   id: string;
   kind: ConversationKind;

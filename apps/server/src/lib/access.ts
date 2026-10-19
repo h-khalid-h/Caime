@@ -20,6 +20,7 @@ export function newPersonalToken(): { token: string; prefix: string; hash: Buffe
 export const PERSON_ROUTES: Readonly<Record<string, PersonalScope>> = {
   'GET /v1/me': 'profile:read',
   'GET /v1/inbox': 'messages:read',
+  'GET /v1/feed': 'messages:read',
   'GET /v1/conversations/:id': 'messages:read',
   'GET /v1/conversations/:id/messages': 'messages:read',
   'GET /v1/search': 'messages:read',

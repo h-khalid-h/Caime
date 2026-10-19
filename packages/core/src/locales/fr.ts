@@ -350,8 +350,8 @@ export const fr: Catalog = {
   },
   Automation: 'Automatisation',
   'Connect Caime to the apps on Zapier': 'Reliez Caime aux applications sur Zapier',
-  'In a Zap, add Webhooks by Zapier: Retrieve Poll to hear from Caime, Custom Request to act in it, each with a header “Authorization: Bearer” and the token.':
-    'Dans un Zap, ajoutez Webhooks by Zapier : Retrieve Poll pour écouter Caime, Custom Request pour y agir, chacun avec un en-tête « Authorization: Bearer » et le jeton.',
+  'In a Zap, add Webhooks by Zapier: Retrieve Poll on the feed address with Key “events” to hear from Caime, Custom Request to act in it, each with a header “Authorization: Bearer” and the token.':
+    'Dans un Zap, ajoutez Webhooks by Zapier : Retrieve Poll sur l’adresse du flux avec Key « events » pour écouter Caime, Custom Request pour y agir, chacun avec un en-tête « Authorization: Bearer » et le jeton.',
   'Connect Caime to the apps on Make': 'Reliez Caime aux applications sur Make',
   'In a scenario, add HTTP: Make a request, with a header “Authorization: Bearer” and the token.':
     'Dans un scénario, ajoutez HTTP : Make a request, avec un en-tête « Authorization: Bearer » et le jeton.',
@@ -367,8 +367,8 @@ export const fr: Catalog = {
     'Dans un applet, ajoutez Webhooks : Make a web request, avec « Authorization: Bearer » et le jeton sous Additional headers.',
   'Caime gives {name} a token of its own, so a recipe there can hear from Caime and act in it, as you and within what you allow. The token is shown once; stop it here any time.':
     'Caime donne à {name} un jeton qui lui est propre : une recette là-bas peut écouter Caime et y agir, en votre nom et dans la limite de ce que vous autorisez. Le jeton n’est montré qu’une fois ; arrêtez-le ici quand vous voulez.',
-  'Hear from Caime: a message arrives, something needs you, an action is due or waiting (polled from your inbox and actions).':
-    'Écouter Caime : un message arrive, quelque chose vous attend, une action est due ou en attente (lu depuis votre boîte et vos actions).',
+  'Hear from Caime: each new message from your feed, and what needs you or is due from your inbox and actions.':
+    'Écouter Caime : chaque nouveau message, depuis votre flux, et ce qui vous attend ou est dû, depuis votre boîte et vos actions.',
   'Act in Caime: send a message as you, add an action, finish one, search.':
     'Agir dans Caime : envoyer un message en votre nom, ajouter une action, en terminer une, chercher.',
   'Your conversation with it': 'Votre conversation avec elle',
@@ -4859,4 +4859,5 @@ export const fr: Catalog = {
     one: '{name} a refusé un de vos rendez-vous',
     other: '{name} a refusé {n} de vos rendez-vous',
   },
+  'Feed address': 'Adresse du flux',
 };

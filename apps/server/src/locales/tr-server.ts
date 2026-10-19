@@ -1552,4 +1552,8 @@ export const turkishServer: Catalog = {
     'Ayarlar · Uygulamalar’da yeniden bağlayana kadar Caime onu sizin için kullanamaz.',
   'This organization keeps its conversations from its members’ own apps.':
     'Bu kuruluş konuşmalarını üyelerinin kendi uygulamalarına kapalı tutuyor.',
+  'That cursor isn’t one this feed gave you: ask once without it.':
+    'Bu imleci bu akış vermedi: bir kez onsuz isteyin.',
+  'The feed began again since that cursor: ask once without it.':
+    'Akış o imleçten bu yana yeniden başladı: bir kez onsuz isteyin.',
 };

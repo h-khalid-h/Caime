@@ -3180,4 +3180,5 @@ export const arB: Catalog = {
     many: 'رفض {name} {n} موعدًا من مواعيدك',
     other: 'رفض {name} {n} موعد من مواعيدك',
   },
+  'Feed address': 'عنوان الموجز',
 };

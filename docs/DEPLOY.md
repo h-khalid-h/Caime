@@ -121,7 +121,8 @@ The order matters: every step leaves Caime working. What each costs is in `docs/
 11. **Hosting in the EU** (counsel's decision, LEGAL-REVIEW-2026-10.md): a VM in a Google Cloud EU
     region (`europe-west3` Frankfurt or `europe-west1` Belgium, the same machine type), EasyPanel
     installed, the services recreated from this page, the database restored from the latest
-    backup (Backups, below) and `/data` copied across, then the `A @` record moved and
+    backup (Backups, below, with `caime_feed_forget()` run since the server is new) and `/data`
+    copied across, then the `A @` record moved and
     `HOSTING_PROVIDER` set to the new region. Before launch, while there's nothing to migrate
     but the owner's own test data, it's an afternoon; after, a maintenance window.
 
@@ -963,7 +964,12 @@ dropdb -h db -U postgres caime_restore
 ```
 
 To restore for real: stop the `caime` service, restore into a fresh database the same way, point
-`DATABASE_URL` at it, start the service (its migrations run forward as needed).
+`DATABASE_URL` at it, start the service (its migrations run forward as needed). When the database
+server itself is new (the `db` service recreated, its volume lost), run
+`psql "$DATABASE_URL" -c 'call caime_feed_forget()'` once after the restore and before the
+service starts: a new server counts transactions from the start, and without it the restored
+messages would reach people's feeds (M16 G5) again as news once its count passed theirs. A
+restore into a fresh database on the same server needs nothing.
 
 **Off the host.** With `BACKUP_S3_ENDPOINT`, `BACKUP_S3_BUCKET`, `BACKUP_S3_ACCESS_KEY_ID` and
 `BACKUP_S3_SECRET_ACCESS_KEY` set (any S3-compatible store: AWS, Cloudflare R2, Backblaze B2,
