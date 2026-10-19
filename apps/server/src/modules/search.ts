@@ -441,6 +441,21 @@ export async function runSearch(
       )
       .where(visibleTasksSql(me))
       .where('status', 'in', ['open', 'accepted'])
+      // Nothing tied to a private conversation is searched on the server (R18, M16 G7).
+      .where((eb) =>
+        eb.or([
+          eb('conversation_id', 'is', null),
+          eb.not(
+            eb.exists(
+              eb
+                .selectFrom('conversations as pc')
+                .select('pc.id')
+                .whereRef('pc.id', '=', 'tasks.conversation_id')
+                .where('pc.privacy_class', '=', 'private'),
+            ),
+          ),
+        ]),
+      )
       .$if(keeps, (qb) =>
         qb.where((eb) => eb.or([eb('conversation_id', 'is', null), open('tasks.conversation_id')])),
       );
@@ -489,6 +504,8 @@ export async function runSearch(
       .innerJoin('participants as p', (j) =>
         j.onRef('p.conversation_id', '=', 'd.conversation_id').on('p.user_id', '=', me),
       )
+      .innerJoin('conversations as dc', 'dc.id', 'd.conversation_id')
+      .where('dc.privacy_class', '<>', 'private')
       .$if(keeps, (qb) => qb.where(open('d.conversation_id')))
       .select(['d.id', 'd.title', 'd.conversation_id', 'd.message_id', 'd.decided_at'])
       .where('p.left_at', 'is', null)

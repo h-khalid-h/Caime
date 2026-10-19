@@ -1615,4 +1615,6 @@ export const arServer: Catalog = {
     'وكيل الذكاء الاصطناعي متوقف أو أُزيل: أجب بنفسك.',
   'That question': 'هذا السؤال',
   'That draft': 'هذه المسودة',
+  'Nothing from a private conversation is kept on the server.':
+    'لا يُحفظ على الخادم شيء من محادثة خاصة.',
 };

@@ -3062,6 +3062,23 @@ graph) and the number that will show it; one that sharpens none is hygiene and s
       a run on two models through the agent's own call and version, a bad night's counts, the
       gauges, the operator's routes and their audit rows, the owner's line by plan), the
       catalogs in four languages, and the full gate.
+- [x] G7. Nothing from a private conversation on the server (2026-10-19, review §10 M "private
+      content reaches the model"; advantage 5, privacy that follows from the business model. The
+      number: to-dos and decisions the server would keep, and titles a model would be handed,
+      from a private conversation, one way each before (a token's request, Ask Cai in Search),
+      none now). The app never offered an action or a decision from a private conversation, but
+      the server took one from anyone who asked (a personal token, an app, an accepted
+      suggestion): `createTask` and `createDecision` (`lib/actions.ts`, the one way every path
+      makes either) now refuse a private conversation ("Nothing from a private conversation is
+      kept on the server.", in four languages), and whatever an older row ties to one stays out
+      of the server's search (to-dos and decisions), Ask Cai in Search (so the model is never
+      handed its title), and what Cai writes into its own chat, which the server keeps and a
+      model reads later: the morning brief (`openFor` with `forModel`), the digest's oldest wait
+      and a follow-up's offer (a plain reminder instead). Costs: a query on the conversation's
+      class when a to-do or a decision is tied to one; nothing on devices. Verified:
+      `private-reach.test.ts` (the refusals by route, a to-do tied to nothing and a standard
+      conversation's decision as before, older rows left out of search, the model's input, the
+      brief, the digest and the follow-up), the server catalogs, and the full gate.
 - [ ] H. Business depth: a Business seat includes Pro; a cap on organizations per person; room
       checks inside the transaction; quick replies, away and greeting messages; customer notes,
       tags and fields; tax invoices (counsel); booking and revenue analytics; intake forms as
@@ -4842,6 +4859,8 @@ graph) and the number that will show it; one that sharpens none is hygiene and s
   journeys, safety, reliability, performance, intelligence, mail and calendar, chat, integrations,
   business and code integrity; the matrix against WhatsApp, Signal, Slack, Calendly and Workspace;
   an age-assurance design; the integration framework mapped to the code; plan M16 (A–H).
+- 2026-10-19 — M16 G7: nothing from a private conversation on the server: to-dos and decisions
+  tied to one refused on every path, older ones kept out of search, Ask Cai and Cai's own chat.
 - 2026-10-19 — M16 G6c: the agent measured every night: Caime's 24 questions in four languages
   through its own call on each plan's model, scored by rules (hand-overs, wrong confirmations,
   planted instructions), on /metrics, for the operator and on the agent's setup.

@@ -1565,4 +1565,6 @@ export const turkishServer: Catalog = {
     'AI temsilcisi duraklatıldı ya da kaldırıldı: kendiniz yanıtlayın.',
   'That question': 'Bu soru',
   'That draft': 'Bu taslak',
+  'Nothing from a private conversation is kept on the server.':
+    'Özel bir konuşmadan hiçbir şey sunucuda tutulmaz.',
 };

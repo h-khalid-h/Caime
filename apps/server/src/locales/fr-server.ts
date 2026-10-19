@@ -1637,4 +1637,6 @@ export const frServer: Catalog = {
     'L’agent IA est en pause ou a été retiré : répondez vous-même.',
   'That question': 'Cette question',
   'That draft': 'Ce brouillon',
+  'Nothing from a private conversation is kept on the server.':
+    'Rien d’une conversation privée n’est conservé sur le serveur.',
 };

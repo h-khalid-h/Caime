@@ -1716,6 +1716,11 @@ A sphere is said as how you know someone, never "sphere".
   `billing.close` job if Stripe is away, and `reconcileBilling` every six hours). Tests talk to
   `test/stripe-stub.ts` (`hold()` stages a race, `outage()` takes Stripe away); the E2E to
   `e2e/stripe-stub.mjs`, whose Checkout and portal pages send the signed webhooks.
+- Nothing tied to a private conversation is kept on the server (R18, M16 G7): `createTask` and
+  `createDecision` (`lib/actions.ts`, every path's one way to make either) refuse one, and every
+  reader that hands rows to a model or writes them into a server-kept message (search and its
+  answer, `openFor` with `forModel`, the digest, `offerFollowUp`) leaves out what an older row
+  ties to one. Anything new that keeps or reads text tied to a conversation does the same.
 - Private conversations (R18): the design is in `packages/core/src/e2ee.ts`'s header and the Web
   Crypto in `e2ee-crypto.ts`; the server never imports the latter and never sees a key or a
   word. The server's side is `lib/e2ee.ts` (live devices, `assertSealedForEveryone`) and

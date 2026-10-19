@@ -204,6 +204,15 @@ async function followUpConversation(ctx: AppContext, t: Followed): Promise<strin
  * notification. False when there's nowhere to send a follow-up: then it's a plain reminder.
  */
 export async function offerFollowUp(ctx: AppContext, t: Followed): Promise<boolean> {
+  // Its title would go into Cai's chat: never one tied to a private conversation (R18).
+  if (t.conversation_id) {
+    const c = await ctx.db
+      .selectFrom('conversations')
+      .select('privacy_class')
+      .where('id', '=', t.conversation_id)
+      .executeTakeFirst();
+    if (c?.privacy_class === 'private') return false;
+  }
   const to = await followUpConversation(ctx, t);
   if (!to || !t.assignee_id) return false;
   const other = await ctx.db
@@ -389,7 +398,9 @@ export async function briefText(
   } catch {
     endOfDay = new Date(now.getTime() + DAY_MS);
   }
-  const open = await openFor(ctx, me, { until: endOfDay });
+  // Written into Cai's chat, which the server keeps and a model reads: nothing from a private
+  // conversation (R18).
+  const open = await openFor(ctx, me, { until: endOfDay, forModel: true });
   const counts = [
     open.counts.asked
       ? trn(open.counts.asked, 'One thing is asked of you.', '{n} things are asked of you.')
@@ -554,8 +565,12 @@ export async function digestText(
     ctx.db
       .selectFrom('tasks as t')
       .leftJoin('users as a', 'a.id', 't.assignee_id')
+      .leftJoin('conversations as c', 'c.id', 't.conversation_id')
       .select(['t.title', 'a.display_name as who'])
       .where(visibleTasksSql(userId, 't'))
+      .where((eb) =>
+        eb.or([eb('c.privacy_class', 'is', null), eb('c.privacy_class', '<>', 'private')]),
+      )
       .where('t.owner_id', '=', userId)
       .where('t.assignee_id', 'is distinct from', userId)
       .where('t.status', 'in', ['open', 'accepted'])

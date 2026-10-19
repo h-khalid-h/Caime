@@ -3,9 +3,11 @@
  * keeps the conversation and message it came from and a snapshot of the relationship at the time.
  */
 import { relationshipLabel, type Sphere, uuidv7 } from '@caime/core';
+import { tr } from '@caime/core/i18n';
 import type { Kysely, Transaction } from 'kysely';
 import type { AppContext } from '../context';
 import type { Database, Task } from '../db/schema';
+import { badRequest } from './errors';
 import { recordEvent } from './events';
 
 type Q = Kysely<Database> | Transaction<Database>;
@@ -33,6 +35,21 @@ export async function relationshipSnapshot(db: Q, ownerId: string, subjectId: st
   };
 }
 
+/**
+ * Nothing is kept on the server from a private conversation (R18, M16 G7): its words never reach
+ * it, so neither does a to-do or a decision made from them, however it's asked for (the app never
+ * offers one; a token, an accepted suggestion or anything later is refused the same).
+ */
+async function assertKeepable(db: Q, conversationId: string): Promise<void> {
+  const c = await db
+    .selectFrom('conversations')
+    .select('privacy_class')
+    .where('id', '=', conversationId)
+    .executeTakeFirst();
+  if (c?.privacy_class === 'private')
+    throw badRequest(tr('Nothing from a private conversation is kept on the server.'));
+}
+
 export interface NewTask {
   ownerId: string;
   assigneeId: string;
@@ -53,6 +70,7 @@ export interface NewTask {
 }
 
 export async function createTask(db: Q, ctx: AppContext, t: NewTask): Promise<Task> {
+  if (t.conversationId) await assertKeepable(db, t.conversationId);
   const counterpart = t.counterpartId ?? (t.assigneeId !== t.ownerId ? t.assigneeId : null);
   const snapshot = counterpart ? await relationshipSnapshot(db, t.ownerId, counterpart) : null;
   const row = await db
@@ -99,6 +117,7 @@ export async function createDecision(
     contextId?: string | null;
   },
 ) {
+  await assertKeepable(db, d.conversationId);
   const row = await db
     .insertInto('decisions')
     .values({
