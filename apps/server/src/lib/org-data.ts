@@ -162,6 +162,12 @@ export async function eraseBusinessConversation(
         .set({ erased_at: now, erased_by: byUserId, updated_at: now })
         .where('conversation_id', '=', conversationId)
         .execute();
+      // Its AI agent's draft and what it couldn't answer here go with them too (M16 G6b).
+      await trx.deleteFrom('agent_drafts').where('conversation_id', '=', conversationId).execute();
+      await trx
+        .deleteFrom('agent_questions')
+        .where('conversation_id', '=', conversationId)
+        .execute();
       // What the team kept about them goes with their words (M16 H3).
       if (thread.customer_id)
         await trx
@@ -284,6 +290,21 @@ export async function buildOrgExport(
     .execute();
   // Its intake forms (M16 H5), as they read now; the answers are on the cards.
   const forms = await intakeForms(db, orgId);
+  // What its AI agent couldn't answer, and its drafts waiting for the team (M16 G6b).
+  const [agentQuestionsKept, agentDraftsKept] = await Promise.all([
+    db
+      .selectFrom('agent_questions')
+      .select(['conversation_id', 'message_id', 'created_at', 'done_at'])
+      .where('org_id', '=', orgId)
+      .orderBy('created_at')
+      .execute(),
+    db
+      .selectFrom('agent_drafts')
+      .select(['conversation_id', 'action', 'body', 'created_at'])
+      .where('org_id', '=', orgId)
+      .orderBy('created_at')
+      .execute(),
+  ]);
   // What its team kept about its customers (M16 H3), with whom each record is about.
   const records = await db
     .selectFrom('org_customers as c')
@@ -349,7 +370,15 @@ export async function buildOrgExport(
         .execute(),
       db
         .selectFrom('org_agents')
-        .select(['knowledge', 'paused_at', 'created_at'])
+        .select([
+          'knowledge',
+          'paused_at',
+          'may_book',
+          'may_order',
+          'answers_when',
+          'review',
+          'created_at',
+        ])
         .where('org_id', '=', orgId)
         .executeTakeFirst(),
       // Its own apps, stopped ones too (closing stops them all): never a token or a secret.
@@ -489,7 +518,24 @@ export async function buildOrgExport(
       ? {
           knowledge: agent.knowledge,
           paused: agent.paused_at !== null,
+          mayBook: agent.may_book,
+          mayOrder: agent.may_order,
+          answersWhen: agent.answers_when,
+          review: agent.review,
           createdAt: agent.created_at.toISOString(),
+          // What it couldn't answer, and its drafts waiting (M16 G6b).
+          questions: agentQuestionsKept.map((q) => ({
+            conversationId: q.conversation_id,
+            messageId: q.message_id,
+            at: q.created_at.toISOString(),
+            doneAt: q.done_at?.toISOString() ?? null,
+          })),
+          drafts: agentDraftsKept.map((d) => ({
+            conversationId: d.conversation_id,
+            action: d.action,
+            body: d.body,
+            at: d.created_at.toISOString(),
+          })),
         }
       : null,
     apps: apps.map((a) => ({
@@ -620,6 +666,8 @@ export async function clearClosedOrg(ctx: AppContext, orgId: string): Promise<bo
     await trx.deleteFrom('org_members').where('org_id', '=', orgId).execute();
     await trx.deleteFrom('org_invites').where('org_id', '=', orgId).execute();
     await trx.deleteFrom('org_agents').where('org_id', '=', orgId).execute();
+    await trx.deleteFrom('agent_drafts').where('org_id', '=', orgId).execute();
+    await trx.deleteFrom('agent_questions').where('org_id', '=', orgId).execute();
     await trx.deleteFrom('places').where('org_id', '=', orgId).execute();
     await trx.deleteFrom('org_quick_replies').where('org_id', '=', orgId).execute();
     await trx.deleteFrom('org_customers').where('org_id', '=', orgId).execute();

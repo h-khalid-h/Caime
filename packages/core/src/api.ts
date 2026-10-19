@@ -14,7 +14,7 @@ import type {
 } from './accounts';
 import type { AddressKind, AddressMethod } from './addresses';
 import type { AgeMethod, AgeOutcome } from './age-assurance';
-import type { AgentAction, AgentCitation, AgentWhen } from './agents';
+import type { AgentAction, AgentCitation, AgentDraftAction, AgentWhen } from './agents';
 import type { AppCategory, AppProvides, ListingState } from './app-directory';
 import type { ApiScope, WebhookEvent } from './apps';
 import type { AttentionReason, AttentionSection } from './attention';
@@ -1169,6 +1169,8 @@ export interface BusinessThreadView {
   } | null;
   /** Its AI agent handed it to the team (PRD §75), and stays out until it's resolved. */
   agentHandedOverAt: string | null;
+  /** Its AI agent's draft waits here for someone on the team to check (M16 G6b). */
+  agentDraft: boolean;
   unreadCount: number;
   lastActivityAt: string;
   /** Its customer blocked the organization: closed until they unblock it. */
@@ -1213,6 +1215,8 @@ export interface ConversationBusinessView {
   retentionDays: number | null;
   /** For the team: the organization's intake forms by name (M16 H5), to send one; else null. */
   forms: Array<{ id: string; name: string }> | null;
+  /** For the team: its AI agent's draft waiting to be checked here (M16 G6b); else null. */
+  agentDraft: AgentDraftView | null;
 }
 
 export interface BusinessInboxView {
@@ -1820,7 +1824,25 @@ export interface OrgExportView {
     closedAt: string | null;
   };
   /** Its AI agent (PRD §74), with the knowledge text it was given. */
-  agent: { knowledge: string; paused: boolean; createdAt: string } | null;
+  agent: {
+    knowledge: string;
+    paused: boolean;
+    /** What it may do and when it answers (M16 G6a), whether its team checks it first (G6b). */
+    mayBook: boolean;
+    mayOrder: boolean;
+    answersWhen: AgentWhen;
+    review: boolean;
+    createdAt: string;
+    /** The questions it couldn't answer, by reference: the conversation and the message. */
+    questions: Array<{
+      conversationId: string;
+      messageId: string;
+      at: string;
+      doneAt: string | null;
+    }>;
+    /** The drafts waiting for its team, as the customer would read them. */
+    drafts: Array<{ conversationId: string; action: AgentDraftAction; body: string; at: string }>;
+  } | null;
   /** Its own apps (PRD §74): what each may do and where it was told, and its kinds of card. */
   apps: Array<{
     name: string;
@@ -1976,6 +1998,10 @@ export interface OrgAgentView {
   mayOrder: boolean;
   /** Always, or only while the organization is closed by its hours. */
   answersWhen: AgentWhen;
+  /** Its team checks each answer before it's sent (M16 G6b). */
+  review: boolean;
+  /** How many customers' questions it couldn't answer wait to be seen to. */
+  questions: number;
   /** What it wrote to customers in the last 24 hours, against what the plan includes. */
   repliesToday: number;
   repliesPerDay: number;
@@ -1989,6 +2015,45 @@ export interface AgentTryView {
   message: string;
   /** The passages of what it was told that its answer rests on (M16 G6a). */
   cited: AgentCitation[];
+}
+
+/**
+ * A draft its AI agent left for its team to check before it's sent (M16 G6b): the team's alone,
+ * never the customer's.
+ */
+export interface AgentDraftView {
+  /** The customer's message it answers. */
+  seq: number;
+  action: AgentDraftAction;
+  /** What the customer would read, its introduction too the first time. */
+  body: string;
+  /** Its answer alone, for a person to take into their own reply. */
+  message: string;
+  /** The passages of what it was told that it rests on. */
+  cited: AgentCitation[];
+  /** The time it would book, and what for, as the card would say. */
+  booking: { at: string; title: string } | null;
+  /** What it would write down as an order, and how it goes. */
+  order: {
+    lines: Array<{ name: string; quantity: number }>;
+    fulfilment: 'pickup' | 'delivery' | null;
+  } | null;
+  createdAt: string;
+}
+
+/** A customer's question its AI agent couldn't answer from what it was told (M16 G6b). */
+export interface AgentQuestionView {
+  id: string;
+  conversationId: string;
+  /** Who asked, by name. */
+  customer: string | null;
+  /** Their words as they stand now. */
+  text: string;
+  at: string;
+}
+
+export interface AgentQuestionsResponse {
+  questions: AgentQuestionView[];
 }
 
 /** An organization's plan (PRD §84): what it includes and how much of it is in use. */

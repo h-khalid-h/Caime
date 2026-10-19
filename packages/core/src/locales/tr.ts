@@ -4687,4 +4687,27 @@ export const turkish: Catalog = {
   'By your hours: while you’re open, your team answers first.':
     'Çalışma saatlerinize göre: açıkken önce ekibiniz yanıt verir.',
   'Day and night, before anyone on your team.': 'Gece gündüz, ekibinizden herkesten önce.',
+  'Sending it books {what} for {when}.': 'Gönderince {what} için {when} rezervasyonu yapılır.',
+  'Sending it writes down an order: {lines}.': 'Gönderince bir sipariş not edilir: {lines}.',
+  'Sending it closes the conversation.': 'Gönderince konuşma kapanır.',
+  'Draft by your AI agent · the customer hasn’t seen it':
+    'AI temsilcinizin taslağı · müşteri henüz görmedi',
+  'Let go': 'Bırak',
+  'AI draft to check': 'Kontrol edilecek AI taslağı',
+  'Drafts answers for your team to check · {repliesToday} of {repliesPerDay} answers in the last 24 hours':
+    'Ekibinizin kontrol edeceği yanıt taslakları yazar · son 24 saatte {repliesToday}/{repliesPerDay} yanıt',
+  'Add what it needs to what it knows': 'Eksik olanı bildiklerine ekleyin',
+  'Check its answers before they’re sent': 'Yanıtlarını gönderilmeden önce kontrol et',
+  'Each one waits in its conversation for someone on your team to send, change or let go.':
+    'Her biri, ekibinizden biri gönderene, değiştirene ya da bırakana kadar kendi konuşmasında bekler.',
+  'What it couldn’t answer': 'Yanıtlayamadıkları',
+  'Add what it needs to what it knows, then mark each one done.':
+    'Eksik olanı bildiklerine ekleyin, sonra her birini tamamlandı olarak işaretleyin.',
+  'A customer': 'Bir müşteri',
+  'Nothing waits: every question it couldn’t answer was seen to.':
+    'Bekleyen yok: yanıtlayamadığı her soruyla ilgilenildi.',
+  '{n} questions it couldn’t answer': {
+    one: 'Yanıtlayamadığı {n} soru',
+    other: 'Yanıtlayamadığı {n} soru',
+  },
 };

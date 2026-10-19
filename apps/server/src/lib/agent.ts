@@ -22,11 +22,18 @@
  * was told that it rests on (`payload.cited`, the team's alone: the customer never sees them), and
  * every call keeps the version of its instructions (`ai_runs.prompt_hash`), so the team can say
  * why it said what it said, and which instructions said it.
+ *
+ * Its organization may have it draft rather than send (M16 G6b, `org_agents.review`): its
+ * answer, booking, order or close waits for someone on the team to send it as it is, take it into
+ * their own reply, or let it go, and nothing it wrote reaches the customer before (handing over,
+ * it tells the team alone). What it couldn't answer from what it was told is kept for its owner
+ * and admins, the customer's message by reference (`agent_questions`).
  */
 import {
   AGENT_CALLS_PER_CONVERSATION,
   AGENT_REPLIES_PER_CONVERSATION,
   type AgentCitation,
+  type AgentDraftAction,
   type AgentWhen,
   type BookingHours,
   CITATION_CHARS,
@@ -45,10 +52,12 @@ import { firstName } from '@caime/core/format';
 import type { InterfaceLanguage } from '@caime/core/i18n';
 import { sql } from 'kysely';
 import type { AppContext } from '../context';
+import type { AgentDraft } from './agent-drafts';
 import { type AgentReply, AiError, type AiUsage, PROMPT_VERSIONS } from './ai';
 import { emitWebhook } from './apps';
 import { catalogLines, itemsFor, menuLines, openSlotsFor, orgHost, slotLine } from './booking';
-import { onCustomerMessage, publishThread, threadViews } from './business';
+import { onCustomerMessage, publishThread, teamOf, threadViews } from './business';
+import { AppError, notFound } from './errors';
 import { recordEvent } from './events';
 import { inLanguage, languageOf } from './i18n';
 import { enqueue, registerJob } from './jobs';
@@ -83,6 +92,7 @@ export async function activeAgent(ctx: Pick<AppContext, 'db'>, orgId: string) {
       'a.may_book',
       'a.may_order',
       'a.answers_when',
+      'a.review',
       'u.display_name as name',
     ])
     .where('a.org_id', '=', orgId)
@@ -349,8 +359,17 @@ async function threadMoved(
   });
 }
 
-/** The people on the team hear that a conversation needs one of them now. */
-async function tellTeam(ctx: AppContext, orgId: string, conversationId: string, agentName: string) {
+/**
+ * The people on the team hear that a conversation needs one of them now: handed to them, or a
+ * draft of its answer waits for one of them to check (M16 G6b).
+ */
+async function tellTeam(
+  ctx: AppContext,
+  orgId: string,
+  conversationId: string,
+  agentName: string,
+  why: 'handed' | 'drafted' = 'handed',
+) {
   const [people, about] = await Promise.all([
     ctx.db
       .selectFrom('org_members as m')
@@ -373,20 +392,28 @@ async function tellTeam(ctx: AppContext, orgId: string, conversationId: string, 
       userId: p.user_id,
       kind: 'business',
       level: 'attention',
-      title: () => tr('{agentName} handed a conversation to the team', { agentName }),
+      title: () =>
+        why === 'drafted'
+          ? tr('{agentName} drafted an answer for you to check', { agentName })
+          : tr('{agentName} handed a conversation to the team', { agentName }),
       body: () => `${about.customer_name ?? tr('A customer')} · ${about.org_name}`,
       data: { conversationId, orgId },
       groupKey: `conv:${conversationId}`,
     });
 }
 
-/** Handed over: it stays out until the conversation is resolved, and the team is told. */
+/**
+ * Handed over: it stays out until the conversation is resolved, and the team is told. What it
+ * didn't know (`unknown`) is kept for its owner and admins (M16 G6b): the customer's message
+ * `seq`, by reference, once.
+ */
 async function handOver(
   ctx: AppContext,
   orgId: string,
   conversationId: string,
   agent: { bot_user_id: string; name: string },
   reason: HandOverReason,
+  seq: number | null = null,
 ) {
   ctx.metrics.agentActions.inc({ action: 'hand_over', reason });
   await ctx.db
@@ -394,6 +421,12 @@ async function handOver(
     .set({ agent_handed_over_at: ctx.now(), updated_at: ctx.now() })
     .where('conversation_id', '=', conversationId)
     .execute();
+  if (reason === 'unknown' && seq !== null)
+    await sql`
+      insert into agent_questions (id, org_id, conversation_id, message_id, created_at)
+      select ${uuidv7()}, ${orgId}, ${conversationId}, m.id, ${ctx.now()}
+      from messages m where m.conversation_id = ${conversationId} and m.seq = ${String(seq)}
+      on conflict (message_id) do nothing`.execute(ctx.db);
   await threadMoved(ctx, conversationId, agent.bot_user_id, 'handed_over');
   await tellTeam(ctx, orgId, conversationId, agent.name);
 }
@@ -533,47 +566,14 @@ export async function agentReply(ctx: AppContext, payload: Record<string, unknow
     thread.customer_id,
     agent.bot_user_id,
   );
-  // The next open slots (R51), where the organization takes bookings: it may offer them. With a
-  // catalog (R58), the items this customer may book, and the slots of the first of them.
-  const host = orgHost({
-    id: thread.org_id,
-    booking: thread.booking,
-    booking_items: thread.booking_items,
-    ordering: thread.ordering,
-    collections: thread.collections,
-  });
-  const items = itemsFor(host, {
-    isConnected: true,
-    spheres: [],
-    adult: !minorOf(customer, ctx.now()),
-  });
-  // What this customer may order (R60), as they'd see it: a count only where it limits them, so
-  // the agent knows no more of the stock than the customer would. Only where the organization
-  // lets it take orders (M16 G6a); else it hands an order over.
-  const takesOrders = host.ordering !== null && agent.may_order;
-  const orderable = takesOrders
-    ? withStock(items.filter(isOrdered), await stockFor(ctx.db, host.id, items), false)
-    : [];
-  const menuText = menuLines(orderable);
-  const menu =
-    host.ordering && takesOrders && menuText
-      ? { lines: menuText, ways: host.ordering.fulfilment }
-      : null;
-  // Times it may offer, where it may book: else it hands a booking over.
-  const open = agent.may_book
-    ? await openSlotsFor(
-        ctx,
-        host,
-        { from: ctx.now(), to: new Date(ctx.now().getTime() + AGENT_SLOT_DAYS * DAY_MS) },
-        { item: items.find(isBooked) ?? null, limit: AGENT_SLOTS },
-      )
-    : null;
+  const offer = await offerFor(ctx, thread, agent, !minorOf(customer, ctx.now()));
+  const { items, menu, open } = offer;
   const slots = open
     ? open.slots.map((d) => `${d.toISOString()} · ${slotLine(d, open.hours.timeZone)}`).join('\n')
     : null;
   const catalog = catalogLines(
     items,
-    items.some((i) => i.placeId) ? await bookablePlaceLines(ctx, host.id) : undefined,
+    items.some((i) => i.placeId) ? await bookablePlaceLines(ctx, offer.host.id) : undefined,
   );
   const reply = await askAgent(
     ctx,
@@ -603,14 +603,36 @@ export async function agentReply(ctx: AppContext, payload: Record<string, unknow
   }
   // What its answer rests on, for the team to read under it (M16 G6a).
   const cited = citationsOf(agent.knowledge, reply.sources);
+  // Its first message here opens with who it is, by the rules (R87): a line of its own, which
+  // the model never reads back, since it names the customer.
+  const body = transcript.introduced
+    ? reply.message
+    : `${inLanguage(await customerLanguage(ctx, thread.customer_id, await latestBody()), () =>
+        introduction(agent.name, thread.org_name, customer.display_name),
+      )}\n${reply.message}`;
+  // Its team checks it first (M16 G6b): nothing it wrote reaches the customer before; handing
+  // over, it tells the team alone, since a person answers from here anyway.
+  if (agent.review) {
+    if (reply.action === 'hand_over') {
+      await discard(ctx, reply.runId);
+      await handOver(ctx, thread.org_id, conversationId, agent, reply.reason ?? 'none', seq);
+      return;
+    }
+    await writeDraft(ctx, {
+      orgId: thread.org_id,
+      conversationId,
+      seq,
+      agent,
+      action: reply.action,
+      body,
+      reply,
+      cited,
+      introduction: !transcript.introduced,
+      offer,
+    });
+    return;
+  }
   try {
-    // Its first message here opens with who it is, by the rules (R87): a line of its own, which
-    // the model never reads back, since it names the customer.
-    const body = transcript.introduced
-      ? reply.message
-      : `${inLanguage(await customerLanguage(ctx, thread.customer_id, await latestBody()), () =>
-          introduction(agent.name, thread.org_name, customer.display_name),
-        )}\n${reply.message}`;
     const marks = {
       ...(transcript.introduced ? {} : { introduction: true }),
       ...(cited.length ? { cited } : {}),
@@ -629,16 +651,102 @@ export async function agentReply(ctx: AppContext, payload: Record<string, unknow
     await discard(ctx, reply.runId);
     return;
   }
+  await carryOut(ctx, thread.org_id, conversationId, seq, agent, reply, offer);
+}
+
+/**
+ * What it may offer a customer now, as they'd see it: the items they may book or order, the next
+ * open times (R51) and the menu (R60), within what its organization lets it do (M16 G6a).
+ */
+async function offerFor(
+  ctx: AppContext,
+  org: {
+    org_id: string;
+    booking: unknown;
+    booking_items: unknown;
+    ordering: unknown;
+    collections: unknown;
+  },
+  agent: { may_book: boolean; may_order: boolean },
+  adult: boolean,
+) {
+  const host = orgHost({
+    id: org.org_id,
+    booking: org.booking,
+    booking_items: org.booking_items,
+    ordering: org.ordering,
+    collections: org.collections,
+  });
+  // With a catalog (R58), the items this customer may book.
+  const items = itemsFor(host, { isConnected: true, spheres: [], adult });
+  // What this customer may order (R60), as they'd see it: a count only where it limits them, so
+  // the agent knows no more of the stock than the customer would. Only where the organization
+  // lets it take orders (M16 G6a); else it hands an order over.
+  const takesOrders = host.ordering !== null && agent.may_order;
+  const orderable = takesOrders
+    ? withStock(items.filter(isOrdered), await stockFor(ctx.db, host.id, items), false)
+    : [];
+  const menuText = menuLines(orderable);
+  const menu =
+    host.ordering && takesOrders && menuText
+      ? { lines: menuText, ways: host.ordering.fulfilment }
+      : null;
+  // The next open times of the first item it may book, where it may book: else it hands a
+  // booking over.
+  const open = agent.may_book
+    ? await openSlotsFor(
+        ctx,
+        host,
+        { from: ctx.now(), to: new Date(ctx.now().getTime() + AGENT_SLOT_DAYS * DAY_MS) },
+        { item: items.find(isBooked) ?? null, limit: AGENT_SLOTS },
+      )
+    : null;
+  return { host, items, orderable, menu, open };
+}
+type Offer = Awaited<ReturnType<typeof offerFor>>;
+
+/** What it decided beyond its words: a time, an order, a close, or the team. */
+type Plan = Pick<
+  AgentReply,
+  'action' | 'bookAt' | 'bookFor' | 'bookItem' | 'orderLines' | 'orderWay' | 'reason'
+>;
+
+/** From the catalog, the item it named, else the one whose times it offered. */
+const bookedItem = (offer: Offer, plan: Plan) =>
+  offer.items.find((i) => i.id === plan.bookItem && isBooked(i)) ??
+  offer.items.find(isBooked) ??
+  null;
+/** The card's title: the item's name, else what the customer said it's for. */
+const bookingTitle = (item: ReturnType<typeof bookedItem>, plan: Plan) =>
+  item && !item.askTopic ? item.name : plan.bookFor || item?.name || 'Appointment';
+/** How an order goes: as asked, else the one way there is. */
+const orderWayOf = (offer: Offer, plan: Plan) =>
+  plan.orderWay ?? (offer.menu?.ways.length === 1 ? (offer.menu.ways[0] ?? null) : null);
+
+/**
+ * Carries out what it decided once its words are in, as it would itself or once its team sent
+ * its draft (M16 G6b): books one of the times it offered, writes an order down, closes the
+ * conversation, or hands it to the team.
+ */
+async function carryOut(
+  ctx: AppContext,
+  orgId: string,
+  conversationId: string,
+  seq: number,
+  agent: { bot_user_id: string; name: string },
+  plan: Plan,
+  offer: Offer,
+) {
   // Booked (R51): one of the slots it offered, still open, becomes an appointment card from the
   // organization, which the customer confirms; the team sees it under Bookings meanwhile.
-  if (reply.action === 'book') {
-    const at = reply.bookAt ? new Date(reply.bookAt) : null;
+  if (plan.action === 'book') {
+    const at = plan.bookAt ? new Date(plan.bookAt) : null;
     const stillOpen =
-      at && !Number.isNaN(at.getTime()) && open?.slots.some((d) => d.getTime() === at.getTime());
-    // From the catalog, the item it named, else the one whose slots it offered; the server
-    // checks the slot for that item as for any booking, and a refusal hands over.
-    const item =
-      items.find((i) => i.id === reply.bookItem && isBooked(i)) ?? items.find(isBooked) ?? null;
+      at &&
+      !Number.isNaN(at.getTime()) &&
+      offer.open?.slots.some((d) => d.getTime() === at.getTime());
+    // The server checks the slot for that item as for any booking, and a refusal hands over.
+    const item = bookedItem(offer, plan);
     let booked = false;
     if (stillOpen && at) {
       booked = await postAs(ctx, agent.bot_user_id, conversationId, {
@@ -646,8 +754,7 @@ export async function agentReply(ctx: AppContext, payload: Record<string, unknow
         payload: {
           kit: 'appointment',
           fields: {
-            title:
-              item && !item.askTopic ? item.name : reply.bookFor || item?.name || 'Appointment',
+            title: bookingTitle(item, plan),
             start: { at: at.toISOString(), hasTime: true },
           },
           ...(item ? { booking: { itemId: item.id, quantity: 1 } } : {}),
@@ -661,17 +768,17 @@ export async function agentReply(ctx: AppContext, payload: Record<string, unknow
     }
     if (booked) ctx.metrics.agentActions.inc({ action: 'book', reason: 'none' });
     // Not a slot it was given, or taken meanwhile: a person books it.
-    else await handOver(ctx, thread.org_id, conversationId, agent, 'refused');
+    else await handOver(ctx, orgId, conversationId, agent, 'refused');
   }
   // Ordered (R60): what the customer said they want from the menu becomes an Order card from the
   // organization, checked against its catalog and stock as anyone's is; the team confirms it.
   // Anything not on the menu, sold out, or a way not chosen where there are two: a person takes it.
-  if (reply.action === 'order') {
-    const onMenu = new Set(orderable.filter((i) => orderableMax(i) > 0).map((i) => i.id));
-    const lines = reply.orderLines ?? [];
-    const way = reply.orderWay ?? (menu?.ways.length === 1 ? (menu.ways[0] ?? null) : null);
+  if (plan.action === 'order') {
+    const onMenu = new Set(offer.orderable.filter((i) => orderableMax(i) > 0).map((i) => i.id));
+    const lines = plan.orderLines ?? [];
+    const way = orderWayOf(offer, plan);
     let ordered = false;
-    if (menu && lines.length && lines.every((l) => onMenu.has(l.itemId)) && way) {
+    if (offer.menu && lines.length && lines.every((l) => onMenu.has(l.itemId)) && way) {
       ordered = await postAs(ctx, agent.bot_user_id, conversationId, {
         kind: 'kit',
         payload: { kit: 'order_status', fields: {}, order: { lines, fulfilment: way } },
@@ -683,12 +790,12 @@ export async function agentReply(ctx: AppContext, payload: Record<string, unknow
         });
     }
     if (ordered) ctx.metrics.agentActions.inc({ action: 'order', reason: 'none' });
-    else await handOver(ctx, thread.org_id, conversationId, agent, 'refused');
+    else await handOver(ctx, orgId, conversationId, agent, 'refused');
   }
-  if (reply.action === 'answer') ctx.metrics.agentActions.inc({ action: 'answer', reason: 'none' });
-  if (reply.action === 'hand_over')
-    await handOver(ctx, thread.org_id, conversationId, agent, reply.reason ?? 'none');
-  if (reply.action === 'resolve') {
+  if (plan.action === 'answer') ctx.metrics.agentActions.inc({ action: 'answer', reason: 'none' });
+  if (plan.action === 'hand_over')
+    await handOver(ctx, orgId, conversationId, agent, plan.reason ?? 'none', seq);
+  if (plan.action === 'resolve') {
     ctx.metrics.agentActions.inc({ action: 'resolve', reason: 'none' });
     await ctx.db
       .updateTable('business_threads')
@@ -698,6 +805,217 @@ export async function agentReply(ctx: AppContext, payload: Record<string, unknow
       .execute();
     await threadMoved(ctx, conversationId, agent.bot_user_id, 'resolved');
   }
+}
+
+/**
+ * Its answer as a draft for its team (M16 G6b): what the customer would read, what it would do
+ * and what it rests on, the conversation's one draft (a newer one takes its place). Its run counts
+ * against the plan as an answer written, as it costs one, until the draft is let go or replaced
+ * (the plan's daily answers bound what drafts cost as they bound answers).
+ */
+async function writeDraft(
+  ctx: AppContext,
+  d: {
+    orgId: string;
+    conversationId: string;
+    seq: number;
+    agent: { name: string };
+    action: AgentDraftAction;
+    body: string;
+    reply: AgentReply & { runId: string };
+    cited: AgentCitation[];
+    introduction: boolean;
+    offer: Offer;
+  },
+) {
+  const plan = d.reply;
+  const at = d.action === 'book' && plan.bookAt ? new Date(plan.bookAt) : null;
+  const way = d.action === 'order' ? orderWayOf(d.offer, plan) : null;
+  const draft: AgentDraft = {
+    message: plan.message,
+    introduction: d.introduction,
+    cited: d.cited,
+    plan: {
+      bookAt: plan.bookAt,
+      bookFor: plan.bookFor,
+      bookItem: plan.bookItem,
+      orderLines: plan.orderLines,
+      orderWay: plan.orderWay,
+    },
+    // What it would book or order, as the card would say, for the team to read before it does.
+    booking:
+      at && !Number.isNaN(at.getTime())
+        ? { at: at.toISOString(), title: bookingTitle(bookedItem(d.offer, plan), plan) }
+        : null,
+    order:
+      d.action === 'order' && plan.orderLines?.length
+        ? {
+            lines: plan.orderLines.map((l) => ({
+              name: d.offer.items.find((i) => i.id === l.itemId)?.name ?? l.itemId,
+              quantity: l.quantity,
+            })),
+            fulfilment: way,
+          }
+        : null,
+  };
+  const row = {
+    seq: String(d.seq),
+    action: d.action,
+    body: d.body,
+    draft: JSON.stringify(draft),
+    run_id: d.reply.runId,
+    created_at: ctx.now(),
+  };
+  const before = await ctx.db
+    .selectFrom('agent_drafts')
+    .select('run_id')
+    .where('conversation_id', '=', d.conversationId)
+    .executeTakeFirst();
+  await ctx.db
+    .insertInto('agent_drafts')
+    .values({ conversation_id: d.conversationId, org_id: d.orgId, ...row })
+    .onConflict((oc) => oc.column('conversation_id').doUpdateSet(row))
+    .execute();
+  // The draft it replaces was never sent: not an answer the plan counts.
+  if (before?.run_id && before.run_id !== d.reply.runId) await discard(ctx, before.run_id);
+  ctx.metrics.agentDrafts.inc({ outcome: 'drafted' });
+  await publishThread(ctx, d.orgId, d.conversationId);
+  await tellTeam(ctx, d.orgId, d.conversationId, d.agent.name, 'drafted');
+}
+
+/**
+ * Someone on its team sends its draft as it is (M16 G6b): its words go as the agent's, with who
+ * checked them kept for the team (`payload.checkedBy`, never the customer's), and what it decided
+ * is carried out as it would have been, the times and the menu read again now. Only the draft for
+ * the customer's latest message while nobody on the team has written since, and once.
+ */
+export async function sendDraft(
+  ctx: AppContext,
+  conversationId: string,
+  userId: string,
+  seq: number,
+): Promise<void> {
+  const thread = await ctx.db
+    .selectFrom('business_threads as t')
+    .innerJoin('organizations as o', 'o.id', 't.org_id')
+    .select([
+      't.org_id',
+      't.customer_id',
+      't.last_customer_seq',
+      't.last_team_seq',
+      'o.booking',
+      'o.booking_items',
+      'o.ordering',
+      'o.collections',
+    ])
+    .where('t.conversation_id', '=', conversationId)
+    .executeTakeFirst();
+  if (!thread) throw notFound(tr('That conversation'));
+  // Taken once: a second send, or a draft replaced meanwhile, finds nothing.
+  const taken = await ctx.db
+    .deleteFrom('agent_drafts')
+    .where('conversation_id', '=', conversationId)
+    .where('seq', '=', String(seq))
+    .returning(['action', 'body', 'draft', 'run_id'])
+    .executeTakeFirst();
+  if (!taken)
+    throw new AppError(409, 'conflict', tr('That draft was sent, let go or replaced already.'));
+  if (Number(thread.last_customer_seq) !== seq || Number(thread.last_team_seq) > seq)
+    throw new AppError(
+      409,
+      'conflict',
+      tr('The conversation moved on since that draft: answer it yourself.'),
+    );
+  const agent = await activeAgent(ctx, thread.org_id);
+  if (!agent)
+    throw new AppError(409, 'conflict', tr('The AI agent is paused or gone: answer it yourself.'));
+  const draft = taken.draft as AgentDraft;
+  await postAs(
+    ctx,
+    agent.bot_user_id,
+    conversationId,
+    {
+      kind: 'text',
+      body: taken.body,
+      payload: {
+        ...(draft.introduction ? { introduction: true } : {}),
+        ...(draft.cited.length ? { cited: draft.cited } : {}),
+        checkedBy: userId,
+      },
+    },
+    { serverPayload: true },
+  );
+  ctx.metrics.agentDrafts.inc({ outcome: 'sent' });
+  const customer = thread.customer_id
+    ? await ctx.db
+        .selectFrom('users')
+        .select(['birth_date', 'time_zone', 'age_minor_until'])
+        .where('id', '=', thread.customer_id)
+        .executeTakeFirst()
+    : undefined;
+  const offer = await offerFor(
+    ctx,
+    thread,
+    agent,
+    customer ? !minorOf(customer, ctx.now()) : false,
+  );
+  await carryOut(
+    ctx,
+    thread.org_id,
+    conversationId,
+    seq,
+    agent,
+    { action: taken.action, reason: null, ...draft.plan },
+    offer,
+  );
+}
+
+/**
+ * Lets go of its draft (M16 G6b): someone on its team let it go, or took it into their own reply
+ * (`edited`). Never sent, it isn't an answer the plan counts. Null when there was none.
+ */
+export async function dropDraft(
+  ctx: AppContext,
+  conversationId: string,
+  seq: number,
+  edited: boolean,
+): Promise<string | null> {
+  const gone = await ctx.db
+    .deleteFrom('agent_drafts')
+    .where('conversation_id', '=', conversationId)
+    .where('seq', '=', String(seq))
+    .returning(['org_id', 'run_id'])
+    .executeTakeFirst();
+  if (!gone) return null;
+  if (gone.run_id) await discard(ctx, gone.run_id);
+  ctx.metrics.agentDrafts.inc({ outcome: edited ? 'edited' : 'dropped' });
+  await publishThread(ctx, gone.org_id, conversationId);
+  return gone.org_id;
+}
+
+/**
+ * Its agent removed (M16 G6b): what it drafted and nobody sent goes with it, given back to the
+ * plan, and the team's devices stop showing it, in one event for every conversation.
+ */
+export async function dropDraftsOf(ctx: AppContext, orgId: string): Promise<void> {
+  const gone = await ctx.db
+    .deleteFrom('agent_drafts')
+    .where('org_id', '=', orgId)
+    .returning('run_id')
+    .execute();
+  if (!gone.length) return;
+  const runs = gone.flatMap((d) => (d.run_id ? [d.run_id] : []));
+  if (runs.length)
+    await ctx.db
+      .updateTable('ai_runs')
+      .set({ discarded_at: ctx.now() })
+      .where('id', 'in', runs)
+      .execute();
+  ctx.metrics.agentDrafts.inc({ outcome: 'dropped' }, gone.length);
+  await ctx.bus.publish(await teamOf(ctx.db, orgId), {
+    type: 'business.updated',
+    data: { orgId, drafts: true },
+  });
 }
 
 export function registerAgentJob(): void {

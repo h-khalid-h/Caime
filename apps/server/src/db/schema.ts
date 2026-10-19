@@ -1321,6 +1321,33 @@ export interface BillingEventsTable {
   received_at: Generated<Date>;
 }
 
+/**
+ * The draft its AI agent left in a conversation for its team (M16 G6b, 0141): one at most, for
+ * the customer's message `seq`; `draft` holds its answer alone, what it rests on and what it
+ * would book or order (`AgentDraft` in lib/agent-drafts.ts).
+ */
+export interface AgentDraftsTable {
+  conversation_id: string;
+  org_id: string;
+  seq: ColumnType<string, string | number, string | number>;
+  action: 'answer' | 'resolve' | 'book' | 'order';
+  body: string;
+  draft: Json<unknown>;
+  run_id: string | null;
+  created_at: Generated<Date>;
+}
+
+/** A customer's message its AI agent couldn't answer from what it was told (M16 G6b, 0141). */
+export interface AgentQuestionsTable {
+  id: string;
+  org_id: string;
+  conversation_id: string;
+  message_id: string;
+  created_at: Generated<Date>;
+  done_at: NullableTimestamp;
+  done_by: string | null;
+}
+
 /** An organization's AI agent (PRD §74–75): one per organization, answering as its own user. */
 export interface OrgAgentsTable {
   org_id: string;
@@ -1332,6 +1359,8 @@ export interface OrgAgentsTable {
   may_order: Defaulted<boolean>;
   /** Always, or only while the organization is closed by its hours. */
   answers_when: Defaulted<'always' | 'closed'>;
+  /** Its team checks each answer before it's sent (M16 G6b, 0141). */
+  review: Defaulted<boolean>;
   created_by: string | null;
   created_at: Generated<Date>;
   updated_at: Generated<Date>;
@@ -1649,6 +1678,8 @@ export interface Database {
   spent_tickets: SpentTicketsTable;
   app_kits: AppKitsTable;
   org_agents: OrgAgentsTable;
+  agent_drafts: AgentDraftsTable;
+  agent_questions: AgentQuestionsTable;
   calls: CallsTable;
   call_members: CallMembersTable;
   e2ee_devices: E2eeDevicesTable;

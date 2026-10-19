@@ -114,6 +114,9 @@ export type AuditAction =
   | 'agent.created'
   | 'agent.updated'
   | 'agent.removed'
+  // Its draft sent as it was, or let go (M16 G6b).
+  | 'agent.draft_sent'
+  | 'agent.draft_dropped'
   | 'plan.changed'
   | 'handle.claimed'
   | 'e2ee.device_first'

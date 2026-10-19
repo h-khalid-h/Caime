@@ -434,6 +434,13 @@ export function applyEvent(qc: QueryClient, event: RealtimeEvent, me: string): v
         invalidate(qk.allConversationViews);
         return;
       }
+      // Its AI agent was removed with drafts nobody sent (M16 G6b): every thread and conversation
+      // that showed one.
+      if (event.data.drafts === true) {
+        invalidate(qk.allOrgInboxes);
+        invalidate(qk.allConversationViews);
+        return;
+      }
       // What the team keeps about a customer changed (M16 H3): that record, and the tags in use.
       if (typeof event.data.customerId === 'string' && typeof event.data.orgId === 'string') {
         invalidate(qk.customerRecord(event.data.orgId, event.data.customerId));

@@ -3194,4 +3194,31 @@ export const arB: Catalog = {
   'By your hours: while you’re open, your team answers first.':
     'حسب ساعات عملك: في ساعات العمل يجيب فريقك أولًا.',
   'Day and night, before anyone on your team.': 'ليلًا ونهارًا، قبل أي أحد من فريقك.',
+  'Sending it books {what} for {when}.': 'بإرسالها يُحجز {what} في {when}.',
+  'Sending it writes down an order: {lines}.': 'بإرسالها يُسجَّل طلب: {lines}.',
+  'Sending it closes the conversation.': 'بإرسالها تُغلق المحادثة.',
+  'Draft by your AI agent · the customer hasn’t seen it':
+    'مسودة من وكيل الذكاء الاصطناعي · لم يرها العميل',
+  'Let go': 'استبعاد',
+  'AI draft to check': 'مسودة ذكاء اصطناعي للمراجعة',
+  'Drafts answers for your team to check · {repliesToday} of {repliesPerDay} answers in the last 24 hours':
+    'يكتب مسودات إجابات يراجعها فريقك · الإجابات في آخر 24 ساعة: {repliesToday} من {repliesPerDay}',
+  'Add what it needs to what it knows': 'أضف ما يحتاجه إلى ما يعرفه',
+  'Check its answers before they’re sent': 'مراجعة إجاباته قبل إرسالها',
+  'Each one waits in its conversation for someone on your team to send, change or let go.':
+    'تنتظر كل إجابة في محادثتها حتى يرسلها أحد من فريقك أو يعدّلها أو يستبعدها.',
+  'What it couldn’t answer': 'ما لم يستطع الإجابة عنه',
+  'Add what it needs to what it knows, then mark each one done.':
+    'أضف ما يحتاجه إلى ما يعرفه، ثم علّم على كل سؤال أنه تمّ.',
+  'A customer': 'عميل',
+  'Nothing waits: every question it couldn’t answer was seen to.':
+    'لا شيء ينتظر: عولج كل سؤال لم يستطع الإجابة عنه.',
+  '{n} questions it couldn’t answer': {
+    zero: 'لا أسئلة لم يستطع الإجابة عنها',
+    one: 'سؤال واحد لم يستطع الإجابة عنه',
+    two: 'سؤالان لم يستطع الإجابة عنهما',
+    few: '{n} أسئلة لم يستطع الإجابة عنها',
+    many: '{n} سؤالًا لم يستطع الإجابة عنها',
+    other: '{n} سؤال لم يستطع الإجابة عنها',
+  },
 };

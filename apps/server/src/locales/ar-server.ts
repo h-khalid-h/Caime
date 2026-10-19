@@ -351,7 +351,6 @@ export const arServer: Catalog = {
   'You decide who connects with you: accept to connect.':
     'أنت من يقرر من يتواصل معك: اقبل ليبدأ التواصل.',
   '{agentName} handed a conversation to the team': 'سلّم {agentName} محادثة إلى الفريق',
-  'A customer': 'عميل',
   'from {caller}': 'من {caller}',
   'from {starter}': 'من {starter}',
   automated: 'آلي',
@@ -1607,4 +1606,13 @@ export const arServer: Catalog = {
     'هذا المؤشر لم يمنحك إياه هذا الموجز: اطلب مرة دونه.',
   'The feed began again since that cursor: ask once without it.':
     'بدأ الموجز من جديد منذ ذلك المؤشر: اطلب مرة دونه.',
+  '{agentName} drafted an answer for you to check': 'كتب {agentName} مسودة إجابة بانتظار المراجعة',
+  'That draft was sent, let go or replaced already.':
+    'أُرسلت هذه المسودة أو استُبعدت أو حلّت محلها أخرى.',
+  'The conversation moved on since that draft: answer it yourself.':
+    'تقدّمت المحادثة منذ هذه المسودة: أجب بنفسك.',
+  'The AI agent is paused or gone: answer it yourself.':
+    'وكيل الذكاء الاصطناعي متوقف أو أُزيل: أجب بنفسك.',
+  'That question': 'هذا السؤال',
+  'That draft': 'هذه المسودة',
 };

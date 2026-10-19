@@ -175,12 +175,15 @@ function ThreadRow({
           ) : null}
           <Text variant="caption" color="textTertiary" numberOfLines={1} style={{ flexShrink: 1 }}>
             {[
-              // What its AI agent did first (PRD §75): a person still owes the customer an answer.
-              thread.agentHandedOverAt && !thread.resolvedAt
-                ? tr('Handed over by AI')
-                : last?.fromAgent
-                  ? tr('Answered by AI')
-                  : null,
+              // What its AI agent did first (PRD §75): a person still owes the customer an answer;
+              // or its answer waits for someone here to check it (M16 G6b).
+              thread.agentDraft
+                ? tr('AI draft to check')
+                : thread.agentHandedOverAt && !thread.resolvedAt
+                  ? tr('Handed over by AI')
+                  : last?.fromAgent
+                    ? tr('Answered by AI')
+                    : null,
               thread.assignee ? thread.assignee.displayName : tr('Nobody has it'),
               thread.customerUnder18 ? tr('Under 18') : null,
             ]

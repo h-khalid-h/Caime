@@ -352,7 +352,6 @@ export const turkishServer: Catalog = {
     'Sorularınızı, fikirlerinizi ve endişelerinizi {mail} adresine yazın.',
   'Web, iOS and Android.': 'Web, iOS ve Android.',
   '{agentName} handed a conversation to the team': '{agentName} bir konuşmayı ekibe devretti',
-  'A customer': 'Bir müşteri',
   Call: 'Arama',
   Answered: 'Yanıtlandı',
   'from {caller}': 'Arayan: {caller}',
@@ -1556,4 +1555,14 @@ export const turkishServer: Catalog = {
     'Bu imleci bu akış vermedi: bir kez onsuz isteyin.',
   'The feed began again since that cursor: ask once without it.':
     'Akış o imleçten bu yana yeniden başladı: bir kez onsuz isteyin.',
+  '{agentName} drafted an answer for you to check':
+    '{agentName} kontrol etmeniz için bir yanıt taslağı yazdı',
+  'That draft was sent, let go or replaced already.':
+    'Bu taslak zaten gönderildi, bırakıldı ya da yerine başkası geldi.',
+  'The conversation moved on since that draft: answer it yourself.':
+    'Bu taslaktan sonra konuşma ilerledi: kendiniz yanıtlayın.',
+  'The AI agent is paused or gone: answer it yourself.':
+    'AI temsilcisi duraklatıldı ya da kaldırıldı: kendiniz yanıtlayın.',
+  'That question': 'Bu soru',
+  'That draft': 'Bu taslak',
 };

@@ -6,8 +6,11 @@ import {
   defaultAgentName,
 } from '@caime/core/agents';
 import type { AgentTryView, OrgView } from '@caime/core/api';
-import { msg, sentence, tr } from '@caime/core/i18n';
+import { formatWhen } from '@caime/core/format';
+import { msg, sentence, tr, trn } from '@caime/core/i18n';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
+import { router } from 'expo-router';
+import MessageCircleQuestion from 'lucide-react-native/icons/message-circle-question-mark';
 import Sparkles from 'lucide-react-native/icons/sparkles';
 import Trash from 'lucide-react-native/icons/trash';
 import { useState } from 'react';
@@ -15,6 +18,7 @@ import { View } from 'react-native';
 import { ApiError } from '@/api/client';
 import { endpoints } from '@/api/endpoints';
 import { qk } from '@/api/keys';
+import { useUserClock } from '@/lib/time';
 import { useTheme } from '@/theme/theme';
 import { Button } from '@/ui/Button';
 import { ChoiceChips } from '@/ui/Chip';
@@ -45,6 +49,15 @@ export function OrgAgent({ org }: { org: OrgView }) {
   const [mayBook, setMayBook] = useState(true);
   const [mayOrder, setMayOrder] = useState(true);
   const [answersWhen, setAnswersWhen] = useState<AgentWhen>('always');
+  const [review, setReview] = useState(false);
+  const [asked, setAsked] = useState(false);
+  const { timeZone, locale } = useUserClock();
+  // What it couldn't answer (M16 G6b), asked for when the list is opened.
+  const questions = useQuery({
+    queryKey: qk.orgAgentQuestions(org.id),
+    queryFn: () => endpoints.agentQuestions(org.id),
+    enabled: asked,
+  });
   const [question, setQuestion] = useState('');
   const [tried, setTried] = useState<AgentTryView | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -66,6 +79,7 @@ export function OrgAgent({ org }: { org: OrgView }) {
     setMayBook(agent?.mayBook ?? true);
     setMayOrder(agent?.mayOrder ?? true);
     setAnswersWhen(agent?.answersWhen ?? 'always');
+    setReview(agent?.review ?? false);
     setQuestion('');
     setTried(null);
     setError(null);
@@ -97,6 +111,7 @@ export function OrgAgent({ org }: { org: OrgView }) {
         mayBook,
         mayOrder,
         answersWhen,
+        review,
       });
       refresh();
       setOpen(false);
@@ -148,15 +163,20 @@ export function OrgAgent({ org }: { org: OrgView }) {
     agent && counts
       ? agent.paused
         ? tr('Paused: your team answers everyone')
-        : agent.answersWhen === 'closed' && org.booking
+        : agent.review
           ? tr(
-              'Answers while you’re closed · {repliesToday} of {repliesPerDay} answers in the last 24 hours',
+              'Drafts answers for your team to check · {repliesToday} of {repliesPerDay} answers in the last 24 hours',
               counts,
             )
-          : tr(
-              'Answers first · {repliesToday} of {repliesPerDay} answers in the last 24 hours',
-              counts,
-            )
+          : agent.answersWhen === 'closed' && org.booking
+            ? tr(
+                'Answers while you’re closed · {repliesToday} of {repliesPerDay} answers in the last 24 hours',
+                counts,
+              )
+            : tr(
+                'Answers first · {repliesToday} of {repliesPerDay} answers in the last 24 hours',
+                counts,
+              )
       : null;
 
   return (
@@ -182,6 +202,21 @@ export function OrgAgent({ org }: { org: OrgView }) {
               onPress={edit}
               testID="org-agent"
             />
+            {agent.questions > 0 ? (
+              // What customers asked that what it knows doesn't say (M16 G6b).
+              <ListRow
+                icon={MessageCircleQuestion}
+                title={trn(
+                  agent.questions,
+                  '{n} question it couldn’t answer',
+                  '{n} questions it couldn’t answer',
+                )}
+                subtitle={tr('Add what it needs to what it knows')}
+                chevron
+                onPress={() => setAsked(true)}
+                testID="org-agent-questions"
+              />
+            ) : null}
             <ListRow
               title={agent.paused ? tr('Let it answer again') : tr('Pause it')}
               subtitle={
@@ -272,6 +307,15 @@ export function OrgAgent({ org }: { org: OrgView }) {
           <Text variant="caption" color="textTertiary">
             {tr(WHAT_IT_DOES)}
           </Text>
+          <SwitchRow
+            label={tr('Check its answers before they’re sent')}
+            detail={tr(
+              'Each one waits in its conversation for someone on your team to send, change or let go.',
+            )}
+            value={review}
+            onChange={setReview}
+            testID="org-agent-review"
+          />
           {org.booking || org.ordering ? (
             // What it may do beyond answering, each for the team to confirm (M16 G6a).
             <View>
@@ -390,6 +434,69 @@ export function OrgAgent({ org }: { org: OrgView }) {
                 testID="org-agent-remove"
               />
             </View>
+          ) : null}
+        </View>
+      </Sheet>
+
+      <Sheet
+        open={asked}
+        onClose={() => setAsked(false)}
+        title={tr('What it couldn’t answer')}
+        subtitle={tr('Add what it needs to what it knows, then mark each one done.')}
+      >
+        <View style={{ gap: 12 }} testID="org-agent-question-list">
+          {(questions.data?.questions ?? []).map((q) => (
+            <View
+              key={q.id}
+              style={{
+                gap: 6,
+                padding: 12,
+                borderRadius: t.radii.sm,
+                backgroundColor: t.c.surfaceMuted,
+              }}
+              testID="agent-question"
+            >
+              <Text variant="caption" color="textSecondary">
+                {[q.customer ?? tr('A customer'), formatWhen(q.at, new Date(), timeZone, locale)]
+                  .filter(Boolean)
+                  .join(' · ')}
+              </Text>
+              <Text variant="body" auto>
+                “{q.text}”
+              </Text>
+              <View style={{ flexDirection: 'row', gap: 8 }}>
+                <Button
+                  label={tr('Open')}
+                  variant="secondary"
+                  size="sm"
+                  onPress={() => {
+                    setAsked(false);
+                    router.push({ pathname: '/c/[id]', params: { id: q.conversationId } });
+                  }}
+                  testID="agent-question-open"
+                />
+                <Button
+                  label={tr('Done')}
+                  variant="ghost"
+                  size="sm"
+                  onPress={() =>
+                    void endpoints
+                      .agentQuestionDone(org.id, q.id)
+                      .then(() => {
+                        void qc.invalidateQueries({ queryKey: qk.orgAgentQuestions(org.id) });
+                        void qc.invalidateQueries({ queryKey: qk.orgAgent(org.id) });
+                      })
+                      .catch((e: Error) => toast(e.message, { tone: 'danger' }))
+                  }
+                  testID="agent-question-done"
+                />
+              </View>
+            </View>
+          ))}
+          {questions.data && questions.data.questions.length === 0 ? (
+            <Text variant="caption" color="textTertiary">
+              {tr('Nothing waits: every question it couldn’t answer was seen to.')}
+            </Text>
           ) : null}
         </View>
       </Sheet>

@@ -1070,3 +1070,288 @@ describe('an agent its organization can answer for (M16 G6a)', () => {
     expect(run.prompt_hash).toBe(PROMPT_VERSIONS.agent_try);
   });
 });
+
+describe('its team checks its answers first, and sees what it couldn’t answer (M16 G6b)', () => {
+  const NAME = 'Nile Dental Assistant';
+  const TOLD = [
+    'Nile Dental is open Sunday to Thursday 9am to 6pm and Saturday 9am to 1pm.',
+    'A check-up is 400 EGP.',
+  ].join('\n');
+  const draftOf = async (c: Client, conversationId: string) =>
+    (await c.get(`/v1/conversations/${conversationId}`)).conversation.business.agentDraft;
+  const repliesNow = async () =>
+    (await noor.get(`/v1/orgs/${orgId}/agent`)).agent.repliesToday as number;
+
+  it('drafts for its team instead of sending, and nothing reaches the customer', async () => {
+    t.clock.advance(86_400_000 + 1);
+    const set = await noor.req('PUT', `/v1/orgs/${orgId}/agent`, {
+      name: NAME,
+      knowledge: TOLD,
+      review: true,
+    });
+    expect(set.json().agent).toMatchObject({ review: true });
+    const before = await repliesNow();
+    const { c: rana, conversationId } = await newCustomer('Rana Review');
+    await send(rana, 'How much is a check-up?', conversationId);
+    replies.push(agentSays('answer', 'A check-up is 400 EGP.', { sources: [2] }));
+    await agentTurn();
+    // The customer reads nothing from it, and nothing of its draft reaches them.
+    const theirs = await rana.get(`/v1/conversations/${conversationId}`);
+    expect(theirs.conversation.business.agentDraft).toBeNull();
+    expect(JSON.stringify(theirs)).not.toContain('400 EGP');
+    expect((await messages(rana, conversationId)).filter((m) => m.aiAgent)).toEqual([]);
+    // The team reads it whole: what she'd read, its answer alone, what it rests on.
+    const draft = await draftOf(omar, conversationId);
+    expect(draft).toMatchObject({
+      action: 'answer',
+      body: 'Hi Rana, I’m Nile Dental Assistant, the AI assistant for Nile Dental.\nA check-up is 400 EGP.',
+      message: 'A check-up is 400 EGP.',
+      cited: [{ n: 2, text: 'A check-up is 400 EGP.' }],
+      booking: null,
+      order: null,
+    });
+    expect((await threadOf(omar, conversationId)).agentDraft).toBe(true);
+    // Its team is told.
+    const told = (await omar.get('/v1/notifications')).notifications.find(
+      (n: any) => n.data?.conversationId === conversationId,
+    );
+    expect(told.title).toBe('Nile Dental Assistant drafted an answer for you to check');
+    // Written, it counts against the plan as any answer does, as it cost one.
+    expect(await repliesNow()).toBe(before + 1);
+
+    // Someone on the team sends it as it is: the agent's words, said to be an AI's; who checked
+    // it is the team's to know.
+    const sent = await omar.req('POST', `/v1/business/${conversationId}/agent-draft/send`, {
+      seq: draft.seq,
+    });
+    expect(sent.statusCode, sent.body).toBe(200);
+    const seen = (await messages(rana, conversationId)).filter((m) => m.aiAgent);
+    expect(seen.map((m) => m.body)).toEqual([draft.body]);
+    expect(seen[0].payload).toEqual({ introduction: true });
+    const teamSees = (await messages(noor, conversationId)).find((m) => m.id === seen[0].id);
+    expect(teamSees.payload).toMatchObject({
+      checkedBy: omar.user.id,
+      cited: [{ n: 2, text: 'A check-up is 400 EGP.' }],
+    });
+    expect(await repliesNow()).toBe(before + 1);
+    expect(await draftOf(omar, conversationId)).toBeNull();
+    // Once: a second send finds nothing.
+    const again = await omar.req('POST', `/v1/business/${conversationId}/agent-draft/send`, {
+      seq: draft.seq,
+    });
+    expect(again.statusCode).toBe(409);
+    const logged = await t.ctx.db
+      .selectFrom('audit_log')
+      .select(['action', 'actor_id'])
+      .where('target', '=', orgId)
+      .where('action', '=', 'agent.draft_sent')
+      .execute();
+    expect(logged).toEqual([{ action: 'agent.draft_sent', actor_id: omar.user.id }]);
+  });
+
+  it('a newer message, or a person answering, ends a draft; taken into a reply, it goes', async () => {
+    const { c: sami, conversationId } = await newCustomer('Sami Review');
+    await send(sami, 'Are you open on Saturday?', conversationId);
+    replies.push(agentSays('answer', 'Yes, from 9am to 1pm.', { sources: [1] }));
+    await agentTurn();
+    const first = await draftOf(noor, conversationId);
+    expect(first.message).toBe('Yes, from 9am to 1pm.');
+    // He writes again: its next draft takes its place, and the old one can't be sent.
+    await send(sami, 'And on Sunday?', conversationId);
+    replies.push(agentSays('answer', 'On Sunday from 9am to 6pm.', { sources: [1] }));
+    await agentTurn();
+    const second = await draftOf(noor, conversationId);
+    expect(second.message).toBe('On Sunday from 9am to 6pm.');
+    expect(second.seq).toBeGreaterThan(first.seq);
+    expect(
+      (
+        await noor.req('POST', `/v1/business/${conversationId}/agent-draft/send`, {
+          seq: first.seq,
+        })
+      ).statusCode,
+    ).toBe(409);
+    // Taken into Noor's own reply: let go, and her words are hers.
+    const taken = await noor.req('POST', `/v1/business/${conversationId}/agent-draft/drop`, {
+      seq: second.seq,
+      edited: true,
+    });
+    expect(taken.statusCode).toBe(200);
+    expect(await draftOf(noor, conversationId)).toBeNull();
+    // Neither of its drafts was sent: neither counts against the plan.
+    const runs = await t.ctx.db
+      .selectFrom('ai_runs')
+      .select('discarded_at')
+      .where('conversation_id', '=', conversationId)
+      .execute();
+    expect(runs).toHaveLength(2);
+    expect(runs.every((r) => r.discarded_at !== null)).toBe(true);
+    // Someone not on the team can't touch one.
+    expect(
+      (
+        await sami.req('POST', `/v1/business/${conversationId}/agent-draft/drop`, {
+          seq: second.seq,
+        })
+      ).statusCode,
+    ).toBe(404);
+    // A person writing there ends the next one too.
+    await send(sami, 'Thanks. What about Monday?', conversationId);
+    replies.push(agentSays('answer', 'Monday from 9am to 6pm.'));
+    await agentTurn();
+    expect(await draftOf(noor, conversationId)).not.toBeNull();
+    await send(noor, 'Monday 9 to 6, Sami.', conversationId);
+    expect(await draftOf(noor, conversationId)).toBeNull();
+  });
+
+  it('handing over while checked, it tells the team alone; what it didn’t know is listed', async () => {
+    // What earlier conversations left (M16 G6a's braces), seen to first.
+    for (const q of (await noor.get(`/v1/orgs/${orgId}/agent/questions`)).questions)
+      await noor.post(`/v1/orgs/${orgId}/agent/questions/${q.id}/done`, {});
+    const { c: hala, conversationId } = await newCustomer('Hala Unknown');
+    await send(hala, 'Do you fit braces?', conversationId);
+    replies.push(agentSays('hand_over', PASSED_ON, { reason: 'unknown' }));
+    await agentTurn();
+    // Nothing from it reaches her; the team has it.
+    expect((await messages(hala, conversationId)).filter((m) => m.aiAgent)).toEqual([]);
+    expect((await threadOf(noor, conversationId)).agentHandedOverAt).not.toBeNull();
+    expect((await noor.get(`/v1/orgs/${orgId}/agent`)).agent.questions).toBe(1);
+    const listed = (await noor.get(`/v1/orgs/${orgId}/agent/questions`)).questions;
+    expect(listed).toEqual([
+      {
+        id: expect.any(String),
+        conversationId,
+        customer: 'Hala Unknown',
+        text: 'Do you fit braces?',
+        at: expect.any(String),
+      },
+    ]);
+    // Its owner and admins' alone.
+    expect((await omar.req('GET', `/v1/orgs/${orgId}/agent/questions`)).statusCode).toBe(403);
+    // Seen to: off the list.
+    const done = await noor.req(
+      'POST',
+      `/v1/orgs/${orgId}/agent/questions/${listed[0].id}/done`,
+      {},
+    );
+    expect(done.statusCode).toBe(200);
+    expect((await noor.get(`/v1/orgs/${orgId}/agent/questions`)).questions).toEqual([]);
+    // A question whose message she deletes leaves the list with it.
+    const { c: lara, conversationId: other } = await newCustomer('Lara Deletes');
+    const gone = (await send(lara, 'Do you do implants?', other)).message;
+    replies.push(agentSays('hand_over', PASSED_ON, { reason: 'unknown' }));
+    await agentTurn();
+    expect((await noor.get(`/v1/orgs/${orgId}/agent/questions`)).questions).toHaveLength(1);
+    await lara.req('DELETE', `/v1/messages/${gone.id}`);
+    expect((await noor.get(`/v1/orgs/${orgId}/agent/questions`)).questions).toEqual([]);
+  });
+
+  it('books only once someone sends its draft, from the times open then', async () => {
+    await noor.req('PUT', `/v1/orgs/${orgId}/booking`, {
+      booking: {
+        timeZone: 'Africa/Cairo',
+        slotMinutes: 30,
+        days: [0, 1, 2, 3, 4, 5, 6].map((weekday) => ({ weekday, start: '00:00', end: '23:30' })),
+        leadMinutes: 0,
+        horizonDays: 14,
+      },
+    });
+    const { c: dana, conversationId } = await newCustomer('Dana Books');
+    await send(dana, 'Can I book a cleaning?', conversationId);
+    replies.push(agentSays('answer', 'Which time suits you?'));
+    await agentTurn();
+    const offered = (requests.at(-1).messages[0].content as string)
+      .split('<slots>')[1]!
+      .split('</slots>')[0]!
+      .trim()
+      .split('\n');
+    const [firstIso] = offered[0]!.split(' · ');
+    await noor.post(`/v1/business/${conversationId}/agent-draft/drop`, {
+      seq: (await draftOf(noor, conversationId)).seq,
+    });
+    await send(dana, 'The first one, please', conversationId);
+    replies.push(
+      agentSays('book', 'I’ve asked the team to confirm it.', {
+        bookAt: firstIso,
+        bookFor: 'Cleaning',
+      }),
+    );
+    await agentTurn();
+    const draft = await draftOf(noor, conversationId);
+    expect(draft).toMatchObject({
+      action: 'book',
+      booking: { at: new Date(firstIso!).toISOString(), title: 'Cleaning' },
+    });
+    expect((await messages(dana, conversationId)).filter((m) => m.kind === 'kit')).toEqual([]);
+    await noor.post(`/v1/business/${conversationId}/agent-draft/send`, { seq: draft.seq });
+    const seen = await messages(dana, conversationId);
+    // Its first words sent here, so they open with who it is (R87).
+    expect(seen.at(-2)).toMatchObject({
+      body: 'Hi Dana, I’m Nile Dental Assistant, the AI assistant for Nile Dental.\nI’ve asked the team to confirm it.',
+      aiAgent: true,
+    });
+    expect(seen.at(-1)).toMatchObject({
+      kind: 'kit',
+      aiAgent: true,
+      payload: { kit: 'appointment', state: 'requested', fields: { title: 'Cleaning' } },
+    });
+    await noor.req('PUT', `/v1/orgs/${orgId}/booking`, { booking: null });
+  });
+
+  it('goes with the conversation’s erasure and is in the organization’s export', async () => {
+    const { c: mona, conversationId } = await newCustomer('Mona Erased');
+    await send(mona, 'Is parking free?', conversationId);
+    replies.push(agentSays('answer', 'I’m not sure.'));
+    await agentTurn();
+    await send(mona, 'Do you fit braces?', conversationId);
+    replies.push(agentSays('hand_over', PASSED_ON, { reason: 'unknown' }));
+    await agentTurn();
+    const exported = await noor.get(`/v1/orgs/${orgId}/export`);
+    expect(exported.agent).toMatchObject({ review: true, mayBook: true, answersWhen: 'always' });
+    expect(exported.agent.questions.some((q: any) => q.conversationId === conversationId)).toBe(
+      true,
+    );
+    expect(
+      (await noor.req('DELETE', `/v1/orgs/${orgId}/conversations/${conversationId}`)).statusCode,
+    ).toBe(200);
+    const left = await t.ctx.db
+      .selectFrom('agent_questions')
+      .select('id')
+      .where('conversation_id', '=', conversationId)
+      .execute();
+    expect(left).toEqual([]);
+    const drafts = await t.ctx.db
+      .selectFrom('agent_drafts')
+      .select('conversation_id')
+      .where('conversation_id', '=', conversationId)
+      .execute();
+    expect(drafts).toEqual([]);
+    await noor.req('PUT', `/v1/orgs/${orgId}/agent`, {
+      name: NAME,
+      knowledge: TOLD,
+      review: false,
+    });
+  });
+
+  it('removed, it takes what it drafted with it, and gives back what that cost', async () => {
+    await noor.req('PUT', `/v1/orgs/${orgId}/agent`, { name: NAME, knowledge: TOLD, review: true });
+    const { c: nada, conversationId } = await newCustomer('Nada Removed');
+    await send(nada, 'Are you open on Friday?', conversationId);
+    replies.push(agentSays('answer', 'We’re closed on Friday.', { sources: [1] }));
+    await agentTurn();
+    expect(await draftOf(noor, conversationId)).not.toBeNull();
+    const { run_id } = await t.ctx.db
+      .selectFrom('agent_drafts')
+      .select('run_id')
+      .where('conversation_id', '=', conversationId)
+      .executeTakeFirstOrThrow();
+    expect((await noor.req('DELETE', `/v1/orgs/${orgId}/agent`)).statusCode).toBe(200);
+    expect(await draftOf(noor, conversationId)).toBeNull();
+    expect((await threadOf(noor, conversationId)).agentDraft).toBe(false);
+    const run = await t.ctx.db
+      .selectFrom('ai_runs')
+      .select('discarded_at')
+      .where('id', '=', run_id!)
+      .executeTakeFirstOrThrow();
+    expect(run.discarded_at).not.toBeNull();
+    expect((await messages(nada, conversationId)).filter((m) => m.aiAgent)).toEqual([]);
+  });
+});

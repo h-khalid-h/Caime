@@ -35,6 +35,13 @@ export const AGENT_KNOWLEDGE_MAX = 8000;
 export const AGENT_WHEN = ['always', 'closed'] as const;
 export type AgentWhen = (typeof AGENT_WHEN)[number];
 
+/**
+ * What its draft may do once its team sends it (M16 G6b): everything but handing over, which it
+ * tells the team itself while its answers wait to be checked.
+ */
+export const AGENT_DRAFT_ACTIONS = ['answer', 'resolve', 'book', 'order'] as const;
+export type AgentDraftAction = (typeof AGENT_DRAFT_ACTIONS)[number];
+
 /** How much of a passage a citation keeps, and how many passages one answer cites at most. */
 export const CITATION_CHARS = 280;
 export const AGENT_SOURCES_MAX = 5;

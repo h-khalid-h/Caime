@@ -19,6 +19,7 @@ import { sql } from 'kysely';
 import type { AppContext } from '../context';
 import type { BusinessThread, Database, Organization } from '../db/schema';
 import { columnsOf, MESSAGE_COLUMNS, ORG_COLUMNS } from '../db/schema';
+import { draftedIn } from './agent-drafts';
 import { emitWebhook } from './apps';
 import type { RealtimeEvent } from './bus';
 import { currencyOf } from './geo';
@@ -144,8 +145,10 @@ export function maskPayload(
   mask: CustomerMask,
 ): Record<string, unknown> {
   const out: Record<string, unknown> = { ...p };
-  // The passages of what its AI agent was told that an answer rests on (M16 G6a): the team's.
+  // The passages of what its AI agent was told that an answer rests on (M16 G6a), and who on
+  // the team checked one before it was sent (M16 G6b): the team's.
   delete out.cited;
+  delete out.checkedBy;
   const other = (v: unknown) => typeof v === 'string' && v !== mask.customerId;
   if (other(out.byId)) {
     out.byId = mask.orgId;
@@ -457,77 +460,80 @@ export async function threadViews(
     : [];
   // Every thread here is one organization's (the inbox, a conversation's view).
   const orgId = threads[0]?.org_id ?? '';
-  const [customers, names, lastMessages, mine, blocked, requests, ages, tags] = await Promise.all([
-    personViewsFor(ctx, viewerId, customerIds),
-    people.length
-      ? ctx.db
-          .selectFrom('users')
-          .select(['id', 'display_name'])
-          .where('id', 'in', people)
-          .execute()
-      : Promise.resolve([]),
-    ctx.db
-      .selectFrom('messages as m')
-      .leftJoin('users as u', 'u.id', 'm.sender_id')
-      .select([
-        ...columnsOf('m', MESSAGE_COLUMNS),
-        'u.display_name as sender_name',
-        'u.kind as sender_kind',
-      ])
-      .where(
-        sql<boolean>`(m.conversation_id, m.seq) in (select conversation_id, max(seq) from messages where conversation_id in (${sql.join(ids)}) and kind <> 'system' group by conversation_id)`,
-      )
-      .execute(),
-    ctx.db
-      .selectFrom('participants as p')
-      .select([
-        'p.conversation_id',
-        // What the customer wrote that I haven't read: the team's own replies aren't news.
-        sql<number>`(select count(*)::int from messages m join business_threads t on t.conversation_id = m.conversation_id where m.conversation_id = p.conversation_id and m.seq > p.last_read_seq and m.sender_id = t.customer_id and m.deleted_at is null)`.as(
-          'unread',
-        ),
-      ])
-      .where('p.user_id', '=', viewerId)
-      .where('p.conversation_id', 'in', ids)
-      .execute(),
-    // Customers who blocked the organization (PRD §55): those threads are closed.
-    ctx.db
-      .selectFrom('business_threads as t')
-      .innerJoin('org_blocks as b', (j) =>
-        j.onRef('b.user_id', '=', 't.customer_id').onRef('b.org_id', '=', 't.org_id'),
-      )
-      .select('t.conversation_id')
-      .where('t.conversation_id', 'in', ids)
-      .execute(),
-    // Customers the team wrote to first who haven't answered (R14); declined reads the same.
-    ctx.db
-      .selectFrom('business_threads as t')
-      .innerJoin('participants as p', (j) =>
-        j
-          .onRef('p.conversation_id', '=', 't.conversation_id')
-          .onRef('p.user_id', '=', 't.customer_id'),
-      )
-      .select('t.conversation_id')
-      .where('t.conversation_id', 'in', ids)
-      .where('p.request_state', 'in', ['pending', 'declined'])
-      .execute(),
-    customerIds.length
-      ? ctx.db
-          .selectFrom('users')
-          .select(['id', 'birth_date', 'time_zone', 'age_minor_until'])
-          .where('id', 'in', customerIds)
-          .execute()
-      : Promise.resolve([]),
-    // What the team keeps about them (M16 H3, lib/org-customers.ts): their tags, for the rows.
-    customerIds.length
-      ? ctx.db
-          .selectFrom('org_customers')
-          .select(['customer_id', 'tags'])
-          .where('org_id', '=', orgId)
-          .where('customer_id', 'in', customerIds)
-          .execute()
-      : Promise.resolve([]),
-  ]);
+  const [customers, names, lastMessages, mine, blocked, requests, ages, tags, drafted] =
+    await Promise.all([
+      personViewsFor(ctx, viewerId, customerIds),
+      people.length
+        ? ctx.db
+            .selectFrom('users')
+            .select(['id', 'display_name'])
+            .where('id', 'in', people)
+            .execute()
+        : Promise.resolve([]),
+      ctx.db
+        .selectFrom('messages as m')
+        .leftJoin('users as u', 'u.id', 'm.sender_id')
+        .select([
+          ...columnsOf('m', MESSAGE_COLUMNS),
+          'u.display_name as sender_name',
+          'u.kind as sender_kind',
+        ])
+        .where(
+          sql<boolean>`(m.conversation_id, m.seq) in (select conversation_id, max(seq) from messages where conversation_id in (${sql.join(ids)}) and kind <> 'system' group by conversation_id)`,
+        )
+        .execute(),
+      ctx.db
+        .selectFrom('participants as p')
+        .select([
+          'p.conversation_id',
+          // What the customer wrote that I haven't read: the team's own replies aren't news.
+          sql<number>`(select count(*)::int from messages m join business_threads t on t.conversation_id = m.conversation_id where m.conversation_id = p.conversation_id and m.seq > p.last_read_seq and m.sender_id = t.customer_id and m.deleted_at is null)`.as(
+            'unread',
+          ),
+        ])
+        .where('p.user_id', '=', viewerId)
+        .where('p.conversation_id', 'in', ids)
+        .execute(),
+      // Customers who blocked the organization (PRD §55): those threads are closed.
+      ctx.db
+        .selectFrom('business_threads as t')
+        .innerJoin('org_blocks as b', (j) =>
+          j.onRef('b.user_id', '=', 't.customer_id').onRef('b.org_id', '=', 't.org_id'),
+        )
+        .select('t.conversation_id')
+        .where('t.conversation_id', 'in', ids)
+        .execute(),
+      // Customers the team wrote to first who haven't answered (R14); declined reads the same.
+      ctx.db
+        .selectFrom('business_threads as t')
+        .innerJoin('participants as p', (j) =>
+          j
+            .onRef('p.conversation_id', '=', 't.conversation_id')
+            .onRef('p.user_id', '=', 't.customer_id'),
+        )
+        .select('t.conversation_id')
+        .where('t.conversation_id', 'in', ids)
+        .where('p.request_state', 'in', ['pending', 'declined'])
+        .execute(),
+      customerIds.length
+        ? ctx.db
+            .selectFrom('users')
+            .select(['id', 'birth_date', 'time_zone', 'age_minor_until'])
+            .where('id', 'in', customerIds)
+            .execute()
+        : Promise.resolve([]),
+      // What the team keeps about them (M16 H3, lib/org-customers.ts): their tags, for the rows.
+      customerIds.length
+        ? ctx.db
+            .selectFrom('org_customers')
+            .select(['customer_id', 'tags'])
+            .where('org_id', '=', orgId)
+            .where('customer_id', 'in', customerIds)
+            .execute()
+        : Promise.resolve([]),
+      // Its AI agent's drafts waiting for the team (M16 G6b), for the rows.
+      draftedIn(ctx.db, ids),
+    ]);
   const tagsOf = new Map(tags.map((r) => [r.customer_id, r.tags]));
   const now = ctx.now();
   const under18 = new Set(ages.filter((u) => minorOf(u, now)).map((u) => u.id));
@@ -568,6 +574,7 @@ export async function threadViews(
           }
         : null,
       agentHandedOverAt: t.agent_handed_over_at?.toISOString() ?? null,
+      agentDraft: drafted.has(t.conversation_id),
       unreadCount: mine.find((m) => m.conversation_id === t.conversation_id)?.unread ?? 0,
       lastActivityAt: (last?.created_at ?? t.updated_at).toISOString(),
       closed: closed.has(t.conversation_id),

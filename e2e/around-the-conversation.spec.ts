@@ -2663,6 +2663,34 @@ test.describe
       );
       await expect(customer.getByTestId('message-cited')).toHaveCount(0);
 
+      // Checked first (M16 G6b): with the switch on, its next answer waits for the team as a draft
+      // Lina never sees; sent, she reads it from the agent.
+      await page.goto(`/o/${handle}/setup`);
+      await page.getByTestId('org-agent').click();
+      await page.getByTestId('org-agent-review').getByRole('switch').click();
+      await page.getByTestId('org-agent-save').click();
+      await expect(page.getByTestId('org-agent')).toContainText(
+        'Drafts answers for your team to check',
+      );
+      const linaConvo = new URL(customer.url()).pathname.split('/').pop() ?? '';
+      // Handed over before, the conversation starts over once resolved and she writes again.
+      const resolved = await noorContext.request.post(`/v1/business/${linaConvo}/resolve`, {
+        headers: CLIENT,
+      });
+      expect(resolved.status()).toBe(200);
+      await write('How much does a check-up cost?');
+      await page.goto(`/c/${linaConvo}`);
+      const draft = page.getByTestId('agent-draft').filter({ visible: true });
+      await expect(draft).toContainText('A check-up costs 400 EGP.');
+      await expect(draft.getByTestId('agent-draft-cited')).toContainText(
+        '“A check-up costs 400 EGP.”',
+      );
+      await page.screenshot({ path: 'e2e/screenshots/desktop-agent-draft.png' });
+      await expect(visible(customer, 'A check-up costs 400 EGP.')).toHaveCount(0);
+      await draft.getByTestId('agent-draft-send').click();
+      await expect(visible(customer, 'A check-up costs 400 EGP.')).toBeVisible();
+      await expect(page.getByTestId('agent-draft')).toHaveCount(0);
+
       // Removed, it leaves the team; what it wrote stays.
       await page.goto(`/o/${handle}/setup`);
       await page.getByTestId('org-agent').click();

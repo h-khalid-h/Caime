@@ -14,6 +14,7 @@ import { sql } from 'kysely';
 import type { AppContext } from '../context';
 import type { Conversation, Participant } from '../db/schema';
 import { columnsOf, ORG_COLUMNS, USER_COLUMNS } from '../db/schema';
+import { draftFor } from '../lib/agent-drafts';
 import { businessClosed } from '../lib/blocks';
 import { orgRef, threadViews } from '../lib/business';
 import { isGroupTopic } from '../lib/conversations';
@@ -318,6 +319,7 @@ export async function conversationView(
           orgSuspended: org.suspended_at !== null,
           retentionDays: org.retention_days,
           forms: null,
+          agentDraft: null,
         };
       } else {
         const [view] = await threadViews(ctx, userId, [thread]);
@@ -337,6 +339,8 @@ export async function conversationView(
           retentionDays: org.retention_days,
           // The forms its team may send here (M16 H5), by name.
           forms: await formNames(ctx.db, org.id),
+          // Its AI agent's draft waiting here (M16 G6b): the team's to check.
+          agentDraft: await draftFor(ctx.db, conversation.id),
         };
       }
     }

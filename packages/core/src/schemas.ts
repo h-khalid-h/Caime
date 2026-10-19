@@ -698,6 +698,17 @@ export const SetOrgAgentBody = z
     mayBook: z.boolean().optional(),
     mayOrder: z.boolean().optional(),
     answersWhen: z.enum(AGENT_WHEN).optional(),
+    /** Its team checks each answer before it's sent (M16 G6b); left out, kept. */
+    review: z.boolean().optional(),
+  })
+  .strict();
+
+/** Its draft in a conversation, by the customer message it answers (M16 G6b). */
+export const AgentDraftBody = z
+  .object({
+    seq: z.number().int().min(1),
+    /** Let go because its words were taken into a person's own reply. */
+    edited: z.boolean().default(false),
   })
   .strict();
 

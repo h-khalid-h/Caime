@@ -191,6 +191,7 @@ export async function queueAutoReplies(
         .select('a.answers_when')
         .whereRef('a.org_id', '=', 'o.id')
         .where('a.paused_at', 'is', null)
+        .where('a.review', '=', false)
         .as('agent_answers'),
     ])
     .where('o.id', '=', orgId)
@@ -200,7 +201,8 @@ export async function queueAutoReplies(
   const now = ctx.now();
   const hours = org.booking as BookingHours | null;
   // Its AI agent answers instead, and introduces itself (when Caime has a model to answer with),
-  // unless it answers only while the organization is closed and it's open now (M16 G6a).
+  // unless it answers only while the organization is closed and it's open now (M16 G6a), or its
+  // answers wait for the team to check them (M16 G6b): then the organization's own words go now.
   if (org.agent_answers && ctx.ai && agentAnswersNow(org.agent_answers, hours, now)) return;
   let greeted = false;
   if (org.greeting) {

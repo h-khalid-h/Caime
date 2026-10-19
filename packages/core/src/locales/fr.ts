@@ -4873,4 +4873,27 @@ export const fr: Catalog = {
   'By your hours: while you’re open, your team answers first.':
     'Selon vos horaires : pendant vos heures d’ouverture, votre équipe répond en premier.',
   'Day and night, before anyone on your team.': 'Jour et nuit, avant quiconque de votre équipe.',
+  'Sending it books {what} for {when}.': 'L’envoyer réserve {what} pour {when}.',
+  'Sending it writes down an order: {lines}.': 'L’envoyer enregistre une commande : {lines}.',
+  'Sending it closes the conversation.': 'L’envoyer clôt la conversation.',
+  'Draft by your AI agent · the customer hasn’t seen it':
+    'Brouillon de votre agent IA · le client ne l’a pas vu',
+  'Let go': 'Écarter',
+  'AI draft to check': 'Brouillon IA à vérifier',
+  'Drafts answers for your team to check · {repliesToday} of {repliesPerDay} answers in the last 24 hours':
+    'Rédige des brouillons que votre équipe vérifie · {repliesToday} réponses sur {repliesPerDay} ces dernières 24 heures',
+  'Add what it needs to what it knows': 'Ajoutez ce qui lui manque à ce qu’il sait',
+  'Check its answers before they’re sent': 'Vérifier ses réponses avant leur envoi',
+  'Each one waits in its conversation for someone on your team to send, change or let go.':
+    'Chacune attend dans sa conversation qu’un membre de votre équipe l’envoie, la modifie ou l’écarte.',
+  'What it couldn’t answer': 'Ce à quoi il n’a pas su répondre',
+  'Add what it needs to what it knows, then mark each one done.':
+    'Ajoutez ce qui lui manque à ce qu’il sait, puis marquez chacune comme traitée.',
+  'A customer': 'Un client',
+  'Nothing waits: every question it couldn’t answer was seen to.':
+    'Rien n’attend : chaque question à laquelle il n’a pas su répondre a été traitée.',
+  '{n} questions it couldn’t answer': {
+    one: '{n} question à laquelle il n’a pas su répondre',
+    other: '{n} questions auxquelles il n’a pas su répondre',
+  },
 };

@@ -413,6 +413,29 @@ describe('a greeting and an away message (M16 H2)', () => {
       'We open at nine.',
     ]);
   });
+
+  it('greet while its AI agent’s answers wait for the team to check them (M16 G6b)', async () => {
+    await noor.req('PUT', `/v1/orgs/${orgId}/agent`, {
+      name: 'Nile Dental Assistant',
+      knowledge:
+        'Nile Dental is open Sunday to Thursday 9am to 12pm. A check-up is 400 EGP. We are at 12 Nile Street.',
+      answersWhen: 'always',
+      review: true,
+    });
+    // 13:00, closed: its answer waits as a draft, and the organization's own words go now.
+    t.clock.set('2026-10-01T10:30:00Z');
+    const nour = await customer('Nour Checked');
+    await send(nour.c, nour.conversationId, 'Are you open now?');
+    await settle();
+    const said = await messages(nour.c, nour.conversationId);
+    expect(said.filter((m) => m.payload?.autoReply).map((m) => m.payload.autoReply)).toEqual([
+      'greeting',
+      'away',
+    ]);
+    expect(said.filter((m) => m.aiAgent)).toEqual([]);
+    const team = await noor.get(`/v1/conversations/${nour.conversationId}`);
+    expect(team.conversation.business.agentDraft).toMatchObject({ message: 'We open at nine.' });
+  });
 });
 
 describe('what an organization says by itself, kept and let go (M16 H2)', () => {

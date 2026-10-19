@@ -15,6 +15,7 @@ import type {
   AccountFilesResponse,
   AccountStartResponse,
   AgeCheckStartResponse,
+  AgentQuestionsResponse,
   AgentTryView,
   AiActionsView,
   AiAnswerView,
@@ -882,8 +883,19 @@ export const endpoints = {
       mayBook?: boolean;
       mayOrder?: boolean;
       answersWhen?: AgentWhen;
+      review?: boolean;
     },
   ) => api.put<OrgAgentSetResponse>(`/orgs/${orgId}/agent`, body),
+  // What it couldn't answer (M16 G6b), and seeing to one.
+  agentQuestions: (orgId: string) =>
+    api.get<AgentQuestionsResponse>(`/orgs/${orgId}/agent/questions`),
+  agentQuestionDone: (orgId: string, questionId: string) =>
+    api.post<OkResponse>(`/orgs/${orgId}/agent/questions/${questionId}/done`, {}),
+  // Its draft in a conversation (M16 G6b): sent as it is, or let go (taken into a reply: edited).
+  sendAgentDraft: (conversationId: string, seq: number) =>
+    api.post<OkResponse>(`/business/${conversationId}/agent-draft/send`, { seq }),
+  dropAgentDraft: (conversationId: string, seq: number, edited: boolean) =>
+    api.post<OkResponse>(`/business/${conversationId}/agent-draft/drop`, { seq, edited }),
   removeOrgAgent: (orgId: string) => api.del<OkResponse>(`/orgs/${orgId}/agent`),
   // Its quick replies (M16 H2): read by its team, saved whole by its owner and admins
   quickReplies: (orgId: string) => api.get<QuickRepliesResponse>(`/orgs/${orgId}/quick-replies`),

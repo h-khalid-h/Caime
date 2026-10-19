@@ -33,6 +33,7 @@ import { qk } from '@/api/keys';
 import { CATCH_UP_AFTER, CatchUpBanner } from '@/features/assist/CatchUpBanner';
 import { catchUp } from '@/features/assist/catchUp';
 import { useAiReady } from '@/features/assist/ready';
+import { AgentDraft } from '@/features/business/AgentDraft';
 import { ThreadBar } from '@/features/business/ThreadBar';
 import {
   callsSupported,
@@ -1134,6 +1135,14 @@ export function ConversationScreen({
       {header}
       {body}
       <SuggestionBar conversationId={id} />
+      {/* Its AI agent's draft, for the team to check before the customer reads it (M16 G6b). */}
+      {thread && business?.agentDraft ? (
+        <AgentDraft
+          conversationId={id}
+          draft={business.agentDraft}
+          onEdit={(words) => composer.current?.insert(words)}
+        />
+      ) : null}
       {/* What's open between you here (R66): a line above the composer, opening the details. */}
       {conversation?.open ? (
         <Pressable

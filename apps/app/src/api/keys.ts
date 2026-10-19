@@ -32,6 +32,8 @@ export const qk = {
   tokens: ['personal-tokens'] as const,
   oauthApps: ['oauth-apps'] as const,
   orgAgent: (orgId: string) => ['org-agent', orgId] as const,
+  /** What its AI agent couldn't answer (M16 G6b), for its setup. */
+  orgAgentQuestions: (orgId: string) => ['org-agent-questions', orgId] as const,
   /** Its quick replies (M16 H2), for its team's composer and its setup. */
   quickReplies: (orgId: string) => ['quick-replies', orgId] as const,
   /** What its team keeps about one customer (M16 H3), and the tags it uses. */

@@ -2992,6 +2992,41 @@ graph) and the number that will show it; one that sharpens none is hygiene and s
       time), `ai.test.ts` (the version on another feature's run), core `agents.test.ts`, the
       catalogs in four languages, the E2E (the try's passage, the switch and the choice, the
       team's Sources and none for the customer), and the full gate.
+- [x] G6b. Checked before it's sent, and what it couldn't answer (2026-10-19, review §10 "for a
+      clinic": no review-before-send mode, no report of unanswered questions; advantage 7. The
+      number: an organization's AI answers a customer reads that no person checked, every one
+      before for a clinic that wanted otherwise, none now with the switch on; and the questions it
+      couldn't answer, kept for the team to add to what it knows, none before). With "Check its
+      answers before they're sent" on (`org_agents.review`, migration 0141, off by default), the
+      agent's answer, booking, order or close waits in its conversation as a draft for the team
+      (`agent_drafts`, one per conversation, the newest in its place): what the customer would read,
+      what sending it also does ("Sending it books Cleaning for Thu 10:00"), the sentences it rests
+      on. Anyone on the team sends it as it is (the agent's words, said to be an AI's, with who
+      checked it on `payload.checkedBy` for the team alone, and the booking or order made with the
+      times and the menu read again then), takes its words into their own reply (Edit), or lets it
+      go; a newer customer message, a person writing there or the conversation resolved ends it, and
+      a draft is sent once. Handing over while checked, it tells the team and writes nothing to the
+      customer, and its organization's greeting and away message go out meanwhile (its own words,
+      never the AI's). Its run counts against the plan when the draft is written, as it cost a call, and is
+      given back when the draft is let go, replaced or its agent removed (which takes every draft
+      with it). The team is told of a
+      draft ("{agentName} drafted an answer for you to check"), the Business inbox row says "AI draft
+      to check", and each send or letting go is audited. Whatever it hands over because what it was
+      told doesn't say (`unknown`) is kept as the customer's message by reference (`agent_questions`,
+      gone with the message, the conversation's erasure and the organization's clearing), listed for
+      its owner and admins on the agent's setup ("2 questions it couldn't answer") with Open and
+      Done. Both are in the organization's export with the agent's switches. Costs: a draft row per
+      conversation waiting, one query for a page of the inbox, a question row per hand-over it
+      couldn't answer. Not done: editing a draft in place before sending it as the agent (Edit makes
+      it the person's own reply), and the nightly evaluation (G6c). Verified: `agents.test.ts` (a
+      draft instead of a message, the customer seeing nothing of it, the team reading it whole and
+      told, sent once as the agent's with who checked it hidden from the customer, the plan counting
+      it as written and giving back what was let go, replaced or removed with the agent, a newer message, a person's reply and Edit ending it, a booking made only when
+      sent, handing over without a word to the customer, the questions listed for managers and gone
+      with a deleted message, erasure and the export), `org-replies.test.ts` (the greeting and the
+      away message while its answer waits), `business.test.ts`, `org-data.test.ts`,
+      `fk-indexes.test.ts`, the catalogs in four languages, the E2E (the switch, the draft in the
+      conversation, sent and read by the customer), and the full gate.
 - [ ] H. Business depth: a Business seat includes Pro; a cap on organizations per person; room
       checks inside the transaction; quick replies, away and greeting messages; customer notes,
       tags and fields; tax invoices (counsel); booking and revenue analytics; intake forms as
@@ -4772,6 +4807,8 @@ graph) and the number that will show it; one that sharpens none is hygiene and s
   journeys, safety, reliability, performance, intelligence, mail and calendar, chat, integrations,
   business and code integrity; the matrix against WhatsApp, Signal, Slack, Calendly and Workspace;
   an age-assurance design; the integration framework mapped to the code; plan M16 (A–H).
+- 2026-10-19 — M16 G6b: an organization may check its agent's answers before they're sent (a
+  draft to send, take into a reply or let go); what it couldn't answer is listed for its owner.
 - 2026-10-19 — M16 G6a: an organization's agent cites the sentences of what it was told under
   every answer for its team alone, books and takes orders only where it's let, can answer only
   while closed, says why it hands over, and every model call keeps its instructions' version.

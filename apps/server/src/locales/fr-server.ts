@@ -356,7 +356,6 @@ export const frServer: Catalog = {
   'Web, iOS and Android.': 'Web, iOS et Android.',
   '{agentName} handed a conversation to the team':
     '{agentName} a transmis une conversation à l’équipe',
-  'A customer': 'Un client',
   Call: 'Appel',
   Answered: 'Décroché',
   'from {caller}': 'de {caller}',
@@ -1629,4 +1628,13 @@ export const frServer: Catalog = {
     'Ce curseur ne vient pas de ce flux : demandez une fois sans lui.',
   'The feed began again since that cursor: ask once without it.':
     'Le flux a recommencé depuis ce curseur : demandez une fois sans lui.',
+  '{agentName} drafted an answer for you to check': '{agentName} a rédigé une réponse à vérifier',
+  'That draft was sent, let go or replaced already.':
+    'Ce brouillon a déjà été envoyé, écarté ou remplacé.',
+  'The conversation moved on since that draft: answer it yourself.':
+    'La conversation a avancé depuis ce brouillon : répondez vous-même.',
+  'The AI agent is paused or gone: answer it yourself.':
+    'L’agent IA est en pause ou a été retiré : répondez vous-même.',
+  'That question': 'Cette question',
+  'That draft': 'Ce brouillon',
 };
