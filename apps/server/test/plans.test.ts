@@ -92,7 +92,7 @@ describe('plans (PRD §84, R23)', () => {
     expect(bad.statusCode).toBe(400);
     const set = await operator(`/v1/admin/people/@${lina.user.handle}/plan`, { plan: 'pro' });
     expect(set.statusCode).toBe(200);
-    expect(set.json().plan).toMatchObject({ plan: 'pro', allowance: { aiPerDay: 200 } });
+    expect(set.json().plan).toMatchObject({ plan: 'pro', allowance: { aiEurPerDay: 2 } });
     expect((await lina.get('/v1/me')).user.plan).toBe('pro');
     const logged = await t.ctx.db
       .selectFrom('audit_log')
@@ -112,14 +112,14 @@ describe('plans (PRD §84, R23)', () => {
     expect(await lina.get('/v1/me/plan')).toEqual({
       plan: 'personal',
       allowance: {
-        aiPerDay: 10,
+        aiEurPerDay: 0.5,
         storageBytes: 5 * GB,
         automations: 5,
         insights: false,
         // Finding follow-ups on the light model: the top one is a paid plan's (M16 H7).
         aiModel: 'light',
       },
-      used: { aiToday: 0, storageBytes: 0, automations: 0 },
+      used: { aiShare: 0, storageBytes: 0, automations: 0 },
       aiNextAt: null,
       upgradeUrl: PLANS_URL,
       via: null,
@@ -154,10 +154,13 @@ describe('plans (PRD §84, R23)', () => {
         insights: false,
         startsPerDay: 20,
         agentRepliesPerDay: 50,
+        // What a day of its answers may cost, past which it waits as past the count (M16 G9).
+        agentEurPerDay: 0.3,
         // Its agent answers on the light model until it pays (M16 H7).
         agentModel: 'light',
       },
       used: { teamSize: 3, apps: 1, startsToday: 0, agentRepliesToday: 0 },
+      agentHeldUntil: null,
       upgradeUrl: PLANS_URL,
     });
     // Only its owner and admins see its plan.
@@ -251,7 +254,7 @@ describe('plans (PRD §84, R23)', () => {
     expect(await omar.get('/v1/me/plan')).toMatchObject({
       plan: 'business',
       allowance: {
-        aiPerDay: 200,
+        aiEurPerDay: 2,
         storageBytes: 100 * GB,
         automations: 50,
         insights: true,

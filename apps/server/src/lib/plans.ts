@@ -24,6 +24,7 @@ import { tr, trn } from '@caime/core/i18n';
 import { type Kysely, sql, type Transaction } from 'kysely';
 import type { AppContext } from '../context';
 import type { Database } from '../db/schema';
+import { inDollars } from './ai-costs';
 import { AppError, notFound } from './errors';
 
 type Q = Kysely<Database> | Transaction<Database>;
@@ -157,17 +158,47 @@ async function planOf(ctx: AppContext, userId: string, db: Q = ctx.db): Promise<
   return (await effectivePlan(ctx, userId, db)).plan;
 }
 
-/** Successful AI assists in the last 24 hours, and when the oldest of them stops counting. */
-async function aiUsage(ctx: AppContext, userId: string) {
+const aiRunsSince = (ctx: AppContext, since: Date) =>
+  ctx.db.selectFrom('ai_runs').where('created_at', '>', since);
+
+/**
+ * What a day's AI calls cost and when there's room again (M16 G9, R107): the sum of what the
+ * last 24 hours' calls cost as they ran (`ai_runs.cost_usd`, `chargedUsd`), against an allowance
+ * in US dollars; once it's spent, room comes back as the oldest of them leave the window, so it's
+ * the moment enough of them have. `runs` picks whose calls count.
+ */
+async function spentOver(
+  ctx: AppContext,
+  runs: (since: Date) => ReturnType<typeof aiRunsSince>,
+  allowanceUsd: number,
+): Promise<{ usd: number; roomAt: Date | null }> {
   const since = new Date(ctx.now().getTime() - DAY_MS);
-  const row = await ctx.db
-    .selectFrom('ai_runs')
-    .select([sql<number>`count(*)::int`.as('n'), sql<Date | null>`min(created_at)`.as('oldest')])
-    .where('user_id', '=', userId)
-    .where('outcome', '=', 'ok')
-    .where('created_at', '>', since)
+  const row = await runs(since)
+    .select(sql<number>`coalesce(sum(cost_usd), 0)::float8`.as('usd'))
     .executeTakeFirstOrThrow();
-  return { used: row.n, oldest: row.oldest };
+  if (row.usd < allowanceUsd) return { usd: row.usd, roomAt: null };
+  // Spent: the calls in order, until what's left after them is under the allowance.
+  const costs = await runs(since)
+    .select(['created_at', 'cost_usd'])
+    .where('cost_usd', '>', 0)
+    .orderBy('created_at')
+    .execute();
+  let left = row.usd;
+  for (const c of costs) {
+    left -= c.cost_usd ?? 0;
+    if (left < allowanceUsd)
+      return { usd: row.usd, roomAt: new Date(c.created_at.getTime() + DAY_MS) };
+  }
+  return { usd: row.usd, roomAt: null };
+}
+
+/** What someone's own AI calls cost in the last 24 hours, against their plan's allowance. */
+async function aiSpent(ctx: AppContext, userId: string, plan: Plan) {
+  return spentOver(
+    ctx,
+    (since) => aiRunsSince(ctx, since).where('user_id', '=', userId),
+    inDollars(PERSON_ALLOWANCES[plan].aiEurPerDay),
+  );
 }
 
 /** What someone's files take up: finished uploads, and those under way at their full size. */
@@ -182,33 +213,29 @@ async function storageUsed(ctx: AppContext, userId: string, db: Q = ctx.db): Pro
 }
 
 /**
- * Room for one more AI assist today, else a refusal saying when the next one is ready. Answers
- * the plan it counted from (their own, or a seat's), which also names the model (M16 H7).
+ * Room for one more AI assist, else a refusal saying when there's room again: what the last 24
+ * hours' calls cost against the plan's allowance (M16 G9, R107), never how many there were.
+ * Answers the plan it counted from (their own, or a seat's), which also names the model (M16 H7).
  */
 export async function assertAiAllowance(ctx: AppContext, userId: string): Promise<Plan> {
+  const plan = await planOf(ctx, userId);
+  const { roomAt } = await aiSpent(ctx, userId, plan);
+  if (!roomAt) return plan;
   const me = await ctx.db
     .selectFrom('users')
     .select(['locale', 'time_zone'])
     .where('id', '=', userId)
     .executeTakeFirstOrThrow();
-  const plan = await planOf(ctx, userId);
-  const { aiPerDay } = PERSON_ALLOWANCES[plan];
-  const { used, oldest } = await aiUsage(ctx, userId);
-  if (used < aiPerDay) return plan;
-  const nextAt = oldest ? new Date(oldest.getTime() + DAY_MS) : null;
-  const ready = nextAt
-    ? ` ${tr('The next one is ready {when}.', { when: formatSoon(nextAt.toISOString(), ctx.now(), me.time_zone, safeLocale(me.locale)) })}`
-    : '';
+  const when = formatSoon(roomAt.toISOString(), ctx.now(), me.time_zone, safeLocale(me.locale));
   const next = nextPersonPlan(plan);
-  const more = next
-    ? ` ${tr('{plan} includes {n} a day.', { plan: PLAN_NAMES[next], n: PERSON_ALLOWANCES[next].aiPerDay })}`
-    : '';
+  const more = next ? ` ${tr('{plan} includes more.', { plan: PLAN_NAMES[next] })}` : '';
   throw limit(
     ctx,
-    tr('You’ve used today’s {aiPerDay} AI assists.{ready}{more}', { aiPerDay, ready, more }),
-    {
-      nextAt: nextAt?.toISOString() ?? null,
-    },
+    tr('You’ve used the AI assist your plan includes for now. There’s more {when}.{more}', {
+      when,
+      more,
+    }),
+    { nextAt: roomAt.toISOString() },
   );
 }
 
@@ -435,22 +462,23 @@ export async function planUsage(ctx: AppContext, userId: string): Promise<PlanUs
   const { plan, via } = await effectivePlan(ctx, userId);
   const allowance = PERSON_ALLOWANCES[plan];
   const [ai, storageBytes, automations] = await Promise.all([
-    aiUsage(ctx, userId),
+    aiSpent(ctx, userId, plan),
     storageUsed(ctx, userId),
     automationsCount(ctx, userId),
   ]);
   return {
     plan,
     allowance,
-    used: { aiToday: ai.used, storageBytes, automations },
-    aiNextAt:
-      ai.used >= allowance.aiPerDay && ai.oldest
-        ? new Date(ai.oldest.getTime() + DAY_MS).toISOString()
-        : null,
+    used: { aiShare: shareOf(ai, inDollars(allowance.aiEurPerDay)), storageBytes, automations },
+    aiNextAt: ai.roomAt?.toISOString() ?? null,
     upgradeUrl: upgrade(ctx),
     via,
   };
 }
+
+/** How much of an allowance is used, 0 to 1 to a hundredth: spent is 1 whatever passed it. */
+const shareOf = (spent: { usd: number; roomAt: Date | null }, allowanceUsd: number) =>
+  spent.roomAt ? 1 : Math.min(0.99, Math.round((spent.usd / allowanceUsd) * 100) / 100);
 
 /**
  * What an organization's AI agents answered in the last 24 hours (PRD §75): every agent it has
@@ -477,18 +505,43 @@ export async function agentRepliesToday(ctx: AppContext, orgId: string): Promise
   return row.n;
 }
 
+/**
+ * What an organization's AI agents cost in the last 24 hours against its plan's backstop
+ * (`agentEurPerDay`, M16 G9): every answer the model wrote, sent, drafted or thrown away, since
+ * each one cost what it cost.
+ */
+export async function agentSpent(ctx: AppContext, orgId: string, plan: OrgPlan) {
+  return spentOver(
+    ctx,
+    (since) =>
+      aiRunsSince(ctx, since)
+        .where('feature', '=', 'agent')
+        .where('user_id', 'in', (eb) =>
+          eb
+            .selectFrom('org_members as m')
+            .innerJoin('users as u', 'u.id', 'm.user_id')
+            .select('m.user_id')
+            .where('m.org_id', '=', orgId)
+            .where('u.kind', '=', 'agent'),
+        ),
+    inDollars(ORG_ALLOWANCES[plan].agentEurPerDay),
+  );
+}
+
 export async function orgPlanView(ctx: AppContext, orgId: string): Promise<OrgPlanView> {
   const org = await orgPlanRow(ctx, orgId);
-  const [size, apps, starts, agentReplies] = await Promise.all([
+  const [size, apps, starts, agentReplies, spent] = await Promise.all([
     teamSize(ctx, orgId),
     appCount(ctx, orgId),
     teamStarts(ctx, orgId),
     agentRepliesToday(ctx, orgId),
+    agentSpent(ctx, orgId, org.plan),
   ]);
   return {
     plan: org.plan,
     allowance: ORG_ALLOWANCES[org.plan],
     used: { teamSize: size, apps, startsToday: starts.used, agentRepliesToday: agentReplies },
+    agentHeldUntil: spent.roomAt?.toISOString() ?? null,
     upgradeUrl: upgrade(ctx),
   };
 }

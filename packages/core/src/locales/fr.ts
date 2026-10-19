@@ -431,11 +431,6 @@ export const fr: Catalog = {
     'Les notifications du travail n’arrivent que ces jours-là. Réglés d’après l’endroit où vous vivez (Langue et région) ; changez-les si les vôtres diffèrent.',
   'Reset to Caime’s defaults': 'Rétablir les réglages par défaut de Caime',
   'Back to the defaults': 'Réglages par défaut rétablis',
-  'Relationship insights, {automations} automations, {aiPerDay} AI assists a day and {storage} for files.':
-    'Analyses de vos relations, {automations} automatisations, {aiPerDay} requêtes IA par jour et {storage} pour les fichiers.',
-  '{aiToday} of {aiPerDay} in the last 24 hours':
-    '{aiToday} sur {aiPerDay} ces dernières 24 heures',
-  '{base}. The next one is ready {when}': '{base}. La prochaine est disponible {when}',
   Plan: 'Forfait',
   'Free forever: your connections, what needs you, what you’re waiting for, search and sync. No plan ever limits those.':
     'Gratuit pour toujours : vos contacts, ce qui a besoin de vous, ce que vous attendez, la recherche et la synchronisation. Aucun forfait ne limite jamais cela.',
@@ -4905,4 +4900,12 @@ export const fr: Catalog = {
     other: '{n} confirmations erronées',
   },
   'Caime tests it every night': 'Caime le teste chaque nuit',
+  'Relationship insights, {automations} automations, more AI assist each day and {storage} for files.':
+    'Analyses de vos relations, {automations} automatisations, plus d’assistance IA chaque jour et {storage} pour les fichiers.',
+  'Used for now. There’s more {when}.': 'Épuisée pour le moment. De nouveau disponible {when}.',
+  'Plenty left': 'Il en reste beaucoup',
+  'Some left': 'Il en reste une partie',
+  'A little left': 'Il en reste peu',
+  'Its answers have used what a day allows: your team answers until {when}.':
+    'Ses réponses ont atteint ce qu’une journée permet : votre équipe répond jusqu’à {when}.',
 };

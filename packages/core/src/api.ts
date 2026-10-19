@@ -2125,6 +2125,11 @@ export interface OrgPlanView {
   plan: OrgPlan;
   allowance: OrgAllowance;
   used: { teamSize: number; apps: number; startsToday: number; agentRepliesToday: number };
+  /**
+   * Its AI agent is quiet until this time because the last 24 hours' answers cost what its plan
+   * allows (`agentEurPerDay`, M16 G9) before they reached the count; null otherwise.
+   */
+  agentHeldUntil: string | null;
   /** Where to see plans and upgrade, when the operator has set one up. */
   upgradeUrl: string | null;
 }
@@ -2435,8 +2440,12 @@ export interface PlanUsageView {
   /** What your allowances come from: your own plan, or a seat's that includes more (M16 H1). */
   plan: Plan;
   allowance: PersonAllowance;
-  used: { aiToday: number; storageBytes: number; automations: number };
-  /** When the next AI assist is available again, once today's are used up. */
+  /**
+   * `aiShare` is how much of the last 24 hours' AI assist is used, 0 to 1, by what the calls cost
+   * (M16 G9): said in words, never as a price.
+   */
+  used: { aiShare: number; storageBytes: number; automations: number };
+  /** When there's AI assist again, once the last 24 hours' is used up. */
   aiNextAt: string | null;
   upgradeUrl: string | null;
   /** The organization whose seat includes it, when it's more than your own plan. */

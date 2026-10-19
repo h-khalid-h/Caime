@@ -500,16 +500,16 @@ const cta = (facts: Pick<SiteFacts, 'linkLang'> | null, links: Array<[string, st
     .join(' ')}</p>`;
 
 const people = (count: number) => trn(count, '{n} person', '{n} people', { n: n(count) });
-const aDay = (count: number, what: 'actions' | 'conversations') =>
-  what === 'actions'
-    ? tr('{n} actions a day', { n: n(count) })
-    : tr('{n} conversations a day', { n: n(count) });
+const conversationsADay = (count: number) => tr('{n} conversations a day', { n: n(count) });
 
-/** What an organization's agent answers on its plan: how many a day, and on which model (M16 H7). */
+/**
+ * What an organization's agent answers on its plan: how many a day at most (what a day of them
+ * may cost can stop it sooner, M16 G9), and on which model (M16 H7).
+ */
 const agentLine = (o: OrgAllowance) =>
   o.agentModel === 'top'
-    ? tr('{n} answers a day, on our most capable model', { n: n(o.agentRepliesPerDay) })
-    : tr('{n} answers a day, on a fast model', { n: n(o.agentRepliesPerDay) });
+    ? tr('up to {n} answers a day, on our most capable model', { n: n(o.agentRepliesPerDay) })
+    : tr('up to {n} answers a day, on a fast model', { n: n(o.agentRepliesPerDay) });
 
 /** The landing page: what Caime is, its spec sheet and its layers. */
 export function renderLanding(facts: SiteFacts | null): SitePage {
@@ -769,10 +769,8 @@ ${main}
         tr('Personal'),
         tr('{free}, always', { free: `<strong>${esc(tr('Free'))}</strong>` }),
         [
-          [
-            tr('AI assist'),
-            esc(tr('{n} actions a day, once you turn it on', { n: n(p.personal.aiPerDay) })),
-          ],
+          // What a day holds is what it costs (M16 G9): said by what it's for, never a count.
+          [tr('AI assist'), esc(tr('for everyday use, once you turn it on'))],
           [tr('files'), esc(gb(p.personal.storageBytes))],
           [tr('automations'), n(p.personal.automations)],
           [
@@ -782,7 +780,7 @@ ${main}
         ],
       )}
       ${plan('pro', PLAN_NAMES.pro, priceLine(facts.prices, 'pro'), [
-        [tr('AI assist'), esc(aDay(p.pro.aiPerDay, 'actions'))],
+        [tr('AI assist'), esc(tr('more each day, and follow-ups found by our most capable model'))],
         [tr('files'), esc(gb(p.pro.storageBytes))],
         [tr('automations'), n(p.pro.automations)],
         [
@@ -798,13 +796,13 @@ ${main}
       ${plan('free', tr('Free'), `<strong>${esc(tr('Free'))}</strong>`, [
         [tr('team'), esc(people(o.free.teamSize))],
         [tr('apps'), n(o.free.apps)],
-        [tr('writing first'), esc(aDay(o.free.startsPerDay, 'conversations'))],
+        [tr('writing first'), esc(conversationsADay(o.free.startsPerDay))],
         [tr('AI agent'), esc(agentLine(o.free))],
       ])}
       ${plan('business', PLAN_NAMES.business, priceLine(facts.prices, 'business'), [
         [tr('team'), esc(people(o.business.teamSize))],
         [tr('apps'), n(o.business.apps)],
-        [tr('writing first'), esc(aDay(o.business.startsPerDay, 'conversations'))],
+        [tr('writing first'), esc(conversationsADay(o.business.startsPerDay))],
         [tr('AI agent'), esc(agentLine(o.business))],
         [
           tr('insights'),
@@ -822,7 +820,7 @@ ${main}
         [
           [tr('team'), esc(people(o.enterprise.teamSize))],
           [tr('apps'), n(o.enterprise.apps)],
-          [tr('writing first'), esc(aDay(o.enterprise.startsPerDay, 'conversations'))],
+          [tr('writing first'), esc(conversationsADay(o.enterprise.startsPerDay))],
           [tr('AI agent'), esc(agentLine(o.enterprise))],
           [tr('insights'), esc(tr('included'))],
         ],

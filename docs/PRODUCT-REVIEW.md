@@ -2181,3 +2181,27 @@ with its reason, so it isn't proposed again without new facts.
   model is counted, not priced). *Next (G):* allowances by cost rather than by count, since 200 calls
   a day on the top model reach €2,178.96 at their edge, and a recording's length read from the file
   on the server.
+- **R107 (2026-10-19) AI by what it costs, never by how many calls.** R106 named the next step: a
+  count a day bounds nothing (200 calls on the top model reached €2,178.96 a month at their edge,
+  a Business agent's 2,000 answers €14,061.74) while it rationed what costs nothing (a free
+  person's ten a day went to a search's reading at €0.0004 as readily as to a ten-minute voice
+  note at €0.05: review 2026-10-17 §5, "allowance per call not per token; search spends it
+  silently"). *Decided:* every call is priced as it runs by the one price list (`ai_runs.cost_usd`
+  through `chargedUsd`; a model or provider the list doesn't name counts at the dearest listed
+  rate, never as nothing), and a person's AI assist is euros of model time in any 24 hours
+  (`aiEurPerDay`: Personal €0.50, today's edge kept; Pro and a Business seat €2; an Enterprise
+  seat €10), spent once the sum reaches it, with room again the moment enough of the day's calls
+  have left the window. People read how much is left in words (Plenty left, Some left, A little
+  left, and when there's more), never a price or a count, as R106 declined a price per call; the
+  pricing page says what a plan's AI is for, and Pro's "more each day, and follow-ups found by our
+  most capable model". An organization's agent keeps its stated answers a day ("up to") and gains
+  a backstop by cost (`agentEurPerDay`: €0.30, €30, €300), held by a test above a day of its count
+  at the assumed answer, so an ordinary clinic never meets it and a flood of long questions stops
+  where the count alone wouldn't; its setup says when the backstop holds it, and until when. *Why:*
+  advantage 4 (one flat price) holds only while a payer's edge is bounded, and the free plan is
+  how people arrive: by cost it allows a hundred cheap things a day where a count allowed ten,
+  at the edge it had. *Declined:* weighting a count by cost (a number that means a different thing
+  each time), a price shown to people, a second, lighter allowance past the first (a plan is a
+  plan), and moving a free organization's agent to cost alone (on the light model it would answer
+  more than a Business agent on the top one). *Next:* a recording's length read from the file on
+  the server, and the operator's `ai.cost` reading `cost_usd` once a window holds no older rows.

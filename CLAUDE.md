@@ -1826,9 +1826,15 @@ A sphere is said as how you know someone, never "sphere".
   path that makes one) (R100). Pro
   sells its depth (R47): relationship insights (`lib/insights.ts` `personInsights`, the
   viewer's own one-to-ones only, names through `personViewsFor`) and automations by plan
-  (`assertAutomationRoom`, under the person's lock, `AUTOMATIONS_MAX` the ceiling). A test
-  that needs a bigger team or more apps puts its organization on Business in its setup;
-  `plans.test.ts` is where limits are tested.
+  (`assertAutomationRoom`, under the person's lock, `AUTOMATIONS_MAX` the ceiling). AI assist
+  is counted by what it costs, never by calls (R107, M16 G9): `runAi` writes each call's
+  `ai_runs.cost_usd` as it runs through `chargedUsd` (`lib/ai-costs.ts`: a model the list
+  doesn't name at the dearest listed rate), a person's day is `aiEurPerDay` and an agent's
+  backstop `agentEurPerDay` beside its count, both summed by `spentOver` (`lib/plans.ts`, with the
+  moment there's room again), and people read what's left in words, never a price. A new AI
+  feature needs nothing more than `runAi`; a test that spends a day inserts runs with a
+  `cost_usd`. A test that needs a bigger team or more apps puts its organization on Business in
+  its setup; `plans.test.ts` is where limits are tested.
 - An organization's insights (PRD §71, M16 H4, `lib/insights.ts`) are counts, times and sums for
   its owner and admins on Business, the team's and never one person's, with nothing a customer
   wrote. What its conversations came to is read from the cards as they stand (`cardsMade`:

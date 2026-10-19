@@ -22,6 +22,7 @@ import { type AiAssist, createAiAssist, type FriendPersona } from '../src/lib/ai
 import {
   type CallUse,
   costUsd,
+  inDollars,
   inEuros,
   LONG_PROMPT,
   modelPrices,
@@ -367,10 +368,17 @@ describe('what a person costs (M16 H7)', () => {
       atBound('actions:light', LIGHT),
       VOICE_NOTE_USD,
     );
-    const personal = inEuros(PERSON_ALLOWANCES.personal.aiPerDay * month * personDearest);
-    // An organization: its agent at its bounds, as many answers as the day allows.
+    // The day is what its calls cost (M16 G9): spent once the sum reaches the allowance, so the
+    // last call of a day can pass it by one dearest call at most.
+    const personal = month * (PERSON_ALLOWANCES.personal.aiEurPerDay + inEuros(personDearest));
+    // An organization: its agent at its bounds, as many answers as the day allows, by count or
+    // by cost, whichever stops it first.
     const freeOrg = inEuros(
-      ORG_ALLOWANCES.free.agentRepliesPerDay * month * atBound('agent:light', LIGHT),
+      month *
+        Math.min(
+          ORG_ALLOWANCES.free.agentRepliesPerDay * atBound('agent:light', LIGHT),
+          inDollars(ORG_ALLOWANCES.free.agentEurPerDay) + atBound('agent:light', LIGHT),
+        ),
     );
     // Held: a change that moves either (an allowance, a free plan's model, a bound) moves this,
     // on purpose (CLAUDE.md convention 14).
@@ -381,6 +389,14 @@ describe('what a person costs (M16 H7)', () => {
       ORG_ALLOWANCES.free.agentRepliesPerDay * month * atBound('agent:top', TOP),
     );
     expect(freeOrgOnTop / freeOrg).toBeGreaterThan(30);
+    // A day's backstop on an agent is above a day of its answers at the assumed size, so a
+    // clinic's ordinary day never meets it: only answers far longer than usual do (M16 G9).
+    const assumed = typicalMonth(typical);
+    for (const p of ['free', 'business', 'enterprise'] as const) {
+      const a = ORG_ALLOWANCES[p];
+      const perAnswer = assumed.organization(a.agentModel) / (30 * 30);
+      expect(inDollars(a.agentEurPerDay), p).toBeGreaterThan(a.agentRepliesPerDay * perAnswer);
+    }
     if (process.env.COST_TABLE)
       writeFileSync(process.env.COST_TABLE, tables(measured, typical, atBound));
   });
@@ -430,7 +446,7 @@ function tables(
       VOICE_NOTE_USD,
     );
     lines.push(
-      `| ${p} | ${a.aiModel} | ${n(a.aiPerDay)} assists a day | ${eur(dearest)} | ${eur(a.aiPerDay * month * dearest)} | ${eur(assumed.person(a.aiModel))} |`,
+      `| ${p} | ${a.aiModel} | €${a.aiEurPerDay.toFixed(2)} a day | ${eur(dearest)} | ${eur(month * (inDollars(a.aiEurPerDay) + dearest))} | ${eur(assumed.person(a.aiModel))} |`,
     );
   }
   for (const p of ['free', 'business', 'enterprise'] as const) {
@@ -438,7 +454,7 @@ function tables(
     const model = a.agentModel === 'top' ? TOP : LIGHT;
     const one = atBound(`agent:${a.agentModel}`, model);
     lines.push(
-      `| organization ${p} | ${a.agentModel} | ${n(a.agentRepliesPerDay)} answers a day | ${eur(one)} | ${eur(a.agentRepliesPerDay * month * one)} | ${eur(assumed.organization(a.agentModel))} |`,
+      `| organization ${p} | ${a.agentModel} | ${n(a.agentRepliesPerDay)} answers or €${a.agentEurPerDay.toFixed(2)} a day | ${eur(one)} | ${eur(month * Math.min(a.agentRepliesPerDay * one, inDollars(a.agentEurPerDay) + one))} | ${eur(assumed.organization(a.agentModel))} |`,
     );
   }
   // Where the Business price (€29 a month, the pricing page's from Stripe) stops covering its
@@ -454,7 +470,7 @@ function tables(
   const covered = (model: string) => Math.floor((29 * PRICES.usdPerEur) / perAnswer(model) / month);
   lines.push(
     '',
-    `On Sonnet 5.5 a Business agent's month at its allowance is ${eur(ORG_ALLOWANCES.business.agentRepliesPerDay * month * atBound('agent:top', MIDDLE))}; a free organization's on the top model, as before M16 H7, ${eur(ORG_ALLOWANCES.free.agentRepliesPerDay * month * atBound('agent:top', TOP))}. Business's €29 covers its agent up to ${n(covered(TOP))} answers a day of the assumed size on Opus 5.5, ${n(covered(MIDDLE))} on Sonnet 5.5 and ${n(covered(LIGHT))} on Haiku 5.5.`,
+    `On Sonnet 5.5 a Business agent's month at its allowance is ${eur(month * Math.min(ORG_ALLOWANCES.business.agentRepliesPerDay * atBound('agent:top', MIDDLE), inDollars(ORG_ALLOWANCES.business.agentEurPerDay) + atBound('agent:top', MIDDLE)))}; a free organization's on the top model, as before M16 H7, ${eur(ORG_ALLOWANCES.free.agentRepliesPerDay * month * atBound('agent:top', TOP))}. Business's €29 covers its agent up to ${n(covered(TOP))} answers a day of the assumed size on Opus 5.5, ${n(covered(MIDDLE))} on Sonnet 5.5 and ${n(covered(LIGHT))} on Haiku 5.5.`,
   );
   return `${lines.join('\n')}\n`;
 }

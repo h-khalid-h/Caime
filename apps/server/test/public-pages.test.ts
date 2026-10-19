@@ -261,7 +261,13 @@ describe('the readable web (R44)', () => {
     const pricing = (await visit('/pricing')).body;
     expect(pricing).toContain('<dt class="mono">Team</dt><dd>3 people</dd>');
     expect(pricing).toContain('<dt class="mono">Team</dt><dd>100 people</dd>');
-    expect(pricing).toContain('<dt class="mono">AI assist</dt><dd>200 actions a day</dd>');
+    // AI assist is a day of what it costs (M16 G9): said by what it's for, never a count, and an
+    // agent's count is a ceiling that its day's cost can reach first.
+    expect(pricing).toContain(
+      '<dt class="mono">AI assist</dt><dd>more each day, and follow-ups found by our most capable model</dd>',
+    );
+    expect(pricing).toContain('up to 2,000 answers a day, on our most capable model');
+    expect(pricing).not.toMatch(/actions a day/);
     expect(pricing).toContain('<dt class="mono">Files</dt><dd>100 GB</dd>');
     // Billing isn't connected here: the price is in the app, never made up.
     expect(pricing).toContain('price shown in the app');

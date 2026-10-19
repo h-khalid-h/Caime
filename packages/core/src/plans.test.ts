@@ -17,13 +17,13 @@ describe('plans', () => {
   it('every plan includes some of everything, and a higher plan never includes less', () => {
     for (const [i, plan] of PERSON_PLANS.entries()) {
       const a = PERSON_ALLOWANCES[plan];
-      expect(a.aiPerDay).toBeGreaterThan(0);
+      expect(a.aiEurPerDay).toBeGreaterThan(0);
       expect(a.storageBytes).toBeGreaterThan(0);
       const below = PERSON_PLANS[i - 1];
       expect(a.automations).toBeGreaterThan(0);
       expect(a.automations).toBeLessThanOrEqual(AUTOMATIONS_MAX);
       if (below) {
-        expect(a.aiPerDay).toBeGreaterThanOrEqual(PERSON_ALLOWANCES[below].aiPerDay);
+        expect(a.aiEurPerDay).toBeGreaterThanOrEqual(PERSON_ALLOWANCES[below].aiEurPerDay);
         expect(a.storageBytes).toBeGreaterThanOrEqual(PERSON_ALLOWANCES[below].storageBytes);
         expect(a.automations).toBeGreaterThanOrEqual(PERSON_ALLOWANCES[below].automations);
         expect(a.insights || !PERSON_ALLOWANCES[below].insights).toBe(true);
@@ -87,8 +87,8 @@ describe('plans', () => {
     // What a seat includes is at least what Pro does.
     for (const p of Object.values(SEAT_PLANS))
       if (p)
-        expect(PERSON_ALLOWANCES[p].aiPerDay).toBeGreaterThanOrEqual(
-          PERSON_ALLOWANCES.pro.aiPerDay,
+        expect(PERSON_ALLOWANCES[p].aiEurPerDay).toBeGreaterThanOrEqual(
+          PERSON_ALLOWANCES.pro.aiEurPerDay,
         );
   });
 });

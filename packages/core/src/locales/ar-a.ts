@@ -483,10 +483,6 @@ export const arA: Catalog = {
     'إشعارات العمل تنتظر هذه الأيام. ضُبطت من مكان إقامتك (اللغة والمنطقة)؛ غيّرها إن كانت أيامك مختلفة.',
   'Reset to Caime’s defaults': 'إعادة إعدادات Caime الافتراضية',
   'Back to the defaults': 'العودة إلى الإعدادات الافتراضية',
-  'Relationship insights, {automations} automations, {aiPerDay} AI assists a day and {storage} for files.':
-    'رؤى العلاقات، {automations} أتمتة، {aiPerDay} مساعدة ذكاء اصطناعي يوميًا، و{storage} للملفات.',
-  '{aiToday} of {aiPerDay} in the last 24 hours': '{aiToday} من {aiPerDay} في آخر 24 ساعة',
-  '{base}. The next one is ready {when}': '{base}. التالية جاهزة {when}',
   Plan: 'الخطة',
   'Free forever: your connections, what needs you, what you’re waiting for, search and sync. No plan ever limits those.':
     'مجاني للأبد: من تتواصل معهم، وما يحتاجك، وما تنتظره، والبحث والمزامنة. لا تحدّها خطة أبدًا.',

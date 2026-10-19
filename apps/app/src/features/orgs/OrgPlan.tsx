@@ -1,4 +1,5 @@
 import type { OrgPlanView } from '@caime/core/api';
+import { formatSoon } from '@caime/core/format';
 import { tr, trn } from '@caime/core/i18n';
 import { nextOrgPlan, PLAN_NAMES } from '@caime/core/plans';
 import Gauge from 'lucide-react-native/icons/gauge';
@@ -7,6 +8,7 @@ import { useOrgBilling } from '@/api/hooks';
 import { qk } from '@/api/keys';
 import { BillingCard, useBackFromCheckout } from '@/features/billing';
 import { openLink } from '@/lib/links';
+import { useSession } from '@/state/session';
 import { useTheme } from '@/theme/theme';
 import { Button } from '@/ui/Button';
 import { Card } from '@/ui/Card';
@@ -25,6 +27,7 @@ export function OrgPlan({
   handle: string;
 }) {
   const t = useTheme();
+  const user = useSession((s) => s.user);
   const next = nextOrgPlan(plan.plan);
   const line = nextOrgPlanLine(plan);
   const billing = useOrgBilling(orgId).data;
@@ -79,6 +82,14 @@ export function OrgPlan({
             },
           )}
         </Text>
+        {plan.agentHeldUntil && user ? (
+          // Long answers can use a day up before the count does (M16 G9): it says so, and until when.
+          <Text variant="caption" color="textSecondary" testID="org-plan-agent-held">
+            {tr('Its answers have used what a day allows: your team answers until {when}.', {
+              when: formatSoon(plan.agentHeldUntil, new Date(), user.timeZone, user.locale),
+            })}
+          </Text>
+        ) : null}
         {billed && billing ? (
           <>
             {plan.plan === 'free' && line ? (

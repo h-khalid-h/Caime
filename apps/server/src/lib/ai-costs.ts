@@ -6,6 +6,8 @@
  * never guessed at: its calls are counted as unpriced.
  */
 
+import { SPEECH_MAX_MS } from './speech';
+
 /** US dollars a million tokens: input, a write to the five-minute cache, a read from it, output. */
 export interface TokenPrices {
   input: number;
@@ -122,6 +124,25 @@ export function costUsd(use: CallUse): number | null {
   const p = long && found.long ? found.long.prices : found.prices;
   return (input * p.input + write * p.cacheWrite + read * p.cacheRead + output * p.output) / 1e6;
 }
+
+/**
+ * What a call counts for against an allowance (M16 G9, R107): what it cost, or, for one the list
+ * can't price (a model or a provider it doesn't name, a recording whose length wasn't kept), the
+ * dearest listed rate for what it used: never nothing, so an unlisted model is no way past one.
+ */
+export function chargedUsd(use: CallUse): number {
+  const priced = costUsd(use);
+  if (priced !== null) return priced;
+  if (use.provider !== 'anthropic') {
+    const perMinute = Math.max(...Object.values(SPEECH_PRICES).flatMap((p) => Object.values(p)));
+    return ((use.audioMs ?? SPEECH_MAX_MS) / 60_000) * perMinute;
+  }
+  const dearest = MODELS.reduce((a, m) => (m.prices.output > a.prices.output ? m : a));
+  return costUsd({ ...use, model: dearest.id }) ?? 0;
+}
+
+/** Euros of an allowance in US dollars at the list's rate, to compare with what calls cost. */
+export const inDollars = (eur: number) => eur * PRICES.usdPerEur;
 
 /** US dollars in euros at the list's rate, to a hundredth of a cent. */
 export const inEuros = (usd: number) => Math.round((usd / PRICES.usdPerEur) * 10_000) / 10_000;

@@ -1182,14 +1182,15 @@ test.describe
       await expect(page.getByTestId('settings-plan')).toContainText('Personal · free forever');
       await page.getByTestId('settings-plan').click();
       await expect(page.getByTestId('plan-name')).toHaveText('Personal');
-      await expect(page.getByTestId('plan-ai')).toContainText('0 of 10 in the last 24 hours');
+      // A day of AI assist is what its calls cost (M16 G9), said in words.
+      await expect(page.getByTestId('plan-ai')).toContainText('Plenty left');
       // Nile Dental's logo is hers: a few kB of her storage, in the reader's units.
       await expect(page.getByTestId('plan-files')).toContainText(/^Files[\d.]+ kB of 5 GB$/);
       await expect(page.getByTestId('plan-automations')).toContainText('of 5');
       // Pro sells the depth of the wedge (R47): insights are named, and locked until then.
       await expect(page.getByTestId('plan-insights')).toContainText('Comes with Pro');
       await expect(page.getByTestId('plan-pro-includes')).toHaveText(
-        'Relationship insights, 50 automations, 200 AI assists a day and 100 GB for files.',
+        'Relationship insights, 50 automations, more AI assist each day and 100 GB for files.',
       );
       // Pro can be bought here, at Stripe's price for it.
       await expect(page.getByTestId('billing-price')).toHaveText('€6 a month');
@@ -1237,7 +1238,7 @@ test.describe
       const paid = page.getByTestId('billing-subscription');
       await expect(paid).toContainText('Pro · €6 a month');
       await expect(paid).toContainText('Renews on');
-      await expect(page.getByTestId('plan-ai')).toContainText('of 200 in the last 24 hours');
+      await expect(page.getByTestId('plan-ai')).toContainText('Plenty left');
       await expect(page.getByTestId('plan-automations')).toContainText('of 50');
       await expect(page.getByTestId('plan-insights')).toContainText('Included in your plan');
       await page.screenshot({ path: 'e2e/screenshots/desktop-plan-pro.png' });

@@ -28,8 +28,13 @@ export const PERSON_PLANS = [
 export const ORG_PLANS = ['free', 'business', 'enterprise'] as const satisfies readonly OrgPlan[];
 
 export interface PersonAllowance {
-  /** AI assist actions in any 24 hours (rewrite, translate, catch up, find follow-ups). */
-  aiPerDay: number;
+  /**
+   * AI assist in any 24 hours, in euros of model time (M16 G9, R107): what the calls cost by the
+   * server's price list, never how many there were, so a search's reading or a short rewrite
+   * takes a sliver of a day and a long search for follow-ups on the top model a good deal more.
+   * People are told how much is left in words, never a price.
+   */
+  aiEurPerDay: number;
   /** Files you've uploaded, in all, in bytes. */
   storageBytes: number;
   /** Automations kept at once (PRD §84: automation is Pro's). Never more than AUTOMATIONS_MAX. */
@@ -60,6 +65,12 @@ export interface OrgAllowance {
    * quiet and the team answers, as it would without one.
    */
   agentRepliesPerDay: number;
+  /**
+   * What its AI agent may cost in any 24 hours, in euros of model time (M16 G9, R107): a
+   * backstop above a day of answers of the usual size, so that a flood of long questions can't
+   * run up what the count alone allows. Past it, the agent stays quiet as past the count.
+   */
+  agentEurPerDay: number;
   /** The model its AI agent answers on: the most capable one on a paid plan. */
   agentModel: ModelTier;
 }
@@ -68,23 +79,23 @@ const GB = 1024 ** 3;
 
 export const PERSON_ALLOWANCES: Readonly<Record<Plan, PersonAllowance>> = {
   personal: {
-    aiPerDay: 10,
+    aiEurPerDay: 0.5,
     storageBytes: 5 * GB,
     automations: 5,
     insights: false,
     aiModel: 'light',
   },
-  pro: { aiPerDay: 200, storageBytes: 100 * GB, automations: 50, insights: true, aiModel: 'top' },
+  pro: { aiEurPerDay: 2, storageBytes: 100 * GB, automations: 50, insights: true, aiModel: 'top' },
   // A business or enterprise seat includes everything Pro does.
   business: {
-    aiPerDay: 200,
+    aiEurPerDay: 2,
     storageBytes: 100 * GB,
     automations: 50,
     insights: true,
     aiModel: 'top',
   },
   enterprise: {
-    aiPerDay: 1000,
+    aiEurPerDay: 10,
     storageBytes: 1024 * GB,
     automations: 50,
     insights: true,
@@ -99,6 +110,7 @@ export const ORG_ALLOWANCES: Readonly<Record<OrgPlan, OrgAllowance>> = {
     insights: false,
     startsPerDay: 20,
     agentRepliesPerDay: 50,
+    agentEurPerDay: 0.3,
     agentModel: 'light',
   },
   business: {
@@ -107,6 +119,7 @@ export const ORG_ALLOWANCES: Readonly<Record<OrgPlan, OrgAllowance>> = {
     insights: true,
     startsPerDay: 1000,
     agentRepliesPerDay: 2000,
+    agentEurPerDay: 30,
     agentModel: 'top',
   },
   enterprise: {
@@ -115,6 +128,7 @@ export const ORG_ALLOWANCES: Readonly<Record<OrgPlan, OrgAllowance>> = {
     insights: true,
     startsPerDay: 20_000,
     agentRepliesPerDay: 20_000,
+    agentEurPerDay: 300,
     agentModel: 'top',
   },
 };

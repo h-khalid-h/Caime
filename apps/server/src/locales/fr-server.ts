@@ -138,11 +138,7 @@ export const frServer: Catalog = {
   'In a business conversation the team’s names and ids are masked everywhere: messages, read receipts, suggestions, exports. Anything filed for the customer names the organization.':
     'Dans une conversation professionnelle, les noms et identifiants de l’équipe sont masqués partout : messages, accusés de lecture, suggestions, exports. Tout ce qui est consigné pour le client nomme l’organisation.',
   'verified · answered in an hour': 'vérifiée · répond en une heure',
-  '{n} actions a day': '{n} actions par jour',
   '{n} conversations a day': '{n} conversations par jour',
-  '{n} answers a day, on a fast model': '{n} réponses par jour, avec un modèle rapide',
-  '{n} answers a day, on our most capable model':
-    '{n} réponses par jour, avec notre modèle le plus performant',
   'Your family, your work and your customers don’t belong in one list. Say who each person is to you, once. From then on Caime knows what needs you first, who may reach you when, what was decided and what’s owed, and what each side of your life sees of you.':
     'Votre famille, votre travail et vos clients n’ont pas leur place dans une seule liste. Dites une fois qui est chaque personne pour vous. Dès lors, Caime sait ce qui a besoin de vous en premier, qui peut vous joindre et quand, ce qui a été décidé et ce qui est dû, et ce que chaque côté de votre vie voit de vous.',
   'Start free': 'Commencer gratuitement',
@@ -225,7 +221,6 @@ export const frServer: Catalog = {
     'L’essentiel de Caime n’est jamais décompté : contacts, relations, ce qui a besoin de vous, ce que vous attendez, recherche et synchronisation sont dans chaque forfait. Les forfaits ne diffèrent que par ce qui a un coût de fonctionnement, et par ce que les organisations achètent.',
   'For people': 'Pour les particuliers',
   Personal: 'Personal',
-  '{n} actions a day, once you turn it on': '{n} actions par jour, une fois activée',
   files: 'fichiers',
   automations: 'automatisations',
   'everything else': 'tout le reste',
@@ -522,9 +517,6 @@ export const frServer: Catalog = {
     'La position en direct se partage avec les personnes que vous connaissez, pas avec les organisations.',
   'That organization': 'Cette organisation',
   'That account': 'Ce compte',
-  'You’ve used today’s {aiPerDay} AI assists.{ready}{more}':
-    'Vous avez utilisé les {aiPerDay} assistances IA du jour.{ready}{more}',
-  'The next one is ready {when}.': ' La prochaine sera prête {when}.',
   '{plan} includes {n} a day.': ' {plan} en inclut {n} par jour.',
   '{plan} includes {bytes}.': ' {plan} inclut {bytes}.',
   'That’s more than the {allowed} of files your plan includes ({used} used).{more}':
@@ -1639,4 +1631,14 @@ export const frServer: Catalog = {
   'That draft': 'Ce brouillon',
   'Nothing from a private conversation is kept on the server.':
     'Rien d’une conversation privée n’est conservé sur le serveur.',
+  '{plan} includes more.': '{plan} en inclut davantage.',
+  'You’ve used the AI assist your plan includes for now. There’s more {when}.{more}':
+    'Vous avez utilisé pour le moment l’assistance IA que votre forfait inclut. De nouveau disponible {when}.{more}',
+  'up to {n} answers a day, on our most capable model':
+    'jusqu’à {n} réponses par jour, avec notre modèle le plus performant',
+  'up to {n} answers a day, on a fast model':
+    'jusqu’à {n} réponses par jour, avec un modèle rapide',
+  'for everyday use, once you turn it on': 'pour l’usage de tous les jours, une fois activée',
+  'more each day, and follow-ups found by our most capable model':
+    'davantage chaque jour, et des suivis trouvés par notre modèle le plus performant',
 };

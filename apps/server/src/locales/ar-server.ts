@@ -112,10 +112,7 @@ export const arServer: Catalog = {
   'In a business conversation the team’s names and ids are masked everywhere: messages, read receipts, suggestions, exports. Anything filed for the customer names the organization.':
     'في محادثة الأعمال تُحجب أسماء الفريق ومعرّفاتهم في كل مكان: الرسائل، وإشعارات القراءة، والاقتراحات، وملفات التصدير. وكل ما يُسجَّل للعميل يحمل اسم المؤسسة.',
   'verified · answered in an hour': 'موثّقة · تجيب خلال ساعة',
-  '{n} actions a day': '{n} إجراء في اليوم',
   '{n} conversations a day': '{n} محادثة في اليوم',
-  '{n} answers a day, on a fast model': '{n} إجابة في اليوم، بنموذج سريع',
-  '{n} answers a day, on our most capable model': '{n} إجابة في اليوم، بأقدر نماذجنا',
   'Your family, your work and your customers don’t belong in one list. Say who each person is to you, once. From then on Caime knows what needs you first, who may reach you when, what was decided and what’s owed, and what each side of your life sees of you.':
     'عائلتك وعملك وعملاؤك لا مكان لهم في قائمة واحدة. قل من يكون كل شخص بالنسبة لك، مرة واحدة فقط. ومن بعدها يعرف Caime ما يحتاجك أولًا، ومن له أن يصل إليك ومتى، وما تقرر وما هو مستحق، وما يراه منك كل جانب من حياتك.',
   'Start free': 'ابدأ مجانًا',
@@ -196,7 +193,6 @@ export const arServer: Catalog = {
     'جوهر Caime لا يُحسب عليك أبدًا: من تتواصل معهم، وعلاقاتك، وما يحتاجك، وما تنتظره، والبحث والمزامنة، كلها في كل خطة. ولا تختلف الخطط إلا فيما يكلّف تشغيله مالًا، وفيما تشتريه المؤسسات.',
   'For people': 'للأفراد',
   Personal: 'شخصي',
-  '{n} actions a day, once you turn it on': '{n} إجراء في اليوم، متى شغّلته',
   files: 'الملفات',
   automations: 'الأتمتة',
   'everything else': 'كل ما عدا ذلك',
@@ -525,9 +521,6 @@ export const arServer: Catalog = {
     'الموقع المباشر لمن تعرفهم، لا للمؤسسات.',
   'That organization': 'تلك المؤسسة',
   'That account': 'ذلك الحساب',
-  'You’ve used today’s {aiPerDay} AI assists.{ready}{more}':
-    'استنفدت مساعدات الذكاء الاصطناعي لهذا اليوم ({aiPerDay}).{ready}{more}',
-  'The next one is ready {when}.': ' تتوفر التالية {when}.',
   '{plan} includes {n} a day.': ' تتضمن {plan} {n} يوميًا.',
   '{plan} includes {bytes}.': ' تتضمن {plan} {bytes}.',
   'That’s more than the {allowed} of files your plan includes ({used} used).{more}':
@@ -1617,4 +1610,12 @@ export const arServer: Catalog = {
   'That draft': 'هذه المسودة',
   'Nothing from a private conversation is kept on the server.':
     'لا يُحفظ على الخادم شيء من محادثة خاصة.',
+  '{plan} includes more.': 'تتضمن {plan} المزيد.',
+  'You’ve used the AI assist your plan includes for now. There’s more {when}.{more}':
+    'استنفدت مساعدة الذكاء الاصطناعي التي تتضمنها خطتك حاليًا. يتوفر المزيد {when}.{more}',
+  'up to {n} answers a day, on our most capable model': 'حتى {n} إجابة في اليوم، بأقدر نماذجنا',
+  'up to {n} answers a day, on a fast model': 'حتى {n} إجابة في اليوم، بنموذج سريع',
+  'for everyday use, once you turn it on': 'للاستخدام اليومي، متى شغّلته',
+  'more each day, and follow-ups found by our most capable model':
+    'أكثر كل يوم، ومتابعات يجدها أقدر نماذجنا',
 };

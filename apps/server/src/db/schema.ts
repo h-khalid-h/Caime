@@ -1025,6 +1025,11 @@ export interface AiRunsTable {
   discarded_at: NullableTimestamp;
   /** Which version of the feature's instructions answered it (M16 G6a, 0140). */
   prompt_hash: string | null;
+  /**
+   * What it cost when it ran, in US dollars, as an allowance counts it (`chargedUsd`, M16 G9,
+   * 0142); null for a call that never got an answer's usage, and for calls before it.
+   */
+  cost_usd: number | null;
   created_at: Generated<Date>;
 }
 

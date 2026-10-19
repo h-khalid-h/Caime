@@ -206,39 +206,46 @@ Prices: https://platform.claude.com/docs/en/about-claude/pricing, read 2026-10-1
 | friend | 11,685 | 512 | €0.0013 | €0.03 | €0.05 |
 | search | 1,929 | 512 | €0.0004 | €0.0080 | €0.02 |
 | search-answer | 15,766 | 4,096 | €0.0032 | €0.06 | €0.13 |
-| agent | 55,692 | 2,048 | €0.0059 | €0.12 | €0.23 |
+| agent | 56,082 | 2,048 | €0.0059 | €0.12 | €0.24 |
 | transcribe | ten minutes of audio | — | €0.05 (OpenAI's estimate) | | |
 
 | Plan | Model for the heavy work | Allowance | Dearest call | A month at every allowance | An assumed month |
 | --- | --- | --- | --- | --- | --- |
-| personal | light | 10 assists a day | €0.05 | €16.00 | €0.11 |
-| pro | top | 200 assists a day | €0.36 | €2,178.96 | €0.52 |
-| business | top | 200 assists a day | €0.36 | €2,178.96 | €0.52 |
-| enterprise | top | 1,000 assists a day | €0.36 | €10,894.80 | €0.52 |
-| organization free | light | 50 answers a day | €0.0059 | €8.79 | €0.27 |
-| organization business | top | 2,000 answers a day | €0.23 | €14,061.74 | €10.93 |
-| organization enterprise | top | 20,000 answers a day | €0.23 | €140,617.44 | €10.93 |
+| personal | light | €0.50 a day | €0.05 | €16.60 | €0.11 |
+| pro | top | €2.00 a day | €0.36 | €70.89 | €0.52 |
+| business | top | €2.00 a day | €0.36 | €70.89 | €0.52 |
+| enterprise | top | €10.00 a day | €0.36 | €310.89 | €0.52 |
+| organization free | light | 50 answers or €0.30 a day | €0.0059 | €8.84 | €0.28 |
+| organization business | top | 2,000 answers or €30.00 a day | €0.24 | €907.07 | €11.40 |
+| organization enterprise | top | 20,000 answers or €300.00 a day | €0.24 | €9,007.07 | €11.40 |
 
-On Sonnet 5.5 a Business agent's month at its allowance is €7,030.87; a free organization's on the top model, as before M16 H7, €351.54. Business's €29 covers its agent up to 79 answers a day of the assumed size on Opus 5.5, 159 on Sonnet 5.5 and 3,183 on Haiku 5.5.
+On Sonnet 5.5 a Business agent's month at its allowance is €903.54; a free organization's on the top model, as before M16 H7, €353.62. Business's €29 covers its agent up to 76 answers a day of the assumed size on Opus 5.5, 152 on Sonnet 5.5 and 3,053 on Haiku 5.5.
 
 The assumed month (in `typicalMonth`: a rewrite, a catch-up, two questions to Cai, half a minute
 of a voice note and one search for follow-ups a day, read at about 2.7 characters a token from
 Anthropic's figures; an agent's 30 answers a day, nothing read from the cache) is an assumption,
 said as one: the operator's `ai.cost.byPlan` replaces it. What the tables say:
 
-- **The free plans are held.** A Personal account at the edge of every allowance costs €16 a
-  month, ten 10-minute voice notes a day being the dearest; a free organization's agent at 50
-  answers a day, €8.79. `ai-costs.test.ts` fails if either passes €20 or €15, so a change to an
-  allowance or a free plan's model is a decision, never a drift. Before this change a free
-  organization's agent could cost €351.54 a month, three of them per owner.
-- **A paid plan's typical use is far under its price**, and its edge is not bounded by it: Pro's
-  200 assists a day are €0.52 a month as assumed and €2,178.96 at the edge (follow-ups on Opus
-  5.5 at 60,000 characters, 200 times a day); a Business agent's 2,000 answers a day reach
-  €14,061.74. A count of calls a day doesn't bound what they cost: an allowance by cost (G) does.
-- **Business's €29 covers its agent up to about 79 answers a day on Opus 5.5** at the assumed
-  size, 159 on Sonnet 5.5 and 3,183 on Haiku 5.5. A clinic busier than that costs more than it
-  pays until the allowance is by cost; setting `ANTHROPIC_MODEL` to Sonnet 5.5 halves it (⛔ the
-  owner's choice: price and model).
+- **The free plans are held.** A Personal account at the edge of its day, €0.50 of model time
+  (M16 G9), with one dearest call past it each day (a voice note of ten minutes), costs €16.60 a
+  month; a free organization's agent at 50 answers a day at their bounds, €8.84. `ai-costs.test.ts`
+  fails if either passes €20 or €15, so a change to an allowance or a free plan's model is a
+  decision, never a drift. Before M16 H7 a free organization's agent could cost €353.62 a month,
+  three of them per owner.
+- **A paid plan's edge is bounded by what its calls cost (M16 G9, R107).** A day of AI assist is
+  euros of model time (`aiEurPerDay`: Personal €0.50, Pro and a Business seat €2, an Enterprise
+  seat €10), priced as each call runs (`ai_runs.cost_usd`, `chargedUsd`; a model the list doesn't
+  name counts at the dearest listed rate), never counted by calls. Pro's month at the very edge
+  is €70.89, where 200 calls a day of finding follow-ups on Opus 5.5 reached €2,178.96; its assumed
+  month stays €0.52. An organization's agent keeps its answers a day and gains a backstop by cost
+  (`agentEurPerDay`: €0.30, €30, €300), set above a day of its count at the assumed answer (the
+  test holds it there), so a Business agent's month at its edge is €907.07 where it was
+  €14,061.74, and an ordinary clinic's day never meets it. A search's reading on the light model is
+  €0.0004 at its bound, a 1,250th of a free day, where it was one of ten assists.
+- **Business's €29 covers its agent up to about 76 answers a day on Opus 5.5** at the assumed
+  size, 152 on Sonnet 5.5 and 3,053 on Haiku 5.5. A clinic busier than that costs more than it
+  pays, up to the backstop; setting `ANTHROPIC_MODEL` to Sonnet 5.5 halves it (⛔ the owner's
+  choice: price and model).
 - **A voice note's length is the device's word.** The server sends a recording only with a stated
   length of ten minutes at most and 25 MB, so a note that lies about its length at a low bitrate
   is billed for what it holds; reading the length from the file before it's sent is G's.

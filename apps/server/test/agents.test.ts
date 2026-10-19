@@ -505,6 +505,37 @@ describe('an organization’s AI agent (PRD §74–75)', () => {
       .where('user_id', '=', bot)
       .where('outcome', '=', 'ok')
       .execute();
+
+    // Or by what a day of its answers may cost (M16 G9): three long ones that cost the free
+    // plan's €0.30 ($0.34), well short of the count, and it waits; the plan says until when.
+    const spentAt = t.clock.now;
+    await t.ctx.db
+      .insertInto('ai_runs')
+      .values(
+        Array.from({ length: 3 }, () => ({
+          id: uuidv7(),
+          user_id: bot,
+          feature: 'agent',
+          provider: 'anthropic',
+          outcome: 'ok',
+          cost_usd: 0.12,
+          created_at: spentAt,
+        })),
+      )
+      .execute();
+    const costly = await newCustomer('Yara Costly');
+    await send(costly.c, 'Are you open on Saturday?', costly.conversationId);
+    await agentTurn();
+    expect(requests).toHaveLength(1);
+    const plan = (await noor.get(`/v1/orgs/${orgId}`)).org.plan;
+    expect(plan.used.agentRepliesToday).toBe(3);
+    expect(plan.agentHeldUntil).toBe(new Date(spentAt.getTime() + 86_400_000).toISOString());
+    await t.ctx.db
+      .deleteFrom('ai_runs')
+      .where('user_id', '=', bot)
+      .where('outcome', '=', 'ok')
+      .execute();
+    expect((await noor.get(`/v1/orgs/${orgId}`)).org.plan.agentHeldUntil).toBeNull();
   });
 
   it('hands a long conversation to a person after ten answers in a day', async () => {
@@ -620,7 +651,8 @@ describe('an organization’s AI agent (PRD §74–75)', () => {
     // A try isn't an answer to anyone, and doesn't count as one.
     expect((await noor.get(`/v1/orgs/${orgId}/agent`)).agent.repliesToday).toBe(10);
 
-    // It is one of the person's own AI assists, though: past their plan's, it waits.
+    // It is one of the person's own AI assists, though: past what their plan's day may cost
+    // (M16 G9), it waits.
     await t.ctx.db
       .insertInto('ai_runs')
       .values(
@@ -630,6 +662,7 @@ describe('an organization’s AI agent (PRD §74–75)', () => {
           feature: 'rewrite',
           provider: 'anthropic',
           outcome: 'ok',
+          cost_usd: 0.06,
           created_at: t.clock.now,
         })),
       )

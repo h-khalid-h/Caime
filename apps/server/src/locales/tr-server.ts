@@ -137,10 +137,7 @@ export const turkishServer: Catalog = {
   'In a business conversation the team’s names and ids are masked everywhere: messages, read receipts, suggestions, exports. Anything filed for the customer names the organization.':
     'İş konuşmalarında ekibin adları ve kimlikleri her yerde gizlenir: mesajlarda, okundu bilgilerinde, önerilerde, dışa aktarımlarda. Müşteri için kaydedilen her şeyde yalnızca kuruluşun adı geçer.',
   'verified · answered in an hour': 'doğrulanmış · bir saat içinde yanıtladı',
-  '{n} actions a day': 'günde {n} eylem',
   '{n} conversations a day': 'günde {n} konuşma',
-  '{n} answers a day, on a fast model': 'günde {n} yanıt, hızlı bir modelle',
-  '{n} answers a day, on our most capable model': 'günde {n} yanıt, en yetenekli modelimizle',
   'Your family, your work and your customers don’t belong in one list. Say who each person is to you, once. From then on Caime knows what needs you first, who may reach you when, what was decided and what’s owed, and what each side of your life sees of you.':
     'Aileniz, işiniz ve müşterileriniz aynı listeye sığmaz. Her kişinin sizin için kim olduğunu bir kez söyleyin. Caime o andan itibaren önce neyin sizi beklediğini, kimin size ne zaman ulaşabileceğini, neye karar verildiğini, kimin neyi yapacağını ve hayatınızın her yanının sizden neyi gördüğünü bilir.',
   'Start free': 'Ücretsiz başlayın',
@@ -222,7 +219,6 @@ export const turkishServer: Catalog = {
     'Caime’yi Caime yapan hiçbir şey kotaya girmez: bağlantılar, ilişkiler, sizi bekleyenler, beklediğiniz şeyler, arama ve eşitleme her planda var. Planlar yalnızca çalıştırması para tutan özelliklerde ve kuruluşların satın aldıklarında ayrılır.',
   'For people': 'Kişiler için',
   Personal: 'Kişisel',
-  '{n} actions a day, once you turn it on': 'açtığınızda günde {n} eylem',
   files: 'dosyalar',
   automations: 'otomasyonlar',
   'everything else': 'diğer her şey',
@@ -505,9 +501,6 @@ export const turkishServer: Catalog = {
     'Canlı konum, kuruluşlar için değil, tanıdığınız kişiler içindir.',
   'That organization': 'Bu kuruluş',
   'That account': 'Bu hesap',
-  'You’ve used today’s {aiPerDay} AI assists.{ready}{more}':
-    'Bugünkü {aiPerDay} AI yardımı hakkınızı kullandınız.{ready}{more}',
-  'The next one is ready {when}.': 'Sıradaki hakkınız {when} hazır olur.',
   '{plan} includes {n} a day.': '{plan} planında günde {n} hak var.',
   '{plan} includes {bytes}.': '{plan} planında {bytes} alan var.',
   'That’s more than the {allowed} of files your plan includes ({used} used).{more}':
@@ -1567,4 +1560,13 @@ export const turkishServer: Catalog = {
   'That draft': 'Bu taslak',
   'Nothing from a private conversation is kept on the server.':
     'Özel bir konuşmadan hiçbir şey sunucuda tutulmaz.',
+  '{plan} includes more.': '{plan} planında daha fazlası var.',
+  'You’ve used the AI assist your plan includes for now. There’s more {when}.{more}':
+    'Planınızın içerdiği AI yardımını şimdilik kullandınız. {when} yeniden hazır.{more}',
+  'up to {n} answers a day, on our most capable model':
+    'günde en fazla {n} yanıt, en yetenekli modelimizle',
+  'up to {n} answers a day, on a fast model': 'günde en fazla {n} yanıt, hızlı bir modelle',
+  'for everyday use, once you turn it on': 'açtığınızda, günlük kullanım için',
+  'more each day, and follow-ups found by our most capable model':
+    'her gün daha fazlası ve en yetenekli modelimizin bulduğu takipler',
 };

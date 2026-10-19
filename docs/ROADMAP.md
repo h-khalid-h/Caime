@@ -3098,6 +3098,31 @@ graph) and the number that will show it; one that sharpens none is hygiene and s
       it was said, each side offered it once, the inbox's reason; a customer's spoken ask filed
       for whoever has the thread; an age check's minor never sent), each failing on the old
       code, and the full gate.
+- [x] G9. AI by what it costs (2026-10-19, R107; review §5 M "allowance per call not per token;
+      search spends it silently", R106's next step; advantage 4, one flat price that holds. The
+      number: a month at a plan's edge, by cost: Pro €70.89 where it was €2,178.96, a Business
+      agent €907.07 where it was €14,061.74, a free person €16.60 against the €20 the test holds,
+      and a search's reading a 1,250th of a free day where it was one of ten assists). Every call
+      is priced as it runs (`ai_runs.cost_usd`, migration 0142, through `chargedUsd`: a model or
+      provider the list doesn't name counts at the dearest listed rate, never as nothing). A
+      person's AI assist is euros of model time in any 24 hours (`aiEurPerDay`: Personal €0.50,
+      Pro and a Business seat €2, an Enterprise seat €10), refused once spent with when there's
+      room again, the moment enough of the day's calls have left the window ("There's more
+      tomorrow at 9:00 AM", in four languages); Settings · Plan's meter fills by the share and says
+      what's left in words, never a price or a count. An organization's agent keeps its answers a
+      day ("up to" on the pricing page) and gains a backstop by cost (`agentEurPerDay`: €0.30, €30,
+      €300) the test holds above a day of its count at the assumed answer; past it the agent
+      waits as past the count, and the organization's plan says until when (`agentHeldUntil`).
+      Costs: one indexed sum per AI check, as the count was (a second, ordered read only once a day
+      is spent), and a float per call; nothing on devices. RESOURCES.md's tables were produced
+      again from `ai-costs.test.ts` (the agent's prompt had grown since H7: 56,082 characters at
+      its bound, so Business's €29 now covers 76 answers a day on Opus 5.5, not 79). Verified:
+      `ai.test.ts` (a spent day refused with its time, the share 1 then 0.96 as the oldest call
+      leaves, a real call priced as it ran, an unlisted model charged at the dearest rate),
+      `agents.test.ts` (long answers holding a free agent short of its count, the plan's time),
+      `plans.test.ts`, `ai-costs.test.ts` (the free edges, the backstops above a day of answers),
+      `public-pages.test.ts` (the pricing page's lines), the catalogs in four languages, the E2E's
+      plan screens and the full gate.
 - [ ] H. Business depth: a Business seat includes Pro; a cap on organizations per person; room
       checks inside the transaction; quick replies, away and greeting messages; customer notes,
       tags and fields; tax invoices (counsel); booking and revenue analytics; intake forms as
@@ -4881,6 +4906,9 @@ graph) and the number that will show it; one that sharpens none is hygiene and s
 - 2026-10-19 — The web's first download back to 447.5 KB of 450: a phone's haptics, keychain and
   AsyncStorage reached on the web through twins that load none of them (2.5 KB gzip), held by
   `webVariants.test.ts`; G9's plan screens took it to 450.3 before.
+- 2026-10-19 — M16 G9: AI by what it costs: every call priced as it runs, a person's day in euros
+  of model time said in words, an agent's backstop by cost beside its count; Pro's edge €70.89 a
+  month where it was €2,178.96.
 - 2026-10-19 — M16 G8: a voice note's words read like typed ones: its asks, promises and dates
   offered once as a text's would be (a customer's for whoever has the thread), and an age
   check's finding keeps a minor's notes from the provider.

@@ -3,6 +3,7 @@ import type { AddressInfo } from 'node:net';
 import { uuidv4 } from '@caime/core';
 import { afterAll, beforeAll, beforeEach, describe, expect, it } from 'vitest';
 import { PROMPT_VERSIONS } from '../src/lib/ai';
+import { chargedUsd } from '../src/lib/ai-costs';
 import { type Client, createTestApp, signup, type TestApp } from './helpers';
 
 /** A stand-in for the Messages API: records each request and answers from a queue. */
@@ -477,13 +478,15 @@ describe('AI assist (PRD §45, R17, R18)', () => {
       latencyMs: runs[0]!.latency_ms,
       at: expect.any(String),
     });
-    // Which conversation the AI agent answered in, as an id, a recording's length (M16 H7) and
-    // which version of Caime's own instructions it ran on (M16 G6a): never what was said.
+    // Which conversation the AI agent answered in, as an id, a recording's length (M16 H7),
+    // which version of Caime's own instructions it ran on (M16 G6a) and what it cost (M16 G9):
+    // never what was said.
     expect(Object.keys(runs[0]!).sort()).toEqual([
       'audio_ms',
       'cache_creation_tokens',
       'cache_read_tokens',
       'conversation_id',
+      'cost_usd',
       'created_at',
       'discarded_at',
       'feature',
@@ -565,7 +568,7 @@ describe('AI assist with an organization (R15)', () => {
 });
 
 describe('AI assist and plans (PRD §84, R23)', () => {
-  it('Personal includes ten a day; the eleventh waits, and says until when', async () => {
+  it('a day is what its calls cost: spent, the next waits and says until when (M16 G9)', async () => {
     const ava = await signup(t, { displayName: 'Ava Stone' });
     await ava.patch('/v1/me', { aiEnabled: true });
     const avaConvo = await connect(ava, sam);
@@ -575,12 +578,18 @@ describe('AI assist and plans (PRD §84, R23)', () => {
         style: 'clearer',
         conversationId: avaConvo,
       });
-    // Failed calls don't count; the first ok one, an hour ago, is the oldest of today's ten.
+    // Personal's day is €0.50 of model time ($0.56 at the list's rate): ten calls of six cents
+    // spend it. What a call that failed cost is what it cost (here nothing), and yesterday's
+    // has left the window.
     const at = (minutesAgo: number) => new Date(t.clock.now.getTime() - minutesAgo * 60_000);
     const runs = [
-      ...Array.from({ length: 10 }, (_, i) => ({ outcome: 'ok', created_at: at(60 - i) })),
-      { outcome: 'busy', created_at: at(5) },
-      { outcome: 'ok', created_at: at(25 * 60) }, // yesterday's
+      ...Array.from({ length: 10 }, (_, i) => ({
+        outcome: 'ok',
+        cost_usd: 0.06,
+        created_at: at(60 - i),
+      })),
+      { outcome: 'busy', cost_usd: null, created_at: at(5) },
+      { outcome: 'ok', cost_usd: 0.5, created_at: at(25 * 60) },
     ];
     await t.ctx.db
       .insertInto('ai_runs')
@@ -597,24 +606,55 @@ describe('AI assist and plans (PRD §84, R23)', () => {
     const before = requests.length;
     const refused = await rewrite();
     expect(refused.statusCode).toBe(403);
+    // Room comes back once the oldest has left the window: what's left is under the day then.
     expect(refused.json().error).toMatchObject({
       code: 'plan_limit',
       details: { nextAt: new Date(at(60).getTime() + 86_400_000).toISOString() },
     });
     // A day after her oldest (13:00 UTC), in Ava's time zone (New York): tomorrow at 9:00 AM.
     expect(refused.json().error.message).toMatch(
-      /^You’ve used today’s 10 AI assists\. The next one is ready tomorrow at 9:00\sAM\. Pro includes 200 a day\.$/,
+      /^You’ve used the AI assist your plan includes for now\. There’s more tomorrow at 9:00\sAM\. Pro includes more\.$/,
     );
     expect(requests.length).toBe(before); // The model was never asked.
-    expect((await ava.get('/v1/me/plan')).used.aiToday).toBe(10);
+    const plan = await ava.get('/v1/me/plan');
+    expect(plan.used.aiShare).toBe(1);
+    expect(plan.aiNextAt).toBe(new Date(at(60).getTime() + 86_400_000).toISOString());
 
-    // Once the oldest of the ten is a day old, one is free again.
+    // Once the oldest is a day old there's room again, and the share says how much is used.
     t.clock.advance(23 * 3_600_000 + 30_000);
-    expect((await ava.get('/v1/me/plan')).used.aiToday).toBe(9);
+    const again = await ava.get('/v1/me/plan');
+    expect(again.used.aiShare).toBe(0.96);
+    expect(again.aiNextAt).toBeNull();
     replies.push(message('Can we move it to 3?'));
     expect((await rewrite()).statusCode).toBe(200);
-    await t.ctx.flush(); // Each call is recorded after its response.
-    expect((await rewrite()).statusCode).toBe(403);
+    await t.ctx.flush(); // Each call is recorded after its response, priced as it ran.
+    const [last] = await t.ctx.db
+      .selectFrom('ai_runs')
+      .select(['cost_usd'])
+      .where('user_id', '=', ava.user.id)
+      .orderBy('created_at', 'desc')
+      .limit(1)
+      .execute();
+    expect(last!.cost_usd).toBeGreaterThan(0);
+    expect(last!.cost_usd).toBeLessThan(0.01);
+  });
+
+  it('a call on a model the price list doesn’t name counts at the dearest rate, never as nothing (M16 G9)', () => {
+    const tokens = {
+      inputTokens: 1_000,
+      outputTokens: 500,
+      cacheReadTokens: 0,
+      cacheCreationTokens: 0,
+      audioMs: null,
+    };
+    const listed = chargedUsd({ provider: 'anthropic', model: 'claude-haiku-5-5', ...tokens });
+    const unlisted = chargedUsd({ provider: 'anthropic', model: 'claude-mystery-9', ...tokens });
+    expect(listed).toBeGreaterThan(0);
+    expect(unlisted).toBeGreaterThan(listed * 50);
+    // A recording on a model nobody priced: its length at the dearest listed rate.
+    expect(
+      chargedUsd({ provider: 'openai', model: 'mystery-transcribe', ...tokens, audioMs: 60_000 }),
+    ).toBeGreaterThan(0);
   });
 });
 

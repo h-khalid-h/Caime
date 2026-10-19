@@ -3238,4 +3238,12 @@ export const arB: Catalog = {
     other: '{n} تأكيد خاطئ',
   },
   'Caime tests it every night': 'يختبره Caime كل ليلة',
+  'Relationship insights, {automations} automations, more AI assist each day and {storage} for files.':
+    'رؤى العلاقات، {automations} أتمتة، ومساعدة ذكاء اصطناعي أكثر كل يوم، و{storage} للملفات.',
+  'Used for now. There’s more {when}.': 'استُنفدت حاليًا. يتوفر المزيد {when}.',
+  'Plenty left': 'يتبقى الكثير',
+  'Some left': 'يتبقى بعضها',
+  'A little left': 'يتبقى القليل',
+  'Its answers have used what a day allows: your team answers until {when}.':
+    'استنفدت إجاباته ما يسمح به يوم واحد: يجيب فريقك حتى {when}.',
 };

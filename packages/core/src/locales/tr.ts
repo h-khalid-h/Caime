@@ -405,10 +405,6 @@ export const turkish: Catalog = {
     'İş bildirimleri bu günleri bekler. Yaşadığınız yere göre ayarlanır (Dil ve bölge); sizinki farklıysa değiştirin.',
   'Reset to Caime’s defaults': 'Caime varsayılanlarına dön',
   'Back to the defaults': 'Varsayılanlara dönüldü',
-  'Relationship insights, {automations} automations, {aiPerDay} AI assists a day and {storage} for files.':
-    'İlişki içgörüleri, {automations} otomasyon, günde {aiPerDay} AI yardımı ve dosyalar için {storage}.',
-  '{aiToday} of {aiPerDay} in the last 24 hours': 'Son 24 saatte {aiToday}/{aiPerDay}',
-  '{base}. The next one is ready {when}': '{base}. Bir sonraki {when} hazır',
   Plan: 'Plan',
   'Free forever: your connections, what needs you, what you’re waiting for, search and sync. No plan ever limits those.':
     'Her zaman ücretsiz: bağlantılarınız, sizi bekleyenler, beklediğiniz şeyler, arama ve eşitleme. Hiçbir plan bunları sınırlamaz.',
@@ -4719,4 +4715,12 @@ export const turkish: Catalog = {
     other: '{n} yanlış onay',
   },
   'Caime tests it every night': 'Caime her gece test ediyor',
+  'Relationship insights, {automations} automations, more AI assist each day and {storage} for files.':
+    'İlişki içgörüleri, {automations} otomasyon, her gün daha fazla AI yardımı ve dosyalar için {storage}.',
+  'Used for now. There’s more {when}.': 'Şimdilik bitti. {when} yeniden hazır.',
+  'Plenty left': 'Bolca kaldı',
+  'Some left': 'Bir kısmı kaldı',
+  'A little left': 'Çok az kaldı',
+  'Its answers have used what a day allows: your team answers until {when}.':
+    'Yanıtları bir günün izin verdiği sınıra ulaştı. Ekibiniz yanıtlıyor; yeniden: {when}.',
 };

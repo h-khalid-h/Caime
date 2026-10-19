@@ -64,7 +64,7 @@ import { enqueue, registerJob } from './jobs';
 import { readableBy } from './messages';
 import { notify } from './notify';
 import { bookablePlaceLines } from './places';
-import { agentRepliesToday } from './plans';
+import { agentRepliesToday, agentSpent } from './plans';
 import { postAs } from './post-as';
 import { stockFor, withStock } from './stock';
 import { transcriptText, wordsFor } from './transcript';
@@ -492,8 +492,11 @@ export async function agentReply(ctx: AppContext, payload: Record<string, unknow
     .executeTakeFirst();
   // A person answers anyone under 18 (R29).
   if (!customer || minorOf(customer, ctx.now())) return;
+  // Past the day's answers, or what a day of them may cost (M16 G9), the team answers.
   if (
-    (await agentRepliesToday(ctx, thread.org_id)) >= ORG_ALLOWANCES[thread.plan].agentRepliesPerDay
+    (await agentRepliesToday(ctx, thread.org_id)) >=
+      ORG_ALLOWANCES[thread.plan].agentRepliesPerDay ||
+    (await agentSpent(ctx, thread.org_id, thread.plan)).roomAt
   )
     return;
 

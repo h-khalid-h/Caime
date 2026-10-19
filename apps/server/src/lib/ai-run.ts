@@ -8,6 +8,7 @@ import { uuidv7 } from '@caime/core';
 import { tr } from '@caime/core/i18n';
 import type { AppContext } from '../context';
 import { AiError, type AiResult, type AiUsage, PROMPT_VERSIONS } from './ai';
+import { chargedUsd } from './ai-costs';
 import { AppError } from './errors';
 
 /**
@@ -39,6 +40,7 @@ export async function runAi<T>(
           usage.cacheCreationTokens,
         );
     }
+    const model = usage?.model ?? (provider === 'anthropic' ? (ctx.ai?.model ?? null) : null);
     ctx.defer('ai run', () =>
       ctx.db
         .insertInto('ai_runs')
@@ -47,7 +49,7 @@ export async function runAi<T>(
           user_id: userId,
           feature,
           provider,
-          model: usage?.model ?? (provider === 'anthropic' ? (ctx.ai?.model ?? null) : null),
+          model,
           input_tokens: usage?.inputTokens ?? null,
           output_tokens: usage?.outputTokens ?? null,
           cache_read_tokens: usage?.cacheReadTokens ?? null,
@@ -56,6 +58,18 @@ export async function runAi<T>(
           latency_ms: Date.now() - started,
           outcome,
           prompt_hash: PROMPT_VERSIONS[feature] ?? null,
+          // Priced as it ran, which is what an allowance counts (M16 G9).
+          cost_usd: usage
+            ? chargedUsd({
+                provider,
+                model,
+                inputTokens: usage.inputTokens,
+                outputTokens: usage.outputTokens,
+                cacheReadTokens: usage.cacheReadTokens ?? null,
+                cacheCreationTokens: usage.cacheCreationTokens ?? null,
+                audioMs: usage.audioMs ?? null,
+              })
+            : null,
         })
         .execute(),
     );

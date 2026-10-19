@@ -59,21 +59,22 @@ function Usage({
 function proIncludes(plan: Plan = 'pro'): string {
   const a = PERSON_ALLOWANCES[plan];
   return tr(
-    'Relationship insights, {automations} automations, {aiPerDay} AI assists a day and {storage} for files.',
-    { automations: a.automations, aiPerDay: a.aiPerDay, storage: formatBytes(a.storageBytes) },
+    'Relationship insights, {automations} automations, more AI assist each day and {storage} for files.',
+    { automations: a.automations, storage: formatBytes(a.storageBytes) },
   );
 }
 
+/**
+ * How much of the last 24 hours' AI assist is left, in words (M16 G9): what the calls cost is
+ * the plan's to count, never a price or a count to read.
+ */
 function aiDetail(p: PlanUsageView, timeZone: string, locale: string): string {
-  const base = tr('{aiToday} of {aiPerDay} in the last 24 hours', {
-    aiToday: p.used.aiToday,
-    aiPerDay: p.allowance.aiPerDay,
-  });
-  if (!p.aiNextAt) return base;
-  return tr('{base}. The next one is ready {when}', {
-    base,
-    when: formatSoon(p.aiNextAt, new Date(), timeZone, locale),
-  });
+  if (p.aiNextAt)
+    return tr('Used for now. There’s more {when}.', {
+      when: formatSoon(p.aiNextAt, new Date(), timeZone, locale),
+    });
+  const share = p.used.aiShare;
+  return share < 0.5 ? tr('Plenty left') : share < 0.8 ? tr('Some left') : tr('A little left');
 }
 
 export default function PlanSettings() {
@@ -127,8 +128,8 @@ export default function PlanSettings() {
           icon={Sparkles}
           title={tr('AI assist')}
           detail={aiDetail(p, user.timeZone, user.locale)}
-          used={p.used.aiToday}
-          of={p.allowance.aiPerDay}
+          used={Math.round(p.used.aiShare * 100)}
+          of={100}
           testID="plan-ai"
         />
         <Divider />
