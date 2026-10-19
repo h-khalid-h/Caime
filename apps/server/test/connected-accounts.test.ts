@@ -263,6 +263,20 @@ describe('connected accounts (R90)', () => {
     // Sealed with VAULT_KEY and named by its id; the database holds no key that opens it.
     expect(row.refresh_kid).toBe(vaultKid(VAULT_KEY));
     expect(await storedServerKey(t.ctx, DATABASE_VAULT_KEY)).toBeNull();
+    // The audit log says which account was connected and for what, never its address (M16 G3).
+    const said = await t.ctx.db
+      .selectFrom('audit_log')
+      .select(['actor_id', 'target', 'metadata'])
+      .where('action', '=', 'connected_account.connected')
+      .execute();
+    expect(said).toEqual([
+      {
+        actor_id: noor.user.id,
+        target: account.id,
+        metadata: { provider: 'google', uses: ['calendar'] },
+      },
+    ]);
+    expect(JSON.stringify(said)).not.toContain('noor@gmail.example');
   });
 
   it('keeps when Noor is busy there, and Noor’s slots are never offered over it', async () => {
@@ -412,6 +426,14 @@ describe('connected accounts (R90)', () => {
     expect((await lina.req('DELETE', `/v1/me/accounts/${account.id}`)).statusCode).toBe(404);
     await omar.req('DELETE', `/v1/me/accounts/${account.id}`);
     expect((await omar.get('/v1/me/accounts')).accounts).toEqual([]);
+    expect(
+      await t.ctx.db
+        .selectFrom('audit_log')
+        .select(['actor_id', 'metadata'])
+        .where('action', '=', 'connected_account.disconnected')
+        .where('target', '=', account.id)
+        .execute(),
+    ).toEqual([{ actor_id: omar.user.id, metadata: { provider: 'microsoft' } }]);
     const busy = await t.ctx.db
       .selectFrom('external_busy')
       .select('user_id')

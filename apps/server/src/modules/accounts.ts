@@ -25,6 +25,7 @@ import { tr } from '@caime/core/i18n';
 import type { FastifyInstance } from 'fastify';
 import { z } from 'zod';
 import type { AppContext } from '../context';
+import { audit } from '../lib/audit';
 import { queueAccountPush } from '../lib/calendar-push';
 import {
   googlePickerOn,
@@ -101,6 +102,13 @@ export async function connectedAccountRoutes(app: FastifyInstance, ctx: AppConte
     const body = parse(AccountClaimBody, req.body);
     await adult(auth.userId);
     const account = await redeemAccountClaim(ctx, auth.userId, p, body.claim);
+    // Which account and for what, never its address (M16 G3).
+    await audit(ctx.db, {
+      actorId: auth.userId,
+      action: 'connected_account.connected',
+      target: account.id,
+      metadata: { provider: p, uses: account.uses },
+    });
     if (account.uses.includes('calendar')) await queueAccountSync(ctx, account.id);
     // Plans written now (R96), or, turned off at the provider, what was written taken out.
     await queueAccountPush(ctx, account.id);
@@ -194,7 +202,14 @@ export async function connectedAccountRoutes(app: FastifyInstance, ctx: AppConte
   app.delete('/me/accounts/:id', async (req): Promise<OkResponse> => {
     const auth = requireAuth(req);
     const { id } = parse(z.object({ id: z.string().uuid() }), req.params);
-    await disconnectAccount(ctx, await accountOf(ctx, auth.userId, id));
+    const account = await accountOf(ctx, auth.userId, id);
+    await disconnectAccount(ctx, account);
+    await audit(ctx.db, {
+      actorId: auth.userId,
+      action: 'connected_account.disconnected',
+      target: id,
+      metadata: { provider: account.provider },
+    });
     return { ok: true };
   });
 }

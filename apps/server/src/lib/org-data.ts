@@ -260,6 +260,7 @@ export async function buildOrgExport(
       'time_zone',
       'workweek',
       'retention_days',
+      'member_apps',
       'created_at',
       'archived_at',
       'booking',
@@ -479,6 +480,8 @@ export async function buildOrgExport(
       timeZone: org.time_zone,
       workweek: org.workweek,
       retentionDays: org.retention_days,
+      // Whether its team's own apps reach its conversations (M16 G3).
+      memberApps: org.member_apps,
       createdAt: org.created_at.toISOString(),
       closedAt: closedAt?.toISOString() ?? null,
     },

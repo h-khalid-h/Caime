@@ -17,6 +17,7 @@ import { sql, type Transaction } from 'kysely';
 import { z } from 'zod';
 import type { AppContext } from '../context';
 import type { Database } from '../db/schema';
+import { audit } from '../lib/audit';
 import { conflict, notFound } from '../lib/errors';
 import { activeRelationships, between, loadPolicies, policyTargetFor } from '../lib/relations';
 import { seedDefaults } from '../lib/users';
@@ -35,6 +36,18 @@ const sameScope = (a: Scope, b: Scope) =>
   (a.role ?? null) === (b.role ?? null) &&
   (a.orgId ?? null) === (b.orgId ?? null) &&
   (a.connectionId ?? null) === (b.connectionId ?? null);
+
+/** Whom a rule is for, as its audit row says it: the kind alone, never who (M16 G3). */
+const scopeKind = (scope: Scope) =>
+  scope.connectionId
+    ? 'person'
+    : scope.orgId
+      ? 'organization'
+      : scope.role
+        ? 'role'
+        : scope.sphere
+          ? 'sphere'
+          : 'everyone';
 
 /** A rule for one person is for one of your own connections. */
 async function assertOwnConnection(ctx: AppContext, userId: string, scope: Scope) {
@@ -109,6 +122,13 @@ export async function policyRoutes(app: FastifyInstance, ctx: AppContext) {
         .execute();
       return { id };
     });
+    // Who a rule is for and which of its settings were set, never their values (M16 G3).
+    await audit(ctx.db, {
+      actorId: auth.userId,
+      action: 'existing' in result ? 'policy.updated' : 'policy.created',
+      target: result.id,
+      metadata: { scope: scopeKind(body.scope), settings: Object.keys(body.settings) },
+    });
     await ctx.bus.publish([auth.userId], { type: 'policies.changed', data: {} });
     if ('existing' in result) return result;
     reply.status(201);
@@ -157,6 +177,15 @@ export async function policyRoutes(app: FastifyInstance, ctx: AppContext) {
         .where('id', '=', id)
         .execute();
     });
+    await audit(ctx.db, {
+      actorId: auth.userId,
+      action: 'policy.updated',
+      target: id,
+      metadata: {
+        ...(body.scope ? { scope: scopeKind(body.scope) } : {}),
+        settings: Object.keys(body.settings ?? {}),
+      },
+    });
     await ctx.bus.publish([auth.userId], { type: 'policies.changed', data: {} });
     return { ok: true };
   });
@@ -170,6 +199,7 @@ export async function policyRoutes(app: FastifyInstance, ctx: AppContext) {
       .where('user_id', '=', auth.userId)
       .executeTakeFirst();
     if (Number(res.numDeletedRows) === 0) throw notFound(tr('That rule'));
+    await audit(ctx.db, { actorId: auth.userId, action: 'policy.removed', target: id });
     await ctx.bus.publish([auth.userId], { type: 'policies.changed', data: {} });
     return { ok: true };
   });
@@ -194,6 +224,7 @@ export async function policyRoutes(app: FastifyInstance, ctx: AppContext) {
         me.workweek?.length ? me.workweek : defaultWorkweek(me.country),
       );
     });
+    await audit(ctx.db, { actorId: auth.userId, action: 'policy.reset' });
     await ctx.bus.publish([auth.userId], { type: 'policies.changed', data: {} });
     return { ok: true };
   });

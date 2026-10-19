@@ -30,6 +30,7 @@ import type { FastifyInstance } from 'fastify';
 import { sql } from 'kysely';
 import { z } from 'zod';
 import type { AppContext } from '../context';
+import { audit } from '../lib/audit';
 import { automationView, lockSaved, savedCount, visibleSaved } from '../lib/automations';
 import { maskId, masksFor } from '../lib/business';
 import { AppError, badRequest, conflict, forbidden, notFound } from '../lib/errors';
@@ -129,6 +130,7 @@ export async function automationRoutes(app: FastifyInstance, ctx: AppContext) {
         })
         .execute();
     });
+    await audit(ctx.db, { actorId: auth.userId, action: 'automation.created', target: id });
     await changed(auth.userId);
     reply.status(201);
     return { id };
@@ -155,6 +157,13 @@ export async function automationRoutes(app: FastifyInstance, ctx: AppContext) {
       .where('user_id', '=', auth.userId)
       .executeTakeFirst();
     if (Number(res.numUpdatedRows) === 0) throw notFound(tr('That automation'));
+    // What changed, by name, never what it now says (M16 G3).
+    await audit(ctx.db, {
+      actorId: auth.userId,
+      action: 'automation.updated',
+      target: id,
+      metadata: { changed: Object.keys(body) },
+    });
     await changed(auth.userId);
     return { ok: true };
   });
@@ -168,6 +177,7 @@ export async function automationRoutes(app: FastifyInstance, ctx: AppContext) {
       .where('user_id', '=', auth.userId)
       .executeTakeFirst();
     if (Number(res.numDeletedRows) === 0) throw notFound(tr('That automation'));
+    await audit(ctx.db, { actorId: auth.userId, action: 'automation.removed', target: id });
     // What it saved stays saved.
     await changed(auth.userId);
     return { ok: true };

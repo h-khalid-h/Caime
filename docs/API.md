@@ -185,6 +185,14 @@ Anything else answers `403` with `token_route` (or `token_scope` without the per
 token never changes a password, privacy or sessions, makes tokens, exports or deletes an
 account. Revoked or expired, it answers `401`.
 
+An organization decides whether its team's own tokens reach its conversations (off unless its
+owner or an admin turns on **Team members' own apps** in its setup). Until then a token acting
+for someone on its team who doesn't run it answers `403 org_apps_closed` for the team's side of
+its customer threads, its spaces' conversations and a thread written as it, and `GET /v1/inbox`,
+`GET /v1/search` and `GET /v1/tasks` leave those out rather than refusing; the person's own
+conversations, their side as anyone's customer and the owner's and admins' own tokens are never
+kept out. The same holds for an OAuth app's tokens and a bridge's.
+
 ### Bridges: Zapier, Make, n8n, Pipedream and IFTTT
 
 The same token, made in one tap (**You → Apps → Discover → Automation**): each platform is a

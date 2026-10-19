@@ -1623,4 +1623,6 @@ export const frServer: Catalog = {
   '{name} needs connecting again': '{name} doit être connecté à nouveau',
   'Caime can’t use it for you until you connect it again in Settings · Apps.':
     'Caime ne peut plus l’utiliser pour vous tant que vous ne l’avez pas connecté à nouveau dans Réglages · Applications.',
+  'This organization keeps its conversations from its members’ own apps.':
+    'Cette organisation garde ses conversations à l’écart des applications personnelles de ses membres.',
 };

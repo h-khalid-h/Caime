@@ -3168,4 +3168,8 @@ export const arB: Catalog = {
   '{name} refused the last change Caime sent': 'رفض {name} آخر تغيير أرسله Caime',
   '{name} didn’t answer the last change Caime sent': 'لم يُجب {name} عن آخر تغيير أرسله Caime',
   'written {when}': 'كُتب {when}',
+  'Team members’ own apps may reach the organization’s conversations':
+    'وصول تطبيقات أعضاء الفريق الخاصة إلى محادثات المؤسسة',
+  'A personal token, a bridge like Zapier, or an app someone on the team connects to their own account. Off, those reach only their own conversations. The owner and admins decide for themselves.':
+    'رمز شخصي، أو جسر مثل Zapier، أو تطبيق مربوط بحساب أحد أعضاء الفريق. عند الإيقاف لا تصل إلا إلى محادثات صاحب الحساب. أما المالك والمشرفون فيقررون لأنفسهم.',
 };

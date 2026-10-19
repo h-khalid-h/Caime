@@ -62,6 +62,7 @@ import { AppError, badRequest, forbidden, notFound } from '../lib/errors';
 import { recordEvent } from '../lib/events';
 import { leaveGroupCallsIn } from '../lib/group-calls';
 import { addToGroup, tellTopics } from '../lib/group-members';
+import { assertOpenToApps } from '../lib/member-apps';
 import { assertCanMessage, participantsOf } from '../lib/messages';
 import { assertNoMinorWhereNoneMay, invitePeople, whoMustBeAsked } from '../lib/place-invites';
 import { openMailConversation } from '../lib/provisional';
@@ -306,6 +307,7 @@ export async function conversationRoutes(app: FastifyInstance, ctx: AppContext) 
     const auth = requireAuth(req);
     const { id } = parse(z.object({ id: z.string().uuid() }), req.params);
     const { conversation, me } = await membership(ctx, auth.userId, id);
+    await assertOpenToApps(ctx, auth, id);
     return { conversation: await conversationView(ctx, auth.userId, conversation, me) };
   });
 

@@ -184,7 +184,7 @@ export function OrgSetupScreen({ handle }: { handle: string }) {
           refresh={() => void qc.invalidateQueries({ queryKey: qk.org(handle) })}
         />
         <OrgForms org={org} />
-        <OrgApps org={org} />
+        <OrgApps org={org} refresh={put} />
         {org.plan ? (
           <View style={{ paddingHorizontal: 16, paddingTop: 12 }}>
             <OrgPlan plan={org.plan} orgId={org.id} handle={org.handle} />

@@ -22,6 +22,7 @@ import type { AppContext } from '../context';
 import { columnsOf, MESSAGE_COLUMNS } from '../db/schema';
 import { maskPayload, orgRef } from '../lib/business';
 import { overdueAtSql } from '../lib/due';
+import { openIn, orgsClosedToApps } from '../lib/member-apps';
 import { messagePreview } from '../lib/messages';
 import { personViewsFor } from '../lib/people-batch';
 import {
@@ -38,6 +39,8 @@ import { requireAuth } from '../plugins/auth';
 export async function buildInbox(
   ctx: AppContext,
   userId: string,
+  /** Organizations that keep their conversations from this request (M16 G3): left out. */
+  closed: readonly string[] = [],
 ): Promise<InboxResponse & { conversations: InboxItemView[] }> {
   const now = ctx.now();
   const me = await ctx.db
@@ -119,6 +122,7 @@ export async function buildInbox(
     .where('p.left_at', 'is', null)
     // An organization's conversations are in its Business inbox, not its team's own (PRD §38).
     .where('p.role', '<>', 'agent')
+    .$if(closed.length > 0, (qb) => qb.where(openIn(userId, closed, sql.ref('c.id'))))
     .execute();
 
   const ids = rows.map((r) => r.id);
@@ -397,7 +401,7 @@ export async function inboxRoutes(app: FastifyInstance, ctx: AppContext) {
   app.get('/inbox', async (req): Promise<InboxResponse | InboxAllResponse> => {
     const auth = requireAuth(req);
     const { view } = parse(InboxQuery, req.query);
-    const inbox = await buildInbox(ctx, auth.userId);
+    const inbox = await buildInbox(ctx, auth.userId, await orgsClosedToApps(ctx, auth));
     // `all` is every conversation, each with its section and rank: the app sections them and
     // makes its All list itself (core `inboxSections`, `inboxAllList`), so one request serves both.
     if (view === 'all')

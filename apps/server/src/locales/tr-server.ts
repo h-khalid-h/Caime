@@ -1550,4 +1550,6 @@ export const turkishServer: Catalog = {
   '{name} needs connecting again': '{name} yeniden bağlanmalı',
   'Caime can’t use it for you until you connect it again in Settings · Apps.':
     'Ayarlar · Uygulamalar’da yeniden bağlayana kadar Caime onu sizin için kullanamaz.',
+  'This organization keeps its conversations from its members’ own apps.':
+    'Bu kuruluş konuşmalarını üyelerinin kendi uygulamalarına kapalı tutuyor.',
 };

@@ -1601,4 +1601,6 @@ export const arServer: Catalog = {
   '{name} needs connecting again': 'يحتاج {name} إلى ربط من جديد',
   'Caime can’t use it for you until you connect it again in Settings · Apps.':
     'لا يستطيع Caime استخدامه من أجلك حتى تربطه من جديد في الإعدادات · التطبيقات.',
+  'This organization keeps its conversations from its members’ own apps.':
+    'تُبقي هذه المؤسسة محادثاتها بعيدًا عن التطبيقات الخاصة بأعضائها.',
 };

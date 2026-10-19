@@ -32,10 +32,12 @@ import { maskId, masksFor } from '../lib/business';
 import { titleWithGroup } from '../lib/conversations';
 import { AppError } from '../lib/errors';
 import { recordEvent } from '../lib/events';
+import { openIn, orgsClosedToApps } from '../lib/member-apps';
 import { fileView, notHiddenFor, readableBy } from '../lib/messages';
 import { personViewsFor } from '../lib/people-batch';
 import { assertAiAllowance } from '../lib/plans';
 import { relationshipView } from '../lib/relations';
+import { visibleTasksSql } from '../lib/task-visibility';
 import { taskViews } from '../lib/tasks';
 import { escapeLike } from '../lib/text';
 import { TtlCache } from '../lib/ttl-cache';
@@ -104,8 +106,12 @@ export async function runSearch(
   me: string,
   parsed: ParsedQuery,
   limit = 20,
+  closed: readonly string[] = [],
 ): Promise<SearchResponse> {
   const scope = parsed.scope;
+  // What an organization keeps from its members' own apps stays out of a token's search (M16 G3).
+  const keeps = closed.length > 0;
+  const open = (column: string) => openIn(me, closed, sql.ref(column));
   const want = (s: ParsedQuery['scope']) => scope === 'all' || scope === s;
   const personIds = parsed.person ? await resolvePeople(ctx, me, parsed.person) : null;
   const text = parsed.text;
@@ -196,6 +202,7 @@ export async function runSearch(
         .select(['o.name', 'o.handle', 't.conversation_id'])
         .where('t.customer_id', '=', me)
         .where('o.name', 'ilike', like(text))
+        .$if(keeps, (qb) => qb.where(open('t.conversation_id')))
         .orderBy('t.updated_at', 'desc')
         .limit(5)
         .execute();
@@ -239,6 +246,7 @@ export async function runSearch(
         .innerJoin('participants as p', (j) =>
           j.onRef('p.conversation_id', '=', 'm.conversation_id').on('p.user_id', '=', me),
         )
+        .$if(keeps, (qb) => qb.where(open('m.conversation_id')))
         .innerJoin('conversations as c', 'c.id', 'm.conversation_id')
         .leftJoin('users as u', 'u.id', 'm.sender_id')
         .select([
@@ -336,6 +344,7 @@ export async function runSearch(
         .innerJoin('participants as p', (j) =>
           j.onRef('p.conversation_id', '=', 'a.conversation_id').on('p.user_id', '=', me),
         )
+        .$if(keeps, (qb) => qb.where(open('a.conversation_id')))
         .leftJoin('files as f', 'f.id', 'a.file_id')
         .select([
           'a.id',
@@ -430,13 +439,11 @@ export async function runSearch(
           .where('created_at', '>=', new Date(parsed.period!.since))
           .where('created_at', '<', new Date(parsed.period!.until)),
       )
-      .where((eb) =>
-        eb.or([
-          eb('owner_id', '=', me),
-          eb.and([eb('assignee_id', '=', me), eb('shared', '=', true)]),
-        ]),
-      )
-      .where('status', 'in', ['open', 'accepted']);
+      .where(visibleTasksSql(me))
+      .where('status', 'in', ['open', 'accepted'])
+      .$if(keeps, (qb) =>
+        qb.where((eb) => eb.or([eb('conversation_id', 'is', null), open('tasks.conversation_id')])),
+      );
     if (scope === 'waiting')
       q = q.where('owner_id', '=', me).where('assignee_id', 'is distinct from', me);
     if (personIds) {
@@ -482,6 +489,7 @@ export async function runSearch(
       .innerJoin('participants as p', (j) =>
         j.onRef('p.conversation_id', '=', 'd.conversation_id').on('p.user_id', '=', me),
       )
+      .$if(keeps, (qb) => qb.where(open('d.conversation_id')))
       .select(['d.id', 'd.title', 'd.conversation_id', 'd.message_id', 'd.decided_at'])
       .where('p.left_at', 'is', null)
       .where('d.status', '=', 'active')
@@ -511,6 +519,7 @@ export async function runSearch(
       .innerJoin('participants as p', (j) =>
         j.onRef('p.conversation_id', '=', 'c.id').on('p.user_id', '=', me),
       )
+      .$if(keeps, (qb) => qb.where(open('c.id')))
       .leftJoin('contexts as x', 'x.id', 'c.context_id')
       .select([
         'c.id',
@@ -715,7 +724,8 @@ export async function searchRoutes(app: FastifyInstance, ctx: AppContext) {
     ctx.limiter.hit(`search:${auth.userId}`, ctx.config.isTest ? 10_000 : 120, 60_000);
     const rules = parseSearchQuery(q, { now: ctx.now() });
     const read = understand === '1' ? await understandWithAi(ctx, auth.userId, rules) : null;
-    const response = await runSearch(ctx, auth.userId, read ?? rules, limit);
+    const closed = await orgsClosedToApps(ctx, auth);
+    const response = await runSearch(ctx, auth.userId, read ?? rules, limit, closed);
     return read ? { ...response, understoodBy: 'ai', label: tr(AI_LABEL) } : response;
   });
 

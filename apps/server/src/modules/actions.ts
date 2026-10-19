@@ -37,6 +37,7 @@ import { membership, sendSystem } from '../lib/conversation-views';
 import { overdueAtSql } from '../lib/due';
 import { badRequest, forbidden, notFound } from '../lib/errors';
 import { recordEvent } from '../lib/events';
+import { actionOpenIn, assertOpenToApps, orgsClosedToApps } from '../lib/member-apps';
 import { assertCanSend, messageViews, participantsOf, sendMessage } from '../lib/messages';
 import { notify } from '../lib/notify';
 import { placeInvitationsFor } from '../lib/place-invites';
@@ -126,7 +127,13 @@ export async function actionRoutes(app: FastifyInstance, ctx: AppContext) {
     const q = parse(TasksQuery, req.query);
     const me = auth.userId;
     const open = ['open', 'accepted'] as const;
-    let query = ctx.db.selectFrom('tasks').selectAll().where(visibleTasksSql(me));
+    // What an organization keeps from its members' own apps stays out of a token's list (M16 G3).
+    const closed = await orgsClosedToApps(ctx, auth);
+    let query = ctx.db
+      .selectFrom('tasks')
+      .selectAll()
+      .where(visibleTasksSql(me))
+      .$if(closed.length > 0, (qb) => qb.where(actionOpenIn(me, closed)));
     switch (q.view) {
       case 'todo':
         query = query.where('assignee_id', '=', me).where('status', 'in', open);
@@ -188,12 +195,8 @@ export async function actionRoutes(app: FastifyInstance, ctx: AppContext) {
           'overdue',
         ),
       ])
-      .where((eb) =>
-        eb.or([
-          eb('owner_id', '=', me),
-          eb.and([eb('assignee_id', '=', me), eb('shared', '=', true)]),
-        ]),
-      )
+      .where(visibleTasksSql(me))
+      .$if(closed.length > 0, (qb) => qb.where(actionOpenIn(me, closed)))
       .executeTakeFirstOrThrow();
     return { tasks: await taskViews(ctx, rows, me), counts };
   });
@@ -252,6 +255,7 @@ export async function actionRoutes(app: FastifyInstance, ctx: AppContext) {
     const auth = requireAuth(req);
     const body = parse(CreateTaskBody, req.body);
     const me = auth.userId;
+    if (body.conversationId) await assertOpenToApps(ctx, auth, body.conversationId);
     // Made on a device while it was offline and sent again (ADR-8): the one that arrived first.
     const sameTask = () =>
       body.clientId
@@ -410,6 +414,7 @@ export async function actionRoutes(app: FastifyInstance, ctx: AppContext) {
     const body = parse(UpdateTaskBody, req.body);
     const me = auth.userId;
     const t = await visibleTask(ctx, me, id);
+    if (t.conversation_id) await assertOpenToApps(ctx, auth, t.conversation_id, { known: true });
     const isOwner = t.owner_id === me;
     const isAssignee = t.assignee_id === me;
     const editsContent =

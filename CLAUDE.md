@@ -1109,6 +1109,12 @@ A sphere is said as how you know someone, never "sphere".
   checked in the auth plugin before the route runs, as app tokens reach only `API_ROUTES`. A
   route joins the list on purpose, with its permission and a case in `personal-tokens.test.ts`;
   nothing about the account itself ever does. `req.auth.grant` says a token made the request.
+  An organization keeps its conversations from such a token until its owner or an admin turns on
+  `organizations.member_apps` (M16 G3, `lib/member-apps.ts`): a route a token reaches that reads
+  or writes one conversation calls `assertOpenToApps` after its membership check, and one that
+  lists them takes `orgsClosedToApps` once and filters with `openIn` (actions: `actionOpenIn`)
+  only when it names any, with a case in `member-apps.test.ts`. The owner and admins, a
+  customer's side and a session in Caime's own app are never asked.
 - Apps (R74): Settings · Apps is `app/(app)/settings/apps.tsx` (Connected and Discover in
   `features/apps/`), never a screen per kind. Connected is `GET /me/connected-apps`
   (`ConnectedAppView`, `kind`: an OAuth grant, or a built-in that's on); Discover is

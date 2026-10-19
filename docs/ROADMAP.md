@@ -2870,6 +2870,31 @@ graph) and the number that will show it; one that sharpens none is hygiene and s
       gone told once and nothing asked of it after), `connected-accounts.test.ts`,
       `calendar-sync.test.ts`, `cloud-files.test.ts`, `sw.test.ts` (the tap opens Settings · Apps on
       the web and a phone), the catalogs in four languages, and the full gate.
+- [x] G3. An organization's say over its members' own apps, and audit rows (2026-10-19, review §8
+      H4; advantage 5, privacy that follows from the business model, now for the organization that
+      answers for its customers' words; the number that shows it: an organization's conversations
+      reachable by a team member's own token without its say, every one before, none now). An
+      organization keeps its conversations from its team's own apps until its owner or an admin
+      turns on "Team members' own apps" in its setup (`organizations.member_apps`, migration 0135,
+      off by default; `OrgView.memberApps` for its team): a token acting as someone on its team who
+      doesn't run it (a personal token, a bridge, an OAuth app they let in) is refused the team's
+      side of its customer threads, its spaces' conversations and a thread written as it (R64) with
+      `403 org_apps_closed` in four languages, only once the person is in the conversation, and the
+      inbox, search and actions it reads leave them out (`lib/member-apps.ts`: one query for the
+      person's closed organizations, nothing more when there are none). The person's own
+      conversations, a customer's side and Caime's own app are never asked; the owner and admins
+      decide, so their own apps are their choice. The switch is audited with who turned it, and
+      connecting or disconnecting an account (which and for what, never its address), making,
+      changing or removing an automation and setting, changing, removing or resetting a rule now
+      write audit rows (what changed, never what it says or whom it's for); search's actions read
+      `visibleTasksSql` as every reader of actions does. Not done: the ICS feed and the plans
+      written to a connected calendar still carry the bookings a team member does (the
+      organization's say over those is the next G slice). Verified: `member-apps.test.ts` (refused
+      and left out by default, never for Caime's app, the owner's token or the customer's, let in by
+      the owner and not by a member, audited once per change, a thread written as it kept once its
+      writer no longer runs it, automations' and rules' audit rows without what they say),
+      `connected-accounts.test.ts` (the connect and disconnect rows, no address),
+      `dpa-draft.test.ts`, the catalogs in four languages, and the full gate.
 - [ ] H. Business depth: a Business seat includes Pro; a cap on organizations per person; room
       checks inside the transaction; quick replies, away and greeting messages; customer notes,
       tags and fields; tax invoices (counsel); booking and revenue analytics; intake forms as
@@ -4650,6 +4675,9 @@ graph) and the number that will show it; one that sharpens none is hygiene and s
   journeys, safety, reliability, performance, intelligence, mail and calendar, chat, integrations,
   business and code integrity; the matrix against WhatsApp, Signal, Slack, Calendly and Workspace;
   an age-assurance design; the integration framework mapped to the code; plan M16 (A–H).
+- 2026-10-19 — M16 G3: an organization keeps its conversations from its team's own tokens,
+  bridges and apps until its owner or an admin lets them in; accounts, automations and rules
+  write audit rows.
 - 2026-10-19 — M16 G2 and G1b: each connected account's read and plans say how they last went,
   a provider's wait honoured, a grant gone told once, Google's and Microsoft's sign-in probed;
   webhook secrets sealed alone.

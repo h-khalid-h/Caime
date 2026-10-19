@@ -28,6 +28,7 @@ import { Button } from '@/ui/Button';
 import { CopyRow } from '@/ui/CopyRow';
 import { ListRow, SectionTitle } from '@/ui/ListRow';
 import { Sheet } from '@/ui/Sheet';
+import { SwitchRow } from '@/ui/SwitchRow';
 import { Text } from '@/ui/Text';
 import { TextField } from '@/ui/TextField';
 import { toast } from '@/ui/Toast';
@@ -118,7 +119,7 @@ function Secrets({ shown, orgId }: { shown: OrgAppSecretsView; orgId: string }) 
  * An organization's apps (PRD §73–75, R16), for its owner and admins: a helpdesk or CRM that
  * hears the inbox, or a bot that answers the simple questions and always says it's automated.
  */
-export function OrgApps({ org }: { org: OrgView }) {
+export function OrgApps({ org, refresh }: { org: OrgView; refresh: (o: OrgView) => void }) {
   const t = useTheme();
   const qc = useQueryClient();
   const now = useNow();
@@ -217,6 +218,19 @@ export function OrgApps({ org }: { org: OrgView }) {
   // Its plan's apps are all in use: say so where Add would be (PRD §84).
   const full = org.plan ? org.plan.used.apps >= org.plan.allowance.apps : false;
 
+  // Whether its team's own apps reach its conversations (M16 G3): off unless it says so.
+  const [letting, setLetting] = useState(false);
+  const memberApps = async (on: boolean) => {
+    setLetting(true);
+    try {
+      refresh((await endpoints.updateOrg(org.id, { memberApps: on })).org);
+    } catch (e) {
+      toast((e as Error).message, { tone: 'danger' });
+    } finally {
+      setLetting(false);
+    }
+  };
+
   return (
     <>
       <SectionTitle
@@ -287,6 +301,18 @@ export function OrgApps({ org }: { org: OrgView }) {
               .join(' ')}
           </Text>
         ) : null}
+        <SwitchRow
+          inset
+          divider
+          label={tr('Team members’ own apps may reach the organization’s conversations')}
+          detail={tr(
+            'A personal token, a bridge like Zapier, or an app someone on the team connects to their own account. Off, those reach only their own conversations. The owner and admins decide for themselves.',
+          )}
+          value={org.memberApps ?? false}
+          disabled={letting}
+          onChange={(on) => void memberApps(on)}
+          testID="org-member-apps"
+        />
       </View>
 
       {published.length ? (

@@ -69,6 +69,7 @@ export const ERROR_CODES = [
   'not_undoable',
   'notice_only',
   'offset_mismatch',
+  'org_apps_closed',
   'org_blocked',
   'org_closed',
   'org_open',

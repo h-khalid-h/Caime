@@ -1403,6 +1403,11 @@ export interface OrgView extends OrgSummaryView {
   payments: PaymentSettings | null;
   /** What its automatic replies say (M16 H2): for its owner and admins only, else null. */
   replies: OrgRepliesView | null;
+  /**
+   * Its team's own apps reach its conversations (M16 G3): for its team, else null. Off, a token
+   * acting as someone on it who doesn't run it is kept from them; its owner and admins never are.
+   */
+  memberApps: boolean | null;
   /** The fields its team keeps for each customer (M16 H3): for its team, else null. */
   customerFields: CustomerField[] | null;
   /** How long it keeps its customers' conversations (R54), in days; null keeps them. */
@@ -1770,6 +1775,8 @@ export interface OrgExportView {
     timeZone: string | null;
     workweek: number[] | null;
     retentionDays: number | null;
+    /** Its team's own apps reach its conversations (M16 G3). */
+    memberApps: boolean;
     createdAt: string;
     /** Closed: when. Its export stays open to its last owner for `CLOSED_ORG_EXPORT_DAYS`. */
     closedAt: string | null;

@@ -277,6 +277,8 @@ async function orgView(ctx: AppContext, viewerId: string, org: Organization): Pr
     // What its automatic replies say (M16 H2): its owner's and admins' to see and set.
     replies:
       seat && canManageOrg(seat.role) ? { greeting: org.greeting, away: org.away_message } : null,
+    // Whether its team's own apps reach its conversations (M16 G3): the team's to know.
+    memberApps: seat ? org.member_apps : null,
     // What its team keeps for each customer (M16 H3): the team's to read.
     customerFields: seat ? fieldsOf(org) : null,
     retentionDays: org.retention_days,
@@ -599,6 +601,14 @@ export async function orgRoutes(app: FastifyInstance, ctx: AppContext) {
         target: id,
         metadata: { on: body.joinByDomain },
       });
+    // Whether its team's own apps reach its conversations (M16 G3): theirs to say, too.
+    if (body.memberApps !== undefined && body.memberApps !== current.member_apps)
+      await audit(ctx.db, {
+        actorId: auth.userId,
+        action: 'org.member_apps_set',
+        target: id,
+        metadata: { on: body.memberApps },
+      });
     // Its logo is an image of the person's own upload, as a profile photo is (modules/me.ts).
     if (body.avatarFileId) {
       const file = await ctx.db
@@ -624,6 +634,7 @@ export async function orgRoutes(app: FastifyInstance, ctx: AppContext) {
         ...(body.foundedYear !== undefined ? { founded_year: body.foundedYear } : {}),
         ...(body.avatarFileId !== undefined ? { avatar_file_id: body.avatarFileId } : {}),
         ...(body.joinByDomain !== undefined ? { domain_join: body.joinByDomain } : {}),
+        ...(body.memberApps !== undefined ? { member_apps: body.memberApps } : {}),
         // Empty is off (M16 H2).
         ...(body.greeting !== undefined ? { greeting: body.greeting || null } : {}),
         ...(body.away !== undefined ? { away_message: body.away || null } : {}),

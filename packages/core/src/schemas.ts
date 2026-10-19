@@ -2010,6 +2010,11 @@ export const UpdateOrgBody = z
      * member, without an invite.
      */
     joinByDomain: z.boolean().optional(),
+    /**
+     * Its team's own apps (a personal token, a bridge, an app someone let in) reach its
+     * conversations (M16 G3); off by default. Its owner and admins are never kept out.
+     */
+    memberApps: z.boolean().optional(),
     /** What its automatic replies say (M16 H2); empty or null turns one off. */
     greeting: OrgReplyText.nullable().optional(),
     away: OrgReplyText.nullable().optional(),

@@ -4665,4 +4665,8 @@ export const turkish: Catalog = {
   '{name} didn’t answer the last change Caime sent':
     '{name}, Caime’in gönderdiği son değişikliğe yanıt vermedi',
   'written {when}': '{when} yazıldı',
+  'Team members’ own apps may reach the organization’s conversations':
+    'Ekip üyelerinin kendi uygulamaları kuruluşun konuşmalarına erişebilir',
+  'A personal token, a bridge like Zapier, or an app someone on the team connects to their own account. Off, those reach only their own conversations. The owner and admins decide for themselves.':
+    'Kişisel bir belirteç, Zapier gibi bir köprü ya da ekipten birinin kendi hesabına bağladığı bir uygulama. Kapalıyken bunlar yalnızca o kişinin kendi konuşmalarına erişir. Sahip ve yöneticiler kendileri karar verir.',
 };

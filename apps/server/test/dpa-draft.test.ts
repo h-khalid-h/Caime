@@ -40,6 +40,8 @@ describe('the draft data processing agreement', () => {
     // The export's rate limit (modules/orgs.ts), and how passwords are kept (lib/crypto.ts).
     expect(doc).toContain('three times an hour');
     expect(doc).toContain('passwords hashed (scrypt)');
+    // An organization's say over its team's own apps (M16 G3), held by member-apps.test.ts.
+    expect(doc).toContain('conversations unless the Organization turns that on');
     // The keys the Operator holds apart from the data (M16 B5, config.ts).
     expect(doc).toContain('`BACKUP_KEY`');
     expect(doc).toContain('`VAULT_KEY`');

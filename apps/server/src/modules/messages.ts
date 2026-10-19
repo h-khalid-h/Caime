@@ -75,6 +75,7 @@ import { AppError, badRequest, forbidden, notFound } from '../lib/errors';
 import { recordEvent } from '../lib/events';
 import { tellCardApp } from '../lib/kits';
 import { stopRepeating } from '../lib/meeting-series';
+import { assertOpenToApps } from '../lib/member-apps';
 import { afterEdit, afterMentioning, afterMessage } from '../lib/message-effects';
 import {
   analyseText,
@@ -100,6 +101,7 @@ export async function messageRoutes(app: FastifyInstance, ctx: AppContext) {
     const { id } = parse(z.object({ id: z.string().uuid() }), req.params);
     const q = parse(MessagesPageQuery, req.query);
     const { conversation, me } = await membership(ctx, auth.userId, id);
+    await assertOpenToApps(ctx, auth, id);
     let query = ctx.db
       .selectFrom('messages')
       .select(MESSAGE_COLUMNS)
@@ -142,6 +144,7 @@ export async function messageRoutes(app: FastifyInstance, ctx: AppContext) {
     const { id } = parse(z.object({ id: z.string().uuid() }), req.params);
     const body = parse(SendMessageBody, req.body);
     ctx.limiter.hit(`send:${auth.userId}`, ctx.config.isTest ? 10_000 : 120, 60_000);
+    await assertOpenToApps(ctx, auth, id);
     const result = await sendMessage(ctx, auth.userId, id, body, {
       sentVia: auth.grant?.name ?? null,
       app: auth.app ?? null,

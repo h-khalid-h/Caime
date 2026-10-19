@@ -4851,4 +4851,8 @@ export const fr: Catalog = {
   '{name} didn’t answer the last change Caime sent':
     '{name} n’a pas répondu à la dernière modification envoyée par Caime',
   'written {when}': 'écrit {when}',
+  'Team members’ own apps may reach the organization’s conversations':
+    'Les applications personnelles des membres de l’équipe peuvent accéder aux conversations de l’organisation',
+  'A personal token, a bridge like Zapier, or an app someone on the team connects to their own account. Off, those reach only their own conversations. The owner and admins decide for themselves.':
+    'Un jeton personnel, une passerelle comme Zapier, ou une application qu’un membre de l’équipe relie à son propre compte. Désactivé, ils n’accèdent qu’aux conversations de la personne. Le propriétaire et les admins décident pour eux-mêmes.',
 };

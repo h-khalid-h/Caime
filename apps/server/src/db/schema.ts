@@ -1111,6 +1111,8 @@ export interface OrganizationsTable {
   cleared_at: NullableTimestamp;
   /** Anyone with a proven address at its verified domain may join its team (M16 C3b). */
   domain_join: Generated<boolean>;
+  /** Its members' own tokens and apps reach its conversations (M16 G3; off by default). */
+  member_apps: Generated<boolean>;
   /** Suspended by the operator (M16 B3): since when, and why, said to its team. */
   suspended_at: Generated<Date | null>;
   suspended_reason: Generated<string | null>;
@@ -1774,6 +1776,7 @@ export const ORG_COLUMNS = [
   'last_owner_id',
   'cleared_at',
   'domain_join',
+  'member_apps',
   'suspended_at',
   'suspended_reason',
   'greeting',

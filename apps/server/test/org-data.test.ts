@@ -68,7 +68,11 @@ describe('the export', () => {
       /^attachment; filename="nile\.dental-caime-\d{4}-\d{2}-\d{2}\.json"$/,
     );
     const data = res.json();
-    expect(data.organization).toMatchObject({ handle: 'nile.dental', retentionDays: null });
+    expect(data.organization).toMatchObject({
+      handle: 'nile.dental',
+      retentionDays: null,
+      memberApps: false,
+    });
     expect(
       data.team
         .map((m: { displayName: string; role: string }) => `${m.displayName}:${m.role}`)
