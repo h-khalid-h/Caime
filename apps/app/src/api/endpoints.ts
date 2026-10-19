@@ -57,6 +57,9 @@ import type {
   ConversationResponse,
   CountriesView,
   CurrenciesView,
+  CustomerFieldsResponse,
+  CustomerRecordResponse,
+  CustomerTagsResponse,
   CustomKitsResponse,
   DecisionsResponse,
   DeliveriesResponse,
@@ -831,8 +834,21 @@ export const endpoints = {
   /** Someone on the team writes to a person first: a message request to them (R14). */
   startThread: (orgId: string, body: { handle: string; body: string; clientId: string }) =>
     api.post<StartThreadResult>(`/orgs/${orgId}/threads`, body),
-  orgInbox: (orgId: string, view: BusinessView) =>
-    api.get<BusinessInboxView>(`/orgs/${orgId}/inbox${q({ view })}`),
+  orgInbox: (orgId: string, view: BusinessView, tag?: string | null) =>
+    api.get<BusinessInboxView>(`/orgs/${orgId}/inbox${q({ view, tag: tag ?? undefined })}`),
+  // What the team keeps about a customer (M16 H3): their record, the tags in use, the fields
+  customerRecord: (orgId: string, customerId: string) =>
+    api.get<CustomerRecordResponse>(`/orgs/${orgId}/customers/${customerId}`),
+  saveCustomerRecord: (
+    orgId: string,
+    customerId: string,
+    body: { note?: string | null; tags?: string[]; fields?: Record<string, string> },
+  ) => api.patch<CustomerRecordResponse>(`/orgs/${orgId}/customers/${customerId}`, body),
+  customerTags: (orgId: string) => api.get<CustomerTagsResponse>(`/orgs/${orgId}/customer-tags`),
+  saveCustomerFields: (
+    orgId: string,
+    fields: Array<{ id?: string; label: string; kind: string; choices?: string[] }>,
+  ) => api.put<CustomerFieldsResponse>(`/orgs/${orgId}/customer-fields`, { fields }),
   businessSummary: () => api.get<BusinessSummaryView>('/business/summary'),
   assignThread: (conversationId: string, userId: string | null) =>
     api.post<ThreadResponse>(`/business/${conversationId}/assign`, { userId }),

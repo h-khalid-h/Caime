@@ -161,6 +161,13 @@ export async function eraseBusinessConversation(
         .set({ erased_at: now, erased_by: byUserId, updated_at: now })
         .where('conversation_id', '=', conversationId)
         .execute();
+      // What the team kept about them goes with their words (M16 H3).
+      if (thread.customer_id)
+        await trx
+          .deleteFrom('org_customers')
+          .where('org_id', '=', orgId)
+          .where('customer_id', '=', thread.customer_id)
+          .execute();
       // What its apps were sent of its words goes from their delivery log too (M16 B2).
       await forgetDeliveries(trx, conversationId);
       const gone = rows.filter((r) => r.what === 'gone').map((r) => r.id);
@@ -261,6 +268,7 @@ export async function buildOrgExport(
       'payments',
       'greeting',
       'away_message',
+      'customer_fields',
     ])
     .where('id', '=', orgId)
     .executeTakeFirstOrThrow();
@@ -271,6 +279,14 @@ export async function buildOrgExport(
     .where('org_id', '=', orgId)
     .orderBy('position')
     .orderBy('created_at')
+    .execute();
+  // What its team kept about its customers (M16 H3), with whom each record is about.
+  const records = await db
+    .selectFrom('org_customers as c')
+    .leftJoin('users as u', 'u.id', 'c.customer_id')
+    .select(['c.customer_id', 'u.display_name', 'c.note', 'c.tags', 'c.fields', 'c.updated_at'])
+    .where('c.org_id', '=', orgId)
+    .orderBy('c.updated_at')
     .execute();
   const [team, threads, checkout, listings, agent, apps, cards, updates, invites] =
     await Promise.all([
@@ -496,6 +512,17 @@ export async function buildOrgExport(
     // Its places (R92), with who each was shown to.
     places: await placesOwnedBy(ctx, { orgId }),
     replies: { greeting: org.greeting, away: org.away_message, quick },
+    customers: {
+      fields: Array.isArray(org.customer_fields) ? org.customer_fields : [],
+      records: records.map((r) => ({
+        customerId: r.customer_id,
+        displayName: r.display_name,
+        note: r.note,
+        tags: r.tags,
+        fields: r.fields,
+        updatedAt: r.updated_at.toISOString(),
+      })),
+    },
     checkout: checkout
       ? {
           provider: checkout.provider,
@@ -588,6 +615,7 @@ export async function clearClosedOrg(ctx: AppContext, orgId: string): Promise<bo
     await trx.deleteFrom('org_agents').where('org_id', '=', orgId).execute();
     await trx.deleteFrom('places').where('org_id', '=', orgId).execute();
     await trx.deleteFrom('org_quick_replies').where('org_id', '=', orgId).execute();
+    await trx.deleteFrom('org_customers').where('org_id', '=', orgId).execute();
     // Its apps' tokens, deliveries and kinds of card go with them; their bots' messages stay in
     // the customers' copies, so the bots themselves stay, as senders.
     await trx.deleteFrom('org_apps').where('org_id', '=', orgId).execute();
@@ -631,6 +659,7 @@ export async function clearClosedOrg(ctx: AppContext, orgId: string): Promise<bo
         payments: null,
         greeting: null,
         away_message: null,
+        customer_fields: JSON.stringify([]),
         cleared_at: now,
         updated_at: now,
       })

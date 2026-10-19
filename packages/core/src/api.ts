@@ -20,6 +20,7 @@ import type { CatalogCollection } from './catalog';
 import type { ContactAccount } from './contact-return';
 import type { PayKindHint } from './countries';
 import type { CustomKitDef, CustomKitIcon } from './custom-kits';
+import type { CustomerField } from './customers';
 import type { PublicJwk, SealedMessage } from './e2ee';
 import type { Gender } from './i18n';
 import type { SuggestionKind } from './intelligence';
@@ -1106,6 +1107,8 @@ export interface BusinessThreadView {
   awaitingAcceptance: boolean;
   /** The customer is under 18 (R29): no money cards, and the team answers knowing it. */
   customerUnder18: boolean;
+  /** The tags its team keeps on the customer (M16 H3), in the order they were given. */
+  customerTags: string[];
   /** Erased at the customer's request (R54): its messages are gone, and it says so. */
   erasedAt: string | null;
 }
@@ -1363,6 +1366,8 @@ export interface OrgView extends OrgSummaryView {
   payments: PaymentSettings | null;
   /** What its automatic replies say (M16 H2): for its owner and admins only, else null. */
   replies: OrgRepliesView | null;
+  /** The fields its team keeps for each customer (M16 H3): for its team, else null. */
+  customerFields: CustomerField[] | null;
   /** How long it keeps its customers' conversations (R54), in days; null keeps them. */
   retentionDays: number | null;
   /** Its address at Caime's mail domain (R75): for its team where mail is on, else null. */
@@ -1384,6 +1389,36 @@ export interface OrgView extends OrgSummaryView {
 export interface OrgRepliesView {
   greeting: string | null;
   away: string | null;
+}
+
+/**
+ * What an organization's team keeps about one of its customers (M16 H3): a note, tags and its
+ * fields' values, for the team alone; the customer never sees it.
+ */
+export interface CustomerRecordView {
+  customerId: string;
+  note: string | null;
+  tags: string[];
+  /** Each of the organization's fields this customer has a value for, by the field's id. */
+  fields: Record<string, string>;
+  updatedAt: string | null;
+  /** Who on the team changed it last. */
+  updatedBy: { userId: string; displayName: string } | null;
+}
+
+export interface CustomerRecordResponse {
+  record: CustomerRecordView;
+  /** The organization's fields, in its order: what the record may hold. */
+  fields: CustomerField[];
+}
+
+/** The tags an organization's team uses, most used first (M16 H3): the inbox's filter. */
+export interface CustomerTagsResponse {
+  tags: Array<{ tag: string; count: number }>;
+}
+
+export interface CustomerFieldsResponse {
+  fields: CustomerField[];
 }
 
 /** A reply an organization's team keeps for what customers ask often (M16 H2). */
@@ -1701,6 +1736,18 @@ export interface OrgExportView {
   };
   /** Its places (R92), with who each is shown to. */
   places: PlaceView[];
+  /** What its team kept about its customers (M16 H3), with the fields it defined. */
+  customers: {
+    fields: CustomerField[];
+    records: Array<{
+      customerId: string;
+      displayName: string | null;
+      note: string | null;
+      tags: string[];
+      fields: Record<string, string>;
+      updatedAt: string;
+    }>;
+  };
   /** What it says by itself (M16 H2): its greeting, its away message and its team's quick replies. */
   replies: {
     greeting: string | null;

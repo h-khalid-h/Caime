@@ -75,6 +75,7 @@ import { currencyOf, currentZone, defaultZoneOf, isCountry } from '../lib/geo';
 import { assertHandleAvailable, claimLost } from '../lib/handles';
 import { orgInsights } from '../lib/insights';
 import { mailAddressOf } from '../lib/mail-address';
+import { fieldsOf } from '../lib/org-customers';
 import {
   applyOrgRetention,
   buildOrgExport,
@@ -276,6 +277,8 @@ async function orgView(ctx: AppContext, viewerId: string, org: Organization): Pr
     // What its automatic replies say (M16 H2): its owner's and admins' to see and set.
     replies:
       seat && canManageOrg(seat.role) ? { greeting: org.greeting, away: org.away_message } : null,
+    // What its team keeps for each customer (M16 H3): the team's to read.
+    customerFields: seat ? fieldsOf(org) : null,
     retentionDays: org.retention_days,
     joinableAs: standing.joinableAs,
     joinOnceConfirmed: standing.joinOnceConfirmed,

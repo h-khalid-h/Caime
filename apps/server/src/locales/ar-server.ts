@@ -1561,4 +1561,6 @@ export const arServer: Catalog = {
     'يدير حتى {count} على خطة {plan} في الوقت نفسه، ولا تُحسب التي على {next}.',
   'We’re open again {when}.': 'نعود {when}.',
   'We’re open again on {date}.': 'نعود يوم {date}.',
+  'That customer': 'ذلك العميل',
+  'That field isn’t one of the organization’s.': 'هذا الحقل ليس من حقول المؤسسة.',
 };

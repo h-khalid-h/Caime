@@ -20,6 +20,7 @@ export * from './contact-invites';
 export * from './contact-sources';
 export * from './contacts';
 export * from './custom-kits';
+export * from './customers';
 export * from './e2ee';
 export * from './errors';
 export * from './format';

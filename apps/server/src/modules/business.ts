@@ -50,6 +50,7 @@ import { afterMessage } from '../lib/message-effects';
 import { messageViews, participantsOf, sendMessage } from '../lib/messages';
 import { notify } from '../lib/notify';
 import { orgOrders } from '../lib/orders';
+import { customersTagged } from '../lib/org-customers';
 import { orgById, orgSeat } from '../lib/orgs';
 import { assertStartRoom, lockOrgRow } from '../lib/plans';
 import { isBlockedEitherWay } from '../lib/relations';
@@ -370,19 +371,23 @@ export async function businessRoutes(app: FastifyInstance, ctx: AppContext) {
   app.get('/orgs/:id/inbox', async (req): Promise<BusinessInboxView> => {
     const auth = requireAuth(req);
     const { id } = parse(idParam, req.params);
-    const { view } = parse(BusinessInboxQuery, req.query);
+    const { view, tag } = parse(BusinessInboxQuery, req.query);
     const org = await orgById(ctx.db, id);
     if (!(await orgSeat(ctx.db, auth.userId, id))) throw notFound(tr('That organization'));
+    // Only the customers the team tagged so (M16 H3), counts and all.
+    const tagged = tag ? await customersTagged(ctx.db, id, tag) : null;
     // A conversation shows up once someone has written in it: the customer, or the team first
     // (R14). The newest few hundred are plenty.
-    const threads = await ctx.db
-      .selectFrom('business_threads')
-      .selectAll()
-      .where('org_id', '=', id)
-      .where((eb) => eb.or([eb('last_customer_seq', '>', '0'), eb('last_team_seq', '>', '0')]))
-      .orderBy('updated_at', 'desc')
-      .limit(500)
-      .execute();
+    const threads = (
+      await ctx.db
+        .selectFrom('business_threads')
+        .selectAll()
+        .where('org_id', '=', id)
+        .where((eb) => eb.or([eb('last_customer_seq', '>', '0'), eb('last_team_seq', '>', '0')]))
+        .orderBy('updated_at', 'desc')
+        .limit(500)
+        .execute()
+    ).filter((t) => !tagged || (t.customer_id !== null && tagged.has(t.customer_id)));
     const counts = Object.fromEntries(
       BUSINESS_VIEWS.map((v) => [
         v,

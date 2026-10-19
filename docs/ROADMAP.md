@@ -2857,6 +2857,22 @@ graph) and the number that will show it; one that sharpens none is hygiene and s
       `e2e/org-replies.spec.ts` (the owner writes all three on the setup screen, the customer reads
       the greeting and "We're open again tomorrow at 9:00", the team puts in /hours), the catalogs
       in four languages and the server's, and the full gate.
+- [x] H3. What a team keeps about its customers (2026-10-19, review §9, PRODUCT-REVIEW R102;
+      convention 1, the relationship first). One record per organization and customer
+      (`org_customers`, migration 0126): a note, tags (one of each however it's cased), and the
+      values of the fields its owner and admins define on the setup screen (Customer fields: words,
+      a number, a day or one of a few choices; core `fieldValue` keeps a number in any script's
+      digits in Latin ones and refuses what a field's kind can't hold). Anyone on the team keeps it
+      from the customer's conversation, below who they are in the details ("What your team keeps
+      about Lina", the customer never sees it); the inbox shows a customer's first two tags on
+      their row and filters by one (`?tag=`), and the team's devices hear which record changed.
+      A field taken away takes every customer's value for it; the record goes with an erasure at
+      the customer's request, with their account, and when a closed organization is cleared, and
+      it's in the export. Verified: `org-customers.test.ts` (fields by the owner alone and read by
+      the team, the record kept and refused, nothing in the customer's views, the tags on rows,
+      the filter and its counts, a field let go, erasure, an account deleted, export and clearing),
+      core `customers.test.ts`, `e2e/customer-records.spec.ts`, the catalogs in four languages and
+      the server's, and the full gate.
 - [ ] ⛔ H, the owner's: a smaller paid tier; WhatsApp Business in the inbox and reminders by
       WhatsApp or SMS (Meta's approval); Stripe Connect live with local currencies.
 - [ ] R98, after C: places as a context for spaces (PRODUCT-REVIEW R98): `spaces.place` from
@@ -4453,6 +4469,8 @@ graph) and the number that will show it; one that sharpens none is hygiene and s
   journeys, safety, reliability, performance, intelligence, mail and calendar, chat, integrations,
   business and code integrity; the matrix against WhatsApp, Signal, Slack, Calendly and Workspace;
   an age-assurance design; the integration framework mapped to the code; plan M16 (A–H).
+- 2026-10-19 — M16 H3: what a team keeps about its customers: a note, tags and its own fields,
+  beside the conversation, for the team alone; tags on the inbox's rows and a filter by one.
 - 2026-10-19 — M16 H2, after CI: the away message landed before the greeting when both
   jobs came due at once; an away message asked for with a greeting now says it first (by
   its client id, so once), and a test runs the away's job first.

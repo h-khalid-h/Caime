@@ -1574,4 +1574,7 @@ export const frServer: Catalog = {
     'gère jusqu’à {count} avec le forfait {plan} à la fois ; celles sur {next} ne comptent pas.',
   'We’re open again {when}.': 'Nous rouvrons {when}.',
   'We’re open again on {date}.': 'Nous rouvrons le {date}.',
+  'That customer': 'Ce client',
+  'That field isn’t one of the organization’s.':
+    'Ce champ n’est pas l’un de ceux de l’organisation.',
 };

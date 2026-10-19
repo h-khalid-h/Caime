@@ -36,6 +36,17 @@ import { BUSINESS_VIEWS } from './business';
 import { CALL_KINDS } from './calls';
 import { COLLECTIONS_MAX, SLUG_MAX, slugError } from './catalog';
 import { CONTACTS_MATCH_MAX } from './contacts';
+import {
+  CUSTOMER_FIELD_KINDS,
+  CUSTOMER_FIELDS_MAX,
+  CUSTOMER_NOTE_CHARS,
+  CUSTOMER_TAGS_MAX,
+  FIELD_CHOICE_CHARS,
+  FIELD_CHOICES_MAX,
+  FIELD_LABEL_CHARS,
+  FIELD_VALUE_CHARS,
+  TAG_CHARS,
+} from './customers';
 import { isPublicKey, isSealed, isSignature, type PublicJwk, type SealedMessage } from './e2ee';
 import { isEmoji } from './emoji';
 import { foldForFind } from './fold';
@@ -543,6 +554,8 @@ export const UpdatesPageQuery = z.object({
 });
 export const BusinessInboxQuery = z.object({
   view: z.enum(BUSINESS_VIEWS).default('customer_waiting'),
+  /** Only customers with this tag (M16 H3). */
+  tag: z.string().trim().min(1).max(TAG_CHARS).optional(),
 });
 /** A calendar's window (R51): up to a year, from one instant to a later one. */
 export const CalendarWindowQuery = z
@@ -2019,6 +2032,50 @@ export const QuickRepliesBody = z
     (b) => new Set(b.replies.map((r) => foldForFind(r.shortcut))).size === b.replies.length,
     msg('Each quick reply needs a shortcut of its own.'),
   );
+
+/**
+ * What the team keeps about a customer (M16 H3), any part of it: the note (empty or null clears
+ * it), the tags (the whole list), and fields' values by id (empty clears one).
+ */
+export const CustomerRecordBody = z
+  .object({
+    note: z.string().max(CUSTOMER_NOTE_CHARS).nullable().optional(),
+    tags: z.array(z.string().trim().min(1).max(TAG_CHARS)).max(CUSTOMER_TAGS_MAX).optional(),
+    fields: z
+      .record(z.string().min(1).max(40), z.string().max(FIELD_VALUE_CHARS))
+      .refine((f) => Object.keys(f).length <= CUSTOMER_FIELDS_MAX)
+      .optional(),
+  })
+  .strict()
+  .refine((b) => Object.keys(b).length > 0, msg('Nothing to change.'));
+
+/**
+ * The fields an organization keeps for each customer (M16 H3), the whole list in its order: a
+ * field it keeps names its id; a new one has none yet. A choice names its choices.
+ */
+export const CustomerFieldsBody = z
+  .object({
+    fields: z
+      .array(
+        z
+          .object({
+            id: z.string().min(1).max(40).optional(),
+            label: z.string().trim().min(1).max(FIELD_LABEL_CHARS),
+            kind: z.enum(CUSTOMER_FIELD_KINDS),
+            choices: z
+              .array(z.string().trim().min(1).max(FIELD_CHOICE_CHARS))
+              .max(FIELD_CHOICES_MAX)
+              .optional(),
+          })
+          .strict()
+          .refine(
+            (f) => f.kind !== 'choice' || (f.choices?.length ?? 0) > 0,
+            msg('A choice needs its choices.'),
+          ),
+      )
+      .max(CUSTOMER_FIELDS_MAX),
+  })
+  .strict();
 
 export const OrgMembersBody = z
   .object({

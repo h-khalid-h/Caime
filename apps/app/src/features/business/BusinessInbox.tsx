@@ -7,12 +7,15 @@ import {
 } from '@caime/core/business';
 import { formatListTime } from '@caime/core/format';
 import { msg, tr } from '@caime/core/i18n';
+import { useQuery } from '@tanstack/react-query';
 import { router, usePathname } from 'expo-router';
 import Inbox from 'lucide-react-native/icons/inbox';
 import SquarePen from 'lucide-react-native/icons/square-pen';
 import { useEffect, useState } from 'react';
 import { FlatList, View } from 'react-native';
+import { endpoints } from '@/api/endpoints';
 import { useBusinessSummary, useOrg, useOrgInbox } from '@/api/hooks';
+import { qk } from '@/api/keys';
 import { OrgMark } from '@/features/orgs/kinds';
 import { DetailPlaceholder } from '@/features/shell/DetailPlaceholder';
 import { useNow, useUserClock } from '@/lib/time';
@@ -147,6 +150,29 @@ function ThreadRow({
             closed={thread.closed}
             request={thread.awaitingAcceptance}
           />
+          {/* The team's own tags on the customer (M16 H3): the first two, then how many more. */}
+          {thread.customerTags.slice(0, 2).map((tag) => (
+            <View
+              key={tag}
+              style={{
+                paddingHorizontal: 6,
+                paddingVertical: 1,
+                borderRadius: t.radii.sm,
+                backgroundColor: t.c.accentSoft,
+                maxWidth: 120,
+              }}
+              testID="thread-tag"
+            >
+              <Text variant="captionStrong" color="accentStrong" numberOfLines={1} auto>
+                {tag}
+              </Text>
+            </View>
+          ))}
+          {thread.customerTags.length > 2 ? (
+            <Text variant="captionStrong" color="textTertiary">
+              {`+${thread.customerTags.length - 2}`}
+            </Text>
+          ) : null}
           <Text variant="caption" color="textTertiary" numberOfLines={1} style={{ flexShrink: 1 }}>
             {[
               // What its AI agent did first (PRD §75): a person still owes the customer an answer.
@@ -194,9 +220,19 @@ export function BusinessInbox({
   }, [initialView]);
   const [writing, setWriting] = useState(false);
   const cards = view === 'bookings' || view === 'orders';
+  // Only customers the team tagged so (M16 H3), from the tags it uses.
+  const [tag, setTag] = useState<string | null>(null);
+  const tags =
+    useQuery({
+      queryKey: qk.customerTags(summary?.id ?? ''),
+      queryFn: () => endpoints.customerTags(summary?.id ?? ''),
+      enabled: Boolean(summary?.myRole) && !cards,
+      staleTime: 60_000,
+    }).data?.tags ?? [];
   const inbox = useOrgInbox(
     summary?.myRole ? summary.id : undefined,
     cards ? 'customer_waiting' : view,
+    cards ? null : tag,
   );
   const openConversation = (conversationId: string) =>
     desktop
@@ -282,6 +318,20 @@ export function BusinessInbox({
           { value: 'orders' as const, label: tr('Orders'), testID: 'business-view-orders' },
         ]}
       />
+      {!cards && (tags.length || tag) ? (
+        <ChoiceChips
+          label={tr('Tags')}
+          value={tag}
+          onChange={setTag}
+          onClear={() => setTag(null)}
+          size="sm"
+          options={[
+            ...(tag && !tags.some((x) => x.tag === tag) ? [{ tag, count: 0 }] : []),
+            ...tags.slice(0, 12),
+          ].map((x) => ({ value: x.tag, label: x.tag, testID: `inbox-tag-${x.tag}` }))}
+          testID="inbox-tags"
+        />
+      ) : null}
       {view === 'bookings' ? (
         <OrgBookings orgId={summary?.id} org={summary} open={openConversation} />
       ) : view === 'orders' ? (

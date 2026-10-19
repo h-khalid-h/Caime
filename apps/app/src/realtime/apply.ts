@@ -428,6 +428,11 @@ export function applyEvent(qc: QueryClient, event: RealtimeEvent, me: string): v
         invalidate(qk.quickReplies(event.data.orgId));
         return;
       }
+      // What the team keeps about a customer changed (M16 H3): that record, and the tags in use.
+      if (typeof event.data.customerId === 'string' && typeof event.data.orgId === 'string') {
+        invalidate(qk.customerRecord(event.data.orgId, event.data.customerId));
+        invalidate(qk.customerTags(event.data.orgId));
+      }
       // A thread moved (a customer wrote, someone took it, it was resolved): the team's views.
       const id = typeof event.data.threadId === 'string' ? event.data.threadId : null;
       invalidate(qk.allOrgInboxes);

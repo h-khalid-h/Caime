@@ -1506,4 +1506,6 @@ export const turkishServer: Catalog = {
     'aynı anda {plan} planında en fazla {count} yönetir; {next} planındakiler sayılmaz.',
   'We’re open again {when}.': '{when} yeniden açığız.',
   'We’re open again on {date}.': '{date} tarihinde yeniden açığız.',
+  'That customer': 'O müşteri',
+  'That field isn’t one of the organization’s.': 'Bu alan kuruluşun alanlarından biri değil.',
 };

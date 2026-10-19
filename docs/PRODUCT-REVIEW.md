@@ -2061,3 +2061,19 @@ with its reason, so it isn't proposed again without new facts.
   message that knows the hours says the one thing a customer wants to know, which a static text
   can't keep true. *Declined:* an away message on a schedule of its own (the hours are the one
   schedule), quick replies with variables, and auto replies that could be mistaken for a person.
+- **R102 (2026-10-19) What a team keeps about its customers.** The review of 2026-10-17 (§9,
+  M16 H) found that a business thread held only an escalation note: a clinic kept its patients'
+  file numbers, insurers and quirks somewhere else, so the inbox couldn't be its one place.
+  *Decided:* one record per organization and customer (`org_customers`): a note, tags, and the
+  values of fields the organization defines on its setup screen (words, a number, a day, one of
+  a few choices; a number in any script's digits kept in Latin ones), kept by anyone on its team
+  from the customer's conversation and never shown to the customer, never handed to a model, never
+  reachable by an app's or a person's token. The inbox shows the first two tags on a row and
+  filters by one; a field taken away takes every customer's value for it. The record goes with
+  an erasure at the customer's request, with their account, and when a closed organization is
+  cleared; it's in the organization's export. *Why:* the relationship is Caime's subject
+  (convention 1), and for an organization the customer is the relationship: what the team knows of
+  them belongs beside the conversation, where the next person who answers will read it.
+  *Declined:* fields the customer fills in (that's an intake form, H5), notes shared with the
+  customer, the agent reading notes, per-person notes (a team keeps one record), and custom field
+  kinds beyond the four.

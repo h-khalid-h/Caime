@@ -8,6 +8,7 @@ import type {
   BookingHours,
   BookingItem,
   CatalogCollection,
+  CustomerField,
   CustomKitDef,
   Gender,
   OrderingSettings,
@@ -1089,9 +1090,23 @@ export interface OrganizationsTable {
   /** What its automatic replies say (M16 H2): a customer's first message, and while it's closed. */
   greeting: Generated<string | null>;
   away_message: Generated<string | null>;
-  /** The account its automatic replies come from: a bot on its team, made when first needed. */
+  /** The account its automatic replies come from: a bot named as it, never on its team. */
   replies_bot_id: Generated<string | null>;
+  /** The fields its team keeps for each customer (M16 H3), in its order. */
+  customer_fields: JsonDefaulted<CustomerField[]>;
   created_at: Generated<Date>;
+  updated_at: Generated<Date>;
+}
+
+/** What an organization's team keeps about one of its customers (M16 H3), for the team alone. */
+export interface OrgCustomersTable {
+  org_id: string;
+  customer_id: string;
+  note: string | null;
+  tags: Defaulted<string[]>;
+  /** Its fields' values, by the field's id. */
+  fields: JsonDefaulted<Record<string, string>>;
+  updated_by: string | null;
   updated_at: Generated<Date>;
 }
 
@@ -1537,6 +1552,7 @@ export interface Database {
   space_members: SpaceMembersTable;
   organizations: OrganizationsTable;
   org_quick_replies: OrgQuickRepliesTable;
+  org_customers: OrgCustomersTable;
   org_checkout: OrgCheckoutTable;
   item_stock: ItemStockTable;
   order_stock: OrderStockTable;
@@ -1703,6 +1719,7 @@ export const ORG_COLUMNS = [
   'greeting',
   'away_message',
   'replies_bot_id',
+  'customer_fields',
   'created_at',
   'updated_at',
 ] as const satisfies ReadonlyArray<

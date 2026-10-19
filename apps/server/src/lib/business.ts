@@ -13,6 +13,7 @@ import {
   threadState,
   waitingSince,
 } from '@caime/core';
+import { tr } from '@caime/core/i18n';
 import type { Kysely, Transaction } from 'kysely';
 import { sql } from 'kysely';
 import type { AppContext } from '../context';
@@ -452,7 +453,9 @@ export async function threadViews(
         .where('id', 'in', forOrgIds)
         .execute()
     : [];
-  const [customers, names, lastMessages, mine, blocked, requests, ages] = await Promise.all([
+  // Every thread here is one organization's (the inbox, a conversation's view).
+  const orgId = threads[0]?.org_id ?? '';
+  const [customers, names, lastMessages, mine, blocked, requests, ages, tags] = await Promise.all([
     personViewsFor(ctx, viewerId, customerIds),
     people.length
       ? ctx.db
@@ -513,7 +516,17 @@ export async function threadViews(
           .where('id', 'in', customerIds)
           .execute()
       : Promise.resolve([]),
+    // What the team keeps about them (M16 H3, lib/org-customers.ts): their tags, for the rows.
+    customerIds.length
+      ? ctx.db
+          .selectFrom('org_customers')
+          .select(['customer_id', 'tags'])
+          .where('org_id', '=', orgId)
+          .where('customer_id', 'in', customerIds)
+          .execute()
+      : Promise.resolve([]),
   ]);
+  const tagsOf = new Map(tags.map((r) => [r.customer_id, r.tags]));
   const now = ctx.now();
   const under18 = new Set(ages.filter((u) => minorOf(u, now)).map((u) => u.id));
   const closed = new Set(blocked.map((b) => b.conversation_id));
@@ -532,7 +545,7 @@ export async function threadViews(
         return o ? orgRef(o) : null;
       })(),
       assignee: t.assignee_id
-        ? { userId: t.assignee_id, displayName: nameOf(t.assignee_id) ?? 'Someone' }
+        ? { userId: t.assignee_id, displayName: nameOf(t.assignee_id) ?? tr('Someone') }
         : null,
       escalated: t.escalated_at
         ? {
@@ -558,6 +571,7 @@ export async function threadViews(
       closed: closed.has(t.conversation_id),
       awaitingAcceptance: awaiting.has(t.conversation_id),
       customerUnder18: t.customer_id !== null && under18.has(t.customer_id),
+      customerTags: (t.customer_id && tagsOf.get(t.customer_id)) || [],
       erasedAt: t.erased_at?.toISOString() ?? null,
     };
   });

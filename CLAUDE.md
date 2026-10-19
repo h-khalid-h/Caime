@@ -1419,6 +1419,18 @@ A sphere is said as how you know someone, never "sphere".
   out marks one `Auto-Submitted: auto-replied` and never tracks it. They're in
   `buildOrgExport` and go in `clearClosedOrg`; anything else an organization says by itself goes
   through the same bot and job, never a person's seat.
+- What a team keeps about its customers (M16 H3, R102, `lib/org-customers.ts`,
+  `modules/org-customers.ts`, core `customers.ts`): one `org_customers` row per organization and
+  customer (a note, tags kept by `cleanTags`, field values by id checked by core `fieldValue`),
+  written only through `saveCustomerRecord` (under the row, telling the team's devices with
+  `business.updated` `{ customerId }`) and only for someone with a thread there; the fields are
+  `organizations.customer_fields`, saved whole by `saveCustomerFields` (a field let go takes every
+  value for it). The team reads a record in the conversation's details (`CustomerRecord`, lazy,
+  the team's alone) and the tags on `BusinessThreadView.customerTags` (one query in
+  `threadViews`); the inbox filters by `?tag=`. Nothing of it reaches the customer, a model or a
+  token; it goes in `eraseBusinessConversation`, with the account (cascade) and in
+  `clearClosedOrg`, and it's in `buildOrgExport`. Anything new the team keeps about a customer
+  joins this record, never a column on a thread.
 - Calls: `apps/server/src/lib/calls.ts` and `modules/calls.ts` ring, relay and record;
   `apps/app/src/features/calls/engine.ts` holds the RTCPeerConnection and `CallScreens.tsx`
   draws the call over everything, on the web and the phones alike. What a phone does differently

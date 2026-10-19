@@ -25,7 +25,8 @@ export const qk = {
   joinRequests: (target: 'group' | 'space', id: string) => ['join-requests', target, id] as const,
   groupLink: (token: string) => ['group-link', token] as const,
   orgCheckout: (id: string) => ['org-checkout', id] as const,
-  orgInbox: (orgId: string, view: string) => ['org-inbox', orgId, view] as const,
+  orgInbox: (orgId: string, view: string, tag?: string | null) =>
+    ['org-inbox', orgId, view, tag ?? null] as const,
   orgInsights: (orgId: string, days: number) => ['org-insights', orgId, days] as const,
   businessSummary: ['business-summary'] as const,
   tokens: ['personal-tokens'] as const,
@@ -33,6 +34,10 @@ export const qk = {
   orgAgent: (orgId: string) => ['org-agent', orgId] as const,
   /** Its quick replies (M16 H2), for its team's composer and its setup. */
   quickReplies: (orgId: string) => ['quick-replies', orgId] as const,
+  /** What its team keeps about one customer (M16 H3), and the tags it uses. */
+  customerRecord: (orgId: string, customerId: string) =>
+    ['customer-record', orgId, customerId] as const,
+  customerTags: (orgId: string) => ['customer-tags', orgId] as const,
   /** An organization's own apps (its tokens and webhooks), and the listings published under it. */
   orgApps: (orgId: string) => ['org-apps', orgId] as const,
   orgListings: (orgId: string) => ['org-listings', orgId] as const,

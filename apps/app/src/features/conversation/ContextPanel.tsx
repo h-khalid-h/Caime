@@ -49,6 +49,10 @@ import { topicsFor } from './topics';
 
 // Who's in a group, and running it: loaded when a group's details are first shown.
 const GroupPeople = lazyPart(() => import('./GroupPeople').then((m) => m.GroupPeople));
+/** What the team keeps about a customer (M16 H3): only the team's, loaded when it's theirs. */
+const CustomerRecord = lazyPart(() =>
+  import('@/features/business/CustomerRecord').then((m) => m.CustomerRecord),
+);
 
 function Section({ title, children }: { title: string; children: React.ReactNode }) {
   return (
@@ -232,7 +236,16 @@ export function ContextPanel({
       </View>
       <ScrollView contentContainerStyle={{ paddingBottom: 24 }}>
         {conversation.business ? (
-          <BusinessCard conversation={conversation} go={go} />
+          <>
+            <BusinessCard conversation={conversation} go={go} />
+            {conversation.business.thread?.customer ? (
+              <CustomerRecord
+                orgId={conversation.business.org.id}
+                customerId={conversation.business.thread.customer.id}
+                name={conversation.business.thread.customer.displayName}
+              />
+            ) : null}
+          </>
         ) : other ? (
           <Pressable
             accessibilityRole="link"

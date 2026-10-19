@@ -216,10 +216,15 @@ export const useSlots = (
 export const useMyBooking = (enabled = true) =>
   useQuery({ queryKey: qk.myBooking, queryFn: () => endpoints.myBooking(), enabled });
 
-export const useOrgInbox = (orgId: string | undefined, view: BusinessView) =>
+export const useOrgInbox = (
+  orgId: string | undefined,
+  view: BusinessView,
+  /** Only customers with this tag (M16 H3). */
+  tag?: string | null,
+) =>
   useQuery({
-    queryKey: qk.orgInbox(orgId ?? '', view),
-    queryFn: () => endpoints.orgInbox(orgId ?? '', view),
+    queryKey: qk.orgInbox(orgId ?? '', view, tag),
+    queryFn: () => endpoints.orgInbox(orgId ?? '', view, tag),
     enabled: Boolean(orgId),
   });
 
