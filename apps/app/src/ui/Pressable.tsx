@@ -1,4 +1,3 @@
-import * as Haptics from 'expo-haptics';
 import type { ReactNode, Ref } from 'react';
 import {
   Platform,
@@ -10,6 +9,7 @@ import {
 } from 'react-native';
 import { useTheme } from '@/theme/theme';
 import { useKeyboardMode } from './focus';
+import { selection } from './haptics';
 
 export interface PressState {
   pressed: boolean;
@@ -125,7 +125,7 @@ export function Pressable({
         (rest as { onKeyDown?: (e: KeyEvent) => void }).onKeyDown,
       )}
       onPress={(e) => {
-        if (haptic && Platform.OS !== 'web') void Haptics.selectionAsync().catch(() => {});
+        if (haptic) selection();
         onPress?.(e);
       }}
       style={(raw) => {

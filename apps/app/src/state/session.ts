@@ -4,7 +4,6 @@
  * signs the device out). Signing out removes everything this device kept.
  */
 import type { AuthResponse, MeView } from '@caime/core/api';
-import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Platform } from 'react-native';
 import { create } from 'zustand';
 import {
@@ -20,6 +19,7 @@ import { qk } from '@/api/keys';
 import { CACHE_VERSION, persister, queryClient } from '@/api/queryClient';
 import { askAgeCheck } from '@/features/age/ageCheck';
 import { setReaderGender } from '@/lib/i18n';
+import AsyncStorage from '@/lib/kv';
 import { readToken, writeToken } from '@/lib/secure';
 import { realtime } from '@/realtime/client';
 import { prefsPending } from '@/state/prefsPending';

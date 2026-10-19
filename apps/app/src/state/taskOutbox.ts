@@ -6,7 +6,6 @@
 import type { MemoryView, TasksResponse, TaskView } from '@caime/core/api';
 import { tr } from '@caime/core/i18n';
 import { uuidv4 } from '@caime/core/ids';
-import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useMemo } from 'react';
 import { create } from 'zustand';
 import { createJSONStorage, persist } from 'zustand/middleware';
@@ -14,6 +13,7 @@ import { ApiError, NetworkError } from '@/api/client';
 import { endpoints } from '@/api/endpoints';
 import { qk } from '@/api/keys';
 import { queryClient } from '@/api/queryClient';
+import AsyncStorage from '@/lib/kv';
 import { toast } from '@/ui/Toast';
 import { patchCaches } from './cache';
 

@@ -3,10 +3,11 @@
  * sees their inbox and recent conversations instantly, online or not (COMPETITIVE.md budgets:
  * cached inbox < 150 ms, cached conversation < 100 ms).
  */
-import AsyncStorage from '@react-native-async-storage/async-storage';
+
 import { dehydrate, focusManager, onlineManager, QueryClient } from '@tanstack/react-query';
 import type { PersistedClient, Persister } from '@tanstack/react-query-persist-client';
 import { AppState, InteractionManager, Platform } from 'react-native';
+import AsyncStorage from '@/lib/kv';
 import { onNetworkChange } from '@/lib/network';
 import { ApiError, NetworkError } from './client';
 

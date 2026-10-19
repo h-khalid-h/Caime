@@ -3,7 +3,7 @@
  * takes them back to their meeting. Apart from the join page, so the guest's landing route
  * doesn't carry it.
  */
-import AsyncStorage from '@react-native-async-storage/async-storage';
+import AsyncStorage from '@/lib/kv';
 
 const KEY = 'caime.guest-link';
 

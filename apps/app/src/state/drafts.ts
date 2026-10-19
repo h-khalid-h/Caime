@@ -4,10 +4,11 @@
  * only held while the app is open: never mirrored, never written to the device's storage.
  * Signing out forgets them all.
  */
-import AsyncStorage from '@react-native-async-storage/async-storage';
+
 import { create } from 'zustand';
 import { createJSONStorage, persist } from 'zustand/middleware';
 import { endpoints } from '@/api/endpoints';
+import AsyncStorage from '@/lib/kv';
 
 interface DraftState {
   drafts: Record<string, string>;

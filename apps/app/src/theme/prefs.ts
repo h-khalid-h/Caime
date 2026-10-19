@@ -6,9 +6,9 @@ import type { BubbleTheme } from '@caime/brand/tokens';
 import type { ArabicVarietyChoice } from '@caime/core/arabic-variety';
 import type { LanguageChoice } from '@caime/core/i18n';
 import type { Initiative } from '@caime/core/initiative';
-import AsyncStorage from '@react-native-async-storage/async-storage';
 import { create } from 'zustand';
 import { createJSONStorage, persist } from 'zustand/middleware';
+import AsyncStorage from '@/lib/kv';
 
 export type ThemePreference = 'system' | 'light' | 'dark';
 export type Personality = 'playful' | 'minimal';

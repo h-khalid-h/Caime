@@ -4878,6 +4878,9 @@ graph) and the number that will show it; one that sharpens none is hygiene and s
   journeys, safety, reliability, performance, intelligence, mail and calendar, chat, integrations,
   business and code integrity; the matrix against WhatsApp, Signal, Slack, Calendly and Workspace;
   an age-assurance design; the integration framework mapped to the code; plan M16 (A–H).
+- 2026-10-19 — The web's first download back to 447.5 KB of 450: a phone's haptics, keychain and
+  AsyncStorage reached on the web through twins that load none of them (2.5 KB gzip), held by
+  `webVariants.test.ts`; G9's plan screens took it to 450.3 before.
 - 2026-10-19 — M16 G8: a voice note's words read like typed ones: its asks, promises and dates
   offered once as a text's would be (a customer's for whoever has the thread), and an age
   check's finding keeps a minor's notes from the provider.

@@ -2157,7 +2157,11 @@ A sphere is said as how you know someone, never "sphere".
   conversation's, a person's, a space's; `mayKeepFrom` is `mayKeep.ts`) and `SaveSheet` (from a
   message's actions and from the files place: once that loaded apart, the sheet the two shared
   moved into `__common`, 0.5 KB). A new thing shared by several routes but needed by none at
-  first joins that list rather than the startup chunk.
+  first joins that list rather than the startup chunk. A package only a phone runs (a tap's
+  haptics, the keychain, AsyncStorage) is reached through a module with a `.web` twin
+  (`ui/haptics`, `lib/secure`, `lib/kv`: the browser's own storage) or from a `.native` file,
+  and `webVariants.test.ts` fails on any other import of one (2.5 KB gzip of the startup chunk,
+  M16 G9); a new package of that kind joins its list.
 - A module leaves the startup chunk only when every import of it is dynamic. Splitting a part
   out of a route's own chunk (a sheet inside the conversation screen) makes it worse: whatever
   it shares with that route moves into `__common`, which loads first (it cost 4.5 KB once). The

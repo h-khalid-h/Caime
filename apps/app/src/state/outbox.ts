@@ -7,12 +7,12 @@
 import type { MessageView } from '@caime/core/api';
 import { tr } from '@caime/core/i18n';
 import { uuidv4 } from '@caime/core/ids';
-import AsyncStorage from '@react-native-async-storage/async-storage';
 import { create } from 'zustand';
 import { createJSONStorage, persist } from 'zustand/middleware';
 import { ApiError, NetworkError } from '@/api/client';
 import { endpoints, type SendBody } from '@/api/endpoints';
 import { queryClient } from '@/api/queryClient';
+import AsyncStorage from '@/lib/kv';
 import { addSentMessage, applyMessageToInbox } from './cache';
 
 export interface OutboxItem {
