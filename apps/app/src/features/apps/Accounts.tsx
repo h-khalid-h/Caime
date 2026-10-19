@@ -21,7 +21,7 @@ import {
 } from '@caime/core/accounts';
 import type { ConnectedAccountView } from '@caime/core/api';
 import { formatWhen } from '@caime/core/format';
-import { tr } from '@caime/core/i18n';
+import { tr, trn } from '@caime/core/i18n';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import CalendarClock from 'lucide-react-native/icons/calendar-clock';
 import { useEffect, useRef, useState } from 'react';
@@ -126,6 +126,13 @@ function AccountRow({
   // What the release before said, until a read or a push works.
   if (account.state === 'failing' && failures.length === 0)
     failures.push(tr('{name} didn’t answer last time', { name }));
+  // Plans it refused at every try, each waiting for its card to change (M16 G4).
+  if (account.state !== 'reconnect' && plans?.stuck)
+    failures.push(
+      trn(plans.stuck, '{name} refused one of your plans', '{name} refused {n} of your plans', {
+        name,
+      }),
+    );
   const missing = offered.filter((u) => !account.uses.includes(u));
   // Read from the main calendar alone (R96): connecting again asks for the list of them all.
   const every = account.state !== 'reconnect' && account.mainCalendarOnly;

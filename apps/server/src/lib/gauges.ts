@@ -32,7 +32,11 @@ export async function syncGauges(ctx: AppContext): Promise<void> {
   ]);
   const accounts = kept.get(ACCOUNTS_SETTING) as typeof accountsState | undefined;
   if (accounts && typeof accounts.at === 'number' && accounts.at > accountsState.at)
-    Object.assign(accountsState, { at: accounts.at, counts: accounts.counts ?? [] });
+    Object.assign(accountsState, {
+      at: accounts.at,
+      counts: accounts.counts ?? [],
+      stuck: accounts.stuck ?? 0,
+    });
   const vault = kept.get(VAULT_SETTING) as VaultState | undefined;
   if (vault && typeof vault.at === 'number' && vault.at > vaultState.at)
     Object.assign(vaultState, {

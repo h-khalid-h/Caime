@@ -14,6 +14,7 @@ import {
   ACCOUNT_BUSY_DAYS,
   ACCOUNT_FRESH_SECONDS,
   ACCOUNT_SYNC_MINUTES,
+  PUSH_TRIES,
 } from '@caime/core/accounts';
 import type { AgeTrigger } from '@caime/core/age-assurance';
 import type { SitePage } from '@caime/core/api';
@@ -360,9 +361,14 @@ calendars alone; Microsoft offers no such permission, so Caime asks to read your
 basics and keeps only the times. When you turn its Plans on, Caime writes your meetings and
 appointments in Caime into that account&rsquo;s main calendar, each with its title, whom it&rsquo;s
 with, when, where and a link back to Caime (one still asked for as tentative), keeps them up to
-date as they&rsquo;re agreed, moved or cancelled, and invites nobody by it. Of each event it wrote,
-Caime keeps the account&rsquo;s id for it, when it is and a fingerprint of what it wrote, so it can
-change it or take it out; it reads nothing else of the calendar for it. From Google, Caime asks to
+date as they&rsquo;re agreed, moved or cancelled, and invites nobody by it. On an organization&rsquo;s
+team that keeps its conversations from its members&rsquo; own apps, its meetings and appointments are
+written as what they are, the organization&rsquo;s name and the time, never whom they&rsquo;re with or
+their own words. Of each event it wrote, Caime keeps the account&rsquo;s id for it, when it is and a
+fingerprint of what it wrote, so it can change it or take it out; it reads nothing else of the
+calendar for it. One the calendar refuses on its own is tried ${PUSH_TRIES} times as it is and then
+waits until it changes: of it, Caime keeps which one, the calendar&rsquo;s answer and how many tries,
+until it&rsquo;s written or no longer yours to write. From Google, Caime asks to
 manage events on the calendars you own; Microsoft offers nothing narrower than reading and writing
 your calendar. An event whose meeting is cancelled or removed in Caime is taken out; one that is
 over stays in your calendar, as yours. Disconnecting first takes out the events Caime wrote that

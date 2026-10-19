@@ -23,10 +23,15 @@ import {
   type AccountRunningUse,
   type AccountUse,
   accountScopes,
+  PUSH_TRIES,
   readsEveryCalendar,
   usesGranted,
 } from '@caime/core/accounts';
-import type { AccountUseHealthView, ConnectedAccountView } from '@caime/core/api';
+import type {
+  AccountUseHealthView,
+  AdminConnectionsResponse,
+  ConnectedAccountView,
+} from '@caime/core/api';
 import { tr } from '@caime/core/i18n';
 import { type Selectable, sql, type Updateable } from 'kysely';
 import type { AppContext } from '../context';
@@ -215,7 +220,7 @@ export async function finishAccountConsent(
 const RUNNING_USES: readonly AccountRunningUse[] = ['calendar', 'plans'];
 
 /** How each use that runs on its own last went, for the uses the connection has. */
-function healthOf(r: Row): AccountUseHealthView[] {
+function healthOf(r: Row, stuck: number): AccountUseHealthView[] {
   const iso = (d: Date | null) => d?.toISOString() ?? null;
   return RUNNING_USES.filter((u) => r.uses.includes(u)).map((use) =>
     use === 'calendar'
@@ -224,18 +229,21 @@ function healthOf(r: Row): AccountUseHealthView[] {
           workedAt: iso(r.synced_at),
           failure: r.read_failure,
           failedAt: iso(r.read_failed_at),
+          stuck: 0,
         }
       : {
           use,
           workedAt: iso(r.pushed_at),
           failure: r.push_failure,
           failedAt: iso(r.push_failed_at),
+          stuck,
         },
   );
 }
 
-export function accountView(r: Row): ConnectedAccountView {
-  const health = healthOf(r);
+/** A connection as its person sees it, with how many of its plans wait for a change (M16 G4). */
+export function accountView(r: Row, stuck = 0): ConnectedAccountView {
+  const health = healthOf(r, stuck);
   return {
     id: r.id,
     provider: r.provider,
@@ -318,7 +326,30 @@ export async function accountsOf(ctx: AppContext, userId: string): Promise<Conne
     .where('user_id', '=', userId)
     .orderBy('created_at')
     .execute();
-  return rows.map(accountView);
+  const stuck = await stuckCounts(
+    ctx,
+    rows.map((r) => r.id),
+  );
+  return rows.map((r) => accountView(r, stuck.get(r.id) ?? 0));
+}
+
+/**
+ * How many plans each connection's provider refused on their own `PUSH_TRIES` times, waiting for
+ * their card to change (M16 G4): one query for the set.
+ */
+export async function stuckCounts(
+  ctx: Pick<AppContext, 'db'>,
+  accountIds: string[],
+): Promise<Map<string, number>> {
+  if (accountIds.length === 0) return new Map();
+  const rows = await ctx.db
+    .selectFrom('calendar_push_failures')
+    .select(['account_id', (eb) => eb.fn.countAll<string>().as('n')])
+    .where('account_id', 'in', accountIds)
+    .where('attempts', '>=', PUSH_TRIES)
+    .groupBy('account_id')
+    .execute();
+  return new Map(rows.map((r) => [r.account_id, Number(r.n)]));
 }
 
 export async function accountOf(ctx: AppContext, userId: string, id: string): Promise<Row> {
@@ -541,28 +572,121 @@ export function askedToWait(status: number, body: unknown): boolean {
   );
 }
 
+type Health = 'working' | 'failing' | 'reconnect';
+
 /**
- * How many connections each use has, by how it last went (working, failing, reconnect), in one
- * query, kept for /metrics on every instance (M16 G2: `caime_connected_accounts`).
+ * How many connections each use has, by how it last went (working, failing, reconnect), and how
+ * many plans wait for their card to change (M16 G4): two queries.
+ */
+async function healthCounts(ctx: Pick<AppContext, 'db'>) {
+  const [{ rows }, waiting] = await Promise.all([
+    sql<{ use: AccountRunningUse; health: Health; n: string }>`
+      select u.use,
+        case
+          when a.state = 'reconnect' then 'reconnect'
+          when (u.use = 'calendar' and a.read_failure is not null)
+            or (u.use = 'plans' and a.push_failure is not null) then 'failing'
+          else 'working'
+        end as health,
+        count(*) as n
+      from connected_accounts a
+      cross join unnest(array['calendar', 'plans']) as u(use)
+      where u.use = any(a.uses)
+      group by 1, 2`.execute(ctx.db),
+    ctx.db
+      .selectFrom('calendar_push_failures')
+      .select((eb) => eb.fn.countAll<string>().as('n'))
+      .where('attempts', '>=', PUSH_TRIES)
+      .executeTakeFirstOrThrow(),
+  ]);
+  return {
+    counts: rows.map((r) => ({ use: r.use, health: r.health, n: Number(r.n) })),
+    stuck: Number(waiting.n),
+  };
+}
+
+/**
+ * The connections' health, kept for /metrics on every instance (M16 G2:
+ * `caime_connected_accounts`; G4: `caime_calendar_plans_stuck`).
  */
 export async function countAccountHealth(ctx: AppContext): Promise<void> {
-  const { rows } = await sql<{ use: string; health: string; n: string }>`
-    select u.use,
-      case
-        when a.state = 'reconnect' then 'reconnect'
-        when (u.use = 'calendar' and a.read_failure is not null)
-          or (u.use = 'plans' and a.push_failure is not null) then 'failing'
-        else 'working'
-      end as health,
-      count(*) as n
-    from connected_accounts a
-    cross join unnest(array['calendar', 'plans']) as u(use)
-    where u.use = any(a.uses)
-    group by 1, 2`.execute(ctx.db);
-  const counts = rows.map((r) => ({ use: r.use, health: r.health, n: Number(r.n) }));
+  const { counts, stuck } = await healthCounts(ctx);
   const at = ctx.now().getTime();
-  await writeSetting(ctx.db, ACCOUNTS_SETTING, { at, counts }, ctx.now());
-  Object.assign(accountsState, { at, counts });
+  await writeSetting(ctx.db, ACCOUNTS_SETTING, { at, counts, stuck }, ctx.now());
+  Object.assign(accountsState, { at, counts, stuck });
+}
+
+/** Connections listed for the operator at most. */
+const FAILING_SHOWN = 100;
+
+/**
+ * The connections not working, for the operator (M16 G4): their health and whose they are by
+ * handle, never an address or anything read or written. Asked again, never kept.
+ */
+export async function connectionsForOperator(
+  ctx: Pick<AppContext, 'db'>,
+): Promise<AdminConnectionsResponse> {
+  const [{ counts, stuck }, rows] = await Promise.all([
+    healthCounts(ctx),
+    ctx.db
+      .selectFrom('connected_accounts')
+      .select(ACCOUNT_ROW)
+      .where((eb) =>
+        eb.or([
+          eb('state', '<>', 'connected'),
+          eb('read_failure', 'is not', null),
+          eb('push_failure', 'is not', null),
+          eb(
+            'id',
+            'in',
+            eb
+              .selectFrom('calendar_push_failures')
+              .select('account_id')
+              .where('attempts', '>=', PUSH_TRIES),
+          ),
+        ]),
+      )
+      .orderBy(sql`greatest(read_failed_at, push_failed_at)`, sql`desc nulls last`)
+      .orderBy('id')
+      .limit(FAILING_SHOWN)
+      .execute(),
+  ]);
+  const [handles, waiting] = await Promise.all([
+    rows.length
+      ? ctx.db
+          .selectFrom('users')
+          .select(['id', 'handle'])
+          .where(
+            'id',
+            'in',
+            rows.map((r) => r.user_id),
+          )
+          .execute()
+      : Promise.resolve([]),
+    stuckCounts(
+      ctx,
+      rows.map((r) => r.id),
+    ),
+  ]);
+  const handleOf = new Map(handles.map((h) => [h.id, h.handle]));
+  return {
+    counts: counts.map((c) => ({ use: c.use, health: c.health, count: c.n })),
+    stuck,
+    failing: rows.map((r) => {
+      const view = accountView(r, waiting.get(r.id) ?? 0);
+      return {
+        id: r.id,
+        provider: r.provider,
+        handle: handleOf.get(r.user_id) ?? '',
+        uses: view.uses,
+        state: view.state,
+        createdAt: view.createdAt,
+        read: view.health.find((h) => h.use === 'calendar') ?? null,
+        plans: view.health.find((h) => h.use === 'plans') ?? null,
+        restUntil: r.rest_until?.toISOString() ?? null,
+      };
+    }),
+  };
 }
 
 /** Their Connected list reads again on every device (M15): connected, ended, or its state moved. */

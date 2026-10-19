@@ -13,13 +13,22 @@
  * (`queueCalendarPush`, from a card sent, moved, stopped, moved to a space or removed), at the
  * end of a ten-second bucket so a burst is one run; and a sweep puts each connection in step
  * once an hour, for what changes without a card moving (a conversation left, a card deleted for
- * oneself, the window moving on). An event is written in the person's own language.
+ * oneself, the window moving on). An event is written in the person's own language. One the
+ * provider refuses on its own (a 400, say) never holds up the rest (M16 G4): it's kept in
+ * `calendar_push_failures`, sent as it is `PUSH_TRIES` times at most, then waits for its card to
+ * change, and the person and the operator are told how many wait.
  */
 import { createHash } from 'node:crypto';
 import { KITS, zonedParts } from '@caime/core';
-import { ACCOUNT_BUSY_DAYS, ACCOUNT_SYNC_MINUTES, type AccountFailure } from '@caime/core/accounts';
+import {
+  ACCOUNT_BUSY_DAYS,
+  ACCOUNT_SYNC_MINUTES,
+  type AccountFailure,
+  PUSH_TRIES,
+} from '@caime/core/accounts';
 import { tr } from '@caime/core/i18n';
 import { joinPath, meetingVenue } from '@caime/core/meetings';
+import { sql } from 'kysely';
 import type { AppContext } from '../context';
 import { eachLimit } from './batch';
 import { minutesOf } from './calendar';
@@ -204,6 +213,9 @@ export async function planEvents(
   });
 }
 
+/** What a refusal to take an event out is kept as, in place of a plan's fingerprint. */
+const REMOVE = 'remove';
+
 const fingerprintOf = (e: PlanEvent) =>
   createHash('sha256')
     .update(
@@ -348,7 +360,7 @@ export async function pushAccountPlans(ctx: AppContext, account: Account): Promi
     from: new Date(now.getTime() - BEFORE_MS),
     until: new Date(now.getTime() + ACCOUNT_BUSY_DAYS * 86_400_000),
   };
-  const [written, wanted] = await Promise.all([
+  const [written, wanted, refused] = await Promise.all([
     ctx.db
       .selectFrom('calendar_pushes')
       .select(['uid', 'event_id', 'end_at', 'fingerprint'])
@@ -357,8 +369,19 @@ export async function pushAccountPlans(ctx: AppContext, account: Account): Promi
     account.uses.includes('plans')
       ? planEvents(ctx, account.user_id, window)
       : Promise.resolve(new Map<string, PlanEvent>()),
+    ctx.db
+      .selectFrom('calendar_push_failures')
+      .select(['uid', 'fingerprint', 'attempts'])
+      .where('account_id', '=', account.id)
+      .execute(),
   ]);
   const had = new Map(written.map((w) => [w.uid, w]));
+  // Refused on its own `PUSH_TRIES` times as it is now (M16 G4): it waits for its card to change.
+  const failed = new Map(refused.map((f) => [f.uid, f]));
+  const stuck = (uid: string, fingerprint: string) => {
+    const f = failed.get(uid);
+    return Boolean(f && f.fingerprint === fingerprint && f.attempts >= PUSH_TRIES);
+  };
   type Op =
     | { kind: 'create'; e: PlanEvent }
     | { kind: 'update'; e: PlanEvent; id: string }
@@ -366,21 +389,35 @@ export async function pushAccountPlans(ctx: AppContext, account: Account): Promi
   const ops: Op[] = [];
   for (const e of wanted.values()) {
     const w = had.get(e.uid);
+    const print = fingerprintOf(e);
+    if (stuck(e.uid, print)) continue;
     if (!w) ops.push({ kind: 'create', e });
-    else if (w.fingerprint !== fingerprintOf(e)) ops.push({ kind: 'update', e, id: w.event_id });
+    else if (w.fingerprint !== print) ops.push({ kind: 'update', e, id: w.event_id });
   }
   const over: string[] = [];
   for (const w of written) {
     if (wanted.has(w.uid)) continue;
-    if (w.end_at <= window.from) over.push(w.uid);
+    // Over, or not taken out after its tries: let go, and left in their calendar as it was.
+    if (w.end_at <= window.from || stuck(w.uid, REMOVE)) over.push(w.uid);
     else ops.push({ kind: 'remove', uid: w.uid, id: w.event_id });
   }
-  // What's over is let go here, and stays in their calendar as it was.
+  // What's over is let go here, and stays in their calendar as it was; so is a refusal kept for
+  // what's no longer a plan.
+  const done = new Set(over);
+  const forgotten = refused
+    .filter((f) => done.has(f.uid) || (!wanted.has(f.uid) && !had.has(f.uid)))
+    .map((f) => f.uid);
   if (over.length)
     await ctx.db
       .deleteFrom('calendar_pushes')
       .where('account_id', '=', account.id)
       .where('uid', 'in', over)
+      .execute();
+  if (forgotten.length)
+    await ctx.db
+      .deleteFrom('calendar_push_failures')
+      .where('account_id', '=', account.id)
+      .where('uid', 'in', forgotten)
       .execute();
   if (ops.length === 0) {
     await settled(ctx, account, now, null);
@@ -393,6 +430,31 @@ export async function pushAccountPlans(ctx: AppContext, account: Account): Promi
   }
   // The first answer that stopped the run, or no answer at all.
   let stopped: Answer | 'unanswered' | null = null;
+  /** One plan refused on its own: counted against its tries as it is, the rest go on. */
+  const refusedOne = async (uid: string, fingerprint: string, status: number) => {
+    ctx.log.warn({ provider: account.provider, status }, 'plans: one refused');
+    await ctx.db
+      .insertInto('calendar_push_failures')
+      .values({ account_id: account.id, uid, fingerprint, status, failed_at: ctx.now() })
+      .onConflict((oc) =>
+        oc.columns(['account_id', 'uid']).doUpdateSet({
+          fingerprint,
+          status,
+          failed_at: ctx.now(),
+          attempts: sql<number>`case when calendar_push_failures.fingerprint = ${fingerprint}
+            then calendar_push_failures.attempts + 1 else 1 end`,
+        }),
+      )
+      .execute();
+  };
+  const cleared = async (uid: string) => {
+    if (failed.has(uid))
+      await ctx.db
+        .deleteFrom('calendar_push_failures')
+        .where('account_id', '=', account.id)
+        .where('uid', '=', uid)
+        .execute();
+  };
   const keep = async (e: PlanEvent, id: string) => {
     const row = {
       event_id: id,
@@ -413,22 +475,25 @@ export async function pushAccountPlans(ctx: AppContext, account: Account): Promi
     try {
       if (op.kind === 'remove') {
         const r = await writer.remove(op.id);
-        if (ok(r.status) || gone(r.status))
+        if (ok(r.status) || gone(r.status)) {
           await ctx.db
             .deleteFrom('calendar_pushes')
             .where('account_id', '=', account.id)
             .where('uid', '=', op.uid)
             .execute();
-        else if (stops(r.status)) stopped ??= r;
+          await cleared(op.uid);
+        } else if (stops(r.status)) stopped ??= r;
+        else await refusedOne(op.uid, REMOVE, r.status);
         return;
       }
-      let done =
-        op.kind === 'update' ? await writer.update(op.id, op.e) : await writer.create(op.e);
+      let put = op.kind === 'update' ? await writer.update(op.id, op.e) : await writer.create(op.e);
       // Deleted there since it was written: the card changed, so it's written anew.
-      if (op.kind === 'update' && gone(done.status)) done = await writer.create(op.e);
-      if (done.id) await keep(op.e, done.id);
-      else if (stops(done.status)) stopped ??= done;
-      else ctx.log.warn({ provider: account.provider, status: done.status }, 'plans: not written');
+      if (op.kind === 'update' && gone(put.status)) put = await writer.create(op.e);
+      if (put.id) {
+        await keep(op.e, put.id);
+        await cleared(op.e.uid);
+      } else if (stops(put.status)) stopped ??= put;
+      else await refusedOne(op.e.uid, fingerprintOf(op.e), put.status);
     } catch (err) {
       ctx.log.warn({ provider: account.provider, err: (err as Error).name }, 'plans: no answer');
       stopped ??= 'unanswered';

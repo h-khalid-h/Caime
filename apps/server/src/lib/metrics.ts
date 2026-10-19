@@ -146,7 +146,9 @@ export const ACCOUNTS_SETTING = 'accounts.health';
 export const accountsState: {
   at: number;
   counts: Array<{ use: string; health: string; n: number }>;
-} = { at: 0, counts: [] };
+  /** Plans refused on their own `PUSH_TRIES` times, waiting for their card to change (M16 G4). */
+  stuck: number;
+} = { at: 0, counts: [], stuck: 0 };
 
 /** The audit chain's last check (lib/audit.ts writes it): when, whether it held, its head. */
 export const auditState = { checkedAt: 0, ok: true, headSeq: 0 };
@@ -341,6 +343,11 @@ export function createMetrics(pool: pg.Pool) {
               value: c.n,
             }))
           : [],
+    ),
+    new Gauge(
+      'caime_calendar_plans_stuck',
+      'Plans a connected calendar refused on their own at every try, waiting for their card to change (absent until counted).',
+      () => (accountsState.at ? [{ labels: {}, value: accountsState.stuck }] : []),
     ),
     new Gauge(
       'caime_backup_last_copy_timestamp_seconds',

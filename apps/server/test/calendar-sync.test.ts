@@ -495,5 +495,8 @@ describe('bookings and connected calendars in step (R96)', () => {
     const page = (await t.app.inject({ method: 'GET', url: '/privacy' })).body.replace(/\s+/g, ' ');
     expect(page).toContain('When you turn its Plans on, Caime writes your meetings');
     expect(page).toContain('invites nobody by it');
+    // A refused one (M16 G4), and an organization's that keeps its conversations (G3b).
+    expect(page).toContain('One the calendar refuses on its own is tried 3 times as it is');
+    expect(page).toContain('the organization&rsquo;s name and the time');
   });
 });

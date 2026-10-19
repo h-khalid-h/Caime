@@ -110,6 +110,7 @@ export type AuditAction =
   | 'oauth.listing_withdrawn'
   | 'oauth.listing_reviewed'
   | 'admin.listings_viewed'
+  | 'admin.connections_viewed'
   | 'agent.created'
   | 'agent.updated'
   | 'agent.removed'

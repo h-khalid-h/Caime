@@ -3172,4 +3172,12 @@ export const arB: Catalog = {
     'وصول تطبيقات أعضاء الفريق الخاصة إلى محادثات المؤسسة',
   'A personal token, a bridge like Zapier, an app someone on the team connects to their own account, or their own calendar. Off, those reach only their own conversations, and a calendar shows the organization’s name and the time, never the customer or the details. The owner and admins decide for themselves.':
     'رمز شخصي، أو جسر مثل Zapier، أو تطبيق أو تقويم مربوط بحساب أحد أعضاء الفريق. عند الإيقاف لا تصل هذه إلا إلى محادثات صاحب الحساب، ولا يظهر في التقويم إلا اسم المؤسسة والوقت، دون العميل أو التفاصيل. أما المالك والمشرفون فيقررون لأنفسهم.',
+  '{name} refused {n} of your plans': {
+    zero: 'لم يرفض {name} أيًّا من مواعيدك',
+    one: 'رفض {name} موعدًا من مواعيدك',
+    two: 'رفض {name} موعدين من مواعيدك',
+    few: 'رفض {name} {n} مواعيد من مواعيدك',
+    many: 'رفض {name} {n} موعدًا من مواعيدك',
+    other: 'رفض {name} {n} موعد من مواعيدك',
+  },
 };

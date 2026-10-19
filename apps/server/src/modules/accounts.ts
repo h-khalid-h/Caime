@@ -46,6 +46,7 @@ import {
   openPickerTicket,
   pickerTicket,
   redeemAccountClaim,
+  stuckCounts,
 } from '../lib/connected-accounts';
 import { badRequest, forbidden, notFound } from '../lib/errors';
 import { queueAccountSync } from '../lib/external-busy';
@@ -134,7 +135,7 @@ export async function connectedAccountRoutes(app: FastifyInstance, ctx: AppConte
     const row = await accountOf(ctx, auth.userId, id);
     ctx.limiter.hit(`accounts-sync:${id}`, ctx.config.isTest ? 1000 : 12, 3_600_000);
     if (row.uses.includes('calendar')) await queueAccountSync(ctx, id);
-    return { account: accountView(row) };
+    return { account: accountView(row, (await stuckCounts(ctx, [id])).get(id) ?? 0) };
   });
 
   // --- Files (R90): a OneDrive's folders browsed in Caime, Google's picked in its own picker,

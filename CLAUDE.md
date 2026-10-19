@@ -1217,7 +1217,12 @@ A sphere is said as how you know someone, never "sphere".
   `afterCardMove`, `stopRepeating`, a meeting moved to a space, `removeForEveryone`, a booking's
   provider reassigned), the
   `accounts.plans` sweep catches the rest hourly, and `disconnectAccount` runs `withdrawPlans`
-  first. A booking from a person's own catalog (`AppointmentBooking.hostId`, written only by
+  first. An event the provider refuses on its own (a 4xx that isn't a grant gone or a wait) is
+  that event's alone (M16 G4): kept in `calendar_push_failures` by uid with the fingerprint it was
+  refused as, sent as it is core `PUSH_TRIES` times at most, then skipped until its fingerprint
+  changes (a removal let go), while the run goes on; `stuckCounts` says how many wait on the
+  account's view, `caime_calendar_plans_stuck` across all, and `connectionsForOperator` behind
+  `GET /v1/admin/connections`. A booking from a person's own catalog (`AppointmentBooking.hostId`, written only by
   `bookingFor`) is in `visibleCards` for them while the booker's request waits; nothing else from
   a pending request is. Each use that runs on its own keeps its own health (M16 G2): the read
   `synced_at`, `read_failure`, `read_failed_at`; the plans `pushed_at` (written only when a push

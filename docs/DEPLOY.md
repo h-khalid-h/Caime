@@ -718,6 +718,11 @@ groups:
       - alert: CaimeAccountsFailing
         expr: sum(caime_connected_accounts{health="failing"}) > 5
         for: 2h
+      # Plans a connected calendar refused at every try (M16 G4): one is the person's own odd
+      # event; many is something Caime sends that the providers no longer take.
+      - alert: CaimePlansStuck
+        expr: caime_calendar_plans_stuck > 10
+        for: 6h
       # The audit log's chain broken at its daily check (R78): a row changed, removed or put in.
       - alert: CaimeAuditChainBroken
         expr: caime_audit_chain_ok == 0
@@ -915,6 +920,16 @@ curl -H "Authorization: Bearer $ADMIN_TOKEN" https://caime.example.com/v1/admin/
 ```
 
 `PROVIDER_HEALTH_ENABLED=false` turns the hourly probe off (the operator's check still runs).
+
+**Connected accounts** (M16 G4). How every connected Google or Microsoft account's read and plans
+last went, how many plans wait for their card to change after the provider refused them at every
+try, and the connections not working (at most a hundred, the latest failure first) by whose they
+are: the handle to look up with `/v1/admin/people/:handle`, never an address or anything read or
+written. Reading it is audited with your name:
+
+```sh
+curl -H "Authorization: Bearer $ADMIN_TOKEN" https://caime.example.com/v1/admin/connections
+```
 
 **Listings** (R74, R80). `GET /v1/admin/listings` is the queue of apps asking to be listed, each
 with its screenshots (`/v1/admin/listings/:id/screenshots/:n`) and the points to check

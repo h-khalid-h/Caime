@@ -328,6 +328,11 @@ export interface AccountUseHealthView {
   /** Why its last try failed, and when; null when its last try worked. */
   failure: AccountFailure | null;
   failedAt: string | null;
+  /**
+   * Plans the provider refused on their own `PUSH_TRIES` times, each waiting for its card to
+   * change (M16 G4); always 0 for the calendar read.
+   */
+  stuck: number;
 }
 export interface ConnectedAccountsResponse {
   accounts: ConnectedAccountView[];
@@ -3674,6 +3679,35 @@ export interface AdminJobsResponse {
   jobs: AdminJobView[];
   /** How many are dead in all. */
   dead: number;
+}
+/**
+ * A connected account that isn't working, for the operator (M16 G4): facts to help with, never
+ * its address, what it read or what it wrote.
+ */
+export interface AdminConnectionView {
+  id: string;
+  provider: AccountProvider;
+  /** Whose, to look them up with `/admin/people/:handle`. */
+  handle: string;
+  uses: AccountUse[];
+  state: AccountState;
+  createdAt: string;
+  read: AccountUseHealthView | null;
+  plans: AccountUseHealthView | null;
+  /** Until when the provider asked Caime to wait, if it did. */
+  restUntil: string | null;
+}
+export interface AdminConnectionsResponse {
+  /** Every connection's uses by how they last went, as `/metrics` counts them. */
+  counts: Array<{
+    use: AccountRunningUse;
+    health: 'working' | 'failing' | 'reconnect';
+    count: number;
+  }>;
+  /** Plans refused on their own and waiting for their card to change, across every connection. */
+  stuck: number;
+  /** The connections not working, the latest failure first, at most a hundred. */
+  failing: AdminConnectionView[];
 }
 export interface BackupResponse {
   backup: BackupView;

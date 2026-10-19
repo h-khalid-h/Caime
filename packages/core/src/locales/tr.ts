@@ -4669,4 +4669,8 @@ export const turkish: Catalog = {
     'Ekip üyelerinin kendi uygulamaları kuruluşun konuşmalarına erişebilir',
   'A personal token, a bridge like Zapier, an app someone on the team connects to their own account, or their own calendar. Off, those reach only their own conversations, and a calendar shows the organization’s name and the time, never the customer or the details. The owner and admins decide for themselves.':
     'Kişisel bir belirteç, Zapier gibi bir köprü, ekipten birinin kendi hesabına bağladığı bir uygulama ya da kendi takvimi. Kapalıyken bunlar yalnızca o kişinin kendi konuşmalarına erişir; takvimde müşteri ya da ayrıntılar değil, yalnızca kuruluşun adı ve saat görünür. Sahip ve yöneticiler kendileri karar verir.',
+  '{name} refused {n} of your plans': {
+    one: '{name} planlarınızdan birini reddetti',
+    other: '{name} planlarınızdan {n} tanesini reddetti',
+  },
 };

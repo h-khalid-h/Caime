@@ -744,6 +744,17 @@ export interface CalendarPushesTable {
   pushed_at: Generated<Date>;
 }
 
+/** A plan the provider refused on its own, kept until it's written or gone (M16 G4, 0137). */
+export interface CalendarPushFailuresTable {
+  account_id: string;
+  uid: string;
+  /** The plan as it was refused (`calendar_pushes`' fingerprint), or 'remove'. */
+  fingerprint: string;
+  status: number;
+  attempts: Defaulted<number>;
+  failed_at: Date;
+}
+
 /** An email or phone number someone added as theirs (R91), proven once `verified_at` is set. */
 export interface OwnAddressesTable {
   id: string;
@@ -1584,6 +1595,7 @@ export interface Database {
   places: PlacesTable;
   external_busy: ExternalBusyTable;
   calendar_pushes: CalendarPushesTable;
+  calendar_push_failures: CalendarPushFailuresTable;
   decisions: DecisionsTable;
   notifications: NotificationsTable;
   push_subscriptions: PushSubscriptionsTable;

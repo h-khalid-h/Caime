@@ -19,6 +19,7 @@ import {
   SuspensionBody,
 } from '@caime/core';
 import type {
+  AdminConnectionsResponse,
   AdminJobsResponse,
   AdminPersonResponse,
   AppealResponse,
@@ -53,6 +54,7 @@ import {
 import { AUDIT_VERIFY_ROWS, audit, verifyAuditChain } from '../lib/audit';
 import { backupDir, lastBackup, listBackups, runBackup } from '../lib/backup';
 import { endBillingOf, paysThroughBilling } from '../lib/billing';
+import { connectionsForOperator } from '../lib/connected-accounts';
 import { AppError, badRequest, conflict, mailUnavailable, notFound } from '../lib/errors';
 import { handleHeld, handleTaken, releaseHandle } from '../lib/handles';
 import { retryJob, troubledJobs } from '../lib/jobs';
@@ -526,6 +528,22 @@ export async function adminRoutes(app: FastifyInstance, ctx: AppContext) {
     const by = operator(req);
     await audit(ctx.db, { actorId: null, action: 'admin.jobs_viewed', metadata: { operator: by } });
     return troubledJobs(ctx);
+  });
+
+  /**
+   * Connected accounts that aren't working (M16 G4): how every use last went, the plans waiting
+   * for their card to change, and the failing connections by whose they are, never an address or
+   * anything read or written. Reading it is audited.
+   */
+  app.get('/admin/connections', async (req): Promise<AdminConnectionsResponse> => {
+    const by = operator(req);
+    const view = await connectionsForOperator(ctx);
+    await audit(ctx.db, {
+      actorId: null,
+      action: 'admin.connections_viewed',
+      metadata: { count: view.failing.length, operator: by },
+    });
+    return view;
   });
 
   /** A dead job given its attempts back, to run now. */

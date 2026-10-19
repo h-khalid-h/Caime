@@ -2910,6 +2910,26 @@ graph) and the number that will show it; one that sharpens none is hygiene and s
       without who, what or where, Caime's own calendar whole, let in and they say it again, the
       owner's own never kept), `calendar.test.ts`, `calendar-sync.test.ts`, the catalogs, and the
       full gate.
+- [x] G4. Plans one event can't hold up, and the operator's view of connections (2026-10-19,
+      review §8 M and §11 (d)(e); advantage 3, the door link whose bookings land in the
+      professional's own calendar; the number: plans asked again forever with no record, every
+      refused one before, none now). A plan a connected calendar refuses on its own (a 400, say;
+      never a grant gone, a wait or an outage, which stop the run as before) is that event's alone:
+      kept in `calendar_push_failures` (migration 0137) with what it was refused as, sent as it is
+      core `PUSH_TRIES` (3) times at most while the rest go in, then left until its card changes;
+      one Caime can't take out is let go after its tries and stays in their calendar. The
+      account's row says how many wait ("Google refused one of your plans", four languages), the
+      person's export lists them beside what was written, the privacy page says what's kept of
+      one (and G3b's rule for an organization's bookings), `caime_calendar_plans_stuck` counts
+      them with an alert in DEPLOY.md, and the operator's `GET /v1/admin/connections` lists how
+      every use last went and the connections not working by whose they are, never an address or
+      anything read or written, audited with the operator's name. Not done: the connector
+      interface (Google and Microsoft still branch in each file that talks to them). Verified:
+      `calendar-push-failures.test.ts` (the rest written beside a refused one, its tries and then
+      nothing asked, the count on the row, /metrics and the operator's list without an address,
+      the export, written again once its card changes, a removal let go), `account-health.test.ts`,
+      `calendar-sync.test.ts` (the privacy page), `connected-accounts.test.ts`, the catalogs, and
+      the full gate.
 - [ ] H. Business depth: a Business seat includes Pro; a cap on organizations per person; room
       checks inside the transaction; quick replies, away and greeting messages; customer notes,
       tags and fields; tax invoices (counsel); booking and revenue analytics; intake forms as
@@ -4690,6 +4710,9 @@ graph) and the number that will show it; one that sharpens none is hygiene and s
   journeys, safety, reliability, performance, intelligence, mail and calendar, chat, integrations,
   business and code integrity; the matrix against WhatsApp, Signal, Slack, Calendly and Workspace;
   an age-assurance design; the integration framework mapped to the code; plan M16 (A–H).
+- 2026-10-19 — M16 G4: a plan a connected calendar refuses is that event's alone: tried three
+  times, then left until it changes while the rest go in; the person, /metrics and the operator's
+  new list of connections say how many wait.
 - 2026-10-19 — M16 G3b and G1c: a team member's own calendars show an organization's bookings
   by its name and time alone while it keeps its conversations from their apps; the clear webhook
   secret columns dropped.

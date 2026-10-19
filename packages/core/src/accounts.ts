@@ -149,6 +149,12 @@ export type AccountFailure = (typeof ACCOUNT_FAILURES)[number];
 /** The uses that run on their own, each keeping how it last went: the busy read and the plans. */
 export type AccountRunningUse = 'calendar' | 'plans';
 
+/**
+ * How many times one plan a provider refuses on its own (a 400, say) is sent as it is (M16 G4):
+ * then it waits for its card to change, and the rest of the plans go in meanwhile.
+ */
+export const PUSH_TRIES = 3;
+
 /** How long a calendar is looked ahead, and how often it's read again. */
 export const ACCOUNT_BUSY_DAYS = 90;
 export const ACCOUNT_SYNC_MINUTES = 15;

@@ -160,6 +160,7 @@ export async function buildExport(ctx: AppContext, me: string, now: Date) {
     mailCopies,
     externalBusy,
     calendarPushes,
+    calendarRefusals,
     reclaims,
     fileLinks,
   ] = await Promise.all([
@@ -1071,6 +1072,14 @@ export async function buildExport(ctx: AppContext, me: string, now: Date) {
       .where('user_id', '=', me)
       .orderBy('start_at')
       .execute(),
+    // And what the provider refused to take (M16 G4): which plan, its answer, how many tries.
+    db
+      .selectFrom('calendar_push_failures as f')
+      .innerJoin('connected_accounts as a', 'a.id', 'f.account_id')
+      .select(['f.uid', 'f.status', 'f.attempts', 'f.failed_at'])
+      .where('a.user_id', '=', me)
+      .orderBy('f.failed_at')
+      .execute(),
     // A closed organization they set out to take back by its domain (R42): never the token.
     db
       .selectFrom('org_reclaims as r')
@@ -1777,6 +1786,12 @@ export async function buildExport(ctx: AppContext, me: string, now: Date) {
       end: p.end_at.toISOString(),
       showsBusy: p.holds,
       writtenAt: p.pushed_at.toISOString(),
+    })),
+    refusedByYourCalendars: calendarRefusals.map((f) => ({
+      event: f.uid,
+      answer: f.status,
+      tries: f.attempts,
+      lastTriedAt: f.failed_at.toISOString(),
     })),
     // The links to your files you gave out (M16 H6): the file, who it was for, how many times its
     // page was opened (never by whom), and when it ran out or was taken back.
