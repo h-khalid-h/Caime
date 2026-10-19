@@ -161,7 +161,12 @@ describe('what Caime keeps, and for how long', () => {
     // The question going takes its words; that Noor wrote stays.
     await noor.del(`/v1/messages/${question?.id}`);
     expect(await unread()).toEqual([{ ...first.note, body: null }]);
-    expect(JSON.stringify(await alex.get('/v1/notifications'))).not.toContain('5521');
+    // Nothing of its words in anything Alex is listed, ids and times aside: a uuid may hold those
+    // digits by chance.
+    const listed = JSON.stringify(await alex.get('/v1/notifications'))
+      .replace(/[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}/g, '')
+      .replace(/\d{4}-\d{2}-\d{2}T[\d:.]+Z/g, '');
+    expect(listed).not.toContain('5521');
     await drained();
     expect(told('notifications.read', (d) => d.ids?.includes(first.note?.id))).toEqual([
       alex.user.id,
