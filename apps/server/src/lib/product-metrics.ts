@@ -254,6 +254,20 @@ export async function productMetrics(ctx: AppContext, days: number): Promise<Pro
     byFeature[r.feature] = f;
   }
 
+  // Advantage 2's number (REVIEW-2026-10-17 §14): what customers book and order in the
+  // conversation, by the cards made in the window (a repeating appointment once, by its first).
+  const commerce = await q<{ bookings: number; orders: number; organizations: number }>(sql`
+    select
+      count(*) filter (where m.payload->>'kit' = 'appointment')::int as bookings,
+      count(*) filter (where m.payload->>'kit' = 'order_status')::int as orders,
+      count(distinct t.org_id)::int as organizations
+    from messages m
+    join business_threads t on t.conversation_id = m.conversation_id
+    where m.kind = 'kit' and m.deleted_at is null
+      and m.payload->>'kit' in ('appointment', 'order_status')
+      and coalesce(m.payload->'series'->>'n', '0') = '0'
+      and m.created_at > ${from} and m.created_at <= ${to}
+  `);
   const business = await q<{ orgs: number; active: number; conversations: number }>(sql`
     select
       (select count(*)::int from organizations where archived_at is null) as orgs,
@@ -333,6 +347,11 @@ export async function productMetrics(ctx: AppContext, days: number): Promise<Pro
       activeOrganizations: business.active,
       customerConversations: business.conversations,
       reply: await replyTimes(ctx, { orgId: null, from, to }),
+      commerce: {
+        bookings: commerce.bookings,
+        orders: commerce.orders,
+        organizations: commerce.organizations,
+      },
     },
     notMeasured: [
       'Time to find counts searches in the apps only; what was searched for is never kept.',

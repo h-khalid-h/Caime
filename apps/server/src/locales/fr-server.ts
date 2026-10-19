@@ -232,8 +232,8 @@ export const frServer: Catalog = {
   'how your relationships are going, from your own messages, for you only':
     'comment vont vos relations, d’après vos propres messages, pour vous uniquement',
   team: 'équipe',
-  'how fast the team answers, who is waiting, what is open':
-    'la rapidité de réponse de l’équipe, qui attend, ce qui est ouvert',
+  'how fast the team answers, who is waiting, what is open, what was booked, ordered and paid':
+    'la rapidité de réponse de l’équipe, qui attend, ce qui est ouvert, ce qui a été réservé, commandé et payé',
   'Talk to us': 'Contactez-nous',
   included: 'inclus',
   'The rules': 'Les règles',
@@ -536,8 +536,8 @@ export const frServer: Catalog = {
   'The next can start {when}.': ' La prochaine pourra démarrer {when}.',
   '{name} has started today’s {startsPerDay} new conversations.{ready}{more}':
     '{name} a démarré les {startsPerDay} nouvelles conversations du jour.{ready}{more}',
-  'Insights come with Business: how fast {name}’s team answers, how many customers write, and what’s still open.':
-    'Les statistiques sont incluses dans Business : la rapidité de réponse de l’équipe de {name}, combien de clients écrivent, et ce qui reste ouvert.',
+  'Insights come with Business: how fast {name}’s team answers, how many customers write, what they book, order and pay, and what’s still open.':
+    'Les statistiques sont incluses dans Business : la rapidité de réponse de l’équipe de {name}, combien de clients écrivent, ce qu’ils réservent, commandent et paient, et ce qui reste ouvert.',
   'Relationship insights come with {pro}: who you write with most, who’s gone quiet, how fast you answer and are answered, and when you write.':
     'Les aperçus de vos relations sont inclus dans {pro} : avec qui vous écrivez le plus, qui ne donne plus de nouvelles, à quelle vitesse vous répondez et on vous répond, et quand vous écrivez.',
   '{plan} keeps {n}.': ' {plan} en permet {n}.',

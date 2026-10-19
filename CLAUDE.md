@@ -1725,6 +1725,15 @@ A sphere is said as how you know someone, never "sphere".
   (`assertAutomationRoom`, under the person's lock, `AUTOMATIONS_MAX` the ceiling). A test
   that needs a bigger team or more apps puts its organization on Business in its setup;
   `plans.test.ts` is where limits are tested.
+- An organization's insights (PRD §71, M16 H4, `lib/insights.ts`) are counts, times and sums for
+  its owner and admins on Business, the team's and never one person's, with nothing a customer
+  wrote. What its conversations came to is read from the cards as they stand (`cardsMade`:
+  appointments and orders made, a repeating appointment once, by its first card; `paidIn`: Pay
+  cards and invoices marked paid, by the last "paid" in their history, the organization's side
+  as `paySides` and the receipt have it; `customersIn`: who wrote, who was a customer before,
+  and when, on the organization's clock), summed by currency and never converted; nothing is
+  kept for them, and the operator's `business.commerce` counts the same cards. A new card about
+  money says in `paidIn` which side is paid.
 - Caime Mail (R75): a handle is an address at `MAIL_DOMAIN` once `MAIL_PROVIDER` is set
   (`mailOn`, `mailAddressOf` in `lib/mail-address.ts`; on `MeView` for adults, on `OrgView` for
   the team). The provider is one interface (`lib/mail-provider.ts`: `inbound`, `send`, `events`;

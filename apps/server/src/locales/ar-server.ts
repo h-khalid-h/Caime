@@ -204,8 +204,8 @@ export const arServer: Catalog = {
   'how your relationships are going, from your own messages, for you only':
     'كيف تسير علاقاتك، من رسائلك أنت، لك وحدك',
   team: 'الفريق',
-  'how fast the team answers, who is waiting, what is open':
-    'سرعة إجابة الفريق، ومن ينتظر، وما هو مفتوح',
+  'how fast the team answers, who is waiting, what is open, what was booked, ordered and paid':
+    'سرعة إجابة الفريق، ومن ينتظر، وما هو مفتوح، وما حُجز وطُلب ودُفع',
   'Talk to us': 'تحدث إلينا',
   included: 'مشمولة',
   'The rules': 'القواعد',
@@ -540,8 +540,8 @@ export const arServer: Catalog = {
   'The next can start {when}.': ' يمكن بدء التالية {when}.',
   '{name} has started today’s {startsPerDay} new conversations.{ready}{more}':
     'بلغت {name} حدّ اليوم من المحادثات الجديدة ({startsPerDay}).{ready}{more}',
-  'Insights come with Business: how fast {name}’s team answers, how many customers write, and what’s still open.':
-    'الرؤى تأتي مع Business: سرعة رد فريق {name}، وعدد العملاء الذين يكتبون، وما لا يزال مفتوحًا.',
+  'Insights come with Business: how fast {name}’s team answers, how many customers write, what they book, order and pay, and what’s still open.':
+    'الرؤى تأتي مع Business: سرعة رد فريق {name}، وعدد العملاء الذين يكتبون، وما يحجزونه ويطلبونه ويدفعونه، وما لا يزال مفتوحًا.',
   'Relationship insights come with {pro}: who you write with most, who’s gone quiet, how fast you answer and are answered, and when you write.':
     'رؤى العلاقات تأتي مع {pro}: من تراسل أكثر، ومن انقطع عن الكتابة، وسرعة ردك والرد عليك، ومتى تكتب.',
   '{plan} keeps {n}.': ' تحتفظ {plan} بـ {n}.',

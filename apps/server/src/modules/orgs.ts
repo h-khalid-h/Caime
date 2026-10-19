@@ -688,10 +688,12 @@ export async function orgRoutes(app: FastifyInstance, ctx: AppContext) {
       }),
       req.query,
     );
-    await orgById(ctx.db, id);
+    const org = await orgById(ctx.db, id);
     await managerSeat(ctx.db, auth.userId, id);
     await assertInsights(ctx, id);
-    return { insights: await orgInsights(ctx, id, days) };
+    return {
+      insights: await orgInsights(ctx, id, days, org.time_zone ?? defaultZoneOf(org.country)),
+    };
   });
 
   app.post('/orgs/:id/members', async (req): Promise<OkResponse> => {

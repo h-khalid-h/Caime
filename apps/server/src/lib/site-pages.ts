@@ -801,7 +801,14 @@ ${main}
         [tr('apps'), n(o.business.apps)],
         [tr('writing first'), esc(aDay(o.business.startsPerDay, 'conversations'))],
         [tr('AI agent'), esc(aDay(o.business.agentRepliesPerDay, 'answers'))],
-        [tr('insights'), esc(tr('how fast the team answers, who is waiting, what is open'))],
+        [
+          tr('insights'),
+          esc(
+            tr(
+              'how fast the team answers, who is waiting, what is open, what was booked, ordered and paid',
+            ),
+          ),
+        ],
       ])}
       ${plan(
         'enterprise',

@@ -2077,3 +2077,21 @@ with its reason, so it isn't proposed again without new facts.
   *Declined:* fields the customer fills in (that's an intake form, H5), notes shared with the
   customer, the agent reading notes, per-person notes (a team keeps one record), and custom field
   kinds beyond the four.
+- **R103 (2026-10-19) What the conversations came to.** The review of 2026-10-17 (§9, M16 H) found
+  that an organization's insights covered reply times alone: a clinic couldn't see what its
+  conversations brought it, though the bookings, orders and Pay cards were all in them. *Decided:*
+  the insights an owner or admin on Business already reads carry what was booked (asked for,
+  confirmed, cancelled, still asked; how many from the catalog; a repeating appointment once),
+  ordered (and what the orders not cancelled come to, by their own amount else their lines'
+  prices) and paid (Pay cards the organization asked for, or a customer said they were paying
+  it, and invoices it sent, marked paid in the period, summed by currency, never converted); of
+  the customers who wrote, those who booked or ordered and those who were its customers before;
+  what was booked or ordered most by name; and when customers write, by hour and weekday on the
+  organization's own clock, with the period before to compare. The operator's metrics count the
+  same cards platform-wide (bookings, orders, organizations with any): advantage 2's number.
+  *Why:* advantage 2 is that the customer books, orders and pays inside the chat; an owner who
+  sees it in numbers keeps the door open, and the operator can measure the advantage it claims.
+  *Declined:* revenue by team member or provider (the team's numbers, never one person's, as
+  PRD §71 has it), a customer's name or words anywhere in it, currency conversion (a rate is a
+  claim Caime can't stand behind), tax figures (the tax invoice is counsel's, H), and money Caime
+  never saw (cash said nowhere, or another system's).

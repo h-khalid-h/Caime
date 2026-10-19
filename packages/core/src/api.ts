@@ -1893,6 +1893,55 @@ export interface ReplyTimesView {
   unanswered: number;
 }
 
+/** A sum of money in one currency; `currency` is null where it was written without one. */
+export interface MoneyTotal {
+  value: number;
+  currency: string | null;
+}
+
+/**
+ * What an organization's conversations came to in a period (M16 H4): what was booked, ordered
+ * and paid in them, which customers bought and which came back, and when customers write.
+ * Counts and sums only: never a customer's name or words, and never one person on the team's.
+ */
+export interface OrgCommerceView {
+  /**
+   * Appointments asked for in the period, by the customer or the team (a repeating one once),
+   * by where each stands now: confirmed (or done), cancelled, or still asked; and how many were
+   * booked from the catalog.
+   */
+  bookings: {
+    made: number;
+    confirmed: number;
+    cancelled: number;
+    requested: number;
+    fromCatalog: number;
+  };
+  /** Orders placed in the period, those cancelled since, and what the rest come to. */
+  orders: { placed: number; cancelled: number; value: MoneyTotal[] };
+  /**
+   * Money the organization was paid in the period: Pay cards and invoices marked paid, the
+   * largest sum first. Caime never holds it; this is what the cards say.
+   */
+  paid: MoneyTotal[];
+  /**
+   * Customers who wrote in the period; those who booked or ordered in it; and those of the
+   * ones who wrote who were its customers before it.
+   */
+  customers: { wrote: number; bought: number; returning: number };
+  /** What was booked or ordered most in the period, by its name then: up to five. */
+  top: Array<{ name: string; count: number }>;
+  /**
+   * When customers wrote in the period, on the organization's clock (`timeZone`): messages by
+   * hour from midnight (24) and by weekday, Sunday first (7).
+   */
+  byHour: number[];
+  byWeekday: number[];
+  timeZone: string;
+  /** The period before, to compare. */
+  previous: { bookings: number; orders: number; paid: MoneyTotal[] };
+}
+
 /** An organization's insights, for its owner and admins on Business (PRD §71, §84). */
 export interface OrgInsightsView {
   days: number;
@@ -1914,6 +1963,8 @@ export interface OrgInsightsView {
     medianReplyMinutes: number | null;
     resolved: number;
   };
+  /** What the conversations came to (M16 H4). */
+  commerce: OrgCommerceView;
 }
 
 /** Someone in your insights: a connection of yours, as you see them. */
@@ -2089,6 +2140,12 @@ export interface ProductMetricsView {
     activeOrganizations: number;
     customerConversations: number;
     reply: ReplyTimesView;
+    /**
+     * Advantage 2's number (REVIEW-2026-10-17 §14, M16 H4): bookings and orders made in customer
+     * conversations in the window (a repeating appointment once), and how many organizations
+     * had any.
+     */
+    commerce: { bookings: number; orders: number; organizations: number };
   };
   /** What these numbers can't say yet, so nobody reads a gap as a zero. */
   notMeasured: string[];

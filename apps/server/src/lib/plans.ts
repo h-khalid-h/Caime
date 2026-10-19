@@ -351,7 +351,7 @@ export async function assertInsights(ctx: AppContext, orgId: string) {
   throw limit(
     ctx,
     tr(
-      'Insights come with Business: how fast {name}’s team answers, how many customers write, and what’s still open.',
+      'Insights come with Business: how fast {name}’s team answers, how many customers write, what they book, order and pay, and what’s still open.',
       { name: org.name },
     ),
   );

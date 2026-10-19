@@ -4752,4 +4752,23 @@ export const fr: Catalog = {
   'That isn’t a number.': 'Ce n’est pas un nombre.',
   'Choose one of its choices.': 'Choisissez l’une de ses options.',
   Tags: 'Étiquettes',
+  'Most often on {day}, around {time}': 'Le plus souvent le {day}, vers {time}',
+  'Booked, ordered and paid': 'Réservé, commandé et payé',
+  'Nothing booked, ordered or paid yet. Bookings, orders and Pay cards in customers’ conversations show here.':
+    'Rien de réservé, commandé ou payé pour l’instant. Les réservations, les commandes et les cartes Payer des conversations avec les clients apparaissent ici.',
+  '{n} confirmed': { one: 'Une confirmée', other: '{n} confirmées' },
+  '{n} waiting for an answer': {
+    one: 'Une en attente de réponse',
+    other: '{n} en attente de réponse',
+  },
+  '{n} cancelled': { one: 'Une annulée', other: '{n} annulées' },
+  'Worth {amount}': 'D’une valeur de {amount}',
+  'Pay cards and invoices marked paid': 'Cartes Payer et factures marquées payées',
+  'Customers who booked or ordered': 'Clients qui ont réservé ou commandé',
+  'Of {count} who wrote': 'Sur {count} qui ont écrit',
+  'Booked or ordered most': 'Le plus réservé ou commandé',
+  'When customers write': 'Quand les clients écrivent',
+  'Money is what Pay cards and invoices say was paid: Caime never holds it.':
+    'L’argent est ce que les cartes Payer et les factures disent avoir été payé : Caime ne le détient jamais.',
+  '{n} returning': { one: 'Un client qui revient', other: '{n} clients qui reviennent' },
 };

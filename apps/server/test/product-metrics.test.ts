@@ -236,6 +236,8 @@ describe('product metrics (PRD §82–83)', () => {
       activeOrganizations: 1,
       customerConversations: 1,
       reply: { medianMinutes: 15, answered: 1, withinHour: 1, unanswered: 0 },
+      // Nothing was booked or ordered here (org-insights.test.ts measures them).
+      commerce: { bookings: 0, orders: 0, organizations: 0 },
     });
     expect(m.notMeasured.length).toBeGreaterThan(0);
   });

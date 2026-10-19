@@ -230,8 +230,8 @@ export const turkishServer: Catalog = {
   'how your relationships are going, from your own messages, for you only':
     'ilişkileriniz nasıl gidiyor: kendi mesajlarınızdan, yalnızca size özel',
   team: 'ekip',
-  'how fast the team answers, who is waiting, what is open':
-    'ekip ne kadar hızlı yanıt veriyor, kim bekliyor, ne açık',
+  'how fast the team answers, who is waiting, what is open, what was booked, ordered and paid':
+    'ekip ne kadar hızlı yanıt veriyor, kim bekliyor, ne açık, neler rezerve edildi, sipariş edildi ve ödendi',
   'Talk to us': 'Bize ulaşın',
   included: 'dahil',
   'The rules': 'Kurallar',
@@ -521,8 +521,8 @@ export const turkishServer: Catalog = {
   'The next can start {when}.': 'Bir sonraki konuşma {when} başlatılabilir.',
   '{name} has started today’s {startsPerDay} new conversations.{ready}{more}':
     '{name} bugünkü {startsPerDay} yeni konuşmayı başlattı.{ready}{more}',
-  'Insights come with Business: how fast {name}’s team answers, how many customers write, and what’s still open.':
-    'İçgörüler Business planıyla gelir: {name} ekibinin ne kadar hızlı yanıt verdiği, kaç müşterinin yazdığı ve neyin hâlâ açık olduğu.',
+  'Insights come with Business: how fast {name}’s team answers, how many customers write, what they book, order and pay, and what’s still open.':
+    'İçgörüler Business planıyla gelir: {name} ekibinin ne kadar hızlı yanıt verdiği, kaç müşterinin yazdığı, neyin rezerve edildiği, sipariş edildiği ve ödendiği ve neyin hâlâ açık olduğu.',
   'Relationship insights come with {pro}: who you write with most, who’s gone quiet, how fast you answer and are answered, and when you write.':
     'İlişki içgörüleri {pro} ile gelir: en çok kiminle yazıştığınız, kimin sessizleştiği, ne kadar hızlı yanıt verdiğiniz ve yanıt aldığınız, ne zaman yazdığınız.',
   '{plan} keeps {n}.': '{plan} planında {n} otomasyona kadar yer var.',

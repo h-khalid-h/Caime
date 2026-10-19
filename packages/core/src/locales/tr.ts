@@ -4569,4 +4569,20 @@ export const turkish: Catalog = {
   'That isn’t a number.': 'Bu bir sayı değil.',
   'Choose one of its choices.': 'Seçeneklerinden birini seçin.',
   Tags: 'Etiketler',
+  'Most often on {day}, around {time}': 'En çok {day} günleri, {time} civarında',
+  'Booked, ordered and paid': 'Rezerve edilen, sipariş edilen ve ödenen',
+  'Nothing booked, ordered or paid yet. Bookings, orders and Pay cards in customers’ conversations show here.':
+    'Henüz rezerve edilen, sipariş edilen ya da ödenen bir şey yok. Müşteri konuşmalarındaki rezervasyonlar, siparişler ve Öde kartları burada görünür.',
+  '{n} confirmed': { one: 'Biri onaylı', other: '{n} onaylı' },
+  '{n} waiting for an answer': { one: 'Biri yanıt bekliyor', other: '{n} yanıt bekliyor' },
+  '{n} cancelled': { one: 'Biri iptal edildi', other: '{n} iptal edildi' },
+  'Worth {amount}': '{amount} değerinde',
+  'Pay cards and invoices marked paid': 'Ödendi olarak işaretlenen Öde kartları ve faturalar',
+  'Customers who booked or ordered': 'Rezervasyon ya da sipariş yapan müşteriler',
+  'Of {count} who wrote': 'Yazan {count} kişiden',
+  'Booked or ordered most': 'En çok rezerve edilen ya da sipariş edilen',
+  'When customers write': 'Müşteriler ne zaman yazıyor',
+  'Money is what Pay cards and invoices say was paid: Caime never holds it.':
+    'Para, Öde kartlarının ve faturaların ödendiğini söylediği tutardır: Caime onu asla tutmaz.',
+  '{n} returning': { one: 'Bir müşteri geri döndü', other: '{n} müşteri geri döndü' },
 };

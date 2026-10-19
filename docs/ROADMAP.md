@@ -2873,6 +2873,22 @@ graph) and the number that will show it; one that sharpens none is hygiene and s
       the filter and its counts, a field let go, erasure, an account deleted, export and clearing),
       core `customers.test.ts`, `e2e/customer-records.spec.ts`, the catalogs in four languages and
       the server's, and the full gate.
+- [x] H4. What the conversations came to (2026-10-19, review §9, PRODUCT-REVIEW R103; advantage 2,
+      the customer books, orders and pays inside the chat). An organization's insights (its owner
+      and admins on Business) say what was booked (asked for, confirmed, cancelled, still asked,
+      from the catalog; a repeating appointment once), ordered (placed, cancelled, and what the
+      rest come to by currency) and paid (Pay cards and invoices marked paid in the period, by
+      currency, the largest first, never converted); of the customers who wrote, who bought and
+      who came back; what was booked or ordered most; and when customers write, by hour and
+      weekday on the organization's clock; each against the period before. The plan's refusal and
+      the pricing page say so. The operator's metrics count bookings, orders and the organizations
+      with any (`business.commerce`): advantage 2's number. Three queries, over the organization's
+      cards (the kit cards' partial index), its paid cards (sent within a year before) and its
+      customers' messages; nothing kept. Verified: `org-insights.test.ts` (catalog bookings, one
+      confirmed and one cancelled, the team's still asked, two orders and one cancelled, a Pay card
+      and a dollar invoice paid, a returning customer, the ten days before, thirty days, owners and
+      admins alone, the operator's number), `product-metrics.test.ts`, `e2e/org-insights.spec.ts`,
+      the catalogs in four languages and the server's, and the full gate.
 - [ ] ⛔ H, the owner's: a smaller paid tier; WhatsApp Business in the inbox and reminders by
       WhatsApp or SMS (Meta's approval); Stripe Connect live with local currencies.
 - [ ] R98, after C: places as a context for spaces (PRODUCT-REVIEW R98): `spaces.place` from
@@ -4469,6 +4485,9 @@ graph) and the number that will show it; one that sharpens none is hygiene and s
   journeys, safety, reliability, performance, intelligence, mail and calendar, chat, integrations,
   business and code integrity; the matrix against WhatsApp, Signal, Slack, Calendly and Workspace;
   an age-assurance design; the integration framework mapped to the code; plan M16 (A–H).
+- 2026-10-19 — M16 H4: what the conversations came to: bookings, orders and money paid on an
+  organization's insights, who bought and came back, what sold most, when customers write;
+  the operator's metrics count advantage 2.
 - 2026-10-19 — M16 H3: what a team keeps about its customers: a note, tags and its own fields,
   beside the conversation, for the team alone; tags on the inbox's rows and a filter by one.
 - 2026-10-19 — M16 H2, after CI: the away message landed before the greeting when both
