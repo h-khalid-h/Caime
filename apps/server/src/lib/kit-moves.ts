@@ -27,10 +27,11 @@ import { AGREED_STATES } from '@caime/core/kit-states';
 import { sql } from 'kysely';
 import type { AppContext } from '../context';
 import { MESSAGE_COLUMNS, type Message } from '../db/schema';
-import { pickProvider } from './booking';
+import { pickProvider, rebookingFor } from './booking';
 import type { CustomerMask } from './business';
 import { afterCardMove } from './card-moves';
 import { expireCheckout, stillPayableAfter } from './checkout';
+import { badRequest } from './errors';
 import { cardStartAt } from './kits';
 import { queueCardUpdate } from './mail-out';
 import { askGuestsForTime } from './meeting-guests';
@@ -205,8 +206,6 @@ function retimeSaid(block: RetimeBlock): string {
       return tr('It’s their calendar’s meeting: only they can move it.');
     case 'moved':
       return tr('It has its own space now: suggest another time there.');
-    case 'booking':
-      return tr('A booking keeps its open time: cancel it and book another.');
     default:
       return tr('You can’t make that change to this card.');
   }
@@ -249,7 +248,22 @@ export async function retimeCard(
   const kit = p.kit === 'appointment' ? 'appointment' : 'meeting';
   const { to } = RETIMES[kit];
   const from = p.state ?? '';
+  // A booking from the catalog (M16 F5b) takes an open time of what it booked, checked as a
+  // booking is: before the transaction (a quick refusal, the other calendars read again), and
+  // once more under the host's lock inside it, as `sendMessage` checks one.
+  let rebooked: Awaited<ReturnType<typeof rebookingFor>> | null = null;
+  if (p.booking) {
+    if (input.durationMinutes)
+      throw badRequest(tr('A booking lasts as long as what was booked: choose its time alone.'));
+    rebooked = await rebookingFor(ctx, m, input.start, input.actorId, input.business);
+  }
   const row = await ctx.db.transaction().execute(async (trx) => {
+    if (rebooked) {
+      await sql`select pg_advisory_xact_lock(hashtext(${`slots:${rebooked.host.kind}:${rebooked.host.id}`}))`.execute(
+        trx,
+      );
+      await rebooked.recheck();
+    }
     const now = await trx
       .selectFrom('messages')
       .select(['deleted_at', 'payload'])
@@ -265,6 +279,7 @@ export async function retimeCard(
     };
     const next = {
       fields,
+      ...(rebooked ? { booking: rebooked.booking } : {}),
       state: to,
       proposedBy: input.actorId,
       sequence: (card.sequence ?? 0) + 1,

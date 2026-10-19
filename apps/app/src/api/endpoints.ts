@@ -968,9 +968,17 @@ export const endpoints = {
   // Bookings for people too (R58): my hours and catalog, and anyone's open slots.
   myBooking: () => api.get<BookingResponse>('/me/booking'),
   setMyBooking: (offer: BookingSaveBody) => api.put<BookingResponse>('/me/booking', offer),
-  slots: (host: BookingHostRef, from: string, to: string, item?: string, quantity?: number) =>
+  slots: (
+    host: BookingHostRef,
+    from: string,
+    to: string,
+    item?: string,
+    quantity?: number,
+    /** A booking being given another time (M16 F5b): its own time shows open. */
+    except?: string,
+  ) =>
     api.get<SlotsView>(
-      `/${host.kind === 'org' ? 'orgs' : 'people'}/${host.id}/slots${q({ from, to, item, quantity })}`,
+      `/${host.kind === 'org' ? 'orgs' : 'people'}/${host.id}/slots${q({ from, to, item, quantity, except })}`,
     ),
   /** Who on the team does a booking (R58); null takes the name off. */
   setBookingProvider: (messageId: string, userId: string | null) =>

@@ -21,6 +21,7 @@ import {
   KitMoveBody,
   MessagesPageQuery,
   PostUpdateBody,
+  RetimeBody,
   SearchQuery,
   SendMessageBody,
   TasksQuery,
@@ -189,6 +190,13 @@ const DOCS: Record<string, RouteDoc> = {
     id: 'changeCard',
     summary: 'Change what one of its cards says.',
     body: KitFieldsBody,
+    response: 'MessageResponse',
+  },
+  'POST /v1/messages/:id/time': {
+    id: 'suggestTime',
+    summary:
+      'Give a meeting or an appointment another time, which asks the other side again (a booking from the catalog, an open time of what it booked).',
+    body: RetimeBody,
     response: 'MessageResponse',
   },
   'GET /v1/me': {

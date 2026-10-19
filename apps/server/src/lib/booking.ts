@@ -39,14 +39,17 @@ import {
 } from '@caime/core';
 import { cardEndMs } from '@caime/core/meetings';
 import type { AppContext } from '../context';
-import type { Organization, User } from '../db/schema';
+import type { Message, Organization, User } from '../db/schema';
 import { humanTeam } from './booking-team';
+import type { CustomerMask } from './business';
 import { orgBookings } from './calendar';
 import { AppError, badRequest, forbidden } from './errors';
 import { busyElsewhere, freshenBusy } from './external-busy';
 import { bookablePlaceIds, bookingWhere } from './places';
+import { viewerRelation } from './relations';
 import { soldOut } from './stock';
 import { cardsAhead } from './upcoming';
+import { minorOf } from './users';
 
 /** Whose hours and catalog: an organization's or a person's. */
 export interface BookingHost {
@@ -252,6 +255,8 @@ async function heldBy(
   hours: BookingHours,
   window: { from: Date; to: Date },
   exceptSeries?: string,
+  /** A booking given another time (M16 F5b): the time it has now holds nothing against it. */
+  exceptCard?: string,
 ): Promise<Held[]> {
   // Every card in the window, never a page of them: a card left out reads as a free slot; and
   // the times ahead of a repeating appointment (R58), which hold theirs before each is posted.
@@ -262,10 +267,12 @@ async function heldBy(
       { from: window.from, until: window.to },
       { limit: HELD_MAX, ahead: { now: ctx.now(), exceptSeries } },
     );
-    return booked.map((b) => {
-      const start = new Date(b.at);
-      return { start, end: endOf(hours, start, b.booking, null), booking: b.booking };
-    });
+    return booked
+      .filter((b) => !(exceptCard && !b.ahead && b.messageId === exceptCard))
+      .map((b) => {
+        const start = new Date(b.at);
+        return { start, end: endOf(hours, start, b.booking, null), booking: b.booking };
+      });
   }
   // A person's own diary: every card in their own conversations and, of an organization's,
   // only those they do (`cardsAhead` keeps a team member to what's theirs); and the times of a
@@ -281,6 +288,7 @@ async function heldBy(
   return [
     ...cards
       .filter((c) => !(exceptSeries && c.projected && c.series?.id === exceptSeries))
+      .filter((c) => !(exceptCard && !c.projected && c.messageId === exceptCard))
       .map((c) => ({
         start: c.at,
         end: endOf(hours, c.at, c.booking, c.durationMinutes),
@@ -367,6 +375,8 @@ export async function openSlotsFor(
     limit?: number;
     /** A repeating appointment booking its next time (R58): its own times ahead hold nothing. */
     exceptSeries?: string;
+    /** A booking given another time (M16 F5b): the time it has now holds nothing against it. */
+    exceptCard?: string;
     /**
      * Whether the other calendars are read again first (R96). False inside the send transaction,
      * which checked a moment before and holds the conversation's lock: a provider's four seconds
@@ -394,6 +404,7 @@ export async function openSlotsFor(
       ),
     },
     opts.exceptSeries,
+    opts.exceptCard,
   );
   const { busy, providersBusy, resource } = busyFor(held, item, host);
   // An organization's providers are busy in their other calendars too (R90).
@@ -433,7 +444,7 @@ export async function bookingFor(
    * A later time of a repeating appointment (R58): agreed with the series, so the lead time and
    * the horizon are behind it, and its own times ahead aren't in its way.
    */
-  opts: { series?: string; fresh?: boolean } = {},
+  opts: { series?: string; fresh?: boolean; exceptCard?: string } = {},
 ): Promise<AppointmentBooking> {
   const hours = host.hours;
   const item = host.items.find((i) => i.id === ask.itemId);
@@ -469,7 +480,14 @@ export async function bookingFor(
         ? { ...host, hours: { ...hours, leadMinutes: 0 } }
         : host,
     { from: start, to: end },
-    { item, quantity, limit: 1, exceptSeries: opts.series, fresh: opts.fresh },
+    {
+      item,
+      quantity,
+      limit: 1,
+      exceptSeries: opts.series,
+      exceptCard: opts.exceptCard,
+      fresh: opts.fresh,
+    },
   );
   if (!open?.slots.some((d) => d.getTime() === start.getTime()))
     throw new AppError(409, 'slot_taken', tr('That time has just been taken. Pick another.'));
@@ -505,7 +523,7 @@ export async function pickProvider(
    * A later time of a repeating appointment (R58): whoever did the time before keeps it while
    * they're free, and the series' own times ahead don't hold them.
    */
-  opts: { prefer?: string | null; exceptSeries?: string } = {},
+  opts: { prefer?: string | null; exceptSeries?: string; exceptCard?: string } = {},
 ): Promise<{ id: string; name: string } | null> {
   const host = orgHost(org);
   const item = host.items.find((i) => i.id === booking.itemId);
@@ -531,7 +549,7 @@ export async function pickProvider(
   const busy = new Set<string>();
   for (const h of held) {
     const p = h.booking?.providerId;
-    if (!p) continue;
+    if (!p || (opts.exceptCard && !h.ahead && h.messageId === opts.exceptCard)) continue;
     const s = new Date(h.at).getTime();
     const e = new Date(h.booking?.endAt ?? h.at).getTime();
     if (s < end.getTime() && e > start.getTime()) busy.add(p);
@@ -558,6 +576,111 @@ export async function pickProvider(
   );
   const chosen = free[0]!;
   return { id: chosen.id, name: chosen.display_name };
+}
+
+/**
+ * A booking from the catalog given another time (M16 F5b): checked as a booking is, by whoever
+ * asks (the host's side keeps no lead time, as for its own slots; the customer books as they
+ * did), at an open time of the same item and quantity, the time it has now holding nothing
+ * against it; what it was booked at (its name and price) stays, its end follows the item, and
+ * whoever did it keeps it while they're free then, else whoever confirms it picks again. Refused
+ * as `bookingFor` refuses, and where its customer booked it from a page without an account:
+ * nothing reaches them but mail. `recheck` runs the slot's check again, without reading other
+ * calendars, under the host's lock.
+ */
+export async function rebookingFor(
+  ctx: AppContext,
+  m: Pick<Message, 'id' | 'conversation_id' | 'payload' | 'sender_id'>,
+  start: Date,
+  actorId: string,
+  business: CustomerMask | null,
+): Promise<{ host: BookingHost; booking: AppointmentBooking; recheck: () => Promise<void> }> {
+  const old = (m.payload as { booking?: AppointmentBooking | null } | null)?.booking;
+  if (!old) throw badRequest(tr('That isn’t a booking from the catalog.'));
+  let host: BookingHost;
+  let org: Pick<Organization, 'id' | 'booking' | 'booking_items'> | null = null;
+  let customerId: string | null;
+  if (business) {
+    org =
+      (await ctx.db
+        .selectFrom('organizations')
+        .select(['id', 'booking', 'booking_items', 'ordering', 'collections'])
+        .where('id', '=', business.orgId)
+        .executeTakeFirst()) ?? null;
+    if (!org) throw badRequest(tr('That isn’t a booking from the catalog.'));
+    host = orgHost(org);
+    customerId = business.customerId;
+  } else {
+    const person = old.hostId
+      ? await ctx.db
+          .selectFrom('users')
+          .select(['id', 'booking', 'booking_items', 'ordering', 'collections'])
+          .where('id', '=', old.hostId)
+          .where('deleted_at', 'is', null)
+          .executeTakeFirst()
+      : undefined;
+    if (!person) throw badRequest(tr('That isn’t a booking from the catalog.'));
+    host = personHost(person);
+    const other = await ctx.db
+      .selectFrom('participants')
+      .select('user_id')
+      .where('conversation_id', '=', m.conversation_id)
+      .where('user_id', '<>', person.id)
+      .where('left_at', 'is', null)
+      .execute();
+    customerId = other.length === 1 ? (other[0]?.user_id ?? null) : null;
+  }
+  const hostSide = business ? actorId !== business.customerId : actorId === host.id;
+  // Booked from a page by someone with no account (R97 (1)): they'd hear nothing until they join.
+  if (customerId && m.sender_id === customerId) {
+    const customer = await ctx.db
+      .selectFrom('users')
+      .select('kind')
+      .where('id', '=', customerId)
+      .executeTakeFirst();
+    if (customer?.kind === 'provisional')
+      throw badRequest(
+        tr(
+          'They booked without an account: cancel it, and they can book another time from your page.',
+        ),
+      );
+  }
+  const actor = await ctx.db
+    .selectFrom('users')
+    .select(['birth_date', 'time_zone', 'age_minor_until'])
+    .where('id', '=', actorId)
+    .executeTakeFirstOrThrow();
+  const adult = !minorOf(actor, ctx.now());
+  let booker: Booker;
+  if (hostSide) booker = { isSelf: true, isConnected: true, spheres: [], adult };
+  else if (business) booker = { isSelf: false, isConnected: true, spheres: [], adult };
+  else {
+    const relation = await viewerRelation(ctx.db, host.id, actorId);
+    booker = {
+      isConnected: relation.isConnected,
+      spheres: relation.ownerSpheresForViewer,
+      adult,
+    };
+  }
+  const ask = { itemId: old.itemId, quantity: old.quantity };
+  const fixed = await bookingFor(ctx, host, booker, ask, start, { exceptCard: m.id });
+  // Whoever did it keeps it while they're free then; else confirming it picks again.
+  let provider = { providerId: null as string | null, providerName: null as string | null };
+  if (org && old.providerId) {
+    const who = await pickProvider(ctx, org, fixed, start, {
+      prefer: old.providerId,
+      exceptCard: m.id,
+    });
+    if (who?.id === old.providerId)
+      provider = { providerId: old.providerId, providerName: old.providerName };
+  }
+  return {
+    host,
+    booking: { ...fixed, name: old.name, price: old.price, ...provider },
+    recheck: async () => {
+      await bookingFor(ctx, host, booker, ask, start, { exceptCard: m.id, fresh: false });
+    },
+  };
 }
 
 /** A person's own catalog names nobody; an organization's names its team. */

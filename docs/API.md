@@ -52,6 +52,7 @@ a write answers `409 org_suspended`.
 | `kits` | `GET /v1/kits`, `PUT /v1/kits/:key`, `DELETE /v1/kits/:key` | The app's own kinds of card (below) |
 | `kits` + `messages:write` | `POST /v1/conversations/:id/messages` | Send one: `{ "clientId", "kind": "kit", "payload": { "kit": "custom", "key", "fields" } }` |
 | `kits` | `POST /v1/messages/:id/kit`, `PATCH /v1/messages/:id/kit` | Move one of its cards on (`{ "to": "<state>" }`), or change what it says (`{ "fields": { … } }`) |
+| `kits` | `POST /v1/messages/:id/time` | Give one of its meetings or appointments (one its bot sent: an app moves only its own cards) another time: `{ "start": { "at": "<ISO instant>", "hasTime": true }, "durationMinutes"?: n }`. It asks the customer again (a meeting proposed, an appointment requested), with a line saying the organization suggested it; a booking from the catalog takes an open time of what it booked (its length is the item's, so no `durationMinutes`; `409 slot_taken` when it isn't open). Refused (400) for a time that repeats, a time already over, and a booking made from a page by someone without an account |
 
 An app answers customers; it never writes to someone first. A person on the team does, from the
 Business inbox, and it reaches them as a message request (R14). An organization's updates go only
@@ -103,7 +104,7 @@ try {
 | `send(id, body, { clientId })`, `sendCard(id, key, fields, { clientId })` | `POST /v1/conversations/:id/messages` | `messages:write` (+ `kits`) |
 | `assign(id, userId \| null)`, `resolve(id)`, `reopen(id)`, `escalate(id, note)`, `stopEscalating(id)` | `POST /v1/business/:id/…`, `DELETE …/escalation` | `threads:write` |
 | `updates(orgId, { before, limit })`, `postUpdate(orgId, body)`, `editUpdate(orgId, id, body)`, `removeUpdate(orgId, id)` | `/v1/orgs/:orgId/updates` | `updates` |
-| `kits()`, `putKit(key, definition)`, `removeKit(key)`, `moveCard(messageId, to)`, `changeCard(messageId, fields)` | `/v1/kits`, `/v1/messages/:id/kit` | `kits` |
+| `kits()`, `putKit(key, definition)`, `removeKit(key)`, `moveCard(messageId, to)`, `changeCard(messageId, fields)`, `suggestTime(messageId, at, durationMinutes?)` | `/v1/kits`, `/v1/messages/:id/kit`, `/v1/messages/:id/time` | `kits` |
 | `person()`, `myInbox()`, `feed({ after, limit, conversationId, mine })`, `search(q, { understand })`, `tasks(view)`, `addTask(task)`, `updateTask(id, change)` | `GET /v1/me`, `GET /v1/inbox`, `GET /v1/feed`, `GET /v1/search`, `/v1/tasks` | A personal (`cap_`) or OAuth (`cao_`) token's routes (below); `conversation`, `messages` and `send` work for a person too |
 
 A refusal throws a `CaimeError` with the server's `status`, `code` and `message` (and

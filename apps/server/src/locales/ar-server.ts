@@ -1675,6 +1675,8 @@ export const arServer: Catalog = {
     'الاجتماع من تقويم الطرف الآخر: لا يغيّر وقته سواه.',
   'It has its own space now: suggest another time there.':
     'للاجتماع مساحته الآن: اقترح وقتًا آخر فيها.',
-  'A booking keeps its open time: cancel it and book another.':
-    'الحجز يبقى على وقته المتاح: ألغِه واحجز غيره.',
+  'They booked without an account: cancel it, and they can book another time from your page.':
+    'تمّ الحجز دون حساب: ألغِه، ويمكن حجز وقت آخر من صفحتك.',
+  'A booking lasts as long as what was booked: choose its time alone.':
+    'مدة الحجز هي مدة ما حُجز: اختر وقته فقط.',
 };

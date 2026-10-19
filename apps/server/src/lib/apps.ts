@@ -66,6 +66,7 @@ export const API_ROUTES: Readonly<Record<string, ApiScope | 'any'>> = {
   'DELETE /v1/kits/:key': 'kits',
   'POST /v1/messages/:id/kit': 'kits',
   'PATCH /v1/messages/:id/kit': 'kits',
+  'POST /v1/messages/:id/time': 'kits',
 };
 
 export interface AppAuth {

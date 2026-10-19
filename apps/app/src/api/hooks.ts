@@ -204,11 +204,20 @@ export const useSlots = (
   to: string,
   item: string | null = null,
   quantity = 1,
+  /** A booking being given another time (M16 F5b): its own time shows open. */
+  except: string | null = null,
 ) =>
   useQuery({
-    queryKey: qk.slots(host?.kind ?? 'org', host?.id ?? '', from, to, item, quantity),
+    queryKey: qk.slots(host?.kind ?? 'org', host?.id ?? '', from, to, item, quantity, except),
     queryFn: () =>
-      endpoints.slots(host ?? { kind: 'org', id: '' }, from, to, item ?? undefined, quantity),
+      endpoints.slots(
+        host ?? { kind: 'org', id: '' },
+        from,
+        to,
+        item ?? undefined,
+        quantity,
+        except ?? undefined,
+      ),
     enabled: Boolean(host),
   });
 

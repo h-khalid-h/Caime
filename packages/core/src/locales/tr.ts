@@ -4742,4 +4742,5 @@ export const turkish: Catalog = {
   '{by} suggested another time for “{title}”': 'Başka bir saat önerildi: {title} · Öneren: {by}',
   '{by} suggested another time': 'Başka bir saat öneren: {by}',
   'Suggest another time': 'Başka bir saat öner',
+  'No other open times in the next two months.': 'Önümüzdeki iki ay içinde başka boş saat yok.',
 };

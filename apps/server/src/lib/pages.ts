@@ -810,8 +810,8 @@ organization&rsquo;s own. Each conversation offers only the ones that fit, and p
 conversations don&rsquo;t have them yet. A Location can be where you are now, or live for 15
 minutes, an hour or 8 hours while Caime is open: stop it from the Sharing your location live
 bar. Either of you can give a meeting or an appointment another time from its card: Suggest
-another time asks the other side again, and whoever has it by email, or as a guest, gets the
-change in their calendar.</li>
+another time asks the other side again (a booking offers the times still open for it), and
+whoever has it by email, or as a guest, gets the change in their calendar.</li>
 <li><strong>A message&rsquo;s menu</strong> lets you react, Reply, Forward, Pin, Edit or Delete.
 You edit only your own text messages. Forward isn&rsquo;t in private conversations, nor for cards,
 polls or a live location. Pin is in

@@ -231,9 +231,15 @@ describe('another time for a meeting or an appointment (M16 F5)', () => {
       'invitation',
     );
     expect(retimeBlock({ kit: 'meeting', state: 'accepted', movedTo: { id: 'x' } })).toBe('moved');
-    expect(retimeBlock({ kit: 'appointment', state: 'requested', booking: { itemId: 'x' } })).toBe(
-      'booking',
-    );
+    // A booking moves too, to an open time of its catalog (M16 F5b: the server's to check).
+    expect(
+      retimeBlock({
+        kit: 'appointment',
+        state: 'confirmed',
+        fields: at,
+        booking: { itemId: 'x' },
+      } as never),
+    ).toBeNull();
   });
   it('says so in the conversation, by whoever suggested it', () => {
     const line = { event: 'time_suggested', byId: 'ben', by: 'Ben', title: 'Plan the launch' };

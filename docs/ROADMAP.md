@@ -2958,8 +2958,8 @@ graph) and the number that will show it; one that sharpens none is hygiene and s
       invitation from someone's calendar (its organizer moves it, F4), a card moved to its space
       (its copy there is the one), a booking from a catalog (its open time is the catalog's); and
       a time already over. Left: one time of a series moved alone, a booking moved to another
-      open time of its catalog, an organization's app moving an appointment through the API, the
-      other side's clock beside the time, and Gmail's, Outlook's and Apple's handling of the update
+      open time of its catalog and an organization's app moving an appointment through the API
+      (both F5b), the other side's clock beside the time, and Gmail's, Outlook's and Apple's handling of the update
       on a real mailbox (⛔ the owner's, as F3's). Costs: one request, one update and one line per
       suggestion; a mail out per person reached by mail and per guest (the provider's call, under
       a cent); on devices, the first download 447.9 KB of 450, 0.1 KB more than F4's (the day
@@ -2976,6 +2976,37 @@ graph) and the number that will show it; one that sharpens none is hygiene and s
       customer, on the card, the line and live; her suggestion back hers), `e2e/meetings.spec.ts`
       (Ben suggests tomorrow from the card, Ana reads the line and agrees, live on both),
       `panes.test.ts`, the catalogs in four languages, and the full gate.
+- [x] F5b. A booking moved to another open time of its catalog (2026-10-19, F5's first two
+      "Left"; advantage 3, the business that runs itself: rescheduling is a clinic's most common
+      change, and was a cancellation and a new booking. The number: of bookings from a catalog
+      whose time moves, the share that move on their own card at an open time of what they
+      booked, every one now where none could). "Suggest another time" on a booking offers the
+      open times of what it booked (`features/kits/RebookSheet.tsx`, with the card, over the card's
+      form's `SlotPicker`), the time it has now freed for it: the slots routes take `except` for someone
+      in its conversation (anyone else learns nothing from it). The server checks the time as a
+      booking is checked (`rebookingFor` in `lib/booking.ts`: the host's side keeps no lead time,
+      as for its own slots; the customer books by the catalog's rules; `exceptCard` so its own
+      time holds nothing against it, in the slots and in who is free), before the transaction and
+      again under the host's slot lock inside it, as `sendMessage` checks a booking; what it was
+      booked at (its name, its price) stays, its end follows the item, and whoever did it keeps it
+      while they're free then, else confirming it picks again. An organization's app gives a card
+      its bot sent another time through `POST /v1/messages/:id/time` (`kits`, the SDK's
+      `suggestTime`, the OpenAPI document), as it moves only its own cards. Refused, in the
+      reader's language: a booking given a length of its own, and one booked from a page by
+      someone without an account (nothing reaches them but mail: F5c). Left: that booker's answer
+      from the mail itself, an app moving the team's or a customer's cards, and one time of a
+      series moved alone. Costs: the slots read once more under the lock (the queries a booking
+      costs); on devices, the first download 448.0 KB of 450, 0.1 KB more than F5's (the sheet
+      comes with the card in the conversation's chunk, 89.9 KB of its 100: loaded apart, the slot
+      picker it shares with the card's form moved into the first download, 1.0 KB). Verified:
+      `card-times.test.ts` (the team moves a confirmed booking half an hour on over its own time,
+      its end and provider kept, the old time freed; a taken time, one outside the hours and a
+      length refused, nothing moved; the customer kept to the notice and asking the team; the
+      slots' `except` for those in the conversation alone; a page's booker refused; a person's
+      catalog from either side), `sdk.test.ts` (`suggestTime` on the bot's card, a time over
+      refused, the team's card refused), `openapi.test.ts`, core `kit-cards.test.ts`,
+      `e2e/bookings.spec.ts` (the team picks one of the haircut's open times, the customer reads
+      the line and confirms), the catalogs in four languages, and the full gate.
 - [ ] G. Integration framework and governed AI (REVIEW §11): credentials (key outside the
       database with a key id and re-seal, a downscoped picker token, sealed webhook secrets,
       rotation); per-use health, Google and Microsoft probes, a freshness gauge, a reconnect
@@ -5204,6 +5235,8 @@ graph) and the number that will show it; one that sharpens none is hygiene and s
   journeys, safety, reliability, performance, intelligence, mail and calendar, chat, integrations,
   business and code integrity; the matrix against WhatsApp, Signal, Slack, Calendly and Workspace;
   an age-assurance design; the integration framework mapped to the code; plan M16 (A–H).
+- 2026-10-19 — M16 F5b: a booking takes another open time of what it booked, from its card and
+  through an organization's app, checked as a booking is, where it took a cancellation.
 - 2026-10-19 — M16 F5: either side suggests another time on a meeting or an appointment's card,
   which asks the other side again and says so; whoever has it by mail and a meeting's guests get
   the update their calendar moves (and the cancellation), where it took a decline and a new card.

@@ -3,7 +3,8 @@
  * item, a visitor finds "Book" on its public page, signs up and books two places from the open
  * slots; the owner sets their own bookable item and a connection books it from their profile.
  * Orders (R60): the salon sells by the piece and the customer orders two on an Order card;
- * counted, the last one ordered reads sold out everywhere.
+ * counted, the last one ordered reads sold out everywhere. A booking takes another open time
+ * (M16 F5b): the team suggests one of the item's, the customer confirms it.
  */
 import { type BrowserContext, expect, test } from '@playwright/test';
 import { apiSignUp, CLIENT, newPerson, photo, visible } from './helpers';
@@ -563,6 +564,55 @@ test.describe
         path: 'e2e/screenshots/phone-order-options.png',
         animations: 'disabled',
       });
+      expect(customerErrors).toEqual([]);
+      await phone.close();
+    });
+
+    test('another open time for a booking (M16 F5b): the team suggests it, the customer confirms', async ({
+      browser,
+    }) => {
+      const phone = await browser.newContext({
+        viewport: { width: 390, height: 844 },
+        storageState: customerState,
+      });
+      // The customer's one conversation with the salon, where the haircut for two was booked.
+      const opened = await phone.request.post(`/v1/orgs/${orgId}/conversations`, {
+        headers: CLIENT,
+        data: {},
+      });
+      expect(opened.ok(), await opened.text()).toBe(true);
+      const { conversationId } = (await opened.json()) as { conversationId: string };
+      const owner = await browser.newContext({
+        viewport: { width: 1280, height: 800 },
+        storageState: ownerState,
+      });
+      const { page, errors } = await newPerson(owner);
+      await page.goto(`/c/${conversationId}`);
+      const theirs = page
+        .getByTestId('kit-appointment')
+        .filter({ hasText: 'For 2', visible: true })
+        .first();
+      await expect(theirs).toContainText('Haircut · 45 min');
+      // The item's open times, not any time: one of them, and it asks the customer.
+      await theirs.getByTestId('kit-another-time').click();
+      const picker = page.getByTestId('slot-picker').filter({ visible: true });
+      await expect(picker).toBeVisible();
+      await picker.locator('[data-testid^="slot-"]').first().click();
+      await page.getByTestId('kit-another-slot-done').click();
+      await expect(visible(page, /^You suggested another time/)).toBeVisible();
+      await expect(theirs.getByRole('button', { name: 'Confirm', exact: true })).toHaveCount(0);
+      expect(errors).toEqual([]);
+      await owner.close();
+
+      const { page: c, errors: customerErrors } = await newPerson(phone);
+      await c.goto(`/c/${conversationId}`);
+      await expect(visible(c, new RegExp(`^Swibba ${stamp} suggested another time`))).toBeVisible();
+      const mine = c
+        .getByTestId('kit-appointment')
+        .filter({ hasText: 'For 2', visible: true })
+        .first();
+      await mine.getByRole('button', { name: 'Confirm', exact: true }).click();
+      await expect(mine).toContainText('Confirmed');
       expect(customerErrors).toEqual([]);
       await phone.close();
     });

@@ -3269,4 +3269,5 @@ export const arB: Catalog = {
     toMan: 'اقترح موعدًا آخر',
     other: 'اقترح موعدًا آخر',
   },
+  'No other open times in the next two months.': 'لا أوقات متاحة أخرى خلال الشهرين القادمين.',
 };

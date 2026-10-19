@@ -303,6 +303,9 @@ export async function messageRoutes(app: FastifyInstance, ctx: AppContext) {
     await assertCanWrite(ctx, m.conversation_id, auth.userId);
     const refused = retimeRefusal(m, auth.userId);
     if (refused) throw badRequest(refused);
+    // An app gives another time only to a card its bot sent, as it moves only its own (PRD §74).
+    if (auth.app && m.sender_id !== auth.userId)
+      throw forbidden(tr('An app moves only its own cards.'));
     const start = new Date(body.start.at);
     if (start.getTime() <= ctx.now().getTime())
       throw badRequest(tr('That time has passed. Choose a later one.'));

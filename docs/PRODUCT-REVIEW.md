@@ -1164,8 +1164,12 @@ with its reason, so it isn't proposed again without new facts.
   every calendar on the one event: whoever has it by mail gets its update (their calendar moves it
   and asks them again; an answer to the time before moves nothing), a meeting's guests are asked
   again with new links, and its cancellation reaches them all. A series, someone's calendar
-  invitation, a card moved to its space and a booking from a catalog keep their time (cancel and
-  send another, or ask its organizer). Phase 2: notices, HTML as sent in a sandbox,
+  invitation and a card moved to its space keep their time (cancel and send another, or ask its
+  organizer). *Built in M16 F5b (2026-10-19):* a booking from the catalog takes another open time
+  of what it booked, offered from its card as the item's open times and checked as a booking is
+  (its own time no hindrance), from either side and from an organization's app for a card its
+  bot sent; one booked from a page by someone without an account waits for their answer by mail
+  (F5c). Phase 2: notices, HTML as sent in a sandbox,
   reply-all with CC, sending as the address from other clients, the agent by mail. Phase 3:
   sign-in with Google, Apple and Microsoft; calendar sync as apps; a verified organization
   receiving at its own domain. ⛔ Before production: the mail domain's MX at the inbound

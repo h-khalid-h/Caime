@@ -666,7 +666,8 @@ A sphere is said as how you know someone, never "sphere".
   `providerId`); nothing else writes it. Who does it: `pickProvider` when the team confirms, the
   reassign route `POST /messages/:id/booking/provider`, masked for the customer in
   `maskPayload`, shown on `OrgBookingView.booking`. `GET /orgs/:id/slots` and
-  `GET /people/:id/slots` take `item` and `quantity`; the app's `useSlots(host, …)` feeds the
+  `GET /people/:id/slots` take `item`, `quantity` and `except` (M16 F5b: a booking being moved, its
+  own time open, for someone in its conversation); the app's `useSlots(host, …)` feeds the
   appointment form, whose host is the organization, the other person if their profile's
   `booking` offers items, else the sender (`useMyBooking`). Public items (`audience: 'public'`)
   are spec rows on the public pages with "Book" first (`bookPath`, `/…?book`; `bookIn` in
@@ -1346,7 +1347,15 @@ A sphere is said as how you know someone, never "sphere".
   customer), its `sequence` one on, then `afterCardMove` (`label`, `asks`), the line that asks
   (`askAgain`: `time_suggested` with `is_request`, let go by the next move through
   `payload.askLine`), the update by mail (`queueCardUpdate`) and the guests asked again
-  (`askGuestsForTime`); a new way a card's time changes does all of it. `tellCardApp`
+  (`askGuestsForTime`); a new way a card's time changes does all of it. A booking from the
+  catalog (M16 F5b) takes an open time of what it booked: `rebookingFor` (`lib/booking.ts`: the
+  host's side without lead time, the customer by the catalog's rules, `exceptCard` so its own time
+  holds nothing against it in the slots and in who is free; its name and price kept, its end the
+  item's, the provider kept while free), checked before the transaction and again under the host's
+  slot lock inside it, as `sendMessage` checks a booking; the slots routes take `except` for
+  someone in its conversation (`RebookSheet` asks with it, imported by the card: loaded apart, the
+  `SlotPicker` it shares with the card's form moved into `__common`); one booked from a page by someone
+  without an account is refused. An app's token reaches it (`kits`) for a card its bot sent. `tellCardApp`
   (`lib/kits.ts`) tells an app's own card to that app alone and one of Caime's cards in a
   customer conversation to every app of the organization that listens (`kit.posted` for any
   card the team sends, `kit.moved` for any move, never what an app did itself); `cardData` is

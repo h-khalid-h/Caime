@@ -1689,6 +1689,8 @@ export const frServer: Catalog = {
     'Elle vient de l’agenda de l’autre personne : elle seule peut la déplacer.',
   'It has its own space now: suggest another time there.':
     'Elle a maintenant son propre espace : proposez un autre horaire là-bas.',
-  'A booking keeps its open time: cancel it and book another.':
-    'Une réservation garde son créneau : annulez-la et réservez-en un autre.',
+  'They booked without an account: cancel it, and they can book another time from your page.':
+    'Cette réservation a été faite sans compte : annulez-la, et un autre horaire pourra être réservé depuis votre page.',
+  'A booking lasts as long as what was booked: choose its time alone.':
+    'Une réservation dure ce que dure ce qui a été réservé : choisissez seulement son horaire.',
 };

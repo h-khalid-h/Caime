@@ -333,6 +333,19 @@ export class Caime {
     return message;
   }
 
+  /**
+   * `kits`: give a meeting or an appointment another time (an ISO instant), which asks the other
+   * side again; a booking from the catalog takes an open time of what it booked, its length its own.
+   */
+  async suggestTime(messageId: string, at: string, durationMinutes?: number): Promise<MessageView> {
+    const { message } = await this.call<{ message: MessageView }>(
+      'POST',
+      `/messages/${enc(messageId)}/time`,
+      { start: { at, hasTime: true }, ...(durationMinutes ? { durationMinutes } : {}) },
+    );
+    return message;
+  }
+
   /** `kits`: change what one of the app's cards says (`null` removes a field that isn't required). */
   async changeCard(messageId: string, fields: Record<string, unknown>): Promise<MessageView> {
     const { message } = await this.call<{ message: MessageView }>(

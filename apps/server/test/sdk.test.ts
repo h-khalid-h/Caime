@@ -171,6 +171,47 @@ describe('@caime/sdk against the server (R39)', () => {
     expect(await caime.kits()).toEqual([]);
   });
 
+  it('gives one of its appointments another time, which asks the customer again (M16 F5)', async () => {
+    const at = new Date(t.ctx.now().getTime() + 3 * 86_400_000).toISOString();
+    const later = new Date(t.ctx.now().getTime() + 4 * 86_400_000).toISOString();
+    // One the app's bot sends (Caime's own kind of card, through the API).
+    const sent = await t.app.inject({
+      method: 'POST',
+      url: `/v1/conversations/${convo}/messages`,
+      headers: { authorization: `Bearer ${token}` },
+      payload: {
+        clientId: crypto.randomUUID(),
+        kind: 'kit',
+        payload: { kit: 'appointment', fields: { title: 'Fitting', start: { at, hasTime: true } } },
+      },
+    });
+    expect(sent.statusCode, sent.body).toBe(201);
+    const id = sent.json().message.id as string;
+    const me = await caime.me();
+    const moved = await caime.suggestTime(id, later);
+    expect(moved.payload).toMatchObject({
+      state: 'requested',
+      proposedBy: me.botUserId,
+      fields: { start: { at: later } },
+    });
+    // A time that's over is refused as the server says it.
+    await expect(
+      caime.suggestTime(id, new Date(t.ctx.now().getTime() - 60_000).toISOString()),
+    ).rejects.toMatchObject({ status: 400 });
+    // The team's own card is the team's: an app moves only its own.
+    const theirs = await noor.post(`/v1/conversations/${convo}/messages`, {
+      clientId: crypto.randomUUID(),
+      kind: 'kit',
+      payload: { kit: 'appointment', fields: { title: 'Measure', start: { at, hasTime: true } } },
+    });
+    await expect(caime.suggestTime(theirs.message.id, later)).rejects.toMatchObject({
+      status: 403,
+    });
+    // Both called off, so the bookings read below are the ones made there.
+    await caime.moveCard(id, 'cancelled');
+    await noor.post(`/v1/messages/${theirs.message.id}/kit`, { to: 'cancelled' });
+  });
+
   it('posts, changes and takes back the organization’s updates', async () => {
     const posted = await caime.postUpdate(orgId, 'New colours in this week.');
     expect(posted.postedBy?.automated).toBe(true);

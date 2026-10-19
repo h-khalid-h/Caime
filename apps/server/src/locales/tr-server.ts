@@ -1617,6 +1617,8 @@ export const turkishServer: Catalog = {
     'Bu toplantı karşı tarafın takviminden: saatini yalnızca o değiştirebilir.',
   'It has its own space now: suggest another time there.':
     'Artık kendi alanı var: başka bir saati orada önerin.',
-  'A booking keeps its open time: cancel it and book another.':
-    'Bir rezervasyon kendi saatini korur: iptal edip başka bir saat ayırtın.',
+  'They booked without an account: cancel it, and they can book another time from your page.':
+    'Bu rezervasyon hesap olmadan yapıldı: iptal edin, sayfanızdan başka bir saat ayırtılabilir.',
+  'A booking lasts as long as what was booked: choose its time alone.':
+    'Rezervasyonun süresi ayırtılanın süresidir: yalnızca saatini seçin.',
 };

@@ -323,7 +323,37 @@ export async function calendarRoutes(app: FastifyInstance, ctx: AppContext) {
   const SlotsQuery = CalendarWindowQuery.extend({
     item: z.string().max(40).optional(),
     quantity: z.coerce.number().int().min(1).max(100).optional(),
+    /** A booking being given another time (M16 F5b): its own time shows as open. */
+    except: z.string().uuid().optional(),
   });
+
+  /**
+   * The booking `except` names, when it's one of this host's that this person is in the
+   * conversation of: then the time it has now holds nothing against its new one. Anyone else
+   * learns nothing from it (the slots read as they do without).
+   */
+  async function ownBooking(
+    host: BookingHost,
+    viewerId: string,
+    messageId: string | undefined,
+  ): Promise<string | undefined> {
+    if (!messageId) return undefined;
+    const m = await ctx.db
+      .selectFrom('messages as m')
+      .innerJoin('participants as p', (j) =>
+        j
+          .onRef('p.conversation_id', '=', 'm.conversation_id')
+          .on('p.user_id', '=', viewerId)
+          .on('p.left_at', 'is', null),
+      )
+      .select(['m.payload'])
+      .where('m.id', '=', messageId)
+      .where('m.kind', '=', 'kit')
+      .where('m.deleted_at', 'is', null)
+      .executeTakeFirst();
+    const booking = (m?.payload as { booking?: { hostId?: string } | null } | undefined)?.booking;
+    return booking?.hostId === host.id ? messageId : undefined;
+  }
 
   /**
    * The slots for a host, for this booker: of the item asked, else the hours alone, which only
@@ -335,6 +365,7 @@ export async function calendarRoutes(app: FastifyInstance, ctx: AppContext) {
     booker: Booker,
     query: unknown,
     hoursAlone: boolean,
+    viewerId: string,
   ): Promise<SlotsView> {
     const q = parse(SlotsQuery, query);
     const window = windowOf({ from: q.from, to: q.to });
@@ -350,7 +381,7 @@ export async function calendarRoutes(app: FastifyInstance, ctx: AppContext) {
       ctx,
       host,
       { from: window.from, to: window.until },
-      { item, quantity: q.quantity },
+      { item, quantity: q.quantity, exceptCard: await ownBooking(host, viewerId, q.except) },
     );
     if (!open) return none;
     return {
@@ -398,6 +429,7 @@ export async function calendarRoutes(app: FastifyInstance, ctx: AppContext) {
       },
       req.query,
       Boolean(seat) || !host.items.some(isBooked),
+      auth.userId,
     );
   });
 
@@ -509,6 +541,7 @@ export async function calendarRoutes(app: FastifyInstance, ctx: AppContext) {
       },
       req.query,
       relation.isSelf || (relation.isConnected && !host.items.some(isBooked)),
+      auth.userId,
     );
   });
 

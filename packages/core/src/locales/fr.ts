@@ -4928,4 +4928,6 @@ export const fr: Catalog = {
   '{by} suggested another time for “{title}”': 'Autre horaire proposé pour « {title} » par : {by}',
   '{by} suggested another time': 'Autre horaire proposé par : {by}',
   'Suggest another time': 'Proposer un autre horaire',
+  'No other open times in the next two months.':
+    'Aucun autre horaire libre dans les deux prochains mois.',
 };
