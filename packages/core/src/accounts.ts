@@ -139,6 +139,16 @@ export const ACCOUNT_FILE_MAX_BYTES = 100 * 1024 * 1024;
 /** Why a connection isn't working: it needs connecting again, or the provider didn't answer. */
 export type AccountState = 'connected' | 'reconnect' | 'failing';
 
+/**
+ * Why a use's last try failed (M16 G2): the provider didn't answer (the network, its own error),
+ * refused what was asked, or asked Caime to wait (too many asks).
+ */
+export const ACCOUNT_FAILURES = ['unanswered', 'refused', 'limited'] as const;
+export type AccountFailure = (typeof ACCOUNT_FAILURES)[number];
+
+/** The uses that run on their own, each keeping how it last went: the busy read and the plans. */
+export type AccountRunningUse = 'calendar' | 'plans';
+
 /** How long a calendar is looked ahead, and how often it's read again. */
 export const ACCOUNT_BUSY_DAYS = 90;
 export const ACCOUNT_SYNC_MINUTES = 15;

@@ -709,8 +709,14 @@ groups:
       - alert: CaimeBackupOld
         expr: time() - caime_backup_last_success_timestamp_seconds > 129600
       # A provider's cheapest read failing for two hours in a row (R78): drift, a key gone, an outage.
+      # Google's and Microsoft's sign-in are among them once their clients are set (M16 G2).
       - alert: CaimeProviderDown
         expr: caime_provider_up == 0
+        for: 2h
+      # Connected calendars whose read or plans keep failing (M16 G2): the person sees why on
+      # their account's row; many at once is the provider's or Caime's, not theirs.
+      - alert: CaimeAccountsFailing
+        expr: sum(caime_connected_accounts{health="failing"}) > 5
         for: 2h
       # The audit log's chain broken at its daily check (R78): a row changed, removed or put in.
       - alert: CaimeAuditChainBroken

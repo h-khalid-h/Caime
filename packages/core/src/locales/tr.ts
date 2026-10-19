@@ -4654,4 +4654,15 @@ export const turkish: Catalog = {
   'Replace the client secret': 'İstemci gizli anahtarını değiştir',
   'The one it had is still taken for a day, so your server switches in its own time':
     'Önceki bir gün daha kabul edilir; sunucunuz kendi zamanında geçiş yapar',
+  '{name} asked Caime to wait before reading again':
+    '{name}, Caime’den yeniden okumadan önce beklemesini istedi',
+  '{name} refused the last read': '{name} son okumayı reddetti',
+  '{name} didn’t answer the last read': '{name} son okumaya yanıt vermedi',
+  '{name} asked Caime to wait before writing again':
+    '{name}, Caime’den yeniden yazmadan önce beklemesini istedi',
+  '{name} refused the last change Caime sent':
+    '{name}, Caime’in gönderdiği son değişikliği reddetti',
+  '{name} didn’t answer the last change Caime sent':
+    '{name}, Caime’in gönderdiği son değişikliğe yanıt vermedi',
+  'written {when}': '{when} yazıldı',
 };

@@ -993,11 +993,11 @@ A sphere is said as how you know someone, never "sphere".
   secret signs beside the new one for `SECRET_OVERLAP_MS` (a day: `previous_webhook_secret`,
   `previous_secret_until`; the header's second `v1`), and core's `parseSignature` and the SDK's
   verifier take any `v1`; nothing else signs or checks a delivery. A secret is kept sealed by the
-  vault's key, bound to its app (M16 G1, `lib/app-secrets.ts`: `sealWebhookSecret`,
-  `webhookSecretOf`, `replacedSecret`); this release writes a clear copy beside it and signs with
-  that while it's there (the release before reads it alone), the next empties the clear copies,
-  and the vault's pass (`resealAppSecrets`) seals what's only in clear, moves the rest to a new
-  key and forgets a removed app's and a replaced one past its day (`NO_SECRETS`). A delivery is tried
+  vault's key alone, bound to its app (M16 G1, `lib/app-secrets.ts`: `sealWebhookSecret`,
+  `webhookSecretOf`, `replacedSecret`); its old clear columns (`webhook_secret`,
+  `previous_webhook_secret`) were emptied (0134), are read by nothing and go in a later release,
+  and the vault's pass (`resealAppSecrets`) moves secrets to a new key and forgets a removed app's
+  and a replaced one past its day (`NO_SECRETS`). A delivery is tried
   six times over about a quarter of an hour (`WEBHOOK_ATTEMPTS`, the job loop's backoff);
   nothing is replayed on its own, but an app lists its own deliveries and retries a failed one
   (`GET /v1/apps/me/deliveries`, `POST …/:id/retry`, `requeueDelivery`), which the doc says.
@@ -1186,8 +1186,10 @@ A sphere is said as how you know someone, never "sphere".
   the value naming its key by id in `refresh_kid`, else the database's own `accounts.vault`;
   `openSecret` by that id, `VAULT_KEY_PREVIOUS` while a key is replaced; `openRefresh` seals a
   stale one again as it's used, and `lib/vault-reseal.ts` moves the rest at start and daily, then
-  deletes the database's key) and an access lives in memory only (`accessFor`, which marks
-  `reconnect` on `invalid_grant`); anything new kept sealed for someone goes through that pair and
+  deletes the database's key) and an access lives in memory only (`accessFor`: `{ access }`, or
+  `{ none: 'reconnect' }` once the grant is gone, `invalid_grant` or a token no key opens, which
+  `markReconnect` records and tells the person once, as it stops; or `{ none: 'unanswered' }` for
+  a network blip or Caime's own client turned away, which blames no account); anything new kept sealed for someone goes through that pair and
   joins the pass (apps' webhook secrets did, M16 G1: in its walk, its counts and the check before
   the database's key goes), never a key of its own in `server_settings`. The calendar use keeps
   `external_busy` (start and end, nothing else), read by `syncAccountCalendar`
@@ -1207,8 +1209,18 @@ A sphere is said as how you know someone, never "sphere".
   `accounts.plans` sweep catches the rest hourly, and `disconnectAccount` runs `withdrawPlans`
   first. A booking from a person's own catalog (`AppointmentBooking.hostId`, written only by
   `bookingFor`) is in `visibleCards` for them while the booker's request waits; nothing else from
-  a pending request is. A change that shows (connected, ended, state moved, first
-  read) publishes `apps.changed` through `accountsChanged`; a routine read says nothing.
+  a pending request is. Each use that runs on its own keeps its own health (M16 G2): the read
+  `synced_at`, `read_failure`, `read_failed_at`; the plans `pushed_at` (written only when a push
+  works), `push_failure`, `push_failed_at`; why is `unanswered`, `refused` or `limited` (core
+  `ACCOUNT_FAILURES`), kept through `noteUse`/`useOutcome` so one use never clears or hides
+  another's; `state` is the connection's own ('reconnect'; 'failing' only as the release before
+  wrote it). A 429 (or Google's 403 for a rate, `askedToWait`) sets `rest_until` from its
+  Retry-After (`restUntilOf`), which every read, push and sweep honours; a failed push waits an
+  hour for the sweep, and a failed read isn't asked again for each slot. The view's `health` says
+  it, the row says each failing use in words, the sweep counts them for
+  `caime_connected_accounts`, and Google's and Microsoft's sign-in are probed in provider health.
+  A change that shows (connected, ended, state moved, a failure come or gone, first read)
+  publishes `apps.changed` through `accountsChanged`; a routine read says nothing.
   Disconnecting, `endAllAccess` and deleting an account go through `disconnectAccount`. A new
   use joins `ACCOUNT_USES`, `USE_SCOPES` (an optional permission in `USE_EXTRAS`),
   `ACCOUNT_USE_LABELS`, `usesOffered`, the privacy page and DEPLOY's list of scopes; the app's section is `features/apps/Accounts.tsx`, its return `connect.ts`

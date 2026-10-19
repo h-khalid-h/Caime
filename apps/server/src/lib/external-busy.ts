@@ -19,7 +19,19 @@ import type { Kysely } from 'kysely';
 import type { AppContext } from '../context';
 import type { Database } from '../db/schema';
 import { eachLimit } from './batch';
-import { accessFor, accountsChanged, markAccount } from './connected-accounts';
+import {
+  ACCOUNT_ROW,
+  type AccountRow,
+  accessFor,
+  accountsChanged,
+  askedToWait,
+  countAccountHealth,
+  markReconnect,
+  noteUse,
+  restUntilOf,
+  shownChanged,
+  useOutcome,
+} from './connected-accounts';
 import { enqueue, registerJob, registerPeriodic } from './jobs';
 import { TtlCache } from './ttl-cache';
 
@@ -38,9 +50,17 @@ const CALENDARS_MAX = 50;
 /** How long a slot waits for a calendar read again before it's offered or taken (R96). */
 const LIVE_MS = 4_000;
 
-type Account = Parameters<typeof accessFor>[1];
+type Account = AccountRow;
 
-async function getJson(url: string, access: string, init: RequestInit = {}) {
+/** What a provider answered: its status, its body, and how long it asked Caime to wait. */
+interface Answer {
+  ok: boolean;
+  status: number;
+  body: unknown;
+  retryAfter: string | null;
+}
+
+async function getJson(url: string, access: string, init: RequestInit = {}): Promise<Answer> {
   const res = await fetch(url, {
     ...init,
     headers: {
@@ -51,8 +71,21 @@ async function getJson(url: string, access: string, init: RequestInit = {}) {
     },
     signal: AbortSignal.timeout(PROVIDER_MS),
   });
-  return { ok: res.ok, status: res.status, body: (await res.json().catch(() => ({}))) as unknown };
+  return {
+    ok: res.ok,
+    status: res.status,
+    body: (await res.json().catch(() => ({}))) as unknown,
+    retryAfter: res.headers.get('retry-after'),
+  };
 }
+
+/** A read that didn't come back: what the provider answered, for its failure to be kept. */
+const unread = (r: Pick<Answer, 'status' | 'body' | 'retryAfter'>) => ({
+  status: r.status,
+  body: r.body,
+  retryAfter: r.retryAfter,
+  busy: null,
+});
 
 /** A provider's time without a zone (Microsoft's, asked in UTC) read as UTC. */
 const asUtc = (t: string) => new Date(/[zZ]|[+-]\d\d:?\d\d$/.test(t) ? t : `${t}Z`);
@@ -101,12 +134,12 @@ async function googleBusy(ctx: AppContext, account: Account, access: string, fro
       }),
     },
   );
-  if (!r.ok) return { status: r.status, busy: null };
+  if (!r.ok) return unread(r);
   const calendars = (r.body as { calendars?: Record<string, FreeBusyCalendar> }).calendars ?? {};
   // The main calendar answers, by the name it was asked by (or its address), or nothing was read:
   // a calendar Google couldn't read isn't one with nothing in it.
   const main = calendars.primary ?? (account.email ? calendars[account.email] : undefined);
-  if (!main || main.errors?.length) return { status: 502, busy: null };
+  if (!main || main.errors?.length) return unread({ status: 502, body: {}, retryAfter: null });
   // Another one that couldn't be read (gone since it was listed) is left out.
   const busy = Object.values(calendars)
     .filter((c) => !c.errors?.length)
@@ -181,7 +214,7 @@ async function microsoftBusy(
       const r = await getJson(url, access, { headers: { prefer: 'outlook.timezone="UTC"' } });
       // The default calendar must be read; another that can't be (gone since) is left out.
       if (!r.ok) {
-        if (i === 0) return { status: r.status, busy: null };
+        if (i === 0) return unread(r);
         break;
       }
       const body = r.body as {
@@ -227,33 +260,49 @@ export function withoutOwn(blocks: BusyBlock[], own: BusyBlock[]): BusyBlock[] {
   return out;
 }
 
-/** Reads a connection's calendar again and keeps what it says, replacing what was kept. */
+/**
+ * Reads a connection's calendar again and keeps what it says, replacing what was kept. Its own
+ * health alone moves (M16 G2): read, or why not; a provider that asked Caime to wait is left
+ * alone until then, and a grant that's gone asks for the connection again.
+ */
 export async function syncAccountCalendar(ctx: AppContext, account: Account): Promise<boolean> {
-  const access = await accessFor(ctx, account);
-  if (!access) return false;
   const now = ctx.now();
+  if (account.rest_until && account.rest_until > now) return false;
+  const got = await accessFor(ctx, account);
+  if (!('access' in got)) {
+    if (got.none === 'unanswered')
+      await noteUse(ctx, account, 'calendar', { failed: 'unanswered' });
+    return false;
+  }
   const from = new Date(now.getTime() - 86_400_000);
   const to = new Date(now.getTime() + ACCOUNT_BUSY_DAYS * 86_400_000);
-  let read: { status: number; busy: BusyBlock[] | null };
+  let read: Awaited<ReturnType<typeof googleBusy>>;
   try {
     read =
       account.provider === 'google'
-        ? await googleBusy(ctx, account, access, from, to)
-        : await microsoftBusy(ctx, account, access, from, to);
+        ? await googleBusy(ctx, account, got.access, from, to)
+        : await microsoftBusy(ctx, account, got.access, from, to);
   } catch (err) {
     ctx.log.warn(
       { provider: account.provider, err: (err as Error).name },
       'accounts: calendar not read',
     );
-    await markAccount(ctx, account.id, 'failing');
+    await noteUse(ctx, account, 'calendar', { failed: 'unanswered' });
     return false;
   }
   if (!read.busy) {
-    await markAccount(
-      ctx,
-      account.id,
-      read.status === 401 || read.status === 403 ? 'reconnect' : 'failing',
-    );
+    const { status, body, retryAfter } = read as ReturnType<typeof unread>;
+    if (askedToWait(status, body))
+      await noteUse(ctx, account, 'calendar', {
+        failed: 'limited',
+        restUntil: restUntilOf(retryAfter, now),
+      });
+    // Not let in any more (the grant gone, or its permission taken back at the provider).
+    else if (status === 401 || status === 403) await markReconnect(ctx, account.id);
+    else
+      await noteUse(ctx, account, 'calendar', {
+        failed: status >= 500 ? 'unanswered' : 'refused',
+      });
     return false;
   }
   const own = await ctx.db
@@ -284,13 +333,16 @@ export async function syncAccountCalendar(ctx: AppContext, account: Account): Pr
         .execute();
     await trx
       .updateTable('connected_accounts')
-      .set({ synced_at: now, state: 'connected' })
+      .set({
+        ...useOutcome('calendar', { worked: now }),
+        ...(account.state === 'failing' ? { state: 'connected' as const } : {}),
+      })
       .where('id', '=', account.id)
+      .where('state', '<>', 'reconnect')
       .execute();
   });
   // Read for the first time, or working again: the list says so. A routine read says nothing.
-  if (!account.synced_at || account.state !== 'connected')
-    await accountsChanged(ctx, account.user_id);
+  if (shownChanged(account, 'calendar', null)) await accountsChanged(ctx, account.user_id);
   return true;
 }
 
@@ -318,20 +370,6 @@ export async function busyElsewhere(
   return out;
 }
 
-const ACCOUNT_COLUMNS = [
-  'id',
-  'user_id',
-  'provider',
-  'email',
-  'uses',
-  'scopes',
-  'state',
-  'refresh_sealed',
-  'refresh_kid',
-  'created_at',
-  'synced_at',
-] as const;
-
 /** A read already on its way, which a second asker waits for rather than asking again. */
 const reading = new TtlCache<string, Promise<boolean>>(10_000, 30_000);
 
@@ -346,9 +384,18 @@ export async function freshenBusy(ctx: AppContext, userIds: string[]): Promise<v
   const now = ctx.now();
   const due = await ctx.db
     .selectFrom('connected_accounts')
-    .select(ACCOUNT_COLUMNS)
+    .select(ACCOUNT_ROW)
     .where('user_id', 'in', [...new Set(userIds)])
     .where('state', '<>', 'reconnect')
+    // One the provider asked to wait is left alone until then, and one whose read failed a
+    // moment ago isn't asked again for every slot (M16 G2): the sweep tries it again.
+    .where((eb) => eb.or([eb('rest_until', 'is', null), eb('rest_until', '<=', now)]))
+    .where((eb) =>
+      eb.or([
+        eb('read_failed_at', 'is', null),
+        eb('read_failed_at', '<', new Date(now.getTime() - ACCOUNT_FRESH_SECONDS * 1000)),
+      ]),
+    )
     .where((eb) => eb(eb.val('calendar'), '=', eb.fn.any('uses')))
     .where((eb) =>
       eb.or([
@@ -399,7 +446,7 @@ export function registerAccountSync(): void {
   registerJob('accounts.sync', async (ctx, payload) => {
     const account = await ctx.db
       .selectFrom('connected_accounts')
-      .select(ACCOUNT_COLUMNS)
+      .select(ACCOUNT_ROW)
       .where('id', '=', String(payload.accountId))
       .executeTakeFirst();
     if (account?.uses.includes('calendar') && account.state !== 'reconnect')
@@ -412,8 +459,9 @@ export function registerAccountSync(): void {
     run: async (ctx) => {
       const due = await ctx.db
         .selectFrom('connected_accounts')
-        .select(ACCOUNT_COLUMNS)
+        .select(ACCOUNT_ROW)
         .where('state', '<>', 'reconnect')
+        .where((eb) => eb.or([eb('rest_until', 'is', null), eb('rest_until', '<=', ctx.now())]))
         .where((eb) => eb(eb.val('calendar'), '=', eb.fn.any('uses')))
         .where((eb) =>
           eb.or([
@@ -425,6 +473,7 @@ export function registerAccountSync(): void {
         .limit(SWEEP)
         .execute();
       await eachLimit(due, 4, (a) => syncAccountCalendar(ctx, a).then(() => undefined));
+      await countAccountHealth(ctx);
     },
   });
 }

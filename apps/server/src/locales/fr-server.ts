@@ -1620,4 +1620,7 @@ export const frServer: Catalog = {
   'This link isn’t open any more.': 'Ce lien n’est plus ouvert.',
   'This app proves itself with PKCE alone: it has no secret to replace.':
     'Cette application s’authentifie avec PKCE seul : elle n’a pas de secret à remplacer.',
+  '{name} needs connecting again': '{name} doit être connecté à nouveau',
+  'Caime can’t use it for you until you connect it again in Settings · Apps.':
+    'Caime ne peut plus l’utiliser pour vous tant que vous ne l’avez pas connecté à nouveau dans Réglages · Applications.',
 };

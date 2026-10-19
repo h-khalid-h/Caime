@@ -459,6 +459,8 @@ describe('the service worker', () => {
       [{ handle: 'nile.dental' }, '/o/nile.dental'],
       [{ spaceId: 's1' }, '/s/s1'],
       [{ invitation: 'i1' }, '/'],
+      // A connected account that needs connecting again (M16 G2): where it's connected.
+      [{ account: 'a1' }, '/settings/apps'],
       [{ userId: 'u1' }, '/p/u1'],
       [{}, '/notifications'],
       // A meeting starting (R83): its join address; anything else in `path` is never followed.

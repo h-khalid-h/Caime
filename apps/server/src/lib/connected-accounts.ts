@@ -15,20 +15,26 @@
 
 import { uuidv4, uuidv7 } from '@caime/core';
 import {
+  ACCOUNT_PROVIDER_NAMES,
   ACCOUNT_RETURN_PATH,
+  type AccountFailure,
   type AccountProvider,
   type AccountReturnError,
+  type AccountRunningUse,
   type AccountUse,
   accountScopes,
   readsEveryCalendar,
   usesGranted,
 } from '@caime/core/accounts';
-import type { ConnectedAccountView } from '@caime/core/api';
+import type { AccountUseHealthView, ConnectedAccountView } from '@caime/core/api';
 import { tr } from '@caime/core/i18n';
+import { type Selectable, sql, type Updateable } from 'kysely';
 import type { AppContext } from '../context';
 import type { ConnectedAccountsTable } from '../db/schema';
 import { withdrawPlans } from './calendar-push';
 import { AppError, badRequest, notFound } from './errors';
+import { ACCOUNTS_SETTING, accountsState } from './metrics';
+import { notify } from './notify';
 import {
   CONSENT_MS,
   consentLink,
@@ -44,21 +50,32 @@ import {
   tradeCode,
 } from './provider-consent';
 import { serverKey } from './server-keys';
+import { writeSetting } from './settings';
 import { TtlCache } from './ttl-cache';
 import { openSecret, sealSecret } from './vault-keys';
 
-type Row = Pick<
-  ConnectedAccountsTable,
-  | 'id'
-  | 'user_id'
-  | 'provider'
-  | 'email'
-  | 'uses'
-  | 'scopes'
-  | 'state'
-  | 'refresh_sealed'
-  | 'refresh_kid'
-> & { created_at: Date; synced_at: Date | null };
+/** A connection as every reader takes it: with how each use last went (M16 G2). */
+export const ACCOUNT_ROW = [
+  'id',
+  'user_id',
+  'provider',
+  'email',
+  'uses',
+  'scopes',
+  'state',
+  'refresh_sealed',
+  'refresh_kid',
+  'created_at',
+  'synced_at',
+  'pushed_at',
+  'read_failure',
+  'read_failed_at',
+  'push_failure',
+  'push_failed_at',
+  'rest_until',
+] as const;
+export type AccountRow = Pick<Selectable<ConnectedAccountsTable>, (typeof ACCOUNT_ROW)[number]>;
+type Row = AccountRow;
 
 export function accountsOffered(ctx: Pick<AppContext, 'config'>): AccountProvider[] {
   return providersOn(ctx.config);
@@ -195,32 +212,49 @@ export async function finishAccountConsent(
   }
 }
 
+const RUNNING_USES: readonly AccountRunningUse[] = ['calendar', 'plans'];
+
+/** How each use that runs on its own last went, for the uses the connection has. */
+function healthOf(r: Row): AccountUseHealthView[] {
+  const iso = (d: Date | null) => d?.toISOString() ?? null;
+  return RUNNING_USES.filter((u) => r.uses.includes(u)).map((use) =>
+    use === 'calendar'
+      ? {
+          use,
+          workedAt: iso(r.synced_at),
+          failure: r.read_failure,
+          failedAt: iso(r.read_failed_at),
+        }
+      : {
+          use,
+          workedAt: iso(r.pushed_at),
+          failure: r.push_failure,
+          failedAt: iso(r.push_failed_at),
+        },
+  );
+}
+
 export function accountView(r: Row): ConnectedAccountView {
+  const health = healthOf(r);
   return {
     id: r.id,
     provider: r.provider,
     email: r.email,
     uses: r.uses as AccountUse[],
-    state: r.state,
+    // Its own standing, else failing while any use's last try failed (or the release before
+    // said so, until a read or a push works).
+    state:
+      r.state === 'reconnect'
+        ? 'reconnect'
+        : r.state === 'failing' || health.some((h) => h.failure)
+          ? 'failing'
+          : 'connected',
     createdAt: r.created_at.toISOString(),
     syncedAt: r.synced_at?.toISOString() ?? null,
     mainCalendarOnly: r.uses.includes('calendar') && !readsEveryCalendar(r.provider, r.scopes),
+    health,
   };
 }
-
-const ROW = [
-  'id',
-  'user_id',
-  'provider',
-  'email',
-  'uses',
-  'scopes',
-  'state',
-  'refresh_sealed',
-  'refresh_kid',
-  'created_at',
-  'synced_at',
-] as const;
 
 /**
  * Redeems a claim for the person signed in: only the one who asked, within ten minutes. The
@@ -270,7 +304,7 @@ export async function redeemAccountClaim(
         state: 'connected',
       }),
     )
-    .returning(ROW)
+    .returning(ACCOUNT_ROW)
     .executeTakeFirstOrThrow();
   accessCache.delete(id);
   await accountsChanged(ctx, userId);
@@ -280,7 +314,7 @@ export async function redeemAccountClaim(
 export async function accountsOf(ctx: AppContext, userId: string): Promise<ConnectedAccountView[]> {
   const rows = await ctx.db
     .selectFrom('connected_accounts')
-    .select(ROW)
+    .select(ACCOUNT_ROW)
     .where('user_id', '=', userId)
     .orderBy('created_at')
     .execute();
@@ -290,7 +324,7 @@ export async function accountsOf(ctx: AppContext, userId: string): Promise<Conne
 export async function accountOf(ctx: AppContext, userId: string, id: string): Promise<Row> {
   const row = await ctx.db
     .selectFrom('connected_accounts')
-    .select(ROW)
+    .select(ACCOUNT_ROW)
     .where('id', '=', id)
     .where('user_id', '=', userId)
     .executeTakeFirst();
@@ -336,18 +370,23 @@ export async function resealRefresh(
 const accessCache = new TtlCache<string, string>(10_000, 50 * 60_000);
 
 /**
- * An access for a connection, renewed when needed; null when the provider refuses (the person
- * revoked it there, or its password changed): the connection then asks to be connected again,
- * and nothing more is asked of the provider for it.
+ * An access for a connection, or why there's none (M16 G2): its grant is gone (the person
+ * revoked it at the provider, or no key here opens its refresh token), so it asks to be connected
+ * again and nothing more is asked of the provider for it; or the provider didn't give one this
+ * time (no answer, or Caime's own client refused, which the provider's probe says), which the use
+ * that asked keeps as its own failure, never the connection's.
  */
-export async function accessFor(ctx: AppContext, account: Row): Promise<string | null> {
+export type Access = { access: string } | { none: 'reconnect' | 'unanswered' };
+
+export async function accessFor(ctx: AppContext, account: Row): Promise<Access> {
   const cached = accessCache.get(account.id, ctx.now().getTime());
-  if (cached) return cached;
+  if (cached) return { access: cached };
   const client = providerClient(ctx.config, account.provider);
+  if (!client) return { none: 'unanswered' };
   const refresh = await openRefresh(ctx, account);
-  if (!client || !refresh) {
-    await markAccount(ctx, account.id, 'reconnect');
-    return null;
+  if (!refresh) {
+    await markReconnect(ctx, account.id);
+    return { none: 'reconnect' };
   }
   let body: Record<string, unknown>;
   try {
@@ -359,14 +398,21 @@ export async function accessFor(ctx: AppContext, account: Row): Promise<string |
     }));
   } catch (err) {
     ctx.log.warn({ provider: account.provider, err: (err as Error).name }, 'accounts: no access');
-    await markAccount(ctx, account.id, 'failing');
-    return null;
+    return { none: 'unanswered' };
   }
   const access = typeof body.access_token === 'string' ? body.access_token : null;
   if (!access) {
-    // `invalid_grant`: revoked or expired at the provider; anything else may pass.
-    await markAccount(ctx, account.id, body.error === 'invalid_grant' ? 'reconnect' : 'failing');
-    return null;
+    // `invalid_grant`: revoked or expired at the provider. Anything else (`invalid_client` is
+    // Caime's own) isn't the person's to fix.
+    if (body.error === 'invalid_grant') {
+      await markReconnect(ctx, account.id);
+      return { none: 'reconnect' };
+    }
+    ctx.log.warn(
+      { provider: account.provider, error: String(body.error ?? '').slice(0, 40) },
+      'accounts: the provider gave no access',
+    );
+    return { none: 'unanswered' };
   }
   // Microsoft hands a new refresh token with each access: the new one is kept.
   if (typeof body.refresh_token === 'string' && body.refresh_token !== refresh.toString()) {
@@ -379,26 +425,144 @@ export async function accessFor(ctx: AppContext, account: Row): Promise<string |
   }
   const seconds = typeof body.expires_in === 'number' ? body.expires_in : 3600;
   accessCache.set(account.id, access, ctx.now().getTime(), Math.max(60, seconds - 60) * 1000);
-  return access;
+  return { access };
 }
 
-export async function markAccount(
-  ctx: AppContext,
-  id: string,
-  state: ConnectedAccountsTable['state'],
-): Promise<void> {
+/**
+ * The connection's grant is gone: it asks to be connected again, what it said holds nobody's
+ * time any longer, and its person is told once, as it stops (M16 G2), never again until it's
+ * connected again and stops again.
+ */
+export async function markReconnect(ctx: AppContext, id: string): Promise<void> {
   const changed = await ctx.db
     .updateTable('connected_accounts')
-    .set({ state })
+    .set({ state: 'reconnect' })
     .where('id', '=', id)
-    .where('state', '<>', state)
-    .returning('user_id')
+    .where('state', '<>', 'reconnect')
+    .returning(['user_id', 'provider'])
     .executeTakeFirst();
-  if (state !== 'connected') accessCache.delete(id);
-  // What it said can't be read again: nothing it said holds anyone's time any longer.
-  if (state === 'reconnect')
-    await ctx.db.deleteFrom('external_busy').where('account_id', '=', id).execute();
-  if (changed) await accountsChanged(ctx, changed.user_id);
+  accessCache.delete(id);
+  await ctx.db.deleteFrom('external_busy').where('account_id', '=', id).execute();
+  if (!changed) return;
+  await accountsChanged(ctx, changed.user_id);
+  const name = ACCOUNT_PROVIDER_NAMES[changed.provider];
+  await notify(ctx, {
+    userId: changed.user_id,
+    kind: 'account',
+    level: 'attention',
+    title: () => tr('{name} needs connecting again', { name }),
+    body: () => tr('Caime can’t use it for you until you connect it again in Settings · Apps.'),
+    data: { account: id },
+    groupKey: `account:${id}`,
+  });
+}
+
+/**
+ * What a use's try changes on its connection (M16 G2): working, when and nothing failing since
+ * (and a 'failing' the release before wrote let go); failed, why and when, and until when the
+ * provider asked Caime to wait. The other use's health is never touched.
+ */
+export function useOutcome(
+  use: AccountRunningUse,
+  outcome: { worked: Date } | { failed: AccountFailure; at: Date; restUntil: Date | null },
+): Updateable<ConnectedAccountsTable> {
+  if ('worked' in outcome)
+    return use === 'calendar'
+      ? { synced_at: outcome.worked, read_failure: null, read_failed_at: null }
+      : { pushed_at: outcome.worked, push_failure: null, push_failed_at: null };
+  return {
+    ...(use === 'calendar'
+      ? { read_failure: outcome.failed, read_failed_at: outcome.at }
+      : { push_failure: outcome.failed, push_failed_at: outcome.at }),
+    ...(outcome.restUntil ? { rest_until: outcome.restUntil } : {}),
+  };
+}
+
+/**
+ * Keeps a use's outcome, and tells the person's devices when what their list shows changed: a
+ * first read, a failure come or gone, or a 'failing' from the release before let go.
+ */
+export async function noteUse(
+  ctx: AppContext,
+  account: Row,
+  use: AccountRunningUse,
+  outcome: { worked: Date } | { failed: AccountFailure; restUntil?: Date | null },
+): Promise<void> {
+  const set =
+    'worked' in outcome
+      ? useOutcome(use, outcome)
+      : useOutcome(use, {
+          failed: outcome.failed,
+          at: ctx.now(),
+          restUntil: outcome.restUntil ?? null,
+        });
+  await ctx.db
+    .updateTable('connected_accounts')
+    .set({
+      ...set,
+      ...('worked' in outcome && account.state === 'failing' ? { state: 'connected' } : {}),
+    })
+    .where('id', '=', account.id)
+    .where('state', '<>', 'reconnect')
+    .execute();
+  if (shownChanged(account, use, 'worked' in outcome ? null : outcome.failed))
+    await accountsChanged(ctx, account.user_id);
+}
+
+/** Whether a use's outcome changes what the person's list shows of the connection. */
+export function shownChanged(account: Row, use: AccountRunningUse, failure: AccountFailure | null) {
+  const was = use === 'calendar' ? account.read_failure : account.push_failure;
+  const first = use === 'calendar' ? !account.synced_at : !account.pushed_at;
+  return was !== failure || account.state === 'failing' || (failure === null && first);
+}
+
+/**
+ * Until when a provider that answered 429 asked Caime to wait: its Retry-After, in seconds or as
+ * a date, held between a minute and six hours; five minutes when it says nothing.
+ */
+export function restUntilOf(retryAfter: string | null | undefined, now: Date): Date {
+  let ms = 5 * 60_000;
+  const said = retryAfter?.trim() ?? '';
+  if (/^\d+$/.test(said)) ms = Number(said) * 1000;
+  else if (said && !Number.isNaN(Date.parse(said))) ms = Date.parse(said) - now.getTime();
+  return new Date(now.getTime() + Math.min(6 * 3_600_000, Math.max(60_000, ms)));
+}
+
+/**
+ * Whether a provider's refusal asks Caime to wait: a 429, or Google's 403 for a rate or a quota.
+ */
+export function askedToWait(status: number, body: unknown): boolean {
+  if (status === 429) return true;
+  if (status !== 403) return false;
+  const errors =
+    (body as { error?: { errors?: Array<{ reason?: unknown }> } } | null)?.error?.errors ?? [];
+  return errors.some(
+    (e) => typeof e.reason === 'string' && /RateLimitExceeded|quotaExceeded/i.test(e.reason),
+  );
+}
+
+/**
+ * How many connections each use has, by how it last went (working, failing, reconnect), in one
+ * query, kept for /metrics on every instance (M16 G2: `caime_connected_accounts`).
+ */
+export async function countAccountHealth(ctx: AppContext): Promise<void> {
+  const { rows } = await sql<{ use: string; health: string; n: string }>`
+    select u.use,
+      case
+        when a.state = 'reconnect' then 'reconnect'
+        when (u.use = 'calendar' and a.read_failure is not null)
+          or (u.use = 'plans' and a.push_failure is not null) then 'failing'
+        else 'working'
+      end as health,
+      count(*) as n
+    from connected_accounts a
+    cross join unnest(array['calendar', 'plans']) as u(use)
+    where u.use = any(a.uses)
+    group by 1, 2`.execute(ctx.db);
+  const counts = rows.map((r) => ({ use: r.use, health: r.health, n: Number(r.n) }));
+  const at = ctx.now().getTime();
+  await writeSetting(ctx.db, ACCOUNTS_SETTING, { at, counts }, ctx.now());
+  Object.assign(accountsState, { at, counts });
 }
 
 /** Their Connected list reads again on every device (M15): connected, ended, or its state moved. */
@@ -435,7 +599,7 @@ export async function disconnectAccount(ctx: AppContext, account: Row): Promise<
 export async function disconnectAllAccounts(ctx: AppContext, userId: string): Promise<void> {
   const rows = await ctx.db
     .selectFrom('connected_accounts')
-    .select(ROW)
+    .select(ACCOUNT_ROW)
     .where('user_id', '=', userId)
     .execute();
   for (const r of rows) await disconnectAccount(ctx, r);
@@ -513,7 +677,7 @@ export async function narrowedAccess(
     return null;
   }
   if (body.error === 'invalid_grant') {
-    await markAccount(ctx, account.id, 'reconnect');
+    await markReconnect(ctx, account.id);
     return null;
   }
   const granted = typeof body.scope === 'string' ? body.scope.split(/\s+/).filter(Boolean) : [];

@@ -19,12 +19,14 @@ import { backupBucket } from './backup';
 /** The last probes, shared by every instance (`lib/gauges.ts` reads them on scrape). */
 export const PROVIDERS_SETTING = 'providers.last';
 
+import { ACCOUNT_PROVIDER_NAMES } from '@caime/core/accounts';
 import { AGE_PROVIDER_NAMES } from './age-provider';
 import { cloudflareIceRequest } from './calls';
 import { expoPush } from './expo-push';
 import { registerPeriodic } from './jobs';
 import { MAIL_PROVIDER_NAMES } from './mail-provider';
 import { type ProviderHealth, providerState } from './metrics';
+import { postForm, providerClient } from './provider-consent';
 import { s3Head } from './s3';
 import { writeSetting } from './settings';
 import { SPEECH_PROVIDER_NAMES } from './speech';
@@ -45,6 +47,8 @@ export const PROVIDERS = [
   'dns',
   'whatsapp',
   'age',
+  'google',
+  'microsoft',
 ] as const;
 export type ProviderId = (typeof PROVIDERS)[number];
 
@@ -99,6 +103,28 @@ export function providerProbes(ctx: AppContext): ProviderProbe[] {
   const whatsapp = whatsappFor(config);
   if (whatsapp)
     probes.push({ id: 'whatsapp', name: 'WhatsApp (Meta)', check: () => whatsapp.ping() });
+  // Google's and Microsoft's sign-in for connected accounts (M16 G2): their token address asked
+  // to renew a refresh token that can't exist. `invalid_grant` is the answer of a provider that's
+  // there and didn't turn Caime's client away; anything else (`invalid_client`: its id or secret
+  // isn't taken) is down.
+  for (const p of ['google', 'microsoft'] as const) {
+    const client = providerClient(config, p);
+    if (client)
+      probes.push({
+        id: p,
+        name: ACCOUNT_PROVIDER_NAMES[p],
+        check: async () => {
+          const { status, body } = await postForm(client.token, {
+            client_id: client.id,
+            client_secret: client.secret,
+            grant_type: 'refresh_token',
+            refresh_token: 'caime-health-probe',
+          });
+          if (body.error !== 'invalid_grant')
+            throw new Error(`It answered ${status} ${String(body.error ?? '')}`.trim());
+        },
+      });
+  }
   const mail = ctx.mail;
   if (mail && config.SMTP_URL)
     probes.push({ id: 'smtp', name: hostOf(config.SMTP_URL), check: () => mail.verify() });

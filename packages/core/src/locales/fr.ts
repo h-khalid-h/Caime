@@ -4840,4 +4840,15 @@ export const fr: Catalog = {
   'Replace the client secret': 'Remplacer le secret client',
   'The one it had is still taken for a day, so your server switches in its own time':
     'L’ancien reste accepté un jour, pour que votre serveur change à son rythme',
+  '{name} asked Caime to wait before reading again':
+    '{name} a demandé à Caime d’attendre avant de lire à nouveau',
+  '{name} refused the last read': '{name} a refusé la dernière lecture',
+  '{name} didn’t answer the last read': '{name} n’a pas répondu à la dernière lecture',
+  '{name} asked Caime to wait before writing again':
+    '{name} a demandé à Caime d’attendre avant d’écrire à nouveau',
+  '{name} refused the last change Caime sent':
+    '{name} a refusé la dernière modification envoyée par Caime',
+  '{name} didn’t answer the last change Caime sent':
+    '{name} n’a pas répondu à la dernière modification envoyée par Caime',
+  'written {when}': 'écrit {when}',
 };

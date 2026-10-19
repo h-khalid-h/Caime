@@ -15,6 +15,7 @@ import type {
   OrderingSettings,
   PaymentSettings,
 } from '@caime/core';
+import type { AccountFailure } from '@caime/core/accounts';
 import type {
   ColumnType,
   Generated,
@@ -710,11 +711,20 @@ export interface ConnectedAccountsTable {
   refresh_sealed: Buffer;
   /** The id of the key that sealed it (M16 B5, `vaultKid`), or null for the database's own. */
   refresh_kid: string | null;
+  /** Its own standing: 'reconnect' once its grant is gone; 'failing' only as the release before wrote it. */
   state: 'connected' | 'reconnect' | 'failing';
   created_at: Generated<Date>;
+  /** When its calendar was last read. */
   synced_at: Date | null;
-  /** When its plans were last put in step with the person's cards (R96). */
+  /** When its plans were last put in step with the person's cards (R96): written when that works. */
   pushed_at: Date | null;
+  /** Why the busy read's and the push's last tries failed, and when; null once they work (0133). */
+  read_failure: AccountFailure | null;
+  read_failed_at: Date | null;
+  push_failure: AccountFailure | null;
+  push_failed_at: Date | null;
+  /** Until when the provider asked Caime to wait (a 429's Retry-After): nothing is asked before. */
+  rest_until: Date | null;
 }
 
 /** An event Caime wrote into a connected calendar for a card or a time of a series (R96). */
@@ -1308,16 +1318,14 @@ export interface OrgAppsTable {
   bot_user_id: string | null;
   scopes: Defaulted<string[]>;
   webhook_url: string | null;
-  /**
-   * The signing secret in clear: written beside its sealed value, and signed with while it's there,
-   * since the release before reads and writes it alone (0130); emptied by the next release, which
-   * reads the sealed one alone (`lib/app-secrets.ts`).
-   */
-  webhook_secret: string | null;
-  /** The secret before the last replacement, still signing deliveries until `…_until` (0052). */
-  previous_webhook_secret: string | null;
+  /** Until when the secret before the last replacement still signs deliveries (0052). */
   previous_secret_until: NullableTimestamp;
-  /** The secrets sealed through the vault, each with the id of the key that sealed it (0130). */
+  /**
+   * The signing secret and the one before it, sealed through the vault, each with the id of the
+   * key that sealed it (0130, `lib/app-secrets.ts`). Their clear copies (`webhook_secret`,
+   * `previous_webhook_secret`) were emptied by 0134 and are read by nothing; a later release
+   * drops them.
+   */
   webhook_secret_sealed: Buffer | null;
   webhook_secret_kid: string | null;
   previous_secret_sealed: Buffer | null;

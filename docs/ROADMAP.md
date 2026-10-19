@@ -2841,6 +2841,35 @@ graph) and the number that will show it; one that sharpens none is hygiene and s
       connection's own where Google won't narrow, counted), `oauth.test.ts` (the new secret and the
       old for a day, then the new alone, only by its developer, only for an app with a secret,
       audited), the catalogs in four languages, and the full gate.
+- [x] G1b. Webhook secrets sealed alone (2026-10-19): nothing reads or writes the clear copies any
+      more, migration 0134 empties those whose sealed copy is kept, and the vault's pass only moves
+      secrets to a new key and forgets what signs nothing. Verified: `apps.test.ts` (a new app's
+      secret and a replaced one sealed and never in clear, both signing for its day, never sent
+      unsigned, a removed app's and a replaced one past its day forgotten, every one moved to a new
+      `VAULT_KEY` at start), and the full gate.
+- [ ] G1c. The clear columns dropped (`org_apps.webhook_secret`, `previous_webhook_secret`), with
+      `-- contracts after` G1b's commit once it's in production.
+- [x] G2. Connected accounts that say how each use is doing (2026-10-19, review §8 H3; advantage 3,
+      the door link whose bookings respect the professional's calendar, and the number that shows
+      it: connections failing unseen, from any to none). The busy read and the plan push each keep
+      when they last worked and why their last try failed (`unanswered`, `refused`, `limited`;
+      migration 0133), so a good read never hides a failing push or clears it, and `pushed_at` is
+      written only when a push works. A 429, or Google's 403 for a rate, sets how long the provider
+      asked Caime to wait from its Retry-After, which reads, pushes and both sweeps honour; a failed
+      push is tried again an hour on, and a failed read isn't asked again for every slot. A network
+      blip or Caime's own client turned away no longer marks the person's connection; a grant that's
+      gone asks to be connected again and tells them once (a notification opening Settings · Apps,
+      in four languages). Each account's row says when its calendar was read and its plans written,
+      and each failing use in words. Google's and Microsoft's sign-in join provider health (their
+      token address asked to renew a token that can't exist: `invalid_grant` is up, `invalid_client`
+      down), and `caime_connected_accounts{use,health}` counts them, with an alert in DEPLOY.md.
+      Not done: a per-event record of what failed to write, and the operator's view of failing
+      connections (G). Verified: `account-health.test.ts` (a failing push beside a good read, a 429
+      and Google's 403 waited out with nothing asked meanwhile, a refusal said apart, a blip and
+      `invalid_client` blaming no account, the counts on /metrics, the probe up and down, a grant
+      gone told once and nothing asked of it after), `connected-accounts.test.ts`,
+      `calendar-sync.test.ts`, `cloud-files.test.ts`, `sw.test.ts` (the tap opens Settings · Apps on
+      the web and a phone), the catalogs in four languages, and the full gate.
 - [ ] H. Business depth: a Business seat includes Pro; a cap on organizations per person; room
       checks inside the transaction; quick replies, away and greeting messages; customer notes,
       tags and fields; tax invoices (counsel); booking and revenue analytics; intake forms as
@@ -4621,6 +4650,9 @@ graph) and the number that will show it; one that sharpens none is hygiene and s
   journeys, safety, reliability, performance, intelligence, mail and calendar, chat, integrations,
   business and code integrity; the matrix against WhatsApp, Signal, Slack, Calendly and Workspace;
   an age-assurance design; the integration framework mapped to the code; plan M16 (A–H).
+- 2026-10-19 — M16 G2 and G1b: each connected account's read and plans say how they last went,
+  a provider's wait honoured, a grant gone told once, Google's and Microsoft's sign-in probed;
+  webhook secrets sealed alone.
 - 2026-10-19 — M16 G1: credentials: organizations' webhook secrets sealed by the vault's key
   (the clear copies emptied next release), Google's picker page opened once with an access asked
   narrowed to the files picked, an OAuth app's client secret replaced with a day's overlap.

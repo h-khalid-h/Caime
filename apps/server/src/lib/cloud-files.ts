@@ -20,13 +20,13 @@ import type { AccountFilesResponse, AccountFileView } from '@caime/core/api';
 import { tr } from '@caime/core/i18n';
 import type { Config } from '../config';
 import type { AppContext } from '../context';
-import { accessFor, markAccount, narrowedAccess } from './connected-accounts';
+import { type AccountRow, accessFor, markReconnect, narrowedAccess } from './connected-accounts';
 import { AppError, badRequest } from './errors';
 import { type FileRow, storeFile } from './files';
 import { assertStorage } from './plans';
 import type { Storage } from './storage';
 
-type Account = Parameters<typeof accessFor>[1];
+type Account = AccountRow;
 
 const PROVIDER_MS = 15_000;
 /** How long the copy of one file may take, start to end. */
@@ -58,9 +58,12 @@ export function usesOffered(config: Config): Record<AccountProvider, AccountUse[
 export async function filesAccess(ctx: AppContext, account: Account): Promise<string> {
   if (!account.uses.includes('files'))
     throw new AppError(403, 'forbidden', tr('Turn on Files for this account first.'));
-  const access = await accessFor(ctx, account);
-  if (!access) throw reconnect();
-  return access;
+  const got = await accessFor(ctx, account);
+  if ('access' in got) return got.access;
+  // Its grant gone, it asks to be connected again; otherwise the provider didn't answer now.
+  throw got.none === 'reconnect'
+    ? reconnect()
+    : failed(account.provider === 'google' ? 'Google' : 'Microsoft');
 }
 
 /**
@@ -98,7 +101,7 @@ async function ask(ctx: AppContext, account: Account, url: string, access: strin
     throw failed(name);
   }
   if (res.status === 401) {
-    await markAccount(ctx, account.id, 'reconnect');
+    await markReconnect(ctx, account.id);
     throw reconnect();
   }
   if (res.status === 404 || res.status === 403)
@@ -263,7 +266,7 @@ export async function importAccountFile(
     throw failed(name);
   }
   if (res.status === 401) {
-    await markAccount(ctx, account.id, 'reconnect');
+    await markReconnect(ctx, account.id);
     throw reconnect();
   }
   if (!res.ok || !res.body) throw failed(name);

@@ -3,6 +3,7 @@ import type { AddressInfo } from 'node:net';
 import { uuidv4 } from '@caime/core';
 import { accountReturnOf } from '@caime/core/accounts';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
+import { ACCOUNT_ROW } from '../src/lib/connected-accounts';
 import { runDueJobs } from '../src/lib/jobs';
 import { type Client, createTestApp, signup, type TestApp } from './helpers';
 
@@ -341,19 +342,7 @@ describe('bookings and connected calendars in step (R96)', () => {
     const { pushAccountPlans } = await import('../src/lib/calendar-push');
     const row = await t.ctx.db
       .selectFrom('connected_accounts')
-      .select([
-        'id',
-        'user_id',
-        'provider',
-        'email',
-        'uses',
-        'scopes',
-        'state',
-        'refresh_sealed',
-        'refresh_kid',
-        'created_at',
-        'synced_at',
-      ])
+      .select(ACCOUNT_ROW)
       .where('user_id', '=', noor.user.id)
       .executeTakeFirstOrThrow();
     await pushAccountPlans(t.ctx, row);

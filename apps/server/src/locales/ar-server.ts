@@ -1598,4 +1598,7 @@ export const arServer: Catalog = {
   'This link isn’t open any more.': 'لم يعد هذا الرابط متاحًا.',
   'This app proves itself with PKCE alone: it has no secret to replace.':
     'يثبت هذا التطبيق نفسه بـ PKCE وحده: ليس له سر لاستبداله.',
+  '{name} needs connecting again': 'يحتاج {name} إلى ربط من جديد',
+  'Caime can’t use it for you until you connect it again in Settings · Apps.':
+    'لا يستطيع Caime استخدامه من أجلك حتى تربطه من جديد في الإعدادات · التطبيقات.',
 };

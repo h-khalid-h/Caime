@@ -137,6 +137,17 @@ export const vaultState = {
   at: 0,
 };
 
+/**
+ * Connected accounts by use and how it last went (M16 G2): counted after each calendar sweep by
+ * `countAccountHealth` (lib/connected-accounts.ts), kept under `ACCOUNTS_SETTING` for every
+ * instance; `at` 0 until counted.
+ */
+export const ACCOUNTS_SETTING = 'accounts.health';
+export const accountsState: {
+  at: number;
+  counts: Array<{ use: string; health: string; n: number }>;
+} = { at: 0, counts: [] };
+
 /** The audit chain's last check (lib/audit.ts writes it): when, whether it held, its head. */
 export const auditState = { checkedAt: 0, ok: true, headSeq: 0 };
 
@@ -318,6 +329,17 @@ export function createMetrics(pool: pg.Pool) {
               { labels: { key: 'older' }, value: vaultState.older },
               { labels: { key: 'unopenable' }, value: vaultState.unopenable },
             ]
+          : [],
+    ),
+    new Gauge(
+      'caime_connected_accounts',
+      'Connected accounts at the last count, by use (calendar, plans) and how it last went (working, failing, reconnect; absent until counted).',
+      () =>
+        accountsState.at
+          ? accountsState.counts.map((c) => ({
+              labels: { use: c.use, health: c.health },
+              value: c.n,
+            }))
           : [],
     ),
     new Gauge(

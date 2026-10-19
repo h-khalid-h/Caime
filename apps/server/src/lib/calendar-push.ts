@@ -17,19 +17,27 @@
  */
 import { createHash } from 'node:crypto';
 import { KITS, zonedParts } from '@caime/core';
-import { ACCOUNT_BUSY_DAYS, ACCOUNT_SYNC_MINUTES } from '@caime/core/accounts';
+import { ACCOUNT_BUSY_DAYS, ACCOUNT_SYNC_MINUTES, type AccountFailure } from '@caime/core/accounts';
 import { tr } from '@caime/core/i18n';
 import { joinPath, meetingVenue } from '@caime/core/meetings';
 import type { AppContext } from '../context';
 import { eachLimit } from './batch';
 import { minutesOf } from './calendar';
-import { accessFor, accountsChanged, markAccount } from './connected-accounts';
+import {
+  ACCOUNT_ROW,
+  type AccountRow,
+  accessFor,
+  askedToWait,
+  markReconnect,
+  noteUse,
+  restUntilOf,
+} from './connected-accounts';
 import { asReader } from './i18n';
 import { enqueue, registerJob, registerPeriodic } from './jobs';
 import { meetingUid } from './meeting-series';
 import { cardsAhead } from './upcoming';
 
-type Account = Parameters<typeof accessFor>[1];
+type Account = AccountRow;
 
 const PROVIDER_MS = 10_000;
 /** A burst of changes to someone's cards is put in step once, at the end of its bucket. */
@@ -45,20 +53,6 @@ const SWEEP_EVERY_MS = 3_600_000;
 const SWEEP = 200;
 /** How long disconnecting waits for the events ahead to be taken out. */
 const WITHDRAW_MS = 8_000;
-
-const ACCOUNT_COLUMNS = [
-  'id',
-  'user_id',
-  'provider',
-  'email',
-  'uses',
-  'scopes',
-  'state',
-  'refresh_sealed',
-  'refresh_kid',
-  'created_at',
-  'synced_at',
-] as const;
 
 /** One event as Caime writes it. */
 export interface PlanEvent {
@@ -223,7 +217,8 @@ const fingerprintOf = (e: PlanEvent) =>
 const googleId = (accountId: string, uid: string) =>
   createHash('sha256').update(`${accountId}:${uid}`).digest('hex');
 
-type Answer = { status: number; body: Record<string, unknown> };
+/** What a provider answered: its status, its body, and how long it asked Caime to wait. */
+type Answer = { status: number; body: Record<string, unknown>; retryAfter: string | null };
 
 async function call(url: string, access: string, method: string, body?: unknown): Promise<Answer> {
   const res = await fetch(url, {
@@ -239,6 +234,7 @@ async function call(url: string, access: string, method: string, body?: unknown)
   return {
     status: res.status,
     body: (await res.json().catch(() => ({}))) as Record<string, unknown>,
+    retryAfter: res.headers.get('retry-after'),
   };
 }
 
@@ -247,9 +243,9 @@ const ok = (status: number) => status >= 200 && status < 300;
 
 /** What a provider is asked to do with one event: written, rewritten, taken out. */
 interface Writer {
-  create(e: PlanEvent): Promise<{ status: number; id: string | null }>;
-  update(id: string, e: PlanEvent): Promise<{ status: number; id: string | null }>;
-  remove(id: string): Promise<number>;
+  create(e: PlanEvent): Promise<Answer & { id: string | null }>;
+  update(id: string, e: PlanEvent): Promise<Answer & { id: string | null }>;
+  remove(id: string): Promise<Answer>;
 }
 
 function googleWriter(ctx: AppContext, account: Account, access: string): Writer {
@@ -268,7 +264,7 @@ function googleWriter(ctx: AppContext, account: Account, access: string): Writer
   });
   const put = async (id: string, e: PlanEvent) => {
     const r = await call(`${events}/${id}${quiet}`, access, 'PUT', bodyOf(e));
-    return { status: r.status, id: ok(r.status) ? id : null };
+    return { ...r, id: ok(r.status) ? id : null };
   };
   return {
     async create(e) {
@@ -276,12 +272,10 @@ function googleWriter(ctx: AppContext, account: Account, access: string): Writer
       const r = await call(`${events}${quiet}`, access, 'POST', { id, ...bodyOf(e) });
       // Its id is taken: written before (a retry), or deleted there once. It's rewritten.
       if (r.status === 409) return put(id, e);
-      return { status: r.status, id: ok(r.status) ? id : null };
+      return { ...r, id: ok(r.status) ? id : null };
     },
     update: put,
-    async remove(id) {
-      return (await call(`${events}/${id}${quiet}`, access, 'DELETE')).status;
-    },
+    remove: (id) => call(`${events}/${id}${quiet}`, access, 'DELETE'),
   };
 }
 
@@ -302,31 +296,29 @@ function microsoftWriter(ctx: AppContext, account: Account, access: string, zone
       // One event for a create retried after a timeout: Microsoft keeps the first.
       const transactionId = googleId(account.id, e.uid).slice(0, 32);
       const r = await call(events, access, 'POST', { ...bodyOf(e), transactionId });
-      return {
-        status: r.status,
-        id: ok(r.status) && typeof r.body.id === 'string' ? r.body.id : null,
-      };
+      return { ...r, id: ok(r.status) && typeof r.body.id === 'string' ? r.body.id : null };
     },
     async update(id, e) {
       const r = await call(`${events}/${encodeURIComponent(id)}`, access, 'PATCH', bodyOf(e));
-      return { status: r.status, id: ok(r.status) ? id : null };
+      return { ...r, id: ok(r.status) ? id : null };
     },
-    async remove(id) {
-      return (await call(`${events}/${encodeURIComponent(id)}`, access, 'DELETE')).status;
-    },
+    remove: (id) => call(`${events}/${encodeURIComponent(id)}`, access, 'DELETE'),
   };
 }
 
-async function writerFor(ctx: AppContext, account: Account): Promise<Writer | null> {
-  const access = await accessFor(ctx, account);
-  if (!access) return null;
-  if (account.provider === 'google') return googleWriter(ctx, account, access);
+async function writerFor(
+  ctx: AppContext,
+  account: Account,
+): Promise<Writer | { none: 'reconnect' | 'unanswered' }> {
+  const got = await accessFor(ctx, account);
+  if (!('access' in got)) return got;
+  if (account.provider === 'google') return googleWriter(ctx, account, got.access);
   const me = await ctx.db
     .selectFrom('users')
     .select('time_zone')
     .where('id', '=', account.user_id)
     .executeTakeFirst();
-  return microsoftWriter(ctx, account, access, me?.time_zone || 'UTC');
+  return microsoftWriter(ctx, account, got.access, me?.time_zone || 'UTC');
 }
 
 /** A provider's answer that stops the run: it refused, or it isn't answering. */
@@ -342,6 +334,8 @@ const stops = (status: number) =>
 export async function pushAccountPlans(ctx: AppContext, account: Account): Promise<boolean> {
   if (account.state === 'reconnect') return false;
   const now = ctx.now();
+  // The provider asked Caime to wait (M16 G2): the sweep puts it in step once that's over.
+  if (account.rest_until && account.rest_until > now) return false;
   const window = {
     from: new Date(now.getTime() - BEFORE_MS),
     until: new Date(now.getTime() + ACCOUNT_BUSY_DAYS * 86_400_000),
@@ -381,12 +375,16 @@ export async function pushAccountPlans(ctx: AppContext, account: Account): Promi
       .where('uid', 'in', over)
       .execute();
   if (ops.length === 0) {
-    await settled(ctx, account, now, false);
+    await settled(ctx, account, now, null);
     return false;
   }
   const writer = await writerFor(ctx, account);
-  if (!writer) return false;
-  let refused = false;
+  if (!('remove' in writer)) {
+    if (writer.none === 'unanswered') await settled(ctx, account, now, 'unanswered');
+    return false;
+  }
+  // The first answer that stopped the run, or no answer at all.
+  let stopped: Answer | 'unanswered' | null = null;
   const keep = async (e: PlanEvent, id: string) => {
     const row = {
       event_id: id,
@@ -403,17 +401,17 @@ export async function pushAccountPlans(ctx: AppContext, account: Account): Promi
       .execute();
   };
   await eachLimit(ops.slice(0, WRITES_MAX), 4, async (op) => {
-    if (refused) return;
+    if (stopped) return;
     try {
       if (op.kind === 'remove') {
-        const status = await writer.remove(op.id);
-        if (ok(status) || gone(status))
+        const r = await writer.remove(op.id);
+        if (ok(r.status) || gone(r.status))
           await ctx.db
             .deleteFrom('calendar_pushes')
             .where('account_id', '=', account.id)
             .where('uid', '=', op.uid)
             .execute();
-        else if (stops(status)) refused = true;
+        else if (stops(r.status)) stopped ??= r;
         return;
       }
       let done =
@@ -421,33 +419,40 @@ export async function pushAccountPlans(ctx: AppContext, account: Account): Promi
       // Deleted there since it was written: the card changed, so it's written anew.
       if (op.kind === 'update' && gone(done.status)) done = await writer.create(op.e);
       if (done.id) await keep(op.e, done.id);
-      else if (stops(done.status)) refused = true;
+      else if (stops(done.status)) stopped ??= done;
       else ctx.log.warn({ provider: account.provider, status: done.status }, 'plans: not written');
     } catch (err) {
       ctx.log.warn({ provider: account.provider, err: (err as Error).name }, 'plans: no answer');
-      refused = true;
+      stopped ??= 'unanswered';
     }
   });
-  await settled(ctx, account, now, refused);
-  return !refused && ops.length > WRITES_MAX;
+  await settled(ctx, account, now, stopped);
+  return !stopped && ops.length > WRITES_MAX;
 }
 
-/** A run's end: when it was, and whether the provider answered (the account's state says so). */
-async function settled(ctx: AppContext, account: Account, at: Date, refused: boolean) {
-  await ctx.db
-    .updateTable('connected_accounts')
-    .set({ pushed_at: at })
-    .where('id', '=', account.id)
-    .execute();
-  if (refused) await markAccount(ctx, account.id, 'failing');
-  else if (account.state === 'failing') {
-    await ctx.db
-      .updateTable('connected_accounts')
-      .set({ state: 'connected' })
-      .where('id', '=', account.id)
-      .execute();
-    await accountsChanged(ctx, account.user_id);
-  }
+/**
+ * A run's end (M16 G2): put in step, or why not, kept as the plans' own health (the busy read's
+ * is never touched); a grant that's gone asks for the connection again, and a provider that
+ * asked Caime to wait is left alone until then.
+ */
+async function settled(
+  ctx: AppContext,
+  account: Account,
+  at: Date,
+  stopped: Answer | 'unanswered' | null,
+) {
+  if (stopped === null) return noteUse(ctx, account, 'plans', { worked: at });
+  if (stopped === 'unanswered') return noteUse(ctx, account, 'plans', { failed: 'unanswered' });
+  if (stopped.status === 401) return markReconnect(ctx, account.id);
+  const failure: AccountFailure = askedToWait(stopped.status, stopped.body)
+    ? 'limited'
+    : stopped.status >= 500
+      ? 'unanswered'
+      : 'refused';
+  return noteUse(ctx, account, 'plans', {
+    failed: failure,
+    restUntil: failure === 'limited' ? restUntilOf(stopped.retryAfter, ctx.now()) : null,
+  });
 }
 
 /**
@@ -467,9 +472,9 @@ export async function withdrawPlans(ctx: AppContext, account: Account): Promise<
   let timer: NodeJS.Timeout | undefined;
   const work = (async () => {
     const writer = await writerFor(ctx, account);
-    if (!writer) return;
+    if (!('remove' in writer)) return;
     await eachLimit(ahead, 4, async (w) => {
-      await writer.remove(w.event_id).catch(() => 0);
+      await writer.remove(w.event_id).catch(() => null);
     });
   })().catch((err) =>
     ctx.log.warn({ provider: account.provider, err: (err as Error).name }, 'plans: not withdrawn'),
@@ -522,7 +527,7 @@ export function registerCalendarPush(): void {
   registerJob('accounts.push', async (ctx, payload) => {
     const account = await ctx.db
       .selectFrom('connected_accounts')
-      .select(ACCOUNT_COLUMNS)
+      .select(ACCOUNT_ROW)
       .where('id', '=', String(payload.accountId))
       .executeTakeFirst();
     if (account && (await pushAccountPlans(ctx, account))) await queuePush(ctx, account.id);
@@ -534,7 +539,7 @@ export function registerCalendarPush(): void {
     run: async (ctx) => {
       const due = await ctx.db
         .selectFrom('connected_accounts')
-        .select(ACCOUNT_COLUMNS)
+        .select(ACCOUNT_ROW)
         .where('state', '<>', 'reconnect')
         .where((eb) =>
           eb.or([
@@ -552,6 +557,15 @@ export function registerCalendarPush(): void {
           eb.or([
             eb('pushed_at', 'is', null),
             eb('pushed_at', '<', new Date(ctx.now().getTime() - SWEEP_EVERY_MS)),
+          ]),
+        )
+        // Left alone while the provider asked Caime to wait, and a push that failed is tried
+        // again an hour on, not at every look (M16 G2).
+        .where((eb) => eb.or([eb('rest_until', 'is', null), eb('rest_until', '<=', ctx.now())]))
+        .where((eb) =>
+          eb.or([
+            eb('push_failed_at', 'is', null),
+            eb('push_failed_at', '<', new Date(ctx.now().getTime() - SWEEP_EVERY_MS)),
           ]),
         )
         .orderBy('pushed_at', (ob) => ob.asc().nullsFirst())

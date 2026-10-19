@@ -353,10 +353,8 @@ export function registerWebhookJob(): void {
         'd.status',
         'a.id as app_id',
         'a.webhook_url',
-        'a.webhook_secret',
         'a.webhook_secret_sealed',
         'a.webhook_secret_kid',
-        'a.previous_webhook_secret',
         'a.previous_secret_sealed',
         'a.previous_secret_kid',
         'a.previous_secret_until',
@@ -468,7 +466,7 @@ export async function appViews(ctx: AppContext, apps: OrgApp[]): Promise<OrgAppV
       webhookUrl: a.webhook_url,
       events: a.events as WebhookEvent[],
       secretOverlapUntil:
-        (a.previous_webhook_secret !== null || a.previous_secret_sealed !== null) &&
+        a.previous_secret_sealed !== null &&
         a.previous_secret_until &&
         a.previous_secret_until > ctx.now()
           ? a.previous_secret_until.toISOString()

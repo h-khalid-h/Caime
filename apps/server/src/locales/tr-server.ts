@@ -1547,4 +1547,7 @@ export const turkishServer: Catalog = {
   'This link isn’t open any more.': 'Bu bağlantı artık açık değil.',
   'This app proves itself with PKCE alone: it has no secret to replace.':
     'Bu uygulama kendini yalnızca PKCE ile kanıtlar: değiştirilecek gizli anahtarı yok.',
+  '{name} needs connecting again': '{name} yeniden bağlanmalı',
+  'Caime can’t use it for you until you connect it again in Settings · Apps.':
+    'Ayarlar · Uygulamalar’da yeniden bağlayana kadar Caime onu sizin için kullanamaz.',
 };

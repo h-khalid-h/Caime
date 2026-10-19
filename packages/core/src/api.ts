@@ -5,7 +5,13 @@
  * zod schemas in ./schemas; everything here is a response. Types only: nothing here ships code.
  */
 import type { z } from 'zod';
-import type { AccountProvider, AccountState, AccountUse } from './accounts';
+import type {
+  AccountFailure,
+  AccountProvider,
+  AccountRunningUse,
+  AccountState,
+  AccountUse,
+} from './accounts';
 import type { AddressKind, AddressMethod } from './addresses';
 import type { AgeMethod, AgeOutcome } from './age-assurance';
 import type { AgentAction } from './agents';
@@ -311,6 +317,17 @@ export interface ConnectedAccountView {
    * granted, or the connection was made before it was asked for. Connecting again reads them all.
    */
   mainCalendarOnly: boolean;
+  /** How each of its uses that runs on its own last went (M16 G2), for the uses it has. */
+  health: AccountUseHealthView[];
+}
+/** How a use that runs on its own last went (M16 G2): a good read never hides a failing push. */
+export interface AccountUseHealthView {
+  use: AccountRunningUse;
+  /** When it last worked: the calendar last read, the plans last put in step. */
+  workedAt: string | null;
+  /** Why its last try failed, and when; null when its last try worked. */
+  failure: AccountFailure | null;
+  failedAt: string | null;
 }
 export interface ConnectedAccountsResponse {
   accounts: ConnectedAccountView[];

@@ -1,13 +1,20 @@
 /**
  * The gauges a periodic task fills (the last backup, the audit chain's check, the providers'
- * probes, the vault's last pass) read back from the database before a scrape, so an instance that runs no workers
+ * probes, the vault's last pass, connected accounts' health) read back from the database before a scrape, so an instance that runs no workers
  * answers with the same numbers as the one that did (review 2026-10-17 §4: a web-only instance
  * said the last backup was at time zero, and `CaimeBackupOld` fired for nothing).
  */
 import type { AppContext } from '../context';
 import { AUDIT_SETTING } from './audit';
 import { lastBackup } from './backup';
-import { auditState, type ProviderHealth, providerState, vaultState } from './metrics';
+import {
+  ACCOUNTS_SETTING,
+  accountsState,
+  auditState,
+  type ProviderHealth,
+  providerState,
+  vaultState,
+} from './metrics';
 import { PROVIDERS_SETTING } from './provider-health';
 import { readSettings } from './settings';
 import { VAULT_SETTING, type VaultState } from './vault-reseal';
@@ -21,7 +28,11 @@ export async function syncGauges(ctx: AppContext): Promise<void> {
     AUDIT_SETTING,
     PROVIDERS_SETTING,
     VAULT_SETTING,
+    ACCOUNTS_SETTING,
   ]);
+  const accounts = kept.get(ACCOUNTS_SETTING) as typeof accountsState | undefined;
+  if (accounts && typeof accounts.at === 'number' && accounts.at > accountsState.at)
+    Object.assign(accountsState, { at: accounts.at, counts: accounts.counts ?? [] });
   const vault = kept.get(VAULT_SETTING) as VaultState | undefined;
   if (vault && typeof vault.at === 'number' && vault.at > vaultState.at)
     Object.assign(vaultState, {

@@ -2,8 +2,9 @@
  * Your accounts (R90): a Google or Microsoft account connected once for the uses turned on: its
  * calendars' busy times, so bookable times are never offered over a meeting kept there, and
  * (R96) Plans, Caime's meetings and appointments written into that calendar. Each row says what
- * it's used for, when it was last read and whether it needs connecting again (or again to read
- * every calendar, not only the main one); reading it now and disconnecting are one tap each. The consent returns here
+ * it's used for, when its calendar was last read and its plans last written, why a use's last try
+ * failed if it did (M16 G2: each use apart), and whether it needs connecting again (or again to
+ * read every calendar, not only the main one); reading it now and disconnecting are one tap each. The consent returns here
  * with a sealed claim this screen redeems (`connect.ts`), so only the person who asked can finish
  * a connection.
  */
@@ -11,9 +12,11 @@ import {
   ACCOUNT_PROVIDER_NAMES,
   ACCOUNT_USE_LABELS,
   ACCOUNT_USES,
+  type AccountFailure,
   type AccountProvider,
   type AccountReturn,
   type AccountReturnError,
+  type AccountRunningUse,
   type AccountUse,
 } from '@caime/core/accounts';
 import type { ConnectedAccountView } from '@caime/core/api';
@@ -65,6 +68,21 @@ async function finish(r: AccountReturn, done: () => void) {
   }
 }
 
+/** Why a use's last try failed, in the reader's words (M16 G2). */
+function failureLine(use: AccountRunningUse, failure: AccountFailure, name: string): string {
+  if (use === 'calendar')
+    return failure === 'limited'
+      ? tr('{name} asked Caime to wait before reading again', { name })
+      : failure === 'refused'
+        ? tr('{name} refused the last read', { name })
+        : tr('{name} didn’t answer the last read', { name });
+  return failure === 'limited'
+    ? tr('{name} asked Caime to wait before writing again', { name })
+    : failure === 'refused'
+      ? tr('{name} refused the last change Caime sent', { name })
+      : tr('{name} didn’t answer the last change Caime sent', { name });
+}
+
 function AccountRow({
   account,
   offered,
@@ -80,14 +98,34 @@ function AccountRow({
   const [busy, setBusy] = useState<'sync' | 'remove' | 'again' | AccountUse | null>(null);
   const name = ACCOUNT_PROVIDER_NAMES[account.provider];
   const uses = account.uses.map((u) => tr(ACCOUNT_USE_LABELS[u].label)).join(' · ');
-  const state =
+  const when = (at: string) => formatWhen(at, now, timeZone, locale);
+  // Each use that runs on its own says how it last went (M16 G2); a copy kept from before has none.
+  const health = account.health ?? [];
+  const plans = health.find((h) => h.use === 'plans');
+  const facts =
     account.state === 'reconnect'
-      ? tr('Needs connecting again')
-      : account.state === 'failing'
-        ? tr('{name} didn’t answer last time', { name })
-        : account.syncedAt
-          ? tr('read {when}', { when: formatWhen(account.syncedAt, now, timeZone, locale) })
-          : tr('not read yet');
+      ? [tr('Needs connecting again')]
+      : [
+          ...(account.uses.includes('calendar')
+            ? [
+                account.syncedAt
+                  ? tr('read {when}', { when: when(account.syncedAt) })
+                  : tr('not read yet'),
+              ]
+            : []),
+          ...(plans?.workedAt ? [tr('written {when}', { when: when(plans.workedAt) })] : []),
+        ];
+  const failures =
+    account.state === 'reconnect'
+      ? []
+      : health.flatMap((h) =>
+          h.failure && h.failedAt
+            ? [`${failureLine(h.use, h.failure, name)} · ${when(h.failedAt)}`]
+            : [],
+        );
+  // What the release before said, until a read or a push works.
+  if (account.state === 'failing' && failures.length === 0)
+    failures.push(tr('{name} didn’t answer last time', { name }));
   const missing = offered.filter((u) => !account.uses.includes(u));
   // Read from the main calendar alone (R96): connecting again asks for the list of them all.
   const every = account.state !== 'reconnect' && account.mainCalendarOnly;
@@ -125,13 +163,21 @@ function AccountRow({
           </Text>
           <Text
             variant="caption"
-            color={account.state === 'connected' ? 'textSecondary' : 'danger'}
+            color={account.state === 'reconnect' ? 'danger' : 'textSecondary'}
             testID={`account-${account.provider}-state`}
           >
-            {every
-              ? `${name} · ${uses} · ${state} · ${tr('main calendar only')}`
-              : `${name} · ${uses} · ${state}`}
+            {[name, uses, ...facts, ...(every ? [tr('main calendar only')] : [])].join(' · ')}
           </Text>
+          {failures.map((line) => (
+            <Text
+              key={line}
+              variant="caption"
+              color="danger"
+              testID={`account-${account.provider}-failure`}
+            >
+              {line}
+            </Text>
+          ))}
         </View>
       </View>
       <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8 }}>

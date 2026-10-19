@@ -3159,4 +3159,13 @@ export const arB: Catalog = {
   'Replace the client secret': 'استبدال سر العميل',
   'The one it had is still taken for a day, so your server switches in its own time':
     'يظل السر السابق مقبولًا ليوم، فيتحوّل خادمك في الوقت الذي يناسبه',
+  '{name} asked Caime to wait before reading again':
+    'طلب {name} من Caime الانتظار قبل القراءة من جديد',
+  '{name} refused the last read': 'رفض {name} القراءة الأخيرة',
+  '{name} didn’t answer the last read': 'لم يُجب {name} عن القراءة الأخيرة',
+  '{name} asked Caime to wait before writing again':
+    'طلب {name} من Caime الانتظار قبل الكتابة من جديد',
+  '{name} refused the last change Caime sent': 'رفض {name} آخر تغيير أرسله Caime',
+  '{name} didn’t answer the last change Caime sent': 'لم يُجب {name} عن آخر تغيير أرسله Caime',
+  'written {when}': 'كُتب {when}',
 };

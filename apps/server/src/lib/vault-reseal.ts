@@ -3,7 +3,7 @@
  * connection's refresh token as it's used (`openRefresh`), and every one of them a batch at a
  * time, in the order of their ids, at start (queued once, whichever instance) and daily
  * (`resealVault`); apps' webhook secrets (M16 G1, `lib/app-secrets.ts`) in the same pass, which
- * also seals what's kept only in clear, with or without VAULT_KEY. Once nothing the database's
+ * also forgets a removed app's and a replaced one past its day. Once nothing the database's
  * own key opens is left, that key is deleted, so no later dump of the database holds it. What's
  * sealed with which key is kept for /metrics (`caime_vault_sealed`, `caime_vault_database_key`),
  * which every instance reads back.
@@ -21,12 +21,6 @@ export const VAULT_SETTING = 'vault.state';
 const JOB = 'vault.reseal';
 const BATCH = 200;
 const DAY_MS = 86_400_000;
-/**
- * How long after an instance starts its apps' pass waits: while a deployment overlaps, the older
- * instance still writes a replaced secret in clear alone, so the pass that seals from the clear
- * copies runs once it has stopped.
- */
-const OVERLAP_MS = 10 * 60_000;
 
 /** What the last pass found, as /metrics says it. */
 export interface VaultState {
@@ -63,7 +57,7 @@ const unmoved = (ctx: AppContext, kid: string, after: string | null) => {
  */
 export async function resealVault(ctx: AppContext): Promise<VaultState> {
   const kid = sealingKid(ctx);
-  // Apps' secrets first, with or without VAULT_KEY: one kept only in clear is sealed either way.
+  // Apps' secrets first, with or without VAULT_KEY: what's past its day goes either way.
   const lost = await resealAppSecrets(ctx, kid);
   if (kid !== null) {
     const open = vaultOpener(ctx);
@@ -153,27 +147,23 @@ export function registerVaultReseal(): void {
 }
 
 /**
- * At start, with VAULT_KEY set: if anything is sealed with another key, or the database still
- * holds its own, a pass is queued once (whichever instance), so a new key takes over that day.
- * An app's secret kept only in clear, or sealed with another key, queues one with or without it,
- * once the deployment's overlap is over (`OVERLAP_MS`).
+ * At start, with VAULT_KEY set: if anything is sealed with another key (a connection's token or
+ * an app's secret), or the database still holds its own, a pass is queued once (whichever
+ * instance), so a new key takes over that day.
  */
 export async function startVaultReseal(ctx: AppContext): Promise<void> {
   const kid = sealingKid(ctx);
+  if (kid === null) return;
+  const [first] = await unmoved(ctx, kid, null);
   const [app] = await appsToSeal(ctx, kid, null);
-  if (app)
+  const keyKept = (await storedServerKey(ctx, DATABASE_VAULT_KEY)) !== null;
+  if (first || app || keyKept)
     await enqueue(
       ctx,
       JOB,
       {},
       {
-        dedupeKey: `vault:apps:${kid ?? 'database'}:${app.id}`,
-        runAt: new Date(ctx.now().getTime() + OVERLAP_MS),
+        dedupeKey: `vault:${kid}:${first?.id ?? app?.id ?? 'key'}`,
       },
     );
-  if (kid === null) return;
-  const [first] = await unmoved(ctx, kid, null);
-  const keyKept = (await storedServerKey(ctx, DATABASE_VAULT_KEY)) !== null;
-  if (first || keyKept)
-    await enqueue(ctx, JOB, {}, { dedupeKey: `vault:${kid}:${first?.id ?? 'key'}` });
 }

@@ -59,6 +59,8 @@ export default function Notifications() {
       router.navigate({ pathname: '/o/[handle]', params: { handle: n.data.handle } });
     // Caime's look at an app's listing (R74): its developer finds it under Developer.
     else if (n.kind === 'app') router.navigate('/settings/developer');
+    // A connected account that needs connecting again (M16 G2): where it's connected.
+    else if (n.kind === 'account') router.navigate('/settings/apps');
   };
 
   return (

@@ -216,8 +216,7 @@ export async function appRoutes(app: FastifyInstance, ctx: AppContext) {
           bot_user_id: botId,
           scopes: body.scopes,
           webhook_url: url,
-          // Sealed, and in clear while the release before may still sign (lib/app-secrets.ts).
-          webhook_secret: secret,
+          // Kept sealed, never in clear (lib/app-secrets.ts): shown this once.
           webhook_secret_sealed: sealed.sealed,
           webhook_secret_kid: sealed.kid,
           events: body.events,
@@ -310,17 +309,13 @@ export async function appRoutes(app: FastifyInstance, ctx: AppContext) {
     const was = await appOf(id, appId);
     // The one it had signs beside the new one for a day (SECRET_OVERLAP_MS), so the app's
     // settings can change in their own time; replaced twice in a day, only the last two count.
-    const [sealed, previous] = await Promise.all([
-      sealWebhookSecret(ctx, appId, secret),
-      replacedSecret(ctx, appId, currentOf(was)),
-    ]);
+    const sealed = await sealWebhookSecret(ctx, appId, secret);
+    const previous = replacedSecret(currentOf(was));
     await ctx.db
       .updateTable('org_apps')
       .set({
-        webhook_secret: secret,
         webhook_secret_sealed: sealed.sealed,
         webhook_secret_kid: sealed.kid,
-        previous_webhook_secret: was.webhook_secret,
         previous_secret_sealed: previous?.sealed ?? null,
         previous_secret_kid: previous?.kid ?? null,
         previous_secret_until: new Date(ctx.now().getTime() + SECRET_OVERLAP_MS),
