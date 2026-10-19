@@ -1157,7 +1157,15 @@ with its reason, so it isn't proposed again without new facts.
   off, an older word is past). Only an invitation that reads as theirs alone becomes a card:
   from its confirmed organizer, to this address, one time ahead of at most a day, in a zone
   Caime can name, never a notice; a series, a day, someone else's event, an invitation to an
-  organization's address and anything else arrive as mail, as before. Phase 2: notices, HTML as sent in a sandbox,
+  organization's address and anything else arrive as mail, as before. *Built in M16 F5
+  (2026-10-19, review 2026-10-17 §6: "rescheduling (cancel and re-propose is the only way)";
+  "guests' calendars go stale"):* either side of a meeting or an appointment suggests another time
+  from its card, which asks the other side again, says so in a line that needs them, and keeps
+  every calendar on the one event: whoever has it by mail gets its update (their calendar moves it
+  and asks them again; an answer to the time before moves nothing), a meeting's guests are asked
+  again with new links, and its cancellation reaches them all. A series, someone's calendar
+  invitation, a card moved to its space and a booking from a catalog keep their time (cancel and
+  send another, or ask its organizer). Phase 2: notices, HTML as sent in a sandbox,
   reply-all with CC, sending as the address from other clients, the agent by mail. Phase 3:
   sign-in with Google, Apple and Microsoft; calendar sync as apps; a verified organization
   receiving at its own domain. ⛔ Before production: the mail domain's MX at the inbound

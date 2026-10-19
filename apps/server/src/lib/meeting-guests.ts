@@ -44,6 +44,8 @@ interface MeetingPayload {
   movedTo?: { conversationId: string; messageId: string };
   /** Made of an invitation from someone's calendar (M16 F4): theirs to invite people to. */
   invitation?: unknown;
+  /** Its calendar invitations' count (M16 F5): one higher with each new time. */
+  sequence?: number;
   booking?: { endAt?: string | null } | null;
   fields?: {
     title?: unknown;
@@ -358,6 +360,9 @@ async function mintGuestLink(
         token_hash: hashToken(token),
         invited_by: inviterId,
         revoked_at: null,
+        // Asked again (a new time, M16 F5): what they said was of the time before.
+        answer: null,
+        answered_at: null,
       }),
     )
     .execute();
@@ -386,7 +391,8 @@ async function sendInvitation(
     method: 'REQUEST',
     // A time of a series is one event, the same as the feed's (R58).
     uid: meetingUid(space.messageId, seriesOf(p)),
-    sequence: 0,
+    // A new time of the same meeting replaces the invitation they have (M16 F5).
+    sequence: p.sequence ?? 0,
     now: ctx.now(),
     start,
     end,
@@ -598,13 +604,34 @@ export async function inviteGuest(
  */
 async function askGuestsAgain(ctx: AppContext, posted: Message, from: Message): Promise<void> {
   if (!ctx.mail) return;
+  const guests = await guestsOf(ctx, from);
+  if (!guests.length) return;
+  const poster = await ctx.db
+    .selectFrom('users')
+    .select('display_name')
+    .where('id', '=', posted.sender_id ?? '')
+    .executeTakeFirst();
+  const p = (posted.payload ?? {}) as MeetingPayload;
+  for (const g of guests)
+    await sendInvitation(ctx, {
+      inviter: g.inviter_name
+        ? { id: g.invited_by, name: g.inviter_name }
+        : { id: posted.sender_id, name: poster?.display_name ?? 'Caime' },
+      space: { conversationId: posted.conversation_id, messageId: posted.id },
+      guest: { id: g.user_id, name: g.display_name, email: g.email },
+      p,
+    });
+}
+
+/** A meeting's guests by address who are still asked: in its space, not gone, not by link. */
+async function guestsOf(ctx: AppContext, space: Message) {
   const guests = await ctx.db
     .selectFrom('meeting_guests as g')
     .innerJoin('users as u', 'u.id', 'g.user_id')
     .innerJoin('participants as p', (j) =>
       j
         .onRef('p.user_id', '=', 'g.user_id')
-        .on('p.conversation_id', '=', posted.conversation_id)
+        .on('p.conversation_id', '=', space.conversation_id)
         .on('p.left_at', 'is', null),
     )
     .leftJoin('users as inviter', 'inviter.id', 'g.invited_by')
@@ -615,29 +642,87 @@ async function askGuestsAgain(ctx: AppContext, posted: Message, from: Message): 
       'u.email',
       'inviter.display_name as inviter_name',
     ])
-    .where('g.space_message_id', '=', from.id)
+    .where('g.space_message_id', '=', space.id)
     .where('g.revoked_at', 'is', null)
     .where('u.deleted_at', 'is', null)
     .where('u.suspended_at', 'is', null)
     .execute();
+  // A guest by link has no address: their page says the time as it is.
+  return guests.filter((g) => g.email && !isLinkGuestAddress(g.email)) as Array<
+    (typeof guests)[number] & { email: string }
+  >;
+}
+
+/**
+ * A meeting given another time in its space (M16 F5): each guest by address is asked again for
+ * it, with a new link of their own and the invitation one sequence on, which moves the event in
+ * their calendar; what they answered before was of the time before. Without mail, nobody is.
+ */
+export async function askGuestsForTime(ctx: AppContext, space: Message): Promise<void> {
+  if (!ctx.mail) return;
+  const guests = await guestsOf(ctx, space);
   if (!guests.length) return;
   const poster = await ctx.db
     .selectFrom('users')
     .select('display_name')
-    .where('id', '=', posted.sender_id ?? '')
+    .where('id', '=', space.sender_id ?? '')
     .executeTakeFirst();
-  const p = (posted.payload ?? {}) as MeetingPayload;
-  for (const g of guests) {
-    // A guest by link has no address: the next time's link is the inviter's to send again.
-    if (!g.email || isLinkGuestAddress(g.email)) continue;
+  const p = (space.payload ?? {}) as MeetingPayload;
+  for (const g of guests)
     await sendInvitation(ctx, {
       inviter: g.inviter_name
         ? { id: g.invited_by, name: g.inviter_name }
-        : { id: posted.sender_id, name: poster?.display_name ?? 'Caime' },
-      space: { conversationId: posted.conversation_id, messageId: posted.id },
+        : { id: space.sender_id, name: poster?.display_name ?? 'Caime' },
+      space: { conversationId: space.conversation_id, messageId: space.id },
       guest: { id: g.user_id, name: g.display_name, email: g.email },
       p,
     });
+}
+
+/**
+ * A meeting with guests, called off (M16 F5): each guest by address is sent its cancellation, one
+ * sequence past the last time they were sent, which takes it off their calendar. Their links end
+ * with the meeting (its card is over), so no new one goes.
+ */
+export async function tellGuestsCancelled(ctx: AppContext, space: Message): Promise<void> {
+  const mail = ctx.mail;
+  if (!mail) return;
+  const guests = await guestsOf(ctx, space);
+  if (!guests.length) return;
+  const p = (space.payload ?? {}) as MeetingPayload;
+  const start = new Date(String(p.fields?.start?.at));
+  if (Number.isNaN(start.getTime())) return;
+  const end = new Date(endOf(p) ?? start.getTime());
+  const title = String(p.title || p.fields?.title || 'Meeting').slice(0, 120);
+  for (const g of guests) {
+    const host = g.inviter_name ?? 'Caime';
+    const sender = invitationSender(ctx.config, host);
+    const ics = buildInvitation({
+      method: 'CANCEL',
+      uid: meetingUid(space.id, seriesOf(p)),
+      sequence: (p.sequence ?? 0) + 1,
+      now: ctx.now(),
+      start,
+      end,
+      summary: title,
+      description: `${host} called it off.`,
+      location: 'Caime',
+      organizer: { name: host, email: sender.address },
+      attendee: { name: g.display_name, email: g.email },
+    });
+    ctx.defer('email.invitation', () =>
+      mail.send({
+        to: g.email,
+        kind: 'invitation',
+        ...(sender.header ? { from: sender.header, replyTo: sender.header } : {}),
+        subject: `Cancelled: ${title}`,
+        text: [
+          ...(sender.header ? [caiIntroduction(g.display_name, host), ''] : []),
+          `"${title}" on Caime, ${start.toISOString().replace('T', ' ').slice(0, 16)} UTC, is called off.`,
+        ].join('\n'),
+        icalEvent: { method: 'CANCEL', content: ics },
+      }),
+    );
   }
 }
 

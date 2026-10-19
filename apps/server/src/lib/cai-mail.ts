@@ -43,8 +43,11 @@ export async function caiMail(ctx: AppContext, mail: InboundMail): Promise<Inbou
     .where('g.revoked_at', 'is', null)
     .executeTakeFirst();
   if (!guest) return 'refused';
-  // The same answer again (a provider's retry, a second tap) changes nothing and says nothing.
+  // The same answer again (a provider's retry, a second tap) changes nothing and says nothing,
+  // and neither does an answer to a time the meeting no longer has (M16 F5).
   if (guest.answer === reply.answer) return 'duplicate';
+  if (reply.sequence < ((guest.payload as { sequence?: number } | null)?.sequence ?? 0))
+    return 'duplicate';
   await ctx.db
     .updateTable('meeting_guests')
     .set({ answer: reply.answer, answered_at: ctx.now() })

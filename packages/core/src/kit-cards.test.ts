@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
-import { formatAmount, messagePreview } from './format';
+import { formatAmount, messagePreview, systemText } from './format';
 import {
+  askedBy,
   CARD_KITS,
   KIT_FLOWS,
   kitDetails,
@@ -9,6 +10,7 @@ import {
   kitStateLabel,
   kitStateTone,
   prepareKitFields,
+  retimeBlock,
 } from './kit-cards';
 import { KITS } from './kits';
 
@@ -196,5 +198,47 @@ describe('how a card reads', () => {
     const sealed = { kind: 'text', body: null, payload: {}, sealed: { v: 1 } };
     expect(messagePreview({ ...sealed, deleted: false })).toBe('Encrypted message');
     expect(messagePreview({ ...sealed, deleted: true })).toBe('Message deleted');
+  });
+});
+
+describe('another time for a meeting or an appointment (M16 F5)', () => {
+  it('asks of whoever didn’t suggest the time it has now', () => {
+    expect(askedBy({}, 'ana')).toBe('ana');
+    expect(askedBy({ proposedBy: 'ben' }, 'ana')).toBe('ben');
+    expect(askedBy({ proposedBy: 42 }, null)).toBeNull();
+    // Ben's suggestion is Ana's to answer, on Ana's own card.
+    const isCreator = (me: string) => askedBy({ proposedBy: 'ben' }, 'ana') === me;
+    expect(kitMoves('meeting', 'proposed', isCreator('ana')).map((m) => m.to)).toEqual([
+      'accepted',
+      'declined',
+    ]);
+    expect(kitMoves('meeting', 'proposed', isCreator('ben')).map((m) => m.to)).toEqual([
+      'cancelled',
+    ]);
+  });
+  it('moves a meeting or an appointment, asked or agreed, at one time and its own', () => {
+    const at = { start: { at: '2026-10-22T09:00:00.000Z', hasTime: true } };
+    expect(retimeBlock({ kit: 'meeting', state: 'proposed', fields: at })).toBeNull();
+    expect(retimeBlock({ kit: 'meeting', state: 'accepted', fields: at })).toBeNull();
+    expect(retimeBlock({ kit: 'appointment', state: 'confirmed', fields: at })).toBeNull();
+    expect(retimeBlock({ kit: 'invoice', state: 'sent' })).toBe('kind');
+    expect(retimeBlock({ kit: 'meeting', state: 'cancelled' })).toBe('state');
+    expect(retimeBlock({ kit: 'appointment', state: 'done' })).toBe('state');
+    expect(
+      retimeBlock({ kit: 'meeting', state: 'accepted', fields: { ...at, repeat: 'week' } }),
+    ).toBe('series');
+    expect(retimeBlock({ kit: 'meeting', state: 'proposed', invitation: { uid: 'x' } })).toBe(
+      'invitation',
+    );
+    expect(retimeBlock({ kit: 'meeting', state: 'accepted', movedTo: { id: 'x' } })).toBe('moved');
+    expect(retimeBlock({ kit: 'appointment', state: 'requested', booking: { itemId: 'x' } })).toBe(
+      'booking',
+    );
+  });
+  it('says so in the conversation, by whoever suggested it', () => {
+    const line = { event: 'time_suggested', byId: 'ben', by: 'Ben', title: 'Plan the launch' };
+    expect(systemText(line, 'ana')).toBe('Ben suggested another time for “Plan the launch”');
+    expect(systemText(line, 'ben')).toBe('You suggested another time for “Plan the launch”');
+    expect(systemText({ ...line, title: null }, 'ana')).toBe('Ben suggested another time');
   });
 });

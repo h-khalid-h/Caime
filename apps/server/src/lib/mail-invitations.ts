@@ -25,7 +25,7 @@ import type { AppContext } from '../context';
 import { MESSAGE_COLUMNS, type Message, type UserRow } from '../db/schema';
 import { queueCalendarPush } from './calendar-push';
 import { afterCardMove } from './card-moves';
-import { mayMove, moveCard } from './kit-moves';
+import { askAgain, mayMove, moveCard } from './kit-moves';
 import { cardStartAt } from './kits';
 import { calendarOf } from './mail-calendar';
 import type { InboundOutcome } from './mail-in';
@@ -233,6 +233,8 @@ async function retimed(
       business: null,
       label: moved ? msg('New time') : undefined,
     });
+    // Asked again: said where the person will see it, as another time suggested here is (F5).
+    if (to === 'proposed') await askAgain(ctx, updated, organizerId);
     return 'invited';
   }
   // Anything else (its name, its place) is shown where the card is, quietly.

@@ -200,7 +200,8 @@ goes between the devices in it.</li>
 <li><strong>Meetings with guests.</strong> When you invite someone to a meeting by email address,
 Caime keeps the address, who invited them and when, and gives the meeting its own group, where the
 guest sees only that meeting. Their link to join is kept only as a fingerprint, and ends when
-they&rsquo;re invited again. Joining keeps the name they give, when they first came in and whether
+they&rsquo;re invited again. Given another time, the meeting invites them again, and what they
+answered before is let go; called off, they&rsquo;re sent its cancellation. Joining keeps the name they give, when they first came in and whether
 they said they&rsquo;re 18 or over; they&rsquo;re signed in to that meeting only, until a day after
 it. The invitation comes from Cai&rsquo;s address (assistant@), for whoever invited them, and
 their calendar&rsquo;s answer to it (coming, not coming, maybe) is kept and shown to whoever
@@ -808,7 +809,9 @@ Order, a Delivery, an Invoice, a Purchase order, a Support ticket or an Appointm
 organization&rsquo;s own. Each conversation offers only the ones that fit, and private
 conversations don&rsquo;t have them yet. A Location can be where you are now, or live for 15
 minutes, an hour or 8 hours while Caime is open: stop it from the Sharing your location live
-bar.</li>
+bar. Either of you can give a meeting or an appointment another time from its card: Suggest
+another time asks the other side again, and whoever has it by email, or as a guest, gets the
+change in their calendar.</li>
 <li><strong>A message&rsquo;s menu</strong> lets you react, Reply, Forward, Pin, Edit or Delete.
 You edit only your own text messages. Forward isn&rsquo;t in private conversations, nor for cards,
 polls or a live location. Pin is in

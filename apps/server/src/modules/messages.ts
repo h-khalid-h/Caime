@@ -32,6 +32,7 @@ import {
   PollPayload,
   providersFor,
   ReactionBody,
+  RetimeBody,
   SendMessageBody,
   SplitOpBody,
   splitShares,
@@ -66,7 +67,7 @@ import { lockConversation } from '../lib/conversations';
 import { assertSealedForEveryone } from '../lib/e2ee';
 import { AppError, badRequest, forbidden, notFound } from '../lib/errors';
 import { recordEvent } from '../lib/events';
-import { mayMove, moveCard } from '../lib/kit-moves';
+import { mayMove, moveCard, retimeCard, retimeRefusal } from '../lib/kit-moves';
 import { tellCardApp } from '../lib/kits';
 import { stopRepeating } from '../lib/meeting-series';
 import { assertOpenToApps } from '../lib/member-apps';
@@ -281,6 +282,41 @@ export async function messageRoutes(app: FastifyInstance, ctx: AppContext) {
     // Where it stands, under its lock, and all that follows (`lib/kit-moves.ts`): the same as a
     // calendar's answer by mail (M16 F3).
     const view = await moveCard(ctx, m, { to, actorId: auth.userId, business });
+    if (view === 'conflict')
+      throw new AppError(409, 'conflict', tr('Someone just changed this card.'));
+    return { message: view };
+  });
+
+  // Another time for a meeting or an appointment (M16 F5): either side suggests it, the card asks
+  // the other where it stands, and whoever has it by mail or as a guest is sent the update.
+  app.post('/messages/:id/time', async (req): Promise<MessageResponse> => {
+    const auth = requireAuth(req);
+    const { id } = parse(z.object({ id: z.string().uuid() }), req.params);
+    const body = parse(RetimeBody, req.body);
+    const m = await ctx.db
+      .selectFrom('messages')
+      .select(MESSAGE_COLUMNS)
+      .where('id', '=', id)
+      .executeTakeFirst();
+    if (!m) throw notFound(tr('That message'));
+    await membership(ctx, auth.userId, m.conversation_id);
+    await assertCanWrite(ctx, m.conversation_id, auth.userId);
+    const refused = retimeRefusal(m, auth.userId);
+    if (refused) throw badRequest(refused);
+    const start = new Date(body.start.at);
+    if (start.getTime() <= ctx.now().getTime())
+      throw badRequest(tr('That time has passed. Choose a later one.'));
+    ctx.limiter.hit(
+      `kit-move:${auth.userId}:${m.conversation_id}`,
+      ctx.config.isTest ? 10_000 : 10,
+      60_000,
+    );
+    const view = await retimeCard(ctx, m, {
+      start,
+      durationMinutes: body.durationMinutes,
+      actorId: auth.userId,
+      business: await customerMask(ctx.db, m.conversation_id),
+    });
     if (view === 'conflict')
       throw new AppError(409, 'conflict', tr('Someone just changed this card.'));
     return { message: view };

@@ -8,6 +8,7 @@
  * session (`expireCheckout`) stays with the route: a payment settled here has none left to end.
  */
 import {
+  askedBy,
   type CardKitId,
   customState,
   isCustomCard,
@@ -28,6 +29,7 @@ import { queueCalendarPush } from './calendar-push';
 import { recordEvent } from './events';
 import { tellCardApp } from './kits';
 import { queueCancellation, queueInvitationAnswer } from './mail-out';
+import { tellGuestsCancelled } from './meeting-guests';
 import { queueNextTime } from './meeting-series';
 import { queueMeetingStart } from './meeting-start';
 import { messageViews, participantsOf } from './messages';
@@ -43,10 +45,17 @@ export async function afterCardMove(
     business: CustomerMask | null;
     /** What the others are told happened, as a key, when it isn't the state's own name. */
     label?: string;
+    /** The move asks the others where they stand (another time, M16 F5): it matters to them. */
+    asks?: boolean;
   },
 ): Promise<MessageView> {
   const { from, to, actorId, business } = input;
-  const card = (m.payload ?? {}) as { kit?: string; title?: string; share?: PaysShare };
+  const card = (m.payload ?? {}) as {
+    kit?: string;
+    title?: string;
+    share?: PaysShare;
+    askLine?: string;
+  };
   const own = isCustomCard(m.payload) ? m.payload : null;
   const onTeam = (userId: string | null) => Boolean(business && userId !== business.customerId);
   // Agreed (R58): its people get a brief an hour before.
@@ -63,7 +72,15 @@ export async function afterCardMove(
   }
   // An appointment that repeats (R58) books its next time when this one ends.
   if (card.kit === 'appointment' && to === 'confirmed') await queueNextTime(ctx, m.id);
-  // A card asks until the move that answers it (M14): answered, it no longer needs anyone.
+  // A card asks until the move that answers it (M14): answered, it no longer needs anyone, and
+  // nor does the line that said another time was suggested (M16 F5).
+  if (card.askLine)
+    await ctx.db
+      .updateTable('messages')
+      .set({ is_request: false })
+      .where('id', '=', card.askLine)
+      .where('is_request', '=', true)
+      .execute();
   const asks = cardAsks(m.payload);
   if (asks !== m.is_request)
     await ctx.db.updateTable('messages').set({ is_request: asks }).where('id', '=', m.id).execute();
@@ -88,6 +105,8 @@ export async function afterCardMove(
     await queueCancellation(ctx, moved, to, actorId);
   // An invitation from someone's calendar answered here (M16 F4): the answer goes back to it.
   if (card.kit === 'meeting') await queueInvitationAnswer(ctx, moved, to, actorId);
+  // A meeting's guests (R84), called off: the cancellation takes it off their calendars (M16 F5).
+  if (card.kit === 'meeting' && to === 'cancelled') await tellGuestsCancelled(ctx, moved);
   const mover = await ctx.db
     .selectFrom('users')
     .select('display_name')
@@ -104,7 +123,8 @@ export async function afterCardMove(
     await notify(ctx, {
       userId,
       kind: 'kit',
-      level: userId === m.sender_id ? 'attention' : 'activity',
+      level:
+        input.asks || userId === askedBy(m.payload ?? {}, m.sender_id) ? 'attention' : 'activity',
       title: () =>
         `${business && !onTeam(userId) ? business.orgName : mover.display_name}: ${own ? customState({ ...own, state: to }).label : tr(input.label ?? kitStateLabel(to))}`,
       body: () => `${own ? own.label : tr(KITS[card.kit as CardKitId].name)} · ${card.title ?? ''}`,

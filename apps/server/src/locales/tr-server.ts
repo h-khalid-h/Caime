@@ -1609,4 +1609,14 @@ export const turkishServer: Catalog = {
   'New time': 'Yeni saat',
   'Accepted: {title}': 'Kabul edildi: {title}',
   'Declined: {title}': 'Reddedildi: {title}',
+  'Only a meeting or an appointment takes another time.':
+    'Yalnızca bir toplantı ya da randevu başka bir saate alınabilir.',
+  'Each time of a series keeps its own: cancel this one and send another.':
+    'Bir serinin her seferi kendi saatini korur: bunu iptal edip başka bir tane gönderin.',
+  'It’s their calendar’s meeting: only they can move it.':
+    'Bu toplantı karşı tarafın takviminden: saatini yalnızca o değiştirebilir.',
+  'It has its own space now: suggest another time there.':
+    'Artık kendi alanı var: başka bir saati orada önerin.',
+  'A booking keeps its open time: cancel it and book another.':
+    'Bir rezervasyon kendi saatini korur: iptal edip başka bir saat ayırtın.',
 };

@@ -5,6 +5,7 @@ import { customDetails, customMoves, customState, isCustomCard } from '@caime/co
 import { formatDue } from '@caime/core/format';
 import { tr } from '@caime/core/i18n';
 import {
+  askedBy,
   bookingDetails,
   isCardKit,
   kitDetails,
@@ -50,6 +51,7 @@ import { lazyPart } from '@/ui/Lazy';
 import { Text } from '@/ui/Text';
 import { toast } from '@/ui/Toast';
 import { AlbumCard } from './AlbumCard';
+import { CardTime } from './CardTime';
 import { ChecklistCard } from './ChecklistCard';
 import { FormCard } from './FormCard';
 import { iconNamed, KIT_ICONS } from './icons';
@@ -79,6 +81,9 @@ interface CardPayload {
   share?: PaysShare | null;
   /** Made of an invitation from someone's calendar (M16 F4): the answer goes back to it. */
   invitation?: unknown;
+  /** Who suggested the time it has now (M16 F5): the other side answers it. */
+  proposedBy?: string;
+  movedTo?: unknown;
   history?: unknown[];
 }
 
@@ -345,8 +350,10 @@ export function KitCard({ m, mine }: { m: MessageView; mine: boolean }) {
       ? { label: tr('Receipt'), testID: 'kit-receipt', onPress: () => setReceiptOpen(true) }
       : null;
   // In a conversation with an organization, the team is one side: anyone on it moves a card
-  // the team sent, as the server has it.
-  const senderSide = mine || Boolean(thread?.customer && m.senderId !== thread.customer.id);
+  // the team asked for, as the server has it. A card asks of whoever didn't suggest its time as
+  // it stands (M16 F5: its sender, or who suggested another since).
+  const asker = askedBy(p, m.senderId);
+  const senderSide = asker === meId || Boolean(thread?.customer && asker !== thread.customer.id);
   if (kit === 'shared_album') return <AlbumCard m={m} mine={mine} />;
   if (kit === 'split') return <SplitCard m={m} mine={mine} />;
   // Agreed and ahead (R58): what to know before it, from the card.
@@ -390,7 +397,10 @@ export function KitCard({ m, mine }: { m: MessageView; mine: boolean }) {
               paidByCard={p.checkout?.status === 'paid'}
             />
           ) : kit === 'appointment' ? (
-            <MeetingRepeat m={m} card={p} />
+            <>
+              <CardTime m={m} card={p} />
+              <MeetingRepeat m={m} card={p} />
+            </>
           ) : kit === 'meeting' ? (
             <>
               {p.invitation && state === 'proposed' && !m.deletedAt ? (
@@ -398,6 +408,7 @@ export function KitCard({ m, mine }: { m: MessageView; mine: boolean }) {
                   {tr('Your answer goes back to the calendar that sent it.')}
                 </Text>
               ) : null}
+              <CardTime m={m} card={p} />
               <MeetingRepeat m={m} card={p as MeetingCardPayload} />
               <MeetingGuests
                 messageId={m.id}

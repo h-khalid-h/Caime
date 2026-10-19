@@ -208,7 +208,10 @@ describe('a guest’s answer to an invitation (R86)', () => {
       uid: 'meeting-m1@caime',
       attendee: 'gus@example.com',
       answer: 'accepted',
+      sequence: 0,
     });
+    // Which time of it the answer is to (M16 F5): an answer to a time since moved is past.
+    expect(readReply(reply('ACCEPTED', 'SEQUENCE:2'))?.sequence).toBe(2);
     expect(readReply(reply('DECLINED'))?.answer).toBe('declined');
     expect(readReply(reply('TENTATIVE'))?.answer).toBe('tentative');
   });

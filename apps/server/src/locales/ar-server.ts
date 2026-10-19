@@ -1668,4 +1668,13 @@ export const arServer: Catalog = {
   'New time': 'موعد جديد',
   'Accepted: {title}': 'قبول: {title}',
   'Declined: {title}': 'اعتذار: {title}',
+  'Only a meeting or an appointment takes another time.': 'لا يأخذ وقتًا آخر إلا اجتماع أو موعد.',
+  'Each time of a series keeps its own: cancel this one and send another.':
+    'لكل مرة من السلسلة وقتها: ألغِ هذه وأرسل غيرها.',
+  'It’s their calendar’s meeting: only they can move it.':
+    'الاجتماع من تقويم الطرف الآخر: لا يغيّر وقته سواه.',
+  'It has its own space now: suggest another time there.':
+    'للاجتماع مساحته الآن: اقترح وقتًا آخر فيها.',
+  'A booking keeps its open time: cancel it and book another.':
+    'الحجز يبقى على وقته المتاح: ألغِه واحجز غيره.',
 };

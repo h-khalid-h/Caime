@@ -4,7 +4,8 @@
  * placing a second; Meetings lists it with its Join. A guest (R84) invited by address from the
  * card joins from their own link, without an account, and is in the meeting's call. A meeting
  * that repeats (R58) is agreed once, until a day if it's given one; the calendar has each time
- * ahead until it's stopped.
+ * ahead until it's stopped. Either side suggests another time from the card (M16 F5), which asks
+ * the other side, in a line that says so, until they answer.
  */
 import { randomUUID } from 'node:crypto';
 import { type Browser, expect, test } from '@playwright/test';
@@ -341,6 +342,65 @@ test('a meeting that repeats is agreed once, and the calendar has each week unti
   await ben.page.goto('/actions?view=calendar');
   await expect(seen(ben.page, `calendar-item-${cardId}`)).toBeVisible();
   await expect(seen(ben.page, `calendar-item-${cardId}:1`)).toHaveCount(0);
+
+  expect([...ana.errors, ...ben.errors]).toEqual([]);
+  await anaCtx.close();
+  await benCtx.close();
+});
+
+test('another time is suggested from the card, and the other side agrees to it (M16 F5)', async ({
+  browser,
+}) => {
+  const { anaCtx, benCtx, ana, ben, conversationId } = await colleagues(browser);
+  // Ana's meeting three days on, which Ben accepted.
+  const sent = await anaCtx.request.post(`/v1/conversations/${conversationId}/messages`, {
+    headers: CLIENT,
+    data: {
+      clientId: randomUUID(),
+      kind: 'kit',
+      payload: {
+        kit: 'meeting',
+        fields: {
+          title: 'Review the plan',
+          start: { at: new Date(Date.now() + 3 * 86_400_000).toISOString(), hasTime: true },
+          durationMinutes: 30,
+        },
+      },
+    },
+  });
+  expect(sent.ok(), await sent.text()).toBe(true);
+  const card = ((await sent.json()) as { message: { id: string } }).message;
+  const accepted = await benCtx.request.post(`/v1/messages/${card.id}/kit`, {
+    headers: CLIENT,
+    data: { to: 'accepted' },
+  });
+  expect(accepted.ok(), await accepted.text()).toBe(true);
+
+  // Ben can't make it then: he suggests tomorrow from the card.
+  await ben.page.goto(`/c/${conversationId}`);
+  const theirs = ben.page
+    .getByTestId('kit-meeting')
+    .filter({ hasText: 'Review the plan', visible: true });
+  await expect(theirs).toContainText('Accepted');
+  await theirs.getByTestId('kit-another-time').click();
+  await ben.page.getByRole('radio', { name: /^Tomorrow/ }).click();
+  await ben.page.getByTestId('kit-another-time-sheet-done').click();
+  await expect(theirs).toContainText('Proposed');
+  await expect(visible(ben.page, 'You suggested another time for “Review the plan”')).toBeVisible();
+  // It's Ana's to answer now: Ben can only take it back.
+  await expect(theirs.getByRole('button', { name: 'Accept', exact: true })).toHaveCount(0);
+
+  // Ana reads the line that asks her, and agrees to the new time.
+  await ana.page.goto(`/c/${conversationId}`);
+  await expect(
+    visible(ana.page, 'Ben Meet suggested another time for “Review the plan”'),
+  ).toBeVisible();
+  const mine = ana.page
+    .getByTestId('kit-meeting')
+    .filter({ hasText: 'Review the plan', visible: true });
+  await mine.getByRole('button', { name: 'Accept', exact: true }).click();
+  await expect(mine).toContainText('Accepted');
+  await expect(theirs).toContainText('Accepted');
 
   expect([...ana.errors, ...ben.errors]).toEqual([]);
   await anaCtx.close();

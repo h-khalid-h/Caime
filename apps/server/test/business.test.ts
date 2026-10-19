@@ -426,4 +426,51 @@ describe('the business inbox (PRD §37–38, R15)', () => {
       (await noor.get(`/v1/decisions?conversationId=${convo}`)).decisions[0].decidedBy,
     ).toEqual({ id: sara.user.id, displayName: 'Sara Ali' });
   });
+
+  it('another time the team suggests is the organization’s, as the customer sees it (M16 F5)', async () => {
+    const day = (n: number) => new Date(t.ctx.now().getTime() + n * 86_400_000).toISOString();
+    const visit = (
+      await sara.post(`/v1/conversations/${convo}/messages`, {
+        clientId: uuidv4(),
+        kind: 'kit',
+        payload: {
+          kit: 'appointment',
+          fields: { title: 'Fitting', start: { at: day(3), hasTime: true } },
+        },
+      })
+    ).message;
+    const retimed = await noor.req('POST', `/v1/messages/${visit.id}/time`, {
+      start: { at: day(4), hasTime: true },
+    });
+    expect(retimed.statusCode).toBe(200);
+    expect(retimed.json().message.payload.proposedBy).toBe(noor.user.id);
+    // The card, the line that says so and what she's told name the organization.
+    const seen = (await lina.get(`/v1/conversations/${convo}/messages`)).messages;
+    expect(seen.find((m: any) => m.id === visit.id).payload.proposedBy).toBe(orgId);
+    expect(
+      seen.find((m: any) => m.kind === 'system' && m.payload.messageId === visit.id).senderId,
+    ).toBe(orgId);
+    expect(teamNamed(JSON.stringify(seen))).toBe(false);
+    expect((await aboutIt(lina)).map((n: any) => n.title)).toContain('DATA C: New time');
+    const live = () =>
+      heard.find(
+        (m) =>
+          m.userIds.includes(lina.user.id) &&
+          m.event.type === 'message.updated' &&
+          (m.event.data as any).id === visit.id,
+      );
+    await until(() => Boolean(live()), 'the customer heard the new time');
+    expect(teamNamed(JSON.stringify(live()))).toBe(false);
+    // Her own suggestion back is hers, and it names nobody on the team either.
+    const back = await lina.req('POST', `/v1/messages/${visit.id}/time`, {
+      start: { at: day(5), hasTime: true },
+    });
+    expect(back.statusCode).toBe(200);
+    expect(back.json().message.payload.proposedBy).toBe(lina.user.id);
+    expect(teamNamed(back.body)).toBe(false);
+    // It's the team's to answer now: anyone on it agrees it for the organization.
+    expect(
+      (await noor.req('POST', `/v1/messages/${visit.id}/kit`, { to: 'confirmed' })).statusCode,
+    ).toBe(200);
+  });
 });

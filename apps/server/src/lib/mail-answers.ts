@@ -48,9 +48,11 @@ export async function answerFromCalendar(
     .select(MESSAGE_COLUMNS)
     .where('id', '=', id)
     .executeTakeFirst();
-  const card = (m?.payload ?? {}) as { kit?: unknown; state?: string };
+  const card = (m?.payload ?? {}) as { kit?: unknown; state?: string; sequence?: number };
   if (!m || m.deleted_at || m.kind !== 'kit') return 'refused';
   if (card.kit !== 'meeting' && card.kit !== 'appointment') return 'refused';
+  // An answer to a time the card no longer has (M16 F5): its update has gone to them since.
+  if (reply.sequence < (card.sequence ?? 0)) return 'duplicate';
   const kit = card.kit;
   const inIt = await ctx.db
     .selectFrom('participants')

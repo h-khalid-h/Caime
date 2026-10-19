@@ -163,7 +163,8 @@ export function maskPayload(
     out.userIds = [...new Set(ids.map((id) => (other(id) ? mask.orgId : id)))];
     if (Array.isArray(out.names)) out.names = ids.some(other) ? [mask.orgName] : out.names;
   }
-  for (const key of ['decidedBy', 'assigneeId', 'ownerId'] as const)
+  // Who decided, is assigned or owns it, and who suggested a card's time (M16 F5).
+  for (const key of ['decidedBy', 'assigneeId', 'ownerId', 'proposedBy'] as const)
     if (other(out[key])) out[key] = mask.orgId;
   // Who on the team does a booking (R58) is the team's to know.
   const booking = out.booking as Record<string, unknown> | undefined;

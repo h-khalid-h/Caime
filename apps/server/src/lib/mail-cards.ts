@@ -48,6 +48,8 @@ interface CardPayload {
   durationMs?: number;
   lat?: number;
   lng?: number;
+  /** Its calendar invitations' count (M16 F5): one higher with each new time. */
+  sequence?: number;
 }
 
 /** What a mail says for a message that isn't only words and files. */
@@ -163,11 +165,13 @@ function invitation(
   );
   const place =
     (typeof p.fields?.place === 'string' ? p.fields.place.trim() : '') || p.booking?.where || '';
+  // Each change a higher number (RFC 5546): a new time replaces the invitation, and the
+  // cancellation replaces the last time sent (M16 F5).
+  const sequence = typeof p.sequence === 'number' ? p.sequence : 0;
   const ics = buildInvitation({
     method,
     uid: meetingUid(m.id, null, kit),
-    // Each change a higher number (RFC 5546): the cancellation replaces the invitation.
-    sequence: method === 'CANCEL' ? 1 : 0,
+    sequence: method === 'CANCEL' ? sequence + 1 : sequence,
     now: ctx.now(),
     start: at,
     end,
@@ -222,6 +226,26 @@ export async function mailedAs(
       kit === 'meeting' || kit === 'appointment'
         ? invitation(ctx, m, p, kit, people, 'REQUEST', text)
         : null;
+    return { text, attachments: event ? [event] : [] };
+  });
+}
+
+/**
+ * A meeting or an appointment mailed from here, given another time (M16 F5): its words as they
+ * now read, under "New time", and the invitation one sequence on, so their calendar moves it.
+ */
+export async function updateOf(
+  ctx: AppContext,
+  m: Message,
+  people: { senderId: string; from: IcsPerson; to: IcsPerson },
+): Promise<MailedAs | null> {
+  const p = (m.payload ?? {}) as CardPayload;
+  if (m.kind !== 'kit' || (p.kit !== 'meeting' && p.kit !== 'appointment')) return null;
+  const kit = p.kit;
+  const { zone, locale } = await clockOf(ctx, m, people.senderId);
+  return asReader(ctx, people.senderId, async () => {
+    const text = `${tr('New time')}\n${cardText(p, kit, people.from, zone, locale)}`;
+    const event = invitation(ctx, m, p, kit, people, 'REQUEST', text);
     return { text, attachments: event ? [event] : [] };
   });
 }

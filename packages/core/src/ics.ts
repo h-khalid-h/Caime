@@ -200,6 +200,8 @@ export interface IcsReply {
   uid: string;
   attendee: string;
   answer: 'accepted' | 'declined' | 'tentative';
+  /** The invitation's sequence it answers (M16 F5): an answer to a time since moved is past. */
+  sequence: number;
 }
 
 const ANSWERS: Record<string, IcsReply['answer']> = {
@@ -230,7 +232,8 @@ export function readReply(text: string): IcsReply | null {
   const stat = /;PARTSTAT=([A-Z-]+)/i.exec(line.slice(0, colon))?.[1]?.toUpperCase();
   const answer = stat ? ANSWERS[stat] : undefined;
   if (!answer || !/^[^\s@]+@[^\s@]+$/.test(attendee)) return null;
-  return { uid, attendee, answer };
+  const sequence = Math.max(0, Math.floor(Number(value('SEQUENCE:')[0]?.slice(9).trim()) || 0));
+  return { uid, attendee, answer, sequence };
 }
 
 // --- Invitations from someone's calendar (M16 F4) -----------------------------------------------

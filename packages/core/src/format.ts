@@ -462,6 +462,11 @@ export function systemText(payload: unknown, viewerId?: string | null): string {
         from,
       });
     }
+    // Another time for a meeting or an appointment (M16 F5): the card, where it is, asks again.
+    case 'time_suggested':
+      return p.title
+        ? tr('{by} suggested another time for “{title}”', { by, title: p.title })
+        : tr('{by} suggested another time', { by });
     case 'decision_recorded':
       return p.title
         ? tr('{by} recorded a decision: {title}', { by, title: p.title })

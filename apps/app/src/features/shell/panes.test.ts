@@ -41,6 +41,9 @@ const LAZY_EVERYWHERE = [
   '@/ui/LoadFailed',
   '@/features/saved/SaveSheet',
   '@/features/conversation/SharedFiles',
+  // Choosing a day (tasks, a mute, a card's form, another time for a card: M16 F5 put it in the
+  // first download, 2.7 KB, from the cards every conversation route draws).
+  '@/features/when/WhenSheet',
 ];
 
 const files = readdirSync(src, { recursive: true })

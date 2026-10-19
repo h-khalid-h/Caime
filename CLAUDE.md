@@ -1338,7 +1338,15 @@ A sphere is said as how you know someone, never "sphere".
   `afterCardMove`), checked first by `mayMove`: the kit route, a calendar's answer by mail and an
   invitation's organizer cancelling it all call them, and a new way someone moves a card does too.
   An invitation's organizer moving its time is no move of the flow: `mail-invitations.ts` writes
-  the time under the card's lock and runs `afterCardMove` with a `label` ("New time"). `tellCardApp`
+  the time under the card's lock and runs `afterCardMove` with a `label` ("New time"). Another
+  time from either side (M16 F5) is `retimeCard` (`POST /messages/:id/time`; core `retimeBlock`
+  and `RETIMES` decide): the time written under the card's lock, back to asking, its asker now
+  whoever suggested it (`payload.proposedBy`, read through core `askedBy` wherever a card's asker
+  matters: `mayMove`, the card's buttons, a move's notification, and `maskPayload` for a
+  customer), its `sequence` one on, then `afterCardMove` (`label`, `asks`), the line that asks
+  (`askAgain`: `time_suggested` with `is_request`, let go by the next move through
+  `payload.askLine`), the update by mail (`queueCardUpdate`) and the guests asked again
+  (`askGuestsForTime`); a new way a card's time changes does all of it. `tellCardApp`
   (`lib/kits.ts`) tells an app's own card to that app alone and one of Caime's cards in a
   customer conversation to every app of the organization that listens (`kit.posted` for any
   card the team sends, `kit.moved` for any move, never what an app did itself); `cardData` is
@@ -1607,7 +1615,10 @@ A sphere is said as how you know someone, never "sphere".
   (`keepMeeting`) and sign-up reads only on `?keep=1`; onboarding then opens the meeting, since a
   pending `/c/<id>` (`conversationIn`) is a linked arrival. Whatever turns a provisional row into
   an account ends every session it had first (`endSessions`), and an update that finds it
-  claimed already makes no session: anything new that does so keeps both.
+  claimed already makes no session: anything new that does so keeps both. A space's card given
+  another time (M16 F5) asks its guests by address again (`askGuestsForTime`: a new link each,
+  their answer let go, the invitation at the card's `sequence`), and called off it sends them its
+  cancellation one past (`tellGuestsCancelled`); a guest by link reads the time on their page.
 - Live location: the server sets `live.until` and refuses moves after it (`liveNow` in
   `packages/core/src/location.ts`, no zod, so the app can import it). The app's
   `LiveLocationSharer` (mounted in the signed-in layout) moves this device's shares from
@@ -1903,7 +1914,10 @@ A sphere is said as how you know someone, never "sphere".
   notice: every reader passes the card's invitation, `CardAhead.invited` and
   `CalendarItemView.invitation` for the calendar's), and the person's answer goes back as core
   `buildReply` from their address (`queueInvitationAnswer` from `afterCardMove`, the `mail.card`
-  job's `answer`);
+  job's `answer`); M16 F5: a time moved here goes as the invitation's update one sequence
+  on (`queueCardUpdate`, the job's `update`, `updateOf`; a cancellation one past the last sent),
+  and a calendar's answer naming an older sequence moves nothing (`readReply`'s `sequence`, at a
+  person's address and Cai's);
   `sendMessage` refuses what `notByMail` holds back to someone reached by mail, and the composer
   never offers it (`reachedByMail`); a notice, core `isNoticeMail` on the
   mail's own list, precedence and auto-submitted headers or a no-reply sender, lands through
@@ -2225,9 +2239,10 @@ A sphere is said as how you know someone, never "sphere".
   screens render but none at first, each `lazyPart`ed wherever it's shown (`LAZY_EVERYWHERE` in
   that test): `PeoplePicker` (its Set toggle is `lib/toggled.ts`, so a screen that only toggles
   imports nothing of the picker), `TimeZoneField`, the files place (`SharedFiles`: a
-  conversation's, a person's, a space's; `mayKeepFrom` is `mayKeep.ts`) and `SaveSheet` (from a
+  conversation's, a person's, a space's; `mayKeepFrom` is `mayKeep.ts`), `SaveSheet` (from a
   message's actions and from the files place: once that loaded apart, the sheet the two shared
-  moved into `__common`, 0.5 KB). A new thing shared by several routes but needed by none at
+  moved into `__common`, 0.5 KB) and `WhenSheet` (a task's day, a mute's end, a card's form and
+  another time for a card: one static import from the cards put it there, 2.7 KB). A new thing shared by several routes but needed by none at
   first joins that list rather than the startup chunk. A package only a phone runs (a tap's
   haptics, the keychain, AsyncStorage) is reached through a module with a `.web` twin
   (`ui/haptics`, `lib/secure`, `lib/kv`: the browser's own storage) or from a `.native` file,

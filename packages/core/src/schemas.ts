@@ -589,6 +589,19 @@ export const CalendarWindowQuery = z
   .strict();
 /** A card moved on (`POST /messages/:id/kit`), and its fields changed (`PATCH`, an app's own). */
 export const KitMoveBody = z.object({ to: z.string().min(1).max(40) });
+/** Another time for a meeting or an appointment (M16 F5): when, and how long if that changes. */
+export const RetimeBody = z
+  .object({
+    start: z.object({ at: z.string().datetime(), hasTime: z.literal(true) }),
+    durationMinutes: z
+      .number()
+      .int()
+      .min(5)
+      .max(24 * 60)
+      .optional(),
+  })
+  .strict();
+export type RetimeBodyT = z.infer<typeof RetimeBody>;
 export const KitFieldsBody = z.object({ fields: z.record(z.string(), z.unknown()) });
 
 export const AppListingReviewBody = z

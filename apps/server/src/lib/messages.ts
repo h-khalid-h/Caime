@@ -1665,6 +1665,8 @@ export async function insertSystemMessage(
   actorId: string,
   event: string,
   data: Record<string, unknown>,
+  /** It asks the others something (M16 F5: another time), as a card that asks does (M14). */
+  opts: { asks?: boolean } = {},
 ): Promise<Message> {
   // Names are recorded with the event, so the line reads the same later (core systemText).
   const userIds = Array.isArray(data.userIds) ? (data.userIds as string[]) : [];
@@ -1702,6 +1704,7 @@ export async function insertSystemMessage(
         kind: 'system',
         body: null,
         payload: JSON.stringify(payload),
+        is_request: opts.asks ?? false,
         expires_at: expiresAt(ctx.now(), kept),
         created_at: ctx.now(),
       })

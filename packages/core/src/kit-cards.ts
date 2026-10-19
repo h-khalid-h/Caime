@@ -178,6 +178,46 @@ export const KIT_FLOWS: Record<CardKitId, Record<string, KitMove[]>> = {
 };
 
 /**
+ * Who asked for a card as it stands (M16 F5): whoever suggested a meeting's or an appointment's
+ * time it now has, else its sender. The other side answers it, and the asker may take it back.
+ */
+export function askedBy(card: { proposedBy?: unknown }, senderId: string | null): string | null {
+  return typeof card.proposedBy === 'string' ? card.proposedBy : senderId;
+}
+
+/** Where a meeting or an appointment may take another time from, and where it goes (M16 F5). */
+export const RETIMES = {
+  meeting: { from: ['proposed', 'accepted'], to: 'proposed' },
+  appointment: { from: ['requested', 'confirmed'], to: 'requested' },
+} as const;
+
+/** Why a card can't take another time (M16 F5). */
+export type RetimeBlock = 'kind' | 'state' | 'series' | 'invitation' | 'moved' | 'booking';
+
+/**
+ * Why a card can't take another time, or null when it can (M16 F5): a meeting or an appointment,
+ * asked or agreed, at one time (each time of a series keeps its own), not someone's calendar
+ * invitation (theirs to move), not moved to its own space (its copy there is the one), not booked
+ * from a catalog (its slot is the catalog's to give).
+ */
+export function retimeBlock(card: {
+  kit?: unknown;
+  state?: unknown;
+  fields?: Record<string, unknown> | null;
+  invitation?: unknown;
+  movedTo?: unknown;
+  booking?: unknown;
+}): RetimeBlock | null {
+  if (card.kit !== 'meeting' && card.kit !== 'appointment') return 'kind';
+  if (!(RETIMES[card.kit].from as readonly unknown[]).includes(card.state)) return 'state';
+  if (isRepeat(card.fields?.repeat)) return 'series';
+  if (card.invitation) return 'invitation';
+  if (card.movedTo) return 'moved';
+  if (card.booking) return 'booking';
+  return null;
+}
+
+/**
  * The moves this person may make on a card in this state. A Pay card's sides are its payer and
  * its payee (R62): its sender pays when they said they're paying, and is paid when they asked.
  */

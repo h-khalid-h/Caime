@@ -4925,4 +4925,7 @@ export const fr: Catalog = {
     'Cela ne part pas par e-mail : la personne ne le verrait jamais.',
   'Your answer goes back to the calendar that sent it.':
     'Votre réponse revient à l’agenda qui a envoyé l’invitation.',
+  '{by} suggested another time for “{title}”': 'Autre horaire proposé pour « {title} » par : {by}',
+  '{by} suggested another time': 'Autre horaire proposé par : {by}',
+  'Suggest another time': 'Proposer un autre horaire',
 };

@@ -1565,7 +1565,7 @@ describe('cards by email (M16 F3)', () => {
     },
   });
   /** What a calendar app sends back to the organizer (RFC 6047), for one attendee. */
-  const calendarReply = (uid: string, attendee: string, partstat: string) =>
+  const calendarReply = (uid: string, attendee: string, partstat: string, sequence?: number) =>
     [
       'BEGIN:VCALENDAR',
       'VERSION:2.0',
@@ -1573,6 +1573,7 @@ describe('cards by email (M16 F3)', () => {
       'METHOD:REPLY',
       'BEGIN:VEVENT',
       `UID:${uid}`,
+      ...(sequence === undefined ? [] : [`SEQUENCE:${sequence}`]),
       `ATTENDEE;CN=Tarek;PARTSTAT=${partstat}:mailto:${attendee}`,
       'END:VEVENT',
       'END:VCALENDAR',
@@ -1585,6 +1586,7 @@ describe('cards by email (M16 F3)', () => {
     partstat: string;
     attendee?: string;
     auth?: 'pass' | 'none';
+    sequence?: number;
   }) =>
     postmark({
       from: opts.from,
@@ -1597,7 +1599,12 @@ describe('cards by email (M16 F3)', () => {
         {
           name: 'invite.ics',
           type: 'application/ics',
-          content: calendarReply(opts.uid, opts.attendee ?? opts.from, opts.partstat),
+          content: calendarReply(
+            opts.uid,
+            opts.attendee ?? opts.from,
+            opts.partstat,
+            opts.sequence,
+          ),
         },
       ],
     });
@@ -1801,6 +1808,74 @@ describe('cards by email (M16 F3)', () => {
       }),
     );
     expect(theirs.json().outcomes[0].outcome).toBe('delivered');
+  });
+
+  it('another time goes to their calendar as the update, and only an answer to it moves the card (M16 F5)', async () => {
+    sends = [];
+    const card = (await rana.post(`/v1/conversations/${convo}/messages`, meeting('rana-meet-5')))
+      .message.id as string;
+    await work();
+    const inviteId = ((sends[0]?.Headers ?? []) as Array<{ Name: string; Value: string }>).find(
+      (h) => h.Name === 'Message-ID',
+    )?.Value;
+    const uid = `meeting-${card}@caime`;
+    const yes = (sequence?: number) =>
+      answer({
+        from: 'tarek@outside.example',
+        to: 'rana.mail@caime.test',
+        uid,
+        partstat: 'ACCEPTED',
+        sequence,
+      });
+    expect((await inbound(await yes())).json().outcomes[0].outcome).toBe('answered');
+    // Rana moves it a day on: the update goes in the invitation's thread, one sequence on, so
+    // his calendar moves the event and asks him again. Nothing else of it is mailed.
+    sends = [];
+    const later = ahead(4);
+    expect(
+      (
+        await rana.req('POST', `/v1/messages/${card}/time`, {
+          start: { at: later.toISOString(), hasTime: true },
+        })
+      ).statusCode,
+    ).toBe(200);
+    await work();
+    expect(sends).toHaveLength(1);
+    const update = sends[0];
+    expect(update?.Subject).toBe('Re: Meeting: Venue walkthrough');
+    expect(String(update?.TextBody)).toMatch(
+      /^New time\nMeeting: Venue walkthrough\nWhen: .+ \(America\/New_York\)\nDuration: 30 min\n/,
+    );
+    expect(
+      ((update?.Headers ?? []) as Array<{ Name: string; Value: string }>).find(
+        (h) => h.Name === 'In-Reply-To',
+      )?.Value,
+    ).toBe(inviteId);
+    const [moved] = ics(update);
+    expect(moved?.ContentType).toBe('text/calendar; method=REQUEST; charset=UTF-8');
+    expect(moved?.text).toContain('METHOD:REQUEST');
+    expect(moved?.text).toContain(`UID:${uid}`);
+    expect(moved?.text).toContain('SEQUENCE:1');
+    const stamp = later
+      .toISOString()
+      .replace(/[-:]/g, '')
+      .replace(/\.\d{3}/, '');
+    expect(moved?.text).toContain(`DTSTART:${stamp}`);
+    expect((await cardIn(rana, convo, card))?.payload.state).toBe('proposed');
+    // His calendar's answer to the time before, arriving late, moves nothing.
+    expect((await inbound(await yes(0))).json().outcomes[0].outcome).toBe('duplicate');
+    expect((await cardIn(rana, convo, card))?.payload.state).toBe('proposed');
+    // His answer to the new time agrees it.
+    expect((await inbound(await yes(1))).json().outcomes[0].outcome).toBe('answered');
+    expect((await cardIn(rana, convo, card))?.payload.state).toBe('accepted');
+    // Called off: the cancellation goes one sequence past the last time he was sent.
+    sends = [];
+    await rana.post(`/v1/messages/${card}/kit`, { to: 'cancelled' });
+    await work();
+    expect(sends).toHaveLength(1);
+    const [cancel] = ics(sends[0]);
+    expect(cancel?.text).toContain('METHOD:CANCEL');
+    expect(cancel?.text).toContain('SEQUENCE:2');
   });
 
   it('sends what a mail carries in words, and refuses what would never reach them', async () => {

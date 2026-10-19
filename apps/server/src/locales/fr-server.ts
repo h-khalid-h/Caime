@@ -1681,4 +1681,14 @@ export const frServer: Catalog = {
   'New time': 'Nouvel horaire',
   'Accepted: {title}': 'Accepté : {title}',
   'Declined: {title}': 'Refusé : {title}',
+  'Only a meeting or an appointment takes another time.':
+    'Seul un rendez-vous ou une réunion peut prendre un autre horaire.',
+  'Each time of a series keeps its own: cancel this one and send another.':
+    'Chaque occurrence d’une série garde son horaire : annulez celle-ci et envoyez-en une autre.',
+  'It’s their calendar’s meeting: only they can move it.':
+    'Elle vient de l’agenda de l’autre personne : elle seule peut la déplacer.',
+  'It has its own space now: suggest another time there.':
+    'Elle a maintenant son propre espace : proposez un autre horaire là-bas.',
+  'A booking keeps its open time: cancel it and book another.':
+    'Une réservation garde son créneau : annulez-la et réservez-en un autre.',
 };

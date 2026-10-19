@@ -215,6 +215,7 @@ import type { CallKind } from '@caime/core/calls';
 import type { PublicJwk, SealedMessage } from '@caime/core/e2ee';
 import type { ChecklistOp, SplitOp } from '@caime/core/kit-cards';
 import type { OrgKind } from '@caime/core/orgs';
+import type { RetimeBodyT } from '@caime/core/schemas';
 import type { SpaceKind } from '@caime/core/spaces';
 import type { Sphere } from '@caime/core/taxonomy';
 import { api, request } from './client';
@@ -516,6 +517,9 @@ export const endpoints = {
   /** Where this Caime keeps its policies and help, as its operator set them. */
   about: () => api.get<AboutView>('/about'),
   moveKit: (id: string, to: string) => api.post<MessageResponse>(`/messages/${id}/kit`, { to }),
+  /** Another time for a meeting or an appointment (M16 F5). */
+  retimeCard: (id: string, body: RetimeBodyT) =>
+    api.post<MessageResponse>(`/messages/${id}/time`, body),
   /** A meeting that repeats (R58): it ends with this time. */
   stopRepeating: (id: string) => api.post<MessageResponse>(`/messages/${id}/repeat/stop`, {}),
   /** The organization's own kinds of card its team may send here (PRD §74). */

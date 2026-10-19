@@ -23,7 +23,7 @@ import { MESSAGE_COLUMNS } from '../db/schema';
 import { asReader } from './i18n';
 import { enqueue, registerJob, registerPeriodic } from './jobs';
 import { mailAddressOf } from './mail-address';
-import { cancellationOf, mailedAs, wholeWhen } from './mail-cards';
+import { cancellationOf, mailedAs, updateOf, wholeWhen } from './mail-cards';
 import type { CardInvitation } from './mail-invitations';
 import {
   type DeliveryEvent,
@@ -45,7 +45,7 @@ const REFERENCES_MAX = 20;
 export function registerMailJobs(): void {
   registerJob(MAIL_SEND_JOB, send);
   registerJob(MAIL_CARD_JOB, (ctx, payload) =>
-    payload.what === 'answer' ? sendAnswer(ctx, payload) : sendCancellation(ctx, payload),
+    payload.what === 'answer' ? sendAnswer(ctx, payload) : sendCardMail(ctx, payload),
   );
   registerPeriodic({
     name: 'mail.sweep',
@@ -293,17 +293,8 @@ export async function queueCancellation(
   const kit = (m.payload as { kit?: unknown } | null)?.kit;
   if (!ctx.mailProvider || to !== 'cancelled' || (kit !== 'meeting' && kit !== 'appointment'))
     return;
-  const went = await ctx.db
-    .selectFrom('mail_messages as mm')
-    .innerJoin('users as u', (j) =>
-      j.onRef('u.email', '=', 'mm.to_address').on('u.kind', '=', 'provisional'),
-    )
-    .select('u.id')
-    .where('mm.message_id', '=', m.id)
-    .where('mm.direction', '=', 'out')
-    .where('mm.delivery', 'is distinct from', 'bounced')
-    .executeTakeFirst();
-  if (!went || went.id === actorId) return;
+  const reached = await mailedTo(ctx, m.id);
+  if (!reached || reached === actorId) return;
   await enqueue(
     ctx,
     MAIL_CARD_JOB,
@@ -312,7 +303,44 @@ export async function queueCancellation(
   );
 }
 
-async function sendCancellation(ctx: AppContext, payload: Record<string, unknown>): Promise<void> {
+/**
+ * The same card given another time here (M16 F5): the update goes to them in the thread, its
+ * invitation one sequence on, so their calendar moves the event rather than adding one. Once a
+ * time; a time given since says its own, and a card cancelled since sends its cancellation.
+ */
+export async function queueCardUpdate(
+  ctx: AppContext,
+  m: Pick<Message, 'id' | 'payload'>,
+  actorId: string,
+): Promise<void> {
+  const p = m.payload as { kit?: unknown; sequence?: number } | null;
+  if (!ctx.mailProvider || (p?.kit !== 'meeting' && p?.kit !== 'appointment')) return;
+  const reached = await mailedTo(ctx, m.id);
+  if (!reached || reached === actorId) return;
+  await enqueue(
+    ctx,
+    MAIL_CARD_JOB,
+    { messageId: m.id, what: 'update', sequence: p.sequence ?? 0 },
+    { dedupeKey: `${MAIL_CARD_JOB}:${m.id}:update:${p.sequence ?? 0}`, maxAttempts: 6 },
+  );
+}
+
+/** Whom a card went to by mail (someone reached by email), unless it bounced. */
+async function mailedTo(ctx: AppContext, messageId: string): Promise<string | null> {
+  const went = await ctx.db
+    .selectFrom('mail_messages as mm')
+    .innerJoin('users as u', (j) =>
+      j.onRef('u.email', '=', 'mm.to_address').on('u.kind', '=', 'provisional'),
+    )
+    .select('u.id')
+    .where('mm.message_id', '=', messageId)
+    .where('mm.direction', '=', 'out')
+    .where('mm.delivery', 'is distinct from', 'bounced')
+    .executeTakeFirst();
+  return went?.id ?? null;
+}
+
+async function sendCardMail(ctx: AppContext, payload: Record<string, unknown>): Promise<void> {
   const provider = ctx.mailProvider;
   const domain = ctx.config.MAIL_DOMAIN;
   const messageId = String(payload.messageId ?? '');
@@ -350,11 +378,16 @@ async function sendCancellation(ctx: AppContext, payload: Record<string, unknown
     .where('id', '=', m.sender_id)
     .executeTakeFirstOrThrow();
   const name = (conversation.kind === 'business' && conversation.orgName) || sender.display_name;
-  const said = await cancellationOf(ctx, m, {
+  const people = {
     senderId: m.sender_id,
     from: { name, email: went.from_address },
     to: { name: attendeeName(to.display_name), email: went.to_address },
-  });
+  };
+  // A new time (M16 F5), unless it moved again since (that time sends its own) or was called off.
+  const update = payload.what === 'update';
+  const now = (m.payload ?? {}) as { state?: string; sequence?: number };
+  if (update && (now.sequence !== payload.sequence || now.state === 'cancelled')) return;
+  const said = update ? await updateOf(ctx, m, people) : await cancellationOf(ctx, m, people);
   if (!said) return;
   try {
     await provider.send({

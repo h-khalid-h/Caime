@@ -2930,6 +2930,52 @@ graph) and the number that will show it; one that sharpens none is hygiene and s
       unknown event's cancellation, unconfirmed, and a list's arriving as mail), `e2e/mail.spec.ts`
       (an invitation as a card among the requests, its Accept mailed back as a reply, its new
       time asking again live), the catalogs in four languages, and the full gate.
+- [x] F5. Another time for a meeting or an appointment (2026-10-19, review §6: "rescheduling
+      (cancel and re-propose is the only way)"; "guests' calendars go stale (sequence always 0, no
+      cancellation sent)"; advantage 2, everyone you deal with in one place, their calendars kept
+      in step. The number: of the meetings and appointments whose time moves, the share that move
+      on their own card, keeping its conversation, its guests and the one event in every calendar
+      it reached, every one now where none could: a new time was a decline and a second card, a
+      second event in each calendar). Either side suggests it from the card ("Suggest another
+      time", `features/kits/CardTime.tsx`, the time chosen in `WhenSheet`; `POST
+      /messages/:id/time`, `retimeCard` in `lib/kit-moves.ts`): the time and `card_start_at` are
+      written under the card's lock, it asks again (a meeting proposed, an appointment requested:
+      core `RETIMES`), now of the other side (its asker is who suggested it, `payload.proposedBy`,
+      read through core `askedBy` by `mayMove`, the card's buttons and the notification, which
+      reaches them as something to answer), and its `sequence` counts on; then what follows any
+      move (`afterCardMove`, "New time"), and a line from whoever suggested it ("Ben suggested
+      another time for “Plan the launch”", `time_suggested`) that puts the conversation under
+      Needs you for the others until the card's next move lets it go (`payload.askLine`). Whoever
+      has it by mail (F3) is sent the update in its thread, the same event one sequence on
+      (`queueCardUpdate`, `updateOf`), so their calendar moves it and asks them again, and their
+      calendar's answer to the time before moves nothing (core `readReply`'s sequence, at a
+      person's address and Cai's); a meeting's guests (R84) are asked again for the new time, each
+      with a new link and what they answered of the time before let go, and are sent its
+      cancellation when it's called off (`askGuestsForTime`, `tellGuestsCancelled`, one sequence
+      past the last they were sent). To a customer, who suggested it is the organization
+      (`maskPayload`). Refused, in the reader's language, where the time isn't the card's to move
+      (core `retimeBlock`): a series (each time keeps its own: cancel it and send another), an
+      invitation from someone's calendar (its organizer moves it, F4), a card moved to its space
+      (its copy there is the one), a booking from a catalog (its open time is the catalog's); and
+      a time already over. Left: one time of a series moved alone, a booking moved to another
+      open time of its catalog, an organization's app moving an appointment through the API, the
+      other side's clock beside the time, and Gmail's, Outlook's and Apple's handling of the update
+      on a real mailbox (⛔ the owner's, as F3's). Costs: one request, one update and one line per
+      suggestion; a mail out per person reached by mail and per guest (the provider's call, under
+      a cent); on devices, the first download 447.9 KB of 450, 0.1 KB more than F4's (the day
+      picker loads when it's opened: a static import of it from the cards put 2.7 KB there, and
+      `panes.test.ts` now holds `WhenSheet` to lazy imports everywhere). Verified: core
+      `kit-cards.test.ts` (`askedBy`, `retimeBlock`, the lines), `ics.test.ts` (a reply's
+      sequence), `card-times.test.ts` (either side moves an agreed meeting, the line needs the
+      other and is let go by the answer, the notification is to be answered, the other side moves
+      it again; an appointment the same and never to a time over; a series, an invitation, a
+      booking, a text and someone outside refused; guests asked again at sequence 1 with a new
+      link and their answer let go, the cancellation at 2), `mail.test.ts` (the update in the
+      invitation's thread at sequence 1, the time before's answer ignored and the new one agreeing
+      it, the cancellation at 2), `business.test.ts` (the organization suggested it, to the
+      customer, on the card, the line and live; her suggestion back hers), `e2e/meetings.spec.ts`
+      (Ben suggests tomorrow from the card, Ana reads the line and agrees, live on both),
+      `panes.test.ts`, the catalogs in four languages, and the full gate.
 - [ ] G. Integration framework and governed AI (REVIEW §11): credentials (key outside the
       database with a key id and re-seal, a downscoped picker token, sealed webhook secrets,
       rotation); per-use health, Google and Microsoft probes, a freshness gauge, a reconnect
@@ -5158,6 +5204,9 @@ graph) and the number that will show it; one that sharpens none is hygiene and s
   journeys, safety, reliability, performance, intelligence, mail and calendar, chat, integrations,
   business and code integrity; the matrix against WhatsApp, Signal, Slack, Calendly and Workspace;
   an age-assurance design; the integration framework mapped to the code; plan M16 (A–H).
+- 2026-10-19 — M16 F5: either side suggests another time on a meeting or an appointment's card,
+  which asks the other side again and says so; whoever has it by mail and a meeting's guests get
+  the update their calendar moves (and the cancellation), where it took a decline and a new card.
 - 2026-10-19 — M16 F4: an invitation someone's calendar mails a person is a meeting card from its
   organizer, answered here and back in their calendar (`METHOD:REPLY` from the person's address),
   moved by their later word (a new time asks again, a cancellation cancels it); a series, a day,

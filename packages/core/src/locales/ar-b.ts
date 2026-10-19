@@ -3262,4 +3262,11 @@ export const arB: Catalog = {
   'That doesn’t travel by email: they’d never see it.':
     'هذا لا يصل بالبريد الإلكتروني: لن يراه الطرف الآخر أبدًا.',
   'Your answer goes back to the calendar that sent it.': 'يصل ردّك إلى التقويم الذي أرسل الدعوة.',
+  '{by} suggested another time for “{title}”': 'اقتراح موعد آخر لـ«{title}»: {by}',
+  '{by} suggested another time': 'اقتراح موعد آخر: {by}',
+  'Suggest another time': {
+    toWoman: 'اقترحي موعدًا آخر',
+    toMan: 'اقترح موعدًا آخر',
+    other: 'اقترح موعدًا آخر',
+  },
 };

@@ -4739,4 +4739,7 @@ export const turkish: Catalog = {
   'That doesn’t travel by email: they’d never see it.':
     'Bu e-postayla gitmez: karşı taraf bunu hiç görmez.',
   'Your answer goes back to the calendar that sent it.': 'Yanıtınız daveti gönderen takvime gider.',
+  '{by} suggested another time for “{title}”': 'Başka bir saat önerildi: {title} · Öneren: {by}',
+  '{by} suggested another time': 'Başka bir saat öneren: {by}',
+  'Suggest another time': 'Başka bir saat öner',
 };
