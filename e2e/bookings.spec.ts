@@ -45,7 +45,7 @@ test.describe
       await page.getByTestId('org-booking-item-max-more').click();
       await page.getByTestId('org-booking-item-public').click();
       await page.getByTestId('org-booking-item-save').click();
-      await expect(visible(page, 'Haircut')).toBeVisible();
+      await expect(visible(page, /^Haircut$/)).toBeVisible();
       await expect(visible(page, /45 min · .*200.* · Everyone/)).toBeVisible();
       // Something the items share (R58): two chairs, which the haircut takes one of.
       await page.getByTestId('org-booking-add-resource').click();
@@ -53,7 +53,8 @@ test.describe
       await page.getByTestId('org-booking-resource-capacity-more').click();
       await page.getByTestId('org-booking-resource-save').click();
       await expect(visible(page, /2 at a time · Shared by 0 items/)).toBeVisible();
-      await visible(page, 'Haircut').click();
+      // The item's own row: its name alone (the door's Book link beside it ends in "/haircut").
+      await visible(page, /^Haircut$/).click();
       await page.locator('[data-testid^="org-booking-item-uses-"]').first().click();
       await page.getByTestId('org-booking-item-save').click();
       await expect(visible(page, /2 at a time · Shared by 1 item$/)).toBeVisible();
@@ -78,7 +79,7 @@ test.describe
       await page.goto(`/o/${handle}`);
       await expect(page.locator('#static')).toBeVisible();
       // The catalog's public item, with its price, and Book first.
-      await expect(visible(page, 'Haircut')).toBeVisible();
+      await expect(visible(page, /^Haircut$/)).toBeVisible();
       await expect(visible(page, /45 min · EGP/)).toBeVisible();
       await page.getByRole('link', { name: `Book Swibba ${stamp}` }).click();
       await page.waitForURL(/\/sign-up\?link=%2Fo%2F.*%3Fbook/);
