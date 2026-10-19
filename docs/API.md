@@ -246,6 +246,9 @@ its website, the addresses people return to, and where it runs.
   itself with PKCE every time.
 - **Its own server** (a confidential app): a secret, `cas_…`, shown once. It sends it as HTTP
   Basic (`client_id:client_secret`) or as `client_secret` in the form, and uses PKCE as well.
+  Replace it from the app's sheet in Settings · Developer: the new one is shown once, and the old
+  one is still taken for 24 hours (the sheet says until when), so your server switches in its
+  own time.
 
 Return addresses are exact: https, plain http only on `localhost`, or the app's own scheme
 (`myapp://callback`). Everything below is also at `/.well-known/oauth-authorization-server`

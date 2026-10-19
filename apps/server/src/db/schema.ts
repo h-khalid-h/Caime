@@ -1308,14 +1308,30 @@ export interface OrgAppsTable {
   bot_user_id: string | null;
   scopes: Defaulted<string[]>;
   webhook_url: string | null;
-  webhook_secret: string;
+  /**
+   * The signing secret in clear: written beside its sealed value, and signed with while it's there,
+   * since the release before reads and writes it alone (0130); emptied by the next release, which
+   * reads the sealed one alone (`lib/app-secrets.ts`).
+   */
+  webhook_secret: string | null;
   /** The secret before the last replacement, still signing deliveries until `…_until` (0052). */
   previous_webhook_secret: string | null;
   previous_secret_until: NullableTimestamp;
+  /** The secrets sealed through the vault, each with the id of the key that sealed it (0130). */
+  webhook_secret_sealed: Buffer | null;
+  webhook_secret_kid: string | null;
+  previous_secret_sealed: Buffer | null;
+  previous_secret_kid: string | null;
   events: Defaulted<string[]>;
   created_by: string | null;
   created_at: Generated<Date>;
   revoked_at: NullableTimestamp;
+}
+
+/** A sealed ticket's nonce, spent at its first opening and kept until it expires (0131). */
+export interface SpentTicketsTable {
+  id: string;
+  expires_at: Date;
 }
 
 /** An app's own kind of card (PRD §74, §86): its definition as core's parseCustomKit left it. */
@@ -1422,6 +1438,9 @@ export interface OAuthClientsTable {
   website: string | null;
   redirect_uris: string[];
   secret_hash: Buffer | null;
+  /** The secret before the last replacement, still taken until `…_until` (0132, M16 G1). */
+  previous_secret_hash: Generated<Buffer | null>;
+  previous_secret_until: Generated<Date | null>;
   created_at: Generated<Date>;
   revoked_at: NullableTimestamp;
   /** Its listing in Discover (R74). */
@@ -1593,6 +1612,7 @@ export interface Database {
   org_reclaims: OrgReclaimsTable;
   business_threads: BusinessThreadsTable;
   org_apps: OrgAppsTable;
+  spent_tickets: SpentTicketsTable;
   app_kits: AppKitsTable;
   org_agents: OrgAgentsTable;
   calls: CallsTable;

@@ -2,22 +2,31 @@
  * What's sealed with a key that no longer seals moves to the one that does (M16 B5): a
  * connection's refresh token as it's used (`openRefresh`), and every one of them a batch at a
  * time, in the order of their ids, at start (queued once, whichever instance) and daily
- * (`resealVault`). Once nothing the database's own key opens is left, that key is deleted, so no
- * later dump of the database holds it. What's sealed with which key is kept for /metrics
- * (`caime_vault_sealed`, `caime_vault_database_key`), which every instance reads back.
+ * (`resealVault`); apps' webhook secrets (M16 G1, `lib/app-secrets.ts`) in the same pass, which
+ * also seals what's kept only in clear, with or without VAULT_KEY. Once nothing the database's
+ * own key opens is left, that key is deleted, so no later dump of the database holds it. What's
+ * sealed with which key is kept for /metrics (`caime_vault_sealed`, `caime_vault_database_key`),
+ * which every instance reads back.
  */
 import type { AppContext } from '../context';
+import { appSecretsOnDatabaseKey, appsToSeal, resealAppSecrets } from './app-secrets';
 import { refreshLabel, resealRefresh } from './connected-accounts';
 import { enqueue, registerJob, registerPeriodic } from './jobs';
 import { vaultState } from './metrics';
 import { dropServerKey, storedServerKey } from './server-keys';
 import { writeSetting } from './settings';
-import { DATABASE_VAULT_KEY, openSecret, sealingKid } from './vault-keys';
+import { DATABASE_VAULT_KEY, sealingKid, vaultOpener } from './vault-keys';
 
 export const VAULT_SETTING = 'vault.state';
 const JOB = 'vault.reseal';
 const BATCH = 200;
 const DAY_MS = 86_400_000;
+/**
+ * How long after an instance starts its apps' pass waits: while a deployment overlaps, the older
+ * instance still writes a replaced secret in clear alone, so the pass that seals from the clear
+ * copies runs once it has stopped.
+ */
+const OVERLAP_MS = 10 * 60_000;
 
 /** What the last pass found, as /metrics says it. */
 export interface VaultState {
@@ -25,7 +34,10 @@ export interface VaultState {
   sealing: number;
   /** Sealed with another key here that still opens it (moved at the next pass or use). */
   older: number;
-  /** Sealed with a key that's gone: its connection asks to be connected again when it's used. */
+  /**
+   * Sealed with a key that's gone: its connection asks to be connected again when it's used, and
+   * its app's secret is replaced by the organization.
+   */
   unopenable: number;
   /** Whether the database still holds its own key. */
   databaseKey: boolean;
@@ -51,19 +63,20 @@ const unmoved = (ctx: AppContext, kid: string, after: string | null) => {
  */
 export async function resealVault(ctx: AppContext): Promise<VaultState> {
   const kid = sealingKid(ctx);
-  const lost = new Set<string>();
+  // Apps' secrets first, with or without VAULT_KEY: one kept only in clear is sealed either way.
+  const lost = await resealAppSecrets(ctx, kid);
   if (kid !== null) {
+    const open = vaultOpener(ctx);
     let after: string | null = null;
     for (;;) {
       const rows = await unmoved(ctx, kid, after);
       for (const r of rows) {
-        const opened = await openSecret(
-          ctx,
+        const opened = await open(
           { sealed: r.refresh_sealed, kid: r.refresh_kid },
           refreshLabel(r.id),
         );
         if (opened) await resealRefresh(ctx, r.id, r.refresh_sealed, opened.plain);
-        else lost.add(r.id);
+        else lost.add(`account:${r.id}`);
       }
       const last = rows.at(-1);
       if (rows.length < BATCH || !last) break;
@@ -71,22 +84,45 @@ export async function resealVault(ctx: AppContext): Promise<VaultState> {
     }
     // Whatever the database's key still seals is only what it can't open (or was sealed by an
     // instance still running without VAULT_KEY, moved at the next pass): the key goes when so.
-    const left = await ctx.db
-      .selectFrom('connected_accounts')
-      .select('id')
-      .where('refresh_kid', 'is', null)
-      .execute();
-    if (left.every((r) => lost.has(r.id))) await dropServerKey(ctx, DATABASE_VAULT_KEY);
+    const left = [
+      ...(
+        await ctx.db
+          .selectFrom('connected_accounts')
+          .select('id')
+          .where('refresh_kid', 'is', null)
+          .execute()
+      ).map((r) => `account:${r.id}`),
+      ...(await appSecretsOnDatabaseKey(ctx)),
+    ];
+    if (left.every((k) => lost.has(k))) await dropServerKey(ctx, DATABASE_VAULT_KEY);
   }
+  // Every sealed value, by the key that sealed it: tokens, apps' secrets and the ones they replaced.
   const counts = await ctx.db
-    .selectFrom('connected_accounts')
-    .select(['refresh_kid', (eb) => eb.fn.countAll<string>().as('n')])
-    .groupBy('refresh_kid')
+    .selectFrom((eb) =>
+      eb
+        .selectFrom('connected_accounts')
+        .select('refresh_kid as kid')
+        .unionAll(
+          eb
+            .selectFrom('org_apps')
+            .select('webhook_secret_kid as kid')
+            .where('webhook_secret_sealed', 'is not', null),
+        )
+        .unionAll(
+          eb
+            .selectFrom('org_apps')
+            .select('previous_secret_kid as kid')
+            .where('previous_secret_sealed', 'is not', null),
+        )
+        .as('v'),
+    )
+    .select(['v.kid', (eb) => eb.fn.countAll<string>().as('n')])
+    .groupBy('v.kid')
     .execute();
   let sealing = 0;
   let others = 0;
   for (const c of counts)
-    if (c.refresh_kid === kid) sealing += Number(c.n);
+    if (c.kid === kid) sealing += Number(c.n);
     else others += Number(c.n);
   // Without VAULT_KEY, nothing sealed under an environment key opens here.
   const unopenable = kid === null ? others : lost.size;
@@ -119,9 +155,22 @@ export function registerVaultReseal(): void {
 /**
  * At start, with VAULT_KEY set: if anything is sealed with another key, or the database still
  * holds its own, a pass is queued once (whichever instance), so a new key takes over that day.
+ * An app's secret kept only in clear, or sealed with another key, queues one with or without it,
+ * once the deployment's overlap is over (`OVERLAP_MS`).
  */
 export async function startVaultReseal(ctx: AppContext): Promise<void> {
   const kid = sealingKid(ctx);
+  const [app] = await appsToSeal(ctx, kid, null);
+  if (app)
+    await enqueue(
+      ctx,
+      JOB,
+      {},
+      {
+        dedupeKey: `vault:apps:${kid ?? 'database'}:${app.id}`,
+        runAt: new Date(ctx.now().getTime() + OVERLAP_MS),
+      },
+    );
   if (kid === null) return;
   const [first] = await unmoved(ctx, kid, null);
   const keyKept = (await storedServerKey(ctx, DATABASE_VAULT_KEY)) !== null;

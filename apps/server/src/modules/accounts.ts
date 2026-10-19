@@ -27,11 +27,11 @@ import { z } from 'zod';
 import type { AppContext } from '../context';
 import { queueAccountPush } from '../lib/calendar-push';
 import {
-  filesAccess,
   googlePickerOn,
   googlePickerPage,
   importAccountFile,
   listAccountFiles,
+  pickerAccess,
   usesOffered,
 } from '../lib/cloud-files';
 import {
@@ -165,8 +165,8 @@ export async function connectedAccountRoutes(app: FastifyInstance, ctx: AppConte
   });
 
   /**
-   * Google's picker page: the ticket says who and which account (no session needed), and the
-   * page's own policy lets Google's script run there and nowhere else.
+   * Google's picker page: the ticket says who and which account (no session needed) and opens
+   * it once, and the page's own policy lets Google's script run there and nowhere else.
    */
   app.get('/accounts/google/picker', async (req, reply) => {
     ctx.limiter.hit(`accounts-picker:${req.ip}`, ctx.config.isTest ? 1000 : 120, 3_600_000);
@@ -174,7 +174,7 @@ export async function connectedAccountRoutes(app: FastifyInstance, ctx: AppConte
     const ticket = await openPickerTicket(ctx, t);
     if (!ticket || !googlePickerOn(ctx.config)) throw notFound(tr('That picker'));
     const row = await accountOf(ctx, ticket.userId, ticket.accountId);
-    const access = await filesAccess(ctx, row);
+    const access = await pickerAccess(ctx, row);
     const nonce = randomBytes(16).toString('base64');
     const page = googlePickerPage(ctx.config, {
       access,

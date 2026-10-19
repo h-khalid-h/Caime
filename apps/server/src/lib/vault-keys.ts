@@ -46,17 +46,42 @@ async function keyFor(ctx: Ctx, kid: string | null): Promise<Buffer | null> {
   return null;
 }
 
+/** A value opened, and whether the key that seals now isn't the one that sealed it. */
+export interface Opened {
+  plain: Buffer;
+  stale: boolean;
+}
+
+const opened = (
+  ctx: Pick<AppContext, 'config'>,
+  key: Buffer | null,
+  value: Sealed,
+  label: string,
+): Opened | null => {
+  const plain = key ? unseal(key, value.sealed, label) : null;
+  return plain ? { plain, stale: value.kid !== sealingKid(ctx) } : null;
+};
+
 /**
  * The value opened, or null when its key is gone or its bytes were changed; `stale` when the key
  * that seals now isn't the one that sealed it, so whoever opened it may seal it again.
  */
-export async function openSecret(
-  ctx: Ctx,
-  value: Sealed,
-  label: string,
-): Promise<{ plain: Buffer; stale: boolean } | null> {
-  const key = await keyFor(ctx, value.kid);
-  const plain = key ? unseal(key, value.sealed, label) : null;
-  if (!plain) return null;
-  return { plain, stale: value.kid !== sealingKid(ctx) };
+export async function openSecret(ctx: Ctx, value: Sealed, label: string): Promise<Opened | null> {
+  return opened(ctx, await keyFor(ctx, value.kid), value, label);
+}
+
+/**
+ * `openSecret` for a pass over many values: each key is read once, so a batch sealed with the
+ * database's own key costs one read of it, never one a value.
+ */
+export function vaultOpener(ctx: Ctx): (value: Sealed, label: string) => Promise<Opened | null> {
+  const keys = new Map<string | null, Promise<Buffer | null>>();
+  return async (value, label) => {
+    let key = keys.get(value.kid);
+    if (!key) {
+      key = keyFor(ctx, value.kid);
+      keys.set(value.kid, key);
+    }
+    return opened(ctx, await key, value, label);
+  };
 }

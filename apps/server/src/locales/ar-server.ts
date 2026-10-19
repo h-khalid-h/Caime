@@ -1596,4 +1596,6 @@ export const arServer: Catalog = {
   'Sign up': 'التسجيل',
   'This link isn’t open': 'هذا الرابط غير متاح',
   'This link isn’t open any more.': 'لم يعد هذا الرابط متاحًا.',
+  'This app proves itself with PKCE alone: it has no secret to replace.':
+    'يثبت هذا التطبيق نفسه بـ PKCE وحده: ليس له سر لاستبداله.',
 };

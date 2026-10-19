@@ -2734,6 +2734,8 @@ export interface OAuthAppView {
   redirectUris: string[];
   /** It keeps a secret on a server; otherwise it proves itself with PKCE alone. */
   confidential: boolean;
+  /** Until when the secret it had before the last replacement is still taken (M16 G1). */
+  secretOverlapUntil: string | null;
   createdAt: string;
   /** Its listing in Discover (R74): what it says of itself, and where it stands. */
   listing: AppListingView;

@@ -4649,4 +4649,9 @@ export const turkish: Catalog = {
   'Opens the files between you': 'Aranızdaki dosyaları açar',
   'Choose how long.': 'Süreyi seçin.',
   'Taken back: that link opens nothing now': 'Geri alındı: bu bağlantı artık hiçbir şey açmıyor',
+  'The secret it had is still taken until {when}: switch before then.':
+    'Önceki gizli anahtar {when} tarihine kadar kabul edilmeye devam eder: ondan önce geçiş yapın.',
+  'Replace the client secret': 'İstemci gizli anahtarını değiştir',
+  'The one it had is still taken for a day, so your server switches in its own time':
+    'Önceki bir gün daha kabul edilir; sunucunuz kendi zamanında geçiş yapar',
 };

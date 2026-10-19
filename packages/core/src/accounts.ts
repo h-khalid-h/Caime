@@ -46,6 +46,12 @@ const IDENTITY: Record<AccountProvider, string[]> = {
 export const GOOGLE_CALENDAR_LIST_SCOPE =
   'https://www.googleapis.com/auth/calendar.calendarlist.readonly';
 
+/**
+ * Google's files the person picks in its picker, and nothing else of the drive: the files use,
+ * and all the picker page's access may reach (M16 G1).
+ */
+export const GOOGLE_PICKED_FILES_SCOPE = 'https://www.googleapis.com/auth/drive.file';
+
 /** Each use's permissions, the narrowest that do the job. */
 const USE_SCOPES: Record<AccountUse, Record<AccountProvider, string[]>> = {
   calendar: {
@@ -63,7 +69,7 @@ const USE_SCOPES: Record<AccountUse, Record<AccountProvider, string[]>> = {
   },
   files: {
     // Only the files the person picks in Google's own picker: never the drive.
-    google: ['https://www.googleapis.com/auth/drive.file'],
+    google: [GOOGLE_PICKED_FILES_SCOPE],
     // The person's own OneDrive, read when they browse it in Caime to pick one.
     microsoft: ['Files.Read'],
   },

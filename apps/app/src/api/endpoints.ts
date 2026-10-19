@@ -691,6 +691,9 @@ export const endpoints = {
     confidential: boolean;
   }) => api.post<OAuthAppCreatedResponse>('/me/oauth-apps', body),
   removeOAuthApp: (id: string) => api.del<OkResponse>(`/me/oauth-apps/${id}`),
+  /** A new client secret, shown once; the one it had is still taken for a day (M16 G1). */
+  replaceOAuthSecret: (id: string) =>
+    api.post<OAuthAppCreatedResponse>(`/me/oauth-apps/${id}/secret`),
   /** What the app says of itself in Discover (R74), and whether it asks to be listed. */
   listOAuthApp: (
     id: string,

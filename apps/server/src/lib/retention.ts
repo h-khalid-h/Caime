@@ -216,6 +216,18 @@ export async function sweepRecords(ctx: AppContext): Promise<void> {
     sql`delete from passkey_challenges where id in (select id from passkey_challenges
       where expires_at < ${ctx.now()} limit ${LOT})`,
   );
+  // An OAuth app's replaced secret past its day (M16 G1): nothing takes it any more.
+  await ctx.db
+    .updateTable('oauth_clients')
+    .set({ previous_secret_hash: null, previous_secret_until: null })
+    .where('previous_secret_until', '<=', ctx.now())
+    .execute();
+  // A ticket past its time opens nothing anyway (M16 G1): its spent nonce has nothing to stop.
+  await inLots(
+    ctx,
+    sql`delete from spent_tickets where id in (select id from spent_tickets
+      where expires_at < ${ctx.now()} limit ${LOT})`,
+  );
   await inLots(
     ctx,
     sql`delete from released_handles where handle in (select handle from released_handles

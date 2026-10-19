@@ -1,6 +1,8 @@
 import type { OAuthAppView } from '@caime/core/api';
+import { formatWhen } from '@caime/core/format';
 import { msg, tr, trn } from '@caime/core/i18n';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
+import KeyRound from 'lucide-react-native/icons/key-round';
 import LayoutGrid from 'lucide-react-native/icons/layout-grid';
 import Plus from 'lucide-react-native/icons/plus';
 import Trash from 'lucide-react-native/icons/trash';
@@ -10,6 +12,7 @@ import { ApiError } from '@/api/client';
 import { endpoints } from '@/api/endpoints';
 import { qk } from '@/api/keys';
 import { WEB_URL } from '@/lib/config';
+import { useUserClock } from '@/lib/time';
 import { Button } from '@/ui/Button';
 import { Divider } from '@/ui/Card';
 import { ChoiceChips } from '@/ui/Chip';
@@ -98,6 +101,28 @@ export function OAuthApps() {
   const shown = open ?? lastOpen.current;
   const [removing, setRemoving] = useState(false);
   const [busy, setBusy] = useState(false);
+  // A replaced secret, shown this once in its app's sheet and forgotten as the sheet fades.
+  const [replaced, setReplaced] = useState<{ appId: string; clientSecret: string } | null>(null);
+  const { timeZone, locale } = useUserClock();
+  const closeApp = () => {
+    setOpen(null);
+    setRemoving(false);
+    setTimeout(() => setReplaced(null), 400);
+  };
+  const replaceSecret = async (app: OAuthAppView) => {
+    setBusy(true);
+    try {
+      const r = await endpoints.replaceOAuthSecret(app.id);
+      if (r.clientSecret) setReplaced({ appId: app.id, clientSecret: r.clientSecret });
+      setOpen(r.app);
+      void qc.invalidateQueries({ queryKey: qk.oauthApps });
+    } catch (e) {
+      toast((e as Error).message, { tone: 'danger' });
+    } finally {
+      setBusy(false);
+    }
+  };
+  const newSecret = shown && replaced?.appId === shown.id ? replaced.clientSecret : null;
 
   const closeNew = () => {
     setMaking(false);
@@ -312,12 +337,13 @@ export function OAuthApps() {
 
       <Sheet
         open={open !== null}
-        onClose={() => {
-          setOpen(null);
-          setRemoving(false);
-        }}
+        onClose={closeApp}
         title={shown?.name}
-        subtitle={shown?.website ?? undefined}
+        subtitle={
+          newSecret
+            ? tr('Copy the secret now: it won’t be shown again.')
+            : (shown?.website ?? undefined)
+        }
         footer={
           removing && shown ? (
             <Button
@@ -334,10 +360,44 @@ export function OAuthApps() {
       >
         {shown ? (
           <View style={{ gap: 12 }}>
+            {newSecret ? (
+              <>
+                <CopyRow
+                  label={tr('Client secret')}
+                  value={newSecret}
+                  testID="oauth-app-new-secret"
+                />
+                <Text variant="caption" color="textSecondary">
+                  {tr(
+                    'Keep it on your server, never in an app people download. Send it with the client ID when you trade a code.',
+                  )}
+                </Text>
+                {shown.secretOverlapUntil ? (
+                  <Text variant="caption" color="textSecondary" testID="oauth-app-secret-overlap">
+                    {tr('The secret it had is still taken until {when}: switch before then.', {
+                      when: formatWhen(shown.secretOverlapUntil, new Date(), timeZone, locale),
+                    })}
+                  </Text>
+                ) : null}
+                <Divider />
+              </>
+            ) : null}
             <Addresses app={shown} />
             <Divider />
             <AppListing key={shown.id} app={shown} onSaved={setOpen} />
             <View style={{ marginHorizontal: -20 }}>
+              {shown.confidential ? (
+                <ListRow
+                  icon={KeyRound}
+                  title={tr('Replace the client secret')}
+                  subtitle={tr(
+                    'The one it had is still taken for a day, so your server switches in its own time',
+                  )}
+                  onPress={() => void replaceSecret(shown)}
+                  disabled={busy}
+                  testID="oauth-app-replace-secret"
+                />
+              ) : null}
               <ListRow
                 icon={Trash}
                 title={tr('Remove the app')}

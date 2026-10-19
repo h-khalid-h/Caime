@@ -992,7 +992,12 @@ A sphere is said as how you know someone, never "sphere".
   `conversation.erased`, so an organization's app drops its copies (R54). A replaced webhook
   secret signs beside the new one for `SECRET_OVERLAP_MS` (a day: `previous_webhook_secret`,
   `previous_secret_until`; the header's second `v1`), and core's `parseSignature` and the SDK's
-  verifier take any `v1`; nothing else signs or checks a delivery. A delivery is tried
+  verifier take any `v1`; nothing else signs or checks a delivery. A secret is kept sealed by the
+  vault's key, bound to its app (M16 G1, `lib/app-secrets.ts`: `sealWebhookSecret`,
+  `webhookSecretOf`, `replacedSecret`); this release writes a clear copy beside it and signs with
+  that while it's there (the release before reads it alone), the next empties the clear copies,
+  and the vault's pass (`resealAppSecrets`) seals what's only in clear, moves the rest to a new
+  key and forgets a removed app's and a replaced one past its day (`NO_SECRETS`). A delivery is tried
   six times over about a quarter of an hour (`WEBHOOK_ATTEMPTS`, the job loop's backoff);
   nothing is replayed on its own, but an app lists its own deliveries and retries a failed one
   (`GET /v1/apps/me/deliveries`, `POST …/:id/retry`, `requeueDelivery`), which the doc says.
@@ -1183,7 +1188,8 @@ A sphere is said as how you know someone, never "sphere".
   stale one again as it's used, and `lib/vault-reseal.ts` moves the rest at start and daily, then
   deletes the database's key) and an access lives in memory only (`accessFor`, which marks
   `reconnect` on `invalid_grant`); anything new kept sealed for someone goes through that pair and
-  joins the pass, never a key of its own in `server_settings`. The calendar use keeps
+  joins the pass (apps' webhook secrets did, M16 G1: in its walk, its counts and the check before
+  the database's key goes), never a key of its own in `server_settings`. The calendar use keeps
   `external_busy` (start and end, nothing else), read by `syncAccountCalendar`
   (`lib/external-busy.ts`: on connect, on "Read now", the `accounts.calendar` sweep, and
   `freshenBusy` before a slot is offered or taken when the last read is older than
@@ -1211,7 +1217,11 @@ A sphere is said as how you know someone, never "sphere".
   `GOOGLE_PICKER_API_KEY` and `GOOGLE_PICKER_APP_ID`); OneDrive is listed by `listAccountFiles`
   (a next page followed only when it's Graph's own); Google's picker is `googlePickerPage`, the
   one page that loads a third party's script, under its own policy, opened by a sealed five-minute
-  `pickerTicket` (no session, so a phone's sheet can open it); a picked file is copied by
+  `pickerTicket` (no session, so a phone's sheet can open it) once (`spendTicket` in
+  `lib/provider-consent.ts` keeps its nonce in `spent_tickets` until it would have expired: a
+  ticket that must open once spends its nonce there), showing `pickerAccess` (an access asked
+  narrowed to `drive.file` by `narrowedAccess`, the connection's own where Google answers with
+  more, counted by `caime_picker_access_total`); a picked file is copied by
   `importAccountFile` as the person's upload (streamed, hashed, capped at
   `ACCOUNT_FILE_MAX_BYTES`, a redirect followed by hand without the access). The composer's Share
   sheet offers each drive, `features/cloud/DriveSheet.tsx` (lazy) browses OneDrive and
@@ -1292,7 +1302,10 @@ A sphere is said as how you know someone, never "sphere".
   `PERSON_ROUTES`, for a `cap_` or `cao_` token on the same client.
 - OAuth apps' tokens (`cao_`) go through the same `PERSON_ROUTES`; `resolveOAuthAccess`
   (`apps/server/src/lib/oauth.ts`) checks the token, its grant, its app and its person are all
-  live. `/v1/oauth/token` and `/v1/oauth/revoke` answer RFC 6749/7009 errors
+  live. A confidential app's developer replaces its client secret (`POST /me/oauth-apps/:id/secret`,
+  shown once, M16 G1): the old one's hash is still taken by `callingClient` for
+  `SECRET_OVERLAP_MS` (`previous_secret_hash`, `previous_secret_until`, swept daily); an
+  organization's app token is replaced at once, since that's how a leaked one is stopped. `/v1/oauth/token` and `/v1/oauth/revoke` answer RFC 6749/7009 errors
   (`{error, error_description}`), not Caime's shape, and take forms. The consent screen is
   `apps/app/src/app/(app)/oauth/authorize.tsx`; a signed-out visitor's authorize link survives
   sign-in through `state/pendingLink.ts` (`appPath` allows 1,000 characters and colons in the

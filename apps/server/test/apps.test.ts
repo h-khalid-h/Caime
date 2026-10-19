@@ -1,10 +1,13 @@
-import { createHmac } from 'node:crypto';
+import { createHmac, randomBytes } from 'node:crypto';
 import { createServer, type IncomingHttpHeaders, type Server } from 'node:http';
 import { type AddressInfo, createServer as createTcpServer } from 'node:net';
 import { parseSignature, uuidv4 } from '@caime/core';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { checkWebhookUrl, isPrivateAddress, postWebhook } from '../src/lib/apps';
 import { runDueJobs } from '../src/lib/jobs';
+import { storedServerKey } from '../src/lib/server-keys';
+import { DATABASE_VAULT_KEY, vaultKid } from '../src/lib/vault-keys';
+import { resealVault, startVaultReseal } from '../src/lib/vault-reseal';
 import { type Client, createTestApp, signup, type TestApp } from './helpers';
 
 let t: TestApp;
@@ -32,6 +35,30 @@ async function deliver() {
   await runDueJobs(t.ctx);
   return received.at(-1);
 }
+/** What an app keeps of its secrets, clear and sealed. */
+const secretsOf = (appId: string) =>
+  t.ctx.db
+    .selectFrom('org_apps')
+    .select([
+      'webhook_secret',
+      'webhook_secret_sealed',
+      'webhook_secret_kid',
+      'previous_webhook_secret',
+      'previous_secret_sealed',
+      'previous_secret_kid',
+      'previous_secret_until',
+    ])
+    .where('id', '=', appId)
+    .executeTakeFirstOrThrow();
+const NOTHING_KEPT = {
+  webhook_secret: null,
+  webhook_secret_sealed: null,
+  webhook_secret_kid: null,
+  previous_webhook_secret: null,
+  previous_secret_sealed: null,
+  previous_secret_kid: null,
+  previous_secret_until: null,
+};
 
 beforeAll(async () => {
   hook = createServer(async (req, res) => {
@@ -253,6 +280,8 @@ describe('apps: tokens, bots and webhooks (PRD §73–75, R16)', () => {
     expect((await as(fresh, 'GET', `/v1/orgs/${orgId}/inbox`)).statusCode).toBe(200);
     await noor.req('DELETE', `/v1/orgs/${orgId}/apps/${appId}`);
     expect((await as(fresh, 'GET', `/v1/orgs/${orgId}/inbox`)).statusCode).toBe(401);
+    // Nothing signs for it any more, so nothing of its secrets is kept (M16 G1).
+    expect(await secretsOf(appId)).toEqual(NOTHING_KEPT);
     const team = (await noor.get(`/v1/orgs/${orgId}`)).org.members;
     expect(team.map((m: any) => m.userId)).not.toContain(botId);
     const people = (await noor.get(`/v1/conversations/${convo}`)).conversation.participants;
@@ -284,6 +313,7 @@ describe('apps: tokens, bots and webhooks (PRD §73–75, R16)', () => {
     expect(seats.filter((s) => s.left_at === null)).toEqual([]);
     expect(seats.filter((s) => s.role === 'owner').map((s) => s.user_id)).toEqual([omar.user.id]);
     expect((await as(other, 'GET', `/v1/orgs/${otherOrgId}/inbox`)).statusCode).toBe(401);
+    expect(await secretsOf(made.json().app.id)).toEqual(NOTHING_KEPT);
   });
 
   it('webhooks never reach a private address', () => {
@@ -349,5 +379,192 @@ describe('apps: tokens, bots and webhooks (PRD §73–75, R16)', () => {
     ).rejects.toThrow(/No answer within/);
     expect(Date.now() - started).toBeLessThan(2000);
     await new Promise((done) => drip.close(done));
+  });
+});
+
+describe('webhook secrets kept sealed (M16 G1)', () => {
+  let appId: string;
+  let secret: string;
+  /** The signatures a ping to the app carried, or null when nothing reached its address. */
+  async function pinged(id: string): Promise<string[] | null> {
+    const before = received.length;
+    await noor.post(`/v1/orgs/${orgId}/apps/${id}/ping`);
+    await runDueJobs(t.ctx);
+    const got = received
+      .slice(before)
+      .find((r) => JSON.parse(r.body).data?.appId === id && JSON.parse(r.body).event === 'ping');
+    if (!got) return null;
+    const sig = parseSignature(String(got.headers['caime-signature']));
+    return sig!.v1.map(
+      (v) =>
+        [secret, ...known].find(
+          (s) => createHmac('sha256', s).update(`${sig!.t}.${got.body}`).digest('hex') === v,
+        ) ?? 'unknown',
+    );
+  }
+  /** Every secret shown so far, to name what a signature was made with. */
+  const known: string[] = [];
+  /** The release after this one: no clear copy, only the sealed secrets. */
+  const clearCopiesGone = (id: string) =>
+    t.ctx.db
+      .updateTable('org_apps')
+      .set({ webhook_secret: null, previous_webhook_secret: null })
+      .where('id', '=', id)
+      .execute();
+
+  it('seals a new app’s secret beside its clear copy, and signs with the sealed one alone', async () => {
+    const made = await noor.post(`/v1/orgs/${orgId}/apps`, {
+      name: 'Sealed Hook',
+      scopes: ['inbox:read'],
+      webhookUrl: hookUrl,
+      events: [],
+    });
+    appId = made.app.id;
+    secret = made.webhookSecret;
+    known.push(secret);
+    const kept = await secretsOf(appId);
+    expect(kept.webhook_secret).toBe(secret);
+    expect(kept.webhook_secret_sealed).not.toBeNull();
+    expect(Buffer.from(kept.webhook_secret_sealed!).toString('latin1')).not.toContain(secret);
+    await clearCopiesGone(appId);
+    expect(await pinged(appId)).toEqual([secret]);
+  });
+
+  it('a replaced secret is sealed too, and both sign for its day', async () => {
+    const rotated = await noor.post(`/v1/orgs/${orgId}/apps/${appId}/secret`);
+    const old = secret;
+    secret = rotated.webhookSecret;
+    known.push(secret);
+    expect(rotated.app.secretOverlapUntil).not.toBeNull();
+    await clearCopiesGone(appId);
+    expect(
+      (await noor.get(`/v1/orgs/${orgId}/apps`)).apps.find((a: any) => a.id === appId),
+    ).toMatchObject({ secretOverlapUntil: rotated.app.secretOverlapUntil });
+    expect(await pinged(appId)).toEqual([secret, old]);
+  });
+
+  it('a secret no key here opens is never sent unsigned', async () => {
+    await t.ctx.db
+      .updateTable('org_apps')
+      .set({ webhook_secret_sealed: randomBytes(60) })
+      .where('id', '=', appId)
+      .execute();
+    const before = received.length;
+    const { deliveryId } = await noor.post(`/v1/orgs/${orgId}/apps/${appId}/ping`);
+    await runDueJobs(t.ctx);
+    expect(received.slice(before).filter((r) => JSON.parse(r.body).data?.appId === appId)).toEqual(
+      [],
+    );
+    const failed = await t.ctx.db
+      .selectFrom('webhook_deliveries')
+      .select(['status', 'last_error', 'attempts'])
+      .where('id', '=', deliveryId)
+      .executeTakeFirstOrThrow();
+    expect(failed).toMatchObject({ status: 'pending', attempts: 1 });
+    expect(failed.last_error).toMatch(/can’t be opened here/);
+    // Replaced, it signs again: the one before opens nowhere, so it signs alone.
+    const rotated = await noor.post(`/v1/orgs/${orgId}/apps/${appId}/secret`);
+    secret = rotated.webhookSecret;
+    known.push(secret);
+    await clearCopiesGone(appId);
+    expect(await pinged(appId)).toEqual([secret]);
+  });
+
+  it('the vault’s pass seals what the release before kept in clear alone, again what no longer opens to it, and forgets what signs nothing', async () => {
+    const make = async (name: string) => {
+      const made = await noor.post(`/v1/orgs/${orgId}/apps`, {
+        name,
+        scopes: ['inbox:read'],
+        webhookUrl: hookUrl,
+        events: [],
+      });
+      known.push(made.webhookSecret);
+      return { id: made.app.id as string, secret: made.webhookSecret as string };
+    };
+    // As the release before made one: a clear secret alone.
+    const before = await make('Older Release');
+    await t.ctx.db
+      .updateTable('org_apps')
+      .set({ webhook_secret_sealed: null, webhook_secret_kid: null })
+      .where('id', '=', before.id)
+      .execute();
+    // One the release before replaced while a deployment overlapped: its clear copy moved on.
+    const moved = await make('Replaced Meanwhile');
+    const newer = 'whsec_written-by-the-release-before';
+    known.push(newer);
+    await t.ctx.db
+      .updateTable('org_apps')
+      .set({
+        webhook_secret: newer,
+        previous_webhook_secret: moved.secret,
+        previous_secret_until: new Date(t.clock.now.getTime() + 3_600_000),
+      })
+      .where('id', '=', moved.id)
+      .execute();
+    // And one the release before removed, keeping its secret.
+    const removed = await make('Removed Before');
+    await t.ctx.db
+      .updateTable('org_apps')
+      .set({ revoked_at: t.clock.now })
+      .where('id', '=', removed.id)
+      .execute();
+
+    // At start, the pass is queued once, past the deployment's overlap.
+    await startVaultReseal(t.ctx);
+    await startVaultReseal(t.ctx);
+    const queued = await t.ctx.db
+      .selectFrom('jobs')
+      .select('run_at')
+      .where('kind', '=', 'vault.reseal')
+      .execute();
+    expect(queued.map((j) => j.run_at.getTime())).toEqual([t.clock.now.getTime() + 10 * 60_000]);
+    await runDueJobs(t.ctx);
+    expect((await secretsOf(before.id)).webhook_secret_sealed).toBeNull();
+    t.clock.advance(10 * 60_000);
+    await runDueJobs(t.ctx);
+
+    expect((await secretsOf(before.id)).webhook_secret_sealed).not.toBeNull();
+    expect(await secretsOf(removed.id)).toEqual(NOTHING_KEPT);
+    for (const id of [before.id, moved.id]) await clearCopiesGone(id);
+    secret = before.secret;
+    expect(await pinged(before.id)).toEqual([before.secret]);
+    secret = newer;
+    expect(await pinged(moved.id)).toEqual([newer, moved.secret]);
+
+    // Past its day, a replaced secret is forgotten.
+    t.clock.advance(3_600_000);
+    await resealVault(t.ctx);
+    expect(await secretsOf(moved.id)).toMatchObject({
+      previous_webhook_secret: null,
+      previous_secret_sealed: null,
+      previous_secret_until: null,
+    });
+    expect(await pinged(moved.id)).toEqual([newer]);
+  });
+
+  it('with VAULT_KEY, apps’ secrets move to it, and the database’s key goes once nothing it seals is left', async () => {
+    const key = randomBytes(32);
+    expect(await storedServerKey(t.ctx, DATABASE_VAULT_KEY)).not.toBeNull();
+    // A day on, the secret replaced while its own couldn't be opened is forgotten with its day.
+    t.clock.advance(24 * 3_600_000);
+    t.ctx.config.vaultKeys = { current: key, previous: null };
+    try {
+      const state = await resealVault(t.ctx);
+      const kept = await t.ctx.db
+        .selectFrom('org_apps')
+        .select(['webhook_secret_kid', 'previous_secret_kid', 'previous_secret_sealed'])
+        .where('webhook_secret_sealed', 'is not', null)
+        .execute();
+      expect(kept.length).toBeGreaterThan(0);
+      for (const r of kept) {
+        expect(r.webhook_secret_kid).toBe(vaultKid(key));
+        if (r.previous_secret_sealed) expect(r.previous_secret_kid).toBe(vaultKid(key));
+      }
+      expect(state).toMatchObject({ databaseKey: false, unopenable: 0, older: 0 });
+      expect(await storedServerKey(t.ctx, DATABASE_VAULT_KEY)).toBeNull();
+      expect(await pinged(appId)).not.toBeNull();
+    } finally {
+      t.ctx.config.vaultKeys = null;
+    }
   });
 });

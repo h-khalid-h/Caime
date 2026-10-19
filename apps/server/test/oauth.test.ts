@@ -10,6 +10,8 @@ let noor: Client; // lets it in
 let sam: Client;
 let convo: string;
 let clientId: string;
+/** The confidential app's secret, as it was made. */
+let serverSecret: string;
 const REDIRECT = 'https://digest.example/callback';
 
 function pkce() {
@@ -297,6 +299,7 @@ describe('OAuth for third-party apps (PRD §74)', () => {
       confidential: true,
     });
     clientId = made.app.clientId;
+    serverSecret = made.clientSecret;
     expect(made.clientSecret).toMatch(/^cas_/);
     const { verifier, challenge } = pkce();
     const { code } = await allow(noor, request(challenge));
@@ -326,6 +329,61 @@ describe('OAuth for third-party apps (PRD §74)', () => {
     const url = new URL(no.json().redirect);
     expect(url.searchParams.get('error')).toBe('access_denied');
     expect(url.searchParams.get('code')).toBeNull();
+  });
+
+  it('a confidential app’s secret is replaced, and the one it had is still taken for a day (M16 G1)', async () => {
+    const mine = async () =>
+      (await dev.get('/v1/me/oauth-apps')).apps.find((a: any) => a.clientId === clientId);
+    const server = await mine();
+    expect(server.secretOverlapUntil).toBeNull();
+    const replaced = await dev.post(`/v1/me/oauth-apps/${server.id}/secret`);
+    expect(replaced.clientSecret).toMatch(/^cas_/);
+    expect(replaced.clientSecret).not.toBe(serverSecret);
+    expect(replaced.app.secretOverlapUntil).toBe(
+      new Date(t.clock.now.getTime() + 24 * 3_600_000).toISOString(),
+    );
+    const trade = async (secret: string) => {
+      const { verifier, challenge } = pkce();
+      const { code } = await allow(noor, request(challenge));
+      return (
+        await token({
+          grant_type: 'authorization_code',
+          code,
+          redirect_uri: REDIRECT,
+          client_id: clientId,
+          client_secret: secret,
+          code_verifier: verifier,
+        })
+      ).json();
+    };
+    expect((await trade(replaced.clientSecret)).access_token).toMatch(/^cao_/);
+    expect((await trade(serverSecret)).access_token).toMatch(/^cao_/);
+    expect((await trade('cas_never-given')).error).toBe('invalid_client');
+    // Its day over, only the new one is taken, and the view says nothing overlaps.
+    await t.ctx.db
+      .updateTable('oauth_clients')
+      .set({ previous_secret_until: new Date(t.clock.now.getTime() - 1) })
+      .where('id', '=', server.id)
+      .execute();
+    expect((await trade(serverSecret)).error).toBe('invalid_client');
+    expect((await trade(replaced.clientSecret)).access_token).toMatch(/^cao_/);
+    expect((await mine()).secretOverlapUntil).toBeNull();
+    // Only by its developer, and only for an app that keeps a secret.
+    expect((await noor.req('POST', `/v1/me/oauth-apps/${server.id}/secret`)).statusCode).toBe(404);
+    const phone = await dev.post('/v1/me/oauth-apps', {
+      name: 'Phone app',
+      redirectUris: [REDIRECT],
+    });
+    expect((await dev.req('POST', `/v1/me/oauth-apps/${phone.app.id}/secret`)).statusCode).toBe(
+      400,
+    );
+    const audited = await t.ctx.db
+      .selectFrom('audit_log')
+      .select('action')
+      .where('target', '=', server.id)
+      .where('action', '=', 'oauth.secret_replaced')
+      .execute();
+    expect(audited).toHaveLength(1);
   });
 
   it('only the app itself gives its tokens back; a garbled client is no client', async () => {

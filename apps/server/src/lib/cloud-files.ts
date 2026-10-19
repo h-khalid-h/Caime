@@ -14,12 +14,13 @@ import {
   ACCOUNT_PICKED_PATH,
   type AccountProvider,
   type AccountUse,
+  GOOGLE_PICKED_FILES_SCOPE,
 } from '@caime/core/accounts';
 import type { AccountFilesResponse, AccountFileView } from '@caime/core/api';
 import { tr } from '@caime/core/i18n';
 import type { Config } from '../config';
 import type { AppContext } from '../context';
-import { accessFor, markAccount } from './connected-accounts';
+import { accessFor, markAccount, narrowedAccess } from './connected-accounts';
 import { AppError, badRequest } from './errors';
 import { type FileRow, storeFile } from './files';
 import { assertStorage } from './plans';
@@ -59,6 +60,20 @@ export async function filesAccess(ctx: AppContext, account: Account): Promise<st
     throw new AppError(403, 'forbidden', tr('Turn on Files for this account first.'));
   const access = await accessFor(ctx, account);
   if (!access) throw reconnect();
+  return access;
+}
+
+/**
+ * The access Google's picker page hands the browser (M16 G1): narrowed to the files the person
+ * picks (`drive.file`) where Google answers so, else the connection's own as before; which of the
+ * two is counted (`caime_picker_access_total`), so whether Google narrows is read, not assumed.
+ */
+export async function pickerAccess(ctx: AppContext, account: Account): Promise<string> {
+  if (!account.uses.includes('files'))
+    throw new AppError(403, 'forbidden', tr('Turn on Files for this account first.'));
+  const narrowed = await narrowedAccess(ctx, account, GOOGLE_PICKED_FILES_SCOPE);
+  const access = narrowed ?? (await filesAccess(ctx, account));
+  ctx.metrics.pickerAccess.inc({ scope: narrowed ? 'picked_files' : 'connection' });
   return access;
 }
 
@@ -305,7 +320,8 @@ const inScript = (v: unknown) =>
  * under a policy written for it alone (`csp`), so no page of the app ever runs a third party's
  * code. It shows the person's Drive with their own access, and hands back the one file picked:
  * to the window that opened it on the web, to the app's scheme on a phone. Picking grants Caime
- * that file (`drive.file`); nothing else of the drive is reachable.
+ * that file (`drive.file`); nothing else of the drive is reachable, and the access it shows with
+ * is narrowed to that where Google narrows it (`pickerAccess`).
  */
 export function googlePickerPage(
   config: Config,

@@ -13,7 +13,7 @@
  * consent link never gets the other's account.
  */
 
-import { uuidv7 } from '@caime/core';
+import { uuidv4, uuidv7 } from '@caime/core';
 import {
   ACCOUNT_RETURN_PATH,
   type AccountProvider,
@@ -40,6 +40,7 @@ import {
   providersOn,
   refusedAs,
   sealState,
+  spendTicket,
   tradeCode,
 } from './provider-consent';
 import { serverKey } from './server-keys';
@@ -444,15 +445,17 @@ interface PickerTicket {
   u: string;
   a: string;
   b: 'web' | 'app';
+  /** Its nonce, spent as it's opened (M16 G1). */
+  n: string;
   e: number;
 }
 const PICKER_MS = 5 * 60_000;
 const pickerLabel = 'caime account picker v1';
 
 /**
- * Google's picker opens on a page of its own (R90): this one-time ticket names who asked, for
- * which account and where it returns, so the page needs no session (a phone's sign-in sheet has
- * none), good for five minutes.
+ * Google's picker opens on a page of its own (R90): this ticket names who asked, for which
+ * account and where it returns, so the page needs no session (a phone's sign-in sheet has none),
+ * good for five minutes and opened once (M16 G1: a second opening finds its nonce spent).
  */
 export async function pickerTicket(
   ctx: AppContext,
@@ -464,6 +467,7 @@ export async function pickerTicket(
     u: userId,
     a: accountId,
     b: back,
+    n: uuidv4(),
     e: ctx.now().getTime() + PICKER_MS,
   };
   return sealState(await stateKey(ctx), ticket, pickerLabel);
@@ -474,6 +478,45 @@ export async function openPickerTicket(
   raw: string | undefined,
 ): Promise<{ userId: string; accountId: string; back: 'web' | 'app' } | null> {
   const t = openState<PickerTicket>(await stateKey(ctx), raw, pickerLabel, ctx.now());
-  if (!t) return null;
+  if (!t || typeof t.n !== 'string' || !UUID.test(t.n)) return null;
+  if (!(await spendTicket(ctx, t.n, new Date(t.e)))) return null;
   return { userId: t.u, accountId: t.a, back: t.b === 'app' ? 'app' : 'web' };
+}
+
+const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/;
+
+/**
+ * An access narrowed to one scope (M16 G1: Google's picker page hands its access to the browser,
+ * so it asks for the picked files alone, never the calendar or the profile the connection also
+ * reaches), kept nowhere; null when the provider answers with more than asked or not at all, and
+ * the caller decides what to do without it. A refresh token the provider no longer takes asks
+ * for the connection to be made again, as `accessFor` does.
+ */
+export async function narrowedAccess(
+  ctx: AppContext,
+  account: Row,
+  scope: string,
+): Promise<string | null> {
+  const client = providerClient(ctx.config, account.provider);
+  const refresh = await openRefresh(ctx, account);
+  if (!client || !refresh) return null;
+  let body: Record<string, unknown>;
+  try {
+    ({ body } = await postForm(client.token, {
+      client_id: client.id,
+      client_secret: client.secret,
+      refresh_token: refresh.toString(),
+      grant_type: 'refresh_token',
+      scope,
+    }));
+  } catch {
+    return null;
+  }
+  if (body.error === 'invalid_grant') {
+    await markAccount(ctx, account.id, 'reconnect');
+    return null;
+  }
+  const granted = typeof body.scope === 'string' ? body.scope.split(/\s+/).filter(Boolean) : [];
+  const narrowed = granted.length > 0 && granted.every((s) => s === scope);
+  return narrowed && typeof body.access_token === 'string' ? body.access_token : null;
 }

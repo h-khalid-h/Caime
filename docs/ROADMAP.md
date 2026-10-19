@@ -2811,6 +2811,36 @@ graph) and the number that will show it; one that sharpens none is hygiene and s
       by tokens with no silent search spend (by cost, priced by H7's `lib/ai-costs.ts`: a count a
       day bounds nothing), a recording's length read from the file before it's sent, private
       content filtered and refused on the server.
+- [x] G1. Credentials (2026-10-19, review §8 H2 and M, §11 (b); advantage 5, privacy that
+      follows from the business model, for an organization's integrations as for its people; the
+      number that shows it: credentials kept in clear, every webhook secret today, none once G1b
+      ships). An organization's webhook secrets are sealed by
+      the vault's key (`lib/app-secrets.ts`, bound to the app, migration 0130), as connected
+      accounts' tokens are, and the vault's pass seals the ones kept only in clear (with or without
+      `VAULT_KEY`, once a deployment's overlap is over), seals again one that no longer opens to its
+      clear copy, moves them to a new key, counts them with the tokens and keeps the database's key
+      while it seals any; a removed app keeps none of its secrets, a replaced one is forgotten past
+      its day, and a delivery whose secret no key here opens is never sent unsigned. This release
+      still writes the clear copy and signs with it while it's there, since the release before reads
+      that alone while a deployment overlaps. Google's picker page opens once by its ticket
+      (`spent_tickets`, migration 0131, swept daily) and hands the browser an access asked narrowed
+      to the files picked (`drive.file`), the connection's own where Google answers with more,
+      counted by `caime_picker_access_total` so whether Google narrows is read in production, not
+      assumed. An OAuth app's developer replaces its client secret from Developer (shown once, the
+      old one still taken for a day, migration 0132, then forgotten), in four languages. An
+      organization's app token is still replaced at once: a replacement is how a leaked one is
+      stopped. Not done: G1b, the next release, empties the clear copies and reads the sealed ones
+      alone, and the one after drops the columns (`-- contracts after` G1b); whether Google narrows
+      a renewed access is unverified (the counter says). Verified: `apps.test.ts` (sealed beside the
+      clear copy and never in it, signed by the sealed one alone, a replaced one sealed and both
+      signing for its day, an unopenable secret never sent, the pass at start queued once past the
+      overlap and sealing an older release's clear secret, again one replaced meanwhile, forgetting
+      a removed app's and a replaced one past its day; with `VAULT_KEY` every app's secret moves and
+      the database's key goes), `vault-keys.test.ts`, `cloud-files.test.ts` (the narrowed access on
+      the page and never the connection's, the ticket opening once, a stale one never, the
+      connection's own where Google won't narrow, counted), `oauth.test.ts` (the new secret and the
+      old for a day, then the new alone, only by its developer, only for an app with a secret,
+      audited), the catalogs in four languages, and the full gate.
 - [ ] H. Business depth: a Business seat includes Pro; a cap on organizations per person; room
       checks inside the transaction; quick replies, away and greeting messages; customer notes,
       tags and fields; tax invoices (counsel); booking and revenue analytics; intake forms as
@@ -4591,6 +4621,9 @@ graph) and the number that will show it; one that sharpens none is hygiene and s
   journeys, safety, reliability, performance, intelligence, mail and calendar, chat, integrations,
   business and code integrity; the matrix against WhatsApp, Signal, Slack, Calendly and Workspace;
   an age-assurance design; the integration framework mapped to the code; plan M16 (A–H).
+- 2026-10-19 — M16 G1: credentials: organizations' webhook secrets sealed by the vault's key
+  (the clear copies emptied next release), Google's picker page opened once with an access asked
+  narrowed to the files picked, an OAuth app's client secret replaced with a day's overlap.
 - 2026-10-19 — M16 H7: what a person costs: production's AI moved off Opus 5.5 for everything
   (the light model is Haiku 5.5 unless set; the top model for a payer's follow-ups and agent), one
   price list priced against `ai_runs`, the operator's AI cost per person by plan, the free plans

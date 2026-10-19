@@ -54,6 +54,7 @@ import {
   listingView,
   publisherOf,
 } from '../lib/app-directory';
+import { SECRET_OVERLAP_MS } from '../lib/apps';
 import { audit } from '../lib/audit';
 import { hashToken } from '../lib/crypto';
 import { AppError, badRequest, forbidden, notFound } from '../lib/errors';
@@ -77,7 +78,7 @@ import { requireAuth } from '../plugins/auth';
 
 const MAX_APPS = 20;
 
-function appView(c: Selectable<OAuthClientsTable>): OAuthAppView {
+function appView(c: Selectable<OAuthClientsTable>, now: Date): OAuthAppView {
   return {
     id: c.id,
     clientId: c.client_id,
@@ -85,6 +86,10 @@ function appView(c: Selectable<OAuthClientsTable>): OAuthAppView {
     website: c.website,
     redirectUris: c.redirect_uris,
     confidential: c.secret_hash !== null,
+    secretOverlapUntil:
+      c.previous_secret_hash && c.previous_secret_until && c.previous_secret_until > now
+        ? c.previous_secret_until.toISOString()
+        : null,
     createdAt: c.created_at.toISOString(),
     listing: listingView(c),
     connectedCount: c.connected_count,
@@ -196,7 +201,7 @@ export async function oauthRoutes(app: FastifyInstance, ctx: AppContext) {
       .where('revoked_at', 'is', null)
       .orderBy('created_at', 'desc')
       .execute();
-    return { apps: rows.map(appView) };
+    return { apps: rows.map((r) => appView(r, ctx.now())) };
   });
 
   app.post('/me/oauth-apps', async (req, reply): Promise<OAuthAppCreatedResponse> => {
@@ -235,7 +240,46 @@ export async function oauthRoutes(app: FastifyInstance, ctx: AppContext) {
     await audit(ctx.db, { actorId: auth.userId, action: 'oauth.app_created', target: row.id });
     reply.status(201);
     // The secret, this once: only its hash is kept.
-    return { app: appView(row), clientSecret: secret };
+    return { app: appView(row, ctx.now()), clientSecret: secret };
+  });
+
+  /**
+   * A new secret for an app that keeps one (M16 G1), shown this once; the one it had is still
+   * taken for a day (SECRET_OVERLAP_MS), so its servers switch in their own time. Replaced twice
+   * in a day, only the last two are taken.
+   */
+  app.post('/me/oauth-apps/:id/secret', async (req): Promise<OAuthAppCreatedResponse> => {
+    const auth = requireAuth(req);
+    const { id } = parse(z.object({ id: z.string().uuid() }), req.params);
+    const secret = newClientSecret();
+    const row = await ctx.db.transaction().execute(async (trx) => {
+      const was = await trx
+        .selectFrom('oauth_clients')
+        .select(['id', 'secret_hash'])
+        .where('id', '=', id)
+        .where('owner_id', '=', auth.userId)
+        .where('revoked_at', 'is', null)
+        .forUpdate()
+        .executeTakeFirst();
+      if (!was) throw notFound(tr('That app'));
+      if (!was.secret_hash)
+        throw badRequest(
+          tr('This app proves itself with PKCE alone: it has no secret to replace.'),
+        );
+      const updated = await trx
+        .updateTable('oauth_clients')
+        .set({
+          secret_hash: hashToken(secret),
+          previous_secret_hash: was.secret_hash,
+          previous_secret_until: new Date(ctx.now().getTime() + SECRET_OVERLAP_MS),
+        })
+        .where('id', '=', id)
+        .returningAll()
+        .executeTakeFirstOrThrow();
+      await audit(trx, { actorId: auth.userId, action: 'oauth.secret_replaced', target: id });
+      return updated;
+    });
+    return { app: appView(row, ctx.now()), clientSecret: secret };
   });
 
   /**
@@ -352,7 +396,7 @@ export async function oauthRoutes(app: FastifyInstance, ctx: AppContext) {
       type: 'apps.changed',
       data: { appId: row.id },
     });
-    return { app: appView(row) };
+    return { app: appView(row, ctx.now()) };
   });
 
   app.delete('/me/oauth-apps/:id', async (req): Promise<OkResponse> => {
@@ -522,13 +566,20 @@ export async function oauthRoutes(app: FastifyInstance, ctx: AppContext) {
     const client = clientId
       ? await ctx.db
           .selectFrom('oauth_clients')
-          .select(['id', 'secret_hash'])
+          .select(['id', 'secret_hash', 'previous_secret_hash', 'previous_secret_until'])
           .where('client_id', '=', clientId)
           .where('revoked_at', 'is', null)
           .executeTakeFirst()
       : undefined;
-    if (!client || (client.secret_hash && !secretMatches(secret, client.secret_hash))) return null;
-    return client;
+    if (!client) return null;
+    // The secret it has, or for a day after it was replaced, the one it had (M16 G1).
+    const proven =
+      !client.secret_hash ||
+      secretMatches(secret, client.secret_hash) ||
+      (client.previous_secret_until !== null &&
+        client.previous_secret_until > ctx.now() &&
+        secretMatches(secret, client.previous_secret_hash));
+    return proven ? client : null;
   }
   const unknownClient = (reply: FastifyReply) =>
     oauthError(reply, 401, 'invalid_client', 'That app isn’t known, or its secret is wrong.');

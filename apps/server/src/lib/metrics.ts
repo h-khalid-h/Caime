@@ -124,9 +124,9 @@ const SECONDS = [0.005, 0.01, 0.025, 0.05, 0.1, 0.25, 0.5, 1, 2.5, 5, 10];
 export const backupState = { at: 0, bytes: 0, copiedAt: 0, encrypted: false };
 
 /**
- * Connected accounts' sealed tokens (M16 B5, lib/vault-reseal.ts writes it): whether VAULT_KEY
- * seals on this instance, and at the last pass, how many are sealed with which key and whether the
- * database still holds its own (`at` 0 until a pass ran).
+ * Connected accounts' sealed tokens and apps' webhook secrets (M16 B5, G1; lib/vault-reseal.ts
+ * writes it): whether VAULT_KEY seals on this instance, and at the last pass, how many are sealed
+ * with which key and whether the database still holds its own (`at` 0 until a pass ran).
  */
 export const vaultState = {
   external: false,
@@ -253,6 +253,10 @@ export function createMetrics(pool: pg.Pool) {
       'caime_webhook_deliveries_total',
       'Webhook delivery attempts, by outcome (delivered, retrying, failed).',
     ),
+    pickerAccess: new Counter(
+      'caime_picker_access_total',
+      'Google picker pages opened, by the access they showed with: picked_files (narrowed to drive.file) or connection (the connection’s own, where Google didn’t narrow it).',
+    ),
     ai: new Counter('caime_ai_calls_total', 'AI assist calls, by feature and outcome.'),
     aiTokens: new Counter(
       'caime_ai_tokens_total',
@@ -296,17 +300,17 @@ export function createMetrics(pool: pg.Pool) {
     ),
     new Gauge(
       'caime_vault_key_external',
-      'Whether VAULT_KEY seals connected accounts’ tokens on this instance (0: the database’s own key does).',
+      'Whether VAULT_KEY seals connected accounts’ tokens and apps’ webhook secrets on this instance (0: the database’s own key does).',
       () => [{ labels: {}, value: vaultState.external ? 1 : 0 }],
     ),
     new Gauge(
       'caime_vault_database_key',
-      'Whether the database still held its own key to connected accounts’ tokens at the last pass (absent until one ran).',
+      'Whether the database still held its own key to connected accounts’ tokens and apps’ webhook secrets at the last pass (absent until one ran).',
       () => (vaultState.at ? [{ labels: {}, value: vaultState.databaseKey ? 1 : 0 }] : []),
     ),
     new Gauge(
       'caime_vault_sealed',
-      'Connected accounts’ tokens at the last pass, by key: the one that seals now, an older one that still opens them, or one that’s gone (absent until a pass ran).',
+      'Connected accounts’ tokens and apps’ webhook secrets at the last pass, by key: the one that seals now, an older one that still opens them, or one that’s gone (absent until a pass ran).',
       () =>
         vaultState.at
           ? [

@@ -16,6 +16,8 @@ let lina: Client;
 let stub: Server;
 let base: string;
 let graphStatus = 200;
+/** Whether the stand-in narrows a renewed access to the scope asked (Google's answer says which). */
+let googleNarrows = true;
 const seen: Array<{ path: string; auth?: string }> = [];
 
 const PDF = Buffer.from('%PDF-1.4\n% a Google document, exported\n%%EOF\n');
@@ -36,7 +38,7 @@ const body = (req: IncomingMessage) =>
 
 beforeAll(async () => {
   stub = createServer(async (req, res) => {
-    await body(req);
+    const form = new URLSearchParams(await body(req));
     const url = new URL(req.url ?? '/', 'http://stub');
     const p = url.pathname;
     seen.push({ path: `${p}${url.search}`, auth: req.headers.authorization });
@@ -48,6 +50,9 @@ beforeAll(async () => {
       res.writeHead(200, { 'content-type': type, 'content-length': String(b.length) });
       res.end(b);
     };
+    const narrowTo = form.get('grant_type') === 'refresh_token' ? form.get('scope') : null;
+    if (p === '/google/token' && narrowTo && googleNarrows)
+      return json(200, { access_token: 'g-picked-only', expires_in: 3599, scope: narrowTo });
     if (p === '/google/token')
       return json(200, {
         access_token: 'g-access',
@@ -297,13 +302,18 @@ describe('files from a connected account (R90)', () => {
     ).toBe(400);
   });
 
-  it('opens Google’s picker on a page of its own, by a ticket good for five minutes', async () => {
+  it('opens Google’s picker on a page of its own, once, by a ticket good for five minutes', async () => {
     const { url } = await noor.post(`/v1/me/accounts/${google.id}/picker`, { back: 'app' });
-    const page = await t.app.inject({
-      method: 'GET',
-      url: url.replace('http://localhost:8787', ''),
-    });
+    const open = (address: string) =>
+      t.app.inject({ method: 'GET', url: address.replace('http://localhost:8787', '') });
+    const page = await open(url);
     expect(page.statusCode).toBe(200);
+    // The browser is handed an access to the files picked and nothing else of the account.
+    expect(page.body).toContain('"g-picked-only"');
+    expect(page.body).not.toContain('"g-access"');
+    expect(t.ctx.metrics.pickerAccess.get({ scope: 'picked_files' })).toBe(1);
+    // The ticket opens once.
+    expect((await open(url)).statusCode).toBe(404);
     expect(page.headers['cache-control']).toBe('no-store');
     const csp = String(page.headers['content-security-policy']);
     expect(csp).toContain('https://apis.google.com');
@@ -322,12 +332,19 @@ describe('files from a connected account (R90)', () => {
     expect(
       (await lina.req('POST', `/v1/me/accounts/${google.id}/picker`, { back: 'web' })).statusCode,
     ).toBe(404);
+    const late = (await noor.post(`/v1/me/accounts/${google.id}/picker`, { back: 'web' })).url;
     t.clock.advance(6 * 60_000);
-    expect(
-      (await t.app.inject({ method: 'GET', url: url.replace('http://localhost:8787', '') }))
-        .statusCode,
-    ).toBe(404);
+    expect((await open(late)).statusCode).toBe(404);
     t.clock.advance(-6 * 60_000);
+    // Where Google answers with more than asked, the connection's own access shows it, counted.
+    googleNarrows = false;
+    const wide = await open(
+      (await noor.post(`/v1/me/accounts/${google.id}/picker`, { back: 'web' })).url,
+    );
+    googleNarrows = true;
+    expect(wide.statusCode).toBe(200);
+    expect(wide.body).toContain('"g-access"');
+    expect(t.ctx.metrics.pickerAccess.get({ scope: 'connection' })).toBe(1);
     // OneDrive has no picker page: it's browsed in Caime.
     expect(
       (await noor.req('POST', `/v1/me/accounts/${ms.id}/picker`, { back: 'web' })).statusCode,

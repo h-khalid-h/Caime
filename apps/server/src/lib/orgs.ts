@@ -10,6 +10,7 @@ import type { Kysely, Transaction } from 'kysely';
 import type { AppContext } from '../context';
 import type { Database, Organization, OrgMember } from '../db/schema';
 import { columnsOf } from '../db/schema';
+import { NO_SECRETS } from './app-secrets';
 import { joinThreads, ORG_REF_COLUMNS, orgRef } from './business';
 import { forbidden, notFound } from './errors';
 import { releaseHandle } from './handles';
@@ -335,7 +336,7 @@ export async function closeOrg(
     .execute();
   await trx
     .updateTable('org_apps')
-    .set({ revoked_at: now })
+    .set({ revoked_at: now, ...NO_SECRETS })
     .where('org_id', '=', orgId)
     .where('revoked_at', 'is', null)
     .execute();

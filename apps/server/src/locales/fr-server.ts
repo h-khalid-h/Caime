@@ -1618,4 +1618,6 @@ export const frServer: Catalog = {
   'Sign up': 'S’inscrire',
   'This link isn’t open': 'Ce lien n’est pas ouvert',
   'This link isn’t open any more.': 'Ce lien n’est plus ouvert.',
+  'This app proves itself with PKCE alone: it has no secret to replace.':
+    'Cette application s’authentifie avec PKCE seul : elle n’a pas de secret à remplacer.',
 };

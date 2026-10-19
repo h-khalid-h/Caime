@@ -22,9 +22,11 @@ import { tr } from '@caime/core/i18n';
 import { type Kysely, sql, type Transaction } from 'kysely';
 import type { AppContext } from '../context';
 import type { Database, OrgApp } from '../db/schema';
+import { currentOf, previousOf, webhookSecretOf } from './app-secrets';
 import { hashToken } from './crypto';
 import { badRequest } from './errors';
 import { enqueue, registerJob } from './jobs';
+import { vaultOpener } from './vault-keys';
 
 export function newApiToken(): { token: string; prefix: string; hash: Buffer } {
   const token = `${API_TOKEN_PREFIX}${randomBytes(24).toString('base64url')}`;
@@ -349,9 +351,14 @@ export function registerWebhookJob(): void {
         'd.payload',
         'd.attempts',
         'd.status',
+        'a.id as app_id',
         'a.webhook_url',
         'a.webhook_secret',
+        'a.webhook_secret_sealed',
+        'a.webhook_secret_kid',
         'a.previous_webhook_secret',
+        'a.previous_secret_sealed',
+        'a.previous_secret_kid',
         'a.previous_secret_until',
         'a.revoked_at',
       ])
@@ -369,36 +376,39 @@ export function registerWebhookJob(): void {
     const body = JSON.stringify(delivery.payload);
     const timestamp = Math.floor(ctx.now().getTime() / 1000);
     // The secret before the last replacement signs too, for a day, so an app switches in its
-    // own time; the new one's signature comes first.
-    const secrets = [delivery.webhook_secret];
-    if (
-      delivery.previous_webhook_secret &&
-      delivery.previous_secret_until &&
-      delivery.previous_secret_until > ctx.now()
-    )
-      secrets.push(delivery.previous_webhook_secret);
-    const signature = `t=${timestamp},${secrets
-      .map((s) => `v1=${signWebhook(s, timestamp, body)}`)
-      .join(',')}`;
+    // own time; the new one's signature comes first. Both are kept sealed (lib/app-secrets.ts).
+    const open = vaultOpener(ctx);
+    const current = await webhookSecretOf(ctx, delivery.app_id, currentOf(delivery), open);
+    const previous =
+      delivery.previous_secret_until && delivery.previous_secret_until > ctx.now()
+        ? await webhookSecretOf(ctx, delivery.app_id, previousOf(delivery), open)
+        : null;
     let status: number | null = null;
     let error: string | null = null;
-    try {
-      status = await postWebhook(
-        delivery.webhook_url,
-        body,
-        {
-          'content-type': 'application/json',
-          'user-agent': 'Caime-Webhooks/1',
-          'caime-event': delivery.event,
-          'caime-delivery': delivery.id,
-          'caime-signature': signature,
-        },
-        { allowPrivate: ctx.config.WEBHOOKS_ALLOW_PRIVATE },
-      );
-      if (status < 200 || status >= 300) error = `It answered ${status}.`;
-    } catch (e) {
-      error = (e as Error).message.slice(0, 300);
-    }
+    // Never sent unsigned: a secret no key here opens is replaced by the organization.
+    if (!current)
+      error = 'Its webhook secret can’t be opened here: replace it in the app’s settings.';
+    else
+      try {
+        const secrets = previous ? [current, previous] : [current];
+        status = await postWebhook(
+          delivery.webhook_url,
+          body,
+          {
+            'content-type': 'application/json',
+            'user-agent': 'Caime-Webhooks/1',
+            'caime-event': delivery.event,
+            'caime-delivery': delivery.id,
+            'caime-signature': `t=${timestamp},${secrets
+              .map((s) => `v1=${signWebhook(s, timestamp, body)}`)
+              .join(',')}`,
+          },
+          { allowPrivate: ctx.config.WEBHOOKS_ALLOW_PRIVATE },
+        );
+        if (status < 200 || status >= 300) error = `It answered ${status}.`;
+      } catch (e) {
+        error = (e as Error).message.slice(0, 300);
+      }
     const attempts = delivery.attempts + 1;
     await ctx.db
       .updateTable('webhook_deliveries')
@@ -458,7 +468,9 @@ export async function appViews(ctx: AppContext, apps: OrgApp[]): Promise<OrgAppV
       webhookUrl: a.webhook_url,
       events: a.events as WebhookEvent[],
       secretOverlapUntil:
-        a.previous_webhook_secret && a.previous_secret_until && a.previous_secret_until > ctx.now()
+        (a.previous_webhook_secret !== null || a.previous_secret_sealed !== null) &&
+        a.previous_secret_until &&
+        a.previous_secret_until > ctx.now()
           ? a.previous_secret_until.toISOString()
           : null,
       tokenPrefix: token?.prefix ?? null,

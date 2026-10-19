@@ -84,6 +84,25 @@ export function openState<T extends { e: number }>(
 }
 
 /**
+ * A sealed ticket spent: true at its first opening, false at every later one (M16 G1). Its nonce
+ * is kept until the ticket would have expired anyway (`spent_tickets`, swept daily), so a ticket
+ * that must open once carries a nonce and spends it here as it's opened.
+ */
+export async function spendTicket(
+  ctx: Pick<AppContext, 'db'>,
+  nonce: string,
+  until: Date,
+): Promise<boolean> {
+  const row = await ctx.db
+    .insertInto('spent_tickets')
+    .values({ id: nonce, expires_at: until })
+    .onConflict((oc) => oc.column('id').doNothing())
+    .returning('id')
+    .executeTakeFirst();
+  return Boolean(row);
+}
+
+/**
  * The provider's consent link. Which account is the person's to choose every time (many have
  * more than one); `offline` asks for a refresh token, which Google gives only with its consent
  * shown again, else an access that lasts the hour and renews nothing.

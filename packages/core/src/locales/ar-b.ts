@@ -3154,4 +3154,9 @@ export const arB: Catalog = {
   'Opens the files between you': 'يفتح الملفات بينكما',
   'Choose how long.': { toWoman: 'اختاري المدة.', toMan: 'اختر المدة.', other: 'اختر المدة.' },
   'Taken back: that link opens nothing now': 'سُحب: هذا الرابط لا يفتح شيئًا الآن',
+  'The secret it had is still taken until {when}: switch before then.':
+    'السر السابق يظل مقبولًا حتى {when}: بدّل قبل ذلك.',
+  'Replace the client secret': 'استبدال سر العميل',
+  'The one it had is still taken for a day, so your server switches in its own time':
+    'يظل السر السابق مقبولًا ليوم، فيتحوّل خادمك في الوقت الذي يناسبه',
 };

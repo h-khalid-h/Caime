@@ -92,6 +92,7 @@ export type AuditAction =
   | 'app.revoked'
   | 'oauth.app_created'
   | 'oauth.app_removed'
+  | 'oauth.secret_replaced'
   | 'oauth.allowed'
   | 'oauth.removed'
   | 'oauth.app_updated'

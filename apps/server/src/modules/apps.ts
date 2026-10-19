@@ -31,6 +31,7 @@ import type { FastifyInstance } from 'fastify';
 import { z } from 'zod';
 import type { AppContext } from '../context';
 import type { OrgApp, WebhookDelivery } from '../db/schema';
+import { currentOf, NO_SECRETS, replacedSecret, sealWebhookSecret } from '../lib/app-secrets';
 import {
   appViews,
   checkWebhookUrl,
@@ -182,6 +183,7 @@ export async function appRoutes(app: FastifyInstance, ctx: AppContext) {
     const botId = uuidv7();
     const token = newApiToken();
     const secret = newWebhookSecret();
+    const sealed = await sealWebhookSecret(ctx, appId, secret);
     await ctx.db.transaction().execute(async (trx) => {
       await lockOrgRow(trx, id);
       await assertAppRoom(ctx, id, trx);
@@ -214,7 +216,10 @@ export async function appRoutes(app: FastifyInstance, ctx: AppContext) {
           bot_user_id: botId,
           scopes: body.scopes,
           webhook_url: url,
+          // Sealed, and in clear while the release before may still sign (lib/app-secrets.ts).
           webhook_secret: secret,
+          webhook_secret_sealed: sealed.sealed,
+          webhook_secret_kid: sealed.kid,
           events: body.events,
           created_by: auth.userId,
         })
@@ -301,16 +306,23 @@ export async function appRoutes(app: FastifyInstance, ctx: AppContext) {
     const auth = requireAuth(req);
     const { id, appId } = parse(appParam, req.params);
     await manager(auth.userId, id);
-    await appOf(id, appId);
     const secret = newWebhookSecret();
     const was = await appOf(id, appId);
     // The one it had signs beside the new one for a day (SECRET_OVERLAP_MS), so the app's
     // settings can change in their own time; replaced twice in a day, only the last two count.
+    const [sealed, previous] = await Promise.all([
+      sealWebhookSecret(ctx, appId, secret),
+      replacedSecret(ctx, appId, currentOf(was)),
+    ]);
     await ctx.db
       .updateTable('org_apps')
       .set({
         webhook_secret: secret,
+        webhook_secret_sealed: sealed.sealed,
+        webhook_secret_kid: sealed.kid,
         previous_webhook_secret: was.webhook_secret,
+        previous_secret_sealed: previous?.sealed ?? null,
+        previous_secret_kid: previous?.kid ?? null,
         previous_secret_until: new Date(ctx.now().getTime() + SECRET_OVERLAP_MS),
       })
       .where('id', '=', appId)
@@ -351,9 +363,10 @@ export async function appRoutes(app: FastifyInstance, ctx: AppContext) {
     await manager(auth.userId, id);
     const found = await appOf(id, appId);
     await ctx.db.transaction().execute(async (trx) => {
+      // Nothing signs for it any more, so nothing of its secrets is kept.
       await trx
         .updateTable('org_apps')
-        .set({ revoked_at: ctx.now() })
+        .set({ revoked_at: ctx.now(), ...NO_SECRETS })
         .where('id', '=', appId)
         .execute();
       await trx

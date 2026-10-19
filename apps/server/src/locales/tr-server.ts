@@ -1545,4 +1545,6 @@ export const turkishServer: Catalog = {
   'Sign up': 'Kaydol',
   'This link isn’t open': 'Bu bağlantı açık değil',
   'This link isn’t open any more.': 'Bu bağlantı artık açık değil.',
+  'This app proves itself with PKCE alone: it has no secret to replace.':
+    'Bu uygulama kendini yalnızca PKCE ile kanıtlar: değiştirilecek gizli anahtarı yok.',
 };

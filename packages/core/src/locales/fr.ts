@@ -4835,4 +4835,9 @@ export const fr: Catalog = {
   'Opens the files between you': 'Ouvre les fichiers entre vous',
   'Choose how long.': 'Choisissez la durée.',
   'Taken back: that link opens nothing now': 'Retiré : ce lien n’ouvre plus rien',
+  'The secret it had is still taken until {when}: switch before then.':
+    'L’ancien secret reste accepté jusqu’au {when} : changez avant.',
+  'Replace the client secret': 'Remplacer le secret client',
+  'The one it had is still taken for a day, so your server switches in its own time':
+    'L’ancien reste accepté un jour, pour que votre serveur change à son rythme',
 };
