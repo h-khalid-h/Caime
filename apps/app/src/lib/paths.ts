@@ -15,6 +15,8 @@ const SITE_PAGE = new RegExp(
   `^/(?:${[...SITE_PAGES, ...MARKETING_PAGES].join('|')})(?:/[^?#]*)?/?(?:[?#]|$)`,
   'i',
 );
+/** A link to someone's file (M16 H6): the server's page for whoever has it, never a screen. */
+const FILE_LINK = /^\/f\/[^/?#]+\/?(?:[?#]|$)/;
 // A query may carry a colon (an app's scope=messages:read, as browsers leave it); a path never.
 const SAFE = /^\/(?!\/)[\w@.~%/=&+-]*(?:\?[\w@.~%/?=&+:-]*)?$/;
 // Long enough for an app's authorization request (/oauth/authorize?…), short of junk.
@@ -26,7 +28,7 @@ const MAX_PATH = 1000;
  */
 export function appPath(path: string | null | undefined): string | null {
   if (!path || path.length > MAX_PATH || !SAFE.test(path) || ENTRY.test(path)) return null;
-  if (SITE_PAGE.test(path)) return null;
+  if (SITE_PAGE.test(path) || FILE_LINK.test(path)) return null;
   return path;
 }
 

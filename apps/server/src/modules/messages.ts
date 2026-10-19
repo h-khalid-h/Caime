@@ -59,11 +59,12 @@ import { sql } from 'kysely';
 import { z } from 'zod';
 import type { AppContext } from '../context';
 import { MESSAGE_COLUMNS } from '../db/schema';
+import { AssetsQuery, assetsPage } from '../lib/assets';
 import { dropSaved, tellSaved } from '../lib/automations';
 import { assertCanWrite } from '../lib/blocks';
 import { orgHost, pickProvider } from '../lib/booking';
 import { humanTeam } from '../lib/booking-team';
-import { customerMask, maskFor, maskId } from '../lib/business';
+import { customerMask, maskFor } from '../lib/business';
 import { queueCalendarPush } from '../lib/calendar-push';
 import { afterCardMove } from '../lib/card-moves';
 import { expireCheckout, stillPayableAfter } from '../lib/checkout';
@@ -1336,93 +1337,9 @@ export async function messageRoutes(app: FastifyInstance, ctx: AppContext) {
   app.get('/conversations/:id/assets', async (req): Promise<AssetsResponse> => {
     const auth = requireAuth(req);
     const { id } = parse(z.object({ id: z.string().uuid() }), req.params);
-    const { kind, before, limit } = parse(
-      z.object({
-        // One kind, or several: kind=photo,video.
-        kind: z
-          .string()
-          .transform((s) => s.split(','))
-          .pipe(
-            z
-              .array(z.enum(['photo', 'video', 'document', 'audio', 'link', 'location', 'contact']))
-              .min(1),
-          )
-          .optional(),
-        // Newest first; the next page starts after the last one shown.
-        before: z.string().uuid().optional(),
-        limit: z.coerce.number().int().min(1).max(200).default(60),
-      }),
-      req.query,
-    );
+    const q = parse(AssetsQuery, req.query);
     await membership(ctx, auth.userId, id);
-    const shown = notHiddenFor(auth.userId, 'assets.message_id');
-    const rows = await ctx.db
-      .selectFrom('assets')
-      .leftJoin('files as f', 'f.id', 'assets.file_id')
-      .leftJoin('messages as m', 'm.id', 'assets.message_id')
-      .select([
-        'm.seq as message_seq',
-        'assets.id',
-        'assets.kind',
-        'assets.url',
-        'assets.title',
-        'assets.host',
-        'assets.message_id',
-        'assets.sender_id',
-        'assets.created_at',
-        'f.id as file_id',
-        'f.name',
-        'f.mime',
-        'f.size',
-        'f.kind as file_kind',
-        'f.width',
-        'f.height',
-        'f.duration_ms',
-        'f.thumb_key',
-      ])
-      .where('assets.conversation_id', '=', id)
-      .where(shown)
-      .$if(Boolean(kind), (qb) => qb.where('assets.kind', 'in', kind!))
-      .$if(Boolean(before), (qb) => qb.where('assets.id', '<', before!))
-      .orderBy('assets.id', 'desc')
-      .limit(limit + 1)
-      .execute();
-    const page = rows.slice(0, limit);
-    const counts = await ctx.db
-      .selectFrom('assets')
-      .select(['kind', sql<number>`count(*)::int`.as('n')])
-      .where('conversation_id', '=', id)
-      .where(shown)
-      .groupBy('kind')
-      .execute();
     const mask = await maskFor(ctx.db, id, auth.userId);
-    return {
-      counts: Object.fromEntries(counts.map((c) => [c.kind, c.n])),
-      nextBefore: rows.length > limit ? (page.at(-1)?.id ?? null) : null,
-      assets: page.map((r) => ({
-        id: r.id,
-        kind: r.kind,
-        url: r.url,
-        title: r.title,
-        host: r.host,
-        messageId: r.message_id,
-        messageSeq: r.message_seq === null ? null : Number(r.message_seq),
-        senderId: mask ? maskId(mask, r.sender_id) : r.sender_id,
-        createdAt: r.created_at.toISOString(),
-        file: r.file_id
-          ? fileView({
-              id: r.file_id,
-              name: r.name!,
-              mime: r.mime!,
-              size: r.size!,
-              kind: r.file_kind!,
-              width: r.width,
-              height: r.height,
-              duration_ms: r.duration_ms,
-              thumb_key: r.thumb_key,
-            })
-          : null,
-      })),
-    };
+    return assetsPage(ctx, auth.userId, { kind: 'conversation', id, mask }, q);
   });
 }

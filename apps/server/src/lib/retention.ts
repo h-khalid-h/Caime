@@ -158,6 +158,14 @@ export async function sweepRecords(ctx: AppContext): Promise<void> {
       where least(coalesce(revoked_at, expires_at), expires_at) < ${before(KEPT_DAYS.spentInvites)}
       limit ${LOT} for update skip locked)`,
   );
+  // A link to someone's file (M16 H6) the same way: run out or taken back, kept as long as an
+  // invite link (its file, message or maker going takes it at once).
+  await inLots(
+    ctx,
+    sql`delete from file_links where id in (select id from file_links
+      where least(coalesce(revoked_at, expires_at), expires_at) < ${before(KEPT_DAYS.spentInvites)}
+      limit ${LOT} for update skip locked)`,
+  );
   // An ask to join (M16 C3h) once decided, as long again: who asked, and how it ended.
   await inLots(
     ctx,

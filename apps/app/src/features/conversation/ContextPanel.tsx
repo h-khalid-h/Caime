@@ -44,10 +44,11 @@ import { Sheet } from '@/ui/Sheet';
 import { Text } from '@/ui/Text';
 import { TextField } from '@/ui/TextField';
 import { toast } from '@/ui/Toast';
-import { SharedFiles } from './SharedFiles';
 import { topicsFor } from './topics';
 
 // Who's in a group, and running it: loaded when a group's details are first shown.
+/** Everything shared here (PRD §26): loaded when it's opened, as on a person's and a space's page. */
+const SharedFiles = lazyPart(() => import('./SharedFiles').then((m) => m.SharedFiles));
 const GroupPeople = lazyPart(() => import('./GroupPeople').then((m) => m.GroupPeople));
 /** What the team keeps about a customer (M16 H3): only the team's, loaded when it's theirs. */
 const CustomerRecord = lazyPart(() =>
@@ -407,6 +408,7 @@ export function ContextPanel({
                         void openFile({
                           id: d.fileId ?? d.id,
                           url: d.url,
+                          viewUrl: d.viewUrl,
                           name: d.title ?? tr('Document'),
                           mime: '',
                         }).catch((e: Error) => toast(e.message, { tone: 'danger' }));
@@ -468,7 +470,7 @@ export function ContextPanel({
       </ScrollView>
       {sharing ? (
         <SharedFiles
-          conversation={conversation}
+          source={{ kind: 'conversation', conversation }}
           onClose={() => setSharing(false)}
           onJump={onJump}
         />

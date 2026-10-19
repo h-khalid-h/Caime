@@ -269,6 +269,20 @@ export interface JoinLinksTable {
   approval: Defaulted<boolean>;
 }
 
+/** A link to someone's own file (M16 H6, migration 0128): its token kept as its hash alone. */
+export interface FileLinksTable {
+  id: string;
+  file_id: string;
+  message_id: string;
+  created_by: string;
+  token_hash: Buffer;
+  audience: 'anyone' | 'caime';
+  opens: Defaulted<number>;
+  expires_at: Date;
+  revoked_at: NullableTimestamp;
+  created_at: Generated<Date>;
+}
+
 /** Someone's ask to join through a link that asks (M16 C3h), pending until it's decided. */
 export interface JoinRequestsTable {
   id: string;
@@ -1510,6 +1524,7 @@ export interface Database {
   invites: InvitesTable;
   org_invites: OrgInvitesTable;
   join_links: JoinLinksTable;
+  file_links: FileLinksTable;
   join_requests: JoinRequestsTable;
   place_invites: PlaceInvitesTable;
   appeals: AppealsTable;

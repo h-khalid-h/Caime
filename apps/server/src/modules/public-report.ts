@@ -27,8 +27,10 @@ export const REPORTS_A_DAY = 3;
 
 const ReportForm = z.object({
   kind: z.string().max(16),
-  handle: z.string().max(64),
+  handle: z.string().max(64).default(''),
   slug: z.string().max(80).default(''),
+  // A link to someone's file is named by the link itself (M16 H6).
+  token: z.string().max(64).default(''),
   reason: z.string().max(32).default('other'),
   // A browser sends a line break as two characters: room for that, the words counted after.
   details: z

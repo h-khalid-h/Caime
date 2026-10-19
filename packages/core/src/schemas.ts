@@ -49,6 +49,7 @@ import {
 } from './customers';
 import { isPublicKey, isSealed, isSignature, type PublicJwk, type SealedMessage } from './e2ee';
 import { isEmoji } from './emoji';
+import { FILE_LINK_AUDIENCES, FILE_LINK_DAYS, FILE_LINK_DEFAULT_DAYS } from './file-views';
 import { foldForFind } from './fold';
 import { isGenericHandle } from './handle-engine';
 import { msg } from './i18n';
@@ -2173,6 +2174,18 @@ export const TeamInviteBody = z
 export const JoinLinkBody = z
   .object({
     approval: z.boolean().default(false),
+  })
+  .strict();
+
+/** A link to one of your own files (M16 H6): who opens it, and for how many days. */
+export const FileLinkBody = z
+  .object({
+    audience: z.enum(FILE_LINK_AUDIENCES).default('anyone'),
+    days: z
+      .number()
+      .int()
+      .refine((d) => (FILE_LINK_DAYS as readonly number[]).includes(d), msg('Choose how long.'))
+      .default(FILE_LINK_DEFAULT_DAYS),
   })
   .strict();
 

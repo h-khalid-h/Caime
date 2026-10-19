@@ -541,6 +541,12 @@ export interface FileView {
   thumbUrl: string | null;
   /** Drawn large: a photo in a message, a sheet, a page (1280 px at most, R70). */
   previewUrl: string | null;
+  /**
+   * A page of what a Word document, a workbook, a deck, a list of values or plain words holds,
+   * drawn by the server (M16 H6): what a browser opens in place of the download. Null for any
+   * other file, and for one too large to read.
+   */
+  viewUrl: string | null;
 }
 
 /** Something shared in a conversation, from its asset index (PRD §26). */
@@ -557,6 +563,17 @@ export interface AssetView {
   senderId: string | null;
   createdAt: string;
   file: FileView | null;
+  /** The conversation it was shared in. */
+  conversationId: string;
+  /**
+   * Where a list spans conversations (the files between two people, a space's, M16 H6): who
+   * shared it, by the name they show, and the topic or conversation it's in by its title. Null in
+   * a conversation's own list, whose screen has both.
+   */
+  senderName: string | null;
+  where: string | null;
+  /** The viewer may give out a link to its file (their own, M16 H6). */
+  linkable: boolean;
 }
 
 export interface AssetsResponse {
@@ -1620,6 +1637,26 @@ export interface JoinLinkView {
   /** It asks: whoever opens it asks, and its owner or an admin lets them in (C3h). */
   approval: boolean;
 }
+/**
+ * A link to one of someone's own files (M16 H6), as its maker lists it: who opens it, until when,
+ * and how many times its page was opened, never by whom. Never its token, which comes back once,
+ * as `url`, when it's made.
+ */
+export interface FileLinkView {
+  id: string;
+  fileId: string;
+  audience: 'anyone' | 'caime';
+  opens: number;
+  expiresAt: string;
+  createdAt: string;
+}
+export interface FileLinksResponse {
+  links: FileLinkView[];
+}
+export interface FileLinkMadeResponse {
+  link: FileLinkView;
+  url: string;
+}
 export interface JoinLinksResponse {
   links: JoinLinkView[];
 }
@@ -2312,6 +2349,8 @@ export interface MemoryView {
     fileId: string | null;
     /** Where it downloads from, while the file is still there. */
     url: string | null;
+    /** Its page, for a document the server reads as one (M16 H6). */
+    viewUrl: string | null;
     messageId: string | null;
   }>;
   links: Array<{ id: string; url: string | null; host: string | null; messageId: string | null }>;

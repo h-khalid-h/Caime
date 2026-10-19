@@ -2923,6 +2923,51 @@ graph) and the number that will show it; one that sharpens none is hygiene and s
       writes the form on the setup screen, the team sends it, the customer fills it in on a phone
       in Arabic digits, both read the answers, her record shows 1234), the catalogs in four
       languages and the server's, and the full gate.
+- [x] H6. A files place, links to your own files, and Office files read as pages (2026-10-19,
+      review §6 and §9, PRODUCT-REVIEW R105; hygiene, said as such in §14: the condition for
+      leaving a drive, not an advantage). The files between two people (their chat and its topics,
+      the profile's "shared" row now a tap into them) and a space's (its conversations the viewer
+      is in): the conversation's Photos, Files and Links sheet across them, saying who shared each
+      and in which topic, opening there at the message; never a group's for two people, a request
+      still waiting, a private conversation, or what someone deleted for themselves or let run out
+      (`readableBy`, now the conversation's own index's rule too). Whoever sent a file gives out a
+      link to it from that sheet (`/f/<token>`, shown once, kept as its hash, masked in the log): for
+      anyone who has it or only someone signed in, for a day, a week or a month, five open at most,
+      taken back with a tap, counted but never who; dead once its message is deleted for everyone or
+      by its maker for themselves, past its time, they've left the conversation, their account is
+      suspended or gone, or the conversation's organization is closed or suspended; only adults make
+      one, never from a private conversation. Its page (for everyone, the app never booted there,
+      never cached, indexed or sent as a referrer, `Disallow: /f/`) shows a picture, plays a video or
+      a sound, shows a document's words, offers the download and takes a visitor's report naming the
+      message and its maker; the bytes are held to so many an hour by link and by address. A Word
+      document, a workbook, a deck, a list of values or plain words opens on the web as the server's
+      page of what it holds (`/v1/files/:id/view`, `FileView.viewUrl`, the conversation panel's
+      documents too): a zip read by its own directory with each part inflated on the thread pool
+      under a ceiling (a zip that lies about its sizes stops there), escaped into Caime's own tags,
+      no script at all, two read at once and each kept ten minutes; a phone opens the file itself in
+      its system viewer. Links are in their maker's export, swept a month after they end, and the
+      privacy page says so. Not done: folders, editing together, versions and a trash, full-text
+      search inside files, the old binary Office formats and OpenDocument, a signed-in visitor sent
+      back to the page after signing in (the page says to open the link again), and the €/user cost
+      of a link's bytes (H7). Verified: `files-place.test.ts` (a document's headings, table, escaped
+      marks and Arabic; a workbook's shared words, day, number and yes; a deck's slides; 3,000
+      paragraphs then cut; a part that says ten bytes and holds seventeen megabytes never read
+      whole; a list of values by its separator and quotes, words in UTF-16 and Western encodings;
+      the page served to the conversation's people alone, no script, in an Arabic reader's
+      direction; the files between two people from both sides, a topic named, another person's
+      conversation left out, a stranger's and one's own empty, what one deleted for oneself gone
+      for them alone; a space's for its people as each is in its conversations, refused to a
+      stranger; a link made by the sender alone, a month refused, a fifteen-year-old refused in
+      words, its hash kept and its message named; its page and file for a visitor, counted, never
+      the app even signed in, `robots.txt`; signed-in links asking a visitor to sign in and closed
+      to someone blocked; a visitor's report naming the message and maker, never the token; taken
+      back, run out, hidden by its maker, deleted for everyone, a suspended maker and back; five
+      at most; the export without a token; swept after a month), `log.test.ts`, core
+      `file-views.test.ts`, the app's `paths.test.ts`, `e2e/files-place.spec.ts` (Noor finds the
+      letter on Omar's page, makes a month's link, a visitor reads the letter's words and downloads
+      it, the link counts one open and is taken back, and Omar's phone browser opens the Word file
+      as its page), `e2e/a11y.spec.ts` (the file link's page in English and Arabic), the catalogs
+      in four languages and the server's, and the full gate.
 - [ ] ⛔ H, the owner's: a smaller paid tier; WhatsApp Business in the inbox and reminders by
       WhatsApp or SMS (Meta's approval); Stripe Connect live with local currencies.
 - [ ] R98, after C: places as a context for spaces (PRODUCT-REVIEW R98): `spaces.place` from
@@ -4519,6 +4564,10 @@ graph) and the number that will show it; one that sharpens none is hygiene and s
   journeys, safety, reliability, performance, intelligence, mail and calendar, chat, integrations,
   business and code integrity; the matrix against WhatsApp, Signal, Slack, Calendly and Workspace;
   an age-assurance design; the integration framework mapped to the code; plan M16 (A–H).
+- 2026-10-19 — M16 H6: a files place, links to your own files, Office files read as pages: the
+  files between two people and a space's, a link for anyone or the signed-in, a day to a month,
+  dead with its message or maker, a visitor's page with a report; Word, Excel, PowerPoint, CSV and
+  text as escaped pages on the web, a zip read under a ceiling. R105.
 - 2026-10-19 — M16 H5: intake forms as cards: an organization's forms, sent from a customer's
   conversation or by themselves after a booking, filled in on the card and kept in the record.
 - 2026-10-19 — M16 H4: what the conversations came to: bookings, orders and money paid on an

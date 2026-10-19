@@ -42,6 +42,7 @@ import {
   systemAccountOf,
   uuidv7,
   VoicePayload,
+  viewable,
 } from '@caime/core';
 import { currencyOfCountry } from '@caime/core/countries';
 import { tr } from '@caime/core/i18n';
@@ -138,6 +139,7 @@ export function fileView(f: {
     url: fileUrl(f.id),
     thumbUrl: f.thumb_key ? `${fileUrl(f.id)}/thumb` : null,
     previewUrl: f.thumb_key ? `${fileUrl(f.id)}/preview` : null,
+    viewUrl: viewable(f.mime, f.name, Number(f.size)) ? `${fileUrl(f.id)}/view` : null,
   };
 }
 

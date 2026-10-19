@@ -89,6 +89,11 @@ export const qk = {
   /** What's been shared in a conversation (PRD §26), all of it or one tab of it. */
   assets: (id: string, tab?: string) =>
     tab ? (['assets', id, tab] as const) : (['assets', id] as const),
+  /** The same across a person's or a space's conversations (M16 H6), one tab of it. */
+  filesOf: (kind: 'person' | 'space', id: string, tab: string) =>
+    ['files-of', kind, id, tab] as const,
+  /** Your open links to one of your files (M16 H6). */
+  fileLinks: (fileId: string) => ['file-links', fileId] as const,
   suggestions: (conversationId?: string) => ['suggestions', conversationId ?? 'all'] as const,
   /** Two of someone's connections who may be one person (PRD §51). */
   duplicates: ['suggestions', 'kind', 'duplicate'] as const,

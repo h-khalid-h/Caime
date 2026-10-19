@@ -4,16 +4,23 @@
  * opens from here, a link is checked before it opens (PRD §60), each can be shown where it was
  * shared, and each saved on its own to a collection (PRD §69). What someone deleted for
  * themselves isn't here for them (the server leaves it out).
+ *
+ * The same place across conversations (M16 H6): the files between you and someone (the person's
+ * page), and a space's (its page), each saying who shared it and in which topic or conversation,
+ * opening there. A file of your own can be shared by a link (`FileLinkSheet`), for someone who
+ * isn't in the conversation.
  */
-import type { AssetView, ConversationView } from '@caime/core/api';
+import type { AssetView, ConversationView, FileView } from '@caime/core/api';
 import { formatBytes, formatDuration, formatListTime } from '@caime/core/format';
 import { listed, msg, tr } from '@caime/core/i18n';
 import { Image } from 'expo-image';
+import { router } from 'expo-router';
 import Bookmark from 'lucide-react-native/icons/bookmark';
 import FileText from 'lucide-react-native/icons/file-text';
 import Link from 'lucide-react-native/icons/link';
 import MessageCircle from 'lucide-react-native/icons/message-circle';
 import Mic from 'lucide-react-native/icons/mic';
+import Share2 from 'lucide-react-native/icons/share-2';
 import Video from 'lucide-react-native/icons/video';
 import { useState } from 'react';
 import { View } from 'react-native';
@@ -21,7 +28,6 @@ import { mediaHeaders, mediaUrl } from '@/api/client';
 import { useAssets } from '@/api/hooks';
 import { PhotoViewerHost } from '@/features/media/PhotoViewerHost';
 import { drawable, showPhotos } from '@/features/media/viewer';
-import { SaveSheet } from '@/features/saved/SaveSheet';
 import { openCheckedLink } from '@/lib/links';
 import { openFile } from '@/lib/openFile';
 import { useNow, useUserClock } from '@/lib/time';
@@ -29,14 +35,28 @@ import { useSession } from '@/state/session';
 import { useTheme } from '@/theme/theme';
 import { Button } from '@/ui/Button';
 import { IconButton } from '@/ui/IconButton';
+import { lazyPart } from '@/ui/Lazy';
 import { ListRow } from '@/ui/ListRow';
 import { Pressable } from '@/ui/Pressable';
 import { Segmented } from '@/ui/Segmented';
 import { afterSheet, Sheet } from '@/ui/Sheet';
 import { Text } from '@/ui/Text';
 import { toast } from '@/ui/Toast';
+import { mayKeepFrom } from './mayKeep';
 
 type Tab = 'media' | 'files' | 'links';
+
+/** Saving to a collection: loaded when it's asked for, as from a message's actions. */
+const SaveSheet = lazyPart(() => import('@/features/saved/SaveSheet').then((m) => m.SaveSheet));
+/** A link to one of your files (M16 H6): loaded when one is asked for. */
+const FileLinkSheet = lazyPart(() =>
+  import('@/features/files/FileLinkSheet').then((m) => m.FileLinkSheet),
+);
+
+/** Whose files: one conversation's, or across a person's or a space's conversations (M16 H6). */
+export type SharedSource =
+  | { kind: 'conversation'; conversation: ConversationView }
+  | { kind: 'person' | 'space'; id: string; name: string };
 
 const TABS: ReadonlyArray<{ value: Tab; label: string; kinds: readonly AssetView['kind'][] }> = [
   { value: 'media', label: msg('Photos'), kinds: ['photo', 'video'] },
@@ -50,25 +70,17 @@ const EMPTY: Record<Tab, string> = {
   links: msg('No links shared here yet.'),
 };
 
-/**
- * Whether anything of a conversation may be saved (the server's rules): never a private one's,
- * nor a message request's until it's accepted, nor once it's declined.
- */
-export function mayKeepFrom(conversation: ConversationView): boolean {
-  const state = conversation.me.requestState;
-  return conversation.privacyClass !== 'private' && state !== 'pending' && state !== 'declined';
-}
-
 export function SharedFiles({
-  conversation,
+  source,
   onClose,
   onJump,
 }: {
-  conversation: ConversationView;
+  source: SharedSource;
   onClose: () => void;
   /** Show the message something came in; absent where the conversation isn't on screen. */
   onJump?: (seq: number) => void;
 }) {
+  const conversation = source.kind === 'conversation' ? source.conversation : null;
   const t = useTheme();
   const me = useSession((s) => s.user?.id ?? '');
   const now = useNow();
@@ -83,10 +95,24 @@ export function SharedFiles({
     setToKeep(a);
     afterSheet(() => setKeeping(a));
   };
+  // A file given out by a link, the same way: this sheet closes and the link's opens.
+  const [linking, setLinking] = useState<FileView | null>(null);
+  const linkTo = (a: AssetView) => {
+    if (!a.file) return;
+    const file = a.file;
+    setToKeep(a);
+    afterSheet(() => setLinking(file));
+  };
   const [first, setFirst] = useState<Tab>('media');
   const tab = chosen ?? first;
   const shown = TABS.find((x) => x.value === tab) ?? TABS[0]!;
-  const q = useAssets(conversation.id, tab, shown.kinds);
+  const q = useAssets(
+    source.kind === 'conversation'
+      ? { kind: 'conversation', id: source.conversation.id }
+      : { kind: source.kind, id: source.id },
+    tab,
+    shown.kinds,
+  );
   const counts = q.data?.pages[0]?.counts ?? {};
   const count = (x: (typeof TABS)[number]) => x.kinds.reduce((n, k) => n + (counts[k] ?? 0), 0);
   // What the last tab showed is only for its counts: never listed under this one.
@@ -99,24 +125,36 @@ export function SharedFiles({
 
   const who = (a: AssetView): string | null => {
     if (!a.senderId) return null;
-    if (a.senderId === me) return 'You';
+    if (a.senderId === me) return tr('You');
+    if (!conversation) return a.senderName;
     const org = conversation.business?.org;
     if (org && a.senderId === org.id) return org.name;
     return (
       conversation.participants.find((p) => p.userId === a.senderId)?.person.displayName ?? null
     );
   };
+  // Who, where (a topic, a space's conversation), when, and what more.
   const line = (a: AssetView, detail?: string | null) =>
-    [who(a), formatListTime(a.createdAt, now, timeZone, locale), detail]
+    [who(a), a.where, formatListTime(a.createdAt, now, timeZone, locale), detail]
       .filter(Boolean)
       .join(' · ');
-  const jump =
-    onJump &&
-    ((a: AssetView) => {
-      if (a.messageSeq === null) return;
-      onClose();
-      onJump(a.messageSeq);
-    });
+  // In the conversation on screen, its own way; from a person's or a space's place, to the
+  // conversation it's in, at the message.
+  const jump = conversation
+    ? onJump &&
+      ((a: AssetView) => {
+        if (a.messageSeq === null) return;
+        onClose();
+        onJump(a.messageSeq);
+      })
+    : (a: AssetView) => {
+        if (a.messageSeq === null) return;
+        onClose();
+        router.navigate({
+          pathname: '/c/[id]',
+          params: { id: a.conversationId, seq: String(a.messageSeq) },
+        });
+      };
   // Photos open full screen in Caime, a swipe from the others shown (R88); anything else opens
   // with the session (a phone's system sheet, a browser's tab).
   const photos = assets.flatMap((a) =>
@@ -128,7 +166,19 @@ export function SharedFiles({
     if (at >= 0) showPhotos(photos, at, 'shared');
     else void openFile(a.file).catch((e: Error) => toast(e.message, { tone: 'danger' }));
   };
-  const mayKeep = mayKeepFrom(conversation);
+  // Across conversations the server lists only what may be kept (never a private one's, nor a
+  // request's still waiting).
+  const mayKeep = conversation ? mayKeepFrom(conversation) : true;
+  const linkIt = (a: AssetView) =>
+    a.linkable && a.file ? (
+      <IconButton
+        icon={Share2}
+        label={tr('Share by link')}
+        size={18}
+        onPress={() => linkTo(a)}
+        testID="shared-link-file"
+      />
+    ) : null;
   const keepIt = (a: AssetView) =>
     mayKeep && a.messageId ? (
       <IconButton
@@ -162,7 +212,26 @@ export function SharedFiles({
           }}
         />
       ) : null}
-      <Sheet open={!toKeep} onClose={onClose} title={tr('Shared here')}>
+      {linking ? (
+        <FileLinkSheet
+          file={linking}
+          onClose={() => {
+            setLinking(null);
+            setToKeep(null);
+          }}
+        />
+      ) : null}
+      <Sheet
+        open={!toKeep}
+        onClose={onClose}
+        title={
+          source.kind === 'conversation'
+            ? tr('Shared here')
+            : source.kind === 'person'
+              ? tr('Between you and {name}', { name: source.name })
+              : tr('Shared in {name}', { name: source.name })
+        }
+      >
         {/* Opened from this sheet, a photo shows over it (R88). */}
         <PhotoViewerHost host="shared" />
         <View style={{ gap: 12 }}>
@@ -271,11 +340,34 @@ export function SharedFiles({
                         <MessageCircle size={15} color="#fff" />
                       </Pressable>
                     ) : null}
+                    {a.linkable && a.file ? (
+                      <Pressable
+                        accessibilityRole="button"
+                        accessibilityLabel={tr('Share by link')}
+                        onPress={() => linkTo(a)}
+                        hitSlop={8}
+                        focusRadius={14}
+                        style={{
+                          position: 'absolute',
+                          bottom: 8,
+                          end: 8,
+                          width: 28,
+                          height: 28,
+                          borderRadius: t.radii.md,
+                          backgroundColor: 'rgba(0,0,0,0.5)',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                        }}
+                        testID="shared-link-file"
+                      >
+                        <Share2 size={15} color="#fff" />
+                      </Pressable>
+                    ) : null}
                     {mayKeep && a.messageId ? (
                       <Pressable
                         accessibilityRole="button"
                         accessibilityLabel={video ? tr('Save this video') : tr('Save this photo')}
-                        onPress={() => setKeeping(a)}
+                        onPress={() => keep(a)}
                         hitSlop={8}
                         focusRadius={14}
                         style={{
@@ -331,6 +423,7 @@ export function SharedFiles({
                       />
                     )}
                   </View>
+                  {linkIt(a)}
                   {keepIt(a)}
                   {showIt(a)}
                 </View>

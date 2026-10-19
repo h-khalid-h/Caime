@@ -1570,4 +1570,29 @@ export const arServer: Catalog = {
   'That form was answered already.': 'تمت الإجابة عن هذا النموذج من قبل.',
   'Forms are sent by an organization to its customers.': 'ترسل المؤسسة النماذج إلى عملائها.',
   'Someone reached by mail can’t fill in a form yet.': 'لا يمكن تعبئة نموذج بعد لمن يُراسَل بالبريد.',
+  'Only adults give out links to their files.': 'روابط الملفات للبالغين وحدهم.',
+  'Slide {number}': 'الشريحة {number}',
+  Spreadsheet: 'جدول بيانات',
+  Presentation: 'عرض تقديمي',
+  Table: 'جدول',
+  'Plain text': 'نص',
+  Audio: 'صوت',
+  'This file can’t be shown as a page. Download it to open it.':
+    'لا يمكن عرض هذا الملف كصفحة، ويُفتح بعد تنزيله.',
+  'The page stops here: the rest is in the file.': 'تتوقف الصفحة هنا: البقية في الملف.',
+  'What the file holds, as words and tables: its look, pictures and charts are in the file itself.':
+    'ما في الملف من كلمات وجداول: تنسيقه وصوره ومخططاته في الملف نفسه.',
+  '{name} shared a file with you on {site}.': 'ملف من {name} على {site}.',
+  'a shared file': 'ملف مشترَك',
+  'Shared by {name}': 'مشاركة من {name}',
+  file: 'الملف',
+  'Whoever has this link and is signed in to {site}': 'من لديه هذا الرابط وسجّل الدخول إلى {site}',
+  'Sign in to open this file': 'تسجيل الدخول لفتح هذا الملف',
+  'Only someone signed in to {site} opens this link.':
+    'لا يفتح هذا الرابط إلا من سجّل الدخول إلى {site}.',
+  'Only someone signed in to {site} opens this link. Sign in in this browser, then open the link again.':
+    'لا يفتح هذا الرابط إلا من سجّل الدخول إلى {site}. بعد تسجيل الدخول في هذا المتصفح، يُفتح الرابط من جديد.',
+  'Sign up': 'التسجيل',
+  'This link isn’t open': 'هذا الرابط غير متاح',
+  'This link isn’t open any more.': 'لم يعد هذا الرابط متاحًا.',
 };

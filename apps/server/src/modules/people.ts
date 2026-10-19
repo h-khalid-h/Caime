@@ -18,6 +18,7 @@ import {
 } from '@caime/core';
 import { addressValue } from '@caime/core/addresses';
 import type {
+  AssetsResponse,
   ContactMatchView,
   ContactsMatchResponse,
   PeopleSearchResponse,
@@ -28,6 +29,7 @@ import { sql } from 'kysely';
 import { z } from 'zod';
 import type { AppContext } from '../context';
 import { provenEmailHolders, provenPhoneHolders } from '../lib/addresses';
+import { AssetsQuery, assetsPage, conversationsBetween } from '../lib/assets';
 import { itemsFor, personHost } from '../lib/booking';
 import { busyNow } from '../lib/calendar';
 import { notFound } from '../lib/errors';
@@ -333,6 +335,16 @@ export async function peopleRoutes(app: FastifyInstance, ctx: AppContext) {
       ];
     });
     return { results };
+  });
+
+  // The files between two people (M16 H6): everything shared in the conversations they have
+  // together, as the profile counts it, a page at a time.
+  app.get('/people/:id/files', async (req): Promise<AssetsResponse> => {
+    const auth = requireAuth(req);
+    const { id } = parse(z.object({ id: z.string().uuid() }), req.params);
+    const q = parse(AssetsQuery, req.query);
+    const ids = id === auth.userId ? [] : await conversationsBetween(ctx, auth.userId, id);
+    return assetsPage(ctx, auth.userId, { kind: 'across', ids }, q);
   });
 
   app.get('/people/:id', async (req): Promise<PersonProfileView> => {

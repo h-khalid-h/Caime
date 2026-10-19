@@ -1517,4 +1517,31 @@ export const turkishServer: Catalog = {
     'Formları bir kuruluş müşterilerine gönderir.',
   'Someone reached by mail can’t fill in a form yet.':
     'E-postayla ulaşılan biri henüz form dolduramaz.',
+  'Only adults give out links to their files.':
+    'Dosyalarına bağlantıyı yalnızca yetişkinler verebilir.',
+  'Slide {number}': 'Slayt {number}',
+  Spreadsheet: 'Elektronik tablo',
+  Presentation: 'Sunum',
+  Table: 'Tablo',
+  'Plain text': 'Düz metin',
+  Audio: 'Ses',
+  'This file can’t be shown as a page. Download it to open it.':
+    'Bu dosya sayfa olarak gösterilemiyor. Açmak için indirin.',
+  'The page stops here: the rest is in the file.': 'Sayfa burada bitiyor: devamı dosyada.',
+  'What the file holds, as words and tables: its look, pictures and charts are in the file itself.':
+    'Dosyanın içindekiler, sözcükler ve tablolar olarak: görünümü, resimleri ve grafikleri dosyanın kendisinde.',
+  '{name} shared a file with you on {site}.': '{name}, {site} üzerinde sizinle bir dosya paylaştı.',
+  'a shared file': 'paylaşılan bir dosya',
+  'Shared by {name}': 'Paylaşan: {name}',
+  file: 'dosya',
+  'Whoever has this link and is signed in to {site}':
+    'Bu bağlantıya sahip ve {site} hesabıyla giriş yapmış herkes',
+  'Sign in to open this file': 'Bu dosyayı açmak için giriş yapın',
+  'Only someone signed in to {site} opens this link.':
+    'Bu bağlantıyı yalnızca {site} hesabıyla giriş yapmış biri açabilir.',
+  'Only someone signed in to {site} opens this link. Sign in in this browser, then open the link again.':
+    'Bu bağlantıyı yalnızca {site} hesabıyla giriş yapmış biri açabilir. Bu tarayıcıda giriş yapın, sonra bağlantıyı yeniden açın.',
+  'Sign up': 'Kaydol',
+  'This link isn’t open': 'Bu bağlantı açık değil',
+  'This link isn’t open any more.': 'Bu bağlantı artık açık değil.',
 };

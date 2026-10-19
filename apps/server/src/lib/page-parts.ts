@@ -26,6 +26,8 @@ const ICONS = {
   calendar: '<rect width="18" height="18" x="3" y="4" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/>',
   box: '<path d="M11 21.73a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73z"/><path d="M12 22V12"/><path d="m3.3 7 7.703 4.734a2 2 0 0 0 2.004 0L20.7 7"/>',
   message: '<path d="M7.9 20A9 9 0 1 0 4 16.1L2 22Z"/>',
+  download:
+    '<path d="M12 15V3"/><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><path d="m7 10 5 5 5-5"/>',
   globe:
     '<circle cx="12" cy="12" r="10"/><path d="M12 2a14.5 14.5 0 0 0 0 20 14.5 14.5 0 0 0 0-20"/><path d="M2 12h20"/>',
   card: '<rect width="20" height="14" x="2" y="5" rx="2"/><path d="M2 10h20"/>',
@@ -131,13 +133,18 @@ const reportRefusal = (r: VisitorReportRefusal): string =>
  */
 export function reportSection(
   state: VisitorReportState,
-  about: { kind: 'person' | 'org'; handle: string; slug?: string },
+  about:
+    | { kind: 'person' | 'org'; handle: string; slug?: string }
+    /** A link to someone's file (M16 H6), named by the link the visitor has. */
+    | { kind: 'file'; token: string },
   language: string,
 ): string {
   const hidden =
     `<input type="hidden" name="kind" value="${about.kind}">` +
-    `<input type="hidden" name="handle" value="${esc(about.handle)}">` +
-    `<input type="hidden" name="slug" value="${esc(about.slug ?? '')}">` +
+    (about.kind === 'file'
+      ? `<input type="hidden" name="token" value="${esc(about.token)}">`
+      : `<input type="hidden" name="handle" value="${esc(about.handle)}">` +
+        `<input type="hidden" name="slug" value="${esc(about.slug ?? '')}">`) +
     `<input type="hidden" name="lang" value="${esc(language)}">`;
   const body = state.sent
     ? `<p class="notice ok" role="status">${esc(tr('Thanks. Someone at Caime reads every report; if you left your email, we’ll write to you there when it’s decided.'))}</p>`

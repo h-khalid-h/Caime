@@ -216,6 +216,13 @@ export function createMetrics(pool: pg.Pool) {
       'caime_join_links_total',
       'Join links made and joined through, by target (group, space) and outcome.',
     ),
+    // Links to files (M16 H6): made, their pages opened, the files downloaded or previewed.
+    fileLinks: new Counter(
+      'caime_file_links_total',
+      'Links to files made, and their pages opened and files fetched, by outcome.',
+    ),
+    // A file read as a page (M16 H6): shown, or unreadable.
+    fileViews: new Counter('caime_file_views_total', 'Files read as pages, by kind and outcome.'),
     // The outbox (A3): what the sweep did about effects the fast path never finished.
     effects: new Counter(
       'caime_message_effects_total',

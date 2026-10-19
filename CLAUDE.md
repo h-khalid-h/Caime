@@ -1961,6 +1961,23 @@ A sphere is said as how you know someone, never "sphere".
   into the cache, once, and handed to the system's sheet; a tab on the web), never `openLink` on a
   `/v1/` address, which a phone's browser opens without a session (R88). A long press on anything
   pressable inside a bubble passes the bubble's (`onHold`), so a phone reaches the actions.
+- What's shared, across conversations (M16 H6, R105): one lister, `assetsPage` (`lib/assets.ts`,
+  `readableBy` always), for a conversation's index (masked for a customer), the files between two
+  people (`conversationsBetween`: their chat and topics, never a request waiting on the viewer or
+  a private one) and a space's (`spaceConversationsOf`); the app's one sheet is `SharedFiles` with
+  a `source`, loaded lazily wherever it's opened (`mayKeep.ts` apart, so nothing imports it
+  statically). A link to a file is `lib/file-links.ts`: only its sender, an adult, from a message
+  still readable to them in a conversation they're still in (`sharedIn`); `/f/<token>` kept as its
+  hash and masked in the log; a page for everyone (`file-link`, `file-sign-in`, `missing` with
+  `file`: never the app, `private, no-store`, `noindex`, `no-referrer`), its bytes at
+  `/v1/public/files/<token>` held by link and by address. Whether one is live is read whole each
+  time (`liveFileLink`), so anything new that ends a message's, a person's or an organization's
+  standing ends its links without a hook of its own. A file read as a page is `lib/file-views.ts`
+  (`viewBodyOf`: core `viewKindOf` and `viewable` decide, `FileView.viewUrl` offers it, the web's
+  `openFile` opens it; a zip read by its own directory and inflated under `PART_MAX_BYTES`, two at
+  a time, ten minutes kept, escaped into its own tags under `VIEW_CSP`): a new kind joins
+  `VIEW_KINDS` with its reader and a case in `files-place.test.ts`, and whatever sends a stored
+  file's bytes goes through `lib/file-stream.ts`.
 - A picked photo goes through `photoToUpload` (`lib/photos.ts`, `photos.web.ts`) before
   `uploadFile`: shrunk on the device to `PHOTO_MAX_EDGE` (`lib/photoSize.ts`, pure and
   tested), or `AVATAR_MAX_EDGE` for a face or a logo; videos and GIFs go as they are, a HEIC
@@ -2054,8 +2071,11 @@ A sphere is said as how you know someone, never "sphere".
   an organization's details editor (`OrgDetails`, from `OrgScreen`), and two parts several
   screens render but none at first, each `lazyPart`ed wherever it's shown (`LAZY_EVERYWHERE` in
   that test): `PeoplePicker` (its Set toggle is `lib/toggled.ts`, so a screen that only toggles
-  imports nothing of the picker) and `TimeZoneField`. A new thing shared by several routes but
-  needed by none at first joins that list rather than the startup chunk.
+  imports nothing of the picker), `TimeZoneField`, the files place (`SharedFiles`: a
+  conversation's, a person's, a space's; `mayKeepFrom` is `mayKeep.ts`) and `SaveSheet` (from a
+  message's actions and from the files place: once that loaded apart, the sheet the two shared
+  moved into `__common`, 0.5 KB). A new thing shared by several routes but needed by none at
+  first joins that list rather than the startup chunk.
 - A module leaves the startup chunk only when every import of it is dynamic. Splitting a part
   out of a route's own chunk (a sheet inside the conversation screen) makes it worse: whatever
   it shares with that route moves into `__common`, which loads first (it cost 4.5 KB once). The

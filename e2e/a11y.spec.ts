@@ -8,6 +8,7 @@
 import { randomUUID } from 'node:crypto';
 import AxeBuilder from '@axe-core/playwright';
 import { expect, type Page, test } from '@playwright/test';
+import { DOCX, letterDocx } from '../apps/server/test/office-fixtures';
 import { apiSignUp, CLIENT, mailsTo, newPerson, visible } from './helpers';
 
 const suffix = Math.random().toString(36).slice(2, 7);
@@ -159,7 +160,7 @@ test('the signed-in screens, phone and desktop, in every interface language', as
   expect(report(found)).toEqual([]);
 });
 
-test('what a visitor gets: the landing page, the site, entry screens, a person, an organization, a meeting guest’s link and a join link', async ({
+test('what a visitor gets: the landing page, the site, entry screens, a person, an organization, a meeting guest’s link, a join link and a file’s link', async ({
   browser,
 }) => {
   test.setTimeout(180_000);
@@ -281,6 +282,30 @@ test('what a visitor gets: the landing page, the site, entry screens, a person, 
   for (const [path, name] of [
     [joinPath, 'join link'],
     [`${joinPath}?lang=ar`, 'join link (ar)'],
+  ] as const) {
+    await page.goto(path);
+    await expect(page.getByRole('heading', { level: 1 })).toBeVisible();
+    await audit(page, name, found);
+  }
+  // A link to one of Tariq's files (M16 H6), as someone without an account opens it.
+  const upload = await maker.request.post('/v1/files', {
+    headers: CLIENT,
+    multipart: {
+      file: { name: 'Treatment plan.docx', mimeType: DOCX, buffer: letterDocx() },
+    },
+  });
+  const { file } = (await upload.json()) as { file: { id: string } };
+  await maker.request.post(`/v1/conversations/${direct.conversation.id}/messages`, {
+    headers: CLIENT,
+    data: { clientId: randomUUID(), kind: 'file', body: 'The plan', fileIds: [file.id] },
+  });
+  const fileLink = (await (
+    await maker.request.post(`/v1/files/${file.id}/links`, { headers: CLIENT, data: {} })
+  ).json()) as { url: string };
+  const filePath = new URL(fileLink.url).pathname;
+  for (const [path, name] of [
+    [filePath, 'file link'],
+    [`${filePath}?lang=ar`, 'file link (ar)'],
   ] as const) {
     await page.goto(path);
     await expect(page.getByRole('heading', { level: 1 })).toBeVisible();

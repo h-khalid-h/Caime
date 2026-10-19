@@ -441,7 +441,10 @@ to its team, with the address it was sent to, is kept the same way once it ran o
 or was used; whoever joined through it stays on the team. A link to join a group or a space is
 kept the same way once it ran out or was taken back; whoever joined through it stays in it. An ask
 to join is kept the same way once it was answered or taken back, and so is an invitation to a
-group or a space once it was answered or ran out (who asked you is never in it). A
+group or a space once it was answered or ran out (who asked you is never in it). A link you
+gave out to one of your files is kept the same way once it ran out or was taken back, with how
+many times its page was opened, never by whom; it opens nothing once its message is deleted, you
+leave that conversation, or it&rsquo;s taken back. A
 notification is kept for
 ${span(KEPT_DAYS.notifications)}, then goes.</li>
 ${

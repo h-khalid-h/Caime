@@ -12,23 +12,27 @@ import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { type Readable, Transform } from 'node:stream';
 import { pipeline } from 'node:stream/promises';
-import { canSee, uuidv7 } from '@caime/core';
+import { canSee, uuidv7, viewable, viewKindOf } from '@caime/core';
 import type { FileResponse, UploadChunkResponse, UploadStartResponse } from '@caime/core/api';
-import { tr } from '@caime/core/i18n';
+import { currentTranslator, tr } from '@caime/core/i18n';
 import type { FastifyInstance, FastifyReply, FastifyRequest } from 'fastify';
 import { z } from 'zod';
 import type { AppContext } from '../context';
 import { USER_COLUMNS } from '../db/schema';
 import { isPublicItem, itemsFor, orgHost, personHost } from '../lib/booking';
 import { AppError, badRequest, notFound } from '../lib/errors';
+import { INLINE_TYPES, largeOf, streamFile } from '../lib/file-stream';
+import { VIEW_CSP, viewBodyOf, viewPage } from '../lib/file-views';
 import { finalizeFile, storeFile } from '../lib/files';
+import { asReader } from '../lib/i18n';
 import { fileView } from '../lib/messages';
 import { requireOperator } from '../lib/operator';
 import { orgSeat } from '../lib/orgs';
+import { shellFaces } from '../lib/page-style';
 import { assertStorage, lockStorage } from '../lib/plans';
 import { NOBODY } from '../lib/public-pages';
 import { viewerRelation } from '../lib/relations';
-import { type Storage, storageFor } from '../lib/storage';
+import { storageFor } from '../lib/storage';
 import { minorOf, privacyOf } from '../lib/users';
 import { parse } from '../lib/validate';
 import { requireAuth } from '../plugins/auth';
@@ -41,63 +45,6 @@ const isListed = (c: {
   reviewed_at: Date | null;
   declined_reason: string | null;
 }) => Boolean(c.listed_at && c.reviewed_at && !c.declined_reason);
-/** The file to send for an image drawn large: its preview, else the cleaned original. */
-async function largeOf(
-  storage: Storage,
-  f: {
-    preview_key: string | null;
-    storage_key: string;
-    mime: string;
-    name: string;
-    size: string | number;
-  },
-) {
-  if (!f.preview_key)
-    return { name: f.name, mime: f.mime, size: f.size, storage_key: f.storage_key };
-  const size = (await storage.size(f.preview_key)) ?? 0;
-  return { name: `${f.name}.webp`, mime: 'image/webp', size, storage_key: f.preview_key };
-}
-
-function contentDisposition(name: string, inline: boolean): string {
-  const safe = name.replace(/[\r\n"]/g, '_');
-  return `${inline ? 'inline' : 'attachment'}; filename="${safe.replace(/[^\x20-\x7e]/g, '_')}"; filename*=UTF-8''${encodeURIComponent(safe)}`;
-}
-
-async function streamFile(
-  req: FastifyRequest,
-  reply: FastifyReply,
-  storage: Storage,
-  file: { name: string; mime: string; size: string | number; storage_key: string },
-  inline: boolean,
-) {
-  const size = Number(file.size);
-  reply
-    .header(
-      'content-type',
-      inline ? file.mime : file.mime === 'application/pdf' ? file.mime : 'application/octet-stream',
-    )
-    .header('content-disposition', contentDisposition(file.name, inline))
-    .header('cache-control', 'private, max-age=31536000, immutable')
-    .header('x-content-type-options', 'nosniff')
-    .header('content-security-policy', "default-src 'none'; sandbox")
-    .header('accept-ranges', 'bytes');
-  const range = /^bytes=(\d*)-(\d*)$/.exec(String(req.headers.range ?? ''));
-  if (range && (range[1] || range[2])) {
-    let start = range[1] ? Number(range[1]) : size - Number(range[2]);
-    let end = range[1] && range[2] ? Number(range[2]) : size - 1;
-    start = Math.max(0, start);
-    end = Math.min(size - 1, end);
-    if (start > end) return reply.status(416).header('content-range', `bytes */${size}`).send();
-    reply
-      .status(206)
-      .header('content-range', `bytes ${start}-${end}/${size}`)
-      .header('content-length', String(end - start + 1));
-    return reply.send(storage.read(file.storage_key, { start, end }));
-  }
-  reply.header('content-length', String(size));
-  return reply.send(storage.read(file.storage_key));
-}
-
 export async function canReadFile(
   ctx: AppContext,
   userId: string,
@@ -350,23 +297,51 @@ export async function fileRoutes(app: FastifyInstance, ctx: AppContext) {
       .where('status', '=', 'ready')
       .executeTakeFirst();
     if (!f) throw notFound(tr('That file'));
-    const sniffedInline = [
-      'image/jpeg',
-      'image/png',
-      'image/gif',
-      'image/webp',
-      'video/mp4',
-      'video/webm',
-      'video/quicktime',
-      'audio/mpeg',
-      'audio/mp4',
-      'audio/ogg',
-      'audio/webm',
-      'audio/wav',
-      'application/pdf',
-    ].includes(f.mime);
     const { download } = parse(z.object({ download: z.enum(['1', 'true']).optional() }), req.query);
-    return streamFile(req, reply, storage, f, sniffedInline && !download);
+    return streamFile(req, reply, storage, f, INLINE_TYPES.has(f.mime) && !download);
+  });
+
+  /**
+   * What a Word document, a workbook, a deck, a list of values or plain words holds, as a page
+   * (M16 H6): what a browser opens in place of the download, in the reader's words. Nothing on it
+   * runs or loads but the shell's fonts.
+   */
+  const faces = shellFaces(ctx.config.WEB_DIR);
+  app.get('/files/:id/view', async (req, reply): Promise<FastifyReply> => {
+    const auth = requireAuth(req);
+    const { id } = parse(z.object({ id: z.string().uuid() }), req.params);
+    if (!(await canReadFile(ctx, auth.userId, id))) throw notFound(tr('That file'));
+    const f = await ctx.db
+      .selectFrom('files')
+      .select(['id', 'name', 'mime', 'size', 'storage_key'])
+      .where('id', '=', id)
+      .where('status', '=', 'ready')
+      .executeTakeFirst();
+    const kind = f ? viewKindOf(f.mime, f.name) : null;
+    if (!f || !kind || !viewable(f.mime, f.name, Number(f.size))) throw notFound(tr('That file'));
+    const html = await asReader(ctx, auth.userId, async () => {
+      const language = currentTranslator().language;
+      const body = await viewBodyOf(storage, f, kind, language);
+      ctx.metrics.fileViews.inc({ kind, outcome: body ? 'shown' : 'unreadable' });
+      return viewPage({
+        name: f.name,
+        kind,
+        size: Number(f.size),
+        body,
+        download: `/v1/files/${f.id}?download=1`,
+        faces,
+        lang: language,
+        rtl: language === 'ar',
+      });
+    });
+    return reply
+      .header('content-type', 'text/html; charset=utf-8')
+      .header('content-security-policy', VIEW_CSP)
+      .header('x-content-type-options', 'nosniff')
+      .header('referrer-policy', 'no-referrer')
+      .header('x-robots-tag', 'noindex')
+      .header('cache-control', 'private, no-store')
+      .send(html);
   });
 
   app.get('/files/:id/thumb', async (req, reply): Promise<FastifyReply> => {

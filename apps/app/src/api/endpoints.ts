@@ -70,6 +70,8 @@ import type {
   DirectoryResponse,
   EffectivePolicyResponse,
   ErasedResponse,
+  FileLinkMadeResponse,
+  FileLinksResponse,
   FileResponse,
   FollowingResponse,
   FollowResponse,
@@ -983,6 +985,20 @@ export const endpoints = {
     api.get<AssetsResponse>(
       `/conversations/${conversationId}/assets${q({ kind: kinds.join(','), before })}`,
     ),
+  /** The same across conversations (M16 H6): the files between you and someone, a space's. */
+  filesOf: (
+    where: { kind: 'person' | 'space'; id: string },
+    kinds: readonly AssetView['kind'][],
+    before?: string,
+  ) =>
+    api.get<AssetsResponse>(
+      `/${where.kind === 'person' ? 'people' : 'spaces'}/${where.id}/files${q({ kind: kinds.join(','), before })}`,
+    ),
+  /** Your open links to one of your files (M16 H6), and making and taking back one. */
+  fileLinks: (fileId: string) => api.get<FileLinksResponse>(`/files/${fileId}/links`),
+  makeFileLink: (fileId: string, body: { audience: 'anyone' | 'caime'; days: number }) =>
+    api.post<FileLinkMadeResponse>(`/files/${fileId}/links`, body),
+  revokeFileLink: (id: string) => api.del<OkResponse>(`/file-links/${id}`),
   pins: (conversationId: string) =>
     api.get<MessagesResponse>(`/conversations/${conversationId}/pins`),
   pin: (messageId: string) => api.post<OkResponse>(`/messages/${messageId}/pin`),

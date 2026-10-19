@@ -14,6 +14,11 @@ const INVITE_TOKEN = /\/(i|invites|t|team-invites|g|join-links)\/[^/]{16,}(?=\/|
 const GUEST_TOKEN = /\/(j|join)\/[^/]{16,}(?=\/|$)/;
 /** A mail's "Open in Caime" link (R75): `/v1/mail/seen/<token>`. */
 const MAIL_SEEN = /\/mail\/seen\/[^/]+$/;
+/**
+ * A link to someone's file is its only key (M16 H6): `/f/<token>`, and its bytes at
+ * `/v1/public/files/<token>[/preview]`.
+ */
+const FILE_TOKEN = /\/(f|public\/files)\/[^/]{16,}(?=\/|$)/;
 
 export function requestForLog(req: { method: string; url: string; ip?: string }) {
   return {
@@ -23,7 +28,8 @@ export function requestForLog(req: { method: string; url: string; ip?: string })
       ?.replace(CALENDAR_FEED, '/calendar/cal_….ics')
       .replace(INVITE_TOKEN, '/$1/…')
       .replace(GUEST_TOKEN, '/$1/…')
-      .replace(MAIL_SEEN, '/mail/seen/…'),
+      .replace(MAIL_SEEN, '/mail/seen/…')
+      .replace(FILE_TOKEN, '/$1/…'),
     remoteAddress: req.ip,
   };
 }

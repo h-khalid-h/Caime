@@ -18,6 +18,7 @@ import { listingState } from './app-directory';
 import { automationView, visibleSaved } from './automations';
 import { bookingOf, catalogOf, orderingOf, paymentsOf } from './booking';
 import { type CustomerMask, maskPayload, masksFor } from './business';
+import { fileLinksForExport } from './file-links';
 import { placesOwnedBy } from './places';
 import { relationshipView } from './relations';
 import { itemsWithStock } from './stock';
@@ -160,6 +161,7 @@ export async function buildExport(ctx: AppContext, me: string, now: Date) {
     externalBusy,
     calendarPushes,
     reclaims,
+    fileLinks,
   ] = await Promise.all([
     // An organization's page is public; whose link a person followed is only counted (R29: it
     // could name someone under 18, or someone who can't be found).
@@ -1077,6 +1079,8 @@ export async function buildExport(ctx: AppContext, me: string, now: Date) {
       .where('r.user_id', '=', me)
       .orderBy('r.created_at')
       .execute(),
+    // The links to your files you gave out (M16 H6): never a token.
+    fileLinksForExport(db, me),
   ]);
   const mailOf = new Map(mailCopies.map((c) => [c.message_id, c]));
   const person = (name: string | null, handle: string | null) =>
@@ -1774,6 +1778,9 @@ export async function buildExport(ctx: AppContext, me: string, now: Date) {
       showsBusy: p.holds,
       writtenAt: p.pushed_at.toISOString(),
     })),
+    // The links to your files you gave out (M16 H6): the file, who it was for, how many times its
+    // page was opened (never by whom), and when it ran out or was taken back.
+    fileLinks,
     // A closed organization you set out to take back by proving its domain (R42).
     reclaims: reclaims.map((r) => ({
       organization: { name: r.name, handle: r.handle },

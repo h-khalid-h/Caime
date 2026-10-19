@@ -20,7 +20,6 @@ import { qk } from '@/api/keys';
 import { translate } from '@/features/assist/translations';
 import { useOpened } from '@/features/e2ee/hooks';
 import { report } from '@/features/safety/report';
-import { SaveSheet } from '@/features/saved/SaveSheet';
 import { copyText } from '@/lib/clipboard';
 import { patchMessage } from '@/state/cache';
 import { useTaskOutbox } from '@/state/taskOutbox';
@@ -28,6 +27,7 @@ import { useTheme } from '@/theme/theme';
 import { Button } from '@/ui/Button';
 import { Forward, ReplyArrow } from '@/ui/directional';
 import { MORE_REACTIONS, QUICK_REACTIONS } from '@/ui/emoji';
+import { lazyPart } from '@/ui/Lazy';
 import { ListRow } from '@/ui/ListRow';
 import { Pressable } from '@/ui/Pressable';
 import { afterSheet, Sheet } from '@/ui/Sheet';
@@ -37,6 +37,9 @@ import { TextField } from '@/ui/TextField';
 import { toast } from '@/ui/Toast';
 import { deleteWithUndo } from './deleteWithUndo';
 import { messageInfo, namesIn } from './rows';
+
+/** Saving to a collection: loaded when it's asked for, as from the files place. */
+const SaveSheet = lazyPart(() => import('@/features/saved/SaveSheet').then((m) => m.SaveSheet));
 
 /** A decision's longest title (the server's). */
 const DECISION_MAX = 300;

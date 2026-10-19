@@ -65,6 +65,22 @@ describe('what a request says of itself in the log', () => {
     expect(requestForLog({ method: 'GET', url: list }).url).toBe(list);
   });
 
+  it('never a link to someone’s file, which opens it for whoever has it (M16 H6)', () => {
+    const token = `f_${'Qm9vay1hLXRhYmxl'.repeat(2)}LWZvci10d28Ab`;
+    expect(requestForLog({ method: 'GET', url: `/f/${token}?lang=ar` }).url).toBe('/f/…');
+    expect(requestForLog({ method: 'GET', url: `/v1/public/files/${token}` }).url).toBe(
+      '/v1/public/files/…',
+    );
+    expect(
+      requestForLog({ method: 'GET', url: `/v1/public/files/${token}/preview?download=1` }).url,
+    ).toBe('/v1/public/files/…/preview');
+    // A file's own links, and taking one back, name no token.
+    const own = '/v1/files/0d6c1a9e-1111-4222-8333-444455556666/links';
+    expect(requestForLog({ method: 'GET', url: own }).url).toBe(own);
+    const back = '/v1/file-links/0d6c1a9e-1111-4222-8333-444455556666';
+    expect(requestForLog({ method: 'DELETE', url: back }).url).toBe(back);
+  });
+
   it('never a meeting guest’s link, which is their way in (R84)', () => {
     const token = 'cmg_Qm9vay1hLXRhYmxlLWZvci10d28';
     expect(requestForLog({ method: 'GET', url: `/j/${token}` }).url).toBe('/j/…');

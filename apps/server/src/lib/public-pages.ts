@@ -31,8 +31,12 @@ import {
   stockLine,
   systemAccountOf,
   truncate,
+  type ViewKind,
+  viewable,
+  viewKindOf,
 } from '@caime/core';
 import { MARKETING_PAGES, type PlaceView } from '@caime/core/api';
+import { formatBytes } from '@caime/core/format';
 import {
   currentTranslator,
   dirOf,
@@ -53,7 +57,10 @@ import type { Database, Organization, User } from '../db/schema';
 import { USER_COLUMNS } from '../db/schema';
 import { catalogOf, paymentsOf } from './booking';
 import { ORG_REF_COLUMNS, orgRef } from './business';
+import { countOpened, liveFileLink } from './file-links';
+import { cutLine, VIEW_KIND_LABELS, VIEW_STYLE, type ViewBody, viewBodyOf } from './file-views';
 import { countryNameIn } from './geo';
+import { inLanguage } from './i18n';
 import { joinLinkOpening, liveJoinLink } from './join-links';
 import {
   type MarketplacePage,
@@ -104,6 +111,7 @@ import {
 } from './site-pages';
 import { sitemaps } from './sitemap-cache';
 import { stockFor, withStock } from './stock';
+import { storageFor } from './storage';
 import { publicFacts } from './system-accounts';
 import { liveTeamInvite } from './team-invites';
 import { avatarUrl, minorOf, privacyOf } from './users';
@@ -298,6 +306,31 @@ export interface PublicJoinLink {
   /** It asks (C3h): whoever comes asks, and its owner or an admin lets them in. */
   approval: boolean;
 }
+/**
+ * A link to someone's file (M16 H6): its name, what it is and its size, who shared it by the name
+ * they show, until when it's open, and what it holds where a page can show it: a picture, a video
+ * or a sound to play, a document's words. Never where it was shared or with whom.
+ */
+export interface PublicFileLink {
+  kind: 'file-link';
+  token: string;
+  /** The link's own id: what a report names (never its token). */
+  linkId: string;
+  name: string;
+  mime: string;
+  size: number;
+  /** Its kind as kept: an image, a video, a sound or a file. */
+  fileKind: string;
+  viewKind: ViewKind | null;
+  hasPreview: boolean;
+  /** What an Office file or plain words hold, read for the page. */
+  body: ViewBody | null;
+  by: string;
+  expiresAt: string;
+  /** Who it's for: anyone with it, or someone signed in to Caime. */
+  audience: 'anyone' | 'caime';
+  report: VisitorReportState;
+}
 export type PublicPage =
   | { kind: 'landing' }
   /** A page of the site about Caime (site-pages.ts): everyone's, signed in or not. */
@@ -311,8 +344,14 @@ export type PublicPage =
   | PublicInvite
   | PublicTeamInvite
   | PublicJoinLink
-  /** Nothing here: a handle nobody has, or (`invite`) an invite link that's no longer open. */
-  | { kind: 'missing'; what?: 'invite' }
+  | PublicFileLink
+  /** A link to a file only someone signed in to Caime opens, asked by a visitor (M16 H6). */
+  | { kind: 'file-sign-in' }
+  /**
+   * Nothing here: a handle nobody has, an invite link that's no longer open (`invite`), or a link
+   * to a file that isn't (`file`).
+   */
+  | { kind: 'missing'; what?: 'invite' | 'file' }
   | { kind: 'app' }
   /**
    * The app's way in for a visitor (welcome, sign-in, sign-up): the screen's words and shape,
@@ -520,13 +559,63 @@ export async function publicJoinLink(
   };
 }
 
+/**
+ * A link to someone's file while it's open (M16 H6): its page counts as opened once, never by
+ * whom; a link only signed-in people open asks a visitor to sign in; anything else is a link that
+ * isn't open.
+ */
+async function publicFileLink(
+  ctx: AppContext,
+  token: string,
+  asker: { userId: string | null; language: InterfaceLanguage },
+  search: URLSearchParams,
+): Promise<PublicPage> {
+  const found = await liveFileLink(ctx, token, asker.userId);
+  if (found === 'sign-in') return { kind: 'file-sign-in' };
+  if (!found) return { kind: 'missing', what: 'file' };
+  const { link, file } = found;
+  const size = Number(file.size);
+  const viewKind = viewable(file.mime, file.name, size) ? viewKindOf(file.mime, file.name) : null;
+  const body = viewKind
+    ? await inLanguage(asker.language, () =>
+        viewBodyOf(storageFor(ctx.config), file, viewKind, asker.language),
+      )
+    : null;
+  await countOpened(ctx, link.id);
+  ctx.metrics.fileLinks.inc({ outcome: 'opened' });
+  return {
+    kind: 'file-link',
+    token,
+    linkId: link.id,
+    name: file.name,
+    mime: file.mime,
+    size,
+    fileKind: file.kind,
+    viewKind,
+    hasPreview: Boolean(file.thumb_key),
+    body,
+    by: found.by,
+    expiresAt: link.expires_at.toISOString(),
+    audience: link.audience,
+    report: visitorReportState(search),
+  };
+}
+
 /** The page a path is, for whoever isn't signed in. */
 export async function publicPageFor(
   ctx: AppContext,
   path: string,
   now: Date,
   search: URLSearchParams = new URLSearchParams(),
+  /** Who asks, when signed in (a link to a file may be for them alone), and in which words. */
+  asker: { userId: string | null; language: InterfaceLanguage } = {
+    userId: null,
+    language: 'en',
+  },
 ): Promise<PublicPage> {
+  // A link to someone's file (M16 H6): read for whoever asks, what it holds in their words.
+  const file = /^\/f\/([^/?#]+)$/.exec(path);
+  if (file) return publicFileLink(ctx, file[1] ?? '', asker, search);
   const page = await pageAt(ctx, path, now, search);
   // Anyone may report a page about someone (M16 B6): its form's state rides on the page.
   return page.kind === 'person' ||
@@ -1331,11 +1420,95 @@ export function renderPublic(
 </main>`,
       };
     }
+    case 'file-link': {
+      const base = `/v1/public/files/${encodeURIComponent(page.token)}`;
+      const what = tr(
+        page.viewKind
+          ? VIEW_KIND_LABELS[page.viewKind]
+          : (FILE_KIND_LABELS[page.fileKind] ?? FILE_KIND_LABELS.other ?? ''),
+      );
+      // What the page shows of it: a picture, a video or a sound to play, a document's words.
+      const shown =
+        page.fileKind === 'image' && page.hasPreview
+          ? `<img class="shot" src="${base}/preview" alt="${esc(page.name)}">`
+          : page.fileKind === 'video'
+            ? `<video class="shot" controls preload="metadata" src="${base}"></video>`
+            : page.fileKind === 'audio'
+              ? `<audio controls preload="metadata" src="${base}"></audio>`
+              : page.body
+                ? `<article class="doc">${page.body.html}</article>${page.body.cut ? `<p class="doc-cut">${esc(cutLine())}</p>` : ''}`
+                : '';
+      const opensInPlace = page.mime === 'application/pdf';
+      return {
+        status: 200,
+        lang: currentTranslator().language,
+        head: meta({
+          title: `${page.name} · ${SITE_NAME}`,
+          description: tr('{name} shared a file with you on {site}.', {
+            name: page.by,
+            site: SITE_NAME,
+          }),
+          image: null,
+          index: false,
+          canonical: false,
+        }),
+        body: `
+<main class="pub pub-sheet" ${langAttrs()}>
+  ${topBar('/sign-in', wordmark(22))}
+  <section class="hero">
+    <p class="kicker"><span class="mono">${esc(tr('a shared file'))}</span></p>
+    <h1 dir="auto">${esc(page.name)}</h1>
+    <p class="who">${esc(tr('Shared by {name}', { name: page.by }))}</p>
+    <div class="actions"><a class="btn" href="${base}?download=1" download>${icon('download', 18)}${esc(tr('Download'))}</a>${opensInPlace ? `<a class="btn quiet" href="${base}">${esc(tr('Open'))}</a>` : ''}</div>
+  </section>
+  ${shown ? `<section class="block shown">${shown}</section>` : ''}
+  ${section(
+    sentence(tr('about')),
+    `<dl class="spec">
+    <div>${label(tr('file'))}<dd>${esc(`${what} · ${formatBytes(page.size)}`)}</dd></div>
+    <div>${label(tr('from'))}<dd>${esc(page.by)}</dd></div>
+    <div>${label(tr('for'))}<dd>${esc(page.audience === 'caime' ? tr('Whoever has this link and is signed in to {site}', { site: SITE_NAME }) : tr('Whoever has this link'))}</dd></div>
+    <div>${label(tr('open until'))}<dd>${esc(dayLabel(page.expiresAt.slice(0, 10), 'UTC'))}</dd></div>
+  </dl>`,
+  )}
+  ${reportSection(page.report, { kind: 'file', token: page.token }, currentTranslator().language)}
+  ${pageFoot(tr(PROMISE), wordmark(18))}
+</main>`,
+      };
+    }
+    case 'file-sign-in':
+      return {
+        status: 200,
+        lang: currentTranslator().language,
+        head: meta({
+          title: `${tr('Sign in to open this file')} · ${SITE_NAME}`,
+          description: tr('Only someone signed in to {site} opens this link.', { site: SITE_NAME }),
+          image: null,
+          index: false,
+          canonical: false,
+        }),
+        body: `
+<main class="pub pub-sheet" ${langAttrs()}>
+  ${topBar('/sign-in', wordmark(22))}
+  <section class="hero hero-center">
+    <p class="kicker"><span class="mono">${esc(tr('a shared file'))}</span></p>
+    <h1>${esc(tr('Sign in to open this file'))}</h1>
+    <p class="lead">${esc(tr('Only someone signed in to {site} opens this link. Sign in in this browser, then open the link again.', { site: SITE_NAME }))}</p>
+    <div class="actions" style="justify-content:center"><a class="btn" href="/sign-in">${esc(tr('Sign in'))}</a><a class="btn quiet" href="/sign-up">${esc(tr('Sign up'))}</a></div>
+  </section>
+  ${pageFoot(tr(PROMISE), wordmark(18))}
+</main>`,
+      };
     case 'missing': {
       // An invite link that's no longer open says so, never that nobody has a handle (review
-      // 2026-10-17 §1 M).
+      // 2026-10-17 §1 M); a link to a file the same way (M16 H6).
       const invite = page.what === 'invite';
-      const heading = invite ? tr('This invite isn’t open') : tr('Nobody by that handle');
+      const fileLink = page.what === 'file';
+      const heading = invite
+        ? tr('This invite isn’t open')
+        : fileLink
+          ? tr('This link isn’t open')
+          : tr('Nobody by that handle');
       return {
         status: 404,
         lang: currentTranslator().language,
@@ -1343,7 +1516,9 @@ export function renderPublic(
           title: `${tr('Not here')} · ${SITE_NAME}`,
           description: invite
             ? tr('This invite isn’t open any more.')
-            : tr('Nobody by that handle.'),
+            : fileLink
+              ? tr('This link isn’t open any more.')
+              : tr('Nobody by that handle.'),
           image: null,
           index: false,
           canonical: false,
@@ -1355,7 +1530,7 @@ export function renderPublic(
     ${friend('pico', 112, 'curious')}
     <p class="kicker"><span class="mono">${esc(tr('not here'))}</span></p>
     <h1>${esc(heading)}</h1>
-    <p class="lead">${esc(invite ? tr('It may have run out, or been taken back. Ask whoever sent it for a new one.') : tr('It may have changed, or been let go of.'))}</p>
+    <p class="lead">${esc(invite || fileLink ? tr('It may have run out, or been taken back. Ask whoever sent it for a new one.') : tr('It may have changed, or been let go of.'))}</p>
     <div class="actions" style="justify-content:center"><a class="btn" href="/">${esc(tr('Open {site}', { site: SITE_NAME }))}</a></div>
   </section>
   ${pageFoot(tr(PROMISE), wordmark(18))}
@@ -1643,6 +1818,15 @@ function refusalLine(reason: VisitorRefusal, path: string): string {
 }
 
 /** A day of the week shown, in the page's language and the host's zone: "Monday 20 October". */
+/** A file that isn't read as a page, by what it is. */
+const FILE_KIND_LABELS: Record<string, string> = {
+  image: msg('Photo'),
+  video: msg('Video'),
+  audio: msg('Audio'),
+  document: msg('Document'),
+  other: msg('File'),
+};
+
 function dayLabel(day: string, timeZone: string): string {
   return new Intl.DateTimeFormat(currentTranslator().language, {
     weekday: 'long',
@@ -2027,6 +2211,10 @@ ${explorerStyle()}
 .pub-market .shots img{flex:none;width:min(560px,86%);height:auto;aspect-ratio:8/5;object-fit:cover;border-radius:${px.radius('lg')};border:1px solid var(--border);background:var(--surface-muted);scroll-snap-align:start}
 @media (min-width:720px){.pub-market .apps{grid-template-columns:1fr 1fr}}
 ${SHEET_STYLE}
+${VIEW_STYLE}
+.pub-sheet .shown{display:flex;flex-direction:column;gap:10px}
+.pub-sheet .shot{display:block;max-width:100%;height:auto;max-height:80vh;border-radius:${px.radius('lg')};border:1px solid var(--border);background:var(--surface-muted)}
+.pub-sheet audio{width:100%}
 </style>`;
 
 /** The shell with a page's head and body in it. Tolerant of a template without the markers. */
@@ -2085,6 +2273,8 @@ export function robotsTxt(publicUrl: string): string {
     'Disallow: /sign-up',
     'Disallow: /recover',
     'Disallow: /onboarding',
+    // A link to someone's file (M16 H6) is for whoever was given it, never a crawler.
+    'Disallow: /f/',
     `Sitemap: ${publicUrl}/sitemap.xml`,
     '',
   ].join('\n');

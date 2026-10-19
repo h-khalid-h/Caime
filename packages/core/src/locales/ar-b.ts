@@ -3131,4 +3131,27 @@ export const arB: Catalog = {
   'Filled in': 'تمت التعبئة',
   'Ask a customer to fill in one of your forms': 'اطلب من العميل تعبئة أحد نماذجك',
   'Write the question.': 'اكتب السؤال.',
+  'Anyone with the link': 'أي شخص لديه الرابط',
+  'People signed in to Caime': 'من سجّل الدخول إلى Caime',
+  'Share by link': 'مشاركة برابط',
+  'For someone who isn’t in the conversation: whoever has the link opens the file, until it runs out or you take it back.':
+    'لمن ليس في المحادثة: من لديه الرابط يفتح الملف، حتى انتهاء مدته أو سحبه.',
+  'Who opens it': 'من يفتحه',
+  'For how long': 'لأي مدة',
+  'The link is shown this once: copy it or share it now.':
+    'يظهر الرابط هذه المرة فقط: يمكن نسخه أو مشاركته الآن.',
+  'opened {n} times': {
+    zero: 'لم يُفتح بعد',
+    one: 'فُتح مرة واحدة',
+    two: 'فُتح مرتين',
+    few: 'فُتح {n} مرات',
+    many: 'فُتح {n} مرة',
+    other: 'فُتح {n} مرة',
+  },
+  'not opened yet': 'لم يُفتح بعد',
+  'Between you and {name}': 'بينك وبين {name}',
+  'Shared in {name}': 'مشترَك في {name}',
+  'Opens the files between you': 'يفتح الملفات بينكما',
+  'Choose how long.': { toWoman: 'اختاري المدة.', toMan: 'اختر المدة.', other: 'اختر المدة.' },
+  'Taken back: that link opens nothing now': 'سُحب: هذا الرابط لا يفتح شيئًا الآن',
 };

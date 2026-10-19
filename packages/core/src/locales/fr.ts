@@ -4819,4 +4819,20 @@ export const fr: Catalog = {
   'Ask a customer to fill in one of your forms':
     'Demander à un client de remplir l’un de vos formulaires',
   'Write the question.': 'Écrivez la question.',
+  'Anyone with the link': 'Toute personne qui a le lien',
+  'People signed in to Caime': 'Les personnes connectées à Caime',
+  'Share by link': 'Partager par lien',
+  'For someone who isn’t in the conversation: whoever has the link opens the file, until it runs out or you take it back.':
+    'Pour quelqu’un qui n’est pas dans la conversation : quiconque a le lien ouvre le fichier, jusqu’à ce qu’il expire ou que vous le retiriez.',
+  'Who opens it': 'Qui l’ouvre',
+  'For how long': 'Pour combien de temps',
+  'The link is shown this once: copy it or share it now.':
+    'Le lien n’est affiché qu’une fois : copiez-le ou partagez-le maintenant.',
+  'opened {n} times': { one: 'ouvert une fois', other: 'ouvert {n} fois' },
+  'not opened yet': 'pas encore ouvert',
+  'Between you and {name}': 'Entre vous et {name}',
+  'Shared in {name}': 'Partagé dans {name}',
+  'Opens the files between you': 'Ouvre les fichiers entre vous',
+  'Choose how long.': 'Choisissez la durée.',
+  'Taken back: that link opens nothing now': 'Retiré : ce lien n’ouvre plus rien',
 };

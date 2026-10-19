@@ -11,6 +11,8 @@
 import type { ReportReason } from '@caime/core';
 import { REPORT_REASONS, uuidv7 } from '@caime/core';
 import type { AppContext } from '../context';
+import { hashToken } from './crypto';
+import { FILE_TOKEN } from './file-links';
 
 /** Why a visitor's report wasn't taken, as the page says it (`?report-error=`). */
 export const VISITOR_REPORT_REFUSALS = ['too_many', 'contact', 'details', 'statement'] as const;
@@ -48,10 +50,14 @@ export interface VisitorReportForm {
   statement: boolean;
 }
 
-/** Whom the page is about: a person, or an organization (its items and collections are its). */
+/**
+ * Whom the page is about: a person, or an organization (its items and collections are its); or,
+ * for a link to someone's file (M16 H6), the message it was shared in and whoever shared it.
+ */
 export type VisitorReportTarget =
   | { kind: 'person'; userId: string; handle: string }
-  | { kind: 'org'; orgId: string; handle: string };
+  | { kind: 'org'; orgId: string; handle: string }
+  | { kind: 'file'; userId: string; messageId: string; conversationId: string };
 
 const EMAIL = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
@@ -88,15 +94,16 @@ export async function takeVisitorReport(
     .values({
       id,
       reporter_id: null,
-      target_user_id: target.kind === 'person' ? target.userId : null,
+      target_user_id: target.kind === 'org' ? null : target.userId,
       org_id: target.kind === 'org' ? target.orgId : null,
-      message_id: null,
-      conversation_id: null,
+      message_id: target.kind === 'file' ? target.messageId : null,
+      conversation_id: target.kind === 'file' ? target.conversationId : null,
       reason: checked.reason,
       details: checked.details,
       visitor_name: checked.name,
       visitor_email: checked.email,
-      page,
+      // A link's token is its only key: the report names the page without it.
+      page: target.kind === 'file' ? '/f/…' : page,
     })
     .execute();
   ctx.metrics.reports.inc({ from: 'visitor', reason: checked.reason });
@@ -113,8 +120,30 @@ const SLUG = /^[a-z0-9][a-z0-9-]{0,79}$/;
  */
 export async function visitorReportTarget(
   ctx: AppContext,
-  form: { kind: string; handle: string; slug: string },
+  form: { kind: string; handle: string; slug: string; token?: string },
 ): Promise<{ target: VisitorReportTarget; page: string } | null> {
+  if (form.kind === 'file') {
+    // Any link the visitor has, open or not: what it showed them is still worth a look.
+    const token = form.token ?? '';
+    if (!FILE_TOKEN.test(token)) return null;
+    const link = await ctx.db
+      .selectFrom('file_links as l')
+      .innerJoin('messages as m', 'm.id', 'l.message_id')
+      .select(['l.created_by', 'l.message_id', 'm.conversation_id'])
+      .where('l.token_hash', '=', hashToken(token))
+      .executeTakeFirst();
+    return link
+      ? {
+          target: {
+            kind: 'file',
+            userId: link.created_by,
+            messageId: link.message_id,
+            conversationId: link.conversation_id,
+          },
+          page: `/f/${token}`,
+        }
+      : null;
+  }
   const handle = form.handle.trim().toLowerCase();
   const slug = form.slug.trim().toLowerCase();
   if (!HANDLE.test(handle) || (slug && !SLUG.test(slug))) return null;

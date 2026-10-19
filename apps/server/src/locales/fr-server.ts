@@ -1588,4 +1588,32 @@ export const frServer: Catalog = {
     'Les formulaires sont envoyés par une organisation à ses clients.',
   'Someone reached by mail can’t fill in a form yet.':
     'Une personne jointe par courriel ne peut pas encore remplir de formulaire.',
+  'Only adults give out links to their files.':
+    'Seuls les adultes donnent des liens vers leurs fichiers.',
+  'Slide {number}': 'Diapositive {number}',
+  Spreadsheet: 'Classeur',
+  Presentation: 'Présentation',
+  Table: 'Tableau',
+  'Plain text': 'Texte brut',
+  Audio: 'Audio',
+  'This file can’t be shown as a page. Download it to open it.':
+    'Ce fichier ne peut pas s’afficher en page. Téléchargez-le pour l’ouvrir.',
+  'The page stops here: the rest is in the file.':
+    'La page s’arrête ici : la suite est dans le fichier.',
+  'What the file holds, as words and tables: its look, pictures and charts are in the file itself.':
+    'Ce que contient le fichier, en mots et en tableaux : sa mise en page, ses images et ses graphiques sont dans le fichier lui-même.',
+  '{name} shared a file with you on {site}.': '{name} a partagé un fichier avec vous sur {site}.',
+  'a shared file': 'un fichier partagé',
+  'Shared by {name}': 'Partagé par {name}',
+  file: 'fichier',
+  'Whoever has this link and is signed in to {site}':
+    'Quiconque a ce lien et est connecté à {site}',
+  'Sign in to open this file': 'Connectez-vous pour ouvrir ce fichier',
+  'Only someone signed in to {site} opens this link.':
+    'Seule une personne connectée à {site} ouvre ce lien.',
+  'Only someone signed in to {site} opens this link. Sign in in this browser, then open the link again.':
+    'Seule une personne connectée à {site} ouvre ce lien. Connectez-vous dans ce navigateur, puis ouvrez de nouveau le lien.',
+  'Sign up': 'S’inscrire',
+  'This link isn’t open': 'Ce lien n’est pas ouvert',
+  'This link isn’t open any more.': 'Ce lien n’est plus ouvert.',
 };

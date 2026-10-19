@@ -24,6 +24,7 @@ const APART: Array<[module: string, importer: string]> = [
   ['@/features/shell/YouSheetBody', 'features/shell/YouButton.tsx'],
   ['./OrgDetails', 'features/orgs/OrgScreen.tsx'],
   ['@/features/orgs/OrgDetails', 'features/orgs/OrgScreen.tsx'],
+  ['./SharedFiles', 'features/conversation/ContextPanel.tsx'],
 ];
 
 /**
@@ -38,6 +39,8 @@ const LAZY_EVERYWHERE = [
   '@/features/join/JoinLinks',
   '@/features/join/JoinRequests',
   '@/ui/LoadFailed',
+  '@/features/saved/SaveSheet',
+  '@/features/conversation/SharedFiles',
 ];
 
 const files = readdirSync(src, { recursive: true })

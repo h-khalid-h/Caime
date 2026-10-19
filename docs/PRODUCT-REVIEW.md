@@ -2120,3 +2120,37 @@ with its reason, so it isn't proposed again without new facts.
   a visitor's page before an account (that page has a form shape of its own, C1; later), files
   and signatures in answers (a consent form is counsel's), questions that depend on other
   answers, and a form filled in by mail.
+- **R105 (2026-10-19) A files place, links to your own files, and Office files read as pages.**
+  The review of 2026-10-17 (§6, Files; §9, M16 H) found a conversation's asset index but no place
+  across a person or a space, no way to give one file to someone outside the conversation, and a
+  Word document, a workbook or a deck that a browser could only download. §14 calls a files place
+  hygiene, not an advantage: nothing to boast of, nothing that may block the switch from WhatsApp
+  and a drive. *Decided:* the files between two people are what's shared in the conversations they
+  have together (their chat and its topics, as the profile already counts them: "3 files · 2
+  links", now a tap into the place), never a group's, never a message request still waiting on the
+  viewer (its photos are veiled, M16 B4) nor a private conversation's; a space's are what's shared in
+  its conversations the viewer is in. Both are the conversation's sheet (Photos, Files, Links) with
+  who shared each and in which topic or conversation, opening there at the message. Whoever sent a
+  file gives out a link to it (`/f/<token>`): for anyone who has it, or only for someone signed in
+  to Caime; for a day, a week or a month, never for good; at most five open to a file; taken back
+  with a tap. The link stands for its maker sharing their own file from where they shared it, so it
+  opens nothing once the message is deleted (for everyone, or by them for themselves) or past its
+  time, they've left that conversation, their account is suspended or gone, or the organization
+  whose conversation it is is closed or suspended. Only adults give links out (R29), never from a
+  private conversation. Its page names the file, who shared it and until when, shows a picture's
+  preview, plays a video or a sound, shows a document's words, offers the download, and takes a
+  visitor's report (the DSA's notice and action: the report names the message and its maker, never
+  the token); it's never indexed, kept in a cache or sent as a referrer, and it counts its opens,
+  never who. A Word document, a workbook, a deck, a list of values or plain words is read by the
+  server as a page of what it holds (`FileView.viewUrl`): its words, headings and tables, a
+  workbook's sheets with their days and values as they show, a deck's slides as their text, all
+  escaped into Caime's own few tags under a policy that runs nothing; a phone opens the file itself
+  in the system's viewer, which reads Office files with their look. *Why:* a clinic that leaves
+  WhatsApp and a shared drive needs to find the lab result Lina sent last month without scrolling,
+  hand a price list to an insurer who isn't on Caime, and read a Word file on a laptop without
+  installing anything; each of those is a reason to keep the old tools, and none of them should be.
+  *Declined:* folders (the conversations and topics are the folders; a person's own drive is Saved,
+  PRD §69), editing documents together, versions and a trash for files, full-text search inside
+  files, the old binary Office formats and OpenDocument (later, by their own readers), a link that
+  shows but won't download (a page that shows a file has sent it: saying otherwise would be a
+  promise Caime can't keep), a link to someone else's file, and a link without an end.

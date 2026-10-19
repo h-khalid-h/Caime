@@ -22,6 +22,7 @@ import {
   uuidv7,
 } from '@caime/core';
 import type {
+  AssetsResponse,
   ConversationResponse,
   MembersAddedResponse,
   OkResponse,
@@ -34,6 +35,7 @@ import { sql } from 'kysely';
 import { z } from 'zod';
 import type { AppContext } from '../context';
 import { USER_COLUMNS } from '../db/schema';
+import { AssetsQuery, assetsPage, spaceConversationsOf } from '../lib/assets';
 import { conversationView, membership, sendSystem } from '../lib/conversation-views';
 import { badRequest, forbidden, notFound } from '../lib/errors';
 import { recordEvent } from '../lib/events';
@@ -361,6 +363,16 @@ export async function spaceRoutes(app: FastifyInstance, ctx: AppContext) {
     );
     reply.status(201);
     return { space: await spaceView(ctx, auth.userId, spaceId), invited: [...asked.ask] };
+  });
+
+  // A space's files (M16 H6): everything shared in its conversations the viewer is in.
+  app.get('/spaces/:id/files', async (req): Promise<AssetsResponse> => {
+    const auth = requireAuth(req);
+    const { id } = parse(z.object({ id: z.string().uuid() }), req.params);
+    const q = parse(AssetsQuery, req.query);
+    const ids = await spaceConversationsOf(ctx, auth.userId, id);
+    if (!ids) throw notFound(tr('That space'));
+    return assetsPage(ctx, auth.userId, { kind: 'across', ids }, q);
   });
 
   app.get('/spaces/:id', async (req): Promise<SpaceResponse> => {

@@ -255,13 +255,20 @@ export const useOrgUpdates = (orgId: string) =>
 
 /** What's been shared in a conversation, of some kinds, newest first (PRD §26). */
 export const useAssets = (
-  conversationId: string,
+  /** A conversation's, or across a person's or a space's (M16 H6). */
+  source: { kind: 'conversation' | 'person' | 'space'; id: string },
   tab: string,
   kinds: readonly AssetView['kind'][],
 ) =>
   useInfiniteQuery({
-    queryKey: qk.assets(conversationId, tab),
-    queryFn: ({ pageParam }) => endpoints.assets(conversationId, kinds, pageParam),
+    queryKey:
+      source.kind === 'conversation'
+        ? qk.assets(source.id, tab)
+        : qk.filesOf(source.kind, source.id, tab),
+    queryFn: ({ pageParam }) =>
+      source.kind === 'conversation'
+        ? endpoints.assets(source.id, kinds, pageParam)
+        : endpoints.filesOf({ kind: source.kind, id: source.id }, kinds, pageParam),
     initialPageParam: undefined as string | undefined,
     getNextPageParam: (last) => last.nextBefore ?? undefined,
     // Another tab keeps the counts it had (they're of everything) while its own list loads.

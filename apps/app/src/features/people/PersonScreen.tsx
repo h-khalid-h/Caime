@@ -83,6 +83,10 @@ const cardParams = (id: string, kit: CardKit | null, itemId: string | null = nul
 type CardKit = 'appointment' | 'order_status' | 'payment_request';
 
 const ItemSheet = lazyPart(() => import('@/features/booking/ItemSheet').then((m) => m.ItemSheet));
+/** The files between the two of you (M16 H6): loaded when they're opened. */
+const SharedFiles = lazyPart(() =>
+  import('@/features/conversation/SharedFiles').then((m) => m.SharedFiles),
+);
 
 interface PersonScreenProps {
   id: string;
@@ -110,6 +114,7 @@ function PersonPage({ id, book = null, slug = null }: PersonScreenProps) {
   });
   const picking = useOpened(picker.open);
   const [connect, setConnect] = useState(false);
+  const [files, setFiles] = useState(false);
   const connecting = useOpened(connect);
   const [busy, setBusy] = useState<string | null>(null);
   const now = useNow();
@@ -587,11 +592,28 @@ function PersonPage({ id, book = null, slug = null }: PersonScreenProps) {
                     : null,
                   {
                     label: tr('shared'),
-                    value: `${trn(p.summary.files, '{n} file', '{n} files')} · ${trn(p.summary.links, '{n} link', '{n} links')}${
-                      p.summary.decisions
-                        ? ` · ${trn(p.summary.decisions, '{n} decision', '{n} decisions')}`
-                        : ''
-                    }`,
+                    value: (() => {
+                      const line = `${trn(p.summary.files, '{n} file', '{n} files')} · ${trn(p.summary.links, '{n} link', '{n} links')}${
+                        p.summary.decisions
+                          ? ` · ${trn(p.summary.decisions, '{n} decision', '{n} decisions')}`
+                          : ''
+                      }`;
+                      // The files and links themselves, across your conversations (M16 H6).
+                      return p.summary.files || p.summary.links ? (
+                        <Pressable
+                          accessibilityRole="button"
+                          accessibilityHint={tr('Opens the files between you')}
+                          onPress={() => setFiles(true)}
+                          testID="person-files"
+                        >
+                          <Text variant="body" color="link">
+                            {line}
+                          </Text>
+                        </Pressable>
+                      ) : (
+                        line
+                      );
+                    })(),
                   },
                   {
                     label: tr('actions'),
@@ -710,6 +732,12 @@ function PersonPage({ id, book = null, slug = null }: PersonScreenProps) {
                 }
           }
           onClose={() => router.setParams({ item: undefined })}
+        />
+      ) : null}
+      {files ? (
+        <SharedFiles
+          source={{ kind: 'person', id: person.id, name }}
+          onClose={() => setFiles(false)}
         />
       ) : null}
       {connecting ? (

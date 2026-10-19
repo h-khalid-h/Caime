@@ -113,20 +113,24 @@ export async function registerWeb(app: FastifyInstance, ctx: AppContext): Promis
     const search = new URLSearchParams(req.url.split('?')[1]?.split('#')[0] ?? '');
     // Signed in (a session cookie, whatever it's worth): the app, not a page about Caime.
     const signedIn = Boolean(req.cookies?.[SESSION_COOKIE]);
+    const asked = siteLanguage(
+      (req.query as Record<string, unknown>).lang,
+      req.headers['accept-language'],
+    );
     const found =
       path === '/' && signedIn
         ? { kind: 'app' as const }
-        : await publicPageFor(ctx, path, ctx.now(), search);
+        : await publicPageFor(ctx, path, ctx.now(), search, {
+            userId: req.auth?.userId ?? null,
+            language: asked.language,
+          });
     // The way in is painted before the app only for a visitor: signed in, these screens send
     // the person on at once, and the paint would only flash.
     const page = found.kind === 'entry' && signedIn ? { kind: 'app' as const } : found;
     // Every page but the app itself (the site, the entry screens, a person's or an
     // organization's page, an invitation, a 404) in the language asked for (`?lang=`, the site's
     // switch), else the browser's (Accept-Language), as the app will show it (R54).
-    const chosen =
-      page.kind === 'app'
-        ? null
-        : siteLanguage((req.query as Record<string, unknown>).lang, req.headers['accept-language']);
+    const chosen = page.kind === 'app' ? null : asked;
     const language = chosen?.language ?? null;
     // The site's own pages, the marketplace's among them (R80): everyone's, signed in or not,
     // never the app, cached ten minutes.
@@ -167,8 +171,15 @@ export async function registerWeb(app: FastifyInstance, ctx: AppContext): Promis
     // without the app's scripts, which would only boot to keep out of its way (R44). Its ways in
     // are links: sign-up and sign-in open the app. A page of the site about Caime is everyone's,
     // signed in or not: the app has no screen for it, so it never boots there.
+    // A link to someone's file (M16 H6), open or not, is a page for everyone too: the app has no
+    // screen for it, and what it shows may depend on whoever asks.
+    const fileLink =
+      page.kind === 'file-link' ||
+      page.kind === 'file-sign-in' ||
+      (page.kind === 'missing' && page.what === 'file');
     const visitor =
       sitePage ||
+      fileLink ||
       ((page.kind === 'person' ||
         page.kind === 'org' ||
         page.kind === 'item' ||
@@ -181,9 +192,19 @@ export async function registerWeb(app: FastifyInstance, ctx: AppContext): Promis
     if (visitor) html = html.replace(/<script\b[^>]*\bsrc=[^>]*><\/script>\s*/g, '');
     // A page that follows the browser's language says so to whatever caches it.
     if (page.kind !== 'app') reply.header('vary', 'accept-language');
+    // A link's page may be taken back at any moment, and its address is its key: nobody keeps
+    // it, nothing indexes it, and nowhere it leads learns it.
+    if (fileLink)
+      reply
+        .header('x-robots-tag', 'noindex')
+        .header('referrer-policy', 'no-referrer')
+        .header('cache-control', 'private, no-store');
     return reply
       .status(rendered.status)
-      .header('cache-control', sitePage ? 'public, max-age=600' : 'no-cache')
+      .header(
+        'cache-control',
+        fileLink ? 'private, no-store' : sitePage ? 'public, max-age=600' : 'no-cache',
+      )
       .header('content-security-policy', pageCsp)
       .header('permissions-policy', PERMISSIONS_POLICY)
       .type('text/html; charset=utf-8')

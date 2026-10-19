@@ -152,6 +152,17 @@ plus one update. The asks list is one indexed read, made only by whoever runs th
 people are shown, and loads as its own 1.4 KB gzip chunk; nothing polls. The startup chunk grew
 0.1 KB (448.9 KB: the endpoints and keys), the conversation route's 0.1 KB (84.4 KB).
 
+### Files read as pages and links to files (M16 H6)
+
+A Word document, a workbook, a deck or words read as a page costs the server once per file, per
+reader's language, per ten minutes on an instance (`viewBodyOf`'s cache, sixteen pages at most):
+up to `VIEW_MAX_BYTES` (20 MB) read into memory, each part inflated on the thread pool under 16 MB
+(48 MB a file), two files at a time (`views`), the page cut at a megabyte of HTML; a list of values
+or words reads its first 2 MB. A link to a file costs its bytes each time it's fetched: three
+hundred fetches an hour a link and a hundred and twenty an address, at most, with a picture sent as
+its preview rendition rather than the original. The files place costs two queries a page (the page
+and its counts) over the asset index, whatever the scope. The €/user cost of a link's bytes is H7's.
+
 ## What a change says
 
 A pull request states, under **Resources**, what the change costs on each of the three: queries

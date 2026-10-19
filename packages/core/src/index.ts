@@ -24,6 +24,7 @@ export * from './customers';
 export * from './e2ee';
 export * from './errors';
 export * from './field-values';
+export * from './file-views';
 export * from './format';
 export * from './history';
 export * from './i18n';

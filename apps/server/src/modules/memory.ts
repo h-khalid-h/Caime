@@ -4,7 +4,14 @@
  */
 
 import type { MemoryView } from '@caime/core';
-import { CreateContextBody, formatDue, joinNames, UpdateContextBody, uuidv7 } from '@caime/core';
+import {
+  CreateContextBody,
+  formatDue,
+  joinNames,
+  UpdateContextBody,
+  uuidv7,
+  viewable,
+} from '@caime/core';
 import type { ContextResponse, ContextsResponse, IdResponse, OkResponse } from '@caime/core/api';
 import { tr, trn } from '@caime/core/i18n';
 import type { FastifyInstance } from 'fastify';
@@ -276,10 +283,23 @@ export async function memoryRoutes(app: FastifyInstance, ctx: AppContext) {
         .execute(),
       ctx.db
         .selectFrom('assets')
-        .select(['id', 'kind', 'title', 'url', 'host', 'file_id', 'message_id', 'created_at'])
-        .where('conversation_id', '=', id)
+        .leftJoin('files as f', 'f.id', 'assets.file_id')
+        .select([
+          'assets.id',
+          'assets.kind',
+          'assets.title',
+          'assets.url',
+          'assets.host',
+          'assets.file_id',
+          'assets.message_id',
+          'assets.created_at',
+          'f.mime',
+          'f.name as file_name',
+          'f.size as file_size',
+        ])
+        .where('assets.conversation_id', '=', id)
         .where(notHiddenFor(auth.userId, 'assets.message_id'))
-        .orderBy('created_at', 'desc')
+        .orderBy('assets.created_at', 'desc')
         .limit(50)
         .execute(),
       ctx.db
@@ -382,6 +402,10 @@ export async function memoryRoutes(app: FastifyInstance, ctx: AppContext) {
           title: a.title,
           fileId: a.file_id,
           url: a.file_id ? fileUrl(a.file_id) : null,
+          viewUrl:
+            a.file_id && a.mime && a.file_name && viewable(a.mime, a.file_name, Number(a.file_size))
+              ? `${fileUrl(a.file_id)}/view`
+              : null,
           messageId: a.message_id,
         })),
       links: assets

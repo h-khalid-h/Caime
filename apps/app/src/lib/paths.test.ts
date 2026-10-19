@@ -81,6 +81,11 @@ describe('paths from links', () => {
       expect(appPath(`/${page}`)).toBeNull();
     }
     expect(appPath('/helpers')).toBe('/helpers');
+    // A link to someone's file (M16 H6) is the server's page, signed in or not.
+    const file = `f_${'a'.repeat(43)}`;
+    expect(ownLinkPath(`${base}/f/${file}`, base)).toBeNull();
+    expect(appPath(`/f/${file}?lang=ar`)).toBeNull();
+    expect(appPath('/files')).toBe('/files');
     expect(ownLinkPath(`${base}/@help`, base)).toBe('/@help');
     expect(ownLinkPath(`${base}/o/help`, base)).toBe('/o/help');
     expect(ownLinkPath('https://other.example/@noor', base)).toBeNull();

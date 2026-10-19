@@ -4633,4 +4633,20 @@ export const turkish: Catalog = {
   'Ask a customer to fill in one of your forms':
     'Bir müşteriden formlarınızdan birini doldurmasını isteyin',
   'Write the question.': 'Soruyu yazın.',
+  'Anyone with the link': 'Bağlantıya sahip herkes',
+  'People signed in to Caime': 'Caime hesabıyla giriş yapmış kişiler',
+  'Share by link': 'Bağlantıyla paylaş',
+  'For someone who isn’t in the conversation: whoever has the link opens the file, until it runs out or you take it back.':
+    'Sohbette olmayan biri için: bağlantıya sahip olan herkes, süresi dolana ya da siz geri alana kadar dosyayı açar.',
+  'Who opens it': 'Kim açabilir',
+  'For how long': 'Ne kadar süreyle',
+  'The link is shown this once: copy it or share it now.':
+    'Bağlantı yalnızca bu kez gösterilir: şimdi kopyalayın ya da paylaşın.',
+  'opened {n} times': { one: 'bir kez açıldı', other: '{n} kez açıldı' },
+  'not opened yet': 'henüz açılmadı',
+  'Between you and {name}': '{name} ile aranızda',
+  'Shared in {name}': '{name} içinde paylaşılanlar',
+  'Opens the files between you': 'Aranızdaki dosyaları açar',
+  'Choose how long.': 'Süreyi seçin.',
+  'Taken back: that link opens nothing now': 'Geri alındı: bu bağlantı artık hiçbir şey açmıyor',
 };

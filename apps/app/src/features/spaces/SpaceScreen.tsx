@@ -55,6 +55,10 @@ const JoinRequests = lazyPart(() =>
 const PeoplePicker = lazyPart(() =>
   import('@/features/people/PeoplePicker').then((m) => m.PeoplePicker),
 );
+/** Everything shared in the space's conversations (M16 H6): loaded when it's opened. */
+const SharedFiles = lazyPart(() =>
+  import('@/features/conversation/SharedFiles').then((m) => m.SharedFiles),
+);
 
 /** What an add did (M16 B4): who came in, and who was asked instead. */
 const addedLine = (added: number, invited: number) =>
@@ -165,6 +169,7 @@ export function SpaceScreen({ id }: { id: string }) {
   const [adding, setAdding] = useState(false);
   const [picked, setPicked] = useState<Set<string>>(new Set());
   const [newConvo, setNewConvo] = useState(false);
+  const [files, setFiles] = useState(false);
   const [title, setTitle] = useState('');
   const [everyone, setEveryone] = useState(true);
   const [managing, setManaging] = useState<SpaceMemberView | null>(null);
@@ -309,6 +314,20 @@ export function SpaceScreen({ id }: { id: string }) {
                     ),
                   }
                 : null,
+              {
+                label: 'shared',
+                value: (
+                  <Pressable
+                    accessibilityRole="button"
+                    onPress={() => setFiles(true)}
+                    testID="space-files"
+                  >
+                    <Text variant="bodyStrong" color="link">
+                      {tr('Photos, files and links')}
+                    </Text>
+                  </Pressable>
+                ),
+              },
             ]}
           />
         </View>
@@ -701,6 +720,12 @@ export function SpaceScreen({ id }: { id: string }) {
       >
         <View />
       </Sheet>
+      {files ? (
+        <SharedFiles
+          source={{ kind: 'space', id: space.id, name: space.name }}
+          onClose={() => setFiles(false)}
+        />
+      ) : null}
     </Screen>
   );
 }
