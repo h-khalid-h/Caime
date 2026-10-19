@@ -2846,12 +2846,14 @@ graph) and the number that will show it; one that sharpens none is hygiene and s
       neither while the AI agent answers, no away message while someone on the team wrote there
       within the hour, both from the organization's automatic-replies account, marked automated,
       never moving the thread or telling the team, read again when they're sent (turned off since,
-      or opened since, nothing). By mail they say they're automatic and are never tracked. They're
-      in the organization's export and go when a closed one is cleared. Verified:
-      `org-replies.test.ts` (who keeps and reads them, folded duplicates, ids kept and foreign ids
-      new, the team told; greeting then away with the opening line, once a spell; open hours; the
-      team answering; a quiet fortnight; Arabic; turned off before sending; mail's
-      `Auto-Submitted` without tracking; the agent; export and clearing), core `opening.test.ts`,
+      or opened since, nothing); an away message asked for with a greeting says the greeting first,
+      so the two arrive in that order however their jobs run. By mail they say they're automatic
+      and are never tracked. They're in the organization's export and go when a closed one is
+      cleared. Verified: `org-replies.test.ts` (who keeps and reads them, folded duplicates, ids
+      kept and foreign ids new, the team told; greeting then away with the opening line, in that
+      order when the away's job runs first, once a spell; open hours; the team answering; a quiet
+      fortnight; Arabic; turned off before sending; mail's `Auto-Submitted` without tracking; the
+      agent; export and clearing), core `opening.test.ts`,
       `e2e/org-replies.spec.ts` (the owner writes all three on the setup screen, the customer reads
       the greeting and "We're open again tomorrow at 9:00", the team puts in /hours), the catalogs
       in four languages and the server's, and the full gate.
@@ -4451,6 +4453,9 @@ graph) and the number that will show it; one that sharpens none is hygiene and s
   journeys, safety, reliability, performance, intelligence, mail and calendar, chat, integrations,
   business and code integrity; the matrix against WhatsApp, Signal, Slack, Calendly and Workspace;
   an age-assurance design; the integration framework mapped to the code; plan M16 (A–H).
+- 2026-10-19 — M16 H2, after CI: the away message landed before the greeting when both
+  jobs came due at once; an away message asked for with a greeting now says it first (by
+  its client id, so once), and a test runs the away's job first.
 - 2026-10-19 — M16 H2: an organization's own replies: quick replies by "/" for the team, a
   greeting, and an away message that says when it opens again, in the customer's language.
 - 2026-10-18 — M16 H1: plans that hold up: a Business seat includes Pro for its person, an owner

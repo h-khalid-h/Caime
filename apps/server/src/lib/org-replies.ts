@@ -234,7 +234,8 @@ export async function queueAutoReplies(
   await enqueue(
     ctx,
     'org.reply',
-    { orgId, conversationId, seq, what: 'away', opens },
+    // With the greeting asked for by the same message, which it says first if it runs first.
+    { orgId, conversationId, seq, what: 'away', opens, greeting: greeted },
     {
       dedupeKey: `org-reply:away:${conversationId}:${opens}`,
       maxAttempts: 3,
@@ -300,12 +301,26 @@ async function awayText(
   return `${text}\n\n${inLanguage(language, () => openAgainLine(opens, now, zone, locale))}`;
 }
 
-/** Sends one automatic reply, as it reads when it's sent: turned off or open since, nothing. */
+/**
+ * A job's automatic reply. An away message asked for with a greeting says the greeting first
+ * (once: by the greeting's own client id, so whichever of the two jobs runs first, the other
+ * finds it said), and the customer reads them in that order however the jobs were run.
+ */
 async function sendAutoReply(ctx: AppContext, payload: Record<string, unknown>): Promise<void> {
+  const what: AutoReply = payload.what === 'away' ? 'away' : 'greeting';
+  if (what === 'away' && payload.greeting === true) await postReply(ctx, payload, 'greeting');
+  await postReply(ctx, payload, what);
+}
+
+/** Sends one automatic reply, as it reads when it's sent: turned off or open since, nothing. */
+async function postReply(
+  ctx: AppContext,
+  payload: Record<string, unknown>,
+  what: AutoReply,
+): Promise<void> {
   const orgId = String(payload.orgId);
   const conversationId = String(payload.conversationId);
   const seq = Number(payload.seq);
-  const what: AutoReply = payload.what === 'away' ? 'away' : 'greeting';
   const org = await ctx.db
     .selectFrom('organizations')
     .select(['greeting', 'away_message', 'booking', 'suspended_at'])

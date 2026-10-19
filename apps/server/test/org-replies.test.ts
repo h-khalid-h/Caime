@@ -10,6 +10,7 @@
 import { createServer, type Server } from 'node:http';
 import type { AddressInfo } from 'node:net';
 import { uuidv4, uuidv7 } from '@caime/core';
+import { sql } from 'kysely';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import type { BusMessage } from '../src/lib/bus';
 import { runDueJobs } from '../src/lib/jobs';
@@ -231,6 +232,28 @@ describe('a greeting and an away message (M16 H2)', () => {
     expect(told.every((n: any) => !String(n.body ?? '').includes(GREETING))).toBe(true);
   });
 
+  it('say the greeting first even when the away message’s job runs before the greeting’s', async () => {
+    const sami = await customer('Sami Nasser');
+    await send(sami.c, sami.conversationId, 'Are you open on Friday?');
+    await t.ctx.flush();
+    // The greeting's own job held back a minute: the away message's runs first, alone.
+    const held = await t.ctx.db
+      .updateTable('jobs')
+      .set({ run_at: new Date(t.ctx.now().getTime() + 60_000) })
+      .where('kind', '=', 'org.reply')
+      .where(sql<boolean>`payload->>'what' = 'greeting'`)
+      .where(sql<boolean>`payload->>'conversationId' = ${sami.conversationId}`)
+      .executeTakeFirst();
+    expect(Number(held.numUpdatedRows)).toBe(1);
+    await settle();
+    const order = async () =>
+      (await autoReplies(sami.c, sami.conversationId)).map((m) => m.payload.autoReply);
+    expect(await order()).toEqual(['greeting', 'away']);
+    // The greeting's job finds it said, and says nothing more.
+    await settle(61_000);
+    expect(await order()).toEqual(['greeting', 'away']);
+  });
+
   it('greet alone while open, keep the away message off while the team is answering, and greet again after a quiet fortnight', async () => {
     // 10:00 in Cairo: open.
     t.clock.set('2026-10-01T07:00:00Z');
@@ -331,8 +354,12 @@ describe('a greeting and an away message (M16 H2)', () => {
       expect(s.TrackOpens).toBeUndefined();
       expect(String(s.TextBody)).not.toContain('is told when this mail is opened');
     }
-    // On the organization's clock: someone reached by mail has none on Caime.
-    expect(String(sends[1]?.TextBody)).toContain('We’re open again at 9:00 AM.');
+    // On the organization's clock: someone reached by mail has none on Caime. (Two mails sent
+    // at once arrive in either order: the away message is the one that says the organization's
+    // own words for it.)
+    const away = sends.map((s) => String(s.TextBody)).find((b) => b.includes(AWAY));
+    expect(away).toContain('We’re open again at 9:00 AM.');
+    expect(sends.map((s) => String(s.TextBody)).some((b) => b.includes(GREETING))).toBe(true);
   });
 
   it('wait while its AI agent answers, which introduces itself instead', async () => {
