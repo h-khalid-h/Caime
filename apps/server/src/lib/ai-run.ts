@@ -49,6 +49,7 @@ export async function runAi<T>(
           output_tokens: usage?.outputTokens ?? null,
           cache_read_tokens: usage?.cacheReadTokens ?? null,
           cache_creation_tokens: usage?.cacheCreationTokens ?? null,
+          audio_ms: usage?.audioMs ?? null,
           latency_ms: Date.now() - started,
           outcome,
         })

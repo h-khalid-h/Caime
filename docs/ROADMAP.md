@@ -2808,7 +2808,9 @@ graph) and the number that will show it; one that sharpens none is hygiene and s
       deliveries; Cai with sources everywhere, read-only tools over the person's own records,
       voice transcripts analysed, the agent's review mode, on/off per action, office hours and
       citations, a nightly evaluation harness with prompt hashes, golden-set hardening, allowance
-      by tokens with no silent search spend, private content filtered and refused on the server.
+      by tokens with no silent search spend (by cost, priced by H7's `lib/ai-costs.ts`: a count a
+      day bounds nothing), a recording's length read from the file before it's sent, private
+      content filtered and refused on the server.
 - [ ] H. Business depth: a Business seat includes Pro; a cap on organizations per person; room
       checks inside the transaction; quick replies, away and greeting messages; customer notes,
       tags and fields; tax invoices (counsel); booking and revenue analytics; intake forms as
@@ -2968,6 +2970,31 @@ graph) and the number that will show it; one that sharpens none is hygiene and s
       it, the link counts one open and is taken back, and Omar's phone browser opens the Word file
       as its page), `e2e/a11y.spec.ts` (the file link's page in English and Arabic), the catalogs
       in four languages and the server's, and the full gate.
+- [x] H7. What a person costs (2026-10-19, review §5 M Cost, §9 and §14, PRODUCT-REVIEW R106; advantage 4,
+      the number that shows it: €/person/month served, under the price). Production ran every AI
+      feature on Claude Opus 5.5: it sets `ANTHROPIC_API_KEY` and no model, so the light features
+      fell back to the top one. The light model is now Haiku 5.5 unless set (forty times cheaper in
+      and out), and finding follow-ups and an organization's agent run on the top model only on a
+      paid plan (core `aiModel`, `agentModel`; the pricing page says which model each
+      organization's agent answers on, in four languages). One price list, `lib/ai-costs.ts`
+      (Anthropic's page and the speech providers', read 2026-10-19; the ECB's euro rate of
+      2026-10-16), prices a call from `ai_runs`; the operator's product metrics say what the
+      window's calls cost (`ai.cost`: in euros, per person active over thirty days, by plan with
+      seats, by feature, and the calls it couldn't price). A transcript keeps its recording's
+      length (`ai_runs.audio_ms`, migration 0129) and a voice note with none stated isn't sent; the
+      agent's runs keep their cache tokens. RESOURCES.md "What a person costs" carries the tables
+      `ai-costs.test.ts` writes from each feature's real request at its bounds. Not done: an
+      allowance by cost (200 calls a day on the top model reach €2,178.96 at their edge; G), a
+      recording's length read from the file before it's sent (G), and the instance's bill per
+      person (⛔ the owner's figure). Verified: `ai-costs.test.ts` (the price list, dated ids and an
+      unlisted model; a call's cost with the cache, Haiku's long prompts and a recording; nothing
+      for an unanswered call; every feature's request at its bounds on its model; the free plans
+      held under €20 and €15 a month at the edge; the operator's figure from runs of three plans, an
+      agent, a recording and two unpriced), `ai.test.ts` (follow-ups on the light model on
+      Personal, the top one on Pro), `agents.test.ts` (a free organization's agent on Haiku 5.5, its
+      cache tokens kept), `speech.test.ts` (a transcript's length kept; a note with no length never
+      sent), `plans.test.ts`, `product-metrics.test.ts`, the catalogs in four languages, and the
+      full gate.
 - [ ] ⛔ H, the owner's: a smaller paid tier; WhatsApp Business in the inbox and reminders by
       WhatsApp or SMS (Meta's approval); Stripe Connect live with local currencies.
 - [ ] R98, after C: places as a context for spaces (PRODUCT-REVIEW R98): `spaces.place` from
@@ -4564,6 +4591,10 @@ graph) and the number that will show it; one that sharpens none is hygiene and s
   journeys, safety, reliability, performance, intelligence, mail and calendar, chat, integrations,
   business and code integrity; the matrix against WhatsApp, Signal, Slack, Calendly and Workspace;
   an age-assurance design; the integration framework mapped to the code; plan M16 (A–H).
+- 2026-10-19 — M16 H7: what a person costs: production's AI moved off Opus 5.5 for everything
+  (the light model is Haiku 5.5 unless set; the top model for a payer's follow-ups and agent), one
+  price list priced against `ai_runs`, the operator's AI cost per person by plan, the free plans
+  held at the edge of their allowances, the tables in RESOURCES.md. R106.
 - 2026-10-19 — M16 H6: a files place, links to your own files, Office files read as pages: the
   files between two people and a space's, a link for anyone or the signed-in, a day to a month,
   dead with its message or maker, a visitor's page with a report; Word, Excel, PowerPoint, CSV and

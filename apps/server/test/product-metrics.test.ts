@@ -1,5 +1,6 @@
 import { uuidv4, uuidv7 } from '@caime/core';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
+import { PRICES } from '../src/lib/ai-costs';
 import { type Client, createTestApp, signup, type TestApp } from './helpers';
 
 const ADMIN = 'operator-token-for-product-metrics-0123456789';
@@ -230,6 +231,15 @@ describe('product metrics (PRD §82–83)', () => {
       calls: 3,
       ok: 2,
       byFeature: { rewrite: { ok: 2, other: 0 }, translate: { ok: 0, other: 1 } },
+      // Calls that kept no tokens cost nothing (ai-costs.test.ts prices real ones, M16 H7).
+      cost: {
+        eur: 0,
+        perActivePersonMonth: 0,
+        byPlan: [{ plan: 'personal', whose: 'person', eur: 0, count: 1, perMonth: 0 }],
+        byFeature: { rewrite: 0, translate: 0 },
+        unpriced: 0,
+        priced: PRICES.read,
+      },
     });
     expect(m.business).toEqual({
       organizations: 1,

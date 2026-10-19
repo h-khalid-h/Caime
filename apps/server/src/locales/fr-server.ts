@@ -140,7 +140,9 @@ export const frServer: Catalog = {
   'verified · answered in an hour': 'vérifiée · répond en une heure',
   '{n} actions a day': '{n} actions par jour',
   '{n} conversations a day': '{n} conversations par jour',
-  '{n} answers a day': '{n} réponses par jour',
+  '{n} answers a day, on a fast model': '{n} réponses par jour, avec un modèle rapide',
+  '{n} answers a day, on our most capable model':
+    '{n} réponses par jour, avec notre modèle le plus performant',
   'Your family, your work and your customers don’t belong in one list. Say who each person is to you, once. From then on Caime knows what needs you first, who may reach you when, what was decided and what’s owed, and what each side of your life sees of you.':
     'Votre famille, votre travail et vos clients n’ont pas leur place dans une seule liste. Dites une fois qui est chaque personne pour vous. Dès lors, Caime sait ce qui a besoin de vous en premier, qui peut vous joindre et quand, ce qui a été décidé et ce qui est dû, et ce que chaque côté de votre vie voit de vous.',
   'Start free': 'Commencer gratuitement',

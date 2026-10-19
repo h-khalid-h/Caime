@@ -35,11 +35,11 @@ Each call is paid for by the token, so what is sent is bounded and what is repea
 
 | Feature | Model | Effort | Input bound | Output bound |
 | --- | --- | --- | --- | --- |
-| Rewrite, translate | `ANTHROPIC_MODEL_LIGHT` when set, else `ANTHROPIC_MODEL` | low | one message (1,500 characters) | 8,192 tokens |
+| Rewrite, translate | `ANTHROPIC_MODEL_LIGHT` (Haiku 5.5 unless set, M16 H7) | low | a draft of 4,000 characters, a message's first 4,000 | 8,192 tokens |
 | Catch me up | the light model | low | 200 messages, 60,000 characters, 1,500 a message | 4,096 tokens |
-| Find follow-ups | `ANTHROPIC_MODEL` | medium | the same transcript, structured output | 8,192 tokens |
+| Find follow-ups | `ANTHROPIC_MODEL` on a paid plan, the light model on Personal (core `aiModel`) | medium | the same transcript, structured output | 8,192 tokens |
 | A question about a conversation (R67) | the light model | low | the same transcript and the question (300 characters) | 4,096 tokens |
-| An organization's agent | `ANTHROPIC_MODEL` | low | its knowledge (8,000 characters, sent as a cached system block) and the last 20 messages | 2,048 tokens, clipped to 1,500 characters |
+| An organization's agent | `ANTHROPIC_MODEL` on Business and Enterprise, the light model on Free (core `agentModel`) | low | its knowledge (8,000 characters, sent as a cached system block) and the last 20 messages | 2,048 tokens, clipped to 1,500 characters |
 
 - **Allowances** (`packages/core/src/plans.ts`): 10 AI calls a day on Personal, 200 on Pro and
   Business, 1,000 on Enterprise; an agent answers each customer message once (`agent_seq`) and
@@ -161,7 +161,86 @@ up to `VIEW_MAX_BYTES` (20 MB) read into memory, each part inflated on the threa
 or words reads its first 2 MB. A link to a file costs its bytes each time it's fetched: three
 hundred fetches an hour a link and a hundred and twenty an address, at most, with a picture sent as
 its preview rendition rather than the original. The files place costs two queries a page (the page
-and its counts) over the asset index, whatever the scope. The €/user cost of a link's bytes is H7's.
+and its counts) over the asset index, whatever the scope. A link's bytes leave from the instance
+(no `FILES_S3_*` on production), so they cost what its traffic costs, under the instance's own bill
+("What a person costs", below).
+
+## What a person costs (M16 H7)
+
+AI is the cost that grows with each person; the rest is the instance's own bill, shared. What a
+call costs is `lib/ai-costs.ts` (the server's one price list: Anthropic's page and the speech
+providers' read on the day it names, US dollars, the ECB's euro rate of that week), and the
+operator reads what the window's calls actually cost in the product metrics (`ai.cost`: in euros,
+per person active over thirty days, by plan, by feature, and how many it couldn't price), so the
+assumption below gives way to a measurement as soon as there are people.
+
+Production ran every AI feature on Claude Opus 5.5 until this change: it sets
+`ANTHROPIC_API_KEY` and neither model, so the light features fell back to the top one. Haiku 5.5 is
+forty times cheaper in and out, so the light model is now Haiku 5.5 unless the operator sets
+another, and the two features that ask the most (finding follow-ups, an organization's agent)
+run on the top model only where someone pays (`aiModel` and `agentModel` in core's plans, said on
+the pricing page for the agent).
+
+Produced by `COST_TABLE=<file> pnpm vitest run test/ai-costs.test.ts` in `apps/server`
+(2026-10-19): each feature's request at the bounds the code sets, measured from what the real
+prompt builders send to a stand-in (system and message characters; output at its `max_tokens`),
+read at a token a character, a ceiling no language's words reach; a voice note at ten minutes,
+its longest.
+
+Prices: https://platform.claude.com/docs/en/about-claude/pricing, read 2026-10-19; 1.1253 US dollars to the euro (ECB, 2026-10-16).
+
+| Feature | Sends at most (characters) | Answers at most (tokens) | Haiku 5.5 | Sonnet 5.5 | Opus 5.5 |
+| --- | --- | --- | --- | --- | --- |
+| rewrite | 4,579 | 8,192 | €0.0040 | €0.08 | €0.16 |
+| translate | 4,294 | 8,192 | €0.0040 | €0.08 | €0.16 |
+| catch-up | 60,825 | 4,096 | €0.0072 | €0.14 | €0.29 |
+| ask | 61,192 | 4,096 | €0.0073 | €0.15 | €0.29 |
+| actions | 61,206 | 8,192 | €0.0091 | €0.18 | €0.36 |
+| brief | 16,825 | 4,096 | €0.0033 | €0.07 | €0.13 |
+| cai | 11,322 | 1,024 | €0.0015 | €0.03 | €0.06 |
+| friend | 11,685 | 512 | €0.0013 | €0.03 | €0.05 |
+| search | 1,929 | 512 | €0.0004 | €0.0080 | €0.02 |
+| search-answer | 15,766 | 4,096 | €0.0032 | €0.06 | €0.13 |
+| agent | 55,692 | 2,048 | €0.0059 | €0.12 | €0.23 |
+| transcribe | ten minutes of audio | — | €0.05 (OpenAI's estimate) | | |
+
+| Plan | Model for the heavy work | Allowance | Dearest call | A month at every allowance | An assumed month |
+| --- | --- | --- | --- | --- | --- |
+| personal | light | 10 assists a day | €0.05 | €16.00 | €0.11 |
+| pro | top | 200 assists a day | €0.36 | €2,178.96 | €0.52 |
+| business | top | 200 assists a day | €0.36 | €2,178.96 | €0.52 |
+| enterprise | top | 1,000 assists a day | €0.36 | €10,894.80 | €0.52 |
+| organization free | light | 50 answers a day | €0.0059 | €8.79 | €0.27 |
+| organization business | top | 2,000 answers a day | €0.23 | €14,061.74 | €10.93 |
+| organization enterprise | top | 20,000 answers a day | €0.23 | €140,617.44 | €10.93 |
+
+On Sonnet 5.5 a Business agent's month at its allowance is €7,030.87; a free organization's on the top model, as before M16 H7, €351.54. Business's €29 covers its agent up to 79 answers a day of the assumed size on Opus 5.5, 159 on Sonnet 5.5 and 3,183 on Haiku 5.5.
+
+The assumed month (in `typicalMonth`: a rewrite, a catch-up, two questions to Cai, half a minute
+of a voice note and one search for follow-ups a day, read at about 2.7 characters a token from
+Anthropic's figures; an agent's 30 answers a day, nothing read from the cache) is an assumption,
+said as one: the operator's `ai.cost.byPlan` replaces it. What the tables say:
+
+- **The free plans are held.** A Personal account at the edge of every allowance costs €16 a
+  month, ten 10-minute voice notes a day being the dearest; a free organization's agent at 50
+  answers a day, €8.79. `ai-costs.test.ts` fails if either passes €20 or €15, so a change to an
+  allowance or a free plan's model is a decision, never a drift. Before this change a free
+  organization's agent could cost €351.54 a month, three of them per owner.
+- **A paid plan's typical use is far under its price**, and its edge is not bounded by it: Pro's
+  200 assists a day are €0.52 a month as assumed and €2,178.96 at the edge (follow-ups on Opus
+  5.5 at 60,000 characters, 200 times a day); a Business agent's 2,000 answers a day reach
+  €14,061.74. A count of calls a day doesn't bound what they cost: an allowance by cost (G) does.
+- **Business's €29 covers its agent up to about 79 answers a day on Opus 5.5** at the assumed
+  size, 159 on Sonnet 5.5 and 3,183 on Haiku 5.5. A clinic busier than that costs more than it
+  pays until the allowance is by cost; setting `ANTHROPIC_MODEL` to Sonnet 5.5 halves it (⛔ the
+  owner's choice: price and model).
+- **A voice note's length is the device's word.** The server sends a recording only with a stated
+  length of ten minutes at most and 25 MB, so a note that lies about its length at a low bitrate
+  is billed for what it holds; reading the length from the file before it's sent is G's.
+- **The instance** (the server and its database, one container on EasyPanel) is a fixed monthly
+  bill whatever the use; its price is the owner's (⛔), and per person it's that bill divided by
+  those on it. Storage is its volume (no `FILES_S3_*`), mail is Postmark's plan, push is Expo's
+  (free), and calls relay through Cloudflare only when they can't connect directly.
 
 ## What a change says
 

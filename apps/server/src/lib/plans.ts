@@ -10,6 +10,7 @@ import {
   nextOrgPlan,
   nextPersonPlan,
   ORG_ALLOWANCES,
+  type OrgPlan,
   type OrgPlanView,
   PERSON_ALLOWANCES,
   PLAN_NAMES,
@@ -46,21 +47,7 @@ export async function effectivePlan(
   userId: string,
   db: Q = ctx.db,
 ): Promise<{ plan: Plan; via: PlanSeatView | null }> {
-  const rows = await db
-    .selectFrom('users as u')
-    .leftJoin('org_members as m', (j) =>
-      j.onRef('m.user_id', '=', 'u.id').on('m.left_at', 'is', null),
-    )
-    .leftJoin('organizations as o', (j) =>
-      j
-        .onRef('o.id', '=', 'm.org_id')
-        .on('o.archived_at', 'is', null)
-        .on('o.suspended_at', 'is', null)
-        .on('o.plan', '<>', 'free'),
-    )
-    .select(['u.plan', 'o.id as org_id', 'o.name as org_name', 'o.plan as org_plan'])
-    .where('u.id', '=', userId)
-    .execute();
+  const rows = await seatRows(db, [userId]).execute();
   const own = rows[0]?.plan;
   if (!own) throw notFound(tr('That person'));
   const seats = rows.flatMap((r) =>
@@ -73,6 +60,41 @@ export async function effectivePlan(
     seats.map((s) => s.plan),
   );
   return { plan, via: seat === null ? null : (seats[seat] ?? null) };
+}
+
+/** People's own plans and their seats on paid plans' open teams: a row a seat, or one with none. */
+const seatRows = (db: Q, userIds: readonly string[]) =>
+  db
+    .selectFrom('users as u')
+    .leftJoin('org_members as m', (j) =>
+      j.onRef('m.user_id', '=', 'u.id').on('m.left_at', 'is', null),
+    )
+    .leftJoin('organizations as o', (j) =>
+      j
+        .onRef('o.id', '=', 'm.org_id')
+        .on('o.archived_at', 'is', null)
+        .on('o.suspended_at', 'is', null)
+        .on('o.plan', '<>', 'free'),
+    )
+    .select(['u.id', 'u.plan', 'o.id as org_id', 'o.name as org_name', 'o.plan as org_plan'])
+    .where('u.id', 'in', userIds);
+
+/**
+ * `effectivePlan` for many people at once, a query a thousand (the operator's cost by plan,
+ * M16 H7): each one's plan as their allowances read it now.
+ */
+export async function effectivePlansOf(
+  ctx: AppContext,
+  userIds: readonly string[],
+): Promise<Map<string, Plan>> {
+  const people = new Map<string, { own: Plan; seats: OrgPlan[] }>();
+  for (let i = 0; i < userIds.length; i += 1000)
+    for (const r of await seatRows(ctx.db, userIds.slice(i, i + 1000)).execute()) {
+      const one = people.get(r.id) ?? { own: r.plan, seats: [] };
+      if (r.org_id && r.org_plan) one.seats.push(r.org_plan);
+      people.set(r.id, one);
+    }
+  return new Map([...people].map(([id, p]) => [id, planWithSeats(p.own, p.seats).plan]));
 }
 
 /**
@@ -159,7 +181,11 @@ async function storageUsed(ctx: AppContext, userId: string, db: Q = ctx.db): Pro
   return Number(row.bytes);
 }
 
-export async function assertAiAllowance(ctx: AppContext, userId: string): Promise<void> {
+/**
+ * Room for one more AI assist today, else a refusal saying when the next one is ready. Answers
+ * the plan it counted from (their own, or a seat's), which also names the model (M16 H7).
+ */
+export async function assertAiAllowance(ctx: AppContext, userId: string): Promise<Plan> {
   const me = await ctx.db
     .selectFrom('users')
     .select(['locale', 'time_zone'])
@@ -168,7 +194,7 @@ export async function assertAiAllowance(ctx: AppContext, userId: string): Promis
   const plan = await planOf(ctx, userId);
   const { aiPerDay } = PERSON_ALLOWANCES[plan];
   const { used, oldest } = await aiUsage(ctx, userId);
-  if (used < aiPerDay) return;
+  if (used < aiPerDay) return plan;
   const nextAt = oldest ? new Date(oldest.getTime() + DAY_MS) : null;
   const ready = nextAt
     ? ` ${tr('The next one is ready {when}.', { when: formatSoon(nextAt.toISOString(), ctx.now(), me.time_zone, safeLocale(me.locale)) })}`

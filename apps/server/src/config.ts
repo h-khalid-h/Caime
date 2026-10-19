@@ -88,11 +88,12 @@ const Env = z.object({
   ANTHROPIC_API_KEY: z.string().optional(),
   ANTHROPIC_MODEL: z.string().default('claude-opus-5-5'),
   /**
-   * A smaller model for the light features (rewrite, translate, catch me up), which are short,
-   * frequent and forgiving; unset, they use ANTHROPIC_MODEL. Finding follow-ups and the
-   * organizations' agents always use ANTHROPIC_MODEL.
+   * The model for everything but the two features that ask the most (finding follow-ups, an
+   * organization's agent), and for those two on a free plan (M16 H7, `ModelTier` in core's
+   * plans): Haiku 5.5, forty times cheaper than Opus 5.5 at the prices of docs/RESOURCES.md.
+   * Set it to ANTHROPIC_MODEL's value to run everything on the one model.
    */
-  ANTHROPIC_MODEL_LIGHT: z.string().optional(),
+  ANTHROPIC_MODEL_LIGHT: z.string().default('claude-haiku-5-5'),
   /** Another Messages API endpoint (a gateway, or the local stub the tests run). */
   ANTHROPIC_BASE_URL: z.string().url().optional(),
   /**

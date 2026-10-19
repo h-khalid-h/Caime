@@ -37,6 +37,7 @@ import { APP_SCREENSHOTS_MAX } from '@caime/core/marketplace';
 import {
   FREE_ORGS_PER_OWNER,
   ORG_ALLOWANCES,
+  type OrgAllowance,
   PERSON_ALLOWANCES,
   PLAN_NAMES,
 } from '@caime/core/plans';
@@ -499,12 +500,16 @@ const cta = (facts: Pick<SiteFacts, 'linkLang'> | null, links: Array<[string, st
     .join(' ')}</p>`;
 
 const people = (count: number) => trn(count, '{n} person', '{n} people', { n: n(count) });
-const aDay = (count: number, what: 'actions' | 'conversations' | 'answers') =>
+const aDay = (count: number, what: 'actions' | 'conversations') =>
   what === 'actions'
     ? tr('{n} actions a day', { n: n(count) })
-    : what === 'conversations'
-      ? tr('{n} conversations a day', { n: n(count) })
-      : tr('{n} answers a day', { n: n(count) });
+    : tr('{n} conversations a day', { n: n(count) });
+
+/** What an organization's agent answers on its plan: how many a day, and on which model (M16 H7). */
+const agentLine = (o: OrgAllowance) =>
+  o.agentModel === 'top'
+    ? tr('{n} answers a day, on our most capable model', { n: n(o.agentRepliesPerDay) })
+    : tr('{n} answers a day, on a fast model', { n: n(o.agentRepliesPerDay) });
 
 /** The landing page: what Caime is, its spec sheet and its layers. */
 export function renderLanding(facts: SiteFacts | null): SitePage {
@@ -794,13 +799,13 @@ ${main}
         [tr('team'), esc(people(o.free.teamSize))],
         [tr('apps'), n(o.free.apps)],
         [tr('writing first'), esc(aDay(o.free.startsPerDay, 'conversations'))],
-        [tr('AI agent'), esc(aDay(o.free.agentRepliesPerDay, 'answers'))],
+        [tr('AI agent'), esc(agentLine(o.free))],
       ])}
       ${plan('business', PLAN_NAMES.business, priceLine(facts.prices, 'business'), [
         [tr('team'), esc(people(o.business.teamSize))],
         [tr('apps'), n(o.business.apps)],
         [tr('writing first'), esc(aDay(o.business.startsPerDay, 'conversations'))],
-        [tr('AI agent'), esc(aDay(o.business.agentRepliesPerDay, 'answers'))],
+        [tr('AI agent'), esc(agentLine(o.business))],
         [
           tr('insights'),
           esc(
@@ -818,7 +823,7 @@ ${main}
           [tr('team'), esc(people(o.enterprise.teamSize))],
           [tr('apps'), n(o.enterprise.apps)],
           [tr('writing first'), esc(aDay(o.enterprise.startsPerDay, 'conversations'))],
-          [tr('AI agent'), esc(aDay(o.enterprise.agentRepliesPerDay, 'answers'))],
+          [tr('AI agent'), esc(agentLine(o.enterprise))],
           [tr('insights'), esc(tr('included'))],
         ],
       )}

@@ -16,6 +16,7 @@ import {
   type AiTone,
   type ArabicVariety,
   BOOKING_CAPACITY_MAX,
+  type ModelTier,
   ORDER_LINES_MAX,
   type RewriteStyle,
   truncate,
@@ -39,6 +40,8 @@ export interface AiUsage {
   /** Of the input, what came from the model's cache and what was written to it: cheaper, and dearer. */
   cacheReadTokens: number;
   cacheCreationTokens: number;
+  /** A recording's length, for a provider that bills by the minute (M16 H7). */
+  audioMs?: number;
 }
 
 export interface AiResult<T> {
@@ -93,6 +96,8 @@ export interface AgentReply {
 }
 
 export interface AgentInput {
+  /** The model the organization's plan names for its agent (`agentModel`, M16 H7). */
+  tier: ModelTier;
   orgName: string;
   agentName: string;
   /** Where the organization is (ISO 3166-1): its currency, its week and its clock follow (R76). */
@@ -133,7 +138,12 @@ export interface AiAssist {
     language: string;
     today: string;
   }): Promise<AiResult<string>>;
-  findActions(input: { transcript: Transcript; today: string }): Promise<AiResult<FoundItem[]>>;
+  /** On the model the person's plan names (`aiModel`, M16 H7). */
+  findActions(input: {
+    transcript: Transcript;
+    today: string;
+    tier: ModelTier;
+  }): Promise<AiResult<FoundItem[]>>;
   /**
    * A question about one conversation, answered from it alone for one of its people (R67's
    * "Cai in a conversation"): what it shows, who said it, or that it doesn't say.
@@ -455,8 +465,10 @@ export function createAiAssist(config: Config): AiAssist | null {
     maxRetries: 2,
   });
   const model = config.ANTHROPIC_MODEL;
-  // The light features (short, frequent, forgiving) may run on a smaller model (docs/RESOURCES.md).
+  // Everything short, frequent and forgiving runs on the light model, and the two features that
+  // ask the most run on the top one only for whoever pays (M16 H7, docs/RESOURCES.md).
   const light = config.ANTHROPIC_MODEL_LIGHT || model;
+  const tiered = (tier: ModelTier) => (tier === 'top' ? model : light);
   // A declined request is re-run server-side on Anthropic's recommended fallback model.
   const shared = {
     model,
@@ -539,10 +551,11 @@ export function createAiAssist(config: Config): AiAssist | null {
         4096,
       );
     },
-    async findActions({ transcript, today }) {
+    async findActions({ transcript, today, tier }) {
       const reply = await client.beta.messages
         .parse({
           ...shared,
+          model: tiered(tier),
           max_tokens: 8192,
           output_config: { effort: 'medium', format: betaZodOutputFormat(Found) },
           system: ACTIONS_SYSTEM(today),
@@ -652,6 +665,7 @@ export function createAiAssist(config: Config): AiAssist | null {
       };
     },
     async supportAgent({
+      tier,
       orgName,
       agentName,
       country,
@@ -666,6 +680,7 @@ export function createAiAssist(config: Config): AiAssist | null {
       const reply = await client.beta.messages
         .parse({
           ...shared,
+          model: tiered(tier),
           max_tokens: 2048,
           output_config: { effort: 'low', format: betaZodOutputFormat(AgentOutput) },
           // The rules and the organization's knowledge are the same for every question its

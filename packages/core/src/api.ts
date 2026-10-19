@@ -2181,7 +2181,12 @@ export interface ProductMetricsView {
      */
     imports: { chats: number; groups: number; messages: number };
   };
-  ai: { calls: number; ok: number; byFeature: Record<string, { ok: number; other: number }> };
+  ai: {
+    calls: number;
+    ok: number;
+    byFeature: Record<string, { ok: number; other: number }>;
+    cost: AiCostView;
+  };
   business: {
     organizations: number;
     activeOrganizations: number;
@@ -2196,6 +2201,34 @@ export interface ProductMetricsView {
   };
   /** What these numbers can't say yet, so nobody reads a gap as a zero. */
   notMeasured: string[];
+}
+
+/**
+ * What the window's model calls cost (M16 H7; REVIEW-2026-10-17 §14, advantage 4's number), in
+ * euros at the price list read on `priced` (the server's lib/ai-costs.ts) and the euro rate beside
+ * it: in all, per person active in the window over thirty days, by the plan that answers for each
+ * call, and by feature. Never anything about anyone in particular.
+ */
+export interface AiCostView {
+  eur: number;
+  perActivePersonMonth: number | null;
+  byPlan: AiCostByPlanView[];
+  byFeature: Record<string, number>;
+  /** Calls on a model or a provider the list doesn't name, or a recording with no length kept. */
+  unpriced: number;
+  priced: string;
+}
+
+/** What AI cost on one plan in the window (M16 H7). */
+export interface AiCostByPlanView {
+  plan: Plan | OrgPlan;
+  /** A person's plan with their seats, as it is now; an organization's for its agent. */
+  whose: 'person' | 'organization';
+  eur: number;
+  /** How many people, or organizations, it was spent on. */
+  count: number;
+  /** What one of them costs over thirty days at the window's pace. */
+  perMonth: number;
 }
 
 /** Your own plan: what it includes, and what you've used of it. */

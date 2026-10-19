@@ -2133,6 +2133,20 @@ A sphere is said as how you know someone, never "sphere".
   `LocationPayload`, nothing for a photo or a file, nothing for a text): a mark Caime writes on a
   message (a transcript, an import, a private reply) is never taken from a device, and a new
   field a device sends joins its kind's schema there.
+- What AI costs (M16 H7, `docs/RESOURCES.md` "What a person costs"): one price list,
+  `lib/ai-costs.ts` (each provider's page and the ECB's euro rate, read on the day it names), prices
+  a call from what `ai_runs` keeps (`costUsd`: the model, its tokens with what the cache read and
+  wrote, a recording's `audio_ms`; nothing for an unanswered call, null for a model or provider it
+  doesn't name, never a guess), and the operator's product metrics read the window's spend through
+  it (`ai.cost`, by plan with seats, `effectivePlansOf`). A new model or provider joins the list
+  with the day it was read; a new place that records a call keeps the cache tokens and, for audio,
+  the length. Everything runs on `ANTHROPIC_MODEL_LIGHT` (Haiku 5.5 unless set) but finding
+  follow-ups and an organization's agent, which take the plan's `ModelTier` (core `aiModel`,
+  `agentModel`: the top model where someone pays); a new feature that needs the top model takes a
+  tier the same way, never the top model for everyone. `ai-costs.test.ts` measures each feature's
+  request at its bounds and holds the free plans' month at the edge (under €20 a person, €15 an
+  organization): a change that moves it is a decision, and `COST_TABLE=<file>` writes the tables
+  RESOURCES.md carries.
 - Natural-language search (R17): `GET /search` runs the rules (`parseSearchQuery`; a time at the
   end, "last week", "in March", "2025", is `query.period`, the days to search, split off first by
   `splitPeriod` and filtered on the server, never read as a person; a bare month is the nearest

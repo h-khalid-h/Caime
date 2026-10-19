@@ -4,10 +4,19 @@
  * nothing here is about anyone in particular, and nothing reads what anyone wrote. "Active"
  * means opened Caime or sent a message; people are humans, never an app's bot.
  */
-import type { ProductMetricsView, Rate } from '@caime/core';
+import type {
+  AiCostByPlanView,
+  AiCostView,
+  OrgPlan,
+  Plan,
+  ProductMetricsView,
+  Rate,
+} from '@caime/core';
 import { sql } from 'kysely';
 import type { AppContext } from '../context';
+import { costUsd, inEuros, LONG_PROMPT, PRICES } from './ai-costs';
 import { replyTimes } from './insights';
+import { effectivePlansOf } from './plans';
 
 const DAY_MS = 86_400_000;
 
@@ -341,6 +350,7 @@ export async function productMetrics(ctx: AppContext, days: number): Promise<Pro
       calls: ai.reduce((n, r) => n + r.n, 0),
       ok: ai.filter((r) => r.outcome === 'ok').reduce((n, r) => n + r.n, 0),
       byFeature,
+      cost: await aiSpend(ctx, { from, to, days, active: engagement.people }),
     },
     business: {
       organizations: business.orgs,
@@ -358,6 +368,123 @@ export async function productMetrics(ctx: AppContext, days: number): Promise<Pro
       'Needs you precision counts answers and “doesn’t need me”; something left alone says nothing.',
       'Invites count sign-ups through someone’s @handle link; a link that was opened and not followed isn’t seen.',
       'Join links count links made and joins through them; a link opened and not followed isn’t seen.',
+      'AI cost is the price list’s, read on the day it names, at the plan each person has now; a call on a model it doesn’t name is counted as unpriced, never guessed.',
     ],
+  };
+}
+
+/** What a run's sum carries, from either of `aiSpend`'s queries. */
+interface Spent {
+  provider: string;
+  model: string | null;
+  long: boolean;
+  calls: number;
+  no_length: number;
+  input: string;
+  output: string;
+  cache_read: string;
+  cache_creation: string;
+  audio_ms: string | null;
+}
+
+/**
+ * What the window's model calls cost (M16 H7; REVIEW-2026-10-17 §14, advantage 4's number), at
+ * the price list's prices (lib/ai-costs.ts): two summing queries (by feature, and by who answers
+ * for the call: a person, or an organization through its agent) and each person's plan read with
+ * their seats, a query a thousand. Never per person in what it answers.
+ */
+async function aiSpend(
+  ctx: AppContext,
+  w: { from: Date; to: Date; days: number; active: number },
+): Promise<AiCostView> {
+  const sums = sql`count(*)::int as calls,
+    count(*) filter (where r.provider <> 'anthropic' and r.model is not null
+      and r.audio_ms is null)::int as no_length,
+    coalesce(sum(r.input_tokens), 0)::text as input,
+    coalesce(sum(r.output_tokens), 0)::text as output,
+    coalesce(sum(r.cache_read_tokens), 0)::text as cache_read,
+    coalesce(sum(r.cache_creation_tokens), 0)::text as cache_creation,
+    sum(r.audio_ms)::text as audio_ms`;
+  // Haiku's dearer rate starts past a prompt this long, so a call is summed with its own kind.
+  const long = sql`coalesce(r.input_tokens, 0) + coalesce(r.cache_read_tokens, 0)
+    + coalesce(r.cache_creation_tokens, 0) > ${LONG_PROMPT}`;
+  const [byFeature, byOwner] = await Promise.all([
+    sql<Spent & { feature: string }>`
+      select r.feature, r.provider, r.model, ${long} as long, ${sums}
+      from ai_runs r
+      where r.created_at > ${w.from} and r.created_at <= ${w.to}
+      group by r.feature, r.provider, r.model, 4
+    `.execute(ctx.db),
+    sql<Spent & { user_id: string | null; org_id: string | null; org_plan: OrgPlan | null }>`
+      select case when a.org_id is null then r.user_id end as user_id, a.org_id,
+        o.plan as org_plan, r.provider, r.model, ${long} as long, ${sums}
+      from ai_runs r
+      left join org_agents a on a.bot_user_id = r.user_id
+      left join organizations o on o.id = a.org_id
+      where r.created_at > ${w.from} and r.created_at <= ${w.to}
+      group by 1, a.org_id, o.plan, r.provider, r.model, 6
+    `.execute(ctx.db),
+  ]);
+  const usdOf = (r: Spent) =>
+    costUsd({
+      provider: r.provider,
+      model: r.model,
+      long: r.long,
+      inputTokens: Number(r.input),
+      outputTokens: Number(r.output),
+      cacheReadTokens: Number(r.cache_read),
+      cacheCreationTokens: Number(r.cache_creation),
+      audioMs: r.audio_ms === null ? null : Number(r.audio_ms),
+    });
+
+  let total = 0;
+  let unpriced = 0;
+  const features = new Map<string, number>();
+  for (const r of byFeature.rows) {
+    const usd = usdOf(r);
+    if (usd === null) unpriced += r.calls;
+    else {
+      total += usd;
+      // A recording whose length wasn't kept is counted, never priced.
+      unpriced += r.no_length;
+    }
+    features.set(r.feature, (features.get(r.feature) ?? 0) + (usd ?? 0));
+  }
+
+  const people = [...new Set(byOwner.rows.flatMap((r) => (r.user_id ? [r.user_id] : [])))];
+  const plans = await effectivePlansOf(ctx, people);
+  const groups = new Map<
+    string,
+    { plan: Plan | OrgPlan; whose: AiCostByPlanView['whose']; usd: number; of: Set<string> }
+  >();
+  for (const r of byOwner.rows) {
+    const owner = r.org_id ?? r.user_id;
+    if (!owner) continue;
+    const whose = r.org_id ? 'organization' : 'person';
+    const plan: Plan | OrgPlan = r.org_id
+      ? (r.org_plan ?? 'free')
+      : (plans.get(owner) ?? 'personal');
+    const key = `${whose}:${plan}`;
+    const g = groups.get(key) ?? { plan, whose, usd: 0, of: new Set<string>() };
+    g.usd += usdOf(r) ?? 0;
+    g.of.add(owner);
+    groups.set(key, g);
+  }
+  const month = 30 / w.days;
+  return {
+    eur: inEuros(total),
+    perActivePersonMonth: w.active > 0 ? inEuros((total / w.active) * month) : null,
+    byPlan: [...groups.values()]
+      .map((g) => ({
+        plan: g.plan,
+        whose: g.whose,
+        eur: inEuros(g.usd),
+        count: g.of.size,
+        perMonth: inEuros((g.usd / g.of.size) * month),
+      }))
+      .sort((a, b) => a.whose.localeCompare(b.whose) || b.eur - a.eur),
+    byFeature: Object.fromEntries([...features].map(([f, usd]) => [f, inEuros(usd)])),
+    unpriced,
+    priced: PRICES.read,
   };
 }

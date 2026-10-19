@@ -2154,3 +2154,30 @@ with its reason, so it isn't proposed again without new facts.
   files, the old binary Office formats and OpenDocument (later, by their own readers), a link that
   shows but won't download (a page that shows a file has sent it: saying otherwise would be a
   promise Caime can't keep), a link to someone else's file, and a link without an end.
+- **R106 (2026-10-19) What a person costs, and the model each plan pays for.** The review of
+  2026-10-17 (§9) found 60,000 agent answers a month on the top model with no figure per person,
+  and §14 holds advantage 4 (one flat price for an organization) to "€/person/month served, under
+  the price". Measuring it found production running every AI feature on Claude Opus 5.5: the light
+  features read `ANTHROPIC_MODEL_LIGHT`, unset there, and fell back to the top model, forty times
+  Haiku 5.5's price in and out. *Decided:* the light model is Haiku 5.5 unless the operator names
+  another, and everything runs on it but the two features that ask the most of a model, finding
+  follow-ups and an organization's agent, which run on the top model where someone pays (Pro,
+  Business and Enterprise for a person, Business and Enterprise for an organization) and on the
+  light one on a free plan; the plans say so (`aiModel`, `agentModel`) and the pricing page says
+  which model each organization's agent answers on. One price list on the server
+  (`lib/ai-costs.ts`) prices a call from what `ai_runs` keeps (the model, its tokens with what the
+  cache read and wrote, a recording's length), so the operator reads what AI cost in the window, per
+  person active, by plan and by feature, with what it couldn't price, never a guess. A voice note
+  is sent for its words only with a stated length, since a provider bills by the minute. The
+  agent's runs keep their cache tokens, as every other call's do. RESOURCES.md carries the model
+  measured from what each feature sends at its bounds: a free person costs at most €16 a month at
+  every allowance's edge and a free organization's agent €8.79 (held by a test), a person who
+  uses AI about €0.11 (Personal) to €0.52 (Pro) as assumed, a Business agent €10.93 at 30 answers a
+  day, covered by its €29 up to about 79 a day on Opus 5.5. *Why:* advantage 4 is a price no
+  competitor can match only while what Caime serves stays under it; the free plans are how people
+  arrive, so they're held by a ceiling, and the top model is what a payer buys. *Declined:* moving
+  everything to the light model (follow-ups and a customer's answers are where quality shows),
+  a price per call shown to people (a plan is a plan), and guessing a model's price (an unlisted
+  model is counted, not priced). *Next (G):* allowances by cost rather than by count, since 200 calls
+  a day on the top model reach €2,178.96 at their edge, and a recording's length read from the file
+  on the server.

@@ -139,7 +139,8 @@ export const turkishServer: Catalog = {
   'verified · answered in an hour': 'doğrulanmış · bir saat içinde yanıtladı',
   '{n} actions a day': 'günde {n} eylem',
   '{n} conversations a day': 'günde {n} konuşma',
-  '{n} answers a day': 'günde {n} yanıt',
+  '{n} answers a day, on a fast model': 'günde {n} yanıt, hızlı bir modelle',
+  '{n} answers a day, on our most capable model': 'günde {n} yanıt, en yetenekli modelimizle',
   'Your family, your work and your customers don’t belong in one list. Say who each person is to you, once. From then on Caime knows what needs you first, who may reach you when, what was decided and what’s owed, and what each side of your life sees of you.':
     'Aileniz, işiniz ve müşterileriniz aynı listeye sığmaz. Her kişinin sizin için kim olduğunu bir kez söyleyin. Caime o andan itibaren önce neyin sizi beklediğini, kimin size ne zaman ulaşabileceğini, neye karar verildiğini, kimin neyi yapacağını ve hayatınızın her yanının sizden neyi gördüğünü bilir.',
   'Start free': 'Ücretsiz başlayın',

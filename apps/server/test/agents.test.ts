@@ -40,7 +40,12 @@ const agentSays = (action: string, message: string, extra: Record<string, unknow
     ],
     stop_reason: 'end_turn',
     stop_sequence: null,
-    usage: { input_tokens: 300, output_tokens: 40 },
+    usage: {
+      input_tokens: 300,
+      output_tokens: 40,
+      cache_read_input_tokens: 120,
+      cache_creation_input_tokens: 30,
+    },
   },
 });
 
@@ -198,6 +203,21 @@ describe('an organization’s AI agent (PRD §74–75)', () => {
     // It isn't the team's answer: the customer still waits for a person (R16).
     const thread = await threadOf(noor);
     expect(thread.state).toBe('new');
+    // Its run is kept with what it read from the cache and wrote to it (M16 H7), on the light
+    // model while the organization is on Free.
+    expect(asked.model).toBe('claude-haiku-5-5');
+    const run = await t.ctx.db
+      .selectFrom('ai_runs')
+      .select(['feature', 'input_tokens', 'cache_read_tokens', 'cache_creation_tokens'])
+      .where('feature', '=', 'agent')
+      .orderBy('created_at', 'desc')
+      .executeTakeFirstOrThrow();
+    expect(run).toEqual({
+      feature: 'agent',
+      input_tokens: 300,
+      cache_read_tokens: 120,
+      cache_creation_tokens: 30,
+    });
     expect(thread.lastMessage).toMatchObject({ fromAgent: true });
     expect(thread.assignee).toBeNull();
     const plan = (await noor.get(`/v1/orgs/${orgId}`)).org.plan;

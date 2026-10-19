@@ -23,6 +23,7 @@ export async function aiGate(ctx: AppContext, userId: string) {
   if (!me.ai_enabled)
     throw new AppError(403, 'ai_off', tr('Turn on AI assist in Settings to use it.'));
   ctx.limiter.hit(`ai:${userId}`, ctx.config.isTest ? 1000 : 60, 3_600_000);
-  await assertAiAllowance(ctx, userId);
-  return { ai, me };
+  // The plan the assist is counted against, which names the model too (M16 H7).
+  const plan = await assertAiAllowance(ctx, userId);
+  return { ai, me, plan };
 }

@@ -111,7 +111,14 @@ describe('plans (PRD §84, R23)', () => {
   it('says what yours includes and what you’ve used', async () => {
     expect(await lina.get('/v1/me/plan')).toEqual({
       plan: 'personal',
-      allowance: { aiPerDay: 10, storageBytes: 5 * GB, automations: 5, insights: false },
+      allowance: {
+        aiPerDay: 10,
+        storageBytes: 5 * GB,
+        automations: 5,
+        insights: false,
+        // Finding follow-ups on the light model: the top one is a paid plan's (M16 H7).
+        aiModel: 'light',
+      },
       used: { aiToday: 0, storageBytes: 0, automations: 0 },
       aiNextAt: null,
       upgradeUrl: PLANS_URL,
@@ -147,6 +154,8 @@ describe('plans (PRD §84, R23)', () => {
         insights: false,
         startsPerDay: 20,
         agentRepliesPerDay: 50,
+        // Its agent answers on the light model until it pays (M16 H7).
+        agentModel: 'light',
       },
       used: { teamSize: 3, apps: 1, startsToday: 0, agentRepliesToday: 0 },
       upgradeUrl: PLANS_URL,
@@ -241,7 +250,13 @@ describe('plans (PRD §84, R23)', () => {
     await operator('/v1/admin/orgs/tiles.co/plan', { plan: 'business' });
     expect(await omar.get('/v1/me/plan')).toMatchObject({
       plan: 'business',
-      allowance: { aiPerDay: 200, storageBytes: 100 * GB, automations: 50, insights: true },
+      allowance: {
+        aiPerDay: 200,
+        storageBytes: 100 * GB,
+        automations: 50,
+        insights: true,
+        aiModel: 'top',
+      },
       via: { orgId, name: 'Tiles Co', plan: 'business' },
     });
     // What it includes is what's checked: relationship insights are Pro's.

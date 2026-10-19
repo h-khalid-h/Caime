@@ -160,13 +160,19 @@ describe('a voice note into words (PRD §46)', () => {
     const found = await ana.get(`/v1/search?q=${encodeURIComponent('contract is signed')}`);
     const hits = (found.results.messages ?? []) as Array<{ id?: string; message?: { id: string } }>;
     expect(hits.some((h) => (h.message?.id ?? h.id) === sent.id)).toBe(true);
-    // One AI assist, by the speech provider.
+    // One AI assist, by the speech provider, kept with the recording's length: what a provider
+    // charges for (M16 H7).
     const runs = await t.ctx.db
       .selectFrom('ai_runs')
-      .select(['feature', 'provider', 'outcome'])
+      .select(['feature', 'provider', 'outcome', 'audio_ms'])
       .where('user_id', '=', ana.user.id)
       .execute();
-    expect(runs).toContainEqual({ feature: 'transcribe', provider: 'openai', outcome: 'ok' });
+    expect(runs).toContainEqual({
+      feature: 'transcribe',
+      provider: 'openai',
+      outcome: 'ok',
+      audio_ms: 2_000,
+    });
   });
 
   it('leaves a note alone when its sender has AI assist off, and hears nothing in silence', async () => {
@@ -200,6 +206,19 @@ describe('a voice note into words (PRD §46)', () => {
     const long = (await said(2_000)).json().message as { id: string };
     await work();
     expect((await read(ana, long.id)).body).toBeNull();
+    // A recording that never said how long it is isn't sent either: its length is what a
+    // provider charges for, so it's what bounds a note (M16 H7).
+    const unsaid = await upload(ana, 'note.wav', 'audio/wav', wav());
+    const quiet = (
+      await ana.req('POST', `/v1/conversations/${convo}/messages`, {
+        clientId: uuidv4(),
+        kind: 'voice',
+        fileIds: [unsaid.id],
+        payload: { durationMs: 2_000 },
+      })
+    ).json().message as { id: string };
+    await work();
+    expect((await read(ana, quiet.id)).body).toBeNull();
     expect(requests.length).toBe(before);
   });
 

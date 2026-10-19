@@ -988,6 +988,8 @@ export interface AiRunsTable {
   /** Of the input, what was read from the model's cache, and what was written to it (0051). */
   cache_read_tokens: number | null;
   cache_creation_tokens: number | null;
+  /** A transcript's recording length, for a provider that bills by the minute (0129). */
+  audio_ms: number | null;
   latency_ms: number | null;
   outcome: string;
   /** The conversation the AI agent was answering in, for its per-conversation bound. */

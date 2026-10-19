@@ -12,6 +12,13 @@ import type { Plan } from './api';
 
 export type OrgPlan = 'free' | 'business' | 'enterprise';
 
+/**
+ * Which model does the work that asks the most of one (M16 H7, docs/RESOURCES.md "What a person
+ * costs"): `top` (the server's ANTHROPIC_MODEL) where someone pays, `light` (ANTHROPIC_MODEL_LIGHT,
+ * forty times cheaper by default) otherwise. Everything else runs on the light one for everyone.
+ */
+export type ModelTier = 'top' | 'light';
+
 export const PERSON_PLANS = [
   'personal',
   'pro',
@@ -32,6 +39,8 @@ export interface PersonAllowance {
    * labels only. The relationships themselves, and what needs you, are free (R23).
    */
   insights: boolean;
+  /** The model that finds follow-ups in a conversation: the most capable one on a paid plan. */
+  aiModel: ModelTier;
 }
 
 export interface OrgAllowance {
@@ -51,26 +60,54 @@ export interface OrgAllowance {
    * quiet and the team answers, as it would without one.
    */
   agentRepliesPerDay: number;
+  /** The model its AI agent answers on: the most capable one on a paid plan. */
+  agentModel: ModelTier;
 }
 
 const GB = 1024 ** 3;
 
 export const PERSON_ALLOWANCES: Readonly<Record<Plan, PersonAllowance>> = {
-  personal: { aiPerDay: 10, storageBytes: 5 * GB, automations: 5, insights: false },
-  pro: { aiPerDay: 200, storageBytes: 100 * GB, automations: 50, insights: true },
+  personal: {
+    aiPerDay: 10,
+    storageBytes: 5 * GB,
+    automations: 5,
+    insights: false,
+    aiModel: 'light',
+  },
+  pro: { aiPerDay: 200, storageBytes: 100 * GB, automations: 50, insights: true, aiModel: 'top' },
   // A business or enterprise seat includes everything Pro does.
-  business: { aiPerDay: 200, storageBytes: 100 * GB, automations: 50, insights: true },
-  enterprise: { aiPerDay: 1000, storageBytes: 1024 * GB, automations: 50, insights: true },
+  business: {
+    aiPerDay: 200,
+    storageBytes: 100 * GB,
+    automations: 50,
+    insights: true,
+    aiModel: 'top',
+  },
+  enterprise: {
+    aiPerDay: 1000,
+    storageBytes: 1024 * GB,
+    automations: 50,
+    insights: true,
+    aiModel: 'top',
+  },
 };
 
 export const ORG_ALLOWANCES: Readonly<Record<OrgPlan, OrgAllowance>> = {
-  free: { teamSize: 3, apps: 1, insights: false, startsPerDay: 20, agentRepliesPerDay: 50 },
+  free: {
+    teamSize: 3,
+    apps: 1,
+    insights: false,
+    startsPerDay: 20,
+    agentRepliesPerDay: 50,
+    agentModel: 'light',
+  },
   business: {
     teamSize: 100,
     apps: 25,
     insights: true,
     startsPerDay: 1000,
     agentRepliesPerDay: 2000,
+    agentModel: 'top',
   },
   enterprise: {
     teamSize: 10_000,
@@ -78,6 +115,7 @@ export const ORG_ALLOWANCES: Readonly<Record<OrgPlan, OrgAllowance>> = {
     insights: true,
     startsPerDay: 20_000,
     agentRepliesPerDay: 20_000,
+    agentModel: 'top',
   },
 };
 

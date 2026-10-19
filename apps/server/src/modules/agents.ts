@@ -206,6 +206,8 @@ export async function agentRoutes(app: FastifyInstance, ctx: AppContext) {
       .where('id', '=', auth.userId)
       .executeTakeFirstOrThrow();
     const reply = await askAgent(ctx, 'agent_try', auth.userId, {
+      // On the model its customers would get (M16 H7).
+      tier: ORG_ALLOWANCES[org.plan].agentModel,
       orgName: org.name,
       agentName: body.name,
       country: org.country,

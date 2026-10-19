@@ -313,8 +313,8 @@ describe('AI assist (PRD §45, R17, R18)', () => {
 
     // What the heuristics already offered for a message isn't offered twice.
     const first = await findActions();
-    // Follow-ups are found by the main model, whatever the light one is.
-    expect(last().body.model).toBe('claude-test-main');
+    // On Personal, follow-ups are found by the light model (M16 H7): the main one is a paid plan's.
+    expect(last().body.model).toBe('claude-test-light');
     expect(last().body.output_config).toMatchObject({
       effort: 'medium',
       format: { type: 'json_schema' },
@@ -335,7 +335,13 @@ describe('AI assist (PRD §45, R17, R18)', () => {
         heuristic.map((s: any) => s.id),
       )
       .execute();
+    // On Pro, the main model finds them.
+    const plan = (p: 'personal' | 'pro') =>
+      t.ctx.db.updateTable('users').set({ plan: p }).where('id', '=', noor.user.id).execute();
+    await plan('pro');
     const second = await findActions();
+    expect(last().body.model).toBe('claude-test-main');
+    await plan('personal');
     expect(Object.keys(second).sort()).toEqual(['task', 'waiting']);
     expect(second.task).toMatchObject({
       title: 'Send the signed contract',
@@ -469,8 +475,10 @@ describe('AI assist (PRD §45, R17, R18)', () => {
       latencyMs: runs[0]!.latency_ms,
       at: expect.any(String),
     });
-    // Which conversation the AI agent answered in, as an id: never what was said.
+    // Which conversation the AI agent answered in, as an id, and a recording's length (M16 H7):
+    // never what was said.
     expect(Object.keys(runs[0]!).sort()).toEqual([
+      'audio_ms',
       'cache_creation_tokens',
       'cache_read_tokens',
       'conversation_id',

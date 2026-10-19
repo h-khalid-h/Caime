@@ -26,6 +26,7 @@ import {
   AiTranslateBody,
   firstFutureWhen,
   firstName,
+  PERSON_ALLOWANCES,
   previewText,
   resolvePolicy,
   systemText,
@@ -295,7 +296,7 @@ export async function aiRoutes(app: FastifyInstance, ctx: AppContext) {
   app.post('/conversations/:id/ai/actions', async (req): Promise<AiActionsView> => {
     const auth = requireAuth(req);
     const { id } = parse(z.object({ id: z.string().uuid() }), req.params);
-    const { ai, me } = await gate(auth.userId);
+    const { ai, me, plan } = await gate(auth.userId);
     const { conversation, me: seat } = await readable(auth.userId, id);
     // A customer's follow-ups never point at who on an organization's team wrote (R15), and what
     // they wait for from it is the conversation's own state; the team's are ordinary ones.
@@ -308,7 +309,12 @@ export async function aiRoutes(app: FastifyInstance, ctx: AppContext) {
     );
     if (lines.length === 0) return { found: [], label: AI_LABEL };
     const items = await run('actions', auth.userId, () =>
-      ai.findActions({ transcript, today: today(me.time_zone) }),
+      ai.findActions({
+        transcript,
+        today: today(me.time_zone),
+        // The most capable model on a paid plan, the light one otherwise (M16 H7).
+        tier: PERSON_ALLOWANCES[plan].aiModel,
+      }),
     );
     const others = await ctx.db
       .selectFrom('participants as p')

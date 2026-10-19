@@ -11,6 +11,7 @@ import { tr } from '@caime/core/i18n';
 import type { AppContext } from '../context';
 import type { Message } from '../db/schema';
 import { MESSAGE_COLUMNS } from '../db/schema';
+import { AiError } from './ai';
 import { runAi } from './ai-run';
 import { AppError } from './errors';
 import { enqueue, registerJob } from './jobs';
@@ -84,9 +85,11 @@ async function transcribe(ctx: AppContext, payload: Record<string, unknown>): Pr
     .orderBy('f.created_at')
     .executeTakeFirst();
   if (!file) return;
-  // `size` is a bigint column, read as text.
+  // `size` is a bigint column, read as text. A recording that doesn't say how long it is isn't
+  // sent: a provider bills by the minute, so the length is what bounds it (M16 H7).
   const size = Number(file.size);
-  if ((file.duration_ms ?? 0) > SPEECH_MAX_MS || size > SPEECH_MAX_BYTES) return;
+  const audioMs = file.duration_ms;
+  if (audioMs === null || audioMs > SPEECH_MAX_MS || size > SPEECH_MAX_BYTES) return;
   try {
     await assertAiAllowance(ctx, sender.id);
   } catch (err) {
@@ -102,13 +105,23 @@ async function transcribe(ctx: AppContext, payload: Record<string, unknown>): Pr
       ctx,
       'transcribe',
       sender.id,
+      // Kept with its length, which is what the provider charges for (M16 H7).
       () =>
-        speech.transcribe({
-          bytes,
-          mime: file.mime,
-          name: file.name,
-          languageHints: hintsFor(prefs.language, sender.locale),
-        }),
+        speech
+          .transcribe({
+            bytes,
+            mime: file.mime,
+            name: file.name,
+            languageHints: hintsFor(prefs.language, sender.locale),
+          })
+          .then(
+            (r) => ({ ...r, usage: { ...r.usage, audioMs } }),
+            (err: unknown) => {
+              throw err instanceof AiError && err.usage
+                ? new AiError(err.reason, err.message, { ...err.usage, audioMs })
+                : err;
+            },
+          ),
       speech.provider,
     );
   } catch (err) {

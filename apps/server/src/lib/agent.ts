@@ -104,6 +104,12 @@ async function recordRun(
   if (usage) {
     ctx.metrics.aiTokens.inc({ feature, direction: 'input' }, usage.inputTokens);
     ctx.metrics.aiTokens.inc({ feature, direction: 'output' }, usage.outputTokens);
+    // Its knowledge is a cached prefix (lib/ai.ts): what was read from the cache and written to
+    // it is what it cost (M16 H7), as every other call keeps.
+    if (usage.cacheReadTokens)
+      ctx.metrics.aiTokens.inc({ feature, direction: 'cache_read' }, usage.cacheReadTokens);
+    if (usage.cacheCreationTokens)
+      ctx.metrics.aiTokens.inc({ feature, direction: 'cache_creation' }, usage.cacheCreationTokens);
   }
   const id = uuidv7();
   await ctx.db
@@ -117,6 +123,8 @@ async function recordRun(
       model: usage?.model ?? ctx.ai?.model ?? null,
       input_tokens: usage?.inputTokens ?? null,
       output_tokens: usage?.outputTokens ?? null,
+      cache_read_tokens: usage?.cacheReadTokens ?? null,
+      cache_creation_tokens: usage?.cacheCreationTokens ?? null,
       latency_ms: Date.now() - started,
       outcome,
       created_at: ctx.now(),
@@ -514,6 +522,7 @@ export async function agentReply(ctx: AppContext, payload: Record<string, unknow
     'agent',
     agent.bot_user_id,
     {
+      tier: ORG_ALLOWANCES[thread.plan].agentModel,
       orgName: thread.org_name,
       agentName: agent.name,
       country: thread.org_country,

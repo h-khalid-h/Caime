@@ -114,7 +114,8 @@ export const arServer: Catalog = {
   'verified · answered in an hour': 'موثّقة · تجيب خلال ساعة',
   '{n} actions a day': '{n} إجراء في اليوم',
   '{n} conversations a day': '{n} محادثة في اليوم',
-  '{n} answers a day': '{n} إجابة في اليوم',
+  '{n} answers a day, on a fast model': '{n} إجابة في اليوم، بنموذج سريع',
+  '{n} answers a day, on our most capable model': '{n} إجابة في اليوم، بأقدر نماذجنا',
   'Your family, your work and your customers don’t belong in one list. Say who each person is to you, once. From then on Caime knows what needs you first, who may reach you when, what was decided and what’s owed, and what each side of your life sees of you.':
     'عائلتك وعملك وعملاؤك لا مكان لهم في قائمة واحدة. قل من يكون كل شخص بالنسبة لك، مرة واحدة فقط. ومن بعدها يعرف Caime ما يحتاجك أولًا، ومن له أن يصل إليك ومتى، وما تقرر وما هو مستحق، وما يراه منك كل جانب من حياتك.',
   'Start free': 'ابدأ مجانًا',
