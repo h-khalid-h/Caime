@@ -87,6 +87,8 @@ beforeAll(async () => {
               bookItem: null,
               orderLines: null,
               orderWay: null,
+              sources: [],
+              reason: null,
             }),
           },
         ],
@@ -380,6 +382,36 @@ describe('a greeting and an away message (M16 H2)', () => {
       .where('dedupe_key', 'like', `%:${huda.conversationId}:%`)
       .execute();
     expect(asked).toEqual([]);
+  });
+
+  it('greet while its AI agent answers only while the organization is closed, and it’s open (M16 G6a)', async () => {
+    const set = await noor.req('PUT', `/v1/orgs/${orgId}/agent`, {
+      name: 'Nile Dental Assistant',
+      knowledge:
+        'Nile Dental is open Sunday to Thursday 9am to 12pm. A check-up is 400 EGP. We are at 12 Nile Street.',
+      answersWhen: 'closed',
+    });
+    expect(set.json().agent.answersWhen).toBe('closed');
+    // 10:00 in Cairo on a Thursday: open, so its team answers first, and the greeting greets.
+    t.clock.set('2026-10-01T07:00:00Z');
+    const rana = await customer('Rana Open');
+    await send(rana.c, rana.conversationId, 'Hello, are you there?');
+    await settle();
+    const open = await messages(rana.c, rana.conversationId);
+    expect(open.filter((m) => m.payload?.autoReply).map((m) => m.payload.autoReply)).toEqual([
+      'greeting',
+    ]);
+    expect(open.filter((m) => m.aiAgent)).toEqual([]);
+    // 13:00, closed: the agent answers and introduces itself, so neither automatic reply is sent.
+    t.clock.set('2026-10-01T10:00:00Z');
+    const hani = await customer('Hani Closed');
+    await send(hani.c, hani.conversationId, 'Are you open now?');
+    await settle();
+    const closed = await messages(hani.c, hani.conversationId);
+    expect(closed.filter((m) => m.payload?.autoReply)).toEqual([]);
+    expect(closed.filter((m) => m.aiAgent).map((m) => m.body.split('\n').at(-1))).toEqual([
+      'We open at nine.',
+    ]);
   });
 });
 

@@ -1454,8 +1454,15 @@ A sphere is said as how you know someone, never "sphere".
   organization, the customer's first name), written by the rules in the language the customer
   wrote in (`writtenIn`, else theirs) and flagged `payload.introduction`, and `transcriptFor`
   drops that line so no customer's name reaches the model; anything new where an AI speaks for
-  someone to someone else opens the same way (Cai's invitation mail: `caiIntroduction`). The E2E
-  Messages stand-in answers as it from the sentence of its knowledge nearest the question.
+  someone to someone else opens the same way (Cai's invitation mail: `caiIntroduction`). What it
+  was told reaches the model as numbered passages, a sentence each (core `knowledgePassages`), and
+  an answer keeps the ones it rests on as `payload.cited` (`citationsOf`), the team's alone:
+  `maskPayload` takes it off for the customer and a forward drops it, so anything new that shows
+  a customer a message goes through the mask. What it may do and when it answers are
+  `org_agents.may_book`, `may_order` and `answers_when` (M16 G6a), read in `agentReply` and, for
+  the greeting, `queueAutoReplies` through `agentAnswersNow`; a hand-over says why on
+  `caime_agent_actions_total`. The E2E Messages stand-in answers as it from the passage of its
+  knowledge nearest the question, citing its number.
 - An organization's own replies (M16 H2, R101, `lib/org-replies.ts`, `modules/quick-replies.ts`):
   quick replies are `org_quick_replies`, saved whole by its owner and admins
   (`saveQuickReplies`, under the organization's row: a kept id keeps who made it, an id not its
@@ -2221,7 +2228,8 @@ A sphere is said as how you know someone, never "sphere".
   no model. Who may use AI assist is `aiGate` (`lib/ai-gate.ts`), for every route that asks a
   model for a person. Every model call anywhere goes through `runAi` (`lib/ai-run.ts`),
   which records the `ai_runs` row and the metrics: a new AI feature uses it, never its own
-  bookkeeping. A new field the model may fill joins `SearchUnderstanding`, `fromUnderstanding`'s
+  bookkeeping, and adds its template to `PROMPT_VERSIONS` (`lib/ai.ts`, written out with fixed
+  placeholders), whose hash every run keeps as `prompt_hash` (M16 G6a). A new field the model may fill joins `SearchUnderstanding`, `fromUnderstanding`'s
   checks, the prompt in `lib/ai.ts` and both stand-ins (`test/ai.test.ts` queues a reply;
   `e2e/anthropic-stub.mjs` answers the "search someone typed" prompt from the words).
   Words are matched against `messages.search_all` (migration 0065: the body with a card's

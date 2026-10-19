@@ -1,3 +1,4 @@
+import type { AgentCitation } from '@caime/core/agents';
 import type { ConversationView, MessageView } from '@caime/core/api';
 import { joinNames, previewText } from '@caime/core/format';
 import { tr, trn } from '@caime/core/i18n';
@@ -202,7 +203,14 @@ export function MessageActions({
     }
   };
   const info = deleted ? null : messageInfo(m, conversation, me);
+  // What an AI agent's answer rests on (M16 G6a): only its organization's team is sent it.
+  const cited = deleted ? [] : ((m.payload as { cited?: AgentCitation[] }).cited ?? []);
   const facts: Array<SpecRow | false> = [
+    cited.length > 0 && {
+      label: tr('from what it knows'),
+      value: cited.map((c) => `“${c.text}”`).join('\n'),
+      testID: 'info-cited',
+    },
     ...(deleted ? [] : reactedBy(m, me, namesIn(conversation))),
     Boolean(info?.read.length) && {
       label: tr('read by'),

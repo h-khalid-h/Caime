@@ -2,6 +2,7 @@ import { createServer, type IncomingHttpHeaders, type Server } from 'node:http';
 import type { AddressInfo } from 'node:net';
 import { uuidv4 } from '@caime/core';
 import { afterAll, beforeAll, beforeEach, describe, expect, it } from 'vitest';
+import { PROMPT_VERSIONS } from '../src/lib/ai';
 import { type Client, createTestApp, signup, type TestApp } from './helpers';
 
 /** A stand-in for the Messages API: records each request and answers from a queue. */
@@ -256,13 +257,14 @@ describe('AI assist (PRD §45, R17, R18)', () => {
     await t.ctx.flush();
     const runs = await t.ctx.db
       .selectFrom('ai_runs')
-      .select(['feature', 'outcome'])
+      .select(['feature', 'outcome', 'prompt_hash'])
       .where('user_id', '=', rana.user.id)
       .where('feature', '=', 'ask')
       .execute();
+    // Each with the version of the instructions it ran on (M16 G6a).
     expect(runs).toEqual([
-      { feature: 'ask', outcome: 'ok' },
-      { feature: 'ask', outcome: 'ok' },
+      { feature: 'ask', outcome: 'ok', prompt_hash: PROMPT_VERSIONS.ask },
+      { feature: 'ask', outcome: 'ok', prompt_hash: PROMPT_VERSIONS.ask },
     ]);
     // A question is a sentence, and an empty conversation needs no model.
     expect(
@@ -475,8 +477,8 @@ describe('AI assist (PRD §45, R17, R18)', () => {
       latencyMs: runs[0]!.latency_ms,
       at: expect.any(String),
     });
-    // Which conversation the AI agent answered in, as an id, and a recording's length (M16 H7):
-    // never what was said.
+    // Which conversation the AI agent answered in, as an id, a recording's length (M16 H7) and
+    // which version of Caime's own instructions it ran on (M16 G6a): never what was said.
     expect(Object.keys(runs[0]!).sort()).toEqual([
       'audio_ms',
       'cache_creation_tokens',
@@ -491,6 +493,7 @@ describe('AI assist (PRD §45, R17, R18)', () => {
       'model',
       'outcome',
       'output_tokens',
+      'prompt_hash',
       'provider',
       'user_id',
     ]);

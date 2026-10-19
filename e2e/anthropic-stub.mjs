@@ -127,12 +127,16 @@ function answer(body) {
           bookItem: null,
           orderLines: null,
           orderWay: null,
+          sources: [],
+          reason: null,
           ...extra,
         }),
       );
-    const handOver = () =>
-      say('hand_over', `I’ve passed this to the team at ${org}. Someone will answer here.`);
-    if (/person|human|someone/i.test(asked)) return handOver();
+    const handOver = (reason) =>
+      say('hand_over', `I’ve passed this to the team at ${org}. Someone will answer here.`, {
+        reason,
+      });
+    if (/person|human|someone/i.test(asked)) return handOver('person');
     // Bookings (R51): offered from <slots> when asked; booked when the customer picks the first.
     const slots = between(content, '<slots>', '</slots>')
       .split('\n')
@@ -159,16 +163,23 @@ function answer(body) {
       );
     }
     if (/thank/i.test(asked)) return say('resolve', 'You’re welcome. Take care!');
-    // The sentence of what it knows that shares the most words with the question.
+    // The passage of what it knows ("[n] text", a sentence each, M16 G6a) that shares the most
+    // words with the question, cited by its number.
     const words = (text) => text.toLowerCase().match(/[a-z]{4,}/g) ?? [];
     const wanted = new Set(words(asked));
     const best = knowledge
-      .split(/(?<=\.)\s+/)
-      .map((sentence) => ({ sentence, n: words(sentence).filter((w) => wanted.has(w)).length }))
-      .sort((a, b) => b.n - a.n)[0];
-    if (!best?.n) return handOver();
+      .split('\n')
+      .map((line) => /^\[(\d+)\] (.*)$/.exec(line.trim()))
+      .filter(Boolean)
+      .map(([, n, sentence]) => ({
+        n: Number(n),
+        sentence,
+        shared: words(sentence).filter((w) => wanted.has(w)).length,
+      }))
+      .sort((a, b) => b.shared - a.shared)[0];
+    if (!best?.shared) return handOver('unknown');
     // Its introduction is Caime's, written by the rules (R87): the model only answers.
-    return say('answer', best.sentence);
+    return say('answer', best.sentence, { sources: [best.n] });
   }
   if (system.includes('what search found in their own messages')) {
     // "Ask Cai" in Search (R66): the first passage found, cited.

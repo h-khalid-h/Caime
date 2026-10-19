@@ -904,6 +904,22 @@ export const MessageBubble = memo(function MessageBubble({
           {m.aiAgent ? tr('AI agent ·') : tr('Automated ·')}
         </Text>
       ) : null}
+      {m.aiAgent && (m.payload as { cited?: unknown[] }).cited?.length && !deleted ? (
+        // What its answer rests on (M16 G6a): its team's alone (the customer is never sent it),
+        // read in the message's sheet.
+        <Pressable
+          accessibilityRole="button"
+          onPress={hold}
+          onLongPress={hold}
+          delayLongPress={300}
+          hitSlop={8}
+          testID="message-cited"
+        >
+          <Text variant="captionStrong" color={meta} style={{ fontSize: 11 }}>
+            {tr('Sources')}
+          </Text>
+        </Pressable>
+      ) : null}
       {(m.payload as { imported?: unknown }).imported ? (
         // Brought over from another app (R45): written there, by whoever it says, before Caime.
         <Text variant="caption" color={meta} style={{ fontSize: 11 }} testID="message-imported">

@@ -6,7 +6,7 @@ import { z } from 'zod';
 import { PERSONAL_SCOPES, redirectUriError } from './access';
 import { ACCOUNT_USES } from './accounts';
 import { ADDRESS_KINDS, E164 } from './addresses';
-import { AGENT_KNOWLEDGE_MAX, AGENT_NAME_MAX } from './agents';
+import { AGENT_KNOWLEDGE_MAX, AGENT_NAME_MAX, AGENT_WHEN } from './agents';
 import { MARKETING_PAGES, SITE_PAGES } from './api';
 import {
   APP_CATEGORIES,
@@ -694,6 +694,10 @@ export const SetOrgAgentBody = z
       .min(20, msg('Tell it what customers ask about: hours, services, prices, how to book.'))
       .max(AGENT_KNOWLEDGE_MAX),
     paused: z.boolean().default(false),
+    /** What it may do beyond answering, and when it answers (M16 G6a); left out, kept. */
+    mayBook: z.boolean().optional(),
+    mayOrder: z.boolean().optional(),
+    answersWhen: z.enum(AGENT_WHEN).optional(),
   })
   .strict();
 

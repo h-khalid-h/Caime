@@ -2564,6 +2564,10 @@ test.describe
       const tried = page.getByTestId('org-agent-tried');
       await expect(tried).toContainText('Answers · nothing was sent');
       await expect(tried).toContainText('A check-up costs 400 EGP.');
+      // And what its answer rests on, a sentence of what it was told (M16 G6a).
+      await expect(page.getByTestId('org-agent-cited')).toContainText(
+        '“A check-up costs 400 EGP.”',
+      );
       await page.screenshot({ path: 'e2e/screenshots/desktop-org-agent.png' });
       await page.getByTestId('org-agent-save').click();
       await expect(page.getByTestId('org-agent')).toContainText('Answers first');
@@ -2600,6 +2604,11 @@ test.describe
       await page.getByTestId('org-booking-day-6').click();
       await page.getByTestId('org-booking-save').click();
       await expect(page.getByTestId('org-booking-hours')).toContainText('30 min');
+      // With hours, whether it books and when it answers are the clinic's to say (M16 G6a).
+      await page.getByTestId('org-agent').click();
+      // The switch's checkbox sits inside the element that carries the test id.
+      await expect(page.getByTestId('org-agent-may-book').getByRole('switch')).toBeChecked();
+      await expect(page.getByTestId('org-agent-when-always')).toBeChecked();
       await page.goto(`/o/${handle}`);
       await expect(page.getByTestId('org-hours')).toContainText('30 min');
       await write('Can I book a cleaning on Thursday?');
@@ -2646,6 +2655,13 @@ test.describe
       await page.goto(`/o/${handle}/inbox`);
       await expect(page.getByTestId(`thread-row-lina.${stamp}`)).toContainText('Handed over by AI');
       await page.screenshot({ path: 'e2e/screenshots/desktop-business-handed-over.png' });
+      // Its team reads what each answer rests on; Lina never does (M16 G6a).
+      await page.getByTestId(`thread-row-lina.${stamp}`).click();
+      await page.getByTestId('message-cited').filter({ visible: true }).first().click();
+      await expect(page.getByTestId('info-cited')).toContainText(
+        '“We are open Sunday to Thursday 9am to 6pm and Saturday 9am to 1pm.”',
+      );
+      await expect(customer.getByTestId('message-cited')).toHaveCount(0);
 
       // Removed, it leaves the team; what it wrote stays.
       await page.goto(`/o/${handle}/setup`);

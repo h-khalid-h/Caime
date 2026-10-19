@@ -1,17 +1,19 @@
 /**
- * One model call, recorded in `ai_runs` (feature, model, tokens, time, outcome; never the text),
- * counted in the metrics, and a failure turned into something the person can act on. The AI
- * routes and natural-language search share it, so every call is counted the same way.
+ * One model call, recorded in `ai_runs` (feature, model, tokens, time, outcome, the version of
+ * its instructions; never the text), counted in the metrics, and a failure turned into
+ * something the person can act on. The AI routes and natural-language search share it, so every
+ * call is counted the same way.
  */
 import { uuidv7 } from '@caime/core';
 import { tr } from '@caime/core/i18n';
 import type { AppContext } from '../context';
-import { AiError, type AiResult, type AiUsage } from './ai';
+import { AiError, type AiResult, type AiUsage, PROMPT_VERSIONS } from './ai';
 import { AppError } from './errors';
 
 /**
- * One model call, recorded in `ai_runs` (feature, model, tokens, time, outcome; never the
- * text), and a failure turned into something the person can act on.
+ * One model call, recorded in `ai_runs` (feature, model, tokens, time, outcome, which version
+ * of its instructions; never the text), and a failure turned into something the person can act
+ * on.
  */
 export async function runAi<T>(
   ctx: AppContext,
@@ -52,6 +54,7 @@ export async function runAi<T>(
           audio_ms: usage?.audioMs ?? null,
           latency_ms: Date.now() - started,
           outcome,
+          prompt_hash: PROMPT_VERSIONS[feature] ?? null,
         })
         .execute(),
     );

@@ -4674,4 +4674,17 @@ export const turkish: Catalog = {
     other: '{name} planlarınızdan {n} tanesini reddetti',
   },
   'Feed address': 'Akış adresi',
+  'from what it knows': 'bildiklerinden',
+  Sources: 'Kaynaklar',
+  'Answers while you’re closed · {repliesToday} of {repliesPerDay} answers in the last 24 hours':
+    'Kapalıyken yanıt verir · son 24 saatte {repliesToday}/{repliesPerDay} yanıt',
+  'Offer times and book them': 'Saat önersin ve rezervasyon yapsın',
+  'Your team confirms each booking.': 'Her rezervasyonu ekibiniz onaylar.',
+  'Write down orders from your menu': 'Menünüzden sipariş alsın',
+  'Your team confirms each order.': 'Her siparişi ekibiniz onaylar.',
+  'When it answers': 'Ne zaman yanıt verir',
+  'While you’re closed': 'Kapalıyken',
+  'By your hours: while you’re open, your team answers first.':
+    'Çalışma saatlerinize göre: açıkken önce ekibiniz yanıt verir.',
+  'Day and night, before anyone on your team.': 'Gece gündüz, ekibinizden herkesten önce.',
 };

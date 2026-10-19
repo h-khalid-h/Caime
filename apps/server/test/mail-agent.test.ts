@@ -47,6 +47,8 @@ beforeAll(async () => {
               bookItem: null,
               orderLines: null,
               orderWay: null,
+              sources: [],
+              reason: null,
             }),
           },
         ],

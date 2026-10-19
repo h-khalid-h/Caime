@@ -3,6 +3,7 @@ import type { AddressInfo } from 'node:net';
 import { AGENT_CALLS_PER_CONVERSATION, uuidv4, uuidv7 } from '@caime/core';
 import { afterAll, beforeAll, beforeEach, describe, expect, it } from 'vitest';
 import { agentReply } from '../src/lib/agent';
+import { PROMPT_VERSIONS } from '../src/lib/ai';
 import { runDueJobs } from '../src/lib/jobs';
 import { type Client, createTestApp, signup, type TestApp } from './helpers';
 
@@ -34,6 +35,8 @@ const agentSays = (action: string, message: string, extra: Record<string, unknow
           bookItem: null,
           orderLines: null,
           orderWay: null,
+          sources: [],
+          reason: null,
           ...extra,
         }),
       },
@@ -181,7 +184,10 @@ describe('an organization’s AI agent (PRD §74–75)', () => {
     );
     // The knowledge is the cached prefix, the same for every question (docs/RESOURCES.md).
     expect(asked.system[1]).toMatchObject({ cache_control: { type: 'ephemeral' } });
-    expect(asked.system[1].text).toContain(KNOWLEDGE);
+    // What it was told, a sentence a passage, numbered for its answers to cite (M16 G6a).
+    expect(asked.system[1].text).toBe(
+      '<knowledge>\n[1] Nile Dental is open Sunday to Thursday 9am to 6pm and Saturday 9am to 1pm.\n[2] A check-up is 400 EGP.\n[3] Book by calling 02 2345 6789.\n</knowledge>',
+    );
     const content = asked.messages[0].content as string;
     expect(content).not.toContain(KNOWLEDGE);
     expect(content).toContain('[1] Customer: Hi! Are you open on Saturday?');
@@ -606,6 +612,7 @@ describe('an organization’s AI agent (PRD §74–75)', () => {
       action: 'hand_over',
       message:
         'Hello, I’m Nile Dental Assistant, the AI assistant for Nile Dental.\nI’ve passed this to the team at Nile Dental. Someone will answer here.',
+      cited: [],
     });
     expect(requests[0].messages[0].content).toContain('[1] Customer: Do you take walk-ins?');
     expect(systemText(requests[0].system)).toContain('Today is Thursday 24 September 2026.');
@@ -839,5 +846,227 @@ describe('an organization’s AI agent (PRD §74–75)', () => {
     expect((await messages(lena, noWay)).filter((m: any) => m.kind === 'kit')).toHaveLength(0);
     expect((await threadOf(noor, noWay)).agentHandedOverAt).not.toBeNull();
     await noor.req('PUT', `/v1/orgs/${orgId}/booking`, { booking: null, ordering: null });
+  });
+});
+
+describe('an agent its organization can answer for (M16 G6a)', () => {
+  const NAME = 'Nile Dental Assistant';
+  const TOLD = [
+    'Nile Dental is open Sunday to Thursday 9am to 6pm and Saturday 9am to 1pm.',
+    'A check-up is 400 EGP.',
+    'We don’t take walk-ins.',
+  ].join('\n');
+  /** Open every day, as Cairo's clock reads it, unless a closed day says otherwise. */
+  const ALL_WEEK = {
+    timeZone: 'Africa/Cairo',
+    slotMinutes: 30,
+    days: [0, 1, 2, 3, 4, 5, 6].map((weekday) => ({ weekday, start: '00:00', end: '23:30' })),
+    leadMinutes: 0,
+    horizonDays: 14,
+  };
+  const cairoDay = (d: Date) =>
+    new Intl.DateTimeFormat('en-CA', { timeZone: 'Africa/Cairo' }).format(d);
+  const newestRun = () =>
+    t.ctx.db
+      .selectFrom('ai_runs')
+      .select(['feature', 'prompt_hash'])
+      .where('feature', '=', 'agent')
+      .where('outcome', '=', 'ok')
+      .orderBy('created_at', 'desc')
+      .executeTakeFirstOrThrow();
+
+  it('rests each answer on numbered passages of what it was told, which its team reads and the customer never does', async () => {
+    t.clock.advance(86_400_000 + 1);
+    await noor.req('PUT', `/v1/orgs/${orgId}/agent`, { name: NAME, knowledge: TOLD });
+    const answered = t.ctx.metrics.agentActions.get({ action: 'answer', reason: 'none' });
+    const { c: hiba, conversationId } = await newCustomer('Hiba Cited');
+    await send(hiba, 'How much is a check-up?', conversationId);
+    // A passage it wasn't given, or one named twice, is dropped.
+    replies.push(agentSays('answer', 'A check-up is 400 EGP.', { sources: [2, 9, 2, 0] }));
+    await agentTurn();
+    expect(requests[0].system[1].text).toBe(
+      '<knowledge>\n[1] Nile Dental is open Sunday to Thursday 9am to 6pm and Saturday 9am to 1pm.\n[2] A check-up is 400 EGP.\n[3] We don’t take walk-ins.\n</knowledge>',
+    );
+    expect(systemText(requests[0].system)).toContain('Set "sources" to the numbers');
+    // Every run keeps the version of the instructions it ran on: the same for every question.
+    expect(await newestRun()).toEqual({ feature: 'agent', prompt_hash: PROMPT_VERSIONS.agent });
+    expect(PROMPT_VERSIONS.agent).toMatch(/^[0-9a-f]{12}$/);
+    expect(t.ctx.metrics.agentActions.get({ action: 'answer', reason: 'none' })).toBe(answered + 1);
+
+    const cited = [{ n: 2, text: 'A check-up is 400 EGP.' }];
+    const answer = (await messages(noor, conversationId)).at(-1);
+    expect(answer).toMatchObject({ aiAgent: true, payload: { introduction: true, cited } });
+    // The customer reads the answer, never what it rests on: in the conversation, in their feed.
+    const theirs = (await messages(hiba, conversationId)).at(-1);
+    expect(theirs.id).toBe(answer.id);
+    expect(theirs.payload).toEqual({ introduction: true });
+    const fed = await hiba.get(`/v1/feed?conversation=${conversationId}`);
+    expect(fed.events.map((e: any) => e.data.text)).toEqual([answer.body]);
+    expect(JSON.stringify(fed)).not.toContain('cited');
+    // Forwarded by its team, the copy is its words alone.
+    const chat = (await noor.post('/v1/conversations', { kind: 'direct', userId: omar.user.id }))
+      .conversation.id;
+    const [copyId] = (
+      await noor.post(`/v1/messages/${answer.id}/forward`, {
+        clientId: uuidv4(),
+        conversationIds: [chat],
+      })
+    ).messageIds;
+    const copy = (await messages(omar, chat)).find((m) => m.id === copyId);
+    expect(copy.body).toBe(answer.body);
+    expect(copy.payload.cited).toBeUndefined();
+  });
+
+  it('books and takes orders only where its organization lets it, and counts why it handed over', async () => {
+    const off = await noor.req('PUT', `/v1/orgs/${orgId}/agent`, {
+      name: NAME,
+      knowledge: TOLD,
+      mayBook: false,
+      mayOrder: false,
+    });
+    expect(off.json().agent).toMatchObject({
+      mayBook: false,
+      mayOrder: false,
+      answersWhen: 'always',
+    });
+    // Left out, each stays as it was.
+    const kept = await noor.req('PUT', `/v1/orgs/${orgId}/agent`, { name: NAME, knowledge: TOLD });
+    expect(kept.json().agent).toMatchObject({ mayBook: false, mayOrder: false });
+    // Who let it do what is on record.
+    const logged = await t.ctx.db
+      .selectFrom('audit_log')
+      .select('metadata')
+      .where('target', '=', orgId)
+      .where('action', '=', 'agent.updated')
+      .orderBy('seq', 'desc')
+      .limit(2)
+      .execute();
+    expect(logged[1]?.metadata).toMatchObject({
+      mayBook: false,
+      mayOrder: false,
+      before: { mayBook: true, mayOrder: true, answersWhen: 'always' },
+    });
+    expect(logged[0]?.metadata).not.toHaveProperty('before');
+    const set = await noor.req('PUT', `/v1/orgs/${orgId}/booking`, {
+      booking: ALL_WEEK,
+      items: [
+        {
+          id: 'kit',
+          name: 'Whitening kit',
+          price: { value: 250, currency: 'EGP' },
+          unit: 'each',
+          minutes: null,
+          capacity: 1,
+          maxQuantity: 5,
+          audience: 'public',
+          providers: null,
+          askTopic: false,
+        },
+      ],
+      ordering: { fulfilment: ['pickup'], note: null },
+    });
+    expect(set.statusCode, set.body).toBe(200);
+    const refused = t.ctx.metrics.agentActions.get({ action: 'hand_over', reason: 'refused' });
+    const { c: walid, conversationId } = await newCustomer('Walid Switches');
+    await send(walid, 'Can I book a cleaning tomorrow?', conversationId);
+    // It books anyway: a time nobody offered it, so a person takes it.
+    replies.push(
+      agentSays('book', 'Done!', {
+        bookAt: new Date(t.clock.now.getTime() + 86_400_000).toISOString(),
+        bookFor: 'Cleaning',
+      }),
+    );
+    await agentTurn();
+    const asked = requests[0];
+    expect(systemText(asked.system)).toContain('takes none here; hand over');
+    expect(systemText(asked.system)).toContain('takes no orders here; hand over');
+    expect(asked.messages[0].content).not.toContain('<slots>');
+    expect(asked.messages[0].content).not.toContain('<menu>');
+    expect((await messages(walid, conversationId)).filter((m) => m.kind === 'kit')).toEqual([]);
+    expect((await threadOf(noor, conversationId)).agentHandedOverAt).not.toBeNull();
+    expect(t.ctx.metrics.agentActions.get({ action: 'hand_over', reason: 'refused' })).toBe(
+      refused + 1,
+    );
+    // Handing over, it says why: what it was told doesn't say, or it needs a person.
+    const unknown = t.ctx.metrics.agentActions.get({ action: 'hand_over', reason: 'unknown' });
+    const { c: zeina, conversationId: braces } = await newCustomer('Zeina Unknown');
+    await send(zeina, 'Do you fit braces?', braces);
+    replies.push(agentSays('hand_over', PASSED_ON, { reason: 'unknown' }));
+    await agentTurn();
+    expect(t.ctx.metrics.agentActions.get({ action: 'hand_over', reason: 'unknown' })).toBe(
+      unknown + 1,
+    );
+    // Let in again, it offers times and the menu as before.
+    await noor.req('PUT', `/v1/orgs/${orgId}/agent`, {
+      name: NAME,
+      knowledge: TOLD,
+      mayBook: true,
+      mayOrder: true,
+    });
+    const { c: rasha, conversationId: again } = await newCustomer('Rasha Again');
+    await send(rasha, 'Can I book a cleaning tomorrow?', again);
+    replies.push(agentSays('answer', 'Which time suits you?'));
+    const at = requests.length;
+    await agentTurn();
+    expect(requests[at].messages[0].content).toContain('<slots>');
+    expect(requests[at].messages[0].content).toContain('<menu>');
+  });
+
+  it('answers only while its organization is closed, where it said so', async () => {
+    const set = await noor.req('PUT', `/v1/orgs/${orgId}/agent`, {
+      name: NAME,
+      knowledge: TOLD,
+      answersWhen: 'closed',
+    });
+    expect(set.json().agent.answersWhen).toBe('closed');
+    // Open now, as its hours say: its team answers first, and the model isn't asked.
+    const { c: fadi, conversationId } = await newCustomer('Fadi Open');
+    await send(fadi, 'Are you there?', conversationId);
+    await agentTurn();
+    expect(requests).toHaveLength(0);
+    expect((await messages(fadi, conversationId)).filter((m) => m.aiAgent)).toEqual([]);
+    // Closed today: it answers.
+    const today = cairoDay(t.clock.now);
+    await noor.req('PUT', `/v1/orgs/${orgId}/booking`, {
+      booking: { ...ALL_WEEK, closed: [{ from: today, to: today }] },
+    });
+    const { c: huda, conversationId: closed } = await newCustomer('Huda Closed');
+    await send(huda, 'Are you open today?', closed);
+    replies.push(agentSays('answer', 'Not today: we’re closed.', { sources: [1] }));
+    await agentTurn();
+    expect(requests).toHaveLength(1);
+    expect((await messages(huda, closed)).filter((m) => m.aiAgent)).toHaveLength(1);
+    // Without hours nothing says it's open, so it answers.
+    await noor.req('PUT', `/v1/orgs/${orgId}/booking`, { booking: null, ordering: null });
+    const { c: amal, conversationId: noHours } = await newCustomer('Amal No Hours');
+    await send(amal, 'Hello?', noHours);
+    replies.push(agentSays('answer', 'Hello! How can I help?'));
+    await agentTurn();
+    expect(requests).toHaveLength(2);
+    await noor.req('PUT', `/v1/orgs/${orgId}/agent`, {
+      name: NAME,
+      knowledge: TOLD,
+      answersWhen: 'always',
+    });
+  });
+
+  it('tried, it shows what its answer rests on', async () => {
+    replies.push(agentSays('answer', 'No, we don’t take walk-ins.', { sources: [3] }));
+    const tried = await noor.post(`/v1/orgs/${orgId}/agent/try`, {
+      name: NAME,
+      knowledge: TOLD,
+      question: 'Can I just walk in?',
+    });
+    expect(tried).toMatchObject({
+      action: 'answer',
+      cited: [{ n: 3, text: 'We don’t take walk-ins.' }],
+    });
+    const run = await t.ctx.db
+      .selectFrom('ai_runs')
+      .select('prompt_hash')
+      .where('feature', '=', 'agent_try')
+      .orderBy('created_at', 'desc')
+      .executeTakeFirstOrThrow();
+    expect(run.prompt_hash).toBe(PROMPT_VERSIONS.agent_try);
   });
 });

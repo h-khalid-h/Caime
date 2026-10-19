@@ -1,7 +1,8 @@
 /**
  * An organization's AI agent (PRD §74–75), set up by its owner and admins: its name and what it
- * answers from, answering or paused; tried on a question before it answers anyone; removed.
- * The work itself is lib/agent.ts.
+ * answers from, what it may do and when it answers (M16 G6a), answering or paused; tried on a
+ * question before it answers anyone, with what its answer rests on; removed. The work itself is
+ * lib/agent.ts.
  */
 import { randomBytes } from 'node:crypto';
 import {
@@ -20,7 +21,7 @@ import { tr } from '@caime/core/i18n';
 import type { FastifyInstance } from 'fastify';
 import { z } from 'zod';
 import type { AppContext } from '../context';
-import { askAgent, introduction, todayForAgent } from '../lib/agent';
+import { askAgent, citationsOf, introduction, todayForAgent } from '../lib/agent';
 import { audit } from '../lib/audit';
 import { joinThreads, leaveThreads } from '../lib/business';
 import { AppError, badRequest, forbidden, notFound } from '../lib/errors';
@@ -51,6 +52,9 @@ export async function agentRoutes(app: FastifyInstance, ctx: AppContext) {
       .select([
         'a.knowledge',
         'a.paused_at',
+        'a.may_book',
+        'a.may_order',
+        'a.answers_when',
         'a.created_at',
         'a.updated_at',
         'u.display_name as name',
@@ -63,6 +67,9 @@ export async function agentRoutes(app: FastifyInstance, ctx: AppContext) {
       name: row.name,
       knowledge: row.knowledge,
       paused: row.paused_at !== null,
+      mayBook: row.may_book,
+      mayOrder: row.may_order,
+      answersWhen: row.answers_when,
       repliesToday: await agentRepliesToday(ctx, orgId),
       repliesPerDay: ORG_ALLOWANCES[row.plan].agentRepliesPerDay,
       createdAt: row.created_at.toISOString(),
@@ -77,7 +84,10 @@ export async function agentRoutes(app: FastifyInstance, ctx: AppContext) {
     return { available: ctx.ai !== null, agent: await viewOf(id) };
   });
 
-  /** Set it up, or change it: its name, what it knows, answering or paused. */
+  /**
+   * Set it up, or change it: its name, what it knows, what it may do and when it answers (each
+   * kept when left out), answering or paused.
+   */
   app.put('/orgs/:id/agent', async (req): Promise<OrgAgentSetResponse> => {
     const auth = requireAuth(req);
     const { id } = parse(orgParam, req.params);
@@ -90,6 +100,12 @@ export async function agentRoutes(app: FastifyInstance, ctx: AppContext) {
       .selectAll()
       .where('org_id', '=', id)
       .executeTakeFirst();
+    // What it may do, and when, as the request says; what it leaves out stays as it was.
+    const governed = {
+      ...(body.mayBook !== undefined ? { may_book: body.mayBook } : {}),
+      ...(body.mayOrder !== undefined ? { may_order: body.mayOrder } : {}),
+      ...(body.answersWhen !== undefined ? { answers_when: body.answersWhen } : {}),
+    };
     if (existing) {
       await ctx.db.transaction().execute(async (trx) => {
         await trx
@@ -97,6 +113,7 @@ export async function agentRoutes(app: FastifyInstance, ctx: AppContext) {
           .set({
             knowledge: body.knowledge,
             paused_at: body.paused ? (existing.paused_at ?? ctx.now()) : null,
+            ...governed,
             updated_at: ctx.now(),
           })
           .where('org_id', '=', id)
@@ -111,7 +128,22 @@ export async function agentRoutes(app: FastifyInstance, ctx: AppContext) {
         actorId: auth.userId,
         action: 'agent.updated',
         target: id,
-        metadata: { paused: body.paused },
+        // What it may do and when, as it was and as it is now: who let it do what is on record.
+        metadata: {
+          paused: body.paused,
+          mayBook: body.mayBook ?? existing.may_book,
+          mayOrder: body.mayOrder ?? existing.may_order,
+          answersWhen: body.answersWhen ?? existing.answers_when,
+          ...(Object.keys(governed).length
+            ? {
+                before: {
+                  mayBook: existing.may_book,
+                  mayOrder: existing.may_order,
+                  answersWhen: existing.answers_when,
+                },
+              }
+            : {}),
+        },
       });
     } else {
       const botId = uuidv7();
@@ -143,6 +175,7 @@ export async function agentRoutes(app: FastifyInstance, ctx: AppContext) {
             bot_user_id: botId,
             knowledge: body.knowledge,
             paused_at: body.paused ? ctx.now() : null,
+            ...governed,
             created_by: auth.userId,
             created_at: ctx.now(),
             updated_at: ctx.now(),
@@ -160,7 +193,16 @@ export async function agentRoutes(app: FastifyInstance, ctx: AppContext) {
           .execute();
       });
       await joinThreads(ctx.db, id, botId);
-      await audit(ctx.db, { actorId: auth.userId, action: 'agent.created', target: id });
+      await audit(ctx.db, {
+        actorId: auth.userId,
+        action: 'agent.created',
+        target: id,
+        metadata: {
+          mayBook: body.mayBook ?? true,
+          mayOrder: body.mayOrder ?? true,
+          answersWhen: body.answersWhen ?? 'always',
+        },
+      });
     }
     return { agent: (await viewOf(id))! };
   });
@@ -226,6 +268,7 @@ export async function agentRoutes(app: FastifyInstance, ctx: AppContext) {
     return {
       action: reply.action,
       message: `${language ? inLanguage(language, intro) : intro()}\n${reply.message}`,
+      cited: citationsOf(body.knowledge, reply.sources),
     };
   });
 }

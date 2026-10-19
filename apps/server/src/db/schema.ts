@@ -1023,6 +1023,8 @@ export interface AiRunsTable {
   conversation_id: string | null;
   /** Its answer was thrown away, never sent: the call counts, the answer doesn't. */
   discarded_at: NullableTimestamp;
+  /** Which version of the feature's instructions answered it (M16 G6a, 0140). */
+  prompt_hash: string | null;
   created_at: Generated<Date>;
 }
 
@@ -1325,6 +1327,11 @@ export interface OrgAgentsTable {
   bot_user_id: string;
   knowledge: string;
   paused_at: NullableTimestamp;
+  /** What it may do beyond answering (M16 G6a, 0140): offer and book times, take orders. */
+  may_book: Defaulted<boolean>;
+  may_order: Defaulted<boolean>;
+  /** Always, or only while the organization is closed by its hours. */
+  answers_when: Defaulted<'always' | 'closed'>;
   created_by: string | null;
   created_at: Generated<Date>;
   updated_at: Generated<Date>;

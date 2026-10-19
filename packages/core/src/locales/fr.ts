@@ -4860,4 +4860,17 @@ export const fr: Catalog = {
     other: '{name} a refusé {n} de vos rendez-vous',
   },
   'Feed address': 'Adresse du flux',
+  'from what it knows': 'd’après ce qu’il sait',
+  Sources: 'Sources',
+  'Answers while you’re closed · {repliesToday} of {repliesPerDay} answers in the last 24 hours':
+    'Répond en dehors de vos horaires · {repliesToday} réponses sur {repliesPerDay} ces dernières 24 heures',
+  'Offer times and book them': 'Proposer des créneaux et les réserver',
+  'Your team confirms each booking.': 'Votre équipe confirme chaque réservation.',
+  'Write down orders from your menu': 'Noter les commandes de votre menu',
+  'Your team confirms each order.': 'Votre équipe confirme chaque commande.',
+  'When it answers': 'Quand il répond',
+  'While you’re closed': 'En dehors de vos horaires',
+  'By your hours: while you’re open, your team answers first.':
+    'Selon vos horaires : pendant vos heures d’ouverture, votre équipe répond en premier.',
+  'Day and night, before anyone on your team.': 'Jour et nuit, avant quiconque de votre équipe.',
 };

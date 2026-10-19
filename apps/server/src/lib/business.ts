@@ -144,6 +144,8 @@ export function maskPayload(
   mask: CustomerMask,
 ): Record<string, unknown> {
   const out: Record<string, unknown> = { ...p };
+  // The passages of what its AI agent was told that an answer rests on (M16 G6a): the team's.
+  delete out.cited;
   const other = (v: unknown) => typeof v === 'string' && v !== mask.customerId;
   if (other(out.byId)) {
     out.byId = mask.orgId;

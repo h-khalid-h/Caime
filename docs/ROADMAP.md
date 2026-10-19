@@ -2962,6 +2962,36 @@ graph) and the number that will show it; one that sharpens none is hygiene and s
       route and the counter; the restore procedure), `business.test.ts` (no team id or name in the
       customer's feed), `member-apps.test.ts`, `personal-tokens.test.ts`, `sdk.test.ts`, the MCP's
       `server.test.ts`, `openapi.test.ts`, `messaging.test.ts`, the catalogs, and the full gate.
+- [x] G6a. An agent its organization can answer for (2026-10-19, review §10 "for a clinic" and
+      §11 "governed AI"; advantage 7, governed, honest AI for the people who are liable. The
+      number: answers the team can open to what they rest on, none before, every one resting on
+      what the agent was told now; hand-overs counted by why, `caime_agent_actions_total`, the
+      hand-over rate the nightly set (G6c) will hold). What the agent was told is numbered a
+      sentence a passage (core `knowledgePassages`, every word kept, the same numbers each time)
+      and every answer names the passages it rests on: kept on the message as `payload.cited` (the
+      passage's words, at most five, numbers it wasn't given dropped), read by its team in the
+      message's sheet from a "Sources" link under the answer and in the try box, and taken off for
+      the customer by `maskPayload` (the conversation, live events, the feed, the export) and off a
+      forwarded copy. Its owner and admins say what it may do (`org_agents.may_book`, `may_order`,
+      migration 0140, on by default, as before): kept from booking it offers no times and hands a
+      booking over, kept from orders it gets no menu and hands an order over; and when it answers
+      (`answers_when`: always, or only while the organization's hours say it's closed, so its
+      team answers first while open and the greeting goes out then; without hours it answers),
+      each change audited with what it was. Handing over, it says why (`unknown`: what it was told
+      doesn't say; `person`), and the rules add `limit` and `refused` (a booking or order it
+      couldn't make). Every model call keeps the version of its instructions on `ai_runs`
+      (`prompt_hash`, a short hash of each feature's template written out with fixed
+      placeholders, `PROMPT_VERSIONS`; the agent's includes its output schema). Costs: the numbers
+      add a few tokens to the agent's cached prefix; the hash is computed once at start. Not done:
+      review before send (G6b), a list of what it couldn't answer (G6b), the nightly evaluation
+      (G6c), and `sources[]` for Cai's own answers and suggestions. Verified: `agents.test.ts`
+      (numbered passages to the model, the citations the team reads and the customer never does,
+      in the conversation, the feed and a forward; the switches' refusals and their audit rows; an
+      answer only while closed, and without hours; the counts by reason; the try's citations; the
+      prompt version on every run), `org-replies.test.ts` (the greeting while it waits for closing
+      time), `ai.test.ts` (the version on another feature's run), core `agents.test.ts`, the
+      catalogs in four languages, the E2E (the try's passage, the switch and the choice, the
+      team's Sources and none for the customer), and the full gate.
 - [ ] H. Business depth: a Business seat includes Pro; a cap on organizations per person; room
       checks inside the transaction; quick replies, away and greeting messages; customer notes,
       tags and fields; tax invoices (counsel); booking and revenue analytics; intake forms as
@@ -4742,6 +4772,9 @@ graph) and the number that will show it; one that sharpens none is hygiene and s
   journeys, safety, reliability, performance, intelligence, mail and calendar, chat, integrations,
   business and code integrity; the matrix against WhatsApp, Signal, Slack, Calendly and Workspace;
   an age-assurance design; the integration framework mapped to the code; plan M16 (A–H).
+- 2026-10-19 — M16 G6a: an organization's agent cites the sentences of what it was told under
+  every answer for its team alone, books and takes orders only where it's let, can answer only
+  while closed, says why it hands over, and every model call keeps its instructions' version.
 - 2026-10-19 — M16 G5: a person's feed of what reached them (`GET /v1/feed`), newest first or
   after a cursor, never passing over a message still being written: the bridges' trigger on a
   new message, with the address on the bridge sheet, the SDK's `feed()` and the MCP's `feed`.

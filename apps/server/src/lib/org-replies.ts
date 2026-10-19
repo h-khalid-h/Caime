@@ -29,6 +29,7 @@ import { formatDeadline, formatSoon } from '@caime/core/format';
 import { tr } from '@caime/core/i18n';
 import { sql } from 'kysely';
 import type { AppContext } from '../context';
+import { agentAnswersNow } from './agent';
 import { onCustomerMessage } from './business';
 import { AppError } from './errors';
 import { inLanguage, languageOf } from './i18n';
@@ -186,22 +187,21 @@ export async function queueAutoReplies(
       'o.booking',
       'o.suspended_at',
       eb
-        .exists(
-          eb
-            .selectFrom('org_agents as a')
-            .select('a.org_id')
-            .whereRef('a.org_id', '=', 'o.id')
-            .where('a.paused_at', 'is', null),
-        )
-        .as('agent_on'),
+        .selectFrom('org_agents as a')
+        .select('a.answers_when')
+        .whereRef('a.org_id', '=', 'o.id')
+        .where('a.paused_at', 'is', null)
+        .as('agent_answers'),
     ])
     .where('o.id', '=', orgId)
     .where('o.archived_at', 'is', null)
     .executeTakeFirst();
   if (!org || org.suspended_at || (!org.greeting && !org.away_message)) return;
-  // Its AI agent answers instead, and introduces itself (when Caime has a model to answer with).
-  if (org.agent_on && ctx.ai) return;
   const now = ctx.now();
+  const hours = org.booking as BookingHours | null;
+  // Its AI agent answers instead, and introduces itself (when Caime has a model to answer with),
+  // unless it answers only while the organization is closed and it's open now (M16 G6a).
+  if (org.agent_answers && ctx.ai && agentAnswersNow(org.agent_answers, hours, now)) return;
   let greeted = false;
   if (org.greeting) {
     const before = await ctx.db
@@ -223,7 +223,6 @@ export async function queueAutoReplies(
       );
     }
   }
-  const hours = org.booking as BookingHours | null;
   if (!org.away_message || !hours || openAt(hours, now)) return;
   // Someone on the team wrote there a moment ago: they're answering, whatever the hours say.
   const thread = await ctx.db

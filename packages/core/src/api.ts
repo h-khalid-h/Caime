@@ -14,7 +14,7 @@ import type {
 } from './accounts';
 import type { AddressKind, AddressMethod } from './addresses';
 import type { AgeMethod, AgeOutcome } from './age-assurance';
-import type { AgentAction } from './agents';
+import type { AgentAction, AgentCitation, AgentWhen } from './agents';
 import type { AppCategory, AppProvides, ListingState } from './app-directory';
 import type { ApiScope, WebhookEvent } from './apps';
 import type { AttentionReason, AttentionSection } from './attention';
@@ -1970,6 +1970,12 @@ export interface OrgAgentView {
   knowledge: string;
   /** Paused, it stays on the team and quiet; nothing it wrote goes away. */
   paused: boolean;
+  /** Offers open times and books them for the team to confirm (M16 G6a). */
+  mayBook: boolean;
+  /** Writes down orders from the menu for the team to confirm. */
+  mayOrder: boolean;
+  /** Always, or only while the organization is closed by its hours. */
+  answersWhen: AgentWhen;
   /** What it wrote to customers in the last 24 hours, against what the plan includes. */
   repliesToday: number;
   repliesPerDay: number;
@@ -1981,6 +1987,8 @@ export interface OrgAgentView {
 export interface AgentTryView {
   action: AgentAction;
   message: string;
+  /** The passages of what it was told that its answer rests on (M16 G6a). */
+  cited: AgentCitation[];
 }
 
 /** An organization's plan (PRD §84): what it includes and how much of it is in use. */

@@ -398,7 +398,7 @@ const BUSINESS_STEPS: ExplorerItem[] = [
     name: msg('The agent answers'),
     title: msg('From what you wrote down, and it says so.'),
     body: msg(
-      'The organization’s AI agent answers only from its knowledge (up to {n} characters you gave it), is marked as an AI, and hands over to a person the moment it isn’t sure. With bookable hours set, it offers the open slots and books the one the customer picks; with orders on, it writes down what they ask for from the menu. The team confirms each.',
+      'The organization’s AI agent answers only from its knowledge (up to {n} characters you gave it), is marked as an AI, and hands over to a person the moment it isn’t sure. With bookable hours set, it offers the open slots and books the one the customer picks; with orders on, it writes down what they ask for from the menu. The team confirms each, reads the sentence of its knowledge every answer rests on, and says what it may do and when it answers.',
     ),
     sample: () =>
       bubble('them', tr('I can offer Thursday 10:00 or 10:30. Which suits you?')) +

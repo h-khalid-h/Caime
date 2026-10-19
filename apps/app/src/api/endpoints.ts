@@ -7,6 +7,7 @@ import type { PersonalScope } from '@caime/core/access';
 import type { AccountProvider, AccountUse } from '@caime/core/accounts';
 import type { AddressKind } from '@caime/core/addresses';
 import type { AgeTrigger } from '@caime/core/age-assurance';
+import type { AgentWhen } from '@caime/core/agents';
 
 import type {
   AboutView,
@@ -871,8 +872,18 @@ export const endpoints = {
   // Apps (PRD §73–75): an organization's integrations, managed by its owner and admins
   // An organization's AI agent (PRD §74–75), for its owner and admins
   orgAgent: (orgId: string) => api.get<OrgAgentResponse>(`/orgs/${orgId}/agent`),
-  setOrgAgent: (orgId: string, body: { name: string; knowledge: string; paused: boolean }) =>
-    api.put<OrgAgentSetResponse>(`/orgs/${orgId}/agent`, body),
+  // What it may do and when it answers (M16 G6a): left out, kept as they are.
+  setOrgAgent: (
+    orgId: string,
+    body: {
+      name: string;
+      knowledge: string;
+      paused: boolean;
+      mayBook?: boolean;
+      mayOrder?: boolean;
+      answersWhen?: AgentWhen;
+    },
+  ) => api.put<OrgAgentSetResponse>(`/orgs/${orgId}/agent`, body),
   removeOrgAgent: (orgId: string) => api.del<OkResponse>(`/orgs/${orgId}/agent`),
   // Its quick replies (M16 H2): read by its team, saved whole by its owner and admins
   quickReplies: (orgId: string) => api.get<QuickRepliesResponse>(`/orgs/${orgId}/quick-replies`),

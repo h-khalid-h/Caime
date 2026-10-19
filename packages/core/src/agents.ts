@@ -29,6 +29,41 @@ export const AGENT_NAME_MAX = 40;
 export const AGENT_KNOWLEDGE_MAX = 8000;
 
 /**
+ * When it answers (M16 G6a): always, or only while the organization is closed by its hours, so
+ * its team answers what comes in while it's open.
+ */
+export const AGENT_WHEN = ['always', 'closed'] as const;
+export type AgentWhen = (typeof AGENT_WHEN)[number];
+
+/** How much of a passage a citation keeps, and how many passages one answer cites at most. */
+export const CITATION_CHARS = 280;
+export const AGENT_SOURCES_MAX = 5;
+
+/**
+ * What it was told, as the numbered passages an answer cites (M16 G6a): a sentence each, line by
+ * line, in order, so the numbers are the same however often it's asked and a citation quotes the
+ * fact itself, never the paragraph around it. Every word it was told is in one (what it knows is
+ * bounded by `AGENT_KNOWLEDGE_MAX`, never by the passages). The team sees the ones an answer
+ * rests on beneath it; the customer never does.
+ */
+export function knowledgePassages(knowledge: string): string[] {
+  const out: string[] = [];
+  for (const line of knowledge.split(/\r?\n/))
+    for (const sentence of line.split(/(?<=[.!?؟])\s+/)) {
+      const text = sentence.trim();
+      if (text) out.push(text);
+    }
+  return out;
+}
+
+/** A passage of what it was told that an answer rests on, as the team sees it under the answer. */
+export interface AgentCitation {
+  /** Its number among the passages when it answered. */
+  n: number;
+  text: string;
+}
+
+/**
  * It answers at most this many times in one conversation in 24 hours; past that, the team
  * takes it. A person, not a loop, finishes a long conversation.
  */

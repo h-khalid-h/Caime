@@ -2,10 +2,11 @@ import {
   AGENT_ACTION_LABELS,
   AGENT_KNOWLEDGE_MAX,
   AGENT_NAME_MAX,
+  type AgentWhen,
   defaultAgentName,
 } from '@caime/core/agents';
 import type { AgentTryView, OrgView } from '@caime/core/api';
-import { msg, tr } from '@caime/core/i18n';
+import { msg, sentence, tr } from '@caime/core/i18n';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import Sparkles from 'lucide-react-native/icons/sparkles';
 import Trash from 'lucide-react-native/icons/trash';
@@ -16,8 +17,10 @@ import { endpoints } from '@/api/endpoints';
 import { qk } from '@/api/keys';
 import { useTheme } from '@/theme/theme';
 import { Button } from '@/ui/Button';
+import { ChoiceChips } from '@/ui/Chip';
 import { ListRow, SectionTitle } from '@/ui/ListRow';
 import { Sheet } from '@/ui/Sheet';
+import { SwitchRow } from '@/ui/SwitchRow';
 import { Text } from '@/ui/Text';
 import { TextField } from '@/ui/TextField';
 import { toast } from '@/ui/Toast';
@@ -27,8 +30,9 @@ const WHAT_IT_DOES = msg(
 );
 
 /**
- * An organization's AI agent (PRD §74–75), for its owner and admins: what it knows, a question
- * to try it on before anyone hears from it, answering or paused, and removed.
+ * An organization's AI agent (PRD §74–75), for its owner and admins: what it knows, what it may
+ * do and when it answers (M16 G6a), a question to try it on before anyone hears from it, with
+ * what its answer rests on, answering or paused, and removed.
  */
 export function OrgAgent({ org }: { org: OrgView }) {
   const t = useTheme();
@@ -38,6 +42,9 @@ export function OrgAgent({ org }: { org: OrgView }) {
   const [open, setOpen] = useState(false);
   const [name, setName] = useState('');
   const [knowledge, setKnowledge] = useState('');
+  const [mayBook, setMayBook] = useState(true);
+  const [mayOrder, setMayOrder] = useState(true);
+  const [answersWhen, setAnswersWhen] = useState<AgentWhen>('always');
   const [question, setQuestion] = useState('');
   const [tried, setTried] = useState<AgentTryView | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -56,6 +63,9 @@ export function OrgAgent({ org }: { org: OrgView }) {
   const edit = () => {
     setName(agent?.name ?? defaultAgentName(org.name));
     setKnowledge(agent?.knowledge ?? '');
+    setMayBook(agent?.mayBook ?? true);
+    setMayOrder(agent?.mayOrder ?? true);
+    setAnswersWhen(agent?.answersWhen ?? 'always');
     setQuestion('');
     setTried(null);
     setError(null);
@@ -84,6 +94,9 @@ export function OrgAgent({ org }: { org: OrgView }) {
         name: name.trim(),
         knowledge: knowledge.trim(),
         paused: agent?.paused ?? false,
+        mayBook,
+        mayOrder,
+        answersWhen,
       });
       refresh();
       setOpen(false);
@@ -128,14 +141,23 @@ export function OrgAgent({ org }: { org: OrgView }) {
       toast(tr('The AI agent left the team. What it wrote stays.'));
     });
 
-  const status = agent
-    ? agent.paused
-      ? tr('Paused: your team answers everyone')
-      : tr('Answers first · {repliesToday} of {repliesPerDay} answers in the last 24 hours', {
-          repliesToday: agent.repliesToday,
-          repliesPerDay: agent.repliesPerDay,
-        })
+  const counts = agent
+    ? { repliesToday: agent.repliesToday, repliesPerDay: agent.repliesPerDay }
     : null;
+  const status =
+    agent && counts
+      ? agent.paused
+        ? tr('Paused: your team answers everyone')
+        : agent.answersWhen === 'closed' && org.booking
+          ? tr(
+              'Answers while you’re closed · {repliesToday} of {repliesPerDay} answers in the last 24 hours',
+              counts,
+            )
+          : tr(
+              'Answers first · {repliesToday} of {repliesPerDay} answers in the last 24 hours',
+              counts,
+            )
+      : null;
 
   return (
     <>
@@ -250,6 +272,54 @@ export function OrgAgent({ org }: { org: OrgView }) {
           <Text variant="caption" color="textTertiary">
             {tr(WHAT_IT_DOES)}
           </Text>
+          {org.booking || org.ordering ? (
+            // What it may do beyond answering, each for the team to confirm (M16 G6a).
+            <View>
+              {org.booking ? (
+                <SwitchRow
+                  label={tr('Offer times and book them')}
+                  detail={tr('Your team confirms each booking.')}
+                  value={mayBook}
+                  onChange={setMayBook}
+                  testID="org-agent-may-book"
+                />
+              ) : null}
+              {org.ordering ? (
+                <SwitchRow
+                  label={tr('Write down orders from your menu')}
+                  detail={tr('Your team confirms each order.')}
+                  value={mayOrder}
+                  onChange={setMayOrder}
+                  testID="org-agent-may-order"
+                />
+              ) : null}
+            </View>
+          ) : null}
+          {org.booking ? (
+            // When it answers, by the hours customers book in (M16 G6a).
+            <View style={{ gap: 4 }}>
+              <Text variant="captionStrong" color="textSecondary">
+                {tr('When it answers')}
+              </Text>
+              <ChoiceChips<AgentWhen>
+                label={tr('When it answers')}
+                value={answersWhen}
+                onChange={setAnswersWhen}
+                wrap
+                flush
+                options={[
+                  { value: 'always', label: tr('Always') },
+                  { value: 'closed', label: tr('While you’re closed') },
+                ]}
+                testID="org-agent-when"
+              />
+              <Text variant="caption" color="textTertiary">
+                {answersWhen === 'closed'
+                  ? tr('By your hours: while you’re open, your team answers first.')
+                  : tr('Day and night, before anyone on your team.')}
+              </Text>
+            </View>
+          ) : null}
           <View style={{ gap: 8 }}>
             <Text variant="captionStrong" color="textSecondary">
               {tr('Try it first')}
@@ -288,6 +358,19 @@ export function OrgAgent({ org }: { org: OrgView }) {
                   })}
                 </Text>
                 <Text variant="body">{tried.message}</Text>
+                {tried.cited.length ? (
+                  // What its answer rests on, as the team reads it under each answer (M16 G6a).
+                  <View style={{ gap: 2, marginTop: 4 }} testID="org-agent-cited">
+                    <Text variant="captionStrong" color="textSecondary">
+                      {sentence(tr('from what it knows'))}
+                    </Text>
+                    {tried.cited.map((c) => (
+                      <Text key={c.n} variant="caption" color="textSecondary">
+                        “{c.text}”
+                      </Text>
+                    ))}
+                  </View>
+                ) : null}
               </View>
             ) : null}
           </View>

@@ -276,6 +276,10 @@ export function createMetrics(pool: pg.Pool) {
       'Google picker pages opened, by the access they showed with: picked_files (narrowed to drive.file) or connection (the connection’s own, where Google didn’t narrow it).',
     ),
     ai: new Counter('caime_ai_calls_total', 'AI assist calls, by feature and outcome.'),
+    agentActions: new Counter(
+      'caime_agent_actions_total',
+      'What organizations’ AI agents did with customers’ messages, by action (answer, book, order, hand_over, resolve) and, handing over, why (unknown: what it was told doesn’t say; person: it needs a person; limit: a long conversation; refused: a booking or order it couldn’t make; none).',
+    ),
     aiTokens: new Counter(
       'caime_ai_tokens_total',
       'Tokens sent to the model and received from it, by feature and direction: what AI costs.',

@@ -3181,4 +3181,17 @@ export const arB: Catalog = {
     other: 'رفض {name} {n} موعد من مواعيدك',
   },
   'Feed address': 'عنوان الموجز',
+  'from what it knows': 'ممّا يعرفه',
+  Sources: 'المصادر',
+  'Answers while you’re closed · {repliesToday} of {repliesPerDay} answers in the last 24 hours':
+    'يجيب خارج ساعات العمل · الإجابات في آخر 24 ساعة: {repliesToday} من {repliesPerDay}',
+  'Offer times and book them': 'اقتراح المواعيد وحجزها',
+  'Your team confirms each booking.': 'يؤكد فريقك كل حجز.',
+  'Write down orders from your menu': 'تسجيل الطلبات من قائمتك',
+  'Your team confirms each order.': 'يؤكد فريقك كل طلب.',
+  'When it answers': 'متى يجيب',
+  'While you’re closed': 'خارج ساعات العمل',
+  'By your hours: while you’re open, your team answers first.':
+    'حسب ساعات عملك: في ساعات العمل يجيب فريقك أولًا.',
+  'Day and night, before anyone on your team.': 'ليلًا ونهارًا، قبل أي أحد من فريقك.',
 };

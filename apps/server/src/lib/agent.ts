@@ -16,15 +16,28 @@
  * Its first message in a conversation opens with its introduction (R87), written by the rules
  * rather than the model so it always says who it is, that it's an AI and whom it answers for, in
  * the language the customer wrote in: "Hi Paola, I'm Nour, the AI assistant for Nile Dental."
+ *
+ * What it may do is the organization's to say (M16 G6a): offer and book times, take orders, and
+ * answer always or only while its hours say it's closed. Each answer keeps the passages of what it
+ * was told that it rests on (`payload.cited`, the team's alone: the customer never sees them), and
+ * every call keeps the version of its instructions (`ai_runs.prompt_hash`), so the team can say
+ * why it said what it said, and which instructions said it.
  */
 import {
   AGENT_CALLS_PER_CONVERSATION,
   AGENT_REPLIES_PER_CONVERSATION,
+  type AgentCitation,
+  type AgentWhen,
+  type BookingHours,
+  CITATION_CHARS,
   isBooked,
   isOrdered,
+  knowledgePassages,
   ORG_ALLOWANCES,
+  openAt,
   orderableMax,
   tr,
+  truncate,
   uuidv7,
   writtenIn,
 } from '@caime/core';
@@ -32,7 +45,7 @@ import { firstName } from '@caime/core/format';
 import type { InterfaceLanguage } from '@caime/core/i18n';
 import { sql } from 'kysely';
 import type { AppContext } from '../context';
-import { type AgentReply, AiError, type AiUsage } from './ai';
+import { type AgentReply, AiError, type AiUsage, PROMPT_VERSIONS } from './ai';
 import { emitWebhook } from './apps';
 import { catalogLines, itemsFor, menuLines, openSlotsFor, orgHost, slotLine } from './booking';
 import { onCustomerMessage, publishThread, threadViews } from './business';
@@ -63,10 +76,43 @@ export async function activeAgent(ctx: Pick<AppContext, 'db'>, orgId: string) {
   return ctx.db
     .selectFrom('org_agents as a')
     .innerJoin('users as u', 'u.id', 'a.bot_user_id')
-    .select(['a.org_id', 'a.bot_user_id', 'a.knowledge', 'u.display_name as name'])
+    .select([
+      'a.org_id',
+      'a.bot_user_id',
+      'a.knowledge',
+      'a.may_book',
+      'a.may_order',
+      'a.answers_when',
+      'u.display_name as name',
+    ])
     .where('a.org_id', '=', orgId)
     .where('a.paused_at', 'is', null)
     .executeTakeFirst();
+}
+
+/**
+ * Whether it answers now (M16 G6a): always, or, where it answers only while the organization is
+ * closed, while its hours say so. Without hours nothing says it's open, so it answers. The
+ * automatic replies read the same rule: while it's quiet, they greet.
+ */
+export function agentAnswersNow(
+  answersWhen: AgentWhen,
+  hours: BookingHours | null,
+  now: Date,
+): boolean {
+  return answersWhen === 'always' || !hours || !openAt(hours, now);
+}
+
+/** Why it handed a conversation to the team, as `caime_agent_actions_total` counts it. */
+export type HandOverReason = 'unknown' | 'person' | 'limit' | 'refused' | 'none';
+
+/** The passages of what it was told that an answer rests on, as the team reads them under it. */
+export function citationsOf(knowledge: string, sources: readonly number[]): AgentCitation[] {
+  const passages = knowledgePassages(knowledge);
+  return sources.flatMap((n) => {
+    const text = passages[n - 1];
+    return text ? [{ n, text: truncate(text, CITATION_CHARS) }] : [];
+  });
 }
 
 /** A customer wrote: the agent looks at it in a moment, once. */
@@ -127,6 +173,7 @@ async function recordRun(
       cache_creation_tokens: usage?.cacheCreationTokens ?? null,
       latency_ms: Date.now() - started,
       outcome,
+      prompt_hash: PROMPT_VERSIONS[feature] ?? null,
       created_at: ctx.now(),
     })
     .execute();
@@ -339,7 +386,9 @@ async function handOver(
   orgId: string,
   conversationId: string,
   agent: { bot_user_id: string; name: string },
+  reason: HandOverReason,
 ) {
+  ctx.metrics.agentActions.inc({ action: 'hand_over', reason });
   await ctx.db
     .updateTable('business_threads')
     .set({ agent_handed_over_at: ctx.now(), updated_at: ctx.now() })
@@ -401,6 +450,8 @@ export async function agentReply(ctx: AppContext, payload: Record<string, unknow
     return;
   const agent = await activeAgent(ctx, thread.org_id);
   if (!agent) return;
+  // Only while the organization is closed, where it said so (M16 G6a): open, its team answers.
+  if (!agentAnswersNow(agent.answers_when, thread.booking, ctx.now())) return;
   const customer = await ctx.db
     .selectFrom('users')
     .select(['birth_date', 'time_zone', 'age_minor_until', 'locale', 'display_name'])
@@ -472,7 +523,7 @@ export async function agentReply(ctx: AppContext, payload: Record<string, unknow
     await postAs(ctx, agent.bot_user_id, conversationId, passed).catch((err) =>
       ctx.log.warn({ err, conversationId }, 'ai agent could not post'),
     );
-    await handOver(ctx, thread.org_id, conversationId, agent);
+    await handOver(ctx, thread.org_id, conversationId, agent, 'limit');
     return;
   }
 
@@ -497,19 +548,26 @@ export async function agentReply(ctx: AppContext, payload: Record<string, unknow
     adult: !minorOf(customer, ctx.now()),
   });
   // What this customer may order (R60), as they'd see it: a count only where it limits them, so
-  // the agent knows no more of the stock than the customer would.
-  const orderable = host.ordering
+  // the agent knows no more of the stock than the customer would. Only where the organization
+  // lets it take orders (M16 G6a); else it hands an order over.
+  const takesOrders = host.ordering !== null && agent.may_order;
+  const orderable = takesOrders
     ? withStock(items.filter(isOrdered), await stockFor(ctx.db, host.id, items), false)
     : [];
   const menuText = menuLines(orderable);
   const menu =
-    host.ordering && menuText ? { lines: menuText, ways: host.ordering.fulfilment } : null;
-  const open = await openSlotsFor(
-    ctx,
-    host,
-    { from: ctx.now(), to: new Date(ctx.now().getTime() + AGENT_SLOT_DAYS * DAY_MS) },
-    { item: items.find(isBooked) ?? null, limit: AGENT_SLOTS },
-  );
+    host.ordering && takesOrders && menuText
+      ? { lines: menuText, ways: host.ordering.fulfilment }
+      : null;
+  // Times it may offer, where it may book: else it hands a booking over.
+  const open = agent.may_book
+    ? await openSlotsFor(
+        ctx,
+        host,
+        { from: ctx.now(), to: new Date(ctx.now().getTime() + AGENT_SLOT_DAYS * DAY_MS) },
+        { item: items.find(isBooked) ?? null, limit: AGENT_SLOTS },
+      )
+    : null;
   const slots = open
     ? open.slots.map((d) => `${d.toISOString()} · ${slotLine(d, open.hours.timeZone)}`).join('\n')
     : null;
@@ -543,24 +601,27 @@ export async function agentReply(ctx: AppContext, payload: Record<string, unknow
     await discard(ctx, reply.runId);
     return;
   }
+  // What its answer rests on, for the team to read under it (M16 G6a).
+  const cited = citationsOf(agent.knowledge, reply.sources);
   try {
     // Its first message here opens with who it is, by the rules (R87): a line of its own, which
     // the model never reads back, since it names the customer.
+    const body = transcript.introduced
+      ? reply.message
+      : `${inLanguage(await customerLanguage(ctx, thread.customer_id, await latestBody()), () =>
+          introduction(agent.name, thread.org_name, customer.display_name),
+        )}\n${reply.message}`;
+    const marks = {
+      ...(transcript.introduced ? {} : { introduction: true }),
+      ...(cited.length ? { cited } : {}),
+    };
+    const marked = Object.keys(marks).length > 0;
     await postAs(
       ctx,
       agent.bot_user_id,
       conversationId,
-      transcript.introduced
-        ? reply.message
-        : {
-            kind: 'text',
-            body: `${inLanguage(
-              await customerLanguage(ctx, thread.customer_id, await latestBody()),
-              () => introduction(agent.name, thread.org_name, customer.display_name),
-            )}\n${reply.message}`,
-            payload: { introduction: true },
-          },
-      { serverPayload: !transcript.introduced },
+      marked ? { kind: 'text', body, payload: marks } : body,
+      { serverPayload: marked },
     );
   } catch (err) {
     // The customer blocked the organization, or it closed: nobody writes there now.
@@ -598,10 +659,9 @@ export async function agentReply(ctx: AppContext, payload: Record<string, unknow
           return false;
         });
     }
-    if (!booked) {
-      // Not a slot it was given, or taken meanwhile: a person books it.
-      await handOver(ctx, thread.org_id, conversationId, agent);
-    }
+    if (booked) ctx.metrics.agentActions.inc({ action: 'book', reason: 'none' });
+    // Not a slot it was given, or taken meanwhile: a person books it.
+    else await handOver(ctx, thread.org_id, conversationId, agent, 'refused');
   }
   // Ordered (R60): what the customer said they want from the menu becomes an Order card from the
   // organization, checked against its catalog and stock as anyone's is; the team confirms it.
@@ -622,10 +682,14 @@ export async function agentReply(ctx: AppContext, payload: Record<string, unknow
           return false;
         });
     }
-    if (!ordered) await handOver(ctx, thread.org_id, conversationId, agent);
+    if (ordered) ctx.metrics.agentActions.inc({ action: 'order', reason: 'none' });
+    else await handOver(ctx, thread.org_id, conversationId, agent, 'refused');
   }
-  if (reply.action === 'hand_over') await handOver(ctx, thread.org_id, conversationId, agent);
+  if (reply.action === 'answer') ctx.metrics.agentActions.inc({ action: 'answer', reason: 'none' });
+  if (reply.action === 'hand_over')
+    await handOver(ctx, thread.org_id, conversationId, agent, reply.reason ?? 'none');
   if (reply.action === 'resolve') {
+    ctx.metrics.agentActions.inc({ action: 'resolve', reason: 'none' });
     await ctx.db
       .updateTable('business_threads')
       .set({ resolved_at: ctx.now(), resolved_by: agent.bot_user_id, updated_at: ctx.now() })

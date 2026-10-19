@@ -91,8 +91,8 @@ export const turkishServer: Catalog = {
   'The agent answers': 'AI temsilcisi yanıtlar',
   'From what you wrote down, and it says so.':
     'Sizin yazdıklarınıza dayanarak; bunu da açıkça söyler.',
-  'The organization’s AI agent answers only from its knowledge (up to {n} characters you gave it), is marked as an AI, and hands over to a person the moment it isn’t sure. With bookable hours set, it offers the open slots and books the one the customer picks; with orders on, it writes down what they ask for from the menu. The team confirms each.':
-    'Kuruluşun AI temsilcisi yalnızca kendisine verilen bilgilerden (sizin yazdığınız en fazla {n} karakter) yanıt verir, AI olarak işaretlenir ve emin olmadığı anda konuşmayı bir insana devreder. Rezervasyon saatleri ayarlıysa boş saatleri önerir ve müşterinin seçtiği saati ayırır; siparişler açıksa müşterinin menüden istediğini not alır. Ekip her birini onaylar.',
+  'The organization’s AI agent answers only from its knowledge (up to {n} characters you gave it), is marked as an AI, and hands over to a person the moment it isn’t sure. With bookable hours set, it offers the open slots and books the one the customer picks; with orders on, it writes down what they ask for from the menu. The team confirms each, reads the sentence of its knowledge every answer rests on, and says what it may do and when it answers.':
+    'Kuruluşun AI temsilcisi yalnızca kendisine verilen bilgilerden (sizin yazdığınız en fazla {n} karakter) yanıt verir, AI olarak işaretlenir ve emin olmadığı anda konuşmayı bir insana devreder. Rezervasyon saatleri ayarlıysa boş saatleri önerir ve müşterinin seçtiği saati ayırır; siparişler açıksa müşterinin menüden istediğini not alır. Ekip her birini onaylar, her yanıtın dayandığı bilgi cümlesini okur ve temsilcinin neler yapabileceğine ve ne zaman yanıt vereceğine karar verir.',
   'I can offer Thursday 10:00 or 10:30. Which suits you?':
     'Perşembe 10:00 ya da 10:30 olabilir. Hangisi size uyar?',
   'Cleaning · Thursday 10:00 · requested': 'Temizlik · Perşembe 10:00 · talep edildi',
