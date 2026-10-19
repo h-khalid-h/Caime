@@ -241,4 +241,43 @@ export const levantineVoice: Catalog = {
     many: '• {n} طلب بعدو مفتوح',
     other: '• {n} طلب بعدو مفتوح',
   },
+  // M16 G11: Cai about one person.
+  'I don’t know who “{name}” is among your people.': 'ما بعرف مين «{name}» من الناس يلّي بتعرفهم.',
+  'You’re waiting on {who} for {n} things:': {
+    zero: 'ما عم تستنى شي من {who}:',
+    one: 'عم تستنى من {who} شغلة وحدة:',
+    two: 'عم تستنى من {who} شغلتين:',
+    few: 'عم تستنى من {who} {n} أشيا:',
+    many: 'عم تستنى من {who} {n} شغلة:',
+    other: 'عم تستنى من {who} {n} شغلة:',
+  },
+  'You’re not waiting on {who} for anything.': 'ما عم تستنى ولا شي من {who}.',
+  'From {who}, {n} things are asked of you:': {
+    zero: 'ما في شي مطلوب منك من {who}:',
+    one: 'من {who}، في شغلة وحدة مطلوبة منك:',
+    two: 'من {who}، في شغلتين مطلوبين منك:',
+    few: 'من {who}، في {n} أشيا مطلوبة منك:',
+    many: 'من {who}، في {n} شغلة مطلوبة منك:',
+    other: 'من {who}، في {n} شغلة مطلوبة منك:',
+  },
+  'Nothing is asked of you by {who}.': 'ما في شي مطلوب منك من {who}.',
+  'You said you’d do {n} things for {who}:': {
+    zero: 'ما وعدت {who} بشي:',
+    one: 'قلت إنك رح تعمل لـ{who} شغلة وحدة:',
+    two: 'قلت إنك رح تعمل لـ{who} شغلتين:',
+    few: 'قلت إنك رح تعمل لـ{who} {n} أشيا:',
+    many: 'قلت إنك رح تعمل لـ{who} {n} شغلة:',
+    other: 'قلت إنك رح تعمل لـ{who} {n} شغلة:',
+  },
+  'Nothing you said you’d do for {who} is open.':
+    'ما في شي من يلّي قلت إنك رح تعملو لـ{who} بعدو مفتوح.',
+  'Coming up with {who}:': 'شو جاي مع {who}:',
+  'Nothing is planned with {who} in the next two months.':
+    'ما في شي مخطط مع {who} بالشهرين الجايين.',
+  'What you and {who} decided:': 'شو تقرر بينك وبين {who}:',
+  'Nothing you and {who} decided is kept yet.': 'بعد ما في قرار محفوظ بينك وبين {who}.',
+  'Payments from {who}:': 'المدفوعات من {who}:',
+  'No card asks {who} to pay you.': 'ما في بطاقة دفع مطلوبة من {who} إلك.',
+  'Or ask about one of your people, by name or as you know them: what you’re waiting for from them, what they asked of you, what you agreed and whether they paid.':
+    'أو اسأل عن حدا من معارفك، بالاسم أو بالصلة: شو عم تستنى، وشو مطلوب منك، وشو اتفقتو عليه، والمدفوعات.',
 };

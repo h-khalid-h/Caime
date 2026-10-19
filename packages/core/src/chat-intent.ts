@@ -1,14 +1,16 @@
 /**
  * What a message to one of Caime's own accounts asks (R67, R71), by the rules, in every interface
  * language: the four questions about one's own open things (what you wait on, what's asked of
- * you, what you said you'd do, what's coming up), and the small talk anyone opens with (a
- * greeting, "how can you help me", thanks). Anything else is the model's, for whoever may use it.
+ * you, what you said you'd do, what's coming up), the same about one person with what you agreed
+ * and whether they paid (`chatAbout`, G11), and the small talk anyone opens with (a greeting,
+ * "how can you help me", thanks). Anything else is the model's, for whoever may use it.
  * Also which interface language a message is written in, so an answer by the rules is said in
  * the writer's language, not only the account's. Pure, no zod; the server's alone (the app never
  * loads it).
  */
 import type { InterfaceLanguage } from './i18n';
 import { latinScores } from './latin-language';
+import { relationshipFromWord, type Sphere } from './taxonomy';
 
 export type ChatIntent = 'waiting' | 'asked' | 'mine' | 'coming' | 'greeting' | 'help' | 'thanks';
 
@@ -407,4 +409,163 @@ export function writtenIn(text: string): InterfaceLanguage | null {
   if (s.fr > s.en && s.fr > s.tr) return 'fr';
   if (s.tr > s.en && s.tr > s.fr) return 'tr';
   return null;
+}
+
+/** What a question about one person asks (G11): the four, what you agreed, whether they paid. */
+export type AboutIntent = 'waiting' | 'asked' | 'mine' | 'coming' | 'agreed' | 'paid';
+
+/** A rule's source, tolerant of how Arabic is typed: any alef, "ى" or "ي", "ة" or "ه". */
+const tolerantAr = (source: string) =>
+  source.replace(/ا/g, '[اأإآ]').replace(/ي/g, '[يى]').replace(/ه/g, '[هة]');
+/**
+ * A day said beside a name ("Ana yesterday", "Murat dün", "منى امبارح"), never part of it: the
+ * answer lists every open thing with its date, so the day changes nothing it says.
+ */
+const TIME =
+  "(?:yesterday|today|tonight|tomorrow|lately|recently|earlier|this\\s+week|last\\s+week|hier|aujourd'hui|demain|cette\\s+semaine|la\\s+semaine\\s+derni[èe]re|dün|bugün|yarın|bu\\s+hafta|geçen\\s+hafta|امبارح|مبارح|النهارده|النهاردة|اليوم|بكره|بكرة|غدا|امس|البارحه|البارحة|هالاسبوع|الاسبوع\\s+ده)";
+/** A name as typed: a word or two ("Ana", "Ana Lopez", "أحمد", "Ayşe"), never a day beside it. */
+const NAME = `([\\p{L}][\\p{L}'’.-]*(?:\\s+(?!(?:next|now|please|yet|back|again|me|you|${tolerantAr(TIME).slice(3, -1)}|الفلوس|المبلغ|الحساب|الفاتوره|الفاتورة|حقي|مني)(?![\\p{L}]))[\\p{L}][\\p{L}'’.-]*)?)`;
+/** Words a name never is: a question about everyone, or about oneself, or a day. */
+const NOT_A_NAME =
+  /^(?:me|you|him|her|them|us|i|we|they|he|she|it|someone|somebody|people|anyone|anybody|everyone|everybody|others|the|my|moi|toi|lui|elle|eux|on|je|tu|il|nous|vous|ils|elles|quelqu'un|ça|ce|personne|les|o|biz|siz|onlar|birisi|الناس|حد|حدا|الكل|الجميع|بيه|به|فيه|عليه|ليه|انا|أنا|انت|إنت|هو|هي|نفسي|ben|sen|herkes|kimse|yesterday|today|tonight|tomorrow|lately|recently|earlier|hier|aujourd'hui|demain|dün|bugün|yarın|امبارح|إمبارح|مبارح|النهارده|النهاردة|اليوم|بكره|بكرة|غدا|امس|أمس|البارحه|البارحة)$/iu;
+/** Where a name goes in a rule: "@" before it is a handle's, a day after it says nothing. */
+const NAMED = `@?${NAME}(?:\\s+${tolerantAr(TIME)})?`;
+const asked = (sources: string[]) =>
+  sources.map(
+    (s) =>
+      new RegExp(
+        `^(?:${tolerantAr(s).replaceAll('NAME', NAMED)})(?:\\s+(?:now|please|maintenant|الحين|دلوقتي|şimdi|${tolerantAr(TIME)}))?\\s*[?؟.!]*$`,
+        'iu',
+      ),
+  );
+
+/**
+ * The questions about one person the rules answer from the person's own records, in every
+ * interface language: "what am I waiting for from Ana", "what did Ana ask me", "what did I
+ * promise Ana", "when am I seeing Ana", "what did Ana and I agree", "did Ana pay".
+ */
+const ABOUT: Array<[AboutIntent, RegExp[]]> = [
+  [
+    'waiting',
+    asked([
+      "(?:what|anything)\\s+(?:am\\s+i|i'?m|i\\s+am)\\s+(?:still\\s+)?waiting\\s+(?:for|on)\\s+from\\s+NAME",
+      'what\\s+(?:does|do)\\s+NAME\\s+owe\\s+me',
+      "what(?:'s|\\s+is)\\s+NAME\\s+(?:supposed|meant)\\s+to\\s+(?:send|do|give)\\s+me",
+      'what\\s+(?:am\\s+i|i\\s+am)\\s+(?:still\\s+)?waiting\\s+(?:for|on)\\s+NAME\\s+(?:for|to\\s+(?:send|do))',
+      '(?:انا\\s+)?(?:مستني|منتظر|ناطر)\\s+(?:ايه|ايش|شو|وش)\\s+من\\s+NAME',
+      '(?:ايه|ايش|شو|وش)\\s+(?:اللي\\s+)?(?:انا\\s+)?(?:مستنيه|منتظره|ناطره|انتظره)\\s+من\\s+NAME',
+      'ماذا\\s+انتظر\\s+من\\s+NAME',
+      '(?:ايه|ايش|شو|وش)\\s+(?:انا\\s+)?(?:مستني|منتظر|ناطر)\\s+من\\s+NAME',
+      "(?:qu'est-ce\\s+que|que)\\s+j'attends\\s+(?:encore\\s+)?de\\s+NAME",
+      "j'attends\\s+quoi\\s+de\\s+NAME",
+      "qu'est-ce\\s+que\\s+NAME\\s+me\\s+doit",
+      "NAME'(?:den|dan|ten|tan)\\s+ne(?:yi|leri)?\\s+bekliyorum",
+      'NAME\\s+bana\\s+ne\\s+borçlu',
+    ]),
+  ],
+  [
+    'asked',
+    asked([
+      'what\\s+(?:did|has)\\s+NAME\\s+ask(?:ed)?\\s+(?:me|of\\s+me)(?:\\s+(?:to\\s+do|for))?',
+      'what\\s+does\\s+NAME\\s+(?:want|need)(?:\\s+from\\s+me)?',
+      'is\\s+NAME\\s+waiting\\s+(?:for|on)\\s+me(?:\\s+for\\s+anything)?',
+      '(?:ايه|ايش|شو|وش|ماذا)\\s+(?:اللي\\s+)?(?:طلب|طلبت|طلبه|طلبته|عايز|عايزه|بده|بدها|يبي|تبي|يبغى)\\s+NAME\\s+مني',
+      'NAME\\s+(?:طلب|طلبت|عايز|عايزه|بده|بدها|يبي|تبي)\\s+مني\\s+(?:ايه|ايش|شو|وش)',
+      '(?:ماذا|ايه|ايش|شو|وش)\\s+(?:اللي\\s+)?(?:طلب|طلبت|طلبه|طلبته|عايز|عايزه|بده|بدها)\\s+مني\\s+NAME',
+      "(?:qu'est-ce\\s+que|que)\\s+NAME\\s+m'a\\s+demandé",
+      "NAME\\s+m'a\\s+demandé\\s+quoi",
+      "qu'est-ce\\s+que\\s+NAME\\s+attend\\s+de\\s+moi",
+      'NAME\\s+benden\\s+ne\\s+(?:istedi|istiyor|bekliyor)',
+    ]),
+  ],
+  [
+    'mine',
+    asked([
+      "what\\s+did\\s+i\\s+(?:promise(?:\\s+to)?|say\\s+i'?d\\s+do\\s+for)\\s+NAME",
+      'what\\s+do\\s+i\\s+owe\\s+NAME',
+      '(?:ايه|ايش|شو|وش|بماذا)\\s+(?:اللي\\s+)?وعدت\\s+(?:به\\s+|بيه\\s+)?NAME',
+      'وعدت\\s+NAME\\s+ب(?:ايه|ايش|شو|ماذا)',
+      "(?:qu'est-ce\\s+que|que)\\s+j'ai\\s+promis\\s+(?:à|a)\\s+NAME",
+      "j'ai\\s+promis\\s+quoi\\s+(?:à|a)\\s+NAME",
+      "qu'est-ce\\s+que\\s+je\\s+dois\\s+(?:à|a)\\s+NAME",
+      "NAME'(?:a|e|ya|ye)\\s+ne\\s+(?:söz\\s+verdim|borçluyum)",
+    ]),
+  ],
+  [
+    'coming',
+    asked([
+      'when\\s+(?:am\\s+i|do\\s+i|will\\s+i)\\s+(?:seeing|see|meeting|meet)\\s+NAME(?:\\s+next)?',
+      "when(?:'s|\\s+is)\\s+my\\s+(?:next\\s+)?(?:meeting|call|appointment)\\s+with\\s+NAME",
+      "what(?:'s|\\s+is)\\s+(?:coming\\s+up|planned|next)\\s+with\\s+NAME",
+      '(?:امتى|متى|ايمتى|وقتاش|فوقاش)\\s+(?:هشوف|حشوف|بشوف|اشوف|راح\\s+اشوف|رح\\s+شوف|هقابل|بقابل|اقابل)\\s+NAME',
+      '(?:امتى|متى|ايمتى)\\s+(?:اجتماعي|موعدي|ميعادي|معادي)\\s+(?:الجاي\\s+)?مع\\s+NAME',
+      'quand\\s+(?:est-ce\\s+que\\s+)?(?:je\\s+vois|je\\s+verrai|je\\s+rencontre|vois-je)\\s+NAME',
+      "c'est\\s+quand\\s+(?:mon\\s+)?(?:prochain\\s+)?(?:rendez-vous|rdv|réunion|appel)\\s+avec\\s+NAME",
+      '(?:je\\s+vois|je\\s+verrai|je\\s+rencontre)\\s+NAME\\s+quand',
+      "NAME(?:\\s+ile|'(?:le|la|yle|yla))\\s+ne\\s+zaman\\s+(?:görüşüyorum|buluşuyorum|görüşeceğim|buluşacağım)",
+    ]),
+  ],
+  [
+    'agreed',
+    asked([
+      'what\\s+did\\s+NAME\\s+and\\s+i\\s+(?:agree|decide)(?:\\s+on)?',
+      'what\\s+did\\s+(?:i|we)\\s+(?:agree|decide)(?:\\s+on)?\\s+with\\s+NAME',
+      'what\\s+have\\s+(?:i|we)\\s+(?:agreed|decided)\\s+with\\s+NAME',
+      '(?:اتفقنا|قررنا|اتفقت)\\s+(?:على\\s+)?(?:ايه|ايش|شو|وش)\\s+(?:انا\\s+و\\s*|مع\\s+)NAME',
+      '(?:ايه|ايش|شو|وش)\\s+اللي\\s+(?:اتفقنا|قررنا|اتفقت)\\s+عليه\\s+(?:انا\\s+و\\s*|مع\\s+)NAME',
+      '(?:ايه|ايش|شو|وش|ماذا)\\s+(?:اتفقنا|قررنا|اتفقت)\\s+(?:عليه\\s+)?(?:انا\\s+و\\s*|مع\\s+)NAME',
+      "(?:qu'est-ce\\s+qu'on\\s+a|qu'avons-nous|qu'est-ce\\s+que\\s+j'ai)\\s+(?:décidé|convenu)\\s+avec\\s+NAME",
+      "on\\s+s'est\\s+mis\\s+d'accord\\s+sur\\s+quoi\\s+avec\\s+NAME",
+      "NAME(?:\\s+ile|'(?:le|la|yle|yla))\\s+ne(?:ye)?\\s+(?:karar\\s+verdik|anlaştık)",
+    ]),
+  ],
+  [
+    'paid',
+    asked([
+      '(?:did|has)\\s+NAME\\s+(?:pay|paid)(?:\\s+(?:me|yet|back))*',
+      'هل\\s+(?:دفع|دفعت|حول|حولت|سدد|سددت)\\s+NAME(?:\\s+(?:الفلوس|المبلغ|الحساب|الفاتوره|حقي|اللي\\s+عليه))?',
+      '(?:هو\\s+|هي\\s+)?NAME\\s+(?:دفع|دفعت|حول|حولت|سدد|سددت)(?:\\s+(?:ولا\\s+لا|ولا\\s+لأ|ولا))?',
+      "(?:est-ce\\s+que\\s+)?NAME\\s+(?:a\\s+payé|m'a\\s+payé|a\\s+réglé|m'a\\s+réglé)",
+      'NAME\\s+a-t-(?:il|elle)\\s+payé',
+      'NAME\\s+(?:ödedi|ödemeyi\\s+yaptı|ödeme\\s+yaptı)\\s+m[ıi]',
+      'NAME\\s+(?:parayı|ödemeyi|borcunu)\\s+(?:gönderdi|yatırdı|ödedi|yolladı)\\s+m[ıi]',
+    ]),
+  ],
+];
+
+/**
+ * A question about one person the rules answer (G11), with the name as typed; null for anything
+ * else. Written plainly, never folded: the name is looked up as it was typed.
+ */
+export function chatAbout(text: string): { intent: AboutIntent; name: string } | null {
+  const t = text.replace(/[’‘`]/g, "'").replace(/\s+/g, ' ').trim();
+  if (!t || t.length > 120) return null;
+  for (const [intent, rules] of ABOUT) {
+    for (const rule of rules) {
+      const m = rule.exec(t);
+      const name = m?.[1]?.trim();
+      if (name && !NOT_A_NAME.test(name)) return { intent, name };
+    }
+  }
+  return null;
+}
+
+/** "my", "the" and their kin before what someone is called ("my dentist", "le médecin"). */
+const BEFORE_A_RELATIONSHIP =
+  /^(?:my|the|our|mon|ma|mes|le|la|les|notre|nos|benim|bizim)\s+|^l['’]/iu;
+
+/**
+ * The relationship a question names someone by in place of a name (G11): "my dentist", "the
+ * client", "mon patron", "مديري" (my manager), "annem" (my mother), as a sphere and, where the
+ * words say one, a role, in the reader's language or English; null for a name or a thing.
+ * Read only once no one of theirs is called that, so a name always wins.
+ */
+export function aboutRelationship(words: string): { sphere: Sphere; role?: string } | null {
+  const rest = relationshipWords(words);
+  return rest ? (relationshipFromWord(rest) ?? null) : null;
+}
+
+/** What someone is called without the "my" or "the" before it: "dentist", "patron", "مديري". */
+export function relationshipWords(words: string): string {
+  return words.trim().replace(BEFORE_A_RELATIONSHIP, '');
 }

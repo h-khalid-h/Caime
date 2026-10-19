@@ -1618,4 +1618,42 @@ export const arServer: Catalog = {
   'for everyday use, once you turn it on': 'للاستخدام اليومي، متى شغّلته',
   'more each day, and follow-ups found by our most capable model':
     'أكثر كل يوم، ومتابعات يجدها أقدر نماذجنا',
+  // M16 G11: Cai about one person.
+  'I don’t know who “{name}” is among your people.': 'لا أعرف من «{name}» بين من تعرفهم.',
+  'You’re waiting on {who} for {n} things:': {
+    zero: 'لا تنتظر من {who} أي أمر:',
+    one: 'تنتظر من {who} أمرًا واحدًا:',
+    two: 'تنتظر من {who} أمرين:',
+    few: 'تنتظر من {who} {n} أمور:',
+    many: 'تنتظر من {who} {n} أمرًا:',
+    other: 'تنتظر من {who} {n} أمر:',
+  },
+  'You’re not waiting on {who} for anything.': 'لا تنتظر من {who} أي شيء.',
+  'From {who}, {n} things are asked of you:': {
+    zero: 'لا شيء مطلوب منك من {who}:',
+    one: 'من {who}، أمر واحد مطلوب منك:',
+    two: 'من {who}، أمران مطلوبان منك:',
+    few: 'من {who}، {n} أمور مطلوبة منك:',
+    many: 'من {who}، {n} أمرًا مطلوبًا منك:',
+    other: 'من {who}، {n} أمر مطلوب منك:',
+  },
+  'Nothing is asked of you by {who}.': 'لا شيء مطلوب منك من {who}.',
+  'You said you’d do {n} things for {who}:': {
+    zero: 'لم تعد {who} بشيء:',
+    one: 'وعدت {who} بأمر واحد:',
+    two: 'وعدت {who} بأمرين:',
+    few: 'وعدت {who} بـ{n} أمور:',
+    many: 'وعدت {who} بـ{n} أمرًا:',
+    other: 'وعدت {who} بـ{n} أمر:',
+  },
+  'Nothing you said you’d do for {who} is open.': 'لا شيء مما وعدت به {who} مفتوح.',
+  'Coming up with {who}:': 'القادم مع {who}:',
+  'Nothing is planned with {who} in the next two months.':
+    'لا شيء مخطط مع {who} في الشهرين القادمين.',
+  'What you and {who} decided:': 'ما تقرّر بينك وبين {who}:',
+  'Nothing you and {who} decided is kept yet.': 'لا قرار محفوظ بينك وبين {who} بعد.',
+  'Payments from {who}:': 'المدفوعات من {who}:',
+  'No card asks {who} to pay you.': 'لا بطاقة تطلب من {who} الدفع لك.',
+  'Or ask about one of your people, by name or as you know them: what you’re waiting for from them, what they asked of you, what you agreed and whether they paid.':
+    'أو اسأل عن أحد من تعرفهم، بالاسم أو بالصلة: ما تنتظره، وما هو مطلوب منك، وما اتُّفق عليه، والمدفوعات.',
 };

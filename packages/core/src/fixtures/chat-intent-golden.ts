@@ -1,4 +1,4 @@
-import type { ChatIntent } from '../chat-intent';
+import type { AboutIntent, ChatIntent } from '../chat-intent';
 
 /**
  * What people write to Cai or a friend, labelled by hand with what the rules should answer
@@ -123,4 +123,286 @@ export const CHAT_INTENT_GOLDEN: IntentLine[] = [
   { text: 'selam, ev sahibime bir e-posta yazar mısın?', lang: 'tr', intent: null },
   { text: 'otobüsü bekliyorum', lang: 'tr', intent: null },
   { text: "Ayşe'den ne bekliyorum?", lang: 'tr', intent: null },
+];
+/**
+ * Questions about one person, as people write them to Cai (G11), labelled by hand with what the
+ * rules should read: the question and the name as typed, or null for anything that isn't one
+ * person's (a question about everyone, about oneself, or not a question). Written before the
+ * rules were measured on them; `chat-intent-golden.test.ts` holds each language to its floor.
+ */
+export interface AboutLine {
+  text: string;
+  lang: 'en' | 'ar' | 'fr' | 'tr';
+  about: { intent: AboutIntent; name: string } | null;
+}
+
+export const ABOUT_GOLDEN: AboutLine[] = [
+  // ---- English
+  {
+    text: 'what am I still waiting for from Maya?',
+    lang: 'en',
+    about: { intent: 'waiting', name: 'Maya' },
+  },
+  { text: 'what does Leo owe me?', lang: 'en', about: { intent: 'waiting', name: 'Leo' } },
+  {
+    text: "anything I'm waiting on from Priya",
+    lang: 'en',
+    about: { intent: 'waiting', name: 'Priya' },
+  },
+  { text: 'what did Maya ask me for?', lang: 'en', about: { intent: 'asked', name: 'Maya' } },
+  { text: 'what does Leo need from me?', lang: 'en', about: { intent: 'asked', name: 'Leo' } },
+  {
+    text: 'is Priya waiting on me for anything?',
+    lang: 'en',
+    about: { intent: 'asked', name: 'Priya' },
+  },
+  { text: 'what did I promise Maya?', lang: 'en', about: { intent: 'mine', name: 'Maya' } },
+  { text: 'what do I owe Leo?', lang: 'en', about: { intent: 'mine', name: 'Leo' } },
+  {
+    text: "what did I say I'd do for Priya?",
+    lang: 'en',
+    about: { intent: 'mine', name: 'Priya' },
+  },
+  { text: 'when am I seeing Maya?', lang: 'en', about: { intent: 'coming', name: 'Maya' } },
+  { text: "when's my next call with Leo?", lang: 'en', about: { intent: 'coming', name: 'Leo' } },
+  { text: "what's coming up with Priya?", lang: 'en', about: { intent: 'coming', name: 'Priya' } },
+  { text: 'what did Maya and I agree on?', lang: 'en', about: { intent: 'agreed', name: 'Maya' } },
+  { text: 'what did we decide with Leo?', lang: 'en', about: { intent: 'agreed', name: 'Leo' } },
+  {
+    text: 'what have I agreed with Priya?',
+    lang: 'en',
+    about: { intent: 'agreed', name: 'Priya' },
+  },
+  { text: 'did Maya pay me?', lang: 'en', about: { intent: 'paid', name: 'Maya' } },
+  { text: 'has Leo paid yet?', lang: 'en', about: { intent: 'paid', name: 'Leo' } },
+  { text: 'did Priya pay back?', lang: 'en', about: { intent: 'paid', name: 'Priya' } },
+  { text: 'What am I waiting for?', lang: 'en', about: null },
+  { text: 'did you pay?', lang: 'en', about: null },
+  { text: 'when am I seeing everyone?', lang: 'en', about: null },
+  { text: 'Maya says hi', lang: 'en', about: null },
+
+  // ---- Arabic
+  { text: 'مستني ايه من ريم؟', lang: 'ar', about: { intent: 'waiting', name: 'ريم' } },
+  { text: 'شو ناطر من سامي؟', lang: 'ar', about: { intent: 'waiting', name: 'سامي' } },
+  { text: 'ماذا أنتظر من ليلى؟', lang: 'ar', about: { intent: 'waiting', name: 'ليلى' } },
+  { text: 'ريم طلبت مني ايه؟', lang: 'ar', about: { intent: 'asked', name: 'ريم' } },
+  { text: 'سامي عايز مني ايه؟', lang: 'ar', about: { intent: 'asked', name: 'سامي' } },
+  { text: 'ماذا طلب مني يوسف؟', lang: 'ar', about: { intent: 'asked', name: 'يوسف' } },
+  { text: 'وعدت ريم بايه؟', lang: 'ar', about: { intent: 'mine', name: 'ريم' } },
+  { text: 'شو وعدت سامي؟', lang: 'ar', about: { intent: 'mine', name: 'سامي' } },
+  { text: 'بماذا وعدت ليلى؟', lang: 'ar', about: { intent: 'mine', name: 'ليلى' } },
+  { text: 'امتى هشوف ريم؟', lang: 'ar', about: { intent: 'coming', name: 'ريم' } },
+  { text: 'إيمتى بشوف سامي؟', lang: 'ar', about: { intent: 'coming', name: 'سامي' } },
+  { text: 'متى موعدي مع ليلى؟', lang: 'ar', about: { intent: 'coming', name: 'ليلى' } },
+  { text: 'اتفقنا على ايه انا وريم؟', lang: 'ar', about: { intent: 'agreed', name: 'ريم' } },
+  { text: 'شو قررنا مع سامي؟', lang: 'ar', about: { intent: 'agreed', name: 'سامي' } },
+  { text: 'ايه اللي اتفقنا عليه مع ليلى؟', lang: 'ar', about: { intent: 'agreed', name: 'ليلى' } },
+  { text: 'ريم دفعت؟', lang: 'ar', about: { intent: 'paid', name: 'ريم' } },
+  { text: 'هل حول سامي الفلوس؟', lang: 'ar', about: { intent: 'paid', name: 'سامي' } },
+  { text: 'ليلى سددت ولا لأ؟', lang: 'ar', about: { intent: 'paid', name: 'ليلى' } },
+  { text: 'مستني ايه؟', lang: 'ar', about: null },
+  { text: 'دفعت؟', lang: 'ar', about: null },
+  { text: 'امتى هشوف الناس؟', lang: 'ar', about: null },
+  { text: 'ريم بتسلم عليك', lang: 'ar', about: null },
+
+  // ---- French
+  {
+    text: "qu'est-ce que j'attends encore de Chloé ?",
+    lang: 'fr',
+    about: { intent: 'waiting', name: 'Chloé' },
+  },
+  { text: 'j’attends quoi de Paul ?', lang: 'fr', about: { intent: 'waiting', name: 'Paul' } },
+  {
+    text: "qu'est-ce que Nadia me doit ?",
+    lang: 'fr',
+    about: { intent: 'waiting', name: 'Nadia' },
+  },
+  {
+    text: "qu'est-ce que Chloé m'a demandé ?",
+    lang: 'fr',
+    about: { intent: 'asked', name: 'Chloé' },
+  },
+  { text: "Paul m'a demandé quoi ?", lang: 'fr', about: { intent: 'asked', name: 'Paul' } },
+  {
+    text: "qu'est-ce que Nadia attend de moi ?",
+    lang: 'fr',
+    about: { intent: 'asked', name: 'Nadia' },
+  },
+  {
+    text: "qu'est-ce que j'ai promis à Chloé ?",
+    lang: 'fr',
+    about: { intent: 'mine', name: 'Chloé' },
+  },
+  { text: "qu'est-ce que je dois à Paul ?", lang: 'fr', about: { intent: 'mine', name: 'Paul' } },
+  { text: "j'ai promis quoi à Nadia ?", lang: 'fr', about: { intent: 'mine', name: 'Nadia' } },
+  {
+    text: 'quand est-ce que je vois Chloé ?',
+    lang: 'fr',
+    about: { intent: 'coming', name: 'Chloé' },
+  },
+  {
+    text: "c'est quand mon prochain rdv avec Paul ?",
+    lang: 'fr',
+    about: { intent: 'coming', name: 'Paul' },
+  },
+  { text: 'je vois Nadia quand ?', lang: 'fr', about: { intent: 'coming', name: 'Nadia' } },
+  {
+    text: "qu'est-ce qu'on a décidé avec Chloé ?",
+    lang: 'fr',
+    about: { intent: 'agreed', name: 'Chloé' },
+  },
+  {
+    text: "on s'est mis d'accord sur quoi avec Paul ?",
+    lang: 'fr',
+    about: { intent: 'agreed', name: 'Paul' },
+  },
+  {
+    text: "qu'est-ce que j'ai convenu avec Nadia ?",
+    lang: 'fr',
+    about: { intent: 'agreed', name: 'Nadia' },
+  },
+  { text: 'Chloé a payé ?', lang: 'fr', about: { intent: 'paid', name: 'Chloé' } },
+  { text: "est-ce que Paul m'a payé ?", lang: 'fr', about: { intent: 'paid', name: 'Paul' } },
+  { text: 'Nadia a-t-elle payé ?', lang: 'fr', about: { intent: 'paid', name: 'Nadia' } },
+  { text: "qu'est-ce que j'attends ?", lang: 'fr', about: null },
+  { text: 'tu as payé ?', lang: 'fr', about: null },
+  { text: 'Chloé te dit bonjour', lang: 'fr', about: null },
+
+  // ---- Turkish
+  { text: "Zeynep'ten ne bekliyorum?", lang: 'tr', about: { intent: 'waiting', name: 'Zeynep' } },
+  { text: "Emre'den neyi bekliyorum?", lang: 'tr', about: { intent: 'waiting', name: 'Emre' } },
+  { text: 'Selin bana ne borçlu?', lang: 'tr', about: { intent: 'waiting', name: 'Selin' } },
+  { text: 'Zeynep benden ne istedi?', lang: 'tr', about: { intent: 'asked', name: 'Zeynep' } },
+  { text: 'Emre benden ne istiyor?', lang: 'tr', about: { intent: 'asked', name: 'Emre' } },
+  { text: 'Selin benden ne bekliyor?', lang: 'tr', about: { intent: 'asked', name: 'Selin' } },
+  { text: "Zeynep'e ne söz verdim?", lang: 'tr', about: { intent: 'mine', name: 'Zeynep' } },
+  { text: "Emre'ye ne söz verdim?", lang: 'tr', about: { intent: 'mine', name: 'Emre' } },
+  { text: "Selin'e ne borçluyum?", lang: 'tr', about: { intent: 'mine', name: 'Selin' } },
+  {
+    text: 'Zeynep ile ne zaman görüşüyorum?',
+    lang: 'tr',
+    about: { intent: 'coming', name: 'Zeynep' },
+  },
+  { text: 'Emre ile ne zaman buluşacağım?', lang: 'tr', about: { intent: 'coming', name: 'Emre' } },
+  {
+    text: "Selin'le ne zaman görüşeceğim?",
+    lang: 'tr',
+    about: { intent: 'coming', name: 'Selin' },
+  },
+  { text: 'Zeynep ile ne karar verdik?', lang: 'tr', about: { intent: 'agreed', name: 'Zeynep' } },
+  { text: 'Emre ile neye anlaştık?', lang: 'tr', about: { intent: 'agreed', name: 'Emre' } },
+  { text: "Selin'le neye karar verdik?", lang: 'tr', about: { intent: 'agreed', name: 'Selin' } },
+  { text: 'Zeynep ödedi mi?', lang: 'tr', about: { intent: 'paid', name: 'Zeynep' } },
+  { text: 'Emre ödemeyi yaptı mı?', lang: 'tr', about: { intent: 'paid', name: 'Emre' } },
+  { text: 'Selin parayı gönderdi mi?', lang: 'tr', about: { intent: 'paid', name: 'Selin' } },
+  { text: 'ne bekliyorum?', lang: 'tr', about: null },
+  { text: 'ödedin mi?', lang: 'tr', about: null },
+  { text: 'Zeynep selam söylüyor', lang: 'tr', about: null },
+
+  // ---- Added once the rules first met the server (2026-10-19), written before they were tried:
+  // a day where a name would be, a name after "to" or "@", a day after the name, and the
+  // relationship someone is named by ("my dentist", "مديري"), which `aboutRelationship` reads.
+  { text: 'what did I promise yesterday?', lang: 'en', about: null },
+  { text: 'what did I promise today?', lang: 'en', about: null },
+  { text: 'what did I promise Ana yesterday?', lang: 'en', about: { intent: 'mine', name: 'Ana' } },
+  { text: 'what did I promise to Ana?', lang: 'en', about: { intent: 'mine', name: 'Ana' } },
+  {
+    text: 'what am I waiting for from @ana?',
+    lang: 'en',
+    about: { intent: 'waiting', name: 'ana' },
+  },
+  {
+    text: 'when am I seeing my dentist?',
+    lang: 'en',
+    about: { intent: 'coming', name: 'my dentist' },
+  },
+  {
+    text: 'what am I waiting for from my manager?',
+    lang: 'en',
+    about: { intent: 'waiting', name: 'my manager' },
+  },
+  { text: 'did the client pay?', lang: 'en', about: { intent: 'paid', name: 'the client' } },
+  { text: 'ايه اللي وعدت بيه امبارح؟', lang: 'ar', about: null },
+  { text: 'مستني ايه من مديري؟', lang: 'ar', about: { intent: 'waiting', name: 'مديري' } },
+  { text: 'هل دفع العميل؟', lang: 'ar', about: { intent: 'paid', name: 'العميل' } },
+  { text: 'امتى هشوف الدكتور؟', lang: 'ar', about: { intent: 'coming', name: 'الدكتور' } },
+  { text: 'وعدت أحمد بإيه امبارح؟', lang: 'ar', about: { intent: 'mine', name: 'أحمد' } },
+  { text: 'منى دفعت امبارح؟', lang: 'ar', about: { intent: 'paid', name: 'منى' } },
+  { text: "qu'est-ce que j'ai promis hier ?", lang: 'fr', about: null },
+  {
+    text: "qu'est-ce que j'attends de mon frère ?",
+    lang: 'fr',
+    about: { intent: 'waiting', name: 'mon frère' },
+  },
+  {
+    text: 'quand est-ce que je vois le médecin ?',
+    lang: 'fr',
+    about: { intent: 'coming', name: 'le médecin' },
+  },
+  { text: 'Karim a payé hier ?', lang: 'fr', about: { intent: 'paid', name: 'Karim' } },
+  {
+    text: "qu'est-ce que j'ai promis à Léa aujourd'hui ?",
+    lang: 'fr',
+    about: { intent: 'mine', name: 'Léa' },
+  },
+  { text: 'bugün ne söz verdim?', lang: 'tr', about: null },
+  { text: 'annem ödedi mi?', lang: 'tr', about: { intent: 'paid', name: 'annem' } },
+  { text: 'patronum benden ne istedi?', lang: 'tr', about: { intent: 'asked', name: 'patronum' } },
+  {
+    text: 'doktor ile ne zaman görüşüyorum?',
+    lang: 'tr',
+    about: { intent: 'coming', name: 'doktor' },
+  },
+  { text: 'Murat dün ödedi mi?', lang: 'tr', about: { intent: 'paid', name: 'Murat' } },
+];
+
+/**
+ * The relationship a question names someone by, in place of their name (G11): "my dentist",
+ * "مديري" (my manager), "mon patron", "annem" (my mother), labelled by hand as the person's own
+ * relationships are kept (a sphere, and a role where the words say one), or null for a name or a
+ * thing. Each is read in its own reader's language, where a relationship's label is its word.
+ * Written before `aboutRelationship` was measured on them.
+ */
+export interface RelationLine {
+  words: string;
+  lang: 'en' | 'ar' | 'fr' | 'tr';
+  relationship: { sphere?: string; role?: string } | null;
+}
+
+export const RELATION_GOLDEN: RelationLine[] = [
+  { words: 'my dentist', lang: 'en', relationship: { role: 'dentist' } },
+  { words: 'my manager', lang: 'en', relationship: { sphere: 'work', role: 'manager' } },
+  { words: 'my boss', lang: 'en', relationship: { sphere: 'work', role: 'manager' } },
+  { words: 'the client', lang: 'en', relationship: { sphere: 'customer' } },
+  { words: 'my landlord', lang: 'en', relationship: { role: 'landlord' } },
+  { words: 'my mom', lang: 'en', relationship: { sphere: 'family', role: 'mother' } },
+  { words: 'my brother', lang: 'en', relationship: { sphere: 'family', role: 'brother' } },
+  { words: 'my lawyer', lang: 'en', relationship: { role: 'lawyer' } },
+  { words: 'Ana', lang: 'en', relationship: null },
+  { words: 'my car', lang: 'en', relationship: null },
+  { words: 'مديري', lang: 'ar', relationship: { sphere: 'work', role: 'manager' } },
+  { words: 'العميل', lang: 'ar', relationship: { sphere: 'customer' } },
+  { words: 'الدكتور', lang: 'ar', relationship: { role: 'doctor' } },
+  { words: 'ماما', lang: 'ar', relationship: { sphere: 'family', role: 'mother' } },
+  { words: 'أخويا', lang: 'ar', relationship: { sphere: 'family', role: 'brother' } },
+  { words: 'صاحبي', lang: 'ar', relationship: { sphere: 'friend' } },
+  { words: 'المحامي', lang: 'ar', relationship: { role: 'lawyer' } },
+  { words: 'سارة', lang: 'ar', relationship: null },
+  { words: 'السيارة', lang: 'ar', relationship: null },
+  { words: 'mon frère', lang: 'fr', relationship: { sphere: 'family', role: 'brother' } },
+  { words: 'le médecin', lang: 'fr', relationship: { role: 'doctor' } },
+  { words: 'mon patron', lang: 'fr', relationship: { sphere: 'work', role: 'manager' } },
+  { words: 'ma mère', lang: 'fr', relationship: { sphere: 'family', role: 'mother' } },
+  { words: 'le client', lang: 'fr', relationship: { sphere: 'customer' } },
+  { words: 'mon avocat', lang: 'fr', relationship: { role: 'lawyer' } },
+  { words: 'Léa', lang: 'fr', relationship: null },
+  { words: 'ma voiture', lang: 'fr', relationship: null },
+  { words: 'annem', lang: 'tr', relationship: { sphere: 'family', role: 'mother' } },
+  { words: 'patronum', lang: 'tr', relationship: { sphere: 'work', role: 'manager' } },
+  { words: 'doktor', lang: 'tr', relationship: { role: 'doctor' } },
+  { words: 'müşterim', lang: 'tr', relationship: { sphere: 'customer' } },
+  { words: 'ev sahibim', lang: 'tr', relationship: { role: 'landlord' } },
+  { words: 'avukatım', lang: 'tr', relationship: { role: 'lawyer' } },
+  { words: 'Zeynep', lang: 'tr', relationship: null },
+  { words: 'arabam', lang: 'tr', relationship: null },
 ];

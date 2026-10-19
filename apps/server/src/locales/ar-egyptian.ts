@@ -241,4 +241,43 @@ export const egyptianVoice: Catalog = {
     many: '• {n} طلب لسه مفتوح',
     other: '• {n} طلب لسه مفتوح',
   },
+  // M16 G11: Cai about one person.
+  'I don’t know who “{name}” is among your people.': 'معرفش مين «{name}» من الناس اللي تعرفهم.',
+  'You’re waiting on {who} for {n} things:': {
+    zero: 'مش بتستنى حاجة من {who}:',
+    one: 'بتستنى من {who} حاجة واحدة:',
+    two: 'بتستنى من {who} حاجتين:',
+    few: 'بتستنى من {who} {n} حاجات:',
+    many: 'بتستنى من {who} {n} حاجة:',
+    other: 'بتستنى من {who} {n} حاجة:',
+  },
+  'You’re not waiting on {who} for anything.': 'مش بتستنى أي حاجة من {who}.',
+  'From {who}, {n} things are asked of you:': {
+    zero: 'مفيش حاجة مطلوبة منك من {who}:',
+    one: 'من {who}، فيه حاجة واحدة مطلوبة منك:',
+    two: 'من {who}، فيه حاجتين مطلوبين منك:',
+    few: 'من {who}، فيه {n} حاجات مطلوبة منك:',
+    many: 'من {who}، فيه {n} حاجة مطلوبة منك:',
+    other: 'من {who}، فيه {n} حاجة مطلوبة منك:',
+  },
+  'Nothing is asked of you by {who}.': 'مفيش حاجة مطلوبة منك من {who}.',
+  'You said you’d do {n} things for {who}:': {
+    zero: 'ما وعدتش {who} بحاجة:',
+    one: 'قلت إنك هتعمل لـ{who} حاجة واحدة:',
+    two: 'قلت إنك هتعمل لـ{who} حاجتين:',
+    few: 'قلت إنك هتعمل لـ{who} {n} حاجات:',
+    many: 'قلت إنك هتعمل لـ{who} {n} حاجة:',
+    other: 'قلت إنك هتعمل لـ{who} {n} حاجة:',
+  },
+  'Nothing you said you’d do for {who} is open.':
+    'مفيش حاجة من اللي قلت إنك هتعملها لـ{who} لسه مفتوحة.',
+  'Coming up with {who}:': 'اللي جاي مع {who}:',
+  'Nothing is planned with {who} in the next two months.':
+    'مفيش حاجة متخططة مع {who} في الشهرين الجايين.',
+  'What you and {who} decided:': 'اللي اتقرر بينك وبين {who}:',
+  'Nothing you and {who} decided is kept yet.': 'لسه مفيش قرار متسجل بينك وبين {who}.',
+  'Payments from {who}:': 'الفلوس من {who}:',
+  'No card asks {who} to pay you.': 'مفيش كارت دفع مطلوب من {who} ليك.',
+  'Or ask about one of your people, by name or as you know them: what you’re waiting for from them, what they asked of you, what you agreed and whether they paid.':
+    'أو اسأل عن حد من معارفك، بالاسم أو بالصلة: اللي بتستناه، واللي مطلوب منك، واللي اتفقتوا عليه، والفلوس.',
 };

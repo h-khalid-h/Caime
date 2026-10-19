@@ -241,4 +241,43 @@ export const gulfVoice: Catalog = {
     many: '• {n} طلب للحين مفتوح',
     other: '• {n} طلب للحين مفتوح',
   },
+  // M16 G11: Cai about one person.
+  'I don’t know who “{name}” is among your people.': 'ما أعرف منو «{name}» من الناس اللي تعرفهم.',
+  'You’re waiting on {who} for {n} things:': {
+    zero: 'ما تنتظر شي من {who}:',
+    one: 'تنتظر من {who} شي واحد:',
+    two: 'تنتظر من {who} شيئين:',
+    few: 'تنتظر من {who} {n} أشياء:',
+    many: 'تنتظر من {who} {n} شي:',
+    other: 'تنتظر من {who} {n} شي:',
+  },
+  'You’re not waiting on {who} for anything.': 'ما تنتظر أي شي من {who}.',
+  'From {who}, {n} things are asked of you:': {
+    zero: 'ما فيه شي مطلوب منك من {who}:',
+    one: 'من {who}، فيه شي واحد مطلوب منك:',
+    two: 'من {who}، فيه شيئين مطلوبة منك:',
+    few: 'من {who}، فيه {n} أشياء مطلوبة منك:',
+    many: 'من {who}، فيه {n} شي مطلوب منك:',
+    other: 'من {who}، فيه {n} شي مطلوب منك:',
+  },
+  'Nothing is asked of you by {who}.': 'ما فيه شي مطلوب منك من {who}.',
+  'You said you’d do {n} things for {who}:': {
+    zero: 'ما وعدت {who} بشي:',
+    one: 'قلت إنك بتسوي لـ{who} شي واحد:',
+    two: 'قلت إنك بتسوي لـ{who} شيئين:',
+    few: 'قلت إنك بتسوي لـ{who} {n} أشياء:',
+    many: 'قلت إنك بتسوي لـ{who} {n} شي:',
+    other: 'قلت إنك بتسوي لـ{who} {n} شي:',
+  },
+  'Nothing you said you’d do for {who} is open.':
+    'ما فيه شي من اللي قلت إنك بتسويه لـ{who} للحين مفتوح.',
+  'Coming up with {who}:': 'اللي جاي مع {who}:',
+  'Nothing is planned with {who} in the next two months.':
+    'ما فيه شي مخطط مع {who} في الشهرين الجايين.',
+  'What you and {who} decided:': 'اللي تقرر بينك وبين {who}:',
+  'Nothing you and {who} decided is kept yet.': 'للحين ما فيه قرار محفوظ بينك وبين {who}.',
+  'Payments from {who}:': 'المدفوعات من {who}:',
+  'No card asks {who} to pay you.': 'ما فيه بطاقة دفع مطلوبة من {who} لك.',
+  'Or ask about one of your people, by name or as you know them: what you’re waiting for from them, what they asked of you, what you agreed and whether they paid.':
+    'أو اسأل عن أحد من معارفك، بالاسم أو بالصلة: وش تنتظر، ووش المطلوب منك، ووش اتفقتوا عليه، والمدفوعات.',
 };

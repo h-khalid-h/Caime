@@ -5,7 +5,9 @@
  * account, through `sendMessage` like anyone's message. Each understands what's written to it by
  * the rules first (core `chatIntent`: a greeting, "how can you help me", thanks, and the four
  * questions about one's own open things, which Cai and every friend answer from three queries,
- * no model, no cost) and answers in the language it was written in. Anything else goes to the
+ * no model, no cost; core `chatAbout`: the same about one person, what the two agreed and
+ * whether they paid, answered from the records with them, M16 G11) and answers in the language
+ * it was written in. Anything else goes to the
  * model only for an adult with AI assist on and an assist left today: Cai as Caime's assistant,
  * a friend in its own character, each reading that conversation and, as its only other context,
  * what's open for them that's its to know (never a private conversation's). Without the model a
@@ -13,18 +15,29 @@
  */
 
 import {
+  type AboutIntent,
   type ArabicVariety,
+  aboutRelationship,
   arabicVariety,
   type CharacterHandle,
   type ChatIntent,
+  chatAbout,
   chatIntent,
   firstName,
   formatAmount,
+  formatDayHeading,
   formatDue,
   formatWhenAt,
   greetsWithPeace,
   isCharacterHandle,
+  joinNames,
+  kitHeadline,
+  kitStateLabel,
+  LARGE_GROUP,
   msg,
+  type PaysShare,
+  paySides,
+  relationshipWords,
   SYSTEM_ACCOUNTS,
   type SystemAccount,
   safeLocale,
@@ -46,9 +59,11 @@ import { asReader, inLanguage, readerOf } from './i18n';
 import { registerJob } from './jobs';
 import { SYSTEM_REPLY_JOB } from './message-effects';
 import { readableBy } from './messages';
+import { type NamedPerson, peopleNamed, plainColumn, plainName } from './people-named';
 import { assertAiAllowance } from './plans';
 import { postAs } from './post-as';
 import { visibleTasksSql } from './task-visibility';
+import { escapeLike } from './text';
 import { transcriptText, wordsFor } from './transcript';
 import { cardsAhead, dueCards } from './upcoming';
 import { minorOf } from './users';
@@ -353,7 +368,12 @@ async function systemReply(ctx: AppContext, payload: Record<string, unknown>): P
     async () => {
       try {
         const me = await person(ctx, personId);
-        const said: Said = { kind: latest.kind, text, intent: text ? chatIntent(text) : null };
+        const said: Said = {
+          kind: latest.kind,
+          text,
+          intent: text ? chatIntent(text) : null,
+          about: text ? chatAbout(text) : null,
+        };
         if (isCharacterHandle(account.handle))
           await friendSays(ctx, account, account.handle, conversationId, me, said, voice);
         else await caiSays(ctx, account, conversationId, me, said, voice);
@@ -384,7 +404,11 @@ interface Said {
   kind: string;
   text: string;
   intent: ChatIntent | null;
+  /** A question about one person (G11), with the name or the relationship as typed. */
+  about: About | null;
 }
+
+type About = { intent: AboutIntent; name: string };
 
 const OWN_QUESTIONS: readonly ChatIntent[] = ['waiting', 'asked', 'mine', 'coming'];
 const isOwnQuestion = (intent: ChatIntent | null): intent is OpenPart =>
@@ -407,6 +431,7 @@ async function friendSays(
   const say = (line: string) => postAs(ctx, account.id, conversationId, line);
   // A sticker is answered with its own.
   if (said.kind === 'sticker') return sticker(ctx, account, conversationId, friend);
+  if (said.about) return say(await aboutAnswer(ctx, me, said.about));
   if (isOwnQuestion(said.intent)) return say(await ruleAnswer(ctx, me, said.intent));
   switch (said.intent) {
     case 'greeting':
@@ -461,6 +486,7 @@ async function caiSays(
   voice: Voice,
 ) {
   const say = (line: string) => postAs(ctx, account.id, conversationId, line);
+  if (said.about) return say(await aboutAnswer(ctx, me, said.about));
   if (isOwnQuestion(said.intent)) return say(await ruleAnswer(ctx, me, said.intent));
   switch (said.intent) {
     case 'greeting':
@@ -473,7 +499,7 @@ async function caiSays(
         ),
       );
     case 'help':
-      return say([tr(HELP), more(ctx, me)].filter(Boolean).join(' '));
+      return say([tr(HELP), tr(ABOUT_HELP), more(ctx, me)].filter(Boolean).join(' '));
     case 'thanks':
       return say(tr('Any time!'));
   }
@@ -537,6 +563,10 @@ async function modelSays(
 
 const HELP = msg(
   'I can always tell you what you’re waiting on, what’s asked of you, what you said you’d do and what’s coming up this week. Just ask, in your own words.',
+);
+/** What Cai says it knows about one person (G11), after `HELP` when asked how it can help. */
+const ABOUT_HELP = msg(
+  'Or ask about one of your people, by name or as you know them: what you’re waiting for from them, what they asked of you, what you agreed and whether they paid.',
 );
 
 /**
@@ -690,9 +720,13 @@ function dueDayOf(now: Date, zone: string): Date {
   return new Date(Date.UTC(p.year, p.month - 1, p.day));
 }
 
-/** What Cai says to a question the rules understood, from what's open. */
+/**
+ * What Cai says to a question the rules understood, from what's open. The answer is a message
+ * the server keeps and a model reads later (the conversation's transcript), so nothing an older
+ * row ties to a private conversation is in it (R18, M16 G7).
+ */
 async function ruleAnswer(ctx: AppContext, me: Person, intent: OpenPart): Promise<string> {
-  const open = await openFor(ctx, me);
+  const open = await openFor(ctx, me, { forModel: true });
   const list = (head: string, lines: string[], total: number) => {
     const rest = total - lines.length;
     return [
@@ -735,6 +769,293 @@ async function ruleAnswer(ctx: AppContext, me: Person, intent: OpenPart): Promis
         ? [tr('Coming up this week:'), ...open.coming].join('\n')
         : tr('Nothing is coming up this week.');
   }
+}
+
+/** How far ahead a question about one person looks for a meeting or an appointment with them. */
+const ABOUT_AHEAD_MS = 60 * 86_400_000;
+
+/** A conversation someone is in now with any of the people a question is about. */
+interface Shared {
+  id: string;
+  /** Their chat, or one of its topics, rather than a group. */
+  chat: boolean;
+  /** A group's or a topic's title, which a line names it by. */
+  title: string | null;
+  /** Which of the people asked about are in it. */
+  with: string[];
+}
+
+/**
+ * The conversations someone is in now with any of these people, in one query: chats and
+ * groups, never a private one (what Cai says is kept, and a model reads it later: R18), an
+ * organization's (R15) or a crowd's (past `LARGE_GROUP`, where a meeting or a decision isn't
+ * theirs together), nor one they haven't let in (a request still waiting on them).
+ */
+async function sharedWith(ctx: AppContext, me: string, ids: string[]): Promise<Shared[]> {
+  if (!ids.length) return [];
+  const rows = await ctx.db
+    .selectFrom('participants as a')
+    .innerJoin('participants as b', 'b.conversation_id', 'a.conversation_id')
+    .innerJoin('conversations as c', 'c.id', 'a.conversation_id')
+    .select(['c.id', 'c.kind', 'c.title', sql<string[]>`array_agg(distinct b.user_id)`.as('with')])
+    .where('a.user_id', '=', me)
+    .where('a.left_at', 'is', null)
+    .where((eb) =>
+      eb.or([eb('a.request_state', 'is', null), eb('a.request_state', '=', 'accepted')]),
+    )
+    .where('b.user_id', 'in', ids)
+    .where('b.left_at', 'is', null)
+    .where('c.kind', 'in', ['direct', 'group'])
+    .where('c.privacy_class', '=', 'standard')
+    .where(
+      sql<boolean>`(c.kind = 'direct' or (select count(*) from participants p
+        where p.conversation_id = c.id and p.left_at is null) <= ${LARGE_GROUP})`,
+    )
+    .groupBy(['c.id', 'c.kind', 'c.title'])
+    .orderBy('c.id')
+    .limit(200)
+    .execute();
+  return rows.map((r) => ({ id: r.id, chat: r.kind === 'direct', title: r.title, with: r.with }));
+}
+
+/**
+ * Whom a question means: the person's own people by that name (`peopleNamed`), else, when the
+ * words name a relationship ("my dentist", "مديري"), the people they keep that relationship
+ * with, by its role (a doctor is one whichever sphere they were labelled in) or its sphere, or
+ * by a label of their own written that way ("Boss"). At most five.
+ */
+async function peopleMeant(ctx: AppContext, me: string, words: string): Promise<NamedPerson[]> {
+  const named = await peopleNamed(ctx, me, words);
+  if (named.length) return named;
+  const relationship = aboutRelationship(words);
+  const label = plainName(relationshipWords(words));
+  if (!relationship && !label) return [];
+  const rows = await ctx.db
+    .selectFrom('relationships as r')
+    .innerJoin('users as u', 'u.id', 'r.subject_id')
+    .select(['u.id', 'u.display_name'])
+    .distinct()
+    .where('r.owner_id', '=', me)
+    .where('r.status', '=', 'active')
+    .where('u.kind', '=', 'human')
+    .where('u.deleted_at', 'is', null)
+    .where((eb) =>
+      eb.or([
+        ...(relationship?.role ? [eb('r.role', '=', relationship.role)] : []),
+        ...(relationship && !relationship.role ? [eb('r.sphere', '=', relationship.sphere)] : []),
+        ...(label ? [eb(plainColumn('r.role_label'), 'ilike', escapeLike(label))] : []),
+      ]),
+    )
+    .orderBy('u.display_name')
+    .limit(5)
+    .execute();
+  return rows.map((r) => ({ id: r.id, name: r.display_name }));
+}
+
+/**
+ * What Cai and the friends say to a question about one person (M16 G11), from the person's own
+ * records with them, by the rules, at no cost: what they wait on from them, what's asked of
+ * them, what they said they'd do for them, what's coming up, what the two decided and what was
+ * paid. Nobody of theirs by that name or relationship is said so; several are answered together,
+ * each line naming whose it is. Nothing from a private conversation (R18): the answer is a
+ * message the server keeps.
+ */
+async function aboutAnswer(ctx: AppContext, me: Person, about: About): Promise<string> {
+  const people = await peopleMeant(ctx, me.id, about.name);
+  if (!people.length)
+    return tr('I don’t know who “{name}” is among your people.', { name: about.name });
+  const ids = people.map((p) => p.id);
+  const names = new Map(people.map((p) => [p.id, p.name]));
+  const who = joinNames(people.map((p) => p.name));
+  /** Whose a line is, when the question meant several people. */
+  const whose = (...of: Array<string | null | undefined>) =>
+    people.length > 1
+      ? joinNames(of.flatMap((id) => (id && names.has(id) ? [names.get(id)!] : [])))
+      : null;
+  const now = ctx.now();
+  const locale = safeLocale(me.locale);
+  const zone = me.time_zone;
+  const line = (...parts: Array<string | null | undefined>) =>
+    `• ${parts.filter(Boolean).join(' · ')}`;
+  const day = (at: Date) => formatDayHeading(at.toISOString(), now, zone, locale);
+
+  if (about.intent === 'waiting' || about.intent === 'asked' || about.intent === 'mine') {
+    // What one said they'd do for someone is what they said in their chat with them.
+    const chats =
+      about.intent === 'mine' ? (await sharedWith(ctx, me.id, ids)).filter((c) => c.chat) : [];
+    if (about.intent === 'mine' && !chats.length)
+      return tr('Nothing you said you’d do for {who} is open.', { who });
+    const chatWith = new Map(chats.map((c) => [c.id, c.with]));
+    const rows = await ctx.db
+      .selectFrom('tasks as t')
+      .leftJoin('conversations as c', 'c.id', 't.conversation_id')
+      .where('t.status', 'in', ['open', 'accepted'])
+      .where(visibleTasksSql(me.id, 't'))
+      .where((eb) =>
+        eb.or([eb('c.privacy_class', 'is', null), eb('c.privacy_class', '<>', 'private')]),
+      )
+      .where((eb) =>
+        about.intent === 'waiting'
+          ? eb.and([eb('t.owner_id', '=', me.id), eb('t.assignee_id', 'in', ids)])
+          : about.intent === 'asked'
+            ? eb.and([eb('t.assignee_id', '=', me.id), eb('t.owner_id', 'in', ids)])
+            : eb.and([
+                eb('t.owner_id', '=', me.id),
+                eb('t.assignee_id', '=', me.id),
+                eb('t.conversation_id', 'in', [...chatWith.keys()]),
+              ]),
+      )
+      .select([
+        't.owner_id',
+        't.assignee_id',
+        't.conversation_id',
+        't.title',
+        't.due_at',
+        't.due_has_time',
+        sql<number>`(count(*) over ())::int`.as('total'),
+      ])
+      .orderBy(sql`coalesce(t.due_at, t.created_at)`)
+      .orderBy('t.id')
+      .limit(SHOWN)
+      .execute();
+    const total = rows[0]?.total ?? 0;
+    const lines = rows.map((r) =>
+      line(
+        about.intent === 'waiting'
+          ? whose(r.assignee_id)
+          : about.intent === 'asked'
+            ? whose(r.owner_id)
+            : whose(...(chatWith.get(r.conversation_id ?? '') ?? [])),
+        r.title,
+        r.due_at ? formatDue(r.due_at.toISOString(), now, zone, locale, r.due_has_time) : null,
+      ),
+    );
+    const rest =
+      total > rows.length
+        ? [trn(total - rows.length, 'And one more in Actions.', 'And {n} more in Actions.')]
+        : [];
+    const head =
+      about.intent === 'waiting'
+        ? total
+          ? trn(
+              total,
+              'You’re waiting on {who} for one thing:',
+              'You’re waiting on {who} for {n} things:',
+              { who },
+            )
+          : tr('You’re not waiting on {who} for anything.', { who })
+        : about.intent === 'asked'
+          ? total
+            ? trn(
+                total,
+                'From {who}, one thing is asked of you:',
+                'From {who}, {n} things are asked of you:',
+                { who },
+              )
+            : tr('Nothing is asked of you by {who}.', { who })
+          : total
+            ? trn(
+                total,
+                'You said you’d do one thing for {who}:',
+                'You said you’d do {n} things for {who}:',
+                { who },
+              )
+            : tr('Nothing you said you’d do for {who} is open.', { who });
+    return [head, ...lines, ...rest].join('\n');
+  }
+
+  const shared = await sharedWith(ctx, me.id, ids);
+  const byId = new Map(shared.map((c) => [c.id, c]));
+  const inShared = shared.map((c) => c.id);
+
+  if (about.intent === 'coming') {
+    const cards = await cardsAhead(ctx, me.id, {
+      from: now,
+      until: new Date(now.getTime() + ABOUT_AHEAD_MS),
+      limit: SHOWN,
+      conversationIds: inShared,
+    });
+    return cards.length
+      ? [
+          tr('Coming up with {who}:', { who }),
+          ...cards.map((c) =>
+            line(
+              whose(...(byId.get(c.conversationId)?.with ?? [])),
+              formatWhenAt(c.at.toISOString(), c.hasTime, now, zone, locale),
+              c.title,
+              c.agreed ? null : tr(kitStateLabel(c.kit === 'meeting' ? 'proposed' : 'requested')),
+            ),
+          ),
+        ].join('\n')
+      : tr('Nothing is planned with {who} in the next two months.', { who });
+  }
+
+  if (about.intent === 'agreed') {
+    const rows = inShared.length
+      ? await ctx.db
+          .selectFrom('decisions')
+          .select(['conversation_id', 'title', 'decided_at'])
+          .where('conversation_id', 'in', inShared)
+          .where('status', '=', 'active')
+          .orderBy('decided_at', 'desc')
+          .limit(SHOWN)
+          .execute()
+      : [];
+    return rows.length
+      ? [
+          tr('What you and {who} decided:', { who }),
+          ...rows.map((r) => {
+            const where = byId.get(r.conversation_id);
+            return line(whose(...(where?.with ?? [])), r.title, where?.title, day(r.decided_at));
+          }),
+        ].join('\n')
+      : tr('Nothing you and {who} decided is kept yet.', { who });
+  }
+
+  // Paid: the Pay cards between them in which one of those asked about pays the person.
+  const cards = inShared.length
+    ? await ctx.db
+        .selectFrom('messages as m')
+        .select(['m.conversation_id', 'm.sender_id', 'm.payload', 'm.created_at'])
+        .where('m.conversation_id', 'in', inShared)
+        .where('m.kind', '=', 'kit')
+        .where(readableBy(me.id, now, 'm'))
+        .where(sql`m.payload->>'kit'`, '=', 'payment_request')
+        .orderBy('m.created_at', 'desc')
+        .limit(40)
+        .execute()
+    : [];
+  const paying = cards
+    .flatMap((m) => {
+      const card = (m.payload ?? {}) as {
+        state?: string;
+        fields?: Record<string, unknown>;
+        share?: PaysShare | null;
+        history?: Array<{ state?: string; by?: string }>;
+      };
+      if (card.state === 'cancelled') return [];
+      const where = byId.get(m.conversation_id);
+      // In a chat the other side is the other person; in a group, whoever said they'd paid.
+      const other = where?.chat ? (m.sender_id === me.id ? (where.with[0] ?? null) : me.id) : null;
+      const { payerId, payeeId } = paySides(card, m.sender_id, other);
+      return payeeId === me.id && payerId && ids.includes(payerId)
+        ? [{ card, payerId, at: m.created_at }]
+        : [];
+    })
+    .slice(0, SHOWN);
+  return paying.length
+    ? [
+        tr('Payments from {who}:', { who }),
+        ...paying.map(({ card, payerId, at }) =>
+          line(
+            whose(payerId),
+            kitHeadline('payment_request', card.fields ?? {}, locale),
+            tr(kitStateLabel(card.state ?? 'requested')),
+            day(at),
+          ),
+        ),
+      ].join('\n')
+    : tr('No card asks {who} to pay you.', { who });
 }
 
 /**

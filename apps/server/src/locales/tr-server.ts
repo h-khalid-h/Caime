@@ -1569,4 +1569,32 @@ export const turkishServer: Catalog = {
   'for everyday use, once you turn it on': 'açtığınızda, günlük kullanım için',
   'more each day, and follow-ups found by our most capable model':
     'her gün daha fazlası ve en yetenekli modelimizin bulduğu takipler',
+  // M16 G11: Cai about one person.
+  'I don’t know who “{name}” is among your people.':
+    'Tanıdıklarınız arasında “{name}” kim, bilmiyorum.',
+  'You’re waiting on {who} for {n} things:': {
+    one: '{who} kişisinden beklediğiniz bir şey var:',
+    other: '{who} kişisinden beklediğiniz {n} şey var:',
+  },
+  'You’re not waiting on {who} for anything.': '{who} kişisinden beklediğiniz bir şey yok.',
+  'From {who}, {n} things are asked of you:': {
+    one: '{who} sizden bir şey istiyor:',
+    other: '{who} sizden {n} şey istiyor:',
+  },
+  'Nothing is asked of you by {who}.': '{who} sizden bir şey istemiyor.',
+  'You said you’d do {n} things for {who}:': {
+    one: '{who} için yapacağınızı söylediğiniz bir şey var:',
+    other: '{who} için yapacağınızı söylediğiniz {n} şey var:',
+  },
+  'Nothing you said you’d do for {who} is open.':
+    '{who} için yapacağınızı söylediğiniz açık bir şey yok.',
+  'Coming up with {who}:': '{who} ile sırada:',
+  'Nothing is planned with {who} in the next two months.':
+    'Önümüzdeki iki ayda {who} ile planlanmış bir şey yok.',
+  'What you and {who} decided:': '{who} ile verdiğiniz kararlar:',
+  'Nothing you and {who} decided is kept yet.': '{who} ile kayıtlı bir karar henüz yok.',
+  'Payments from {who}:': '{who} kişisinden ödemeler:',
+  'No card asks {who} to pay you.': '{who} kişisinden size ödeme isteyen bir kart yok.',
+  'Or ask about one of your people, by name or as you know them: what you’re waiting for from them, what they asked of you, what you agreed and whether they paid.':
+    'Ya da tanıdıklarınızdan birini adıyla ya da yakınlığınızla sorun: ne beklediğinizi, sizden ne istendiğini, neye karar verildiğini ve ödemeleri.',
 };

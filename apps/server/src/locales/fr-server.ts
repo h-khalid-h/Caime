@@ -1641,4 +1641,32 @@ export const frServer: Catalog = {
   'for everyday use, once you turn it on': 'pour l’usage de tous les jours, une fois activée',
   'more each day, and follow-ups found by our most capable model':
     'davantage chaque jour, et des suivis trouvés par notre modèle le plus performant',
+  // M16 G11: Cai about one person.
+  'I don’t know who “{name}” is among your people.':
+    'Je ne sais pas qui est « {name} » parmi vos contacts.',
+  'You’re waiting on {who} for {n} things:': {
+    one: 'Vous attendez une chose de {who} :',
+    other: 'Vous attendez {n} choses de {who} :',
+  },
+  'You’re not waiting on {who} for anything.': 'Vous n’attendez rien de {who}.',
+  'From {who}, {n} things are asked of you:': {
+    one: 'De la part de {who}, une chose vous est demandée :',
+    other: 'De la part de {who}, {n} choses vous sont demandées :',
+  },
+  'Nothing is asked of you by {who}.': 'Rien ne vous est demandé de la part de {who}.',
+  'You said you’d do {n} things for {who}:': {
+    one: 'Vous avez promis une chose à {who} :',
+    other: 'Vous avez promis {n} choses à {who} :',
+  },
+  'Nothing you said you’d do for {who} is open.':
+    'Rien de ce que vous avez promis à {who} n’est en suspens.',
+  'Coming up with {who}:': 'À venir avec {who} :',
+  'Nothing is planned with {who} in the next two months.':
+    'Rien de prévu avec {who} dans les deux prochains mois.',
+  'What you and {who} decided:': 'Ce que vous avez décidé avec {who} :',
+  'Nothing you and {who} decided is kept yet.': 'Aucune décision avec {who} n’est encore gardée.',
+  'Payments from {who}:': 'Paiements de {who} :',
+  'No card asks {who} to pay you.': 'Aucune carte ne demande à {who} de vous payer.',
+  'Or ask about one of your people, by name or as you know them: what you’re waiting for from them, what they asked of you, what you agreed and whether they paid.':
+    'Ou posez une question sur l’une de vos connaissances, par son nom ou par votre lien : ce que vous attendez, ce qui vous est demandé, ce qui a été convenu et les paiements.',
 };

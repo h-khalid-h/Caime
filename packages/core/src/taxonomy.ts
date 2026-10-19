@@ -475,6 +475,13 @@ function wordForm(word: string): string {
     .join(' ');
 }
 
+/** Turkish's "my" at a word's end: after "-ler"/"-lar", after a vowel, after a consonant. */
+const TURKISH_MY = [
+  /^(.+?(?:ler|lar))(?:ım|im|um|üm)$/u,
+  /^(.+?[aeıioöuü])m$/u,
+  /^(.+?[^aeıioöuü\s])(?:ım|im|um|üm)$/u,
+];
+
 /**
  * The word, and the word without "my" where a language says it in the word's ending: Arabic
  * "عملائي" (my customers), "عائلتي" (my family); Turkish "müşterilerim", "ailem".
@@ -486,8 +493,12 @@ function forms(word: string): string[] {
     if (w.endsWith('تي')) out.push(`${w.slice(0, -2)}ه`);
     if (w.endsWith('ي')) out.push(w.slice(0, -1));
   } else {
-    const turkish = /^(.+?(?:ler|lar))(?:ım|im|um|üm)$/u.exec(w) ?? /^(.+?[aeıioöuü])m$/u.exec(w);
-    if (turkish) out.push(turkish[1]!);
+    // "müşterilerim", "ailem", and after a consonant "avukatım", "patronum" (my lawyer, my boss):
+    // every way the ending can be read, since "patronum" also ends in a vowel and "m".
+    for (const ending of TURKISH_MY) {
+      const stem = ending.exec(w)?.[1];
+      if (stem) out.push(stem);
+    }
   }
   return out;
 }
@@ -515,26 +526,46 @@ const RELATIONSHIP_WORDS: Record<string, { sphere: Sphere; role?: string }> = {
   'iş arkadaşı': { sphere: 'work', role: 'colleague' },
   'iş arkadaşları': { sphere: 'work', role: 'colleague' },
   'iş arkadaşlarım': { sphere: 'work', role: 'colleague' },
+  // What people call someone they'd label otherwise, asking Cai about them (M16 G11).
+  boss: { sphere: 'work', role: 'manager' },
+  patron: { sphere: 'work', role: 'manager' },
+  mom: { sphere: 'family', role: 'mother' },
+  mum: { sphere: 'family', role: 'mother' },
+  dad: { sphere: 'family', role: 'father' },
+  maman: { sphere: 'family', role: 'mother' },
+  papa: { sphere: 'family', role: 'father' },
+  ماما: { sphere: 'family', role: 'mother' },
+  بابا: { sphere: 'family', role: 'father' },
+  اخويا: { sphere: 'family', role: 'brother' },
+  اخوي: { sphere: 'family', role: 'brother' },
+  اختي: { sphere: 'family', role: 'sister' },
+  دكتور: { sphere: 'service_provider', role: 'doctor' },
+  دكتوري: { sphere: 'service_provider', role: 'doctor' },
+  صاحب: { sphere: 'friend' },
+  صاحبي: { sphere: 'friend' },
 };
 
 export function relationshipFromWord(word: string): { sphere: Sphere; role?: string } | undefined {
   const asked = forms(word);
   if (!asked[0]) return undefined;
   for (const w of asked) if (RELATIONSHIP_WORDS[w]) return RELATIONSHIP_WORDS[w];
-  // In the reader's language, any form of the word (R81: "شريكة" finds partners too).
-  const named = (label: string, plural: string) =>
+  // In the reader's language, the label as it's said first, then any form of it (R81: "شريكة"
+  // finds partners too), so "frère" is a brother before it's a sibling's form for a man.
+  const named = (label: string, plural: string, anyForm: boolean) =>
     [label, plural].some((l) => {
       const english = l.toLowerCase();
-      const shown = trForms(l).map(wordForm);
+      const shown = (anyForm ? trForms(l) : [tr(l)]).map(wordForm);
       return asked.some((w) => w === english || shown.includes(w));
     });
-  for (const sphere of SPHERES) {
-    const def = SPHERE_DEFS[sphere];
-    if (named(def.label, def.plural)) return { sphere };
-  }
-  for (const sphere of SPHERES) {
-    for (const role of ROLES[sphere]) {
-      if (named(role.label, role.plural)) return { sphere, role: role.id };
+  for (const anyForm of [false, true]) {
+    for (const sphere of SPHERES) {
+      const def = SPHERE_DEFS[sphere];
+      if (named(def.label, def.plural, anyForm)) return { sphere };
+    }
+    for (const sphere of SPHERES) {
+      for (const role of ROLES[sphere]) {
+        if (named(role.label, role.plural, anyForm)) return { sphere, role: role.id };
+      }
     }
   }
   return undefined;

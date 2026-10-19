@@ -3172,6 +3172,50 @@ graph) and the number that will show it; one that sharpens none is hygiene and s
       relationship words. Verified: the five golden tests (`intelligence-golden`,
       `intelligence-heldout`, `amounts-golden`, `chat-intent-golden`, `search-golden`), core's 813
       tests, and the full gate.
+- [x] G11. Cai about one person, by the rules (2026-10-19, review §5: "Qualifiers are dropped
+      ('what am I waiting for *from Ana*' lists every wait). Nothing can answer 'what did Ana and
+      I agree, is it in my calendar, did she pay'"; §13 G's "read-only tools over the person's own
+      records"; advantage 1, the relationship is the object, and 8, the graph: "my landlord" is
+      someone because they were labelled so. The number: questions about one person answered
+      without a model, none before (the model, for an adult with AI assist on and an allowance
+      left, else "That one's beyond me"), every one of the golden set's 110 lines now, in four
+      languages). Core `chatAbout` reads six questions about one person (what you wait on from
+      them, what they asked of you, what you said you'd do for them, when you see them next, what
+      you agreed, whether they paid) in English, Arabic as Cairo, the Gulf and the Levant write
+      it, French and Turkish, the name as typed, a day beside it ("Ana yesterday") or a handle's
+      "@" left out; `aboutRelationship` reads what someone is called in a name's place ("my
+      dentist", "the client", "مديري", "أخويا", "mon patron", "annem", "avukatım") as a
+      relationship through taxonomy's `relationshipFromWord`, which now prefers a label's own
+      word to another's form ("frère" a brother before a sibling) and reads every Turkish "my"
+      ending, search's reading too. The server: `lib/people-named.ts` (`peopleNamed`: the person's
+      connections and those they're in a chat or a group with, never through an organization's
+      conversation (R15), by a word of the name or the nickname, a whole word before the start of
+      one, without accents and with Arabic's letter forms as one, in one query the database folds
+      as the reader does, `plainColumn`), else the people they keep that relationship with (its
+      role, else its sphere, or a label of their own); `aboutAnswer` in `lib/system-accounts.ts`
+      answers from the records with them alone: to-dos through `visibleTasksSql`, a promise as one
+      said it in their chat, meetings and appointments ahead in conversations with them
+      (`cardsAhead`), decisions there, Pay cards in which they pay the person (`paySides`), five
+      lines at most, each naming whose when the name meant several people, and "I don't know who
+      “Zed” is among your people." when it meant no one. Cai and every friend answer it, in the
+      Arabic it was asked in too (R72: each line in the Egyptian, Gulf and Levantine overlays),
+      and "how can you help" says so. Nothing from a private conversation; and, found in passing,
+      Cai's answers to the four questions about one's own things now leave out what an older row
+      ties to one too (G7 had covered the brief, the digest and a follow-up, not these, which a
+      model reads later in the chat's transcript). Measured before the rules met them: the
+      questions 21 of 22, 18 of 22, 19 of 21 and 17 of 21 (English, Arabic, French, Turkish); the
+      lines added once they met the server (a day where a name would be, "to" or "@" before one,
+      a day after one, a relationship in a name's place) left the whole set at 25 of 30, 25 of 28,
+      24 of 26 and 25 of 26; the relationship words 2 of 10, 5 of 9, 2 of 8 and 6 of 8 as search
+      had read them; all at 1.00 after, the floors set there. Left: "is it in my calendar" (a
+      connected calendar's busy times) and a team member's "did the customer pay", which the
+      organization's side and its mask answer differently; a question about someone that isn't
+      one of the six still goes to the model, which reads what's open, not the records with them.
+      Costs: two to four bounded queries a question (the name, the shared conversations, the
+      records), no model and no tokens; nothing on devices. Verified: `chat-intent-golden.test.ts`
+      (the questions and the relationships per language), `cai-about.test.ts` (each question, two
+      Anas, "Ayse", "my landlord", Zed, Cairo's Arabic without its hamza answered in Cairo's, a
+      friend, the private wait), `voices.test.ts`, the server catalogs, and the full gate.
 - [ ] H. Business depth: a Business seat includes Pro; a cap on organizations per person; room
       checks inside the transaction; quick replies, away and greeting messages; customer notes,
       tags and fields; tax invoices (counsel); booking and revenue analytics; intake forms as
@@ -4952,6 +4996,9 @@ graph) and the number that will show it; one that sharpens none is hygiene and s
   journeys, safety, reliability, performance, intelligence, mail and calendar, chat, integrations,
   business and code integrity; the matrix against WhatsApp, Signal, Slack, Calendly and Workspace;
   an age-assurance design; the integration framework mapped to the code; plan M16 (A–H).
+- 2026-10-19 — M16 G11: Cai about one person, by the rules: "what am I waiting for from Ana",
+  "what did my manager ask me", "امتى هشوف أحمد" answered from the records with that person alone
+  in four languages, no model; Cai's own-question answers keep an older private to-do out.
 - 2026-10-19 — M16 G10: the golden sets hardened: 465 golden lines with a per-language due date,
   156 held-out lines of Arabic by dialect, and golden sets for amounts, Cai's intents and Search;
   the Maghreb's promises read on lines nobody tuned for at 0.86 where they were 0.00.

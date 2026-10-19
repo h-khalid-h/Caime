@@ -1362,8 +1362,13 @@ A sphere is said as how you know someone, never "sphere".
   `system.reply` job and does nothing else (no notification, suggestion, topic or follow-up),
   and the inbox never lets that chat need you. What's written to one is read by core `chatIntent` (`chat-intent.ts`: a greeting, a
   greeting of peace answered in kind, "how can you help", thanks, and the four questions about
-  one's own open things, which Cai and every friend answer from three queries) and answered in the
-  language it was written in (`writtenIn`, else the account's, through `inLanguage`); the rest goes
+  one's own open things, which Cai and every friend answer from three queries; and core `chatAbout`,
+  those four about one person with what the two agreed and whether they paid, answered by
+  `aboutAnswer` from the records with them alone, the person being `peopleNamed`'s
+  (`lib/people-named.ts`, never through an organization's conversation) or, failing a name, the
+  relationship core `aboutRelationship` reads ("my dentist", "مديري"), never the model: a new
+  question about someone joins `ABOUT` with its golden lines in every language, M16 G11) and
+  answered in the language it was written in (`writtenIn`, else the account's, through `inLanguage`); the rest goes
   through `runAi('cai')`, or for a friend `runAi('friend')` in its own character (R71: `FRIENDS`
   in `lib/system-accounts.ts` holds its lines, tips, sticker, persona for the model and `reads`,
   the parts of what's open that are its to know), for adults with assist on, within the
