@@ -1504,4 +1504,6 @@ export const turkishServer: Catalog = {
   'an owner': 'bir kuruluş sahibi',
   'runs up to {count} on the {plan} plan at once; those on {next} don’t count.':
     'aynı anda {plan} planında en fazla {count} yönetir; {next} planındakiler sayılmaz.',
+  'We’re open again {when}.': '{when} yeniden açığız.',
+  'We’re open again on {date}.': '{date} tarihinde yeniden açığız.',
 };

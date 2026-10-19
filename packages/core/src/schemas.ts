@@ -38,6 +38,7 @@ import { COLLECTIONS_MAX, SLUG_MAX, slugError } from './catalog';
 import { CONTACTS_MATCH_MAX } from './contacts';
 import { isPublicKey, isSealed, isSignature, type PublicJwk, type SealedMessage } from './e2ee';
 import { isEmoji } from './emoji';
+import { foldForFind } from './fold';
 import { isGenericHandle } from './handle-engine';
 import { msg } from './i18n';
 import { IMPORT_MAX_MESSAGES, IMPORT_MAX_TEXT } from './imports';
@@ -56,6 +57,12 @@ import { PAYMENT_KINDS, PAYMENT_METHODS_MAX, paymentUrlError } from './payments'
 import { ORG_PLACE_AUDIENCES, PLACE_KINDS, PLACES_MAX } from './places';
 import { AI_TONES, NOTIFY_MODES, PRIORITIES, PRIVACY_PRESETS } from './policy';
 import { GROUP_ADDS, PRIVACY_FIELDS } from './privacy';
+import {
+  AUTO_REPLY_CHARS,
+  QUICK_REPLIES_MAX,
+  QUICK_REPLY_CHARS,
+  SHORTCUT_PATTERN,
+} from './quick-replies';
 import {
   HANDLE_PATTERN,
   HANDLE_REPEAT_RULE,
@@ -1955,6 +1962,9 @@ export const CreateOrgBody = z
   })
   .strict();
 
+/** An automatic reply's words (M16 H2): what an organization says without anyone typing it. */
+const OrgReplyText = z.string().trim().max(AUTO_REPLY_CHARS);
+
 export const UpdateOrgBody = z
   .object({
     name: OrgName.optional(),
@@ -1975,9 +1985,40 @@ export const UpdateOrgBody = z
      * member, without an invite.
      */
     joinByDomain: z.boolean().optional(),
+    /** What its automatic replies say (M16 H2); empty or null turns one off. */
+    greeting: OrgReplyText.nullable().optional(),
+    away: OrgReplyText.nullable().optional(),
   })
   .strict()
   .refine((b) => Object.keys(b).length > 0, msg('Nothing to change.'));
+
+/**
+ * An organization's quick replies (M16 H2), saved as the whole list in the team's order: each a
+ * shortcut of its own (letters of any script, digits, - or _) and the words it puts in a reply.
+ */
+export const QuickRepliesBody = z
+  .object({
+    replies: z
+      .array(
+        z
+          .object({
+            id: z.string().uuid().optional(),
+            shortcut: z
+              .string()
+              .trim()
+              .regex(SHORTCUT_PATTERN, msg('A shortcut is one word: letters, digits, - or _.')),
+            body: z.string().trim().min(1).max(QUICK_REPLY_CHARS),
+          })
+          .strict(),
+      )
+      .max(QUICK_REPLIES_MAX),
+  })
+  .strict()
+  // Found without case or accents, so two that fold the same are one shortcut.
+  .refine(
+    (b) => new Set(b.replies.map((r) => foldForFind(r.shortcut))).size === b.replies.length,
+    msg('Each quick reply needs a shortcut of its own.'),
+  );
 
 export const OrgMembersBody = z
   .object({

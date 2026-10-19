@@ -149,6 +149,7 @@ import type {
   PolicyCreatedResponse,
   PrivacyResponse,
   PushKeyResponse,
+  QuickRepliesResponse,
   ReceiptResponse,
   RecoveryCodesResponse,
   RelationshipHistoryView,
@@ -850,6 +851,12 @@ export const endpoints = {
   setOrgAgent: (orgId: string, body: { name: string; knowledge: string; paused: boolean }) =>
     api.put<OrgAgentSetResponse>(`/orgs/${orgId}/agent`, body),
   removeOrgAgent: (orgId: string) => api.del<OkResponse>(`/orgs/${orgId}/agent`),
+  // Its quick replies (M16 H2): read by its team, saved whole by its owner and admins
+  quickReplies: (orgId: string) => api.get<QuickRepliesResponse>(`/orgs/${orgId}/quick-replies`),
+  saveQuickReplies: (
+    orgId: string,
+    replies: Array<{ id?: string; shortcut: string; body: string }>,
+  ) => api.put<QuickRepliesResponse>(`/orgs/${orgId}/quick-replies`, { replies }),
   tryOrgAgent: (orgId: string, body: { name: string; knowledge: string; question: string }) =>
     api.post<AgentTryView>(`/orgs/${orgId}/agent/try`, body),
   orgApps: (orgId: string) => api.get<OrgAppsResponse>(`/orgs/${orgId}/apps`),

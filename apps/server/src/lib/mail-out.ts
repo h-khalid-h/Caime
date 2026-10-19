@@ -152,10 +152,14 @@ async function send(ctx: AppContext, payload: Record<string, unknown>): Promise<
       .select('message_id')
       .where((eb) => eb.or([eb('to_address', '=', to.email), eb('from_address', '=', to.email)]))
       .executeTakeFirst());
+  // An organization's greeting or away message (M16 H2): an automatic reply, said so in the mail.
+  const autoReplied = Boolean((m.payload as { autoReply?: unknown } | null)?.autoReply);
   // Whether its sender is told when it's opened (R75): a person's own choice, on unless they
-  // turned it off; an organization's agent and apps, as the organization, always.
+  // turned it off; an organization's agent and apps, as the organization, always; an automatic
+  // reply never, since nobody wrote it to know.
   const trackOpens =
-    speaksForOrg || (sender.preferences as { mailOpens?: boolean }).mailOpens !== false;
+    !autoReplied &&
+    (speaksForOrg || (sender.preferences as { mailOpens?: boolean }).mailOpens !== false);
   const rfcId = uuidv4();
   const footer = [
     // The first mail Caime ever sends an address that never wrote to it (R93) says who wrote
@@ -220,6 +224,7 @@ async function send(ctx: AppContext, payload: Record<string, unknown>): Promise<
       references,
       attachments,
       trackOpens,
+      autoReplied,
     });
     await ctx.db
       .insertInto('mail_messages')

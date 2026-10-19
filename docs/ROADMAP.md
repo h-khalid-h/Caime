@@ -2834,6 +2834,27 @@ graph) and the number that will show it; one that sharpens none is hygiene and s
       apps at once, two uploads at once), `business-start.test.ts` (the day's last start to one of
       two asked at once), `billing.test.ts`, core `plans.test.ts` (`planWithSeats`), the catalogs in
       four languages and the server's, and the full gate.
+- [x] H2. An organization's own replies (2026-10-19, review §9, PRODUCT-REVIEW R101; advantage 2,
+      the door). Quick replies: the owner and admins keep the team's on the setup screen (Replies,
+      after the AI agent), a shortcut of one word in any script and the words it puts in, saved
+      whole (`PUT /orgs/:id/quick-replies`, one a shortcut however it's cased); the team types "/"
+      in a customer's conversation and picks one by its shortcut's start (arrows, Enter or Tab,
+      Escape), asked for at the first "/" and refreshed when they change (`business.updated` with
+      `quickReplies`). A greeting goes once when a customer writes first or after a quiet
+      fortnight, and an away message once each closed spell while the bookable hours say it's
+      closed, ending with when it opens again in the customer's language and on their clock;
+      neither while the AI agent answers, no away message while someone on the team wrote there
+      within the hour, both from the organization's automatic-replies account, marked automated,
+      never moving the thread or telling the team, read again when they're sent (turned off since,
+      or opened since, nothing). By mail they say they're automatic and are never tracked. They're
+      in the organization's export and go when a closed one is cleared. Verified:
+      `org-replies.test.ts` (who keeps and reads them, folded duplicates, ids kept and foreign ids
+      new, the team told; greeting then away with the opening line, once a spell; open hours; the
+      team answering; a quiet fortnight; Arabic; turned off before sending; mail's
+      `Auto-Submitted` without tracking; the agent; export and clearing), core `opening.test.ts`,
+      `e2e/org-replies.spec.ts` (the owner writes all three on the setup screen, the customer reads
+      the greeting and "We're open again tomorrow at 9:00", the team puts in /hours), the catalogs
+      in four languages and the server's, and the full gate.
 - [ ] ⛔ H, the owner's: a smaller paid tier; WhatsApp Business in the inbox and reminders by
       WhatsApp or SMS (Meta's approval); Stripe Connect live with local currencies.
 - [ ] R98, after C: places as a context for spaces (PRODUCT-REVIEW R98): `spaces.place` from
@@ -4430,6 +4451,8 @@ graph) and the number that will show it; one that sharpens none is hygiene and s
   journeys, safety, reliability, performance, intelligence, mail and calendar, chat, integrations,
   business and code integrity; the matrix against WhatsApp, Signal, Slack, Calendly and Workspace;
   an age-assurance design; the integration framework mapped to the code; plan M16 (A–H).
+- 2026-10-19 — M16 H2: an organization's own replies: quick replies by "/" for the team, a
+  greeting, and an away message that says when it opens again, in the customer's language.
 - 2026-10-18 — M16 H1: plans that hold up: a Business seat includes Pro for its person, an owner
   runs three free organizations at once, and a plan's room is counted inside the transaction that
   takes it (two at once never both pass).

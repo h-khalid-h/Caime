@@ -259,10 +259,19 @@ export async function buildOrgExport(
       'collections',
       'ordering',
       'payments',
+      'greeting',
+      'away_message',
     ])
     .where('id', '=', orgId)
     .executeTakeFirstOrThrow();
   const closedAt = org.archived_at;
+  const quick = await db
+    .selectFrom('org_quick_replies')
+    .select(['shortcut', 'body'])
+    .where('org_id', '=', orgId)
+    .orderBy('position')
+    .orderBy('created_at')
+    .execute();
   const [team, threads, checkout, listings, agent, apps, cards, updates, invites] =
     await Promise.all([
       // Its team now; closed, as it stood when it closed (every seat ended at that moment).
@@ -486,6 +495,7 @@ export async function buildOrgExport(
     },
     // Its places (R92), with who each was shown to.
     places: await placesOwnedBy(ctx, { orgId }),
+    replies: { greeting: org.greeting, away: org.away_message, quick },
     checkout: checkout
       ? {
           provider: checkout.provider,
@@ -577,6 +587,7 @@ export async function clearClosedOrg(ctx: AppContext, orgId: string): Promise<bo
     await trx.deleteFrom('org_invites').where('org_id', '=', orgId).execute();
     await trx.deleteFrom('org_agents').where('org_id', '=', orgId).execute();
     await trx.deleteFrom('places').where('org_id', '=', orgId).execute();
+    await trx.deleteFrom('org_quick_replies').where('org_id', '=', orgId).execute();
     // Its apps' tokens, deliveries and kinds of card go with them; their bots' messages stay in
     // the customers' copies, so the bots themselves stay, as senders.
     await trx.deleteFrom('org_apps').where('org_id', '=', orgId).execute();
@@ -618,6 +629,8 @@ export async function clearClosedOrg(ctx: AppContext, orgId: string): Promise<bo
         collections: JSON.stringify([]),
         ordering: null,
         payments: null,
+        greeting: null,
+        away_message: null,
         cleared_at: now,
         updated_at: now,
       })

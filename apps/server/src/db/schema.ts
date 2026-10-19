@@ -1086,6 +1086,23 @@ export interface OrganizationsTable {
   /** Suspended by the operator (M16 B3): since when, and why, said to its team. */
   suspended_at: Generated<Date | null>;
   suspended_reason: Generated<string | null>;
+  /** What its automatic replies say (M16 H2): a customer's first message, and while it's closed. */
+  greeting: Generated<string | null>;
+  away_message: Generated<string | null>;
+  /** The account its automatic replies come from: a bot on its team, made when first needed. */
+  replies_bot_id: Generated<string | null>;
+  created_at: Generated<Date>;
+  updated_at: Generated<Date>;
+}
+
+/** A reply an organization's team keeps for what customers ask often (M16 H2). */
+export interface OrgQuickRepliesTable {
+  id: string;
+  org_id: string;
+  shortcut: string;
+  body: string;
+  position: Defaulted<number>;
+  created_by: string | null;
   created_at: Generated<Date>;
   updated_at: Generated<Date>;
 }
@@ -1519,6 +1536,7 @@ export interface Database {
   spaces: SpacesTable;
   space_members: SpaceMembersTable;
   organizations: OrganizationsTable;
+  org_quick_replies: OrgQuickRepliesTable;
   org_checkout: OrgCheckoutTable;
   item_stock: ItemStockTable;
   order_stock: OrderStockTable;
@@ -1682,6 +1700,9 @@ export const ORG_COLUMNS = [
   'domain_join',
   'suspended_at',
   'suspended_reason',
+  'greeting',
+  'away_message',
+  'replies_bot_id',
   'created_at',
   'updated_at',
 ] as const satisfies ReadonlyArray<

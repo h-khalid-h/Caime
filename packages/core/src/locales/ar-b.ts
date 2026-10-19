@@ -2934,4 +2934,67 @@ export const arB: Catalog = {
   'Choose how you know them before a role or an organization.':
     'اختر أولًا كيف تعرفهم، ثم الدور أو المؤسسة.',
   'Included with {name}’s {plan} plan.': 'ضمن خطة {plan} لدى {name}.',
+  'Customers are greeted when they first write': 'يُرحَّب بالعملاء حين يكتبون أول مرة',
+  'Customers hear your away message while you’re closed':
+    'تصل رسالة الغياب إلى العملاء خارج ساعات العمل',
+  'The greeting is off': 'رسالة الترحيب متوقفة',
+  'The away message is off': 'رسالة الغياب متوقفة',
+  'A shortcut is one word: letters, digits, - or _.':
+    'الاختصار كلمة واحدة: حروف أو أرقام أو - أو _.',
+  'Each quick reply needs a shortcut of its own.': 'لكل رد سريع اختصار خاص به.',
+  '{n} quick replies: your team types / to use them': {
+    zero: 'لا ردود سريعة',
+    one: 'رد سريع واحد: يكتب فريقك / لاستخدامه',
+    two: 'ردّان سريعان: يكتب فريقك / لاستخدامهما',
+    few: '{n} ردود سريعة: يكتب فريقك / لاستخدامها',
+    many: '{n} ردًّا سريعًا: يكتب فريقك / لاستخدامها',
+    other: '{n} رد سريع: يكتب فريقك / لاستخدامها',
+  },
+  'No quick replies now': 'لا ردود سريعة الآن',
+  'Your AI agent answers first and introduces itself, so the greeting and the away message wait while it does.':
+    'وكيل الذكاء الاصطناعي يجيب أولًا ويعرّف بنفسه، فتنتظر رسالتا الترحيب والغياب ما دام يجيب.',
+  Greeting: 'رسالة الترحيب',
+  'Away message': 'رسالة الغياب',
+  'Set your bookable hours first: it’s sent while they say you’re closed':
+    'حدّد ساعات الحجز أولًا: تُرسَل خارجها',
+  'Quick replies': 'ردود سريعة',
+  '{n} kept: type / in a customer’s conversation': {
+    zero: 'لا شيء محفوظ',
+    one: 'رد واحد محفوظ: اكتب / في محادثة عميل',
+    two: 'ردّان محفوظان: اكتب / في محادثة عميل',
+    few: '{n} ردود محفوظة: اكتب / في محادثة عميل',
+    many: '{n} ردًّا محفوظًا: اكتب / في محادثة عميل',
+    other: '{n} رد محفوظ: اكتب / في محادثة عميل',
+  },
+  'Answers your team puts in with / and a shortcut': 'إجابات يدرجها فريقك بكتابة / واختصار',
+  'Sent once while your hours say you’re closed, unless someone on the team is answering there':
+    'تُرسَل مرة خارج ساعات العمل، إلا إذا كان أحد من الفريق يجيب هناك',
+  'Sent the first time someone writes, and when they write again after two quiet weeks':
+    'تُرسَل أول مرة يكتب فيها أحد، وحين يكتب مجددًا بعد أسبوعين من الهدوء',
+  'Turn it off': 'أوقفه',
+  'What it says': 'نص الرسالة',
+  'Thanks for writing. We’re closed now and answer as soon as we’re back.':
+    'شكرًا على رسالتك. نحن خارج ساعات العمل الآن ونرد فور عودتنا.',
+  'Welcome! Tell us what you need, and someone from the team answers here.':
+    'أهلًا وسهلًا! أخبرنا بما تحتاج إليه، وسيرد أحد من الفريق هنا.',
+  'Caime adds when you open again, on each customer’s clock and in their language.':
+    'يضيف Caime موعد العودة، بتوقيت كل عميل وبلغته.',
+  'It waits for your bookable hours: set them under Bookings, and it goes out while they say you’re closed.':
+    'تنتظر ساعات الحجز: حدّدها في الحجوزات، فتُرسَل خارجها.',
+  'It comes from {name}, marked as automated, and never counts as an answer: the conversation still waits for your team.':
+    'تصل باسم {name} موسومة بأنها تلقائية، ولا تُحتسب ردًّا: تبقى المحادثة بانتظار فريقك.',
+  'Your team types / and a shortcut in a customer’s conversation to put one in':
+    'يكتب فريقك / واختصارًا في محادثة عميل لإدراج رد',
+  'Remove /{shortcut}': 'إزالة /{shortcut}',
+  'None yet. Add what customers ask most: your hours, prices, how to find you.':
+    'لا شيء بعد. أضف ما يسأل عنه العملاء أكثر: ساعات العمل والأسعار وطريقة الوصول.',
+  Shortcut: 'الاختصار',
+  'The reply': 'الرد',
+  'We’re open Sunday to Thursday, 9 to 6.': 'نعمل من الأحد إلى الخميس، من 9 إلى 6.',
+  'Add it': 'أضفه',
+  '/{shortcut}, {position} of {count}. Enter puts it in, Escape closes the list.':
+    '/{shortcut}، {position} من {count}. Enter للإدراج، وEscape لإغلاق القائمة.',
+  'Put in /{shortcut}': 'إدراج /{shortcut}',
+  'No quick replies yet: the organization’s owner or admins add them in its setup.':
+    'لا ردود سريعة بعد: يضيفها مالك المؤسسة أو مشرفوها من الإعداد.',
 };

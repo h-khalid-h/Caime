@@ -1361,6 +1361,8 @@ export interface OrgView extends OrgSummaryView {
   payable: boolean;
   /** How it's paid (R62), as set: for its owner and admins only, else null. */
   payments: PaymentSettings | null;
+  /** What its automatic replies say (M16 H2): for its owner and admins only, else null. */
+  replies: OrgRepliesView | null;
   /** How long it keeps its customers' conversations (R54), in days; null keeps them. */
   retentionDays: number | null;
   /** Its address at Caime's mail domain (R75): for its team where mail is on, else null. */
@@ -1372,6 +1374,27 @@ export interface OrgView extends OrgSummaryView {
   joinableAs: string | null;
   /** Their sign-in address at that domain, not confirmed yet: confirming it lets them join. */
   joinOnceConfirmed: string | null;
+}
+
+/**
+ * What an organization's automatic replies say (M16 H2), each null while it's off: a greeting the
+ * first time a customer writes (or after a quiet fortnight), and an away message while its
+ * bookable hours say it's closed.
+ */
+export interface OrgRepliesView {
+  greeting: string | null;
+  away: string | null;
+}
+
+/** A reply an organization's team keeps for what customers ask often (M16 H2). */
+export interface QuickReplyView {
+  id: string;
+  shortcut: string;
+  body: string;
+}
+
+export interface QuickRepliesResponse {
+  replies: QuickReplyView[];
 }
 
 /**
@@ -1678,6 +1701,12 @@ export interface OrgExportView {
   };
   /** Its places (R92), with who each is shown to. */
   places: PlaceView[];
+  /** What it says by itself (M16 H2): its greeting, its away message and its team's quick replies. */
+  replies: {
+    greeting: string | null;
+    away: string | null;
+    quick: Array<{ shortcut: string; body: string }>;
+  };
   /** Its own checkout account (R65), if it connected one: the provider's id, never a key. */
   checkout: {
     provider: string;

@@ -2043,3 +2043,21 @@ with its reason, so it isn't proposed again without new facts.
   that lets two in at the limit is a promise broken by timing. *Declined:* counting paid
   organizations against the cap, a cap that removes or stops anything already running, and a
   price per seat.
+- **R101 (2026-10-19) An organization's own replies.** The review of 2026-10-17 (§9, M16 H) found
+  the Business inbox without what WhatsApp Business gives a clinic for nothing: quick replies, a
+  greeting and an away message. *Decided:* the team keeps quick replies (a shortcut of one word in
+  any script, the words it puts in), saved whole by the owner and admins on the setup screen and
+  put in from the composer by "/" and the shortcut's start, only in a customer's conversation and
+  only for the team; a greeting goes once when a customer writes first or after a quiet fortnight,
+  and an away message once each closed spell while the organization's bookable hours say it's
+  closed, ending with when it opens again, written by Caime in the language the customer wrote in
+  and on their clock (the organization's for someone reached by mail), so the hours are kept in
+  one place. Both come from the organization's own automatic-replies account (a bot named as it,
+  never on its team), marked automated, never moving a thread or counting as an answer, never
+  telling the team; neither while its AI agent answers (which introduces itself), and no away
+  message while someone on the team wrote there within the hour. By mail they say they're
+  automatic (`Auto-Submitted`) and are never tracked. *Why:* a clinic switches when the first
+  minute of its inbox works as well as the app it leaves (advantage 2, the door), and an away
+  message that knows the hours says the one thing a customer wants to know, which a static text
+  can't keep true. *Declined:* an away message on a schedule of its own (the hours are the one
+  schedule), quick replies with variables, and auto replies that could be mistaken for a person.

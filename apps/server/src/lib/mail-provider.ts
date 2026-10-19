@@ -87,6 +87,8 @@ export interface OutboundMail {
   attachments: MailAttachment[];
   /** Ask the provider to say when it's opened (its pixel, on an HTML copy of the text). */
   trackOpens: boolean;
+  /** An organization's automatic reply (M16 H2): marked so (RFC 3834), so no autoresponder answers it. */
+  autoReplied?: boolean;
 }
 
 export interface DeliveryEvent {
@@ -301,6 +303,7 @@ function postmark(config: Config): MailProvider {
             ...(mail.references.length
               ? [{ Name: 'References', Value: mail.references.join(' ') }]
               : []),
+            ...(mail.autoReplied ? [{ Name: 'Auto-Submitted', Value: 'auto-replied' }] : []),
           ],
           Attachments: mail.attachments.map((a) => ({
             Name: a.name,

@@ -4,6 +4,7 @@ import type {
   ConversationView,
   CustomKitOfferView,
   MessageView,
+  QuickReplyView,
 } from '@caime/core/api';
 import { listTitle, messagePreview } from '@caime/core/format';
 import { msg, tr, trn } from '@caime/core/i18n';
@@ -11,6 +12,7 @@ import { isLargeGroup } from '@caime/core/large-group';
 import { firstLinkIn } from '@caime/core/link-text';
 import { SUBJECT_MAX, subjectFromText } from '@caime/core/mail';
 import { mentionAt, mentionCandidates, mentionedIn, mentionText } from '@caime/core/mentions';
+import { matchingReplies, quickReplyQuery } from '@caime/core/quick-replies';
 import { isSystemKind } from '@caime/core/system-ids';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import * as DocumentPicker from 'expo-document-picker';
@@ -127,6 +129,9 @@ const MAX_LINES = { phone: 5, desktop: 8 };
 const SIDE = 40;
 /** A link's card is asked for once the typing has stayed on it this long (M16 E4c). */
 const LINK_SETTLE_MS = 600;
+/** The quick replies offered at once, and how long a team's list is kept before it's asked again. */
+const QUICK_SHOWN = 6;
+const QUICK_STALE_MS = 5 * 60_000;
 /**
  * The cards anyone reaches for, offered as plain rows beside a photo and a file, each by its
  * plain name (M16 E5); every other card stays under Cards.
@@ -313,15 +318,47 @@ export const Composer = forwardRef<ComposerHandle, ComposerProps>(function Compo
   const typing = mentionable && !editing ? mentionAt(value, caret) : null;
   const options = typing && typing.start !== settled ? mentionCandidates(typing.query, people) : [];
   const chosen = options[Math.min(active, options.length - 1)];
+  // Quick replies (M16 H2): the team, in a customer's conversation, types "/" and the start of a
+  // shortcut, and the organization's replies are offered; asked for at the first "/", kept a while.
+  const teamOrg = conversation.business?.thread ? conversation.business.org.id : null;
+  const quickQuery = teamOrg && !editing ? quickReplyQuery(value) : null;
+  const quick = useQuery({
+    queryKey: qk.quickReplies(teamOrg ?? ''),
+    queryFn: () => endpoints.quickReplies(teamOrg ?? ''),
+    enabled: quickQuery !== null,
+    staleTime: QUICK_STALE_MS,
+  }).data?.replies;
+  // The words Escape put the list away at: nothing more is offered for them.
+  const [quickSettled, setQuickSettled] = useState<string | null>(null);
+  const [quickActive, setQuickActive] = useState(0);
+  const quickOptions =
+    quickQuery !== null && value !== quickSettled && quick
+      ? matchingReplies(quick, quickQuery).slice(0, QUICK_SHOWN)
+      : [];
+  const quickChosen = quickOptions[Math.min(quickActive, quickOptions.length - 1)];
+  const pickQuick = (r: QuickReplyView) => {
+    onChange(r.body);
+    setQuickActive(0);
+    setCaret(r.body.length);
+    setPlaceCaret({ start: r.body.length, end: r.body.length });
+    input.current?.focus();
+  };
   // Focus stays in the text, so the picker is told to a screen reader as it changes: who Enter
-  // would mention. A live region does it on the web and Android; iOS is told outright.
+  // would mention, or which reply it would put in. A live region does it on the web and Android;
+  // iOS is told outright.
   const offered = chosen
     ? tr('{displayName}, {position} of {count}. Enter mentions them, Escape closes the list.', {
         displayName: chosen.displayName,
         position: options.indexOf(chosen) + 1,
         count: options.length,
       })
-    : '';
+    : quickChosen
+      ? tr('/{shortcut}, {position} of {count}. Enter puts it in, Escape closes the list.', {
+          shortcut: quickChosen.shortcut,
+          position: quickOptions.indexOf(quickChosen) + 1,
+          count: quickOptions.length,
+        })
+      : '';
   useEffect(() => {
     if (offered && Platform.OS === 'ios') AccessibilityInfo.announceForAccessibility(offered);
   }, [offered]);
@@ -773,6 +810,51 @@ export const Composer = forwardRef<ComposerHandle, ComposerProps>(function Compo
           })}
         </View>
       ) : null}
+      {quickOptions.length ? (
+        <View
+          accessibilityRole="menu"
+          accessibilityLabel={tr('Quick replies')}
+          testID="quick-reply-picker"
+          style={{ paddingHorizontal: 8, paddingTop: 6, gap: 2 }}
+        >
+          {quickOptions.map((r) => {
+            const on = r.id === quickChosen?.id;
+            return (
+              <Pressable
+                key={r.id}
+                accessibilityRole="menuitem"
+                accessibilityLabel={tr('Put in /{shortcut}', { shortcut: r.shortcut })}
+                accessibilityState={{ selected: on }}
+                onPress={() => pickQuick(r)}
+                testID="quick-reply-option"
+                style={{
+                  gap: 2,
+                  paddingHorizontal: 8,
+                  paddingVertical: 6,
+                  borderRadius: 10,
+                  backgroundColor: on ? t.c.accentSoft : 'transparent',
+                }}
+              >
+                <Text variant="bodyStrong" numberOfLines={1}>
+                  {`/${r.shortcut}`}
+                </Text>
+                <Text variant="caption" color="textSecondary" numberOfLines={1}>
+                  {r.body}
+                </Text>
+              </Pressable>
+            );
+          })}
+        </View>
+      ) : quickQuery === '' && quick?.length === 0 ? (
+        <Text
+          variant="caption"
+          color="textTertiary"
+          style={{ paddingHorizontal: 16, paddingTop: 6 }}
+          testID="quick-reply-none"
+        >
+          {tr('No quick replies yet: the organization’s owner or admins add them in its setup.')}
+        </Text>
+      ) : null}
       {asksSubject && !editing && !replyTo && !recording ? (
         <TextField
           testID="composer-subject"
@@ -882,6 +964,26 @@ export const Composer = forwardRef<ComposerHandle, ComposerProps>(function Compo
                   isComposing?: boolean;
                 };
                 const plain = !ne.shiftKey && !ne.altKey && !ne.ctrlKey && !ne.metaKey;
+                // Choosing a quick reply, as a mention is chosen: ↑ ↓, Enter or Tab, Esc.
+                if (quickOptions.length && !ne.isComposing) {
+                  const at = quickOptions.findIndex((r) => r.id === quickChosen?.id);
+                  if (ne.key === 'ArrowDown' || ne.key === 'ArrowUp') {
+                    e.preventDefault();
+                    const step = ne.key === 'ArrowDown' ? 1 : -1;
+                    setQuickActive((at + step + quickOptions.length) % quickOptions.length);
+                    return;
+                  }
+                  if ((ne.key === 'Enter' || ne.key === 'Tab') && plain && quickChosen) {
+                    e.preventDefault();
+                    pickQuick(quickChosen);
+                    return;
+                  }
+                  if (ne.key === 'Escape') {
+                    e.preventDefault();
+                    setQuickSettled(value);
+                    return;
+                  }
+                }
                 // Choosing someone to mention: ↑ ↓ move, Enter or Tab picks, Esc puts it away.
                 if (options.length && typing && !ne.isComposing) {
                   const at = options.findIndex((p) => p.userId === chosen?.userId);

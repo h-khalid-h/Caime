@@ -1559,4 +1559,6 @@ export const arServer: Catalog = {
   'an owner': 'المالك',
   'runs up to {count} on the {plan} plan at once; those on {next} don’t count.':
     'يدير حتى {count} على خطة {plan} في الوقت نفسه، ولا تُحسب التي على {next}.',
+  'We’re open again {when}.': 'نعود {when}.',
+  'We’re open again on {date}.': 'نعود يوم {date}.',
 };

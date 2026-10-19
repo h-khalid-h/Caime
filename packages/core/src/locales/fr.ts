@@ -4653,4 +4653,63 @@ export const fr: Catalog = {
   'Choose how you know them before a role or an organization.':
     'Choisissez d’abord d’où vous vous connaissez, puis un rôle ou une organisation.',
   'Included with {name}’s {plan} plan.': 'Inclus avec le forfait {plan} de {name}.',
+  'Customers are greeted when they first write':
+    'Les clients sont accueillis à leur premier message',
+  'Customers hear your away message while you’re closed':
+    'Les clients reçoivent votre message d’absence en dehors de vos heures',
+  'The greeting is off': 'Le message d’accueil est désactivé',
+  'The away message is off': 'Le message d’absence est désactivé',
+  'A shortcut is one word: letters, digits, - or _.':
+    'Un raccourci est un seul mot : lettres, chiffres, - ou _.',
+  'Each quick reply needs a shortcut of its own.':
+    'Chaque réponse rapide a besoin de son propre raccourci.',
+  '{n} quick replies: your team types / to use them': {
+    one: 'Une réponse rapide : votre équipe tape / pour l’utiliser',
+    other: '{n} réponses rapides : votre équipe tape / pour les utiliser',
+  },
+  'No quick replies now': 'Plus aucune réponse rapide',
+  'Your AI agent answers first and introduces itself, so the greeting and the away message wait while it does.':
+    'Votre agent IA répond en premier et se présente : le message d’accueil et le message d’absence attendent pendant ce temps.',
+  Greeting: 'Message d’accueil',
+  'Away message': 'Message d’absence',
+  'Set your bookable hours first: it’s sent while they say you’re closed':
+    'Définissez d’abord vos heures réservables : il part en dehors de ces heures',
+  'Quick replies': 'Réponses rapides',
+  '{n} kept: type / in a customer’s conversation': {
+    one: 'Une enregistrée : tapez / dans la conversation d’un client',
+    other: '{n} enregistrées : tapez / dans la conversation d’un client',
+  },
+  'Answers your team puts in with / and a shortcut':
+    'Des réponses que votre équipe insère avec / et un raccourci',
+  'Sent once while your hours say you’re closed, unless someone on the team is answering there':
+    'Envoyé une fois en dehors de vos heures, sauf si quelqu’un de l’équipe y répond déjà',
+  'Sent the first time someone writes, and when they write again after two quiet weeks':
+    'Envoyé au premier message, et quand on réécrit après deux semaines calmes',
+  'Turn it off': 'Le désactiver',
+  'What it says': 'Texte du message',
+  'Thanks for writing. We’re closed now and answer as soon as we’re back.':
+    'Merci pour votre message. Nous sommes fermés pour le moment et répondons dès notre retour.',
+  'Welcome! Tell us what you need, and someone from the team answers here.':
+    'Bienvenue ! Dites-nous ce dont vous avez besoin, et quelqu’un de l’équipe vous répond ici.',
+  'Caime adds when you open again, on each customer’s clock and in their language.':
+    'Caime ajoute quand vous rouvrez, à l’heure de chaque client et dans sa langue.',
+  'It waits for your bookable hours: set them under Bookings, and it goes out while they say you’re closed.':
+    'Il attend vos heures réservables : définissez-les sous Réservations, et il part en dehors de ces heures.',
+  'It comes from {name}, marked as automated, and never counts as an answer: the conversation still waits for your team.':
+    'Il vient de {name}, marqué comme automatique, et ne compte jamais comme une réponse : la conversation attend toujours votre équipe.',
+  'Your team types / and a shortcut in a customer’s conversation to put one in':
+    'Votre équipe tape / et un raccourci dans la conversation d’un client pour en insérer une',
+  'Remove /{shortcut}': 'Retirer /{shortcut}',
+  'None yet. Add what customers ask most: your hours, prices, how to find you.':
+    'Aucune pour l’instant. Ajoutez ce que les clients demandent le plus : vos horaires, vos prix, comment vous trouver.',
+  Shortcut: 'Raccourci',
+  'The reply': 'La réponse',
+  'We’re open Sunday to Thursday, 9 to 6.':
+    'Nous sommes ouverts du dimanche au jeudi, de 9 h à 18 h.',
+  'Add it': 'L’ajouter',
+  '/{shortcut}, {position} of {count}. Enter puts it in, Escape closes the list.':
+    '/{shortcut}, {position} sur {count}. Entrée pour l’insérer, Échap pour fermer la liste.',
+  'Put in /{shortcut}': 'Insérer /{shortcut}',
+  'No quick replies yet: the organization’s owner or admins add them in its setup.':
+    'Pas encore de réponses rapides : le propriétaire ou les admins de l’organisation les ajoutent dans sa configuration.',
 };

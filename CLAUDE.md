@@ -1400,6 +1400,25 @@ A sphere is said as how you know someone, never "sphere".
   drops that line so no customer's name reaches the model; anything new where an AI speaks for
   someone to someone else opens the same way (Cai's invitation mail: `caiIntroduction`). The E2E
   Messages stand-in answers as it from the sentence of its knowledge nearest the question.
+- An organization's own replies (M16 H2, R101, `lib/org-replies.ts`, `modules/quick-replies.ts`):
+  quick replies are `org_quick_replies`, saved whole by its owner and admins
+  (`saveQuickReplies`, under the organization's row: a kept id keeps who made it, an id not its
+  own is a new reply), read by its team; the composer asks for them at the first "/" in a
+  customer's conversation (core `quickReplyQuery`, `matchingReplies`, `SHORTCUT_PATTERN`) and a
+  save tells the team with `business.updated` `{ quickReplies: true }`, which refreshes that list
+  alone. The greeting and the away message are `organizations.greeting` and `away_message`
+  (`PATCH /orgs/:id`, `OrgView.replies` for managers), queued by `queueAutoReplies` from
+  `onCustomerMessage` (one query for an organization with neither) and sent by the `org.reply`
+  job from the organization's automatic-replies bot (`replies_bot_id`, made once under its row,
+  renamed with it, never on the team, joined to a conversation as it writes) through `postAs`
+  with `payload.autoReply`, read again when sent. Whether it's open is core `openAt` and
+  `nextOpening` (`opening.ts`, apart from `booking.ts`, which the first download carries) over
+  the bookable hours; the away line is Caime's (`openAgainLine`) in the language the customer
+  wrote in, on their clock (the hours' for someone reached by mail). Neither while its AI agent
+  answers; no away message while `business_threads.last_team_at` is within `TEAM_HERE_MS`. Mail
+  out marks one `Auto-Submitted: auto-replied` and never tracks it. They're in
+  `buildOrgExport` and go in `clearClosedOrg`; anything else an organization says by itself goes
+  through the same bot and job, never a person's seat.
 - Calls: `apps/server/src/lib/calls.ts` and `modules/calls.ts` ring, relay and record;
   `apps/app/src/features/calls/engine.ts` holds the RTCPeerConnection and `CallScreens.tsx`
   draws the call over everything, on the web and the phones alike. What a phone does differently

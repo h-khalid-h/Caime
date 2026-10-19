@@ -4472,4 +4472,61 @@ export const turkish: Catalog = {
   'Choose how you know them before a role or an organization.':
     'Bir rol veya kuruluş için önce onu nereden tanıdığınızı seçin.',
   'Included with {name}’s {plan} plan.': '{name} kuruluşunun {plan} planına dahil.',
+  'Customers are greeted when they first write': 'Müşteriler ilk yazdıklarında karşılanır',
+  'Customers hear your away message while you’re closed':
+    'Müşterilere saatleriniz dışında uzakta mesajınız gider',
+  'The greeting is off': 'Karşılama mesajı kapalı',
+  'The away message is off': 'Uzakta mesajı kapalı',
+  'A shortcut is one word: letters, digits, - or _.':
+    'Kısayol tek kelimedir: harf, rakam, - veya _.',
+  'Each quick reply needs a shortcut of its own.':
+    'Her hızlı yanıtın kendine ait bir kısayolu olmalı.',
+  '{n} quick replies: your team types / to use them': {
+    one: 'Bir hızlı yanıt: ekibiniz kullanmak için / yazar',
+    other: '{n} hızlı yanıt: ekibiniz kullanmak için / yazar',
+  },
+  'No quick replies now': 'Artık hızlı yanıt yok',
+  'Your AI agent answers first and introduces itself, so the greeting and the away message wait while it does.':
+    'AI temsilciniz önce yanıtlar ve kendini tanıtır; o yanıtladığı sürece karşılama ve uzakta mesajları bekler.',
+  Greeting: 'Karşılama mesajı',
+  'Away message': 'Uzakta mesajı',
+  'Set your bookable hours first: it’s sent while they say you’re closed':
+    'Önce rezervasyon saatlerinizi belirleyin: bu saatlerin dışında gönderilir',
+  'Quick replies': 'Hızlı yanıtlar',
+  '{n} kept: type / in a customer’s conversation': {
+    one: 'Bir kayıtlı: bir müşterinin konuşmasında / yazın',
+    other: '{n} kayıtlı: bir müşterinin konuşmasında / yazın',
+  },
+  'Answers your team puts in with / and a shortcut':
+    'Ekibinizin / ve bir kısayolla eklediği yanıtlar',
+  'Sent once while your hours say you’re closed, unless someone on the team is answering there':
+    'Saatleriniz dışında bir kez gönderilir; ekipten biri orada yanıtlıyorsa gönderilmez',
+  'Sent the first time someone writes, and when they write again after two quiet weeks':
+    'Biri ilk yazdığında ve iki sessiz haftadan sonra yeniden yazdığında gönderilir',
+  'Turn it off': 'Kapat',
+  'What it says': 'Mesaj metni',
+  'Thanks for writing. We’re closed now and answer as soon as we’re back.':
+    'Yazdığınız için teşekkürler. Şu an kapalıyız, döner dönmez yanıtlıyoruz.',
+  'Welcome! Tell us what you need, and someone from the team answers here.':
+    'Hoş geldiniz! Neye ihtiyacınız olduğunu yazın, ekipten biri burada yanıtlar.',
+  'Caime adds when you open again, on each customer’s clock and in their language.':
+    'Caime, yeniden ne zaman açıldığınızı her müşterinin saatine ve diline göre ekler.',
+  'It waits for your bookable hours: set them under Bookings, and it goes out while they say you’re closed.':
+    'Rezervasyon saatlerinizi bekler: Rezervasyonlar altında belirleyin, bu saatlerin dışında gönderilir.',
+  'It comes from {name}, marked as automated, and never counts as an answer: the conversation still waits for your team.':
+    '{name} adına, otomatik olarak işaretli gelir ve asla yanıt sayılmaz: konuşma ekibinizi beklemeye devam eder.',
+  'Your team types / and a shortcut in a customer’s conversation to put one in':
+    'Ekibiniz bir müşterinin konuşmasında / ve bir kısayol yazarak birini ekler',
+  'Remove /{shortcut}': '/{shortcut} kaldır',
+  'None yet. Add what customers ask most: your hours, prices, how to find you.':
+    'Henüz yok. Müşterilerin en çok sorduklarını ekleyin: saatleriniz, fiyatlar, size nasıl ulaşılır.',
+  Shortcut: 'Kısayol',
+  'The reply': 'Yanıt',
+  'We’re open Sunday to Thursday, 9 to 6.': 'Pazardan perşembeye 9 ile 18 arası açığız.',
+  'Add it': 'Ekle',
+  '/{shortcut}, {position} of {count}. Enter puts it in, Escape closes the list.':
+    '/{shortcut}, {position}/{count}. Enter ile ekleyin, Escape listeyi kapatır.',
+  'Put in /{shortcut}': '/{shortcut} ekle',
+  'No quick replies yet: the organization’s owner or admins add them in its setup.':
+    'Henüz hızlı yanıt yok: kuruluşun sahibi veya yöneticileri bunları kurulumda ekler.',
 };

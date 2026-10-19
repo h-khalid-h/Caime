@@ -35,6 +35,7 @@ import { OrgData } from './OrgData';
 import { OrgDoor } from './OrgDoor';
 import { OrgPlaces } from './OrgPlaces';
 import { OrgPlan } from './OrgPlan';
+import { OrgReplies } from './OrgReplies';
 import { OrgVerification } from './OrgVerification';
 import { type SetupStepKey, setupSteps } from './setupSteps';
 
@@ -175,6 +176,7 @@ export function OrgSetupScreen({ handle }: { handle: string }) {
         <View onLayout={mark('agent')}>
           <OrgAgent org={org} />
         </View>
+        <OrgReplies org={org} refresh={put} />
         <OrgApps org={org} />
         {org.plan ? (
           <View style={{ paddingHorizontal: 16, paddingTop: 12 }}>

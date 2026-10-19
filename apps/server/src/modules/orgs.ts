@@ -273,6 +273,9 @@ async function orgView(ctx: AppContext, viewerId: string, org: Organization): Pr
     // sets them, and on a Pay card to its payer.
     payable: !seat && methodsFor(paymentsOf(org), { isConnected: true, spheres: [] }).length > 0,
     payments: seat && canManageOrg(seat.role) ? paymentsOf(org) : null,
+    // What its automatic replies say (M16 H2): its owner's and admins' to see and set.
+    replies:
+      seat && canManageOrg(seat.role) ? { greeting: org.greeting, away: org.away_message } : null,
     retentionDays: org.retention_days,
     joinableAs: standing.joinableAs,
     joinOnceConfirmed: standing.joinOnceConfirmed,
@@ -618,6 +621,9 @@ export async function orgRoutes(app: FastifyInstance, ctx: AppContext) {
         ...(body.foundedYear !== undefined ? { founded_year: body.foundedYear } : {}),
         ...(body.avatarFileId !== undefined ? { avatar_file_id: body.avatarFileId } : {}),
         ...(body.joinByDomain !== undefined ? { domain_join: body.joinByDomain } : {}),
+        // Empty is off (M16 H2).
+        ...(body.greeting !== undefined ? { greeting: body.greeting || null } : {}),
+        ...(body.away !== undefined ? { away_message: body.away || null } : {}),
         updated_at: ctx.now(),
       })
       .where('id', '=', id)

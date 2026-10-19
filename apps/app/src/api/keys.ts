@@ -31,6 +31,8 @@ export const qk = {
   tokens: ['personal-tokens'] as const,
   oauthApps: ['oauth-apps'] as const,
   orgAgent: (orgId: string) => ['org-agent', orgId] as const,
+  /** Its quick replies (M16 H2), for its team's composer and its setup. */
+  quickReplies: (orgId: string) => ['quick-replies', orgId] as const,
   /** An organization's own apps (its tokens and webhooks), and the listings published under it. */
   orgApps: (orgId: string) => ['org-apps', orgId] as const,
   orgListings: (orgId: string) => ['org-listings', orgId] as const,

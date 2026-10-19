@@ -1572,4 +1572,6 @@ export const frServer: Catalog = {
   'an owner': 'un propriétaire',
   'runs up to {count} on the {plan} plan at once; those on {next} don’t count.':
     'gère jusqu’à {count} avec le forfait {plan} à la fois ; celles sur {next} ne comptent pas.',
+  'We’re open again {when}.': 'Nous rouvrons {when}.',
+  'We’re open again on {date}.': 'Nous rouvrons le {date}.',
 };
