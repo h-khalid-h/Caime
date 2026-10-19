@@ -458,8 +458,12 @@ ${
     ? `<li>Mail to your address (your @handle at ${escapeHtml(f.mailDomain)}) is a message like any
 other, kept and erased with the rest; what the mail was on the wire (its ids, its subject, the
 addresses) stays with the message, and erasing the message clears the subject and the sender&rsquo;s
-address. A sender is taken for who they are only when the receiving mail server vouched for their
-address; anything else is dropped unread. Someone who writes to you by mail and isn&rsquo;t on
+address. A sender is taken for who they are only when their mail proves it came from their address
+(its signature or the server that sent it, checked by Caime itself). Mail that doesn&rsquo;t is
+never taken as anyone&rsquo;s: it&rsquo;s kept for you under Notices, saying its sender wasn&rsquo;t
+confirmed, from a stand-in of its own named only by the address it claims, never answered and read
+for nothing; unless its domain asks for such mail to be refused, which it then is, unread, as it is
+at an organization&rsquo;s address and for anyone under 18. Someone who writes to you by mail and isn&rsquo;t on
 Caime is kept as a person only you can see (their address and the name their mail gave) until a
 year passes with no mail either way, or until every conversation with them is gone; signing up
 with that address makes that person, and your conversations with them, theirs. A list&rsquo;s
@@ -742,8 +746,9 @@ what you answer goes back to them as mail from your address, with &ldquo;Sent&rd
 &ldquo;Delivered&rdquo; or &ldquo;Bounced&rdquo; beside it as the mail servers say. A stranger&rsquo;s
 first mail is a message request, like anyone&rsquo;s first message; under 18, only people you&rsquo;re
 connected with reach you by mail. A newsletter or a no-reply sender&rsquo;s mail is a notice: it
-waits under Notices, tells you nothing, asks nothing of you, and isn&rsquo;t answered. An
-organization&rsquo;s address lands in its inbox.</li>
+waits under Notices, tells you nothing, asks nothing of you, and isn&rsquo;t answered. So does
+mail Caime couldn&rsquo;t confirm came from the address it names, which says so and is never taken
+as theirs. An organization&rsquo;s address lands in its inbox.</li>
 `
     : ''
 }<li><strong>Inviting someone.</strong> In Connect, Invite someone makes a link that says who

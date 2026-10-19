@@ -3246,4 +3246,11 @@ export const arB: Catalog = {
   'A little left': 'يتبقى القليل',
   'Its answers have used what a day allows: your team answers until {when}.':
     'استنفدت إجاباته ما يسمح به يوم واحد: يجيب فريقك حتى {when}.',
+  'by email, sender not confirmed ·': 'عبر البريد، من مصدر غير مؤكد ·',
+  'by email, sender not confirmed': 'عبر البريد، من مصدر غير مؤكد',
+  'Caime couldn’t confirm this mail came from {address}: it’s here to read, and nothing is sent from here.':
+    'تعذّر على Caime التأكد من أن هذا البريد جاء من {address}: هو هنا للقراءة، ولا يُرسَل شيء من هنا.',
+  'Sender not confirmed': 'مصدر غير مؤكد',
+  'Mail came in naming this address, but Caime couldn’t confirm it was sent from it, so nothing in it is taken as theirs.':
+    'وصل بريد باسم هذا العنوان، لكن تعذّر على Caime التأكد من أنه أُرسل منه، فلا يُنسب شيء مما فيه إلى صاحبه.',
 };

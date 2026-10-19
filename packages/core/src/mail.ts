@@ -68,3 +68,11 @@ export function isNoticeMail(fromAddress: string, signals: MailSignals): boolean
   const local = fromAddress.split('@')[0] ?? '';
   return NO_REPLY.test(local);
 }
+
+/**
+ * How often someone reached by email may be written to again before they answer (M16 F2): as
+ * anyone writing by mail follows up, once a day has passed since the last, twice at most. Anyone
+ * on Caime is asked once (a message request), and nobody hears more until they answer.
+ */
+export const MAIL_FOLLOW_UPS = 2;
+export const MAIL_FOLLOW_UP_AFTER_MS = 24 * 3_600_000;

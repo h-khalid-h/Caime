@@ -1096,8 +1096,9 @@ A sphere is said as how you know someone, never "sphere".
   ways for everyone; a new card between two named people in a group uses the same rule.
 - Message requests live on the recipient's `participants.request_state` (pending, accepted,
   declined), for a stranger's direct message and an organization's first message alike.
-  `sendMessage` (`apps/server/src/lib/messages.ts`) owns the rules: one message until answered,
-  declined reads to the sender as unanswered, replying accepts. The team writes first through
+  `sendMessage` (`apps/server/src/lib/messages.ts`) owns the rules: one message until answered
+  (to someone reached by email, a follow-up once a day has passed since the last, twice at most:
+  core `MAIL_FOLLOW_UPS` in `mail.ts`, M16 F2), declined reads to the sender as unanswered, replying accepts. The team writes first through
   `POST /orgs/:id/threads`, which sends through `sendMessage` too.
 - In a business conversation, anything filed for the customer (suggestions, tasks, AI
   follow-ups) names the organization and points at nobody on its team: no team member's id as a
@@ -1861,7 +1862,16 @@ A sphere is said as how you know someone, never "sphere".
   undici replaces the dispatcher every `fetch` in the server uses, and a test holds that) checks in the provider's raw message itself: DKIM through `ctx.dns`, SPF only
   for the address in the top `Received` lines a host of the provider's `receivingHosts` wrote
   (past its own private hops), DMARC; never
-  a header the payload carries, and no raw message vouches for nothing. Tests sign real mail
+  a header the payload carries, and no raw message vouches for nothing. Mail that fails is never
+  taken as anyone's (M16 F1): for a person it lands, unless its domain's DMARC asks for a reject
+  (`MailAuth.dmarc.policy`), from a stand-in of its own for that person and the address it
+  claims (`unverifiedSender`, `lib/provisional.ts`: a provisional row at `UNVERIFIED_DOMAIN`,
+  `unverified.invalid`, named by the address alone; never the address's own person, never found,
+  claimed or mailed) in their one notice from it, marked `mail_messages.unverified`
+  (`MessageMailView.unverified`; `ConversationView.unverifiedSender` for the composer's line), its
+  signature teaching no later mail and its arrival marking nothing seen; an organization's
+  address, Cai's and someone under 18 take none of it (the counter's `unverified` and `refused`,
+  `kept_unverified` for what's kept). Tests sign real mail
   with `test/mail-fixtures.ts` (`rawMail`, `mailDns`; the E2E publishes `DKIM_TXT`); the staff
   addresses (`STAFF_ADDRESSES`, each reserved) land at `MAIL_STAFF_HANDLE`; a provisional person is `users.kind =
   'provisional'` with a `mail:<id>` handle, found by nobody since every lookup of people takes

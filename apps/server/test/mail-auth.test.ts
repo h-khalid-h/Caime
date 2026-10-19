@@ -96,7 +96,16 @@ describe('mail in: who sent it, checked by Caime (R75)', () => {
       await mail(),
       POSTMARK,
     );
-    expect(auth.dmarc).toEqual({ result: 'pass', domain: 'partner.example' });
+    expect(auth.dmarc).toEqual({ result: 'pass', domain: 'partner.example', policy: 'reject' });
+    // What the domain asks done with mail that fails, read from its record as it applies.
+    const failing = await mail({ dkim: 'wrong-key', hop: { ip: BULK_IP } });
+    const asked = async (record: string) =>
+      (await authenticateMail(ctx({ 'partner.example': record }), failing, POSTMARK)).dmarc;
+    expect(await asked('v=DMARC1; p=reject')).toMatchObject({ result: 'fail', policy: 'reject' });
+    expect(await asked('v=DMARC1; p=quarantine')).toMatchObject({ policy: 'quarantine' });
+    expect(await asked('v=DMARC1; p=none')).toMatchObject({ policy: 'none' });
+    // A record in test mode asks one step less (RFC 9989 4.7).
+    expect(await asked('v=DMARC1; p=reject; t=y')).toMatchObject({ policy: 'quarantine' });
   });
 
   it('checking a mail leaves the dispatcher every fetch in the server uses as it was', async () => {

@@ -604,6 +604,8 @@ export interface MailMessagesTable {
   /** A mail out the provider saw opened (its pixel), only where `track_opens`: a "probably". */
   opened_at: NullableTimestamp;
   track_opens: Defaulted<boolean>;
+  /** Mail in whose sender Caime couldn't confirm (M16 F1): kept as a notice that says so. */
+  unverified: Defaulted<boolean>;
   created_at: Generated<Date>;
 }
 export type MailMessage = Selectable<MailMessagesTable>;

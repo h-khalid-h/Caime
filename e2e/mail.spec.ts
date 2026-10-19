@@ -231,4 +231,53 @@ test.describe
         .toContain(`Noor Post wrote this on Caime, from ${address}`);
       expect(errors).toEqual([]);
     });
+
+    test('mail its sender couldn’t be confirmed for waits under Notices, saying so (M16 F1)', async () => {
+      // Unsigned, and from no server the provider saw connect: nothing vouches for its From.
+      const from = `billing.${suffix}@bank.example`;
+      const to = address;
+      const messageId = `<e2e-${suffix}-unverified@bank.example>`;
+      const text = 'Your invoice is overdue. Please pay it today.';
+      const raw = await rawMail({
+        from,
+        fromName: 'Your Bank',
+        to: [to],
+        subject: 'Invoice overdue',
+        text,
+        messageId,
+        dkim: 'none',
+        hop: null,
+      });
+      const got = await post('/v1/mail/in/postmark', {
+        FromFull: { Email: from, Name: 'Your Bank' },
+        ToFull: [{ Email: to, Name: '' }],
+        Subject: 'Invoice overdue',
+        MessageID: `pm-in-${suffix}-unverified`,
+        TextBody: text,
+        HtmlBody: '',
+        Headers: [{ Name: 'Message-ID', Value: messageId }],
+        Attachments: [],
+        RawEmail: raw,
+      });
+      expect(got.outcomes?.[0]?.outcome).toBe('kept_unverified');
+      await page.goto('/chats');
+      await visible(page, 'Notices · 1').click();
+      // Named by the address it claims, never by the name it gave.
+      await visible(page, from).click();
+      await page.waitForURL(/\/c\//);
+      await expect(visible(page, text)).toBeVisible();
+      await expect(page.getByTestId('message-mail').first()).toHaveText(
+        'by email, sender not confirmed ·',
+      );
+      await expect(
+        visible(
+          page,
+          `Caime couldn’t confirm this mail came from ${from}: it’s here to read, and nothing is sent from here.`,
+        ),
+      ).toBeVisible();
+      await expect(visible(page, 'Sender not confirmed')).toBeVisible();
+      await expect(page.getByText('Your Bank')).toHaveCount(0);
+      await expect(page.getByTestId('composer-input')).toHaveCount(0);
+      expect(errors).toEqual([]);
+    });
   });

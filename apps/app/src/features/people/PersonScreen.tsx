@@ -245,87 +245,89 @@ function PersonPage({ id, book = null, slug = null }: PersonScreenProps) {
     ) : null;
   // Someone reached by email (R93) isn't on Caime to connect with: they're written to by mail.
   const byMail = person.kind === 'provisional';
-  const primaryAction = self ? null : byMail ? (
-    <Button
-      label={tr('Write by email')}
-      icon={MessageCircle}
-      size="lg"
-      block
-      onPress={() => {
-        const general = p.conversations.find((c) => c.isGeneral);
-        void openChatWith({ conversationId: general?.id ?? null, person });
-      }}
-      testID="person-write-mail"
-    />
-  ) : state === 'connected' ? (
-    <Button
-      label={tr('Message')}
-      icon={MessageCircle}
-      size="lg"
-      block
-      onPress={() => {
-        const general = p.conversations.find((c) => c.isGeneral);
-        void openChatWith({ conversationId: general?.id ?? null, person });
-      }}
-      testID="person-message"
-    />
-  ) : state === 'incoming' ? (
-    <View style={{ flexDirection: 'row', gap: 8 }}>
+  // A stand-in for mail nobody confirmed (M16 F1) is nobody to write to: its notice says so.
+  const primaryAction =
+    self || person.trust.unverifiedSender ? null : byMail ? (
       <Button
-        label={tr('Accept')}
+        label={tr('Write by email')}
+        icon={MessageCircle}
         size="lg"
-        style={{ flex: 1 }}
         block
-        loading={busy === 'accept'}
-        onPress={() =>
-          act(
-            'accept',
-            () => endpoints.acceptRequest(p.connection.requestId ?? ''),
-            tr('You’re connected with {name}', { name }),
-          )
-        }
+        onPress={() => {
+          const general = p.conversations.find((c) => c.isGeneral);
+          void openChatWith({ conversationId: general?.id ?? null, person });
+        }}
+        testID="person-write-mail"
       />
+    ) : state === 'connected' ? (
       <Button
-        label={tr('Decline')}
+        label={tr('Message')}
+        icon={MessageCircle}
+        size="lg"
+        block
+        onPress={() => {
+          const general = p.conversations.find((c) => c.isGeneral);
+          void openChatWith({ conversationId: general?.id ?? null, person });
+        }}
+        testID="person-message"
+      />
+    ) : state === 'incoming' ? (
+      <View style={{ flexDirection: 'row', gap: 8 }}>
+        <Button
+          label={tr('Accept')}
+          size="lg"
+          style={{ flex: 1 }}
+          block
+          loading={busy === 'accept'}
+          onPress={() =>
+            act(
+              'accept',
+              () => endpoints.acceptRequest(p.connection.requestId ?? ''),
+              tr('You’re connected with {name}', { name }),
+            )
+          }
+        />
+        <Button
+          label={tr('Decline')}
+          variant="secondary"
+          size="lg"
+          style={{ flex: 1 }}
+          block
+          loading={busy === 'decline'}
+          onPress={() =>
+            act(
+              'decline',
+              () => endpoints.declineRequest(p.connection.requestId ?? ''),
+              tr('Declined. They won’t be told.'),
+            )
+          }
+        />
+      </View>
+    ) : state === 'outgoing' ? (
+      <Button
+        label={tr('Request sent · Cancel')}
         variant="secondary"
         size="lg"
-        style={{ flex: 1 }}
         block
-        loading={busy === 'decline'}
+        loading={busy === 'cancel'}
         onPress={() =>
           act(
-            'decline',
-            () => endpoints.declineRequest(p.connection.requestId ?? ''),
-            tr('Declined. They won’t be told.'),
+            'cancel',
+            () => endpoints.cancelRequest(p.connection.requestId ?? ''),
+            tr('Request cancelled'),
           )
         }
       />
-    </View>
-  ) : state === 'outgoing' ? (
-    <Button
-      label={tr('Request sent · Cancel')}
-      variant="secondary"
-      size="lg"
-      block
-      loading={busy === 'cancel'}
-      onPress={() =>
-        act(
-          'cancel',
-          () => endpoints.cancelRequest(p.connection.requestId ?? ''),
-          tr('Request cancelled'),
-        )
-      }
-    />
-  ) : (
-    <Button
-      label={tr('Connect with {name}', { name })}
-      icon={UserPlus}
-      size="lg"
-      block
-      onPress={() => setConnect(true)}
-      testID="person-connect"
-    />
-  );
+    ) : (
+      <Button
+        label={tr('Connect with {name}', { name })}
+        icon={UserPlus}
+        size="lg"
+        block
+        onPress={() => setConnect(true)}
+        testID="person-connect"
+      />
+    );
 
   return (
     <Screen edges={desktop ? [] : ['top']}>

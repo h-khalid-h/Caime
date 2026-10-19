@@ -6,9 +6,11 @@
  *
  * - Who the sender is comes from the authenticated From alone (DMARC: SPF or DKIM aligned with
  *   the From domain, as Caime checks the raw message itself: `mail-auth.ts`), never a header the
- *   payload carries, a Reply-To, a Sender or a display name. Mail that fails is dropped and
- *   counted; the provider's spam verdict drops the rest.
- *   (Phase 2's notices will show unverified mail as such; nothing attributes it to a person.)
+ *   payload carries, a Reply-To, a Sender or a display name. Mail that fails is never taken as
+ *   anyone's (M16 F1): to a person it lands as a notice that says its sender wasn't confirmed,
+ *   from a stand-in of its own (`unverifiedSender`), unless its domain asks for such mail to be
+ *   refused (DMARC's reject); an organization's address and Cai's take none of it, nor does
+ *   someone under 18. The provider's spam verdict drops the rest.
  * - A sender with an account is that person. Anyone else is a provisional person: a users row
  *   of kind 'provisional' holding the address and the name the mail gave, which the person they
  *   wrote to sees and nobody can find (every lookup of people takes kind 'human'), and which
@@ -42,7 +44,7 @@ import type { InboundMail, MailAuth } from './mail-provider';
 import { afterMessage } from './message-effects';
 import { messageViews, participantsOf, sendMessage } from './messages';
 import { assertStorage } from './plans';
-import { personForAddress } from './provisional';
+import { personForAddress, unverifiedSender } from './provisional';
 import { between, pairKey } from './relations';
 import { storageFor } from './storage';
 import { openSystemConversation } from './system-accounts';
@@ -52,6 +54,9 @@ import { minorOf } from './users';
 export type InboundOutcome =
   | 'delivered'
   | 'duplicate'
+  /** Its sender couldn't be confirmed: kept as a notice that says so (M16 F1). */
+  | 'kept_unverified'
+  /** Its sender couldn't be confirmed, and it's for nobody to keep: refused, as its domain asks. */
   | 'unverified'
   | 'spam'
   | 'unknown'
@@ -108,7 +113,10 @@ export async function receiveMail(
     spf: auth.spf?.result ?? null,
     dmarc: auth.dmarc?.result ?? null,
   };
-  if (!senderVerified(mail.from.address, auth)) return all('unverified');
+  const verified = senderVerified(mail.from.address, auth);
+  // A domain that asks for mail failing its checks to be refused (DMARC's reject) has it refused;
+  // anything else that fails is kept for a person as what it is (M16 F1), never as anyone's.
+  if (!verified && auth.dmarc?.policy === 'reject') return all('unverified');
   if (!mail.text.trim() && !mail.attachments.length) return all('empty');
   const out: Array<{ to: string; outcome: InboundOutcome }> = [];
   // Two addresses that land in one place (support@ and hello@, or a staff address and the staff
@@ -117,7 +125,7 @@ export async function receiveMail(
   for (const to of ours) {
     const lands = landingOf(ctx, handleOf(to, domain));
     const outcome =
-      lands && reached.has(lands) ? 'duplicate' : await deliverTo(ctx, mail, to, domain);
+      lands && reached.has(lands) ? 'duplicate' : await deliverTo(ctx, mail, to, domain, verified);
     if (lands) reached.add(lands);
     count(outcome);
     out.push({ to, outcome });
@@ -197,6 +205,8 @@ async function deliverTo(
   mail: InboundMail,
   toAddress: string,
   domain: string,
+  /** Whether its sender was confirmed (`senderVerified`). */
+  verified: boolean,
 ): Promise<InboundOutcome> {
   // The provider delivering the same mail again (its retry) is the one message.
   const seen = await ctx.db
@@ -208,13 +218,15 @@ async function deliverTo(
   if (seen) return 'duplicate';
   const handle = handleOf(toAddress, domain);
   if (!handle) return 'unknown';
-  // Cai's own address (R86): a guest's answer to a meeting's invitation, and nothing else.
-  if (handle === CAI_MAIL) return caiMail(ctx, mail);
+  // Cai's own address (R86): a guest's answer to a meeting's invitation, and nothing else; a
+  // forged acceptance is worse than a lost one, so only from a sender confirmed.
+  if (handle === CAI_MAIL) return verified ? caiMail(ctx, mail) : 'unverified';
   // The staff addresses reach whoever the operator named; without one, nobody.
   const lands = landingOf(ctx, handle);
   if (!lands) return 'unknown';
   const target = await recipientOf(ctx, lands, lands !== handle);
   if (!target) return 'unknown';
+  if (!verified) return keepUnverified(ctx, mail, toAddress, target);
   const sender = await senderOf(ctx, mail);
   if (!sender) return 'refused';
   if (target.kind === 'person' && sender.id === target.user.id) {
@@ -249,6 +261,32 @@ async function deliverTo(
   }
   await deliver(ctx, sender, conversationId, mail, toAddress);
   return 'delivered';
+}
+
+/**
+ * Mail whose sender wasn't confirmed (M16 F1, R75 (1)), kept for the person it reached as what
+ * it is: from a stand-in of its own for that person and the address it claims, in their one
+ * notice from it (muted, never a request, never answered, read for nothing), each message saying
+ * so. An organization's address, where a forged customer would be answered as one, and someone
+ * under 18, who takes mail from connections alone, take none of it.
+ */
+async function keepUnverified(
+  ctx: AppContext,
+  mail: InboundMail,
+  toAddress: string,
+  target: Target,
+): Promise<InboundOutcome> {
+  if (target.kind !== 'person') return 'unverified';
+  const person = target.user;
+  if (minorOf(person, ctx.now())) return 'refused';
+  const stand = await unverifiedSender(ctx, person.id, mail.from.address);
+  if (!stand) return 'unverified';
+  const rel = await between(ctx.db, person.id, stand.id);
+  if (rel.blockedByMe || rel.blockedMe) return 'refused';
+  const notice = await noticeFor(ctx, stand.id, person.id);
+  if (!notice) return 'unverified';
+  await deliver(ctx, stand, notice, mail, toAddress, { unverified: true });
+  return 'kept_unverified';
 }
 
 /**
@@ -365,7 +403,10 @@ async function deliver(
   conversationId: string,
   mail: InboundMail,
   toAddress: string,
+  /** Its sender wasn't confirmed (M16 F1): it teaches nothing of the address it claims. */
+  opts: { unverified?: boolean } = {},
 ): Promise<void> {
+  const unverified = opts.unverified ?? false;
   const provider = ctx.mailProvider;
   if (!provider) return;
   const storage = storageFor(ctx.config);
@@ -382,16 +423,20 @@ async function deliver(
     }
   };
   // Their words as a chat shows them (R75): a client's emphasis marks out, the signature apart,
-  // known by its own mark or by the one this sender's last mail ended with.
-  const before = await ctx.db
-    .selectFrom('mail_messages')
-    .select('signature')
-    .where('from_address', '=', mail.from.address)
-    .where('direction', '=', 'in')
-    .where('signature', 'is not', null)
-    .orderBy('created_at', 'desc')
-    .limit(1)
-    .executeTakeFirst();
+  // known by its own mark or by the one this sender's last mail ended with; never one a mail
+  // nobody confirmed came with, nor for one (M16 F1), whose sender may be anyone.
+  const before = unverified
+    ? undefined
+    : await ctx.db
+        .selectFrom('mail_messages')
+        .select('signature')
+        .where('from_address', '=', mail.from.address)
+        .where('direction', '=', 'in')
+        .where('unverified', '=', false)
+        .where('signature', 'is not', null)
+        .orderBy('created_at', 'desc')
+        .limit(1)
+        .executeTakeFirst();
   const words = mailText(mail.text, mail.html, before?.signature ?? null);
   let text = words.body;
   if (text.length > MESSAGE_MAX) {
@@ -436,11 +481,13 @@ async function deliver(
       provider_id: null,
       html: mail.html,
       signature: words.signature?.slice(0, 2000) ?? null,
+      unverified,
     })
     .onConflict((oc) => oc.columns(['rfc_message_id', 'to_address']).doNothing())
     .execute();
-  // They wrote back: what was mailed them from this address before it, they've seen.
-  await seenByReply(ctx, mail.from.address, toAddress);
+  // They wrote back: what was mailed them from this address before it, they've seen. A mail
+  // nobody confirmed says nothing of who saw what.
+  if (!unverified) await seenByReply(ctx, mail.from.address, toAddress);
   // Everyone else in it hears it now, as a sent message is heard; its effects run after.
   const [view] = await messageViews(ctx.db, [result.message], sender.id);
   const others = (await participantsOf(ctx.db, conversationId))

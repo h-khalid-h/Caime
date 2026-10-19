@@ -741,6 +741,8 @@ export interface MessageMailView {
   seenAt: string | null;
   /** A mail out the provider saw opened (its pixel): probably read, never certainly. */
   openedAt: string | null;
+  /** A mail in whose sender Caime couldn't confirm (M16 F1): `address` is only what it claims. */
+  unverified: boolean;
 }
 
 /** What the mail provider's inbound webhook is answered (R75): each address here the mail reached, and what became of it there. */
@@ -809,6 +811,11 @@ export interface ConversationView {
   mailSubject: string | null;
   /** Bulk or no-reply mail (R75): read here, never answered. */
   notice: boolean;
+  /**
+   * A notice of mail whose sender Caime couldn't confirm (M16 F1): the address it claims, which
+   * is all its stand-in is named by; null for any other conversation.
+   */
+  unverifiedSender: string | null;
   purpose: string | null;
   isGeneral: boolean;
   parentId: string | null;

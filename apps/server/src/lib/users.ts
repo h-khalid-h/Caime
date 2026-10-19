@@ -25,7 +25,7 @@ import type { Config } from '../config';
 import type { Database, User, UserRow } from '../db/schema';
 import { AppError } from './errors';
 import { currencyOf } from './geo';
-import { type MailConfig, mailAddressOf } from './mail-address';
+import { isUnverifiedAddress, type MailConfig, mailAddressOf } from './mail-address';
 
 export const ONLINE_WINDOW_MS = 2 * 60_000;
 
@@ -250,6 +250,7 @@ export function personView(user: UserRow, viewer: ViewerRelation, now: Date): Pe
       verifiedOrgName:
         user.kind !== 'human' || see('identityDetails') ? (viewer.verifiedOrgName ?? null) : null,
       kind: user.kind,
+      unverifiedSender: user.kind === 'provisional' && isUnverifiedAddress(user.email),
     }),
   };
 }

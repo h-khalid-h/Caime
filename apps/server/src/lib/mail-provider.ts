@@ -32,12 +32,15 @@ const TIMEOUT_MS = 20_000;
 export const MAIL_ATTACHMENT_MAX = 10 * 1024 * 1024;
 
 export type AuthResult = 'pass' | 'fail' | 'none' | 'other';
+/** What a From domain's DMARC record asks done with mail that fails its checks. */
+export type DmarcPolicy = 'none' | 'quarantine' | 'reject';
 
 /** What Caime found out about who sent a mail (`mail-auth.ts`). */
 export interface MailAuth {
   spf: { result: AuthResult; domain: string | null } | null;
   dkim: Array<{ result: AuthResult; domain: string | null }>;
-  dmarc: { result: AuthResult; domain: string | null } | null;
+  /** `policy`: what its domain asks done with mail that fails, when it publishes a record. */
+  dmarc: { result: AuthResult; domain: string | null; policy?: DmarcPolicy | null } | null;
 }
 
 export interface MailAttachment {

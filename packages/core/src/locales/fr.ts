@@ -4908,4 +4908,11 @@ export const fr: Catalog = {
   'A little left': 'Il en reste peu',
   'Its answers have used what a day allows: your team answers until {when}.':
     'Ses réponses ont atteint ce qu’une journée permet : votre équipe répond jusqu’à {when}.',
+  'by email, sender not confirmed ·': 'par e-mail, provenance non confirmée ·',
+  'by email, sender not confirmed': 'par e-mail, provenance non confirmée',
+  'Caime couldn’t confirm this mail came from {address}: it’s here to read, and nothing is sent from here.':
+    'Caime n’a pas pu confirmer que ce message vient de {address} : il est là pour être lu, et rien n’est envoyé d’ici.',
+  'Sender not confirmed': 'Provenance non confirmée',
+  'Mail came in naming this address, but Caime couldn’t confirm it was sent from it, so nothing in it is taken as theirs.':
+    'Un e-mail est arrivé au nom de cette adresse, mais Caime n’a pas pu confirmer qu’il en venait : rien de ce qu’il contient n’est attribué à son titulaire.',
 };

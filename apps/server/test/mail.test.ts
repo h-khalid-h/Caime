@@ -751,22 +751,23 @@ describe('who may write in, and to whom', () => {
     ).toBe('unknown');
   });
 
-  it('drops mail the server didn’t vouch for, spam, and mail to nobody, and counts each', async () => {
+  it('takes mail the server didn’t vouch for as nobody’s, drops spam and mail to nobody, and counts each', async () => {
     const before = (await conversationsOf(noor)).length;
+    // Each kept as a notice that says so (M16 F1), never as the address's own person's.
     expect(
       (
         await inbound(
           await postmark({ from: 'spoof@bank.example', to: 'noor.mail@caime.test', auth: 'fail' }),
         )
       ).json().outcomes[0].outcome,
-    ).toBe('unverified');
+    ).toBe('kept_unverified');
     expect(
       (
         await inbound(
           await postmark({ from: 'anon@bank.example', to: 'noor.mail@caime.test', auth: 'none' }),
         )
       ).json().outcomes[0].outcome,
-    ).toBe('unverified');
+    ).toBe('kept_unverified');
     expect(
       (
         await inbound(
@@ -777,7 +778,7 @@ describe('who may write in, and to whom', () => {
           }),
         )
       ).json().outcomes[0].outcome,
-    ).toBe('unverified');
+    ).toBe('kept_unverified');
     // A verdict the sender wrote into their own headers is theirs, not a server's.
     expect(
       (
@@ -785,7 +786,7 @@ describe('who may write in, and to whom', () => {
           await postmark({ from: 'ceo@bank.example', to: 'noor.mail@caime.test', auth: 'forged' }),
         )
       ).json().outcomes[0].outcome,
-    ).toBe('unverified');
+    ).toBe('kept_unverified');
     expect(
       (
         await inbound(
@@ -814,7 +815,8 @@ describe('who may write in, and to whom', () => {
       ).json().outcomes[0].outcome,
     ).toBe('empty');
     await t.ctx.flush();
-    expect((await conversationsOf(noor)).length).toBe(before);
+    // One notice for each address claimed, and nobody made for any of them.
+    expect((await conversationsOf(noor)).length).toBe(before + 4);
     expect(
       await t.ctx.db
         .selectFrom('users')
@@ -845,7 +847,7 @@ describe('who may write in, and to whom', () => {
       headers: { authorization: 'Bearer test-metrics-token' },
     });
     expect(metrics.statusCode).toBe(200);
-    expect(metrics.body).toContain('caime_mail_total{direction="in",outcome="unverified"} 4');
+    expect(metrics.body).toContain('caime_mail_total{direction="in",outcome="kept_unverified"} 4');
     expect(metrics.body).toContain('caime_mail_total{direction="in",outcome="spam"} 1');
   });
 
@@ -1278,5 +1280,245 @@ describe('how far a mail got, and words that read as chat (R75)', () => {
     expect(followed.statusCode).toBe(302);
     expect(followed.headers.location).toBe('http://localhost:8787/sign-up');
     expect((await mailOf(next.message.id))?.seenAt).not.toBeNull();
+  });
+});
+
+describe('mail its sender couldn’t be confirmed for (M16 F1)', () => {
+  let lena: Client;
+  beforeAll(async () => {
+    lena = await signup(t, {
+      displayName: 'Lena Mail',
+      handle: 'lena.mail',
+      email: 'lena.mail@example.com',
+    });
+  });
+
+  it('is kept as a notice that says so, named by the address alone, never answered and read for nothing', async () => {
+    const before = await conversationsOf(lena);
+    const told = (await lena.get('/v1/notifications')).notifications.length;
+    const first = await inbound(
+      await postmark({
+        from: 'billing@bank.example',
+        fromName: 'Your Bank',
+        to: 'lena.mail@caime.test',
+        auth: 'fail',
+        subject: 'Invoice overdue',
+        text: 'I’ll send the contract by Friday. Could you pay the invoice today?',
+      }),
+    );
+    expect(first.json().outcomes).toEqual([
+      { to: 'lena.mail@caime.test', outcome: 'kept_unverified' },
+    ]);
+    await work();
+    const after = await conversationsOf(lena);
+    expect(after).toHaveLength(before.length + 1);
+    const notice = after.find((c) => !before.some((b) => b.conversationId === c.conversationId));
+    // Under Notices, named by the address it claimed, never the name it gave.
+    expect(notice).toMatchObject({ section: 'notices', title: 'billing@bank.example' });
+    const id = notice?.conversationId as string;
+    const view = (await lena.get(`/v1/conversations/${id}`)).conversation;
+    expect(view).toMatchObject({ notice: true, unverifiedSender: 'billing@bank.example' });
+    // Whoever it stands for, its profile says only what Caime knows: nobody anyone vouched for.
+    const standIn = (view as { other: { userId: string } }).other.userId;
+    expect((await lena.get(`/v1/people/${standIn}`)).person.trust).toMatchObject({
+      label: 'Sender not confirmed',
+      unverifiedSender: true,
+    });
+    const [m] = await messagesIn(lena, id);
+    expect(m?.mail).toMatchObject({
+      direction: 'in',
+      address: 'billing@bank.example',
+      unverified: true,
+    });
+    // Nobody told, nothing asked of anyone, and nothing goes back.
+    expect((await lena.get('/v1/notifications')).notifications.length).toBe(told);
+    expect(
+      await t.ctx.db
+        .selectFrom('suggestions')
+        .select('id')
+        .where('user_id', '=', lena.user.id)
+        .execute(),
+    ).toHaveLength(0);
+    const answered = await lena.req('POST', `/v1/conversations/${id}/messages`, {
+      clientId: uuidv7(),
+      kind: 'text',
+      body: 'Paid.',
+    });
+    expect(answered.statusCode).toBe(409);
+    expect(answered.json().error.code).toBe('notice_only');
+    // Whoever holds that address isn't who wrote this: nobody was made for it.
+    expect(
+      await t.ctx.db
+        .selectFrom('users')
+        .select('id')
+        .where('email', '=', 'billing@bank.example')
+        .execute(),
+    ).toHaveLength(0);
+    // The next one claiming the same address lands in the same notice.
+    expect(
+      (
+        await inbound(
+          await postmark({
+            from: 'billing@bank.example',
+            to: 'lena.mail@caime.test',
+            auth: 'none',
+            text: 'Second notice.',
+          }),
+        )
+      ).json().outcomes[0].outcome,
+    ).toBe('kept_unverified');
+    await work();
+    expect(await messagesIn(lena, id)).toHaveLength(2);
+    expect(await conversationsOf(lena)).toHaveLength(before.length + 1);
+    // Mail its server vouches for, from that address, is the address's own person, elsewhere.
+    expect(
+      (
+        await inbound(
+          await postmark({
+            from: 'billing@bank.example',
+            to: 'lena.mail@caime.test',
+            text: 'The real one.',
+          }),
+        )
+      ).json().outcomes[0].outcome,
+    ).toBe('delivered');
+    await work();
+    const real = (await conversationsOf(lena)).filter(
+      (c) => c.conversationId !== id && !before.some((b) => b.conversationId === c.conversationId),
+    );
+    expect(real).toHaveLength(1);
+    expect(real[0]?.section).not.toBe('notices');
+    expect((await messagesIn(lena, real[0]?.conversationId as string))[0]?.mail).toMatchObject({
+      unverified: false,
+    });
+  });
+
+  it('teaches nothing of the real sender: a signature it came with folds none of theirs', async () => {
+    await inbound(
+      await postmark({
+        from: 'sam@bank.example',
+        to: 'lena.mail@caime.test',
+        auth: 'fail',
+        text: 'Please wire it today.\n\n-- \nSam Teller\nACME Bank',
+      }),
+    );
+    await inbound(
+      await postmark({
+        from: 'sam@bank.example',
+        to: 'lena.mail@caime.test',
+        text: 'Here are the minutes.\n\nSam Teller\nACME Bank',
+      }),
+    );
+    await work();
+    const rows = await t.ctx.db
+      .selectFrom('mail_messages')
+      .select(['unverified', 'signature'])
+      .where('from_address', '=', 'sam@bank.example')
+      .orderBy('created_at')
+      .execute();
+    expect(rows).toEqual([
+      { unverified: true, signature: 'Sam Teller\nACME Bank' },
+      // Read whole: a signature nobody confirmed is no sign of how this sender ends a mail.
+      { unverified: false, signature: null },
+    ]);
+  });
+
+  it('is refused where its domain asks, at an organization’s address and Cai’s, and under 18', async () => {
+    t.ctx.dns = mailDns({
+      'strict.example': 'v=DMARC1; p=reject',
+      'careful.example': 'v=DMARC1; p=quarantine',
+    });
+    try {
+      const before = (await conversationsOf(lena)).length;
+      const outcome = async (from: string, to: string) =>
+        (await inbound(await postmark({ from, to, auth: 'fail' }))).json().outcomes[0].outcome;
+      // A domain that asks for it to be refused has it refused; one that asks for care, kept.
+      expect(await outcome('ceo@strict.example', 'lena.mail@caime.test')).toBe('unverified');
+      expect(await outcome('ceo@careful.example', 'lena.mail@caime.test')).toBe('kept_unverified');
+      // A forged customer would be answered as one, and a forged acceptance believed.
+      expect(await outcome('patient@bank.example', 'nile.dental@caime.test')).toBe('unverified');
+      expect(await outcome('guest@bank.example', 'assistant@caime.test')).toBe('unverified');
+      // Under 18: mail from connections alone, and this is nobody's.
+      expect(await outcome('anyone@bank.example', 'mina.young@caime.test')).toBe('refused');
+      await work();
+      expect((await conversationsOf(lena)).length).toBe(before + 1);
+      // So nothing stands in for its sender in a conversation of hers.
+      expect(
+        await t.ctx.db
+          .selectFrom('participants as p')
+          .innerJoin('conversations as c', 'c.id', 'p.conversation_id')
+          .select('c.id')
+          .where('p.user_id', '=', mina.user.id)
+          .where('c.notice', '=', true)
+          .execute(),
+      ).toHaveLength(0);
+    } finally {
+      t.ctx.dns = mailDns();
+    }
+  });
+});
+
+describe('following up by email (M16 F2)', () => {
+  // Signed in after the year the sweep's test moved the clock, so the session stands.
+  let ines: Client;
+  beforeAll(async () => {
+    ines = await signup(t, {
+      displayName: 'Ines Mail',
+      handle: 'ines.mail',
+      email: 'ines.mail@example.com',
+    });
+  });
+
+  it('writes again as a person by mail would: a day apart, twice at most, until they answer', async () => {
+    const convo = (
+      await ines.post('/v1/conversations/by-email', { email: 'sami@outside.example', name: 'Sami' })
+    ).conversation.id as string;
+    const write = (n: number) =>
+      ines.req('POST', `/v1/conversations/${convo}/messages`, {
+        clientId: `ines-to-sami-${n}`,
+        kind: 'text',
+        body: `Following up, note ${n}.`,
+      });
+    sends = [];
+    expect((await write(1)).statusCode).toBeLessThan(300);
+    // Not again within the day, and it says when.
+    const soon = await write(2);
+    expect(soon.statusCode).toBe(403);
+    expect(soon.json().error.code).toBe('awaiting_acceptance');
+    expect(soon.json().error.message).toMatch(
+      /^You can follow up (at|tomorrow at) .+: once a day, twice at most, until they answer\.$/,
+    );
+    t.clock.advance(24 * 3_600_000 + 60_000);
+    expect((await write(2)).statusCode).toBeLessThan(300);
+    t.clock.advance(24 * 3_600_000 + 60_000);
+    expect((await write(3)).statusCode).toBeLessThan(300);
+    // Twice at most, however long it's been: then nothing more until they answer.
+    t.clock.advance(7 * 24 * 3_600_000);
+    const fourth = await write(4);
+    expect(fourth.statusCode).toBe(403);
+    expect(fourth.json().error.message).toBe('You can write again once they answer.');
+    await work();
+    expect(sends.filter((m) => m.To === 'sami@outside.example')).toHaveLength(3);
+    // Someone on Caime is asked once, as before, however long it's been.
+    const rami = await signup(t, {
+      displayName: 'Rami Stranger',
+      handle: 'rami.stranger',
+      email: 'rami.stranger@example.com',
+    });
+    const dm = (await ines.post('/v1/conversations', { kind: 'direct', userId: rami.user.id }))
+      .conversation.id as string;
+    const toRami = (n: number) =>
+      ines.req('POST', `/v1/conversations/${dm}/messages`, {
+        clientId: `ines-to-rami-${n}`,
+        kind: 'text',
+        body: `Hello Rami, ${n}.`,
+      });
+    expect((await toRami(1)).statusCode).toBeLessThan(300);
+    t.clock.advance(2 * 24 * 3_600_000);
+    const again = await toRami(2);
+    expect(again.statusCode).toBe(403);
+    expect(again.json().error.message).toBe(
+      'You can send more once they accept your message request.',
+    );
   });
 });

@@ -4723,4 +4723,11 @@ export const turkish: Catalog = {
   'A little left': 'Çok az kaldı',
   'Its answers have used what a day allows: your team answers until {when}.':
     'Yanıtları bir günün izin verdiği sınıra ulaştı. Ekibiniz yanıtlıyor; yeniden: {when}.',
+  'by email, sender not confirmed ·': 'e-postayla, gönderen doğrulanamadı ·',
+  'by email, sender not confirmed': 'e-postayla, gönderen doğrulanamadı',
+  'Caime couldn’t confirm this mail came from {address}: it’s here to read, and nothing is sent from here.':
+    'Caime bu postanın {address} adresinden geldiğini doğrulayamadı: okumak için burada, buradan bir şey gönderilmez.',
+  'Sender not confirmed': 'Gönderen doğrulanamadı',
+  'Mail came in naming this address, but Caime couldn’t confirm it was sent from it, so nothing in it is taken as theirs.':
+    'Bu adres adına bir e-posta geldi, ancak Caime bu adresten gönderildiğini doğrulayamadı; bu yüzden içindekiler adresin sahibine mal edilmez.',
 };

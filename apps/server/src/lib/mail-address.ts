@@ -55,6 +55,15 @@ export function alignedDomains(a: string | null, b: string | null): boolean {
 }
 
 /** What a sender's name reads: their display name, else the local part made readable. */
+/**
+ * The reserved domain (RFC 2606) a stand-in for a sender nobody confirmed is held under (M16 F1,
+ * `unverifiedSender`), as a link guest is under `guest.invalid`: nothing is delivered there, so
+ * nobody is ever written to, found or claimed at it.
+ */
+export const UNVERIFIED_DOMAIN = 'unverified.invalid';
+export const isUnverifiedAddress = (email: string | null | undefined) =>
+  Boolean(email?.toLowerCase().endsWith(`@${UNVERIFIED_DOMAIN}`));
+
 export function senderName(name: string | null | undefined, address: string): string {
   const given = (name ?? '')
     .replace(/\s+/g, ' ')

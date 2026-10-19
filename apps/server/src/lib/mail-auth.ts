@@ -16,7 +16,7 @@ import { evaluateDmarc } from 'mailauth/lib/dmarc/index.js';
 import { spf } from 'mailauth/lib/spf/index.js';
 import type { AppContext } from '../context';
 import { isPrivateAddress } from './apps';
-import type { AuthResult, MailAuth } from './mail-provider';
+import type { AuthResult, DmarcPolicy, MailAuth } from './mail-provider';
 
 export const NO_AUTH: MailAuth = { spf: null, dkim: [], dmarc: null };
 
@@ -80,6 +80,11 @@ const asResult = (word: unknown): AuthResult => {
   if (w === 'pass') return 'pass';
   if (w === 'fail' || w === 'softfail') return 'fail';
   return !w || w === 'none' ? 'none' : 'other';
+};
+
+const asPolicy = (word: unknown): DmarcPolicy | null => {
+  const w = String(word ?? '').toLowerCase();
+  return w === 'none' || w === 'quarantine' || w === 'reject' ? w : null;
 };
 
 /** DNS for mailauth, through Caime's own resolver (tests and E2E stand in for the internet). */
@@ -154,6 +159,8 @@ export async function authenticateMail(
                 ? 'other'
                 : asResult(dmarc.status?.result),
             domain: dmarc.domain ?? null,
+            // As the record applies to this domain (a subdomain's, a test mode's one step down).
+            policy: asPolicy(dmarc.policy),
           }
         : null,
     };

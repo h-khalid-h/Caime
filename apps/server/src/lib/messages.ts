@@ -14,6 +14,7 @@ import {
   canPostTo,
   type FileView,
   FormAskBody,
+  formatSoon,
   type IntakeForm,
   initialKitState,
   KIT_MODES,
@@ -37,6 +38,7 @@ import {
   type SendMessageBodyT,
   ShareAskBody,
   StickerPayload,
+  safeLocale,
   messagePreview as sharedPreview,
   shareOut,
   systemAccountOf,
@@ -47,6 +49,7 @@ import {
 import { currencyOfCountry } from '@caime/core/countries';
 import { tr } from '@caime/core/i18n';
 import { AGREED_STATES, cardAsks } from '@caime/core/kit-states';
+import { MAIL_FOLLOW_UP_AFTER_MS, MAIL_FOLLOW_UPS } from '@caime/core/mail';
 import { isRepeat, repeatsIn } from '@caime/core/repeat';
 import { dayIn, type MeetingSeries } from '@caime/core/series';
 import type { Kysely, SqlBool, Transaction } from 'kysely';
@@ -99,6 +102,7 @@ export type MailViewRow = Pick<
   | 'signature'
   | 'seen_at'
   | 'opened_at'
+  | 'unverified'
 > & { has_html: boolean };
 
 export function mailViewOf(row: MailViewRow | undefined): MessageMailView | null {
@@ -113,6 +117,7 @@ export function mailViewOf(row: MailViewRow | undefined): MessageMailView | null
     signature: row.signature,
     seenAt: row.seen_at?.toISOString() ?? null,
     openedAt: row.opened_at?.toISOString() ?? null,
+    unverified: row.unverified,
   };
 }
 
@@ -291,6 +296,7 @@ export async function messageViews(
               'signature',
               'seen_at',
               'opened_at',
+              'unverified',
             ])
             // Whether there's HTML to show as sent, never the HTML itself with every view.
             .select(sql<boolean>`html is not null`.as('has_html'))
@@ -950,15 +956,51 @@ export async function sendMessage(
       if (other.request_state === 'pending' && opts.channel !== 'mail') {
         const sent = await ctx.db
           .selectFrom('messages')
-          .select(sql<number>`count(*)::int`.as('n'))
+          .select([
+            sql<number>`count(*)::int`.as('n'),
+            sql<Date | null>`max(created_at)`.as('last'),
+          ])
           .where('conversation_id', '=', conversationId)
           .where('sender_id', '=', senderId)
           .executeTakeFirstOrThrow();
-        if (sent.n >= 1) {
+        // Someone reached by email (R93, M16 F2) is followed up as anyone writing by mail would:
+        // once a day has passed since the last, twice at most, then nothing more until they
+        // answer. Anyone on Caime is asked once.
+        const byMail =
+          sent.n >= 1 &&
+          (
+            await ctx.db
+              .selectFrom('users')
+              .select('kind')
+              .where('id', '=', other.user_id)
+              .executeTakeFirst()
+          )?.kind === 'provisional';
+        if (sent.n >= 1 + (byMail ? MAIL_FOLLOW_UPS : 0))
           throw new AppError(
             403,
             'awaiting_acceptance',
-            tr('You can send more once they accept your message request.'),
+            byMail
+              ? tr('You can write again once they answer.')
+              : tr('You can send more once they accept your message request.'),
+          );
+        const ready = sent.last ? new Date(sent.last).getTime() + MAIL_FOLLOW_UP_AFTER_MS : 0;
+        if (byMail && ready > ctx.now().getTime()) {
+          const mine = await ctx.db
+            .selectFrom('users')
+            .select(['locale', 'time_zone'])
+            .where('id', '=', senderId)
+            .executeTakeFirstOrThrow();
+          throw new AppError(
+            403,
+            'awaiting_acceptance',
+            tr('You can follow up {when}: once a day, twice at most, until they answer.', {
+              when: formatSoon(
+                new Date(ready).toISOString(),
+                ctx.now(),
+                mine.time_zone,
+                safeLocale(mine.locale),
+              ),
+            }),
           );
         }
       }

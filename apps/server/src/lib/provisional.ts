@@ -4,7 +4,8 @@
  * nobody can type or find. Inbound mail, a meeting's guests and writing to an address all ask
  * here, so one address is one person everywhere and signing up with it claims all of it.
  */
-import { defaultPrivacy, uuidv7 } from '@caime/core';
+import { createHash } from 'node:crypto';
+import { defaultPrivacy, truncate, uuidv7 } from '@caime/core';
 import { addressValue } from '@caime/core/addresses';
 import { tr } from '@caime/core/i18n';
 import type { AppContext } from '../context';
@@ -13,7 +14,7 @@ import { personByAddress } from './addresses';
 import { assertAgeChecked } from './age';
 import { ensureDirectConversation } from './conversations';
 import { AppError, badRequest, conflict, forbidden } from './errors';
-import { mailOn } from './mail-address';
+import { isUnverifiedAddress, mailOn, UNVERIFIED_DOMAIN } from './mail-address';
 import { isBlockedEitherWay, pairKey } from './relations';
 import { minorOf } from './users';
 
@@ -33,8 +34,8 @@ export async function personForAddress(
   name: string,
 ): Promise<UserRow | null> {
   const email = address.toLowerCase();
-  // Nobody is written to at a guest's reserved address: it's no one's to reach.
-  if (isLinkGuestAddress(email)) return null;
+  // Nobody is written to at a guest's reserved address, or a stand-in's: it's no one's to reach.
+  if (isLinkGuestAddress(email) || isUnverifiedAddress(email)) return null;
   const byId = (id: string) =>
     ctx.db.selectFrom('users').select(USER_COLUMNS).where('id', '=', id).executeTakeFirst();
   const ownerId = await personByAddress(ctx.db, email);
@@ -61,6 +62,50 @@ export async function personForAddress(
     .onConflict((oc) => oc.column('email').doNothing())
     .execute();
   // Two asks for a new address at once: the first one's row is theirs.
+  return (await find()) ?? null;
+}
+
+/**
+ * Who sent a mail that failed the sender check (M16 F1, R75 (1)), as the one person it reached
+ * sees it: a provisional person of their own for that person and the address the mail claims,
+ * under `UNVERIFIED_DOMAIN`. Never the address's own person (whoever holds that address may not
+ * have written it), so nothing it says is ever taken as theirs; never found, claimed or written
+ * to; named by the address it claimed alone, never the name it gave, the easiest part to make up.
+ */
+export async function unverifiedSender(
+  ctx: AppContext,
+  recipientId: string,
+  claimed: string,
+): Promise<UserRow | null> {
+  const address = claimed.toLowerCase();
+  const key = createHash('sha256').update(`${recipientId}\n${address}`).digest('hex');
+  const email = `${key.slice(0, 32)}@${UNVERIFIED_DOMAIN}`;
+  const find = () =>
+    ctx.db
+      .selectFrom('users')
+      .select(USER_COLUMNS)
+      .where('email', '=', email)
+      .where('kind', '=', 'provisional')
+      .executeTakeFirst();
+  const known = await find();
+  if (known) return known;
+  const id = uuidv7();
+  await ctx.db
+    .insertInto('users')
+    .values({
+      id,
+      email,
+      // A handle nobody can type or find, as a provisional person's (a colon is never in one).
+      handle: `unverified:${id}`,
+      password_hash: '',
+      display_name: truncate(address, 80),
+      kind: 'provisional',
+      privacy: JSON.stringify(defaultPrivacy({ minor: false })),
+      created_at: ctx.now(),
+    })
+    .onConflict((oc) => oc.column('email').doNothing())
+    .execute();
+  // Two mails at once: the first one's row is theirs.
   return (await find()) ?? null;
 }
 

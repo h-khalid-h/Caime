@@ -1597,4 +1597,6 @@ export const turkishServer: Catalog = {
   'No card asks {who} to pay you.': '{who} kişisinden size ödeme isteyen bir kart yok.',
   'Or ask about one of your people, by name or as you know them: what you’re waiting for from them, what they asked of you, what you agreed and whether they paid.':
     'Ya da tanıdıklarınızdan birini adıyla ya da yakınlığınızla sorun: ne beklediğinizi, sizden ne istendiğini, neye karar verildiğini ve ödemeleri.',
+  'You can follow up {when}: once a day, twice at most, until they answer.':
+    'Yanıt gelene kadar günde bir kez, en fazla iki kez hatırlatabilirsiniz; bir sonraki: {when}.',
 };

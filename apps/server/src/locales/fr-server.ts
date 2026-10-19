@@ -1669,4 +1669,6 @@ export const frServer: Catalog = {
   'No card asks {who} to pay you.': 'Aucune carte ne demande à {who} de vous payer.',
   'Or ask about one of your people, by name or as you know them: what you’re waiting for from them, what they asked of you, what you agreed and whether they paid.':
     'Ou posez une question sur l’une de vos connaissances, par son nom ou par votre lien : ce que vous attendez, ce qui vous est demandé, ce qui a été convenu et les paiements.',
+  'You can follow up {when}: once a day, twice at most, until they answer.':
+    'Vous pourrez relancer {when} : une fois par jour, deux fois au plus, jusqu’à sa réponse.',
 };

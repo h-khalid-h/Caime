@@ -1656,4 +1656,6 @@ export const arServer: Catalog = {
   'No card asks {who} to pay you.': 'لا بطاقة تطلب من {who} الدفع لك.',
   'Or ask about one of your people, by name or as you know them: what you’re waiting for from them, what they asked of you, what you agreed and whether they paid.':
     'أو اسأل عن أحد من تعرفهم، بالاسم أو بالصلة: ما تنتظره، وما هو مطلوب منك، وما اتُّفق عليه، والمدفوعات.',
+  'You can follow up {when}: once a day, twice at most, until they answer.':
+    'يمكنك المتابعة {when}: مرة في اليوم، ومرتين على الأكثر، إلى أن يصل رد.',
 };

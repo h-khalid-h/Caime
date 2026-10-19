@@ -1131,7 +1131,11 @@ with its reason, so it isn't proposed again without new facts.
   mail's own list, precedence and auto-submitted headers or a no-reply address (a sender can
   only make itself quieter by them), in a conversation that started as a notice, so a person
   someone already writes with stays one; and the agent answering by mail; HTML as sent, opened from the message in a CSP sandbox that
-  runs and loads nothing, to the conversation's people alone. Phase 2: notices, HTML as sent in a sandbox,
+  runs and loads nothing, to the conversation's people alone. *Built in M16 F1 (2026-10-19):* (1)'s
+  unverified notice: mail that fails the check is kept for the person it reached, from a stand-in
+  named by the address it claims, in a notice of its own that says so, never answered and read for
+  nothing; refused where its domain's DMARC asks, at an organization's address and Cai's, and for
+  anyone under 18. Phase 2: notices, HTML as sent in a sandbox,
   reply-all with CC, sending as the address from other clients, the agent by mail. Phase 3:
   sign-in with Google, Apple and Microsoft; calendar sync as apps; a verified organization
   receiving at its own domain. ⛔ Before production: the mail domain's MX at the inbound
@@ -1848,7 +1852,10 @@ with its reason, so it isn't proposed again without new facts.
   inbound mail and meeting guests use), and the first message goes out from the person's own
   Caime address with a line saying who wrote and that a reply reaches them in Caime. It's a
   message request like any stranger's: one message until they reply, which keeps Caime's
-  sending domain clean. An address that is someone's on Caime is never mailed behind them and
+  sending domain clean. *Refined in M16 F2 (2026-10-19, review 2026-10-17 §6):* a follow-up once
+  a day has passed since the last, twice at most, as anyone writing by mail would, then nothing
+  more until they answer; three mails a day apart don't make a list, and twenty new addresses a
+  day still bounds who's written to. An address that is someone's on Caime is never mailed behind them and
   never named: the offer answers as sign-up does ("someone on Caime uses that address"), and
   whoever lets people find them by email shows as themselves in the results above. Adults with
   a Caime address only; twenty new addresses a day.

@@ -340,6 +340,9 @@ function MailSignature({ text, meta, onHold }: { text: string; meta: string; onH
 }
 
 function mailLine(mail: MessageMailView, spoken: boolean): string {
+  // Its sender couldn't be confirmed (M16 F1): never taken as whoever its address names.
+  if (mail.direction === 'in' && mail.unverified)
+    return spoken ? tr('by email, sender not confirmed') : tr('by email, sender not confirmed ·');
   if (mail.direction === 'in') return spoken ? tr('by email') : tr('by email ·');
   // Seen is certain (they replied, or opened it in Caime); opened is the provider's pixel.
   if (mail.seenAt) return spoken ? tr('seen, by email') : tr('Seen by email ·');

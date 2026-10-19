@@ -2796,6 +2796,49 @@ graph) and the number that will show it; one that sharpens none is hygiene and s
       and Outlook events shown to the person alone with consent, the other side's local time; an
       in-call side panel and the call linked to its card; VoIP ringing (⛔ a development build on
       a phone); more than eight people by ADR-17's media server (decided after F).
+- [x] F1. Mail its sender couldn't be confirmed for, kept as such (2026-10-19, review §6: "mail
+      failing the sender check is dropped silently (`mail-in.ts:111`, against R75's promised
+      notice; the owner lost mail this way)"; R75 (1); advantage 5, privacy that never costs you
+      your mail. The number: mail failing the check that reaches a person and is kept, every one
+      now unless its domain's DMARC asks for a reject, none before). Such mail is never taken as
+      anyone's: for a person it lands from a stand-in of its own for that person and the address
+      it claims (`unverifiedSender`: a provisional row at the reserved `unverified.invalid`, named
+      by that address alone, never by the name the mail gave; never the address's own person,
+      never found, claimed or mailed), in one notice per claimed address under Notices (muted,
+      never a request, never answered, read for nothing: no suggestion, action, link preview or
+      notification from its words), marked `mail_messages.unverified` (migration 0143, expand
+      only). The bubble says "by email, sender not confirmed", the composer "Caime couldn’t
+      confirm this mail came from {address}…", and its profile "Sender not confirmed" with
+      nothing to press. It teaches nothing of the real sender (a signature it came with folds
+      none of theirs, and its arrival marks nothing seen), and mail from the same address that
+      its server does vouch for is that address's own person's, apart. Refused and counted, as
+      before, where the From domain's DMARC asks (`p=reject`, `t=y` read as one step less:
+      `MailAuth.dmarc.policy`, from mailauth's own evaluation), at an organization's address (a
+      forged customer would be answered as one), at Cai's (a forged acceptance), and for anyone
+      under 18; the counter says `kept_unverified` for what's kept. The privacy page and the help
+      say so. Left: CC and reply-all (the F line's first item, designed apart); an organization's
+      address still refuses such mail.
+      Costs: a mail that was dropped is now kept as a notice is (the stand-in once per person and
+      address, the message, its files), read for nothing; nothing on devices. Verified:
+      `mail.test.ts` (kept and said so, named by the address, nobody told and nothing asked,
+      never answered, its profile, the address's own person never made and the vouched-for mail
+      landing apart; a signature that teaches nothing; refused under a domain's reject and kept
+      under its quarantine, refused at an organization's address and Cai's, and under 18; the
+      four failing kinds kept and counted), `mail-auth.test.ts` (the policy read from the record,
+      test mode one step less), the catalogs in four languages, and the full gate.
+- [x] F2. Following up by email (2026-10-19, review §6: "one mail to a new address until they
+      reply"; R93; advantage 2, everyone you deal with in one place, by mail too. The number:
+      what a person may send someone reached by email before they answer, three mails a day
+      apart where it was one). A person writing to an address (R93) follows up as anyone
+      writing by mail would: once a day has passed since their last, twice at most, then nothing
+      more until the other side answers; too soon, the refusal says when, in the writer's
+      language and on their clock ("You can follow up tomorrow at 10:32: once a day, twice at
+      most, until they answer."). Anyone on Caime is still asked once (a message request), and
+      twenty new addresses a day still bound who's written to. Costs: the count a refused send
+      already made, with its latest time, and the other's kind read only once a message has
+      gone; nothing on devices. Verified: `mail.test.ts` (three mails out a day apart, the
+      fourth refused until they answer, the refusal's when; a stranger on Caime still asked
+      once), the server catalogs, and the full gate.
 - [ ] G. Integration framework and governed AI (REVIEW §11): credentials (key outside the
       database with a key id and re-seal, a downscoped picker token, sealed webhook secrets,
       rotation); per-use health, Google and Microsoft probes, a freshness gauge, a reconnect
@@ -5024,6 +5067,11 @@ graph) and the number that will show it; one that sharpens none is hygiene and s
   journeys, safety, reliability, performance, intelligence, mail and calendar, chat, integrations,
   business and code integrity; the matrix against WhatsApp, Signal, Slack, Calendly and Workspace;
   an age-assurance design; the integration framework mapped to the code; plan M16 (A–H).
+- 2026-10-19 — M16 F2: someone reached by email can be followed up, a day apart and twice at
+  most, before they answer, where one mail was all.
+- 2026-10-19 — M16 F1: mail whose sender couldn't be confirmed is kept for the person it reached,
+  under Notices and saying so, never taken as the address's own person's; refused only where its
+  domain asks, at an organization's or Cai's address, and under 18.
 - 2026-10-19 — M16 G12: a voice note's length read from the recording itself, never its device's
   word, before a provider is paid for it; a browser's MP4 voice note (Safari's) is a recording,
   heard, where it was kept as a video.

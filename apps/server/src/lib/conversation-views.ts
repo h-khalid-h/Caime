@@ -19,6 +19,7 @@ import { businessClosed } from '../lib/blocks';
 import { orgRef, threadViews } from '../lib/business';
 import { isGroupTopic } from '../lib/conversations';
 import { badRequest, notFound } from '../lib/errors';
+import { isUnverifiedAddress } from '../lib/mail-address';
 import { insertSystemMessage, messageViews, participantsOf } from '../lib/messages';
 import { formNames } from '../lib/org-forms';
 import { personViewsFor } from '../lib/people-batch';
@@ -374,6 +375,10 @@ export async function conversationView(
     connected,
     mailSubject,
     notice: conversation.notice,
+    // A stand-in for a sender nobody confirmed (M16 F1) is named by the address it claimed.
+    unverifiedSender: conversation.notice
+      ? (others.find((o) => isUnverifiedAddress(o.email))?.display_name ?? null)
+      : null,
     topics: topics.map((c) => ({
       id: c.id,
       title: c.title ?? 'Topic',
