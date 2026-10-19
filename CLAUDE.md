@@ -1332,7 +1332,11 @@ A sphere is said as how you know someone, never "sphere".
   `qk.orgApps`, and their deliveries list is polled only while a delivery is pending.
 - What follows a card's move is `afterCardMove` (`lib/card-moves.ts`): the kit move route and
   `settleCheckout` (a Pay card paid through Checkout moves to `paid` the same way) both call it,
-  so a new way a card moves calls it too, never its own notify, publish or event. `tellCardApp`
+  so a new way a card moves calls it too, never its own notify, publish or event. A person's move
+  is `moveCard` (`lib/kit-moves.ts`, M16 F3: where it stands under its lock, an order's stock and
+  a share's split in that transaction, the provider picked, the request answered, then
+  `afterCardMove`), checked first by `mayMove`: the kit route and a calendar's answer by mail both
+  call them, and a new way someone moves a card does too. `tellCardApp`
   (`lib/kits.ts`) tells an app's own card to that app alone and one of Caime's cards in a
   customer conversation to every app of the organization that listens (`kit.posted` for any
   card the team sends, `kit.moved` for any move, never what an app did itself); `cardData` is
@@ -1880,7 +1884,15 @@ A sphere is said as how you know someone, never "sphere".
   go through `storeBytes` in `lib/files.ts`, where the upload routes' finaliser lives too) and
   `lib/mail-out.ts` (`queueMailOut` from `effectsOf`: a person's words and files to each
   provisional member, and in a customer thread the agent's and apps' words too, as the
-  organization's (`speaksForOrg`; `mail-agent.test.ts`); a notice, core `isNoticeMail` on the
+  organization's (`speaksForOrg`; `mail-agent.test.ts`); M16 F3: whatever core `notByMail`
+  passes, a card of `MAIL_CARDS`, a place and a voice note said in words by `mailedAs`
+  (`lib/mail-cards.ts`, in the sender's language, times whole on the sender's clock or the
+  organization's), a meeting's and an appointment's with its invitation organized by the address
+  it goes from, whose calendar answer `answerFromCalendar` (`lib/mail-answers.ts`, called by
+  `deliverTo` for a confirmed sender, the calendar read by `lib/mail-calendar.ts`) applies
+  through `moveCard`, and a cancellation here `queueCancellation` mails with its update;
+  `sendMessage` refuses what `notByMail` holds back to someone reached by mail, and the composer
+  never offers it (`reachedByMail`); a notice, core `isNoticeMail` on the
   mail's own list, precedence and auto-submitted headers or a no-reply sender, lands through
   `noticeFor` in one muted conversation per sender (`conversations.notice`, the inbox's
   `notices` section) whose effects are skipped and which `sendMessage` closes to anything but

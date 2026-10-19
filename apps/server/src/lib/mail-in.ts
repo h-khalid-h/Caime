@@ -22,6 +22,8 @@
  *   here lands in that conversation, else its subject names the topic (made on the first).
  * - Attachments go through the files pipeline as the sender's own files; words past a message's
  *   length ride along whole as a text file.
+ * - A calendar's answer to a meeting or an appointment mailed from here (M16 F3,
+ *   `mail-answers.ts`) moves that card, from the address invited alone, and isn't posted.
  * - Under 18, an address takes mail only from people the person is connected with (R29);
  *   anything else is dropped without a bounce, since a bounce says the address exists.
  */
@@ -38,6 +40,7 @@ import { caiMail } from './cai-mail';
 import { ensureDirectConversation } from './conversations';
 import { storeBytes } from './files';
 import { alignedDomains, domainOf, handleOf, mailOn, senderName } from './mail-address';
+import { answerFromCalendar } from './mail-answers';
 import { authenticateMail } from './mail-auth';
 import { tellSenders } from './mail-out';
 import type { InboundMail, MailAuth } from './mail-provider';
@@ -53,6 +56,8 @@ import { minorOf } from './users';
 
 export type InboundOutcome =
   | 'delivered'
+  /** A calendar's answer to a card mailed from here, which moved the card (M16 F3). */
+  | 'answered'
   | 'duplicate'
   /** Its sender couldn't be confirmed: kept as a notice that says so (M16 F1). */
   | 'kept_unverified'
@@ -229,6 +234,10 @@ async function deliverTo(
   if (!verified) return keepUnverified(ctx, mail, toAddress, target);
   const sender = await senderOf(ctx, mail);
   if (!sender) return 'refused';
+  // A calendar's answer to a meeting or an appointment mailed from here (M16 F3): it moves the
+  // card, as a tap would, and isn't posted.
+  const answer = await answerFromCalendar(ctx, mail, sender);
+  if (answer) return answer;
   if (target.kind === 'person' && sender.id === target.user.id) {
     // Mail from one of one's own addresses to one's own Caime address (R91): forwarded in to keep
     // or to act on, it lands in one's conversation with Cai, as one's own message, unanswered.

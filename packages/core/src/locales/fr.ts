@@ -4915,4 +4915,12 @@ export const fr: Catalog = {
   'Sender not confirmed': 'Provenance non confirmée',
   'Mail came in naming this address, but Caime couldn’t confirm it was sent from it, so nothing in it is taken as theirs.':
     'Un e-mail est arrivé au nom de cette adresse, mais Caime n’a pas pu confirmer qu’il en venait : rien de ce qu’il contient n’est attribué à son titulaire.',
+  'A time that repeats doesn’t travel by email: send one time.':
+    'Un horaire qui se répète ne part pas par e-mail : envoyez-en un seul.',
+  'A live location doesn’t travel by email: share the place.':
+    'Une position en direct ne part pas par e-mail : partagez le lieu.',
+  'Say where it is: someone reached by email can’t join a call on Caime.':
+    'Dites où : une personne jointe par e-mail ne peut pas rejoindre un appel sur Caime.',
+  'That doesn’t travel by email: they’d never see it.':
+    'Cela ne part pas par e-mail : la personne ne le verrait jamais.',
 };

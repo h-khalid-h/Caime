@@ -1135,7 +1135,17 @@ with its reason, so it isn't proposed again without new facts.
   unverified notice: mail that fails the check is kept for the person it reached, from a stand-in
   named by the address it claims, in a notice of its own that says so, never answered and read for
   nothing; refused where its domain's DMARC asks, at an organization's address and Cai's, and for
-  anyone under 18. Phase 2: notices, HTML as sent in a sandbox,
+  anyone under 18. *Built in M16 F3 (2026-10-19, review 2026-10-17 §6: "cards are offered in mail
+  conversations but never mailed"):* phase 1's "a card stays on Caime" is over. A card goes to
+  someone reached by email in words, as it reads on Caime (times whole on the clock it was set by,
+  the ways to pay a Pay card names), a meeting's and an appointment's with the calendar
+  invitation organized by the address it went from, so the yes or no from their calendar comes
+  back there and moves the card as a tap would (from the address invited alone, its sender
+  confirmed as any mail is); cancelled here, the cancellation goes too, with the update that
+  takes it off their calendar; a place goes as its line and a map, a voice note as its recording.
+  What a mail can't carry isn't offered there and isn't sent: a sticker, a poll, a card that asks
+  for taps nobody can make in a mail, a live location, a time that repeats, a meeting held on
+  Caime. Phase 2: notices, HTML as sent in a sandbox,
   reply-all with CC, sending as the address from other clients, the agent by mail. Phase 3:
   sign-in with Google, Apple and Microsoft; calendar sync as apps; a verified organization
   receiving at its own domain. ⛔ Before production: the mail domain's MX at the inbound

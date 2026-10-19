@@ -17,6 +17,7 @@ import { listed, msg, tr } from '@caime/core/i18n';
 import { uuidv4 } from '@caime/core/ids';
 import { CARD_KITS, type CardKitId, isCardKit, prepareKitFields } from '@caime/core/kit-cards';
 import { KITS, type KitDef, type KitField, kitsFor } from '@caime/core/kits';
+import { MAIL_CARDS, notByMail, notByMailText } from '@caime/core/mail';
 import { repeatsIn } from '@caime/core/repeat';
 import { SPACE_KIND_DEFS } from '@caime/core/spaces';
 import { zonedParts } from '@caime/core/time';
@@ -31,6 +32,7 @@ import { useMyBooking, useSlots } from '@/api/hooks';
 import { qk } from '@/api/keys';
 import { branchName } from '@/features/booking/branchName';
 import { ItemPhoto } from '@/features/booking/ItemPhoto';
+import { reachedByMail } from '@/features/conversation/topics';
 import { CurrencyField } from '@/features/geo/CurrencyField';
 import { type Chosen, instantOf } from '@/features/when/when';
 import { wordsMatch } from '@/lib/find';
@@ -103,6 +105,8 @@ export function kitsOffered(conversation: ConversationView, viewerIsMinor: boole
     : (conversation.other?.relationship?.sphere ??
       (conversation.space ? SPACE_KIND_DEFS[conversation.space.kind].sphere : undefined));
   const offered = new Set<string>([...CARD_KITS, 'poll', 'location']);
+  // Someone reached by email reads only what a mail carries (M16 F3): those cards and a place.
+  const byMail = reachedByMail(conversation);
   return kitsFor({
     spheres: sphere ? [sphere] : [],
     // One customer, one organization: its cards are one-to-one cards.
@@ -116,7 +120,8 @@ export function kitsOffered(conversation: ConversationView, viewerIsMinor: boole
       // With someone under 18 in it, no card about money (R29): the server refuses them too.
       !(conversation.hasMinor && k.adultsOnly && isCardKit(k.id)) &&
       // A form is offered once the organization has one (M16 H5).
-      (k.id !== 'form' || Boolean(conversation.business?.forms?.length)),
+      (k.id !== 'form' || Boolean(conversation.business?.forms?.length)) &&
+      (!byMail || k.id === 'location' || (MAIL_CARDS as readonly string[]).includes(k.id)),
   );
 }
 
@@ -265,10 +270,13 @@ export function KitForm({
   const direct = conversation.kind === 'direct' && !conversation.business;
   // A meeting repeats in a chat or a group; an appointment in a chat or with an organization,
   // each time booked as it comes (R58).
+  // Someone reached by email (M16 F3) gets one time: a series doesn't travel by mail.
+  const byMail = reachedByMail(conversation);
   const repeats =
-    kit === 'appointment'
+    !byMail &&
+    (kit === 'appointment'
       ? repeatsIn(conversation.business ? 'business' : conversation.kind, 'appointment')
-      : repeatsIn(conversation.kind) && !conversation.business;
+      : repeatsIn(conversation.kind) && !conversation.business);
   // Its last day is asked once it repeats.
   const repeating = repeats && picked.repeat !== undefined;
   // Read afresh when the form opens: a copy of the organization or the profile kept from before
@@ -631,6 +639,9 @@ export function KitForm({
         fields.direction = 'send';
         fields.amount = start.amount;
       }
+      // By email (M16 F3), a meeting says where: nobody joins a call on Caime from a mail.
+      const unmailable = byMail && !custom ? notByMail('kit', { kit, fields }) : null;
+      if (unmailable) return setError(notByMailText(unmailable));
       const checked = custom ? prepareCustomFields(custom, fields) : prepareKitFields(kit, fields);
       if (!checked.ok) return setError(checked.error);
       body = {
@@ -724,20 +735,23 @@ export function KitForm({
             </View>
           ) : null}
           {spot && !fromPlace ? (
-            <ChoiceChips
-              wrap
-              flush
-              label={tr('How long to share it')}
-              value={liveFor}
-              onChange={setLiveFor}
-              options={[
-                { value: '0' as const, label: tr('Just now') },
-                { value: '15' as const, label: tr('15 min') },
-                { value: '60' as const, label: tr('1 hour') },
-                { value: '480' as const, label: tr('8 hours') },
-              ]}
-              testID="live-for"
-            />
+            // Live doesn't travel by email (M16 F3): it would move after the mail had gone.
+            byMail ? null : (
+              <ChoiceChips
+                wrap
+                flush
+                label={tr('How long to share it')}
+                value={liveFor}
+                onChange={setLiveFor}
+                options={[
+                  { value: '0' as const, label: tr('Just now') },
+                  { value: '15' as const, label: tr('15 min') },
+                  { value: '60' as const, label: tr('1 hour') },
+                  { value: '480' as const, label: tr('8 hours') },
+                ]}
+                testID="live-for"
+              />
+            )
           ) : (
             <Button
               label={tr('Use where I am now')}

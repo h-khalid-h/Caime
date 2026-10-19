@@ -4,6 +4,9 @@
  * gave a subject takes its first line: the composer offers it, the server sends it.
  */
 import { truncate } from './format';
+import { tr } from './i18n';
+import { meetingVenue } from './meetings';
+import { isRepeat } from './repeat';
 
 /** A topic's name, and so a subject, is at most this long. */
 export const SUBJECT_MAX = 120;
@@ -76,3 +79,64 @@ export function isNoticeMail(fromAddress: string, signals: MailSignals): boolean
  */
 export const MAIL_FOLLOW_UPS = 2;
 export const MAIL_FOLLOW_UP_AFTER_MS = 24 * 3_600_000;
+
+/**
+ * The cards that reach someone by email (M16 F3, review 2026-10-17 §6), each said in words as it
+ * reads on Caime, a meeting's and an appointment's with the calendar invitation whose answer
+ * comes back to move it. A card that asks for taps nobody can make in a mail (an approval, a
+ * review, a checklist, an album, a split, a form) isn't offered there and isn't sent.
+ */
+export const MAIL_CARDS = [
+  'meeting',
+  'appointment',
+  'payment_request',
+  'invoice',
+  'order_status',
+  'delivery',
+  'purchase_order',
+  'support_ticket',
+] as const;
+
+/** Why a message can't reach someone by email (M16 F3); null when a mail carries it. */
+export type NotByMail = 'kind' | 'repeats' | 'live' | 'where';
+
+/**
+ * Whether a message, as its kind and payload say, reaches someone by email: words, photos,
+ * files and a voice note's recording go as they are; a place as its line and a map; a card of
+ * `MAIL_CARDS` in words. Never a sticker, a poll, a contact, a live location (it moves after the
+ * mail has gone), a time that repeats, or a meeting held on Caime, whose call nobody joins from
+ * a mail.
+ */
+export function notByMail(kind: string, payload: unknown): NotByMail | null {
+  const p = (payload ?? {}) as { kit?: unknown; fields?: Record<string, unknown>; live?: unknown };
+  switch (kind) {
+    case 'text':
+    case 'media':
+    case 'file':
+    case 'voice':
+      return null;
+    case 'location':
+      return p.live ? 'live' : null;
+    case 'kit':
+      if (!(MAIL_CARDS as readonly unknown[]).includes(p.kit)) return 'kind';
+      if (isRepeat(p.fields?.repeat)) return 'repeats';
+      if (p.kit === 'meeting' && meetingVenue(p.fields?.place) === 'caime') return 'where';
+      return null;
+    default:
+      return 'kind';
+  }
+}
+
+/** What the refusal says, on the device before it's sent and from the server after. */
+export function notByMailText(reason: NotByMail): string {
+  switch (reason) {
+    case 'repeats':
+      return tr('A time that repeats doesn’t travel by email: send one time.');
+    case 'live':
+      return tr('A live location doesn’t travel by email: share the place.');
+    case 'where':
+      return tr('Say where it is: someone reached by email can’t join a call on Caime.');
+    default:
+      return tr('That doesn’t travel by email: they’d never see it.');
+  }
+}

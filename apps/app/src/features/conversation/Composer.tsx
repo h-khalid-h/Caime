@@ -77,7 +77,7 @@ import { TextField } from '@/ui/TextField';
 import { toast } from '@/ui/Toast';
 import { useCardAction } from './cardActions';
 import { LinkCard } from './LinkCard';
-import { mailBound, topicsFor } from './topics';
+import { mailBound, reachedByMail, topicsFor } from './topics';
 
 /** The recorder loads when the microphone is pressed, never before (the audio module). */
 const Recorder = lazy(() =>
@@ -225,7 +225,8 @@ export const Composer = forwardRef<ComposerHandle, ComposerProps>(function Compo
   const own = useQuery({
     queryKey: qk.conversationKits(id),
     queryFn: () => endpoints.customKits(id),
-    enabled: attach && Boolean(conversation.business?.thread),
+    // Never to a customer who writes by mail (M16 F3): an app's own card doesn't travel by mail.
+    enabled: attach && Boolean(conversation.business?.thread) && !reachedByMail(conversation),
     staleTime: 60_000,
   }).data?.kits;
   const [uploading, setUploading] = useState<string | null>(null);
@@ -701,9 +702,10 @@ export const Composer = forwardRef<ComposerHandle, ComposerProps>(function Compo
     afterSheet(next);
   };
   const canSend = value.trim().length > 0;
-  // Stickers sit inside the box, as in every messenger (R88): not while editing, and not in a
-  // private conversation, which takes only sealed text.
-  const stickersHere = !privately && !editing;
+  // Stickers sit inside the box, as in every messenger (R88): not while editing, not in a
+  // private conversation, which takes only sealed text, and not to someone reached by email,
+  // whom a sticker never reaches (M16 F3).
+  const stickersHere = !privately && !editing && !reachedByMail(conversation);
   const side = { width: SIDE, height: SIDE, borderRadius: SIDE / 2 };
   const banner = editing ? (
     <Banner

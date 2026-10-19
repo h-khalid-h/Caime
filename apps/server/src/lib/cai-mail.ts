@@ -11,20 +11,12 @@
 import { tr } from '@caime/core/i18n';
 import { readReply } from '@caime/core/ics';
 import type { AppContext } from '../context';
+import { calendarOf } from './mail-calendar';
 import type { InboundOutcome } from './mail-in';
 import type { InboundMail } from './mail-provider';
 import { notify } from './notify';
 
 const UID = /^meeting-([0-9a-f-]{36})@caime$/;
-
-/** The calendar part of a mail: an attached `.ics`, else its text when it's a calendar. */
-function calendarOf(mail: InboundMail): string | null {
-  const part = mail.attachments.find(
-    (a) => a.mime.toLowerCase().startsWith('text/calendar') || /\.ics$/i.test(a.name),
-  );
-  if (part && part.bytes.length <= 64 * 1024) return part.bytes.toString('utf8');
-  return mail.text.includes('BEGIN:VCALENDAR') ? mail.text : null;
-}
 
 export async function caiMail(ctx: AppContext, mail: InboundMail): Promise<InboundOutcome> {
   const text = calendarOf(mail);

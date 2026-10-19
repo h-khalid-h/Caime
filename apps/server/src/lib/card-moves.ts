@@ -27,6 +27,7 @@ import type { CustomerMask } from './business';
 import { queueCalendarPush } from './calendar-push';
 import { recordEvent } from './events';
 import { tellCardApp } from './kits';
+import { queueCancellation } from './mail-out';
 import { queueNextTime } from './meeting-series';
 import { queueMeetingStart } from './meeting-start';
 import { messageViews, participantsOf } from './messages';
@@ -74,6 +75,10 @@ export async function afterCardMove(
   // recalled the day before (R97 (1), C1b, C1c), whether an organization or a person is the host.
   if (card.kit === 'appointment' && (to === 'confirmed' || to === 'cancelled'))
     await mailProvisionalBooker(ctx, moved, to);
+  // A meeting or an appointment that went to someone by mail (M16 F3), cancelled here: the
+  // cancellation goes by mail too, with the update that takes it off their calendar.
+  if (card.kit === 'meeting' || card.kit === 'appointment')
+    await queueCancellation(ctx, moved, to, actorId);
   const mover = await ctx.db
     .selectFrom('users')
     .select('display_name')

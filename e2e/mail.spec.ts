@@ -280,4 +280,92 @@ test.describe
       await expect(page.getByTestId('composer-input')).toHaveCount(0);
       expect(errors).toEqual([]);
     });
+
+    test('a meeting goes by email as an invitation, and their calendar’s yes agrees it (M16 F3)', async () => {
+      const tarek = `tarek.${suffix}@outside.example`;
+      // His domain signs his calendar's answer, as Sara's signs her mail.
+      await publishTxt('test._domainkey.outside.example', [DKIM_TXT]);
+      await page.goto('/connect');
+      await page.getByTestId('connect-search').fill(tarek);
+      await page.getByTestId('write-by-email').filter({ visible: true }).click();
+      await page.waitForURL(/\/c\//);
+      // Only what a mail carries is offered: no sticker, no poll.
+      await expect(page.getByTestId('composer-stickers')).toHaveCount(0);
+      await page.getByRole('button', { name: 'Share a photo, a file or a card' }).click();
+      await expect(page.getByTestId('kit-option-poll')).toHaveCount(0);
+      await page.getByTestId('kit-option-meeting').click();
+      // One time: a series doesn't travel by mail.
+      await expect(page.getByTestId('kit-repeat')).toHaveCount(0);
+      await page.getByLabel('Title').fill('Venue walkthrough');
+      await page.getByLabel('When', { exact: true }).fill('Friday 3pm');
+      // Held on Caime, nobody could join it from a mail: it says where it must be.
+      await page.getByTestId('kit-send').click();
+      await expect(
+        visible(page, 'Say where it is: someone reached by email can’t join a call on Caime.'),
+      ).toBeVisible();
+      await page.getByLabel('Where (optional)').fill('meet.google.com/abc-defg-hij');
+      await page.getByTestId('kit-send').click();
+      const card = page
+        .getByTestId('kit-meeting')
+        .filter({ hasText: 'Venue walkthrough', visible: true });
+      await expect(card).toContainText('Proposed');
+      // Its words and its invitation, from Noor's own address.
+      await expect
+        .poll(async () => (await sent()).find((m) => m.To === tarek)?.Subject ?? '')
+        .toBe('Meeting: Venue walkthrough');
+      const mail = (await sent()).find((m) => m.To === tarek) as Sent & {
+        Attachments?: Array<{ Name: string; ContentType: string; Content: string }>;
+      };
+      expect(mail.TextBody).toContain('Where: meet.google.com/abc-defg-hij');
+      const invite = mail.Attachments?.find((a) => a.Name === 'invite.ics');
+      expect(invite?.ContentType).toBe('text/calendar; method=REQUEST; charset=UTF-8');
+      const ics = Buffer.from(invite?.Content ?? '', 'base64')
+        .toString('utf8')
+        .replace(/\r\n[ \t]/g, '');
+      expect(ics).toContain(`ORGANIZER;CN="Noor Post":mailto:${address}`);
+      const uid = /^UID:(\S+)$/m.exec(ics)?.[1] ?? '';
+      expect(uid).toMatch(/^meeting-[0-9a-f-]{36}@caime$/);
+      // His calendar's yes comes back to Noor's address, signed by his domain: the card is agreed.
+      const answer = [
+        'BEGIN:VCALENDAR',
+        'METHOD:REPLY',
+        'BEGIN:VEVENT',
+        `UID:${uid}`,
+        `ATTENDEE;CN=Tarek;PARTSTAT=ACCEPTED:mailto:${tarek}`,
+        'END:VEVENT',
+        'END:VCALENDAR',
+        '',
+      ].join('\r\n');
+      const messageId = `<e2e-${suffix}-yes@outside.example>`;
+      const text = 'Tarek has accepted this invitation.';
+      const got = await post('/v1/mail/in/postmark', {
+        FromFull: { Email: tarek, Name: 'Tarek' },
+        ToFull: [{ Email: address, Name: '' }],
+        Subject: 'Accepted: Venue walkthrough',
+        MessageID: `pm-in-${suffix}-yes`,
+        TextBody: text,
+        HtmlBody: '',
+        Headers: [{ Name: 'Message-ID', Value: messageId }],
+        Attachments: [
+          {
+            Name: 'invite.ics',
+            ContentType: 'application/ics',
+            Content: Buffer.from(answer).toString('base64'),
+          },
+        ],
+        RawEmail: await rawMail({
+          from: tarek,
+          fromName: 'Tarek',
+          to: [address],
+          subject: 'Accepted: Venue walkthrough',
+          text,
+          messageId,
+        }),
+      });
+      expect(got.outcomes?.[0]?.outcome).toBe('answered');
+      await expect(card).toContainText('Accepted');
+      // Nothing posted: the card says it.
+      await expect(page.getByText(text)).toHaveCount(0);
+      expect(errors).toEqual([]);
+    });
   });

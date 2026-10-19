@@ -49,7 +49,12 @@ import {
 import { currencyOfCountry } from '@caime/core/countries';
 import { tr } from '@caime/core/i18n';
 import { AGREED_STATES, cardAsks } from '@caime/core/kit-states';
-import { MAIL_FOLLOW_UP_AFTER_MS, MAIL_FOLLOW_UPS } from '@caime/core/mail';
+import {
+  MAIL_FOLLOW_UP_AFTER_MS,
+  MAIL_FOLLOW_UPS,
+  notByMail,
+  notByMailText,
+} from '@caime/core/mail';
 import { isRepeat, repeatsIn } from '@caime/core/repeat';
 import { dayIn, type MeetingSeries } from '@caime/core/series';
 import type { Kysely, SqlBool, Transaction } from 'kysely';
@@ -937,6 +942,24 @@ export async function sendMessage(
         .executeTakeFirstOrThrow();
       if (sent.n >= 1) throw unanswered(tr('You can write again once they answer.'));
     }
+  }
+  // Someone reached by email (R93) reads only what a mail carries (M16 F3): a sticker, a poll, a
+  // card nobody can answer by mail, a live location, a time that repeats or a meeting held on
+  // Caime would never reach them, so none is sent. One query, and only for those.
+  const unmailable =
+    opts.channel === 'mail' || opts.trusted ? null : notByMail(body.kind, body.payload);
+  if (unmailable && (conversation.kind === 'direct' || conversation.kind === 'business')) {
+    const otherSide = members.find(
+      (p) => p.user_id !== senderId && (conversation.kind === 'direct' || p.role === 'member'),
+    );
+    const reached = otherSide
+      ? await ctx.db
+          .selectFrom('users')
+          .select('kind')
+          .where('id', '=', otherSide.user_id)
+          .executeTakeFirst()
+      : null;
+    if (reached?.kind === 'provisional') throw badRequest(notByMailText(unmailable));
   }
   if (conversation.kind === 'direct') {
     const other = members.find((p) => p.user_id !== senderId);

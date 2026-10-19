@@ -17,20 +17,17 @@ import {
   canRemoveOthersMessages,
   checklistItems,
   checklistState,
-  customMoves,
   EditMessageBody,
   ForwardBody,
   formatAmount,
   isCardKit,
   isCustomCard,
   KitMoveBody,
-  kitMoves,
   type LiveLocation,
   LiveLocationUpdate,
   type LocationPayloadT,
   liveNow,
   MessagesPageQuery,
-  type PaysShare,
   PINNED_MAX,
   PollPayload,
   providersFor,
@@ -39,7 +36,6 @@ import {
   SplitOpBody,
   splitShares,
   splitState,
-  standsAside,
   tr,
   trn,
   uuidv7,
@@ -53,7 +49,6 @@ import type {
   OkResponse,
   ReceiptResponse,
 } from '@caime/core/api';
-import { AGREED_STATES } from '@caime/core/kit-states';
 import type { FastifyInstance } from 'fastify';
 import { sql } from 'kysely';
 import { z } from 'zod';
@@ -62,17 +57,16 @@ import { MESSAGE_COLUMNS } from '../db/schema';
 import { AssetsQuery, assetsPage } from '../lib/assets';
 import { dropSaved, tellSaved } from '../lib/automations';
 import { assertCanWrite } from '../lib/blocks';
-import { orgHost, pickProvider } from '../lib/booking';
+import { orgHost } from '../lib/booking';
 import { humanTeam } from '../lib/booking-team';
 import { customerMask, maskFor } from '../lib/business';
 import { queueCalendarPush } from '../lib/calendar-push';
-import { afterCardMove } from '../lib/card-moves';
-import { expireCheckout, stillPayableAfter } from '../lib/checkout';
 import { membership, sendSystem } from '../lib/conversation-views';
 import { lockConversation } from '../lib/conversations';
 import { assertSealedForEveryone } from '../lib/e2ee';
 import { AppError, badRequest, forbidden, notFound } from '../lib/errors';
 import { recordEvent } from '../lib/events';
+import { mayMove, moveCard } from '../lib/kit-moves';
 import { tellCardApp } from '../lib/kits';
 import { stopRepeating } from '../lib/meeting-series';
 import { assertOpenToApps } from '../lib/member-apps';
@@ -90,8 +84,6 @@ import {
 import { removeForEveryone } from '../lib/moderation';
 import { notify } from '../lib/notify';
 import { receiptFor } from '../lib/receipts';
-import { shareMoved } from '../lib/splits';
-import { orderMoved, tellStockChanged } from '../lib/stock';
 import { parse } from '../lib/validate';
 import { requireAuth } from '../plugins/auth';
 
@@ -268,35 +260,17 @@ export async function messageRoutes(app: FastifyInstance, ctx: AppContext) {
     if (!m) throw notFound(tr('That message'));
     await membership(ctx, auth.userId, m.conversation_id);
     await assertCanWrite(ctx, m.conversation_id, auth.userId);
-    const card = (m.payload ?? {}) as {
-      kit?: unknown;
-      state?: string;
-      title?: string;
-      fields?: Record<string, unknown>;
-      history?: Array<{ state: string; by: string; at: string }>;
-      share?: PaysShare;
-    };
+    const card = (m.payload ?? {}) as { kit?: unknown };
     const own = isCustomCard(m.payload) ? m.payload : null;
     if (m.kind !== 'kit' || m.deleted_at || !(own || isCardKit(card.kit)))
       throw badRequest(tr('That isn’t a card that can change.'));
     // An app moves only its own cards: those of its kits, and Caime's own its bot sent.
     if (auth.app && !(own ? own.app.id === auth.app.id : m.sender_id === auth.userId))
       throw forbidden(tr('An app moves only its own cards.'));
-    const from = card.state ?? '';
     // In a business conversation the team is one side: anyone on it acts for a card it sent.
     const business = await customerMask(ctx.db, m.conversation_id);
-    const onTeam = (userId: string | null) => Boolean(business && userId !== business.customerId);
-    const senderSide = m.sender_id === auth.userId || (onTeam(m.sender_id) && onTeam(auth.userId));
-    // An organization's own card says who moves it: the organization (its team and its apps),
-    // its customer, or either.
-    const move = own
-      ? business
-        ? customMoves(own, onTeam(auth.userId)).find((x) => x.to === to)
-        : undefined
-      : isCardKit(card.kit) && !standsAside(card, auth.userId, m.sender_id)
-        ? kitMoves(card.kit, from, senderSide, card.fields).find((x) => x.to === to)
-        : undefined;
-    if (!move) throw forbidden(tr('You can’t make that change to this card.'));
+    if (!mayMove(m, to, auth.userId, business))
+      throw forbidden(tr('You can’t make that change to this card.'));
     // Each move tells the other side: one person, or one app, moves a conversation's cards only
     // so often.
     ctx.limiter.hit(
@@ -304,119 +278,13 @@ export async function messageRoutes(app: FastifyInstance, ctx: AppContext) {
       ctx.config.isTest ? 10_000 : 10,
       60_000,
     );
-    // Only if nobody moved it first, and only where it stands (merged into the card, so an app's
-    // change to its fields at the same moment is kept): its row is locked while its history is
-    // added to, from the row as it is, the last 50 moves kept.
-    const moved = await ctx.db.transaction().execute(async (trx) => {
-      const row = await trx
-        .selectFrom('messages')
-        .select(['deleted_at', 'payload'])
-        .where('id', '=', id)
-        .forUpdate()
-        .executeTakeFirst();
-      const now = (row?.payload ?? {}) as typeof card;
-      if (!row || row.deleted_at || now.state !== from) return null;
-      const history = [...(now.history ?? []), { state: to, by: auth.userId, at: ctx.now() }];
-      // An order's stock (R60): given back if it's cancelled, spent once it's on its way.
-      const restocked = card.kit === 'order_status' ? await orderMoved(trx, id, to, ctx.now()) : [];
-      // A share's Pay card received (R62): the share it paid is settled with it.
-      const split = await shareMoved(trx, m, to, auth.userId, ctx.now());
-      const after = await trx
-        .updateTable('messages')
-        .set({
-          payload: sql`payload || ${JSON.stringify({ state: to, history: history.slice(-50) })}::jsonb`,
-        })
-        .where('id', '=', id)
-        .returning(MESSAGE_COLUMNS)
-        .executeTakeFirstOrThrow();
-      return { row: after, restocked, split };
-    });
-    if (!moved) throw new AppError(409, 'conflict', tr('Someone just changed this card.'));
-    const updated = moved.row;
-    await tellStockChanged(ctx, moved.restocked);
-    if (moved.split) {
-      const [split] = await messageViews(ctx.db, [moved.split], auth.userId);
-      const members = (await participantsOf(ctx.db, m.conversation_id)).map((p) => p.user_id);
-      await ctx.bus.publish(members, {
-        type: 'message.updated',
-        data: { ...split, clientId: null },
-      });
-    }
-    // Confirmed by the team (R58): a booking from the catalog with nobody named yet gets the free
-    // member with the fewest that day; the customer never sees who (masked).
-    const confirmed = await assignOnConfirm(updated, to, business?.orgId ?? null);
-    // A Pay card settled another way (R65): its open card session ends, so nobody pays twice.
-    if (card.kit === 'payment_request' && !stillPayableAfter(card.fields, to))
-      await expireCheckout(ctx, id).catch((e) =>
-        req.log.warn({ err: (e as Error).message }, 'checkout expire'),
-      );
-    // Agreeing to what came as a message request (a booking from one's public catalog, a meeting
-    // proposed by someone new) answers it, as a reply does (R14): it leaves Requests.
-    if ((card.kit === 'meeting' || card.kit === 'appointment') && to === AGREED_STATES[card.kit])
-      await answerRequest(m.conversation_id, auth.userId);
-    // What follows any move, a payment by card's too (M11): the brief, the event, the people.
-    const view = await afterCardMove(ctx, confirmed, {
-      from,
-      to,
-      actorId: auth.userId,
-      business,
-    });
+    // Where it stands, under its lock, and all that follows (`lib/kit-moves.ts`): the same as a
+    // calendar's answer by mail (M16 F3).
+    const view = await moveCard(ctx, m, { to, actorId: auth.userId, business });
+    if (view === 'conflict')
+      throw new AppError(409, 'conflict', tr('Someone just changed this card.'));
     return { message: view };
   });
-
-  /** Whoever agreed, if the conversation was still a request to them, has answered it. */
-  async function answerRequest(conversationId: string, userId: string): Promise<void> {
-    const answered = await ctx.db
-      .updateTable('participants')
-      .set({ request_state: 'accepted', archived_at: null })
-      .where('conversation_id', '=', conversationId)
-      .where('user_id', '=', userId)
-      .where('request_state', 'in', ['pending', 'declined'])
-      .executeTakeFirst();
-    if (Number(answered.numUpdatedRows) > 0)
-      await ctx.bus.publish(
-        (await participantsOf(ctx.db, conversationId)).map((p) => p.user_id),
-        { type: 'conversation.updated', data: { conversationId } },
-      );
-  }
-
-  async function assignOnConfirm<T extends { id: string; payload: unknown }>(
-    row: T,
-    to: string,
-    orgId: string | null,
-  ): Promise<T> {
-    const p = (row.payload ?? {}) as {
-      kit?: string;
-      fields?: { start?: { at?: string } };
-      booking?: AppointmentBooking | null;
-    };
-    if (
-      to !== 'confirmed' ||
-      p.kit !== 'appointment' ||
-      !orgId ||
-      !p.booking ||
-      p.booking.providerId
-    )
-      return row;
-    const start = p.fields?.start?.at ? new Date(p.fields.start.at) : null;
-    if (!start) return row;
-    const org = await ctx.db
-      .selectFrom('organizations')
-      .select(['id', 'booking', 'booking_items'])
-      .where('id', '=', orgId)
-      .executeTakeFirst();
-    if (!org) return row;
-    const who = await pickProvider(ctx, org, p.booking, start);
-    if (!who) return row;
-    const booking = { ...p.booking, providerId: who.id, providerName: who.name };
-    const saved = await ctx.db
-      .updateTable('messages')
-      .set({ payload: sql`payload || ${JSON.stringify({ booking })}::jsonb` })
-      .where('id', '=', row.id)
-      .returning(MESSAGE_COLUMNS)
-      .executeTakeFirst();
-    return saved ? ({ ...row, ...saved } as T) : row;
-  }
 
   // Who on the team does a booking (R58): the team changes it in one tap; null takes the name off.
   app.post('/messages/:id/booking/provider', async (req): Promise<MessageResponse> => {

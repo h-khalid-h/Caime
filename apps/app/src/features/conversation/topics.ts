@@ -13,6 +13,15 @@ export function mailBound(c: ConversationView): boolean {
   return c.kind === 'direct' && c.other?.person.kind === 'provisional';
 }
 
+/**
+ * The other side reads this by email (M16 F3): a one-to-one with someone reached by mail, or on
+ * an organization's side, a customer who writes by mail. Only what a mail carries is offered
+ * (core `notByMail`), as the server sends only that.
+ */
+export function reachedByMail(c: ConversationView): boolean {
+  return mailBound(c) || c.business?.thread?.customer?.kind === 'provisional';
+}
+
 export function topicsFor(c: ConversationView): 'direct' | 'group' | null {
   // Only between people connected now (a view from before says nothing, so offers nothing).
   if (

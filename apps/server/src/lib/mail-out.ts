@@ -4,19 +4,22 @@
  * thread the other side's client knows (In-Reply-To and References), with the message's files
  * attached. How far it got is what the provider says, honestly: sent (the provider took it),
  * delivered (the receiving server took it), bounced; never a read by a tracking pixel. Words and
- * files go; a card or a sticker stays on Caime (phase 2 says them in words).
+ * files go, and so do a voice note's recording, a place and the cards a mail can carry, said in
+ * words (`mail-cards.ts`, M16 F3), a meeting's and an appointment's with its calendar invitation
+ * and, cancelled here, its cancellation; a sticker or a poll is never sent (`notByMail`).
  *
  * A provisional person who has been silent for a year, or is in no conversation any more, is
  * swept: their row goes, their words stay with whoever they wrote to (the sender column clears).
  */
 import { createHmac, timingSafeEqual } from 'node:crypto';
 import { uuidv4 } from '@caime/core';
-import { bareSubject, replySubject, subjectFromText } from '@caime/core/mail';
+import { bareSubject, notByMail, replySubject, subjectFromText } from '@caime/core/mail';
 import type { AppContext } from '../context';
 import type { Conversation, Message } from '../db/schema';
 import { MESSAGE_COLUMNS } from '../db/schema';
 import { enqueue, registerJob, registerPeriodic } from './jobs';
 import { mailAddressOf } from './mail-address';
+import { cancellationOf, mailedAs } from './mail-cards';
 import {
   type DeliveryEvent,
   MAIL_ATTACHMENT_MAX,
@@ -28,6 +31,7 @@ import { serverKey } from './server-keys';
 import { storageFor } from './storage';
 
 export const MAIL_SEND_JOB = 'mail.send';
+const MAIL_CARD_JOB = 'mail.card';
 /** A provisional person silent this long goes (their words stay). */
 const PROVISIONAL_KEEP_MS = 365 * 24 * 3_600_000;
 /** How many earlier ids a References header carries at most. */
@@ -35,6 +39,7 @@ const REFERENCES_MAX = 20;
 
 export function registerMailJobs(): void {
   registerJob(MAIL_SEND_JOB, send);
+  registerJob(MAIL_CARD_JOB, sendCancellation);
   registerPeriodic({
     name: 'mail.sweep',
     everyMs: 24 * 3_600_000,
@@ -45,8 +50,9 @@ export function registerMailJobs(): void {
 
 /**
  * A message just sent in a conversation with someone reached by mail: queue the mail to each of
- * them. One query to find them, only for a one-to-one or a customer thread, only for a person's
- * words and files, never for mail that just came in.
+ * them. One query to find them, only for a one-to-one or a customer thread, only for what a mail
+ * carries (`notByMail`: words, files, a voice note, a place, a card of `MAIL_CARDS`), never for
+ * mail that just came in.
  */
 export async function queueMailOut(
   ctx: AppContext,
@@ -57,7 +63,7 @@ export async function queueMailOut(
   if (!ctx.mailProvider || message.channel === 'mail' || message.sealed || !message.sender_id)
     return;
   if (conversation.kind !== 'direct' && conversation.kind !== 'business') return;
-  if (message.kind !== 'text' && message.kind !== 'media' && message.kind !== 'file') return;
+  if (notByMail(message.kind, message.payload)) return;
   const others = memberIds.filter((id) => id !== message.sender_id);
   if (!others.length) return;
   const reached = await ctx.db
@@ -90,7 +96,7 @@ async function send(ctx: AppContext, payload: Record<string, unknown>): Promise<
   if (!m || m.deleted_at || !m.sender_id) return;
   const to = await ctx.db
     .selectFrom('users')
-    .select(['id', 'email'])
+    .select(['id', 'email', 'display_name'])
     .where('id', '=', toUserId)
     .where('kind', '=', 'provisional')
     .executeTakeFirst();
@@ -133,6 +139,14 @@ async function send(ctx: AppContext, payload: Record<string, unknown>): Promise<
     from = { address: mailAddressOf(org.handle, ctx.config) ?? '', name: org.name };
   }
   if (!from.address) return;
+  // A card, a place or a voice note in words (M16 F3), a meeting's and an appointment's with its
+  // calendar invitation, organized by the address it goes from, so the answer comes back to it.
+  const said = await mailedAs(ctx, m, {
+    senderId: sender.id,
+    from: { name: from.name, email: from.address },
+    to: { name: attendeeName(to.display_name), email: to.email },
+  });
+  if (!said && m.kind !== 'text' && m.kind !== 'media' && m.kind !== 'file') return;
   // The thread the other side's client knows: the latest mail either way in this conversation.
   const latest = await ctx.db
     .selectFrom('mail_messages as mm')
@@ -172,7 +186,7 @@ async function send(ctx: AppContext, payload: Record<string, unknown>): Promise<
     trackOpens ? `${from.name} is told when this mail is opened.` : null,
   ].filter(Boolean);
   const opening = `\n\n--\n${footer.join('\n')}`;
-  const body = m.body ?? '';
+  const body = said?.text ?? m.body ?? '';
   // An organization's first mail to someone who wrote on its page (R97 (1)) answers what they
   // wrote, as a reply to a mail of theirs would: their words' first line is the subject.
   const opener =
@@ -196,7 +210,7 @@ async function send(ctx: AppContext, payload: Record<string, unknown>): Promise<
     replySubject(opener ? subjectFromText(opener) : null) ||
     subjectFromText(body) ||
     `A message from ${from.name}`;
-  const attachments = await attachmentsOf(ctx, m.id);
+  const attachments = [...(await attachmentsOf(ctx, m.id)), ...(said?.attachments ?? [])];
   const rfcMessageId = `<${rfcId}@${domain}>`;
   const references = latest
     ? [...latest.references_ids, latest.rfc_message_id].slice(-REFERENCES_MAX)
@@ -250,6 +264,108 @@ async function send(ctx: AppContext, payload: Record<string, unknown>): Promise<
   // is read for a row whose channel is mail), on the row and in what the sender is told now.
   await ctx.db.updateTable('messages').set({ channel: 'mail' }).where('id', '=', m.id).execute();
   await tellSender(ctx, { ...m, channel: 'mail' });
+}
+
+/** Who a calendar invitation is to: their name, unless all Caime has of it is their address. */
+function attendeeName(name: string): string {
+  return name.includes('@') ? '' : name;
+}
+
+/**
+ * A meeting or an appointment mailed to someone reached by email, cancelled here (M16 F3): the
+ * cancellation goes to them in the same thread, with the update that takes it off their
+ * calendar. Never when they cancelled it themselves (their calendar did), and only for a card
+ * that went by mail and wasn't bounced; once a card.
+ */
+export async function queueCancellation(
+  ctx: AppContext,
+  m: Pick<Message, 'id' | 'payload'>,
+  to: string,
+  actorId: string,
+): Promise<void> {
+  const kit = (m.payload as { kit?: unknown } | null)?.kit;
+  if (!ctx.mailProvider || to !== 'cancelled' || (kit !== 'meeting' && kit !== 'appointment'))
+    return;
+  const went = await ctx.db
+    .selectFrom('mail_messages as mm')
+    .innerJoin('users as u', (j) =>
+      j.onRef('u.email', '=', 'mm.to_address').on('u.kind', '=', 'provisional'),
+    )
+    .select('u.id')
+    .where('mm.message_id', '=', m.id)
+    .where('mm.direction', '=', 'out')
+    .where('mm.delivery', 'is distinct from', 'bounced')
+    .executeTakeFirst();
+  if (!went || went.id === actorId) return;
+  await enqueue(
+    ctx,
+    MAIL_CARD_JOB,
+    { messageId: m.id },
+    { dedupeKey: `${MAIL_CARD_JOB}:${m.id}:cancelled`, maxAttempts: 6 },
+  );
+}
+
+async function sendCancellation(ctx: AppContext, payload: Record<string, unknown>): Promise<void> {
+  const provider = ctx.mailProvider;
+  const domain = ctx.config.MAIL_DOMAIN;
+  const messageId = String(payload.messageId ?? '');
+  if (!provider || !domain || !messageId) return;
+  const m = await ctx.db
+    .selectFrom('messages')
+    .select(MESSAGE_COLUMNS)
+    .where('id', '=', messageId)
+    .executeTakeFirst();
+  if (!m?.sender_id) return;
+  const went = await ctx.db
+    .selectFrom('mail_messages')
+    .select(['from_address', 'to_address', 'rfc_message_id', 'references_ids', 'subject'])
+    .where('message_id', '=', m.id)
+    .where('direction', '=', 'out')
+    .executeTakeFirst();
+  if (!went) return;
+  // Someone who has claimed the address since reads it in Caime.
+  const to = await ctx.db
+    .selectFrom('users')
+    .select('display_name')
+    .where('email', '=', went.to_address)
+    .where('kind', '=', 'provisional')
+    .executeTakeFirst();
+  if (!to) return;
+  const conversation = await ctx.db
+    .selectFrom('conversations as c')
+    .leftJoin('organizations as o', 'o.id', 'c.org_id')
+    .select(['c.kind', 'o.name as orgName'])
+    .where('c.id', '=', m.conversation_id)
+    .executeTakeFirstOrThrow();
+  const sender = await ctx.db
+    .selectFrom('users')
+    .select('display_name')
+    .where('id', '=', m.sender_id)
+    .executeTakeFirstOrThrow();
+  const name = (conversation.kind === 'business' && conversation.orgName) || sender.display_name;
+  const said = await cancellationOf(ctx, m, {
+    senderId: m.sender_id,
+    from: { name, email: went.from_address },
+    to: { name: attendeeName(to.display_name), email: went.to_address },
+  });
+  if (!said) return;
+  try {
+    await provider.send({
+      from: { address: went.from_address, name },
+      to: went.to_address,
+      subject: replySubject(went.subject) ?? subjectFromText(said.text) ?? name,
+      text: said.text,
+      messageId: `<${uuidv4()}@${domain}>`,
+      inReplyTo: went.rfc_message_id,
+      references: [...went.references_ids, went.rfc_message_id].slice(-REFERENCES_MAX),
+      attachments: said.attachments,
+      trackOpens: false,
+    });
+    ctx.metrics.mail.inc({ direction: 'out', outcome: 'sent' });
+  } catch (err) {
+    if (!(err instanceof MailRefused)) throw err;
+    ctx.metrics.mail.inc({ direction: 'out', outcome: 'refused' });
+  }
 }
 
 /** The message's files, as attachments, within what a mail carries. */

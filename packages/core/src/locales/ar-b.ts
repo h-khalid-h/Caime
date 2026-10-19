@@ -3253,4 +3253,12 @@ export const arB: Catalog = {
   'Sender not confirmed': 'مصدر غير مؤكد',
   'Mail came in naming this address, but Caime couldn’t confirm it was sent from it, so nothing in it is taken as theirs.':
     'وصل بريد باسم هذا العنوان، لكن تعذّر على Caime التأكد من أنه أُرسل منه، فلا يُنسب شيء مما فيه إلى صاحبه.',
+  'A time that repeats doesn’t travel by email: send one time.':
+    'الموعد المتكرر لا يصل بالبريد الإلكتروني: أرسل موعدًا واحدًا.',
+  'A live location doesn’t travel by email: share the place.':
+    'الموقع المباشر لا يصل بالبريد الإلكتروني: شارك المكان.',
+  'Say where it is: someone reached by email can’t join a call on Caime.':
+    'حدّد المكان: من يُراسَل بالبريد الإلكتروني لا يستطيع الانضمام إلى مكالمة على Caime.',
+  'That doesn’t travel by email: they’d never see it.':
+    'هذا لا يصل بالبريد الإلكتروني: لن يراه الطرف الآخر أبدًا.',
 };

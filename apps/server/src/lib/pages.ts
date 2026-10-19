@@ -475,7 +475,10 @@ erased with the message. A mail in&rsquo;s signature is kept apart from its word
 with them. A mail sent from Caime links back to the conversation; following that link, or
 replying, tells its sender it was seen. Unless its sender turned it off, it also asks the mail
 provider to say when it&rsquo;s opened, which shows its sender &ldquo;Opened, probably&rdquo;:
-every such mail says so at its end.</li>
+every such mail says so at its end. A card sent to someone reached by email goes as words in a
+mail, a meeting&rsquo;s or an appointment&rsquo;s with an invitation their calendar adds and
+answers; that answer, from the address invited and checked as any mail is, moves the card and is
+kept only as that move.</li>
 `
     : ''
 }<li>A handle you stop using, by changing it or deleting your account, is kept from everyone for
@@ -748,7 +751,10 @@ first mail is a message request, like anyone&rsquo;s first message; under 18, on
 connected with reach you by mail. A newsletter or a no-reply sender&rsquo;s mail is a notice: it
 waits under Notices, tells you nothing, asks nothing of you, and isn&rsquo;t answered. So does
 mail Caime couldn&rsquo;t confirm came from the address it names, which says so and is never taken
-as theirs. An organization&rsquo;s address lands in its inbox.</li>
+as theirs. A card you send someone reached by email goes in words, and a meeting or an
+appointment as an invitation their calendar adds: their yes or no from it moves the card here, as
+a tap would. What a mail can&rsquo;t carry (a sticker, a poll, a live location) isn&rsquo;t offered.
+An organization&rsquo;s address lands in its inbox.</li>
 `
     : ''
 }<li><strong>Inviting someone.</strong> In Connect, Invite someone makes a link that says who

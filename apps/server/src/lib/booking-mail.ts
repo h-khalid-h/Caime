@@ -100,7 +100,9 @@ async function bookedFor(ctx: AppContext, m: Message): Promise<Booked | null> {
       .execute();
     customerId = others.length === 1 ? (others[0]?.user_id ?? null) : null;
   }
-  if (!customerId) return null;
+  // Theirs to be told of when they booked it (from a page, as themselves); a card the host sent
+  // them by mail went with its own invitation, and its answer comes from their calendar (M16 F3).
+  if (!customerId || m.sender_id !== customerId) return null;
   const customer = await ctx.db
     .selectFrom('users')
     .select(['kind', 'email', 'display_name'])

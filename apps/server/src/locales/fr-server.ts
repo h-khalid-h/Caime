@@ -1671,4 +1671,11 @@ export const frServer: Catalog = {
     'Ou posez une question sur l’une de vos connaissances, par son nom ou par votre lien : ce que vous attendez, ce qui vous est demandé, ce qui a été convenu et les paiements.',
   'You can follow up {when}: once a day, twice at most, until they answer.':
     'Vous pourrez relancer {when} : une fois par jour, deux fois au plus, jusqu’à sa réponse.',
+  'Ways to pay {name}:': 'Pour payer {name} :',
+  '{name} is paying you this.': '{name} vous paie ce montant.',
+  '{name} asks you to pay this.': '{name} vous demande de payer ce montant.',
+  'Answer it from your calendar: your answer reaches {name} on Caime.':
+    'Répondez depuis votre agenda : votre réponse parvient à {name} sur Caime.',
+  'Voice note, {duration}': 'Note vocale, {duration}',
+  'A place': 'Un lieu',
 };

@@ -2839,6 +2839,51 @@ graph) and the number that will show it; one that sharpens none is hygiene and s
       gone; nothing on devices. Verified: `mail.test.ts` (three mails out a day apart, the
       fourth refused until they answer, the refusal's when; a stranger on Caime still asked
       once), the server catalogs, and the full gate.
+- [x] F3. Cards travel by mail (2026-10-19, review §6: "cards are offered in mail conversations
+      but never mailed"; "a meeting proposed in a mail thread is never mailed, can't be accepted,
+      stays 'asked'"; "customers who write by mail never get their appointment or Pay cards";
+      advantage 2, everyone you deal with in one place, by mail too. The number: of the cards a
+      person can send someone reached by email, the share that reaches them, every one offered
+      now (meeting, appointment, Pay, invoice, order, delivery, purchase order, ticket, place,
+      voice note) where none did, and a meeting's answer from their calendar moving the card
+      where nothing could). A card goes in words as it reads on Caime (`mailedAs`, in its sender's
+      language, times whole on the sender's or the organization's clock with the zone named,
+      the ways to pay a Pay card names); a meeting or an appointment carries its calendar
+      invitation (`METHOD:REQUEST`, organized by the address it goes from, the card's own event
+      id), and the answer their calendar sends back to that address (`METHOD:REPLY`, from the
+      address invited, its sender confirmed) moves the card through the same `moveCard` a tap
+      does (`lib/kit-moves.ts`, the kit route's move made shared): yes agrees it and answers
+      their request, as a reply does; no declines it, or cancels what was agreed; a "maybe" moves
+      nothing and arrives as their mail; nothing is posted, the card says it and its sender is
+      told as of any move, and the card's mail reads "Seen". Cancelled here, the cancellation goes
+      in the same thread with the update that takes it off their calendar (`SEQUENCE:1`, once a
+      card). The calendar is read from an attached `.ics`, else from the message as it arrived
+      (Outlook's and Apple's carry it as an alternative part: base64, quoted-printable or as it
+      is), else from the words. What a mail can't carry isn't offered (`reachedByMail`: no
+      sticker, no poll, no card that asks for taps, no live location, no Repeats, and a meeting
+      must say where, since nobody joins a call on Caime from a mail) and is refused by the
+      server in the reader's language (core `notByMail`, four sentences). A booker who booked
+      from a page is still mailed by `mailProvisionalBooker`; a card the host sent them by mail
+      no longer is, since its invitation went with it. Left: a meeting's later change of time
+      ("Suggest another time", the F line's own item), order and delivery moves told by mail, a
+      card in a group with someone reached by mail, an organization's own kinds of card (an
+      app's) by mail, and Gmail's, Outlook's and Apple's own handling of the invitation tried on
+      a real mailbox (⛔ the owner's, once cai.me's mail runs: built to RFC 5545/5546/6047 and
+      tested against the stand-ins, not yet against those clients). Costs: one mail per card
+      (the provider's call, under a cent), a small calendar file; an answer is one mail in that
+      moves a card; nothing on devices but a filter over what's already offered. Verified:
+      `mail.test.ts` (a meeting's words and invitation from her address, her calendar's yes
+      agreeing it, seen, told, the request answered; no declining it; a cancellation's update in
+      the thread; an answer refused from another address, for another attendee, unconfirmed,
+      or for an event not Caime's, and a "maybe" arriving as mail; a Pay card and a place in
+      words; a sticker, a poll, an
+      approval, a repeating meeting, one held on Caime and a live location refused; an
+      organization's appointment from its address on its country's clock, confirmed by the
+      customer's calendar with no booker's mail), `mail-calendar.test.ts` (base64,
+      quoted-printable and plain calendar parts), core `mail.test.ts`, the 40 server suites that
+      move cards or mail (391 tests), `e2e/mail.spec.ts` (Connect to an address, only what travels offered, the meeting
+      sent with its invitation, the calendar's yes agreeing it live), the catalogs in four
+      languages, and the full gate.
 - [ ] G. Integration framework and governed AI (REVIEW §11): credentials (key outside the
       database with a key id and re-seal, a downscoped picker token, sealed webhook secrets,
       rotation); per-use health, Google and Microsoft probes, a freshness gauge, a reconnect
@@ -5067,6 +5112,8 @@ graph) and the number that will show it; one that sharpens none is hygiene and s
   journeys, safety, reliability, performance, intelligence, mail and calendar, chat, integrations,
   business and code integrity; the matrix against WhatsApp, Signal, Slack, Calendly and Workspace;
   an age-assurance design; the integration framework mapped to the code; plan M16 (A–H).
+- 2026-10-19 — M16 F3: cards reach someone by email, a meeting as an invitation their calendar
+  answers, the answer moving the card; what a mail can't carry isn't offered.
 - 2026-10-19 — M16 F2: someone reached by email can be followed up, a day apart and twice at
   most, before they answer, where one mail was all.
 - 2026-10-19 — M16 F1: mail whose sender couldn't be confirmed is kept for the person it reached,

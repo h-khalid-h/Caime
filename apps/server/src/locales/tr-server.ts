@@ -1599,4 +1599,11 @@ export const turkishServer: Catalog = {
     'Ya da tanıdıklarınızdan birini adıyla ya da yakınlığınızla sorun: ne beklediğinizi, sizden ne istendiğini, neye karar verildiğini ve ödemeleri.',
   'You can follow up {when}: once a day, twice at most, until they answer.':
     'Yanıt gelene kadar günde bir kez, en fazla iki kez hatırlatabilirsiniz; bir sonraki: {when}.',
+  'Ways to pay {name}:': '{name} için ödeme yolları:',
+  '{name} is paying you this.': '{name} size bu ödemeyi yapıyor.',
+  '{name} asks you to pay this.': '{name} bu ödemeyi sizden istiyor.',
+  'Answer it from your calendar: your answer reaches {name} on Caime.':
+    'Takviminizden yanıtlayın: yanıtınız Caime üzerinden {name} ile paylaşılır.',
+  'Voice note, {duration}': 'Sesli not, {duration}',
+  'A place': 'Bir yer',
 };

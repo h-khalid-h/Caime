@@ -1522,3 +1522,413 @@ describe('following up by email (M16 F2)', () => {
     );
   });
 });
+
+describe('cards by email (M16 F3)', () => {
+  // Signed in after the year the sweep's test moved the clock, so the sessions stand.
+  let rana: Client;
+  let dina: Client;
+  let clinicId: string;
+  beforeAll(async () => {
+    rana = await signup(t, {
+      displayName: 'Rana Mail',
+      handle: 'rana.mail',
+      email: 'rana.mail@example.com',
+    });
+    dina = await signup(t, {
+      displayName: 'Dina Owner',
+      handle: 'dina.owner',
+      email: 'dina.owner@example.com',
+    });
+    clinicId = (
+      await dina.post('/v1/orgs', {
+        country: 'EG',
+        name: 'Dina Clinic',
+        handle: 'dina.clinic',
+        kind: 'business',
+      })
+    ).org.id;
+  });
+
+  const ahead = (days: number) => new Date(t.ctx.now().getTime() + days * 86_400_000);
+  const meeting = (clientId: string, fields: Record<string, unknown> = {}) => ({
+    clientId,
+    kind: 'kit',
+    payload: {
+      kit: 'meeting',
+      fields: {
+        title: 'Venue walkthrough',
+        start: { at: ahead(3).toISOString(), hasTime: true },
+        durationMinutes: 30,
+        place: 'meet.google.com/abc-defg-hij',
+        ...fields,
+      },
+    },
+  });
+  /** What a calendar app sends back to the organizer (RFC 6047), for one attendee. */
+  const calendarReply = (uid: string, attendee: string, partstat: string) =>
+    [
+      'BEGIN:VCALENDAR',
+      'VERSION:2.0',
+      'PRODID:-//Google Inc//Google Calendar 70.9054//EN',
+      'METHOD:REPLY',
+      'BEGIN:VEVENT',
+      `UID:${uid}`,
+      `ATTENDEE;CN=Tarek;PARTSTAT=${partstat}:mailto:${attendee}`,
+      'END:VEVENT',
+      'END:VCALENDAR',
+      '',
+    ].join('\r\n');
+  const answer = (opts: {
+    from: string;
+    to: string;
+    uid: string;
+    partstat: string;
+    attendee?: string;
+    auth?: 'pass' | 'none';
+  }) =>
+    postmark({
+      from: opts.from,
+      fromName: 'Tarek',
+      to: opts.to,
+      subject: `${opts.partstat === 'ACCEPTED' ? 'Accepted' : 'Declined'}: Venue walkthrough`,
+      text: `Tarek has ${opts.partstat.toLowerCase()} this invitation.`,
+      auth: opts.auth ?? 'pass',
+      attachments: [
+        {
+          name: 'invite.ics',
+          type: 'application/ics',
+          content: calendarReply(opts.uid, opts.attendee ?? opts.from, opts.partstat),
+        },
+      ],
+    });
+  const cardIn = async (c: Client, convo: string, id: string) =>
+    (
+      (await c.get(`/v1/conversations/${convo}/messages?limit=50`)).messages as Array<{
+        id: string;
+        payload: { state?: string };
+        mail: { seenAt: string | null; delivery: string | null } | null;
+      }>
+    ).find((m) => m.id === id);
+  const ics = (mail: Record<string, unknown> | undefined) =>
+    (
+      (mail?.Attachments ?? []) as Array<{ Name: string; ContentType: string; Content: string }>
+    ).map((a) => ({
+      ...a,
+      // Read with its long lines unfolded (RFC 5545 folds them at 75 octets).
+      text: Buffer.from(a.Content, 'base64')
+        .toString('utf8')
+        .replace(/\r\n[ \t]/g, ''),
+    }));
+  let convo: string;
+
+  it('a meeting goes in words with its invitation from her address, and their calendar’s yes agrees it', async () => {
+    convo = (
+      await rana.post('/v1/conversations/by-email', {
+        email: 'tarek@outside.example',
+        name: 'Tarek',
+      })
+    ).conversation.id as string;
+    sends = [];
+    const card = (await rana.post(`/v1/conversations/${convo}/messages`, meeting('rana-meet-1')))
+      .message.id as string;
+    await work();
+    expect(sends).toHaveLength(1);
+    const sent = sends[0];
+    expect(sent?.From).toBe('Rana Mail <rana.mail@caime.test>');
+    expect(sent?.To).toBe('tarek@outside.example');
+    expect(sent?.Subject).toBe('Meeting: Venue walkthrough');
+    const text = String(sent?.TextBody);
+    expect(text).toMatch(
+      /^Meeting: Venue walkthrough\nWhen: .+ \(America\/New_York\)\nDuration: 30 min\n/,
+    );
+    expect(text).toContain('Where: meet.google.com/abc-defg-hij');
+    expect(text).toContain('Answer it from your calendar: your answer reaches Rana Mail on Caime.');
+    const [invite] = ics(sent);
+    expect(invite?.Name).toBe('invite.ics');
+    expect(invite?.ContentType).toBe('text/calendar; method=REQUEST; charset=UTF-8');
+    expect(invite?.text).toContain('METHOD:REQUEST');
+    expect(invite?.text).toContain(`UID:meeting-${card}@caime`);
+    expect(invite?.text).toContain('ORGANIZER;CN="Rana Mail":mailto:rana.mail@caime.test');
+    expect(invite?.text).toContain('PARTSTAT=NEEDS-ACTION;RSVP=TRUE:mailto:tarek@outside.example');
+    expect(invite?.text).toContain('URL:https://meet.google.com/abc-defg-hij');
+    expect((await cardIn(rana, convo, card))?.mail?.delivery).toBe('sent');
+
+    // Their calendar's yes, from the address invited, to hers: the card is agreed, nothing posted.
+    const before = (await messagesIn(rana, convo)).length;
+    const res = await inbound(
+      await answer({
+        from: 'tarek@outside.example',
+        to: 'rana.mail@caime.test',
+        uid: `meeting-${card}@caime`,
+        partstat: 'ACCEPTED',
+      }),
+    );
+    expect(res.json().outcomes[0].outcome).toBe('answered');
+    await t.ctx.flush();
+    const moved = await cardIn(rana, convo, card);
+    expect(moved?.payload.state).toBe('accepted');
+    expect(moved?.mail?.seenAt).toBeTruthy();
+    expect((await messagesIn(rana, convo)).length).toBe(before);
+    const told = (await rana.get('/v1/notifications')).notifications as Array<{ title: string }>;
+    expect(told.some((n) => n.title === 'Tarek: Accepted')).toBe(true);
+    // The same answer again changes nothing; and agreeing answered the request, as a reply does.
+    const again = await inbound(
+      await answer({
+        from: 'tarek@outside.example',
+        to: 'rana.mail@caime.test',
+        uid: `meeting-${card}@caime`,
+        partstat: 'ACCEPTED',
+      }),
+    );
+    expect(again.json().outcomes[0].outcome).toBe('duplicate');
+    for (const n of [1, 2])
+      expect(
+        (
+          await rana.req('POST', `/v1/conversations/${convo}/messages`, {
+            clientId: `rana-after-yes-${n}`,
+            kind: 'text',
+            body: `See you then, ${n}.`,
+          })
+        ).statusCode,
+      ).toBeLessThan(300);
+  });
+
+  it('their calendar’s no declines it, and a cancel here goes as the update that takes it off theirs', async () => {
+    const declined = (
+      await rana.post(`/v1/conversations/${convo}/messages`, meeting('rana-meet-2'))
+    ).message.id as string;
+    await work();
+    const no = await inbound(
+      await answer({
+        from: 'tarek@outside.example',
+        to: 'rana.mail@caime.test',
+        uid: `meeting-${declined}@caime`,
+        partstat: 'DECLINED',
+      }),
+    );
+    expect(no.json().outcomes[0].outcome).toBe('answered');
+    expect((await cardIn(rana, convo, declined))?.payload.state).toBe('declined');
+
+    sends = [];
+    const cancelled = (
+      await rana.post(`/v1/conversations/${convo}/messages`, meeting('rana-meet-3'))
+    ).message.id as string;
+    await work();
+    const inviteId = ((sends[0]?.Headers ?? []) as Array<{ Name: string; Value: string }>).find(
+      (h) => h.Name === 'Message-ID',
+    )?.Value;
+    sends = [];
+    await rana.post(`/v1/messages/${cancelled}/kit`, { to: 'cancelled' });
+    await work();
+    expect(sends).toHaveLength(1);
+    const update = sends[0];
+    expect(String(update?.TextBody)).toMatch(
+      /^Cancelled: Venue walkthrough\n.+ \(America\/New_York\)$/,
+    );
+    expect(
+      ((update?.Headers ?? []) as Array<{ Name: string; Value: string }>).find(
+        (h) => h.Name === 'In-Reply-To',
+      )?.Value,
+    ).toBe(inviteId);
+    const [cancel] = ics(update);
+    expect(cancel?.ContentType).toBe('text/calendar; method=CANCEL; charset=UTF-8');
+    expect(cancel?.text).toContain('METHOD:CANCEL');
+    expect(cancel?.text).toContain(`UID:meeting-${cancelled}@caime`);
+    expect(cancel?.text).toContain('SEQUENCE:1');
+    expect(cancel?.text).toContain('STATUS:CANCELLED');
+    // Once a card: cancelling can't happen twice, and nothing more is sent.
+    sends = [];
+    await work();
+    expect(sends).toHaveLength(0);
+  });
+
+  it('takes an answer only from the address invited, its sender confirmed, for a card that went there', async () => {
+    const card = (await rana.post(`/v1/conversations/${convo}/messages`, meeting('rana-meet-4')))
+      .message.id as string;
+    await work();
+    const uid = `meeting-${card}@caime`;
+    // Someone else's answer, carried by Tarek's mail.
+    const other = await inbound(
+      await answer({
+        from: 'tarek@outside.example',
+        to: 'rana.mail@caime.test',
+        uid,
+        partstat: 'ACCEPTED',
+        attendee: 'someone.else@outside.example',
+      }),
+    );
+    expect(other.json().outcomes[0].outcome).toBe('refused');
+    // From an address it never went to.
+    const stranger = await inbound(
+      await answer({
+        from: 'stranger@outside.example',
+        to: 'rana.mail@caime.test',
+        uid,
+        partstat: 'ACCEPTED',
+      }),
+    );
+    expect(stranger.json().outcomes[0].outcome).toBe('refused');
+    // Its sender not confirmed (M16 F1): kept as a notice, and the card stays as it was.
+    const unconfirmed = await inbound(
+      await answer({
+        from: 'tarek@outside.example',
+        to: 'rana.mail@caime.test',
+        uid,
+        partstat: 'ACCEPTED',
+        auth: 'none',
+      }),
+    );
+    expect(unconfirmed.json().outcomes[0].outcome).toBe('kept_unverified');
+    expect((await cardIn(rana, convo, card))?.payload.state).toBe('proposed');
+    // A "maybe" moves nothing: it arrives as their mail.
+    const maybe = await inbound(
+      await answer({
+        from: 'tarek@outside.example',
+        to: 'rana.mail@caime.test',
+        uid,
+        partstat: 'TENTATIVE',
+      }),
+    );
+    expect(maybe.json().outcomes[0].outcome).toBe('delivered');
+    expect((await cardIn(rana, convo, card))?.payload.state).toBe('proposed');
+    // A calendar mail about an event that isn't one of Caime's cards is only mail.
+    const theirs = await inbound(
+      await answer({
+        from: 'tarek@outside.example',
+        to: 'rana.mail@caime.test',
+        uid: 'abc123@google.com',
+        partstat: 'ACCEPTED',
+      }),
+    );
+    expect(theirs.json().outcomes[0].outcome).toBe('delivered');
+  });
+
+  it('sends what a mail carries in words, and refuses what would never reach them', async () => {
+    sends = [];
+    await rana.post(`/v1/conversations/${convo}/messages`, {
+      clientId: 'rana-pay-1',
+      kind: 'kit',
+      payload: {
+        kit: 'payment_request',
+        fields: {
+          direction: 'ask',
+          amount: { value: 450, currency: 'EGP' },
+          note: 'the venue deposit',
+        },
+      },
+    });
+    await rana.post(`/v1/conversations/${convo}/messages`, {
+      clientId: 'rana-place-1',
+      kind: 'location',
+      payload: { lat: 30.0444, lng: 31.2357, label: 'Café Riche' },
+    });
+    await work();
+    // Each its own mail, in whichever order the jobs ran.
+    const texts = sends.map((m) => String(m.TextBody));
+    const pay = texts.find((x) => x.startsWith('Pay: '));
+    expect(pay).toMatch(/^Pay: .*450.* for the venue deposit\n/);
+    expect(pay).toContain('Rana Mail asks you to pay this.');
+    expect(texts.find((x) => x.startsWith('Café Riche'))).toMatch(
+      /^Café Riche\nhttps:\/\/www\.openstreetmap\.org\/\?mlat=30\.044400&mlon=31\.235700#map=17\/30\.044400\/31\.235700\n/,
+    );
+    const refused = async (body: Record<string, unknown>) => {
+      const res = await rana.req('POST', `/v1/conversations/${convo}/messages`, body);
+      expect(res.statusCode).toBe(400);
+      return res.json().error.message as string;
+    };
+    expect(
+      await refused({
+        clientId: 'rana-sticker',
+        kind: 'sticker',
+        payload: { pack: 'caime', sticker: 'cai-wave' },
+      }),
+    ).toBe('That doesn’t travel by email: they’d never see it.');
+    expect(
+      await refused({
+        clientId: 'rana-poll',
+        kind: 'poll',
+        payload: {
+          question: 'Which day?',
+          options: [
+            { id: 'a', text: 'Mon' },
+            { id: 'b', text: 'Tue' },
+          ],
+        },
+      }),
+    ).toBe('That doesn’t travel by email: they’d never see it.');
+    expect(
+      await refused({
+        clientId: 'rana-approval',
+        kind: 'kit',
+        payload: { kit: 'approval', fields: { title: 'The budget' } },
+      }),
+    ).toBe('That doesn’t travel by email: they’d never see it.');
+    expect(await refused(meeting('rana-weekly', { repeat: 'week' }))).toBe(
+      'A time that repeats doesn’t travel by email: send one time.',
+    );
+    expect(await refused(meeting('rana-on-caime', { place: '' }))).toBe(
+      'Say where it is: someone reached by email can’t join a call on Caime.',
+    );
+    expect(
+      await refused({
+        clientId: 'rana-live',
+        kind: 'location',
+        payload: { lat: 30.0444, lng: 31.2357, live: { minutes: 15 } },
+      }),
+    ).toBe('A live location doesn’t travel by email: share the place.');
+  });
+
+  it('an organization’s appointment goes from its address, confirmed by the customer’s calendar alone', async () => {
+    const wrote = await inbound(
+      await postmark({
+        from: 'karim@outside.example',
+        fromName: 'Karim',
+        to: 'dina.clinic@caime.test',
+        subject: 'A cleaning',
+        text: 'Could I come in next week?',
+      }),
+    );
+    expect(wrote.json().outcomes[0].outcome).toBe('delivered');
+    await t.ctx.flush();
+    type Thread = { conversationId: string; customer: { displayName: string } | null };
+    const thread = [
+      ...((await dina.get(`/v1/orgs/${clinicId}/inbox?view=customer_waiting`)).threads as Thread[]),
+      ...((await dina.get(`/v1/orgs/${clinicId}/inbox?view=new`)).threads as Thread[]),
+    ].find((x) => x.customer?.displayName === 'Karim');
+    expect(thread).toBeDefined();
+    const id = thread?.conversationId as string;
+    sends = [];
+    smtp.outbox.length = 0;
+    const card = (
+      await dina.post(`/v1/conversations/${id}/messages`, {
+        clientId: 'dina-appointment-1',
+        kind: 'kit',
+        payload: {
+          kit: 'appointment',
+          fields: { title: 'Cleaning', start: { at: ahead(5).toISOString(), hasTime: true } },
+        },
+      })
+    ).message.id as string;
+    await work();
+    expect(sends).toHaveLength(1);
+    expect(sends[0]?.From).toBe('Dina Clinic <dina.clinic@caime.test>');
+    // On the organization's clock, its country's when it set none.
+    expect(String(sends[0]?.TextBody)).toMatch(/\nWhen: .+ \(Africa\/Cairo\)\n/);
+    const [invite] = ics(sends[0]);
+    expect(invite?.text).toContain(`UID:appointment-${card}@caime`);
+    expect(invite?.text).toContain('ORGANIZER;CN="Dina Clinic":mailto:dina.clinic@caime.test');
+    const yes = await inbound(
+      await answer({
+        from: 'karim@outside.example',
+        to: 'dina.clinic@caime.test',
+        uid: `appointment-${card}@caime`,
+        partstat: 'ACCEPTED',
+      }),
+    );
+    expect(yes.json().outcomes[0].outcome).toBe('answered');
+    await work();
+    expect((await cardIn(dina, id, card))?.payload.state).toBe('confirmed');
+    // The customer confirmed it themselves: no booker's mail tells them the clinic did.
+    expect(smtp.outbox.filter((m) => m.to === 'karim@outside.example')).toHaveLength(0);
+  });
+});

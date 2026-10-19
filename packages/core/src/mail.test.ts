@@ -2,6 +2,9 @@ import { describe, expect, it } from 'vitest';
 import {
   bareSubject,
   isNoticeMail,
+  MAIL_CARDS,
+  notByMail,
+  notByMailText,
   replySubject,
   SUBJECT_LINE_MAX,
   SUBJECT_MAX,
@@ -74,5 +77,51 @@ describe('a notice by mail (R75)', () => {
     expect(isNoticeMail('newsom@family.example', none)).toBe(false);
     expect(isNoticeMail('hana@clinic.example', { ...none, autoSubmitted: 'no' })).toBe(false);
     expect(isNoticeMail('hana@clinic.example', { ...none, precedence: 'first-class' })).toBe(false);
+  });
+});
+
+describe('notByMail (M16 F3)', () => {
+  const meeting = (fields: Record<string, unknown>) => ({
+    kit: 'meeting',
+    fields: {
+      title: 'Walkthrough',
+      start: { at: '2026-10-21T10:00:00Z', hasTime: true },
+      ...fields,
+    },
+  });
+
+  it('lets through what a mail carries: words, files, a voice note, a place, the cards it can say', () => {
+    for (const kind of ['text', 'media', 'file', 'voice']) expect(notByMail(kind, {})).toBeNull();
+    expect(notByMail('location', { lat: 30, lng: 31, label: 'Café Riche' })).toBeNull();
+    for (const kit of MAIL_CARDS)
+      expect(
+        notByMail('kit', kit === 'meeting' ? meeting({ place: 'Café Riche' }) : { kit }),
+      ).toBeNull();
+    expect(notByMail('kit', meeting({ place: 'meet.google.com/abc-defg-hij' }))).toBeNull();
+  });
+
+  it('keeps back what would never reach them, and says why', () => {
+    for (const kind of ['sticker', 'poll', 'contact', 'system'])
+      expect(notByMail(kind, {})).toBe('kind');
+    for (const kit of [
+      'approval',
+      'document_review',
+      'checklist',
+      'shared_album',
+      'split',
+      'form',
+      'custom',
+    ])
+      expect(notByMail('kit', { kit })).toBe('kind');
+    expect(notByMail('location', { lat: 30, lng: 31, live: { minutes: 15 } })).toBe('live');
+    expect(notByMail('kit', meeting({ place: 'Café Riche', repeat: 'week' }))).toBe('repeats');
+    expect(notByMail('kit', { kit: 'appointment', fields: { repeat: 'month' } })).toBe('repeats');
+    // Held on Caime: nobody joins its call from a mail.
+    expect(notByMail('kit', meeting({}))).toBe('where');
+    expect(notByMail('kit', meeting({ place: 'Caime' }))).toBe('where');
+    expect(notByMailText('where')).toBe(
+      'Say where it is: someone reached by email can’t join a call on Caime.',
+    );
+    expect(notByMailText('kind')).toBe('That doesn’t travel by email: they’d never see it.');
   });
 });

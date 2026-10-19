@@ -1658,4 +1658,11 @@ export const arServer: Catalog = {
     'أو اسأل عن أحد من تعرفهم، بالاسم أو بالصلة: ما تنتظره، وما هو مطلوب منك، وما اتُّفق عليه، والمدفوعات.',
   'You can follow up {when}: once a day, twice at most, until they answer.':
     'يمكنك المتابعة {when}: مرة في اليوم، ومرتين على الأكثر، إلى أن يصل رد.',
+  'Ways to pay {name}:': 'طرق الدفع إلى {name}:',
+  '{name} is paying you this.': 'دفعة من {name} إليك.',
+  '{name} asks you to pay this.': 'طلب دفع من {name}.',
+  'Answer it from your calendar: your answer reaches {name} on Caime.':
+    'أجب من تقويمك: يصل ردّك إلى {name} على Caime.',
+  'Voice note, {duration}': 'رسالة صوتية، {duration}',
+  'A place': 'مكان',
 };

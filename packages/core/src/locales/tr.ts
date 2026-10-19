@@ -4730,4 +4730,12 @@ export const turkish: Catalog = {
   'Sender not confirmed': 'Gönderen doğrulanamadı',
   'Mail came in naming this address, but Caime couldn’t confirm it was sent from it, so nothing in it is taken as theirs.':
     'Bu adres adına bir e-posta geldi, ancak Caime bu adresten gönderildiğini doğrulayamadı; bu yüzden içindekiler adresin sahibine mal edilmez.',
+  'A time that repeats doesn’t travel by email: send one time.':
+    'Tekrarlanan bir zaman e-postayla gitmez: tek bir zaman gönderin.',
+  'A live location doesn’t travel by email: share the place.':
+    'Canlı konum e-postayla gitmez: yeri paylaşın.',
+  'Say where it is: someone reached by email can’t join a call on Caime.':
+    'Nerede olduğunu yazın: e-postayla ulaşılan biri Caime’deki bir aramaya katılamaz.',
+  'That doesn’t travel by email: they’d never see it.':
+    'Bu e-postayla gitmez: karşı taraf bunu hiç görmez.',
 };
