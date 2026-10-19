@@ -291,7 +291,7 @@ const HOW_ARE_YOU =
   /^(?:nasılsın(?:ız)?|naber|n'aber|ne\s+haber|napıyorsun|ne\s+yapıyorsun|iyi\s+misin(?:iz)?)[\s,!.]*(?:\p{L}+)?$/u;
 
 const DECISION = re(
-  `${B}(karar(?:ımızı|ımı)?\\s+(?:verdik|verildi|verdim|kıldık|aldık|alındı)|kabul\\s+(?:edildi|ettik|ediyoruz)|anlaştık|onaylandı|onayladık|onayladım|onaylıyorum|onaylıyoruz|kesinleşti|kesinleştirdik|kesinleştirildi|seçtik|seçildi|tercih\\s+ettik|devam\\s+(?:ediyoruz|edeceğiz|edelim)|ilerliyoruz|ilerleyeceğiz|ilerleyelim|gidiyoruz|gidelim|gideceğiz)${E}`,
+  `${B}(karar(?:ımızı|ımı)?\\s+(?:verdik|verildi|verdim|kıldık|aldık|alındı)|kabul\\s+(?:edildi|ettik|ediyoruz)|anlaştık|onaylandı|onayladık|onayladım|onayladı|onayladılar|onaylıyorum|onaylıyoruz|kesinleşti|kesinleştirdik|kesinleştirildi|seçtik|seçildi|tercih\\s+ettik|devam\\s+(?:ediyoruz|edeceğiz|edelim)|ilerliyoruz|ilerleyeceğiz|ilerleyelim|gidiyoruz|gidelim|gideceğiz)${E}`,
 );
 /** "Devam ediyoruz" decides only with what it goes on with: "ikinci teklifle", "B planı ile". */
 const GOES_WITH = /(?:\s+ile|y?l[ae])\s+$/u;

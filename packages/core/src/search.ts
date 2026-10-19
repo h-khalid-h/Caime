@@ -257,6 +257,35 @@ const PERIOD_RULES: Array<[RegExp, (m: RegExpExecArray) => Period | null]> = [
   ],
 ];
 
+/**
+ * Turkish's time before what it's of, with "-ki" ("geçen haftaki", "dünkü", "eylüldeki"), at the
+ * start or after whose ("Ayşe'nin geçen ayki belgeleri"): group 1 is what comes before it, group 2
+ * the time as written.
+ */
+const TR_LEADING: Array<[RegExp, (m: RegExpExecArray) => Period | null]> = [
+  [
+    /(^|^.+?'\p{L}+\s+)((?:geçen|bu)\s+(?:hafta|ay|yıl|sene)(?:ki|lık))\s+\S/u,
+    (m) => {
+      const [which, unit] = m[2]!.split(/\s+/);
+      return {
+        kind: which === 'bu' ? 'this' : 'last',
+        unit: trUnit(unit!.replace(/(?:ki|lık)$/u, '')),
+      };
+    },
+  ],
+  [
+    /(^|^.+?'\p{L}+\s+)((?:dün|bugün)(?:kü|ki))\s+\S/u,
+    (m) => ({ kind: m[2]!.startsWith('dün') ? 'yesterday' : 'today' }),
+  ],
+  [
+    new RegExp(`(^|^.+?'\\p{L}+\\s+)((?:${MONTH_ALT})'?(?:daki|deki|taki|teki))\\s+\\S`, 'u'),
+    (m) => {
+      const month = monthIn(m[2]!.replace(/'?(?:daki|deki|taki|teki)$/u, ''));
+      return month < 0 ? null : { kind: 'month', month, year: null };
+    },
+  ],
+];
+
 function weekday(word: string): Period | null {
   const day = dayIn(word.replace(/\s+/g, ' '));
   return day < 0 ? null : { kind: 'weekday', day };
@@ -292,6 +321,19 @@ const utcDay = (y: number, m: number, d: number) => new Date(Date.UTC(y, m, d));
  */
 export function splitPeriod(q: string, now: Date): { rest: string; period: ParsedQuery['period'] } {
   const folded = foldSame(q);
+  for (const [rule, read] of TR_LEADING) {
+    const m = rule.exec(folded);
+    if (!m) continue;
+    const period = read(m);
+    if (!period) continue;
+    const days = daysOf(period, now);
+    const at = m.index + m[1]!.length;
+    const label = q.slice(at, at + m[2]!.length).trim();
+    return {
+      rest: `${q.slice(0, at)} ${q.slice(at + m[2]!.length)}`.replace(/\s+/g, ' ').trim(),
+      period: { since: iso(days.since), until: iso(days.until), label },
+    };
+  }
   for (const [rule, read] of PERIOD_RULES) {
     const m = rule.exec(folded);
     if (!m) continue;
@@ -403,7 +445,12 @@ const FILE_WORDS: Array<[RegExp, FileKind | null, SearchScope]> = [
   ],
 ];
 
-const fileWord = (word: string) => FILE_WORDS.find(([re]) => re.test(word.trim()));
+/** "les PDF", "the photos", "my files": the kind, its article or "my" left off. */
+const KIND_ARTICLE = /^(?:les|des|mes|tes|ses|nos|vos|leurs|the|my|all|all\s+my)\s+/iu;
+const fileWord = (word: string) => {
+  const w = word.trim().replace(KIND_ARTICLE, '');
+  return FILE_WORDS.find(([re]) => re.test(w));
+};
 
 /**
  * What Search offers to try (M16 E1), shown in the reader's language: each is read whole by the
@@ -598,13 +645,27 @@ const RULES: Rule[] = [
   ],
   // Case counts here: a name is capitalised as typed.
   [new RegExp(`^(.+?)\\s+[dD]e\\s+${FR_NAME}$`, 'u'), filesFrom(1, 2)],
-  [rx(`^(.+?)(?:${TR_FROM}|${TR_OF})\\s+(?:gelen\\s+)?(.+)$`), filesFrom(2, 1)],
+  [
+    rx(
+      `^(.+?)(?:${TR_FROM}|${TR_OF})\\s+(?:gelen\\s+|gönderdiği\\s+|paylaştığı\\s+|attığı\\s+|yolladığı\\s+)?(.+)$`,
+    ),
+    filesFrom(2, 1),
+  ],
+  // "pdfs Maya sent", "ملفات PDF بعتها سامي": the kind, then who sent it
+  [rx('^(.+?)\\s+(\\S+)\\s+(?:sent|shared|posted|sent\\s+me)$'), filesFrom(1, 2)],
+  [
+    rx(
+      '^(.+?)\\s+(?:بعتها|بعته|بعتهم|بعتتها|بعتهالي|ارسلها|ارسله|ارسلهم|شاركها|طرشها|دزها|صيفطها)\\s+(.+)$',
+    ),
+    filesFrom(1, 2),
+  ],
   // "things Sarah asked me to do", "what did Sarah ask me"
   [rx('^(?:things|what|stuff)\\s+(.+?)\\s+asked\\s+me(?:\\s+to\\s+do|\\s+for)?$'), askedMe()],
   [rx('^what\\s+did\\s+(.+?)\\s+ask\\s+(?:me|me\\s+to\\s+do|me\\s+for)$'), askedMe()],
   [rx('^(?:ماذا|ما\\s+الذي|ايه\\s+اللي|شو)\\s+طلب(?:ت|ه)?\\s+مني\\s+(.+)$'), askedMe()],
   [rx('^(?:ماذا|ما\\s+الذي|شو)\\s+طلب(?:ت)?\\s+(.+?)\\s+مني$'), askedMe()],
   [rx('^(?:ايه\\s+اللي|اللي|الذي)\\s+(.+?)\\s+طلب(?:ه|ته|تو|و)?\\s+مني$'), askedMe()],
+  [rx('^(?:ايه\\s+اللي|اللي|الذي)\\s+طلب(?:ه|ته|تو|و)?\\s+مني\\s+(.+)$'), askedMe()],
   [
     rx(
       "^(?:ce\\s+que|qu'est-ce\\s+que|tout\\s+ce\\s+que)\\s+(.+?)\\s+m'a\\s+demandé(?:\\s+de\\s+faire)?$",
@@ -658,6 +719,14 @@ const RULES: Rule[] = [
     rx('^(?:ايه\\s+اللي|اللي)\\s+(.+?)\\s+(?:قاله|قالته|كتبه|كتبته)\\s+(?:عن|بخصوص|حول)\\s+(.+)$'),
     said(1, 2),
   ],
+  // Cairo's order, "قال إيه عمر عن العقد", and "رسائل خالد عن السفر" (Khaled's messages about…)
+  [
+    rx(
+      '^(?:قال|قالت|كتب|كتبت|بعت|بعتت)\\s+(?:ايه|ايش|شو|وش)\\s+(.+?)\\s+(?:عن|بخصوص|حول)\\s+(.+)$',
+    ),
+    said(1, 2),
+  ],
+  [rx('^(?:رسائل|رسايل|مسجات|كلام)\\s+(.+?)\\s+(?:عن|بخصوص|حول)\\s+(.+)$'), said(1, 2)],
   [
     rx(
       "^(?:qu'a\\s+dit|qu'est-ce\\s+qu'a\\s+dit|ce\\s+qu'a\\s+dit)\\s+(.+?)\\s+(?:sur|à\\s+propos\\s+de|au\\s+sujet\\s+de|concernant)\\s+(.+)$",
@@ -746,8 +815,12 @@ function parseWords(q: string, out: ParsedQuery): ParsedQuery {
     };
   }
 
-  // "managers", "my customers", "family", "عملائي", "mes clients", "müşterilerim"
-  const named = q.replace(MY, '');
+  // "managers", "my customers", "family", "عملائي", "mes clients", "müşterilerim"; "زملائي في
+  // الشغل" (at work) is "زملائي"
+  const named = q
+    .replace(MY, '')
+    .replace(/\s+(?:في|ف|بال)\s*(?:ال)?(?:شغل|عمل)$/u, '')
+    .replace(/\s+(?:at\s+work|au\s+travail|au\s+boulot)$/iu, '');
   const rel = relationshipFromWord(named);
   if (rel) {
     return {

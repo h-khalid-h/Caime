@@ -42,58 +42,69 @@ const QUESTIONS: Array<[ChatIntent, RegExp]> = [
     'asked',
     re([
       "who(?:'?s| is) waiting (?:for|on) me",
-      "what(?:'?s| is| was| have i been) asked of me",
+      '(?:is )?any(?:one|body) waiting (?:for|on) me',
+      "what(?:'?s| is| was| have i been| has been) asked of me",
+      'what (?:have|has) i been asked(?: to do)?',
+      'what (?:was|am) i asked(?: to do)?',
       'what do i owe',
       'what do (?:people|others) (?:want|need) from me',
       'من ينتظرني',
       'مين مستنيني',
       'ماذا (?:طلب|يطلبون) مني',
       'ما المطلوب مني',
-      'ايه المطلوب مني',
+      '(?:ايه|وش|شو|ايش|شنو) المطلوب مني',
       'مطلوب مني ايه',
+      '(?:شو|ايش|وش|ايه|شنو) (?:طالبين|بدهم|يبون|يبغون|عايزين|عاوزين) مني',
       "qui m'attend",
       "qu'est-ce qu'on (?:m'a demandé|attend de moi)",
+      "on m'a demandé quoi",
+      'on attend quoi de moi',
       'beni kim bekliyor',
       'benden ne (?:isteniyor|istendi|bekleniyor)',
+      'benden neler (?:isteniyor|istendi|bekleniyor)',
     ]),
   ],
   [
     'waiting',
     re([
-      'what am i waiting (?:for|on)',
-      'who am i waiting (?:for|on)',
+      'what am i (?:still )?waiting (?:for|on)',
+      "(?:what|anything) (?:i'?m|i am) (?:still )?waiting (?:for|on)",
+      'who am i (?:still )?waiting (?:for|on)',
       'who owes me',
+      "who (?:hasn'?t|has not|didn'?t|did not) (?:got|gotten|get|come|written|replied|answered|responded)(?: back)?(?: to me)?",
       "what(?:'?s| is) (?:still )?pending",
       'ماذا انتظر',
       'ما الذي انتظره',
       'من انتظر',
       'انا مستني (?:ايه|مين)',
       'مستني (?:ايه|مين)',
+      '(?:ايش|ايه|شو|وش|شنو) (?:اللي )?(?:انتظره|انا منتظره|منتظره|مستنيه|ناطره|ناطر)',
+      'شو عم انطر',
       "qu'est-ce que j'attends",
       "j'attends quoi",
       'qui me doit',
-      'ne bekliyorum',
+      "qui ne m'a pas (?:répondu|rappelé|recontacté|écrit)",
+      'ne(?:yi|leri)? bekliyorum',
       'kimi bekliyorum',
+      'bana kim (?:dönmedi|dönüş yapmadı|cevap vermedi|yazmadı)',
     ]),
   ],
   [
     'mine',
     re([
-      'my (?:tasks|actions|to-?dos?|to-?do list)',
       'what (?:did|have) i promised?',
       "what did i say i(?:'?d| would)",
       'what do i (?:have|need) to do',
       'ما هي مهامي',
-      'مهامي',
       'بماذا وعدت',
       'ماذا علي ان افعل',
       'وعدت بايه',
+      '(?:ايه|ايش|شو|وش) (?:اللي )?وعدت(?: (?:بيه|به|فيه))?',
       'لازم اعمل ايه',
-      'mes tâches',
       "qu'ai-je promis",
       "j'ai promis quoi",
+      "qu'est-ce que j'ai promis",
       "qu'est-ce que je dois faire",
-      'görevlerim',
       'ne söz verdim',
       'ne yapmam gerekiyor',
     ]),
@@ -102,23 +113,128 @@ const QUESTIONS: Array<[ChatIntent, RegExp]> = [
     'coming',
     re([
       "what(?:'?s| is) (?:coming up|next|on my (?:calendar|schedule))",
-      'my (?:calendar|schedule|week|agenda)',
-      'what do i have (?:today|tomorrow|this week)',
+      "what(?:'?s| is) on (?:for )?(?:today|tomorrow|this week)",
+      'what do i have (?:on )?(?:today|tomorrow|this week)',
+      'do i have anything (?:on )?(?:today|tomorrow|this week)',
       'ماذا لدي (?:اليوم|غدا|هذا الاسبوع)',
       'ما القادم',
-      'جدولي',
       'عندي ايه (?:النهارده|انهارده|بكره|الاسبوع ده)',
+      '(?:وش|شو|ايش|ايه|شنو) عندي (?:اليوم|بكره|بكرا|باكر|باچر|غدا|غدوه|هالاسبوع|الاسبوع ده|هذا الاسبوع|النهارده)',
       'ايه اللي جاي',
       "qu'est-ce que j'ai (?:aujourd'hui|demain|cette semaine)",
-      'mon agenda',
       "qu'est-ce qui arrive",
+      "quoi de prévu(?: (?:aujourd'hui|demain|cette semaine))?",
+      "qu'est-ce qui est prévu",
+      "c'est quoi mon programme",
       'bugün ne var',
       'yarın ne var',
       'bu hafta ne var',
-      'takvimim',
+      '(?:bugün|yarın|bu hafta) neyim var',
     ]),
   ],
 ];
+
+/**
+ * The same four said as what one has ("my tasks", "مهامي", "takvimim"): only when that's all the
+ * message says, with a "show me" or "what are" around it ("summarise my week" is the model's).
+ */
+const OWN_LISTS: Array<[ChatIntent, RegExp]> = [
+  [
+    'mine',
+    re([
+      'my (?:tasks|actions|to-?dos?|to-?do list|open promises|promises|commitments)',
+      'مهامي',
+      '(?:المهام|مهام) (?:تبعي|تبعتي|حقتي|ديالي|بتاعتي)',
+      'mes tâches',
+      'ma liste de tâches',
+      'mes engagements',
+      'görevlerim',
+      'görev listem',
+      'yapılacaklarım',
+      'yapılacaklar listem',
+    ]),
+  ],
+  [
+    'coming',
+    re([
+      'my (?:calendar|schedule|week|agenda)',
+      'جدولي',
+      'mon agenda',
+      "mon programme(?: (?:d'aujourd'hui|de demain|de la semaine))?",
+      'takvimim',
+      'programım',
+    ]),
+  ],
+];
+/** What may stand around one of those and still only ask for it. */
+const AROUND_A_LIST = new Set([
+  'show',
+  'me',
+  'list',
+  'what',
+  'whats',
+  "what's",
+  'are',
+  'is',
+  'all',
+  'the',
+  'please',
+  'pls',
+  'open',
+  'current',
+  'now',
+  'today',
+  'tomorrow',
+  'this',
+  'week',
+  'ما',
+  'هي',
+  'هو',
+  'وش',
+  'شو',
+  'ايش',
+  'ايه',
+  'اعرض',
+  'وريني',
+  'ورني',
+  'كل',
+  'اليوم',
+  'بكره',
+  'montre',
+  'moi',
+  'affiche',
+  'quoi',
+  "c'est",
+  'ce',
+  'est',
+  'sont',
+  'quelles',
+  'quels',
+  'aujourd',
+  "aujourd'hui",
+  'hui',
+  'demain',
+  'göster',
+  'bana',
+  'listele',
+  'neler',
+  'ne',
+  'nedir',
+  'bugün',
+  'yarın',
+  'bugünkü',
+]);
+
+/**
+ * A question about one person ("from Ana", "من أحمد", "de Sarah", "Ayşe'den") is the model's,
+ * which reads the lines with their names: a rule's list would answer for everyone.
+ */
+const ABOUT_SOMEONE = re([
+  '(?:from|by|with|for|about) (?!people|anyone|anybody|others|everyone|everybody|me\\b|you\\b)\\p{L}+',
+  '(?:من|مع|عن) (?!الناس|حد|حدا|احد|الكل|الجميع|غيري|فضلك|بعد|زمان)\\p{L}+',
+  "(?:(?:de|avec|du côté de) |d')(?!personne|quelqu'un|les autres|autres|tout le monde|gens|moi(?![\\p{L}\\p{N}]))\\p{L}+",
+  "\\p{L}+'(?:den|dan|ten|tan)",
+]);
 
 /** "How can you help me", "what can you do", "who are you", anywhere in a short message. */
 const HELP = re([
@@ -126,6 +242,7 @@ const HELP = re([
   'what can you do',
   'what do you do',
   'how (?:can|could|do|will) you help',
+  'what can you help(?: me)? with',
   'who are you',
   'what are you',
   'ساعدني',
@@ -158,6 +275,8 @@ const HELP = re([
   'ne işe yararsın',
   'sen kimsin',
   'bana nasıl yardım',
+  '(?:bana )?nasıl yardımcı ol(?:ursun|abilirsin)',
+  'yardımcı olur musun',
 ]);
 
 const THANKS = re([
@@ -247,7 +366,21 @@ function mostly(t: string, rule: RegExp, rest: number): boolean {
 export function chatIntent(text: string): ChatIntent | null {
   const t = foldForIntent(text);
   if (!t) return null;
-  for (const [intent, rule] of QUESTIONS) if (rule.test(t)) return intent;
+  for (const [intent, rule] of QUESTIONS) {
+    const m = rule.exec(t);
+    if (!m) continue;
+    // Turkish names the person first: "Ayşe'den ne bekliyorum".
+    const about =
+      ABOUT_SOMEONE.test(t.slice(m.index + m[0].length)) ||
+      /\p{L}+'(?:den|dan|ten|tan)\s+$/u.test(t.slice(0, m.index));
+    return about ? null : intent;
+  }
+  for (const [intent, rule] of OWN_LISTS) {
+    const m = rule.exec(t);
+    if (!m) continue;
+    const left = (t.slice(0, m.index) + t.slice(m.index + m[0].length)).match(/[\p{L}\p{N}']+/gu);
+    if ((left ?? []).every((w) => AROUND_A_LIST.has(w))) return intent;
+  }
   if (mostly(t, HELP, 3)) return 'help';
   if (mostly(t, THANKS, 2)) return 'thanks';
   if (mostly(t, PEACE, 2) || mostly(t, GREETING, 2)) return 'greeting';

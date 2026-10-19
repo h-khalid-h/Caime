@@ -124,9 +124,10 @@ These are rules, not preferences.
 17. **Intelligence in every interface language** (R70, R71). Whatever Caime understands of
     people's words (promises, requests, decisions, questions, dates, amounts, what's asked of Cai
     and the friends) it understands in every language of `INTERFACE_LANGUAGES`, by rules first,
-    measured per language by the golden set (`intelligence-golden.test.ts`: floors per label and
-    language, only ever raised, with lines written apart from the rules), and it answers in the
-    language it was written in. The model is asked only for what the rules don't answer, for
+    measured per language by the golden sets (`intelligence-golden.test.ts`: floors per label and
+    language, the due date per language, only ever raised, with lines written apart from the
+    rules; Arabic by dialect in a held-out set no rule is fixed against; amounts, Cai's intents
+    and Search each a set of their own), and it answers in the language it was written in. The model is asked only for what the rules don't answer, for
     whoever may use it, on the latest model by default. A new language brings its readers and
     their golden lines with its catalog.
 
@@ -2097,11 +2098,23 @@ A sphere is said as how you know someone, never "sphere".
   (their decisions' conversations, their waiting items, what was asked of them), so a new thing
   remembered there follows the same two conditions the `actions` counts use, never a wider one.
 - The message intelligence is measured, not only exampled: `intelligence-golden.test.ts` reads
-  every line of `fixtures/intelligence-golden.ts` (labelled by hand, half negatives) and fails
-  below the precision and recall floors per label and language, printing each wrong line. A
-  new rule, trigger or list entry adds its lines there (a positive and the near-miss it must
-  not catch), and a floor only ever moves up. Quoted words (`maskQuoted`) and forwarded
-  messages are nobody's promise; a sentence ends at punctuation followed by a space.
+  every line of `fixtures/intelligence-golden.ts` (labelled by hand, a third negatives at least,
+  15 positives of each label and 15 dated lines in each language) and fails below the precision
+  and recall floors per label and language and the due date's per language (the day on the
+  writer's clock), printing each wrong line. A new rule, trigger or list entry adds its lines
+  there (a positive and the near-miss it must not catch), and a floor only ever moves up.
+  `fixtures/intelligence-heldout.ts` is Arabic as Cairo, the Gulf, the Levant and the Maghreb
+  write it, held out (M16 G10): no rule is fixed against one of its lines (a fix brings its own
+  line to the golden set, and says so when a held-out line showed the gap), and
+  `intelligence-heldout.test.ts` holds each variety to what was measured. The same file holds
+  "Quite sure" and "Fairly sure" (`sureness.ts`) to how often such a suggestion is right over
+  both sets, nine in ten and three in four. Amounts (`amounts-golden.test.ts`: value and
+  currency both, and never a currency that isn't a code), Cai's intents
+  (`chat-intent-golden.test.ts`: right answers, and right rule answers, since a list answering
+  the wrong question costs more than the model) and Search's rules (`search-golden.test.ts`,
+  each query in its own reader's language) have golden sets of their own, by the same rules.
+  Quoted words (`maskQuoted`) and forwarded messages are nobody's promise; a sentence ends at
+  punctuation followed by a space.
 - Dates are `parseWhen` (`packages/core/src/when.ts`): a piece carries a `date`, a `time`, or a
   `softTime` (what "tonight" or "tomorrow evening" suggests, which a written hour beside it
   replaces, read as that part of the day), and the recent past ("last Friday", "yesterday")
@@ -2113,13 +2126,24 @@ A sphere is said as how you know someone, never "sphere".
   (`absorbVague`: the one it replies to, or the only one open within two days), else it's its own.
 - The message intelligence reads Arabic by lists in `packages/core/src/intelligence.ts`
   (`AR_COMMIT`, `AR_REQUEST_VERBS_LIST`, `AR_REQUEST`, `AR_DECISION`, `AR_CONFIRM`, `AR_PAY`,
-  `AR_QUESTION_START` with `AR_NOT_A_QUESTION` for "ما" as a negation): a trigger is a whole
-  word, a promise's object skips the trigger's words and the particles (`AR_PARTICLES`), and a
-  negation right before a promise (`AR_NEGATIVE_BEFORE`) takes it back. A new dialect form joins
-  its list with a case in `intelligence.test.ts`, never a regex of its own in the loop. Amounts:
-  digits of any script go through `asciiDigits` (the matched text stays the writer's), and a
-  currency word with its country goes in `AR_CURRENCY_OF`; a bare word that names several
-  currencies ("دينار", "ليرة") says `null`, never a guess.
+  `AR_QUESTION_START`, where "ما" asks only before what a question names, and
+  `AR_NOT_A_QUESTION`): a trigger is a whole word (a joined "و" allowed before a promise), a
+  promise's object skips the trigger's words and the particles (`AR_PARTICLES`). A promise is
+  `arabicPromise`: a verb marked for the future in any dialect's way, from the stems each mark
+  takes (`AR_PROMISE_STEMS` after Cairo's "ه" and the Levant's "ح", `AR_PRESENT_STEMS` after the
+  Gulf's and the Levant's "ب", `AR_MAGHREB_STEMS` after the Maghreb's "غادي ن", `AR_MSA_STEMS`
+  after "سـ"; a stem the mark turns into another word stays out: "هودي", "برد", "بعدي"), "أوعدك"
+  and what follows it, or a first person's bare verb only once the sentence says when or takes it
+  on (`AR_FIRST_PERSON`, `AR_TAKES_IT_ON`). It's taken back by a negation in its clause
+  (`AR_NEGATIVE_BEFORE`, `AR_NEGATED_CLAUSE`, up to a comma, a "بس" or a joined "و"), a meaning
+  once or a guess (`AR_NOT_PROMISED_BEFORE`: "كنت هبعتلك", "يمكن أعدي"), a condition, or a habit
+  said in the present (`AR_HABIT`), and dated by its own clause first. A new dialect form joins
+  its list with a golden line, never a regex of its own in the loop. Amounts: digits of any
+  script go through `asciiDigits` (the matched text stays the writer's); a currency word takes
+  only a country after it (`AR_COUNTRY_WORDS`, then `AR_CURRENCY_OF`), never the next word; a
+  bare word that names several currencies ("دينار", "ليرة") says `null`, never a guess; amounts
+  in words are `wordAmounts` (the four languages' number words, "ألف وخمسمية", "quatre-vingts")
+  and a bare number in a sentence about money `bareAmounts` (no currency: none was said).
 - French and Turkish are read by their own modules (`intelligence-fr.ts`, `intelligence-tr.ts`,
   their dates in `when.ts`) for a sentence `latinLanguage` (`latin-language.ts`) says is theirs;
   anything unclear is read as English. A new phrase joins its language's list with a golden line

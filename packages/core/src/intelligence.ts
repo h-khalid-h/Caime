@@ -81,15 +81,17 @@ export interface Analysis {
 const EN_COMMIT =
   /\b(i['’]?ll|i will|i['’]?m going to|im going to|i am going to|i['’]?m gonna|im gonna|let me|i shall|we['’]?ll|we will|i promise to|i plan to|i can)\s+(?!not\b|never\b|be\b|have\b|need\b|try\b|know\b|see\b|think\b|guess\b|check if\b)/i;
 const EN_NEGATIVE = /\b(won['’]?t|will not|can['’]?t|cannot|couldn['’]?t|wouldn['’]?t)\b/i;
+/** A guess in the words right before a promise ("Maybe I will call him") makes it none. */
+const EN_HEDGE = /\b(?:maybe|perhaps|probably|possibly)\b[^,;.!?]{0,20}$/i;
 /** Where one clause ends and the next begins: a negation before this boundary doesn't reach past it. */
 const EN_CLAUSE_BREAK = /[,;]|\b(?:but|and|so|though|although)\b/gi;
 const EN_REQUEST =
   /\b(can you|could you|would you|will you|can u|could u|would u|pls|please|plz|kindly|i need you to|need you to|would you mind|make sure (?:to|you)|don['’]?t forget to|remember to)\b[\s,]*/i;
 /** A request's words that ask for nothing: courtesy, rhetoric, or an ask not to. */
 const EN_NOT_A_REQUEST =
-  /\b(?:please\s+(?:ignore|disregard|find\s+attached|see\s+attached|note)|can\s+you\s+believe|could\s+you\s+imagine|(?:can|could|would|will)\s+(?:you|u)\s+not\b)/i;
+  /\b(?:please\s+(?:ignore|disregard|find\s+attached|see\s+attached|note)|can\s+you\s+believe|could\s+you\s+imagine|(?:can|could|would|will)\s+(?:you|u)\s+not\b|(?:did|have|had)\s+(?:you|u)\s+(?:remember|forget|forgot|get\s+a\s+chance|manage)\s+to\b)/i;
 const EN_DECISION =
-  /\b(we(?:['’]ve| have)? decided(?: to| that| on)?|decided to|decision:|let['’]?s go with|lets go with|we['’]?ll go with|we['’]?re going with|we are going with|i['’]?m going with|we agreed(?: to| on| that)?|agreed to|agreed on|it['’]?s agreed|approved|it['’]?s settled|settled on|final decision(?: is)?:?)\s*/i;
+  /\b(we(?:['’]ve| have)? decided(?: to| that| on)?|decided to|decision:|let['’]?s go with|lets go with|we['’]?ll go with|we['’]?re going with|we are going with|i['’]?m going with|we agreed(?: to| on| that)?|agreed to|agreed on|it['’]?s agreed|approved|it['’]?s settled|settled on|final decision(?: is)?:?|we(?:['’]ve| have)? (?:picked|chosen|chose|opted for)|we picked|we chose|^agreed\s*[:,—–-]|^deal\s*[:,!—–-])\s*/i;
 /** A decision taken back or in doubt in the words right before it ("wasn't approved", "not sure we decided"). */
 const EN_NOT_DECIDED =
   /\b(?:not|n['’]?t|never|no|isn['’]?t|wasn['’]?t|weren['’]?t|aren['’]?t|hasn['’]?t|haven['’]?t|not\s+sure|unless|until|if|whether|hope|hopefully|maybe|once)\b[^.!?]{0,25}$/i;
@@ -146,67 +148,226 @@ const IMPERATIVE_VERBS = new Set([
   'cancel',
 ]);
 
-// Arabic, as people write it: Egyptian (هبعتلك, ممكن), Gulf (راح أرسل, تقدر, أبغى) and
-// Levantine (رح ابعتلك, فيك, بدي) alongside MSA (سأرسل, أرجو). A trigger is a whole word.
-const AR_EDGE = '(?=$|[\\s،,.!؟?])';
+// Arabic, as people write it: Egyptian (هبعتلك, ممكن), Gulf (برسل لك, تكفى, أبغى), Levantine
+// (رح ابعتلك, فيك, دخيلك) and the Maghreb's (غادي نصيفط, عافاك) alongside MSA (سأرسل, يرجى).
+// A trigger is a whole word.
+const AR_EDGE = '(?=$|[\\s،,.!؟?:؛])';
+/** What hangs on a promised verb: "you" (ـلك, ـك), "it" (ـه, ـها, ـهولك), "them". */
+const AR_OBJECT = '(?:لكم|لكو|لكوا|ليك|لك|كم|ك|هالك|هولك|ها|هم|لهم|لها|له|ه)?';
+/**
+ * The verbs people promise with, as written after the person's mark (Cairo's "ه" and "بعت" is
+ * "I'll send", the Levant's "ح" and "خلص" "I'll finish"): send, transfer, pay, finish, prepare,
+ * bring, pass by, come, come back, buy, book, review, confirm, call, reply, tell, remind, fix,
+ * write, sign, check, ask, meet, take, order, put, answer, follow up, share, look for. Not what
+ * the mark makes another word of: "هودي" is a hoodie, "حمر" red, "حجي" a pilgrim.
+ */
+const AR_PROMISE_STEMS = [
+  'بعت',
+  'ابعت',
+  'بعث',
+  'رسل',
+  'ارسل',
+  'حول',
+  'دفع',
+  'سدد',
+  'خلص',
+  'كمل',
+  'جهز',
+  'حضر',
+  'جيب',
+  'عدي',
+  'مرق',
+  'اجي',
+  'وصل',
+  'رجع',
+  'شتري',
+  'اشتري',
+  'حجز',
+  'راجع',
+  'أكد',
+  'اكد',
+  'كلم',
+  'تصل',
+  'اتصل',
+  'رن',
+  'رد',
+  'قول',
+  'خبر',
+  'بلغ',
+  'فكر',
+  'ذكر',
+  'صلح',
+  'ظبط',
+  'كتب',
+  'وقع',
+  'شوف',
+  'سأل',
+  'اسأل',
+  'قابل',
+  'حكي',
+  'عمل',
+  'خد',
+  'اخد',
+  'طلب',
+  'حط',
+  'جاوب',
+  'تابع',
+  'شارك',
+  'دور',
+];
+/**
+ * After the present's "ب", a promise in the Gulf and the Levant ("برسل لك", "بمر عليك") and what
+ * Cairo is about to do ("ببعتلك"). Only the verbs that say it whatever the dialect; the rest
+ * ("بكلمك" is Cairo's "I'm talking to you") wait for something that says when.
+ */
+const AR_PRESENT_STEMS = [
+  'بعت',
+  'ابعت',
+  'رسل',
+  'ارسل',
+  'أرسل',
+  'حول',
+  'سدد',
+  'خلص',
+  'جهز',
+  'جيب',
+  'حجز',
+  'أكد',
+  'اكد',
+  'دز',
+  'طرش',
+  'عطي',
+  'مر',
+  'مرق',
+  'سوي',
+];
+/** The Maghreb's verbs after its "ن" (I): send, call, do, buy, pass by, prepare. */
+const AR_MAGHREB_STEMS = [
+  'صيفط',
+  'سيفط',
+  'بعث',
+  'عيط',
+  'دير',
+  'شري',
+  'جيب',
+  'خلص',
+  'كلم',
+  'تصل',
+  'دوز',
+  'فوت',
+  'وجد',
+  'رجع',
+  'جي',
+  'مر',
+  'قول',
+  'صاوب',
+  'حول',
+  'دفع',
+  'حجز',
+];
+/** Verbs that promise only once something says when or takes it on ("بكلمك باكر", "أمر عليك"). */
+const AR_CUED_STEMS = [...AR_PROMISE_STEMS, ...AR_PRESENT_STEMS, ...AR_MAGHREB_STEMS, 'جي', 'مر'];
+/** MSA's future after "سـ": "سأرسل", "سنراجع". */
+const AR_MSA_STEMS = [
+  'رسل',
+  'بعث',
+  'تصل',
+  'راجع',
+  'خبر',
+  'رد',
+  'حول',
+  'شارك',
+  'حجز',
+  'دفع',
+  'جهز',
+  'كمل',
+  'نهي',
+  'سلم',
+  'وقع',
+  'حضر',
+  'كتب',
+  'قوم',
+  'عود',
+  'تابع',
+  'ؤكد',
+  'رتب',
+  'بلغ',
+  'طلب',
+  'قابل',
+  'زور',
+  'سدد',
+  'كلم',
+  'وفر',
+  'نجز',
+  'صلح',
+  'رفع',
+  'تواصل',
+  'عمل',
+];
+const stems = (list: string[]) => [...new Set(list)].join('|');
 const AR_COMMIT = new RegExp(
-  `(^|[\\s،,.!؟?])(${[
-    // Egyptian: ه/ح + verb, with an attached "you"
-    'هبعت(?:لك|هولك|ها|ه)?',
-    'حبعت(?:لك)?',
-    'هكلم(?:ك)?',
+  `(^و?|[\\s،,.!؟?]و?)(${[
+    // Egypt's and the Levant's future: ه/ح, "ن" for "we" ("هنبعتلك"), then the verb
+    `[هح]ن?(?:${stems(AR_PROMISE_STEMS)})${AR_OBJECT}`,
     'هتصل(?:\\s+بيك)?',
-    'هرد(?:\\s+عليك)?',
-    'هشوف',
-    'هخلص',
-    'هجهز',
-    'هقولك',
-    'هعمل',
-    'هجيب',
-    'هحول(?:لك)?',
-    'هدفع',
-    'هراجع',
-    'هرسل(?:لك)?',
-    'هبلغك',
-    'هأكد(?:لك)?',
-    'هاكد(?:لك)?',
+    'هجي(?:لك|ك)?',
+    'هاجي(?:لك|ك)?',
     // Gulf: راح + verb; Levantine: رح/حـ + verb. First person only (أ/ا: I, ن: we): "راح
-    // يجيب" is someone else's doing and "راح تحبه" is the reader's.
-    'راح\\s+(?!ال)[أاإن][؀-ۿ]+',
-    'رح\\s+(?!ال)[أاإن][؀-ۿ]+',
-    // Levantine and Gulf present-as-promise, only the verbs that promise something
-    'بعطيك',
-    'ببعت(?:لك)?',
-    'بأرسل(?:\\s+لك)?',
-    'بارسل(?:ك|لك)?',
-    'برسل(?:ك|لك)?',
-    'بحول(?:لك)?',
+    // يجيب" is someone else's doing and "راح تحبه" is the reader's. The Levant's "رح" takes the
+    // verb bare too ("رح خلص"), never "رح نشوف", we'll see.
+    'راح\\s+(?!ال|نشوف)[أاإن][؀-ۿ]+',
+    'رح\\s+(?!ال|نشوف)[أاإن][؀-ۿ]+',
+    'رح\\s+(?!ال|[يتن])[؀-ۿ]{2,}',
+    // The present as a promise ("برسل لك", "ببعتلك"); "بحول الله" is God willing
+    `بن?(?:${stems(AR_PRESENT_STEMS)})${AR_OBJECT}(?!\\s+الله)`,
     'بخبرك',
     'بحكيلك',
-    'بأكد(?:لك)?',
-    'باكد(?:لك)?',
-    'بجهز(?:لك)?',
-    'بخلص(?:لك)?',
+    'بحكيك',
+    'بحكي\\s+مع',
+    'بذكرك',
     'برد\\s+عليك',
     'بتصل\\s+فيك',
-    // MSA
-    'سأرسل(?:\\s+لك)?',
-    'سأبعث(?:\\s+لك)?',
-    'سأتصل(?:\\s+بك)?',
-    'سأراجع',
-    'سأخبرك',
+    // The Maghreb's future: "غادي نصيفط", "غانجي", Tunis's "باش نبعثلك", Algiers' "راني نبعثلك"
+    '(?:غادي|غاديين|غادية|غاد|غا)\\s+ن[؀-ۿ]{2,}',
+    'غان[؀-ۿ]{2,}',
+    `(?:باش|راني|رانا)\\s+ن(?:${stems([...AR_MAGHREB_STEMS, ...AR_PROMISE_STEMS])})${AR_OBJECT}`,
+    // MSA ("سامر" is a name)
+    `(?!سامر)س[أان](?:${stems(AR_MSA_STEMS)})${AR_OBJECT}`,
     'سأرد(?:\\s+عليك)?',
-    'سأحول(?:\\s+لك)?',
-    'سأشارك(?:ك)?',
+    'سأخبرك',
     'سأقوم\\s+ب',
-    'سأحجز',
-    'سأدفع',
     'سوف\\s+[؀-ۿ]+',
   ].join('|')})${AR_EDGE}`,
   'u',
 );
+/** "أوعدك أخلص": a promise said as one, what follows it the thing promised. */
+const AR_PROMISE_WORD =
+  /(^|[\s،,.!؟?])(أوعدك|اوعدك|أوعدكم|اوعدكم|بوعدك|بوعدكم|أعدك|اعدك|أعدكم|وعد\s+مني)(?=\s+(?!مش|ما|لن|مو|مب|لا)[؀-ۿ])/u;
+/**
+ * A first person's verb with nothing that marks the future ("أمر عليك", "نبعثلك", "بكلمك"): a
+ * promise only once the sentence says when, or the words before it take something on ("إن شاء
+ * الله", "أبشر", "حاضر"); "نجيب" and "ناجي" are names too.
+ */
+const AR_FIRST_PERSON = new RegExp(
+  `(^و?|[\\s،,.!؟?]و?)((?!نجيب|ناجي)(?:[أان]|بن?)(?:${stems(AR_CUED_STEMS)})${AR_OBJECT})${AR_EDGE}`,
+  'u',
+);
+const AR_TAKES_IT_ON =
+  /(?:^|[\s،,.!])(?:إن\s+شاء\s+الله|ان\s+شاء\s+الله|إنشالله|انشالله|انشاء\s+الله|إنشاء\s+الله|بإذن\s+الله|باذن\s+الله|بحول\s+الله|حاضر|أبشر|ابشر|من\s+عيوني|من\s+عيني|تكرم|ولا\s+يهمك|أكيد|اكيد|اوكي|أوكي|طيب|تمام|ماشي|خلاص|صافي|واخا)(?=$|[\s،,.!])/u;
 /** A negation right before a promise ("مش هبعت", "ما راح أقدر", "لن") takes it back. */
 const AR_NEGATIVE_BEFORE = /(^|[\s،,])(مش|ما|لن|لا|مو|مب|مهوب|ماراح|مارح)\s*$/u;
+/** "كنت هبعتلك" (I was going to send it), "يمكن أعدي" (maybe I'll pass): no promise. */
+const AR_NOT_PROMISED_BEFORE =
+  /(?:^|[\s،,])(?:كنت|كان|كانت|كنا|كنتي|كنتو|يمكن|ممكن|بلكي|ربما|لعل|احتمال|مش\s+عارف|مش\s+متأكد|مو\s+متأكد)(?:\s+[؀-ۿ]+)?\s*$/u;
+/**
+ * A negation earlier in the same clause ("ما راح أقدر أجي", "مش هقدر أبعتها"), up to a comma or
+ * a "بس" (but): "مش النهارده، بس هكلمك بكرة" still promises.
+ */
+const AR_NEGATED_CLAUSE =
+  /(?:^|[\s،,])(?:مش|ما|لن|لا|مو|مب|ماني|مانيش|مهوب)\s(?:(?![،,]|\s(?:بس|لكن|بل|بعدين)\s).)*$/u;
+/** "كل يوم", "دايما": a habit, never a promise, said in the present. */
+const AR_HABIT =
+  /(?:^|[\s،,])(?:كل\s+(?:يوم|شهر|أسبوع|اسبوع|سنة|سنه|مرة|مره|ليلة|ليله|صبح|جمعة|جمعه|أحد|احد|سبت|خميس)|دايما|دايمًا|دائما|دائمًا|دوم|عادة|عادةً|عاده|غالبا|غالبًا|ساعات)(?=$|[\s،,.!؟?])/u;
 const AR_REQUEST_VERBS_LIST = [
   // Egyptian
   'ابعتلي',
@@ -240,6 +401,48 @@ const AR_REQUEST_VERBS_LIST = [
   'اعلمني',
   'أخبرني',
   'اخبرني',
+  // Kuwait's and the Gulf's "send me" (دز), the Maghreb's (صيفط, ابعث) and its "call me" (عيط)
+  'دزلي',
+  'دز\\s+لي',
+  'دزيلي',
+  'ابعثلي',
+  'ابعثيلي',
+  'ابعثولي',
+  'ابعث\\s+لي',
+  'ابعث\\s+ليا',
+  'صيفطلي',
+  'صيفط\\s+ليا',
+  'صيفط\\s+لي',
+  'صيفطي\\s+ليا',
+  'سيفط\\s+ليا',
+  'عيطلي',
+  'عيط\\s+ليا',
+  'عيط\\s+لي',
+  // remind me, show me, bring me, call me, book me
+  'ذكرني',
+  'ذكريني',
+  'فكرني',
+  'فكرنى',
+  'فكريني',
+  'وريني',
+  'ورّيني',
+  'هاتلي',
+  'هات\\s+لي',
+  'جيبلي',
+  'جيب\\s+لي',
+  'جيبيلي',
+  'اتصل\\s+بي',
+  'اتصل\\s+بيا',
+  'اتصل\\s+فيا',
+  'اتصل\\s+علي',
+  'اتصل\\s+عليا',
+  'رنلي',
+  'رن\\s+علي',
+  'رن\\s+عليا',
+  'احجزلي',
+  'احجز\\s+لي',
+  'احجزلنا',
+  'احجز\\s+لنا',
 ];
 const AR_REQUEST = new RegExp(
   `(^|[\\s،,.!؟?])(${[
@@ -269,6 +472,45 @@ const AR_REQUEST = new RegExp(
     'لو\\s+ممكن',
     'لو\\s+تكرمت(?:ي)?',
     'الله\\s+يخليك',
+    // please, as the Gulf (تكفى), the Levant (دخيلك), Morocco (عافاك) and Tunis (يعيشك) say it,
+    // and MSA's "يرجى" (it is asked)
+    'تكفى',
+    'تكفين',
+    'تكفون',
+    'دخيلك',
+    'دخلك',
+    'عافاك',
+    'عفاك',
+    'عافاكي',
+    'الله\\s+يعافيك',
+    'الله\\s+يعافيكي',
+    'الله\\s+يعافيكم',
+    'الله\\s+يرضى\\s+عليك',
+    'يعيشك',
+    'يعيشكم',
+    'يرحم\\s+والديك',
+    'يرجى',
+    'نرجو',
+    // don't forget, in every dialect's spelling
+    'متنساش',
+    'ماتنساش',
+    'ما\\s+تنساش',
+    'متنسيش',
+    'ماتنسيش',
+    'ما\\s+تنسيش',
+    'ما\\s+تنسى',
+    'ماتنسى',
+    'ما\\s+تنسا',
+    'لا\\s+تنسى',
+    'لا\\s+تنسي',
+    'لا\\s+تنس',
+    'لاتنسى',
+    // I want you to: Morocco's "بغيتك", the Gulf's "ودي تـ"
+    'بغيتك',
+    'بغيتكم',
+    'عايزاك',
+    'عاوزاك',
+    'ودي(?=\\s+ت[؀-ۿ]+)',
     'أبغاك',
     'ابغاك',
     'أبيك',
@@ -286,10 +528,10 @@ const AR_REQUEST_VERBS = new RegExp(`^(${AR_REQUEST_VERBS_LIST.join('|')})$`, 'u
 const AR_PARTICLES =
   /^(?:(?:لي|لى|ليا|لك|لكم|لنا|عليا|علي|عليّ|معي|معاي|معك|إلي|الي|ياه|ياها|لو\s+سمحت)\s+)+/u;
 const AR_QUESTION_START =
-  /^(هل|ايه|إيه|امتى|إمتى|فين|مين|ليه|ازاي|إزاي|كام|متى|أين|اين|كيف|لماذا|ماذا|ما|وين|شو|ايش|إيش|وش|ويش|شنو|شنهو|شلون|ليش|لويش|منو|منهو|كم|قديش|قديه|وقتيش|وقتاش|بكم|بكام)(?=$|[\s،,؟?])/u;
+  /^(هل|ايه|إيه|امتى|إمتى|فين|مين|ليه|ازاي|إزاي|كام|متى|أين|اين|كيف|لماذا|ماذا|ما(?=\s+(?:هو|هي|هم|هذا|هذه|ذا|ذلك|تلك|اللي|الذي|التي|رأيك|رايك|اسمك|أخبارك|اخبارك|أخبار|اخبار|ال[؀-ۿ]+))|وين|شو|ايش|إيش|وش|ويش|شنو|شنهو|شلون|ليش|لويش|منو|منهو|كم|قديش|قديه|وقتيش|وقتاش|بكم|بكام)(?=$|[\s،,؟?])/u;
 /** "ما" negates here ("ما راح أقدر", "ما عندي"), where elsewhere it asks ("ما رأيك"). */
 const AR_NOT_A_QUESTION =
-  /^(?:ما\s+(?:راح|رح|ه[؀-ۿ]+|أقدر|اقدر|بقدر|قدرت|عندي|عندك|عندنا|معي|معاي|في|فيه|عرفت|أعرف|اعرف|بعرف|كان|كانت|بدي|أبغى|ابغى|أبي|حبيت|رديت|وصل|وصلت|لقيت|شفت|سمعت|لحقت|خلصت|قلت|سويت|عملت|شاء\s+الله|وافقنا|وافقت)|ليش\s+لا|شو\s+هال|كيف\s+ما|ايش\s+ما|إيش\s+ما)(?=$|[\s،,؟?])/u;
+  /^(?:ما\s+(?:راح|رح|ه[؀-ۿ]+|أقدر|اقدر|بقدر|قدرت|عندي|عندك|عندنا|معي|معاي|في|فيه|عرفت|أعرف|اعرف|بعرف|كان|كانت|بدي|أبغى|ابغى|أبي|حبيت|رديت|وصل|وصلت|لقيت|شفت|سمعت|لحقت|خلصت|قلت|سويت|عملت|شاء\s+الله|وافقنا|وافقت)|ليش\s+لا|شو\s+هال[؀-ۿ]*|مين\s+(?:قدك|قدّك|زيك|زيّك)|كيف\s+ما|ايش\s+ما|إيش\s+ما)(?=$|[\s،,؟?])/u;
 const AR_DECISION = new RegExp(
   `(^|[\\s،,.!؟?])(${[
     'اتفقنا(?:\\s+على|\\s+إن|\\s+ان|\\s+نـ?)?',
@@ -311,7 +553,22 @@ const AR_DECISION = new RegExp(
     'خلينا\\s+نمشي\\s+(?:على|ب|بـ)',
     'خلاص\\s+نمشي\\s+(?:على|ب|بـ)',
     'نروح\\s+على',
-    'القرار\\s+(?:هو|[إا]ن[؀-ۿ]*|أن[؀-ۿ]*)',
+    'القرار\\s+(?:هو|[إا]ن[؀-ۿ]*|أن[؀-ۿ]*|النهائي|الأخير|الاخير)',
+    'قرار(?:نا)?\\s+(?:نهائي|النهائي)',
+    'استقرينا(?:\\s+على|\\s+عال)?',
+    'استقرّينا(?:\\s+على|\\s+عال)?',
+    'استقر\\s+(?:الرأي|رأينا)(?:\\s+على)?',
+    'اخترنا',
+    'إخترنا',
+    'خترنا',
+    'تفاهمنا(?:\\s+على)?',
+    'اتفاهمنا(?:\\s+على)?',
+    'حسمنا',
+    'حسمناها',
+    'حسمنا\\s+الموضوع',
+    'وافق(?:ت|وا)?(?:\\s+[؀-ۿ]+)?\\s+على',
+    // "خلص، منعمل…" (done: we'll…), never "خلاص نشوف" (we'll see)
+    '(?:خلص|خلاص|صافي)[،,]?\\s+(?!نشوف|منشوف|هنشوف)(?:من|هن|حن|ن)[؀-ۿ]{2,}',
   ].join('|')})${AR_EDGE}`,
   'u',
 );
@@ -461,6 +718,58 @@ function toAction(
   return { title, object, handover: HANDOVER_VERBS.test(verb), when, quote };
 }
 
+/**
+ * What an Arabic sentence promises, if anything: a verb marked for the future in any dialect's
+ * way ("هبعتلك", "برسل لك", "رح خلص", "غادي نصيفط", "سأرسل"), "أوعدك" and what follows it, or a
+ * first person's bare verb once the sentence says when or takes it on ("إن شاء الله أمر عليك").
+ * Never one taken back ("مش هبعت"), meant once ("كنت هبعتلك"), a guess ("يمكن أعدي"), a
+ * condition ("لو عندي وقت") or a habit said in the present ("بدفع كل شهر").
+ */
+function arabicPromise(text: string, index: number, dates: WhenMatch[]): ActionClause | null {
+  // The promise's own date: the first after it ("مش النهارده وهكلمك بكرة"), else the sentence's.
+  const whenOf = (at: number) =>
+    firstDateIn(dates, index + at, text.length - at) ?? firstDateIn(dates, index, text.length);
+  const before = (at: number) => text.slice(0, at);
+  // "مش هقدر النهارده وهكلمك بكرة": a promise joined by "و" starts its own clause.
+  const kept = (at: number, present: boolean, joined = false) =>
+    !AR_NEGATIVE_BEFORE.test(before(at)) &&
+    (joined || !AR_NEGATED_CLAUSE.test(before(at))) &&
+    !AR_NOT_PROMISED_BEFORE.test(before(at)) &&
+    !(present && AR_HABIT.test(text));
+  const from = (start: number, trigger: string) =>
+    toAction(
+      tidy(removeRanges(text.slice(start), index + start, dates)),
+      text,
+      whenOf(start),
+      true,
+      trigger,
+    );
+
+  const a = AR_COMMIT.exec(text);
+  if (a) {
+    const at = a.index + a[1]!.length;
+    if (kept(at, a[2]!.startsWith('ب'), a[1]!.endsWith('و'))) return from(at, a[2]!);
+  }
+  const w = AR_PROMISE_WORD.exec(text);
+  if (w) {
+    const at = w.index + w[1]!.length;
+    if (kept(at, false)) {
+      // The thing promised starts after "أوعدك": its verb is the trigger the object skips.
+      const after = at + w[2]!.length;
+      const start = after + (text.slice(after).length - text.slice(after).trimStart().length);
+      return from(start, text.slice(start).split(/\s+/)[0] ?? '');
+    }
+  }
+  const f = AR_FIRST_PERSON.exec(text);
+  if (f) {
+    const at = f.index + f[1]!.length;
+    const cued = whenOf(at) !== null || AR_TAKES_IT_ON.test(before(at));
+    const conditional = /(?:^|[\s،,])(?:لو|إذا|اذا|إن\s+كان|ان\s+كان)(?=\s)/u.test(before(at));
+    if (cued && !conditional && kept(at, true, f[1]!.endsWith('و'))) return from(at, f[2]!);
+  }
+  return null;
+}
+
 export function extractLinks(text: string): LinkEntity[] {
   const out: LinkEntity[] = [];
   for (const m of text.matchAll(LINK_IN_TEXT)) {
@@ -553,7 +862,6 @@ export function analyzeMessage(input: string, options: AnalyzeOptions): Analysis
 
     if (!commitment) {
       const c = EN_COMMIT.exec(s.text);
-      const a = c ? null : AR_COMMIT.exec(s.text);
       // "I won't be able to send it, but I'll call you tomorrow": the negation stays in its
       // clause, so only what's said between the last clause break and the promise counts.
       const negatedBefore = (at: number) => {
@@ -561,19 +869,20 @@ export function analyzeMessage(input: string, options: AnalyzeOptions): Analysis
         for (const b of s.text.slice(0, at).matchAll(EN_CLAUSE_BREAK)) from = b.index + b[0].length;
         return EN_NEGATIVE.test(s.text.slice(from, at));
       };
-      if (c && !negatedBefore(c.index) && !EN_NEGATIVE.test(s.text.slice(c.index, c.index + 40))) {
+      // "Maybe I will call him", "If you want, I can send it": an offer or a guess, no promise.
+      const hedged = (at: number) =>
+        EN_HEDGE.test(s.text.slice(0, at)) ||
+        (/^i can\b/i.test(c?.[1] ?? '') && /^(?:if|unless)\b/i.test(s.text));
+      if (
+        c &&
+        !negatedBefore(c.index) &&
+        !hedged(c.index) &&
+        !EN_NEGATIVE.test(s.text.slice(c.index, c.index + 40))
+      ) {
         const clause = clauseFrom(s.text, c.index + c[0].length, s.index, dates);
         commitment = toAction(clause, said, firstDateIn(dates, s.index, s.text.length), false);
-      } else if (a && !AR_NEGATIVE_BEFORE.test(s.text.slice(0, a.index + a[1]!.length))) {
-        const start = a.index + a[1]!.length;
-        const clause = tidy(removeRanges(s.text.slice(start), s.index + start, dates));
-        commitment = toAction(
-          clause,
-          s.text,
-          firstDateIn(dates, s.index, s.text.length),
-          true,
-          a[2]!,
-        );
+      } else if (!c && !english) {
+        commitment = arabicPromise(s.text, s.index, dates);
       }
     }
 
@@ -589,9 +898,11 @@ export function analyzeMessage(input: string, options: AnalyzeOptions): Analysis
       } else if (ar) {
         // "ابعتلي" (send me) is itself the verb; "ممكن" (could you) only introduces it.
         const trigger = ar[2]!;
-        const start =
-          ar.index + ar[1]!.length + (AR_REQUEST_VERBS.test(trigger) ? 0 : trigger.length);
-        const clause = tidy(removeRanges(s.text.slice(start), s.index + start, dates));
+        const at = ar.index + ar[1]!.length;
+        const start = at + (AR_REQUEST_VERBS.test(trigger) ? 0 : trigger.length);
+        const after = tidy(removeRanges(s.text.slice(start), s.index + start, dates));
+        // "الصور لو سمحت": a "please" at the end asks for what came before it.
+        const clause = after || tidy(removeRanges(s.text.slice(0, at), s.index, dates));
         request = toAction(clause, s.text, firstDateIn(dates, s.index, s.text.length), true);
       } else if (english) {
         const first =

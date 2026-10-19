@@ -3123,6 +3123,55 @@ graph) and the number that will show it; one that sharpens none is hygiene and s
       `plans.test.ts`, `ai-costs.test.ts` (the free edges, the backstops above a day of answers),
       `public-pages.test.ts` (the pricing page's lines), the catalogs in four languages, the E2E's
       plan screens and the full gate.
+- [x] G10. The golden sets hardened (2026-10-19, review §5 M "Measurement": "the due-date floor
+      is pooled across languages", "48 Arabic lines in all, 4 Arabic decision positives, no Gulf
+      or Maghrebi dialect lines; amounts, `chatIntent` and search unmeasured; 'Quite sure'
+      hand-set"; advantage 6, Arabic-first intelligence by dialect, and its number: the floors per
+      label and language). Every new line was written before the rules were measured on it. The
+      golden set grew to 465 lines, at least 15 positives of each label and 15 dated lines in each
+      language, the due date held per language on the writer's own clock (a pooled UTC day had
+      read "tonight" in New York as tomorrow). A held-out set of Arabic as Cairo, the Gulf, the
+      Levant and the Maghreb write it (156 lines, 39 each, a third negatives) that no rule is fixed
+      against. Golden sets of their own for amounts (90 lines), what's written to Cai and the friends
+      (100) and Search (64, each query in its reader's language). And "Quite sure" and "Fairly sure"
+      checked against how often such a suggestion is right over both sets (124 of 124 and 181 of
+      185; the words promise nine in ten and three in four). Measured before any fix: Arabic requests
+      at recall 0.61, promises 0.67, decisions 0.59 and the due date 0.60 on the golden set; on the
+      held-out set, promises at 0.57 in Cairo and the Gulf, 0.29 in the Levant and 0.00 in the
+      Maghreb, due dates 0.57, 0.43, 0.43 and 0.14; amounts in Arabic at precision 0.75 and recall
+      0.60 (a currency word took the word after it: "١٢٠٠ ريال للفندق" came back in the currency
+      "ريال للفندق", which a conversation's memory showed); Cai's intents right on 62% to 67% of
+      lines ("summarise my week" got the week's list, "what am I waiting for from Ana?" every wait);
+      Search reading 63% of Arabic and Turkish queries right. Fixed in the rules alone, against the
+      golden set's lines: Arabic promises from the stems each dialect's future mark takes (Cairo's
+      "ه", the Levant's "ح" and bare "رح", the Gulf's and the Levant's "ب", the Maghreb's "غادي ن",
+      "باش", "راني", MSA's "سـ"), "أوعدك", a bare first person's verb once the sentence says when
+      or takes it on, negation held to its clause, a meaning once or a guess, a habit; requests by
+      the Gulf's "تكفى", the Levant's "دخيلك", Morocco's "عافاك", "متنساش", "يرجى", "ذكرني",
+      "صيفط ليا", "دز لي", a "please" at the end; decisions by "استقرينا", "اخترنا", "تفاهمنا",
+      "حسمنا", "وافقت … على", "القرار النهائي"; "ما" a question only before what it asks about;
+      tomorrow as the Gulf ("باكر", "باچر") and the Maghreb ("غدوة") say it; English hedges and
+      "we've picked", "deal,"; French "on s'est mis d'accord", "va pour"; Turkish "onayladı";
+      amounts' currency word taking only a country, "ج" as Egypt's pound, codes and "$" after the
+      number, amounts in words in all four languages and a bare amount in a sentence about money;
+      Cai's four questions in each dialect's and language's words, a list only when that's all the
+      message asks, and a question about one person left to the model, which reads the names;
+      Search's "pdfs Maya sent", "قال إيه عمر عن العقد", "اللي طلبه مني كريم", "رسائل خالد عن
+      السفر", "les PDF envoyés par Léa", Turkish's time before what it's of ("geçen haftaki
+      bağlantılar", "Ayşe'nin geçen ayki belgeleri") and what people call a relationship
+      ("coworkers", "أهلي", "iş arkadaşlarım"). After: every golden set at 1.00 in every language;
+      the held-out set, which none of it was fixed against, at promises' recall 1.00, 1.00, 1.00
+      and 0.86, requests 0.86, 1.00, 0.86 and 1.00, decisions 1.00, 0.83, 0.67 and 0.83, and due
+      dates 1.00 in all four, its floors set there. One held-out line showed a gap (a promise joined
+      by "و" after a refusal); its rule came with its own golden line and the held-out line stays
+      counted. Left as the held-out set still reads them: reported speech without quotation marks
+      ("قالي هبعتلك الفلوس ومبعتش"), "اعتمدت الإدارة", Levantine "منمشي", "ليش لأ", "كيفك" without
+      its mark, "معلش ابقى هات"; Arabic written in Latin letters (Arabizi) isn't read at all; Cai
+      answering "from Ana" by the rules is the qualifiers step. Costs: rules only, nothing on the
+      server's or a device's clock worth a number; the app's first download carries the few
+      relationship words. Verified: the five golden tests (`intelligence-golden`,
+      `intelligence-heldout`, `amounts-golden`, `chat-intent-golden`, `search-golden`), core's 813
+      tests, and the full gate.
 - [ ] H. Business depth: a Business seat includes Pro; a cap on organizations per person; room
       checks inside the transaction; quick replies, away and greeting messages; customer notes,
       tags and fields; tax invoices (counsel); booking and revenue analytics; intake forms as
@@ -4903,6 +4952,9 @@ graph) and the number that will show it; one that sharpens none is hygiene and s
   journeys, safety, reliability, performance, intelligence, mail and calendar, chat, integrations,
   business and code integrity; the matrix against WhatsApp, Signal, Slack, Calendly and Workspace;
   an age-assurance design; the integration framework mapped to the code; plan M16 (A–H).
+- 2026-10-19 — M16 G10: the golden sets hardened: 465 golden lines with a per-language due date,
+  156 held-out lines of Arabic by dialect, and golden sets for amounts, Cai's intents and Search;
+  the Maghreb's promises read on lines nobody tuned for at 0.86 where they were 0.00.
 - 2026-10-19 — The web's first download back to 447.5 KB of 450: a phone's haptics, keychain and
   AsyncStorage reached on the web through twins that load none of them (2.5 KB gzip), held by
   `webVariants.test.ts`; G9's plan screens took it to 450.3 before.

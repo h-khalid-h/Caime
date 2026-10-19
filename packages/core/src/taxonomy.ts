@@ -497,9 +497,30 @@ function forms(word: string): string[] {
  * work/manager, "customers", "عملائي", "mes clients" (its "mes" taken off by search), "müşterilerim"
  * → customer.
  */
+/**
+ * What people call a relationship that isn't its label in any language: "coworkers", Egypt's
+ * "أهلي" (my family) and "زمايلي", Turkish's "iş arkadaşlarım". Keyed as `wordForm` writes them.
+ */
+const RELATIONSHIP_WORDS: Record<string, { sphere: Sphere; role?: string }> = {
+  coworker: { sphere: 'work', role: 'colleague' },
+  coworkers: { sphere: 'work', role: 'colleague' },
+  'co-workers': { sphere: 'work', role: 'colleague' },
+  workmates: { sphere: 'work', role: 'colleague' },
+  اهلي: { sphere: 'family' },
+  اهل: { sphere: 'family' },
+  زمايلي: { sphere: 'work', role: 'colleague' },
+  زمايل: { sphere: 'work', role: 'colleague' },
+  زباين: { sphere: 'customer' },
+  زبايني: { sphere: 'customer' },
+  'iş arkadaşı': { sphere: 'work', role: 'colleague' },
+  'iş arkadaşları': { sphere: 'work', role: 'colleague' },
+  'iş arkadaşlarım': { sphere: 'work', role: 'colleague' },
+};
+
 export function relationshipFromWord(word: string): { sphere: Sphere; role?: string } | undefined {
   const asked = forms(word);
   if (!asked[0]) return undefined;
+  for (const w of asked) if (RELATIONSHIP_WORDS[w]) return RELATIONSHIP_WORDS[w];
   // In the reader's language, any form of the word (R81: "شريكة" finds partners too).
   const named = (label: string, plural: string) =>
     [label, plural].some((l) => {
