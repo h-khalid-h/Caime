@@ -3351,6 +3351,10 @@ test.describe
       await phone.goto(`/o/${handle}`);
       await phone.getByTestId('org-follow').filter({ visible: true }).click();
       await expect(visible(phone, `Following ${name}: its updates are in Updates`)).toBeVisible();
+      // In Chats before it posts: one that arrives while its page is open is seen there.
+      await phone.goto('/chats');
+      const row = phone.getByTestId('updates-row').filter({ visible: true });
+      await expect(row).toContainText(`From ${name} you follow`);
 
       // Its owner posts; the team sees how many follow, never who.
       const { page, errors } = noor;
@@ -3362,9 +3366,8 @@ test.describe
       await expect(page.getByTestId('org-update').first()).toContainText('by Noor Haddad');
       await page.screenshot({ path: 'e2e/screenshots/desktop-org-updates.png' });
 
-      // In Chats it's one row of its own; opened, it's what the organization said.
-      await phone.goto('/chats');
-      const row = phone.getByTestId('updates-row').filter({ visible: true });
+      // In Chats it's one row of its own, new as it arrives; opened, it's what the organization
+      // said.
       await expect(row).toContainText(`New from ${name}`);
       await row.click();
       await phone.waitForURL('**/updates');
