@@ -11,6 +11,7 @@ import { msg, sentence, tr, trn } from '@caime/core/i18n';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { router } from 'expo-router';
 import MessageCircleQuestion from 'lucide-react-native/icons/message-circle-question-mark';
+import ShieldCheck from 'lucide-react-native/icons/shield-check';
 import Sparkles from 'lucide-react-native/icons/sparkles';
 import Trash from 'lucide-react-native/icons/trash';
 import { useState } from 'react';
@@ -215,6 +216,27 @@ export function OrgAgent({ org }: { org: OrgView }) {
                 chevron
                 onPress={() => setAsked(true)}
                 testID="org-agent-questions"
+              />
+            ) : null}
+            {agent.evaluated ? (
+              // Caime's own questions, put every night to the model its plan gives it (M16 G6c).
+              <ListRow
+                icon={ShieldCheck}
+                title={trn(
+                  agent.evaluated.asked,
+                  '{passed} of {n} test question handled as it should be',
+                  '{passed} of {n} test questions handled as they should be',
+                  { passed: agent.evaluated.passed },
+                )}
+                subtitle={[
+                  trn(
+                    agent.evaluated.wrongConfirmations,
+                    '{n} wrong confirmation',
+                    '{n} wrong confirmations',
+                  ),
+                  tr('Caime tests it every night'),
+                ].join(' · ')}
+                testID="org-agent-tested"
               />
             ) : null}
             <ListRow

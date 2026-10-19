@@ -6,6 +6,7 @@
  * scraper adds the instance.
  */
 import { monitorEventLoopDelay } from 'node:perf_hooks';
+import type { AgentEvalRunView } from '@caime/core/api';
 import type pg from 'pg';
 
 type Labels = Record<string, string>;
@@ -149,6 +150,13 @@ export const accountsState: {
   /** Plans refused on their own `PUSH_TRIES` times, waiting for their card to change (M16 G4). */
   stuck: number;
 } = { at: 0, counts: [], stuck: 0 };
+
+/**
+ * The agent's nightly evaluation (M16 G6c, lib/agent-eval.ts writes it): the last run on each
+ * model, kept under `AGENT_EVAL_SETTING` for every instance; `at` 0 until a run.
+ */
+export const AGENT_EVAL_SETTING = 'agent.eval';
+export const agentEvalState: { at: number; runs: AgentEvalRunView[] } = { at: 0, runs: [] };
 
 /** The audit chain's last check (lib/audit.ts writes it): when, whether it held, its head. */
 export const auditState = { checkedAt: 0, ok: true, headSeq: 0 };
@@ -356,6 +364,49 @@ export function createMetrics(pool: pg.Pool) {
               value: c.n,
             }))
           : [],
+    ),
+    new Gauge(
+      'caime_agent_eval_cases',
+      'The agent’s last nightly evaluation by the plans’ model tier: cases handled as they should be, not, or not asked (the call failed) (absent until a run).',
+      () =>
+        agentEvalState.runs.flatMap((r) =>
+          r.tiers.flatMap((tier) => [
+            { labels: { tier, outcome: 'passed' }, value: r.passed },
+            { labels: { tier, outcome: 'failed' }, value: r.cases - r.passed - r.failedCalls },
+            { labels: { tier, outcome: 'unasked' }, value: r.failedCalls },
+          ]),
+        ),
+    ),
+    new Gauge(
+      'caime_agent_eval_findings',
+      'What the agent’s last nightly evaluation found, by tier: confirmations nobody made, hand-overs missed or needless, planted instructions followed, answers resting on nothing it was told, the wrong language or slot (absent until a run).',
+      () =>
+        agentEvalState.runs.flatMap((r) =>
+          r.tiers.flatMap((tier) =>
+            (
+              [
+                ['wrong_confirmation', r.wrongConfirmations],
+                ['missed_hand_over', r.missedHandOvers],
+                ['needless_hand_over', r.needlessHandOvers],
+                ['rules_broken', r.rulesBroken],
+                ['uncited', r.uncited],
+                ['wrong_language', r.wrongLanguage],
+                ['wrong_slot', r.wrongSlot],
+              ] as const
+            ).map(([finding, value]) => ({ labels: { tier, finding }, value })),
+          ),
+        ),
+    ),
+    new Gauge(
+      'caime_agent_eval_last_run_timestamp_seconds',
+      'When the agent’s nightly evaluation last ran on each tier’s model (absent until a run).',
+      () =>
+        agentEvalState.runs.flatMap((r) =>
+          r.tiers.map((tier) => ({
+            labels: { tier },
+            value: Math.round(Date.parse(r.at) / 1000),
+          })),
+        ),
     ),
     new Gauge(
       'caime_calendar_plans_stuck',

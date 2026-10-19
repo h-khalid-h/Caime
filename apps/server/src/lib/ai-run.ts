@@ -18,7 +18,8 @@ import { AppError } from './errors';
 export async function runAi<T>(
   ctx: AppContext,
   feature: string,
-  userId: string,
+  /** Whose it is; null for Caime's own (the agent's nightly evaluation, M16 G6c). */
+  userId: string | null,
   work: () => Promise<AiResult<T>>,
   /** Who answered: Anthropic for the model features, the speech provider for a transcript. */
   provider = 'anthropic',

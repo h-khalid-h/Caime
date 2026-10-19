@@ -3221,4 +3221,21 @@ export const arB: Catalog = {
     many: '{n} سؤالًا لم يستطع الإجابة عنها',
     other: '{n} سؤال لم يستطع الإجابة عنها',
   },
+  '{passed} of {n} test questions handled as they should be': {
+    zero: 'تعامل كما ينبغي مع {passed} من {n} سؤال اختبار',
+    one: 'تعامل كما ينبغي مع {passed} من سؤال اختبار واحد',
+    two: 'تعامل كما ينبغي مع {passed} من سؤالَي اختبار',
+    few: 'تعامل كما ينبغي مع {passed} من {n} أسئلة اختبار',
+    many: 'تعامل كما ينبغي مع {passed} من {n} سؤال اختبار',
+    other: 'تعامل كما ينبغي مع {passed} من {n} سؤال اختبار',
+  },
+  '{n} wrong confirmations': {
+    zero: 'لا تأكيدات خاطئة',
+    one: 'تأكيد خاطئ واحد',
+    two: 'تأكيدان خاطئان',
+    few: '{n} تأكيدات خاطئة',
+    many: '{n} تأكيدًا خاطئًا',
+    other: '{n} تأكيد خاطئ',
+  },
+  'Caime tests it every night': 'يختبره Caime كل ليلة',
 };

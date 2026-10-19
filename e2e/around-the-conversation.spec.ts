@@ -2691,6 +2691,27 @@ test.describe
       await expect(visible(customer, 'A check-up costs 400 EGP.')).toBeVisible();
       await expect(page.getByTestId('agent-draft')).toHaveCount(0);
 
+      // Caime puts its own questions to the agent's model every night (M16 G6c): asked for now by
+      // the operator, the setup says what the run found on the model the plan gives it.
+      const operator = { authorization: `Bearer ${ADMIN_TOKEN}` };
+      const ran = await noorContext.request.post('/v1/admin/agent-eval/run', { headers: operator });
+      expect(ran.status()).toBe(202);
+      await expect
+        .poll(
+          async () =>
+            (
+              (await (
+                await noorContext.request.get('/v1/admin/agent-eval', { headers: operator })
+              ).json()) as { at: string | null }
+            ).at,
+          { timeout: 30_000 },
+        )
+        .not.toBeNull();
+      await page.goto(`/o/${handle}/setup`);
+      const tested = page.getByTestId('org-agent-tested');
+      await expect(tested).toContainText(/\d+ of \d+ test questions handled as they should be/);
+      await expect(tested).toContainText('Caime tests it every night');
+
       // Removed, it leaves the team; what it wrote stays.
       await page.goto(`/o/${handle}/setup`);
       await page.getByTestId('org-agent').click();

@@ -38,6 +38,7 @@ import {
   todayForAgent,
 } from '../lib/agent';
 import { agentQuestions, openQuestions } from '../lib/agent-drafts';
+import { evaluatedFor } from '../lib/agent-eval';
 import { audit } from '../lib/audit';
 import { joinThreads, leaveThreads } from '../lib/business';
 import { AppError, badRequest, forbidden, notFound } from '../lib/errors';
@@ -93,6 +94,7 @@ export async function agentRoutes(app: FastifyInstance, ctx: AppContext) {
       questions: await openQuestions(ctx.db, orgId),
       repliesToday: await agentRepliesToday(ctx, orgId),
       repliesPerDay: ORG_ALLOWANCES[row.plan].agentRepliesPerDay,
+      evaluated: await evaluatedFor(ctx, row.plan),
       createdAt: row.created_at.toISOString(),
       updatedAt: row.updated_at.toISOString(),
     };

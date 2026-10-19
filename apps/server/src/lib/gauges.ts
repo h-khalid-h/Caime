@@ -9,7 +9,9 @@ import { AUDIT_SETTING } from './audit';
 import { lastBackup } from './backup';
 import {
   ACCOUNTS_SETTING,
+  AGENT_EVAL_SETTING,
   accountsState,
+  agentEvalState,
   auditState,
   type ProviderHealth,
   providerState,
@@ -29,7 +31,11 @@ export async function syncGauges(ctx: AppContext): Promise<void> {
     PROVIDERS_SETTING,
     VAULT_SETTING,
     ACCOUNTS_SETTING,
+    AGENT_EVAL_SETTING,
   ]);
+  const evaluated = kept.get(AGENT_EVAL_SETTING) as typeof agentEvalState | undefined;
+  if (evaluated && typeof evaluated.at === 'number' && evaluated.at > agentEvalState.at)
+    Object.assign(agentEvalState, { at: evaluated.at, runs: evaluated.runs ?? [] });
   const accounts = kept.get(ACCOUNTS_SETTING) as typeof accountsState | undefined;
   if (accounts && typeof accounts.at === 'number' && accounts.at > accountsState.at)
     Object.assign(accountsState, {

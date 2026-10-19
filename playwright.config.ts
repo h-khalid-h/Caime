@@ -200,6 +200,9 @@ export default defineConfig({
             AGE_CHECK_TRIGGERS: '',
             // Link previews (M16 E4c) read the site stand-in on this machine, by its local name.
             LINK_PREVIEWS_ALLOW_PRIVATE: 'true',
+            // The agent's nightly evaluation (M16 G6c) would put its set to the Messages
+            // stand-in at start; the server's tests hold it.
+            AGENT_EVAL_ENABLED: 'false',
           },
         },
       ],

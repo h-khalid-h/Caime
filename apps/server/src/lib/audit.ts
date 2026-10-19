@@ -46,6 +46,8 @@ export type AuditAction =
   | 'admin.audit_verified'
   | 'admin.providers_viewed'
   | 'admin.providers_checked'
+  | 'admin.agent_eval_viewed'
+  | 'admin.agent_eval_run'
   | 'admin.access_ended'
   | 'admin.reset_sent'
   | 'auth.recovery_codes_regenerated'

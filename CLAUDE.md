@@ -1468,7 +1468,12 @@ A sphere is said as how you know someone, never "sphere".
   (`POST /business/:id/agent-draft/send`, the plan carried out by `carryOut` as the agent would),
   takes it into a reply or lets it go (`…/drop`); `lib/agent-drafts.ts` reads drafts and the
   questions it couldn't answer (`agent_questions`, recorded by `handOver` for `unknown`) without
-  importing the agent, and both go with erasure, closing and the export. A draft stands only while
+  importing the agent, and both go with erasure, closing and the export. Its nightly evaluation
+  (M16 G6c) is `lib/agent-eval.ts` over `lib/agent-eval-set.ts`: the cases go through
+  `supportAgent` itself on each model a plan gives it, so a change to its instructions is
+  measured as customers meet it; a new rule it's given brings its case (scored by rules in
+  `scoreCase`, never by a model), and saying something was done is `claimsDone`, in every
+  interface language. A draft stands only while
   it answers the customer's latest and nobody on the team has written since (`standing`). The E2E
   Messages stand-in answers as it from the passage of its knowledge nearest the question, citing
   its number.

@@ -22,6 +22,7 @@ import type {
   AdminConnectionsResponse,
   AdminJobsResponse,
   AdminPersonResponse,
+  AgentEvalResponse,
   AppealResponse,
   AppealsResponse,
   AppListingReviewResponse,
@@ -44,6 +45,7 @@ import type { FastifyInstance, FastifyRequest } from 'fastify';
 import { sql } from 'kysely';
 import { z } from 'zod';
 import type { AppContext } from '../context';
+import { agentEvalKept } from '../lib/agent-eval';
 import {
   giveSlug,
   listingById,
@@ -57,7 +59,7 @@ import { endBillingOf, paysThroughBilling } from '../lib/billing';
 import { connectionsForOperator } from '../lib/connected-accounts';
 import { AppError, badRequest, conflict, mailUnavailable, notFound } from '../lib/errors';
 import { handleHeld, handleTaken, releaseHandle } from '../lib/handles';
-import { retryJob, troubledJobs } from '../lib/jobs';
+import { enqueue, retryJob, troubledJobs } from '../lib/jobs';
 import {
   appealViews,
   decideAppeal,
@@ -491,6 +493,45 @@ export async function adminRoutes(app: FastifyInstance, ctx: AppContext) {
       metadata: { operator: by, down: providers.filter((p) => p.up === false).map((p) => p.id) },
     });
     return { providers };
+  });
+
+  // The agent's nightly evaluation (M16 G6c): the last run on each model, and one now, as a job
+  // (it takes minutes).
+  app.get('/admin/agent-eval', async (req): Promise<AgentEvalResponse> => {
+    const by = operator(req);
+    await audit(ctx.db, {
+      actorId: null,
+      action: 'admin.agent_eval_viewed',
+      metadata: { operator: by },
+    });
+    const kept = await agentEvalKept(ctx);
+    return {
+      enabled: ctx.config.AGENT_EVAL_ENABLED && ctx.ai !== null,
+      at: kept ? new Date(kept.at).toISOString() : null,
+      runs: kept?.runs ?? [],
+    };
+  });
+  app.post('/admin/agent-eval/run', async (req, reply): Promise<OkResponse> => {
+    const by = operator(req);
+    if (!ctx.ai)
+      throw new AppError(503, 'ai_unavailable', tr('AI assist isn’t set up on this server.'));
+    // At most one asked for a minute: a second press runs nothing twice.
+    await enqueue(
+      ctx,
+      'agent.eval',
+      {},
+      {
+        dedupeKey: `agent.eval:${Math.floor(ctx.now().getTime() / 60_000)}`,
+        maxAttempts: 1,
+      },
+    );
+    await audit(ctx.db, {
+      actorId: null,
+      action: 'admin.agent_eval_run',
+      metadata: { operator: by },
+    });
+    reply.code(202);
+    return { ok: true };
   });
 
   app.get('/admin/backups', async (req): Promise<BackupsResponse> => {

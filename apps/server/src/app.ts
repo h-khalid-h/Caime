@@ -18,6 +18,7 @@ import { migrate } from './db/migrate';
 import { createDb } from './db/pool';
 import { ageProviderFor } from './lib/age-provider';
 import { registerAgentJob } from './lib/agent';
+import { registerAgentEval } from './lib/agent-eval';
 import { createAiAssist } from './lib/ai';
 import { registerWebhookJob } from './lib/apps';
 import { registerAuditCheck } from './lib/audit';
@@ -398,6 +399,7 @@ export async function buildApp(config: Config, options: BuildOptions = {}): Prom
   registerProviderHealth();
   registerUpdateJobs();
   registerAgentJob();
+  registerAgentEval();
   registerAutoReplies();
   registerSystemJobs();
   registerCaiJobs();

@@ -59,6 +59,11 @@ Each call is paid for by the token, so what is sent is bounded and what is repea
   it's spent (a rate over it is the bill). Never the prompt or the answer.
 - **Heuristics first** (R17): dates, amounts, questions and follow-ups are found in core without
   a model; AI is asked only when a person asks, or an organization turned its agent on.
+- **The agent's nightly evaluation** (M16 G6c): 24 calls a night on each model a plan gives an
+  agent, the agent's own prompt with its knowledge cached, at most €1.20 a night at the
+  ceiling (`agent-eval.test.ts`: a token a character, every answer at 2,048 tokens); each run
+  keeps its own tokens and cost, and its calls are `agent_eval` in the operator's spend, never a
+  person's or an organization's. `AGENT_EVAL_ENABLED=false` stops it.
 
 ## People's devices
 

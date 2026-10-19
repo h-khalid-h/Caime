@@ -217,6 +217,8 @@ BACKUP_KEEP_DAYS=30
 
 # --- Health of the providers, hourly (R78); webhooks only to public https addresses
 PROVIDER_HEALTH_ENABLED=true
+# The agent's nightly evaluation (M16 G6c), where AI assist is on
+AGENT_EVAL_ENABLED=true
 WEBHOOKS_ALLOW_PRIVATE=false
 # Link previews (M16 E4c), on unless set false; never LINK_PREVIEWS_ALLOW_PRIVATE in production
 LINK_PREVIEWS=true
@@ -921,6 +923,13 @@ curl -H "Authorization: Bearer $ADMIN_TOKEN" https://caime.example.com/v1/admin/
 ```
 
 `PROVIDER_HEALTH_ENABLED=false` turns the hourly probe off (the operator's check still runs).
+
+**The agent's nightly evaluation** (M16 G6c). Where AI assist is on, Caime puts its own set of a
+clinic's questions to each model a plan gives an organization's agent once a day, and keeps what
+it found: `GET /v1/admin/agent-eval` reads it, `POST /v1/admin/agent-eval/run` runs it now (a job;
+it takes minutes), and /metrics carries `caime_agent_eval_cases` and
+`caime_agent_eval_findings` by tier. `AGENT_EVAL_ENABLED=false` turns the nightly run off (the
+operator's still works).
 
 **Connected accounts** (M16 G4). How every connected Google or Microsoft account's read and plans
 last went, how many plans wait for their card to change after the provider refused them at every

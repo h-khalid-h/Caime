@@ -136,6 +136,8 @@ export interface AgentInput {
 
 export interface AiAssist {
   readonly model: string;
+  /** The model a tier runs on (M16 H7): the evaluation asks, to run each once (M16 G6c). */
+  modelFor(tier: ModelTier): string;
   /** The API's cheapest authenticated read (R78: the provider probe). Throws when it fails. */
   ping(): Promise<void>;
   rewrite(input: { text: string; style: RewriteStyle; tone: AiTone }): Promise<AiResult<string>>;
@@ -449,6 +451,8 @@ export const PROMPT_VERSIONS: Readonly<Record<string, string>> = (() => {
     friend: versionOf(FRIEND_SYSTEM(friend, '{language}', '{voice}', '{today}')),
     agent,
     agent_try: agent,
+    // The nightly evaluation runs the agent's own instructions (M16 G6c).
+    agent_eval: agent,
   };
 })();
 
@@ -573,6 +577,7 @@ export function createAiAssist(config: Config): AiAssist | null {
 
   return {
     model,
+    modelFor: tiered,
     async ping() {
       await client.models.list({ limit: 1 }, { timeout: 10_000, maxRetries: 0 });
     },

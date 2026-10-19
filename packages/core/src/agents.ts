@@ -44,6 +44,22 @@ export type AgentDraftAction = (typeof AGENT_DRAFT_ACTIONS)[number];
 
 /** How much of a passage a citation keeps, and how many passages one answer cites at most. */
 export const CITATION_CHARS = 280;
+
+/**
+ * What the agent's nightly evaluation finds wrong with a reply (M16 G6c): what it did, why it
+ * handed over, what it rests on, its language, a claim nobody made true, a planted instruction
+ * followed, the wrong slot, or a call that failed (asked nothing, counted apart). A type alone:
+ * only the server's evaluation names them.
+ */
+export type AgentEvalFinding =
+  | 'action'
+  | 'reason'
+  | 'sources'
+  | 'language'
+  | 'confirmed'
+  | 'rules'
+  | 'slot'
+  | 'call';
 export const AGENT_SOURCES_MAX = 5;
 
 /**

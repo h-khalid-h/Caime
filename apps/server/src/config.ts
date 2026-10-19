@@ -138,6 +138,12 @@ const Env = z.object({
   /** The hourly probe of each configured provider (R78, lib/provider-health.ts); tests turn it off. */
   PROVIDER_HEALTH_ENABLED: bool.default(true),
   /**
+   * The agent's nightly evaluation (M16 G6c, lib/agent-eval.ts): Caime's set of a clinic's
+   * questions put to each model a plan gives an agent, once a day where AI assist is on; tests
+   * and the E2E turn it off.
+   */
+  AGENT_EVAL_ENABLED: bool.default(true),
+  /**
    * Database backups (docs/DEPLOY.md, "Backups"): a `pg_dump` by a worker instance every
    * BACKUP_EVERY_HOURS, kept BACKUP_KEEP_DAYS in BACKUP_DIR (DATA_DIR/backups unless set), each
    * checked with `pg_restore --list` as it's made. Off only where something else backs up.

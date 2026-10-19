@@ -3027,6 +3027,41 @@ graph) and the number that will show it; one that sharpens none is hygiene and s
       away message while its answer waits), `business.test.ts`, `org-data.test.ts`,
       `fk-indexes.test.ts`, the catalogs in four languages, the E2E (the switch, the draft in the
       conversation, sent and read by the customer), and the full gate.
+- [x] G6c. The agent measured every night (2026-10-19, review §10 H, no model-backed path was
+      measured; advantage 7's number, REVIEW-2026-10-17 §14: hand-over rate and wrong
+      confirmations on a nightly set, none measured before, every night on each model a plan
+      gives an agent now). Caime's own set of a clinic's questions (`lib/agent-eval-set.ts`: 24
+      cases in the four interface languages, written apart from the agent's instructions: answers
+      from the passage that says it, hand-overs by why, a medical question, a refund, times
+      offered and booked from the open ones, "so it's confirmed now?", a thanks, and instructions
+      a customer plants) goes through the agent's own call (`supportAgent`, the instructions
+      customers meet, `PROMPT_VERSIONS.agent` kept on the run and each call's `ai_runs` row, for
+      nobody) once a night on each model the plans give an agent (`modelFor`: the light model on
+      Free, the top one on Business; a model two tiers share, once), and is scored by rules
+      (`scoreCase`, never a model): what it did, why it handed over, what it rests on, the
+      language it answered in (core `writtenIn`), a slot not listed, words only a planted
+      instruction would write, and `claimsDone`, saying in any of the four languages that
+      something was confirmed, booked, cancelled or refunded, never what will be once someone
+      acts or isn't yet. What it found (cases handled as they should be, hand-overs missed or
+      needless, wrong confirmations, instructions followed, answers resting on nothing, the
+      tokens and what they cost, each failing case by id) is kept for every instance
+      (`server_settings` `agent.eval`), on /metrics (`caime_agent_eval_cases`,
+      `caime_agent_eval_findings`, `caime_agent_eval_last_run_timestamp_seconds`, by tier), for
+      the operator (`GET /v1/admin/agent-eval`; `POST …/run`, a job, audited), and on an agent's
+      setup as one line for the model its plan gives it ("23 of 24 test questions handled as they
+      should be · 0 wrong confirmations · Caime tests it every night", gone after three days
+      without a run). A failed call asks nothing and is counted apart. `AGENT_EVAL_ENABLED` (on
+      where AI assist is; the tests and the E2E off). Costs: 24 calls a night on each model, at
+      most €1.20 a night at their ceiling (a token a character, every answer at 2,048 tokens,
+      measured by `agent-eval.test.ts`), recorded under `agent_eval` in the operator's AI spend
+      and never in anyone's; nothing on devices. Not done: the real models' first numbers, which
+      production's first night writes (this container holds no key: ⛔ `ANTHROPIC_API_KEY` is
+      production's alone); measuring Cai's own answers and suggestions (faithfulness, finding
+      follow-ups) and the golden-set hardening G names. Verified: `agent-eval.test.ts` (the set's
+      shape and its good answers, claims in four languages and their near-misses, the scoring,
+      a run on two models through the agent's own call and version, a bad night's counts, the
+      gauges, the operator's routes and their audit rows, the owner's line by plan), the
+      catalogs in four languages, and the full gate.
 - [ ] H. Business depth: a Business seat includes Pro; a cap on organizations per person; room
       checks inside the transaction; quick replies, away and greeting messages; customer notes,
       tags and fields; tax invoices (counsel); booking and revenue analytics; intake forms as
@@ -4807,6 +4842,9 @@ graph) and the number that will show it; one that sharpens none is hygiene and s
   journeys, safety, reliability, performance, intelligence, mail and calendar, chat, integrations,
   business and code integrity; the matrix against WhatsApp, Signal, Slack, Calendly and Workspace;
   an age-assurance design; the integration framework mapped to the code; plan M16 (A–H).
+- 2026-10-19 — M16 G6c: the agent measured every night: Caime's 24 questions in four languages
+  through its own call on each plan's model, scored by rules (hand-overs, wrong confirmations,
+  planted instructions), on /metrics, for the operator and on the agent's setup.
 - 2026-10-19 — M16 G6b: an organization may check its agent's answers before they're sent (a
   draft to send, take into a reply or let go); what it couldn't answer is listed for its owner.
 - 2026-10-19 — M16 G6a: an organization's agent cites the sentences of what it was told under

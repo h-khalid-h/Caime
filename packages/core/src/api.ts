@@ -14,7 +14,13 @@ import type {
 } from './accounts';
 import type { AddressKind, AddressMethod } from './addresses';
 import type { AgeMethod, AgeOutcome } from './age-assurance';
-import type { AgentAction, AgentCitation, AgentDraftAction, AgentWhen } from './agents';
+import type {
+  AgentAction,
+  AgentCitation,
+  AgentDraftAction,
+  AgentEvalFinding,
+  AgentWhen,
+} from './agents';
 import type { AppCategory, AppProvides, ListingState } from './app-directory';
 import type { ApiScope, WebhookEvent } from './apps';
 import type { AttentionReason, AttentionSection } from './attention';
@@ -37,7 +43,7 @@ import type { AiUse, AppPricing, ListingCheck } from './marketplace';
 import type { OrgKind, OrgRole } from './orgs';
 import type { PaymentSettings } from './payments';
 import type { OrgPlaceAudience, PlaceKind, PlaceParts, PlacePoint } from './places';
-import type { OrgAllowance, OrgPlan, PersonAllowance } from './plans';
+import type { ModelTier, OrgAllowance, OrgPlan, PersonAllowance } from './plans';
 import type { EffectivePolicy, NotificationLevel, RelationshipPolicy } from './policy';
 import type { Audience, PrivacySettings } from './privacy';
 import type { Repeat } from './repeat';
@@ -2005,8 +2011,66 @@ export interface OrgAgentView {
   /** What it wrote to customers in the last 24 hours, against what the plan includes. */
   repliesToday: number;
   repliesPerDay: number;
+  /** Caime's nightly test of the model its plan gives it (M16 G6c); null before one ran. */
+  evaluated: AgentEvaluatedView | null;
   createdAt: string;
   updatedAt: string;
+}
+
+/**
+ * The last night's run of the agent's evaluation on the model an organization's plan gives its
+ * agent (M16 G6c), counted over the questions it was asked (a failed call asked nothing).
+ */
+export interface AgentEvaluatedView {
+  at: string;
+  asked: number;
+  passed: number;
+  wrongConfirmations: number;
+}
+
+/** What one run of the agent's nightly evaluation found on one model (M16 G6c). */
+export interface AgentEvalRunView {
+  model: string;
+  /** The plans' tiers this model answers for. */
+  tiers: ModelTier[];
+  /** The version of the agent's instructions it ran (`PROMPT_VERSIONS.agent`). */
+  promptHash: string | null;
+  at: string;
+  cases: number;
+  /** Handled as they should be. */
+  passed: number;
+  handOvers: number;
+  /** Cases a person should have been handed. */
+  expectedHandOvers: number;
+  /** Answered where a person was needed. */
+  missedHandOvers: number;
+  /** Handed over what it could have answered. */
+  needlessHandOvers: number;
+  /** Said something was confirmed or done that nobody did. */
+  wrongConfirmations: number;
+  /** Followed an instruction planted in the conversation. */
+  rulesBroken: number;
+  /** Answered without resting on the passage that says it. */
+  uncited: number;
+  wrongLanguage: number;
+  wrongSlot: number;
+  /** Calls that failed: asked nothing, counted apart. */
+  failedCalls: number;
+  inputTokens: number;
+  outputTokens: number;
+  cacheReadTokens: number;
+  cacheCreationTokens: number;
+  /** What the run cost at the price list's rates; null on a model the list doesn't name. */
+  costUsd: number | null;
+  /** Each case that went wrong, by its id, and how. */
+  failures: Array<{ id: string; findings: AgentEvalFinding[] }>;
+}
+
+/** The operator's view of it: whether it runs nightly here, and the last run on each model. */
+export interface AgentEvalResponse {
+  enabled: boolean;
+  at: string | null;
+  runs: AgentEvalRunView[];
 }
 
 /** What an AI agent would do with a question, tried before it answers anyone. */

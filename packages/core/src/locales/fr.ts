@@ -4896,4 +4896,13 @@ export const fr: Catalog = {
     one: '{n} question à laquelle il n’a pas su répondre',
     other: '{n} questions auxquelles il n’a pas su répondre',
   },
+  '{passed} of {n} test questions handled as they should be': {
+    one: '{passed} sur {n} question de test traitée comme il faut',
+    other: '{passed} sur {n} questions de test traitées comme il faut',
+  },
+  '{n} wrong confirmations': {
+    one: '{n} confirmation erronée',
+    other: '{n} confirmations erronées',
+  },
+  'Caime tests it every night': 'Caime le teste chaque nuit',
 };

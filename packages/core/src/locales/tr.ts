@@ -4710,4 +4710,13 @@ export const turkish: Catalog = {
     one: 'Yanıtlayamadığı {n} soru',
     other: 'Yanıtlayamadığı {n} soru',
   },
+  '{passed} of {n} test questions handled as they should be': {
+    one: '{n} test sorusundan {passed} tanesi olması gerektiği gibi yanıtlandı',
+    other: '{n} test sorusundan {passed} tanesi olması gerektiği gibi yanıtlandı',
+  },
+  '{n} wrong confirmations': {
+    one: '{n} yanlış onay',
+    other: '{n} yanlış onay',
+  },
+  'Caime tests it every night': 'Caime her gece test ediyor',
 };
