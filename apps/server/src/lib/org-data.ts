@@ -24,6 +24,7 @@ import { dropUnusedFiles, removeStored, type StoredKeys } from './files';
 import { previewIdOf, previewUrl } from './link-preview-views';
 import { insertSystemMessage, messageViews, participantsOf } from './messages';
 import { forgetNotificationsOf, tellForgotten } from './notify';
+import { intakeForms } from './org-forms';
 import { placesOwnedBy } from './places';
 import { KEPT_DAYS } from './retention';
 import { itemsWithStock, stockBackCtes, tellStockChanged } from './stock';
@@ -280,6 +281,8 @@ export async function buildOrgExport(
     .orderBy('position')
     .orderBy('created_at')
     .execute();
+  // Its intake forms (M16 H5), as they read now; the answers are on the cards.
+  const forms = await intakeForms(db, orgId);
   // What its team kept about its customers (M16 H3), with whom each record is about.
   const records = await db
     .selectFrom('org_customers as c')
@@ -512,6 +515,7 @@ export async function buildOrgExport(
     // Its places (R92), with who each was shown to.
     places: await placesOwnedBy(ctx, { orgId }),
     replies: { greeting: org.greeting, away: org.away_message, quick },
+    forms,
     customers: {
       fields: Array.isArray(org.customer_fields) ? org.customer_fields : [],
       records: records.map((r) => ({
@@ -616,6 +620,7 @@ export async function clearClosedOrg(ctx: AppContext, orgId: string): Promise<bo
     await trx.deleteFrom('places').where('org_id', '=', orgId).execute();
     await trx.deleteFrom('org_quick_replies').where('org_id', '=', orgId).execute();
     await trx.deleteFrom('org_customers').where('org_id', '=', orgId).execute();
+    await trx.deleteFrom('org_forms').where('org_id', '=', orgId).execute();
     // Its apps' tokens, deliveries and kinds of card go with them; their bots' messages stay in
     // the customers' copies, so the bots themselves stay, as senders.
     await trx.deleteFrom('org_apps').where('org_id', '=', orgId).execute();

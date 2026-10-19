@@ -51,6 +51,7 @@ import { Text } from '@/ui/Text';
 import { toast } from '@/ui/Toast';
 import { AlbumCard } from './AlbumCard';
 import { ChecklistCard } from './ChecklistCard';
+import { FormCard } from './FormCard';
 import { iconNamed, KIT_ICONS } from './icons';
 import { type MeetingCardPayload, MeetingGuests } from './MeetingGuests';
 import { MeetingRepeat } from './MeetingRepeat';
@@ -276,6 +277,7 @@ export function KitCard({ m, mine }: { m: MessageView; mine: boolean }) {
 
   const kit = p.kit;
   if (kit === 'checklist') return <ChecklistCard m={m} mine={mine} />;
+  if (kit === 'form') return <FormCard m={m} thread={thread} />;
   // Pay (R62): a priced booking or order offers it to whoever pays: an organization's customer,
   // or whoever isn't the person paid; it opens the Pay card's form, filled and replying here.
   const due =

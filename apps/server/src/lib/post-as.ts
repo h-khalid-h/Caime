@@ -15,7 +15,9 @@ export async function postAs(
   ctx: AppContext,
   senderId: string,
   conversationId: string,
-  what: string | { kind: 'text' | 'kit' | 'sticker'; body?: string; payload?: unknown },
+  what:
+    | string
+    | { kind: 'text' | 'kit' | 'sticker'; body?: string; payload?: unknown; replyToId?: string },
   opts: { clientId?: string; echo?: boolean; serverPayload?: boolean } = {},
 ): Promise<{ message: Message; created: boolean }> {
   const clientId = opts.clientId ?? `agent:${uuidv4()}`;

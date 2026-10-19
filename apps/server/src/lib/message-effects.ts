@@ -34,6 +34,7 @@ import { queueLinkPreview } from './link-previews';
 import { queueMailOut } from './mail-out';
 import { analyseText, messagePreview } from './messages';
 import { runNotificationHooks, withLivePush } from './notify';
+import { queueBookedForms } from './org-forms';
 import {
   activeConnectionIds,
   activeRelationships,
@@ -253,6 +254,8 @@ async function effectsOf(ctx: AppContext, message: Message, read: Analysis | nul
     await notifyBusiness(ctx, conversation, message, sender, recipients, replyToSender ?? null);
     await suggestBusiness(ctx, conversation, message, analysis, sender);
     await runAutomations(ctx, conversation, message, recipients);
+    // A booked or ordered item's form follows its card (M16 H5), once.
+    await queueBookedForms(ctx, message);
     return;
   }
   const addressed = (userId: string) =>

@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
-import { type CustomerField, cleanTags, fieldValue, sameTag } from './customers';
+import { type CustomerField, cleanTags, sameTag } from './customers';
+import { fieldValue } from './field-values';
 
 describe('what a team keeps about a customer (M16 H3)', () => {
   it('keeps one of each tag however it is cased or accented, in the order given', () => {

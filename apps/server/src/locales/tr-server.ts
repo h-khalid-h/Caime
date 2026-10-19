@@ -1508,4 +1508,13 @@ export const turkishServer: Catalog = {
   'We’re open again on {date}.': '{date} tarihinde yeniden açığız.',
   'That customer': 'O müşteri',
   'That field isn’t one of the organization’s.': 'Bu alan kuruluşun alanlarından biri değil.',
+  '{question} can’t be kept in that field.': '{question} o alanda saklanamaz.',
+  'That form isn’t one of the organization’s.': 'Bu form kuruluşun formlarından biri değil.',
+  'That form': 'Bu form',
+  'Only the customer it was sent to fills it in.': 'Yalnızca gönderildiği müşteri doldurabilir.',
+  'That form was answered already.': 'Bu form zaten yanıtlandı.',
+  'Forms are sent by an organization to its customers.':
+    'Formları bir kuruluş müşterilerine gönderir.',
+  'Someone reached by mail can’t fill in a form yet.':
+    'E-postayla ulaşılan biri henüz form dolduramaz.',
 };

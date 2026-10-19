@@ -42,6 +42,7 @@ import { useMe } from '@/state/session';
 import { useTheme } from '@/theme/theme';
 import { Button } from '@/ui/Button';
 import { Chip, ChoiceChips } from '@/ui/Chip';
+import { ChoiceList } from '@/ui/ChoiceList';
 import { IconButton } from '@/ui/IconButton';
 import { lazyPart, useOpened } from '@/ui/Lazy';
 import { PickerField } from '@/ui/PickerField';
@@ -107,11 +108,15 @@ export function kitsOffered(conversation: ConversationView, viewerIsMinor: boole
     // One customer, one organization: its cards are one-to-one cards.
     isGroup: conversation.kind !== 'direct' && !business,
     viewerIsMinor,
+    // The organization's side (its team's view has the thread): its forms are its own to send.
+    isTeam: Boolean(conversation.business?.thread),
   }).filter(
     (k) =>
       offered.has(k.id) &&
       // With someone under 18 in it, no card about money (R29): the server refuses them too.
-      !(conversation.hasMinor && k.adultsOnly && isCardKit(k.id)),
+      !(conversation.hasMinor && k.adultsOnly && isCardKit(k.id)) &&
+      // A form is offered once the organization has one (M16 H5).
+      (k.id !== 'form' || Boolean(conversation.business?.forms?.length)),
   );
 }
 
@@ -231,6 +236,11 @@ export function KitForm({
   const [multiple, setMultiple] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
+  // A form (M16 H5): which of the organization's forms goes, chosen from its team's view.
+  const forms = conversation.business?.forms ?? [];
+  const [formId, setFormId] = useState<string | null>(
+    forms.length === 1 ? (forms[0]?.id ?? null) : null,
+  );
   // An amount's currency: the organization's for its team, else where the person lives.
   const defaultCurrency =
     (conversation.business?.thread ? conversation.business.org.currency : null) ?? me.currency;
@@ -547,6 +557,9 @@ export function KitForm({
           ...(spot && !fromPlace && liveFor !== '0' ? { live: { minutes: Number(liveFor) } } : {}),
         },
       };
+    } else if (kit === 'form') {
+      if (!formId) return setError(tr('Pick a form.'));
+      body = { kind: 'kit', payload: { kit: 'form', fields: {}, form: { formId } } };
     } else if (kit === 'poll') {
       const question = (texts.question ?? '').trim();
       const choices = options.map((o) => o.trim()).filter(Boolean);
@@ -752,6 +765,21 @@ export function KitForm({
             }}
             testID="location-place"
           />
+        </View>
+      ) : kit === 'form' ? (
+        <View style={{ gap: 12 }}>
+          <ChoiceList<string>
+            label={tr('Form')}
+            value={formId}
+            onChange={setFormId}
+            options={forms.map((f) => ({ value: f.id, label: f.name }))}
+            testID="form-pick"
+          />
+          <Text variant="caption" color="textSecondary">
+            {tr(
+              'The customer fills it in on the card. Answers a question keeps go into their record.',
+            )}
+          </Text>
         </View>
       ) : kit === 'poll' ? (
         <View style={{ gap: 12 }}>

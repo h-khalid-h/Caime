@@ -21,6 +21,7 @@ export const KIT_IDS = [
   'payment_request',
   'support_ticket',
   'appointment',
+  'form',
   'location',
   'shared_album',
   'poll',
@@ -62,6 +63,11 @@ export interface KitDef {
   groups: boolean;
   /** Never offered to or by under-18 accounts. */
   adultsOnly?: boolean;
+  /**
+   * Sent by an organization's side to its customer alone (an intake form, M16 H5): never by the
+   * customer, never between people.
+   */
+  teamOnly?: boolean;
   fields: KitField[];
   /** Status values the card moves through; the first is the initial state. */
   states: string[];
@@ -253,6 +259,19 @@ export const KITS: Record<KitId, KitDef> = {
     ],
     states: ['requested', 'confirmed', 'done', 'cancelled'],
   },
+  // An organization's intake form (M16 H5): its questions are the form's, kept on the card as it
+  // was sent, and the customer answers them on the card (`POST /messages/:id/answers`).
+  form: {
+    id: 'form',
+    name: msg('Form'),
+    description: msg('Ask a customer to fill in one of your forms'),
+    icon: 'file-text',
+    spheres: ['customer'],
+    groups: false,
+    teamOnly: true,
+    fields: [],
+    states: ['sent', 'answered'],
+  },
   location: {
     id: 'location',
     name: msg('Location'),
@@ -326,6 +345,8 @@ export interface KitContext {
   viewerIsMinor: boolean;
   /** Business conversations get their own set regardless of personal classification. */
   isBusiness?: boolean;
+  /** The viewer is on the organization's side of a business conversation (its team, its bots). */
+  isTeam?: boolean;
 }
 
 /**
@@ -337,7 +358,8 @@ export function kitsFor(ctx: KitContext): KitDef[] {
   const fits = (kit: KitDef) =>
     (kit.spheres === null || kit.spheres.some((s) => spheres.includes(s))) &&
     (!ctx.isGroup || kit.groups) &&
-    (!kit.adultsOnly || !ctx.viewerIsMinor);
+    (!kit.adultsOnly || !ctx.viewerIsMinor) &&
+    (!kit.teamOnly || ctx.isTeam === true);
   const specific = KIT_IDS.map((id) => KITS[id]).filter((k) => k.spheres !== null && fits(k));
   const general = KIT_IDS.map((id) => KITS[id]).filter((k) => k.spheres === null && fits(k));
   return [...specific, ...general];

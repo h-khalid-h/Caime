@@ -60,6 +60,7 @@ import { calendarItems, minutesOf, orgBookings, overdueTasks } from '../lib/cale
 import { hashToken, newToken } from '../lib/crypto';
 import { badRequest, forbidden, notFound } from '../lib/errors';
 import { meetingUid } from '../lib/meeting-series';
+import { formNames } from '../lib/org-forms';
 import { orgById, orgSeat } from '../lib/orgs';
 import { viewerRelation } from '../lib/relations';
 import { forgetSitemaps } from '../lib/sitemap-cache';
@@ -244,7 +245,8 @@ export async function calendarRoutes(app: FastifyInstance, ctx: AppContext) {
     if (!canManageOrg(seat.role))
       throw forbidden(tr('Only the organization’s owner and admins can.'));
     const team = await humanTeam(ctx.db, id);
-    const kept = catalogFrom(body, catalogOf(org).collections, body.booking);
+    const forms = new Set((await formNames(ctx.db, id)).map((f) => f.id));
+    const kept = catalogFrom(body, catalogOf(org).collections, body.booking, forms);
     assertItemsFit(
       orgHost(org),
       kept.items,

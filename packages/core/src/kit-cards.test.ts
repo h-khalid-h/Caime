@@ -22,9 +22,9 @@ describe('kit flows', () => {
         for (const move of moves)
           expect(kit.states, `${id}: ${from} → ${move.to}`).toContain(move.to);
       }
-      // A checklist moves by its items being ticked, a split by its shares being settled, not by
-      // buttons (checklistState, splitState).
-      if (id !== 'checklist' && id !== 'split')
+      // A checklist moves by its items being ticked, a split by its shares being settled and a
+      // form by its answers, not by buttons (checklistState, splitState, answerForm).
+      if (id !== 'checklist' && id !== 'split' && id !== 'form')
         expect(flows[kit.states[0]!]?.length, `${id} starts stuck`).toBeGreaterThan(0);
     }
   });

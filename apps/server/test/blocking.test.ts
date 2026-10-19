@@ -109,6 +109,20 @@ describe('blocking an organization (PRD §55, R15)', () => {
   });
 
   it('closes the conversation: nobody on the team, nor its bot, can write to the customer', async () => {
+    // A form sent before the block (M16 H5) waits unanswered while it stands.
+    const form = (
+      await noor.req('PUT', `/v1/orgs/${orgId}/forms`, {
+        forms: [
+          { name: 'Your floor', questions: [{ label: 'Size', kind: 'text', required: true }] },
+        ],
+      })
+    ).json().forms[0] as { id: string; questions: Array<{ id: string }> };
+    const sentForm = await send(omar, convo, {
+      kind: 'kit',
+      payload: { kit: 'form', fields: {}, form: { formId: form.id } },
+    });
+    expect(sentForm.statusCode, sentForm.body).toBe(201);
+    const formCard = sentForm.json().message.id as string;
     await lina.post(`/v1/orgs/${orgId}/block`, {});
     expect((await lina.get(`/v1/orgs/${orgId}`)).org.blockedByMe).toBe(true);
     expect((await noor.get(`/v1/orgs/${orgId}`)).org.blockedByMe).toBe(false);
@@ -143,6 +157,10 @@ describe('blocking an organization (PRD §55, R15)', () => {
     });
     const again = await lina.req('POST', `/v1/orgs/${orgId}/conversations`, {});
     expect(again.json().error.code).toBe('org_blocked');
+    const answered = await lina.req('POST', `/v1/messages/${formCard}/answers`, {
+      answers: { [form.questions[0]?.id ?? '']: '20 m²' },
+    });
+    expect(answered.json().error.code).toBe('org_blocked');
     expect((await lina.get('/v1/blocks')).orgs).toEqual([
       expect.objectContaining({ id: orgId, name: 'Tiles Co', handle: 'tiles.co' }),
     ]);

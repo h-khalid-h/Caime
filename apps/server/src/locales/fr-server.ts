@@ -1577,4 +1577,15 @@ export const frServer: Catalog = {
   'That customer': 'Ce client',
   'That field isn’t one of the organization’s.':
     'Ce champ n’est pas l’un de ceux de l’organisation.',
+  '{question} can’t be kept in that field.': '{question} ne peut pas être gardé dans ce champ.',
+  'That form isn’t one of the organization’s.':
+    'Ce formulaire n’est pas l’un de ceux de l’organisation.',
+  'That form': 'Ce formulaire',
+  'Only the customer it was sent to fills it in.':
+    'Seul le client à qui il a été envoyé le remplit.',
+  'That form was answered already.': 'Ce formulaire a déjà reçu une réponse.',
+  'Forms are sent by an organization to its customers.':
+    'Les formulaires sont envoyés par une organisation à ses clients.',
+  'Someone reached by mail can’t fill in a form yet.':
+    'Une personne jointe par courriel ne peut pas encore remplir de formulaire.',
 };

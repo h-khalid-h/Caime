@@ -11,6 +11,7 @@ import type {
   CustomerField,
   CustomKitDef,
   Gender,
+  IntakeQuestion,
   OrderingSettings,
   PaymentSettings,
 } from '@caime/core';
@@ -1122,6 +1123,19 @@ export interface OrgQuickRepliesTable {
   updated_at: Generated<Date>;
 }
 
+/** An organization's intake form (M16 H5): its questions, as a Form card copies them. */
+export interface OrgFormsTable {
+  id: string;
+  org_id: string;
+  name: string;
+  intro: string | null;
+  questions: JsonDefaulted<IntakeQuestion[]>;
+  position: Defaulted<number>;
+  created_by: string | null;
+  created_at: Generated<Date>;
+  updated_at: Generated<Date>;
+}
+
 export interface OrgReclaimsTable {
   org_id: string;
   user_id: string;
@@ -1552,6 +1566,7 @@ export interface Database {
   space_members: SpaceMembersTable;
   organizations: OrganizationsTable;
   org_quick_replies: OrgQuickRepliesTable;
+  org_forms: OrgFormsTable;
   org_customers: OrgCustomersTable;
   org_checkout: OrgCheckoutTable;
   item_stock: ItemStockTable;

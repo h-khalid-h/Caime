@@ -11,7 +11,7 @@
  * Caime keeps only as hashes or never shows (a password, tokens, recovery codes, a calendar's
  * address, a device's address for notifications).
  */
-import { callResult, MANAGING_ROLES } from '@caime/core';
+import { callResult, formOf, MANAGING_ROLES } from '@caime/core';
 import { sql } from 'kysely';
 import type { AppContext } from '../context';
 import { listingState } from './app-directory';
@@ -110,6 +110,7 @@ export async function buildExport(ctx: AppContext, me: string, now: Date) {
     messages,
     theirChecklists,
     theirSplits,
+    answeredForms,
     reactions,
     votes,
     hidden,
@@ -369,6 +370,21 @@ export async function buildExport(ctx: AppContext, me: string, now: Date) {
       .where('m.deleted_at', 'is', null)
       .where(
         sql<boolean>`m.payload->'fields'->'shares' @> ${JSON.stringify([{ userId: me }])}::jsonb`,
+      )
+      .orderBy('m.created_at')
+      .execute(),
+    // The forms organizations sent them that they answered (M16 H5): their words, on its card.
+    db
+      .selectFrom('messages as m')
+      .innerJoin('participants as p', (j) =>
+        j.onRef('p.conversation_id', '=', 'm.conversation_id').on('p.user_id', '=', me),
+      )
+      .select(['m.id', 'm.conversation_id', 'm.payload'])
+      .where('m.kind', '=', 'kit')
+      .where('m.sender_id', '<>', me)
+      .where('m.deleted_at', 'is', null)
+      .where(
+        sql<boolean>`m.payload->'history' @> ${JSON.stringify([{ state: 'answered', by: me }])}::jsonb`,
       )
       .orderBy('m.created_at')
       .execute(),
@@ -1300,6 +1316,20 @@ export async function buildExport(ctx: AppContext, me: string, now: Date) {
           settledAt: sh.settledAt ?? null,
           settledByYou: sh.settledBy === me,
         }));
+    }),
+    yourAnswersToForms: answeredForms.flatMap((m) => {
+      const card = formOf(m.payload);
+      if (!card) return [];
+      return [
+        {
+          formMessageId: m.id,
+          conversationId: m.conversation_id,
+          form: card.form.name,
+          answers: card.form.questions
+            .filter((q) => card.answers?.[q.id] !== undefined)
+            .map((q) => ({ question: q.label, answer: card.answers?.[q.id] ?? null })),
+        },
+      ];
     }),
     reactions: reactions.map((r) => ({
       messageId: r.message_id,

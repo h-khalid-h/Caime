@@ -9,6 +9,8 @@
  * agent answers (the agent's introduction greets), and no away message while someone on the team
  * is answering there. Each is sent once: a greeting for the message that opened the
  * conversation or a quiet stretch, an away message once a closed spell for each conversation.
+ * The same account and job send the form a booked or ordered item names (M16 H5,
+ * `lib/org-forms.ts`), after its card.
  */
 import { randomBytes } from 'node:crypto';
 import {
@@ -31,6 +33,7 @@ import { onCustomerMessage } from './business';
 import { AppError } from './errors';
 import { inLanguage, languageOf } from './i18n';
 import { enqueue, registerJob } from './jobs';
+import { intakeForms } from './org-forms';
 import { postAs } from './post-as';
 
 /** A conversation quiet this long greets its customer again when they write. */
@@ -307,6 +310,7 @@ async function awayText(
  * finds it said), and the customer reads them in that order however the jobs were run.
  */
 async function sendAutoReply(ctx: AppContext, payload: Record<string, unknown>): Promise<void> {
+  if (payload.what === 'form') return postForm(ctx, payload);
   const what: AutoReply = payload.what === 'away' ? 'away' : 'greeting';
   if (what === 'away' && payload.greeting === true) await postReply(ctx, payload, 'greeting');
   await postReply(ctx, payload, what);
@@ -334,15 +338,8 @@ async function postReply(
   if (what === 'away' && (!hours || openAt(hours, now))) return;
   const body =
     what === 'away' && hours ? await awayText(ctx, text, hours, conversationId, seq, now) : text;
-  const botId = await repliesBot(ctx, orgId);
+  const botId = await repliesBotIn(ctx, orgId, conversationId);
   if (!botId) return;
-  // In the conversations it writes in, as the team is (to the customer, the organization).
-  await sql`
-    insert into participants (conversation_id, user_id, role, last_read_seq, last_delivered_seq)
-    select ${conversationId}, ${botId}, 'agent', c.last_seq, c.last_seq
-    from conversations c where c.id = ${conversationId}
-    on conflict (conversation_id, user_id) do update set left_at = null, role = 'agent'
-  `.execute(ctx.db);
   try {
     await postAs(
       ctx,
@@ -366,6 +363,69 @@ async function postReply(
     // The customer blocked the organization since, or it closed: nobody writes there now.
     if (!(err instanceof AppError)) throw err;
     ctx.log.warn({ err, conversationId }, 'automatic reply could not post');
+  }
+}
+
+/**
+ * The organization's automatic-replies account, in the conversation it writes in as the team is
+ * (to the customer, the organization); null for an organization that closed.
+ */
+async function repliesBotIn(
+  ctx: AppContext,
+  orgId: string,
+  conversationId: string,
+): Promise<string | null> {
+  const botId = await repliesBot(ctx, orgId);
+  if (!botId) return null;
+  await sql`
+    insert into participants (conversation_id, user_id, role, last_read_seq, last_delivered_seq)
+    select ${conversationId}, ${botId}, 'agent', c.last_seq, c.last_seq
+    from conversations c where c.id = ${conversationId}
+    on conflict (conversation_id, user_id) do update set left_at = null, role = 'agent'
+  `.execute(ctx.db);
+  return botId;
+}
+
+/**
+ * The form a booked or ordered item names (M16 H5), as a Form card answering its card, once: by
+ * the card and the form (a client id is at most 64), so a job run again finds it sent. Nothing
+ * when the card was taken down since, the form let go, or the organization suspended.
+ */
+async function postForm(ctx: AppContext, payload: Record<string, unknown>): Promise<void> {
+  const orgId = String(payload.orgId);
+  const conversationId = String(payload.conversationId);
+  const messageId = String(payload.messageId);
+  const formId = String(payload.formId);
+  const org = await ctx.db
+    .selectFrom('organizations')
+    .select('suspended_at')
+    .where('id', '=', orgId)
+    .where('archived_at', 'is', null)
+    .executeTakeFirst();
+  if (!org || org.suspended_at) return;
+  const card = await ctx.db
+    .selectFrom('messages')
+    .select('id')
+    .where('id', '=', messageId)
+    .where('conversation_id', '=', conversationId)
+    .where('deleted_at', 'is', null)
+    .executeTakeFirst();
+  if (!card) return;
+  if (!(await intakeForms(ctx.db, orgId)).some((f) => f.id === formId)) return;
+  const botId = await repliesBotIn(ctx, orgId, conversationId);
+  if (!botId) return;
+  try {
+    await postAs(
+      ctx,
+      botId,
+      conversationId,
+      { kind: 'kit', payload: { kit: 'form', fields: {}, form: { formId } }, replyToId: messageId },
+      { clientId: `form:${messageId}:${formId.slice(-12)}` },
+    );
+  } catch (err) {
+    // The customer blocked the organization since, or it closed: nobody writes there now.
+    if (!(err instanceof AppError)) throw err;
+    ctx.log.warn({ err, conversationId }, 'a booked item’s form could not post');
   }
 }
 

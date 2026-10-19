@@ -428,6 +428,12 @@ export function applyEvent(qc: QueryClient, event: RealtimeEvent, me: string): v
         invalidate(qk.quickReplies(event.data.orgId));
         return;
       }
+      // Its forms changed (M16 H5): the setup's list, and the forms its conversations offer.
+      if (event.data.forms === true && typeof event.data.orgId === 'string') {
+        invalidate(qk.orgForms(event.data.orgId));
+        invalidate(qk.allConversationViews);
+        return;
+      }
       // What the team keeps about a customer changed (M16 H3): that record, and the tags in use.
       if (typeof event.data.customerId === 'string' && typeof event.data.orgId === 'string') {
         invalidate(qk.customerRecord(event.data.orgId, event.data.customerId));

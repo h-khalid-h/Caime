@@ -1421,7 +1421,8 @@ A sphere is said as how you know someone, never "sphere".
   through the same bot and job, never a person's seat.
 - What a team keeps about its customers (M16 H3, R102, `lib/org-customers.ts`,
   `modules/org-customers.ts`, core `customers.ts`): one `org_customers` row per organization and
-  customer (a note, tags kept by `cleanTags`, field values by id checked by core `fieldValue`),
+  customer (a note, tags kept by `cleanTags`, field values by id checked by core `fieldValue`,
+  `field-values.ts`),
   written only through `saveCustomerRecord` (under the row, telling the team's devices with
   `business.updated` `{ customerId }`) and only for someone with a thread there; the fields are
   `organizations.customer_fields`, saved whole by `saveCustomerFields` (a field let go takes every
@@ -1431,6 +1432,27 @@ A sphere is said as how you know someone, never "sphere".
   token; it goes in `eraseBusinessConversation`, with the account (cascade) and in
   `clearClosedOrg`, and it's in `buildOrgExport`. Anything new the team keeps about a customer
   joins this record, never a column on a thread.
+- Intake forms (M16 H5, R104, `lib/org-forms.ts`, `modules/org-forms.ts`; core `intake.ts`, the
+  kinds and limits the setup screen reads, and `intake-answers.ts`, the checks the card alone loads,
+  with `fieldValue` in `field-values.ts` apart from `customers.ts`, which the first download
+  carries): an organization's forms are `org_forms`, saved whole by its owner and admins
+  (`saveIntakeForms`, under the organization's row: a kept id keeps its questions' ids, an id not
+  its own is new; a question kept in a customer field names one of the kind it answers, core
+  `keepsIn`, and a choice kept so takes that field's choices), read by its team; the team's view of
+  a customer's conversation names them (`ConversationBusinessView.forms`), and the composer offers
+  the Form card only to the organization's side once it has one (`teamOnly` in core `kits.ts`,
+  `kitsFor` with `isTeam`). `sendMessage` copies the chosen form whole onto the card
+  (`payload.form`, `FormAskBody`), refused for the customer, between people and to someone reached
+  by mail; `POST /messages/:id/answers` takes the answers of the customer it was sent to, once,
+  under the card's lock (`answerForm`, core `checkAnswers`), keeps the ones a question keeps in
+  their record (`keepAnswers`, through `saveCustomerRecord`) and moves the card through
+  `afterCardMove`. An item's `formId` (one of its host's forms, kept by `catalogFrom`) follows a
+  booking or an order: `queueBookedForms` in the message's effects, then the `org.reply` job with
+  `what: 'form'`, from the automatic-replies account, once by the card and the form. A model reads
+  the card's name, never its answers; the organization's apps get them in `cardData`. Forms are in
+  `buildOrgExport` and go in `clearClosedOrg`; a customer's answers are in their export
+  (`yourAnswersToForms`). Anything new a customer fills in for an organization is a question of a
+  form, never a card of its own.
 - Calls: `apps/server/src/lib/calls.ts` and `modules/calls.ts` ring, relay and record;
   `apps/app/src/features/calls/engine.ts` holds the RTCPeerConnection and `CallScreens.tsx`
   draws the call over everything, on the web and the phones alike. What a phone does differently

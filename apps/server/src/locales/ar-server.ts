@@ -1563,4 +1563,11 @@ export const arServer: Catalog = {
   'We’re open again on {date}.': 'نعود يوم {date}.',
   'That customer': 'ذلك العميل',
   'That field isn’t one of the organization’s.': 'هذا الحقل ليس من حقول المؤسسة.',
+  '{question} can’t be kept in that field.': 'لا يمكن حفظ «{question}» في ذلك الحقل.',
+  'That form isn’t one of the organization’s.': 'هذا النموذج ليس من نماذج المؤسسة.',
+  'That form': 'ذلك النموذج',
+  'Only the customer it was sent to fills it in.': 'لا يملؤه إلا العميل الذي أُرسل إليه.',
+  'That form was answered already.': 'تمت الإجابة عن هذا النموذج من قبل.',
+  'Forms are sent by an organization to its customers.': 'ترسل المؤسسة النماذج إلى عملائها.',
+  'Someone reached by mail can’t fill in a form yet.': 'لا يمكن تعبئة نموذج بعد لمن يُراسَل بالبريد.',
 };

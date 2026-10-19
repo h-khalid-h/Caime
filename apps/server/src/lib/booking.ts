@@ -569,6 +569,7 @@ export function catalogFrom(
   body: { items: BookingItemInput[]; collections?: CollectionInput[] },
   kept: CatalogCollection[],
   hours: Pick<BookingHours, 'resources'> | null = null,
+  forms: ReadonlySet<string> = new Set(),
 ): { items: BookingItem[]; collections: CatalogCollection[] } {
   const collections = body.collections ?? kept;
   const ids = new Set(collections.map((c) => c.id));
@@ -583,6 +584,9 @@ export function catalogFrom(
         i.resourceId && i.unit !== 'each' && shared.has(i.resourceId) ? i.resourceId : null,
       // Where it's done (R92) is for something booked at a time; `assertPlacesFit` checks it.
       placeId: i.unit !== 'each' ? (i.placeId ?? null) : null,
+      // The form sent after it's booked or ordered (M16 H5): one of the host's own, else none
+      // (a person has none; a form let go since leaves its items without one).
+      formId: i.formId && forms.has(i.formId) ? i.formId : null,
     })),
     collections,
   ) as { items: BookingItem[]; collections: CatalogCollection[] };

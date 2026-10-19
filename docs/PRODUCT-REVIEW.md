@@ -2095,3 +2095,28 @@ with its reason, so it isn't proposed again without new facts.
   PRD §71 has it), a customer's name or words anywhere in it, currency conversion (a rate is a
   claim Caime can't stand behind), tax figures (the tax invoice is counsel's, H), and money Caime
   never saw (cash said nowhere, or another system's).
+- **R104 (2026-10-19) Intake forms as cards.** The review of 2026-10-17 (§9, M16 H) listed intake
+  forms among what a small business still needs: a clinic asks about allergies before a visit, a
+  garage asks for the car's plate, a caterer how many are coming, and today that's a paper form at
+  the desk, a link to another service, or a string of messages the team copies out by hand.
+  *Decided:* an organization's owner and admins keep up to ten forms on its setup screen (a name,
+  a line before the questions, up to twenty questions: words, several lines, a number, a day, one
+  of a few choices, yes or no; needed or not; an answer kept in one of its customer fields where
+  the kinds agree, a choice kept so asking that field's choices). Its team sends one as a Form
+  card from a customer's conversation (offered to the organization's side alone, once it has a
+  form), and an item of its catalog may name one, which its automatic-replies account sends by
+  itself once the item is booked or ordered, answering the booking, once. The card keeps a copy
+  of the form, so a form changed or let go never changes a card sent. The customer it was sent to
+  fills it in on the card, once, each answer checked by the same rules on the device and the
+  server (a number in any script's digits kept in Latin ones), and both sides read the answers
+  there; the answers kept in customer fields go into the customer's record (H3). The card asks
+  until it's answered (the customer's Needs you); its answer is a card's move (whoever on the team
+  sent it is told, and the organization's apps hear `kit.moved` with the questions and the
+  answers); the answers are in the customer's own export and the organization's conversations,
+  and a model reading the conversation reads "Form: Before your visit", never the answers.
+  *Why:* advantage 2 is that the customer books, orders and pays inside the chat; what's asked
+  before a visit belongs there too, in the customer's language and on their phone, so the clinic
+  stops sending a link to another service and typing the answers in again. *Declined:* a form on
+  a visitor's page before an account (that page has a form shape of its own, C1; later), files
+  and signatures in answers (a consent form is counsel's), questions that depend on other
+  answers, and a form filled in by mail.

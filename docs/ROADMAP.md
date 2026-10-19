@@ -2889,6 +2889,40 @@ graph) and the number that will show it; one that sharpens none is hygiene and s
       and a dollar invoice paid, a returning customer, the ten days before, thirty days, owners and
       admins alone, the operator's number), `product-metrics.test.ts`, `e2e/org-insights.spec.ts`,
       the catalogs in four languages and the server's, and the full gate.
+- [x] H5. Intake forms as cards (2026-10-19, review §9, PRODUCT-REVIEW R104; advantage 2, the
+      customer books, orders and pays inside the chat, and answers there what's asked before a
+      visit). An organization's owner and admins keep up to ten forms on the setup screen (Forms,
+      after the customer fields): a name, a line before the questions and up to twenty questions
+      (words, several lines, a number, a day, one of a few choices, yes or no; needed or not), an
+      answer kept in one of its customer fields where the kinds agree (a choice kept so asks the
+      field's choices). Its team sends one from a customer's conversation (the cards offer Form to
+      the organization's side alone, once it has one), and an item of its catalog may name one ("A
+      form to fill in"), which its automatic-replies account sends by itself once the item is
+      booked or ordered, answering the booking, once. The card keeps a copy of the form; the
+      customer fills it in on the card (a sheet on a phone), each answer checked as the server
+      checks it, once; both sides read the answers on the card ("Filled in"), the kept ones go into
+      the customer's record, whoever on the team sent it is told, and the organization's apps hear
+      `kit.moved` with the questions and the answers. A blocked, closed or suspended organization
+      takes no answers, and someone reached by mail is sent none. A model reading the conversation
+      reads the form's name, never its answers; the answers are in the customer's export, the
+      forms in the organization's, and they go when a closed organization is cleared. Not done: a
+      form on a visitor's page before an account, files and signatures in answers, and telling the
+      thread's assignee when a form the automatic-replies account sent is answered (its booking is
+      theirs to confirm in the same conversation). Verified: `org-forms.test.ts` (forms kept by the
+      owner and refused to the team and to strangers, a question kept in a field of another kind,
+      a choice without choices and a form without questions refused, a choice kept taking the
+      field's choices, ids kept, the team's view naming them and the customer's not; a card sent by
+      the organization's side alone, never between people nor with a form not its own; answered by
+      its customer alone, once, each answer checked, Arabic digits kept as Latin ones, nothing of
+      the team in what she gets back; the record keeping the file number and the insurer; a model
+      reading "Form: Before your visit"; the form changed and the card not; a booking of an item
+      that names it followed by one card from the organization, run twice and posted once, an item
+      without one followed by nothing, a form not the organization's let go from the catalog; both
+      exports; clearing), `blocking.test.ts` (a customer who blocked the organization can't
+      answer), core `intake.test.ts` and `kit-cards.test.ts`, `e2e/intake-forms.spec.ts` (the owner
+      writes the form on the setup screen, the team sends it, the customer fills it in on a phone
+      in Arabic digits, both read the answers, her record shows 1234), the catalogs in four
+      languages and the server's, and the full gate.
 - [ ] ⛔ H, the owner's: a smaller paid tier; WhatsApp Business in the inbox and reminders by
       WhatsApp or SMS (Meta's approval); Stripe Connect live with local currencies.
 - [ ] R98, after C: places as a context for spaces (PRODUCT-REVIEW R98): `spaces.place` from
@@ -4485,6 +4519,8 @@ graph) and the number that will show it; one that sharpens none is hygiene and s
   journeys, safety, reliability, performance, intelligence, mail and calendar, chat, integrations,
   business and code integrity; the matrix against WhatsApp, Signal, Slack, Calendly and Workspace;
   an age-assurance design; the integration framework mapped to the code; plan M16 (A–H).
+- 2026-10-19 — M16 H5: intake forms as cards: an organization's forms, sent from a customer's
+  conversation or by themselves after a booking, filled in on the card and kept in the record.
 - 2026-10-19 — M16 H4: what the conversations came to: bookings, orders and money paid on an
   organization's insights, who bought and came back, what sold most, when customers write;
   the operator's metrics count advantage 2.

@@ -25,6 +25,7 @@ export const CARD_KITS = [
   'payment_request',
   'support_ticket',
   'appointment',
+  'form',
   'checklist',
   'shared_album',
   'split',
@@ -47,6 +48,7 @@ export const KIT_MODES: Record<CardKitId, Mode> = {
   payment_request: 'pay',
   support_ticket: 'request',
   appointment: 'plan',
+  form: 'request',
   checklist: 'plan',
   shared_album: 'share',
   split: 'pay',
@@ -162,6 +164,8 @@ export const KIT_FLOWS: Record<CardKitId, Record<string, KitMove[]>> = {
     requested: [m('confirmed', msg('Confirm'), 'others'), m('cancelled', msg('Cancel'), 'anyone')],
     confirmed: [m('done', msg('Done'), 'anyone'), m('cancelled', msg('Cancel'), 'anyone')],
   },
+  // A form has no buttons either (M16 H5): it's answered when its customer sends their answers.
+  form: {},
   // A checklist has no buttons to press: it's done when everything on it is ticked.
   checklist: {},
   // Whoever made an album decides when it's full: closed, nobody adds to it.

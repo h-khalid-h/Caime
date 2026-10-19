@@ -18,6 +18,7 @@ const STATE_LABELS: Record<string, string> = {
   problem: msg('Problem reported'),
   waiting: msg('Waiting on a reply'),
   accepted: msg('Accepted'),
+  answered: msg('Filled in'),
   approved: msg('Approved'),
   cancelled: msg('Cancelled'),
   closed: msg('Closed'),
@@ -42,6 +43,7 @@ const STATE_LABELS: Record<string, string> = {
   shipped: msg('Shipped'),
 };
 const POSITIVE = new Set([
+  'answered',
   'approved',
   'accepted',
   'paid',
@@ -105,6 +107,7 @@ export const ASKING_STATES: Record<string, readonly string[]> = {
   payment_request: ['requested'],
   support_ticket: ['open'],
   appointment: ['requested'],
+  form: ['sent'],
 };
 
 /** Whether a card, as its payload stands, asks something of whoever received it. */

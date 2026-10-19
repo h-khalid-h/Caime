@@ -102,6 +102,7 @@ import { notificationRoutes } from './modules/notifications';
 import { oauthDiscovery, oauthRoutes } from './modules/oauth';
 import { openApiRoutes } from './modules/openapi';
 import { orgCustomerRoutes } from './modules/org-customers';
+import { orgFormRoutes } from './modules/org-forms';
 import { orgRoutes } from './modules/orgs';
 import { pageRoutes, sitePageAt } from './modules/pages';
 import { passkeyRoutes } from './modules/passkeys';
@@ -357,6 +358,7 @@ export async function buildApp(config: Config, options: BuildOptions = {}): Prom
       await spaceRoutes(v1, ctx);
       await orgRoutes(v1, ctx);
       await orgCustomerRoutes(v1, ctx);
+      await orgFormRoutes(v1, ctx);
       await quickReplyRoutes(v1, ctx);
       await teamInviteRoutes(v1, ctx);
       await domainJoinRoutes(v1, ctx);

@@ -23,6 +23,7 @@ import type { CustomKitDef, CustomKitIcon } from './custom-kits';
 import type { CustomerField } from './customers';
 import type { PublicJwk, SealedMessage } from './e2ee';
 import type { Gender } from './i18n';
+import type { IntakeForm } from './intake';
 import type { SuggestionKind } from './intelligence';
 import type { KitField } from './kits';
 import type { Lean } from './learning';
@@ -1138,6 +1139,8 @@ export interface ConversationBusinessView {
   orgSuspended: boolean;
   /** How long the organization keeps this conversation (R54), in days; null keeps it. Said to the customer. */
   retentionDays: number | null;
+  /** For the team: the organization's intake forms by name (M16 H5), to send one; else null. */
+  forms: Array<{ id: string; name: string }> | null;
 }
 
 export interface BusinessInboxView {
@@ -1419,6 +1422,11 @@ export interface CustomerTagsResponse {
 
 export interface CustomerFieldsResponse {
   fields: CustomerField[];
+}
+
+/** An organization's intake forms (M16 H5), in its order: for its team. */
+export interface IntakeFormsResponse {
+  forms: IntakeForm[];
 }
 
 /** A reply an organization's team keeps for what customers ask often (M16 H2). */
@@ -1748,6 +1756,8 @@ export interface OrgExportView {
       updatedAt: string;
     }>;
   };
+  /** Its intake forms (M16 H5), as they read now; the answers are on the cards in its conversations. */
+  forms: IntakeForm[];
   /** What it says by itself (M16 H2): its greeting, its away message and its team's quick replies. */
   replies: {
     greeting: string | null;

@@ -5,6 +5,7 @@ import CalendarClock from 'lucide-react-native/icons/calendar-clock';
 import ChartBar from 'lucide-react-native/icons/chart-no-axes-column';
 import ClipboardList from 'lucide-react-native/icons/clipboard-list';
 import FileCheck from 'lucide-react-native/icons/file-check';
+import FileText from 'lucide-react-native/icons/file-text';
 import HandCoins from 'lucide-react-native/icons/hand-coins';
 import Images from 'lucide-react-native/icons/images';
 import LifeBuoy from 'lucide-react-native/icons/life-buoy';
@@ -27,6 +28,7 @@ export const KIT_ICONS: Record<CardKitId | 'poll' | 'location', IconComponent> =
   payment_request: HandCoins,
   support_ticket: LifeBuoy,
   appointment: CalendarCheck,
+  form: FileText,
   checklist: ListChecks,
   shared_album: Images,
   split: HandCoins,

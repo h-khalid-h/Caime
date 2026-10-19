@@ -20,6 +20,14 @@ export interface WebhookCard {
   state: string | null;
   booking: Record<string, unknown> | null;
   order: Record<string, unknown> | null;
+  /** A Form card's form (M16 H5): its questions as the card asked them. */
+  form?: {
+    id: string;
+    name: string;
+    questions: Array<{ id: string; label: string; kind: string }>;
+  };
+  /** A Form card's answers by question id, once the customer answered; else null. */
+  answers?: Record<string, string> | null;
 }
 
 export type BusinessMessageWebhook = Delivery<

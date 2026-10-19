@@ -395,6 +395,11 @@ export interface BookingItem {
    */
   placeId?: string | null;
   /**
+   * The form an organization sends after it's booked or ordered (M16 H5): one of its own forms,
+   * sent by itself, once; none for a person's items.
+   */
+  formId?: string | null;
+  /**
    * How many are left of something sold by the piece (R60), kept apart from the catalog: its
    * host reads the count, anyone else only once it's fewer than one order may take (0 is sold
    * out). Left out when it isn't counted, or doesn't limit this reader.

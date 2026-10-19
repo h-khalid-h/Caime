@@ -13,6 +13,8 @@ import {
   ContactPayload,
   canPostTo,
   type FileView,
+  FormAskBody,
+  type IntakeForm,
   initialKitState,
   KIT_MODES,
   kitHeadline,
@@ -69,6 +71,7 @@ import { AppError, badRequest, forbidden, notFound } from './errors';
 import { recordEvent } from './events';
 import { cardStartAt, customCardFor } from './kits';
 import { previewIdsOf, previewView, readyPreviews } from './link-preview-views';
+import { formForCard } from './org-forms';
 import { isBlockedEitherWay, shareAConnection, viewerRelation } from './relations';
 import { type ShareToPay, shareToPay } from './splits';
 import { hostWithStock, takeStock, tellStockChanged } from './stock';
@@ -1117,9 +1120,14 @@ export async function sendMessage(
       booking?: unknown;
       order?: unknown;
       share?: unknown;
+      form?: unknown;
     };
     const card = prepareKitFields(raw.kit, raw.fields);
     if (!card.ok) throw badRequest(card.error);
+    // In a business conversation, which side sends it: the customer, or the organization's.
+    const mask =
+      conversation.kind === 'business' ? await customerMask(ctx.db, conversationId) : null;
+    const fromTeam = Boolean(mask && mask.customerId !== senderId);
     // A business conversation is one-to-one: a customer and the organization (R15).
     if (conversation.kind !== 'direct' && conversation.kind !== 'business' && !card.def.groups)
       throw badRequest(
@@ -1128,9 +1136,13 @@ export async function sendMessage(
     // With an organization, only the cards a customer relationship offers (orders, tickets…).
     if (
       conversation.kind === 'business' &&
-      !kitsFor({ spheres: [], isGroup: false, viewerIsMinor: false, isBusiness: true }).some(
-        (k) => k.id === card.kit,
-      )
+      !kitsFor({
+        spheres: [],
+        isGroup: false,
+        viewerIsMinor: false,
+        isBusiness: true,
+        isTeam: fromTeam,
+      }).some((k) => k.id === card.kit)
     )
       throw badRequest(
         tr('{name} cards aren’t for conversations with an organization.', { name: card.def.name }),
@@ -1181,6 +1193,24 @@ export async function sendMessage(
       !isRepeat(card.fields.repeat)
     )
       throw badRequest(tr('Until is for a meeting that repeats.'));
+    // An intake form (M16 H5): the organization's side sends one of its forms to its customer,
+    // copied whole as it reads now, for the customer to answer on the card. Someone reached by
+    // mail has nowhere to fill one in.
+    let intake: IntakeForm | null = null;
+    if (card.kit === 'form') {
+      if (!mask || !fromTeam)
+        throw badRequest(tr('Forms are sent by an organization to its customers.'));
+      const { formId } = parse(FormAskBody, raw.form ?? {});
+      const customer = await ctx.db
+        .selectFrom('users')
+        .select('kind')
+        .where('id', '=', mask.customerId)
+        .executeTakeFirst();
+      if (customer?.kind !== 'human')
+        throw badRequest(tr('Someone reached by mail can’t fill in a form yet.'));
+      intake = await formForCard(ctx.db, mask.orgId, formId);
+      card.fields.title = intake.name;
+    }
     if (card.kit === 'split') {
       // Who owes the payer: everyone else here (people, not bots), an equal share each, worked
       // out once and kept on the card (R38: a record, never a transfer).
@@ -1316,6 +1346,7 @@ export async function sendMessage(
       ...(payee ? { payee } : {}),
       ...(payTo ? { payTo } : {}),
       ...(paying ? { share: { splitId: paying.splitId, payeeId: paying.payeeId } } : {}),
+      ...(intake ? { form: intake } : {}),
     };
     kitMode = KIT_MODES[card.kit];
   }

@@ -55,6 +55,15 @@ import { msg } from './i18n';
 import { IMPORT_MAX_MESSAGES, IMPORT_MAX_TEXT } from './imports';
 import { INITIATIVES } from './initiative';
 import {
+  FORM_INTRO_CHARS,
+  FORM_NAME_CHARS,
+  FORMS_MAX,
+  LONG_ANSWER_CHARS,
+  QUESTION_CHARS,
+  QUESTION_KINDS,
+  QUESTIONS_MAX,
+} from './intake';
+import {
   AI_USE_DAYS_MAX,
   AI_USE_TEXT_MAX,
   APP_LANGUAGES,
@@ -1826,6 +1835,8 @@ export const BookingItemBody = z
     options: z.array(ItemOptionBody).max(ITEM_OPTIONS_MAX).optional(),
     // R92: where it's done, one of the host's places; none, wherever the host is.
     placeId: z.string().uuid().nullable().default(null),
+    // M16 H5: the organization's form sent after it's booked or ordered; one of its forms, else none.
+    formId: z.string().uuid().nullable().default(null),
   })
   .strict()
   .refine((i) => i.unit === 'each' || i.stock == null, {
@@ -2076,6 +2087,61 @@ export const CustomerFieldsBody = z
       .max(CUSTOMER_FIELDS_MAX),
   })
   .strict();
+
+/**
+ * An organization's intake forms (M16 H5), the whole list in its order: a form or a question it
+ * keeps names its id; a new one has none yet. A choice names its choices, and an answer kept in
+ * the customer's record names the customer field it's kept in.
+ */
+export const IntakeFormsBody = z
+  .object({
+    forms: z
+      .array(
+        z
+          .object({
+            id: z.string().uuid().optional(),
+            name: z.string().trim().min(1, msg('Name it.')).max(FORM_NAME_CHARS),
+            intro: z.string().trim().max(FORM_INTRO_CHARS).nullable().optional(),
+            questions: z
+              .array(
+                z
+                  .object({
+                    id: z.string().uuid().optional(),
+                    label: z.string().trim().min(1, msg('Write the question.')).max(QUESTION_CHARS),
+                    kind: z.enum(QUESTION_KINDS),
+                    choices: z
+                      .array(z.string().trim().min(1).max(FIELD_CHOICE_CHARS))
+                      .max(FIELD_CHOICES_MAX)
+                      .optional(),
+                    required: z.boolean(),
+                    keepAs: z.string().min(1).max(40).nullable().optional(),
+                  })
+                  .strict()
+                  .refine(
+                    (q) => q.kind !== 'choice' || (q.choices?.length ?? 0) > 0,
+                    msg('A choice needs its choices.'),
+                  ),
+              )
+              .min(1, msg('Ask at least one question.'))
+              .max(QUESTIONS_MAX),
+          })
+          .strict(),
+      )
+      .max(FORMS_MAX),
+  })
+  .strict();
+
+/** A customer's answers to a Form card (M16 H5), by question; an empty one is no answer. */
+export const AnswersBody = z
+  .object({
+    answers: z
+      .record(z.string().uuid(), z.string().max(LONG_ANSWER_CHARS))
+      .refine((a) => Object.keys(a).length <= QUESTIONS_MAX),
+  })
+  .strict();
+
+/** Which of the organization's forms a Form card sends (M16 H5): the server copies it whole. */
+export const FormAskBody = z.object({ formId: z.string().uuid() }).strict();
 
 export const OrgMembersBody = z
   .object({

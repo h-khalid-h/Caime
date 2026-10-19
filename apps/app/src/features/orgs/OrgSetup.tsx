@@ -34,6 +34,7 @@ import { OrgCheckout } from './OrgCheckout';
 import { OrgCustomerFields } from './OrgCustomerFields';
 import { OrgData } from './OrgData';
 import { OrgDoor } from './OrgDoor';
+import { OrgForms } from './OrgForms';
 import { OrgPlaces } from './OrgPlaces';
 import { OrgPlan } from './OrgPlan';
 import { OrgReplies } from './OrgReplies';
@@ -182,6 +183,7 @@ export function OrgSetupScreen({ handle }: { handle: string }) {
           org={org}
           refresh={() => void qc.invalidateQueries({ queryKey: qk.org(handle) })}
         />
+        <OrgForms org={org} />
         <OrgApps org={org} />
         {org.plan ? (
           <View style={{ paddingHorizontal: 16, paddingTop: 12 }}>

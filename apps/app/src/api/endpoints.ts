@@ -85,6 +85,7 @@ import type {
   ImportChatView,
   InboxAllResponse,
   InboxResponse,
+  IntakeFormsResponse,
   InvitationAnsweredResponse,
   InviteAcceptView,
   InviteOpenResponse,
@@ -192,6 +193,7 @@ import type { RewriteStyle } from '@caime/core/assist';
 import type { AutomationWhen } from '@caime/core/automations';
 import type { BilledPlan, BillingInterval, BillingView } from '@caime/core/billing';
 import type { ContactAccount } from '@caime/core/contact-return';
+import type { IntakeFormInput } from '@caime/core/intake';
 import type { SuggestionKind } from '@caime/core/intelligence';
 import type { AiUse, AppPricing } from '@caime/core/marketplace';
 
@@ -873,6 +875,13 @@ export const endpoints = {
     orgId: string,
     replies: Array<{ id?: string; shortcut: string; body: string }>,
   ) => api.put<QuickRepliesResponse>(`/orgs/${orgId}/quick-replies`, { replies }),
+  // Its intake forms (M16 H5): read by its team, saved whole by its owner and admins, and a
+  // customer's answers to one sent to them
+  orgForms: (orgId: string) => api.get<IntakeFormsResponse>(`/orgs/${orgId}/forms`),
+  saveOrgForms: (orgId: string, forms: IntakeFormInput[]) =>
+    api.put<IntakeFormsResponse>(`/orgs/${orgId}/forms`, { forms }),
+  answerForm: (messageId: string, answers: Record<string, string>) =>
+    api.post<MessageResponse>(`/messages/${messageId}/answers`, { answers }),
   tryOrgAgent: (orgId: string, body: { name: string; knowledge: string; question: string }) =>
     api.post<AgentTryView>(`/orgs/${orgId}/agent/try`, body),
   orgApps: (orgId: string) => api.get<OrgAppsResponse>(`/orgs/${orgId}/apps`),

@@ -38,6 +38,8 @@ export const qk = {
   customerRecord: (orgId: string, customerId: string) =>
     ['customer-record', orgId, customerId] as const,
   customerTags: (orgId: string) => ['customer-tags', orgId] as const,
+  /** Its intake forms (M16 H5), for its setup and the item editor's choice. */
+  orgForms: (orgId: string) => ['org-forms', orgId] as const,
   /** An organization's own apps (its tokens and webhooks), and the listings published under it. */
   orgApps: (orgId: string) => ['org-apps', orgId] as const,
   orgListings: (orgId: string) => ['org-listings', orgId] as const,

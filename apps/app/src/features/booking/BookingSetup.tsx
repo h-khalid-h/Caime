@@ -125,6 +125,8 @@ export interface BookingHostInfo {
   ref?: { kind: 'org' | 'person'; id: string };
   /** An organization's places its customers may see (R92): where an item may be done. */
   branches?: Array<{ id: string; name: string }>;
+  /** An organization's intake forms (M16 H5): one may follow an item once it's booked or ordered. */
+  forms?: Array<{ id: string; name: string }>;
 }
 
 /** "Haircut · 45 min · EGP 200 · Everyone": an item in one line. */
@@ -1586,6 +1588,8 @@ function ItemEditor({
   const [resourceId, setResourceId] = useState<string | null>(item.resourceId ?? null);
   // Where it's done (R92): one of an organization's branches, or wherever.
   const [placeId, setPlaceId] = useState<string | null>(item.placeId ?? null);
+  // The form that follows it once it's booked or ordered (M16 H5): one of the organization's.
+  const [formId, setFormId] = useState<string | null>(item.formId ?? null);
   // Its photo (R63): the one it has, or one just uploaded (shown by the file's own address).
   const [photoFileId, setPhotoFileId] = useState<string | null>(item.photoFileId ?? null);
   const [photoPreview, setPhotoPreview] = useState<string | null>(
@@ -1669,6 +1673,7 @@ function ItemEditor({
             unit !== 'each' && resources.some((r) => r.id === resourceId) ? resourceId : null,
           placeId:
             unit !== 'each' && (host.branches ?? []).some((b) => b.id === placeId) ? placeId : null,
+          formId: (host.forms ?? []).some((f) => f.id === formId) ? formId : null,
           photoFileId,
           ...(chosen.length ? { options: chosen } : {}),
         },
@@ -1799,6 +1804,30 @@ function ItemEditor({
               ]}
               testID={`${testID}-where`}
             />
+          </View>
+        ) : null}
+        {host.forms?.length ? (
+          <View style={{ gap: 6 }}>
+            <Text variant="label">{tr('A form to fill in')}</Text>
+            <ChoiceChips
+              wrap
+              flush
+              label={tr('A form to fill in')}
+              value={formId ?? 'none'}
+              onChange={(v) => setFormId(v === 'none' ? null : v)}
+              options={[
+                { value: 'none', label: tr('No form'), testID: `${testID}-no-form` },
+                ...host.forms.map((f) => ({
+                  value: f.id,
+                  label: f.name,
+                  testID: `${testID}-form-${f.id}`,
+                })),
+              ]}
+              testID={`${testID}-form`}
+            />
+            <Text variant="caption" color="textTertiary">
+              {tr('Sent by itself once it’s booked or ordered.')}
+            </Text>
           </View>
         ) : null}
         {resources.length && unit !== 'each' ? (

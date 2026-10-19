@@ -19,6 +19,7 @@ import { orgRef, threadViews } from '../lib/business';
 import { isGroupTopic } from '../lib/conversations';
 import { badRequest, notFound } from '../lib/errors';
 import { insertSystemMessage, messageViews, participantsOf } from '../lib/messages';
+import { formNames } from '../lib/org-forms';
 import { personViewsFor } from '../lib/people-batch';
 import {
   activeRelationships,
@@ -316,6 +317,7 @@ export async function conversationView(
           orgClosed: org.archived_at !== null,
           orgSuspended: org.suspended_at !== null,
           retentionDays: org.retention_days,
+          forms: null,
         };
       } else {
         const [view] = await threadViews(ctx, userId, [thread]);
@@ -333,6 +335,8 @@ export async function conversationView(
           orgClosed: org.archived_at !== null,
           orgSuspended: org.suspended_at !== null,
           retentionDays: org.retention_days,
+          // The forms its team may send here (M16 H5), by name.
+          forms: await formNames(ctx.db, org.id),
         };
       }
     }

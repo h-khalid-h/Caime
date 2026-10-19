@@ -9,6 +9,7 @@ import {
   type CustomKitCard,
   type CustomKitDef,
   customTitle,
+  formOf,
   isCustomCard,
   isUuid,
   KITS,
@@ -150,7 +151,24 @@ export function cardData(payload: unknown): Record<string, unknown> | null {
   };
   const own = isCustomCard(payload) ? payload : null;
   if (!own && typeof card.kit !== 'string') return null;
+  // An intake form (M16 H5): its questions, and the customer's answers once given, for the
+  // organization's own systems (a clinic's records), as its conversations' words reach them.
+  const intake = formOf(payload);
   return {
+    ...(intake
+      ? {
+          form: {
+            id: intake.form.id,
+            name: intake.form.name,
+            questions: intake.form.questions.map((q) => ({
+              id: q.id,
+              label: q.label,
+              kind: q.kind,
+            })),
+          },
+          answers: intake.answers,
+        }
+      : {}),
     kit: own
       ? { key: own.key, name: own.label, custom: true }
       : {

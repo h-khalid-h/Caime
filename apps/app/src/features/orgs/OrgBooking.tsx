@@ -4,7 +4,7 @@
  * the team does them and at which of its branches.
  */
 import type { OrgView } from '@caime/core/api';
-import { useQueryClient } from '@tanstack/react-query';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { endpoints } from '@/api/endpoints';
 import { qk } from '@/api/keys';
 import { branchName } from '@/features/booking/branchName';
@@ -18,6 +18,11 @@ const BookingSetup = lazyPart(() =>
 
 export function OrgBooking({ org }: { org: OrgView }) {
   const qc = useQueryClient();
+  // Its forms (M16 H5), the setup's own list: one may follow an item once it's booked.
+  const forms = useQuery({
+    queryKey: qk.orgForms(org.id),
+    queryFn: () => endpoints.orgForms(org.id),
+  }).data?.forms;
   return (
     <BookingSetup
       host={{
@@ -34,6 +39,7 @@ export function OrgBooking({ org }: { org: OrgView }) {
         branches: (org.places ?? [])
           .filter((p) => p.orgAudience !== 'team')
           .map((p) => ({ id: p.id, name: branchName(p) })),
+        forms: (forms ?? []).map((f) => ({ id: f.id, name: f.name })),
       }}
       offer={{
         booking: org.booking,
