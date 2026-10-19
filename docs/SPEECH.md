@@ -68,12 +68,16 @@ mixed with English mid-sentence, on a phone's microphone.
 - Server: `lib/speech.ts` (the interface, OpenAI and ElevenLabs adapters), `lib/transcribe.ts`
   (the `speech.transcribe` job: queued by `afterMessage` for a voice note, checks the sender and
   the note, reads the audio from wherever files live, runs through `runAi` with the provider
-  recorded on the `ai_runs` row, writes the body and `payload.transcript = { language, by, at }`,
-  tells the conversation with `message.updated`), the processors list entry
+  recorded on the `ai_runs` row, writes the body and `payload.transcript = { language, by, at }`
+  with what the rules read in the words at the note's own time (dates, asks, questions), tells
+  the conversation with `message.updated`, then offers what the words ask, promise or decide
+  once, as typed words would be (`afterTranscript`, M16 G8)), the processors list entry
   (`processors.ts`, named by the provider when configured), the privacy page's sentence, the
   DPA draft's row. `test/speech.test.ts` runs a stand-in: the audio alone goes, the words come
   back as the body and are searchable, AI assist off means nothing is sent, silence is nothing
-  kept, a long note isn't sent, busy is retried.
+  kept, a long note isn't sent, busy is retried, an ask said aloud is offered to both sides (to
+  whoever has a customer's thread) and dated from when it was said, and someone an age check
+  found under 18 is never sent.
 - App: a voice note is recorded in the composer (expo-audio on every platform), uploaded with its
   length, sent as `kind: voice`; the bubble plays it and shows the transcript under it labelled
   "Transcript · Suggested by Cai" when it has come.

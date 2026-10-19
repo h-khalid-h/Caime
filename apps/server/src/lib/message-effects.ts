@@ -338,6 +338,61 @@ export async function afterEdit(
   await suggest(ctx, conversation, message, analysis, sender, recipients, addressed);
 }
 
+/**
+ * A voice note's words, once heard (M16 G8, `lib/transcribe.ts`): what they ask, promise or
+ * decide is offered as a text's would have been when it was sent, each kind once per message
+ * (the fingerprint), with nobody told again (the note was). A customer conversation files them
+ * as its typed messages' are (R15); a question or an ask in a chat of two waits for its answer
+ * as a typed one does; forwarded words are nobody's here.
+ */
+export async function afterTranscript(
+  ctx: AppContext,
+  message: Message,
+  analysis: Analysis | null,
+): Promise<void> {
+  if (!analysis || !message.sender_id || message.forwarded_from_id || message.sealed) return;
+  const conversation = await ctx.db
+    .selectFrom('conversations')
+    .selectAll()
+    .where('id', '=', message.conversation_id)
+    .executeTakeFirstOrThrow();
+  if (conversation.privacy_class === 'private' || conversation.notice) return;
+  const sender = await ctx.db
+    .selectFrom('users')
+    .select(['id', 'display_name'])
+    .where('id', '=', message.sender_id)
+    .executeTakeFirst();
+  if (!sender) return;
+  if (conversation.kind === 'business') {
+    await suggestBusiness(ctx, conversation, message, analysis, sender);
+    return;
+  }
+  const recipients = (
+    await ctx.db
+      .selectFrom('participants')
+      .select(['user_id', 'request_state'])
+      .where('conversation_id', '=', conversation.id)
+      .where('left_at', 'is', null)
+      .execute()
+  ).filter((r) => r.user_id !== sender.id);
+  const replyToSender = message.reply_to_id
+    ? (
+        await ctx.db
+          .selectFrom('messages')
+          .select('sender_id')
+          .where('id', '=', message.reply_to_id)
+          .executeTakeFirst()
+      )?.sender_id
+    : null;
+  const addressed = (userId: string) =>
+    conversation.kind === 'direct' || message.mentions.includes(userId) || replyToSender === userId;
+  await Promise.all([
+    suggest(ctx, conversation, message, analysis, sender, recipients, addressed),
+    detectTopic(ctx, conversation, message),
+    scheduleFollowUp(ctx, conversation, message, recipients),
+  ]);
+}
+
 /** An edit names people it didn't before (PRD §20): they're told, as of a message for them. */
 export async function afterMentioning(
   ctx: AppContext,

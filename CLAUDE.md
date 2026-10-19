@@ -2202,7 +2202,13 @@ A sphere is said as how you know someone, never "sphere".
   sender has AI assist on, is an adult and has an assist left today, the note isn't sealed and
   is under ten minutes, runs it through `runAi(…, provider)` so the `ai_runs` row names the
   provider, and keeps the words as the message's `body` (so search, previews, exports and
-  erasure treat them as written words) with `payload.transcript = { language, by, at }`. A new
+  erasure treat them as written words) with `payload.transcript = { language, by, at }`. The
+  words are then read as typed ones (M16 G8): `analyseText` at the note's own time writes its
+  entities, `is_question` and `is_request` in the same update, and `afterTranscript`
+  (`message-effects.ts`, handed to `registerTranscribeJob` so the job never imports the effects)
+  offers what a text would have, once by fingerprint (a customer conversation's through
+  `suggestBusiness`, a chat's follow-up check and topic), telling nobody again; the adult check
+  is `minorOf`, so an age check's finding holds. A new
   provider is an adapter in `speech.ts`, a name in `SPEECH_PROVIDER_NAMES` (the processors list
   reads it) and a candidate in `scripts/speech-bakeoff.mjs`. The app records with expo-audio in
   `features/voice/Recorder.tsx` and plays in `VoiceNote.tsx`, both loaded lazily (the audio

@@ -47,7 +47,7 @@ import { mailProviderFor } from './lib/mail-provider';
 import { registerGuestsAgain } from './lib/meeting-guests';
 import { registerSeriesJob } from './lib/meeting-series';
 import { registerMeetingStartJob } from './lib/meeting-start';
-import { registerEffectsSweep } from './lib/message-effects';
+import { afterTranscript, registerEffectsSweep } from './lib/message-effects';
 import { createMetrics } from './lib/metrics';
 import { registerAutoReplies } from './lib/org-replies';
 import { registerProviderHealth } from './lib/provider-health';
@@ -410,7 +410,7 @@ export async function buildApp(config: Config, options: BuildOptions = {}): Prom
   registerAccountSync();
   registerCalendarPush();
   registerGuestsAgain();
-  registerTranscribeJob();
+  registerTranscribeJob(afterTranscript);
   registerLinkPreviewJob();
   registerMailJobs();
   registerEffectsSweep();

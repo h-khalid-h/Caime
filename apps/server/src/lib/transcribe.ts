@@ -4,9 +4,12 @@
  * `payload.transcript` saying who heard it and when, and shown to everyone in the conversation
  * under the note. Only when the sender has AI assist on (an adult, within their day's allowance,
  * counted as one assist), never from a private conversation, never for a note longer than a
- * voice note. Every call is one `ai_runs` row (`feature: transcribe`), through `runAi`.
+ * voice note. Every call is one `ai_runs` row (`feature: transcribe`), through `runAi`. The words
+ * are then read as typed ones are (M16 G8): the dates, asks and promises in them, at the moment
+ * they were said, and what follows from them is the message effects' (`afterTranscript`, handed
+ * to `registerTranscribeJob`, so this module never imports them).
  */
-import { isMinor } from '@caime/core';
+import type { Analysis } from '@caime/core';
 import { tr } from '@caime/core/i18n';
 import type { AppContext } from '../context';
 import type { Message } from '../db/schema';
@@ -15,10 +18,11 @@ import { AiError } from './ai';
 import { runAi } from './ai-run';
 import { AppError } from './errors';
 import { enqueue, registerJob } from './jobs';
-import { messageViews, participantsOf } from './messages';
+import { analyseText, messageViews, participantsOf } from './messages';
 import { assertAiAllowance } from './plans';
 import { SPEECH_MAX_BYTES, SPEECH_MAX_MS } from './speech';
 import { storageFor } from './storage';
+import { minorOf } from './users';
 
 export const TRANSCRIBE_JOB = 'speech.transcribe';
 
@@ -50,7 +54,18 @@ function hintsFor(
   return chosen === 'ar' || chosen === 'en' || chosen === 'fr' || chosen === 'tr' ? [chosen] : [];
 }
 
-async function transcribe(ctx: AppContext, payload: Record<string, unknown>): Promise<void> {
+/** What a note's heard words lead to: the suggestions a text's would offer (M16 G8). */
+export type HeardWords = (
+  ctx: AppContext,
+  message: Message,
+  analysis: Analysis | null,
+) => Promise<void>;
+
+async function transcribe(
+  ctx: AppContext,
+  payload: Record<string, unknown>,
+  heard: HeardWords,
+): Promise<void> {
   const speech = ctx.speech;
   const messageId = String(payload.messageId ?? '');
   if (!speech || !messageId) return;
@@ -71,10 +86,13 @@ async function transcribe(ctx: AppContext, payload: Record<string, unknown>): Pr
       'age_minor_until',
       'locale',
       'preferences',
+      'workweek',
+      'country',
     ])
     .where('id', '=', m.sender_id)
     .executeTakeFirst();
-  if (!sender?.ai_enabled || isMinor(sender.birth_date, ctx.now(), sender.time_zone)) return;
+  // Under 18 by the date of birth or by a check of their age (M16 B7): no model hears them.
+  if (!sender?.ai_enabled || minorOf(sender, ctx.now())) return;
   const file = await ctx.db
     .selectFrom('message_files as mf')
     .innerJoin('files as f', 'f.id', 'mf.file_id')
@@ -134,11 +152,17 @@ async function transcribe(ctx: AppContext, payload: Record<string, unknown>): Pr
     by: speech.provider,
     at: ctx.now().toISOString(),
   };
+  // Read as its sender's typed words would have been when it was sent (M16 G8): a voice note's
+  // "tomorrow" is the day after it was said, and what it asks reads in the inbox as asked.
+  const read = analyseText(transcript.text.trim(), sender, m.created_at);
   const updated = await ctx.db
     .updateTable('messages')
     .set({
       body: transcript.text,
       payload: JSON.stringify({ ...(m.payload as Record<string, unknown>), transcript: mark }),
+      entities: JSON.stringify(read.entities),
+      is_question: read.analysis?.isQuestion ?? false,
+      is_request: read.analysis?.isRequest ?? false,
     })
     .where('id', '=', m.id)
     .where('body', 'is', null)
@@ -156,6 +180,8 @@ async function transcribe(ctx: AppContext, payload: Record<string, unknown>): Pr
       type: 'message.updated',
       data: { ...view, clientId: null },
     });
+  // What it asks, promises or decides, offered once as a text's would be.
+  await heard(ctx, updated, read.analysis);
 }
 
 /** The whole file, from wherever this Caime keeps files, never past the cap. */
@@ -173,6 +199,6 @@ async function readAll(ctx: AppContext, key: string, size: number): Promise<Buff
   return Buffer.concat(chunks);
 }
 
-export function registerTranscribeJob(): void {
-  registerJob(TRANSCRIBE_JOB, transcribe);
+export function registerTranscribeJob(heard: HeardWords): void {
+  registerJob(TRANSCRIBE_JOB, (ctx, payload) => transcribe(ctx, payload, heard));
 }

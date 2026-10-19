@@ -3079,6 +3079,25 @@ graph) and the number that will show it; one that sharpens none is hygiene and s
       `private-reach.test.ts` (the refusals by route, a to-do tied to nothing and a standard
       conversation's decision as before, older rows left out of search, the model's input, the
       brief, the digest and the follow-up), the server catalogs, and the full gate.
+- [x] G8. A voice note's words read like typed ones (2026-10-19, review §11 "voice transcripts
+      analysed"; advantage 1, the relationship's memory: what was asked and promised, however it
+      was said. The number: suggestions and asks read from a transcribed voice note, none
+      before, the same as for its words typed now). A transcript was kept as the note's body,
+      searched and previewed, but nothing read it: a promise said aloud never became a reminder,
+      an ask never read "Asked you to do something" in the inbox, and its "Friday" was no date.
+      Now the job reads the words as its sender's typed words at the note's own time
+      (`analyseText` with their zone, locale, week and country: entities, `is_question` and
+      `is_request` in the transcript's own update), and `afterTranscript`
+      (`lib/message-effects.ts`) offers what a text would have: each side's suggestions once by
+      fingerprint, a customer conversation's through `suggestBusiness` (R15), a chat's follow-up
+      check and emerging topic; nobody is told again. The adult check reads `minorOf`: it read
+      the date of birth alone, so someone a check of their age found under 18 (M16 B7) had their
+      notes sent to the provider. Costs: one rules pass over a note's words (ten minutes at
+      most) and the effects' few queries per transcribed note; no model call, nothing on
+      devices. Verified: `speech.test.ts` (an ask heard a day after it was said, dated from when
+      it was said, each side offered it once, the inbox's reason; a customer's spoken ask filed
+      for whoever has the thread; an age check's minor never sent), each failing on the old
+      code, and the full gate.
 - [ ] H. Business depth: a Business seat includes Pro; a cap on organizations per person; room
       checks inside the transaction; quick replies, away and greeting messages; customer notes,
       tags and fields; tax invoices (counsel); booking and revenue analytics; intake forms as
@@ -4859,6 +4878,9 @@ graph) and the number that will show it; one that sharpens none is hygiene and s
   journeys, safety, reliability, performance, intelligence, mail and calendar, chat, integrations,
   business and code integrity; the matrix against WhatsApp, Signal, Slack, Calendly and Workspace;
   an age-assurance design; the integration framework mapped to the code; plan M16 (A–H).
+- 2026-10-19 — M16 G8: a voice note's words read like typed ones: its asks, promises and dates
+  offered once as a text's would be (a customer's for whoever has the thread), and an age
+  check's finding keeps a minor's notes from the provider.
 - 2026-10-19 — M16 G7: nothing from a private conversation on the server: to-dos and decisions
   tied to one refused on every path, older ones kept out of search, Ask Cai and Cai's own chat.
 - 2026-10-19 — M16 G6c: the agent measured every night: Caime's 24 questions in four languages

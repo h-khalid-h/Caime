@@ -233,4 +233,84 @@ describe('a voice note into words (PRD §46)', () => {
     await runDueJobs(t.ctx);
     expect((await read(ana, sent.id)).body).toBe('Second time lucky.');
   });
+
+  it('reads the words as typed ones: an ask, its day from when it was said, each side offered it once (M16 G8)', async () => {
+    replies.push({ status: 200, json: { text: 'Can you send me the invoice by Friday?' } });
+    const sent = await voiceNote(ana, convo);
+    // Heard a day later than it was said: "Friday" is still the Friday after it was said.
+    t.clock.advance(24 * 3_600_000);
+    await work();
+    await t.ctx.flush();
+    const row = await t.ctx.db
+      .selectFrom('messages')
+      .select(['body', 'is_request', 'entities'])
+      .where('id', '=', sent.id)
+      .executeTakeFirstOrThrow();
+    expect(row.body).toBe('Can you send me the invoice by Friday?');
+    expect(row.is_request).toBe(true);
+    // Said on Wednesday 2026-09-23: Friday is the 25th.
+    expect((row.entities as { dates: Array<{ date: string }> }).dates.map((d) => d.date)).toEqual([
+      '2026-09-25',
+    ]);
+    const offered = async (c: Client) =>
+      (await c.get(`/v1/suggestions?conversationId=${convo}`)).suggestions.filter(
+        (s: { messageId: string }) => s.messageId === sent.id,
+      ) as Array<{ kind: string; dueText: string | null }>;
+    // Ben is asked; Ana waits on him, as for the same words typed.
+    expect((await offered(ben)).map((s) => s.kind)).toEqual(['task']);
+    expect((await offered(ben))[0]).toMatchObject({ dueText: 'by Friday' });
+    expect((await offered(ana)).map((s) => s.kind)).toEqual(['waiting']);
+    // Ben's inbox says he was asked to do something, as for the typed words.
+    const inbox = await ben.get('/v1/inbox?view=all');
+    const item = (
+      inbox.conversations as Array<{ id: string; reasons: Array<{ code: string }> }>
+    ).find((i) => i.id === convo);
+    expect(item?.reasons.map((r) => r.code)).toContain('request_to_you');
+  });
+
+  it('files a customer’s spoken ask for whoever has their thread, as typed words are (M16 G8, R15)', async () => {
+    const owner = await signup(t, {
+      displayName: 'Rania Clinic',
+      email: 'rania.voice@example.com',
+    });
+    const orgId = (
+      await owner.post('/v1/orgs', {
+        country: 'EG',
+        name: 'Voice Dental',
+        handle: 'voicedental.clinic',
+        kind: 'business',
+      })
+    ).org.id as string;
+    const thread = (await ana.post(`/v1/orgs/${orgId}/conversations`)).conversationId as string;
+    await owner.post(`/v1/business/${thread}/assign`, { userId: owner.user.id });
+    replies.push({ status: 200, json: { text: 'Can you move my cleaning to Thursday?' } });
+    const sent = await voiceNote(ana, thread);
+    await work();
+    await t.ctx.flush();
+    const theirs = (await owner.get(`/v1/suggestions?conversationId=${thread}`)).suggestions.filter(
+      (s: { messageId: string }) => s.messageId === sent.id,
+    ) as Array<{ kind: string; dueText: string | null }>;
+    expect(theirs.map((s) => s.kind)).toEqual(['task']);
+    expect(theirs[0]).toMatchObject({ dueText: 'Thursday' });
+  });
+
+  it('never hears someone a check of their age found under 18, whatever their date of birth (M16 B7)', async () => {
+    const before = requests.length;
+    await t.ctx.db
+      .updateTable('users')
+      .set({ age_minor_until: new Date(t.clock.now.getTime() + 365 * 86_400_000) })
+      .where('id', '=', ana.user.id)
+      .execute();
+    replies.push({ status: 200, json: { text: 'Not for a model to hear.' } });
+    const sent = await voiceNote(ana, convo);
+    await work();
+    expect((await read(ana, sent.id)).body).toBeNull();
+    expect(requests.length).toBe(before);
+    replies.length = 0;
+    await t.ctx.db
+      .updateTable('users')
+      .set({ age_minor_until: null })
+      .where('id', '=', ana.user.id)
+      .execute();
+  });
 });
