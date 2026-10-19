@@ -2082,8 +2082,9 @@ A sphere is said as how you know someone, never "sphere".
   QuickTime file or an MPEG-4 recording has every `udta` and `meta` box of its movie and tracks,
   and XMP beside it, made a zeroed `free` box of the same size (`stripVideoDetails`,
   `lib/video-details.ts`, M16 E4b; both read boxes through `lib/boxes.ts`), so no video keeps
-  where it was filmed and every offset stays true; one that can't be read is refused. A video
-  plays in its bubble on the web (`features/media/VideoTile.web.tsx`, the browser's player by
+  where it was filmed and every offset stays true; one that can't be read is refused, and one
+  of sound alone is a recording (`soundOnly`, M16 G12: a browser's MP4 and an Android phone's
+  never say "M4A", so their tracks say it), kept as `audio/mp4`. A video plays in its bubble on the web (`features/media/VideoTile.web.tsx`, the browser's player by
   byte ranges) and opens in a phone's own player (`VideoTile.tsx`, `openFile`), veiled from a
   stranger as a photo is; a message of videos alone is marked `payload.video` by the server
   from its files, which core `messagePreview` reads ("🎥 Video"). The shrinking itself (`photoShrink.ts`,
@@ -2239,7 +2240,11 @@ A sphere is said as how you know someone, never "sphere".
   multipart call over fetch (never an SDK). `lib/transcribe.ts` owns the rules: `afterMessage`
   queues a voice note (`speech.transcribe`, deduped by message), the job sends it only when the
   sender has AI assist on, is an adult and has an assist left today, the note isn't sealed and
-  is under ten minutes, runs it through `runAi(…, provider)` so the `ai_runs` row names the
+  plays for ten minutes at most as its own bytes say (`audioLengthMs`, `lib/audio-length.ts`,
+  M16 G12: Opus by each packet's table of contents in a WebM, an Ogg or an MP4, AAC by its
+  frames, a WAV by its frames at its rate; never a header's duration or the length the device
+  said, and a recording that doesn't read through to its end, holds a picture or is of another
+  kind isn't sent), runs it through `runAi(…, provider)` so the `ai_runs` row names the
   provider, and keeps the words as the message's `body` (so search, previews, exports and
   erasure treat them as written words) with `payload.transcript = { language, by, at }`. The
   words are then read as typed ones (M16 G8): `analyseText` at the note's own time writes its

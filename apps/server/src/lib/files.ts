@@ -45,7 +45,7 @@ export async function finalizeFile(
 ) {
   const now = ctx.now();
   const key = keyFor(id, now);
-  const sniffed = await sniffFile(storage.path(tempKey), declaredMime, name);
+  let sniffed = await sniffFile(storage.path(tempKey), declaredMime, name);
   let width: number | null = null;
   let height: number | null = null;
   let thumbKey: string | null = null;
@@ -63,7 +63,7 @@ export async function finalizeFile(
   // A video keeps where it was filmed in its movie box, and so may a phone's recording: cleared
   // where it sits (M16 E4b), and one that can't be read for certain is never kept as it came.
   if (ISO_MEDIA.has(sniffed.mime)) {
-    const { unsure } = await stripVideoDetails(storage.path(tempKey));
+    const { unsure, sound } = await stripVideoDetails(storage.path(tempKey));
     if (unsure) {
       await storage.remove(tempKey);
       throw badRequest(
@@ -72,6 +72,10 @@ export async function finalizeFile(
           : tr('That recording couldn’t be read, so it wasn’t sent. Try another.'),
       );
     }
+    // A movie of sound alone is a recording, whatever its brand (M16 G12): a browser's or an
+    // Android phone's voice note never says "M4A".
+    if (sound && sniffed.kind === 'video')
+      sniffed = { mime: 'audio/mp4', kind: 'audio', inline: true };
   }
   if (sniffed.kind === 'image' && sniffed.mime !== 'image/gif' && sniffed.mime !== 'image/heic') {
     // One of a few at a time on this instance, and never a picture too large to decode.

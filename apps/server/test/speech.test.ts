@@ -4,6 +4,7 @@
  * on, keeps the words as the message's body (searched, previewed, erased as words are), marks
  * who heard it, tells the conversation, and counts one AI assist.
  */
+import { readFileSync } from 'node:fs';
 import { createServer, type Server } from 'node:http';
 import type { AddressInfo } from 'node:net';
 import { uuidv4 } from '@caime/core';
@@ -33,11 +34,14 @@ function multipart(name: string, mime: string, data: Buffer) {
   };
 }
 
-/** A small WAV: 16 kHz, mono, a fifth of a second of silence (the server sniffs the kind). */
-function wav(seconds = 0.2): Buffer {
-  const rate = 16_000;
+/**
+ * A WAV of silence, mono, 16-bit at 16 kHz or 8-bit at 8 kHz for a long one: the server sniffs
+ * its kind and reads how long it is from its bytes (M16 G12).
+ */
+function wav(seconds = 0.2, rate = 16_000): Buffer {
+  const width = rate === 16_000 ? 2 : 1;
   const samples = Math.round(rate * seconds);
-  const data = Buffer.alloc(samples * 2);
+  const data = Buffer.alloc(samples * width, width === 1 ? 0x80 : 0);
   const header = Buffer.alloc(44);
   header.write('RIFF', 0);
   header.writeUInt32LE(36 + data.length, 4);
@@ -47,9 +51,9 @@ function wav(seconds = 0.2): Buffer {
   header.writeUInt16LE(1, 20);
   header.writeUInt16LE(1, 22);
   header.writeUInt32LE(rate, 24);
-  header.writeUInt32LE(rate * 2, 28);
-  header.writeUInt16LE(2, 32);
-  header.writeUInt16LE(16, 34);
+  header.writeUInt32LE(rate * width, 28);
+  header.writeUInt16LE(width, 32);
+  header.writeUInt16LE(width * 8, 34);
   header.write('data', 36);
   header.writeUInt32LE(data.length, 40);
   return Buffer.concat([header, data]);
@@ -68,8 +72,9 @@ async function upload(c: Client, name: string, mime: string, data: Buffer, durat
 }
 
 async function voiceNote(c: Client, conversation: string, durationMs = 2_000) {
-  // The app says how long the note is when it uploads it, as the recorder measured it.
-  const file = await upload(c, 'note.wav', 'audio/wav', wav(), durationMs);
+  // The app says how long the note is when it uploads it, as the recorder measured it; the
+  // server reads it from the recording all the same (M16 G12).
+  const file = await upload(c, 'note.wav', 'audio/wav', wav(durationMs / 1000), durationMs);
   expect(file.kind).toBe('audio');
   const sent = await c.post(`/v1/conversations/${conversation}/messages`, {
     clientId: uuidv4(),
@@ -193,7 +198,7 @@ describe('a voice note into words (PRD §46)', () => {
   it('never sends a private conversation’s note, nor one longer than a voice note', async () => {
     const before = requests.length;
     // Longer than a voice note can be, it isn't sent as one (M16 E4)…
-    const file = await upload(ana, 'note.wav', 'audio/wav', wav(), 11 * 60_000);
+    const file = await upload(ana, 'note.wav', 'audio/wav', wav(10 * 60 + 1, 8_000), 11 * 60_000);
     const said = (durationMs: number) =>
       ana.req('POST', `/v1/conversations/${convo}/messages`, {
         clientId: uuidv4(),
@@ -202,24 +207,59 @@ describe('a voice note into words (PRD §46)', () => {
         payload: { durationMs },
       });
     expect((await said(11 * 60_000)).statusCode).toBe(400);
-    // …and one whose recording is longer than it says is judged by the recording, never heard.
+    // …and one whose recording is longer than its note says is judged by the recording, read
+    // from its bytes, never heard (M16 G12).
     const long = (await said(2_000)).json().message as { id: string };
     await work();
     expect((await read(ana, long.id)).body).toBeNull();
-    // A recording that never said how long it is isn't sent either: its length is what a
-    // provider charges for, so it's what bounds a note (M16 H7).
-    const unsaid = await upload(ana, 'note.wav', 'audio/wav', wav());
+    // A recording whose length can't be read from it isn't sent either, whatever its device
+    // said: its length is what a provider charges for, so it's what bounds a note (M16 H7, G12).
+    const unread = await upload(
+      ana,
+      'note.mp3',
+      'audio/mpeg',
+      Buffer.concat([Buffer.from('ID3'), Buffer.alloc(4_000, 1)]),
+      2_000,
+    );
     const quiet = (
       await ana.req('POST', `/v1/conversations/${convo}/messages`, {
         clientId: uuidv4(),
         kind: 'voice',
-        fileIds: [unsaid.id],
+        fileIds: [unread.id],
         payload: { durationMs: 2_000 },
       })
     ).json().message as { id: string };
     await work();
     expect((await read(ana, quiet.id)).body).toBeNull();
     expect(requests.length).toBe(before);
+  });
+
+  it('takes a browser’s MP4 of sound alone as a recording, and its length from its bytes', async () => {
+    // Recorded by Chromium's MediaRecorder as "audio/mp4" (Opus in an "isom" MP4, as Safari's
+    // and an Android phone's are MP4s that don't say "M4A"), labelled as the web app labels it.
+    const bytes = readFileSync(new URL('./fixtures/voice-2s.mp4', import.meta.url));
+    const file = await upload(ana, 'voice.webm', 'audio/webm', bytes, 9_000);
+    expect(file.kind).toBe('audio');
+    replies.push({ status: 200, json: { text: 'Two seconds of a tone.', language: 'en' } });
+    const sent = (
+      await ana.req('POST', `/v1/conversations/${convo}/messages`, {
+        clientId: uuidv4(),
+        kind: 'voice',
+        fileIds: [file.id],
+        payload: { durationMs: 9_000 },
+      })
+    ).json().message as { id: string };
+    await work();
+    expect((await read(ana, sent.id)).body).toBe('Two seconds of a tone.');
+    // Kept at the length it plays for, never the nine seconds its device said.
+    const run = await t.ctx.db
+      .selectFrom('ai_runs')
+      .select('audio_ms')
+      .where('user_id', '=', ana.user.id)
+      .where('feature', '=', 'transcribe')
+      .orderBy('id', 'desc')
+      .executeTakeFirstOrThrow();
+    expect(run.audio_ms).toBe(1_980);
   });
 
   it('tries again when the provider is busy, and gives up when it declines', async () => {

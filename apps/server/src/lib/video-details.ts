@@ -21,6 +21,26 @@ const HOLDERS = new Set(['moov', 'trak']);
 /** XMP beside the movie, as an editing app writes it: a `uuid` box of this kind. */
 const XMP_UUID = 'be7acfcb97a942e89c71999491e3afac';
 
+/**
+ * Whether a movie box's tracks are sound alone (M16 G12): a browser's recording (Chromium's, and
+ * Safari's) and an Android phone's are MP4s of one sound track whose brand never says "M4A", so
+ * their bytes, not their brand, say they're recordings. Null when a track can't be read.
+ */
+export function soundOnly(buf: Buffer, from: number, to: number): boolean | null {
+  const tracks = boxesIn(buf, from, to)?.filter((b) => b.type === 'trak');
+  if (!tracks) return null;
+  let sound = 0;
+  for (const trak of tracks) {
+    const mdia = boxesIn(buf, trak.body, trak.end)?.find((b) => b.type === 'mdia');
+    const hdlr = mdia && boxesIn(buf, mdia.body, mdia.end)?.find((b) => b.type === 'hdlr');
+    if (!hdlr || hdlr.end - hdlr.body < 12) return null;
+    const handler = buf.toString('latin1', hdlr.body + 8, hdlr.body + 12);
+    if (handler === 'soun') sound++;
+    else if (handler === 'vide') return false;
+  }
+  return sound > 0;
+}
+
 /** Every details box from `from` to `to` in `buf` made a zeroed `free` box: how many, or null. */
 export function clearDetails(buf: Buffer, from: number, to: number): number | null {
   const boxes = boxesIn(buf, from, to);
@@ -46,8 +66,8 @@ export function clearDetails(buf: Buffer, from: number, to: number): number | nu
  */
 export async function stripVideoDetails(
   path: string,
-): Promise<{ cleared: number; unsure: boolean }> {
-  const unsure = { cleared: 0, unsure: true };
+): Promise<{ cleared: number; unsure: boolean; sound: boolean }> {
+  const unsure = { cleared: 0, unsure: true, sound: false };
   const fh = await open(path, 'r+');
   try {
     const size = (await fh.stat()).size;
@@ -55,6 +75,7 @@ export async function stripVideoDetails(
     let at = 0;
     let cleared = 0;
     let movie = false;
+    let sound = false;
     while (at + 8 <= size) {
       const { bytesRead } = await fh.read(head, 0, 24, at);
       if (bytesRead < 8) return unsure;
@@ -73,6 +94,8 @@ export async function stripVideoDetails(
         if (boxSize > MOOV_MAX) return unsure;
         const moov = Buffer.alloc(boxSize);
         await fh.read(moov, 0, boxSize, at);
+        // Read before it's cleared: which tracks it has (a `udta` is never one).
+        sound = soundOnly(moov, body, boxSize) === true;
         const inside = clearDetails(moov, body, boxSize);
         if (inside === null) return unsure;
         if (inside) await fh.write(moov, 0, boxSize, at);
@@ -92,7 +115,7 @@ export async function stripVideoDetails(
       at += boxSize;
     }
     // Without a movie box it isn't a video Caime can say anything certain of.
-    return movie && at === size ? { cleared, unsure: false } : unsure;
+    return movie && at === size ? { cleared, unsure: false, sound } : unsure;
   } catch {
     return unsure;
   } finally {

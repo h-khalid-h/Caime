@@ -57,8 +57,10 @@ mixed with English mid-sentence, on a phone's microphone.
   it has run, the roadmap keeps the item ⛔ and production has no key.
 - **Voice notes before recordings.** A voice note is the sender's own words, already stored by
   Caime (not private), sent for transcription only when the sender has AI assist on (an adult,
-  within the day's allowance, one assist per note), never longer than ten minutes, never from a
-  private conversation. The transcript is the message's `body`: searched, previewed, exported
+  within the day's allowance, one assist per note), never longer than ten minutes as the
+  recording itself plays (M16 G12: read from its bytes, never the length its device said; a
+  recording Caime can't read through, or one its apps don't make, an MP3 or AMR, isn't sent),
+  never from a private conversation. The transcript is the message's `body`: searched, previewed, exported
   and erased exactly as written words are, and shown under the note to everyone in the
   conversation, labelled as Caime's. Recording a call (R52) waits for the consent flow and
   monthly minute allowances, and it will use this same interface.
@@ -75,7 +77,9 @@ mixed with English mid-sentence, on a phone's microphone.
   (`processors.ts`, named by the provider when configured), the privacy page's sentence, the
   DPA draft's row. `test/speech.test.ts` runs a stand-in: the audio alone goes, the words come
   back as the body and are searchable, AI assist off means nothing is sent, silence is nothing
-  kept, a long note isn't sent, busy is retried, an ask said aloud is offered to both sides (to
+  kept, a long note isn't sent (its length read from its bytes: `audio-length.test.ts` reads
+  Chromium's own WebM and MP4 recordings, a phone's m4a, Ogg Opus and WAV), a browser's MP4 of
+  sound alone is heard as a recording, busy is retried, an ask said aloud is offered to both sides (to
   whoever has a customer's thread) and dated from when it was said, and someone an age check
   found under 18 is never sent.
 - App: a voice note is recorded in the composer (expo-audio on every platform), uploaded with its

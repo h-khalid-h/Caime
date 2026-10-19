@@ -3216,6 +3216,34 @@ graph) and the number that will show it; one that sharpens none is hygiene and s
       (the questions and the relationships per language), `cai-about.test.ts` (each question, two
       Anas, "Ayse", "my landlord", Zed, Cairo's Arabic without its hamza answered in Cairo's, a
       friend, the private wait), `voices.test.ts`, the server catalogs, and the full gate.
+- [x] G12. A recording's length read from the recording (2026-10-19, the G line's "a recording's
+      length read from the file before it's sent"; convention 11, nothing trusts device input;
+      H7's bound on what a voice note costs, since a speech provider bills by the minute). The
+      number: voice notes whose length the server reads rather than takes, every kind Caime's
+      apps record (a browser's WebM and MP4, Firefox's Ogg, a phone's m4a), none before (H7
+      bounded a note by the length its device said). `lib/audio-length.ts` reads how long a
+      recording plays from its own bytes, as a decoder does: Opus by each packet's table of
+      contents wherever it's carried (a WebM's blocks, laced or not, in the clusters of unknown
+      size a live recording writes; an Ogg stream's packets; an MP4's samples, in chunks or in
+      fragments), AAC by its frames at the rate its decoder's configuration gives (HE-AAC's
+      core), a WAV by its frames at its sample rate; never a header's duration, a chunk's size or
+      a byte-rate field. A recording cut short, one with a picture or a second sound, a sample
+      table pointing past the file, or a kind Caime's apps don't record (an MP3, AMR) reads as
+      nothing and isn't sent. `transcribe.ts` sends a note only when it plays for ten minutes at
+      most, and keeps that length as the run's `audio_ms`, what H7's price list charges. Found on
+      the way: a browser's MP4 of sound alone (Chromium's "audio/mp4", Safari's, an Android
+      phone's; none says "M4A") was sniffed as a video, so a voice note recorded in Safari was
+      kept as a video and never heard; the video cleaner now says which tracks a movie has
+      (`soundOnly`), and an MP4 of sound alone is a recording. Left: an MP3 or AMR voice note
+      (none of Caime's apps records one) isn't heard; the bubble still shows the length the
+      device gave. Costs: one pass over the bytes already read to send them, no decoding;
+      nothing on devices. Verified: `audio-length.test.ts` (Chromium's own two-second WebM and
+      MP4 recordings read as 1.98 s, a phone's m4a by its frames, HE-AAC, Ogg Opus, a WAV and a
+      track that say less or more than they hold, files cut short, a picture),
+      `speech.test.ts` (a note longer than its device said judged by its bytes, one that can't be
+      read not sent whatever its device said, a browser's MP4 of sound alone heard and kept at
+      1.98 s; three of its cases fail on the old code), `video-details.test.ts`,
+      `files.test.ts`, and the full gate.
 - [ ] H. Business depth: a Business seat includes Pro; a cap on organizations per person; room
       checks inside the transaction; quick replies, away and greeting messages; customer notes,
       tags and fields; tax invoices (counsel); booking and revenue analytics; intake forms as
@@ -4996,6 +5024,9 @@ graph) and the number that will show it; one that sharpens none is hygiene and s
   journeys, safety, reliability, performance, intelligence, mail and calendar, chat, integrations,
   business and code integrity; the matrix against WhatsApp, Signal, Slack, Calendly and Workspace;
   an age-assurance design; the integration framework mapped to the code; plan M16 (A–H).
+- 2026-10-19 — M16 G12: a voice note's length read from the recording itself, never its device's
+  word, before a provider is paid for it; a browser's MP4 voice note (Safari's) is a recording,
+  heard, where it was kept as a video.
 - 2026-10-19 — M16 G11: Cai about one person, by the rules: "what am I waiting for from Ana",
   "what did my manager ask me", "امتى هشوف أحمد" answered from the records with that person alone
   in four languages, no model; Cai's own-question answers keep an older private to-do out.

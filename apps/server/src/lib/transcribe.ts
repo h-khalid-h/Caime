@@ -16,6 +16,7 @@ import type { Message } from '../db/schema';
 import { MESSAGE_COLUMNS } from '../db/schema';
 import { AiError } from './ai';
 import { runAi } from './ai-run';
+import { audioLengthMs } from './audio-length';
 import { AppError } from './errors';
 import { enqueue, registerJob } from './jobs';
 import { analyseText, messageViews, participantsOf } from './messages';
@@ -103,11 +104,9 @@ async function transcribe(
     .orderBy('f.created_at')
     .executeTakeFirst();
   if (!file) return;
-  // `size` is a bigint column, read as text. A recording that doesn't say how long it is isn't
-  // sent: a provider bills by the minute, so the length is what bounds it (M16 H7).
+  // `size` is a bigint column, read as text.
   const size = Number(file.size);
-  const audioMs = file.duration_ms;
-  if (audioMs === null || audioMs > SPEECH_MAX_MS || size > SPEECH_MAX_BYTES) return;
+  if (size > SPEECH_MAX_BYTES) return;
   try {
     await assertAiAllowance(ctx, sender.id);
   } catch (err) {
@@ -116,6 +115,11 @@ async function transcribe(
     throw err;
   }
   const bytes = await readAll(ctx, file.storage_key, size);
+  // A provider bills by the minute (M16 H7), so a note's length is what bounds it: read from the
+  // recording itself as it plays (M16 G12), never the one its device said, and a recording whose
+  // length can't be read for certain isn't sent.
+  const audioMs = audioLengthMs(bytes, file.mime);
+  if (audioMs === null || audioMs > SPEECH_MAX_MS) return;
   const prefs = (sender.preferences ?? {}) as { language?: string };
   let transcript: Awaited<ReturnType<typeof speech.transcribe>>['value'];
   try {
