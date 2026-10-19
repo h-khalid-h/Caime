@@ -46,11 +46,11 @@ if (process.env.OPENAI_API_KEY)
   });
 if (process.env.ELEVENLABS_API_KEY)
   providers.push({
-    name: `elevenlabs/${process.env.ELEVENLABS_MODEL ?? 'scribe_v1'}`,
+    name: `elevenlabs/${process.env.ELEVENLABS_MODEL ?? 'scribe_v2'}`,
     async transcribe(bytes, mime, name) {
       const form = new FormData();
       form.append('file', new Blob([bytes], { type: mime }), name);
-      form.append('model_id', process.env.ELEVENLABS_MODEL ?? 'scribe_v1');
+      form.append('model_id', process.env.ELEVENLABS_MODEL ?? 'scribe_v2');
       form.append('tag_audio_events', 'false');
       const res = await fetch('https://api.elevenlabs.io/v1/speech-to-text', {
         method: 'POST',

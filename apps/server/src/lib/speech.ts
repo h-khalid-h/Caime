@@ -18,9 +18,14 @@ export const SPEECH_PROVIDER_NAMES: Record<SpeechProvider, string> = {
   elevenlabs: 'ElevenLabs, Inc.',
 };
 
-const DEFAULT_MODEL: Record<SpeechProvider, string> = {
+/**
+ * Each provider's model unless `SPEECH_MODEL` names another; every one is on the price list
+ * (`SPEECH_PRICES`, `ai-costs.test.ts`). ElevenLabs deprecated Scribe v1 for v2 (its models page,
+ * read 2026-10-19).
+ */
+export const DEFAULT_MODEL: Record<SpeechProvider, string> = {
   openai: 'gpt-4o-transcribe',
-  elevenlabs: 'scribe_v1',
+  elevenlabs: 'scribe_v2',
 };
 
 const DEFAULT_BASE: Record<SpeechProvider, string> = {

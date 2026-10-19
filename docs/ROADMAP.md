@@ -5235,6 +5235,10 @@ graph) and the number that will show it; one that sharpens none is hygiene and s
   journeys, safety, reliability, performance, intelligence, mail and calendar, chat, integrations,
   business and code integrity; the matrix against WhatsApp, Signal, Slack, Calendly and Workspace;
   an age-assurance design; the integration framework mapped to the code; plan M16 (A–H).
+- 2026-10-19 — Speech: ElevenLabs is production's speech provider (its privacy page names it);
+  the adapter's default model is Scribe v2, which the price list prices, where it asked for v1,
+  which ElevenLabs deprecated and no longer prices (`ai-costs.test.ts` holds every provider's
+  default to a price).
 - 2026-10-19 — M16 F5b: a booking takes another open time of what it booked, from its card and
   through an organization's app, checked as a booking is, where it took a cancellation.
 - 2026-10-19 — M16 F5: either side suggests another time on a meeting or an appointment's card,

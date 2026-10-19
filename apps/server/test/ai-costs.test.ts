@@ -29,6 +29,7 @@ import {
   PRICES,
   SPEECH_PRICES,
 } from '../src/lib/ai-costs';
+import { DEFAULT_MODEL, SPEECH_PROVIDERS, speechFor } from '../src/lib/speech';
 import { type Client, createTestApp, signup, type TestApp } from './helpers';
 
 const TOP = 'claude-opus-5-5';
@@ -122,6 +123,17 @@ describe('the price list (M16 H7)', () => {
       costUsd(use({ provider: 'elevenlabs', model: 'scribe_v1', audioMs: 60_000 })),
     ).toBeNull();
     expect(costUsd(use({ provider: 'openai', model: 'gpt-4o-transcribe' }))).toBeNull();
+  });
+
+  it('prices the model each speech provider is asked for unless another is named', () => {
+    for (const provider of SPEECH_PROVIDERS) {
+      const adapter = speechFor({ SPEECH_PROVIDER: provider, SPEECH_API_KEY: 'k' } as Config);
+      expect(adapter?.model).toBe(DEFAULT_MODEL[provider]);
+      expect(
+        costUsd(use({ provider, model: adapter?.model ?? null, audioMs: 60_000 })),
+        provider,
+      ).toBeGreaterThan(0);
+    }
   });
 });
 

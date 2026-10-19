@@ -27,7 +27,7 @@ mixed with English mid-sentence, on a phone's microphone.
 | Provider | Arabic | Turns | Terms | Call | Price (per audio minute) |
 | --- | --- | --- | --- | --- | --- |
 | **OpenAI** `gpt-4o-transcribe` (`gpt-4o-mini-transcribe` cheaper) | Strong multilingual single model, code-switching handled inside the model, dialects fair | A separate diarizing model | API audio isn't used for training; zero data retention and EU residency on request | `POST /v1/audio/transcriptions`, multipart, `text` back | ~$0.006 ($0.003 mini) |
-| **ElevenLabs** Scribe (`scribe_v1`) | Published as leading on FLEURS and Common Voice Arabic; code-switching good | Built in (up to 32 speakers), word timestamps | A DPA on request; retention terms to confirm for the plan bought | `POST /v1/speech-to-text`, multipart, `text` and `language_code` back | ~$0.0067 |
+| **ElevenLabs** Scribe (`scribe_v2`; `scribe_v1`, the first tried here, deprecated by ElevenLabs in 2026) | Published as leading on FLEURS and Common Voice Arabic; code-switching good | Built in (up to 32 speakers), word timestamps | A DPA on request; retention terms to confirm for the plan bought | `POST /v1/speech-to-text`, multipart, `text` and `language_code` back | ~$0.0037 (v2: $0.22 an hour, read 2026-10-19) |
 | Microsoft Azure AI Speech | Explicit dialect locales (`ar-EG`, `ar-SA`, `ar-AE`, `ar-LB`, …), the broadest; weaker across a language switch mid-sentence | Built in | Microsoft's DPA, EU regions | Fast transcription REST, multipart | ~$0.017 |
 | Google Chirp (Speech-to-Text v2) | Arabic with dialect locales, good | Built in | Google Cloud's DPA, EU regions | Client-library shaped; REST possible | ~$0.016 |
 | Deepgram Nova-3 | No Arabic in the multilingual model | — | — | — | — |

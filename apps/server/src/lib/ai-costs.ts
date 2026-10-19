@@ -79,7 +79,7 @@ export function modelPrices(model: string | null): ModelPrices | null {
 /**
  * Speech to text, US dollars an audio minute, as each provider's page estimated it on the day
  * beside it (OpenAI's per-minute estimate of its token prices; ElevenLabs' hourly rate). Scribe v1,
- * the ElevenLabs adapter's default (docs/SPEECH.md), isn't on its page any more: unpriced.
+ * which ElevenLabs deprecated for v2, isn't on its page any more: unpriced.
  */
 export const SPEECH_PRICES: Readonly<Record<string, Readonly<Record<string, number>>>> = {
   openai: { 'gpt-4o-transcribe': 0.006, 'gpt-4o-mini-transcribe': 0.003, 'whisper-1': 0.006 },
