@@ -10,7 +10,11 @@ import { ar } from './locales/ar';
 import { arA } from './locales/ar-a';
 import { arB } from './locales/ar-b';
 import { fr } from './locales/fr';
+import { frA } from './locales/fr-a';
+import { frB } from './locales/fr-b';
 import { turkish } from './locales/tr';
+import { turkishA } from './locales/tr-a';
+import { turkishB } from './locales/tr-b';
 import { tagsOf } from './tagged';
 
 describe.each([
@@ -85,8 +89,12 @@ describe.each([
   });
 });
 
-// The app fetches Arabic in two halves side by side; a string in both is downloaded twice, and
-// the second hides the first (M16 D4: a renamed key once landed beside its twin).
-it('keeps each Arabic string in one half', () => {
-  expect(Object.keys(arA).filter((k) => k in arB)).toEqual([]);
+// The app fetches each language in two halves side by side; a string in both is downloaded
+// twice, and the second hides the first (M16 D4: a renamed key once landed beside its twin).
+it.each([
+  ['Arabic', arA, arB],
+  ['French', frA, frB],
+  ['Turkish', turkishA, turkishB],
+])('keeps each %s string in one half', (_name, a, b) => {
+  expect(Object.keys(a).filter((k) => k in b)).toEqual([]);
 });

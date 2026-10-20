@@ -29,7 +29,8 @@ export function deviceLanguageTag(): string | null {
 }
 
 async function catalogFor(language: InterfaceLanguage): Promise<Catalog> {
-  // Arabic comes in two halves, fetched side by side: no one download over a chunk's budget.
+  // Each language comes in two halves, fetched side by side: no one download over a chunk's
+  // budget.
   if (language === 'ar') {
     const [a, b] = await Promise.all([
       import('@caime/core/locales/ar-a'),
@@ -37,8 +38,20 @@ async function catalogFor(language: InterfaceLanguage): Promise<Catalog> {
     ]);
     return { ...a.arA, ...b.arB };
   }
-  if (language === 'fr') return (await import('@caime/core/locales/fr')).fr;
-  if (language === 'tr') return (await import('@caime/core/locales/tr')).turkish;
+  if (language === 'fr') {
+    const [a, b] = await Promise.all([
+      import('@caime/core/locales/fr-a'),
+      import('@caime/core/locales/fr-b'),
+    ]);
+    return { ...a.frA, ...b.frB };
+  }
+  if (language === 'tr') {
+    const [a, b] = await Promise.all([
+      import('@caime/core/locales/tr-a'),
+      import('@caime/core/locales/tr-b'),
+    ]);
+    return { ...a.turkishA, ...b.turkishB };
+  }
   return {};
 }
 

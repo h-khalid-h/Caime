@@ -5402,6 +5402,9 @@ graph) and the number that will show it; one that sharpens none is hygiene and s
   journeys, safety, reliability, performance, intelligence, mail and calendar, chat, integrations,
   business and code integrity; the matrix against WhatsApp, Signal, Slack, Calendly and Workspace;
   an age-assurance design; the integration framework mapped to the code; plan M16 (A–H).
+- 2026-10-20 — The French and Turkish catalogs come in two halves fetched side by side, as Arabic
+  does: their largest download 48.9 KB where one was 95.2 KB of a chunk's 100; the first download
+  448.8 KB of 450 (0.2 KB more: the two loaders).
 - 2026-10-20 — M16 F7d: "Catch me up" and "Find follow-ups" on a call's notes, on ask: a catch-up
   labelled Cai's and kept nowhere, the follow-ups the reader's own suggestions by the line they
   came from, offered once.

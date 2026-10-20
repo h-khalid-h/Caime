@@ -775,12 +775,13 @@ A sphere is said as how you know someone, never "sphere".
 - The interface's words (R54, ADR-16): every string the app or core shows is written in English
   where it's used, wrapped in `tr('…')` (variables as `{name}`), `trn(n, 'one thing', '{n}
   things')` for a count, or `msg('…')` in a table of options that's translated where it's shown
-  (`tr(item.label)`, or `trAll(items)`); the English is the key into `locales/ar.ts` (two halves the app
-  fetches side by side, `ar-a.ts` and `ar-b.ts`, so no download is a chunk over 100 KB; `ar.ts`
-  merges them for the tests and the server, and a new Arabic key goes at the end of `ar-b.ts`) and
+  (`tr(item.label)`, or `trAll(items)`); the English is the key into `locales/ar.ts`,
   `locales/fr.ts` (R55: French is the third language, for the Maghreb and Lebanon) and
   `locales/tr.ts` (R59: Turkish, exported as `turkish` since `tr` is the function; the server's
-  is `turkishServer`), and
+  is `turkishServer`), each two halves the app fetches side by side (`ar-a.ts` and `ar-b.ts`,
+  `fr-a.ts` and `fr-b.ts`, `tr-a.ts` and `tr-b.ts`), so no download is a chunk over 100 KB: the
+  plain file merges them for the tests and the server, and a new key goes at the end of the
+  second half (`i18n-catalog.test.ts` fails on a key in both), and
   `i18n-catalog.test.ts` fails, for every language in `INTERFACE_LANGUAGES`, for a string
   without its translation or an entry nothing says (`node scripts/i18n-keys.mjs missing <lang>`
   lists them), and `i18n-literals.test.ts` fails for English shown outside `tr` (`node
