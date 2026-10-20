@@ -949,9 +949,12 @@ export async function sendMessage(
   }
   // Someone reached by email (R93) reads only what a mail carries (M16 F3): a sticker, a poll, a
   // card nobody can answer by mail, a live location, a time that repeats or a meeting held on
-  // Caime would never reach them, so none is sent. One query, and only for those.
+  // Caime outside a one-to-one (in one, its mail carries their link to the call: M16 F6c) would
+  // never reach them, so none is sent. One query, and only for those.
   const unmailable =
-    opts.channel === 'mail' || opts.trusted ? null : notByMail(body.kind, body.payload);
+    opts.channel === 'mail' || opts.trusted
+      ? null
+      : notByMail(body.kind, body.payload, conversation.kind === 'direct');
   if (unmailable && (conversation.kind === 'direct' || conversation.kind === 'business')) {
     const otherSide = members.find(
       (p) => p.user_id !== senderId && (conversation.kind === 'direct' || p.role === 'member'),

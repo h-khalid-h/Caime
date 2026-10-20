@@ -6,6 +6,10 @@
  * in it, and its call (rung like anyone's, joined from here while it's on). Nothing else of
  * Caime is theirs (the server's guard, `guest-routes.ts`), so this page is all they see.
  *
+ * Someone reached by mail (M16 F6c: a page's booker, whoever a meeting or an appointment held on
+ * Caime was mailed to) has a link of the same shape to the card in their one-to-one: the page is
+ * the same, and its call is that one-to-one's, joined (or answered) from here.
+ *
  * The address belongs to someone on Caime: they sign in and find the meeting among their
  * requests. Someone else signed in here: the link is never taken over them.
  */
@@ -23,12 +27,15 @@ import { endpoints } from '@/api/endpoints';
 import { qk } from '@/api/keys';
 import { AuthLayout } from '@/features/auth/AuthLayout';
 import {
+  callsSupported,
   checkGroupCallIn,
   groupCallsSupported,
+  joinDirect,
   joinGroupCall,
   startGroupCall,
 } from '@/features/calls/calls';
 import { useNow, useUserClock } from '@/lib/time';
+import { useCall } from '@/state/calls';
 import { useGroupCall } from '@/state/groupCall';
 import { rememberLink } from '@/state/pendingLink';
 import { clientKind, useSession } from '@/state/session';
@@ -63,7 +70,7 @@ export function JoinMeeting({ token }: { token: string }) {
         <Text color="textSecondary" testID="join-gone">
           {link.error instanceof ApiError && link.error.status === 404
             ? tr(
-                'It ran out a day after the meeting, or a newer one replaced it. Ask whoever invited you for a new link.',
+                'It ran out a day after its time, or it was called off or replaced. Ask whoever it’s with for a new link.',
               )
             : (link.error as Error | null)?.message}
         </Text>
@@ -122,7 +129,10 @@ function useMeetingRows(view: JoinView) {
       label: tr('Duration'),
       value: tr('{minutes} min', { minutes: view.meeting.durationMinutes }),
     },
-    view.meeting.host ? { label: tr('Invited by'), value: view.meeting.host } : null,
+    // In a one-to-one it's simply whom it's with (M16 F6c); a meeting's space was someone's invitation.
+    view.meeting.host
+      ? { label: view.meeting.direct ? tr('With') : tr('Invited by'), value: view.meeting.host }
+      : null,
     // Said before they join (M16 F7c): they're asked as they join, and it starts once all say yes.
     view.meeting.notes
       ? { label: tr('Notes'), value: tr('Cai, once everyone in the call says yes') }
@@ -134,7 +144,8 @@ function JoinForm({ token, view }: { token: string; view: JoinView }) {
   const qc = useQueryClient();
   const rows = useMeetingRows(view);
   const [name, setName] = useState(view.guest.name);
-  const [adult, setAdult] = useState(false);
+  // A page's booker said it as they booked (M16 F6c); anyone else says it here.
+  const [adult, setAdult] = useState(view.guest.adult === true);
   const join = useMutation({
     mutationFn: async () => {
       const taken = await endpoints.takeJoin(token, {
@@ -153,9 +164,13 @@ function JoinForm({ token, view }: { token: string; view: JoinView }) {
   });
   return (
     <AuthLayout
-      kicker={tr('Meeting')}
+      kicker={view.meeting.booking ? tr('Appointment') : tr('Meeting')}
       title={view.meeting.title}
-      subtitle={tr('You’re invited. Join as a guest: no account, nothing to install.')}
+      subtitle={
+        view.meeting.booking
+          ? tr('Its call is here: no account, nothing to install.')
+          : tr('You’re invited. Join as a guest: no account, nothing to install.')
+      }
       back={false}
     >
       <View style={{ gap: 16 }} testID="join-form">
@@ -221,16 +236,25 @@ function GuestMeeting({ view, space }: { view: JoinView; space: NonNullable<Join
   }, [space.conversationId]);
   const open = joinOpen({ at: view.meeting.at, hasTime: true }, view.meeting.durationMinutes, now);
   return (
-    <AuthLayout kicker={tr('Meeting')} title={view.meeting.title} back={false}>
+    <AuthLayout
+      kicker={view.meeting.booking ? tr('Appointment') : tr('Meeting')}
+      title={view.meeting.title}
+      back={false}
+    >
       <View style={{ gap: 16 }} testID="guest-meeting">
         <Spec
           rows={[
             ...rows,
-            people?.length ? { label: tr('With'), value: joinNames(people, 4) } : null,
+            // A one-to-one's other side is already "With" (M16 F6c).
+            people?.length && !view.meeting.direct
+              ? { label: tr('With'), value: joinNames(people, 4) }
+              : null,
           ]}
           dense
         />
-        {groupCallsSupported ? (
+        {view.meeting.direct ? (
+          <DirectCall conversationId={space.conversationId} open={open} />
+        ) : groupCallsSupported ? (
           inCall ? null : live && on && notesAsked(on.notes) ? (
             // Cai's notes are asked for or on: joining says with Cai or without (R85 (1)), since
             // joining without answering would stop them for everyone.
@@ -290,6 +314,36 @@ function GuestMeeting({ view, space }: { view: JoinView; space: NonNullable<Join
 }
 
 /**
+ * The call in a one-to-one (M16 F6c): joining calls whoever it's with, or answers them when
+ * they're ringing here. Rung while this page is open, the call itself draws over it.
+ */
+function DirectCall({ conversationId, open }: { conversationId: string; open: boolean }) {
+  const inCall = useCall((s) => Boolean(s.phase && s.phase !== 'ended'));
+  if (!callsSupported)
+    return (
+      <Text variant="caption" color="textSecondary">
+        {tr(
+          'This browser can’t make calls. Open your link in a recent Chrome, Safari, Edge or Firefox.',
+        )}
+      </Text>
+    );
+  if (inCall) return null;
+  return open ? (
+    <Button
+      label={tr('Join the call')}
+      onPress={() => void joinDirect(conversationId)}
+      testID="guest-join-direct"
+    />
+  ) : (
+    <Text variant="caption" color="textSecondary" testID="guest-not-yet">
+      {tr(
+        'The call opens ten minutes before it starts. Keep this page, or come back by your link.',
+      )}
+    </Text>
+  );
+}
+
+/**
  * Keeping the meeting (M16 C3f): the guest makes it their own account, and the meeting, its
  * people and what was said stay theirs. Sign-up does the rest, with what this hands it: their
  * name, and the address their invitation came to (its code proves it there) or, for a guest by
@@ -308,13 +362,21 @@ function KeepMeeting({ view, space }: { view: JoinView; space: NonNullable<JoinV
       setTimeout(() => router.replace({ pathname: '/sign-up', params: { keep: '1' } }), 0);
     },
   });
+  // A one-to-one is a conversation to keep, with whoever it's with (M16 F6c).
+  const direct = view.meeting.direct;
   return (
     <View style={{ gap: 8 }} testID="guest-keep">
-      <Text variant="bodyStrong">{tr('Keep this meeting')}</Text>
+      <Text variant="bodyStrong">
+        {direct ? tr('Keep this conversation') : tr('Keep this meeting')}
+      </Text>
       <Text variant="caption" color="textSecondary">
-        {tr(
-          'Make it your own Caime account, free: the meeting, its people and what was said stay yours.',
-        )}
+        {direct
+          ? tr(
+              'Make it your own Caime account, free: this conversation and what was said stay yours.',
+            )
+          : tr(
+              'Make it your own Caime account, free: the meeting, its people and what was said stay yours.',
+            )}
       </Text>
       {keep.error ? (
         <Text color="danger" testID="guest-keep-error">

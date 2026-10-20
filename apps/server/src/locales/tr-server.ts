@@ -1629,8 +1629,6 @@ export const turkishServer: Catalog = {
   'One of your actions.': 'Eylemlerinizden biri.',
   'You’re waiting on {name}.': '{name} bekleniyor.',
   Action: 'Eylem',
-  '{name} isn’t on Caime yet: a call reaches them once they join with their address.':
-    '{name} henüz Caime’de değil: adresiyle katıldığında arama ona ulaşır.',
   'Free for people. Organizations pay for their team.':
     'Kişiler için ücretsiz. Kuruluşlar ekipleri için öder.',
   'You’re not in that call.': 'Bu aramada değilsiniz.',
@@ -1649,4 +1647,10 @@ export const turkishServer: Catalog = {
   'Cai takes notes in the call, once everyone in it says yes.':
     'Cai aramada not alır; aramadaki herkes evet dediğinde.',
   '{speaker} said {quote}': 'Aramada söylendi {quote}: {speaker}',
+  '{name} isn’t on Caime yet. A meeting held on Caime mails {name} a link to its call.':
+    '{name} henüz Caime’de değil. Caime’de yapılan bir toplantı, görüşmesinin bağlantısını {name} kişisine e-postayla gönderir.',
+  '{name} hasn’t opened the link Caime mailed yet. When {name} joins from it, the call rings here.':
+    '{name}, Caime’in gönderdiği bağlantıyı henüz açmadı. {name} oradan katıldığında arama burada çalar.',
+  'It’s a call on Caime. At its time, join it from your own link: {link}':
+    'Bu bir Caime görüşmesi. Saatinde kendi bağlantınızdan katılın: {link}',
 };

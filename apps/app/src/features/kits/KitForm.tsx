@@ -677,8 +677,12 @@ export function KitForm({
         fields.direction = 'send';
         fields.amount = start.amount;
       }
-      // By email (M16 F3), a meeting says where: nobody joins a call on Caime from a mail.
-      const unmailable = byMail && !custom ? notByMail('kit', { kit, fields }) : null;
+      // By email (M16 F3), a meeting says where, but in a one-to-one, whose mail carries their
+      // own link to its call on Caime (M16 F6c).
+      const unmailable =
+        byMail && !custom
+          ? notByMail('kit', { kit, fields }, conversation.kind === 'direct')
+          : null;
       if (unmailable) return setError(notByMailText(unmailable));
       const checked = custom ? prepareCustomFields(custom, fields) : prepareKitFields(kit, fields);
       if (!checked.ok) return setError(checked.error);

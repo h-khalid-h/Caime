@@ -5,7 +5,9 @@
  * and a confirmed one is recalled the day before it. Each carries the link that brings the
  * conversation into an account made with the same address (R93; the claim asks that address's
  * code, review 2026-10-17 §2 H1). The host is an organization, named and never a team member
- * (R15), or the person whose public item it was. Mail stays English and plain (R48): the
+ * (R15), or the person whose public item it was. A booking held as a call on Caime carries the
+ * booker's own link to it (M16 F6c), the same in the confirmation, its calendar event and the
+ * reminder, from which they join without an account. Mail stays English and plain (R48): the
  * confirmation goes after the response (`ctx.defer`), the reminder from its job, whose payload
  * holds ids alone. A customer with an account is told in Caime as anyone is.
  */
@@ -20,6 +22,7 @@ import { bookingOf } from './booking';
 import { customerMask } from './business';
 import { fromAddress, type Mail } from './email';
 import { enqueue, registerJob } from './jobs';
+import { callLinkFor } from './meeting-join';
 import { meetingUid } from './meeting-series';
 
 type Moved = 'confirmed' | 'cancelled';
@@ -44,8 +47,10 @@ interface Booked {
   end: Date;
   zone: string;
   where: string | null;
-  /** Held on Caime (M16 F6): a call in the conversation, joined from an account. */
+  /** Held on Caime (M16 F6): a call in the conversation. */
   call: boolean;
+  /** The booker's own link to that call (M16 F6c), on what's sent while it's on. */
+  join: string | null;
   link: string;
   uid: string;
 }
@@ -82,9 +87,9 @@ function inZone(at: Date, zone: string): string {
  * whose customer is a provisional person with an address, in an organization's customer
  * conversation or in a one-to-one booked from a person's catalog (`booking.hostId`, which only
  * `bookingFor` writes). The customer is read first, so a customer with an account costs one
- * query.
+ * query. With `withLink`, a call's booker is handed their own link to it.
  */
-async function bookedFor(ctx: AppContext, m: Message): Promise<Booked | null> {
+async function bookedFor(ctx: AppContext, m: Message, withLink = false): Promise<Booked | null> {
   const p = (m.payload ?? {}) as AppointmentPayload;
   if (m.kind !== 'kit' || p.kit !== 'appointment') return null;
   const start = new Date(String(p.fields?.start?.at ?? ''));
@@ -133,6 +138,19 @@ async function bookedFor(ctx: AppContext, m: Message): Promise<Booked | null> {
   }
   const base = ctx.config.PUBLIC_URL;
   const name = firstName(customer.display_name);
+  const call = cardVenue({ kit: 'appointment', place: p.booking?.where }) === 'caime';
+  // A person's own call (an organization's conversations hold none yet). Booked from a page, they
+  // said they're 18 or over there.
+  const join =
+    withLink && call && hostId
+      ? await callLinkFor(
+          ctx,
+          m,
+          customerId,
+          hostId,
+          m.client_id?.startsWith('public-book:') ? true : null,
+        )
+      : null;
   return {
     to: customer.email,
     name: name && !name.includes('@') ? name : '',
@@ -147,7 +165,8 @@ async function bookedFor(ctx: AppContext, m: Message): Promise<Booked | null> {
     ),
     zone,
     where: p.booking?.where ?? null,
-    call: cardVenue({ kit: 'appointment', place: p.booking?.where }) === 'caime',
+    call,
+    join,
     link: `${base}/sign-up?link=${encodeURIComponent(`/c/${m.conversation_id}`)}`,
     // The same event the calendar feed names (R58): one appointment, in every calendar alike.
     uid: meetingUid(m.id, seriesOf(m.payload as Parameters<typeof seriesOf>[0]), 'appointment'),
@@ -163,13 +182,13 @@ function body(b: Booked, opening: string, middle: string[]): string {
     '',
     b.what,
     inZone(b.start, b.zone),
-    // A call on Caime (M16 F6) is taken from an account made with this address, where its Join is.
-    ...(b.call
+    // A call on Caime (M16 F6c) is joined from the booker's own link, no account needed.
+    ...(b.join
       ? [
           '',
-          `It's a call on Caime: join Caime with this address, and at its time Join is in your conversation with ${b.host}: ${b.link}`,
+          `It's a call on Caime. At its time, join it from your own link, no account needed: ${b.join}`,
         ]
-      : b.where
+      : !b.call && b.where
         ? [b.where]
         : []),
     '',
@@ -188,9 +207,9 @@ function body(b: Booked, opening: string, middle: string[]): string {
 export async function mailProvisionalBooker(ctx: AppContext, m: Message, to: Moved): Promise<void> {
   const mail = ctx.mail;
   if (!mail) return;
-  const b = await bookedFor(ctx, m);
-  if (!b) return;
   const confirmed = to === 'confirmed';
+  const b = await bookedFor(ctx, m, confirmed);
+  if (!b) return;
   const ics = buildInvitation({
     method: confirmed ? 'REQUEST' : 'CANCEL',
     uid: b.uid,
@@ -199,11 +218,12 @@ export async function mailProvisionalBooker(ctx: AppContext, m: Message, to: Mov
     start: b.start,
     end: b.end,
     summary: `${b.what} with ${b.host}`,
-    description: b.call
-      ? `A call on Caime with ${b.host}. Join Caime with this address to take it: ${b.link}`
+    // Their calendar's own Join: the link they take the call from (M16 F6c).
+    description: b.join
+      ? `A call on Caime with ${b.host}. At its time, join it from your own link, no account needed: ${b.join}`
       : `${b.host} on Caime: ${b.link}`,
-    location: b.call ? b.link : b.where,
-    url: b.link,
+    location: b.join ?? (b.call ? null : b.where),
+    url: b.join ?? b.link,
     organizer: { name: b.host, email: fromAddress(ctx.config.EMAIL_FROM) },
     attendee: { name: b.name || b.to, email: b.to },
   });
@@ -258,7 +278,7 @@ async function remindJob(ctx: AppContext, payload: Record<string, unknown>): Pro
     .where('id', '=', String(payload.messageId))
     .executeTakeFirst();
   if (!m || m.deleted_at || (m.payload as AppointmentPayload | null)?.state !== 'confirmed') return;
-  const b = await bookedFor(ctx, m);
+  const b = await bookedFor(ctx, m, true);
   // Moved, claimed by an account since (told in Caime), or begun already: nothing to say.
   if (!b || b.start.toISOString() !== String(payload.at)) return;
   if (b.start.getTime() <= ctx.now().getTime()) return;

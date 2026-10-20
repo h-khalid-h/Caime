@@ -607,8 +607,10 @@ export async function authRoutes(app: FastifyInstance, ctx: AppContext) {
         durationMinutes: link.durationMinutes,
         host: link.host,
         notes: link.notes,
+        direct: link.direct,
+        booking: link.booking,
       },
-      guest: { name: link.guestName },
+      guest: { name: link.guestName, adult: link.adult },
       // The address is someone's on Caime: they sign in, and find it among their requests.
       signIn: link.userKind === 'human',
       // Taken already, by this very guest: their meeting, so the page opens it.

@@ -2278,6 +2278,13 @@ with its reason, so it isn't proposed again without new facts.
   link to join without an account is F6c); Cai taking notes in a meeting (R82 phase 1 under R85)
   is F7, now that the speech provider is live.
 
+- **R108 addendum (2026-10-20, M16 F6c).** A call held on Caime is joined by whoever it's with, an
+  account or not: someone reached by mail (a page's booker, whoever a meeting held here is mailed
+  to in a one-to-one) has their own link in the mail and as their calendar event's place, which
+  signs them in to that call alone, as a meeting's guest's does (R84). Calendly hands its invitee
+  a Zoom or Meet link; Caime's is its own call, in the conversation the booking lives in, with Cai's
+  notes asked as anyone's (R85) and the conversation theirs to keep. A group with someone reached by
+  mail, and an organization's items on Caime, are next.
 - **R109 (2026-10-20) Cai takes notes in a call: R82 phase 1, built under R85.** The owner's report
   (R108) ended with "nothing joined it to take notes". *Decided and built (M16 F7):* (1) *Asked from
   inside the call*, by anyone in it who is an adult on Caime with AI assist on and room in the

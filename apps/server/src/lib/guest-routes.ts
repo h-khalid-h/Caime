@@ -5,10 +5,12 @@
  * plugin (plugins/auth.ts), so a route added later is closed to guests until it's added here on
  * purpose. `guest-routes.test.ts` walks every registered route to prove it.
  *
- * A guest is in one conversation, their meeting's space, and these are what being in it takes:
- * their session and their own name, reading the space and its card, its call (ICE, what's live,
- * start, join, decline, leave, signal, alive), and the live socket that rings them and carries
- * the call's signals (it tells each person only what's theirs, and drops a guest's typing),
+ * A guest is in one conversation, their meeting's space, or, reached by mail, their one-to-one
+ * with whoever a card held on Caime is with (M16 F6c), and these are what being in it takes:
+ * their session and their own name, reading it and its card, its call (ICE, what's live, start,
+ * join or answer, decline, leave, signal, alive: a one-to-one's only by their link to a card
+ * there, `callLinkIn`), and the live socket that rings them and carries the call's signals (it
+ * tells each person only what's theirs, and drops a guest's typing),
  * their say in Cai's notes of that call (M16 F7), and keeping the meeting as their own account
  * (M16 C3f), which hands them what sign-up takes.
  * Each route still checks membership itself, so none reaches past the space. Writing in the
@@ -34,6 +36,13 @@ export const GUEST_ROUTES: ReadonlySet<string> = new Set([
   'POST /v1/group-calls/:id/leave',
   'POST /v1/group-calls/:id/signal',
   'POST /v1/group-calls/:id/alive',
+  // The call in their one-to-one, by their own link to a card there (M16 F6c).
+  'POST /v1/conversations/:id/calls',
+  'POST /v1/calls/:id/accept',
+  'POST /v1/calls/:id/decline',
+  'POST /v1/calls/:id/end',
+  'POST /v1/calls/:id/signal',
+  'POST /v1/calls/:id/alive',
   // Cai's notes in their meeting's call (M16 F7): a guest says yes or no, stops it, and reads
   // what was said; never asks (it's on an account's allowance) and never records (R85 (4)).
   'POST /v1/calls/:id/notes/answer',

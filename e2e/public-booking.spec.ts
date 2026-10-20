@@ -244,6 +244,36 @@ test('a visitor books a person’s lesson from their page, and confirming it ans
   );
   expect(lesson?.payload.state).toBe('confirmed');
   expect(lesson?.payload.fields.start.at).toBe(chosen);
+
+  // M16 F6c: the confirmation carries Omar's own link to the lesson's call. From it, with no
+  // account, Omar joins (18 or over, as said when booking), and Lina's call is answered there.
+  const link = /\/j\/cmg_[A-Za-z0-9_-]+/.exec(told?.text ?? '')?.[0] ?? '';
+  expect(link).not.toBe('');
+  const refused: string[] = [];
+  page.on('response', (r) => {
+    if (r.url().includes('/v1/') && r.status() === 403) refused.push(r.url());
+  });
+  // The lesson is the first open time, minutes away: Omar's page reads its clock at its start,
+  // when the call is open.
+  await page.clock.setFixedTime(new Date(chosen));
+  await page.goto(link);
+  const form = page.getByTestId('join-form');
+  await expect(form).toBeVisible();
+  await expect(form).toContainText('Lina Haddad');
+  await expect(page.getByTestId('join-adult').getByRole('switch')).toBeChecked();
+  await page.getByTestId('join-submit').click();
+  await expect(page.getByTestId('guest-meeting')).toBeVisible();
+  await expect(page.getByTestId('guest-keep')).toContainText('Keep this conversation');
+  // Omar joins: Lina is rung in the app, answers, and both are on.
+  await page.getByTestId('guest-join-direct').click();
+  await linaPage.getByTestId('call-accept').click({ timeout: 20_000 });
+  await expect(linaPage.getByTestId('call-status')).toHaveText(/^\d+:\d\d$/, {
+    timeout: 20_000,
+  });
+  await expect(page.getByTestId('call-status')).toHaveText(/^\d+:\d\d$/, { timeout: 20_000 });
+  await linaPage.getByTestId('call-hangup').click();
+  // Nothing Omar's page asked for was refused: a guest's routes are all it needs.
+  expect(refused).toEqual([]);
   await visitor.close();
   await host.close();
 });

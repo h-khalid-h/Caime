@@ -1686,8 +1686,6 @@ export const arServer: Catalog = {
   'One of your actions.': 'أحد إجراءاتك.',
   'You’re waiting on {name}.': 'في انتظار {name}.',
   Action: 'إجراء',
-  '{name} isn’t on Caime yet: a call reaches them once they join with their address.':
-    'لا حساب لـ {name} على Caime بعد: تصل المكالمة بعد الانضمام بالعنوان نفسه.',
   'Free for people. Organizations pay for their team.': 'مجاني للأفراد. والمؤسسات تدفع لفريقها.',
   'You’re not in that call.': 'لست في تلك المكالمة.',
   'Cai can’t take notes on this Caime yet.': 'لا يستطيع Cai تدوين الملاحظات على Caime هذا بعد.',
@@ -1705,4 +1703,10 @@ export const arServer: Catalog = {
   'Cai takes notes in the call, once everyone in it says yes.':
     'يدوّن Cai الملاحظات في المكالمة، حين يوافق كل من فيها.',
   '{speaker} said {quote}': 'قيل في المكالمة {quote}: {speaker}',
+  '{name} isn’t on Caime yet. A meeting held on Caime mails {name} a link to its call.':
+    'لا حساب لـ {name} على Caime بعد. موعد على Caime يصل {name} بالبريد مع رابط لمكالمته.',
+  '{name} hasn’t opened the link Caime mailed yet. When {name} joins from it, the call rings here.':
+    'لم يُفتح بعد الرابط الذي أرسله Caime إلى {name}. عند انضمام {name} منه، ترنّ المكالمة هنا.',
+  'It’s a call on Caime. At its time, join it from your own link: {link}':
+    'إنها مكالمة على Caime. في موعدها، الانضمام إليها من رابطك الخاص: {link}',
 };

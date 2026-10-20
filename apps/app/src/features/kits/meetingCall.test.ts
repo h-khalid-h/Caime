@@ -22,9 +22,10 @@ const group = (n: number) =>
 describe('the call a meeting’s Join opens (R83)', () => {
   it('is the direct call with someone who can be called', () => {
     expect(meetingCall(direct(), can)).toBe('direct');
+    // Someone reached by mail joins from their own link (M16 F6c).
+    expect(meetingCall(direct('provisional'), can)).toBe('direct');
   });
-  it('is none with someone reached by mail, a request, or where calls can’t be made', () => {
-    expect(meetingCall(direct('provisional'), can)).toBeNull();
+  it('is none with a request, or where calls can’t be made', () => {
     expect(meetingCall(direct('person', { request: {} } as never), can)).toBeNull();
     expect(meetingCall(direct(), { calls: false, groupCalls: true })).toBeNull();
     expect(meetingCall(null, can)).toBeNull();

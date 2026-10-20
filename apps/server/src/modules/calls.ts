@@ -32,6 +32,7 @@ import {
 import { membership } from '../lib/conversation-views';
 import { AppError, badRequest, forbidden, notFound } from '../lib/errors';
 import { groupCallView, joinedGroupCallOf, ringingGroupCallFor } from '../lib/group-calls';
+import { callLinkIn, sessionLive } from '../lib/meeting-join';
 import { participantsOf } from '../lib/messages';
 import { notify } from '../lib/notify';
 import { personViewsFor } from '../lib/people-batch';
@@ -122,8 +123,27 @@ export async function callRoutes(app: FastifyInstance, ctx: AppContext) {
     const people = await participantsOf(ctx.db, id);
     const other = people.find((p) => p.user_id !== auth.userId);
     if (!other) throw badRequest(tr('There’s nobody to call here.'));
+    const callee = await ctx.db
+      .selectFrom('users')
+      .select(['display_name', 'kind', 'presence'])
+      .where('id', '=', other.user_id)
+      .where('deleted_at', 'is', null)
+      .executeTakeFirst();
+    // Someone reached by mail (a page's booker, whoever a meeting held here was mailed to) is in a
+    // call here by their own link alone, taken, to a card here that's asked or agreed (M16 F6c):
+    // the link is the invitation, so it answers a request as a reply does.
+    const link = auth.guest
+      ? await callLinkIn(ctx, id, auth.userId)
+      : callee?.kind === 'provisional'
+        ? await callLinkIn(ctx, id, other.user_id)
+        : null;
+    const byLink = link === 'taken';
+    if (auth.guest && !byLink) throw new AppError(403, 'guest_route', tr('A guest can’t do this.'));
     // Someone who hasn't accepted a message request can't be rung either (R14).
-    if (people.some((p) => p.request_state === 'pending' || p.request_state === 'declined'))
+    if (
+      !byLink &&
+      people.some((p) => p.request_state === 'pending' || p.request_state === 'declined')
+    )
       throw new AppError(
         403,
         'awaiting_acceptance',
@@ -131,21 +151,27 @@ export async function callRoutes(app: FastifyInstance, ctx: AppContext) {
       );
     if (await isBlockedEitherWay(ctx.db, auth.userId, other.user_id))
       throw forbidden(tr('You can’t call this person.'));
-    const callee = await ctx.db
-      .selectFrom('users')
-      .select(['display_name', 'kind', 'presence'])
-      .where('id', '=', other.user_id)
-      .where('deleted_at', 'is', null)
-      .executeTakeFirst();
-    // Someone reached by mail (a booker from a page, R93) takes a call once they've joined with
-    // their address, which their mail asks (M16 F6).
-    if (callee?.kind === 'provisional')
-      throw badRequest(
-        tr('{name} isn’t on Caime yet: a call reaches them once they join with their address.', {
-          name: callee.display_name,
-        }),
-      );
-    if (callee?.kind !== 'human') throw badRequest(tr('There’s nobody to call here.'));
+    if (callee?.kind === 'provisional') {
+      const name = callee.display_name;
+      if (!link)
+        throw badRequest(
+          tr(
+            '{name} isn’t on Caime yet. A meeting held on Caime mails {name} a link to its call.',
+            {
+              name,
+            },
+          ),
+        );
+      // Their page rings while it's open to them: a link not taken yet, or no session left, and
+      // nothing would.
+      if (!byLink || !(await sessionLive(ctx, other.user_id)))
+        throw badRequest(
+          tr(
+            '{name} hasn’t opened the link Caime mailed yet. When {name} joins from it, the call rings here.',
+            { name },
+          ),
+        );
+    } else if (callee?.kind !== 'human') throw badRequest(tr('There’s nobody to call here.'));
     ctx.limiter.hit(`call:${auth.userId}`, ctx.config.isTest ? 1000 : 20, 10 * 60_000);
     // "On another call" says they're around right now: only to someone who may see that.
     const shown = (await personViewsFor(ctx, auth.userId, [other.user_id])).get(other.user_id);
@@ -200,6 +226,8 @@ export async function callRoutes(app: FastifyInstance, ctx: AppContext) {
       return { call: await callView(ctx, call, auth.userId) };
     }
     await publishCall(ctx, call, 'call.ringing');
+    // Someone reached by mail hears it on their page alone: never notified (R75).
+    if (callee.kind !== 'human') return { call: await callView(ctx, call, auth.userId) };
     // By the name they know the caller by.
     const me = await nameShownTo(ctx, other.user_id, auth.userId);
     await notify(ctx, {

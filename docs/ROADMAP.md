@@ -3059,10 +3059,44 @@ graph) and the number that will show it; one that sharpens none is hygiene and s
       an organization's), `app-directory.test.ts`, the E2E `places.spec.ts`, `bookings.spec.ts`,
       `mail.spec.ts` and `around-the-conversation.spec.ts` (Where chosen on the forms, the Calendar
       feed), the catalogs in four languages, and the full gate.
-- [ ] F6c. Someone who booked from a page without an account joins its call from their mail: a
-      link of their own (as a meeting guest's, R84), a guest session for that one conversation's
-      call, a one-to-one call that takes a provisional party with a live session; until then
-      their mail says to join Caime with the address (F6).
+- [x] F6c. Whoever is reached by mail joins a call held on Caime from their own link, with no
+      account (2026-10-20, R108, R84, R93; the owner's report: a booking from their page couldn't
+      be met on Caime by someone who isn't on it; advantage 3, the door that needs no account, and
+      what Calendly with Zoom gives an invitee: the link in the invitation, and nothing to sign up
+      for. The number: of bookings held as a call on Caime from a page, and of meetings held on
+      Caime mailed to someone, the share whose mail carries a way into the call without an
+      account, every one, where none had it; `growth.guests.fromMail` counts who came in by it).
+      A page's booker, once the booking is confirmed, and whoever a meeting or an appointment held
+      on Caime is mailed to in a one-to-one, are handed their own link (`callLinkFor`,
+      `lib/meeting-join.ts`: a `meeting_guests` row on the card itself, its token made from the
+      server's key, the card and the person, so the confirmation, its calendar event, the reminder
+      and a new time's invitation all carry the same link and nothing keeps it but its hash), in
+      the words and as the calendar event's place and address, so their calendar's Join is it; a
+      meeting held on Caime now goes by mail in a one-to-one, which F3 kept back (core `notByMail`
+      takes `oneToOne`), and the form offers On Caime there (`meetingCall`).
+      `/j/<token>` is the guest's page they know (`JoinMeeting`: the card, whom it's with, the name,
+      "I'm 18 or over", already on for a booker who said it as they booked), signing them in as
+      their provisional self for that one-to-one until a day after the card ends, while it's asked
+      or agreed (`guestLink`); there "Join the call" calls whoever it's with, or answers them, and
+      a call to them rings their page. The call routes are a guest's (`GUEST_ROUTES`), and a call
+      takes someone reached by mail only by their link to a card there, taken (`callLinkIn`):
+      the link is the invitation, so it stands for a request answered; a call to them before they
+      opened it says so ("hasn't opened the link Caime mailed yet"), and to someone with no such
+      link, that a meeting held on Caime mails one. They're never notified, never record, and
+      answer Cai's notes as any guest; "Keep this conversation" makes it their account. Left: a
+      group's member reached by mail (a mail group holds a group call), an organization's items
+      on Caime (its conversations hold no call yet), and that booker's answer from the mail itself
+      (F5c). Costs: a link is one HMAC and one row a card and person, made when the mail goes; the
+      start of a call one or two queries more where someone is reached by mail; on the device, the guest's page 5.3 KB where it was 4.9 (it loads only at `/j/`), the first download 448.8 KB of 450 and the conversation's chunk 91.5 KB, as before. Verified:
+      `card-where.test.ts` (a page's booker's confirmation and reminder carry the same link, as the
+      event's place and address; before it's opened a call says so; taken, the booker reads the
+      conversation and nothing else, calls the host, who is told and answers, and is rung by the
+      host's call and answers, told nowhere else; called off, the link and the calls end),
+      `mail.test.ts` (a meeting held on Caime mailed to someone goes with their link; taken, the
+      sender's call rings them though they never answered in Caime), `guest-routes.test.ts`,
+      `product-metrics.test.ts`, the E2E `public-booking.spec.ts` (the visitor opens the link from
+      the confirmation, joins with no account, and the host's call rings their page and they're
+      on), the catalogs in four languages, and the full gate.
 - [x] F7. Cai takes notes in a call (2026-10-20, R82 phase 1 under R85, R109; the owner's report
       of 2026-10-19: "the Assistant didn't join and so the meeting wasn't recorded"; advantages 5
       and 4: everyone's yes and no audio kept, on every plan at its published cost, where Meet,
@@ -5405,6 +5439,9 @@ graph) and the number that will show it; one that sharpens none is hygiene and s
 - 2026-10-20 — The French and Turkish catalogs come in two halves fetched side by side, as Arabic
   does: their largest download 48.9 KB where one was 95.2 KB of a chunk's 100; the first download
   448.8 KB of 450 (0.2 KB more: the two loaders).
+- 2026-10-20 — M16 F6c: whoever is reached by mail (a page's booker, someone a meeting held on
+  Caime was mailed to) joins its call from their own link in the mail and their calendar, with no
+  account; a call to them rings their page.
 - 2026-10-20 — M16 F7d: "Catch me up" and "Find follow-ups" on a call's notes, on ask: a catch-up
   labelled Cai's and kept nowhere, the follow-ups the reader's own suggestions by the line they
   came from, offered once.

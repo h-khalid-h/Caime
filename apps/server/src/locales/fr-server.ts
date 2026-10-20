@@ -1701,8 +1701,6 @@ export const frServer: Catalog = {
   'One of your actions.': 'Une de vos actions.',
   'You’re waiting on {name}.': 'Vous attendez {name}.',
   Action: 'Action',
-  '{name} isn’t on Caime yet: a call reaches them once they join with their address.':
-    '{name} n’est pas encore sur Caime : un appel l’atteindra une fois son compte créé avec son adresse.',
   'Free for people. Organizations pay for their team.':
     'Gratuit pour les particuliers. Les organisations paient pour leur équipe.',
   'You’re not in that call.': 'Vous n’êtes pas dans cet appel.',
@@ -1724,4 +1722,10 @@ export const frServer: Catalog = {
   'Cai takes notes in the call, once everyone in it says yes.':
     'Cai prend des notes dans l’appel, une fois que chacun y a dit oui.',
   '{speaker} said {quote}': 'Dit dans l’appel {quote} : {speaker}',
+  '{name} isn’t on Caime yet. A meeting held on Caime mails {name} a link to its call.':
+    '{name} n’est pas encore sur Caime. Un rendez-vous tenu sur Caime envoie à {name} un lien vers son appel.',
+  '{name} hasn’t opened the link Caime mailed yet. When {name} joins from it, the call rings here.':
+    '{name} n’a pas encore ouvert le lien envoyé par Caime. Quand {name} le rejoint depuis ce lien, l’appel sonne ici.',
+  'It’s a call on Caime. At its time, join it from your own link: {link}':
+    'C’est un appel sur Caime. À son heure, rejoignez-le depuis votre propre lien : {link}',
 };

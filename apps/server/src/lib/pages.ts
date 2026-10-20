@@ -234,8 +234,12 @@ page&rsquo;s own address, for fifteen minutes), and an address whose code never 
 removed within two days. With the code, the booking or the message is kept as that address&rsquo;s,
 seen by the organization or the person it went to, in one conversation with them; their answers
 reach the address by email where Caime carries mail, and a reply to that email comes back into the
-same conversation. Signing up with the address makes all of it theirs; an address that has been
-silent for a year is removed, and its words stay with whoever they went to.</li>
+same conversation. A booking held as a call on Caime, once it&rsquo;s confirmed, and a meeting or
+an appointment held on Caime sent to someone by email, carry that person&rsquo;s own link to its
+call, kept only as a fingerprint: it signs them in to that conversation&rsquo;s call alone until a
+day after it ends, keeping the name they give, when they came in and whether they said
+they&rsquo;re 18 or over. Signing up with the address makes all of it theirs; an address that has
+been silent for a year is removed, and its words stay with whoever they went to.</li>
 <li><strong>What Caime works out for you.</strong> In conversations that aren&rsquo;t private,
 Caime notes the dates, amounts, links, email addresses, phone numbers, reference numbers (an order,
 an invoice, a ticket), topics (such as Project Atlas), questions and requests in each message. From these, and from a team, a space or a work email domain you share with someone,

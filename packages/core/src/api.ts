@@ -2390,9 +2390,11 @@ export interface ProductMetricsView {
     /**
      * Meeting guests (R84, M16 C3f): who came in by their link in the window, and of guests, who
      * made it their account in the window (`kept`: by link keeping the meeting, or by address
-     * signing up with it), the number that shows a meeting bringing someone in.
+     * signing up with it), the number that shows a meeting bringing someone in; and (M16 F6c) who
+     * came in to a call in their one-to-one by the link their mail carried (`fromMail`: a page's
+     * booker, whoever a meeting held on Caime was mailed to).
      */
-    guests: { joined: number; kept: number };
+    guests: { joined: number; kept: number; fromMail: number };
     /**
      * Chats brought over from WhatsApp (R45, M16 C3g) in the window: one-to-ones, groups, and how
      * many messages came with them, the number that shows a group moving over with its past.
@@ -4088,8 +4090,16 @@ export interface JoinView {
     host: string | null;
     /** It says Cai takes notes in its call (M16 F7c): told before joining, asked as they join. */
     notes: boolean;
+    /**
+     * Its call is the guest's one-to-one with whoever it's with (M16 F6c: a page's booker, or
+     * whoever a card held on Caime was mailed to), not a meeting space's group call.
+     */
+    direct: boolean;
+    /** An appointment, a booking among them, rather than a meeting. */
+    booking: boolean;
   };
-  guest: { name: string };
+  /** Their name, and what they said of their age before (as they booked), if they did. */
+  guest: { name: string; adult: boolean | null };
   /** The address is someone's on Caime: they sign in instead, and find it among their requests. */
   signIn: boolean;
   /**

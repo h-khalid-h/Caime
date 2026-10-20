@@ -23,7 +23,7 @@ import { MESSAGE_COLUMNS } from '../db/schema';
 import { asReader } from './i18n';
 import { enqueue, registerJob, registerPeriodic } from './jobs';
 import { mailAddressOf } from './mail-address';
-import { cancellationOf, mailedAs, updateOf, wholeWhen } from './mail-cards';
+import { cancellationOf, joinLinkFor, mailedAs, updateOf, wholeWhen } from './mail-cards';
 import type { CardInvitation } from './mail-invitations';
 import {
   type DeliveryEvent,
@@ -70,7 +70,7 @@ export async function queueMailOut(
   if (!ctx.mailProvider || message.channel === 'mail' || message.sealed || !message.sender_id)
     return;
   if (conversation.kind !== 'direct' && conversation.kind !== 'business') return;
-  if (notByMail(message.kind, message.payload)) return;
+  if (notByMail(message.kind, message.payload, conversation.kind === 'direct')) return;
   const others = memberIds.filter((id) => id !== message.sender_id);
   if (!others.length) return;
   const reached = await ctx.db
@@ -152,6 +152,7 @@ async function send(ctx: AppContext, payload: Record<string, unknown>): Promise<
     senderId: sender.id,
     from: { name: from.name, email: from.address },
     to: { name: attendeeName(to.display_name), email: to.email },
+    join: await joinLinkFor(ctx, m, conversation.kind, to.id),
   });
   if (!said && m.kind !== 'text' && m.kind !== 'media' && m.kind !== 'file') return;
   // The thread the other side's client knows: the latest mail either way in this conversation.
@@ -361,7 +362,7 @@ async function sendCardMail(ctx: AppContext, payload: Record<string, unknown>): 
   // Someone who has claimed the address since reads it in Caime.
   const to = await ctx.db
     .selectFrom('users')
-    .select('display_name')
+    .select(['id', 'display_name'])
     .where('email', '=', went.to_address)
     .where('kind', '=', 'provisional')
     .executeTakeFirst();
@@ -378,13 +379,14 @@ async function sendCardMail(ctx: AppContext, payload: Record<string, unknown>): 
     .where('id', '=', m.sender_id)
     .executeTakeFirstOrThrow();
   const name = (conversation.kind === 'business' && conversation.orgName) || sender.display_name;
+  // A new time (M16 F5), unless it moved again since (that time sends its own) or was called off.
+  const update = payload.what === 'update';
   const people = {
     senderId: m.sender_id,
     from: { name, email: went.from_address },
     to: { name: attendeeName(to.display_name), email: went.to_address },
+    join: update ? await joinLinkFor(ctx, m, conversation.kind, to.id) : null,
   };
-  // A new time (M16 F5), unless it moved again since (that time sends its own) or was called off.
-  const update = payload.what === 'update';
   const now = (m.payload ?? {}) as { state?: string; sequence?: number };
   if (update && (now.sequence !== payload.sequence || now.state === 'cancelled')) return;
   const said = update ? await updateOf(ctx, m, people) : await cancellationOf(ctx, m, people);

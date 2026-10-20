@@ -2057,8 +2057,6 @@ export const arB: Catalog = {
   'Moved to its own space, with its guests.': 'انتقل إلى مساحة خاصة به مع ضيوفه.',
   'Your invitation': 'دعوتك',
   'This invitation has ended': 'انتهت هذه الدعوة',
-  'It ran out a day after the meeting, or a newer one replaced it. Ask whoever invited you for a new link.':
-    'انتهت صلاحيتها بعد يوم من الاجتماع، أو حلّت محلها دعوة أحدث. اطلب رابطًا جديدًا ممن أرسل الدعوة.',
   'This invitation is for your Caime account': 'هذه الدعوة لحسابك على Caime',
   'Sign in, and you’ll find the meeting among your requests.':
     'سجّل الدخول، وستجد الاجتماع بين طلباتك.',
@@ -3335,4 +3333,10 @@ export const arB: Catalog = {
   'Cai, once everyone in the call says yes': 'Cai، حين يوافق كل من في المكالمة',
   'Everyone is asked as they join, and it starts once all say yes. Voices aren’t kept.':
     'يُسأل كلٌّ عند انضمامه، ويبدأ التدوين حين يوافق الجميع. لا تُحفظ الأصوات.',
+  'It ran out a day after its time, or it was called off or replaced. Ask whoever it’s with for a new link.':
+    'انتهت صلاحيته بعد يوم من موعده، أو أُلغي أو حلّ محله آخر. اطلب رابطًا جديدًا من الطرف الآخر.',
+  'Its call is here: no account, nothing to install.': 'مكالمته هنا: بلا حساب ولا تثبيت.',
+  'Keep this conversation': 'الاحتفاظ بهذه المحادثة',
+  'Make it your own Caime account, free: this conversation and what was said stay yours.':
+    'حساب Caime خاص بك، مجانًا: تبقى لك هذه المحادثة وما قيل فيها.',
 };

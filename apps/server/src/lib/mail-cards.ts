@@ -27,7 +27,7 @@ import type { AppointmentBooking, PlacedOrder } from '@caime/core/booking';
 import { tr } from '@caime/core/i18n';
 import { buildInvitation, type IcsPerson } from '@caime/core/ics';
 import { dateFormat } from '@caime/core/locale';
-import { cardEndMs, meetingLink, meetingVenue } from '@caime/core/meetings';
+import { cardEndMs, heldOnCaime, meetingLink, meetingVenue } from '@caime/core/meetings';
 import { mapsUrl } from '@caime/core/places';
 import type { AppContext } from '../context';
 import type { Message } from '../db/schema';
@@ -35,6 +35,7 @@ import { bookingOf } from './booking';
 import { defaultZoneOf } from './geo';
 import { asReader } from './i18n';
 import type { MailAttachment } from './mail-provider';
+import { callLinkFor } from './meeting-join';
 import { meetingUid } from './meeting-series';
 
 interface CardPayload {
@@ -50,6 +51,34 @@ interface CardPayload {
   lng?: number;
   /** Its calendar invitations' count (M16 F5): one higher with each new time. */
   sequence?: number;
+  /** Made of an invitation from someone's calendar (M16 F4): held where it says. */
+  invitation?: unknown;
+}
+
+/** Who a card is mailed to, from whom, and their own link to its call when it's held here. */
+interface MailedPeople {
+  senderId: string;
+  from: IcsPerson;
+  to: IcsPerson;
+  join?: string | null;
+}
+
+/**
+ * The link someone reached by mail joins a card's call from (M16 F6c): a meeting or an
+ * appointment held on Caime in their one-to-one; null for anything else.
+ */
+export async function joinLinkFor(
+  ctx: AppContext,
+  m: Message,
+  conversationKind: string,
+  toUserId: string,
+): Promise<string | null> {
+  const p = (m.payload ?? {}) as CardPayload;
+  if (m.kind !== 'kit' || (p.kit !== 'meeting' && p.kit !== 'appointment')) return null;
+  if (conversationKind !== 'direct' || !m.sender_id) return null;
+  const place = typeof p.fields?.place === 'string' ? p.fields.place : p.booking?.where;
+  if (!heldOnCaime({ kit: p.kit, place, invitation: p.invitation }, conversationKind)) return null;
+  return callLinkFor(ctx, m, toUserId, m.sender_id);
 }
 
 /** What a mail says for a message that isn't only words and files. */
@@ -113,7 +142,14 @@ function payLines(to: PayTo): string[] {
 }
 
 /** A card's words: its name and main line, its facts, and what the other side does with it. */
-function cardText(p: CardPayload, kit: CardKitId, from: IcsPerson, zone: string, locale: string) {
+function cardText(
+  p: CardPayload,
+  kit: CardKitId,
+  from: IcsPerson,
+  zone: string,
+  locale: string,
+  join?: string | null,
+) {
   const fields = p.fields ?? {};
   const defs = KITS[kit].fields;
   const facts = [
@@ -138,6 +174,12 @@ function cardText(p: CardPayload, kit: CardKitId, from: IcsPerson, zone: string,
     );
     if (p.payTo) lines.push(...payLines(p.payTo));
   }
+  // Held on Caime: their own link to its call, no account needed (M16 F6c).
+  if (join)
+    lines.push(
+      '',
+      tr('It’s a call on Caime. At its time, join it from your own link: {link}', { link: join }),
+    );
   if (kit === 'meeting' || kit === 'appointment')
     lines.push(
       '',
@@ -152,7 +194,7 @@ function invitation(
   m: Pick<Message, 'id'>,
   p: CardPayload,
   kit: 'meeting' | 'appointment',
-  people: { from: IcsPerson; to: IcsPerson },
+  people: { from: IcsPerson; to: IcsPerson; join?: string | null },
   method: 'REQUEST' | 'CANCEL',
   words: string,
 ): MailAttachment | null {
@@ -177,8 +219,9 @@ function invitation(
     end,
     summary: p.title || tr(KITS[kit].name),
     description: words,
-    location: place || null,
-    url: meetingVenue(place) === 'link' ? meetingLink(place) : null,
+    // Held here, their calendar's Join is their own link to the call (M16 F6c).
+    location: people.join ?? (place || null),
+    url: people.join ?? (meetingVenue(place) === 'link' ? meetingLink(place) : null),
     organizer: people.from,
     attendee: people.to,
   });
@@ -196,7 +239,7 @@ function invitation(
 export async function mailedAs(
   ctx: AppContext,
   m: Message,
-  people: { senderId: string; from: IcsPerson; to: IcsPerson },
+  people: MailedPeople,
 ): Promise<MailedAs | null> {
   const p = (m.payload ?? {}) as CardPayload;
   if (m.kind === 'voice')
@@ -221,7 +264,7 @@ export async function mailedAs(
   const kit = p.kit;
   const { zone, locale } = await clockOf(ctx, m, people.senderId);
   return asReader(ctx, people.senderId, async () => {
-    const text = cardText(p, kit, people.from, zone, locale);
+    const text = cardText(p, kit, people.from, zone, locale, people.join);
     const event =
       kit === 'meeting' || kit === 'appointment'
         ? invitation(ctx, m, p, kit, people, 'REQUEST', text)
@@ -237,14 +280,14 @@ export async function mailedAs(
 export async function updateOf(
   ctx: AppContext,
   m: Message,
-  people: { senderId: string; from: IcsPerson; to: IcsPerson },
+  people: MailedPeople,
 ): Promise<MailedAs | null> {
   const p = (m.payload ?? {}) as CardPayload;
   if (m.kind !== 'kit' || (p.kit !== 'meeting' && p.kit !== 'appointment')) return null;
   const kit = p.kit;
   const { zone, locale } = await clockOf(ctx, m, people.senderId);
   return asReader(ctx, people.senderId, async () => {
-    const text = `${tr('New time')}\n${cardText(p, kit, people.from, zone, locale)}`;
+    const text = `${tr('New time')}\n${cardText(p, kit, people.from, zone, locale, people.join)}`;
     const event = invitation(ctx, m, p, kit, people, 'REQUEST', text);
     return { text, attachments: event ? [event] : [] };
   });
@@ -254,7 +297,7 @@ export async function updateOf(
 export async function cancellationOf(
   ctx: AppContext,
   m: Message,
-  people: { senderId: string; from: IcsPerson; to: IcsPerson },
+  people: MailedPeople,
 ): Promise<MailedAs | null> {
   const p = (m.payload ?? {}) as CardPayload;
   if (m.kind !== 'kit' || (p.kit !== 'meeting' && p.kit !== 'appointment')) return null;

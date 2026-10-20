@@ -1429,8 +1429,6 @@ export const frB: Catalog = {
     'Déplacée dans son propre espace, avec les personnes invitées.',
   'Your invitation': 'Votre invitation',
   'This invitation has ended': 'Cette invitation a expiré',
-  'It ran out a day after the meeting, or a newer one replaced it. Ask whoever invited you for a new link.':
-    'Elle a expiré un jour après la réunion, ou une plus récente l’a remplacée. Demandez un nouveau lien à la personne qui a envoyé l’invitation.',
   'This invitation is for your Caime account': 'Cette invitation est pour votre compte Caime',
   'Sign in, and you’ll find the meeting among your requests.':
     'Connectez-vous : la réunion vous attend parmi vos demandes.',
@@ -2560,4 +2558,11 @@ export const frB: Catalog = {
   'Cai, once everyone in the call says yes': 'Cai, une fois que chacun dans l’appel a dit oui',
   'Everyone is asked as they join, and it starts once all say yes. Voices aren’t kept.':
     'Chacun est sollicité en rejoignant, et cela commence quand tous ont dit oui. Les voix ne sont pas conservées.',
+  'It ran out a day after its time, or it was called off or replaced. Ask whoever it’s with for a new link.':
+    'Il a expiré un jour après son heure, ou il a été annulé ou remplacé. Demandez un nouveau lien à la personne avec qui vous l’aviez.',
+  'Its call is here: no account, nothing to install.':
+    'Son appel est ici : sans compte, sans rien installer.',
+  'Keep this conversation': 'Garder cette conversation',
+  'Make it your own Caime account, free: this conversation and what was said stay yours.':
+    'Faites-en votre propre compte Caime, gratuit : cette conversation et ce qui s’y est dit restent à vous.',
 };

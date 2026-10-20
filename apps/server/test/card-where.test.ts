@@ -7,7 +7,8 @@
  * anyone may see or somewhere else in their words; its booking's card says so, and one held here
  * is joined as a meeting is (the calendar, the feed, "starting now"); something ordered by the
  * piece may say it's sent here; the page says where each is; someone who booked without an
- * account is told it's a call, and a call to them says why it can't ring yet. A calendar event
+ * account is mailed their own link to its call, from which they join it with no account (M16 F6c),
+ * and a call to them before they have says why it can't ring yet. A calendar event
  * names whom it's with, never the same words twice, with its join address for its place, and in
  * a business conversation the team reads the customer and the customer the organization.
  */
@@ -19,7 +20,7 @@ import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { planEvents } from '../src/lib/calendar-push';
 import { memoryMailer } from '../src/lib/email';
 import { runDueJobs } from '../src/lib/jobs';
-import { type Client, createTestApp, signup, type TestApp } from './helpers';
+import { type Client, clientFor, createTestApp, signup, type TestApp } from './helpers';
 
 let t: TestApp;
 const mail = memoryMailer();
@@ -274,7 +275,7 @@ describe('where a booking is (M16 F6)', () => {
     expect(await page('call')).not.toContain('4 Nile Street');
   });
 
-  it('someone who booked without an account is told it’s a call, and a call to them says why it can’t ring yet', async () => {
+  it('someone who booked without an account joins its call from their own link, with no account (M16 F6c)', async () => {
     const start = await form('/v1/public/book', {
       host: 'sami.tutor',
       item: 'call',
@@ -310,15 +311,80 @@ describe('where a booking is (M16 F6)', () => {
     const confirmed = mail.outbox.slice(before).find((m) => m.to === 'pia@example.com');
     expect(confirmed?.text).toContain('a call on Caime');
     expect(confirmed?.icalEvent?.content).toContain('A call on Caime with Sami Tutor');
+    // Her own link, in the words and as her calendar's place and address.
+    const link = /https:\/\/caime\.example\/j\/(cmg_[A-Za-z0-9_-]+)/.exec(confirmed?.text ?? '');
+    expect(link, confirmed?.text).not.toBeNull();
+    const event = (confirmed?.icalEvent?.content ?? '').replace(/\r\n[ \t]/g, '');
+    expect(event).toContain(`LOCATION:${link?.[0]}`);
+    expect(event).toContain(`URL:${link?.[0]}`);
     // Sami's Join rings nobody yet: he's told why, in his language.
-    const rung = await sami.req('POST', `/v1/conversations/${withPia}/calls`, {
-      kind: 'video',
-      deviceId: uuidv4(),
-    });
-    expect(rung.statusCode).toBe(400);
-    expect(rung.json().error.message).toBe(
-      'Pia Visitor isn’t on Caime yet: a call reaches them once they join with their address.',
+    const call = (who: Client) =>
+      who.req('POST', `/v1/conversations/${withPia}/calls`, { kind: 'video', deviceId: uuidv4() });
+    const early = await call(sami);
+    expect(early.statusCode).toBe(400);
+    expect(early.json().error.message).toBe(
+      'Pia Visitor hasn’t opened the link Caime mailed yet. When Pia Visitor joins from it, the call rings here.',
     );
+    // The day before, the reminder carries the same link.
+    t.clock.set('2026-10-20T06:00:01Z');
+    await runDueJobs(t.ctx);
+    const reminder = mail.outbox.find(
+      (m) => m.to === 'pia@example.com' && m.subject.startsWith('Reminder:'),
+    );
+    expect(reminder?.text).toContain(link?.[0]);
+    // What the link says before it's taken: the booking, whom it's with, and that she said she's
+    // 18 or over as she booked.
+    const token = link?.[1] ?? '';
+    const seen = await t.app.inject({ method: 'GET', url: `/v1/join/${token}` });
+    expect(seen.json().meeting).toMatchObject({
+      title: 'Arabic lesson',
+      host: 'Sami Tutor',
+      direct: true,
+      booking: true,
+      notes: false,
+    });
+    expect(seen.json().guest).toEqual({ name: 'Pia Visitor', adult: true });
+    const taken = await t.app.inject({
+      method: 'POST',
+      url: `/v1/join/${token}`,
+      payload: { adult: true, client: 'native' },
+    });
+    expect(taken.statusCode, taken.body).toBe(200);
+    expect(taken.json().conversationId).toBe(withPia);
+    const pia = clientFor(t, taken.json().token, { id: '', displayName: 'Pia Visitor' } as never);
+    expect((await pia.req('GET', `/v1/conversations/${withPia}`)).statusCode).toBe(200);
+    expect((await pia.req('GET', '/v1/inbox')).statusCode).toBe(403);
+    // Pia joins: Sami is rung (told as anyone is), and answers.
+    const hers = await call(pia);
+    expect(hers.statusCode, hers.body).toBe(201);
+    const told = (await sami.get('/v1/notifications')).notifications as Array<{ title: string }>;
+    expect(told.some((n) => n.title === 'Pia Visitor is calling')).toBe(true);
+    const callId = hers.json().call.id as string;
+    expect(
+      (await sami.req('POST', `/v1/calls/${callId}/accept`, { deviceId: uuidv4() })).statusCode,
+    ).toBe(200);
+    expect((await pia.req('POST', `/v1/calls/${callId}/end`, {})).statusCode).toBe(200);
+    // Sami's Join rings her page now; nothing tells her anywhere else.
+    const his = await call(sami);
+    expect(his.statusCode, his.body).toBe(201);
+    const hisId = his.json().call.id as string;
+    expect(
+      (await pia.req('POST', `/v1/calls/${hisId}/accept`, { deviceId: uuidv4() })).statusCode,
+    ).toBe(200);
+    expect((await sami.req('POST', `/v1/calls/${hisId}/end`, {})).statusCode).toBe(200);
+    const piaId = (await pia.get('/v1/me')).user.id as string;
+    const hersTold = await t.ctx.db
+      .selectFrom('notifications')
+      .select('id')
+      .where('user_id', '=', piaId)
+      .where('kind', '=', 'call')
+      .execute();
+    expect(hersTold).toEqual([]);
+    // Called off, the link is over, and so is her way into a call there.
+    await sami.post(`/v1/messages/${card.id}/kit`, { to: 'cancelled' });
+    expect((await t.app.inject({ method: 'GET', url: `/v1/join/${token}` })).statusCode).toBe(404);
+    const after = await call(pia);
+    expect(after.statusCode).toBe(403);
   });
 
   it('at its time its people are told it’s starting, as for a meeting', async () => {

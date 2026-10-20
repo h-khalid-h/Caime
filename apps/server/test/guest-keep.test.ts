@@ -248,6 +248,6 @@ describe('keeping a meeting (M16 C3f)', () => {
     // and by address), all on the test's clock.
     t.clock.set('2026-10-20T09:00:00Z');
     const { guests } = (await productMetrics(t.ctx, 30)).growth;
-    expect(guests).toEqual({ joined: 6, kept: 2 });
+    expect(guests).toEqual({ joined: 6, kept: 2, fromMail: 0 });
   });
 });

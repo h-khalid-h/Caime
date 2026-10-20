@@ -1676,7 +1676,16 @@ A sphere is said as how you know someone, never "sphere".
   (`keepMeeting`) and sign-up reads only on `?keep=1`; onboarding then opens the meeting, since a
   pending `/c/<id>` (`conversationIn`) is a linked arrival. Whatever turns a provisional row into
   an account ends every session it had first (`endSessions`), and an update that finds it
-  claimed already makes no session: anything new that does so keeps both. A space's card given
+  claimed already makes no session: anything new that does so keeps both. Someone reached by mail
+  (M16 F6c: a page's booker once confirmed, whoever a meeting or an appointment held on Caime is
+  mailed to in a one-to-one) has the same kind of link to the card itself (`callLinkFor`,
+  `lib/meeting-join.ts`: the token made from `serverKey('call.links')`, the card and the person,
+  so every mail about it carries one link, in the words and as the calendar event's place; made by
+  `mailProvisionalBooker` and `joinLinkFor` in `mail-cards.ts`), `guestLink` reads either kind
+  (`JoinView.meeting.direct`, `booking`), and their page's call is the one-to-one's: a call there
+  takes them only by their link, taken, to a card there that's asked or agreed (`callLinkIn` in
+  the start route, which stands for a request answered), rings them only while a session of
+  theirs is good (`sessionLive`) and notifies them never. A space's card given
   another time (M16 F5) asks its guests by address again (`askGuestsForTime`: a new link each,
   their answer let go, the invitation at the card's `sequence`), and called off it sends them its
   cancellation one past (`tellGuestsCancelled`); a guest by link reads the time on their page.

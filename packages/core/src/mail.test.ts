@@ -116,9 +116,11 @@ describe('notByMail (M16 F3)', () => {
     expect(notByMail('location', { lat: 30, lng: 31, live: { minutes: 15 } })).toBe('live');
     expect(notByMail('kit', meeting({ place: 'Café Riche', repeat: 'week' }))).toBe('repeats');
     expect(notByMail('kit', { kit: 'appointment', fields: { repeat: 'month' } })).toBe('repeats');
-    // Held on Caime: nobody joins its call from a mail.
+    // Held on Caime: nobody joins its call from a mail, but in a one-to-one, where the mail
+    // carries their own link to it (M16 F6c).
     expect(notByMail('kit', meeting({}))).toBe('where');
     expect(notByMail('kit', meeting({ place: 'Caime' }))).toBe('where');
+    expect(notByMail('kit', meeting({}), true)).toBeNull();
     expect(notByMailText('where')).toBe(
       'Say where it is: someone reached by email can’t join a call on Caime.',
     );

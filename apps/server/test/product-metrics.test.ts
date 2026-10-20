@@ -219,7 +219,7 @@ describe('product metrics (PRD §82–83)', () => {
       // Nor made a join link (join-links.test.ts measures them).
       joinLinks: { made: 0, joined: 0, newPeople: 0, asked: 0 },
       // Nor had a meeting's guest (guest-keep.test.ts measures them).
-      guests: { joined: 0, kept: 0 },
+      guests: { joined: 0, kept: 0, fromMail: 0 },
       // Nor brought a chat over (import.test.ts measures them).
       imports: { chats: 0, groups: 0, messages: 0 },
     });

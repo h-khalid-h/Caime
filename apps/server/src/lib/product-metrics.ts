@@ -223,10 +223,16 @@ export async function productMetrics(ctx: AppContext, days: number): Promise<Pro
 
   // Meeting guests (R84, M16 C3f): who came in by their link in the window, and of guests, who
   // made it their account in the window: the same row, claimed, by link or by address.
-  const guests = await q<{ joined: number; kept: number }>(sql`
+  // M16 F6c: and who came in to a call in their one-to-one by the link their mail carried.
+  const guests = await q<{ joined: number; kept: number; from_mail: number }>(sql`
     select
-      (select count(distinct user_id)::int from meeting_guests
-        where joined_at > ${from} and joined_at <= ${to}) as joined,
+      (select count(distinct g.user_id)::int from meeting_guests g
+        join meeting_spaces ms on ms.space_message_id = g.space_message_id
+        where g.joined_at > ${from} and g.joined_at <= ${to}) as joined,
+      (select count(distinct g.user_id)::int from meeting_guests g
+        where not exists (select 1 from meeting_spaces ms
+          where ms.space_message_id = g.space_message_id)
+          and g.joined_at > ${from} and g.joined_at <= ${to}) as from_mail,
       (select count(distinct g.user_id)::int from meeting_guests g
         join users u on u.id = g.user_id
         where u.claimed_at > ${from} and u.claimed_at <= ${to}) as kept
@@ -343,7 +349,7 @@ export async function productMetrics(ctx: AppContext, days: number): Promise<Pro
         newPeople: joinLinks.fresh,
         asked: joinLinks.asked,
       },
-      guests: { joined: guests.joined, kept: guests.kept },
+      guests: { joined: guests.joined, kept: guests.kept, fromMail: guests.from_mail },
       imports: { chats: imports.chats, groups: imports.groups, messages: imports.messages },
     },
     ai: {

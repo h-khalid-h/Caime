@@ -104,10 +104,10 @@ export type NotByMail = 'kind' | 'repeats' | 'live' | 'where';
  * Whether a message, as its kind and payload say, reaches someone by email: words, photos,
  * files and a voice note's recording go as they are; a place as its line and a map; a card of
  * `MAIL_CARDS` in words. Never a sticker, a poll, a contact, a live location (it moves after the
- * mail has gone), a time that repeats, or a meeting held on Caime, whose call nobody joins from
- * a mail.
+ * mail has gone), a time that repeats, or a meeting held on Caime outside a one-to-one: in one
+ * (`oneToOne`), its mail carries their own link to its call (M16 F6c).
  */
-export function notByMail(kind: string, payload: unknown): NotByMail | null {
+export function notByMail(kind: string, payload: unknown, oneToOne = false): NotByMail | null {
   const p = (payload ?? {}) as {
     kit?: unknown;
     fields?: Record<string, unknown>;
@@ -125,7 +125,11 @@ export function notByMail(kind: string, payload: unknown): NotByMail | null {
     case 'kit':
       if (!(MAIL_CARDS as readonly unknown[]).includes(p.kit)) return 'kind';
       if (isRepeat(p.fields?.repeat)) return 'repeats';
-      if (p.kit === 'meeting' && meetingVenue(p.fields?.place, p.invitation) === 'caime')
+      if (
+        p.kit === 'meeting' &&
+        !oneToOne &&
+        meetingVenue(p.fields?.place, p.invitation) === 'caime'
+      )
         return 'where';
       return null;
     default:

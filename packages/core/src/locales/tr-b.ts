@@ -1371,8 +1371,6 @@ export const turkishB: Catalog = {
   'Moved to its own space, with its guests.': 'Konuklarıyla birlikte kendi alanına taşındı.',
   'Your invitation': 'Davetin',
   'This invitation has ended': 'Bu davetin süresi doldu',
-  'It ran out a day after the meeting, or a newer one replaced it. Ask whoever invited you for a new link.':
-    'Toplantıdan bir gün sonra sona erdi ya da yerini daha yeni bir davet aldı. Seni davet edenden yeni bir bağlantı iste.',
   'This invitation is for your Caime account': 'Bu davet Caime hesabın için',
   'Sign in, and you’ll find the meeting among your requests.':
     'Giriş yap; toplantıyı isteklerinin arasında bulacaksın.',
@@ -2473,4 +2471,11 @@ export const turkishB: Catalog = {
   'Cai, once everyone in the call says yes': 'Cai, aramadaki herkes evet dediğinde',
   'Everyone is asked as they join, and it starts once all say yes. Voices aren’t kept.':
     'Herkese katılırken sorulur ve herkes evet dediğinde başlar. Sesler saklanmaz.',
+  'It ran out a day after its time, or it was called off or replaced. Ask whoever it’s with for a new link.':
+    'Saatinden bir gün sonra sona erdi ya da iptal edildi veya yerini başkası aldı. Görüştüğünüz kişiden yeni bir bağlantı isteyin.',
+  'Its call is here: no account, nothing to install.':
+    'Görüşmesi burada: hesap yok, kurulacak bir şey yok.',
+  'Keep this conversation': 'Bu konuşmayı saklayın',
+  'Make it your own Caime account, free: this conversation and what was said stay yours.':
+    'Kendi Caime hesabınız yapın, ücretsiz: bu konuşma ve konuşulanlar sizde kalır.',
 };

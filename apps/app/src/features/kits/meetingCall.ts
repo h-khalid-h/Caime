@@ -6,8 +6,9 @@ import { isSystemKind } from '@caime/core/system-ids';
 /**
  * Which call a meeting's Join opens in its conversation (R83), by the same rules as the
  * conversation's own call buttons: a direct conversation with someone who can be called (not
- * Cai or a friend, not a request, not someone reached by mail), or a group of up to eight.
- * Null where there's no call to make.
+ * Cai or a friend, not a request), someone reached by mail among them, who joins from the link
+ * their mail carried (M16 F6c: the server says when they haven't yet), or a group of up to
+ * eight. Null where there's no call to make.
  */
 export function meetingCall(
   c: ConversationView | null | undefined,
@@ -17,7 +18,7 @@ export function meetingCall(
   if (c.kind === 'direct') {
     const other = c.other;
     if (!other || !can.calls || c.request) return null;
-    if (isSystemKind(other.person.kind) || other.person.kind === 'provisional') return null;
+    if (isSystemKind(other.person.kind)) return null;
     return 'direct';
   }
   if (c.kind === 'group') {

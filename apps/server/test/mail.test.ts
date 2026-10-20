@@ -16,7 +16,7 @@ import { runDueJobs } from '../src/lib/jobs';
 import { STAFF_ADDRESSES } from '../src/lib/mail-in';
 import { sweepProvisional } from '../src/lib/mail-out';
 import { eraseMessagesWhere } from '../src/lib/org-data';
-import { type Client, createTestApp, signup, type TestApp } from './helpers';
+import { type Client, clientFor, createTestApp, signup, type TestApp } from './helpers';
 import { BULK_DOMAIN, BULK_IP, mailDns, rawMail, SENDER_IP } from './mail-fixtures';
 
 const DOMAIN = 'caime.test';
@@ -1941,9 +1941,8 @@ describe('cards by email (M16 F3)', () => {
     expect(await refused(meeting('rana-weekly', { repeat: 'week' }))).toBe(
       'A time that repeats doesn’t travel by email: send one time.',
     );
-    expect(await refused(meeting('rana-on-caime', { place: '' }))).toBe(
-      'Say where it is: someone reached by email can’t join a call on Caime.',
-    );
+    // A meeting held on Caime goes in a one-to-one, with their own link to its call (M16 F6c,
+    // below); core's `notByMail` keeps it back elsewhere.
     expect(
       await refused({
         clientId: 'rana-live',
@@ -2005,6 +2004,61 @@ describe('cards by email (M16 F3)', () => {
     expect((await cardIn(dina, id, card))?.payload.state).toBe('confirmed');
     // The customer confirmed it themselves: no booker's mail tells them the clinic did.
     expect(smtp.outbox.filter((m) => m.to === 'karim@outside.example')).toHaveLength(0);
+  });
+
+  it('a meeting held on Caime goes with their own link to its call, which signs them in to it alone (M16 F6c)', async () => {
+    const withOmar = (
+      await rana.post('/v1/conversations/by-email', {
+        email: 'omar.f6c@outside.example',
+        name: 'Omar',
+      })
+    ).conversation.id as string;
+    sends = [];
+    // No place: a meeting is held on Caime.
+    const held = meeting('rana-meet-f6c');
+    delete (held.payload.fields as { place?: string }).place;
+    await rana.post(`/v1/conversations/${withOmar}/messages`, held);
+    await work();
+    expect(sends).toHaveLength(1);
+    const text = String(sends[0]?.TextBody);
+    expect(text).toContain('It’s a call on Caime. At its time, join it from your own link:');
+    const link = /https?:\/\/\S+\/j\/(cmg_[A-Za-z0-9_-]+)/.exec(text);
+    expect(link, text).not.toBeNull();
+    const [invite] = ics(sends[0]);
+    expect(invite?.text).toContain(`LOCATION:${link?.[0]}`);
+    expect(invite?.text).toContain(`URL:${link?.[0]}`);
+    // Asked, not yet answered: the link opens it all the same, as theirs to join.
+    const seen = await t.app.inject({ method: 'GET', url: `/v1/join/${link?.[1]}` });
+    expect(seen.json().meeting).toMatchObject({
+      title: 'Venue walkthrough',
+      host: 'Rana Mail',
+      direct: true,
+      booking: false,
+    });
+    expect(seen.json().guest).toEqual({ name: 'Omar', adult: null });
+    const taken = await t.app.inject({
+      method: 'POST',
+      url: `/v1/join/${link?.[1]}`,
+      payload: { adult: true, client: 'native' },
+    });
+    expect(taken.statusCode, taken.body).toBe(200);
+    expect(taken.json().conversationId).toBe(withOmar);
+    const omar = clientFor(t, taken.json().token, { id: '', displayName: 'Omar' } as never);
+    // Rana's call rings Omar's page, though Omar never answered her first mail in Caime: the link
+    // is the invitation. Omar answers it.
+    const rung = await rana.req('POST', `/v1/conversations/${withOmar}/calls`, {
+      kind: 'video',
+      deviceId: 'rana-device',
+    });
+    expect(rung.statusCode, rung.body).toBe(201);
+    const callId = rung.json().call.id as string;
+    const answered = await omar.req('POST', `/v1/calls/${callId}/accept`, {
+      deviceId: 'omar-device',
+    });
+    expect(answered.statusCode, answered.body).toBe(200);
+    expect((await rana.req('POST', `/v1/calls/${callId}/end`, {})).statusCode).toBe(200);
+    // Nothing else of Caime is Omar's.
+    expect((await omar.req('GET', '/v1/inbox')).statusCode).toBe(403);
   });
 });
 
