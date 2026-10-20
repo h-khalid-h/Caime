@@ -5,7 +5,8 @@
  * its own track and sends each utterance as it ends, which the speech stand-in hears; anyone stops
  * it; the call's line opens the notes, speaker by speaker, and each may delete their own words. A
  * second call answered without Cai never starts it. A meeting proposed with "Cai takes notes"
- * (M16 F7c) says so on its card, and its Join asks as it starts the call.
+ * (M16 F7c) says so on its card, and its Join asks as it starts the call. Asked, Cai catches the
+ * reader up on the notes and finds their follow-ups (M16 F7d).
  */
 import { type BrowserContext, expect, type Page, test } from '@playwright/test';
 import { apiSignUp, CLIENT, newPerson, visible } from './helpers';
@@ -121,6 +122,14 @@ test.describe
       await expect(sheet.getByText('Hi Noor, the contract is signed.').first()).toBeVisible();
       await expect(sheet.getByText('You').first()).toBeVisible();
       await expect(sheet.getByText('Sam Rivera').first()).toBeVisible();
+      // Asked, Cai catches Noor up on what was said, labelled as Cai's and kept nowhere, and
+      // finds its follow-ups (M16 F7d): nothing here is anyone's to do.
+      await page.getByTestId('call-notes-catch-up').click();
+      const summary = page.getByTestId('call-notes-summary');
+      await expect(summary).toContainText('Suggested by Cai');
+      await expect(summary).toContainText(/Caught up on \d+ messages/);
+      await page.getByTestId('call-notes-follow-ups').click();
+      await expect(visible(page, 'Nothing new to follow up')).toBeVisible();
       await page.screenshot({ path: 'e2e/screenshots/desktop-call-notes-sheet.png' });
 
       // Noor deletes her own words; Sam's stay.

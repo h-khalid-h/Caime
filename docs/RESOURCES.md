@@ -338,6 +338,9 @@ Pro's €2 10.23 hours, and a half-hour 1:1 where someone is speaking 80% of the
 recording runs one AudioContext, an analyser and a delay per voice, and a MediaRecorder only while
 someone speaks. No timer, poll or AI token anywhere else: the state moves on events (an ask, an
 answer, a join, a leave, a stop) through one reconcile, and nothing is summarised unless asked.
+Asked (M16 F7d), "Catch me up" is one light-model call and "Find follow-ups" one on the plan's
+tier, each on the asker's day by cost, over at most 24,000 characters of the notes: under the
+60,000 a conversation's catch-up and follow-ups may read, which `ai-costs.test.ts` measures.
 
 ## Meetings with guests (R84)
 

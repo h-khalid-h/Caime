@@ -2304,10 +2304,13 @@ with its reason, so it isn't proposed again without new facts.
   call", speaker by speaker, for whoever was in it from when they joined; each deletes their own
   words; the notes go with the line (disappearing, erasure) and a person's export carries their own
   answers and words. Nothing is drawn from them unless asked. *Not yet, with why:* a summary or
-  follow-ups on ask (F7d, after the notes have been used), Cai asked in the call (R82 (7)), phones
+  follow-ups on ask (F7d), Cai asked in the call (R82 (7)), phones
   recording (R82 (5)), in person (R82 (6)), an organization's 90 days of audio (R85 (5): no
   organization holds calls yet). *Built since (F7c, the same day):* "Cai takes notes" chosen ahead on
   a meeting card held on Caime, by someone who could ask in its call; the card, its mail and its
   calendar events say so, and Join is the labelled pair ("Join, Cai takes notes", "Join without
   Cai"), which asks as it starts or answers the call. No way into a call whose notes are asked for or
   on joins without a choice: a meeting's card, a calendar's join address and a guest's page included.
+  And F7d: the notes offer "Catch me up" and "Find follow-ups" on ask, read by the same instructions
+  as a conversation's; the catch-up is kept nowhere, the follow-ups are the reader's suggestions by
+  the line they came from, offered once (R12).

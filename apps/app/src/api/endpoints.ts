@@ -805,6 +805,9 @@ export const endpoints = {
   ) => api.post<CallNotesStateResponse>(`/calls/${id}/notes/answer`, body),
   stopCallNotes: (id: string) => api.post<CallNotesStateResponse>(`/calls/${id}/notes/stop`, {}),
   callNotes: (id: string) => api.get<CallNotesResponse>(`/calls/${id}/notes`),
+  /** Cai on a call's notes, on ask (M16 F7d): a catch-up, and the follow-ups as suggestions. */
+  catchUpCallNotes: (id: string) => api.post<AiCatchUpView>(`/calls/${id}/notes/catch-up`, {}),
+  callNoteFollowUps: (id: string) => api.post<AiActionsView>(`/calls/${id}/notes/follow-ups`, {}),
   deleteCallNoteLine: (id: string, lineId: string) =>
     api.del<OkResponse>(`/calls/${id}/notes/lines/${lineId}`),
   /** One thing said, from the device recording: its audio, who said it and when. */

@@ -3146,8 +3146,34 @@ graph) and the number that will show it; one that sharpens none is hygiene and s
       core `kit-cards.test.ts` (the card's Notes line), the E2E `call-notes.spec.ts` (the form's
       switch, the card's line, "Join, Cai takes notes" and the other side's ring asking) and
       `meetings.spec.ts`, the catalogs in four languages, and the full gate.
-- [ ] F7d. A summary and the follow-ups of a call's notes, on ask, Cai's and labelled so, offered
-      as suggestions (R12), once the notes have been used.
+- [x] F7d. Cai on a call's notes, on ask (2026-10-20, R82 (3), R12; what Meet's, Zoom's and
+      Teams' note-takers sell as the summary and its action items, here kept nowhere and offered
+      as the reader's own suggestions; advantages 1 and 8: a call's promises join the relationship
+      they were made in, where a note-taker's land in a document. The number: of follow-ups found
+      in a call's notes, the share offered for the reader to accept or dismiss, every one, never
+      written as a fact (R12); of catch-ups, the share kept anywhere, none). "Notes from the call"
+      offers "Catch me up" and "Find follow-ups" to whoever may use AI assist once something was
+      heard, the conversation's own words and shape (`NotesSheet`): the catch-up is labelled
+      "Suggested by Cai" and kept nowhere; each follow-up (something the reader agreed or was
+      asked to do, something they wait on someone in the call for, something decided) is the
+      reader's suggestion by the line it came from (`ai:callnote:<line>:<kind>`, so a line's is
+      offered once and a dismissed one stays dismissed), tied to the call's line in its
+      conversation, with "{speaker} said “…”" for its reason. The notes are read as a
+      conversation is, by the same instructions as a conversation's catch-up and follow-ups
+      (`lib/call-notes-ai.ts`: `notesFor`'s lines, the reader's own as "You", numbered by
+      `transcriptText`; prompts `notes-catch-up` and `notes-actions` in `PROMPT_VERSIONS`), only
+      what the reader may read (from when they joined), never anyone's audio. The privacy page
+      and the processors list say what the AI provider receives. Costs: one light-model call per
+      catch-up and one per "Find follow-ups" on the plan's tier, each on the asker's day by cost,
+      the transcript at most 24,000 characters (under a conversation's 60,000, whose cost is
+      measured in `ai-costs.test.ts`); no timer, no row kept but the suggestions; on devices,
+      the first download 448.6 KB of 450, as F7c's (two endpoints: the buttons load with the
+      notes' sheet), the conversation's chunk 91.5 KB as before. Verified:
+      `call-notes.test.ts` (a catch-up labelled Cai's from both people's lines; follow-ups by
+      their lines, the waiting one naming the other speaker, a line out of range skipped, none
+      offered twice; refused with AI assist off and for someone not in the call), the E2E
+      `call-notes.spec.ts` (Catch me up and Find follow-ups from the call's line), and the full
+      gate.
 - [ ] G. Integration framework and governed AI (REVIEW §11): credentials (key outside the
       database with a key id and re-seal, a downscoped picker token, sealed webhook secrets,
       rotation); per-use health, Google and Microsoft probes, a freshness gauge, a reconnect
@@ -5376,6 +5402,9 @@ graph) and the number that will show it; one that sharpens none is hygiene and s
   journeys, safety, reliability, performance, intelligence, mail and calendar, chat, integrations,
   business and code integrity; the matrix against WhatsApp, Signal, Slack, Calendly and Workspace;
   an age-assurance design; the integration framework mapped to the code; plan M16 (A–H).
+- 2026-10-20 — M16 F7d: "Catch me up" and "Find follow-ups" on a call's notes, on ask: a catch-up
+  labelled Cai's and kept nowhere, the follow-ups the reader's own suggestions by the line they
+  came from, offered once.
 - 2026-10-20 — M16 F7c: a meeting proposed with "Cai takes notes" says so on its card, mail and
   calendar, and its Join asks as it starts or answers the call; a group meeting's Join joins the
   call that's on; no plain Join into a call whose notes are asked for or on, a guest's included.

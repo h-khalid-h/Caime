@@ -1704,4 +1704,5 @@ export const arServer: Catalog = {
     'يدوّن Cai الملاحظات في الاجتماعات على Caime فقط.',
   'Cai takes notes in the call, once everyone in it says yes.':
     'يدوّن Cai الملاحظات في المكالمة، حين يوافق كل من فيها.',
+  '{speaker} said {quote}': 'قيل في المكالمة {quote}: {speaker}',
 };

@@ -1648,4 +1648,5 @@ export const turkishServer: Catalog = {
     'Cai yalnızca Caime’de yapılan toplantılarda not alır.',
   'Cai takes notes in the call, once everyone in it says yes.':
     'Cai aramada not alır; aramadaki herkes evet dediğinde.',
+  '{speaker} said {quote}': 'Aramada söylendi {quote}: {speaker}',
 };

@@ -2,19 +2,26 @@
  * What was said in a call while Cai took notes (M16 F7, R82 (3)), loaded when it's opened from
  * the call's line: speaker by speaker, as each was heard, from when the reader joined (R85 (2)).
  * Each person may delete their own words; the others keep theirs. Nothing is drawn from it on its
- * own: it's what was said, and that's all.
+ * own: Cai catches the reader up on it, or finds its follow-ups, only when they ask (M16 F7d), the
+ * catch-up labelled and kept nowhere, the follow-ups offered as their own suggestions.
  */
-import type { CallNoteLineView } from '@caime/core/api';
+import type { AiCatchUpView, CallNoteLineView } from '@caime/core/api';
+import { AI_LABEL } from '@caime/core/assist';
 import { formatClock } from '@caime/core/format';
 import { tr, trn } from '@caime/core/i18n';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
+import ListChecks from 'lucide-react-native/icons/list-checks';
+import Sparkles from 'lucide-react-native/icons/sparkles';
 import Trash from 'lucide-react-native/icons/trash';
+import { useState } from 'react';
 import { View } from 'react-native';
 import { endpoints } from '@/api/endpoints';
 import { qk } from '@/api/keys';
 import { useUserClock } from '@/lib/time';
+import { useSession } from '@/state/session';
 import { useTheme } from '@/theme/theme';
 import { Avatar } from '@/ui/Avatar';
+import { Button } from '@/ui/Button';
 import { EmptyState } from '@/ui/EmptyState';
 import { lazyPart } from '@/ui/Lazy';
 import { Pressable } from '@/ui/Pressable';
@@ -44,6 +51,37 @@ export function NotesSheet({
   });
   const lines = notes.data?.lines ?? [];
   const writing = lines.filter((l) => l.text === null).length;
+  // Cai on what was said (M16 F7d), for whoever may use AI assist, once something was heard.
+  const assisted = useSession((s) => Boolean(s.user?.aiEnabled && !s.user.minor));
+  const heard = lines.some((l) => l.text !== null);
+  const [caughtUp, setCaughtUp] = useState<AiCatchUpView | null>(null);
+  const [busy, setBusy] = useState<'catch-up' | 'follow-ups' | null>(null);
+  const catchUp = async () => {
+    setBusy('catch-up');
+    try {
+      setCaughtUp(await endpoints.catchUpCallNotes(callId));
+    } catch (e) {
+      toast((e as Error).message, { tone: 'danger' });
+    } finally {
+      setBusy(null);
+    }
+  };
+  const followUps = async () => {
+    setBusy('follow-ups');
+    try {
+      const n = (await endpoints.callNoteFollowUps(callId)).found.length;
+      toast(
+        n
+          ? trn(n, '{n} follow-up to review', '{n} follow-ups to review')
+          : tr('Nothing new to follow up'),
+      );
+      void qc.invalidateQueries({ queryKey: qk.allSuggestions });
+    } catch (e) {
+      toast((e as Error).message, { tone: 'danger' });
+    } finally {
+      setBusy(null);
+    }
+  };
   const remove = async (line: CallNoteLineView) => {
     try {
       await endpoints.deleteCallNoteLine(callId, line.id);
@@ -76,6 +114,62 @@ export function NotesSheet({
         />
       ) : (
         <View style={{ gap: 14 }} testID="call-notes-lines">
+          {assisted && heard ? (
+            <View style={{ gap: 10 }}>
+              <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8 }}>
+                <Button
+                  label={tr('Catch me up')}
+                  icon={Sparkles}
+                  size="sm"
+                  variant="secondary"
+                  loading={busy === 'catch-up'}
+                  disabled={busy !== null}
+                  onPress={() => void catchUp()}
+                  testID="call-notes-catch-up"
+                />
+                <Button
+                  label={tr('Find follow-ups')}
+                  icon={ListChecks}
+                  size="sm"
+                  variant="secondary"
+                  loading={busy === 'follow-ups'}
+                  disabled={busy !== null}
+                  onPress={() => void followUps()}
+                  testID="call-notes-follow-ups"
+                />
+              </View>
+              {caughtUp ? (
+                <View
+                  accessibilityLiveRegion="polite"
+                  testID="call-notes-summary"
+                  style={{
+                    padding: 12,
+                    borderRadius: t.radii.md,
+                    gap: 6,
+                    backgroundColor: t.c.surfaceMuted,
+                  }}
+                >
+                  {caughtUp.summary ? (
+                    <>
+                      <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+                        <Sparkles size={13} color={t.c.accentStrong} />
+                        <Text variant="overline" color="accentStrong">
+                          {tr(caughtUp.label ?? AI_LABEL)}
+                        </Text>
+                      </View>
+                      <Text variant="body" auto selectable>
+                        {caughtUp.summary}
+                      </Text>
+                    </>
+                  ) : (
+                    <Text variant="body" color="textSecondary">
+                      {tr('Nothing to catch up on yet.')}
+                    </Text>
+                  )}
+                </View>
+              ) : null}
+            </View>
+          ) : null}
           {lines.map((l) => (
             <View
               key={l.id}

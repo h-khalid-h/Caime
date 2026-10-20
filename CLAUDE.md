@@ -1645,8 +1645,11 @@ A sphere is said as how you know someone, never "sphere".
   (`lib/notes-allowed.ts`), for the in-call ask and for a meeting card that chooses them ahead
   (`fields.notes: 'cai'`, M16 F7c, checked in `sendMessage`); a meeting's Join goes through
   `joinDirect` or `joinGroupMeeting` (`features/calls/calls.ts`), which answer or join the call
-  that's on and ask with Cai. The E2E runs in a project of its own (`chromium-speech`) whose
-  microphone speaks and pauses (`e2e/fake-speech.ts`).
+  that's on and ask with Cai. Cai on the notes is on ask alone (`lib/call-notes-ai.ts`, M16 F7d):
+  `notesFor`'s lines as a transcript, a catch-up kept nowhere and follow-ups as the reader's
+  suggestions by line (`ai:callnote:<line>:<kind>`); anything new drawn from the notes is asked
+  for the same way. The E2E runs in a project of its own (`chromium-speech`) whose microphone
+  speaks and pauses (`e2e/fake-speech.ts`).
 - A meeting's guests (R83, R84): invited by address from an accepted meeting card held here
   (`features/kits/MeetingGuests.tsx`: Invite a guest, the sheet lazy; the card that moved says
   so and opens the space), or by a link the inviter sends themselves (H6, `inviteGuestByLink`: a

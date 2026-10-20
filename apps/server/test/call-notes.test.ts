@@ -18,6 +18,22 @@ import { eraseMessagesWhere } from '../src/lib/org-data';
 import { type Client, createTestApp, signup, type TestApp, until } from './helpers';
 
 const replies: Array<{ status: number; json: unknown }> = [];
+/** What the model answers, in turn (M16 F7d: a catch-up and the follow-ups of the notes). */
+const said: Array<{ status: number; json: unknown }> = [];
+const modelSays = (text: string) =>
+  said.push({
+    status: 200,
+    json: {
+      id: 'msg_stub',
+      type: 'message',
+      role: 'assistant',
+      model: 'claude-test',
+      content: [{ type: 'text', text }],
+      stop_reason: 'end_turn',
+      stop_sequence: null,
+      usage: { input_tokens: 10, output_tokens: 5 },
+    },
+  });
 let stub: Server;
 let t: TestApp;
 let noor: Client;
@@ -100,12 +116,15 @@ const ask = (c: Client, id: string, deviceId: string, canRecord = true) =>
 beforeAll(async () => {
   stub = createServer(async (req, res) => {
     for await (const _ of req) {
-      // The audio is read and dropped; the queued words come back.
+      // The audio (or the model's request) is read and dropped; what's queued comes back.
     }
-    const r = replies.shift() ?? {
-      status: 200,
-      json: { text: 'Hello from the call.', language: 'en' },
-    };
+    const model = (req.url ?? '').startsWith('/v1/messages');
+    const r = model
+      ? (said.shift() ?? { status: 500, json: { type: 'error', error: { type: 'api_error' } } })
+      : (replies.shift() ?? {
+          status: 200,
+          json: { text: 'Hello from the call.', language: 'en' },
+        });
     res.writeHead(r.status, { 'content-type': 'application/json' });
     res.end(JSON.stringify(r.json));
   });
@@ -115,6 +134,8 @@ beforeAll(async () => {
     SPEECH_PROVIDER: 'openai',
     SPEECH_API_KEY: 'test-speech-key',
     SPEECH_BASE_URL: `http://127.0.0.1:${port}`,
+    ANTHROPIC_API_KEY: 'test-key',
+    ANTHROPIC_BASE_URL: `http://127.0.0.1:${port}`,
   });
   noor = await signup(t, { displayName: 'Noor Notes' });
   sam = await signup(t, { displayName: 'Sam Notes' });
@@ -473,5 +494,77 @@ describe('chosen ahead on a meeting card (M16 F7c)', () => {
     const plain = await meeting(omar, omarNoor, {});
     expect(plain.statusCode).toBe(201);
     expect(plain.json().message.payload.fields.notes).toBeUndefined();
+  });
+});
+
+describe('Cai on the notes, on ask (M16 F7d)', () => {
+  it('catches up whoever was in the call, and offers its follow-ups once, by the line', async () => {
+    const callId = await ring();
+    await ask(noor, callId, 'noor-tab-1');
+    await sam.req('POST', `/v1/calls/${callId}/accept`, {
+      deviceId: 'sam-phone-1',
+      notes: 'yes',
+      canRecord: false,
+    });
+    replies.push(
+      { status: 200, json: { text: 'I will send the signed contract by Friday.', language: 'en' } },
+      { status: 200, json: { text: 'Great, and I will confirm the venue.', language: 'en' } },
+    );
+    const now = Date.now();
+    expect((await line(noor, callId, 'noor-tab-1', noor.user.id, wav(), now)).statusCode).toBe(200);
+    expect(
+      (await line(noor, callId, 'noor-tab-1', sam.user.id, wav(), now + 5_000)).statusCode,
+    ).toBe(200);
+    await work();
+    await noor.req('POST', `/v1/calls/${callId}/end`, { deviceId: 'noor-tab-1' });
+    await t.ctx.flush();
+
+    // A catch-up, labelled as Cai's and kept nowhere; the model read both, the reader as "You".
+    modelSays('Noor will send the contract by Friday; Sam confirms the venue.');
+    const caught = await noor.post(`/v1/calls/${callId}/notes/catch-up`, {});
+    expect(caught).toMatchObject({
+      summary: 'Noor will send the contract by Friday; Sam confirms the venue.',
+      label: 'Suggested by Cai',
+    });
+
+    // Follow-ups, each the reader's suggestion by the line it came from, tied to the call's line.
+    const found = {
+      items: [
+        { kind: 'task', title: 'Send the signed contract', who: null, due: 'Friday', line: 1 },
+        { kind: 'waiting', title: 'Confirm the venue', who: 'Sam', due: null, line: 2 },
+        { kind: 'task', title: 'Not a line', who: null, due: null, line: 99 },
+      ],
+    };
+    modelSays(JSON.stringify(found));
+    const first = await noor.post(`/v1/calls/${callId}/notes/follow-ups`, {});
+    const callLine = await t.ctx.db
+      .selectFrom('call_notes')
+      .select('message_id')
+      .where('call_id', '=', callId)
+      .executeTakeFirstOrThrow();
+    expect(first.label).toBe('Suggested by Cai');
+    expect(first.found).toHaveLength(2);
+    expect(first.found).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          kind: 'task',
+          title: 'Send the signed contract',
+          messageId: callLine.message_id,
+        }),
+        expect.objectContaining({ kind: 'waiting', subjectUserId: sam.user.id }),
+      ]),
+    );
+    // Asked again, nothing is offered twice.
+    modelSays(JSON.stringify(found));
+    expect((await noor.post(`/v1/calls/${callId}/notes/follow-ups`, {})).found).toEqual([]);
+
+    // Only for someone with AI assist on; never for someone who wasn't in the call.
+    await sam.patch('/v1/me', { aiEnabled: false });
+    const off = await sam.req('POST', `/v1/calls/${callId}/notes/catch-up`, {});
+    expect(off.statusCode).toBe(403);
+    expect(off.json().error.code).toBe('ai_off');
+    await sam.patch('/v1/me', { aiEnabled: true });
+    const stranger = await omar.req('POST', `/v1/calls/${callId}/notes/catch-up`, {});
+    expect(stranger.statusCode).toBe(404);
   });
 });

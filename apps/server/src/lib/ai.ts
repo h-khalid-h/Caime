@@ -442,9 +442,12 @@ export const PROMPT_VERSIONS: Readonly<Record<string, string>> = (() => {
     rewrite: versionOf(REWRITE_SYSTEM('clearer', 'neutral')),
     translate: versionOf(TRANSLATE_SYSTEM('{language}')),
     'catch-up': versionOf(CATCH_UP_SYSTEM('{language}', '{today}', 1)),
+    // A call's notes are read by the same instructions as a conversation (M16 F7d).
+    'notes-catch-up': versionOf(CATCH_UP_SYSTEM('{language}', '{today}', null)),
     brief: versionOf(CATCH_UP_SYSTEM('{language}', '{today}', null)),
     ask: versionOf(ASK_SYSTEM('{language}', '{today}')),
     actions: versionOf(ACTIONS_SYSTEM('{today}')),
+    'notes-actions': versionOf(ACTIONS_SYSTEM('{today}')),
     'search-answer': versionOf(FOUND_SYSTEM('{language}', '{today}')),
     search: versionOf(SEARCH_SYSTEM),
     cai: versionOf(CAI_SYSTEM('{language}', '{voice}', '{today}')),

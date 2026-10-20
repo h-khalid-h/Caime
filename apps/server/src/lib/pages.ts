@@ -207,7 +207,10 @@ began and stopped. Whoever was in the call reads the notes from when they joined
 their own words, and anyone&rsquo;s no, at any time, stops the notes for everyone from that moment.
 The notes go with the call&rsquo;s line in its conversation. Never in a private conversation, and
 never with anyone under 18 in the call. Hearing them counts towards the AI assist of whoever
-asked.</li>
+asked. A meeting may say ahead that Cai takes notes in its call; everyone is still asked as they
+join. Whoever was in the call may ask Cai to catch them up on the notes or find their follow-ups:
+what they may read of the notes goes to the AI provider named below for that answer alone, the
+catch-up is kept nowhere, and the follow-ups are kept as their own suggestions.</li>
 <li><strong>Meetings with guests.</strong> When you invite someone to a meeting by email address,
 Caime keeps the address, who invited them and when, and gives the meeting its own group, where the
 guest sees only that meeting. Their link to join is kept only as a fingerprint, and ends when

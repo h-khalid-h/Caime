@@ -4,6 +4,8 @@
  * utterance is kept only until it's heard.
  */
 import {
+  type AiActionsView,
+  type AiCatchUpView,
   CallNoteLineQuery,
   CallNotesAnswerBody,
   CallNotesAskBody,
@@ -27,6 +29,7 @@ import {
   saveLine,
   stopNotes,
 } from '../lib/call-notes';
+import { catchUpOnNotes, findNoteFollowUps } from '../lib/call-notes-ai';
 import { AppError, badRequest } from '../lib/errors';
 import { parse } from '../lib/validate';
 import { requireAuth } from '../plugins/auth';
@@ -113,5 +116,20 @@ export async function callNotesRoutes(app: FastifyInstance, ctx: AppContext) {
     const call = await callForNotes(ctx, id, auth.userId);
     await deleteOwnLine(ctx, call, lineId, auth.userId);
     return { ok: true };
+  });
+
+  /**
+   * Cai on the notes, on ask (M16 F7d): a catch-up of what this person may read of them, kept
+   * nowhere, and the follow-ups in them, offered as their own suggestions.
+   */
+  app.post('/calls/:id/notes/catch-up', async (req): Promise<AiCatchUpView> => {
+    const auth = requireAuth(req);
+    const { id } = parse(callParam, req.params);
+    return catchUpOnNotes(ctx, await callForNotes(ctx, id, auth.userId), auth.userId);
+  });
+  app.post('/calls/:id/notes/follow-ups', async (req): Promise<AiActionsView> => {
+    const auth = requireAuth(req);
+    const { id } = parse(callParam, req.params);
+    return findNoteFollowUps(ctx, await callForNotes(ctx, id, auth.userId), auth.userId);
   });
 }

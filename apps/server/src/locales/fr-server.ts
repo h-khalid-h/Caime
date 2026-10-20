@@ -1723,4 +1723,5 @@ export const frServer: Catalog = {
     'Cai ne prend des notes que dans une réunion tenue sur Caime.',
   'Cai takes notes in the call, once everyone in it says yes.':
     'Cai prend des notes dans l’appel, une fois que chacun y a dit oui.',
+  '{speaker} said {quote}': 'Dit dans l’appel {quote} : {speaker}',
 };
