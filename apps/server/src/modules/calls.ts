@@ -1,6 +1,7 @@
 import {
   CALL_RING_SECONDS,
   CallDeviceBody,
+  CallEntryBody,
   type CallHistoryResponse,
   CallSignalBody,
   type IceConfigView,
@@ -13,6 +14,7 @@ import type { FastifyInstance } from 'fastify';
 import { z } from 'zod';
 import type { AppContext } from '../context';
 import type { Call } from '../db/schema';
+import { answerOnEntry, reconcileNotes } from '../lib/call-notes';
 import {
   callHistory,
   callView,
@@ -219,7 +221,7 @@ export async function callRoutes(app: FastifyInstance, ctx: AppContext) {
   app.post('/calls/:id/accept', async (req): Promise<CallResponse> => {
     const auth = requireAuth(req);
     const { id } = parse(callParam, req.params);
-    const { deviceId } = parse(CallDeviceBody, req.body);
+    const { deviceId, notes, canRecord } = parse(CallEntryBody, req.body);
     const call = await mine(auth.userId, id);
     if (call.callee_id !== auth.userId) throw forbidden(tr('Only the person called can answer.'));
     // Never rung for them (they were on another call): nothing to answer.
@@ -233,6 +235,15 @@ export async function callRoutes(app: FastifyInstance, ctx: AppContext) {
         (await otherCallIn(ctx, auth.userId, id, trx))
       )
         throw new AppError(409, 'in_call', tr('You’re already in a call.'));
+      // Answered with Cai taking notes or without (R85 (1)), with the answer itself.
+      await answerOnEntry(
+        trx,
+        id,
+        auth.userId,
+        notes,
+        { deviceId, canRecord: canRecord ?? false },
+        ctx.now(),
+      );
       return trx
         .updateTable('calls')
         .set({
@@ -250,6 +261,7 @@ export async function callRoutes(app: FastifyInstance, ctx: AppContext) {
     });
     if (!answered) throw over();
     await ringStopped(ctx, answered);
+    await reconcileNotes(ctx, id);
     await publishCall(ctx, answered);
     return { call: await callView(ctx, answered, auth.userId) };
   });

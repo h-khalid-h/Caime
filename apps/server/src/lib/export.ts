@@ -128,6 +128,8 @@ export async function buildExport(ctx: AppContext, me: string, now: Date) {
     privateDevices,
     calls,
     groupCalls,
+    noteAnswers,
+    noteWords,
     reports,
     security,
     activity,
@@ -636,6 +638,23 @@ export async function buildExport(ctx: AppContext, me: string, now: Date) {
       ])
       .where('m.user_id', '=', me)
       .orderBy('m.rung_at')
+      .execute(),
+    // Their yes or no to Cai's notes in a call, and their own words in them (M16 F7): never
+    // anyone else's words, nor anyone else's answer.
+    db
+      .selectFrom('call_note_answers as a')
+      .innerJoin('call_notes as n', 'n.id', 'a.notes_id')
+      .select(['n.conversation_id', 'a.answer', 'a.at'])
+      .where('a.user_id', '=', me)
+      .orderBy('a.at')
+      .execute(),
+    db
+      .selectFrom('call_note_lines as l')
+      .innerJoin('call_notes as n', 'n.id', 'l.notes_id')
+      .select(['n.conversation_id', 'l.spoken_at', 'l.body', 'l.language'])
+      .where('l.speaker_id', '=', me)
+      .where('l.state', '=', 'heard')
+      .orderBy('l.spoken_at')
       .execute(),
     // Reports they made. Those about them stay with the people who run Caime: they'd name who made them.
     db
@@ -1514,6 +1533,17 @@ export async function buildExport(ctx: AppContext, me: string, now: Date) {
       joinedAt: iso(c.joined_at),
       leftAt: iso(c.left_at),
       endedAt: iso(c.ended_at),
+    })),
+    callNotesAnswers: noteAnswers.map((a) => ({
+      conversationId: a.conversation_id,
+      answer: a.answer,
+      at: a.at.toISOString(),
+    })),
+    yourWordsInCallNotes: noteWords.map((l) => ({
+      conversationId: l.conversation_id,
+      at: l.spoken_at.toISOString(),
+      text: l.body,
+      language: l.language,
     })),
     reports: reports.map((r) => ({
       about: r.person_name

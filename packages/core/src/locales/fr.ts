@@ -4947,4 +4947,44 @@ export const fr: Catalog = {
     'Vos réunions et actions à échéance dans Calendrier Apple, ou toute application de calendrier',
   'A private address any calendar app subscribes to: your actions with a due date, and the meetings and appointments you agreed to. For Google Calendar or Outlook, connect the account under Your accounts instead: Caime writes your plans there as they change. Nothing changes in Caime from the feed. Anyone with the address sees it, so keep it to yourself.':
     'Une adresse privée à laquelle toute application de calendrier s’abonne : vos actions à échéance, et les réunions et rendez-vous que vous avez acceptés. Pour Google Agenda ou Outlook, connectez plutôt le compte dans Vos comptes : Caime y écrit vos projets dès qu’ils changent. Rien ne change dans Caime depuis le flux. Quiconque a l’adresse le voit : gardez-la pour vous.',
+  'Notes from the call': 'Notes de l’appel',
+  'Written by Cai from what was said, under each person’s name. Voices weren’t kept. You can delete your own words.':
+    'Écrites par Cai à partir de ce qui a été dit, sous le nom de chaque personne. Les voix n’ont pas été gardées. Vous pouvez supprimer vos propres mots.',
+  'The notes couldn’t load': 'Les notes n’ont pas pu se charger',
+  'Nothing was said while Cai took notes': 'Rien n’a été dit pendant que Cai prenait des notes',
+  'Words that are still being written show here once they are.':
+    'Les mots encore en cours d’écriture s’affichent ici dès qu’ils le sont.',
+  'Cai is still writing this…': 'Cai écrit encore ceci…',
+  'Delete my words': 'Supprimer mes mots',
+  'Cai is still writing {n} of these.': {
+    one: 'Cai écrit encore l’un d’eux.',
+    other: 'Cai écrit encore {n} d’entre eux.',
+  },
+  'Stop Cai': 'Arrêter Cai',
+  'Stop asking': 'Annuler la demande',
+  'Take notes': 'Prendre des notes',
+  'Cai is taking notes': 'Cai prend des notes',
+  'Asking {names} to let Cai take notes':
+    'En attente de l’accord de {names} pour que Cai prenne des notes',
+  '{name} asks Cai to take notes': '{name} demande à Cai de prendre des notes',
+  'Cai writes down what’s said, under each person’s name, for everyone in the call. Voices aren’t kept, and anyone can stop it.':
+    'Cai note ce qui est dit, sous le nom de chaque personne, pour tous ceux qui sont dans l’appel. Les voix ne sont pas gardées, et chacun peut l’arrêter.',
+  'Let Cai take notes': 'Laisser Cai prendre des notes',
+  'Not this time: Cai isn’t taking notes.': 'Pas cette fois : Cai ne prend pas de notes.',
+  'Someone is in the call without Cai, so Cai stopped taking notes.':
+    'Quelqu’un est dans l’appel sans Cai, alors Cai a arrêté de prendre des notes.',
+  'Cai takes notes when someone in the call is on Caime in a browser.':
+    'Cai prend des notes quand quelqu’un dans l’appel est sur Caime dans un navigateur.',
+  'Cai stopped taking notes: today’s AI assist is used up.':
+    'Cai a arrêté de prendre des notes : l’assistance IA du jour est épuisée.',
+  'Cai can’t take notes in this call.': 'Cai ne peut pas prendre de notes dans cet appel.',
+  'Cai stopped taking notes.': 'Cai a arrêté de prendre des notes.',
+  '{name} asks Cai to take notes in this call.':
+    '{name} demande à Cai de prendre des notes dans cet appel.',
+  'Answer without Cai': 'Répondre sans Cai',
+  'Answer, Cai takes notes': 'Répondre, Cai prend des notes',
+  'Join, Cai takes notes': 'Rejoindre, Cai prend des notes',
+  'Join without Cai': 'Rejoindre sans Cai',
+  'Cai is taking notes in this call.': 'Cai prend des notes dans cet appel.',
+  'Cai is asked to take notes in this call.': 'Cai est invité à prendre des notes dans cet appel.',
 };

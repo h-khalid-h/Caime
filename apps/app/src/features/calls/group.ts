@@ -30,6 +30,7 @@ import { useSession } from '@/state/session';
 import { toast } from '@/ui/Toast';
 import { checkLiveCall } from './engine';
 import { errorName, media, mediaTrouble } from './media';
+import { canRecordNotes } from './notes';
 import { callsAvailable } from './rtc';
 
 export const groupCallsSupported = callsAvailable;
@@ -583,7 +584,8 @@ export async function startGroupCall(conversationId: string, kind: CallKind): Pr
 }
 
 /** Join on this device: the call ringing here, or one on in a group (from its banner). */
-export async function joinGroupCall(target?: GroupCallView): Promise<void> {
+/** Join, on this device; while Cai takes notes in it, with Cai or without (R85 (1)). */
+export async function joinGroupCall(target?: GroupCallView, notes?: 'yes' | 'no'): Promise<void> {
   const phase = store().phase;
   const call = target ?? current();
   if (!call || (phase && !(phase === 'incoming' && current()?.id === call.id))) return;
@@ -619,7 +621,11 @@ export async function joinGroupCall(target?: GroupCallView): Promise<void> {
   store().patch({ local: got.stream, cameraOff: asPressed(got) });
   try {
     iceServers = (await endpoints.callIce().catch(() => ({ iceServers: [] }))).iceServers;
-    const { call: joined } = await endpoints.joinGroupCall(call.id, DEVICE_ID);
+    const { call: joined } = await endpoints.joinGroupCall(
+      call.id,
+      DEVICE_ID,
+      notes ? { answer: notes, canRecord: canRecordNotes() } : undefined,
+    );
     // A later join from this device answers for itself.
     if (attempt !== joins) return;
     if (current()?.id !== call.id || store().phase !== 'joining') {

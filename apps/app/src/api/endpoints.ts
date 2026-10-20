@@ -40,6 +40,8 @@ import type {
   CalendarFeedResponse,
   CalendarView,
   CallHistoryResponse,
+  CallNotesResponse,
+  CallNotesStateResponse,
   CallResponse,
   CheckoutSettledResponse,
   ClosedOrgExportsResponse,
@@ -219,6 +221,14 @@ import type { RetimeBodyT } from '@caime/core/schemas';
 import type { SpaceKind } from '@caime/core/spaces';
 import type { Sphere } from '@caime/core/taxonomy';
 import { api, request } from './client';
+
+/** A yes or a no to Cai's notes, given as a call is answered or joined (M16 F7). */
+export interface NotesChoice {
+  answer: 'yes' | 'no';
+  /** This device can be the one that records (a browser with a recorder). */
+  canRecord: boolean;
+}
+const notesBody = (n?: NotesChoice) => (n ? { notes: n.answer, canRecord: n.canRecord } : {});
 
 const q = (params: Record<string, string | number | boolean | null | undefined>) => {
   const s = Object.entries(params)
@@ -769,8 +779,9 @@ export const endpoints = {
   liveCall: () => api.get<LiveCallsResponse>('/calls/live'),
   startCall: (conversationId: string, body: { kind: CallKind; deviceId: string }) =>
     api.post<CallResponse>(`/conversations/${conversationId}/calls`, body),
-  acceptCall: (id: string, deviceId: string) =>
-    api.post<CallResponse>(`/calls/${id}/accept`, { deviceId }),
+  /** Answered on this device; with Cai taking notes or without, when notes were asked (R85 (1)). */
+  acceptCall: (id: string, deviceId: string, notes?: NotesChoice) =>
+    api.post<CallResponse>(`/calls/${id}/accept`, { deviceId, ...notesBody(notes) }),
   declineCall: (id: string) => api.post<CallResponse>(`/calls/${id}/decline`, {}),
   endCall: (id: string, body: { deviceId: string; failed?: boolean }) =>
     api.post<CallResponse>(`/calls/${id}/end`, body),
@@ -785,6 +796,28 @@ export const endpoints = {
   ) => api.post<OkResponse>(`/calls/${id}/signal`, body),
   callAlive: (id: string, deviceId: string) =>
     api.post<CallResponse>(`/calls/${id}/alive`, { deviceId }),
+  // Cai's notes in a call (M16 F7, R85): asked, answered, stopped, read, one's own words deleted
+  askCallNotes: (id: string, body: { deviceId: string; canRecord: boolean }) =>
+    api.post<CallNotesStateResponse>(`/calls/${id}/notes`, body),
+  answerCallNotes: (
+    id: string,
+    body: { deviceId: string; answer: 'yes' | 'no'; canRecord: boolean },
+  ) => api.post<CallNotesStateResponse>(`/calls/${id}/notes/answer`, body),
+  stopCallNotes: (id: string) => api.post<CallNotesStateResponse>(`/calls/${id}/notes/stop`, {}),
+  callNotes: (id: string) => api.get<CallNotesResponse>(`/calls/${id}/notes`),
+  deleteCallNoteLine: (id: string, lineId: string) =>
+    api.del<OkResponse>(`/calls/${id}/notes/lines/${lineId}`),
+  /** One thing said, from the device recording: its audio, who said it and when. */
+  callNoteLine: (
+    id: string,
+    line: { deviceId: string; speakerId: string; at: number; audio: Blob },
+    signal?: AbortSignal,
+  ) => {
+    const form = new FormData();
+    form.append('file', line.audio, 'utterance');
+    const query = q({ deviceId: line.deviceId, speakerId: line.speakerId, at: line.at });
+    return request<OkResponse>('POST', `/calls/${id}/notes/lines${query}`, { raw: form, signal });
+  },
   // Private conversations (R18): this device's public keys, and everyone's to seal for
   registerDevice: (body: {
     id: string;
@@ -821,8 +854,9 @@ export const endpoints = {
     api.get<GroupCallMaybeResponse>(`/conversations/${conversationId}/group-call`),
   startGroupCall: (conversationId: string, body: { kind: CallKind; deviceId: string }) =>
     api.post<GroupCallResponse>(`/conversations/${conversationId}/group-calls`, body),
-  joinGroupCall: (id: string, deviceId: string) =>
-    api.post<GroupCallResponse>(`/group-calls/${id}/join`, { deviceId }),
+  /** Joined on this device; with Cai taking notes or without, when they're on (R85 (1)). */
+  joinGroupCall: (id: string, deviceId: string, notes?: NotesChoice) =>
+    api.post<GroupCallResponse>(`/group-calls/${id}/join`, { deviceId, ...notesBody(notes) }),
   declineGroupCall: (id: string) => api.post<GroupCallResponse>(`/group-calls/${id}/decline`, {}),
   leaveGroupCall: (id: string, deviceId: string) =>
     api.post<GroupCallResponse>(`/group-calls/${id}/leave`, { deviceId }),

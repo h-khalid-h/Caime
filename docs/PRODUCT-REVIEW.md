@@ -2277,3 +2277,33 @@ with its reason, so it isn't proposed again without new facts.
   account takes its call once they join Caime with the address, as their mail says (their own
   link to join without an account is F6c); Cai taking notes in a meeting (R82 phase 1 under R85)
   is F7, now that the speech provider is live.
+
+- **R109 (2026-10-20) Cai takes notes in a call: R82 phase 1, built under R85.** The owner's report
+  (R108) ended with "nothing joined it to take notes". *Decided and built (M16 F7):* (1) *Asked from
+  inside the call*, by anyone in it who is an adult on Caime with AI assist on and room in the
+  day's allowance: "Take notes" beside Mute. The ask is their own yes; a caller may ask while it
+  rings, and the ring then asks for them, with no plain Answer: "Answer, Cai takes notes" and
+  "Answer without Cai"; a group call joined while notes are asked for or on offers "Join, Cai takes
+  notes" and "Join without Cai", its banner too (R85 (1)). (2) *On once everyone in the call has
+  said yes*; anyone's no at any time ("Not now", answering or joining without Cai, Stop Cai) stops
+  it for everyone from that moment, and the utterance under way is dropped. Nobody is told who said
+  no or who stopped it, only why in words that name nobody; someone under 18 anywhere in the call
+  stops it in words that never say who (R29), and a private conversation is never asked (R52). (3) *The
+  recorder is one member's browser that said yes*, the asker's first, handed to the next as the
+  one recording leaves; a meeting's guest never records (R85 (4)) and a call of phones alone says
+  "Cai takes notes when someone in the call is on Caime in a browser". (4) *Each voice on its own
+  track, cut at its pauses on the device* (a quarter second of speech above the room starts an
+  utterance, most of a second of quiet ends it, half a minute cuts it, under half a second is
+  never sent), sent as it ends; the server keeps only voices that said yes, reads each one's length
+  from the recording, hears it in a job of its own and deletes the audio (R85 (5)). (5) *Every plan,
+  bounded by the day's AI allowance by cost* (R107), which replaces R52's "Pro and Business with
+  monthly minute allowances": an hour of speech is €0.1955 on the production provider, so
+  Personal's day covers 2.56 hours (RESOURCES.md). A free note-taker in the call, in the four
+  interface languages and the Arabic dialects the provider hears, is what Meet, Zoom and Teams sell
+  in their paid tiers. (6) *What comes out*: the call's line in its conversation opens "Notes from the
+  call", speaker by speaker, for whoever was in it from when they joined; each deletes their own
+  words; the notes go with the line (disappearing, erasure) and a person's export carries their own
+  answers and words. Nothing is drawn from them unless asked. *Not yet, with why:* a summary or
+  follow-ups on ask (F7d, after the notes have been used), "Cai takes notes" chosen on a meeting card
+  ahead of its call (F7c), Cai asked in the call (R82 (7)), phones recording (R82 (5)), in person (R82
+  (6)), an organization's 90 days of audio (R85 (5): no organization holds calls yet).

@@ -1621,6 +1621,26 @@ A sphere is said as how you know someone, never "sphere".
   (closed first, a device still in it restarted ICE against a call that had ended: 409s). A
   signal already on its way when its sender or the one it's for left is late, as one to an ended
   call is: `409 call_ended`; between devices that were never in it, 403.
+- Cai's notes in a call (M16 F7, R82 under R85, R109; `lib/call-notes.ts`, `modules/call-notes.ts`,
+  `features/calls/notes.ts`): one live `call_notes` row a call (asking or on: a partial unique
+  index), each person's `call_note_answers` (yes or no, the device, whether it records) and
+  `call_note_lines` (a speaker's utterance: its file until heard, then its words). Its state moves
+  only in `reconcileNotes`, under the notes' row lock, from the call as it is, so anything new
+  that puts someone in a call, takes them out or ends one reconciles too (the answer and join
+  routes save the choice they carry with `answerOnEntry` in the transaction that puts someone in,
+  `settleGroupCall` reconciles on every change, `endCall` and a group's line run `notesAtEnd`).
+  Whose yes it needs is `askedIn` (a call between two: both, from the ring; a group: who's
+  joined), who reads it `readersOf` (from when each joined); the view never says who said no or
+  who stopped it, and a refusal to ask reads the same whatever its reason. A line is taken from
+  the recorder's device alone (`recorder_id`, `recorder_device`; a member's browser, never a
+  guest's), of a speaker who said yes, its length read from the file (`audioLengthMs`), heard in
+  the `call.note` job through `runAi('notes')` on the asker's allowance, its file dropped once
+  heard; the lines go with the call's line (`message_id`, erased with it) and each person's are
+  in their export. The recorder is the web's alone (an analyser and a delay per track, a
+  MediaRecorder per utterance, `step` cutting at pauses, two uploads at a time, everything under
+  way dropped at a stop); while notes are asked for or on, a ring and a join offer two labelled
+  choices (`NotesUi.tsx`, `callUi.tsx`), never a plain Answer. The E2E runs in a project of its
+  own (`chromium-speech`) whose microphone speaks and pauses (`e2e/fake-speech.ts`).
 - A meeting's guests (R83, R84): invited by address from an accepted meeting card held here
   (`features/kits/MeetingGuests.tsx`: Invite a guest, the sheet lazy; the card that moved says
   so and opens the space), or by a link the inviter sends themselves (H6, `inviteGuestByLink`: a

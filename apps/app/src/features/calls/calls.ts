@@ -77,8 +77,8 @@ export async function joinDirect(conversationId: string): Promise<void> {
 export async function startGroupCall(conversationId: string, kind: CallKind): Promise<void> {
   await (await asked())?.startGroupCall(conversationId, kind);
 }
-export async function joinGroupCall(target?: GroupCallView): Promise<void> {
-  await (await asked())?.joinGroupCall(target);
+export async function joinGroupCall(target?: GroupCallView, notes?: 'yes' | 'no'): Promise<void> {
+  await (await asked())?.joinGroupCall(target, notes);
 }
 export async function checkGroupCallIn(conversationId: string): Promise<void> {
   const check = (stack: Stack) => stack.checkGroupCallIn(conversationId);
@@ -98,4 +98,8 @@ export function onCallEvent(event: RealtimeEvent): void {
 }
 export function onGroupCallEvent(event: RealtimeEvent): void {
   void callStackOr('live', live).then((stack) => stack?.onGroupCallEvent(event));
+}
+/** Cai's notes in a call (M16 F7): what the call on this device, and a group's banner, show. */
+export function onNotesEvent(event: RealtimeEvent): void {
+  void callStackOr('live', live).then((stack) => stack?.onNotesEvent(event));
 }

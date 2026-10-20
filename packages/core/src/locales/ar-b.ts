@@ -3287,4 +3287,47 @@ export const arB: Catalog = {
     'اجتماعاتك وإجراءاتك المستحقة في تقويم Apple، أو أي تطبيق تقويم',
   'A private address any calendar app subscribes to: your actions with a due date, and the meetings and appointments you agreed to. For Google Calendar or Outlook, connect the account under Your accounts instead: Caime writes your plans there as they change. Nothing changes in Caime from the feed. Anyone with the address sees it, so keep it to yourself.':
     'عنوان خاص يشترك فيه أي تطبيق تقويم: إجراءاتك ذات تاريخ استحقاق، والاجتماعات والمواعيد التي وافقت عليها. لتقويم Google أو Outlook، اربط الحساب من «حساباتك» بدلًا من ذلك: يكتب Caime خططك هناك فور تغيّرها. لا يتغير شيء في Caime من الرابط. وكل من لديه العنوان يراها، فاحتفظ به لنفسك.',
+  'Notes from the call': 'ملاحظات المكالمة',
+  'Written by Cai from what was said, under each person’s name. Voices weren’t kept. You can delete your own words.':
+    'دوّنها Cai مما قيل، تحت اسم كل شخص. لم تُحفظ الأصوات، وحذف كلماتك متاح لك.',
+  'The notes couldn’t load': 'تعذّر تحميل الملاحظات',
+  'Nothing was said while Cai took notes': 'لم يُقل شيء أثناء تدوين Cai للملاحظات',
+  'Words that are still being written show here once they are.':
+    'تظهر هنا الكلمات التي لا تزال قيد التدوين فور اكتمالها.',
+  'Cai is still writing this…': 'لا يزال Cai يدوّن هذا…',
+  'Delete my words': { toWoman: 'احذفي كلماتي', toMan: 'احذف كلماتي', other: 'احذف كلماتي' },
+  'Cai is still writing {n} of these.': {
+    zero: 'لا شيء قيد التدوين.',
+    one: 'لا يزال Cai يدوّن واحدًا منها.',
+    two: 'لا يزال Cai يدوّن اثنين منها.',
+    few: 'لا يزال Cai يدوّن {n} منها.',
+    many: 'لا يزال Cai يدوّن {n} منها.',
+    other: 'لا يزال Cai يدوّن {n} منها.',
+  },
+  'Stop Cai': { toWoman: 'أوقفي Cai', toMan: 'أوقف Cai', other: 'أوقف Cai' },
+  'Stop asking': { toWoman: 'ألغي الطلب', toMan: 'ألغِ الطلب', other: 'ألغِ الطلب' },
+  'Take notes': 'تدوين الملاحظات',
+  'Cai is taking notes': 'Cai يدوّن الملاحظات',
+  'Asking {names} to let Cai take notes': 'بانتظار موافقة {names} على تدوين Cai للملاحظات',
+  '{name} asks Cai to take notes': 'طلب أن يدوّن Cai الملاحظات: {name}',
+  'Cai writes down what’s said, under each person’s name, for everyone in the call. Voices aren’t kept, and anyone can stop it.':
+    'يدوّن Cai ما يُقال، تحت اسم كل شخص، لكل من في المكالمة. لا تُحفظ الأصوات، ويمكن لأي شخص إيقافه.',
+  'Let Cai take notes': 'نعم، يدوّن Cai الملاحظات',
+  'Not this time: Cai isn’t taking notes.': 'ليس هذه المرة: Cai لا يدوّن الملاحظات.',
+  'Someone is in the call without Cai, so Cai stopped taking notes.':
+    'في المكالمة من انضم دون Cai، لذا توقّف Cai عن تدوين الملاحظات.',
+  'Cai takes notes when someone in the call is on Caime in a browser.':
+    'يدوّن Cai الملاحظات حين يكون أحد من في المكالمة على Caime في متصفح.',
+  'Cai stopped taking notes: today’s AI assist is used up.':
+    'توقّف Cai عن تدوين الملاحظات: نفدت مساعدة الذكاء الاصطناعي لهذا اليوم.',
+  'Cai can’t take notes in this call.': 'لا يمكن لـCai تدوين الملاحظات في هذه المكالمة.',
+  'Cai stopped taking notes.': 'توقّف Cai عن تدوين الملاحظات.',
+  '{name} asks Cai to take notes in this call.':
+    'طلب أن يدوّن Cai الملاحظات في هذه المكالمة: {name}',
+  'Answer without Cai': 'رد دون Cai',
+  'Answer, Cai takes notes': 'رد، ويدوّن Cai الملاحظات',
+  'Join, Cai takes notes': 'انضمام، ويدوّن Cai الملاحظات',
+  'Join without Cai': 'انضمام دون Cai',
+  'Cai is taking notes in this call.': 'يدوّن Cai الملاحظات في هذه المكالمة.',
+  'Cai is asked to take notes in this call.': 'طُلب من Cai تدوين الملاحظات في هذه المكالمة.',
 };

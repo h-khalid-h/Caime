@@ -25,6 +25,7 @@ import { useSession } from '@/state/session';
 import { toast } from '@/ui/Toast';
 import { checkLiveGroupCall } from './group';
 import { errorName, media, mediaTrouble } from './media';
+import { canRecordNotes } from './notes';
 import { callsAvailable, canShareScreen } from './rtc';
 
 export const callsSupported = callsAvailable;
@@ -348,8 +349,11 @@ export async function startCall(conversationId: string, kind: CallKind): Promise
   }
 }
 
-/** Answer on this device: its connection is ready before the other side makes its offer. */
-export async function answer(): Promise<void> {
+/**
+ * Answer on this device: its connection is ready before the other side makes its offer. Where
+ * the caller asked Cai to take notes, the answer says with Cai or without (R85 (1)).
+ */
+export async function answer(notes?: 'yes' | 'no'): Promise<void> {
   const call = current();
   if (!call || store().phase !== 'incoming') return;
   store().patch({ phase: 'connecting' });
@@ -371,7 +375,11 @@ export async function answer(): Promise<void> {
   try {
     store().patch({ local: got.stream, cameraOff: asPressed(got) });
     await connect(got.stream);
-    const { call: answered } = await endpoints.acceptCall(call.id, DEVICE_ID);
+    const { call: answered } = await endpoints.acceptCall(
+      call.id,
+      DEVICE_ID,
+      notes ? { answer: notes, canRecord: canRecordNotes() } : undefined,
+    );
     // It ended meanwhile (the event came before the answer): nothing to start.
     if (current()?.id !== call.id || store().phase !== 'connecting') return;
     store().patch({ call: answered });

@@ -30,6 +30,7 @@ import { mediaHeaders, mediaUrl } from '@/api/client';
 import { Character } from '@/brand/Character';
 import { type Translation, useTranslations } from '@/features/assist/translations';
 import { FollowUpOffer, type FollowUpPayload } from '@/features/cai/FollowUpOffer';
+import { CallNotesLink } from '@/features/calls/CallNotesLink';
 import {
   readAs,
   suspiciousLink,
@@ -472,10 +473,20 @@ export const MessageBubble = memo(function MessageBubble({
 
   if (m.kind === 'system') {
     // A topic started from here opens from its line (PRD §58).
-    const said = m.payload as { event?: string; conversationId?: unknown };
+    const said = m.payload as {
+      event?: string;
+      conversationId?: unknown;
+      callId?: unknown;
+      notes?: unknown;
+    };
     const topic =
       said.event === 'topic_started' && typeof said.conversationId === 'string'
         ? said.conversationId
+        : null;
+    // A call Cai took notes in opens them from its line (M16 F7).
+    const notesOf =
+      said.event === 'call' && said.notes === true && typeof said.callId === 'string'
+        ? said.callId
         : null;
     const line = (
       <View
@@ -505,6 +516,7 @@ export const MessageBubble = memo(function MessageBubble({
         ) : (
           line
         )}
+        {notesOf ? <CallNotesLink callId={notesOf} /> : null}
       </View>
     );
   }

@@ -150,7 +150,8 @@ private conversation, what messages say is encrypted end to end: Caime can&rsquo
 <li>No ads, no selling your data, and no tracking you across other sites or apps.</li>
 <li>AI assist is off until you turn it on, and nothing from a private conversation is ever sent
 to it. With it on, your voice notes are turned into words too, shown under the note and
-searchable, by the speech-to-text provider named below when this Caime has one.</li>
+searchable, by the speech-to-text provider named below when this Caime has one; and in a call,
+Cai can take notes, only once everyone in it has said yes.</li>
 <li>You can download your data, and delete your account, whenever you like.</li>
 </ul>
 </section>
@@ -197,6 +198,16 @@ answers, reactions, and who has read what. Private conversations carry text only
 <li><strong>Your calls.</strong> Who called whom, voice or video, when, for how long, and whether
 it was answered, missed or declined. What&rsquo;s said and shown in a call isn&rsquo;t kept: it
 goes between the devices in it.</li>
+<li><strong>Cai&rsquo;s notes in a call.</strong> Only when someone in a call asks and everyone in
+it says yes, each by a button that says so. Then one browser in the call, of someone on Caime,
+sends each thing said, as it ends, to the speech-to-text provider named below, which turns it into
+words; Caime keeps the words, each under the name of whoever said it, and deletes the audio as
+soon as it&rsquo;s heard. Caime keeps who asked, each person&rsquo;s yes or no, and when the notes
+began and stopped. Whoever was in the call reads the notes from when they joined; anyone may delete
+their own words, and anyone&rsquo;s no, at any time, stops the notes for everyone from that moment.
+The notes go with the call&rsquo;s line in its conversation. Never in a private conversation, and
+never with anyone under 18 in the call. Hearing them counts towards the AI assist of whoever
+asked.</li>
 <li><strong>Meetings with guests.</strong> When you invite someone to a meeting by email address,
 Caime keeps the address, who invited them and when, and gives the meeting its own group, where the
 guest sees only that meeting. Their link to join is kept only as a fingerprint, and ends when
@@ -525,7 +536,8 @@ rules, connections, requests to connect and who you&rsquo;ve blocked; the conver
 in or were in, with your settings and drafts, the messages you sent, what you added to
 others&rsquo; checklists, your shares of others&rsquo; splits, your reactions and votes; your files, each with a link; your actions, and
 those people asked of you; what Caime suggested, and the decisions you&rsquo;re part of; your
-notifications and calls; your devices, with where each signed in from and which service delivers
+notifications and calls, your answers to Cai&rsquo;s notes and your own words in them; your
+devices, with where each signed in from and which service delivers
 its notifications; your spaces, organizations and automations, what you&rsquo;ve saved, the apps
 and tokens that can act for you, and your billing; what an organization&rsquo;s apps were sent of
 your conversation with it; the reports you made; your security records, the log of what you do,

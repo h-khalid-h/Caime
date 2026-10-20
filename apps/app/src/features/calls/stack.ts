@@ -7,3 +7,4 @@
 export { CallScreens } from './CallScreens';
 export * from './engine';
 export * from './group';
+export { answerNotes, askNotes, onNotesEvent, stopNotes } from './notes';

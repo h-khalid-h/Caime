@@ -77,7 +77,7 @@ export function Round({
       >
         <Icon size={26} color={on ? INK : '#FFFFFF'} />
       </Pressable>
-      <Text variant="caption" style={{ color: '#FFFFFFCC' }}>
+      <Text variant="caption" align="center" style={{ color: '#FFFFFFCC', maxWidth: 104 }}>
         {label}
       </Text>
     </View>

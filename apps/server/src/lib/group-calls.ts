@@ -17,6 +17,7 @@ import { CALL_RING_SECONDS, type CallOutcome, type GroupCallView, tr } from '@ca
 import { type Kysely, sql, type Transaction } from 'kysely';
 import type { AppContext } from '../context';
 import type { Call, Database } from '../db/schema';
+import { notesAtEnd, notesViewOf, notesWithLine, reconcileNotes } from './call-notes';
 import { CALL_SEEN_MS, callInOf, lockCallEntry, nameShownTo } from './calls';
 import { titleWithGroup } from './conversations';
 import { registerPeriodic } from './jobs';
@@ -38,7 +39,8 @@ export async function groupCallView(
   ctx: AppContext,
   call: Call,
   viewerId: string,
-  opts: { outsider?: boolean } = {},
+  /** `notes`: the call's notes, read once for everyone a view is made for (M16 F7). */
+  opts: { outsider?: boolean; notes?: GroupCallView['notes'] } = {},
 ): Promise<GroupCallView> {
   const outsider =
     opts.outsider ??
@@ -127,6 +129,7 @@ export async function groupCallView(
     createdAt: call.created_at.toISOString(),
     answeredAt: call.answered_at?.toISOString() ?? null,
     endedAt: call.ended_at?.toISOString() ?? null,
+    notes: opts.notes !== undefined ? opts.notes : await notesViewOf(ctx.db, call),
   };
 }
 
@@ -140,8 +143,9 @@ export async function publishGroupCall(
   rung: string[] = [],
 ): Promise<void> {
   const people = (await participantsOf(ctx.db, call.conversation_id)).map((p) => p.user_id);
+  const notes = await notesViewOf(ctx.db, call);
   for (const userId of people) {
-    const view = await groupCallView(ctx, call, userId, { outsider: false });
+    const view = await groupCallView(ctx, call, userId, { outsider: false, notes });
     await ctx.bus.publish([userId], {
       type: rung.includes(userId) ? 'groupcall.ringing' : 'groupcall.updated',
       data: view,
@@ -397,6 +401,7 @@ async function callLine(ctx: AppContext, ended: Call) {
   // Whoever started it deleted their account: the call still happened, so its line is from the
   // first who joined it (a completed call reads the same to everyone).
   const actor = ended.caller_id ?? first?.user_id;
+  const { taken } = await notesAtEnd(ctx, ended.id);
   if (!actor) return;
   const seconds =
     ended.outcome === 'completed' && ended.answered_at && ended.ended_at
@@ -408,7 +413,11 @@ async function callLine(ctx: AppContext, ended: Call) {
     seconds,
     group: true,
     people: joined.n,
+    callId: ended.id,
+    // Its notes open from its line, and go with it (M16 F7).
+    ...(taken ? { notes: true } : {}),
   });
+  if (taken) await notesWithLine(ctx, ended.id, line.id);
   const [view] = await messageViews(ctx.db, [line], actor);
   await ctx.bus.publish(
     (await participantsOf(ctx.db, ended.conversation_id)).map((p) => p.user_id),
@@ -493,6 +502,8 @@ export async function settleGroupCall(
     };
   });
   if (!done.call) return undefined;
+  // Who's in it changed: Cai's notes follow the call as it is now (M16 F7), before anyone hears.
+  if (done.changed) await reconcileNotes(ctx, callId);
   await tellMissed(ctx, done.call, done.missed);
   const tell = 'tell' in done ? done.tell : undefined;
   if (done.changed && tell) {

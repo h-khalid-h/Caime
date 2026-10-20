@@ -83,9 +83,9 @@ export const SUB_PROCESSORS: readonly SubProcessor[] = [
   {
     id: 'speech',
     name: 'The speech-to-text provider the operator sets',
-    does: 'Turns voice notes into words, for search and reading.',
+    does: 'Turns voice notes, and what’s said in a call while Cai takes notes, into words.',
     receives:
-      'The audio of a voice note whose sender has AI assist on, and nothing else about anyone. Nothing from a private conversation, ever.',
+      'The audio of a voice note whose sender has AI assist on, or of one thing said in a call whose people all said yes to Cai’s notes, and nothing else about anyone. Nothing from a private conversation, ever.',
     when: 'configured',
   },
   {

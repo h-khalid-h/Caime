@@ -22,6 +22,7 @@ import {
 import { type Kysely, sql, type Transaction } from 'kysely';
 import type { AppContext } from '../context';
 import type { Call, Database } from '../db/schema';
+import { notesAtEnd, notesViewOf, notesWithLine } from './call-notes';
 import { titleWithGroup } from './conversations';
 import { registerPeriodic } from './jobs';
 import { insertSystemMessage, messageViews, participantsOf } from './messages';
@@ -74,6 +75,7 @@ export async function callView(ctx: AppContext, call: Call, viewerId: string): P
     createdAt: call.created_at.toISOString(),
     answeredAt: call.answered_at?.toISOString() ?? null,
     endedAt: call.ended_at?.toISOString() ?? null,
+    notes: await notesViewOf(ctx.db, call),
   };
 }
 
@@ -275,6 +277,8 @@ export async function endCall(
     (outcome === 'missed' || outcome === 'cancelled') &&
     Boolean(ended.callee_id && ended.caller_id);
   await ringStopped(ctx, ended, { missedNotice });
+  // Cai's notes stop with it (M16 F7), before anyone hears how it ended.
+  const { taken } = await notesAtEnd(ctx, ended.id);
   await publishCall(ctx, ended);
   const seconds =
     outcome === 'completed' && ended.answered_at
@@ -285,7 +289,11 @@ export async function endCall(
       kind: ended.kind,
       outcome,
       seconds,
+      callId: ended.id,
+      // Its notes open from its line, and go with it (M16 F7).
+      ...(taken ? { notes: true } : {}),
     });
+    if (taken) await notesWithLine(ctx, ended.id, line.id);
     const [view] = await messageViews(ctx.db, [line], ended.caller_id);
     await ctx.bus.publish(
       (await participantsOf(ctx.db, ended.conversation_id)).map((p) => p.user_id),

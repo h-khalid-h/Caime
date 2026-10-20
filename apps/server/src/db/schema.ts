@@ -1297,6 +1297,59 @@ export interface CallMembersTable {
   seen_at: NullableTimestamp;
 }
 
+/** Cai taking notes in a call (M16 F7, R82 under R85): asked, on, and how it stopped. */
+export interface CallNotesTable {
+  id: string;
+  call_id: string;
+  conversation_id: string;
+  /** Who asked, whose day's allowance pays for hearing it (R107). */
+  started_by: string | null;
+  state: 'asking' | 'on' | 'stopped' | 'declined';
+  /** The browser recording while it's on: a member's, never a guest's (R85 (4)). */
+  recorder_id: string | null;
+  recorder_device: string | null;
+  /** The call's line in its conversation, once the call has ended: the notes go with it. */
+  message_id: string | null;
+  asked_at: Generated<Date>;
+  started_at: NullableTimestamp;
+  stopped_at: NullableTimestamp;
+  stopped_by: string | null;
+  why:
+    | 'stopped'
+    | 'declined'
+    | 'joined_without'
+    | 'minor'
+    | 'ended'
+    | 'no_recorder'
+    | 'allowance'
+    | null;
+  created_at: Generated<Date>;
+}
+
+/** Each person's yes or no to a call's notes, on the device they said it on. */
+export interface CallNoteAnswersTable {
+  notes_id: string;
+  user_id: string;
+  answer: 'yes' | 'no';
+  device: string | null;
+  can_record: Generated<boolean>;
+  at: Generated<Date>;
+}
+
+/** One utterance of a call's notes: its words once heard, its audio only until then (R85 (5)). */
+export interface CallNoteLinesTable {
+  id: string;
+  notes_id: string;
+  speaker_id: string;
+  spoken_at: Date;
+  length_ms: number;
+  file_id: string | null;
+  body: string | null;
+  language: string | null;
+  state: Generated<'waiting' | 'heard' | 'unheard'>;
+  created_at: Generated<Date>;
+}
+
 /** Which Stripe customer is whose (R25): a person's, or an organization's. */
 export interface BillingCustomersTable {
   id: string;
@@ -1689,6 +1742,9 @@ export interface Database {
   agent_questions: AgentQuestionsTable;
   calls: CallsTable;
   call_members: CallMembersTable;
+  call_notes: CallNotesTable;
+  call_note_answers: CallNoteAnswersTable;
+  call_note_lines: CallNoteLinesTable;
   e2ee_devices: E2eeDevicesTable;
   billing_customers: BillingCustomersTable;
   billing_subscriptions: BillingSubscriptionsTable;
@@ -1749,6 +1805,7 @@ export type OrgMember = Selectable<OrgMembersTable>;
 export type BusinessThread = Selectable<BusinessThreadsTable>;
 export type OrgApp = Selectable<OrgAppsTable>;
 export type Call = Selectable<CallsTable>;
+export type CallNotes = Selectable<CallNotesTable>;
 export type Task = Selectable<TasksTable>;
 export type Suggestion = Selectable<SuggestionsTable>;
 

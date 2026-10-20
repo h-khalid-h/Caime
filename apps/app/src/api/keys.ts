@@ -103,6 +103,8 @@ export const qk = {
   /** Call history: every call, the missed ones, or those with one person. */
   calls: (filter: string) => ['calls', filter] as const,
   callsPage: (filter: string, limit: number) => ['calls', filter, limit] as const,
+  /** What was said in a call while Cai took notes (M16 F7). */
+  callNotes: (callId: string) => ['call-notes', callId] as const,
   relationshipHistory: (id: string) => ['relationship-history', id] as const,
   connections: ['connections'] as const,
   /** Updates: the organizations someone follows, and each one's updates (PRD §59). */

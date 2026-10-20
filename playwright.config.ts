@@ -5,6 +5,7 @@
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { defineConfig, devices } from '@playwright/test';
+import { fakeSpeechFile } from './e2e/fake-speech';
 import {
   ACCOUNTS_STUB,
   ADMIN_TOKEN,
@@ -59,11 +60,27 @@ export default defineConfig({
   projects: [
     {
       name: 'chromium',
+      testIgnore: /call-notes\.spec\.ts/,
       use: {
         ...devices['Desktop Chrome'],
         // Calls: a test pattern and a tone stand in for a camera and a microphone.
         launchOptions: {
           args: ['--use-fake-ui-for-media-stream', '--use-fake-device-for-media-stream'],
+        },
+      },
+    },
+    {
+      // Cai's notes in a call (M16 F7): a microphone that speaks and pauses, from a file.
+      name: 'chromium-speech',
+      testMatch: /call-notes\.spec\.ts/,
+      use: {
+        ...devices['Desktop Chrome'],
+        launchOptions: {
+          args: [
+            '--use-fake-ui-for-media-stream',
+            '--use-fake-device-for-media-stream',
+            `--use-file-for-fake-audio-capture=${fakeSpeechFile()}`,
+          ],
         },
       },
     },

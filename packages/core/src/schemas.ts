@@ -653,6 +653,42 @@ export const StartCallBody = z.object({ kind: z.enum(CALL_KINDS), deviceId: Call
 /** Answer, on this device. */
 export const CallDeviceBody = z.object({ deviceId: CallDevice }).strict();
 
+/**
+ * A yes or a no to Cai taking notes in a call (M16 F7, R85 (1)): a labelled choice, said on the
+ * device in the call, which says whether it can be the one that records (a browser with a
+ * recorder; R85 (4)).
+ */
+const NotesAnswer = z.enum(['yes', 'no']);
+
+/** Answer a ring, or join a group call, on this device: with Cai taking notes or without. */
+export const CallEntryBody = z
+  .object({
+    deviceId: CallDevice,
+    notes: NotesAnswer.optional(),
+    canRecord: z.boolean().optional(),
+  })
+  .strict();
+
+/** Ask Cai to take notes in the call this device is in. */
+export const CallNotesAskBody = z
+  .object({ deviceId: CallDevice, canRecord: z.boolean().default(false) })
+  .strict();
+
+/** Answer the ask, on the device in the call. */
+export const CallNotesAnswerBody = z
+  .object({ deviceId: CallDevice, answer: NotesAnswer, canRecord: z.boolean().default(false) })
+  .strict();
+
+/** One thing said, from the device recording (M16 F7, R82 (2)): who said it, and when. */
+export const CallNoteLineQuery = z
+  .object({
+    deviceId: CallDevice,
+    speakerId: z.string().uuid(),
+    /** When its recording begins, in milliseconds since 1970 (its length is read from it). */
+    at: z.coerce.number().int().min(0),
+  })
+  .strict();
+
 /** How this device can be reached (WebRTC), for the other side's device. */
 export const CallSignalBody = z
   .object({

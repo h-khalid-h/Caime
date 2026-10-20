@@ -1689,4 +1689,14 @@ export const arServer: Catalog = {
   '{name} isn’t on Caime yet: a call reaches them once they join with their address.':
     'لا حساب لـ {name} على Caime بعد: تصل المكالمة بعد الانضمام بالعنوان نفسه.',
   'Free for people. Organizations pay for their team.': 'مجاني للأفراد. والمؤسسات تدفع لفريقها.',
+  'You’re not in that call.': 'لست في تلك المكالمة.',
+  'Cai can’t take notes on this Caime yet.': 'لا يستطيع Cai تدوين الملاحظات على Caime هذا بعد.',
+  'Cai doesn’t take notes in a private conversation: nothing said there reaches Caime.':
+    'لا يدوّن Cai الملاحظات في محادثة خاصة: لا يصل شيء مما يُقال فيها إلى Caime.',
+  'Only someone on Caime can ask Cai to take notes.':
+    'طلب التدوين من Cai لمن لديه حساب على Caime فقط.',
+  'This device isn’t taking notes in that call.': 'هذا الجهاز لا يدوّن الملاحظات في تلك المكالمة.',
+  'That line': 'ذلك السطر',
+  'Attach a recording.': 'التسجيل مطلوب.',
+  'That isn’t a recording Caime reads.': 'هذا ليس تسجيلًا يقرؤه Caime.',
 };

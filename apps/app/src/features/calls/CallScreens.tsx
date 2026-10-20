@@ -37,6 +37,8 @@ import {
   toggleMute,
 } from './engine';
 import { GroupCallLayer } from './GroupCallLayer';
+import { NotesAsk, NotesLine, NotesRound } from './NotesUi';
+import { notesAsked } from './notes';
 
 /**
  * The call screen (PRD §47), over everything while a call rings or runs: who it's with, how
@@ -156,7 +158,27 @@ function OneToOneCallLayer() {
         >
           {phase === 'incoming' ? tr('{status} · calling you', { status }) : status}
         </Text>
+        {phase === 'active' || phase === 'outgoing' ? (
+          <NotesLine notes={call.notes} me={me} />
+        ) : null}
+        {phase === 'incoming' && notesAsked(call.notes) ? (
+          <Text
+            variant="caption"
+            align="center"
+            style={{ color: '#FFFFFFDD', paddingHorizontal: 24, ...OVER_VIDEO }}
+            testID="call-incoming-notes"
+          >
+            {tr('{name} asks Cai to take notes in this call.', {
+              name: other.displayName.split(' ')[0] || other.displayName,
+            })}
+          </Text>
+        ) : null}
       </View>
+      {phase === 'active' ? (
+        <View style={{ position: 'absolute', bottom: 150 + insets.bottom, left: 0, right: 0 }}>
+          <NotesAsk notes={call.notes} me={me} />
+        </View>
+      ) : null}
       {sharing && phase === 'active' ? (
         <View
           style={{
@@ -212,14 +234,35 @@ function OneToOneCallLayer() {
                 onPress={() => void hangUp()}
                 testID="call-decline"
               />
-              <Round
-                icon={video ? Video : Phone}
-                label={tr('Answer')}
-                tone="go"
-                onPress={() => void answer()}
-                focusRef={primary}
-                testID="call-accept"
-              />
+              {notesAsked(call.notes) ? (
+                // Asked to take notes: no plain Answer, each says what it does (R85 (1)).
+                <>
+                  <Round
+                    icon={video ? Video : Phone}
+                    label={tr('Answer without Cai')}
+                    tone="go"
+                    onPress={() => void answer('no')}
+                    testID="call-accept-without-notes"
+                  />
+                  <Round
+                    icon={video ? Video : Phone}
+                    label={tr('Answer, Cai takes notes')}
+                    tone="go"
+                    onPress={() => void answer('yes')}
+                    focusRef={primary}
+                    testID="call-accept-with-notes"
+                  />
+                </>
+              ) : (
+                <Round
+                  icon={video ? Video : Phone}
+                  label={tr('Answer')}
+                  tone="go"
+                  onPress={() => void answer()}
+                  focusRef={primary}
+                  testID="call-accept"
+                />
+              )}
             </>
           ) : (
             <>
@@ -256,6 +299,11 @@ function OneToOneCallLayer() {
                   onPress={toggleCamera}
                   testID="call-camera"
                 />
+              ) : null}
+              {phase === 'active' || phase === 'outgoing' ? (
+                // Asked while it rings, the ring itself asks (R85 (1): the caller's consent is
+                // starting with Cai).
+                <NotesRound notes={call.notes} testID="call-notes" />
               ) : null}
               <Round
                 icon={PhoneOff}

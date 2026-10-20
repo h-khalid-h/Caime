@@ -3063,14 +3063,63 @@ graph) and the number that will show it; one that sharpens none is hygiene and s
       link of their own (as a meeting guest's, R84), a guest session for that one conversation's
       call, a one-to-one call that takes a provisional party with a live session; until then
       their mail says to join Caime with the address (F6).
-- [ ] F7. Cai takes notes in a call or a meeting (R82 phase 1 under R85, the owner's report of
-      2026-10-19: "the Assistant didn't join and so the meeting wasn't recorded"): a labelled
-      choice to start, answer or join with Cai, anyone's no stopping it for everyone, never with
-      anyone under 18 and never in a private conversation, one member's browser recording each
-      voice apart in utterances, each transcribed by the speech provider (ElevenLabs Scribe v2 in
-      production) on the starter's AI allowance by cost, the audio gone once its words are made,
-      the transcript on the call's line for whoever was in it, and each person's own lines theirs
-      to delete.
+- [x] F7. Cai takes notes in a call (2026-10-20, R82 phase 1 under R85, R109; the owner's report
+      of 2026-10-19: "the Assistant didn't join and so the meeting wasn't recorded"; advantages 5
+      and 4: everyone's yes and no audio kept, on every plan at its published cost, where Meet,
+      Zoom and Teams sell a note-taker in their paid tiers. The number: of notes taken, the share
+      that started only once everyone in the call had said yes, every one (`started` on
+      `caime_call_notes_total` is counted there alone); of what was said, the share whose audio is
+      kept once heard, none; an hour of speech heard costs €0.1955, so Personal's day covers 2.56
+      hours). "Take notes" sits beside Mute in a call between two and in a group call (a meeting's
+      call is one), for an adult on Caime with AI assist on and room left in the day (`mayAsk`),
+      never in a private conversation or with anyone under 18 in the call (refused in words that
+      never say who); the ask is the asker's own yes. A caller may ask while it rings,
+      and the ring then asks: "Answer, Cai takes notes" and "Answer without Cai", no plain Answer;
+      a group call joined while notes are asked for or on offers "Join, Cai takes notes" and "Join
+      without Cai", its banner too; whoever is already in it is asked in the call ("Let Cai take
+      notes", "Not now"). On once everyone in the call has said yes; anyone's no (Not now, a ring
+      answered or a call joined without Cai, Stop Cai) stops it for everyone at once, the utterance
+      under way dropped, and nobody is told who, only why, in words that name nobody. Its state
+      moves in one place, `reconcileNotes` (`lib/call-notes.ts`), under the notes' row lock, after
+      an ask, an answer or a stop, a call between two answered or ended, and any change to who's
+      in a group call. The recorder is one member's browser that said yes (the asker's, else
+      whoever said yes first, handed on as one leaves; never a guest's; a call of phones alone is
+      told Cai needs someone in a browser): each voice on its own track, cut at its pauses on the
+      device (`features/calls/notes.ts`: a quarter of a second above the room starts an utterance,
+      most of a second of quiet ends it, half a minute cuts it, under half a second is never
+      sent), each sent as it ends; the server takes lines from the recorder's device alone, of
+      voices that said yes, reads each one's length from the file, hears it in a `call.note` job
+      through `runAi('notes')` on the asker's allowance by cost (a day run out stops the notes and
+      says so) and deletes the audio once heard. The call's line opens "Notes from the call"
+      (`NotesSheet`, lazy), speaker by speaker, for whoever was in it, from when they joined; each
+      deletes their own words; the notes go with the line (`eraseMessagesWhere`, an organization's
+      erasure); a person's export carries their own answers and words; the privacy page, the DPA
+      and the processors list say what the speech provider receives. Nothing is drawn from them
+      unless asked. Costs: on the server, a row per ask and per answer, and per utterance a row, a
+      file until it's heard, a job and one speech call; an event per change of state; no timer or
+      poll; on devices, the recorder's AudioContext with an analyser and a delay per voice and a
+      MediaRecorder only while someone speaks, about 4 KB a second of speech sent; the first
+      download 448.5 KB of 450 (0.2 KB more than the Settings audit's 448.3: the notes' endpoints
+      and their event), the conversation's chunk 90.8 KB of its 100 (0.5 KB more: the call line's
+      way to the notes); the call screens' part is in the calls' own chunk.
+      Verified: `call-notes.test.ts` (asked while it rings and told to both, on when answered
+      with Cai, on the asker's browser; lines from the recorder alone, a short one never heard,
+      heard and its audio deleted, the run priced by its length; read the same by both from when
+      they joined, each deleting their own; a stop for everyone; a no that never lets it start;
+      the call's line marked, the notes in the export and erased with it; who may ask: AI assist
+      off, a private conversation, someone under 18, two asks at once making one; a call nobody
+      can record; a group's recorder handed over as it leaves, and a join without Cai stopping
+      it), the app's `notes.test.ts` (where an utterance starts, ends and is cut; a noisy room;
+      the lines that say why it stopped), the E2E `call-notes.spec.ts` in Chromium with
+      microphones that speak and pause (`e2e/fake-speech.ts`, a project of its own: asked while
+      it rings, answered with Cai, utterances heard, stopped by the other side, read from the
+      call's line, one's own deleted; a ring answered without Cai never starts it), the catalogs
+      in four languages, and the full gate.
+- [ ] F7c. "Cai takes notes" chosen on a meeting card ahead of its call: the card says so to
+      everyone it's for, and Join asks each person as the ring does (R85 (1)); a guest's page
+      says it before they join.
+- [ ] F7d. A summary and the follow-ups of a call's notes, on ask, Cai's and labelled so, offered
+      as suggestions (R12), once the notes have been used.
 - [ ] G. Integration framework and governed AI (REVIEW §11): credentials (key outside the
       database with a key id and re-seal, a downscoped picker token, sealed webhook secrets,
       rotation); per-use health, Google and Microsoft probes, a freshness gauge, a reconnect
@@ -5299,6 +5348,11 @@ graph) and the number that will show it; one that sharpens none is hygiene and s
   journeys, safety, reliability, performance, intelligence, mail and calendar, chat, integrations,
   business and code integrity; the matrix against WhatsApp, Signal, Slack, Calendly and Workspace;
   an age-assurance design; the integration framework mapped to the code; plan M16 (A–H).
+- 2026-10-20 — M16 F7: Cai takes notes in a call: asked by anyone in it, on once everyone has
+  said yes (the ring and the join ask, never a plain Answer), stopped for everyone by anyone's
+  no; one member's browser records each voice apart in utterances, heard by the speech provider
+  on the asker's day and deleted once heard; the call's line opens the notes, each person's
+  words theirs to delete.
 - 2026-10-20 — Settings, every page on a desktop and a phone: `/settings` opens You, never a
   page that isn't there; a browser's session is named by its browser ("Chrome · macOS") as a
   passkey is; in a customer's conversation the team is offered the organization's places for a

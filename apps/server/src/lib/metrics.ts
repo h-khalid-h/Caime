@@ -194,6 +194,12 @@ export function createMetrics(pool: pg.Pool) {
       'caime_public_bookings_total',
       'Bookings before an account, by outcome (a code sent, booked, or why not).',
     ),
+    // Cai's notes in calls (M16 F7): asked, started, handed to another recorder, stopped and why,
+    // and each utterance heard or not.
+    callNotes: new Counter(
+      'caime_call_notes_total',
+      'Notes in calls by outcome (asked, started, a stop and its reason, a line heard or not).',
+    ),
     // Writing to an organization before an account (R97 (1), M16 C1d): each step's outcome.
     publicWrites: new Counter(
       'caime_public_writes_total',

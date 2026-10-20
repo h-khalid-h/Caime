@@ -9,7 +9,8 @@
  * their session and their own name, reading the space and its card, its call (ICE, what's live,
  * start, join, decline, leave, signal, alive), and the live socket that rings them and carries
  * the call's signals (it tells each person only what's theirs, and drops a guest's typing),
- * and keeping the meeting as their own account (M16 C3f), which hands them what sign-up takes.
+ * their say in Cai's notes of that call (M16 F7), and keeping the meeting as their own account
+ * (M16 C3f), which hands them what sign-up takes.
  * Each route still checks membership itself, so none reaches past the space. Writing in the
  * space, people, search, settings: never.
  */
@@ -33,6 +34,12 @@ export const GUEST_ROUTES: ReadonlySet<string> = new Set([
   'POST /v1/group-calls/:id/leave',
   'POST /v1/group-calls/:id/signal',
   'POST /v1/group-calls/:id/alive',
+  // Cai's notes in their meeting's call (M16 F7): a guest says yes or no, stops it, and reads
+  // what was said; never asks (it's on an account's allowance) and never records (R85 (4)).
+  'POST /v1/calls/:id/notes/answer',
+  'POST /v1/calls/:id/notes/stop',
+  'GET /v1/calls/:id/notes',
+  'DELETE /v1/calls/:id/notes/lines/:lineId',
 ]);
 
 /** The key a route is listed under: its method and its pattern (`/v1/messages/:id`). */

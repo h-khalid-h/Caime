@@ -93,6 +93,15 @@ export async function eraseMessagesWhere(
         references_ids = '{}', delivery_detail = null, html = null, signature = null
       where message_id in (select id from gone)
     ),
+    -- A call's line takes Cai's notes of the call with it (M16 F7), and any utterance's audio
+    -- still waiting to be heard.
+    notes_gone as (
+      delete from call_notes where message_id in (select id from gone) returning id
+    ),
+    note_audio as (
+      select file_id from call_note_lines
+      where notes_id in (select id from notes_gone) and file_id is not null
+    ),
     ${stockBackCtes(sql`select id from gone`, now)}
     select distinct 'saved' as what, user_id::text as id, null as conversation_id
     from saved_gone
@@ -101,7 +110,7 @@ export async function eraseMessagesWhere(
     union all
     select distinct 'file', file_id::text, null from (
       select file_id from assets_gone union select file_id from files_gone
-      union select file_id from album_gone
+      union select file_id from album_gone union select file_id from note_audio
     ) f where file_id is not null
     union all
     select 'link', url, null from linked

@@ -7,7 +7,7 @@ import { isLargeGroup } from '@caime/core/large-group';
 import type { QueryClient, QueryKey } from '@tanstack/react-query';
 import { endpoints } from '@/api/endpoints';
 import { qk } from '@/api/keys';
-import { onCallEvent, onGroupCallEvent } from '@/features/calls/calls';
+import { onCallEvent, onGroupCallEvent, onNotesEvent } from '@/features/calls/calls';
 import {
   applyEditToInbox,
   applyMessageToInbox,
@@ -118,6 +118,14 @@ export function applyEvent(qc: QueryClient, event: RealtimeEvent, me: string): v
       void import('@/features/e2ee/private')
         .then((p) => p.devicesChanged(event.data.userId))
         .catch(() => {});
+      return;
+    case 'call.notes':
+      // Cai's notes in a call were asked for, began, moved or stopped (M16 F7).
+      onNotesEvent(event);
+      return;
+    case 'callnotes.changed':
+      // Words heard in a call's notes, or a line deleted: whoever reads them reads them again.
+      invalidate(qk.callNotes(String(event.data.callId)));
       return;
     case 'groupcall.ringing':
     case 'groupcall.updated':

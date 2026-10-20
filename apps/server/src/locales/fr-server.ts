@@ -1705,4 +1705,16 @@ export const frServer: Catalog = {
     '{name} n’est pas encore sur Caime : un appel l’atteindra une fois son compte créé avec son adresse.',
   'Free for people. Organizations pay for their team.':
     'Gratuit pour les particuliers. Les organisations paient pour leur équipe.',
+  'You’re not in that call.': 'Vous n’êtes pas dans cet appel.',
+  'Cai can’t take notes on this Caime yet.':
+    'Cai ne peut pas encore prendre de notes sur ce Caime.',
+  'Cai doesn’t take notes in a private conversation: nothing said there reaches Caime.':
+    'Cai ne prend pas de notes dans une conversation privée : rien de ce qui s’y dit n’atteint Caime.',
+  'Only someone on Caime can ask Cai to take notes.':
+    'Seule une personne sur Caime peut demander à Cai de prendre des notes.',
+  'This device isn’t taking notes in that call.':
+    'Cet appareil ne prend pas de notes dans cet appel.',
+  'That line': 'Cette ligne',
+  'Attach a recording.': 'Joignez un enregistrement.',
+  'That isn’t a recording Caime reads.': 'Ce n’est pas un enregistrement que Caime lit.',
 };

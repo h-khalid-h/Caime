@@ -6,6 +6,7 @@
 import {
   CALL_RING_SECONDS,
   CallDeviceBody,
+  CallEntryBody,
   GROUP_CALL_MAX,
   GroupCallSignalBody,
   type GroupCallView,
@@ -19,6 +20,7 @@ import { type Kysely, sql, type Transaction } from 'kysely';
 import { z } from 'zod';
 import type { AppContext } from '../context';
 import type { Call, Database } from '../db/schema';
+import { answerOnEntry, reconcileNotes } from '../lib/call-notes';
 import { lockCallEntry, nameShownTo } from '../lib/calls';
 import { membership } from '../lib/conversation-views';
 import { shownTitle } from '../lib/conversations';
@@ -252,7 +254,7 @@ export async function groupCallRoutes(app: FastifyInstance, ctx: AppContext) {
   app.post('/group-calls/:id/join', async (req): Promise<GroupCallResponse> => {
     const auth = requireAuth(req);
     const { id } = parse(callParam, req.params);
-    const { deviceId } = parse(CallDeviceBody, req.body);
+    const { deviceId, notes, canRecord } = parse(CallEntryBody, req.body);
     paced(auth.userId, id);
     const { call, outsider } = await theirs(auth.userId, id);
     if (call.state === 'ended')
@@ -296,6 +298,15 @@ export async function groupCallRoutes(app: FastifyInstance, ctx: AppContext) {
       )
         throw forbidden(tr('You can’t join this call.'));
       const now = ctx.now();
+      // Joined with Cai taking notes or without (R85 (1)), with the join itself.
+      await answerOnEntry(
+        trx,
+        id,
+        auth.userId,
+        notes,
+        { deviceId, canRecord: canRecord ?? false },
+        now,
+      );
       await trx
         .insertInto('call_members')
         .values({
@@ -333,6 +344,7 @@ export async function groupCallRoutes(app: FastifyInstance, ctx: AppContext) {
     if (joined.state === 'ended')
       throw over(await groupCallView(ctx, joined, auth.userId, { outsider }));
     await ringStoppedFor(ctx, id, [auth.userId], 'joined');
+    await reconcileNotes(ctx, id);
     await publishGroupCall(ctx, joined);
     return { call: await groupCallView(ctx, joined, auth.userId, { outsider }) };
   });

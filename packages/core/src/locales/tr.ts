@@ -4759,4 +4759,42 @@ export const turkish: Catalog = {
     'Toplantılarınız ve vadesi gelen eylemleriniz Apple Takvim’de veya herhangi bir takvim uygulamasında',
   'A private address any calendar app subscribes to: your actions with a due date, and the meetings and appointments you agreed to. For Google Calendar or Outlook, connect the account under Your accounts instead: Caime writes your plans there as they change. Nothing changes in Caime from the feed. Anyone with the address sees it, so keep it to yourself.':
     'Herhangi bir takvim uygulamasının abone olduğu özel bir adres: vadesi olan eylemleriniz ve kabul ettiğiniz toplantılar ile randevular. Google Takvim veya Outlook için bunun yerine hesabı Hesaplarınız’dan bağlayın: Caime planlarınızı değiştikçe oraya yazar. Akıştan Caime’de hiçbir şey değişmez. Adresi olan herkes onu görür; kendinize saklayın.',
+  'Notes from the call': 'Aramanın notları',
+  'Written by Cai from what was said, under each person’s name. Voices weren’t kept. You can delete your own words.':
+    'Söylenenlerden, her kişinin adı altında Cai yazdı. Sesler saklanmadı. Kendi sözlerinizi silebilirsiniz.',
+  'The notes couldn’t load': 'Notlar yüklenemedi',
+  'Nothing was said while Cai took notes': 'Cai not alırken bir şey söylenmedi',
+  'Words that are still being written show here once they are.':
+    'Hâlâ yazılan sözler, yazıldıkça burada görünür.',
+  'Cai is still writing this…': 'Cai bunu hâlâ yazıyor…',
+  'Delete my words': 'Sözlerimi sil',
+  'Cai is still writing {n} of these.': {
+    one: 'Cai bunlardan birini hâlâ yazıyor.',
+    other: 'Cai bunlardan {n} tanesini hâlâ yazıyor.',
+  },
+  'Stop Cai': 'Cai’yi durdur',
+  'Stop asking': 'İsteği geri al',
+  'Take notes': 'Not al',
+  'Cai is taking notes': 'Cai not alıyor',
+  'Asking {names} to let Cai take notes': 'Cai’nin not alması için onay bekleniyor: {names}',
+  '{name} asks Cai to take notes': 'Cai’nin not almasını isteyen: {name}',
+  'Cai writes down what’s said, under each person’s name, for everyone in the call. Voices aren’t kept, and anyone can stop it.':
+    'Cai, söylenenleri her kişinin adı altında, aramadaki herkes için yazar. Sesler saklanmaz ve herkes durdurabilir.',
+  'Let Cai take notes': 'Cai not alsın',
+  'Not this time: Cai isn’t taking notes.': 'Bu sefer değil: Cai not almıyor.',
+  'Someone is in the call without Cai, so Cai stopped taking notes.':
+    'Aramada Cai olmadan katılan biri var, bu yüzden Cai not almayı bıraktı.',
+  'Cai takes notes when someone in the call is on Caime in a browser.':
+    'Cai, aramadaki biri Caime’e bir tarayıcıdan bağlıyken not alır.',
+  'Cai stopped taking notes: today’s AI assist is used up.':
+    'Cai not almayı bıraktı: bugünkü AI yardımı tükendi.',
+  'Cai can’t take notes in this call.': 'Cai bu aramada not alamaz.',
+  'Cai stopped taking notes.': 'Cai not almayı bıraktı.',
+  '{name} asks Cai to take notes in this call.': 'Bu aramada Cai’nin not almasını isteyen: {name}',
+  'Answer without Cai': 'Cai olmadan yanıtla',
+  'Answer, Cai takes notes': 'Yanıtla, Cai not alsın',
+  'Join, Cai takes notes': 'Katıl, Cai not alsın',
+  'Join without Cai': 'Cai olmadan katıl',
+  'Cai is taking notes in this call.': 'Cai bu aramada not alıyor.',
+  'Cai is asked to take notes in this call.': 'Cai’den bu aramada not alması istendi.',
 };

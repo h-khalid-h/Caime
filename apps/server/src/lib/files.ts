@@ -200,7 +200,8 @@ export async function storeBytes(
 export type StoredKeys = Pick<FileRow, 'storage_key' | 'thumb_key' | 'preview_key'>;
 
 /**
- * Of `ids`, the files nothing points at any more go: no message, album, asset, avatar (a
+ * Of `ids`, the files nothing points at any more go: no message, album, asset, call note's
+ * utterance waiting to be heard, avatar (a
  * person's own, a group's, an organization's), catalog photo (an organization's, or its
  * uploader's own, since a catalog takes only its saver's images) or app icon or screenshot.
  * Their rows are deleted in `trx`; their bytes are the caller's to remove once it commits
@@ -217,6 +218,7 @@ export async function dropUnusedFiles(
       select file_id as id from message_files where file_id in (select id from cand)
       union select file_id from album_photos where file_id in (select id from cand)
       union select file_id from assets where file_id in (select id from cand)
+      union select file_id from call_note_lines where file_id in (select id from cand)
       union select avatar_file_id from conversations where avatar_file_id in (select id from cand)
       union select avatar_file_id from organizations where avatar_file_id in (select id from cand)
       union select icon_file_id from oauth_clients where icon_file_id in (select id from cand)

@@ -2854,6 +2854,11 @@ export type RealtimeDataEvent =
   | { type: 'call.signal'; data: CallSignalView }
   | { type: 'groupcall.ringing' | 'groupcall.updated'; data: GroupCallView }
   | { type: 'groupcall.signal'; data: GroupCallSignalView }
+  /** Cai's notes in a call were asked for, began, moved to another recorder or stopped (M16 F7). */
+  | {
+      type: 'call.notes';
+      data: { callId: string; conversationId: string; group: boolean; notes: CallNotesView };
+    }
   | { type: 'presence'; data: { userId: string; state: PresenceState; at: string } }
   /** Someone's devices for private conversations changed: seal for the new set (R18). */
   | { type: 'devices.changed'; data: { userId: string; conversationIds: string[] } }
@@ -2912,6 +2917,8 @@ export type RealtimeSignalType =
   | 'booking.changed'
   /** Someone asked to join a place one runs, or an ask was answered (C3h): `{ target, id }`. */
   | 'join.asked'
+  /** A call's notes changed for those who read them: words heard, a line deleted (`{ callId }`). */
+  | 'callnotes.changed'
   | 'invites.changed';
 
 export type RealtimeEvent =
@@ -3135,6 +3142,72 @@ export interface CallView {
   createdAt: string;
   answeredAt: string | null;
   endedAt: string | null;
+  /** Cai taking notes in it (M16 F7): asked, on, or why it stopped; null when nobody asked. */
+  notes: CallNotesView | null;
+}
+
+/** Why Cai stopped taking notes in a call, or never started (M16 F7, R85). */
+export type CallNotesWhy =
+  /** Someone in the call pressed Stop. */
+  | 'stopped'
+  /** Someone asked said no. */
+  | 'declined'
+  /** Someone answered or joined without Cai (R85 (2)). */
+  | 'joined_without'
+  /** Someone under 18 is in the call (R29, R85 (3)): said to nobody as such. */
+  | 'minor'
+  | 'ended'
+  /** Nobody who said yes is in the call on Caime in a browser (R82 (5), R85 (4)). */
+  | 'no_recorder'
+  /** What the asker may spend on AI today is spent (R107). */
+  | 'allowance';
+
+/**
+ * Cai taking notes in a call (M16 F7, R82 phase 1 under R85), the same for everyone who may see
+ * the call: who asked, who in the call has said yes and who hasn't yet, and the device that
+ * records while it's on. Never who said no, nor who stopped it.
+ */
+export interface CallNotesView {
+  id: string;
+  state: 'asking' | 'on' | 'stopped' | 'declined';
+  askedBy: { id: string; displayName: string };
+  /** Of the people in the call now, those who said yes. */
+  yes: string[];
+  /** While it's asked: who in the call hasn't answered yet. */
+  waitingOn: Array<{ id: string; displayName: string }>;
+  /** The device recording while it's on: a member's browser in the call. */
+  recorderDevice: string | null;
+  startedAt: string | null;
+  stoppedAt: string | null;
+  why: CallNotesWhy | null;
+}
+
+/** One thing said in a call while Cai took notes, as someone who was in it reads it. */
+export interface CallNoteLineView {
+  id: string;
+  speaker: CallPersonView;
+  /** When it was said. */
+  at: string;
+  /** The words, once heard; null while Cai is still writing them. */
+  text: string | null;
+  /** The language Cai heard it in (a BCP 47 tag), when the provider said. */
+  language: string | null;
+  /** The reader's own words, which they may delete (R85 (2)). */
+  mine: boolean;
+}
+
+/** `GET /calls/:id/notes`: what was said, from when the reader joined. */
+export interface CallNotesResponse {
+  callId: string;
+  conversationId: string;
+  /** The call's latest notes, as everyone in it saw them. */
+  notes: CallNotesView | null;
+  lines: CallNoteLineView[];
+}
+
+/** What the notes' routes answer with: how they stand now. */
+export interface CallNotesStateResponse {
+  notes: CallNotesView | null;
 }
 
 /** Someone in a call, as the viewer may see them. */
@@ -3174,6 +3247,8 @@ export interface GroupCallView {
   createdAt: string;
   answeredAt: string | null;
   endedAt: string | null;
+  /** Cai taking notes in it (M16 F7): to the whole conversation, so its banner offers both joins. */
+  notes: CallNotesView | null;
 }
 
 /** A group call's signal says whose device it's from too: it's that device of that person. */

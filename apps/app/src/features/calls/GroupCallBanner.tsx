@@ -31,6 +31,8 @@ export function GroupCallBanner({ conversationId }: { conversationId: string }) 
     .filter((m) => m.person.id !== me?.id)
     .map((m) => m.person.displayName.split(' ')[0] ?? m.person.displayName);
   const Icon = on.kind === 'video' ? Video : Phone;
+  // On another device of theirs it's theirs to answer there; here, joining chooses (M16 F7).
+  const notes = !elsewhere && (on.notes?.state === 'asking' || on.notes?.state === 'on');
   return (
     <View
       testID="group-call-banner"
@@ -55,12 +57,31 @@ export function GroupCallBanner({ conversationId }: { conversationId: string }) 
             ? tr('Video call on · {names}', { names: joinNames(names) })
             : tr('Voice call on · {names}', { names: joinNames(names) })}
       </Text>
-      <Button
-        label={elsewhere ? tr('Join here') : tr('Join')}
-        size="sm"
-        onPress={() => void joinGroupCall(on)}
-        testID="group-call-banner-join"
-      />
+      {notes ? (
+        // Cai's notes are asked for or on: each way in says what it does (R85 (1)).
+        <View style={{ gap: 6 }}>
+          <Button
+            label={tr('Join, Cai takes notes')}
+            size="sm"
+            onPress={() => void joinGroupCall(on, 'yes')}
+            testID="group-call-banner-join-with-notes"
+          />
+          <Button
+            label={tr('Join without Cai')}
+            size="sm"
+            variant="secondary"
+            onPress={() => void joinGroupCall(on, 'no')}
+            testID="group-call-banner-join-without-notes"
+          />
+        </View>
+      ) : (
+        <Button
+          label={elsewhere ? tr('Join here') : tr('Join')}
+          size="sm"
+          onPress={() => void joinGroupCall(on)}
+          testID="group-call-banner-join"
+        />
+      )}
     </View>
   );
 }

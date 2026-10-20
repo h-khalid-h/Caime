@@ -324,13 +324,20 @@ query). Forgetting writes one field. The settings screen and the offer's buttons
 their own routes; what the first download gained (Attention's "Write to", the brief's preference,
 three endpoints) is 0.2 KB: 449.8 KB gzip, measured 2026-10-06.
 
-## Recording (R52, not built)
+## Cai's notes in calls (R82, R85, R109; M16 F7)
 
-When it comes, each recorded minute costs the speech-to-text provider's price per minute, paid
-once per call, plus one short model turn per summary or action list asked for. The plans carry
-monthly minute allowances for it (Pro and Business; none free), set from the provider's price
-once a provider has passed the test in R52; until then the line stays unpriced here rather than
-guessed.
+Only speaking time is sent and paid for: the recorder (one member's browser in the call) cuts each
+voice's track at its pauses and sends each utterance as it ends, so silence and the other
+participants' quiet never reach the provider. Each utterance is one upload (WebM/Opus at 32 kbps,
+about 4 KB a second), one file row kept only until it's heard, and one `call.note` job that calls
+the speech provider once through `runAi` (feature `notes`) on the asker's day by cost (R107).
+At the production provider's price (ElevenLabs Scribe v2, $0.22 an hour of audio, the price list's
+`usdPerEur` 1.1253), an hour of speech is €0.1955: Personal's €0.50 a day covers 2.56 hours of it,
+Pro's €2 10.23 hours, and a half-hour 1:1 where someone is speaking 80% of the time costs €0.078
+(computed from `ai-costs.ts`, 2026-10-20). The server keeps the words, never the audio; the device
+recording runs one AudioContext, an analyser and a delay per voice, and a MediaRecorder only while
+someone speaks. No timer, poll or AI token anywhere else: the state moves on events (an ask, an
+answer, a join, a leave, a stop) through one reconcile, and nothing is summarised unless asked.
 
 ## Meetings with guests (R84)
 

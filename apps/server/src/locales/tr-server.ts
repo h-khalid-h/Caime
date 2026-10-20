@@ -1633,4 +1633,14 @@ export const turkishServer: Catalog = {
     '{name} henüz Caime’de değil: adresiyle katıldığında arama ona ulaşır.',
   'Free for people. Organizations pay for their team.':
     'Kişiler için ücretsiz. Kuruluşlar ekipleri için öder.',
+  'You’re not in that call.': 'Bu aramada değilsiniz.',
+  'Cai can’t take notes on this Caime yet.': 'Cai bu Caime’de henüz not alamıyor.',
+  'Cai doesn’t take notes in a private conversation: nothing said there reaches Caime.':
+    'Cai özel bir sohbette not almaz: orada söylenenlerin hiçbiri Caime’e ulaşmaz.',
+  'Only someone on Caime can ask Cai to take notes.':
+    'Cai’den not almasını yalnızca Caime’deki biri isteyebilir.',
+  'This device isn’t taking notes in that call.': 'Bu cihaz o aramada not almıyor.',
+  'That line': 'Bu satır',
+  'Attach a recording.': 'Bir kayıt ekleyin.',
+  'That isn’t a recording Caime reads.': 'Bu, Caime’in okuduğu bir kayıt değil.',
 };

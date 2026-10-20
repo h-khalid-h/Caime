@@ -38,6 +38,8 @@ import {
   toggleGroupCamera,
   toggleGroupMute,
 } from './group';
+import { NotesAsk, NotesLine, NotesRound } from './NotesUi';
+import { notesAsked } from './notes';
 
 const first = (name: string) => name.split(' ')[0] ?? name;
 
@@ -255,6 +257,19 @@ export function GroupCallLayer() {
               : tr('{count} in the call', { count: joined.length })}
           </Text>
         ) : null}
+        {phase === 'in' ? <NotesLine notes={call.notes} me={me.id} /> : null}
+        {phase === 'incoming' && notesAsked(call.notes) ? (
+          <Text
+            variant="caption"
+            align="center"
+            style={{ color: '#FFFFFFDD' }}
+            testID="group-call-incoming-notes"
+          >
+            {call.notes?.state === 'on'
+              ? tr('Cai is taking notes in this call.')
+              : tr('Cai is asked to take notes in this call.')}
+          </Text>
+        ) : null}
       </View>
 
       {phase === 'incoming' || phase === 'joining' ? (
@@ -317,6 +332,11 @@ export function GroupCallLayer() {
         </View>
       )}
 
+      {phase === 'in' ? (
+        <View style={{ paddingBottom: 8 }}>
+          <NotesAsk notes={call.notes} me={me.id} />
+        </View>
+      ) : null}
       {phase === 'ended' ? null : (
         <View
           style={{
@@ -337,14 +357,35 @@ export function GroupCallLayer() {
                 onPress={() => void leaveGroupCall()}
                 testID="group-call-decline"
               />
-              <Round
-                icon={video ? Video : Phone}
-                label={tr('Join')}
-                tone="go"
-                onPress={() => void joinGroupCall()}
-                focusRef={primary}
-                testID="group-call-join"
-              />
+              {notesAsked(call.notes) ? (
+                // Cai's notes are asked for or on: no plain Join, each says what it does (R85 (1)).
+                <>
+                  <Round
+                    icon={video ? Video : Phone}
+                    label={tr('Join without Cai')}
+                    tone="go"
+                    onPress={() => void joinGroupCall(undefined, 'no')}
+                    testID="group-call-join-without-notes"
+                  />
+                  <Round
+                    icon={video ? Video : Phone}
+                    label={tr('Join, Cai takes notes')}
+                    tone="go"
+                    onPress={() => void joinGroupCall(undefined, 'yes')}
+                    focusRef={primary}
+                    testID="group-call-join-with-notes"
+                  />
+                </>
+              ) : (
+                <Round
+                  icon={video ? Video : Phone}
+                  label={tr('Join')}
+                  tone="go"
+                  onPress={() => void joinGroupCall()}
+                  focusRef={primary}
+                  testID="group-call-join"
+                />
+              )}
             </>
           ) : (
             <>
@@ -382,6 +423,7 @@ export function GroupCallLayer() {
                   testID="group-call-camera"
                 />
               ) : null}
+              {phase === 'in' ? <NotesRound notes={call.notes} testID="group-call-notes" /> : null}
               <Round
                 icon={PhoneOff}
                 label={tr('Leave')}
