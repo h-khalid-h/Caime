@@ -119,6 +119,8 @@ export interface CardAhead {
    * joined here (core `heldOnCaime`).
    */
   heldHere: boolean;
+  /** Held here, it says Cai takes notes in its call (M16 F7c), once everyone in it says yes. */
+  notes: boolean;
   /** A meeting that repeats (R58): its series and which time this is. */
   series: { id: string; n: number } | null;
   /** How often it repeats, while it still does. */
@@ -139,6 +141,7 @@ type CardPayload = {
     start?: { at?: string; hasTime?: boolean };
     durationMinutes?: unknown;
     place?: unknown;
+    notes?: unknown;
     repeat?: unknown;
     repeatUntil?: unknown;
   };
@@ -164,6 +167,10 @@ function cardAhead(row: CardRow, payload: CardPayload, kit: CardKit, at: Date): 
   const minutes = Number(payload.fields?.durationMinutes);
   const moved = payload.history?.at(-1)?.at;
   const series = seriesOf(payload);
+  const heldHere = heldOnCaime(
+    { kit, place: payload.fields?.place, invitation: payload.invitation },
+    row.conversation_kind,
+  );
   return {
     messageId: row.id,
     conversationId: row.conversation_id,
@@ -178,10 +185,8 @@ function cardAhead(row: CardRow, payload: CardPayload, kit: CardKit, at: Date): 
     updated: moved ? new Date(moved) : (row.edited_at ?? row.created_at),
     booking,
     invited: Boolean(payload.invitation),
-    heldHere: heldOnCaime(
-      { kit, place: payload.fields?.place, invitation: payload.invitation },
-      row.conversation_kind,
-    ),
+    heldHere,
+    notes: heldHere && payload.fields?.notes === 'cai',
     series: series ? { id: series.id, n: series.n } : null,
     repeat: isRepeat(payload.fields?.repeat) ? payload.fields.repeat : null,
     projected: false,

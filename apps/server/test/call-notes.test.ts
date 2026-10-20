@@ -12,6 +12,7 @@ import { uuidv4 } from '@caime/core';
 import { sql } from 'kysely';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import type { BusMessage } from '../src/lib/bus';
+import { planEvents } from '../src/lib/calendar-push';
 import { runDueJobs } from '../src/lib/jobs';
 import { eraseMessagesWhere } from '../src/lib/org-data';
 import { type Client, createTestApp, signup, type TestApp, until } from './helpers';
@@ -397,5 +398,80 @@ describe('notes in a group call (R85 (2))', () => {
       [noor, 'noor-tab-1'],
     ] as const)
       await c.req('POST', `/v1/group-calls/${callId}/leave`, { deviceId: d });
+  });
+});
+
+describe('chosen ahead on a meeting card (M16 F7c)', () => {
+  const meeting = (c: Client, conversationId: string, fields: Record<string, unknown>) =>
+    c.req('POST', `/v1/conversations/${conversationId}/messages`, {
+      clientId: uuidv4(),
+      kind: 'kit',
+      payload: {
+        kit: 'meeting',
+        fields: {
+          title: 'Contract review',
+          start: { at: new Date(Date.now() + 86_400_000).toISOString(), hasTime: true },
+          durationMinutes: 30,
+          place: 'Caime',
+          ...fields,
+        },
+      },
+    });
+
+  it('says so on a meeting held on Caime, and tells a guest before they join', async () => {
+    const sent = await meeting(noor, noorSam, { notes: 'cai' });
+    expect(sent.statusCode, sent.body).toBe(201);
+    const card = sent.json().message;
+    expect(card.payload.fields.notes).toBe('cai');
+    // Accepted, a guest by link reads that Cai takes notes before taking the link (R85 (1)).
+    await sam.post(`/v1/messages/${card.id}/kit`, { to: 'accepted' });
+    const invited = await noor.post(`/v1/messages/${card.id}/guests`, {
+      link: true,
+      name: 'Gus Guest',
+    });
+    const token = /\/j\/(cmg_[A-Za-z0-9_-]+)/.exec(invited.link ?? '')?.[1] ?? '';
+    expect(token).not.toBe('');
+    const seen = await t.app.inject({ method: 'GET', url: `/v1/join/${token}` });
+    expect(seen.json().meeting).toMatchObject({ title: 'Contract review', notes: true });
+    // Its calendar events say it too, wherever the meeting is written (Google, Outlook, the feed).
+    const events = await planEvents(t.ctx, sam.user.id, {
+      from: new Date(Date.now() - 3_600_000),
+      until: new Date(Date.now() + 3 * 86_400_000),
+    });
+    const said = [...events.values()].find((e) => e.summary.startsWith('Contract review'));
+    expect(said?.description).toContain(
+      'Cai takes notes in the call, once everyone in it says yes.',
+    );
+  });
+
+  it('never for a meeting held elsewhere, by someone who couldn’t ask, or with anyone under 18', async () => {
+    const elsewhere = await meeting(noor, noorSam, { notes: 'cai', place: 'Cairo Opera House' });
+    expect(elsewhere.statusCode).toBe(400);
+    expect(elsewhere.json().error.message).toBe('Cai takes notes only in a meeting held on Caime.');
+    // Omar has AI assist off: the ask would be his, so the card can't say it.
+    const omarNoor = (
+      await omar.post('/v1/conversations', { kind: 'direct', userId: noor.user.id })
+    ).conversation.id;
+    const off = await meeting(omar, omarNoor, { notes: 'cai' });
+    expect(off.statusCode).toBe(403);
+    expect(off.json().error.code).toBe('ai_off');
+    // Someone under 18 in the conversation: refused in words that name nobody (R29).
+    await t.ctx.db
+      .updateTable('users')
+      .set({ birth_date: '2012-01-01' })
+      .where('id', '=', sam.user.id)
+      .execute();
+    const minor = await meeting(noor, noorSam, { notes: 'cai' });
+    expect(minor.statusCode).toBe(403);
+    expect(minor.json().error.message).toBe('Cai can’t take notes in this conversation.');
+    await t.ctx.db
+      .updateTable('users')
+      .set({ birth_date: '1990-01-01' })
+      .where('id', '=', sam.user.id)
+      .execute();
+    // Without Cai, the same meeting goes as ever.
+    const plain = await meeting(omar, omarNoor, {});
+    expect(plain.statusCode).toBe(201);
+    expect(plain.json().message.payload.fields.notes).toBeUndefined();
   });
 });

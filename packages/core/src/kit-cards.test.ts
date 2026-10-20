@@ -159,6 +159,13 @@ describe('how a card reads', () => {
     expect(length(120)).toBe('2 h');
     expect(length(135)).toBe('2 h 15 min');
     expect(length(60)).toBe('1 hour');
+    // Held on Caime with Cai's notes chosen ahead (M16 F7c): said under Where, consent and all.
+    expect(
+      kitDetails('meeting', { ...fields, place: 'Caime', notes: 'cai' }, opts).slice(-2),
+    ).toEqual([
+      { key: 'place', label: 'Where', value: 'Caime' },
+      { key: 'notes', label: 'Notes', value: 'Cai, once everyone in the call says yes' },
+    ]);
     const pay = {
       amount: { value: 1200, currency: 'EGP' },
       note: 'the tickets',

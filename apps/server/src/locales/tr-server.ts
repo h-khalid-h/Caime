@@ -1643,4 +1643,9 @@ export const turkishServer: Catalog = {
   'That line': 'Bu satır',
   'Attach a recording.': 'Bir kayıt ekleyin.',
   'That isn’t a recording Caime reads.': 'Bu, Caime’in okuduğu bir kayıt değil.',
+  'Cai can’t take notes in this conversation.': 'Cai bu konuşmada not alamaz.',
+  'Cai takes notes only in a meeting held on Caime.':
+    'Cai yalnızca Caime’de yapılan toplantılarda not alır.',
+  'Cai takes notes in the call, once everyone in it says yes.':
+    'Cai aramada not alır; aramadaki herkes evet dediğinde.',
 };

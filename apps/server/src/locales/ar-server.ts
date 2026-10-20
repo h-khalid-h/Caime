@@ -1699,4 +1699,9 @@ export const arServer: Catalog = {
   'That line': 'ذلك السطر',
   'Attach a recording.': 'التسجيل مطلوب.',
   'That isn’t a recording Caime reads.': 'هذا ليس تسجيلًا يقرؤه Caime.',
+  'Cai can’t take notes in this conversation.': 'لا يمكن لـCai تدوين الملاحظات في هذه المحادثة.',
+  'Cai takes notes only in a meeting held on Caime.':
+    'يدوّن Cai الملاحظات في الاجتماعات على Caime فقط.',
+  'Cai takes notes in the call, once everyone in it says yes.':
+    'يدوّن Cai الملاحظات في المكالمة، حين يوافق كل من فيها.',
 };

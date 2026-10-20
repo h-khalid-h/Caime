@@ -10,6 +10,7 @@
  * requests. Someone else signed in here: the link is never taken over them.
  */
 import type { JoinView } from '@caime/core/api';
+import { notesAsked } from '@caime/core/calls';
 import { formatWhenAt, joinNames } from '@caime/core/format';
 import { tr } from '@caime/core/i18n';
 import { joinOpen } from '@caime/core/meetings';
@@ -122,6 +123,10 @@ function useMeetingRows(view: JoinView) {
       value: tr('{minutes} min', { minutes: view.meeting.durationMinutes }),
     },
     view.meeting.host ? { label: tr('Invited by'), value: view.meeting.host } : null,
+    // Said before they join (M16 F7c): they're asked as they join, and it starts once all say yes.
+    view.meeting.notes
+      ? { label: tr('Notes'), value: tr('Cai, once everyone in the call says yes') }
+      : null,
   ];
 }
 
@@ -226,7 +231,23 @@ function GuestMeeting({ view, space }: { view: JoinView; space: NonNullable<Join
           dense
         />
         {groupCallsSupported ? (
-          inCall ? null : live && on ? (
+          inCall ? null : live && on && notesAsked(on.notes) ? (
+            // Cai's notes are asked for or on: joining says with Cai or without (R85 (1)), since
+            // joining without answering would stop them for everyone.
+            <View style={{ gap: 8 }}>
+              <Button
+                label={tr('Join, Cai takes notes')}
+                onPress={() => void joinGroupCall(on, 'yes')}
+                testID="guest-join-with-notes"
+              />
+              <Button
+                label={tr('Join without Cai')}
+                variant="secondary"
+                onPress={() => void joinGroupCall(on, 'no')}
+                testID="guest-join-without-notes"
+              />
+            </View>
+          ) : live && on ? (
             <Button
               label={tr('Join the call')}
               onPress={() => void joinGroupCall(on)}

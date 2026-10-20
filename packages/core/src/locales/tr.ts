@@ -4797,4 +4797,9 @@ export const turkish: Catalog = {
   'Join without Cai': 'Cai olmadan katıl',
   'Cai is taking notes in this call.': 'Cai bu aramada not alıyor.',
   'Cai is asked to take notes in this call.': 'Cai’den bu aramada not alması istendi.',
+  'Cai takes notes': 'Cai not alır',
+  Notes: 'Notlar',
+  'Cai, once everyone in the call says yes': 'Cai, aramadaki herkes evet dediğinde',
+  'Everyone is asked as they join, and it starts once all say yes. Voices aren’t kept.':
+    'Herkese katılırken sorulur ve herkes evet dediğinde başlar. Sesler saklanmaz.',
 };

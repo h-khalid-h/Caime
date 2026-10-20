@@ -606,6 +606,7 @@ export async function authRoutes(app: FastifyInstance, ctx: AppContext) {
         at: link.at.toISOString(),
         durationMinutes: link.durationMinutes,
         host: link.host,
+        notes: link.notes,
       },
       guest: { name: link.guestName },
       // The address is someone's on Caime: they sign in, and find it among their requests.

@@ -1,5 +1,6 @@
 import type { ConversationView, MessageView } from '@caime/core/api';
 import type { AppointmentBooking, PlacedOrder } from '@caime/core/booking';
+import { notesAsked } from '@caime/core/calls';
 import type { CardCheckout } from '@caime/core/checkout';
 import { customDetails, customMoves, customState, isCustomCard } from '@caime/core/custom-kits';
 import { formatDue } from '@caime/core/format';
@@ -35,13 +36,15 @@ import {
   callsSupported,
   groupCallsSupported,
   joinDirect,
-  startGroupCall,
+  joinGroupMeeting,
 } from '@/features/calls/calls';
 import { useCardAction } from '@/features/conversation/cardActions';
 import { copyText } from '@/lib/clipboard';
 import { leaveFor, openLink } from '@/lib/links';
 import { useNow, useUserClock } from '@/lib/time';
 import { upsertMessage } from '@/state/cache';
+import { useCall } from '@/state/calls';
+import { useGroupCall } from '@/state/groupCall';
 import { useSession } from '@/state/session';
 import { useTheme } from '@/theme/theme';
 import { Button, type IconComponent } from '@/ui/Button';
@@ -240,6 +243,15 @@ export function KitCard({ m, mine }: { m: MessageView; mine: boolean }) {
     enabled: false,
     select: (d: { conversation: ConversationView }) => d.conversation.kind === 'group',
   }).data;
+  // Cai's notes (M16 F7c): whether this person may ask for them (an adult with AI assist on),
+  // and whether they're asked for or on in this conversation's call right now.
+  const mayAskNotes = useSession((s) => Boolean(s.user?.aiEnabled && !s.user.minor));
+  const groupNotes = useGroupCall((s) => s.on[m.conversationId]?.notes?.state ?? null);
+  const directNotes = useCall((s) =>
+    s.call?.conversationId === m.conversationId ? (s.call.notes?.state ?? null) : null,
+  );
+  const liveNotes = call === 'group' ? groupNotes : call === 'direct' ? directNotes : null;
+  const notesLive = notesAsked(liveNotes ? { state: liveNotes } : null);
   // Never opened is null: the sheet loads the first time it's asked for.
   const [receiptOpen, setReceiptOpen] = useState<boolean | null>(null);
   const clock = { now, timeZone, locale };
@@ -327,18 +339,31 @@ export function KitCard({ m, mine }: { m: MessageView; mine: boolean }) {
   // held on another service. A priced card's Pay comes first; meetings carry no price.
   const held = m.deletedAt ? null : meetingAction(p, now);
   const place = typeof p.fields?.place === 'string' ? p.fields.place : '';
+  const join = (notes?: 'yes' | 'no') =>
+    void (call === 'group'
+      ? joinGroupMeeting(m.conversationId, notes)
+      : joinDirect(m.conversationId, notes));
+  // With Cai or without (M16 F7c, R85 (1)): a meeting that says Cai takes notes, to whoever may
+  // ask for them, and any meeting whose call has them asked for or on, since a plain Join there
+  // would stop them for everyone.
   const meeting =
     held === 'join' && call
-      ? {
-          label: tr('Join'),
-          testID: 'kit-join',
-          onPress: () =>
-            void (call === 'group'
-              ? startGroupCall(m.conversationId, 'video')
-              : joinDirect(m.conversationId)),
-        }
+      ? notesLive || (p.fields?.notes === 'cai' && mayAskNotes)
+        ? [
+            {
+              label: tr('Join, Cai takes notes'),
+              testID: 'kit-join-with-notes',
+              onPress: () => join('yes'),
+            },
+            {
+              label: tr('Join without Cai'),
+              testID: 'kit-join-without-notes',
+              onPress: () => join('no'),
+            },
+          ]
+        : [{ label: tr('Join'), testID: 'kit-join', onPress: () => join() }]
       : held === 'open' && place
-        ? { label: tr('Open'), testID: 'kit-open', onPress: () => openLink(meetingLink(place)) }
+        ? [{ label: tr('Open'), testID: 'kit-open', onPress: () => openLink(meetingLink(place)) }]
         : null;
   // Paid (R62, R65): its receipt, for its two sides (the server says the same).
   const sides = paySides(p as Parameters<typeof paySides>[0], m.senderId, null);
@@ -379,7 +404,9 @@ export function KitCard({ m, mine }: { m: MessageView; mine: boolean }) {
           ...(kit === 'order_status' ? orderDetails(p.order) : []),
         ]}
         before={ahead ? { messageId: m.id, title: p.title ?? tr(KITS[kit].name) } : null}
-        action={pay ?? meeting ?? receipt}
+        actions={pay ? [pay] : (meeting ?? (receipt ? [receipt] : []))}
+        // A meeting that can be joined now leads with Join (R83), never with Cancel.
+        lead={!pay && held === 'join' && Boolean(meeting)}
         extra={
           kit === 'payment_request' && p.payTo ? (
             <PayToBlock
@@ -448,7 +475,8 @@ function CardBody({
   moves,
   from,
   before,
-  action = null,
+  actions = [],
+  lead = false,
   extra = null,
   testID,
 }: {
@@ -464,8 +492,13 @@ function CardBody({
   from?: string;
   /** An agreed meeting ahead (R58): the brief opens from here. */
   before?: { messageId: string; title: string } | null;
-  /** One more thing to do from the card (R62: Pay a priced order). */
-  action?: { label: string; onPress: () => void; testID: string } | null;
+  /**
+   * What else to do from the card (R62: Pay a priced order; R83: Join a meeting, with Cai or
+   * without when its notes are asked for: M16 F7c), the first of them the main one.
+   */
+  actions?: Array<{ label: string; onPress: () => void; testID: string }>;
+  /** The actions come before the moves (a meeting that can be joined now: Join, not Cancel). */
+  lead?: boolean;
   /** What the card shows beneath its lines (R62: whom a Pay card pays, and how). */
   extra?: React.ReactNode;
   testID: string;
@@ -516,28 +549,43 @@ function CardBody({
           {tr('From {from}', { from })}
         </Text>
       ) : null}
-      {moves.length || before || action ? (
+      {moves.length || before || actions.length ? (
         <View style={{ flexDirection: 'row', gap: 8, flexWrap: 'wrap', paddingTop: 2 }}>
+          {lead
+            ? actions.map((action, i) => (
+                <Button
+                  key={action.testID}
+                  label={action.label}
+                  size="sm"
+                  variant={i === 0 ? 'primary' : 'secondary'}
+                  onPress={action.onPress}
+                  testID={action.testID}
+                />
+              ))
+            : null}
           {moves.map((move, i) => (
             <Button
               key={move.to}
               label={tr(move.label)}
               size="sm"
-              variant={i === 0 ? 'primary' : 'secondary'}
+              variant={i === 0 && !(lead && actions.length) ? 'primary' : 'secondary'}
               loading={busy === move.to}
               disabled={busy !== null}
               onPress={() => void go(move.to)}
             />
           ))}
-          {action ? (
-            <Button
-              label={action.label}
-              size="sm"
-              variant={moves.length ? 'secondary' : 'primary'}
-              onPress={action.onPress}
-              testID={action.testID}
-            />
-          ) : null}
+          {lead
+            ? null
+            : actions.map((action, i) => (
+                <Button
+                  key={action.testID}
+                  label={action.label}
+                  size="sm"
+                  variant={moves.length || i > 0 ? 'secondary' : 'primary'}
+                  onPress={action.onPress}
+                  testID={action.testID}
+                />
+              ))}
           {before ? (
             <Button
               label={tr('Before it')}

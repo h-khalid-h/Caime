@@ -115,3 +115,10 @@ export function callResult(input: {
   if (outgoing) return outcome === 'cancelled' ? 'cancelled' : 'unanswered';
   return outcome === 'declined' ? 'declined' : 'missed';
 }
+
+/**
+ * Whether Cai's notes in a call are asked for or on (M16 F7): then every way into the call says
+ * whether it's with Cai or without (R85 (1)), since joining without answering would stop them.
+ */
+export const notesAsked = (notes: { state: string } | null | undefined): boolean =>
+  notes?.state === 'asking' || notes?.state === 'on';

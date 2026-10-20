@@ -19,7 +19,7 @@ import type {
   GroupCallView,
   RealtimeEvent,
 } from '@caime/core/api';
-import { CALL_RING_SECONDS, type CallKind } from '@caime/core/calls';
+import { CALL_RING_SECONDS, type CallKind, notesAsked } from '@caime/core/calls';
 import { tr } from '@caime/core/i18n';
 import { ApiError } from '@/api/client';
 import { endpoints } from '@/api/endpoints';
@@ -30,7 +30,7 @@ import { useSession } from '@/state/session';
 import { toast } from '@/ui/Toast';
 import { checkLiveCall } from './engine';
 import { errorName, media, mediaTrouble } from './media';
-import { canRecordNotes } from './notes';
+import { askNotes, canRecordNotes } from './notes';
 import { callsAvailable } from './rtc';
 
 export const groupCallsSupported = callsAvailable;
@@ -583,8 +583,10 @@ export async function startGroupCall(conversationId: string, kind: CallKind): Pr
   }
 }
 
-/** Join on this device: the call ringing here, or one on in a group (from its banner). */
-/** Join, on this device; while Cai takes notes in it, with Cai or without (R85 (1)). */
+/**
+ * Join on this device: the call ringing here, or one on in a group (from its banner); while Cai's
+ * notes are asked for or on, with Cai or without (R85 (1)).
+ */
 export async function joinGroupCall(target?: GroupCallView, notes?: 'yes' | 'no'): Promise<void> {
   const phase = store().phase;
   const call = target ?? current();
@@ -792,6 +794,34 @@ export async function checkGroupCallIn(conversationId: string): Promise<void> {
     const was = store().on[conversationId];
     if (was) heard({ ...was, state: 'ended' });
   }
+}
+
+/**
+ * A meeting's Join in a group (R83, M16 F7c): the call that's on in it, ringing here or not, is
+ * joined rather than met with a second (two people pressing Join at once end up in one call);
+ * with none on, one is started. While Cai's notes are asked for or on, joining says with Cai or
+ * without (R85 (1)), so with no choice it joins nothing: joining without answering would stop
+ * them for everyone, and the banner and the card both offer the choice. With Cai and nobody
+ * asking yet, this person asks.
+ */
+export async function joinGroupMeeting(
+  conversationId: string,
+  notes?: 'yes' | 'no',
+): Promise<void> {
+  const phase = store().phase;
+  const ringing = phase === 'incoming' && current()?.conversationId === conversationId;
+  if ((phase && !ringing) || inOneToOne()) return;
+  await checkGroupCallIn(conversationId);
+  const on = ringing ? current() : store().on[conversationId];
+  if (on && on.state !== 'ended' && on.members.some((m) => m.state === 'joined')) {
+    const asked = notesAsked(on.notes);
+    if (asked && !notes) return;
+    await joinGroupCall(on, asked ? notes : undefined);
+    if (notes === 'yes' && !asked && store().phase === 'in') await askNotes();
+    return;
+  }
+  await startGroupCall(conversationId, 'video');
+  if (notes === 'yes' && store().phase === 'in') await askNotes();
 }
 
 /** A group call on this device: the 1:1 engine rings nothing over it. */

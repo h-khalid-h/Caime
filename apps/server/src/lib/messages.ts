@@ -56,6 +56,7 @@ import {
   notByMail,
   notByMailText,
 } from '@caime/core/mail';
+import { heldOnCaime } from '@caime/core/meetings';
 import { isRepeat, repeatsIn } from '@caime/core/repeat';
 import { dayIn, type MeetingSeries } from '@caime/core/series';
 import type { Kysely, SqlBool, Transaction } from 'kysely';
@@ -82,6 +83,7 @@ import { AppError, badRequest, forbidden, notFound } from './errors';
 import { recordEvent } from './events';
 import { cardStartAt, customCardFor } from './kits';
 import { previewIdsOf, previewView, readyPreviews } from './link-preview-views';
+import { assertNotesAllowed } from './notes-allowed';
 import { formForCard } from './org-forms';
 import { isBlockedEitherWay, shareAConnection, viewerRelation } from './relations';
 import { type ShareToPay, shareToPay } from './splits';
@@ -1262,6 +1264,19 @@ export async function sendMessage(
       !isRepeat(card.fields.repeat)
     )
       throw badRequest(tr('Until is for a meeting that repeats.'));
+    // Cai takes notes in its call (M16 F7c): chosen ahead on a meeting held here, by someone who
+    // could ask for them in the call, where Cai may take notes at all (R85, R52). Everyone is
+    // still asked as they join.
+    if (card.kit === 'meeting' && card.fields.notes !== undefined) {
+      if (!heldOnCaime({ kit: 'meeting', place: card.fields.place }, conversation.kind))
+        throw badRequest(tr('Cai takes notes only in a meeting held on Caime.'));
+      await assertNotesAllowed(ctx, {
+        conversationId,
+        askerId: senderId,
+        people: members.map((p) => p.user_id),
+        where: 'conversation',
+      });
+    }
     // An intake form (M16 H5): the organization's side sends one of its forms to its customer,
     // copied whole as it reads now, for the customer to answer on the card. Someone reached by
     // mail has nowhere to fill one in.

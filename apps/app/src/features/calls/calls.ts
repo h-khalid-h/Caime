@@ -6,7 +6,7 @@
  * from is rtc.ts (the browser's) or rtc.native.ts (react-native-webrtc's).
  */
 import type { GroupCallView, RealtimeEvent } from '@caime/core/api';
-import type { CallKind } from '@caime/core/calls';
+import { type CallKind, notesAsked } from '@caime/core/calls';
 import { tr } from '@caime/core/i18n';
 import { useCall } from '@/state/calls';
 import { toast } from '@/ui/Toast';
@@ -57,9 +57,11 @@ export async function startCall(conversationId: string, kind: CallKind): Promise
 /**
  * A meeting's Join (R83) in a direct conversation. Both people often press it at once, so the
  * call ringing here from this conversation is answered rather than met with a second one; a
- * call already on this device is left as it is (its screen is up); otherwise it's started.
+ * call already on this device is left as it is (its screen is up); otherwise it's started. With
+ * Cai or without (M16 F7c): the answer to notes already asked, or, with Cai and nobody asking
+ * yet, this person asks (while it rings, the ring then asks the other: R85 (1)).
  */
-export async function joinDirect(conversationId: string): Promise<void> {
+export async function joinDirect(conversationId: string, notes?: 'yes' | 'no'): Promise<void> {
   const ringingHere = () => {
     const { phase, call } = useCall.getState();
     return phase === 'incoming' && call?.conversationId === conversationId;
@@ -68,11 +70,22 @@ export async function joinDirect(conversationId: string): Promise<void> {
   // live first, so a call already ringing is answered rather than met with a second.
   if (!useCall.getState().phase) await checkLiveCalls();
   if (ringingHere()) {
-    await (await asked())?.answer();
+    const before = notesAsked(useCall.getState().call?.notes);
+    const stack = await asked();
+    await stack?.answer(notes);
+    if (notes === 'yes' && !before) await stack?.askNotes();
     return;
   }
   if (useCall.getState().phase) return;
   await startCall(conversationId, 'video');
+  if (notes === 'yes') await (await asked())?.askNotes();
+}
+/** A meeting's Join in a group (R83, M16 F7c): the call that's on in it, else a new one. */
+export async function joinGroupMeeting(
+  conversationId: string,
+  notes?: 'yes' | 'no',
+): Promise<void> {
+  await (await asked())?.joinGroupMeeting(conversationId, notes);
 }
 export async function startGroupCall(conversationId: string, kind: CallKind): Promise<void> {
   await (await asked())?.startGroupCall(conversationId, kind);

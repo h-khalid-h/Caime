@@ -28,6 +28,8 @@ export interface GuestLink {
   title: string;
   at: Date;
   durationMinutes: number;
+  /** The card says Cai takes notes in its call (M16 F7c). */
+  notes: boolean;
   endsAt: Date;
 }
 
@@ -65,7 +67,12 @@ export async function guestLink(ctx: AppContext, token: string): Promise<GuestLi
   const p = (row.payload ?? {}) as {
     state?: string;
     title?: string;
-    fields?: { title?: unknown; start?: { at?: string }; durationMinutes?: unknown };
+    fields?: {
+      title?: unknown;
+      start?: { at?: string };
+      durationMinutes?: unknown;
+      notes?: unknown;
+    };
     booking?: { endAt?: string | null } | null;
   };
   if (p.state !== 'accepted') throw gone();
@@ -91,6 +98,7 @@ export async function guestLink(ctx: AppContext, token: string): Promise<GuestLi
     title: String(p.title || p.fields?.title || tr('Meeting')),
     at,
     durationMinutes,
+    notes: p.fields?.notes === 'cai',
     endsAt,
   };
 }

@@ -165,10 +165,6 @@ function conversationOf(): string {
   return useCall.getState().call?.conversationId ?? '';
 }
 
-/** Whether a choice made as a call is answered or joined is about Cai (it's asked, or on). */
-export const notesAsked = (notes: CallNotesView | null | undefined): boolean =>
-  notes?.state === 'asking' || notes?.state === 'on';
-
 // ---- The recorder -------------------------------------------------------------------------
 
 /** One voice on its own track. */

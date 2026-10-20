@@ -5,6 +5,7 @@
  * time: R85 (2)).
  */
 import type { CallNotesView } from '@caime/core/api';
+import { notesAsked } from '@caime/core/calls';
 import { joinNames } from '@caime/core/format';
 import { tr } from '@caime/core/i18n';
 import NotebookPen from 'lucide-react-native/icons/notebook-pen';
@@ -12,7 +13,7 @@ import { View } from 'react-native';
 import { Pressable } from '@/ui/Pressable';
 import { Text } from '@/ui/Text';
 import { INK, OVER_VIDEO, Round } from './callUi';
-import { answerNotes, askNotes, notesAsked, stopNotes } from './notes';
+import { answerNotes, askNotes, stopNotes } from './notes';
 
 const first = (name: string) => name.split(' ')[0] || name;
 

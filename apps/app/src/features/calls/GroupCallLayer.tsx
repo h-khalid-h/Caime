@@ -1,5 +1,6 @@
 import { radii } from '@caime/brand/tokens';
 import type { CallPersonView } from '@caime/core/api';
+import { notesAsked } from '@caime/core/calls';
 import { joinNames } from '@caime/core/format';
 import { listed, tr } from '@caime/core/i18n';
 import Mic from 'lucide-react-native/icons/mic';
@@ -39,7 +40,6 @@ import {
   toggleGroupMute,
 } from './group';
 import { NotesAsk, NotesLine, NotesRound } from './NotesUi';
-import { notesAsked } from './notes';
 
 const first = (name: string) => name.split(' ')[0] ?? name;
 

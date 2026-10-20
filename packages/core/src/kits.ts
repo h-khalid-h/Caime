@@ -111,6 +111,14 @@ export const KITS: Record<KitId, KitDef> = {
         ],
       },
       { key: 'place', label: msg('Where'), type: 'text', placeholder: msg('Place or link') },
+      // Cai takes notes in its call (M16 F7c): chosen ahead for a meeting held on Caime, by
+      // someone who could ask in the call; everyone is still asked as they join (R85 (1)).
+      {
+        key: 'notes',
+        label: msg('Notes'),
+        type: 'options',
+        choices: [{ value: 'cai', label: msg('Cai, once everyone in the call says yes') }],
+      },
       // Agreed once, each time its own card (R58): only in a chat or a group (`repeatsIn`).
       {
         key: 'repeat',

@@ -1,3 +1,4 @@
+import { notesAsked } from '@caime/core/calls';
 import { joinNames } from '@caime/core/format';
 import { tr } from '@caime/core/i18n';
 import Phone from 'lucide-react-native/icons/phone';
@@ -32,7 +33,7 @@ export function GroupCallBanner({ conversationId }: { conversationId: string }) 
     .map((m) => m.person.displayName.split(' ')[0] ?? m.person.displayName);
   const Icon = on.kind === 'video' ? Video : Phone;
   // On another device of theirs it's theirs to answer there; here, joining chooses (M16 F7).
-  const notes = !elsewhere && (on.notes?.state === 'asking' || on.notes?.state === 'on');
+  const notes = !elsewhere && notesAsked(on.notes);
   return (
     <View
       testID="group-call-banner"

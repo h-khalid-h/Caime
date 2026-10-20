@@ -1638,9 +1638,15 @@ A sphere is said as how you know someone, never "sphere".
   heard; the lines go with the call's line (`message_id`, erased with it) and each person's are
   in their export. The recorder is the web's alone (an analyser and a delay per track, a
   MediaRecorder per utterance, `step` cutting at pauses, two uploads at a time, everything under
-  way dropped at a stop); while notes are asked for or on, a ring and a join offer two labelled
-  choices (`NotesUi.tsx`, `callUi.tsx`), never a plain Answer. The E2E runs in a project of its
-  own (`chromium-speech`) whose microphone speaks and pauses (`e2e/fake-speech.ts`).
+  way dropped at a stop); while notes are asked for or on (core `notesAsked`), every way in offers
+  two labelled choices, never a plain Answer or Join (`NotesUi.tsx`, `callUi.tsx`, the group
+  banner, a meeting card, a guest's page), and a way in without a choice (a calendar's join
+  address) joins nothing. Whether Cai may take notes at all is `assertNotesAllowed`
+  (`lib/notes-allowed.ts`), for the in-call ask and for a meeting card that chooses them ahead
+  (`fields.notes: 'cai'`, M16 F7c, checked in `sendMessage`); a meeting's Join goes through
+  `joinDirect` or `joinGroupMeeting` (`features/calls/calls.ts`), which answer or join the call
+  that's on and ask with Cai. The E2E runs in a project of its own (`chromium-speech`) whose
+  microphone speaks and pauses (`e2e/fake-speech.ts`).
 - A meeting's guests (R83, R84): invited by address from an accepted meeting card held here
   (`features/kits/MeetingGuests.tsx`: Invite a guest, the sheet lazy; the card that moved says
   so and opens the space), or by a link the inviter sends themselves (H6, `inviteGuestByLink`: a

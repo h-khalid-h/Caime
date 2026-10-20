@@ -464,6 +464,16 @@ export function KitForm({
   // other here, which it starts as, as Cal.com and Google Calendar start with their own call.
   const saysWhere = !custom && (kit === 'meeting' || (appointment && !item));
   const callable = meetingCall(conversation, { calls: true, groupCalls: true }) !== null;
+  // Cai takes notes in its call (M16 F7c): offered on a meeting held here, outside a private
+  // conversation, to someone who could ask in the call (an adult with AI assist on).
+  const notesOffered =
+    kit === 'meeting' &&
+    !custom &&
+    callable &&
+    where === 'caime' &&
+    conversation.privacyClass !== 'private' &&
+    me.aiEnabled &&
+    !me.minor;
   useEffect(() => {
     if (saysWhere && callable && where === null) {
       setWhere('caime');
@@ -611,6 +621,7 @@ export function KitForm({
         // A meeting repeats only in a chat or a group (R58), and ends on a day only if it does.
         if (field.key === 'repeat' && !repeats) continue;
         if (field.key === 'repeatUntil' && !repeating) continue;
+        if (field.key === 'notes' && !notesOffered) continue;
         if (field.type === 'items') {
           const lines = options.map((o) => o.trim()).filter(Boolean);
           if (lines.length) fields[field.key] = lines;
@@ -1093,8 +1104,26 @@ export function KitForm({
             (payingShare && SHARE_FIXED.includes(field.key)) ||
             (field.key === 'repeat' && !repeats) ||
             (field.key === 'repeatUntil' && !repeating) ||
-            (field.key === 'place' && appointment && item) ? null : field.key === 'place' &&
-              saysWhere ? (
+            (field.key === 'notes' && !notesOffered) ||
+            (field.key === 'place' && appointment && item) ? null : field.key === 'notes' ? (
+              <SwitchRow
+                key={field.key}
+                label={tr('Cai takes notes')}
+                detail={tr(
+                  'Everyone is asked as they join, and it starts once all say yes. Voices aren’t kept.',
+                )}
+                value={picked.notes === 'cai'}
+                onChange={(on) =>
+                  setPicked((s) => {
+                    const next = { ...s };
+                    if (on) next.notes = 'cai';
+                    else delete next.notes;
+                    return next;
+                  })
+                }
+                testID="kit-notes"
+              />
+            ) : field.key === 'place' && saysWhere ? (
               // Its room held while the places load, so nothing under it moves (R88).
               <View key={field.key} style={{ minHeight: 76 }}>
                 <WherePicker

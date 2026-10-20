@@ -30,10 +30,11 @@ import { AppError, forbidden, notFound } from './errors';
 import { dropUnusedFiles, removeStored, storeBytes } from './files';
 import { enqueue, registerJob } from './jobs';
 import { participantsOf } from './messages';
+import { assertNotesAllowed } from './notes-allowed';
 import { personViewsFor } from './people-batch';
 import { assertAiAllowance } from './plans';
 import { storageFor } from './storage';
-import { anyMinor, minorOf } from './users';
+import { anyMinor } from './users';
 
 type Db = Kysely<Database> | Transaction<Database>;
 
@@ -317,48 +318,21 @@ export async function callForNotes(ctx: AppContext, callId: string, userId: stri
 }
 
 /**
- * Who may ask Cai to take notes (R85): someone in the call on this device; an adult on Caime (not
- * a meeting's guest) with AI assist on and room left today; in a call that isn't in a private
- * conversation and has nobody under 18 in it; on a Caime whose speech provider is set up.
+ * Who may ask Cai to take notes (R85): someone in the call on this device, where Cai may take
+ * notes (`assertNotesAllowed`: an adult on Caime, not a meeting's guest, with AI assist on, in a
+ * call that isn't in a private conversation and has nobody under 18 in it, on a Caime whose
+ * speech provider is set up), with room left today.
  */
 async function mayAsk(ctx: AppContext, call: Call, userId: string, deviceId: string) {
-  if (!ctx.speech)
-    throw new AppError(503, 'ai_unavailable', tr('Cai can’t take notes on this Caime yet.'));
   if (call.state === 'ended') throw new AppError(409, 'call_ended', tr('That call has ended.'));
   const asked = await askedIn(ctx.db, call);
   if (!asked.some((p) => p.userId === userId && p.device === deviceId)) throw notInCall();
-  const [conversation, me] = await Promise.all([
-    ctx.db
-      .selectFrom('conversations')
-      .select('privacy_class')
-      .where('id', '=', call.conversation_id)
-      .executeTakeFirstOrThrow(),
-    ctx.db
-      .selectFrom('users')
-      .select(['kind', 'ai_enabled', 'birth_date', 'time_zone', 'age_minor_until'])
-      .where('id', '=', userId)
-      .executeTakeFirstOrThrow(),
-  ]);
-  if (conversation.privacy_class === 'private')
-    throw new AppError(
-      403,
-      'ai_private',
-      tr('Cai doesn’t take notes in a private conversation: nothing said there reaches Caime.'),
-    );
-  if (me.kind !== 'human') throw forbidden(tr('Only someone on Caime can ask Cai to take notes.'));
-  if (minorOf(me, ctx.now()))
-    throw new AppError(403, 'ai_adults_only', tr('AI assist is for adults for now.'));
-  if (!me.ai_enabled)
-    throw new AppError(403, 'ai_off', tr('Turn on AI assist in Settings to use it.'));
-  // Who's under 18 is never told to the others (R29): the same words, whoever it is.
-  if (
-    await anyMinor(
-      ctx.db,
-      asked.map((p) => p.userId),
-      ctx.now(),
-    )
-  )
-    throw forbidden(tr('Cai can’t take notes in this call.'));
+  await assertNotesAllowed(ctx, {
+    conversationId: call.conversation_id,
+    askerId: userId,
+    people: asked.map((p) => p.userId),
+    where: 'call',
+  });
   ctx.limiter.hit(`call-notes:${userId}`, ctx.config.isTest ? 1000 : 20, 3_600_000);
   await assertAiAllowance(ctx, userId);
 }

@@ -4081,7 +4081,14 @@ export interface ReceiptResponse {
 
 /** `GET /v1/join/:token` (R84): a guest's link, before they take it. */
 export interface JoinView {
-  meeting: { title: string; at: string; durationMinutes: number; host: string | null };
+  meeting: {
+    title: string;
+    at: string;
+    durationMinutes: number;
+    host: string | null;
+    /** It says Cai takes notes in its call (M16 F7c): told before joining, asked as they join. */
+    notes: boolean;
+  };
   guest: { name: string };
   /** The address is someone's on Caime: they sign in instead, and find it among their requests. */
   signIn: boolean;

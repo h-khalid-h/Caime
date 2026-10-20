@@ -4987,4 +4987,9 @@ export const fr: Catalog = {
   'Join without Cai': 'Rejoindre sans Cai',
   'Cai is taking notes in this call.': 'Cai prend des notes dans cet appel.',
   'Cai is asked to take notes in this call.': 'Cai est invité à prendre des notes dans cet appel.',
+  'Cai takes notes': 'Cai prend des notes',
+  Notes: 'Notes',
+  'Cai, once everyone in the call says yes': 'Cai, une fois que chacun dans l’appel a dit oui',
+  'Everyone is asked as they join, and it starts once all say yes. Voices aren’t kept.':
+    'Chacun est sollicité en rejoignant, et cela commence quand tous ont dit oui. Les voix ne sont pas conservées.',
 };

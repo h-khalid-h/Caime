@@ -39,6 +39,7 @@ import {
   callsSupported,
   groupCallsSupported,
   joinDirect,
+  joinGroupMeeting,
   startCall,
   startGroupCall,
 } from '@/features/calls/calls';
@@ -279,7 +280,10 @@ export function ConversationScreen({
       { calls: callsSupported, groupCalls: groupCallsSupported },
       new Date(),
     );
-    if (which === 'group') void startGroupCall(id, 'video');
+    // A group's call that's on is joined rather than met with a second; one with Cai's notes
+    // asked for or on joins nothing from an address, since the choice is the person's (the
+    // card and the banner offer it: M16 F7c).
+    if (which === 'group') void joinGroupMeeting(id);
     else if (which === 'direct') void joinDirect(id);
   }, [join, conversation, messages, id]);
   // A message arriving while the conversation is open is said to a screen reader (a list growing

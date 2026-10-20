@@ -1717,4 +1717,10 @@ export const frServer: Catalog = {
   'That line': 'Cette ligne',
   'Attach a recording.': 'Joignez un enregistrement.',
   'That isn’t a recording Caime reads.': 'Ce n’est pas un enregistrement que Caime lit.',
+  'Cai can’t take notes in this conversation.':
+    'Cai ne peut pas prendre de notes dans cette conversation.',
+  'Cai takes notes only in a meeting held on Caime.':
+    'Cai ne prend des notes que dans une réunion tenue sur Caime.',
+  'Cai takes notes in the call, once everyone in it says yes.':
+    'Cai prend des notes dans l’appel, une fois que chacun y a dit oui.',
 };

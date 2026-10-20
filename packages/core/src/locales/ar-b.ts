@@ -3330,4 +3330,9 @@ export const arB: Catalog = {
   'Join without Cai': 'انضمام دون Cai',
   'Cai is taking notes in this call.': 'يدوّن Cai الملاحظات في هذه المكالمة.',
   'Cai is asked to take notes in this call.': 'طُلب من Cai تدوين الملاحظات في هذه المكالمة.',
+  'Cai takes notes': 'يدوّن Cai الملاحظات',
+  Notes: 'الملاحظات',
+  'Cai, once everyone in the call says yes': 'Cai، حين يوافق كل من في المكالمة',
+  'Everyone is asked as they join, and it starts once all say yes. Voices aren’t kept.':
+    'يُسأل كلٌّ عند انضمامه، ويبدأ التدوين حين يوافق الجميع. لا تُحفظ الأصوات.',
 };

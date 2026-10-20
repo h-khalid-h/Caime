@@ -4,11 +4,12 @@
  * their calendar app reads (`modules/calendar.ts`), in their own language (called inside
  * `asReader`). Its title is the card's and whom it's with, never the same words twice: a meeting's
  * own space (R84) is named by the meeting, so its people are named instead. The description names
- * whom it's with, says how to join it here or open it in Caime, and that Caime keeps it; one held
- * here (core `heldOnCaime`) has its join address for its place, which the calendar opens. Nobody
- * is invited by it: Caime's own invitations reach the people it's with, and each of them on Caime
- * has their own calendar written. An organization that keeps its conversations from its team's
- * own apps (M16 G3b) gets its kind, its name and the time, never who or where.
+ * whom it's with, says how to join it here or open it in Caime, whether Cai takes notes in its call
+ * (M16 F7c), and that Caime keeps it; one held here (core `heldOnCaime`) has its join address for
+ * its place, which the calendar opens. Nobody is invited by it: Caime's own invitations reach the
+ * people it's with, and each of them on Caime has their own calendar written. An organization
+ * that keeps its conversations from its team's own apps (M16 G3b) gets its kind, its name and the
+ * time, never who or where.
  */
 import { KITS } from '@caime/core';
 import { foldForFind } from '@caime/core/fold';
@@ -89,6 +90,8 @@ export function cardEventText(
       asked,
       names.length ? tr('With {names}', { names: joinNames(names, LISTED) }) : null,
       how,
+      // Said wherever the meeting is (M16 F7c): everyone is asked again as they join.
+      card.notes && here ? tr('Cai takes notes in the call, once everyone in it says yes.') : null,
       keeps,
     ]
       .filter(Boolean)

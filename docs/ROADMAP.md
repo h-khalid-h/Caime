@@ -3115,9 +3115,37 @@ graph) and the number that will show it; one that sharpens none is hygiene and s
       it rings, answered with Cai, utterances heard, stopped by the other side, read from the
       call's line, one's own deleted; a ring answered without Cai never starts it), the catalogs
       in four languages, and the full gate.
-- [ ] F7c. "Cai takes notes" chosen on a meeting card ahead of its call: the card says so to
-      everyone it's for, and Join asks each person as the ring does (R85 (1)); a guest's page
-      says it before they join.
+- [x] F7c. "Cai takes notes" chosen on a meeting card ahead of its call (2026-10-20, the owner's
+      expectation that the assistant joins the meeting; advantages 5 and 4 as F7. The number: of
+      meetings that say Cai takes notes, the share whose Join asks for them in the same tap,
+      every one, where the asking was a second step in the call; of joins into a call whose notes
+      are asked for or on, the share made without a choice, none, where a meeting's card, a
+      calendar's join address and a guest's page joined plainly and stopped the notes for
+      everyone). The meeting form offers "Cai takes notes" under Where while the meeting is held
+      on Caime, outside a private conversation, to someone who could ask in the call (an adult
+      with AI assist on); the card says it under Where ("Notes: Cai, once everyone in the call
+      says yes", in its mail and its calendar events too), and `sendMessage` refuses it for a
+      meeting held elsewhere or where Cai may not take notes, through the same check as the
+      call's ask (`assertNotesAllowed`, `lib/notes-allowed.ts`). Join on such a card, and on any
+      meeting whose call has notes asked for or on, is a labelled pair, "Join, Cai takes notes"
+      and "Join without Cai", leading the card's buttons (a meeting that can be joined now leads
+      with Join, never Cancel): with Cai it answers a ring that asks, or starts the call and asks
+      as it rings, so the other side's ring asks too (`joinDirect`); in a group it joins the call
+      that's on rather than meeting it with a second (`joinGroupMeeting`: the second person to
+      press Join was refused "There's a call on here already"), and a calendar's join address
+      joins nothing while notes are asked for or on, the choice being the person's. A guest's
+      page says "Notes" before they join (`JoinView.meeting.notes`) and joins with Cai or
+      without while they're asked for or on. Costs: none on the server beyond a field, the check
+      on send and a line in the calendar's words; on devices, the first download 448.6 KB of 450
+      (0.1 KB more than F7's: Join with Cai in the calls' entry), the conversation's chunk 91.5
+      KB of its 100 (0.7 KB more: the card's pair and the form's switch). Verified: `call-notes.test.ts` (a meeting that says so, a guest's page that says so
+      before they join, and its calendar events that say so; refused held elsewhere, from someone with AI assist off, and
+      with someone under 18 in the conversation, in words that name nobody), the app's
+      `joinDirect.test.ts` (with Cai: starts and asks, answers and asks, answers a ring that
+      asks with a yes and asks nothing more; without Cai: a no; a group's Join to the engine),
+      core `kit-cards.test.ts` (the card's Notes line), the E2E `call-notes.spec.ts` (the form's
+      switch, the card's line, "Join, Cai takes notes" and the other side's ring asking) and
+      `meetings.spec.ts`, the catalogs in four languages, and the full gate.
 - [ ] F7d. A summary and the follow-ups of a call's notes, on ask, Cai's and labelled so, offered
       as suggestions (R12), once the notes have been used.
 - [ ] G. Integration framework and governed AI (REVIEW §11): credentials (key outside the
@@ -5348,6 +5376,9 @@ graph) and the number that will show it; one that sharpens none is hygiene and s
   journeys, safety, reliability, performance, intelligence, mail and calendar, chat, integrations,
   business and code integrity; the matrix against WhatsApp, Signal, Slack, Calendly and Workspace;
   an age-assurance design; the integration framework mapped to the code; plan M16 (A–H).
+- 2026-10-20 — M16 F7c: a meeting proposed with "Cai takes notes" says so on its card, mail and
+  calendar, and its Join asks as it starts or answers the call; a group meeting's Join joins the
+  call that's on; no plain Join into a call whose notes are asked for or on, a guest's included.
 - 2026-10-20 — M16 F7: Cai takes notes in a call: asked by anyone in it, on once everyone has
   said yes (the ring and the join ask, never a plain Answer), stopped for everyone by anyone's
   no; one member's browser records each voice apart in utterances, heard by the speech provider

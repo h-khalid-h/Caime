@@ -1,4 +1,5 @@
 import { radii } from '@caime/brand/tokens';
+import { notesAsked } from '@caime/core/calls';
 import { tr } from '@caime/core/i18n';
 import Mic from 'lucide-react-native/icons/mic';
 import MicOff from 'lucide-react-native/icons/mic-off';
@@ -38,7 +39,6 @@ import {
 } from './engine';
 import { GroupCallLayer } from './GroupCallLayer';
 import { NotesAsk, NotesLine, NotesRound } from './NotesUi';
-import { notesAsked } from './notes';
 
 /**
  * The call screen (PRD §47), over everything while a call rings or runs: who it's with, how
