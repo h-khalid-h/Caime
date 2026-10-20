@@ -12,7 +12,7 @@
 
 import { firstName } from '@caime/core/format';
 import { buildInvitation } from '@caime/core/ics';
-import { cardEndMs } from '@caime/core/meetings';
+import { cardEndMs, cardVenue } from '@caime/core/meetings';
 import { seriesOf } from '@caime/core/series';
 import type { AppContext } from '../context';
 import { MESSAGE_COLUMNS, type Message } from '../db/schema';
@@ -44,6 +44,8 @@ interface Booked {
   end: Date;
   zone: string;
   where: string | null;
+  /** Held on Caime (M16 F6): a call in the conversation, joined from an account. */
+  call: boolean;
   link: string;
   uid: string;
 }
@@ -145,6 +147,7 @@ async function bookedFor(ctx: AppContext, m: Message): Promise<Booked | null> {
     ),
     zone,
     where: p.booking?.where ?? null,
+    call: cardVenue({ kit: 'appointment', place: p.booking?.where }) === 'caime',
     link: `${base}/sign-up?link=${encodeURIComponent(`/c/${m.conversation_id}`)}`,
     // The same event the calendar feed names (R58): one appointment, in every calendar alike.
     uid: meetingUid(m.id, seriesOf(m.payload as Parameters<typeof seriesOf>[0]), 'appointment'),
@@ -160,7 +163,15 @@ function body(b: Booked, opening: string, middle: string[]): string {
     '',
     b.what,
     inZone(b.start, b.zone),
-    ...(b.where ? [b.where] : []),
+    // A call on Caime (M16 F6) is taken from an account made with this address, where its Join is.
+    ...(b.call
+      ? [
+          '',
+          `It's a call on Caime: join Caime with this address, and at its time Join is in your conversation with ${b.host}: ${b.link}`,
+        ]
+      : b.where
+        ? [b.where]
+        : []),
     '',
     ...middle,
     `To write to ${b.host}, or to change or cancel it, join Caime with this address and the conversation will be there: ${b.link}`,
@@ -188,8 +199,10 @@ export async function mailProvisionalBooker(ctx: AppContext, m: Message, to: Mov
     start: b.start,
     end: b.end,
     summary: `${b.what} with ${b.host}`,
-    description: `${b.host} on Caime: ${b.link}`,
-    location: b.where,
+    description: b.call
+      ? `A call on Caime with ${b.host}. Join Caime with this address to take it: ${b.link}`
+      : `${b.host} on Caime: ${b.link}`,
+    location: b.call ? b.link : b.where,
     url: b.link,
     organizer: { name: b.host, email: fromAddress(ctx.config.EMAIL_FROM) },
     attendee: { name: b.name || b.to, email: b.to },

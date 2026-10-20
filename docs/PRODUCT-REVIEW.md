@@ -2246,3 +2246,34 @@ with its reason, so it isn't proposed again without new facts.
   plan), and moving a free organization's agent to cost alone (on the light model it would answer
   more than a Business agent on the top one). *Next:* a recording's length read from the file on
   the server, and the operator's `ai.cost` reading `cost_usd` once a window holds no older rows.
+- **R108 (2026-10-19) Where a meeting or a booking is, said every time; a booking held on Caime is
+  a meeting; a calendar event names whom.** The owner's report: a booking from their page made a
+  card and not a meeting; a meeting from "+" reached Google as "Great Meeting test · Great Meeting
+  test", nobody named and its link in the notes; nothing joined it to take notes; Meetings left
+  page bookings out; and "Your calendar" looked like a second Google and Microsoft. Weighed
+  against Calendly, Cal.com and Google Calendar, which ask where for every kind of event and start
+  with their own call. *Decided:* (1) *Where is always said*, on the meeting and appointment
+  forms and on everything a host offers: On Caime (a call in its conversation, with Join at its
+  time; first, and chosen, wherever a call can be made), one of the places whoever fills it in may
+  see (theirs, and those the other side shows them, R92), or somewhere else, typed (an address or
+  another service's link). A booking from a catalog takes its item's. (2) *A person's item by the
+  minute is a call on Caime unless it says otherwise*, and something sold by the piece may say
+  it's sent on Caime; an item's place is one anyone may see, since each booking copies its address
+  to whoever booked (an organization's for its customers or everyone, as R92 had). An
+  organization's items keep their places and words: its conversations hold no call yet. (3) *A
+  confirmed appointment held on Caime is a meeting*: Join on its card, in the Calendar and in
+  Meetings (which lists appointments too now), "starting now" at its time, its join address in
+  every calendar. (4) *A calendar event names whom and never says a thing twice*: its title and
+  whom it's with (the other person; the customer to the team and the organization to the
+  customer, R15; a space by its name; a meeting's own space, R84, by its people), "With …" in its
+  notes, its join address as its place where it's held here, in the reader's language, the same
+  words for Google, Outlook and the feed. (5) *Nobody is invited by it, on purpose*: an attendee on
+  the copy has Google send its own invitation and put a second copy in the calendar of each person
+  on Caime, which Caime already writes for them; someone not on Caime gets Caime's own invitation
+  (R83 (2)). (6) *A calendar shows each once*: while a connected account writes someone's plans,
+  the feed leaves the meetings and appointments it writes (the next 90 days) to it; "Your
+  calendar" is the Calendar feed, for Apple Calendar or any other app, and Google and Outlook are
+  pointed to Your accounts. *Not done, with why:* someone who booked from a page without an
+  account takes its call once they join Caime with the address, as their mail says (their own
+  link to join without an account is F6c); Cai taking notes in a meeting (R82 phase 1 under R85)
+  is F7, now that the speech provider is live.

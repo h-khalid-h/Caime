@@ -1,15 +1,17 @@
 /**
  * "Starting now" (R83): at an agreed meeting's time, everyone in its conversation is told, and
  * the notification opens the meeting's join address, so the first tap joins its call. Only for a
- * meeting held on Caime (its Where empty: core `meetingVenue`) with a time, in a conversation
- * where a call can be made (direct or a group, never private), to its people who are in it.
+ * meeting held on Caime (its Where empty: core `cardVenue`), or a confirmed appointment that says
+ * it's held here (M16 F6: a booking of a person's item held on Caime), with a time, in a
+ * conversation where a call can be made (direct or a group, never private), to its people who
+ * are in it.
  * One job per card and start, as the brief is (briefs.ts): a card moved to another time gets
  * another, and the old one finds the card elsewhere and does nothing; a job run late says
  * nothing once the meeting could no longer be joined.
  */
 
 import { tr } from '@caime/core/i18n';
-import { JOIN_LATE_MS, joinPath, meetingVenue } from '@caime/core/meetings';
+import { cardVenue, JOIN_LATE_MS, joinPath } from '@caime/core/meetings';
 import type { AppContext } from '../context';
 import { eachLimit } from './batch';
 import { enqueue, registerJob } from './jobs';
@@ -24,7 +26,7 @@ interface Card {
   at: Date;
 }
 
-/** An accepted meeting held on Caime, with a time; null for anything else. */
+/** An accepted meeting or a confirmed appointment held on Caime, with a time; else null. */
 async function meetingOf(ctx: AppContext, messageId: string): Promise<Card | null> {
   const row = await ctx.db
     .selectFrom('messages')
@@ -38,20 +40,30 @@ async function meetingOf(ctx: AppContext, messageId: string): Promise<Card | nul
     title?: string;
     fields?: { title?: unknown; start?: { at?: string; hasTime?: boolean }; place?: unknown };
   };
-  if (p.kit !== 'meeting' || p.state !== 'accepted') return null;
+  if (
+    !(p.kit === 'meeting' && p.state === 'accepted') &&
+    !(p.kit === 'appointment' && p.state === 'confirmed')
+  )
+    return null;
   // Moved to its own space (R84): its copy there is the one that starts.
   if ((p as { movedTo?: unknown }).movedTo) return null;
   // An invitation from someone's calendar (M16 F4) is held where they say: nothing starts here.
   const invitation = (p as { invitation?: unknown }).invitation;
-  if (meetingVenue(p.fields?.place, invitation) !== 'caime' || p.fields?.start?.hasTime === false)
+  if (
+    cardVenue({ kit: p.kit, place: p.fields?.place, invitation }) !== 'caime' ||
+    p.fields?.start?.hasTime === false
+  )
     return null;
   const at = p.fields?.start?.at ? new Date(p.fields.start.at) : null;
   if (!at || Number.isNaN(at.getTime())) return null;
-  const title = p.title || (typeof p.fields?.title === 'string' && p.fields.title) || tr('Meeting');
+  const title =
+    p.title ||
+    (typeof p.fields?.title === 'string' && p.fields.title) ||
+    tr(p.kit === 'appointment' ? 'Appointment' : 'Meeting');
   return { conversationId: row.conversation_id, seq: Number(row.seq), title, at };
 }
 
-/** Queued when a meeting is accepted (card-moves.ts), for its start. */
+/** Queued when a meeting is accepted or an appointment confirmed (card-moves.ts), for its start. */
 export async function queueMeetingStart(ctx: AppContext, messageId: string): Promise<void> {
   const card = await meetingOf(ctx, messageId);
   if (!card || card.at.getTime() <= ctx.now().getTime()) return;

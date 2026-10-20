@@ -363,7 +363,6 @@ export const arA: Catalog = {
     'يتوقف عن التصرف نيابةً عنك فورًا. لاستخدامه مجددًا، تسمح له من التطبيق نفسه.',
   'What it already did stays as it is, marked as sent through it.':
     'ما فعله من قبل يبقى كما هو، معلَّمًا بأنه أُرسل عبره.',
-  'Your calendar': 'تقويمك',
   'What {name} can do with Caime': 'ما تستطيع {name} فعله مع Caime',
   'Token for {name}': 'رمز {name}',
   'Shown this once: paste it on {name} now. {how}':

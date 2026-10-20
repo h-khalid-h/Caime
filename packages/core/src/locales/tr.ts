@@ -299,7 +299,6 @@ export const turkish: Catalog = {
     'Sizin adınıza işlem yapmayı hemen bırakır. Yeniden kullanmak isterseniz uygulamanın kendisinden yeniden izin vermeniz gerekir.',
   'What it already did stays as it is, marked as sent through it.':
     'Daha önce yaptıkları olduğu gibi kalır; onun aracılığıyla gönderildiği belirtilir.',
-  'Your calendar': 'Takviminiz',
   'What {name} can do with Caime': '{name} Caime ile neler yapabilir',
   'Token for {name}': '{name} için belirteç',
   'Shown this once: paste it on {name} now. {how}':
@@ -3351,10 +3350,6 @@ export const turkish: Catalog = {
   Health: 'Sağlık',
   Travel: 'Seyahat',
   'Developer tools': 'Geliştirici araçları',
-  'Your due actions and meetings in Google Calendar, Outlook or Apple Calendar':
-    'Vadesi gelen eylemlerin ve toplantıların Google Takvim, Outlook veya Apple Takvim’de',
-  'A private address your calendar app reads: your actions with a due date, and the meetings and appointments you agreed to. Nothing changes in Caime from there. Anyone with the address sees them, so keep it to yourself.':
-    'Takvim uygulamanın okuduğu özel bir adres: vadesi olan eylemlerin ve kabul ettiğin toplantılar ile randevular. Oradan Caime’de hiçbir şey değişmez. Adresi olan herkes bunları görür; kendine sakla.',
   'Your calendar and the apps that act for you; discover more':
     'Takvimin ve senin adına hareket eden uygulamalar; daha fazlasını keşfet',
   'Connect must send people to an https address.':
@@ -3618,8 +3613,8 @@ export const turkish: Catalog = {
     'Caime’nin size nasıl yazdığı ve sizi tanıyanların sizi nasıl etiketli gördüğü, Arapça ve Fransızcada. Asla tahmin edilmez.',
   Meetings: 'Toplantılar',
   'No meetings yet': 'Henüz toplantı yok',
-  'Meetings agreed in your conversations show here, with Join when it’s time.':
-    'Sohbetlerinizde kararlaştırılan toplantılar burada görünür; zamanı gelince Katıl ile.',
+  'Meetings and appointments agreed in your conversations show here, with Join when it’s time.':
+    'Sohbetlerinizde kararlaştırılan toplantılar ve randevular burada görünür; zamanı gelince Katıl ile.',
   // An organization's closing (DPA §12): its export, for its last owner.
   'Export {name}': 'Dışa aktar: {name}',
   'It closed. Its export is yours until {date}, then what was only its own is deleted.':
@@ -3934,7 +3929,6 @@ export const turkish: Catalog = {
   'In {timeZone}. Its items are booked on these days.':
     '{timeZone} saatiyle. Öğeleri bu günlerde rezerve edilir.',
   'Same as the organization’s': 'Kuruluşunkiyle aynı',
-  Wherever: 'Herhangi bir yerde',
   'At {place}': '{place} konumunda',
   'Each place’s hours once.': 'Her yerin saatleri bir kez.',
   'Nobody with these addresses or numbers is on Caime yet, or they keep them private.':
@@ -4743,4 +4737,26 @@ export const turkish: Catalog = {
   '{by} suggested another time': 'Başka bir saat öneren: {by}',
   'Suggest another time': 'Başka bir saat öner',
   'No other open times in the next two months.': 'Önümüzdeki iki ay içinde başka boş saat yok.',
+  'On Caime': 'Caime’de',
+  'Somewhere else': 'Başka bir yerde',
+  'A call in this conversation, with Join at its time.':
+    'Bu sohbette bir arama; zamanı gelince Katıl ile.',
+  'Where isn’t said': 'Yeri belirtilmemiş',
+  'Say where it is.': 'Nerede olduğunu belirtin.',
+  'Sent on Caime': 'Caime’de gönderilir',
+  'Sent in your conversation with whoever orders it.': 'Sipariş verenle sohbetinizde gönderilir.',
+  'A call in your conversation, with Join at its time.':
+    'Sohbetinizde bir arama; zamanı gelince Katıl ile.',
+  'Its address is copied into each booking or order.':
+    'Adresi her rezervasyona veya siparişe kopyalanır.',
+  'A call on Caime': 'Caime’de bir arama',
+  'Your {provider} calendar gets your meetings and appointments from your connected account as they change, so this feed carries your actions’ due dates, and what’s more than {days} days ahead.':
+    '{provider} takviminiz toplantılarınızı ve randevularınızı bağlı hesabınızdan değiştikçe alır; bu yüzden bu akış eylemlerinizin son tarihlerini ve {days} günden daha ileridekileri taşır.',
+  'Using Google Calendar or Outlook? Connect the account under Your accounts instead: Caime writes your plans there as they change, and keeps bookings off your busy times.':
+    'Google Takvim veya Outlook mu kullanıyorsunuz? Bunun yerine hesabı Hesaplarınız’dan bağlayın: Caime planlarınızı değiştikçe oraya yazar ve rezervasyonları dolu saatlerinizden uzak tutar.',
+  'Calendar feed': 'Takvim akışı',
+  'Your meetings and due actions in Apple Calendar, or any calendar app':
+    'Toplantılarınız ve vadesi gelen eylemleriniz Apple Takvim’de veya herhangi bir takvim uygulamasında',
+  'A private address any calendar app subscribes to: your actions with a due date, and the meetings and appointments you agreed to. For Google Calendar or Outlook, connect the account under Your accounts instead: Caime writes your plans there as they change. Nothing changes in Caime from the feed. Anyone with the address sees it, so keep it to yourself.':
+    'Herhangi bir takvim uygulamasının abone olduğu özel bir adres: vadesi olan eylemleriniz ve kabul ettiğiniz toplantılar ile randevular. Google Takvim veya Outlook için bunun yerine hesabı Hesaplarınız’dan bağlayın: Caime planlarınızı değiştikçe oraya yazar. Akıştan Caime’de hiçbir şey değişmez. Adresi olan herkes onu görür; kendinize saklayın.',
 };

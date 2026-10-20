@@ -45,6 +45,11 @@ test.describe
       await expect(page.getByTestId('org-booking-item-capacity')).toHaveText('2');
       await page.getByTestId('org-booking-item-max-more').click();
       await page.getByTestId('org-booking-item-public').click();
+      // Where it's had is always said (M16 F6): the salon has no place saved, so in its words.
+      await page.getByTestId('org-booking-item-save').click();
+      await expect(visible(page, 'Say where it is.')).toBeVisible();
+      await page.getByTestId('org-booking-item-elsewhere').click();
+      await page.getByTestId('org-booking-item-where-note').fill('At the salon, 12 Tahrir St.');
       await page.getByTestId('org-booking-item-save').click();
       await expect(visible(page, /^Haircut$/)).toBeVisible();
       await expect(visible(page, /45 min · .*200.* · Everyone/)).toBeVisible();
@@ -135,6 +140,8 @@ test.describe
       await page.getByTestId('my-booking-item-name').fill('A quick chat');
       await page.getByTestId('my-booking-item-public').click();
       await page.getByTestId('my-booking-item-topic').click();
+      // A person's time is a call on Caime unless they say otherwise (M16 F6).
+      await expect(page.getByTestId('my-booking-item-on-caime')).toBeChecked();
       await page.getByTestId('my-booking-item-save').click();
       await expect(visible(page, 'A quick chat')).toBeVisible();
       expect(errors).toEqual([]);
@@ -249,6 +256,8 @@ test.describe
       await page.getByTestId('org-booking-item-price').fill('120');
       await page.getByTestId('org-booking-item-each').click();
       await page.getByTestId('org-booking-item-public').click();
+      await page.getByTestId('org-booking-item-elsewhere').click();
+      await page.getByTestId('org-booking-item-where-note').fill('At the salon, 12 Tahrir St.');
       await page.getByTestId('org-booking-item-save').click();
       await expect(visible(page, /By the piece · .*120.* · Everyone/)).toBeVisible();
       expect(errors).toEqual([]);
@@ -523,6 +532,8 @@ test.describe
       await page.getByTestId('org-booking-item-price').fill('50');
       await page.getByTestId('org-booking-item-each').click();
       await page.getByTestId('org-booking-item-public').click();
+      await page.getByTestId('org-booking-item-elsewhere').click();
+      await page.getByTestId('org-booking-item-where-note').fill('At the café');
       // A size, required, one of Small or Large (ten more).
       await page.getByTestId('org-booking-item-add-option').click();
       await page.getByTestId('org-booking-item-option-0-name').fill('Size');

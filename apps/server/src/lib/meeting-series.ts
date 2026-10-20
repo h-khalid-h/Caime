@@ -210,7 +210,8 @@ async function nextJob(ctx: AppContext, payload: Record<string, unknown>): Promi
       });
   }
   await queueBrief(ctx, message.id);
-  if (card.kit === 'meeting') await queueMeetingStart(ctx, message.id);
+  // Held on Caime, a meeting's or an appointment's (M16 F6): its start is told; else nothing.
+  await queueMeetingStart(ctx, message.id);
   await queueNextTime(ctx, message.id);
   if (posted.created && card.kit === 'meeting')
     for (const handler of whenPosted) await handler(ctx, message, from);

@@ -22,6 +22,7 @@ import {
   type TaskView,
   zonedParts,
 } from '@caime/core';
+import { ACCOUNT_BUSY_DAYS } from '@caime/core/accounts';
 import type {
   BookingResponse,
   BriefView,
@@ -30,7 +31,6 @@ import type {
   OkResponse,
 } from '@caime/core/api';
 import { tr } from '@caime/core/i18n';
-import { joinPath, meetingVenue } from '@caime/core/meetings';
 import type { FastifyInstance, FastifyReply } from 'fastify';
 import { z } from 'zod';
 import type { AppContext } from '../context';
@@ -56,9 +56,17 @@ import {
 } from '../lib/booking';
 import { humanTeam } from '../lib/booking-team';
 import { briefFor } from '../lib/briefs';
-import { calendarItems, minutesOf, orgBookings, overdueTasks } from '../lib/calendar';
+import {
+  calendarItems,
+  conversationsFor,
+  minutesOf,
+  orgBookings,
+  overdueTasks,
+} from '../lib/calendar';
+import { cardEventText } from '../lib/card-events';
 import { hashToken, newToken } from '../lib/crypto';
 import { badRequest, forbidden, notFound } from '../lib/errors';
+import { asReader } from '../lib/i18n';
 import { meetingUid } from '../lib/meeting-series';
 import { keptFromApps } from '../lib/member-apps';
 import { formNames } from '../lib/org-forms';
@@ -101,16 +109,23 @@ function localDate(at: Date, timeZone: string): string {
 
 function taskSummary(t: TaskView): string {
   if (t.direction === 'waiting' || t.direction === 'i_asked')
-    return `Waiting on ${t.assignee.displayName}: ${t.title}`;
+    return tr('Waiting on {name}: {title}', { name: t.assignee.displayName, title: t.title });
   return t.title;
 }
 
 function taskWho(t: TaskView): string {
-  if (t.direction === 'asked_me') return `${t.owner.displayName} asked you.`;
-  if (t.direction === 'mine') return 'One of your actions.';
-  return `You’re waiting on ${t.assignee.displayName}.`;
+  if (t.direction === 'asked_me') return tr('{name} asked you.', { name: t.owner.displayName });
+  if (t.direction === 'mine') return tr('One of your actions.');
+  return tr('You’re waiting on {name}.', { name: t.assignee.displayName });
 }
 
+/**
+ * The feed's events, in its person's own language (M16 F6): their open actions with a due date,
+ * what they owe by a day, and the meetings and appointments agreed in their conversations, worded
+ * as their connected calendar has them (`card-events.ts`). While a connected account writes their
+ * plans (R96), the meetings and appointments it writes are left to it, so a calendar that shows
+ * both never shows one twice; those further ahead than it writes stay here.
+ */
 export async function calendarEvents(
   ctx: AppContext,
   userId: string,
@@ -130,91 +145,108 @@ export async function calendarEvents(
   // Meetings and appointments agreed in conversations they're still in, never one taken back.
   // A meeting that repeats (R58) is there each time ahead, as one event a time before and after
   // its card is posted (`meetingUid`).
-  const cards = await cardsAhead(ctx, userId, {
-    from,
-    until,
-    limit: MAX_EVENTS,
-    agreedOnly: true,
-    series: { now },
-  });
-  const owed = await dueCards(ctx, userId, { from, until, limit: MAX_EVENTS });
+  const [all, owed, plans] = await Promise.all([
+    cardsAhead(ctx, userId, {
+      from,
+      until,
+      limit: MAX_EVENTS,
+      agreedOnly: true,
+      series: { now },
+    }),
+    dueCards(ctx, userId, { from, until, limit: MAX_EVENTS }),
+    ctx.db
+      .selectFrom('connected_accounts')
+      .select('id')
+      .where('user_id', '=', userId)
+      .where('state', '<>', 'reconnect')
+      .where((eb) => eb(eb.val('plans'), '=', eb.fn.any('uses')))
+      .executeTakeFirst(),
+  ]);
+  const writtenUntil = now.getTime() + ACCOUNT_BUSY_DAYS * DAY_MS;
+  const cards = plans ? all.filter((c) => c.at.getTime() > writtenUntil) : all;
   // A calendar app reads this feed for them: what an organization keeps from its team's own apps
   // is its name and the time, never who, what, how much or where (M16 G3b).
-  const kept = await keptFromApps(ctx, userId, [
-    ...rows.map((r) => r.conversation_id),
-    ...cards.map((c) => c.conversationId),
-    ...owed.map((c) => c.conversationId),
+  const [kept, about] = await Promise.all([
+    keptFromApps(ctx, userId, [
+      ...rows.map((r) => r.conversation_id),
+      ...cards.map((c) => c.conversationId),
+      ...owed.map((c) => c.conversationId),
+    ]),
+    conversationsFor(
+      ctx,
+      userId,
+      cards.map((c) => c.conversationId),
+    ),
   ]);
   const keptBy = (conversationId: string | null) =>
     conversationId ? kept.get(conversationId) : undefined;
-  const events: IcsEvent[] = [];
-  rows.forEach((row, i) => {
-    const t = views[i];
-    if (!t?.dueAt) return;
-    const due = new Date(t.dueAt);
-    const url = where(t.conversationId);
-    const org = keptBy(t.conversationId);
-    const notes = t.notes ? `${t.notes}\n\n` : '';
-    events.push({
-      uid: `task-${t.id}@caime`,
-      summary: org ? `Action · ${org}` : taskSummary(t),
-      description: org ? `In Caime: ${url}` : `${notes}${taskWho(t)} In Caime: ${url}`,
-      url,
-      ...(t.dueHasTime
-        ? { start: due, end: new Date(due.getTime() + TASK_MINUTES * 60_000) }
-        : { date: localDate(due, timeZone) }),
-      updated: row.updated_at as Date,
+  return asReader(ctx, userId, async () => {
+    const events: IcsEvent[] = [];
+    rows.forEach((row, i) => {
+      const t = views[i];
+      if (!t?.dueAt) return;
+      const due = new Date(t.dueAt);
+      const url = where(t.conversationId);
+      const org = keptBy(t.conversationId);
+      const open = tr('Open in Caime: {url}', { url });
+      events.push({
+        uid: `task-${t.id}@caime`,
+        summary: org ? `${tr('Action')} · ${org}` : taskSummary(t),
+        description: org ? open : [t.notes, taskWho(t), open].filter(Boolean).join('\n\n'),
+        url,
+        ...(t.dueHasTime
+          ? { start: due, end: new Date(due.getTime() + TASK_MINUTES * 60_000) }
+          : { date: localDate(due, timeZone) }),
+        updated: row.updated_at as Date,
+      });
     });
+    for (const card of cards) {
+      // A meeting or an appointment held on Caime (R83, M16 F6) is joined from the calendar
+      // app: its address opens the conversation at the card and joins it (the app checks the
+      // card first). A time still to be posted has no card to join yet: it opens the conversation.
+      // As long as the app's calendar says (M16): as booked, as the field says, else an hour.
+      const minutes = minutesOf(card);
+      const text = cardEventText(
+        card,
+        about.get(card.conversationId),
+        userId,
+        base,
+        keptBy(card.conversationId),
+      );
+      events.push({
+        uid: meetingUid(card.messageId, card.series, card.kit),
+        summary: text.summary,
+        description: text.description,
+        location: text.location,
+        url: text.url,
+        ...(card.hasTime
+          ? { start: card.at, end: new Date(card.at.getTime() + minutes * 60_000) }
+          : { date: localDate(card.at, timeZone) }),
+        updated: card.updated,
+        busy: true,
+      });
+    }
+    // What's owed by a day (M14): a Pay card or an invoice on its due day, all day, holding nothing.
+    for (const card of owed) {
+      const url = where(card.conversationId);
+      const org = keptBy(card.conversationId);
+      const kind = tr(KITS[card.kit].name);
+      const what = org
+        ? `${kind} · ${org}`
+        : card.amount
+          ? `${card.title}: ${formatAmount(card.amount.value, card.amount.currency)}`
+          : card.title;
+      events.push({
+        uid: `${card.kit}-${card.messageId}@caime`,
+        summary: what,
+        description: [kind, tr('Open in Caime: {url}', { url })].join('\n\n'),
+        url,
+        date: localDate(card.at, 'UTC'),
+        updated: card.updated,
+      });
+    }
+    return events;
   });
-  for (const card of cards) {
-    // A meeting held on Caime (R83) is joined from the calendar app: its address opens the
-    // conversation at the card and joins it (the app checks the card first). A time still to be
-    // posted has no card to join yet: it opens the conversation.
-    const here =
-      card.kit === 'meeting' &&
-      card.hasTime &&
-      !card.projected &&
-      meetingVenue(card.place, card.invited) === 'caime';
-    const url = here
-      ? `${base}${joinPath(card.conversationId, card.seq, card.messageId)}`
-      : where(card.conversationId);
-    // As long as the app's calendar says (M16): as booked, as the field says, else an hour.
-    const minutes = minutesOf(card);
-    const org = keptBy(card.conversationId);
-    events.push({
-      uid: meetingUid(card.messageId, card.series, card.kit),
-      summary: org ? `${KITS[card.kit].name} · ${org}` : card.title,
-      description: here
-        ? `${KITS[card.kit].name} on Caime. Join: ${url}`
-        : `${KITS[card.kit].name}, agreed in Caime: ${url}`,
-      location: here ? 'Caime' : org ? null : card.place,
-      url,
-      ...(card.hasTime
-        ? { start: card.at, end: new Date(card.at.getTime() + minutes * 60_000) }
-        : { date: localDate(card.at, timeZone) }),
-      updated: card.updated,
-      busy: true,
-    });
-  }
-  // What's owed by a day (M14): a Pay card or an invoice on its due day, all day, holding nothing.
-  for (const card of owed) {
-    const url = where(card.conversationId);
-    const org = keptBy(card.conversationId);
-    const what = org
-      ? `${KITS[card.kit].name} · ${org}`
-      : card.amount
-        ? `${card.title}: ${formatAmount(card.amount.value, card.amount.currency)}`
-        : card.title;
-    events.push({
-      uid: `${card.kit}-${card.messageId}@caime`,
-      summary: what,
-      description: `${KITS[card.kit].name}, due in Caime: ${url}`,
-      url,
-      date: localDate(card.at, 'UTC'),
-      updated: card.updated,
-    });
-  }
-  return events;
 }
 
 /** From one instant to another, at most a year apart: what a calendar screen asks for. */

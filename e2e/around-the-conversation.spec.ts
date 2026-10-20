@@ -312,7 +312,7 @@ test.describe
       await expect(page.getByTestId('calendar-feed-url')).toHaveCount(0);
       await expect(visible(page, /^On since .* · last read /)).toBeVisible();
       await page.screenshot({ path: 'e2e/screenshots/desktop-apps-connected.png' });
-      await page.getByTestId('connected-Your calendar').click();
+      await page.getByTestId('connected-Calendar feed').click();
       await expect(page.getByTestId('calendar-feed-on')).toBeVisible();
       await page.getByTestId('calendar-feed-replace').filter({ visible: true }).click();
       await page.getByTestId('calendar-feed-confirm').filter({ visible: true }).click();
@@ -479,7 +479,10 @@ test.describe
       await page.getByLabel('When', { exact: true }).fill('Friday 3pm');
       await expect(visible(page, /^Fri, .*3:00/)).toBeVisible();
       await page.getByRole('radio', { name: '45 min', exact: true }).click();
-      await page.getByLabel('Where (optional)').fill('Cairo Opera House');
+      // Where it is is always said (M16 F6): On Caime first, somewhere else typed.
+      await expect(page.getByTestId('kit-where-caime')).toBeChecked();
+      await page.getByTestId('kit-where-other').click();
+      await page.getByTestId('kit-field-place').fill('Cairo Opera House');
       await page.getByTestId('kit-send').click();
 
       const mine = page.getByTestId('kit-meeting').filter({ hasText: 'Venue walkthrough' });
@@ -1106,6 +1109,11 @@ test.describe
       await page.getByTestId('kit-option-appointment').click();
       await page.getByLabel('For', { exact: true }).fill('Cleaning');
       await page.getByLabel('When', { exact: true }).fill('Thursday 10am');
+      // Where it is is always said (M16 F6): a customer's conversation holds no call, so the
+      // team says it in words.
+      await expect(page.getByTestId('kit-where-caime')).toHaveCount(0);
+      await page.getByTestId('kit-where-other').click();
+      await page.getByTestId('kit-field-place').fill('Room 2');
       await page.getByTestId('kit-send').click();
       await expect(
         page.getByTestId('kit-appointment').filter({ hasText: 'Cleaning', visible: true }),

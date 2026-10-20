@@ -617,6 +617,28 @@ A sphere is said as how you know someone, never "sphere".
   the privacy fields `busy` and `busyDetails` (core `privacy.ts`), on the profile
   (`PersonProfileView.busy`, `busyNow` run only when `canSee` allows): never on a `PersonView`
   (every list would pay a query per person) and never anyone's calendar.
+- Where a meeting or a booking is (M16 F6) is always said. A card keeps its Where as words
+  (`fields.place`), read by core `cardVenue` (a meeting with none is on Caime, R83; an appointment
+  with none is at its provider's, unsaid; "Caime" is here for both) and `heldOnCaime` (that, in a
+  conversation that holds a call: `holdsCalls`, a chat or a group), which `CardAhead.heldHere` and
+  `CalendarItemView.heldHere` carry: one held here has Join, "starting now" (`meeting-start.ts`)
+  and its join address as its place in calendars, a confirmed appointment as an accepted meeting.
+  The forms ask it with `features/places/WherePicker.tsx` (in the places chunk, its room held by
+  `KitForm`): On Caime first where a call can be made, the places the person may see
+  (`conversationPlaces`), or somewhere else, typed; a booking from a catalog takes its item's. An
+  item says where it's had, one of three (`BookingItem.placeId`, `onCaime`, `whereNote`, kept so
+  by `whereOf` in `catalogFrom`; core `itemOnCaime` and `itemWhereSaid`): a person's by the minute
+  is on Caime unless it says otherwise (an organization's conversations hold no call yet), a place
+  is one anyone may see for either host (`bookablePlaceIds`, let go of by `savePlaces` when it no
+  longer is), and `whereBooked` writes a booking's `where` and an order's (`PlacedOrder.where`,
+  when its items agree). What a calendar event says is `lib/card-events.ts` (`cardEventText`, in
+  the reader's language), for the Plans push and the feed alike: whom by name (`conversationsFor`:
+  the customer to the team, the organization to the customer, a space by its space, a meeting's
+  own space by its people), never the same words twice, its join address for its place where
+  it's held here, and nobody invited by it. The feed leaves the meetings and appointments within
+  `ACCOUNT_BUSY_DAYS` to a connected account that writes plans, so none shows twice; anything new
+  that writes someone's calendar keeps to the same split. A call to someone not on Caime yet (a
+  page's booker) says why it can't ring (`modules/calls.ts`).
 - A meeting that repeats (R58): `fields.repeat` (core `repeat.ts`: `REPEAT_CHOICES`, `isRepeat`,
   `repeatsIn` (a chat or a group), the light part the form, the card and the calendar read, so
   the series' arithmetic, which the calendar would share with the conversation, stays out of

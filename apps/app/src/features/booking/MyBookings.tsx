@@ -3,11 +3,12 @@
  * in Settings. The same setup an organization uses; the items are theirs to do.
  */
 import { tr } from '@caime/core/i18n';
-import { useQueryClient } from '@tanstack/react-query';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { View } from 'react-native';
 import { endpoints } from '@/api/endpoints';
 import { useMyBooking } from '@/api/hooks';
 import { qk } from '@/api/keys';
+import { branchName } from '@/features/booking/branchName';
 import { SettingsPage } from '@/features/settings/SettingsPage';
 import { putAnswer } from '@/state/cache';
 import { useMe } from '@/state/session';
@@ -21,6 +22,9 @@ export function MyBookings() {
   const me = useMe();
   const qc = useQueryClient();
   const q = useMyBooking();
+  // Where something of theirs may be had (M16 F6): their places anyone may see, since a booking
+  // copies the address to whoever made it.
+  const places = useQuery({ queryKey: qk.myPlaces, queryFn: endpoints.myPlaces }).data?.places;
   return (
     <SettingsPage title={tr('What you offer')}>
       <Text variant="body" color="textSecondary" style={{ paddingHorizontal: 4 }}>
@@ -40,6 +44,9 @@ export function MyBookings() {
               weekStart: me.weekStart,
               payKinds: me.payKinds,
               ref: { kind: 'person', id: me.id },
+              places: (places ?? [])
+                .filter((p) => p.audience?.kind === 'everyone')
+                .map((p) => ({ id: p.id, name: branchName(p) })),
             }}
             offer={q.data}
             save={async (next) => {

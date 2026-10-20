@@ -3007,6 +3007,70 @@ graph) and the number that will show it; one that sharpens none is hygiene and s
       refused, the team's card refused), `openapi.test.ts`, core `kit-cards.test.ts`,
       `e2e/bookings.spec.ts` (the team picks one of the haircut's open times, the customer reads
       the line and confirms), the catalogs in four languages, and the full gate.
+- [x] F6. Where a meeting or a booking is, said every time; a booking held on Caime joined as a
+      meeting; calendar events that name whom (2026-10-19, the owner's report: a booking from
+      their page was a card and not a meeting, a meeting reached Google as "Great Meeting test ·
+      Great Meeting test" with nobody named and its link in the notes, Meetings left page bookings
+      out, and "Your calendar" looked like a second Google; R108; advantage 2, everyone you deal
+      with in one place. The number: of meetings and bookings, the share whose Where is said,
+      every one now, where a booking said nothing unless an organization's branch did; of
+      bookings of a person's time held on Caime, the share with Join, every one, where none had
+      it; of the events Caime writes into a calendar, the share that name whom they're with, every
+      one, where a meeting's own space doubled its title). Where is a choice on the forms
+      (`features/places/WherePicker.tsx`, in the places chunk, its room held while it loads: On
+      Caime, first and chosen wherever a call can be made; the places whoever fills it in may see;
+      somewhere else, typed), on a meeting, an appointment and an item (`BookingSetup`); core
+      `cardVenue` and `heldOnCaime` read it (a meeting with none on Caime, R83; an appointment with
+      none at its provider's; a conversation that holds a call). A person's item by the minute is a
+      call on Caime unless it says a place anyone may see or words of its own (`BookingItem.onCaime`,
+      `whereNote`, kept one of three by `whereOf`), which `whereBooked` writes into its booking's
+      card and an order's (`PlacedOrder.where`, "Sent on Caime"); a confirmed appointment held here
+      has Join on its card, in the calendar and in Meetings (which lists appointments too),
+      "starting now" and its join address in calendars. What Caime writes into Google and Outlook
+      and what the feed says are one wording (`lib/card-events.ts`, in the reader's language):
+      whom by name (the customer to the team, the organization to the customer, a space by its
+      name, a meeting's own space by its people), never the same words twice, "With …", the join
+      address as its place (Outlook's `locationUri` too); nobody invited, on purpose (R108 (5)).
+      The feed leaves to a connected account writing plans the meetings and appointments it writes
+      (90 days), its other lines in the reader's language too, and is the Calendar feed in Apps
+      (for Apple Calendar and the rest; Google and Outlook pointed to Your accounts). A person's
+      public items say where (a call on Caime, sent on Caime, the place, the words), the agent's
+      catalog says an item's words, a page's booker is mailed that it's a call taken once they join
+      with the address, and a call to them says why it can't ring yet. Left: that booker joining
+      without an account (F6c), Cai's notes in the call (F7), an organization's items on Caime (its
+      conversations hold no call yet), and the other side's clock beside a time. Costs: the feed
+      four queries more per read (whom its cards are with, three batched, and whether an account
+      writes the plans), the push one more per run, none per row; on devices, the first download
+      448.2 KB of 450, 0.2 KB more than F5b's (the picker and its places load with the form's
+      first Where, in the places chunk), the conversation's chunk 90.3 KB of its 100 (0.4 KB more:
+      the form's choice and its room). Verified: core `meetings.test.ts` (`cardVenue`,
+      `holdsCalls`, `heldOnCaime`, a confirmed appointment's Join until its booking ends),
+      `booking.test.ts` (`itemOnCaime`, `itemWhereSaid`), `kit-cards.test.ts` (an order's Where),
+      `card-where.test.ts` (an item's three wheres kept one of three and a place not everyone's
+      refused; a booking's card says Caime, the place's address or the words; Join in the calendar
+      for one held here and none elsewhere; the Plans event and the feed name whom with the join
+      address; an order sent on Caime; the item pages; a page's booker mailed that it's a call and
+      a call to them refused in words; "starting now" at its time; a meeting's own space named by
+      its people; a business conversation's events name the customer to the team and the
+      organization to the customer, nobody on the team, and hold no call), `calendar.test.ts` (the
+      feed's words, the join address as its place, a connected account's plans left to it and back
+      once it's to reconnect), `calendar-sync.test.ts`, `member-apps.test.ts` (a space by its
+      name), `branches.test.ts` (a person's item at someone else's place refused, a branch's days
+      an organization's), `app-directory.test.ts`, the E2E `places.spec.ts`, `bookings.spec.ts`,
+      `mail.spec.ts` and `around-the-conversation.spec.ts` (Where chosen on the forms, the Calendar
+      feed), the catalogs in four languages, and the full gate.
+- [ ] F6c. Someone who booked from a page without an account joins its call from their mail: a
+      link of their own (as a meeting guest's, R84), a guest session for that one conversation's
+      call, a one-to-one call that takes a provisional party with a live session; until then
+      their mail says to join Caime with the address (F6).
+- [ ] F7. Cai takes notes in a call or a meeting (R82 phase 1 under R85, the owner's report of
+      2026-10-19: "the Assistant didn't join and so the meeting wasn't recorded"): a labelled
+      choice to start, answer or join with Cai, anyone's no stopping it for everyone, never with
+      anyone under 18 and never in a private conversation, one member's browser recording each
+      voice apart in utterances, each transcribed by the speech provider (ElevenLabs Scribe v2 in
+      production) on the starter's AI allowance by cost, the audio gone once its words are made,
+      the transcript on the call's line for whoever was in it, and each person's own lines theirs
+      to delete.
 - [ ] G. Integration framework and governed AI (REVIEW §11): credentials (key outside the
       database with a key id and re-seal, a downscoped picker token, sealed webhook secrets,
       rotation); per-use health, Google and Microsoft probes, a freshness gauge, a reconnect
@@ -5235,6 +5299,10 @@ graph) and the number that will show it; one that sharpens none is hygiene and s
   journeys, safety, reliability, performance, intelligence, mail and calendar, chat, integrations,
   business and code integrity; the matrix against WhatsApp, Signal, Slack, Calendly and Workspace;
   an age-assurance design; the integration framework mapped to the code; plan M16 (A–H).
+- 2026-10-19 — M16 F6: Where is said on every meeting, booking and item (on Caime, a place, or
+  somewhere else); a booking of a person's time held on Caime is joined as a meeting; Google,
+  Outlook and the feed name whom it's with, never doubled, with the join link as its place; the
+  feed leaves to a connected account what it writes there.
 - 2026-10-19 — Speech: ElevenLabs is production's speech provider (its privacy page names it);
   the adapter's default model is Scribe v2, which the price list prices, where it asked for v1,
   which ElevenLabs deprecated and no longer prices (`ai-costs.test.ts` holds every provider's

@@ -1693,4 +1693,14 @@ export const frServer: Catalog = {
     'Cette réservation a été faite sans compte : annulez-la, et un autre horaire pourra être réservé depuis votre page.',
   'A booking lasts as long as what was booked: choose its time alone.':
     'Une réservation dure ce que dure ce qui a été réservé : choisissez seulement son horaire.',
+  'With {names}': 'Avec {names}',
+  'Choose one of your places that anyone may see.':
+    'Choisissez un de vos lieux que tout le monde peut voir.',
+  'Waiting on {name}: {title}': 'En attente de {name} : {title}',
+  '{name} asked you.': '{name} vous l’a demandé.',
+  'One of your actions.': 'Une de vos actions.',
+  'You’re waiting on {name}.': 'Vous attendez {name}.',
+  Action: 'Action',
+  '{name} isn’t on Caime yet: a call reaches them once they join with their address.':
+    '{name} n’est pas encore sur Caime : un appel l’atteindra une fois son compte créé avec son adresse.',
 };

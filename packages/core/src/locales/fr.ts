@@ -322,7 +322,6 @@ export const fr: Catalog = {
     'Elle cesse immédiatement d’agir en votre nom. Pour la réutiliser, il faudra l’autoriser à nouveau depuis l’application elle-même.',
   'What it already did stays as it is, marked as sent through it.':
     'Ce qu’elle a déjà fait reste tel quel, marqué comme envoyé par elle.',
-  'Your calendar': 'Votre calendrier',
   'What {name} can do with Caime': 'Ce que {name} peut faire avec Caime',
   'Token for {name}': 'Jeton pour {name}',
   'Shown this once: paste it on {name} now. {how}':
@@ -3505,10 +3504,6 @@ export const fr: Catalog = {
   Health: 'Santé',
   Travel: 'Voyage',
   'Developer tools': 'Outils de développement',
-  'Your due actions and meetings in Google Calendar, Outlook or Apple Calendar':
-    'Vos actions à échéance et vos réunions dans Google Agenda, Outlook ou Calendrier Apple',
-  'A private address your calendar app reads: your actions with a due date, and the meetings and appointments you agreed to. Nothing changes in Caime from there. Anyone with the address sees them, so keep it to yourself.':
-    'Une adresse privée que votre application de calendrier lit : vos actions à échéance, et les réunions et rendez-vous que vous avez acceptés. Rien ne change dans Caime depuis là. Quiconque a l’adresse les voit : gardez-la pour vous.',
   'Your calendar and the apps that act for you; discover more':
     'Votre calendrier et les applications qui agissent pour vous ; découvrez-en d’autres',
   'Connect must send people to an https address.':
@@ -3776,8 +3771,8 @@ export const fr: Catalog = {
     'Comment Caime vous écrit, et comment les personnes qui vous connaissent voient votre lien, en arabe et en français. Jamais deviné.',
   Meetings: 'Réunions',
   'No meetings yet': 'Aucune réunion pour l’instant',
-  'Meetings agreed in your conversations show here, with Join when it’s time.':
-    'Les réunions convenues dans vos conversations s’affichent ici, avec Rejoindre le moment venu.',
+  'Meetings and appointments agreed in your conversations show here, with Join when it’s time.':
+    'Les réunions et rendez-vous convenus dans vos conversations s’affichent ici, avec Rejoindre le moment venu.',
   // An organization's closing (DPA §12): its export, for its last owner.
   'Export {name}': 'Exporter {name}',
   'It closed. Its export is yours until {date}, then what was only its own is deleted.':
@@ -4100,7 +4095,6 @@ export const fr: Catalog = {
   'In {timeZone}. Its items are booked on these days.':
     'Fuseau {timeZone}. Ses articles se réservent ces jours-là.',
   'Same as the organization’s': 'Comme ceux de l’organisation',
-  Wherever: 'N’importe où',
   'At {place}': 'À {place}',
   'Each place’s hours once.': 'Les horaires de chaque lieu une seule fois.',
   'Nobody with these addresses or numbers is on Caime yet, or they keep them private.':
@@ -4930,4 +4924,27 @@ export const fr: Catalog = {
   'Suggest another time': 'Proposer un autre horaire',
   'No other open times in the next two months.':
     'Aucun autre horaire libre dans les deux prochains mois.',
+  'On Caime': 'Sur Caime',
+  'Somewhere else': 'Ailleurs',
+  'A call in this conversation, with Join at its time.':
+    'Un appel dans cette conversation, avec Rejoindre le moment venu.',
+  'Where isn’t said': 'Lieu non précisé',
+  'Say where it is.': 'Précisez le lieu.',
+  'Sent on Caime': 'Envoyé sur Caime',
+  'Sent in your conversation with whoever orders it.':
+    'Envoyé dans votre conversation avec la personne qui le commande.',
+  'A call in your conversation, with Join at its time.':
+    'Un appel dans votre conversation, avec Rejoindre le moment venu.',
+  'Its address is copied into each booking or order.':
+    'Son adresse est copiée dans chaque réservation ou commande.',
+  'A call on Caime': 'Un appel sur Caime',
+  'Your {provider} calendar gets your meetings and appointments from your connected account as they change, so this feed carries your actions’ due dates, and what’s more than {days} days ahead.':
+    'Votre calendrier {provider} reçoit vos réunions et rendez-vous depuis votre compte connecté dès qu’ils changent : ce flux porte donc les échéances de vos actions, et ce qui est à plus de {days} jours.',
+  'Using Google Calendar or Outlook? Connect the account under Your accounts instead: Caime writes your plans there as they change, and keeps bookings off your busy times.':
+    'Vous utilisez Google Agenda ou Outlook ? Connectez plutôt le compte dans Vos comptes : Caime y écrit vos projets dès qu’ils changent, et évite les réservations sur vos créneaux occupés.',
+  'Calendar feed': 'Flux du calendrier',
+  'Your meetings and due actions in Apple Calendar, or any calendar app':
+    'Vos réunions et actions à échéance dans Calendrier Apple, ou toute application de calendrier',
+  'A private address any calendar app subscribes to: your actions with a due date, and the meetings and appointments you agreed to. For Google Calendar or Outlook, connect the account under Your accounts instead: Caime writes your plans there as they change. Nothing changes in Caime from the feed. Anyone with the address sees it, so keep it to yourself.':
+    'Une adresse privée à laquelle toute application de calendrier s’abonne : vos actions à échéance, et les réunions et rendez-vous que vous avez acceptés. Pour Google Agenda ou Outlook, connectez plutôt le compte dans Vos comptes : Caime y écrit vos projets dès qu’ils changent. Rien ne change dans Caime depuis le flux. Quiconque a l’adresse le voit : gardez-la pour vous.',
 };

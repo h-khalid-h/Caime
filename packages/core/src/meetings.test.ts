@@ -3,6 +3,9 @@ import {
   CARD_MINUTES,
   calendarAction,
   cardEndMs,
+  cardVenue,
+  heldOnCaime,
+  holdsCalls,
   JOIN_EARLY_MS,
   JOIN_LATE_MS,
   joinOpen,
@@ -159,6 +162,65 @@ describe('a meeting in the calendar (R83)', () => {
   });
   it('joins at the card, in its conversation', () => {
     expect(joinPath('c-1', 42, 'm-1')).toBe('/c/c-1?seq=42&join=m-1');
+  });
+});
+
+describe('an appointment held where its Where says (M16 F6)', () => {
+  const at = '2026-10-13T10:00:00.000Z';
+  const ms = Date.parse(at);
+  it('is at its provider’s when its Where says nothing, where a meeting is held here', () => {
+    for (const place of [undefined, null, '', '  ']) {
+      expect(cardVenue({ kit: 'appointment', place })).toBe('place');
+      expect(cardVenue({ kit: 'meeting', place })).toBe('caime');
+    }
+    expect(cardVenue({ kit: 'appointment', place: 'Caime' })).toBe('caime');
+    expect(cardVenue({ kit: 'appointment', place: 'on Caime' })).toBe('caime');
+    expect(cardVenue({ kit: 'appointment', place: 'zoom.us/j/1' })).toBe('link');
+    expect(cardVenue({ kit: 'appointment', place: 'Nile Dental, 12 Tahrir St.' })).toBe('place');
+    expect(cardVenue({ kit: 'meeting', place: 'Caime', invitation: { uid: 'x' } })).toBe('place');
+  });
+  it('is joined here only in a conversation that holds a call', () => {
+    expect(holdsCalls('direct')).toBe(true);
+    expect(holdsCalls('group')).toBe(true);
+    for (const kind of ['business', 'broadcast', 'community', undefined, 7])
+      expect(holdsCalls(kind)).toBe(false);
+    expect(heldOnCaime({ kit: 'appointment', place: 'Caime' }, 'direct')).toBe(true);
+    expect(heldOnCaime({ kit: 'appointment', place: 'Caime' }, 'business')).toBe(false);
+    expect(heldOnCaime({ kit: 'appointment', place: '' }, 'direct')).toBe(false);
+    expect(heldOnCaime({ kit: 'meeting', place: '' }, 'group')).toBe(true);
+  });
+  it('offers Join once confirmed, until half an hour after its booking’s own end', () => {
+    const card = (state: string, place = 'Caime') => ({
+      kit: 'appointment',
+      state,
+      fields: { start: { at, hasTime: true }, place },
+      booking: { endAt: '2026-10-13T11:30:00.000Z' },
+    });
+    expect(meetingAction(card('confirmed'), new Date(ms))).toBe('join');
+    expect(meetingAction(card('confirmed'), new Date(ms + 90 * 60_000 + JOIN_LATE_MS))).toBe(
+      'join',
+    );
+    expect(
+      meetingAction(card('confirmed'), new Date(ms + 90 * 60_000 + JOIN_LATE_MS + 1)),
+    ).toBeNull();
+    expect(meetingAction(card('requested'), new Date(ms))).toBeNull();
+    expect(meetingAction(card('confirmed', ''), new Date(ms))).toBeNull();
+    expect(meetingAction(card('confirmed', 'meet.google.com/x'), new Date(ms))).toBe('open');
+  });
+  it('offers Join in the calendar only where the server says it’s held here', () => {
+    const item = {
+      kind: 'appointment',
+      state: 'agreed',
+      hasTime: true,
+      at,
+      endAt: '2026-10-13T10:30:00.000Z',
+      place: 'Caime',
+    };
+    expect(calendarAction(item, new Date(ms))).toBe('join');
+    expect(calendarAction({ ...item, heldHere: true }, new Date(ms))).toBe('join');
+    expect(calendarAction({ ...item, heldHere: false }, new Date(ms))).toBeNull();
+    expect(calendarAction({ ...item, place: null }, new Date(ms))).toBeNull();
+    expect(calendarAction({ ...item, state: 'asked' }, new Date(ms))).toBeNull();
   });
 });
 

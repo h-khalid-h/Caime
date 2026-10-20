@@ -24,6 +24,7 @@ import {
   canBook,
   isBooked,
   isOrdered,
+  itemOnCaime,
   type OrderAsk,
   type OrderingSettings,
   openSlots,
@@ -502,11 +503,29 @@ export async function bookingFor(
     endAt: end.toISOString(),
     providerId: ask.providerId ?? null,
     providerName: null,
-    // Where (R92): the branch, and its address as written now, copied into the card.
-    ...(host.kind === 'org' && item.placeId
-      ? { placeId: item.placeId, where: await bookingWhere(ctx, host.id, item.placeId) }
-      : {}),
+    // Where (R92, M16 F6): the place, and its address as written now, copied into the card;
+    // one held on Caime says so, and is joined from its conversation; else the host's words.
+    ...(await whereBooked(ctx, host, item)),
   };
+}
+
+/**
+ * Where a booking or an order of an item is (R92, M16 F6), as its card copies it: its place's
+ * address now (`placeId` with it), "Caime" for one had on Caime, the host's own words, or nothing
+ * for an item that never said.
+ */
+export async function whereBooked(
+  ctx: AppContext,
+  host: Pick<BookingHost, 'kind' | 'id'>,
+  item: Pick<BookingItem, 'unit' | 'onCaime' | 'placeId' | 'whereNote'>,
+): Promise<{ placeId?: string; where?: string }> {
+  if (item.placeId) {
+    const where = await bookingWhere(ctx, host, item.placeId);
+    return where ? { placeId: item.placeId, where } : {};
+  }
+  if (itemOnCaime(host.kind, item)) return { where: 'Caime' };
+  const note = item.whereNote?.trim();
+  return note ? { where: note } : {};
 }
 
 /**
@@ -683,7 +702,25 @@ export async function rebookingFor(
   };
 }
 
-/** A person's own catalog names nobody; an organization's names its team. */
+/**
+ * Where an item is had as a save keeps it (M16 F6): one of a place, on Caime (said for something
+ * ordered; for something by the minute only as `false`, since a person's says Caime when it says
+ * nothing), and the host's own words; nothing for a stay on Caime, which is no call.
+ */
+function whereOf(i: BookingItemInput): Pick<BookingItem, 'placeId' | 'onCaime' | 'whereNote'> {
+  const note = (i.whereNote ?? '').trim();
+  if (i.placeId) return { placeId: i.placeId, onCaime: undefined, whereNote: null };
+  if (i.unit === 'each' && i.onCaime === true)
+    return { placeId: null, onCaime: true, whereNote: null };
+  if (note)
+    return { placeId: null, onCaime: i.unit === 'minutes' ? false : undefined, whereNote: note };
+  return {
+    placeId: null,
+    onCaime: i.unit === 'minutes' && i.onCaime === false ? false : undefined,
+    whereNote: null,
+  };
+}
+
 /**
  * What a save keeps (R61): the catalog as sent, its collections as sent (else as they were),
  * an item in a collection no longer there in none, and every address unique.
@@ -705,8 +742,9 @@ export function catalogFrom(
       collectionId: i.collectionId && ids.has(i.collectionId) ? i.collectionId : null,
       resourceId:
         i.resourceId && i.unit !== 'each' && shared.has(i.resourceId) ? i.resourceId : null,
-      // Where it's done (R92) is for something booked at a time; `assertPlacesFit` checks it.
-      placeId: i.unit !== 'each' ? (i.placeId ?? null) : null,
+      // Where it's had (R92, M16 F6), one of three: a place (`assertPlacesFit` checks it), on
+      // Caime, or the host's own words. A place wins over the rest, then Caime.
+      ...whereOf(i),
       // The form sent after it's booked or ordered (M16 H5): one of the host's own, else none
       // (a person has none; a form let go since leaves its items without one).
       formId: i.formId && forms.has(i.formId) ? i.formId : null,
@@ -780,11 +818,16 @@ export async function assertPlacesFit(
     ...(hours?.placeHours ?? []).map((p) => p.placeId),
   ];
   if (wanted.length === 0) return;
-  if (host.kind === 'person')
+  // A branch's own days (R92) are an organization's alone.
+  if (host.kind === 'person' && hours?.placeHours?.length)
     throw forbidden(tr('Only an organization’s items are done at its places.'));
-  const open = await bookablePlaceIds(ctx, host.id);
+  const open = await bookablePlaceIds(ctx, host);
   if (wanted.some((id) => !open.has(id)))
-    throw badRequest(tr('Choose one of your places that customers may see.'));
+    throw badRequest(
+      host.kind === 'org'
+        ? tr('Choose one of your places that customers may see.')
+        : tr('Choose one of your places that anyone may see.'),
+    );
 }
 
 /** "Thursday 8 October, 10:00" in the host's zone, for the agent and its customer. */
@@ -856,6 +899,8 @@ export function catalogLines(
         i.unit === 'minutes' ? `${i.minutes} min` : 'per day',
         i.price ? `${i.price.currency} ${i.price.value}` : 'free',
         ...(i.placeId && places.get(i.placeId) ? [`at ${places.get(i.placeId)}`] : []),
+        // Where it's had in its host's words (M16 F6), as the customer's card will say it.
+        ...(!i.placeId && i.whereNote ? [`at ${i.whereNote}`] : []),
       ].join(' · '),
     )
     .join('\n');

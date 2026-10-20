@@ -647,7 +647,18 @@ export function kitDetails(
 export function orderDetails(
   order: PlacedOrder | null | undefined,
 ): Array<{ key: string; label: string; value: string }> {
-  if (!order?.fulfilment) return [];
+  // Where it's had (M16 F6): sent here, or the place it's from, unless it's delivered.
+  const where =
+    order?.where && order.fulfilment !== 'delivery'
+      ? [
+          {
+            key: 'where',
+            label: tr('Where'),
+            value: /^ca[iı]me$/i.test(order.where.trim()) ? tr('Sent on Caime') : order.where,
+          },
+        ]
+      : [];
+  if (!order?.fulfilment) return where;
   return [
     {
       key: 'fulfilment',
@@ -657,6 +668,7 @@ export function orderDetails(
     ...(order.fulfilment === 'delivery' && order.deliverTo
       ? [{ key: 'deliverTo', label: tr('Deliver to'), value: order.deliverTo }]
       : []),
+    ...where,
   ];
 }
 

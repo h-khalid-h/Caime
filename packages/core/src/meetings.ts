@@ -2,8 +2,10 @@
  * Meetings (R83): planned, with a time and people, held on Caime, in person, or on another
  * service. Where it's held is the Meeting kit's own Where: empty (or "Caime"), it's held here and
  * has a Join; a web address, it's on another service and Caime only opens the link; anything
- * else is a place, in person. A call is unplanned and rings; a meeting's Join opens the call of
- * its conversation at its time, and nothing else starts one.
+ * else is a place, in person. An appointment is held where its Where says too (M16 F6), save
+ * that one which says nothing is at its provider's: a booking held here says "Caime" itself. A
+ * call is unplanned and rings; a meeting's Join opens the call of its conversation at its time,
+ * and nothing else starts one.
  */
 
 export type MeetingVenue = 'caime' | 'link' | 'place';
@@ -58,6 +60,45 @@ export function meetingVenue(place: unknown, invitation?: unknown): MeetingVenue
   return 'place';
 }
 
+/**
+ * Where a meeting or an appointment card is held (M16 F6), from its kind and its Where: a meeting
+ * by `meetingVenue`; an appointment the same way, except that one whose Where says nothing is at
+ * its provider's, a place nobody named here (a clinic's chair, a salon), never a call. One booked
+ * from a catalog item held on Caime says "Caime" (`bookingFor`), as anyone may write it.
+ */
+export function cardVenue(card: {
+  kit?: unknown;
+  place?: unknown;
+  invitation?: unknown;
+}): MeetingVenue {
+  const p = typeof card.place === 'string' ? card.place.trim() : '';
+  if (card.kit === 'appointment' && !p) return 'place';
+  return meetingVenue(p, card.invitation);
+}
+
+/** What a meeting or an appointment is once it's agreed: accepted, or confirmed. */
+const AGREED_AS: Record<string, string> = { meeting: 'accepted', appointment: 'confirmed' };
+
+/**
+ * Whether a conversation of this kind holds a call its people can join (R83): two people's, or a
+ * group's. An organization's conversation holds none yet, nor does a broadcast or a community.
+ */
+export function holdsCalls(conversationKind: unknown): boolean {
+  return conversationKind === 'direct' || conversationKind === 'group';
+}
+
+/**
+ * Whether a card is held on Caime (R83, M16 F6): its Where says so, by `cardVenue`, and its
+ * conversation holds a call. The server's one test for what's joined here: the calendar's Join,
+ * the feed's and a connected calendar's join address, "starting now".
+ */
+export function heldOnCaime(
+  card: { kit?: unknown; place?: unknown; invitation?: unknown },
+  conversationKind: unknown,
+): boolean {
+  return cardVenue(card) === 'caime' && holdsCalls(conversationKind);
+}
+
 /** The address to open for a meeting on another service: its scheme added when it has none. */
 export function meetingLink(place: string): string {
   const p = place.trim();
@@ -87,9 +128,10 @@ export function joinOpen(start: unknown, durationMinutes: unknown, now: Date): b
 export type MeetingAction = 'join' | 'open' | null;
 
 /**
- * For an accepted meeting card: Join while it can be joined (held on Caime), Open for one held
- * on another service, nothing for one in person or not accepted. Whether this device can make
- * the call is the app's to say.
+ * For an accepted meeting card or a confirmed appointment (M16 F6): Join while it can be joined
+ * (held on Caime), Open for one held on another service, nothing for one in person or not
+ * agreed. Whether its conversation holds a call, and this device can make it, is the app's to
+ * say. A booking's own end (its item's length) closes Join, as it closes the slot.
  */
 export function meetingAction(
   card: {
@@ -98,23 +140,31 @@ export function meetingAction(
     fields?: Record<string, unknown> | null;
     movedTo?: unknown;
     invitation?: unknown;
+    booking?: { endAt?: unknown } | null;
   },
   now: Date,
 ): MeetingAction {
-  if (card.kit !== 'meeting' || card.state !== 'accepted') return null;
+  if (typeof card.kit !== 'string' || !AGREED_AS[card.kit] || card.state !== AGREED_AS[card.kit])
+    return null;
   // Moved to its own space (R84): joined there, from the card's copy.
   if (card.movedTo) return null;
   const f = card.fields ?? {};
-  const venue = meetingVenue(f.place, card.invitation);
+  const venue = cardVenue({ kit: card.kit, place: f.place, invitation: card.invitation });
   if (venue === 'link') return 'open';
-  if (venue === 'caime' && joinOpen(f.start, f.durationMinutes, now)) return 'join';
-  return null;
+  if (venue !== 'caime') return null;
+  const s = (f.start ?? {}) as { at?: unknown; hasTime?: unknown };
+  if (s.hasTime === false || typeof s.at !== 'string') return null;
+  const at = Date.parse(s.at);
+  if (!Number.isFinite(at)) return null;
+  const end = cardEndMs(at, { durationMinutes: f.durationMinutes, booking: card.booking });
+  return windowOpen(at, end, now) ? 'join' : null;
 }
 
 /**
- * The same for a line of the calendar (`CalendarItemView`): an agreed meeting with a time, held
- * here while it can be joined, or on another service. Its end is the server's (as booked, as its
- * field says, else an hour), so the calendar and the card agree.
+ * The same for a line of the calendar (`CalendarItemView`): an agreed meeting or appointment with
+ * a time, held here while it can be joined, or on another service. Whether it's held here is the
+ * server's (`heldHere`: its Where and its conversation, by `heldOnCaime`), and its end too (as
+ * booked, as its field says, else an hour), so the calendar and the card agree.
  */
 export function calendarAction(
   item: {
@@ -125,13 +175,15 @@ export function calendarAction(
     endAt: string | null;
     place: string | null;
     invitation?: boolean;
+    heldHere?: boolean;
   },
   now: Date,
 ): MeetingAction {
-  if (item.kind !== 'meeting' || item.state !== 'agreed') return null;
-  const venue = meetingVenue(item.place, item.invitation);
+  if ((item.kind !== 'meeting' && item.kind !== 'appointment') || item.state !== 'agreed')
+    return null;
+  const venue = cardVenue({ kit: item.kind, place: item.place, invitation: item.invitation });
   if (venue === 'link') return 'open';
-  if (venue !== 'caime' || !item.hasTime) return null;
+  if (venue !== 'caime' || item.heldHere === false || !item.hasTime) return null;
   const at = Date.parse(item.at);
   if (!Number.isFinite(at)) return null;
   const end = item.endAt ? Date.parse(item.endAt) : cardEndMs(at, {});

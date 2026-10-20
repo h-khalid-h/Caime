@@ -135,6 +135,14 @@ export async function callRoutes(app: FastifyInstance, ctx: AppContext) {
       .where('id', '=', other.user_id)
       .where('deleted_at', 'is', null)
       .executeTakeFirst();
+    // Someone reached by mail (a booker from a page, R93) takes a call once they've joined with
+    // their address, which their mail asks (M16 F6).
+    if (callee?.kind === 'provisional')
+      throw badRequest(
+        tr('{name} isn’t on Caime yet: a call reaches them once they join with their address.', {
+          name: callee.display_name,
+        }),
+      );
     if (callee?.kind !== 'human') throw badRequest(tr('There’s nobody to call here.'));
     ctx.limiter.hit(`call:${auth.userId}`, ctx.config.isTest ? 1000 : 20, 10 * 60_000);
     // "On another call" says they're around right now: only to someone who may see that.

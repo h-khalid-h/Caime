@@ -12,6 +12,7 @@
  */
 import type { AppointmentBooking, UpcomingView } from '@caime/core';
 import { AGREED_STATES as AGREED, DUE_STATES } from '@caime/core/kit-states';
+import { heldOnCaime } from '@caime/core/meetings';
 import { isRepeat, type Repeat } from '@caime/core/repeat';
 import { isDay, occurrencesBetween, seriesAgreed, seriesOf, timesAYear } from '@caime/core/series';
 import { sql } from 'kysely';
@@ -52,6 +53,7 @@ function visibleCards(
         'm.payload',
         'm.created_at',
         'm.edited_at',
+        'c.kind as conversation_kind',
         't.customer_id',
         't.assignee_id',
       ])
@@ -112,6 +114,11 @@ export interface CardAhead {
   booking: AppointmentBooking | null;
   /** Made of an invitation from someone's calendar (M16 F4): held where they say, never here. */
   invited: boolean;
+  /**
+   * Held on Caime (R83, M16 F6): its Where says so and its conversation holds a call, so it's
+   * joined here (core `heldOnCaime`).
+   */
+  heldHere: boolean;
   /** A meeting that repeats (R58): its series and which time this is. */
   series: { id: string; n: number } | null;
   /** How often it repeats, while it still does. */
@@ -148,6 +155,7 @@ type CardRow = {
   payload: unknown;
   created_at: Date;
   edited_at: Date | null;
+  conversation_kind: string;
 };
 
 /** A card read as what's ahead, at the time it's for (another, for a time looked ahead). */
@@ -170,6 +178,10 @@ function cardAhead(row: CardRow, payload: CardPayload, kit: CardKit, at: Date): 
     updated: moved ? new Date(moved) : (row.edited_at ?? row.created_at),
     booking,
     invited: Boolean(payload.invitation),
+    heldHere: heldOnCaime(
+      { kit, place: payload.fields?.place, invitation: payload.invitation },
+      row.conversation_kind,
+    ),
     series: series ? { id: series.id, n: series.n } : null,
     repeat: isRepeat(payload.fields?.repeat) ? payload.fields.repeat : null,
     projected: false,

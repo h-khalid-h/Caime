@@ -13,6 +13,9 @@ import type {
   Sphere,
   TaskView,
 } from '@caime/core';
+import { foldForFind } from '@caime/core/fold';
+import { joinNames } from '@caime/core/format';
+import { tr } from '@caime/core/i18n';
 import { HELD_APPOINTMENT_STATES } from '@caime/core/kit-states';
 import { cardEndMs } from '@caime/core/meetings';
 import { isRepeat } from '@caime/core/repeat';
@@ -24,6 +27,7 @@ import { orgRef } from './business';
 import { overdueAtSql } from './due';
 import { personViewsFor } from './people-batch';
 import { activeRelationships, relationshipView } from './relations';
+import { spaceConversationTitle } from './spaces';
 import { cardsAhead, dueCards, SERIES_ENDED_MS } from './upcoming';
 
 /**
@@ -47,36 +51,68 @@ export interface Window {
   until: Date;
 }
 
-/** Whom a conversation is with, for the viewer: a person, an organization, or a title. */
-async function conversationsFor(
+/** The most people a card's event names (a group call's room); the rest are counted. */
+const NAMES_MAX = 8;
+
+/**
+ * Whom a conversation is with, for the viewer: the other person in a direct one, the organization
+ * (and, to its team, the customer) in a business one, a group's or a space's title; and the people
+ * in it besides the viewer by name, people alone (never a bot, an agent, Cai or a friend), in the
+ * order they came, a few more than an event names so it can count the rest.
+ */
+export interface ConversationAbout {
+  kind: string;
+  otherId: string | null;
+  org: OrgRef | null;
+  /** A business conversation's customer: the team names them, never the other way (R15). */
+  customer: { id: string; name: string } | null;
+  title: string | null;
+  names: string[];
+}
+
+export async function conversationsFor(
   ctx: AppContext,
   viewerId: string,
   conversationIds: string[],
-): Promise<Map<string, { otherId: string | null; org: OrgRef | null; title: string | null }>> {
-  const out = new Map<
-    string,
-    { otherId: string | null; org: OrgRef | null; title: string | null }
-  >();
+): Promise<Map<string, ConversationAbout>> {
+  const out = new Map<string, ConversationAbout>();
   const ids = [...new Set(conversationIds)];
   if (ids.length === 0) return out;
   const [rows, others, threads] = await Promise.all([
     ctx.db
-      .selectFrom('conversations')
-      .select(['id', 'kind', 'title'])
-      .where('id', 'in', ids)
+      .selectFrom('conversations as c')
+      .leftJoin('spaces as s', 's.id', 'c.space_id')
+      .leftJoin('conversations as g', 'g.id', 'c.parent_id')
+      .select([
+        'c.id',
+        'c.kind',
+        'c.title',
+        'c.is_general',
+        'c.parent_id',
+        's.name as space_name',
+        'g.title as group_title',
+      ])
+      .where('c.id', 'in', ids)
       .execute(),
     ctx.db
-      .selectFrom('participants')
-      .select(['conversation_id', 'user_id'])
-      .where('conversation_id', 'in', ids)
-      .where('user_id', '<>', viewerId)
-      .where('left_at', 'is', null)
+      .selectFrom('participants as p')
+      .innerJoin('users as u', 'u.id', 'p.user_id')
+      .select(['p.conversation_id', 'p.user_id', 'u.kind', 'u.display_name'])
+      .where('p.conversation_id', 'in', ids)
+      .where('p.user_id', '<>', viewerId)
+      .where('p.left_at', 'is', null)
+      // In the order they came, and by name among those who came together.
+      .orderBy('p.joined_at')
+      .orderBy('u.display_name')
       .execute(),
     ctx.db
       .selectFrom('business_threads as t')
       .innerJoin('organizations as o', 'o.id', 't.org_id')
+      .leftJoin('users as cu', 'cu.id', 't.customer_id')
       .select([
         't.conversation_id',
+        't.customer_id',
+        'cu.display_name as customer_name',
         'o.id',
         'o.name',
         'o.handle',
@@ -89,19 +125,56 @@ async function conversationsFor(
       .where('t.conversation_id', 'in', ids)
       .execute(),
   ]);
-  const othersOf = new Map<string, string[]>();
+  const othersOf = new Map<string, typeof others>();
   for (const p of others)
-    othersOf.set(p.conversation_id, [...(othersOf.get(p.conversation_id) ?? []), p.user_id]);
-  const orgOf = new Map(threads.map((t) => [t.conversation_id, orgRef(t)]));
+    othersOf.set(p.conversation_id, [...(othersOf.get(p.conversation_id) ?? []), p]);
+  const threadOf = new Map(threads.map((t) => [t.conversation_id, t]));
   for (const c of rows) {
     const them = othersOf.get(c.id) ?? [];
+    const t = threadOf.get(c.id);
     out.set(c.id, {
-      otherId: c.kind === 'direct' && them.length === 1 ? (them[0] ?? null) : null,
-      org: orgOf.get(c.id) ?? null,
-      title: c.kind === 'direct' || c.kind === 'business' ? null : c.title,
+      kind: c.kind,
+      otherId: c.kind === 'direct' && them.length === 1 ? (them[0]?.user_id ?? null) : null,
+      org: t ? orgRef(t) : null,
+      customer:
+        t?.customer_id && t.customer_name ? { id: t.customer_id, name: t.customer_name } : null,
+      title: titleOf(c),
+      names: them
+        .filter((p) => p.kind === 'human' || p.kind === 'provisional')
+        .slice(0, NAMES_MAX + 1)
+        .map((p) => p.display_name),
     });
   }
   return out;
+}
+
+/**
+ * A group's or a space's name, as its inbox has it (`conversation-titles.ts`): a space's
+ * conversation by its space, a group's topic by its group. A one-to-one or a business
+ * conversation is named by whom it's with instead.
+ */
+function titleOf(c: {
+  kind: string;
+  title: string | null;
+  is_general: boolean;
+  parent_id: string | null;
+  space_name: string | null;
+  group_title: string | null;
+}): string | null {
+  if (c.kind === 'direct' || c.kind === 'business') return null;
+  if (c.space_name) return spaceConversationTitle({ name: c.space_name }, c);
+  if (c.parent_id) return c.group_title;
+  return c.title;
+}
+
+/**
+ * A group's or a space's line under a card: its title, or its people where the title is the
+ * card's own (a meeting's space is named by it, R84), never the same words twice.
+ */
+function groupLine(about: ConversationAbout | undefined, cardTitle: string): string | null {
+  if (!about?.title) return null;
+  if (foldForFind(about.title.trim()) !== foldForFind(cardTitle.trim())) return about.title;
+  return about.names.length ? joinNames(about.names) : null;
 }
 
 /**
@@ -174,13 +247,14 @@ export async function calendarItems(
       endAt: c.hasTime ? new Date(c.at.getTime() + minutes * 60_000).toISOString() : null,
       place: c.place,
       ...(c.invited ? { invitation: true } : {}),
+      heldHere: c.heldHere,
       repeat: c.repeat,
       projected: c.projected,
       amount: null,
       conversationId: c.conversationId,
       ...withOf(a?.otherId ?? null),
       org: a?.org ?? null,
-      conversationTitle: a?.title ?? null,
+      conversationTitle: groupLine(a, c.title),
       state: c.agreed ? 'agreed' : 'asked',
     });
   }
@@ -216,7 +290,9 @@ export async function calendarItems(
       kind: 'task',
       id: t.id,
       seq: null,
-      title: waiting ? `Waiting on ${t.assignee.displayName}: ${t.title}` : t.title,
+      title: waiting
+        ? tr('Waiting on {name}: {title}', { name: t.assignee.displayName, title: t.title })
+        : t.title,
       at: t.dueAt,
       hasTime: t.dueHasTime,
       endAt: null,

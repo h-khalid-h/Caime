@@ -72,6 +72,7 @@ import {
   orgHost,
   paymentsOf,
   personHost,
+  whereBooked,
 } from './booking';
 import { customerMask, maskFor, maskMessage, recordBusinessMessage } from './business';
 import { queueCalendarPush } from './calendar-push';
@@ -1338,6 +1339,17 @@ export async function sendMessage(
       if (orderAsk) {
         // Checked against the counts now (a quick refusal), and taken under their locks below.
         order = orderFor(await hostWithStock(ctx.db, found.host), found.booker, orderAsk);
+        // Where it's had (M16 F6), when everything in it says the same: sent here, or a place.
+        const wheres = new Set(
+          await Promise.all(
+            [...new Set(order.lines.map((l) => l.itemId))].map(async (itemId) => {
+              const item = found.host.items.find((i) => i.id === itemId);
+              return item ? ((await whereBooked(ctx, found.host, item)).where ?? '') : '';
+            }),
+          ),
+        );
+        const [where] = [...wheres];
+        if (wheres.size === 1 && where) order = { ...order, where };
         orderTake = { host: found.host, order };
         // The card reads as any order does: its number, what was ordered, the total.
         card.fields.summary = orderSummary(order).slice(0, 200);

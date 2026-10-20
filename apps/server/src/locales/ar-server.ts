@@ -1679,4 +1679,13 @@ export const arServer: Catalog = {
     'تمّ الحجز دون حساب: ألغِه، ويمكن حجز وقت آخر من صفحتك.',
   'A booking lasts as long as what was booked: choose its time alone.':
     'مدة الحجز هي مدة ما حُجز: اختر وقته فقط.',
+  'With {names}': 'مع {names}',
+  'Choose one of your places that anyone may see.': 'اختر أحد أماكنك التي يمكن لأي أحد رؤيتها.',
+  'Waiting on {name}: {title}': 'في انتظار {name}: {title}',
+  '{name} asked you.': 'طلبٌ من {name}.',
+  'One of your actions.': 'أحد إجراءاتك.',
+  'You’re waiting on {name}.': 'في انتظار {name}.',
+  Action: 'إجراء',
+  '{name} isn’t on Caime yet: a call reaches them once they join with their address.':
+    'لا حساب لـ {name} على Caime بعد: تصل المكالمة بعد الانضمام بالعنوان نفسه.',
 };

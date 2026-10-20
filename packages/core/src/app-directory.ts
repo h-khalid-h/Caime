@@ -72,10 +72,11 @@ export type ListingState = (typeof LISTING_STATES)[number];
 export const BUILTIN_APPS = [
   {
     id: 'calendar',
-    name: msg('Your calendar'),
-    tagline: msg('Your due actions and meetings in Google Calendar, Outlook or Apple Calendar'),
+    // The feed (M16 F6): for Apple Calendar or any app; Google and Outlook are connected accounts.
+    name: msg('Calendar feed'),
+    tagline: msg('Your meetings and due actions in Apple Calendar, or any calendar app'),
     description: msg(
-      'A private address your calendar app reads: your actions with a due date, and the meetings and appointments you agreed to. Nothing changes in Caime from there. Anyone with the address sees them, so keep it to yourself.',
+      'A private address any calendar app subscribes to: your actions with a due date, and the meetings and appointments you agreed to. For Google Calendar or Outlook, connect the account under Your accounts instead: Caime writes your plans there as they change. Nothing changes in Caime from the feed. Anyone with the address sees it, so keep it to yourself.',
     ),
     category: 'calendars',
   },

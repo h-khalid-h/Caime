@@ -5,6 +5,7 @@ import {
   grouped,
   isBooked,
   isOrdered,
+  itemOnCaime,
   itemPhotoPath,
   lineKey,
   orderableMax,
@@ -34,6 +35,7 @@ import { branchName } from '@/features/booking/branchName';
 import { ItemPhoto } from '@/features/booking/ItemPhoto';
 import { reachedByMail } from '@/features/conversation/topics';
 import { CurrencyField } from '@/features/geo/CurrencyField';
+import type { WhereChoice } from '@/features/places/WherePicker';
 import { type Chosen, instantOf } from '@/features/when/when';
 import { wordsMatch } from '@/lib/find';
 import { useUserClock } from '@/lib/time';
@@ -55,10 +57,13 @@ import { SwitchRow } from '@/ui/SwitchRow';
 import { Text } from '@/ui/Text';
 import { TextField } from '@/ui/TextField';
 import { exampleAmount, parseNumber } from './amounts';
+import { meetingCall } from './meetingCall';
 import { SlotPicker, SlotPickerHolder } from './SlotPicker';
 
 // Places to fill a card from (R92): loaded with the form's first place field, never at start.
 const PlaceChips = lazyPart(() => import('@/features/places/parts').then((m) => m.PlaceChips));
+// Where a meeting or an appointment is (M16 F6), with the places: the same chunk.
+const WherePicker = lazyPart(() => import('@/features/places/parts').then((m) => m.WherePicker));
 
 /** Choosing a day, loaded the first time it's opened. */
 /** Up to this many items are chips; more are found by name. */
@@ -236,6 +241,8 @@ export function KitForm({
   const clock: Clock = { now: new Date(), timeZone, locale, workweek: me.workweek };
   const readers = useReaders();
   const [texts, setTexts] = useState<Record<string, string>>({});
+  // Where a meeting or an appointment is (M16 F6), always said: on Caime, a place, or typed.
+  const [where, setWhere] = useState<WhereChoice | null>(null);
   const [picked, setPicked] = useState<Record<string, number | string>>({});
   const [options, setOptions] = useState<string[]>(['', '']);
   const [multiple, setMultiple] = useState(false);
@@ -452,6 +459,17 @@ export function KitForm({
           .find((p) => p.id === id) ?? null)
       : null;
   const branch = placeById(item?.placeId);
+  // Where it is (M16 F6), always said on the form: for a meeting, and for an appointment unless
+  // it's booked from a catalog, whose item says where. On Caime where its people can call each
+  // other here, which it starts as, as Cal.com and Google Calendar start with their own call.
+  const saysWhere = !custom && (kit === 'meeting' || (appointment && !item));
+  const callable = meetingCall(conversation, { calls: true, groupCalls: true }) !== null;
+  useEffect(() => {
+    if (saysWhere && callable && where === null) {
+      setWhere('caime');
+      setTexts((s) => ({ ...s, place: 'Caime' }));
+    }
+  }, [saysWhere, callable, where]);
   // With items at two or more branches, the customer says where first (R92), and sees what's
   // done there (and anything done anywhere).
   const branches = branchIds.flatMap((id) => {
@@ -503,6 +521,7 @@ export function KitForm({
 
   const close = () => {
     setTexts({});
+    setWhere(null);
     setPicked({});
     // A card's currency and days are its own: the next one starts from the defaults.
     setCurrencies({});
@@ -601,6 +620,8 @@ export function KitForm({
           if (picked[field.key] !== undefined) fields[field.key] = picked[field.key];
           continue;
         }
+        // Booked from a catalog (M16 F6): where it is is the item's, as the server copies it.
+        if (field.key === 'place' && appointment && item) continue;
         // Booked from a catalog (R58): the item is what it's for, or the topic they wrote.
         const text =
           field.key === 'title' && item
@@ -625,6 +646,12 @@ export function KitForm({
         if (read.value !== undefined) fields[field.key] = read.value;
       }
       if (appointment && host?.items.length && !item) return setError(tr('Pick what it’s for.'));
+      if (saysWhere && !(where && (texts.place ?? '').trim()))
+        return setError(
+          byMail
+            ? tr('Say where it is: someone reached by email can’t join a call on Caime.')
+            : tr('Say where it is.'),
+        );
       const lines = held.map((l) => ({
         itemId: l.item.id,
         quantity: l.quantity,
@@ -1065,7 +1092,24 @@ export function KitForm({
               ['reference', 'summary', 'amount'].includes(field.key)) ||
             (payingShare && SHARE_FIXED.includes(field.key)) ||
             (field.key === 'repeat' && !repeats) ||
-            (field.key === 'repeatUntil' && !repeating) ? null : field.type === 'items' ? (
+            (field.key === 'repeatUntil' && !repeating) ||
+            (field.key === 'place' && appointment && item) ? null : field.key === 'place' &&
+              saysWhere ? (
+              // Its room held while the places load, so nothing under it moves (R88).
+              <View key={field.key} style={{ minHeight: 76 }}>
+                <WherePicker
+                  conversationId={conversation.id}
+                  callable={callable}
+                  value={where}
+                  text={texts.place ?? ''}
+                  onChange={(choice, words) => {
+                    setWhere(choice);
+                    setTexts((s) => ({ ...s, place: words }));
+                  }}
+                  testID="kit-where"
+                />
+              </View>
+            ) : field.type === 'items' ? (
               <View key={field.key} style={{ gap: 8 }}>
                 <Text variant="label">{tr(field.label)}</Text>
                 {options.map((o, j) => (
@@ -1236,7 +1280,15 @@ export function KitForm({
                           ? tr('{minutes} min', { minutes: item.minutes ?? 0 })
                           : tr('Per day'),
                         price ? tr('{price}, not paid through Caime', { price }) : tr('Free'),
-                        branch ? tr('At {place}', { place: branchName(branch) }) : null,
+                        // Where it's had, as the item says (M16 F6): its place, a call here, or
+                        // its host's words.
+                        branch
+                          ? tr('At {place}', { place: branchName(branch) })
+                          : host && itemOnCaime(host.ref.kind, item)
+                            ? tr('A call on Caime')
+                            : item.whereNote
+                              ? tr('At {place}', { place: item.whereNote })
+                              : null,
                       ]
                         .filter(Boolean)
                         .join(' · ')}
@@ -1330,7 +1382,7 @@ export function KitForm({
               />
             ),
           )}
-          {def.fields.some((f) => f.key === 'place' && f.type === 'text') ? (
+          {custom && def.fields.some((f) => f.key === 'place' && f.type === 'text') ? (
             <PlaceChips
               conversationId={conversation.id}
               onPick={(line) => setTexts((s) => ({ ...s, place: line }))}

@@ -9,6 +9,7 @@ import {
   kitMoves,
   kitStateLabel,
   kitStateTone,
+  orderDetails,
   prepareKitFields,
   retimeBlock,
 } from './kit-cards';
@@ -246,5 +247,30 @@ describe('another time for a meeting or an appointment (M16 F5)', () => {
     expect(systemText(line, 'ana')).toBe('Ben suggested another time for “Plan the launch”');
     expect(systemText(line, 'ben')).toBe('You suggested another time for “Plan the launch”');
     expect(systemText({ ...line, title: null }, 'ana')).toBe('Ben suggested another time');
+  });
+});
+
+describe('where an order is had (M16 F6)', () => {
+  const order = {
+    number: 'A-1',
+    lines: [],
+    total: null,
+    fulfilment: 'pickup' as const,
+  };
+  it('says it’s sent on Caime, or the place it’s from, unless it’s delivered', () => {
+    expect(orderDetails({ ...order, where: 'Caime' } as never)).toEqual(
+      expect.arrayContaining([{ key: 'where', label: 'Where', value: 'Sent on Caime' }]),
+    );
+    expect(orderDetails({ ...order, where: '9 Road 233, Cairo' } as never)).toEqual(
+      expect.arrayContaining([{ key: 'where', label: 'Where', value: '9 Road 233, Cairo' }]),
+    );
+    expect(
+      orderDetails({ ...order, fulfilment: 'delivery', where: 'Caime' } as never).map((d) => d.key),
+    ).not.toContain('where');
+    // Without a way to have it, its Where alone.
+    expect(orderDetails({ ...order, fulfilment: null, where: 'Caime' } as never)).toEqual([
+      { key: 'where', label: 'Where', value: 'Sent on Caime' },
+    ]);
+    expect(orderDetails({ ...order, fulfilment: null } as never)).toEqual([]);
   });
 });

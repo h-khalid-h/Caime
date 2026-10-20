@@ -5,7 +5,10 @@
  * kept in step: written when asked (tentative) or agreed, written again when one changes, taken
  * out when it's cancelled, declined, deleted, moved or no longer theirs. Caime is the record;
  * the calendar shows it. Nobody is invited (`sendUpdates=none`, no attendees): Caime already
- * tells the people it's with.
+ * tells the people it's with, by its own invitations, and each of them on Caime has their own
+ * calendar written; attendees here would send them a second invitation and put a second copy in
+ * their calendars. The event names them instead, and one held on Caime has its join address for
+ * its place (`card-events.ts`, the feed's wording too).
  *
  * Put in step by reconciling, never by replaying events: `pushAccountPlans` compares what the
  * person's cards say now with what was written (`calendar_pushes`, a hash of each event) and
@@ -19,19 +22,18 @@
  * change, and the person and the operator are told how many wait.
  */
 import { createHash } from 'node:crypto';
-import { KITS, zonedParts } from '@caime/core';
+import { zonedParts } from '@caime/core';
 import {
   ACCOUNT_BUSY_DAYS,
   ACCOUNT_SYNC_MINUTES,
   type AccountFailure,
   PUSH_TRIES,
 } from '@caime/core/accounts';
-import { tr } from '@caime/core/i18n';
-import { joinPath, meetingVenue } from '@caime/core/meetings';
 import { sql } from 'kysely';
 import type { AppContext } from '../context';
 import { eachLimit } from './batch';
-import { minutesOf } from './calendar';
+import { conversationsFor, minutesOf } from './calendar';
+import { cardEventText } from './card-events';
 import {
   ACCOUNT_ROW,
   type AccountRow,
@@ -90,53 +92,6 @@ function dayIn(at: Date, timeZone: string): string {
 const nextDay = (day: string) =>
   new Date(Date.parse(`${day}T00:00:00Z`) + 86_400_000).toISOString().slice(0, 10);
 
-/** Whom each conversation is with, for this person: an organization, a person, or a title. */
-async function withWhom(
-  ctx: AppContext,
-  userId: string,
-  conversationIds: string[],
-): Promise<Map<string, string | null>> {
-  const out = new Map<string, string | null>();
-  const ids = [...new Set(conversationIds)];
-  if (ids.length === 0) return out;
-  const [rows, others] = await Promise.all([
-    ctx.db
-      .selectFrom('conversations as c')
-      .leftJoin('business_threads as t', 't.conversation_id', 'c.id')
-      .leftJoin('organizations as o', 'o.id', 't.org_id')
-      .leftJoin('users as cu', 'cu.id', 't.customer_id')
-      .select([
-        'c.id',
-        'c.kind',
-        'c.title',
-        't.customer_id',
-        'o.name as org_name',
-        'cu.display_name as customer_name',
-      ])
-      .where('c.id', 'in', ids)
-      .execute(),
-    ctx.db
-      .selectFrom('participants as p')
-      .innerJoin('users as u', 'u.id', 'p.user_id')
-      .select(['p.conversation_id', 'u.display_name'])
-      .where('p.conversation_id', 'in', ids)
-      .where('p.user_id', '<>', userId)
-      .where('p.left_at', 'is', null)
-      .execute(),
-  ]);
-  const othersOf = new Map<string, string[]>();
-  for (const o of others)
-    othersOf.set(o.conversation_id, [...(othersOf.get(o.conversation_id) ?? []), o.display_name]);
-  for (const c of rows) {
-    // A customer sees the organization, never who on its team (R15); the team sees the customer.
-    if (c.customer_id)
-      out.set(c.id, c.customer_id === userId ? (c.org_name ?? null) : (c.customer_name ?? null));
-    else if (c.kind === 'direct') out.set(c.id, othersOf.get(c.id)?.[0] ?? null);
-    else out.set(c.id, c.title ?? null);
-  }
-  return out;
-}
-
 /** The events this person's cards stand for now, in their language, by their calendar id. */
 export async function planEvents(
   ctx: AppContext,
@@ -152,8 +107,8 @@ export async function planEvents(
   const ids = cards.map((c) => c.conversationId);
   // An organization that keeps its conversations from its team's own apps: its name and the time
   // alone, never the customer's name, the card's own words or its place (M16 G3b).
-  const [who, kept] = await Promise.all([
-    withWhom(ctx, userId, ids),
+  const [about, kept] = await Promise.all([
+    conversationsFor(ctx, userId, ids),
     keptFromApps(ctx, userId, ids),
   ]);
   const me = await ctx.db
@@ -167,41 +122,24 @@ export async function planEvents(
     const out = new Map<string, PlanEvent>();
     for (const card of cards) {
       const uid = meetingUid(card.messageId, card.series, card.kit);
-      // A meeting held on Caime (R83) is joined from its event, as from the feed's.
-      const here =
-        card.kit === 'meeting' &&
-        card.hasTime &&
-        !card.projected &&
-        meetingVenue(card.place, card.invited) === 'caime';
-      const url = here
-        ? `${base}${joinPath(card.conversationId, card.seq, card.messageId)}`
-        : `${base}/c/${card.conversationId}`;
       const end = new Date(card.at.getTime() + minutesOf(card) * 60_000);
       const from = dayIn(card.at, zone);
       const last = dayIn(end, zone);
-      // A card without a title of its own is named by its kind, in the reader's words.
-      const title =
-        card.title === 'Meeting' || card.title === 'Appointment'
-          ? tr(KITS[card.kit].name)
-          : card.title;
-      const other = who.get(card.conversationId);
-      const org = kept.get(card.conversationId);
+      // One wording with the feed's (M16 F6): whom it's with by name, its join address where it's
+      // held here, which the calendar opens.
+      const text = cardEventText(
+        card,
+        about.get(card.conversationId),
+        userId,
+        base,
+        kept.get(card.conversationId),
+      );
       out.set(uid, {
         uid,
-        summary: org
-          ? `${tr(KITS[card.kit].name)} · ${org}`
-          : other
-            ? `${title} · ${other}`
-            : title,
-        description: [
-          card.agreed ? null : tr('Asked, not agreed yet.'),
-          here ? tr('Join in Caime: {url}', { url }) : tr('Open in Caime: {url}', { url }),
-          tr('Caime keeps this up to date. Change it in Caime.'),
-        ]
-          .filter(Boolean)
-          .join('\n\n'),
-        location: here ? 'Caime' : org ? null : card.place,
-        url,
+        summary: text.summary,
+        description: text.description,
+        location: text.location,
+        url: text.url,
         start: card.at,
         end,
         days: card.hasTime ? null : { from, until: last > from ? last : nextDay(from) },
@@ -305,7 +243,15 @@ function microsoftWriter(ctx: AppContext, account: Account, access: string, zone
   const bodyOf = (e: PlanEvent) => ({
     subject: e.summary,
     body: { contentType: 'text', content: e.description },
-    ...(e.location ? { location: { displayName: e.location } } : {}),
+    // Its join address, where it's held on Caime, is its place's address too (M16 F6).
+    ...(e.location
+      ? {
+          location:
+            e.location === e.url
+              ? { displayName: e.location, locationUri: e.url }
+              : { displayName: e.location },
+        }
+      : {}),
     isAllDay: Boolean(e.days),
     start: e.days ? { dateTime: `${e.days.from}T00:00:00`, timeZone: zone } : at(e.start),
     end: e.days ? { dateTime: `${e.days.until}T00:00:00`, timeZone: zone } : at(e.end),

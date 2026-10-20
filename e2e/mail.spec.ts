@@ -303,7 +303,10 @@ test.describe
       await expect(
         visible(page, 'Say where it is: someone reached by email can’t join a call on Caime.'),
       ).toBeVisible();
-      await page.getByLabel('Where (optional)').fill('meet.google.com/abc-defg-hij');
+      // Nobody reached by email joins a call here: On Caime isn't offered (M16 F6).
+      await expect(page.getByTestId('kit-where-caime')).toHaveCount(0);
+      await page.getByTestId('kit-where-other').click();
+      await page.getByTestId('kit-field-place').fill('meet.google.com/abc-defg-hij');
       await page.getByTestId('kit-send').click();
       const card = page
         .getByTestId('kit-meeting')

@@ -72,8 +72,9 @@ function Row({
   now: Date;
 }) {
   const t = useTheme();
-  // A meeting (R83): Join while one held here can be joined (its conversation opens at the card
-  // and checks it before calling), Open for one on another service.
+  // A meeting or an appointment (R83, M16 F6): Join while one held here can be joined (its
+  // conversation opens at the card and checks it before calling), Open for one on another
+  // service.
   // A time of a repeating meeting still to be posted (R58) has no card to join or open yet.
   const held = item.projected ? null : calendarAction(item, now);
   const action =
@@ -195,8 +196,9 @@ function Row({
 }
 
 /**
- * The calendar, or with `meetings` (R83) Meetings: only the meetings, the last month's as well
- * as what's ahead, each with its Join or its Open; the bridges below are the calendar's alone.
+ * The calendar, or with `meetings` (R83) Meetings: only the meetings and appointments (bookings
+ * included, M16 F6), the last month's as well as what's ahead, each with its Join or its Open;
+ * the bridges below are the calendar's alone.
  */
 export function CalendarList({ meetings = false }: { meetings?: boolean } = {}) {
   const t = useTheme();
@@ -215,8 +217,10 @@ export function CalendarList({ meetings = false }: { meetings?: boolean } = {}) 
   const sections = useMemo(() => {
     const byDay = new Map<string, CalendarItemView[]>();
     for (const item of q.data?.items ?? []) {
-      // Meetings lists the meetings that are cards; the calendar looks further ahead (R58).
-      if (meetings && (item.kind !== 'meeting' || item.projected)) continue;
+      // Meetings lists the meetings and appointments that are cards, bookings among them (M16
+      // F6); the calendar looks further ahead (R58).
+      if (meetings && ((item.kind !== 'meeting' && item.kind !== 'appointment') || item.projected))
+        continue;
       const day = formatDayHeading(item.at, now, timeZone, locale);
       byDay.set(day, [...(byDay.get(day) ?? []), item]);
     }
@@ -253,7 +257,9 @@ export function CalendarList({ meetings = false }: { meetings?: boolean } = {}) 
             expression="happy"
             icon={CalendarClock}
             title={tr('No meetings yet')}
-            body={tr('Meetings agreed in your conversations show here, with Join when it’s time.')}
+            body={tr(
+              'Meetings and appointments agreed in your conversations show here, with Join when it’s time.',
+            )}
           />
         ) : (
           <EmptyState

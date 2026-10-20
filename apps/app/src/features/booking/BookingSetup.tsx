@@ -25,7 +25,9 @@ import {
   BOOKING_ITEMS_MAX,
   CLOSED_MAX,
   describeHours,
+  itemOnCaime,
   itemPhotoPath,
+  itemWhereSaid,
   RESOURCES_MAX,
   SLOT_MINUTES,
   STOCK_MAX,
@@ -125,9 +127,22 @@ export interface BookingHostInfo {
   ref?: { kind: 'org' | 'person'; id: string };
   /** An organization's places its customers may see (R92): where an item may be done. */
   branches?: Array<{ id: string; name: string }>;
+  /** A person's places anyone may see (M16 F6): where an item of theirs may be had. */
+  places?: Array<{ id: string; name: string }>;
   /** An organization's intake forms (M16 H5): one may follow an item once it's booked or ordered. */
   forms?: Array<{ id: string; name: string }>;
 }
+
+/** Where an item is had, as its editor offers it (M16 F6): on Caime, a place, or in words. */
+type ItemWhere = 'caime' | 'other' | `place:${string}`;
+
+/**
+ * Whether On Caime is offered for something (M16 F6): sent here for something ordered, a call
+ * for a person's time by the minute; never a call with an organization, whose conversations hold
+ * none yet, nor for a stay.
+ */
+const caimeOffered = (hostKind: 'org' | 'person', unit: BookingUnit) =>
+  unit === 'each' || (hostKind === 'person' && unit === 'minutes');
 
 /** "Haircut · 45 min · EGP 200 · Everyone": an item in one line. */
 export function itemLine(item: BookingItem, locale: string, host: BookingHostInfo): string {
@@ -141,6 +156,8 @@ export function itemLine(item: BookingItem, locale: string, host: BookingHostInf
     // Its count as its host reads it (R60): "12 in stock".
     stockLine(item.stock, true),
     audienceLabel(item.audience, host.kind),
+    // One that never said where it's had (M16 F6) asks for it here.
+    itemWhereSaid(host.kind, item) ? null : tr('Where isn’t said'),
   ]
     .filter(Boolean)
     .join(' · ');
@@ -1586,8 +1603,19 @@ function ItemEditor({
   const [collectionId, setCollectionId] = useState<string | null>(item.collectionId);
   // What it shares with other items (R58), for something held at a time.
   const [resourceId, setResourceId] = useState<string | null>(item.resourceId ?? null);
-  // Where it's done (R92): one of an organization's branches, or wherever.
-  const [placeId, setPlaceId] = useState<string | null>(item.placeId ?? null);
+  // Where it's had (R92, M16 F6), always said: on Caime, one of the host's places anyone booking
+  // may see, or somewhere else in the host's words.
+  const wherePlaces = (host.kind === 'org' ? host.branches : host.places) ?? [];
+  const [where, setWhere] = useState<ItemWhere | null>(() =>
+    item.placeId
+      ? `place:${item.placeId}`
+      : item.whereNote
+        ? 'other'
+        : itemOnCaime(host.kind, item)
+          ? 'caime'
+          : null,
+  );
+  const [whereNote, setWhereNote] = useState(item.whereNote ?? '');
   // The form that follows it once it's booked or ordered (M16 H5): one of the organization's.
   const [formId, setFormId] = useState<string | null>(item.formId ?? null);
   // Its photo (R63): the one it has, or one just uploaded (shown by the file's own address).
@@ -1634,6 +1662,13 @@ function ItemEditor({
       return setError(tr('Say how many are left, or stop counting.'));
     const chosen = unit === 'each' ? optionsFrom(options, paid) : [];
     if (typeof chosen === 'string') return setError(chosen);
+    // Where it's had (M16 F6): one of what's offered for it, said.
+    const at = where?.startsWith('place:') ? where.slice(6) : null;
+    const said =
+      (where === 'caime' && caimeOffered(host.kind, unit)) ||
+      (where === 'other' && whereNote.trim()) ||
+      (at && wherePlaces.some((p) => p.id === at));
+    if (!said) return setError(tr('Say where it is.'));
     // Sent only when it changed (an order may have taken one since this was opened).
     const stock = counting
       ? count === item.stock
@@ -1671,8 +1706,18 @@ function ItemEditor({
           // Something ordered by the piece holds no time, so it shares nothing.
           resourceId:
             unit !== 'each' && resources.some((r) => r.id === resourceId) ? resourceId : null,
-          placeId:
-            unit !== 'each' && (host.branches ?? []).some((b) => b.id === placeId) ? placeId : null,
+          placeId: at,
+          // On Caime: something ordered says so; something by the minute says so by saying
+          // nothing else (M16 F6).
+          onCaime:
+            where === 'caime'
+              ? unit === 'each'
+                ? true
+                : undefined
+              : unit === 'minutes'
+                ? false
+                : undefined,
+          whereNote: where === 'other' ? whereNote.trim() : null,
           formId: (host.forms ?? []).some((f) => f.id === formId) ? formId : null,
           photoFileId,
           ...(chosen.length ? { options: chosen } : {}),
@@ -1785,27 +1830,57 @@ function ItemEditor({
             />
           </View>
         ) : null}
-        {host.branches?.length && unit !== 'each' ? (
-          <View style={{ gap: 6 }}>
-            <Text variant="label">{tr('Where')}</Text>
-            <ChoiceChips
-              wrap
-              flush
+        <View style={{ gap: 6 }}>
+          <Text variant="label">{tr('Where')}</Text>
+          <ChoiceChips<ItemWhere>
+            wrap
+            flush
+            label={tr('Where')}
+            value={where}
+            onChange={setWhere}
+            options={[
+              ...(caimeOffered(host.kind, unit)
+                ? [
+                    {
+                      value: 'caime' as const,
+                      label: unit === 'each' ? tr('Sent on Caime') : tr('On Caime'),
+                      testID: `${testID}-on-caime`,
+                    },
+                  ]
+                : []),
+              ...wherePlaces.map((b) => ({
+                value: `place:${b.id}` as const,
+                label: b.name,
+                testID: `${testID}-at-${b.id}`,
+              })),
+              {
+                value: 'other' as const,
+                label: tr('Somewhere else'),
+                testID: `${testID}-elsewhere`,
+              },
+            ]}
+            testID={`${testID}-where`}
+          />
+          {where === 'other' ? (
+            <TextField
               label={tr('Where')}
-              value={placeId ?? 'none'}
-              onChange={(v) => setPlaceId(v === 'none' ? null : v)}
-              options={[
-                { value: 'none', label: tr('Wherever'), testID: `${testID}-anywhere` },
-                ...host.branches.map((b) => ({
-                  value: b.id,
-                  label: b.name,
-                  testID: `${testID}-at-${b.id}`,
-                })),
-              ]}
-              testID={`${testID}-where`}
+              placeholder={tr('Place or link')}
+              value={whereNote}
+              onChangeText={setWhereNote}
+              testID={`${testID}-where-note`}
             />
-          </View>
-        ) : null}
+          ) : (
+            <Text variant="caption" color="textTertiary">
+              {where === 'caime'
+                ? unit === 'each'
+                  ? tr('Sent in your conversation with whoever orders it.')
+                  : tr('A call in your conversation, with Join at its time.')
+                : wherePlaces.length
+                  ? tr('Its address is copied into each booking or order.')
+                  : tr('Places you save in Settings show here, to send in one tap.')}
+            </Text>
+          )}
+        </View>
         {host.forms?.length ? (
           <View style={{ gap: 6 }}>
             <Text variant="label">{tr('A form to fill in')}</Text>

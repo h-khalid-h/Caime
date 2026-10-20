@@ -1877,6 +1877,9 @@ export const BookingItemBody = z
     options: z.array(ItemOptionBody).max(ITEM_OPTIONS_MAX).optional(),
     // R92: where it's done, one of the host's places; none, wherever the host is.
     placeId: z.string().uuid().nullable().default(null),
+    // M16 F6: where it's had, one of three: on Caime, a place (above), or the host's own words.
+    onCaime: z.boolean().optional(),
+    whereNote: z.string().trim().max(200).nullable().optional(),
     // M16 H5: the organization's form sent after it's booked or ordered; one of its forms, else none.
     formId: z.string().uuid().nullable().default(null),
   })

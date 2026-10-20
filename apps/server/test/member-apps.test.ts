@@ -299,7 +299,11 @@ describe('an organization’s say over its members’ own apps (M16 G3)', () => 
     await noor.patch(`/v1/orgs/${nileId}`, { memberApps: true });
     lines = await feed();
     expect(eventOf(lines, meetingUid)).toEqual(
-      expect.arrayContaining(['SUMMARY:Fitting Lina’s crown', 'LOCATION:12 Corniche St']),
+      // Named by its space, as the inbox names it (M16 F6).
+      expect.arrayContaining([
+        'SUMMARY:Fitting Lina’s crown · Front desk',
+        'LOCATION:12 Corniche St',
+      ]),
     );
     expect(eventOf(lines, `task-${call}@caime`)).toEqual(
       expect.arrayContaining(['SUMMARY:Call Lina about the crown']),

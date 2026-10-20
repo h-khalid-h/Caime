@@ -12,6 +12,8 @@ import {
   hoursFor,
   isBooked,
   isOrdered,
+  itemOnCaime,
+  itemWhereSaid,
   lineKey,
   openSlots,
   orderableMax,
@@ -588,5 +590,33 @@ describe('orders from the catalog (R60)', () => {
     ).toEqual([]);
     expect(isOrdered(menu[0] as BookingItem)).toBe(true);
     expect(isBooked(menu[3] as BookingItem)).toBe(true);
+  });
+});
+
+describe('where an item is had (M16 F6)', () => {
+  const lesson = { unit: 'minutes' as const, placeId: null, whereNote: null };
+  it('a person’s item by the minute is a call on Caime unless it says where else', () => {
+    expect(itemOnCaime('person', lesson)).toBe(true);
+    expect(itemOnCaime('person', { ...lesson, onCaime: false })).toBe(false);
+    expect(itemOnCaime('person', { ...lesson, placeId: 'p1' })).toBe(false);
+    expect(itemOnCaime('person', { ...lesson, whereNote: 'Cafe Riche' })).toBe(false);
+    // A stay is no call; an organization's conversations hold none yet.
+    expect(itemOnCaime('person', { ...lesson, unit: 'days' })).toBe(false);
+    expect(itemOnCaime('org', lesson)).toBe(false);
+    expect(itemOnCaime('org', { ...lesson, onCaime: true })).toBe(false);
+  });
+  it('something ordered by the piece is sent here only when it says so', () => {
+    const notes = { ...lesson, unit: 'each' as const };
+    expect(itemOnCaime('person', notes)).toBe(false);
+    expect(itemOnCaime('person', { ...notes, onCaime: true })).toBe(true);
+    expect(itemOnCaime('org', { ...notes, onCaime: true })).toBe(true);
+    expect(itemOnCaime('org', { ...notes, onCaime: true, placeId: 'p1' })).toBe(false);
+  });
+  it('an item says where it is when it’s on Caime, at a place, or in its host’s words', () => {
+    expect(itemWhereSaid('person', lesson)).toBe(true);
+    expect(itemWhereSaid('org', lesson)).toBe(false);
+    expect(itemWhereSaid('org', { ...lesson, placeId: 'p1' })).toBe(true);
+    expect(itemWhereSaid('org', { ...lesson, whereNote: 'At your home' })).toBe(true);
+    expect(itemWhereSaid('org', { ...lesson, unit: 'each' })).toBe(false);
   });
 });

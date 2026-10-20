@@ -193,7 +193,7 @@ describe('Discover and Connected (R74)', () => {
     expect(seen.apps.map((a) => a.id)).toEqual(['calendar', ...BRIDGE_IDS]);
     expect(seen.apps[0]).toMatchObject({
       kind: 'builtin',
-      name: 'Your calendar',
+      name: 'Calendar feed',
       category: 'calendars',
       publisher: { name: 'Caime', handle: null, verified: true },
       connected: false,
@@ -224,7 +224,7 @@ describe('Discover and Connected (R74)', () => {
 
     const seen = await directory(noor);
     expect(seen.apps.map((a) => a.name)).toEqual([
-      'Your calendar',
+      'Calendar feed',
       'Zapier',
       'Make',
       'n8n',
@@ -298,7 +298,7 @@ describe('Discover and Connected (R74)', () => {
         kind: 'builtin',
         appId: 'calendar',
         grantId: null,
-        name: 'Your calendar',
+        name: 'Calendar feed',
         publisher: { kind: 'caime', name: 'Caime', handle: null, verified: true },
         scopes: [],
       }),

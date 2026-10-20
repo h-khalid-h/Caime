@@ -361,8 +361,9 @@ you&rsquo;re busy, and nobody sees them. From Google, Caime asks for busy times 
 calendars alone; Microsoft offers no such permission, so Caime asks to read your calendar&rsquo;s
 basics and keeps only the times. When you turn its Plans on, Caime writes your meetings and
 appointments in Caime into that account&rsquo;s main calendar, each with its title, whom it&rsquo;s
-with, when, where and a link back to Caime (one still asked for as tentative), keeps them up to
-date as they&rsquo;re agreed, moved or cancelled, and invites nobody by it. On an organization&rsquo;s
+with by name, when, where (for one held on Caime, its link to join) and a link back to Caime (one
+still asked for as tentative), keeps them up to date as they&rsquo;re agreed, moved or cancelled,
+and invites nobody by it. On an organization&rsquo;s
 team that keeps its conversations from its members&rsquo; own apps, its meetings and appointments are
 written as what they are, the organization&rsquo;s name and the time, never whom they&rsquo;re with or
 their own words. Of each event it wrote, Caime keeps the account&rsquo;s id for it, when it is and a
@@ -379,7 +380,9 @@ kept and gives the permission back. Your export lists the accounts you connected
 address and, only if you ask, the point where you stood when you added it; nobody looks an address
 up, and no map service sees one. Each is shown only to whom you choose (nobody until you choose;
 under 18, your family at most). When you pick one for a meeting or a delivery, its words are
-copied into that card and stay with it. An organization's places are shown to anyone on its page,
+copied into that card and stay with it. One you choose for something people book or order from
+you, which can only be a place anyone may see, is named on its page and copied into each booking
+or order of it. An organization's places are shown to anyone on its page,
 to its customers, or to its team, as it chooses. Your export lists your places; deleting one, or
 your account, deletes it.</li>
 <li><strong>Email addresses and phone numbers you add as yours.</strong> Beside the email you sign
@@ -397,10 +400,12 @@ own window, which gives Caime that file and no other; from Microsoft, Caime list
 you browse it, since Microsoft offers no such per-file permission, and keeps nothing of the list.
 The file you pick is copied into Caime as your own upload, and from then on it&rsquo;s kept, shown,
 exported and deleted like any file you send. Caime keeps no link to it there.</li>
-<li><strong>Services you choose.</strong> If you add Your calendar (You &rarr; Apps) to
-Google Calendar, Outlook or Apple Calendar, that service reads your open actions with a due date,
-with who asked you or who you&rsquo;re waiting on, and the meetings and appointments you&rsquo;ve
-agreed, with their titles, notes and places, and so can anyone with its address. Apps under You &rarr; Apps &rarr; Discover are listed by their developers and looked at once by Caime; Discover shows how many people connected an app, never who, and an app reaches only what you allow it when its own sign-in asks. Opening a shared place on the map takes you to OpenStreetMap.</li>
+<li><strong>Services you choose.</strong> If you add the Calendar feed (You &rarr; Apps) to
+Apple Calendar or any other calendar app, that app reads your open actions with a due date, with
+who asked you or who you&rsquo;re waiting on, and the meetings and appointments you&rsquo;ve
+agreed, with their titles, whom they&rsquo;re with, notes and places, and so can anyone with its
+address; while an account you connected writes your plans, the feed leaves to it the meetings and
+appointments it writes there. Apps under You &rarr; Apps &rarr; Discover are listed by their developers and looked at once by Caime; Discover shows how many people connected an app, never who, and an app reaches only what you allow it when its own sign-in asks. Opening a shared place on the map takes you to OpenStreetMap.</li>
 </ul>
 <p>Some of these companies, and Caime&rsquo;s servers where the hosting provider above says so,
 are outside the European Economic Area, in countries the European Commission hasn&rsquo;t found to

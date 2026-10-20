@@ -576,7 +576,7 @@ export async function agentReply(ctx: AppContext, payload: Record<string, unknow
     : null;
   const catalog = catalogLines(
     items,
-    items.some((i) => i.placeId) ? await bookablePlaceLines(ctx, offer.host.id) : undefined,
+    items.some((i) => i.placeId) ? await bookablePlaceLines(ctx, offer.host) : undefined,
   );
   const reply = await askAgent(
     ctx,

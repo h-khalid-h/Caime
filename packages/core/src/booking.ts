@@ -196,6 +196,11 @@ export interface PlacedOrder {
   fulfilment: 'pickup' | 'delivery' | null;
   /** Where it's delivered (R92), copied from the customer's place when it was placed. */
   deliverTo?: string | null;
+  /**
+   * Where it's had (M16 F6), copied when it was placed from what its items say, where they all
+   * say the same: "Caime" for something sent here, a place's address, or the host's words.
+   */
+  where?: string | null;
 }
 
 /**
@@ -225,6 +230,26 @@ export const ORDER_LINES_MAX = 30;
 /** Booked in time (an appointment, a stay), or ordered by the piece. */
 export const isOrdered = (item: Pick<BookingItem, 'unit'>) => item.unit === 'each';
 export const isBooked = (item: Pick<BookingItem, 'unit'>) => item.unit !== 'each';
+
+/**
+ * Whether this item is had on Caime (M16 F6): a person's item by the minute unless it says it's
+ * at a place or somewhere else (a call), or something ordered by the piece that says it's sent
+ * here. A booking's card then says "Caime" where it's held; an order's, where it's had.
+ */
+export function itemOnCaime(
+  hostKind: 'org' | 'person',
+  item: Pick<BookingItem, 'unit' | 'onCaime' | 'placeId' | 'whereNote'>,
+): boolean {
+  if (item.placeId || item.whereNote) return false;
+  if (item.unit === 'each') return item.onCaime === true;
+  return hostKind === 'person' && item.unit === 'minutes' && item.onCaime !== false;
+}
+
+/** Whether an item says where it's had (M16 F6): on Caime, at a place, or in the host's words. */
+export const itemWhereSaid = (
+  hostKind: 'org' | 'person',
+  item: Pick<BookingItem, 'unit' | 'onCaime' | 'placeId' | 'whereNote'>,
+): boolean => Boolean(item.placeId || item.whereNote) || itemOnCaime(hostKind, item);
 
 /**
  * Checks an order against the host's catalog and fixes it as the card keeps it: every line an
@@ -394,6 +419,15 @@ export interface BookingItem {
    * days are that place's when it has its own (`hoursFor`), and a booking copies its address.
    */
   placeId?: string | null;
+  /**
+   * Where it's had (M16 F6, always said): on Caime, one of the host's places (`placeId`), or
+   * somewhere else in the host's own words (`whereNote`), one of the three. On Caime, something
+   * booked by the minute is a call in the booking's conversation, with Join at its time (a
+   * person's alone: an organization's conversations hold no call yet), and something ordered by
+   * the piece is sent there. A person's item by the minute that says nothing is on Caime.
+   */
+  onCaime?: boolean;
+  whereNote?: string | null;
   /**
    * The form an organization sends after it's booked or ordered (M16 H5): one of its own forms,
    * sent by itself, once; none for a person's items.

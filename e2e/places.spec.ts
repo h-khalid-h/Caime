@@ -45,14 +45,15 @@ test('a place added in Settings shows to a connection and fills a meetingâ€™s â€
     '9 Road 233, Cairo',
   );
 
-  // In their conversation, a meeting's "Where" fills from Noor's home in one tap.
+  // In their conversation, a meeting's "Where" is Noor's home in one tap (M16 F6: one of the
+  // choices, beside On Caime and somewhere else).
   await sara.page.goto(`/c/${convo}`);
   await sara.page.getByRole('button', { name: 'Share a photo, a file or a card' }).click();
   await sara.page.getByTestId('kit-option-meeting').click();
-  await sara.page.getByTestId('kit-place-from-theirs-0-0').filter({ visible: true }).click();
-  await expect(sara.page.getByTestId('kit-field-place').filter({ visible: true })).toHaveValue(
-    /9 Road 233, Cairo/,
-  );
+  const home = sara.page.getByTestId('kit-where-place-0').filter({ visible: true });
+  await expect(home).toContainText('Noor');
+  await home.click();
+  await expect(home).toBeChecked();
   await sara.page.keyboard.press('Escape');
 
   // Noor shares her home as a Location card: the place as written, never live. A location is

@@ -1,8 +1,12 @@
 /**
- * Your calendar (PRD §72): Google Calendar, Outlook or Apple Calendar reads your actions with a
- * due date and the meetings you agreed in Caime from a private address. Caime stays where they
- * change. The address is shown once, as it's made; a new one ends the old one.
+ * The calendar feed (PRD §72): Apple Calendar or any calendar app reads your actions with a due
+ * date and the meetings you agreed in Caime from a private address. Caime stays where they
+ * change. The address is shown once, as it's made; a new one ends the old one. Google Calendar
+ * and Outlook are better connected (R96: plans written as they change, busy times read), so it
+ * says so; and while a connected account writes your plans, the feed leaves them to it (M16 F6),
+ * so a calendar that shows both never shows one twice.
  */
+import { ACCOUNT_BUSY_DAYS, ACCOUNT_PROVIDER_NAMES } from '@caime/core/accounts';
 import type { CalendarFeedResponse } from '@caime/core/api';
 import { formatWhen } from '@caime/core/format';
 import { msg, tr } from '@caime/core/i18n';
@@ -35,6 +39,13 @@ export function CalendarFeed() {
     queryFn: endpoints.calendarFeed,
     enabled: !minor,
   });
+  // A connected account that writes the plans (R96): the feed leaves meetings to it.
+  const accounts = useQuery({
+    queryKey: qk.accounts,
+    queryFn: endpoints.accounts,
+    enabled: !minor,
+  }).data?.accounts;
+  const writer = accounts?.find((a) => a.uses.includes('plans') && a.state !== 'reconnect');
   const [url, setUrl] = useState<string | null>(null);
   const [busy, setBusy] = useState<'make' | 'stop' | null>(null);
   const [confirming, setConfirming] = useState<'replace' | 'stop' | null>(null);
@@ -86,6 +97,16 @@ export function CalendarFeed() {
         {tr(
           'See your actions’ due dates and the meetings you agree to in Google Calendar, Outlook or Apple Calendar. They read a private address; nothing changes in Caime from there.',
         )}
+      </Text>
+      <Text variant="caption" color="textSecondary" testID="calendar-feed-accounts">
+        {writer
+          ? tr(
+              'Your {provider} calendar gets your meetings and appointments from your connected account as they change, so this feed carries your actions’ due dates, and what’s more than {days} days ahead.',
+              { provider: ACCOUNT_PROVIDER_NAMES[writer.provider], days: ACCOUNT_BUSY_DAYS },
+            )
+          : tr(
+              'Using Google Calendar or Outlook? Connect the account under Your accounts instead: Caime writes your plans there as they change, and keeps bookings off your busy times.',
+            )}
       </Text>
       {url ? (
         <View style={{ gap: 8 }}>

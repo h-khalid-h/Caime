@@ -1568,6 +1568,11 @@ export interface CalendarItemView {
   place: string | null;
   /** Made of an invitation from someone's calendar (M16 F4): held where they say, never here. */
   invitation?: boolean;
+  /**
+   * A meeting's or an appointment's: held on Caime, so its Join opens its call (R83, M16 F6): its
+   * Where says so and its conversation holds a call (core `heldOnCaime`).
+   */
+  heldHere?: boolean;
   /** A meeting that repeats (R58): how often, while it still does. */
   repeat: Repeat | null;
   /**

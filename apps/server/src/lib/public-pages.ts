@@ -18,6 +18,7 @@ import {
   formatClock,
   grouped,
   handleError,
+  itemOnCaime,
   itemPhotoPath,
   methodsFor,
   normalizeHandle,
@@ -83,7 +84,7 @@ import {
   verifiedMark,
 } from './page-parts';
 import { FACE, px, THEME_VARS, type } from './page-style';
-import { orgPlacesFor } from './places';
+import { orgPlacesFor, placesNamed } from './places';
 import {
   type VisitorBookingState,
   type VisitorHost,
@@ -149,6 +150,8 @@ export interface PublicPerson {
   items: PublicItem[];
   /** Their public collections (R61) that hold something public. */
   collections: PublicCollection[];
+  /** The places their public items are at (M16 F6), each one anyone may see: no other. */
+  places: PlaceView[];
   /** The kinds of ways anyone may pay them (R62): never the details. */
   pays: PaymentKind[];
   /** Cai or a Caime Friend (R67): Caime's own, said so, with what it's for as its bio. */
@@ -192,6 +195,8 @@ export type PublicItem = Pick<
   | 'stock'
   | 'options'
   | 'placeId'
+  | 'onCaime'
+  | 'whereNote'
 >;
 export type PublicCollection = Pick<CatalogCollection, 'id' | 'slug' | 'name' | 'description'>;
 
@@ -233,6 +238,9 @@ function publicCatalog(
       ...(i.options?.length ? { options: i.options } : {}),
       // Where it's done (R92): named on a page only when that place is everyone's.
       ...(i.placeId ? { placeId: i.placeId } : {}),
+      // Where it's had otherwise (M16 F6): on Caime, or in the host's own words.
+      ...(i.onCaime !== undefined ? { onCaime: i.onCaime } : {}),
+      ...(i.whereNote ? { whereNote: i.whereNote } : {}),
     }));
   const held = new Set(items.map((i) => i.collectionId));
   const collections = catalog.collections
@@ -454,6 +462,7 @@ export async function publicPerson(db: Q, handle: string, now: Date): Promise<Pu
   if (!privacy.discoverByHandle) return null;
   const see = (field: Parameters<typeof canSee>[1]) => canSee(privacy, field, NOBODY);
   const organizations = see('identityDetails') ? await orgsOf(db, u.id) : [];
+  const catalog = publicCatalog(u, await stockFor(db, u.id, catalogOf(u).items));
   return {
     kind: 'person',
     id: u.id,
@@ -464,7 +473,12 @@ export async function publicPerson(db: Q, handle: string, now: Date): Promise<Pu
     bio: own ? own.about : see('bio') ? u.bio : null,
     headline: see('identityDetails') ? u.headline : null,
     organizations,
-    ...publicCatalog(u, await stockFor(db, u.id, catalogOf(u).items)),
+    ...catalog,
+    places: await placesNamed(
+      { db },
+      { kind: 'person', id: u.id },
+      catalog.items.flatMap((i) => (i.placeId ? [i.placeId] : [])),
+    ),
     pays: publicPays(u),
     system: own?.kind ?? null,
     facts: own ? factsOf(own.handle) : null,
@@ -1589,7 +1603,7 @@ function payLink(host: PublicPerson | PublicOrg, pagePath: string, quiet: boolea
 /** "45 min · EGP 200", "EGP 40 · 2 left": what an item is, in a line (R58, R60). */
 /** The place an item is done at (R92), when it's among those the page shows. */
 function placeOf(host: PublicPerson | PublicOrg, i: PublicItem): PlaceView | null {
-  if (host.kind !== 'org' || !i.placeId) return null;
+  if (!i.placeId) return null;
   return host.places.find((p) => p.id === i.placeId) ?? null;
 }
 
@@ -1737,6 +1751,15 @@ function itemChips(host: PublicPerson | PublicOrg, i: PublicItem) {
         : tr('Free'),
     },
     at ? { icon: 'pin' as const, text: at.label ?? tr(PLACE_KIND_LABELS[at.kind]) } : null,
+    // Where it's had otherwise (M16 F6): a call on Caime, sent on Caime, or the host's words.
+    itemOnCaime(host.kind, i)
+      ? {
+          icon: 'video' as const,
+          text: i.unit === 'each' ? tr('Sent on Caime') : tr('A call on Caime'),
+        }
+      : !at && i.whereNote
+        ? { icon: 'pin' as const, text: i.whereNote }
+        : null,
     stockLine(i.stock) ? { icon: 'box' as const, text: stockLine(i.stock) ?? '' } : null,
   ];
 }

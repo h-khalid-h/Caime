@@ -194,7 +194,7 @@ describe('a calendar feed (PRD §72)', () => {
         'DTSTART:20261005T070000Z',
         'DTEND:20261005T073000Z',
         'SUMMARY:Call the bank\\, then the notary',
-        'DESCRIPTION:Ask about the fee\\n\\nOne of your actions. In Caime: http://localhost:8787/actions',
+        'DESCRIPTION:Ask about the fee\\n\\nOne of your actions.\\n\\nOpen in Caime: http://localhost:8787/actions',
       ]),
     );
     expect(event(all, `task-${deck.id}@caime`)).toEqual(
@@ -213,7 +213,7 @@ describe('a calendar feed (PRD §72)', () => {
     expect(event(his, `task-${deck.id}@caime`)).toEqual(
       expect.arrayContaining([
         'SUMMARY:Send the deck',
-        `DESCRIPTION:Ana Calendar asked you. In Caime: http://localhost:8787/c/${withBen}`,
+        `DESCRIPTION:Ana Calendar asked you.\\n\\nOpen in Caime: http://localhost:8787/c/${withBen}`,
       ]),
     );
     expect(event(his, `task-${quiet.id}@caime`)).toBeNull();
@@ -237,12 +237,17 @@ describe('a calendar feed (PRD §72)', () => {
     expect(
       (await ben.req('POST', `/v1/messages/${meeting.id}/kit`, { to: 'accepted' })).statusCode,
     ).toBe(200);
-    for (const feed of [url, benFeed])
+    // Each reads whom it's with by name (M16 F6), in the words their connected calendar has.
+    for (const [feed, other] of [
+      [url, 'Ben Calendar'],
+      [benFeed, 'Ana Calendar'],
+    ] as const)
       expect(event(await lines(feed), uid)).toEqual(
         expect.arrayContaining([
           'DTSTART:20261002T110000Z',
           'DTEND:20261002T114500Z',
-          'SUMMARY:Venue walkthrough',
+          `SUMMARY:Venue walkthrough · ${other}`,
+          `DESCRIPTION:With ${other}\\n\\nOpen in Caime: http://localhost:8787/c/${withBen}\\n\\nCaime keeps this up to date. Change it in Caime.`,
           'LOCATION:Hall B\\, 2nd floor',
           'TRANSP:OPAQUE',
           `URL:http://localhost:8787/c/${withBen}`,
@@ -317,8 +322,15 @@ describe('a calendar feed (PRD §72)', () => {
     await ben.post(`/v1/messages/${sync.id}/kit`, { to: 'accepted' });
     const join = `http://localhost:8787/c/${withBen}?seq=${sync.seq}&join=${sync.id}`;
     const ev = event(await lines(url), `meeting-${sync.id}@caime`);
-    expect(ev).toEqual(expect.arrayContaining(['LOCATION:Caime', `URL:${join}`]));
-    expect(ev?.some((l) => l.startsWith('DESCRIPTION:') && l.includes(join))).toBe(true);
+    // Its place is its join address, which the calendar app opens (M16 F6), and it says whom.
+    expect(ev).toEqual(
+      expect.arrayContaining([
+        'SUMMARY:Weekly sync · Ben Calendar',
+        `LOCATION:${join}`,
+        `URL:${join}`,
+        `DESCRIPTION:With Ben Calendar\\n\\nJoin in Caime: ${join}\\n\\nCaime keeps this up to date. Change it in Caime.`,
+      ]),
+    );
     // In the app's calendar, the card's place in its conversation, for Join to open it at.
     const window = 'from=2026-10-01T00:00:00Z&to=2026-10-31T00:00:00Z';
     const mine = (await ana.get(`/v1/calendar?${window}`)).items.find((i: any) => i.id === sync.id);
@@ -333,6 +345,59 @@ describe('a calendar feed (PRD §72)', () => {
     expect(event(await lines(url), `meeting-${zoom.id}@caime`)).toEqual(
       expect.arrayContaining(['LOCATION:zoom.us/j/123', `URL:http://localhost:8787/c/${withBen}`]),
     );
+  });
+
+  it('leaves to a connected calendar what it writes there, so none shows twice (M16 F6)', async () => {
+    const { url } = await ana.post('/v1/calendar/feed');
+    const soon = await card(ana, withBen, 'meeting', {
+      title: 'Soon',
+      start: { at: '2026-10-15T09:00:00Z', hasTime: true },
+    });
+    const later = await card(ana, withBen, 'meeting', {
+      title: 'Next year',
+      start: { at: '2027-01-10T09:00:00Z', hasTime: true },
+    });
+    for (const m of [soon, later]) await ben.post(`/v1/messages/${m.id}/kit`, { to: 'accepted' });
+    const task = (
+      await ana.post('/v1/tasks', {
+        title: 'Book the hall',
+        dueAt: '2026-10-14T09:00:00.000Z',
+        dueHasTime: true,
+      })
+    ).task;
+    expect(event(await lines(url), `meeting-${soon.id}@caime`)).not.toBeNull();
+    // Ana's Google writes her plans (R96) for the next 90 days: the feed leaves those to it.
+    const account = uuidv4();
+    await t.ctx.db
+      .insertInto('connected_accounts')
+      .values({
+        id: account,
+        user_id: ana.user.id,
+        provider: 'google',
+        subject: `g-${account}`,
+        email: 'ana@gmail.test',
+        uses: ['calendar', 'plans'],
+        scopes: [],
+        refresh_sealed: Buffer.from('sealed'),
+        state: 'connected',
+      })
+      .execute();
+    let all = await lines(url);
+    expect(event(all, `meeting-${soon.id}@caime`)).toBeNull();
+    expect(event(all, `meeting-${later.id}@caime`)).not.toBeNull();
+    // Her actions are the feed's alone: nothing else writes them.
+    expect(event(all, `task-${task.id}@caime`)).not.toBeNull();
+    // Gone to "reconnect", it writes nothing: the feed has them again.
+    await t.ctx.db
+      .updateTable('connected_accounts')
+      .set({ state: 'reconnect' })
+      .where('id', '=', account)
+      .execute();
+    all = await lines(url);
+    expect(event(all, `meeting-${soon.id}@caime`)).not.toBeNull();
+    await t.ctx.db.deleteFrom('connected_accounts').where('id', '=', account).execute();
+    await ana.post(`/v1/messages/${soon.id}/kit`, { to: 'cancelled' });
+    await ana.post(`/v1/messages/${later.id}/kit`, { to: 'cancelled' });
   });
 
   it('in the app (R51): what’s ahead in a window, with whom and what they are to you; an organization’s bookings for its team', async () => {

@@ -106,12 +106,17 @@ describe('branches as booking hosts (R92)', () => {
       items: [],
     });
     expect(hoursAtTeam.statusCode).toBe(400);
-    // A person's own catalog has no branches.
+    // A person's own catalog names only their own places (M16 F6), and has no branches' days.
     const mine = await noor.req('PUT', '/v1/me/booking', {
       booking: HOURS,
       items: [item('mine', maadi)],
     });
-    expect(mine.statusCode).toBe(403);
+    expect(mine.statusCode).toBe(400);
+    const myDays = await noor.req('PUT', '/v1/me/booking', {
+      booking: { ...HOURS, placeHours: [{ placeId: maadi, days: HOURS.days }] },
+      items: [],
+    });
+    expect(myDays.statusCode).toBe(403);
 
     const saved = await noor.req('PUT', `/v1/orgs/${orgId}/booking`, {
       // Maadi opens on Friday afternoons only.

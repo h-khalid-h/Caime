@@ -1621,4 +1621,14 @@ export const turkishServer: Catalog = {
     'Bu rezervasyon hesap olmadan yapıldı: iptal edin, sayfanızdan başka bir saat ayırtılabilir.',
   'A booking lasts as long as what was booked: choose its time alone.':
     'Rezervasyonun süresi ayırtılanın süresidir: yalnızca saatini seçin.',
+  'With {names}': '{names} ile',
+  'Choose one of your places that anyone may see.':
+    'Herkesin görebileceği yerlerinizden birini seçin.',
+  'Waiting on {name}: {title}': '{name} bekleniyor: {title}',
+  '{name} asked you.': '{name} sizden istedi.',
+  'One of your actions.': 'Eylemlerinizden biri.',
+  'You’re waiting on {name}.': '{name} bekleniyor.',
+  Action: 'Eylem',
+  '{name} isn’t on Caime yet: a call reaches them once they join with their address.':
+    '{name} henüz Caime’de değil: adresiyle katıldığında arama ona ulaşır.',
 };

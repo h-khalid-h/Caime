@@ -1564,10 +1564,6 @@ export const arB: Catalog = {
   Health: 'الصحة',
   Travel: 'السفر',
   'Developer tools': 'أدوات المطورين',
-  'Your due actions and meetings in Google Calendar, Outlook or Apple Calendar':
-    'إجراءاتك المستحقة واجتماعاتك في تقويم Google أو Outlook أو تقويم Apple',
-  'A private address your calendar app reads: your actions with a due date, and the meetings and appointments you agreed to. Nothing changes in Caime from there. Anyone with the address sees them, so keep it to yourself.':
-    'عنوان خاص يقرؤه تطبيق التقويم لديك: إجراءاتك ذات تاريخ استحقاق، والاجتماعات والمواعيد التي وافقت عليها. لا يتغير شيء في Caime من هناك. وكل من لديه العنوان يراها، فاحتفظ به لنفسك.',
   'Your calendar and the apps that act for you; discover more':
     'تقويمك والتطبيقات التي تتصرف نيابةً عنك؛ اكتشف المزيد',
   'Connect must send people to an https address.': 'يجب أن يرسل «اتصال» الأشخاص إلى عنوان https.',
@@ -1936,8 +1932,8 @@ export const arB: Catalog = {
     'كيف يكتب لك Caime، وكيف يرى من يعرفونك وصفك، بالعربية والفرنسية. لا يُخمَّن أبدًا.',
   Meetings: 'الاجتماعات',
   'No meetings yet': 'لا اجتماعات بعد',
-  'Meetings agreed in your conversations show here, with Join when it’s time.':
-    'تظهر هنا الاجتماعات المتفق عليها في محادثاتك، مع زر الانضمام حين يحين وقتها.',
+  'Meetings and appointments agreed in your conversations show here, with Join when it’s time.':
+    'تظهر هنا الاجتماعات والمواعيد المتفق عليها في محادثاتك، مع زر الانضمام حين يحين وقتها.',
   // An organization's closing (DPA §12): its export, for its last owner.
   'Export {name}': 'تصدير {name}',
   'It closed. Its export is yours until {date}, then what was only its own is deleted.':
@@ -2321,7 +2317,6 @@ export const arB: Catalog = {
   'In {timeZone}. Its items are booked on these days.':
     'بتوقيت {timeZone}. تُحجز عناصره في هذه الأيام.',
   'Same as the organization’s': 'مثل مواعيد المؤسسة',
-  Wherever: 'في أي مكان',
   'At {place}': 'في {place}',
   'Each place’s hours once.': 'مواعيد كل مكان مرة واحدة.',
   'Nobody with these addresses or numbers is on Caime yet, or they keep them private.':
@@ -3270,4 +3265,25 @@ export const arB: Catalog = {
     other: 'اقترح موعدًا آخر',
   },
   'No other open times in the next two months.': 'لا أوقات متاحة أخرى خلال الشهرين القادمين.',
+  'On Caime': 'على Caime',
+  'Somewhere else': 'في مكان آخر',
+  'A call in this conversation, with Join at its time.':
+    'مكالمة في هذه المحادثة، مع زر الانضمام في وقتها.',
+  'Where isn’t said': 'المكان غير محدد',
+  'Say where it is.': { toWoman: 'حدّدي المكان.', toMan: 'حدّد المكان.', other: 'حدّد المكان.' },
+  'Sent on Caime': 'يُرسَل على Caime',
+  'Sent in your conversation with whoever orders it.': 'يُرسَل في محادثتك مع من يطلبه.',
+  'A call in your conversation, with Join at its time.':
+    'مكالمة في محادثتك، مع زر الانضمام في وقتها.',
+  'Its address is copied into each booking or order.': 'يُنسخ عنوانه في كل حجز أو طلب.',
+  'A call on Caime': 'مكالمة على Caime',
+  'Your {provider} calendar gets your meetings and appointments from your connected account as they change, so this feed carries your actions’ due dates, and what’s more than {days} days ahead.':
+    'تصل اجتماعاتك ومواعيدك إلى تقويم {provider} من حسابك المرتبط فور تغيّرها، لذا تحمل هذه التغذية مواعيد استحقاق إجراءاتك، وما يبعد أكثر من {days} يومًا.',
+  'Using Google Calendar or Outlook? Connect the account under Your accounts instead: Caime writes your plans there as they change, and keeps bookings off your busy times.':
+    'لتقويم Google أو Outlook، اربط الحساب من «حساباتك» بدلًا من ذلك: يكتب Caime خططك هناك فور تغيّرها، ويُبعد الحجوزات عن أوقات انشغالك.',
+  'Calendar feed': 'تغذية التقويم',
+  'Your meetings and due actions in Apple Calendar, or any calendar app':
+    'اجتماعاتك وإجراءاتك المستحقة في تقويم Apple، أو أي تطبيق تقويم',
+  'A private address any calendar app subscribes to: your actions with a due date, and the meetings and appointments you agreed to. For Google Calendar or Outlook, connect the account under Your accounts instead: Caime writes your plans there as they change. Nothing changes in Caime from the feed. Anyone with the address sees it, so keep it to yourself.':
+    'عنوان خاص يشترك فيه أي تطبيق تقويم: إجراءاتك ذات تاريخ استحقاق، والاجتماعات والمواعيد التي وافقت عليها. لتقويم Google أو Outlook، اربط الحساب من «حساباتك» بدلًا من ذلك: يكتب Caime خططك هناك فور تغيّرها. لا يتغير شيء في Caime من التغذية. وكل من لديه العنوان يراها، فاحتفظ به لنفسك.',
 };
