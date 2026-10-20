@@ -91,7 +91,7 @@ test.describe
       await expect(row).toContainText('Connected');
       await page.goto('/settings/apps');
       const connected = page.getByTestId('connected-Zapier');
-      await expect(connected).toContainText(/On since .* · last used/);
+      await expect(connected).toContainText(/Turned on .* · last used/);
       await connected.click();
       await expect(page.getByTestId('bridge-on').filter({ visible: true })).toBeVisible();
       await expect(page.getByTestId('bridge-scopes').filter({ visible: true })).toContainText(

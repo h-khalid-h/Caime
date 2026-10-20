@@ -538,8 +538,8 @@ export const fr: Catalog = {
   Automatic: 'Automatique',
   'Your device’s language': 'La langue de votre appareil',
   'Dates, times and numbers': 'Dates, heures et nombres',
-  'How Caime writes them for you. Dates you type are read in English and Arabic.':
-    'Comment Caime les écrit pour vous. Les dates que vous tapez sont lues en anglais et en arabe.',
+  'How Caime writes them for you. Dates you type are read in any language Caime offers.':
+    'Comment Caime les écrit pour vous. Les dates que vous tapez sont lues dans toutes les langues de Caime.',
   'Written as in': 'Écrits comme en',
   'Show in the conversation': 'Afficher dans la conversation',
   'Remove from saved': 'Retirer des enregistrés',
@@ -1915,7 +1915,7 @@ export const fr: Catalog = {
   'This browser couldn’t turn them on.': 'Ce navigateur n’a pas pu les activer.',
   'Notifications are off in this browser': 'Les notifications sont désactivées dans ce navigateur',
   'In this browser': 'Dans ce navigateur',
-  "Only while you're signed in here. What each notification says follows your rules below.":
+  'Only while you’re signed in here. What each notification says follows your rules below.':
     'Seulement tant que votre session est ouverte ici. Ce que dit chaque notification suit vos règles ci-dessous.',
   'This browser blocks notifications from Caime. Allow them in its site settings, then come back.':
     'Ce navigateur bloque les notifications de Caime. Autorisez-les dans ses réglages de site, puis revenez.',
@@ -2025,13 +2025,13 @@ export const fr: Catalog = {
     'Google Agenda : Autres agendas, puis À partir de l’URL. Outlook : Ajouter un calendrier, puis S’abonner à partir du web. Calendrier Apple : Fichier, puis Nouvel abonnement à un calendrier.',
   'Your calendar won’t read Caime any more': 'Votre calendrier ne lira plus Caime',
   'Calendars are for people over 18.': 'Les calendriers sont réservés aux plus de 18 ans.',
-  'See your actions’ due dates and the meetings you agree to in Google Calendar, Outlook or Apple Calendar. They read a private address; nothing changes in Caime from there.':
-    'Voyez les échéances de vos actions et les réunions que vous acceptez dans Google Agenda, Outlook ou Calendrier Apple. Ils lisent une adresse privée ; rien ne change dans Caime depuis ces applications.',
+  'See your actions’ due dates and the meetings you agree to in Apple Calendar or any calendar app. It reads a private address; nothing changes in Caime from there.':
+    'Voyez les échéances de vos actions et les réunions que vous acceptez dans Calendrier Apple ou toute application d’agenda. Elle lit une adresse privée ; rien ne change dans Caime depuis là.',
   'Calendar address': 'Adresse du calendrier',
   'Shown this once: add it to your calendar now. {how}':
     'Affichée une seule fois : ajoutez-la à votre calendrier maintenant. {how}',
   'Open in your calendar app': 'Ouvrir dans votre application de calendrier',
-  'On since {when} · {text}': 'Active depuis {when} · {text}',
+  'Turned on {when} · {text}': 'Activé {when} · {text}',
   'not read yet': 'pas encore lue',
   'The address your calendar has now stops working, and you add the new one.':
     'L’adresse actuelle de votre calendrier cesse de fonctionner, et vous ajoutez la nouvelle.',
@@ -3504,8 +3504,8 @@ export const fr: Catalog = {
   Health: 'Santé',
   Travel: 'Voyage',
   'Developer tools': 'Outils de développement',
-  'Your calendar and the apps that act for you; discover more':
-    'Votre calendrier et les applications qui agissent pour vous ; découvrez-en d’autres',
+  'Your accounts, the calendar feed and the apps that act for you':
+    'Vos comptes, le flux du calendrier et les applications qui agissent pour vous',
   'Connect must send people to an https address.':
     'Connecter doit envoyer les gens à une adresse https.',
   '{name}, {role}': '{name}, {role}',
@@ -3514,8 +3514,8 @@ export const fr: Catalog = {
   for: 'pour',
   'people, and the organizations they deal with':
     'les gens, et les organisations avec lesquelles ils traitent',
-  'Free for people. Organizations pay for their team.':
-    'Gratuit pour les particuliers. Les organisations paient pour leur équipe.',
+  'Free for people, with Pro for more. Organizations pay for their team.':
+    'Gratuit pour les particuliers, avec Pro pour plus. Les organisations paient pour leur équipe.',
   'used {when}': 'utilisé {when}',
   'never used': 'jamais utilisé',
   ended: 'terminé',
@@ -4046,8 +4046,8 @@ export const fr: Catalog = {
   'Where to find you: a public one is on your page with a map, for search engines too; one for your customers shows to people you serve; one for your team stays inside.':
     'Où vous trouver : un lieu public figure sur votre page avec une carte, aussi pour les moteurs de recherche ; un lieu pour vos clients se montre aux personnes que vous servez ; un lieu pour votre équipe reste en interne.',
   'Your places': 'Vos lieux',
-  'Each is shown to whom you choose, nobody until you do. When you pick one for a meeting or a delivery, its words go with that card, and the card keeps them if the place changes.':
-    'Chacun est montré à qui vous choisissez, à personne tant que vous ne choisissez pas. Quand vous en prenez un pour un rendez-vous ou une livraison, ses mots partent avec cette carte, qui les garde si le lieu change.',
+  'Each is shown to whom you choose, nobody until you do. When you pick one for a meeting, a delivery or something you offer, its words go with that card, and the card keeps them if the place changes.':
+    'Chacun est montré à qui vous choisissez, à personne tant que vous ne choisissez pas. Quand vous en prenez un pour un rendez-vous, une livraison ou quelque chose que vous proposez, ses mots partent avec cette carte, qui les garde si le lieu change.',
   'Your places and theirs': 'Vos lieux et les leurs',
   '{name}’s {place}': '{place} · {name}',
   'Add a place': 'Ajouter un lieu',

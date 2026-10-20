@@ -45,7 +45,10 @@ export default function About() {
               Platform.OS === 'web' ? tr('the web') : Platform.OS === 'ios' ? 'iOS' : 'Android',
           },
           { label: tr('for'), value: tr('people, and the organizations they deal with') },
-          { label: tr('price'), value: tr('Free for people. Organizations pay for their team.') },
+          {
+            label: tr('price'),
+            value: tr('Free for people, with Pro for more. Organizations pay for their team.'),
+          },
         ]}
       />
       {links?.privacyUrl || links?.termsUrl || links?.helpUrl ? (

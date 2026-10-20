@@ -591,8 +591,8 @@ export const arA: Catalog = {
   Automatic: 'تلقائي',
   'Your device’s language': 'لغة جهازك',
   'Dates, times and numbers': 'التواريخ والأوقات والأرقام',
-  'How Caime writes them for you. Dates you type are read in English and Arabic.':
-    'كيف يكتبها Caime لك. التواريخ التي تكتبها تُقرأ بالإنجليزية والعربية.',
+  'How Caime writes them for you. Dates you type are read in any language Caime offers.':
+    'كيف يكتبها Caime لك. التواريخ التي تكتبها تُقرأ بأي لغة يتيحها Caime.',
   'Written as in': 'تُكتب كما في',
   'Show in the conversation': 'إظهار في المحادثة',
   'Remove from saved': 'إزالة من المحفوظات',
@@ -1919,7 +1919,7 @@ export const arA: Catalog = {
   'This browser couldn’t turn them on.': 'تعذّر على هذا المتصفح تفعيلها.',
   'Notifications are off in this browser': 'الإشعارات معطّلة في هذا المتصفح',
   'In this browser': 'في هذا المتصفح',
-  "Only while you're signed in here. What each notification says follows your rules below.":
+  'Only while you’re signed in here. What each notification says follows your rules below.':
     'فقط ما دمت مسجّل الدخول هنا. ما يقوله كل إشعار يتبع قواعدك أدناه.',
   'This browser blocks notifications from Caime. Allow them in its site settings, then come back.':
     'يمنع هذا المتصفح الإشعارات من Caime. اسمح بها في إعدادات الموقع، ثم عد.',
@@ -2038,8 +2038,8 @@ export const arA: Catalog = {
     'تقويم Google: التقويمات الأخرى، ثم من عنوان URL. Outlook: إضافة تقويم، ثم الاشتراك من الويب. تقويم Apple: ملف، ثم اشتراك تقويم جديد.',
   'Your calendar won’t read Caime any more': 'لن يقرأ تقويمك Caime بعد الآن',
   'Calendars are for people over 18.': 'التقويمات لمن تجاوزوا 18.',
-  'See your actions’ due dates and the meetings you agree to in Google Calendar, Outlook or Apple Calendar. They read a private address; nothing changes in Caime from there.':
-    'اعرض مواعيد استحقاق إجراءاتك والاجتماعات التي توافق عليها في تقويم Google أو Outlook أو تقويم Apple. تقرأ هذه التقويمات عنوانًا خاصًا؛ ولا يتغير شيء في Caime من هناك.',
+  'See your actions’ due dates and the meetings you agree to in Apple Calendar or any calendar app. It reads a private address; nothing changes in Caime from there.':
+    'اعرض مواعيد استحقاق إجراءاتك والاجتماعات التي توافق عليها في تقويم Apple أو أي تطبيق تقويم. يقرأ التطبيق عنوانًا خاصًا؛ ولا يتغير شيء في Caime من هناك.',
   'Calendar address': 'عنوان التقويم',
   'Shown this once: add it to your calendar now. {how}':
     'يُعرض مرة واحدة: أضفه إلى تقويمك الآن. {how}',
@@ -2048,7 +2048,7 @@ export const arA: Catalog = {
     toMan: 'افتح في تطبيق التقويم',
     other: 'افتح في تطبيق التقويم',
   },
-  'On since {when} · {text}': 'مفعّل منذ {when} · {text}',
+  'Turned on {when} · {text}': 'فُعِّل {when} · {text}',
   'not read yet': 'لم يُقرأ بعد',
   'The address your calendar has now stops working, and you add the new one.':
     'يتوقف العنوان الذي لدى تقويمك الآن عن العمل، وتضيف الجديد.',

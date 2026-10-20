@@ -1703,4 +1703,6 @@ export const frServer: Catalog = {
   Action: 'Action',
   '{name} isn’t on Caime yet: a call reaches them once they join with their address.':
     '{name} n’est pas encore sur Caime : un appel l’atteindra une fois son compte créé avec son adresse.',
+  'Free for people. Organizations pay for their team.':
+    'Gratuit pour les particuliers. Les organisations paient pour leur équipe.',
 };

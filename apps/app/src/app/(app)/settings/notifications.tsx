@@ -35,9 +35,12 @@ const DeviceNotifications = lazyPart(() =>
 // The rule editor is shared with a person's page and Automations: its own file, loaded when opened.
 const RuleSheet = lazyPart(() => import('@/features/settings/RuleSheet').then((m) => m.RuleSheet));
 
-/** Who a rule is for: "Work · Manager", "Customers", or its name when it has one. */
+/**
+ * Who a rule is for: "Work · Manager", "Customers", or its name when it has one: a template's,
+ * in the reader's words ("My Customers" is a key).
+ */
 function scopeLabel(p: Pick<PolicyView, 'name' | 'scope'>): string {
-  if (p.name) return p.name;
+  if (p.name) return tr(p.name);
   if (p.scope.connectionId) return tr('One person');
   const { sphere, role } = p.scope;
   if (sphere) {

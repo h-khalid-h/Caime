@@ -210,6 +210,14 @@ describe('an organization’s places', () => {
         ],
       },
     ]);
+    // Its team is offered the same, since the customer reads the card: never the warehouse kept
+    // for the team, nor a team member's own places (Noor keeps two of her own, M16 F6).
+    expect((await noor.get('/v1/me/places')).places.length).toBeGreaterThan(0);
+    const teamOffered = await noor.get(`/v1/conversations/${conversationId}/places`);
+    expect(teamOffered.mine).toEqual([]);
+    expect(
+      teamOffered.theirs[0].places.map((p: { label: string | null; kind: string }) => p.kind),
+    ).toEqual(['hq', 'branch']);
     // And its export carries them.
     const exported = (await noor.req('GET', `/v1/orgs/${org.id}/export`)).json();
     expect(exported.places).toHaveLength(3);

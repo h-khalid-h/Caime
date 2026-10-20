@@ -511,8 +511,8 @@ export const turkish: Catalog = {
   Automatic: 'Otomatik',
   'Your device’s language': 'Cihazınızın dili',
   'Dates, times and numbers': 'Tarihler, saatler ve sayılar',
-  'How Caime writes them for you. Dates you type are read in English and Arabic.':
-    'Caime’nin bunları size nasıl yazacağı. Yazdığınız tarihler İngilizce ve Arapça olarak anlaşılır.',
+  'How Caime writes them for you. Dates you type are read in any language Caime offers.':
+    'Caime’nin bunları size nasıl yazacağı. Yazdığınız tarihler Caime’nin sunduğu her dilde anlaşılır.',
   'Written as in': 'Şu dildeki gibi yazılır',
   'Show in the conversation': 'Konuşmada göster',
   'Remove from saved': 'Kaydedilenlerden kaldır',
@@ -1830,7 +1830,7 @@ export const turkish: Catalog = {
   'This browser couldn’t turn them on.': 'Bu tarayıcıda bildirimler açılamadı.',
   'Notifications are off in this browser': 'Bu tarayıcıda bildirimler kapalı',
   'In this browser': 'Bu tarayıcıda',
-  "Only while you're signed in here. What each notification says follows your rules below.":
+  'Only while you’re signed in here. What each notification says follows your rules below.':
     'Yalnızca burada oturumunuz açıkken. Her bildirimin içeriği aşağıdaki kurallarınıza göre belirlenir.',
   'This browser blocks notifications from Caime. Allow them in its site settings, then come back.':
     'Bu tarayıcı Caime bildirimlerini engelliyor. Site ayarlarından izin verip geri gelin.',
@@ -1939,13 +1939,13 @@ export const turkish: Catalog = {
     'Google Takvim: Diğer takvimler, sonra URL’den. Outlook: Takvim ekle, sonra Web’den abone ol. Apple Takvim: Dosya, sonra Yeni Takvim Aboneliği.',
   'Your calendar won’t read Caime any more': 'Takviminiz artık Caime’yi okumayacak',
   'Calendars are for people over 18.': 'Takvimler 18 yaş üstü kişiler içindir.',
-  'See your actions’ due dates and the meetings you agree to in Google Calendar, Outlook or Apple Calendar. They read a private address; nothing changes in Caime from there.':
-    'Eylemlerinizin son tarihlerini ve kabul ettiğiniz toplantıları Google Takvim, Outlook veya Apple Takvim’de görün. Takviminiz özel bir adresi okur; oradan Caime’de hiçbir şey değiştirilemez.',
+  'See your actions’ due dates and the meetings you agree to in Apple Calendar or any calendar app. It reads a private address; nothing changes in Caime from there.':
+    'Eylemlerinizin son tarihlerini ve kabul ettiğiniz toplantıları Apple Takvim’de ya da herhangi bir takvim uygulamasında görün. Uygulama özel bir adresi okur; oradan Caime’de hiçbir şey değiştirilemez.',
   'Calendar address': 'Takvim adresi',
   'Shown this once: add it to your calendar now. {how}':
     'Yalnızca bu kez gösterilir: şimdi takviminize ekleyin. {how}',
   'Open in your calendar app': 'Takvim uygulamanızda aç',
-  'On since {when} · {text}': '{when} itibarıyla açık · {text}',
+  'Turned on {when} · {text}': '{when} açıldı · {text}',
   'not read yet': 'henüz okunmadı',
   'The address your calendar has now stops working, and you add the new one.':
     'Takviminizdeki mevcut adres çalışmaz olur; yenisini eklemeniz gerekir.',
@@ -3350,8 +3350,8 @@ export const turkish: Catalog = {
   Health: 'Sağlık',
   Travel: 'Seyahat',
   'Developer tools': 'Geliştirici araçları',
-  'Your calendar and the apps that act for you; discover more':
-    'Takvimin ve senin adına hareket eden uygulamalar; daha fazlasını keşfet',
+  'Your accounts, the calendar feed and the apps that act for you':
+    'Hesapların, takvim akışı ve senin adına hareket eden uygulamalar',
   'Connect must send people to an https address.':
     'Bağla, insanları bir https adresine göndermeli.',
   '{name}, {role}': '{name}, {role}',
@@ -3359,8 +3359,8 @@ export const turkish: Catalog = {
   'the web': 'web',
   for: 'kimin için',
   'people, and the organizations they deal with': 'insanlar ve iletişimde oldukları kuruluşlar',
-  'Free for people. Organizations pay for their team.':
-    'Kişiler için ücretsiz. Kuruluşlar ekipleri için öder.',
+  'Free for people, with Pro for more. Organizations pay for their team.':
+    'Kişiler için ücretsiz, daha fazlası için Pro. Kuruluşlar ekipleri için öder.',
   'used {when}': '{when} kullanıldı',
   'never used': 'hiç kullanılmadı',
   ended: 'sona erdi',
@@ -3880,8 +3880,8 @@ export const turkish: Catalog = {
   'Where to find you: a public one is on your page with a map, for search engines too; one for your customers shows to people you serve; one for your team stays inside.':
     'Sizi nerede bulacakları: herkese açık bir yer sayfanızda haritasıyla, arama motorları için de görünür; müşterileriniz için olan, hizmet verdiğiniz kişilere görünür; ekibiniz için olan içeride kalır.',
   'Your places': 'Yerleriniz',
-  'Each is shown to whom you choose, nobody until you do. When you pick one for a meeting or a delivery, its words go with that card, and the card keeps them if the place changes.':
-    'Her biri seçtiğiniz kişilere görünür; siz seçene kadar kimseye. Bir toplantı ya da teslimat için birini seçtiğinizde sözleri o karta geçer ve yer değişse de kart onları saklar.',
+  'Each is shown to whom you choose, nobody until you do. When you pick one for a meeting, a delivery or something you offer, its words go with that card, and the card keeps them if the place changes.':
+    'Her biri seçtiğiniz kişilere görünür; siz seçene kadar kimseye. Bir toplantı, teslimat ya da sunduğunuz bir şey için birini seçtiğinizde sözleri o karta geçer ve yer değişse de kart onları saklar.',
   'Your places and theirs': 'Sizin ve onların yerleri',
   '{name}’s {place}': '{place} · {name}',
   'Add a place': 'Yer ekle',

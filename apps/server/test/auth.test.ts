@@ -388,9 +388,22 @@ describe('sign-in and sessions', () => {
       },
     });
     const b = clientFor(t, second.json().token, a.user);
+    // A browser is named by itself, never left "Browser" beside another browser.
+    await t.app.inject({
+      method: 'POST',
+      url: '/v1/auth/login',
+      headers: {
+        'user-agent':
+          'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/141.0.0.0 Safari/537.36',
+      },
+      payload: { identifier: a.user.handle, password: 'correct horse battery', client: 'web' },
+    });
     const { sessions } = await a.get('/v1/auth/sessions');
-    expect(sessions).toHaveLength(2);
+    expect(sessions).toHaveLength(3);
     expect(sessions.filter((s: { current: boolean }) => s.current)).toHaveLength(1);
+    expect(sessions.map((s: { deviceName: string | null }) => s.deviceName)).toEqual(
+      expect.arrayContaining(['Tablet', 'Chrome · macOS']),
+    );
     await a.post('/v1/auth/password', {
       currentPassword: 'correct horse battery',
       newPassword: 'another good passphrase',

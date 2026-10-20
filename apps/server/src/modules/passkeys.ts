@@ -4,6 +4,7 @@
  * the same session, cookie and audit a password's sign-in makes. A passkey on an account that
  * is suspended, deleted or a bot's opens nothing.
  */
+
 import { PasskeyAddBody, PasskeySignInBody, PasskeyStartBody } from '@caime/core';
 import type {
   AuthResponse,
@@ -29,12 +30,12 @@ import type { AppContext } from '../context';
 import { USER_COLUMNS } from '../db/schema';
 import { audit } from '../lib/audit';
 import { verifyPassword } from '../lib/crypto';
+import { deviceNameOf } from '../lib/device-names';
 import { AppError, notFound } from '../lib/errors';
 import {
   answeredChallenge,
   keepChallenge,
   PASSKEYS_MAX,
-  passkeyName,
   passkeyView,
   readSigninChallenge,
   relyingParty,
@@ -146,7 +147,7 @@ export async function passkeyRoutes(app: FastifyInstance, ctx: AppContext) {
         counter: credential.counter,
         transports: credential.transports ?? [],
         backed_up: credentialBackedUp,
-        name: passkeyName(userAgent),
+        name: deviceNameOf(userAgent),
         created_at: ctx.now(),
       })
       .onConflict((oc) => oc.column('id').doNothing())

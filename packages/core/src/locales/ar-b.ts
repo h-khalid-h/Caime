@@ -1564,15 +1564,16 @@ export const arB: Catalog = {
   Health: 'الصحة',
   Travel: 'السفر',
   'Developer tools': 'أدوات المطورين',
-  'Your calendar and the apps that act for you; discover more':
-    'تقويمك والتطبيقات التي تتصرف نيابةً عنك؛ اكتشف المزيد',
+  'Your accounts, the calendar feed and the apps that act for you':
+    'حساباتك ورابط التقويم والتطبيقات التي تتصرف نيابةً عنك',
   'Connect must send people to an https address.': 'يجب أن يرسل «اتصال» الأشخاص إلى عنوان https.',
   '{name}, {role}': '{name}، {role}',
   version: 'الإصدار',
   'the web': 'الويب',
   for: 'لمن',
   'people, and the organizations they deal with': 'الأشخاص، والمنظمات التي يتعاملون معها',
-  'Free for people. Organizations pay for their team.': 'مجاني للأفراد. والمؤسسات تدفع لفريقها.',
+  'Free for people, with Pro for more. Organizations pay for their team.':
+    'مجاني للأفراد، ومع Pro المزيد. والمؤسسات تدفع لفريقها.',
   'used {when}': 'استُخدم {when}',
   'never used': 'لم يُستخدم قط',
   ended: 'انتهى',
@@ -1862,7 +1863,7 @@ export const arB: Catalog = {
   '{name} bookings': 'حجوزات {name}',
   'The appointments its customers asked for or confirmed': 'المواعيد التي طلبها عملاؤها أو أُكِّدت',
   'In your calendar app': 'في تطبيق التقويم لديك',
-  'A feed of this calendar, from Settings · Apps': 'تغذية لهذا التقويم، من الإعدادات · التطبيقات',
+  'A feed of this calendar, from Settings · Apps': 'رابط لهذا التقويم، من الإعدادات · التطبيقات',
   InstaPay: 'إنستاباي',
   'Vodafone Cash': 'فودافون كاش',
   Fawry: 'فوري',
@@ -2270,8 +2271,8 @@ export const arB: Catalog = {
   'Where to find you: a public one is on your page with a map, for search engines too; one for your customers shows to people you serve; one for your team stays inside.':
     'حيث يجدونكم: المكان العام يظهر في صفحتكم مع خريطة، ولمحركات البحث أيضًا؛ ومكان العملاء يظهر لمن تخدمونهم؛ ومكان الفريق يبقى داخله.',
   'Your places': 'أماكنك',
-  'Each is shown to whom you choose, nobody until you do. When you pick one for a meeting or a delivery, its words go with that card, and the card keeps them if the place changes.':
-    'يظهر كل مكان لمن تختار، ولا يظهر لأحد حتى تختار. وحين تختاره لاجتماع أو توصيل تنتقل كلماته إلى تلك البطاقة، وتحتفظ بها البطاقة إن تغيّر المكان.',
+  'Each is shown to whom you choose, nobody until you do. When you pick one for a meeting, a delivery or something you offer, its words go with that card, and the card keeps them if the place changes.':
+    'يظهر كل مكان لمن تختار، ولا يظهر لأحد حتى تختار. وحين تختاره لاجتماع أو توصيل أو لشيء تقدّمه تنتقل كلماته إلى تلك البطاقة، وتحتفظ بها البطاقة إن تغيّر المكان.',
   'Your places and theirs': 'أماكنك وأماكنهم',
   '{name}’s {place}': '{place} · {name}',
   'Add a place': { toWoman: 'أضيفي مكانًا', toMan: 'أضف مكانًا', other: 'أضف مكانًا' },
@@ -3278,12 +3279,12 @@ export const arB: Catalog = {
   'Its address is copied into each booking or order.': 'يُنسخ عنوانه في كل حجز أو طلب.',
   'A call on Caime': 'مكالمة على Caime',
   'Your {provider} calendar gets your meetings and appointments from your connected account as they change, so this feed carries your actions’ due dates, and what’s more than {days} days ahead.':
-    'تصل اجتماعاتك ومواعيدك إلى تقويم {provider} من حسابك المرتبط فور تغيّرها، لذا تحمل هذه التغذية مواعيد استحقاق إجراءاتك، وما يبعد أكثر من {days} يومًا.',
+    'تصل اجتماعاتك ومواعيدك إلى تقويم {provider} من حسابك المرتبط فور تغيّرها، لذا يحمل هذا الرابط مواعيد استحقاق إجراءاتك، وما يبعد أكثر من {days} يومًا.',
   'Using Google Calendar or Outlook? Connect the account under Your accounts instead: Caime writes your plans there as they change, and keeps bookings off your busy times.':
     'لتقويم Google أو Outlook، اربط الحساب من «حساباتك» بدلًا من ذلك: يكتب Caime خططك هناك فور تغيّرها، ويُبعد الحجوزات عن أوقات انشغالك.',
-  'Calendar feed': 'تغذية التقويم',
+  'Calendar feed': 'رابط التقويم',
   'Your meetings and due actions in Apple Calendar, or any calendar app':
     'اجتماعاتك وإجراءاتك المستحقة في تقويم Apple، أو أي تطبيق تقويم',
   'A private address any calendar app subscribes to: your actions with a due date, and the meetings and appointments you agreed to. For Google Calendar or Outlook, connect the account under Your accounts instead: Caime writes your plans there as they change. Nothing changes in Caime from the feed. Anyone with the address sees it, so keep it to yourself.':
-    'عنوان خاص يشترك فيه أي تطبيق تقويم: إجراءاتك ذات تاريخ استحقاق، والاجتماعات والمواعيد التي وافقت عليها. لتقويم Google أو Outlook، اربط الحساب من «حساباتك» بدلًا من ذلك: يكتب Caime خططك هناك فور تغيّرها. لا يتغير شيء في Caime من التغذية. وكل من لديه العنوان يراها، فاحتفظ به لنفسك.',
+    'عنوان خاص يشترك فيه أي تطبيق تقويم: إجراءاتك ذات تاريخ استحقاق، والاجتماعات والمواعيد التي وافقت عليها. لتقويم Google أو Outlook، اربط الحساب من «حساباتك» بدلًا من ذلك: يكتب Caime خططك هناك فور تغيّرها. لا يتغير شيء في Caime من الرابط. وكل من لديه العنوان يراها، فاحتفظ به لنفسك.',
 };

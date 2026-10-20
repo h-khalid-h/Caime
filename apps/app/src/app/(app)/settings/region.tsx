@@ -120,7 +120,9 @@ export default function Region() {
       </Group>
       <Group
         title={tr('Dates, times and numbers')}
-        footer={tr('How Caime writes them for you. Dates you type are read in English and Arabic.')}
+        footer={tr(
+          'How Caime writes them for you. Dates you type are read in any language Caime offers.',
+        )}
       >
         <View style={{ padding: 16 }}>
           <LanguageField

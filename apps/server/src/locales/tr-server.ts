@@ -1631,4 +1631,6 @@ export const turkishServer: Catalog = {
   Action: 'Eylem',
   '{name} isn’t on Caime yet: a call reaches them once they join with their address.':
     '{name} henüz Caime’de değil: adresiyle katıldığında arama ona ulaşır.',
+  'Free for people. Organizations pay for their team.':
+    'Kişiler için ücretsiz. Kuruluşlar ekipleri için öder.',
 };

@@ -96,7 +96,7 @@ export function DeviceNotifications() {
     <Group
       title={w.title}
       footer={tr(
-        "Only while you're signed in here. What each notification says follows your rules below.",
+        'Only while you’re signed in here. What each notification says follows your rules below.',
       )}
     >
       <View style={{ padding: 16, gap: 10 }} testID="browser-notifications">

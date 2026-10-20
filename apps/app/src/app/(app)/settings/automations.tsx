@@ -48,9 +48,9 @@ function reminderLine(p: Pick<PolicyView, 'scope' | 'settings'>): string {
   });
 }
 
-/** Who a rule is for, as a label: its name, or "Work · Managers". */
+/** Who a rule is for, as a label: its name (a template's, in the reader's words), or "Work · Managers". */
 function label(p: Pick<PolicyView, 'name' | 'scope'>): string {
-  if (p.name) return p.name;
+  if (p.name) return tr(p.name);
   const { sphere, role } = p.scope;
   if (!sphere) return tr('Everyone else');
   const r = findRole(sphere, role);
@@ -203,7 +203,7 @@ export default function Automations() {
             <ListRow
               icon={Clock}
               title={reminderLine(p)}
-              subtitle={p.name}
+              subtitle={p.name ? tr(p.name) : undefined}
               chevron
               onPress={() => setRule(p.id)}
               testID="reminder-row"

@@ -129,7 +129,7 @@ export function BridgeSheet({ appId }: { appId: string }) {
       ) : on ? (
         <View style={{ gap: 4 }}>
           <Text variant="caption" color="textSecondary" testID="bridge-on">
-            {tr('On since {when} · {text}', {
+            {tr('Turned on {when} · {text}', {
               when: formatWhen(on.createdAt, now, timeZone, locale),
               text: on.lastUsedAt
                 ? tr('last used {when}', { when: formatWhen(on.lastUsedAt, now, timeZone, locale) })

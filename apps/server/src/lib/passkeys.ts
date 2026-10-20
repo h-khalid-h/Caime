@@ -129,37 +129,6 @@ export async function spendSigninChallenge(
   return Boolean(row);
 }
 
-/** What a passkey is called, from the browser that made it: "Chrome · macOS". Product names, never words. */
-export function passkeyName(userAgent: string | null): string | null {
-  if (!userAgent) return null;
-  const os = /iPhone/.test(userAgent)
-    ? 'iPhone'
-    : /iPad/.test(userAgent)
-      ? 'iPad'
-      : /Android/.test(userAgent)
-        ? 'Android'
-        : /CrOS/.test(userAgent)
-          ? 'ChromeOS'
-          : /Macintosh|Mac OS X/.test(userAgent)
-            ? 'macOS'
-            : /Windows/.test(userAgent)
-              ? 'Windows'
-              : /Linux/.test(userAgent)
-                ? 'Linux'
-                : null;
-  const browser = /Edg\//.test(userAgent)
-    ? 'Edge'
-    : /Firefox\/|FxiOS\//.test(userAgent)
-      ? 'Firefox'
-      : /Chrome\/|CriOS\//.test(userAgent)
-        ? 'Chrome'
-        : /Safari\//.test(userAgent)
-          ? 'Safari'
-          : null;
-  const parts = [browser, os].filter(Boolean);
-  return parts.length ? parts.join(' · ') : null;
-}
-
 export function passkeyView(row: {
   id: string;
   name: string | null;

@@ -254,17 +254,29 @@ export async function conversationPlaces(
     age_minor_until: Date | null;
   }>,
 ): Promise<ConversationPlacesResponse> {
-  const mine = await myPlaces(ctx, userId);
   const theirs: ConversationPlacesResponse['theirs'] = [];
   if (conversation.kind === 'business' && conversation.org_id) {
-    const org = await ctx.db
-      .selectFrom('organizations')
-      .select('name')
-      .where('id', '=', conversation.org_id)
-      .executeTakeFirst();
-    const places = await orgPlacesFor(ctx, conversation.org_id, userId);
+    const [org, standing] = await Promise.all([
+      ctx.db
+        .selectFrom('organizations')
+        .select('name')
+        .where('id', '=', conversation.org_id)
+        .executeTakeFirst(),
+      standingWith(ctx, conversation.org_id, userId),
+    ]);
+    // A card here is read by its customer (M16 F6): the team is offered the organization's places
+    // its customers may see, never one kept for the team or a team member's own; the customer
+    // their own and the organization's they're shown.
+    const places = standing.team
+      ? (await rowsOf(ctx, { orgId: conversation.org_id }))
+          .filter((r) => r.org_audience !== 'team')
+          .map((r) => placeView(r, true))
+      : await orgPlacesFor(ctx, conversation.org_id, userId);
     if (org && places.length) theirs.push({ owner: org.name, places });
-  } else if (conversation.kind === 'direct') {
+    return { mine: standing.team ? [] : await myPlaces(ctx, userId), theirs };
+  }
+  const mine = await myPlaces(ctx, userId);
+  if (conversation.kind === 'direct') {
     for (const o of others) {
       const places = await personPlacesFor(ctx, o, userId);
       if (places.length) theirs.push({ owner: o.display_name, places });

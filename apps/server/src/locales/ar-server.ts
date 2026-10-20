@@ -1688,4 +1688,5 @@ export const arServer: Catalog = {
   Action: 'إجراء',
   '{name} isn’t on Caime yet: a call reaches them once they join with their address.':
     'لا حساب لـ {name} على Caime بعد: تصل المكالمة بعد الانضمام بالعنوان نفسه.',
+  'Free for people. Organizations pay for their team.': 'مجاني للأفراد. والمؤسسات تدفع لفريقها.',
 };

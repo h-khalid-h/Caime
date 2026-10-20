@@ -310,7 +310,7 @@ test.describe
       // Once away from the page, it isn't shown again: only that it's on, under Connected.
       await page.goto('/settings/apps');
       await expect(page.getByTestId('calendar-feed-url')).toHaveCount(0);
-      await expect(visible(page, /^On since .* · last read /)).toBeVisible();
+      await expect(visible(page, /^Turned on .* · last read /)).toBeVisible();
       await page.screenshot({ path: 'e2e/screenshots/desktop-apps-connected.png' });
       await page.getByTestId('connected-Calendar feed').click();
       await expect(page.getByTestId('calendar-feed-on')).toBeVisible();

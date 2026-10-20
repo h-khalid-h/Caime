@@ -154,7 +154,7 @@ function BuiltinRow({ app, onPress }: { app: ConnectedAppView; onPress: () => vo
         />
       }
       title={app.name}
-      subtitle={tr('On since {when} · {text}', {
+      subtitle={tr('Turned on {when} · {text}', {
         when: formatWhen(app.createdAt, now, timeZone, locale),
         text: bridge
           ? last

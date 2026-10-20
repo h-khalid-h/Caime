@@ -137,9 +137,7 @@ export default function Security() {
           <View key={s.id} style={{ borderTopWidth: i ? 1 : 0, borderTopColor: t.c.border }}>
             <ListRow
               icon={deviceIcon(s)}
-              title={
-                s.deviceName ?? s.platform ?? (s.kind === 'native' ? tr('Phone') : tr('Browser'))
-              }
+              title={s.deviceName ?? (s.kind === 'native' ? tr('Phone') : tr('Browser'))}
               subtitle={
                 s.current
                   ? tr('This device')

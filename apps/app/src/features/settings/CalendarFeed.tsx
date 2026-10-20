@@ -95,7 +95,7 @@ export function CalendarFeed() {
     <View style={{ padding: 16, gap: 12 }} testID="calendar-feed">
       <Text variant="body" color="textSecondary">
         {tr(
-          'See your actions’ due dates and the meetings you agree to in Google Calendar, Outlook or Apple Calendar. They read a private address; nothing changes in Caime from there.',
+          'See your actions’ due dates and the meetings you agree to in Apple Calendar or any calendar app. It reads a private address; nothing changes in Caime from there.',
         )}
       </Text>
       <Text variant="caption" color="textSecondary" testID="calendar-feed-accounts">
@@ -123,7 +123,7 @@ export function CalendarFeed() {
         </View>
       ) : feed?.enabled ? (
         <Text variant="caption" color="textSecondary" testID="calendar-feed-on">
-          {tr('On since {when} · {text}', {
+          {tr('Turned on {when} · {text}', {
             when: formatWhen(feed.createdAt ?? '', now, timeZone, locale),
             text: feed.lastReadAt
               ? tr('last read {when}', { when: formatWhen(feed.lastReadAt, now, timeZone, locale) })

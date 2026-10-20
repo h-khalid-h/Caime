@@ -10,6 +10,7 @@ import { uuidv7 } from '@caime/core';
 import type { FastifyReply, FastifyRequest } from 'fastify';
 import type { AppContext } from '../context';
 import { hashToken, newToken } from './crypto';
+import { deviceNameOf } from './device-names';
 import { setSessionCookie } from './session-cookie';
 
 /** The bus event the realtime hub acts on; never delivered to a device. */
@@ -86,7 +87,8 @@ export async function createSession(
       user_id: userId,
       token_hash: hashToken(token),
       kind: client,
-      device_name: deviceName?.slice(0, 80) ?? null,
+      // A phone says what it is; a browser is named by itself ("Chrome · Windows").
+      device_name: deviceName?.slice(0, 80) ?? deviceNameOf(userAgent),
       platform: platformFrom(userAgent),
       ip,
       user_agent: userAgent?.slice(0, 300) ?? null,

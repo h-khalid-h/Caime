@@ -34,16 +34,19 @@ export function PersonInsights() {
   const locked = q.error instanceof ApiError && q.error.code === 'plan_limit';
   return (
     <>
-      <Segmented
-        label={tr('How far back')}
-        value={String(days)}
-        onChange={(v) => setDays(Number(v) as Days)}
-        options={[
-          { value: '30', label: trn(30, '{n} day', '{n} days') },
-          { value: '90', label: tr('A quarter') },
-          { value: '365', label: tr('A year') },
-        ]}
-      />
+      {/* How far back means nothing until there's something to look back over. */}
+      {locked ? null : (
+        <Segmented
+          label={tr('How far back')}
+          value={String(days)}
+          onChange={(v) => setDays(Number(v) as Days)}
+          options={[
+            { value: '30', label: trn(30, '{n} day', '{n} days') },
+            { value: '90', label: tr('A quarter') },
+            { value: '365', label: tr('A year') },
+          ]}
+        />
+      )}
       {q.isPending ? (
         <SkeletonRows count={6} />
       ) : locked ? (

@@ -45,6 +45,7 @@ import {
   recoverySalt,
   verifyPassword,
 } from '../lib/crypto';
+import { deviceNameOf } from '../lib/device-names';
 import { offerTeamByDomain } from '../lib/domain-join';
 import { sendEmailCode, spendEmailCode } from '../lib/email-codes';
 import {
@@ -338,7 +339,7 @@ export async function authRoutes(app: FastifyInstance, ctx: AppContext) {
     const auth = requireAuth(req);
     const rows = await ctx.db
       .selectFrom('sessions')
-      .select(['id', 'kind', 'device_name', 'platform', 'created_at', 'last_seen_at'])
+      .select(['id', 'kind', 'device_name', 'user_agent', 'platform', 'created_at', 'last_seen_at'])
       .where('user_id', '=', auth.userId)
       .where('revoked_at', 'is', null)
       .where('expires_at', '>', ctx.now())
@@ -348,7 +349,8 @@ export async function authRoutes(app: FastifyInstance, ctx: AppContext) {
       sessions: rows.map((s) => ({
         id: s.id,
         kind: s.kind,
-        deviceName: s.device_name,
+        // A browser signed in before it was named so is named by what it said it was.
+        deviceName: s.device_name ?? deviceNameOf(s.user_agent),
         platform: s.platform,
         createdAt: s.created_at.toISOString(),
         lastSeenAt: s.last_seen_at.toISOString(),

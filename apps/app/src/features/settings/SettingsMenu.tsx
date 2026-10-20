@@ -133,7 +133,7 @@ const ITEMS: Array<{
     icon: LayoutGrid,
     // One place for what's connected and what can be (R74): the calendar is an app among them.
     title: msg('Apps'),
-    subtitle: msg('Your calendar and the apps that act for you; discover more'),
+    subtitle: msg('Your accounts, the calendar feed and the apps that act for you'),
   },
   {
     href: '/settings/developer',

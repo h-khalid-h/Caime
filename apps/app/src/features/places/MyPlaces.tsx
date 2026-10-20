@@ -21,7 +21,7 @@ export function MyPlaces() {
     <SettingsPage title={tr('Your places')}>
       <Group
         footer={tr(
-          'Each is shown to whom you choose, nobody until you do. When you pick one for a meeting or a delivery, its words go with that card, and the card keeps them if the place changes.',
+          'Each is shown to whom you choose, nobody until you do. When you pick one for a meeting, a delivery or something you offer, its words go with that card, and the card keeps them if the place changes.',
         )}
       >
         {q.data ? (

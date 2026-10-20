@@ -5299,6 +5299,12 @@ graph) and the number that will show it; one that sharpens none is hygiene and s
   journeys, safety, reliability, performance, intelligence, mail and calendar, chat, integrations,
   business and code integrity; the matrix against WhatsApp, Signal, Slack, Calendly and Workspace;
   an age-assurance design; the integration framework mapped to the code; plan M16 (A–H).
+- 2026-10-20 — Settings, every page on a desktop and a phone: `/settings` opens You, never a
+  page that isn't there; a browser's session is named by its browser ("Chrome · macOS") as a
+  passkey is; in a customer's conversation the team is offered the organization's places for a
+  card's Where, never a team member's own; template rules read in the reader's language; Personal
+  shows no period picker over insights it can't show; the calendar feed, places, region, About
+  and Apps say what they do in truer words ("Turned on", not "On since").
 - 2026-10-19 — M16 F6: Where is said on every meeting, booking and item (on Caime, a place, or
   somewhere else); a booking of a person's time held on Caime is joined as a meeting; Google,
   Outlook and the feed name whom it's with, never doubled, with the join link as its place; the
