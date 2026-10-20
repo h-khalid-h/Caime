@@ -6,8 +6,9 @@
  * the rules first (core `chatIntent`: a greeting, "how can you help me", thanks, and the four
  * questions about one's own open things, which Cai and every friend answer from three queries,
  * no model, no cost; core `chatAbout`: the same about one person, what the two agreed and
- * whether they paid, answered from the records with them, M16 G11) and answers in the language
- * it was written in. Anything else goes to the
+ * whether they paid, answered from the records with them, M16 G11; core `chatSave`: something
+ * to keep, saved to their actions on the spot since they asked, M16 G13) and answers in the
+ * language it was written in. Anything else goes to the
  * model only for an adult with AI assist on and an assist left today: Cai as Caime's assistant,
  * a friend in its own character, each reading that conversation and, as its only other context,
  * what's open for them that's its to know (never a private conversation's). Without the model a
@@ -23,6 +24,8 @@ import {
   type ChatIntent,
   chatAbout,
   chatIntent,
+  chatSave,
+  firstFutureWhen,
   firstName,
   formatAmount,
   formatDayHeading,
@@ -31,27 +34,32 @@ import {
   greetsWithPeace,
   isCharacterHandle,
   joinNames,
+  keptTitle,
   kitHeadline,
   kitStateLabel,
   LARGE_GROUP,
   msg,
   type PaysShare,
   paySides,
+  previewText,
   relationshipWords,
+  type SaveAsk,
   SYSTEM_ACCOUNTS,
   type SystemAccount,
   safeLocale,
   systemAccountOf,
   tr,
   trn,
+  truncate,
   writtenIn,
   zonedParts,
 } from '@caime/core';
 import type { Gender } from '@caime/core/i18n';
 import { sql } from 'kysely';
 import type { AppContext } from '../context';
+import { createTask } from './actions';
 import { todayForAgent } from './agent';
-import { type FriendPersona, languageName } from './ai';
+import { type CaiAnswer, type CaiKeep, type FriendPersona, languageName } from './ai';
 import { runAi } from './ai-run';
 import { ensureDirectConversation } from './conversations';
 import { AppError } from './errors';
@@ -340,7 +348,7 @@ async function systemReply(ctx: AppContext, payload: Record<string, unknown>): P
   // Only the latest of theirs, and only while nothing has answered it: a newer one has its job.
   const latest = await ctx.db
     .selectFrom('messages')
-    .select(['seq', 'sender_id', 'kind', 'body'])
+    .select(['id', 'seq', 'sender_id', 'kind', 'body'])
     .where('conversation_id', '=', conversationId)
     .where('deleted_at', 'is', null)
     .where('kind', '<>', 'system')
@@ -369,10 +377,13 @@ async function systemReply(ctx: AppContext, payload: Record<string, unknown>): P
       try {
         const me = await person(ctx, personId);
         const said: Said = {
+          id: latest.id,
+          seq: Number(latest.seq),
           kind: latest.kind,
           text,
           intent: text ? chatIntent(text) : null,
           about: text ? chatAbout(text) : null,
+          save: text ? chatSave(text) : null,
         };
         if (isCharacterHandle(account.handle))
           await friendSays(ctx, account, account.handle, conversationId, me, said, voice);
@@ -401,11 +412,15 @@ interface Voice {
 
 /** The message being answered: its kind, its words and what the rules read in them. */
 interface Said {
+  id: string;
+  seq: number;
   kind: string;
   text: string;
   intent: ChatIntent | null;
   /** A question about one person (G11), with the name or the relationship as typed. */
   about: About | null;
+  /** Something to keep (G13): a reminder or an action, and its words. */
+  save: SaveAsk | null;
 }
 
 type About = { intent: AboutIntent; name: string };
@@ -433,6 +448,7 @@ async function friendSays(
   if (said.kind === 'sticker') return sticker(ctx, account, conversationId, friend);
   if (said.about) return say(await aboutAnswer(ctx, me, said.about));
   if (isOwnQuestion(said.intent)) return say(await ruleAnswer(ctx, me, said.intent));
+  if (said.save) return keepAsked(ctx, account, conversationId, me, said, null);
   switch (said.intent) {
     case 'greeting':
       await sticker(ctx, account, conversationId, friend);
@@ -488,6 +504,7 @@ async function caiSays(
   const say = (line: string) => postAs(ctx, account.id, conversationId, line);
   if (said.about) return say(await aboutAnswer(ctx, me, said.about));
   if (isOwnQuestion(said.intent)) return say(await ruleAnswer(ctx, me, said.intent));
+  if (said.save) return keepAsked(ctx, account, conversationId, me, said, voice);
   switch (said.intent) {
     case 'greeting':
       return say(
@@ -513,24 +530,174 @@ async function caiSays(
   const answer = await modelSays(
     ctx,
     me,
-    async () => {
-      const [transcript, open] = await Promise.all([
-        transcriptOf(ctx, conversationId, me.id, 'Cai'),
-        openFor(ctx, me, { forModel: true }),
-      ]);
-      const ai = ctx.ai!;
-      return runAi(ctx, 'cai', me.id, () =>
-        ai.caiChat({
-          transcript,
-          context: contextLines(open),
-          ...spoken(voice),
-          today: todayForAgent(ctx.now(), me.time_zone),
-        }),
-      );
-    },
+    () => caiAnswer(ctx, conversationId, me, voice),
     tr(HELP),
   );
-  return say(answer);
+  if (typeof answer === 'string') return say(answer);
+  if (answer.reply) await say(answer.reply);
+  // Asked in words the rules don't read ("could you jot that down for Monday?"): the model read
+  // the ask, and it's kept as one the rules read would be.
+  if (answer.keep) await keepIt(ctx, account, conversationId, me, answer.keep, said.id);
+}
+
+/** Cai's model on this conversation and what's open for them (R67), with what to keep (G13). */
+async function caiAnswer(ctx: AppContext, conversationId: string, me: Person, voice: Voice) {
+  const [transcript, open] = await Promise.all([
+    transcriptOf(ctx, conversationId, me.id, 'Cai'),
+    openFor(ctx, me, { forModel: true }),
+  ]);
+  const ai = ctx.ai!;
+  return runAi(ctx, 'cai', me.id, () =>
+    ai.caiChat({
+      transcript,
+      context: contextLines(open),
+      ...spoken(voice),
+      today: todayForAgent(ctx.now(), me.time_zone),
+    }),
+  );
+}
+
+/**
+ * Something they asked to keep (M16 G13), kept as one of their actions on the spot: they asked,
+ * so it's theirs, never a suggestion to accept (R12), and the line that says so carries an Undo.
+ * Its words are the ask's own ("remind me to call Sam tomorrow" keeps "Call Sam", tomorrow at
+ * nine); when they only point back ("save it as a task"), Cai's model reads what "it" is, for
+ * whoever may use it, else it's their own words before the ask.
+ */
+async function keepAsked(
+  ctx: AppContext,
+  account: SystemAccount,
+  conversationId: string,
+  me: Person,
+  said: Said,
+  voice: Voice | null,
+) {
+  const ask = said.save!;
+  const opts = { now: ctx.now(), timeZone: me.time_zone, locale: safeLocale(me.locale) };
+  const when = firstFutureWhen(ask.words ?? said.text, opts) ?? null;
+  const title = ask.words
+    ? keptTitle(ask.words, when && ask.words.includes(when.text) ? when.text : null, ask.lang)
+    : '';
+  if (title)
+    return keepIt(
+      ctx,
+      account,
+      conversationId,
+      me,
+      {
+        title,
+        details: null,
+        when: when?.text ?? null,
+        remind: ask.remind,
+      },
+      said.id,
+      when,
+    );
+  // "Save it": Cai's model says what "it" is, as it would for an ask it read itself.
+  if (voice && mayAskModel(ctx, me)) {
+    const answer = await modelSays(ctx, me, () => caiAnswer(ctx, conversationId, me, voice), '');
+    if (typeof answer !== 'string' && answer.keep)
+      return keepIt(
+        ctx,
+        account,
+        conversationId,
+        me,
+        { ...answer.keep, remind: answer.keep.remind || ask.remind },
+        said.id,
+        when,
+      );
+  }
+  // Else what they wrote before the ask is what's kept, its first line the title.
+  const before = await ctx.db
+    .selectFrom('messages')
+    .select(['id', 'body'])
+    .where('conversation_id', '=', conversationId)
+    .where('sender_id', '=', me.id)
+    .where('kind', '=', 'text')
+    .where('seq', '<', String(said.seq))
+    .where(readableBy(me.id, ctx.now()))
+    .orderBy('seq', 'desc')
+    .limit(1)
+    .executeTakeFirst();
+  const words = before?.body?.trim() ?? '';
+  if (!words || chatSave(words))
+    return postAs(
+      ctx,
+      account.id,
+      conversationId,
+      tr(
+        'What should I keep? Write it after “Remind me to” or “Add an action:”, and I’ll save it.',
+      ),
+    );
+  const head = previewText(words, 100);
+  // A time said in the ask wins; else one said in what it points at ("…due next Friday").
+  const due = when ?? firstFutureWhen(words, opts) ?? null;
+  return keepIt(
+    ctx,
+    account,
+    conversationId,
+    me,
+    {
+      title: head,
+      details: head.length < words.length ? truncate(words, 2000) : null,
+      when: due?.text ?? null,
+      remind: ask.remind,
+    },
+    before!.id,
+    due,
+  );
+}
+
+/** One of their actions made from what they asked to keep, and Cai's line saying so, with Undo. */
+async function keepIt(
+  ctx: AppContext,
+  account: SystemAccount,
+  conversationId: string,
+  me: Person,
+  keep: CaiKeep,
+  messageId: string,
+  read?: ReturnType<typeof firstFutureWhen> | null,
+) {
+  const locale = safeLocale(me.locale);
+  const when =
+    read ??
+    (keep.when
+      ? (firstFutureWhen(keep.when, { now: ctx.now(), timeZone: me.time_zone, locale }) ?? null)
+      : null);
+  const title = truncate(keep.title, 200);
+  const task = await createTask(ctx.db, ctx, {
+    ownerId: me.id,
+    assigneeId: me.id,
+    title,
+    notes: keep.details,
+    dueAt: when?.at ?? null,
+    dueHasTime: Boolean(when?.time),
+    remindAt: keep.remind && when ? when.at : null,
+    conversationId,
+    messageId,
+  });
+  await ctx.bus.publish([me.id], { type: 'task.created', data: { id: task.id } });
+  // When it's for, as a label after it ("· Tomorrow 09:00"); a reminder says the hour it rings.
+  const at = when
+    ? formatDue(when.at, ctx.now(), me.time_zone, locale, Boolean(when.time) || keep.remind)
+    : null;
+  const saved =
+    keep.remind && at
+      ? tr('I’ll remind you: “{title}”', { title })
+      : tr('Saved to your actions: “{title}”', { title });
+  const line = [
+    at ? `${saved} · ${at}` : saved,
+    keep.remind && !at ? tr('Tell me when, and I’ll remind you then.') : '',
+  ]
+    .filter(Boolean)
+    .join('\n');
+  return postAs(
+    ctx,
+    account.id,
+    conversationId,
+    { kind: 'text', body: line, payload: { kept: { taskId: task.id } } },
+    { serverPayload: true },
+  );
 }
 
 /** What the model is told of how to speak: the language, their Arabic, where they live. */
@@ -545,19 +712,24 @@ const spoken = (voice: Voice) => ({
  * A model's answer within the person's allowance, cut to a message's length; out of assists,
  * busy or declined, the refusal in its own words, then `otherwise`: what the rules still answer.
  */
-async function modelSays(
+async function modelSays<T extends string | CaiAnswer>(
   ctx: AppContext,
   me: Person,
-  ask: () => Promise<string>,
+  ask: () => Promise<T>,
   otherwise: string,
-): Promise<string> {
+): Promise<T | string> {
   try {
     ctx.limiter.hit(`ai:${me.id}`, ctx.config.isTest ? 1000 : 60, 3_600_000);
     await assertAiAllowance(ctx, me.id);
-    return (await ask()).slice(0, 4000);
+    const answer: string | CaiAnswer = await ask();
+    return (
+      typeof answer === 'string'
+        ? answer.slice(0, 4000)
+        : { ...answer, reply: answer.reply.slice(0, 4000) }
+    ) as T;
   } catch (err) {
     if (!(err instanceof AppError)) throw err;
-    return `${err.message} ${otherwise}`;
+    return `${err.message} ${otherwise}`.trim();
   }
 }
 

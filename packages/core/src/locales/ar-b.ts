@@ -3339,4 +3339,6 @@ export const arB: Catalog = {
   'Keep this conversation': 'الاحتفاظ بهذه المحادثة',
   'Make it your own Caime account, free: this conversation and what was said stay yours.':
     'حساب Caime خاص بك، مجانًا: تبقى لك هذه المحادثة وما قيل فيها.',
+  'Taken out of your actions': 'أُزيل من إجراءاتك',
+  'Open Actions': 'فتح الإجراءات',
 };

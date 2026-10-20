@@ -1709,4 +1709,9 @@ export const arServer: Catalog = {
     'لم يُفتح بعد الرابط الذي أرسله Caime إلى {name}. عند انضمام {name} منه، ترنّ المكالمة هنا.',
   'It’s a call on Caime. At its time, join it from your own link: {link}':
     'إنها مكالمة على Caime. في موعدها، الانضمام إليها من رابطك الخاص: {link}',
+  'I’ll remind you: “{title}”': 'سأذكّرك: «{title}»',
+  'Saved to your actions: “{title}”': 'تم الحفظ في إجراءاتك: «{title}»',
+  'Tell me when, and I’ll remind you then.': 'قل لي متى، وسأذكّرك حينها.',
+  'What should I keep? Write it after “Remind me to” or “Add an action:”, and I’ll save it.':
+    'ماذا أحفظ؟ اكتبه بعد «ذكّرني أن» أو «أضف مهمة:»، وسأحفظه.',
 };

@@ -2278,6 +2278,28 @@ with its reason, so it isn't proposed again without new facts.
   link to join without an account is F6c); Cai taking notes in a meeting (R82 phase 1 under R85)
   is F7, now that the speech provider is live.
 
+- **R110 (2026-10-20) Cai does what it's asked, through the paths the app uses.** The owner asked
+  Cai to "Save it as a task" and was told to open Actions and make one; then: "not only actions,
+  Cai shall be capable of handling any things". No assistant should answer a plain ask with
+  directions, and Caime's own (R67, R68) had the means at hand. *Decided:* (1) *An explicit ask is
+  the person's decision, not an inference.* R12 stands for what's inferred; what someone asks Cai
+  or a friend to keep is kept on the spot, in their words, and said in a line that carries Undo.
+  Nothing is kept that wasn't asked for: an ask is a whole message from its first word, read by
+  the rules in the four languages and measured by a golden set whose near-misses are there on
+  purpose ("remind me what we agreed", "I added it to my tasks", "save the date", "احفظ رقمي").
+  (2) *"It" is read, never guessed*: when the words only point back ("save it"), Cai's model says
+  what it was, for whoever may use it, else it's their own words before the ask, with a time
+  either said. (3) *The model reads what the rules don't*, and its answer carries what to keep
+  apart from its reply; Caime keeps it as the rules would, and the reply never claims what Caime
+  didn't do. (4) *Everything else Cai is asked goes the same way, in phases*: what touches only
+  the person's own things (an action, a reminder) is done; what reaches someone else (a message,
+  a call, a meeting proposed, a payment asked for) is prepared, shown as what will go and to whom,
+  and done on their tap, never sent by Cai (R68's follow-up rule); finding something is search's
+  own answer (R66), cited. *Built* (M16 G13): keeping actions and reminders. *Next* (G14): a message
+  drafted to one of their people, a call started, a meeting proposed, something found. *Later*:
+  what changes settings or money, each with its own confirmation. *Cost*: the rules ask nothing; "it"
+  without words is one light-model call for someone with AI assist, the call Cai makes to answer
+  anything; nothing on the first download.
 - **R108 addendum (2026-10-20, M16 F6c).** A call held on Caime is joined by whoever it's with, an
   account or not: someone reached by mail (a page's booker, whoever a meeting held here is mailed
   to in a one-to-one) has their own link in the mail and as their calendar event's place, which

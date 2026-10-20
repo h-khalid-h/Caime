@@ -30,6 +30,8 @@ const PANDA = friend('panda');
 const LUMI = friend('lumi');
 const ZUZU = friend('zuzu');
 
+/** Cai's model answers in a structure (M16 G13): its reply, and what it was asked to keep. */
+const caiSays = (reply: string, keep: unknown = null) => JSON.stringify({ reply, keep });
 const open = (c: Client, userId: string) => c.post('/v1/conversations', { kind: 'direct', userId });
 const send = (c: Client, conversationId: string, body: string) =>
   c.post(`/v1/conversations/${conversationId}/messages`, { clientId: uuidv4(), body });
@@ -162,7 +164,7 @@ describe('Cai (R67)', () => {
     expect(said.at(-1).body).toMatch(/^I can answer that with AI assist on/);
     expect(requests).toHaveLength(0);
     await hassan.patch('/v1/me', { aiEnabled: true });
-    replies.push('To love, laughter and a long life together!');
+    replies.push(caiSays('To love, laughter and a long life together!'));
     await send(hassan, cai, 'Write a short toast for my sister’s wedding');
     said = await answered(hassan, cai);
     expect(said.at(-1)).toMatchObject({
@@ -185,7 +187,7 @@ describe('Cai (R67)', () => {
     const pin = (await send(hassan, cai, 'My bank PIN is 4321')).message;
     await answered(hassan, cai);
     await hassan.del(`/v1/messages/${pin.id}?forEveryone=false`);
-    replies.push('Noted.');
+    replies.push(caiSays('Noted.'));
     const before = requests.length;
     await send(hassan, cai, 'What did I tell you a moment ago?');
     await answered(hassan, cai);
@@ -413,7 +415,7 @@ describe('their Arabic (R72)', () => {
     const mona = await signup(t, { displayName: 'Mona Fawzy', locale: 'ar-EG' });
     await mona.patch('/v1/me', { aiEnabled: true });
     const chat = (await open(mona, CAI_ID)).conversation.id;
-    replies.push('أكيد! ممكن تروحي الأزهر بارك.');
+    replies.push(caiSays('أكيد! ممكن تروحي الأزهر بارك.'));
     await send(mona, chat, 'اقترح عليّ مكان أخرج فيه النهارده');
     expect((await answered(mona, chat)).at(-1).body).toBe('أكيد! ممكن تروحي الأزهر بارك.');
     let system = JSON.stringify(requests.at(-1).system);
@@ -426,7 +428,7 @@ describe('their Arabic (R72)', () => {
     );
     // Written in another variety, that's what it mirrors; chosen, it's that one.
     await mona.patch('/v1/me', { preferences: { arabicVariety: 'gulf' } });
-    replies.push('أبشر!');
+    replies.push(caiSays('أبشر!'));
     await send(mona, chat, 'شو رأيك بمطعم؟');
     await answered(mona, chat);
     system = JSON.stringify(requests.at(-1).system);

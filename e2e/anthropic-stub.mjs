@@ -64,11 +64,26 @@ function answer(body) {
     return reply(`${name} here! About “${asked}”, let’s see.`);
   }
   if (system.includes('You are Cai, the assistant inside Caime')) {
-    // Cai (R67): it says what it was asked and how many open things it was told of.
+    // Cai (R67): it says what it was asked and how many open things it was told of. Asked to
+    // keep what was said before ("save it as a task", M16 G13), it keeps the person's words
+    // before the ask, their first sentence the title.
     calls.push('cai');
-    const asked = [...content.matchAll(/\] Person: (.*)$/gm)].at(-1)?.[1]?.trim() ?? '';
+    const said = [...content.matchAll(/\] Person: (.*)$/gm)].map((m) => m[1].trim());
+    const asked = said.at(-1) ?? '';
+    if (/\b(?:save|keep)\b.*\b(?:it|this|that)\b/i.test(asked) && said.length > 1) {
+      const before = said.at(-2);
+      const title = before.split(/[.!?]/)[0].slice(0, 80);
+      return reply(
+        JSON.stringify({ reply: '', keep: { title, details: before, when: null, remind: false } }),
+      );
+    }
     const open = (between(content, '<context>', '</context>').match(/^• /gm) ?? []).length;
-    return reply(`About “${asked}”: here’s an idea. (${open} open things in mind.)`);
+    return reply(
+      JSON.stringify({
+        reply: `About “${asked}”: here’s an idea. (${open} open things in mind.)`,
+        keep: null,
+      }),
+    );
   }
   if (system.includes('question about a conversation')) {
     // A question about the conversation (R67): it names the question and what it read.

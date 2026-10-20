@@ -2478,4 +2478,6 @@ export const turkishB: Catalog = {
   'Keep this conversation': 'Bu konuşmayı saklayın',
   'Make it your own Caime account, free: this conversation and what was said stay yours.':
     'Kendi Caime hesabınız yapın, ücretsiz: bu konuşma ve konuşulanlar sizde kalır.',
+  'Taken out of your actions': 'Eylemlerinizden çıkarıldı',
+  'Open Actions': 'Eylemleri aç',
 };

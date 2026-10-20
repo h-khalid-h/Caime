@@ -280,4 +280,9 @@ export const egyptianVoice: Catalog = {
   'No card asks {who} to pay you.': 'مفيش كارت دفع مطلوب من {who} ليك.',
   'Or ask about one of your people, by name or as you know them: what you’re waiting for from them, what they asked of you, what you agreed and whether they paid.':
     'أو اسأل عن حد من معارفك، بالاسم أو بالصلة: اللي بتستناه، واللي مطلوب منك، واللي اتفقتوا عليه، والفلوس.',
+  'I’ll remind you: “{title}”': 'هفكّرك: «{title}»',
+  'Saved to your actions: “{title}”': 'اتحفظ في إجراءاتك: «{title}»',
+  'Tell me when, and I’ll remind you then.': 'قولّي إمتى وهفكّرك ساعتها.',
+  'What should I keep? Write it after “Remind me to” or “Add an action:”, and I’ll save it.':
+    'أحفظ إيه؟ اكتبه بعد «فكّرني» أو «ضيف مهمة:»، وأنا أحفظه.',
 };

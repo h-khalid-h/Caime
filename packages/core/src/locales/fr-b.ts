@@ -2565,4 +2565,6 @@ export const frB: Catalog = {
   'Keep this conversation': 'Garder cette conversation',
   'Make it your own Caime account, free: this conversation and what was said stay yours.':
     'Faites-en votre propre compte Caime, gratuit : cette conversation et ce qui s’y est dit restent à vous.',
+  'Taken out of your actions': 'Retiré de vos actions',
+  'Open Actions': 'Ouvrir les actions',
 };

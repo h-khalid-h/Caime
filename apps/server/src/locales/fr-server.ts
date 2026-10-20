@@ -1728,4 +1728,9 @@ export const frServer: Catalog = {
     '{name} n’a pas encore ouvert le lien envoyé par Caime. Quand {name} le rejoint depuis ce lien, l’appel sonne ici.',
   'It’s a call on Caime. At its time, join it from your own link: {link}':
     'C’est un appel sur Caime. À son heure, rejoignez-le depuis votre propre lien : {link}',
+  'I’ll remind you: “{title}”': 'Je vous le rappellerai : « {title} »',
+  'Saved to your actions: “{title}”': 'Ajouté à vos actions : « {title} »',
+  'Tell me when, and I’ll remind you then.': 'Dites-moi quand, et je vous le rappellerai.',
+  'What should I keep? Write it after “Remind me to” or “Add an action:”, and I’ll save it.':
+    'Que dois-je garder ? Écrivez-le après « Rappelle-moi de » ou « Ajoute une tâche : », et je l’enregistre.',
 };

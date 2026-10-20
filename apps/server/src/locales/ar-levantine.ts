@@ -280,4 +280,9 @@ export const levantineVoice: Catalog = {
   'No card asks {who} to pay you.': 'ما في بطاقة دفع مطلوبة من {who} إلك.',
   'Or ask about one of your people, by name or as you know them: what you’re waiting for from them, what they asked of you, what you agreed and whether they paid.':
     'أو اسأل عن حدا من معارفك، بالاسم أو بالصلة: شو عم تستنى، وشو مطلوب منك، وشو اتفقتو عليه، والمدفوعات.',
+  'I’ll remind you: “{title}”': 'رح ذكّرك: «{title}»',
+  'Saved to your actions: “{title}”': 'انحفظ بإجراءاتك: «{title}»',
+  'Tell me when, and I’ll remind you then.': 'قلّي إيمتى ورح ذكّرك وقتها.',
+  'What should I keep? Write it after “Remind me to” or “Add an action:”, and I’ll save it.':
+    'شو بدك احفظ؟ اكتبه بعد «ذكّرني» أو «ضيف مهمة:»، وبحفظه.',
 };

@@ -1415,7 +1415,14 @@ A sphere is said as how you know someone, never "sphere".
   (`lib/people-named.ts`, never through an organization's conversation) or, failing a name, the
   relationship core `aboutRelationship` reads ("my dentist", "مديري"), never the model: a new
   question about someone joins `ABOUT` with its golden lines in every language, M16 G11) and
-  answered in the language it was written in (`writtenIn`, else the account's, through `inLanguage`); the rest goes
+  answered in the language it was written in (`writtenIn`, else the account's, through `inLanguage`).
+  What they're asked to keep (M16 G13, R110) is core `chatSave` (an ask is a whole message, from
+  its first word; `keptTitle` gives its title) and is kept on the spot by `keepAsked` through
+  `createTask`, in a line whose `payload.kept` draws Undo and Open Actions (`KeptAction`); "it" is
+  the `keep` of Cai's model answer (`caiChat` answers `{ reply, keep }`), else the person's words
+  before the ask. Anything new Cai is asked to do follows R110: what touches only the person's
+  own things is done and said with its Undo, what reaches anyone else is prepared and done on
+  their tap, never by Cai; the rest goes
   through `runAi('cai')`, or for a friend `runAi('friend')` in its own character (R71: `FRIENDS`
   in `lib/system-accounts.ts` holds its lines, tips, sticker, persona for the model and `reads`,
   the parts of what's open that are its to know), for adults with assist on, within the

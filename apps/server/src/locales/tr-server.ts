@@ -1653,4 +1653,9 @@ export const turkishServer: Catalog = {
     '{name}, Caime’in gönderdiği bağlantıyı henüz açmadı. {name} oradan katıldığında arama burada çalar.',
   'It’s a call on Caime. At its time, join it from your own link: {link}':
     'Bu bir Caime görüşmesi. Saatinde kendi bağlantınızdan katılın: {link}',
+  'I’ll remind you: “{title}”': 'Size hatırlatacağım: “{title}”',
+  'Saved to your actions: “{title}”': 'Eylemlerinize kaydedildi: “{title}”',
+  'Tell me when, and I’ll remind you then.': 'Ne zaman olduğunu söyleyin, o zaman hatırlatayım.',
+  'What should I keep? Write it after “Remind me to” or “Add an action:”, and I’ll save it.':
+    'Neyi kaydedeyim? “Yeni görev:” diye başlayın ya da sonuna “hatırlat” yazın, kaydedeyim.',
 };

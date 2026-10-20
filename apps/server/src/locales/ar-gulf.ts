@@ -280,4 +280,9 @@ export const gulfVoice: Catalog = {
   'No card asks {who} to pay you.': 'ما فيه بطاقة دفع مطلوبة من {who} لك.',
   'Or ask about one of your people, by name or as you know them: what you’re waiting for from them, what they asked of you, what you agreed and whether they paid.':
     'أو اسأل عن أحد من معارفك، بالاسم أو بالصلة: وش تنتظر، ووش المطلوب منك، ووش اتفقتوا عليه، والمدفوعات.',
+  'I’ll remind you: “{title}”': 'بذكّرك: «{title}»',
+  'Saved to your actions: “{title}”': 'انحفظ في إجراءاتك: «{title}»',
+  'Tell me when, and I’ll remind you then.': 'قل لي متى وبذكّرك وقتها.',
+  'What should I keep? Write it after “Remind me to” or “Add an action:”, and I’ll save it.':
+    'وش أحفظ؟ اكتبه بعد «ذكّرني» أو «أضف مهمة:»، وأحفظه لك.',
 };

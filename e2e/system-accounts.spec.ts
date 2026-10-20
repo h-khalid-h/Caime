@@ -60,6 +60,26 @@ test('Cai and the Caime Friends answer like anyone you write to', async ({ brows
   await expect(visible(page, /About “Plan a dinner for four”: here’s an idea\./)).toBeVisible();
   await page.screenshot({ path: 'e2e/screenshots/phone-cai.png', animations: 'disabled' });
 
+  // Asked to keep something, Cai keeps it (M16 G13): by the rules, with Undo under the line.
+  await input.fill('Remind me to call Sam tomorrow at 9');
+  await page.getByTestId('composer-send').filter({ visible: true }).click();
+  await expect(visible(page, /^I’ll remind you: “Call Sam” · Tomorrow/)).toBeVisible();
+  await page.getByTestId('kept-undo').filter({ visible: true }).click();
+  await expect(visible(page, 'Taken out of your actions')).toBeVisible();
+  // "Save it as a task": what "it" was, as Cai's model reads it, then the action in Actions.
+  await input.fill('The venue deposit is due next Friday. Ask Leila first.');
+  await page.getByTestId('composer-send').filter({ visible: true }).click();
+  await expect(visible(page, /About “The venue deposit is due next Friday/)).toBeVisible();
+  await input.fill('Save it as a task');
+  await page.getByTestId('composer-send').filter({ visible: true }).click();
+  await expect(
+    visible(page, 'Saved to your actions: “The venue deposit is due next Friday”'),
+  ).toBeVisible();
+  await page.getByTestId('kept-open').filter({ visible: true }).click();
+  await page.waitForURL(/\/actions/);
+  await expect(visible(page, 'The venue deposit is due next Friday')).toBeVisible();
+  await page.goBack();
+
   // Its page, by its handle like anyone's.
   await page.goto('/@cai');
   await expect(page.getByTestId('system-profile').filter({ visible: true })).toContainText(

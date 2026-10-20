@@ -3656,6 +3656,34 @@ graph) and the number that will show it; one that sharpens none is hygiene and s
       read not sent whatever its device said, a browser's MP4 of sound alone heard and kept at
       1.98 s; three of its cases fail on the old code), `video-details.test.ts`,
       `files.test.ts`, and the full gate.
+- [x] G13. Cai keeps what it's asked to (2026-10-20, R110; the owner's "Save it as a task", which
+      Cai answered with directions to Actions; advantage 2, the assistant that keeps going, R68.
+      The number: asks to keep something that end with it kept, every one of the golden set's in
+      four languages and none it holds as a near-miss, where Cai kept none). Core `chatSave` reads
+      an ask to keep something by the rules in the four interface languages, from its first word
+      once what only makes it polite is off (a reminder or an action, its words, or none when they
+      point back), and `keptTitle` cuts its time and joiners out ("remind me tomorrow at 9 to call
+      Sam" keeps "Call Sam", tomorrow at nine on their clock). Cai and every friend keep it on the
+      spot through `createTask` (`keepAsked`, `keepIt` in `lib/system-accounts.ts`: they asked,
+      so it's theirs, never a suggestion), with a line that says what and when ("I’ll remind you:
+      “Call Sam” · Tomorrow 9:00 AM") and carries the action (`payload.kept`) for Undo and Open
+      Actions under it (`features/cai/KeptAction.tsx`, loaded with the first). "Save it" is what
+      Cai's model reads "it" as, for whoever may use it (`caiChat` now answers `{ reply, keep }`,
+      the reply never claiming what Caime didn't do), else the person's own words before the ask,
+      with a time either said; an ask the rules don't read ("could you jot that down for
+      Monday?") is the model's to read and is kept as the rules' would be. Left (R110's phases): a
+      message drafted to one of their people, a call, a meeting proposed and something found
+      (G14), settings and money after. Costs: on the device, the first download 448.8 KB of 450 as before, the conversation's chunk 91.6 KB (91.5 before: the line's check and its import), and the Undo and Open beside a kept line 0.8 KB, loaded with the first; on the server, an ask the rules read asks no model and writes one action, and "it" with AI assist is one light-model call within the day's allowance (R107). Verified:
+      `chat-save-golden.test.ts` (102 hand-labelled lines in four languages, every one read
+      right; no question to Cai or about someone read as an ask, nor an ask as one of them),
+      `cai-keep.test.ts` (a reminder by the rules at nine on his clock, no model asked; an action
+      after a lead, and a friend's reminder; "it" without the model from his words before, with
+      the day they said; nothing before, so it asks what; with AI assist, "it" as the model read
+      it with its details, an ask the rules don't read kept from the model's answer, and a model
+      that keeps nothing keeping nothing; Arabic said in her Egyptian; Undo), the system
+      accounts' and the voices' tests (each new line in every Arabic), the E2E
+      `system-accounts.spec.ts` (a reminder kept and undone; "Save it as a task" kept from the
+      line before and opened in Actions), and the full gate.
 - [ ] H. Business depth: a Business seat includes Pro; a cap on organizations per person; room
       checks inside the transaction; quick replies, away and greeting messages; customer notes,
       tags and fields; tax invoices (counsel); booking and revenue analytics; intake forms as
@@ -5439,6 +5467,8 @@ graph) and the number that will show it; one that sharpens none is hygiene and s
 - 2026-10-20 — The French and Turkish catalogs come in two halves fetched side by side, as Arabic
   does: their largest download 48.9 KB where one was 95.2 KB of a chunk's 100; the first download
   448.8 KB of 450 (0.2 KB more: the two loaders).
+- 2026-10-20 — M16 G13: Cai and the friends keep what they're asked to ("remind me to…", "add a
+  task:", "save it as a task") on the spot, with Undo, in four languages: R110's first phase.
 - 2026-10-20 — M16 F6c: whoever is reached by mail (a page's booker, someone a meeting held on
   Caime was mailed to) joins its call from their own link in the mail and their calendar, with no
   account; a call to them rings their page.

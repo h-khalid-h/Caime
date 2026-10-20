@@ -11,7 +11,7 @@ import {
 import { listed, tr } from '@caime/core/i18n';
 import { type Mentionable, type MentionSpan, mentionSpans } from '@caime/core/mentions';
 import { imageFor } from '@caime/core/renditions';
-import { CAI_ID } from '@caime/core/system-ids';
+import { CAI_ID, systemHandleOf } from '@caime/core/system-ids';
 import { Image } from 'expo-image';
 import { router } from 'expo-router';
 import AtSign from 'lucide-react-native/icons/at-sign';
@@ -30,6 +30,7 @@ import { mediaHeaders, mediaUrl } from '@/api/client';
 import { Character } from '@/brand/Character';
 import { type Translation, useTranslations } from '@/features/assist/translations';
 import { FollowUpOffer, type FollowUpPayload } from '@/features/cai/FollowUpOffer';
+import type { KeptPayload } from '@/features/cai/KeptAction';
 import { CallNotesLink } from '@/features/calls/CallNotesLink';
 import {
   readAs,
@@ -60,6 +61,8 @@ const VoiceNote = lazy(() =>
 );
 /** A video's player loads with the first video shown (M16 E4b). */
 const VideoTile = lazy(() => import('@/features/media/VideoTile'));
+/** Undo and Open under what Cai kept for the reader (M16 G13), loaded with the first one shown. */
+const KeptAction = lazy(() => import('@/features/cai/KeptAction'));
 
 export type Delivery = 'queued' | 'sending' | 'failed' | 'sent' | 'delivered' | 'read';
 
@@ -1008,6 +1011,10 @@ export const MessageBubble = memo(function MessageBubble({
 
   // Cai's offer of a follow-up (R68), sent or changed only by the reader's tap.
   const followUp = (m.payload as { followUp?: FollowUpPayload } | null)?.followUp;
+  // What Cai or a friend kept as one of the reader's actions when asked (M16 G13).
+  const kept = systemHandleOf(m.senderId)
+    ? (m.payload as { kept?: KeptPayload } | null)?.kept
+    : undefined;
 
   // What a screen reader says of the bubble, every word in the reader's language: a photo, a
   // card or a voice note without words reads as its preview does in the inbox, less the emoji.
@@ -1194,6 +1201,11 @@ export const MessageBubble = memo(function MessageBubble({
       </View>
       {followUp && m.senderId === CAI_ID ? (
         <FollowUpOffer messageId={m.id} offer={followUp} />
+      ) : null}
+      {kept ? (
+        <Suspense fallback={null}>
+          <KeptAction kept={kept} />
+        </Suspense>
       ) : null}
       {m.reactions.length ? (
         <View
