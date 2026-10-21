@@ -29,6 +29,7 @@ const ACCEPT_LABEL: Record<string, string> = {
   decision: msg('Save decision'),
   topic: msg('Start a topic'),
   relationship: msg('Add label'),
+  done: msg('Mark done'),
 };
 
 const DONE: Record<string, string> = {
@@ -38,6 +39,7 @@ const DONE: Record<string, string> = {
   decision: msg('Decision saved'),
   topic: msg('Topic started'),
   relationship: msg('Label added. Only you see it.'),
+  done: msg('Marked done'),
 };
 
 /**

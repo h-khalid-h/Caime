@@ -1767,4 +1767,9 @@ export const frServer: Catalog = {
   'That order can’t be taken as it stands now: answer it yourself.':
     'Cette commande ne peut plus être prise telle quelle : répondez vous-même.',
   '{name} said it would be done by now': '{name} avait dit que ce serait fait à cette heure',
+  '{name} wrote “{words}”': '{name} a écrit « {words} »',
+  'You wrote “{words}”': 'Vous avez écrit « {words} »',
+  '{name} sent something here': '{name} a envoyé quelque chose ici',
+  'You sent something here': 'Vous avez envoyé quelque chose ici',
+  'That action was closed already.': 'Cette action est déjà close.',
 };

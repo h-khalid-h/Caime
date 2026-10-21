@@ -3343,4 +3343,7 @@ export const arB: Catalog = {
   'Open Actions': 'فتح الإجراءات',
   'Next steps': 'الخطوات التالية',
   'Cai is writing the notes…': 'Cai يكتب الملاحظات…',
+  'What arrived': 'ما وصل',
+  'Mark done': 'تم الإنجاز',
+  'Marked done': 'أصبح منجزًا',
 };

@@ -2482,4 +2482,7 @@ export const turkishB: Catalog = {
   'Open Actions': 'Eylemleri aç',
   'Next steps': 'Sonraki adımlar',
   'Cai is writing the notes…': 'Cai notları yazıyor…',
+  'What arrived': 'Gelenler',
+  'Mark done': 'Yapıldı olarak işaretle',
+  'Marked done': 'Yapıldı olarak işaretlendi',
 };

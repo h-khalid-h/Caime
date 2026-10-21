@@ -1690,4 +1690,9 @@ export const turkishServer: Catalog = {
   'That order can’t be taken as it stands now: answer it yourself.':
     'Bu sipariş şu haliyle alınamıyor: kendiniz yanıtlayın.',
   '{name} said it would be done by now': '{name} bunun şimdiye kadar biteceğini söylemişti',
+  '{name} wrote “{words}”': '{name} şunu yazdı: “{words}”',
+  'You wrote “{words}”': 'Şunu yazdınız: “{words}”',
+  '{name} sent something here': '{name} buraya bir şey gönderdi',
+  'You sent something here': 'Buraya bir şey gönderdiniz',
+  'That action was closed already.': 'Bu eylem zaten kapatıldı.',
 };

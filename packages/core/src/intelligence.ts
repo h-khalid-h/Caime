@@ -989,7 +989,9 @@ export type SuggestionKind =
   | 'topic'
   | 'relationship'
   | 'duplicate'
-  | 'context';
+  | 'context'
+  /** What was waited on, or promised, has arrived: mark it done? (M17 I2b) */
+  | 'done';
 
 export interface SuggestionDraft {
   kind: SuggestionKind;

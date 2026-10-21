@@ -23,6 +23,7 @@ export * from './contact-sources';
 export * from './contacts';
 export * from './custom-kits';
 export * from './customers';
+export * from './delivered';
 export * from './e2ee';
 export * from './errors';
 export * from './field-values';

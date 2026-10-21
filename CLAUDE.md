@@ -591,7 +591,11 @@ A sphere is said as how you know someone, never "sphere".
   a new way to make an action leaves it out (`asked: true` for a "remind me"), never a time of its
   own; null means never. One of their own rings its morning, a wait at the end of its day, and
   `PATCH /tasks/:id` moves a reminder the rule made when the day moves (it recomputes what the
-  rule gave at `created_at` to tell), never one chosen by hand.
+  rule gave at `created_at` to tell), never one chosen by hand. What was promised arriving is
+  core `saysDelivered` (`delivered.ts`, every interface language, its lines in
+  `delivered.test.ts`): `offerDone` (`message-effects.ts`) offers the owner a `done` suggestion
+  for the open, unshared action of that conversation waiting on the sender, which accepting marks
+  done and Undo opens again; nothing closes an action by itself (R12).
 - Whose tasks a person sees is one rule, `visibleTasksSql(me)` (`lib/task-visibility.ts`): their
   own, and what's asked of them that was shared with them. Every reader of `tasks` for a person
   (Actions, the inbox's counts, Cai and the friends, the briefs, the calendar) puts it in its

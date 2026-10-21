@@ -2569,4 +2569,7 @@ export const frB: Catalog = {
   'Open Actions': 'Ouvrir les actions',
   'Next steps': 'Prochaines étapes',
   'Cai is writing the notes…': 'Cai rédige les notes…',
+  'What arrived': 'Ce qui est arrivé',
+  'Mark done': 'Marquer comme fait',
+  'Marked done': 'Marqué comme fait',
 };

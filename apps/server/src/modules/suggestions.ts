@@ -134,6 +134,32 @@ export async function suggestionRoutes(app: FastifyInstance, ctx: AppContext) {
       .executeTakeFirst();
     if (s?.status !== 'accepted') throw notFound(tr('That suggestion'));
     const ref = s.result_ref as { type?: string; id?: string; title?: string } | null;
+    // Marked done from a suggestion (M17 I2b): open again, while nobody has touched it since.
+    if (s.kind === 'done' && ref?.type === 'task' && ref.id) {
+      const reopened = await ctx.db.transaction().execute(async (trx) => {
+        const row = await trx
+          .updateTable('tasks')
+          .set({ status: 'open', completed_at: null, completed_by: null, updated_at: ctx.now() })
+          .where('id', '=', ref.id as string)
+          .where('owner_id', '=', auth.userId)
+          .where('status', '=', 'done')
+          .where('completed_by', '=', auth.userId)
+          .returning('id')
+          .executeTakeFirst();
+        if (!row) return false;
+        await trx
+          .updateTable('suggestions')
+          .set({ status: 'pending', resolved_at: null, result_ref: null })
+          .where('id', '=', id)
+          .execute();
+        return true;
+      });
+      if (!reopened)
+        throw new AppError(400, 'not_undoable', tr('That step was changed since: it stays.'));
+      await ctx.bus.publish([auth.userId], { type: 'task.updated', data: { id: ref.id } });
+      await ctx.bus.publish([auth.userId], { type: 'suggestion.created', data: { id } });
+      return { ok: true };
+    }
     if (!['task', 'reminder', 'waiting'].includes(s.kind) || ref?.type !== 'task' || !ref.id)
       throw new AppError(400, 'not_undoable', tr('This step can’t be taken back here.'));
     const task = await ctx.db
@@ -441,6 +467,27 @@ export async function acceptSuggestion(
           .execute();
         break;
       }
+      case 'done': {
+        // Done by its owner, if it's still open: nothing else is changed (M17 I2b).
+        const taskId = String(payload.taskId ?? '');
+        const marked = await trx
+          .updateTable('tasks')
+          .set({
+            status: 'done',
+            completed_at: ctx.now(),
+            completed_by: auth.userId,
+            updated_at: ctx.now(),
+          })
+          .where('id', '=', taskId)
+          .where('owner_id', '=', auth.userId)
+          .where('status', 'in', ['open', 'accepted'])
+          .returning('id')
+          .executeTakeFirst();
+        if (!marked) throw new AppError(409, 'conflict', tr('That action was closed already.'));
+        await recordEvent(trx, 'task.completed', auth.userId, { taskId, status: 'done' });
+        ref = { type: 'task', id: taskId };
+        break;
+      }
       default:
         throw badRequest(
           tr('Accepting a {kind} suggestion isn’t supported yet.', { kind: s.kind }),
@@ -490,7 +537,8 @@ export async function acceptSuggestion(
     });
   else
     await ctx.bus.publish(affected, {
-      type: `${result.type}.created`,
+      // Marked done, the action was there before (M17 I2b).
+      type: s.kind === 'done' ? 'task.updated' : `${result.type}.created`,
       data: { id: result.id, conversationId: s.conversation_id },
     });
   await ctx.bus.publish([auth.userId], {

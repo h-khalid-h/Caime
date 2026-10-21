@@ -3993,9 +3993,17 @@ clinic can sign for. I1 lands before launch.
       with Cai on "Less"; Attention asks about a wait three quiet days after its day, not after it
       was made; a moved day moves the reminder the rule made, never one chosen by hand. Verified:
       `remind-at.test.ts`, `reminders.test.ts`, the task, Attention, Cai-keep and messaging suites.
-- [ ] I2. Nothing slips (M), the rest: a pending card follows an edit and is let go when stale; "Done?"
-      offered when whoever promised sends what was promised, never closed by itself (R12); the five
-      no-reply paths made one. Number: waits closed within seven days of their due date.
+- [x] I2b. Promises kept, offered to close (S): when whoever promised something sends it, a
+      file, a link, or words that say it's here (core `saysDelivered`: "Sent!", "Here it is",
+      "تم", "بعتلك", "c'est fait", "ci-joint", "gönderdim", "tamamdır", never a question, a
+      negation or a future in its clause), the one waiting on it, or the one who promised it, is
+      offered "Mark done" as a suggestion of its own kind (`done`), never closed by itself (R12);
+      only an open, unshared action of that conversation waiting on the sender (the one the
+      message answers, else the only one), once an action; accepting marks it done, Undo opens it
+      again. Verified: `delivered.test.ts` (12 deliveries and 12 near-misses in each language),
+      `reminders.test.ts`.
+- [ ] I2. Nothing slips (M), the rest: a pending card follows an edit and is let go when stale;
+      the five no-reply paths made one. Number: waits closed within seven days of their due date.
 - [ ] I3. What did I miss (M; L with the summary): the Needs-you conversations since each was last
       read, by the rules, ranked as Attention ranks them, with a cited summary for whoever has
       assist on, cached by read position, in Cai's chat and on Attention; a catch-up past 200
@@ -5618,6 +5626,8 @@ clinic can sign for. I1 lands before launch.
 - 2026-10-20 — The French and Turkish catalogs come in two halves fetched side by side, as Arabic
   does: their largest download 48.9 KB where one was 95.2 KB of a chunk's 100; the first download
   448.8 KB of 450 (0.2 KB more: the two loaders).
+- 2026-10-21 — M17 I2b: "Mark done" offered when whoever promised something sends it (a file, a
+  link, "Sent!", "تم", "c'est fait", "gönderdim"), never closed by itself; Undo opens it again.
 - 2026-10-21 — M17 I2a: one rule for when an action reminds its owner (core `remindAtFor`): its
   morning, never the moment it's late; a "remind me" without a day the next morning; a wait looked
   at on its day and saying whose it is; Attention asking after a wait's day; a moved day moving the

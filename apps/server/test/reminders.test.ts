@@ -4,6 +4,7 @@
  * a wait after its day rather than after it was made; a moved day moving the reminder the rule
  * made, never one chosen by hand.
  */
+import { uuidv4 } from '@caime/core';
 import { sql } from 'kysely';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { runPeriodic } from '../src/lib/jobs';
@@ -130,5 +131,60 @@ describe('when an action reminds its owner (M17 I2)', () => {
     // Three days past its day: asked about.
     t.clock.set(new Date(asked + 8 * DAY + 60_000).toISOString());
     expect((await lina.get('/v1/attention')).ask).toMatchObject({ taskId: report.id });
+  });
+});
+
+describe('what was promised arrives (M17 I2b)', () => {
+  const say = (c: Client, body: string) =>
+    c.post(`/v1/conversations/${convo}/messages`, { clientId: uuidv4(), body });
+  const statusOf = async (id: string) =>
+    (
+      await t.ctx.db
+        .selectFrom('tasks')
+        .select('status')
+        .where('id', '=', id)
+        .executeTakeFirstOrThrow()
+    ).status;
+  const offers = async (c: Client) => {
+    await t.ctx.flush();
+    return ((await c.get('/v1/suggestions')).suggestions as any[]).filter((s) => s.kind === 'done');
+  };
+
+  it('offers whoever waits on it to mark it done, never closing it, and takes it back on undo', async () => {
+    const waits = (await noor.get('/v1/tasks?view=waiting')).tasks as any[];
+    const plan = waits.find((w) => w.title === 'The floor plan');
+    expect(plan).toBeDefined();
+    // Asked whether it's here, nothing is offered.
+    await say(sami, 'Is the floor plan done?');
+    expect(await offers(noor)).toEqual([]);
+    // Sami says it's here: Noor is offered to mark it done; it stays open until she does.
+    await say(sami, 'Here it is, the final version.');
+    const [offer] = await offers(noor);
+    expect(offer).toMatchObject({
+      title: 'The floor plan',
+      rationale: 'Sami Nasser wrote “Here it is, the final version.”',
+      payload: { taskId: plan.id },
+      subjectUserId: sami.user.id,
+    });
+    expect(await statusOf(plan.id)).toBe('open');
+    // Nobody else is offered it.
+    expect(await offers(sami)).toEqual([]);
+    await noor.post(`/v1/suggestions/${offer.id}/accept`, {});
+    expect(await statusOf(plan.id)).toBe('done');
+    // Taken back, it's open again and offered again.
+    await noor.post(`/v1/suggestions/${offer.id}/undo`, {});
+    expect(await statusOf(plan.id)).toBe('open');
+    expect((await offers(noor)).map((s) => s.id)).toEqual([offer.id]);
+  });
+
+  it('offers one’s own promise done when a link to it is sent', async () => {
+    const minutes = await add(noor, { title: 'Send the minutes', conversationId: convo });
+    t.clock.advance(60_000);
+    await say(noor, 'https://example.com/minutes-october');
+    const mine = (await offers(noor)).find((s) => s.payload.taskId === minutes.id);
+    expect(mine).toMatchObject({
+      title: 'Send the minutes',
+      rationale: 'You wrote “https://example.com/minutes-october”',
+    });
   });
 });

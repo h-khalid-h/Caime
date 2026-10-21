@@ -11,10 +11,12 @@ import {
   firstName,
   isLargeGroup,
   type NotificationKind,
+  previewText,
   type RelationshipPolicy,
   resolvePolicy,
   type SpaceRef,
   type Sphere,
+  saysDelivered,
   suggestFromAnalysis,
   systemAccountOf,
   tr,
@@ -279,10 +281,75 @@ async function effectsOf(ctx: AppContext, message: Message, read: Analysis | nul
       { crowd },
     ),
     suggest(ctx, conversation, message, analysis, sender, recipients, addressed),
+    offerDone(ctx, conversation, message, analysis, sender),
     detectTopic(ctx, conversation, message),
     scheduleFollowUp(ctx, conversation, message, recipients),
     runAutomations(ctx, conversation, message, recipients),
   ]);
+}
+
+/**
+ * Whoever promised something sends it (M17 I2b): a file, a link, or words that say it's here
+ * (core `saysDelivered`: "Sent!", "تم", "c'est fait", "gönderdim") offer the one waiting on it,
+ * or the one who promised it, to mark it done; it's never closed by itself (R12). Only an open
+ * action of this conversation that waits on the sender: the one the message answers, else the
+ * only one; once an action (its fingerprint). Not one shared as a request, which its card moves.
+ */
+async function offerDone(
+  ctx: AppContext,
+  conversation: Conversation,
+  message: Message,
+  analysis: Analysis | null,
+  sender: { id: string; display_name: string },
+): Promise<void> {
+  if (
+    message.kind === 'system' ||
+    message.sealed ||
+    (message.payload as { imported?: unknown })?.imported
+  )
+    return;
+  const files = message.kind === 'media' || message.kind === 'file' ? 1 : 0;
+  const links = analysis?.links.length ?? 0;
+  const words = message.body ?? '';
+  if (!saysDelivered(words, { files, links })) return;
+  const open = await ctx.db
+    .selectFrom('tasks')
+    .select(['id', 'owner_id', 'title', 'message_id'])
+    .where('conversation_id', '=', conversation.id)
+    .where('assignee_id', '=', sender.id)
+    .where('shared', '=', false)
+    .where('status', 'in', ['open', 'accepted'])
+    .where('created_at', '<', message.created_at)
+    .orderBy('created_at', 'desc')
+    .limit(5)
+    .execute();
+  const task =
+    open.find((t) => message.reply_to_id !== null && t.message_id === message.reply_to_id) ??
+    (open.length === 1 ? open[0] : undefined);
+  if (!task) return;
+  const theirs = task.owner_id !== sender.id;
+  const said = previewText(words, 80);
+  const name = sender.display_name;
+  await createSuggestion(ctx, {
+    userId: task.owner_id,
+    kind: 'done',
+    title: task.title,
+    rationale: () =>
+      said
+        ? theirs
+          ? tr('{name} wrote “{words}”', { name, words: said })
+          : tr('You wrote “{words}”', { words: said })
+        : theirs
+          ? tr('{name} sent something here', { name })
+          : tr('You sent something here'),
+    // Said in so many words, fairly sure; a file or a link alone, a little less.
+    confidence: said && saysDelivered(words) ? 0.8 : 0.7,
+    payload: { taskId: task.id },
+    subjectUserId: theirs ? sender.id : null,
+    conversationId: conversation.id,
+    messageId: message.id,
+    fingerprint: `done:${task.id}`,
+  });
 }
 
 type Recipient = {
