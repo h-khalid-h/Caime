@@ -640,7 +640,8 @@ export async function buildExport(ctx: AppContext, me: string, now: Date) {
       .orderBy('m.rung_at')
       .execute(),
     // Their yes or no to Cai's notes in a call, and their own words in them (M16 F7): never
-    // anyone else's words, nor anyone else's answer.
+    // anyone else's words, nor anyone else's answer. Cai's write-up of a call (M16 F7e) tells
+    // everyone's words again, so it stays out too; the steps it drew for them are their suggestions.
     db
       .selectFrom('call_note_answers as a')
       .innerJoin('call_notes as n', 'n.id', 'a.notes_id')

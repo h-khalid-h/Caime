@@ -2480,4 +2480,6 @@ export const turkishB: Catalog = {
     'Kendi Caime hesabınız yapın, ücretsiz: bu konuşma ve konuşulanlar sizde kalır.',
   'Taken out of your actions': 'Eylemlerinizden çıkarıldı',
   'Open Actions': 'Eylemleri aç',
+  'Next steps': 'Sonraki adımlar',
+  'Cai is writing the notes…': 'Cai notları yazıyor…',
 };

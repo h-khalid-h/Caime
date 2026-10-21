@@ -1675,4 +1675,7 @@ export const turkishServer: Catalog = {
   'That one starts on your device.': 'Bu, cihazınızdan başlar.',
   'Open your chat with {name} first.': 'Önce {name} ile sohbetinizi açın.',
   'That isn’t your chat with {name}.': 'Bu, {name} ile sohbetiniz değil.',
+  'Your notes from the call with {name} are ready.':
+    '{name} ile yaptığınız aramanın notları hazır.',
+  'Your notes from the call are ready.': 'Aramanın notları hazır.',
 };

@@ -1731,4 +1731,6 @@ export const arServer: Catalog = {
   'That one starts on your device.': 'هذا يبدأ من جهازك.',
   'Open your chat with {name} first.': 'يلزم فتح المحادثة مع {name} أولًا.',
   'That isn’t your chat with {name}.': 'هذه ليست المحادثة مع {name}.',
+  'Your notes from the call with {name} are ready.': 'ملاحظات مكالمتك مع {name} جاهزة.',
+  'Your notes from the call are ready.': 'ملاحظات المكالمة جاهزة.',
 };

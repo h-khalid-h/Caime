@@ -82,7 +82,7 @@ async function askedIn(db: Db, call: Call): Promise<Asked[]> {
 }
 
 /** Who reads a call's notes, and from when: whoever was in it, from when they joined (R85 (2)). */
-async function readersOf(db: Db, call: Call): Promise<Map<string, Date>> {
+export async function readersOf(db: Db, call: Call): Promise<Map<string, Date>> {
   const from = new Map<string, Date>();
   if (!call.is_group) {
     if (call.answered_at) {
@@ -741,6 +741,8 @@ export async function notesFor(
     conversationId: call.conversation_id,
     notes: await notesViewOf(ctx.db, call),
     lines: view,
+    summary: null,
+    summaryState: null,
   };
 }
 

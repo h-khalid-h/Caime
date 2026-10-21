@@ -1350,6 +1350,21 @@ export interface CallNoteLinesTable {
   created_at: Generated<Date>;
 }
 
+/**
+ * Cai's notes of a call, written once it's over (M16 F7e, R112): one row a call, for whoever was
+ * in it for all of it; gone with the call's line.
+ */
+export interface CallNoteSummariesTable {
+  call_id: string;
+  conversation_id: string;
+  message_id: string | null;
+  state: 'writing' | 'written' | 'none';
+  summary: Json | null;
+  written_at: NullableTimestamp;
+  requested_at: Generated<Date>;
+  created_at: Generated<Date>;
+}
+
 /** Which Stripe customer is whose (R25): a person's, or an organization's. */
 export interface BillingCustomersTable {
   id: string;
@@ -1745,6 +1760,7 @@ export interface Database {
   call_notes: CallNotesTable;
   call_note_answers: CallNoteAnswersTable;
   call_note_lines: CallNoteLinesTable;
+  call_note_summaries: CallNoteSummariesTable;
   e2ee_devices: E2eeDevicesTable;
   billing_customers: BillingCustomersTable;
   billing_subscriptions: BillingSubscriptionsTable;

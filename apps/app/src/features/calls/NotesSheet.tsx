@@ -1,11 +1,13 @@
 /**
  * What was said in a call while Cai took notes (M16 F7, R82 (3)), loaded when it's opened from
  * the call's line: speaker by speaker, as each was heard, from when the reader joined (R85 (2)).
- * Each person may delete their own words; the others keep theirs. Nothing is drawn from it on its
- * own: Cai catches the reader up on it, or finds its follow-ups, only when they ask (M16 F7d), the
- * catch-up labelled and kept nowhere, the follow-ups offered as their own suggestions.
+ * Each person may delete their own words; the others keep theirs. Whoever heard it all reads Cai's
+ * write-up above them once the call is over (M16 F7e): what it was about, its topics, what was
+ * decided and the next steps, each step already its person's to take. Someone who came in later
+ * asks Cai to catch them up, or to find the follow-ups, on what they heard (M16 F7d), the catch-up
+ * labelled and kept nowhere, the follow-ups offered as their own suggestions.
  */
-import type { AiCatchUpView, CallNoteLineView } from '@caime/core/api';
+import type { AiCatchUpView, CallNoteLineView, CallNotesSummaryView } from '@caime/core/api';
 import { AI_LABEL } from '@caime/core/assist';
 import { formatClock } from '@caime/core/format';
 import { tr, trn } from '@caime/core/i18n';
@@ -32,6 +34,59 @@ import { toast } from '@/ui/Toast';
 
 const LoadFailed = lazyPart(() => import('@/ui/LoadFailed').then((m) => m.LoadFailed));
 
+/** Cai's write-up of the call, as everyone who heard it all reads it (M16 F7e). */
+function WrittenNotes({ notes }: { notes: CallNotesSummaryView }) {
+  const t = useTheme();
+  const section = (title: string, items: string[], testID: string) =>
+    items.length ? (
+      <View style={{ gap: 4 }} testID={testID}>
+        <Text variant="overline" color="textSecondary">
+          {title}
+        </Text>
+        {items.map((item) => (
+          <Text key={item} variant="body" auto selectable>
+            {`• ${item}`}
+          </Text>
+        ))}
+      </View>
+    ) : null;
+  return (
+    <View
+      accessibilityLiveRegion="polite"
+      testID="call-notes-written"
+      style={{ padding: 12, borderRadius: t.radii.md, gap: 10, backgroundColor: t.c.surfaceMuted }}
+    >
+      <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+        <Sparkles size={13} color={t.c.accentStrong} />
+        <Text variant="overline" color="accentStrong">
+          {tr(notes.label || AI_LABEL)}
+        </Text>
+      </View>
+      <Text variant="body" auto selectable>
+        {notes.summary}
+      </Text>
+      {notes.topics.map((topic) => (
+        <View key={topic.title} style={{ gap: 4 }} testID="call-notes-topic">
+          <Text variant="label" auto>
+            {topic.title}
+          </Text>
+          {topic.points.map((point) => (
+            <Text key={point} variant="body" auto selectable>
+              {`• ${point}`}
+            </Text>
+          ))}
+        </View>
+      ))}
+      {section(tr('Decided'), notes.decisions, 'call-notes-decided')}
+      {section(
+        tr('Next steps'),
+        notes.nextSteps.map((s) => [s.who, s.what, s.due].filter(Boolean).join(' · ')),
+        'call-notes-next',
+      )}
+    </View>
+  );
+}
+
 export function NotesSheet({
   callId,
   open,
@@ -50,6 +105,8 @@ export function NotesSheet({
     enabled: open,
   });
   const lines = notes.data?.lines ?? [];
+  const written = notes.data?.summary ?? null;
+  const writingUp = notes.data?.summaryState === 'writing';
   const writing = lines.filter((l) => l.text === null).length;
   // Cai on what was said (M16 F7d), for whoever may use AI assist, once something was heard.
   const assisted = useSession((s) => Boolean(s.user?.aiEnabled && !s.user.minor));
@@ -114,7 +171,13 @@ export function NotesSheet({
         />
       ) : (
         <View style={{ gap: 14 }} testID="call-notes-lines">
-          {assisted && heard ? (
+          {written ? <WrittenNotes notes={written} /> : null}
+          {writingUp ? (
+            <Text variant="caption" color="textTertiary" testID="call-notes-writing">
+              {tr('Cai is writing the notes…')}
+            </Text>
+          ) : null}
+          {assisted && heard && !written && !writingUp ? (
             <View style={{ gap: 10 }}>
               <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8 }}>
                 <Button

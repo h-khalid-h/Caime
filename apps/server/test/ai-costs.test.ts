@@ -191,6 +191,13 @@ const AT_BOUNDS: ReadonlyArray<{
     tiered: true,
     call: (ai, tier) => ai.findActions({ transcript: transcript(60_000), today, tier }),
   },
+  // lib/call-notes-summary.ts: SUMMARY_CHARS of a call's heard lines, written up once (M16 F7e).
+  {
+    feature: 'notes-summary',
+    tiered: true,
+    call: (ai, tier) =>
+      ai.callNotes({ transcript: transcript(60_000), language: 'English', today, tier }),
+  },
   // lib/briefs.ts: 40 messages of 400 characters, read by catch-up's call.
   {
     feature: 'brief',

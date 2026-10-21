@@ -1,6 +1,7 @@
 /**
  * Cai's notes in a call (M16 F7, R82 under R85): ask, answer, stop, the device recording sending
- * each thing said, and reading what was said. The rules are in lib/call-notes.ts; the audio of an
+ * each thing said, and reading what was said, with Cai's write-up of it for whoever heard it all
+ * (M16 F7e). The rules are in lib/call-notes.ts and lib/call-notes-summary.ts; the audio of an
  * utterance is kept only until it's heard.
  */
 import {
@@ -30,6 +31,7 @@ import {
   stopNotes,
 } from '../lib/call-notes';
 import { catchUpOnNotes, findNoteFollowUps } from '../lib/call-notes-ai';
+import { afterLineDeleted, summaryFor } from '../lib/call-notes-summary';
 import { AppError, badRequest } from '../lib/errors';
 import { parse } from '../lib/validate';
 import { requireAuth } from '../plugins/auth';
@@ -106,7 +108,11 @@ export async function callNotesRoutes(app: FastifyInstance, ctx: AppContext) {
     const auth = requireAuth(req);
     const { id } = parse(callParam, req.params);
     const call = await callForNotes(ctx, id, auth.userId);
-    return notesFor(ctx, call, auth.userId);
+    const [notes, written] = await Promise.all([
+      notesFor(ctx, call, auth.userId),
+      summaryFor(ctx, call, auth.userId),
+    ]);
+    return { ...notes, ...written };
   });
 
   /** One's own words out of the notes (R85 (2)): the others keep theirs. */
@@ -115,6 +121,8 @@ export async function callNotesRoutes(app: FastifyInstance, ctx: AppContext) {
     const { id, lineId } = parse(lineParam, req.params);
     const call = await callForNotes(ctx, id, auth.userId);
     await deleteOwnLine(ctx, call, lineId, auth.userId);
+    // What was drawn from those words goes, and Cai writes the notes again without them.
+    await afterLineDeleted(ctx, call, lineId);
     return { ok: true };
   });
 

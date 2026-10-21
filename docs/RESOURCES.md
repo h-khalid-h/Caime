@@ -187,7 +187,8 @@ run on the top model only where someone pays (`aiModel` and `agentModel` in core
 the pricing page for the agent).
 
 Produced by `COST_TABLE=<file> pnpm vitest run test/ai-costs.test.ts` in `apps/server`
-(2026-10-19; the cai and friend rows again on 2026-10-20, with what M16 G13 and G14 tell them):
+(2026-10-19; the cai and friend rows again on 2026-10-20, with what M16 G13 and G14 tell them;
+notes-summary on 2026-10-21, M16 F7e's write-up of a call's notes):
 each feature's request at the bounds the code sets, measured from what the real
 prompt builders send to a stand-in (system and message characters; output at its `max_tokens`),
 read at a token a character, a ceiling no language's words reach; a voice note at ten minutes,
@@ -202,6 +203,7 @@ Prices: https://platform.claude.com/docs/en/about-claude/pricing, read 2026-10-1
 | catch-up | 60,825 | 4,096 | €0.0072 | €0.14 | €0.29 |
 | ask | 61,192 | 4,096 | €0.0073 | €0.15 | €0.29 |
 | actions | 61,206 | 8,192 | €0.0091 | €0.18 | €0.36 |
+| notes-summary | 61,477 | 8,192 | €0.0091 | €0.18 | €0.36 |
 | brief | 16,825 | 4,096 | €0.0033 | €0.07 | €0.13 |
 | cai | 13,023 | 1,024 | €0.0016 | €0.03 | €0.06 |
 | friend | 11,801 | 512 | €0.0013 | €0.03 | €0.05 |

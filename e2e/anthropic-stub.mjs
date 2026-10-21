@@ -100,6 +100,22 @@ function answer(body) {
       `About “${question}”: ${lines.length} messages, the latest from ${last?.speaker ?? 'nobody'}.`,
     );
   }
+  if (system.includes('You write the notes of a call')) {
+    // A call's notes (M16 F7e): how many lines, its first speaker's step from the first line.
+    calls.push('notes-summary');
+    const lines = linesOf(content);
+    const first = lines[0];
+    return reply(
+      JSON.stringify({
+        summary: `A call of ${lines.length} lines, opened by ${first?.speaker ?? 'nobody'}.`,
+        topics: [{ title: 'What was said', points: lines.slice(0, 2).map((l) => l.text) }],
+        decisions: [],
+        nextSteps: first
+          ? [{ who: first.speaker, what: 'Follow up on the call', due: null, line: 1 }]
+          : [],
+      }),
+    );
+  }
   if (system.includes('catch someone up')) {
     calls.push('catch-up');
     const lines = linesOf(content);

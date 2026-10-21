@@ -115,21 +115,20 @@ test.describe
       await page.getByTestId('call-hangup').click();
       await expect(page.getByTestId('call-screen')).toHaveCount(0);
 
-      // The call's line opens the notes, speaker by speaker.
+      // The call's line opens the notes: Cai's write-up once every word is heard (M16 F7e),
+      // labelled as Cai's, for both of them, then what was said, speaker by speaker.
       await page.getByTestId('call-notes-open').click();
+      const written = page.getByTestId('call-notes-written');
+      await expect(written).toContainText('Suggested by Cai', { timeout: 45_000 });
+      await expect(written).toContainText(/A call of \d+ lines, opened by /);
+      await expect(written.getByTestId('call-notes-next')).toContainText('Follow up on the call');
+      // Written up, there's nothing to ask for: the catch-up is for someone who came in later.
+      await expect(page.getByTestId('call-notes-catch-up')).toHaveCount(0);
       const sheet = page.getByTestId('call-notes-lines');
       await expect(sheet).toBeVisible();
       await expect(sheet.getByText('Hi Noor, the contract is signed.').first()).toBeVisible();
       await expect(sheet.getByText('You').first()).toBeVisible();
       await expect(sheet.getByText('Sam Rivera').first()).toBeVisible();
-      // Asked, Cai catches Noor up on what was said, labelled as Cai's and kept nowhere, and
-      // finds its follow-ups (M16 F7d): nothing here is anyone's to do.
-      await page.getByTestId('call-notes-catch-up').click();
-      const summary = page.getByTestId('call-notes-summary');
-      await expect(summary).toContainText('Suggested by Cai');
-      await expect(summary).toContainText(/Caught up on \d+ messages/);
-      await page.getByTestId('call-notes-follow-ups').click();
-      await expect(visible(page, 'Nothing new to follow up')).toBeVisible();
       await page.screenshot({ path: 'e2e/screenshots/desktop-call-notes-sheet.png' });
 
       // Noor deletes her own words; Sam's stay.

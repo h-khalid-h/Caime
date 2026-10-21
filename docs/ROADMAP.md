@@ -3208,6 +3208,34 @@ graph) and the number that will show it; one that sharpens none is hygiene and s
       offered twice; refused with AI assist off and for someone not in the call), the E2E
       `call-notes.spec.ts` (Catch me up and Find follow-ups from the call's line), and the full
       gate.
+- [x] F7e. A call's notes written up once, as a note-taker would (2026-10-21, PRODUCT-REVIEW R112;
+      the owner's "no fragmentation, duplication or confusion across the entire Caime
+      intelligence", with Gemini Notes as the example; advantages 1 and 2: a call's next steps
+      land with the people they're for, in the relationship, where a note-taker's land in a
+      document. The number: of calls with notes, the share that end with notes written for
+      everyone who heard it all and each next step offered to its person, every one where the
+      asker may use AI assist, where none had them unless someone asked). Once a call with notes
+      ends and every word is heard, the `call.notes.summary` job (`lib/call-notes-summary.ts`)
+      writes them once (`ai.callNotes`, prompt `notes-summary`: what it was about, up to six
+      topics with their points, what was decided, the next steps by person with their line and
+      any deadline as said), in the language most of the call was heard in, on the asker's day
+      by cost and their plan's model, kept on `call_note_summaries` (migration 0145) with the
+      call's line and erased with it. Whoever was in it for all of it reads them above what was
+      said (`CallNotesResponse.summary`, `NotesSheet`); someone who came in later keeps "Catch me
+      up" and "Find follow-ups" on what they heard. Each next step is its person's suggestion by
+      its line (`ai:callnote:<line>:task`, F7d's key), the other one's wait in a call of two, a
+      decision the asker's; each is told once, in their own words. A line its speaker deletes
+      takes back what was drawn from it and not yet answered, and writes the notes again,
+      unannounced. The steps are offered as Cai's own initiative (R66) to whoever has AI assist
+      on; the latest ask writes them (`requested_at`), and a busy model or the asker's hour used
+      up puts them off. Costs: on devices, the first download 448.8 KB of 450 as before, the conversation's chunk 91.4 KB as before, and the notes sheet's 2.9 KB, loaded when the notes open; on the server, one job and one model call a call with notes (a deleted line's rewrite once, by its latest ask), €0.0091 at the bounds on the light model and €0.36 on the top model (61,477 tokens in, 8,192 out), on the asker's day. Verified: `call-notes.test.ts` (written once
+      for both, each step its person's and the other's wait, a decision the asker's, nobody
+      outside the call; told once; a deleted line's steps gone and the notes written again
+      without it; nothing heard, nothing written and no model asked; gone with the call's line;
+      a busy model waited out; nothing offered to someone who wants Cai to do less or has AI
+      assist off, both told; two lines deleted a second apart written up again once),
+      the E2E `call-notes.spec.ts` (the write-up in the sheet from the call's line, without the
+      buttons it replaces), and the full gate.
 - [ ] G. Integration framework and governed AI (REVIEW §11): credentials (key outside the
       database with a key id and re-seal, a downscoped picker token, sealed webhook secrets,
       rotation); per-use health, Google and Microsoft probes, a freshness gauge, a reconnect
@@ -5516,6 +5544,8 @@ graph) and the number that will show it; one that sharpens none is hygiene and s
 - 2026-10-20 — The French and Turkish catalogs come in two halves fetched side by side, as Arabic
   does: their largest download 48.9 KB where one was 95.2 KB of a chunk's 100; the first download
   448.8 KB of 450 (0.2 KB more: the two loaders).
+- 2026-10-21 — M16 F7e: a call's notes written up once it's over, for whoever heard it all: its
+  summary, topics, decisions and next steps, each step offered to its person (R112).
 - 2026-10-21 — R111 decided: an organization's Cai answers its calls, the organization pays and
   the caller never does; built after customers can call an organization at all (H8).
 - 2026-10-20 — M16 G14: Cai and the friends get a message, a call, a meeting or a search ready

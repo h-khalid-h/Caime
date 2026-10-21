@@ -18,10 +18,17 @@ import { eraseMessagesWhere } from '../src/lib/org-data';
 import { type Client, createTestApp, signup, type TestApp, until } from './helpers';
 
 const replies: Array<{ status: number; json: unknown }> = [];
-/** What the model answers, in turn (M16 F7d: a catch-up and the follow-ups of the notes). */
-const said: Array<{ status: number; json: unknown }> = [];
-const modelSays = (text: string) =>
+/**
+ * What the model answers, in turn (M16 F7d: a catch-up and the follow-ups of the notes), each to
+ * the first request whose words hold its `match` when it has one: an earlier call's write-up, due
+ * as the clock moves on, never takes the answer meant for this call's (M16 F7e).
+ */
+const said: Array<{ status: number; json: unknown; match?: string }> = [];
+/** Every request the model was sent, as sent. */
+const asked: string[] = [];
+const modelSays = (text: string, match?: string) =>
   said.push({
+    match,
     status: 200,
     json: {
       id: 'msg_stub',
@@ -115,12 +122,17 @@ const ask = (c: Client, id: string, deviceId: string, canRecord = true) =>
 
 beforeAll(async () => {
   stub = createServer(async (req, res) => {
-    for await (const _ of req) {
-      // The audio (or the model's request) is read and dropped; what's queued comes back.
-    }
+    // The audio is read and dropped; the model's request is read for what it's about.
+    const chunks: Buffer[] = [];
+    for await (const chunk of req) chunks.push(chunk as Buffer);
     const model = (req.url ?? '').startsWith('/v1/messages');
+    const body = model ? Buffer.concat(chunks).toString('utf8') : '';
+    if (model) asked.push(body);
+    const i = said.findIndex((s) => !s.match || body.includes(s.match));
     const r = model
-      ? (said.shift() ?? { status: 500, json: { type: 'error', error: { type: 'api_error' } } })
+      ? i >= 0
+        ? said.splice(i, 1)[0]!
+        : { status: 500, json: { type: 'error', error: { type: 'api_error' } } }
       : (replies.shift() ?? {
           status: 200,
           json: { text: 'Hello from the call.', language: 'en' },
@@ -566,5 +578,271 @@ describe('Cai on the notes, on ask (M16 F7d)', () => {
     await sam.patch('/v1/me', { aiEnabled: true });
     const stranger = await omar.req('POST', `/v1/calls/${callId}/notes/catch-up`, {});
     expect(stranger.statusCode).toBe(404);
+  });
+});
+
+describe('Cai’s notes of the call, once it’s over (M16 F7e)', () => {
+  it('writes them once for whoever heard it all, offers each step to its person, and again without deleted words', async () => {
+    await sam.patch('/v1/me', { aiEnabled: true });
+    const callId = await ring();
+    await ask(noor, callId, 'noor-tab-1');
+    await sam.req('POST', `/v1/calls/${callId}/accept`, {
+      deviceId: 'sam-phone-1',
+      notes: 'yes',
+      canRecord: false,
+    });
+    // One line heard at a time, each as the words queued for it.
+    const now = Date.now();
+    replies.push({
+      status: 200,
+      json: { text: 'I will send the venue contract by Friday.', language: 'en' },
+    });
+    expect((await line(noor, callId, 'noor-tab-1', noor.user.id, wav(), now)).statusCode).toBe(200);
+    await work();
+    replies.push({ status: 200, json: { text: 'Good, I will book the caterer.', language: 'en' } });
+    expect(
+      (await line(noor, callId, 'noor-tab-1', sam.user.id, wav(), now + 5_000)).statusCode,
+    ).toBe(200);
+    await work();
+    await noor.req('POST', `/v1/calls/${callId}/end`, { deviceId: 'noor-tab-1' });
+    await t.ctx.flush();
+    // Being written, for both of them, a moment after the call is over.
+    expect((await noor.get(`/v1/calls/${callId}/notes`)).summaryState).toBe('writing');
+
+    const notes = {
+      summary: 'Noor and Sam split the event work.',
+      topics: [
+        {
+          title: 'The event',
+          points: ['Noor sends the venue contract.', 'Sam books the caterer.'],
+        },
+      ],
+      decisions: [{ text: 'Sam books the caterer', line: 2 }],
+      nextSteps: [
+        { who: 'Noor Notes', what: 'Send the venue contract', due: 'Friday', line: 1 },
+        { who: 'Sam', what: 'Book the caterer', due: null, line: 2 },
+        { who: 'Omar', what: 'Nobody in the call', due: null, line: 1 },
+      ],
+    };
+    modelSays(JSON.stringify(notes), 'book the caterer');
+    t.clock.advance(6_000);
+    await work();
+    const read = await noor.get(`/v1/calls/${callId}/notes`);
+    expect(read.summaryState).toBe('written');
+    expect(read.summary).toEqual({
+      summary: 'Noor and Sam split the event work.',
+      topics: notes.topics,
+      decisions: ['Sam books the caterer'],
+      nextSteps: notes.nextSteps.map(({ who, what, due }) => ({ who, what, due })),
+      label: 'Suggested by Cai',
+    });
+    expect((await sam.get(`/v1/calls/${callId}/notes`)).summary.summary).toBe(
+      'Noor and Sam split the event work.',
+    );
+
+    // Each step is its person's to take; in a call of two the other waits on it; the decision
+    // is the asker's to record; nobody who wasn't in the call gets one.
+    const mine = (await noor.get('/v1/suggestions')).suggestions as any[];
+    expect(mine.map((s) => [s.kind, s.title])).toEqual(
+      expect.arrayContaining([
+        ['task', 'Send the venue contract'],
+        ['waiting', 'Book the caterer'],
+        ['decision', 'Sam books the caterer'],
+      ]),
+    );
+    const sams = (await sam.get('/v1/suggestions')).suggestions as any[];
+    expect(sams.map((s) => [s.kind, s.title])).toEqual(
+      expect.arrayContaining([
+        ['task', 'Book the caterer'],
+        ['waiting', 'Send the venue contract'],
+      ]),
+    );
+    expect(sams.some((s) => s.kind === 'decision')).toBe(false);
+    // Told once, each in their own words.
+    const told = await t.ctx.db
+      .selectFrom('notifications')
+      .select(['user_id', 'body'])
+      .where('kind', '=', 'call')
+      .where('body', 'like', 'Your notes from the call%')
+      .execute();
+    expect(told.map((n) => [n.user_id, n.body]).sort()).toEqual(
+      [
+        [noor.user.id, 'Your notes from the call with Sam are ready.'],
+        [sam.user.id, 'Your notes from the call with Noor are ready.'],
+      ].sort(),
+    );
+
+    // Noor deletes her words: what was drawn from them goes, and the notes are written again
+    // without them, told to nobody a second time.
+    const first = read.lines.find((l: { mine: boolean }) => l.mine);
+    await noor.req('DELETE', `/v1/calls/${callId}/notes/lines/${first.id}`);
+    expect((await noor.get(`/v1/calls/${callId}/notes`)).summaryState).toBe('writing');
+    const gone = (await noor.get('/v1/suggestions')).suggestions as any[];
+    expect(gone.some((s) => s.title === 'Send the venue contract' && s.status === 'pending')).toBe(
+      false,
+    );
+    modelSays(
+      JSON.stringify({
+        summary: 'Sam books the caterer.',
+        topics: [],
+        decisions: [],
+        nextSteps: [{ who: 'Sam', what: 'Book the caterer', due: null, line: 1 }],
+      }),
+      'book the caterer',
+    );
+    t.clock.advance(6_000);
+    await work();
+    expect((await sam.get(`/v1/calls/${callId}/notes`)).summary.summary).toBe(
+      'Sam books the caterer.',
+    );
+    const again = await t.ctx.db
+      .selectFrom('notifications')
+      .select('id')
+      .where('kind', '=', 'call')
+      .where('body', 'like', 'Your notes from the call%')
+      .execute();
+    expect(again).toHaveLength(2);
+    // Someone who wasn't in the call reads none of it.
+    expect((await omar.req('GET', `/v1/calls/${callId}/notes`)).statusCode).toBe(404);
+  });
+
+  it('none to write when nothing was heard, and gone with the call’s line', async () => {
+    const callId = await ring();
+    await ask(noor, callId, 'noor-tab-1');
+    await sam.req('POST', `/v1/calls/${callId}/accept`, {
+      deviceId: 'sam-phone-1',
+      notes: 'yes',
+      canRecord: false,
+    });
+    await noor.req('POST', `/v1/calls/${callId}/end`, { deviceId: 'noor-tab-1' });
+    await t.ctx.flush();
+    t.clock.advance(6_000);
+    await work();
+    const row = await t.ctx.db
+      .selectFrom('call_note_summaries')
+      .select(['state', 'message_id'])
+      .where('call_id', '=', callId)
+      .executeTakeFirst();
+    // Nothing was said: no notes to write, and no model asked.
+    expect(row?.state).toBe('none');
+    expect(row?.message_id).toBeTruthy();
+    await t.ctx.db
+      .transaction()
+      .execute((trx) =>
+        eraseMessagesWhere(trx, sql`select ${row!.message_id}::uuid as id`, new Date()),
+      );
+    expect(
+      await t.ctx.db
+        .selectFrom('call_note_summaries')
+        .select('call_id')
+        .where('call_id', '=', callId)
+        .executeTakeFirst(),
+    ).toBeUndefined();
+  });
+
+  it('waits out a busy model, offers nothing to whoever wants less or has assist off, and writes again once', async () => {
+    await noor.req('PATCH', '/v1/me', { preferences: { caiInitiative: 'less' } });
+    await sam.patch('/v1/me', { aiEnabled: false });
+    const callId = await ring();
+    await ask(noor, callId, 'noor-tab-1');
+    await sam.req('POST', `/v1/calls/${callId}/accept`, {
+      deviceId: 'sam-phone-1',
+      notes: 'yes',
+      canRecord: false,
+    });
+    const now = Date.now();
+    const said3: Array<[string, string]> = [
+      [noor.user.id, 'I will print the tickets tonight.'],
+      [sam.user.id, 'I will bring the banner.'],
+      [noor.user.id, 'And I will call the printer.'],
+    ];
+    for (const [i, [speaker, text]] of said3.entries()) {
+      replies.push({ status: 200, json: { text, language: 'en' } });
+      await line(noor, callId, 'noor-tab-1', speaker, wav(), now + i * 5_000);
+      await work();
+    }
+    await noor.req('POST', `/v1/calls/${callId}/end`, { deviceId: 'noor-tab-1' });
+    await t.ctx.flush();
+    const forThisCall = () =>
+      asked.filter(
+        (b) => b.includes('You write the notes of a call') && b.includes('bring the banner'),
+      ).length;
+
+    // The model is busy (each of the client's tries): the notes wait a minute, still being written.
+    const busy = {
+      status: 529,
+      json: { type: 'error', error: { type: 'overloaded_error', message: 'Overloaded' } },
+      match: 'bring the banner',
+    };
+    said.push(busy, { ...busy }, { ...busy });
+    t.clock.advance(6_000);
+    await work();
+    expect((await noor.get(`/v1/calls/${callId}/notes`)).summaryState).toBe('writing');
+    modelSays(
+      JSON.stringify({
+        summary: 'Tickets, a banner and the printer.',
+        topics: [],
+        decisions: [],
+        nextSteps: [
+          { who: 'Noor', what: 'Print the tickets', due: null, line: 1 },
+          { who: 'Sam', what: 'Bring the banner', due: null, line: 2 },
+        ],
+      }),
+      'bring the banner',
+    );
+    t.clock.advance(61_000);
+    await work();
+    expect((await noor.get(`/v1/calls/${callId}/notes`)).summaryState).toBe('written');
+
+    // Noor asked Cai to do less unasked, and Sam has AI assist off: both read the notes, with
+    // every step in them, and both are told; neither is offered anything from them.
+    const titles = async (c: Client) =>
+      ((await c.get('/v1/suggestions')).suggestions as any[]).map((s) => s.title);
+    for (const c of [noor, sam]) {
+      const read = await c.get(`/v1/calls/${callId}/notes`);
+      expect(read.summary.nextSteps.map((n: { what: string }) => n.what)).toEqual([
+        'Print the tickets',
+        'Bring the banner',
+      ]);
+      const offered = await titles(c);
+      expect(offered).not.toContain('Print the tickets');
+      expect(offered).not.toContain('Bring the banner');
+    }
+    const told = await t.ctx.db
+      .selectFrom('notifications')
+      .select('user_id')
+      .where('kind', '=', 'call')
+      .where('body', 'like', 'Your notes from the call%')
+      .where(sql<boolean>`data->>'callId' = ${callId}`)
+      .execute();
+    expect(told.map((n) => n.user_id).sort()).toEqual([noor.user.id, sam.user.id].sort());
+
+    // She deletes both her lines, a second apart: written again once, without them.
+    const before = forThisCall();
+    const mine = (await noor.get(`/v1/calls/${callId}/notes`)).lines.filter(
+      (l: { mine: boolean }) => l.mine,
+    );
+    expect(mine).toHaveLength(2);
+    for (const l of mine) {
+      await noor.req('DELETE', `/v1/calls/${callId}/notes/lines/${l.id}`);
+      t.clock.advance(1_000);
+    }
+    modelSays(
+      JSON.stringify({
+        summary: 'Sam brings the banner.',
+        topics: [],
+        decisions: [],
+        nextSteps: [],
+      }),
+      'bring the banner',
+    );
+    t.clock.advance(6_000);
+    await work();
+    expect(forThisCall()).toBe(before + 1);
+    expect((await sam.get(`/v1/calls/${callId}/notes`)).summary.summary).toBe(
+      'Sam brings the banner.',
+    );
+    await noor.req('PATCH', '/v1/me', { preferences: { caiInitiative: 'usual' } });
+    await sam.patch('/v1/me', { aiEnabled: true });
   });
 });

@@ -31,6 +31,7 @@ import { businessRealtime } from './lib/business';
 import { registerCaiJobs } from './lib/cai';
 import { registerCalendarPush } from './lib/calendar-push';
 import { registerNotesJob } from './lib/call-notes';
+import { registerNotesSummaryJob } from './lib/call-notes-summary';
 import { registerCallSweep } from './lib/calls';
 import { canonicalLocation } from './lib/canonical-host';
 import { deferredQueue } from './lib/deferred';
@@ -415,6 +416,7 @@ export async function buildApp(config: Config, options: BuildOptions = {}): Prom
   registerGuestsAgain();
   registerTranscribeJob(afterTranscript);
   registerNotesJob();
+  registerNotesSummaryJob();
   registerLinkPreviewJob();
   registerMailJobs();
   registerEffectsSweep();

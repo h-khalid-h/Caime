@@ -98,6 +98,10 @@ export async function eraseMessagesWhere(
     notes_gone as (
       delete from call_notes where message_id in (select id from gone) returning id
     ),
+    -- And Cai's write-up of them (M16 F7e).
+    summaries_gone as (
+      delete from call_note_summaries where message_id in (select id from gone)
+    ),
     note_audio as (
       select file_id from call_note_lines
       where notes_id in (select id from notes_gone) and file_id is not null

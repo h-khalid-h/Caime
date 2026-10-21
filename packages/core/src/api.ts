@@ -3226,6 +3226,19 @@ export interface CallNoteLineView {
   mine: boolean;
 }
 
+/**
+ * Cai's write-up of a call's notes (M16 F7e), for whoever was in it for all of it: what it was
+ * about, its topics, what was decided and the next steps by person, as Cai wrote them.
+ */
+export interface CallNotesSummaryView {
+  summary: string;
+  topics: Array<{ title: string; points: string[] }>;
+  decisions: string[];
+  /** Whose step it is as the notes name them (null: nobody in particular), and by when. */
+  nextSteps: Array<{ who: string | null; what: string; due: string | null }>;
+  label: string;
+}
+
 /** `GET /calls/:id/notes`: what was said, from when the reader joined. */
 export interface CallNotesResponse {
   callId: string;
@@ -3233,6 +3246,10 @@ export interface CallNotesResponse {
   /** The call's latest notes, as everyone in it saw them. */
   notes: CallNotesView | null;
   lines: CallNoteLineView[];
+  /** Cai's write-up (M16 F7e): only for whoever heard it all; null while there's none. */
+  summary: CallNotesSummaryView | null;
+  /** Being written, written, or none to write (assist off, nothing heard); null: not theirs. */
+  summaryState: 'writing' | 'written' | 'none' | null;
 }
 
 /** What the notes' routes answer with: how they stand now. */

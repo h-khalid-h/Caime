@@ -1660,10 +1660,15 @@ A sphere is said as how you know someone, never "sphere".
   (`lib/notes-allowed.ts`), for the in-call ask and for a meeting card that chooses them ahead
   (`fields.notes: 'cai'`, M16 F7c, checked in `sendMessage`); a meeting's Join goes through
   `joinDirect` or `joinGroupMeeting` (`features/calls/calls.ts`), which answer or join the call
-  that's on and ask with Cai. Cai on the notes is on ask alone (`lib/call-notes-ai.ts`, M16 F7d):
-  `notesFor`'s lines as a transcript, a catch-up kept nowhere and follow-ups as the reader's
-  suggestions by line (`ai:callnote:<line>:<kind>`); anything new drawn from the notes is asked
-  for the same way. The E2E runs in a project of its own (`chromium-speech`) whose microphone
+  that's on and ask with Cai. Once the call is over, Cai writes the notes up once (M16 F7e,
+  `lib/call-notes-summary.ts`, queued as its line is written): `call_note_summaries`, one row a
+  call, gone with its line; read by whoever was in it for all of it; each next step its person's
+  suggestion by line (`ai:callnote:<line>:<kind>`, the same key F7d's follow-ups take, so a line
+  is offered once), Cai's own initiative and only to whoever has AI assist on; a deleted line
+  takes back what came of it and writes them again, the latest ask alone (`requested_at`). Someone who
+  came in later asks instead (`lib/call-notes-ai.ts`, M16 F7d): a catch-up kept nowhere and
+  follow-ups by line. Anything new drawn from a call's notes joins the write-up, never a summary
+  of its own. The E2E runs in a project of its own (`chromium-speech`) whose microphone
   speaks and pauses (`e2e/fake-speech.ts`).
 - A meeting's guests (R83, R84): invited by address from an accepted meeting card held here
   (`features/kits/MeetingGuests.tsx`: Invite a guest, the sheet lazy; the card that moved says

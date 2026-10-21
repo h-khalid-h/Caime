@@ -2372,3 +2372,32 @@ with its reason, so it isn't proposed again without new facts.
   word measured on a real call, and the cost per minute in RESOURCES.md (convention 13), the
   provider in `processors.ts` and the DPA first. *Not adopted:* the caller paying; a credit of
   Caime's own that people buy (the plan's allowance, and billing's top-up, are the one budget).
+- **R112 (2026-10-21) A call's notes, written up once, as a note-taker would; one intelligence.**
+  The owner: "We previously discussed that Cai will participate in meetings, calls, etc: ensure no
+  fragmentation, duplication or confusion across the entire Caime intelligence", with what Gemini
+  Notes does as the example: after a meeting, its summary by topic and its next steps by person,
+  sent to who was there. Caime had the words (F7) and, on ask, a catch-up and follow-ups for each
+  reader (F7d): two summaries of one call if two people asked, none if nobody did, and nothing
+  that said whose a step was. *Decided:* (1) *Once a call with notes is over and every word in it
+  is heard, Cai writes them up once*: what it was about, its topics and their points, what was
+  decided, and the next steps by person, in the language most of it was said in, on the asker's
+  day by cost (R107) and on their plan's model, as finding follow-ups is. This changes R109 (6)'s
+  "nothing is drawn from them unless asked" for the write-up alone: everyone in the call said yes
+  to Cai taking notes, and the write-up is what notes are taken for. (2) *For whoever was in it for
+  all of it* (R85 (2)): someone who came in later reads from when they joined, and asks Cai to
+  catch them up on that (F7d stays theirs). (3) *Each next step is its person's suggestion*, by the
+  line it came from, under the same key as F7d's follow-ups, so one line is never offered twice
+  whichever way it was found; in a call of two the other waits on it, and a decision is the asker's
+  to record (R12: none of it is a fact until accepted). The notes were asked for and the
+  suggestions weren't: they are Cai's own initiative, which a person's setting holds back (R66),
+  and offered only to someone with AI assist on, as anything Cai finds for them is (F7d). (4)
+  *Told once*, each in their own language, everyone who heard it all, and kept on the call's line:
+  gone with it (disappearing, erasure), and written again without someone's words when they
+  delete them, whatever was drawn from those words and not yet answered going too; words deleted
+  one after another are written up once, by the latest ask, and a busy model or the asker's hour
+  of AI assist used up puts the notes off rather than losing them. A person's export keeps their
+  own words and the suggestions drawn for them, never the write-up, which tells everyone's words
+  again. (5) *One intelligence*: the brief before the next meeting reads the actions
+  taken from it as it reads any (R58), Cai's digest counts them, and nothing else keeps a summary
+  of a call. *Not yet:* mailing the write-up to a meeting's guests, who were in it on Caime but
+  have no app (R83); a meeting card showing its notes beside its time.

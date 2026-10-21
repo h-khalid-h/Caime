@@ -1752,4 +1752,7 @@ export const frServer: Catalog = {
   'That one starts on your device.': 'Celui-ci se lance depuis votre appareil.',
   'Open your chat with {name} first.': 'Ouvrez d’abord votre conversation avec {name}.',
   'That isn’t your chat with {name}.': 'Ce n’est pas votre conversation avec {name}.',
+  'Your notes from the call with {name} are ready.':
+    'Vos notes de l’appel avec {name} sont prêtes.',
+  'Your notes from the call are ready.': 'Vos notes de l’appel sont prêtes.',
 };

@@ -2567,4 +2567,6 @@ export const frB: Catalog = {
     'Faites-en votre propre compte Caime, gratuit : cette conversation et ce qui s’y est dit restent à vous.',
   'Taken out of your actions': 'Retiré de vos actions',
   'Open Actions': 'Ouvrir les actions',
+  'Next steps': 'Prochaines étapes',
+  'Cai is writing the notes…': 'Cai rédige les notes…',
 };

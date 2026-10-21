@@ -3341,4 +3341,6 @@ export const arB: Catalog = {
     'حساب Caime خاص بك، مجانًا: تبقى لك هذه المحادثة وما قيل فيها.',
   'Taken out of your actions': 'أُزيل من إجراءاتك',
   'Open Actions': 'فتح الإجراءات',
+  'Next steps': 'الخطوات التالية',
+  'Cai is writing the notes…': 'Cai يكتب الملاحظات…',
 };

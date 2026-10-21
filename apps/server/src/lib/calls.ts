@@ -23,6 +23,7 @@ import { type Kysely, sql, type Transaction } from 'kysely';
 import type { AppContext } from '../context';
 import type { Call, Database } from '../db/schema';
 import { notesAtEnd, notesViewOf, notesWithLine } from './call-notes';
+import { queueNotesSummary } from './call-notes-summary';
 import { titleWithGroup } from './conversations';
 import { registerPeriodic } from './jobs';
 import { insertSystemMessage, messageViews, participantsOf } from './messages';
@@ -293,7 +294,11 @@ export async function endCall(
       // Its notes open from its line, and go with it (M16 F7).
       ...(taken ? { notes: true } : {}),
     });
-    if (taken) await notesWithLine(ctx, ended.id, line.id);
+    if (taken) {
+      await notesWithLine(ctx, ended.id, line.id);
+      // Cai writes them up once every word is heard (M16 F7e).
+      await queueNotesSummary(ctx, ended, { messageId: line.id });
+    }
     const [view] = await messageViews(ctx.db, [line], ended.caller_id);
     await ctx.bus.publish(
       (await participantsOf(ctx.db, ended.conversation_id)).map((p) => p.user_id),
