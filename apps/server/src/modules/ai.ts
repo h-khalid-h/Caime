@@ -35,6 +35,7 @@ import {
 } from '@caime/core';
 import { tr } from '@caime/core/i18n';
 import type { FastifyInstance } from 'fastify';
+import { sql } from 'kysely';
 import { z } from 'zod';
 import type { AppContext } from '../context';
 import type { Conversation, Message } from '../db/schema';
@@ -193,6 +194,23 @@ export async function aiRoutes(app: FastifyInstance, ctx: AppContext) {
     };
   }
 
+  /**
+   * Everything others wrote since the reader last read (M17 I3), counted as the transcript counts
+   * what's new: a catch-up that read only the latest of it says so, never passing for the whole.
+   */
+  async function unreadSince(viewerId: string, conversationId: string, lastReadSeq: number) {
+    const row = await ctx.db
+      .selectFrom('messages')
+      .select(sql<number>`count(*)::int`.as('n'))
+      .where('conversation_id', '=', conversationId)
+      .where('seq', '>', String(lastReadSeq))
+      .where('sender_id', 'is distinct from', viewerId)
+      .where('kind', '<>', 'system')
+      .where(readableBy(viewerId, ctx.now()))
+      .executeTakeFirstOrThrow();
+    return row.n;
+  }
+
   const today = (timeZone: string) => transcriptClock(timeZone).day(ctx.now());
 
   app.get('/ai', async (req): Promise<AiStatusView> => {
@@ -250,13 +268,11 @@ export async function aiRoutes(app: FastifyInstance, ctx: AppContext) {
     const { id } = parse(z.object({ id: z.string().uuid() }), req.params);
     const { ai, me } = await gate(auth.userId);
     const { me: seat } = await readable(auth.userId, id);
-    const { transcript, lines, newCount } = await transcriptOf(
-      auth.userId,
-      id,
-      Number(seat.last_read_seq),
-      me.time_zone,
-    );
-    if (lines.length === 0) return { summary: null, label: null, newCount: 0 };
+    const [{ transcript, lines, newCount }, unread] = await Promise.all([
+      transcriptOf(auth.userId, id, Number(seat.last_read_seq), me.time_zone),
+      unreadSince(auth.userId, id, Number(seat.last_read_seq)),
+    ]);
+    if (lines.length === 0) return { summary: null, label: null, newCount: 0, unread };
     const language = languageName(await languageOf(ctx, auth.userId));
     const summary = await run('catch-up', auth.userId, () =>
       ai.catchUp({
@@ -265,7 +281,7 @@ export async function aiRoutes(app: FastifyInstance, ctx: AppContext) {
         today: today(me.time_zone),
       }),
     );
-    return { summary, label: AI_LABEL, newCount };
+    return { summary, label: AI_LABEL, newCount, unread };
   });
 
   /**

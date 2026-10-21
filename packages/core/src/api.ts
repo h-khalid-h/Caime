@@ -2600,6 +2600,11 @@ export interface AiCatchUpView {
   label: string | null;
   /** Messages since the reader last read, among those summarized. */
   newCount: number;
+  /**
+   * Everything others wrote since the reader last read (M17 I3): more than `newCount` when the
+   * catch-up read only the latest of it, which the app then says.
+   */
+  unread: number;
 }
 
 /**

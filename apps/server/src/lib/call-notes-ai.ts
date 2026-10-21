@@ -90,7 +90,8 @@ export async function catchUpOnNotes(
 ): Promise<AiCatchUpView> {
   const { ai, me } = await aiGate(ctx, userId);
   const { transcript, lines } = await noteTranscript(ctx, call, userId, me.time_zone);
-  if (!lines.length) return { summary: null, label: null, newCount: 0 };
+  // A call's notes are read whole: nothing new is left out (M17 I3).
+  if (!lines.length) return { summary: null, label: null, newCount: 0, unread: 0 };
   const language = languageName(await languageOf(ctx, userId));
   const summary = await runAi(ctx, 'notes-catch-up', userId, () =>
     ai.catchUp({
@@ -99,7 +100,7 @@ export async function catchUpOnNotes(
       today: transcriptClock(me.time_zone).day(ctx.now()),
     }),
   );
-  return { summary, label: AI_LABEL, newCount: 0 };
+  return { summary, label: AI_LABEL, newCount: 0, unread: 0 };
 }
 
 /**

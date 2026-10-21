@@ -2488,4 +2488,6 @@ export const turkishB: Catalog = {
   '{name} said “{title}” would be done by {when}. Still waiting?':
     '{name}, “{title}” için {when} demişti. Hâlâ bekliyor musunuz?',
   'Is “{title}” from {name} still to come?': '{name} kişisinden “{title}” hâlâ bekleniyor mu?',
+  'From the latest {count} of {total} new messages.':
+    '{total} yeni mesajın son {count} tanesinden.',
 };

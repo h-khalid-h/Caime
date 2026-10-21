@@ -112,6 +112,15 @@ export function AssistTools({ conversationId }: { conversationId: string }) {
               <Text variant="body" auto={result.summary} selectable>
                 {result.summary}
               </Text>
+              {result.unread > result.newCount ? (
+                // Read only the latest of what's new (M17 I3): said, never passing for the whole.
+                <Text variant="caption" color="textSecondary" testID="assist-summary-window">
+                  {tr('From the latest {count} of {total} new messages.', {
+                    count: result.newCount,
+                    total: result.unread,
+                  })}
+                </Text>
+              ) : null}
             </>
           ) : (
             <Text variant="body" color="textSecondary">

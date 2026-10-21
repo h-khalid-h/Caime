@@ -2575,4 +2575,6 @@ export const frB: Catalog = {
   '{name} said “{title}” would be done by {when}. Still waiting?':
     '{name} avait dit que « {title} » serait fait pour {when}. Toujours en attente ?',
   'Is “{title}” from {name} still to come?': '« {title} » de {name} est-il toujours attendu ?',
+  'From the latest {count} of {total} new messages.':
+    'D’après les {count} derniers des {total} nouveaux messages.',
 };

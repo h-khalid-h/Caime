@@ -4016,10 +4016,14 @@ clinic can sign for. I1 lands before launch.
       done" as soon as its action is closed. The number: waits closed within seven days of their
       day (`core.waitsClosedOnTime` in the operator's product metrics). Verified:
       `reminders.test.ts`, `product-metrics.test.ts`, and the Cai, messaging and suggestion suites.
+- [x] I3a. A catch-up says how much it read (S): "Catch me up" reads a conversation's latest 200
+      messages and 60,000 characters; it now counts everything others wrote since the reader last
+      read (`AiCatchUpView.unread`, one count under `readableBy`) and, when it read only the
+      latest of it, says so under the summary ("From the latest 39 of 45 new messages."), never
+      passing for the whole. Verified: `ai.test.ts` (45 long messages: all 45 counted, the latest 39 read).
 - [ ] I3. What did I miss (M; L with the summary): the Needs-you conversations since each was last
       read, by the rules, ranked as Attention ranks them, with a cited summary for whoever has
-      assist on, cached by read position, in Cai's chat and on Attention; a catch-up past 200
-      messages says how much it read.
+      assist on, cached by read position, in Cai's chat and on Attention.
 - [ ] I4. One cited answer engine (M): Cai's chat answers questions about people and what they said
       through Search's engine with its sources; "Ask about this conversation" is that engine scoped
       to it; one answering prompt; the model keeps the rules' time phrase; catch-ups and briefs cite
@@ -5638,6 +5642,8 @@ clinic can sign for. I1 lands before launch.
 - 2026-10-20 — The French and Turkish catalogs come in two halves fetched side by side, as Arabic
   does: their largest download 48.9 KB where one was 95.2 KB of a chunk's 100; the first download
   448.8 KB of 450 (0.2 KB more: the two loaders).
+- 2026-10-21 — M17 I3a: a catch-up that read only the latest of what's new says how much
+  ("From the latest 39 of 45 new messages.").
 - 2026-10-21 — M17 I2c, and so I2: one way a wait is brought up (where it stands read once; the
   reminder, Cai's follow-up and Attention's ask say only that; the "No reply" push and the chat's
   "follow up?" leave an ask to the wait it became); a pending card follows its edited words and

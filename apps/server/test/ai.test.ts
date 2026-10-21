@@ -212,6 +212,7 @@ describe('AI assist (PRD §45, R17, R18)', () => {
         'Lina booked the venue visit for Thursday at 11am and asked you to bring the floor plan.',
       label: 'Suggested by Cai',
       newCount: 2,
+      unread: 2,
     });
     const sent = last().body;
     const lines = sent.messages[0].content.split('\n').slice(1, -1);
@@ -228,8 +229,20 @@ describe('AI assist (PRD §45, R17, R18)', () => {
       summary: null,
       label: null,
       newCount: 0,
+      unread: 0,
     });
     expect(requests.length).toBe(before);
+  });
+
+  it('says it read only the latest when more arrived than it reads (M17 I3)', async () => {
+    const sana = await signup(t, { displayName: 'Sana Idris' });
+    const c = await connect(sana, noor);
+    // Forty-five long messages: past the 60,000 characters a catch-up reads.
+    for (let i = 0; i < 45; i++) await say(sana, c, `Note ${i + 1}: ${'x'.repeat(1_480)}`);
+    replies.push(message('Sana sent a long run of notes.'));
+    const r = await noor.post(`/v1/conversations/${c}/catch-up`, {});
+    // The latest 39 fit the 60,000 characters; all 45 are counted.
+    expect(r).toMatchObject({ unread: 45, newCount: 39 });
   });
 
   it('answers a question about the conversation from it, in the question’s language, keeping nothing', async () => {
@@ -452,6 +465,8 @@ describe('AI assist (PRD §45, R17, R18)', () => {
       'rewrite ok',
       'translate ok',
       'catch-up ok',
+      // Past what a catch-up reads (M17 I3).
+      'catch-up ok',
       'actions ok',
       'actions ok',
       'actions ok',
@@ -490,7 +505,7 @@ describe('AI assist (PRD §45, R17, R18)', () => {
     expect(tokens('cache_creation')).toBeGreaterThanOrEqual(2);
     // They are the person's own data: in their export, as what and when.
     const archive = JSON.parse((await noor.req('GET', '/v1/me/export')).body);
-    expect(archive.aiAssist).toHaveLength(8);
+    expect(archive.aiAssist).toHaveLength(9);
     expect(archive.aiAssist[0]).toEqual({
       feature: 'rewrite',
       provider: 'anthropic',

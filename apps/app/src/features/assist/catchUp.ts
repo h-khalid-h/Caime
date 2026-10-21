@@ -7,7 +7,13 @@ import { endpoints } from '@/api/endpoints';
 
 export type CatchUp =
   | { state: 'loading' }
-  | { state: 'done'; summary: string | null; label: string | null; newCount: number }
+  | {
+      state: 'done';
+      summary: string | null;
+      label: string | null;
+      newCount: number;
+      unread: number;
+    }
   | { state: 'failed'; error: string };
 
 export const useCatchUps = create<{
@@ -28,6 +34,7 @@ export async function catchUp(conversationId: string): Promise<void> {
       summary: r.summary,
       label: r.label,
       newCount: r.newCount,
+      unread: r.unread,
     });
   } catch (e) {
     put(conversationId, { state: 'failed', error: (e as Error).message });

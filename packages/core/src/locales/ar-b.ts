@@ -3349,4 +3349,5 @@ export const arB: Catalog = {
   '{name} said “{title}” would be done by {when}. Still waiting?':
     'موعد {name} لإنجاز «{title}» كان {when}. هل ما زال الانتظار قائمًا؟',
   'Is “{title}” from {name} still to come?': 'هل ما زال «{title}» من {name} منتظرًا؟',
+  'From the latest {count} of {total} new messages.': 'من آخر {count} من أصل {total} رسالة جديدة.',
 };
