@@ -28,7 +28,7 @@ import { z } from 'zod';
 import type { AppContext } from '../context';
 import type { Task } from '../db/schema';
 import { MESSAGE_COLUMNS } from '../db/schema';
-import { createDecision, createTask } from '../lib/actions';
+import { createDecision, createTask, reminderFor } from '../lib/actions';
 import { assertCanWrite } from '../lib/blocks';
 import { customerMask, maskFor } from '../lib/business';
 import { calendarItems } from '../lib/calendar';
@@ -225,13 +225,16 @@ export async function actionRoutes(app: FastifyInstance, ctx: AppContext) {
       placeInvitationsFor(ctx, me),
     ]);
     const waiting = await taskViews(ctx, rows, me);
-    // A wait gone quiet: three days or more (a day with "More", never with "Less": R66), and not
-    // asked about since (asking sets a reminder).
+    // A wait gone quiet: three days or more (a day with "More", never with "Less": R66) after it
+    // was made or, where it named a day, after that day (M17 I2), and not asked about since
+    // (asking sets a reminder).
     const quietAfter = quietWaitAfterMs(initiativeOf(mine?.preferences));
+    const quietSince = (t: (typeof rows)[number]) =>
+      Math.max(t.created_at.getTime(), t.due_at?.getTime() ?? 0);
     const quiet = rows.find(
       (t) =>
         quietAfter !== null &&
-        now.getTime() - t.created_at.getTime() >= quietAfter &&
+        now.getTime() - quietSince(t) >= quietAfter &&
         (!t.remind_at || t.remind_at.getTime() <= now.getTime()),
     );
     return {
@@ -329,7 +332,8 @@ export async function actionRoutes(app: FastifyInstance, ctx: AppContext) {
           notes: body.notes ?? null,
           dueAt: body.dueAt ?? null,
           dueHasTime: body.dueHasTime ?? false,
-          remindAt: body.remindAt ?? null,
+          // Left out, the one rule decides (M17 I2); null, it never reminds.
+          remindAt: body.remindAt,
           conversationId: body.conversationId ?? null,
           messageId: body.messageId ?? null,
           contextId: body.contextId ?? null,
@@ -433,6 +437,30 @@ export async function actionRoutes(app: FastifyInstance, ctx: AppContext) {
       if (body.status === 'done' && !isOwner && !isAssignee) throw forbidden();
     }
     const done = body.status === 'done';
+    // Its day moved and its reminder not said: the one the rule made moves with it (M17 I2); one
+    // chosen by hand, or none chosen, stays as it was.
+    let moved: { remind_at: Date | null; reminded_at: null } | null = null;
+    if (
+      body.remindAt === undefined &&
+      (body.dueAt !== undefined || body.dueHasTime !== undefined)
+    ) {
+      const who = { ownerId: t.owner_id, assigneeId: t.assignee_id ?? t.owner_id };
+      // What the rule gave it when it was made: the same, and it's the rule's to move.
+      const made = await reminderFor(
+        ctx.db,
+        { now: () => t.created_at },
+        { ...who, dueAt: t.due_at, dueHasTime: t.due_has_time },
+      );
+      if ((made?.getTime() ?? null) === (t.remind_at?.getTime() ?? null))
+        moved = {
+          remind_at: await reminderFor(ctx.db, ctx, {
+            ...who,
+            dueAt: body.dueAt !== undefined ? body.dueAt : t.due_at,
+            dueHasTime: body.dueHasTime ?? t.due_has_time,
+          }),
+          reminded_at: null,
+        };
+    }
     const updated = await ctx.db
       .updateTable('tasks')
       .set({
@@ -441,6 +469,7 @@ export async function actionRoutes(app: FastifyInstance, ctx: AppContext) {
         ...(body.dueAt !== undefined ? { due_at: body.dueAt } : {}),
         ...(body.dueHasTime !== undefined ? { due_has_time: body.dueHasTime } : {}),
         ...(body.remindAt !== undefined ? { remind_at: body.remindAt, reminded_at: null } : {}),
+        ...(moved ?? {}),
         // Only a wait on someone else is Cai's to follow up (R68).
         ...(body.caiFollowUp !== undefined
           ? { cai_follow_up: body.caiFollowUp && Boolean(t.assignee_id) && t.assignee_id !== me }

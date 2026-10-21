@@ -585,6 +585,13 @@ A sphere is said as how you know someone, never "sphere".
   card of captions. Anything that starts a
   conversation, a group or a space is offered from the Chats "+" sheet (`NewChatSheet`) as well
   as its own tab: one place to start, and the screens it opens stay the only ones.
+- When an action reminds its owner is one rule (M17 I2, core `remindAtFor`, `remind-at.ts`):
+  `createTask` runs it through `reminderFor` (`lib/actions.ts`: the owner's clock, their brief's
+  hour as their morning, no wait reminded with Cai on "Less") whenever `remindAt` is left out, so
+  a new way to make an action leaves it out (`asked: true` for a "remind me"), never a time of its
+  own; null means never. One of their own rings its morning, a wait at the end of its day, and
+  `PATCH /tasks/:id` moves a reminder the rule made when the day moves (it recomputes what the
+  rule gave at `created_at` to tell), never one chosen by hand.
 - Whose tasks a person sees is one rule, `visibleTasksSql(me)` (`lib/task-visibility.ts`): their
   own, and what's asked of them that was shared with them. Every reader of `tasks` for a person
   (Actions, the inbox's counts, Cai and the friends, the briefs, the calendar) puts it in its

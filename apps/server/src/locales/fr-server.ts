@@ -1730,7 +1730,6 @@ export const frServer: Catalog = {
     'C’est un appel sur Caime. À son heure, rejoignez-le depuis votre propre lien : {link}',
   'I’ll remind you: “{title}”': 'Je vous le rappellerai : « {title} »',
   'Saved to your actions: “{title}”': 'Ajouté à vos actions : « {title} »',
-  'Tell me when, and I’ll remind you then.': 'Dites-moi quand, et je vous le rappellerai.',
   'What should I keep? Write it after “Remind me to” or “Add an action:”, and I’ll save it.':
     'Que dois-je garder ? Écrivez-le après « Rappelle-moi de » ou « Ajoute une tâche : », et je l’enregistre.',
   'Let’s look for “{query}” in your conversations.':
@@ -1767,4 +1766,5 @@ export const frServer: Catalog = {
     'Ce créneau n’est plus libre : répondez vous-même.',
   'That order can’t be taken as it stands now: answer it yourself.':
     'Cette commande ne peut plus être prise telle quelle : répondez vous-même.',
+  '{name} said it would be done by now': '{name} avait dit que ce serait fait à cette heure',
 };

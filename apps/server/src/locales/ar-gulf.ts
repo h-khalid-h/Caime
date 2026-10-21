@@ -282,7 +282,6 @@ export const gulfVoice: Catalog = {
     'أو اسأل عن أحد من معارفك، بالاسم أو بالصلة: وش تنتظر، ووش المطلوب منك، ووش اتفقتوا عليه، والمدفوعات.',
   'I’ll remind you: “{title}”': 'بذكّرك: «{title}»',
   'Saved to your actions: “{title}”': 'انحفظ في إجراءاتك: «{title}»',
-  'Tell me when, and I’ll remind you then.': 'قل لي متى وبذكّرك وقتها.',
   'What should I keep? Write it after “Remind me to” or “Add an action:”, and I’ll save it.':
     'وش أحفظ؟ اكتبه بعد «ذكّرني» أو «أضف مهمة:»، وأحفظه لك.',
   'Let’s look for “{query}” in your conversations.': 'خلنا ندوّر على «{query}» في محادثاتك.',

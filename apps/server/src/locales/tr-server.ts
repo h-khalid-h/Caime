@@ -1655,7 +1655,6 @@ export const turkishServer: Catalog = {
     'Bu bir Caime görüşmesi. Saatinde kendi bağlantınızdan katılın: {link}',
   'I’ll remind you: “{title}”': 'Size hatırlatacağım: “{title}”',
   'Saved to your actions: “{title}”': 'Eylemlerinize kaydedildi: “{title}”',
-  'Tell me when, and I’ll remind you then.': 'Ne zaman olduğunu söyleyin, o zaman hatırlatayım.',
   'What should I keep? Write it after “Remind me to” or “Add an action:”, and I’ll save it.':
     'Neyi kaydedeyim? “Yeni görev:” diye başlayın ya da sonuna “hatırlat” yazın, kaydedeyim.',
   'Let’s look for “{query}” in your conversations.': '“{query}” için konuşmalarınıza bakalım.',
@@ -1690,4 +1689,5 @@ export const turkishServer: Catalog = {
     'Bu saat artık boş değil: kendiniz yanıtlayın.',
   'That order can’t be taken as it stands now: answer it yourself.':
     'Bu sipariş şu haliyle alınamıyor: kendiniz yanıtlayın.',
+  '{name} said it would be done by now': '{name} bunun şimdiye kadar biteceğini söylemişti',
 };

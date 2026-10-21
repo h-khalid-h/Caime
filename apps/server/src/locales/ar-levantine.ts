@@ -282,7 +282,6 @@ export const levantineVoice: Catalog = {
     'أو اسأل عن حدا من معارفك، بالاسم أو بالصلة: شو عم تستنى، وشو مطلوب منك، وشو اتفقتو عليه، والمدفوعات.',
   'I’ll remind you: “{title}”': 'رح ذكّرك: «{title}»',
   'Saved to your actions: “{title}”': 'انحفظ بإجراءاتك: «{title}»',
-  'Tell me when, and I’ll remind you then.': 'قلّي إيمتى ورح ذكّرك وقتها.',
   'What should I keep? Write it after “Remind me to” or “Add an action:”, and I’ll save it.':
     'شو بدك احفظ؟ اكتبه بعد «ذكّرني» أو «ضيف مهمة:»، وبحفظه.',
   'Let’s look for “{query}” in your conversations.': 'خلّينا ندوّر على «{query}» بمحادثاتك.',

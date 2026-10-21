@@ -282,7 +282,6 @@ export const egyptianVoice: Catalog = {
     'أو اسأل عن حد من معارفك، بالاسم أو بالصلة: اللي بتستناه، واللي مطلوب منك، واللي اتفقتوا عليه، والفلوس.',
   'I’ll remind you: “{title}”': 'هفكّرك: «{title}»',
   'Saved to your actions: “{title}”': 'اتحفظ في إجراءاتك: «{title}»',
-  'Tell me when, and I’ll remind you then.': 'قولّي إمتى وهفكّرك ساعتها.',
   'What should I keep? Write it after “Remind me to” or “Add an action:”, and I’ll save it.':
     'أحفظ إيه؟ اكتبه بعد «فكّرني» أو «ضيف مهمة:»، وأنا أحفظه.',
   'Let’s look for “{query}” in your conversations.': 'يلا ندوّر على «{query}» في محادثاتك.',

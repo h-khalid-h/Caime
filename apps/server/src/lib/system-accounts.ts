@@ -698,25 +698,24 @@ async function keepIt(
     notes: keep.details,
     dueAt: when?.at ?? null,
     dueHasTime: Boolean(when?.time),
-    remindAt: keep.remind && when ? when.at : null,
+    // Asked, the rule rings it (M17 I2): at its hour, its morning, or the next morning.
+    ...(keep.remind ? { asked: true } : {}),
     conversationId,
     messageId,
   });
   await ctx.bus.publish([me.id], { type: 'task.created', data: { id: task.id } });
-  // When it's for, as a label after it ("· Tomorrow 09:00"); a reminder says the hour it rings.
-  const at = when
-    ? formatDue(when.at, ctx.now(), me.time_zone, locale, Boolean(when.time) || keep.remind)
-    : null;
+  // When it's for, as a label after it ("· Tomorrow 09:00"); a reminder says when it rings.
+  const rings = keep.remind ? task.remind_at : null;
+  const at = rings
+    ? formatDue(rings.toISOString(), ctx.now(), me.time_zone, locale, true)
+    : when
+      ? formatDue(when.at, ctx.now(), me.time_zone, locale, Boolean(when.time))
+      : null;
   const saved =
     keep.remind && at
       ? tr('I’ll remind you: “{title}”', { title })
       : tr('Saved to your actions: “{title}”', { title });
-  const line = [
-    at ? `${saved} · ${at}` : saved,
-    keep.remind && !at ? tr('Tell me when, and I’ll remind you then.') : '',
-  ]
-    .filter(Boolean)
-    .join('\n');
+  const line = at ? `${saved} · ${at}` : saved;
   return postAs(
     ctx,
     account.id,

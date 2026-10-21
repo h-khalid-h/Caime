@@ -1711,7 +1711,6 @@ export const arServer: Catalog = {
     'إنها مكالمة على Caime. في موعدها، الانضمام إليها من رابطك الخاص: {link}',
   'I’ll remind you: “{title}”': 'سأذكّرك: «{title}»',
   'Saved to your actions: “{title}”': 'تم الحفظ في إجراءاتك: «{title}»',
-  'Tell me when, and I’ll remind you then.': 'قل لي متى، وسأذكّرك حينها.',
   'What should I keep? Write it after “Remind me to” or “Add an action:”, and I’ll save it.':
     'ماذا أحفظ؟ اكتبه بعد «ذكّرني أن» أو «أضف مهمة:»، وسأحفظه.',
   'Let’s look for “{query}” in your conversations.': 'لنبحث عن «{query}» في محادثاتك.',
@@ -1742,4 +1741,5 @@ export const arServer: Catalog = {
   'That time isn’t open any more: answer it yourself.': 'لم يعد هذا الموعد متاحًا: أجب بنفسك.',
   'That order can’t be taken as it stands now: answer it yourself.':
     'لا يمكن تسجيل هذا الطلب كما هو الآن: أجب بنفسك.',
+  '{name} said it would be done by now': 'حلّ الموعد الذي حدّده {name} لإنجاز هذا',
 };

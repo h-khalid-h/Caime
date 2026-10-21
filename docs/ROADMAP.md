@@ -3983,9 +3983,17 @@ clinic can sign for. I1 lands before launch.
       `ai.test.ts` (translate, the catch-up and ask in the chosen language, a question in its own; no fallbacks on the light model), the E2E's
       clinic (the team confirms the agent's booking from the conversation). Drafts are checked by
       the team before they're sent, so a claim in one is held back as in a live answer.
-- [ ] I2. Nothing slips (M): a reminder the morning of a dated promise and a default time for an
-      undated "remind me"; a wait nudged on its promised day and asked about by Attention after
-      it, not after its creation; a pending card follows an edit and is let go when stale; "Done?"
+- [x] I2a. Reminders by one rule (S): when an action reminds its owner is core `remindAtFor`
+      (server `reminderFor`, run by `createTask` whenever `remindAt` is left out), whichever way it
+      was made (a suggestion accepted, Cai asked to keep it, one added by hand, the API): one of
+      their own the morning of its day (their brief's hour, else nine) or an hour before an early
+      hour it names, never at the moment it's late; a "remind me" at its hour, its morning, or with
+      no day the next morning (Cai's line says when); a wait on someone at the hour they named,
+      else the end of that day, saying whose it is ("Sami said it would be done by now"), none
+      with Cai on "Less"; Attention asks about a wait three quiet days after its day, not after it
+      was made; a moved day moves the reminder the rule made, never one chosen by hand. Verified:
+      `remind-at.test.ts`, `reminders.test.ts`, the task, Attention, Cai-keep and messaging suites.
+- [ ] I2. Nothing slips (M), the rest: a pending card follows an edit and is let go when stale; "Done?"
       offered when whoever promised sends what was promised, never closed by itself (R12); the five
       no-reply paths made one. Number: waits closed within seven days of their due date.
 - [ ] I3. What did I miss (M; L with the summary): the Needs-you conversations since each was last
@@ -5610,6 +5618,10 @@ clinic can sign for. I1 lands before launch.
 - 2026-10-20 — The French and Turkish catalogs come in two halves fetched side by side, as Arabic
   does: their largest download 48.9 KB where one was 95.2 KB of a chunk's 100; the first download
   448.8 KB of 450 (0.2 KB more: the two loaders).
+- 2026-10-21 — M17 I2a: one rule for when an action reminds its owner (core `remindAtFor`): its
+  morning, never the moment it's late; a "remind me" without a day the next morning; a wait looked
+  at on its day and saying whose it is; Attention asking after a wait's day; a moved day moving the
+  reminder it made.
 - 2026-10-21 — M17 I1: the agent's runs priced, so its backstop trips; AI answers in the
   language a person reads Caime in; the agent makes a booking or an order before it says so, the
   team confirms it, a refusal or a false claim is a fixed line and a hand-over; never silent (the

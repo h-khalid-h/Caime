@@ -2,8 +2,9 @@
  * Creating actions with provenance (PRD §28–§30; PRODUCT-REVIEW R13). Every task and decision
  * keeps the conversation and message it came from and a snapshot of the relationship at the time.
  */
-import { relationshipLabel, type Sphere, uuidv7 } from '@caime/core';
+import { type RemindKind, relationshipLabel, remindAtFor, type Sphere, uuidv7 } from '@caime/core';
 import { tr } from '@caime/core/i18n';
+import { initiativeOf } from '@caime/core/initiative';
 import type { Kysely, Transaction } from 'kysely';
 import type { AppContext } from '../context';
 import type { Database, Task } from '../db/schema';
@@ -58,7 +59,13 @@ export interface NewTask {
   notes?: string | null;
   dueAt?: string | Date | null;
   dueHasTime?: boolean;
+  /**
+   * When it reminds its owner: left out, the one rule decides (`reminderFor`, M17 I2); null, it
+   * never does; a time, then.
+   */
   remindAt?: string | Date | null;
+  /** The owner asked to be reminded of it (Cai's "remind me"): rung even without a day. */
+  asked?: boolean;
   conversationId?: string | null;
   messageId?: string | null;
   contextId?: string | null;
@@ -69,8 +76,47 @@ export interface NewTask {
   clientId?: string | null;
 }
 
+/**
+ * When an action reminds its owner, by the one rule (core `remindAtFor`, M17 I2): what they asked
+ * to be reminded of at its hour or its morning, the next morning without a day; one of their own
+ * the morning of its day; a wait on someone else at the hour they named or the end of that day,
+ * unless Cai is to do less unasked (R66). On the owner's own clock, their brief's hour their
+ * morning.
+ */
+export async function reminderFor(
+  db: Q,
+  ctx: Pick<AppContext, 'now'>,
+  t: {
+    ownerId: string;
+    assigneeId: string;
+    dueAt?: string | Date | null;
+    dueHasTime?: boolean;
+    asked?: boolean;
+  },
+): Promise<Date | null> {
+  const kind: RemindKind = t.asked ? 'asked' : t.assigneeId === t.ownerId ? 'own' : 'wait';
+  if (!t.dueAt && kind !== 'asked') return null;
+  const owner = await db
+    .selectFrom('users')
+    .select(['time_zone', 'preferences'])
+    .where('id', '=', t.ownerId)
+    .executeTakeFirst();
+  if (!owner) return null;
+  if (kind === 'wait' && initiativeOf(owner.preferences) === 'less') return null;
+  const brief = (owner.preferences as { caiBrief?: unknown } | null)?.caiBrief;
+  return remindAtFor({
+    kind,
+    dueAt: t.dueAt ?? null,
+    dueHasTime: Boolean(t.dueHasTime),
+    now: ctx.now(),
+    timeZone: owner.time_zone,
+    morning: typeof brief === 'string' ? brief : null,
+  });
+}
+
 export async function createTask(db: Q, ctx: AppContext, t: NewTask): Promise<Task> {
   if (t.conversationId) await assertKeepable(db, t.conversationId);
+  const remindAt = t.remindAt !== undefined ? t.remindAt : await reminderFor(db, ctx, t);
   const counterpart = t.counterpartId ?? (t.assigneeId !== t.ownerId ? t.assigneeId : null);
   const snapshot = counterpart ? await relationshipSnapshot(db, t.ownerId, counterpart) : null;
   const row = await db
@@ -84,7 +130,7 @@ export async function createTask(db: Q, ctx: AppContext, t: NewTask): Promise<Ta
       notes: t.notes ?? null,
       due_at: t.dueAt ?? null,
       due_has_time: t.dueHasTime ?? false,
-      remind_at: t.remindAt ?? null,
+      remind_at: remindAt,
       conversation_id: t.conversationId ?? null,
       message_id: t.messageId ?? null,
       context_id: t.contextId ?? null,

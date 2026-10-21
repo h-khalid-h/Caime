@@ -138,6 +138,25 @@ export function registerWorkers(): void {
         )
         .returning(['id', 'owner_id', 'assignee_id', 'title', 'conversation_id', 'cai_follow_up'])
         .execute();
+      // A wait on someone says whose it is (M17 I2): their names, in one query for the batch.
+      const others = [
+        ...new Set(
+          due.flatMap((t) =>
+            t.assignee_id && t.assignee_id !== t.owner_id ? [t.assignee_id] : [],
+          ),
+        ),
+      ];
+      const names = new Map(
+        others.length
+          ? (
+              await ctx.db
+                .selectFrom('users')
+                .select(['id', 'display_name'])
+                .where('id', 'in', others)
+                .execute()
+            ).map((u) => [u.id, u.display_name])
+          : [],
+      );
       // Four at a time (lib/batch.ts): a batch of due reminders was offered and told one by one.
       await eachLimit(due, 4, async (t) => {
         // Handed to Cai (R68): its offer of a follow-up, in place of a bare reminder.
@@ -154,7 +173,11 @@ export function registerWorkers(): void {
           kind: 'reminder',
           level: 'attention',
           title: t.title,
-          body: () => tr('Reminder'),
+          body: () => {
+            const name =
+              t.assignee_id && t.assignee_id !== t.owner_id ? names.get(t.assignee_id) : undefined;
+            return name ? tr('{name} said it would be done by now', { name }) : tr('Reminder');
+          },
           data: { taskId: t.id, conversationId: t.conversation_id },
         });
       });
