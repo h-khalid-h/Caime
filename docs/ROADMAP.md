@@ -3955,6 +3955,64 @@ graph) and the number that will show it; one that sharpens none is hygiene and s
       space's. Declined there: ownerless places and claiming, public reading of a group's words,
       following people, guardians by time spent in a place, finding people by proximity.
 
+## M17 — One intelligence, ahead of the alternatives (docs/REVIEW-2026-10-21-INTELLIGENCE.md)
+
+The owner, 2026-10-21: "ensure that entire Caime intelligence is properly optimal and outperform
+its alternatives. Go deeper and wider" (PRODUCT-REVIEW R113). Caime hasn't launched, so nobody has
+met any of this: ranked by what it would cost the first people at launch, then by how far it moves
+the three reasons to switch: nothing slips, ask anything in your language with sources, an agent a
+clinic can sign for. I1 lands before launch.
+
+- [ ] I1. Two bugs and the agent's honesty (S each, first): (a) the organization's agent's model
+      runs priced as every run is (`recordRun` writes `cost_usd`), so its plan's backstop trips
+      and a manager's try counts against their own day; (b) every model answer in the language the
+      person reads Caime in (`languageOf`: the catch-up, ask, translate, the call notes' catch-up,
+      Ask Cai, the brief, the write-up's fallback), the brief's day on the reader's clock and its
+      summary labelled as every model answer is; (c) the agent books or orders before it speaks,
+      says a refusal in a fixed line, and the team confirms what it books for a customer (the
+      card's `proposedBy` the customer), as it confirms a page's booking; `claimsDone` on every
+      live answer and draft; (d) never silent: the away message or the greeting while the agent
+      stays out, a failed call tried once more; (e) the light model's calls leave room for
+      thinking within their caps (it thinks by default and that counts toward `max_tokens`, so 512
+      can end before any text) and send no `fallbacks`, which it doesn't have.
+- [ ] I2. Nothing slips (M): a reminder the morning of a dated promise and a default time for an
+      undated "remind me"; a wait nudged on its promised day and asked about by Attention after
+      it, not after its creation; a pending card follows an edit and is let go when stale; "Done?"
+      offered when whoever promised sends what was promised, never closed by itself (R12); the five
+      no-reply paths made one. Number: waits closed within seven days of their due date.
+- [ ] I3. What did I miss (M; L with the summary): the Needs-you conversations since each was last
+      read, by the rules, ranked as Attention ranks them, with a cited summary for whoever has
+      assist on, cached by read position, in Cai's chat and on Attention; a catch-up past 200
+      messages says how much it read.
+- [ ] I4. One cited answer engine (M): Cai's chat answers questions about people and what they said
+      through Search's engine with its sources; "Ask about this conversation" is that engine scoped
+      to it; one answering prompt; the model keeps the rules' time phrase; catch-ups and briefs cite
+      their lines. Number: the share of answers with a source.
+- [ ] I5. Arabic-first retrieval (M): a folded index built concurrently (hamza and alef forms, ة/ه,
+      ى/ي, accents, dotted İ), queries and names folded the same way, relevance with recency, the
+      unread index dropped in a later release; a retrieval golden set per language.
+- [ ] I6. Evaluations for every model path (M–L): `lib/evals/` from the agent's, scored by rules
+      first (follow-ups by line, faithful summaries and write-ups, Cai's keep and act, search
+      readings, translations, the agent with a catalog, a menu, moves and every variety), nightly
+      in batches and in CI when a prompt's hash moves, floors that only rise.
+- [ ] I7. A calendar-aware Cai (M): "when am I free" from the calendar and connected busy times; a
+      prepared meeting warns of a clash and offers the next free time; "move my 3pm" as another
+      time suggested (F5); the coming-up list says its true count.
+- [ ] I8. An agent that learns and proves (M): catalog descriptions, places and hours as passages;
+      slots for the item and day asked; the time now; the customer's own cards as they stand; "add
+      to what it knows" from a team member's answer, as a suggestion the owner accepts; the owner's
+      numbers (resolved by the agent, hand-overs by reason, drafts, time to first answer, cost per
+      conversation); a test before saving that replays what it couldn't answer.
+- [ ] I9. Words become cards (L): a plan offers a filled Meeting card, money a Pay card, "every
+      Monday" a repeat, "before the meeting" that meeting's time; dates, numbers and addresses
+      tappable.
+- [ ] I10. Groups (M): whom a promise or an ask is for by the names in it (`peopleMeant`), and
+      "everyone".
+- [ ] I11. Cai by voice, and a reply drafted in a conversation (M each).
+- [ ] I12. Calls and files in answers, then meaning (L): a call's lines and write-up as passages;
+      Office and PDF text indexed; search by meaning after I5, with its processor in the DPA and
+      erasure removing what it kept.
+
 ## Log
 
 - 2026-09-26 — Session 1: docs written; brand system adopted from the owner's board (vector
@@ -5544,6 +5602,10 @@ graph) and the number that will show it; one that sharpens none is hygiene and s
 - 2026-10-20 — The French and Turkish catalogs come in two halves fetched side by side, as Arabic
   does: their largest download 48.9 KB where one was 95.2 KB of a chunk's 100; the first download
   448.8 KB of 450 (0.2 KB more: the two loaders).
+- 2026-10-21 — Intelligence review (docs/REVIEW-2026-10-21-INTELLIGENCE.md, R113): five slices
+  against the best alternatives; ahead on people, behind on volume; two bugs found before anyone
+  met them (the agent's runs unpriced, AI answers in the sign-up locale); the plan is M17, I1
+  before launch.
 - 2026-10-21 — M16 F7e: a call's notes written up once it's over, for whoever heard it all: its
   summary, topics, decisions and next steps, each step offered to its person (R112).
 - 2026-10-21 — R111 decided: an organization's Cai answers its calls, the organization pays and

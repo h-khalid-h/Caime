@@ -2401,3 +2401,26 @@ with its reason, so it isn't proposed again without new facts.
   taken from it as it reads any (R58), Cai's digest counts them, and nothing else keeps a summary
   of a call. *Not yet:* mailing the write-up to a meeting's guests, who were in it on Caime but
   have no app (R83); a meeting card showing its notes beside its time.
+- **R113 (2026-10-21) One intelligence, measured, in the reader's language, ahead of the
+  alternatives.** The owner: "Remember to ensure that entire Caime intelligence is properly optimal
+  and outperform its alternatives. Go deeper and wider." The review of that day
+  (`docs/REVIEW-2026-10-21-INTELLIGENCE.md`) read what Caime reads in people's words, Cai and the
+  friends, finding and condensing, the organization's agent and the architecture under them,
+  against WhatsApp, Gmail and Meet, Slack, Teams, Apple, Fin and Meta's business agent. Caime leads
+  every row about people (whose promise, how sure, when to chase, what stays private) and trails
+  the rows about volume (recaps, answers across everything, proof for a business). *Decided:*
+  (1) every model call goes through `runAi` and is priced as it runs, the organization's agent's
+  included; (2) whatever a model writes for someone is in the language they read Caime in (their
+  choice, else what their app shows, else their account's), on their own clock, and shown as Cai's
+  (`AI_LABEL`) wherever it appears; (3) an agent's commitment is made before it's said, and what it
+  says matches who confirms: the team confirms what the agent books for a customer, as it confirms
+  what a visitor books from a page; (4) nothing slips: a promise is reminded before it's due, a wait
+  on its day, and a promise kept is offered to close, never closed by itself (R12); (5) one answer
+  engine with its sources, over every scope a person may read, folded for Arabic, French and
+  Turkish as people write them; (6) every model path has its evaluation, scored by rules first,
+  floors that only rise, run whenever its prompt changes. *Declined* (the review's §8): sending
+  anything for someone without their tap (R110), a model over every message by default (R107,
+  R18), search by meaning before the folded index shows the gap, server-side summaries of private
+  conversations, a write-up per reader's language, customers' ratings of the agent before its
+  resolution is measured. Caime hasn't launched: the review's findings are what people would meet
+  at launch, and the plan is the roadmap's M17, its first item before launch.
