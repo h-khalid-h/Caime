@@ -2424,3 +2424,69 @@ with its reason, so it isn't proposed again without new facts.
   conversations, a write-up per reader's language, customers' ratings of the agent before its
   resolution is measured. Caime hasn't launched: the review's findings are what people would meet
   at launch, and the plan is the roadmap's M17, its first item before launch.
+- **R114 (2026-10-21) Cai in a call in three modes: Notes, Record, Interact.** The owner's report: a
+  call with Cai's notes and a screen shared ("let's see the result of the record"), notes that came
+  out in sentence pieces, and a recording meant for someone who wasn't in the call; then the
+  brainstorm "Notes: Cai takes notes. Records: Cai records and takes notes. Interact: Cai sees,
+  listens, talks, and acts." Checked against the code: a desktop browser shares its screen in a call
+  and nothing records it; Cai's notes keep words only and delete each voice once heard (R85 (5));
+  there is no recording to keep or to share, and Cai never speaks. *Decided:* (1) *Three modes, as
+  the owner named them*, each chosen by whoever brings Cai in and each a labelled consent at the
+  ring and the join (R85 (1)): Notes ("Answer, Cai takes notes": what's said, as words under each
+  name, the voices deleted once heard; Cai is silent), Record ("Answer, Cai records": Notes, and the
+  voices and shared screens kept as a recording; Cai is silent) and Interact ("Answer, Cai joins
+  in": Notes, and Cai hears its name, answers aloud, sees the shared screen when asked about it and
+  prepares what it's asked to do; nothing kept beyond the notes). Every mode includes Notes, since
+  what's said is how Cai knows anything; Record and Interact combine ("Cai joins in and records"),
+  the button saying both; anyone's no stops the mode asked for everyone (R85 (2)), never a silent
+  step down; a change of mode mid-call asks everyone again, the mode under way going on until they
+  have. A first draft of this entry made Interact no mode at all, Cai's answers being written; the
+  owner's "talks" makes it one, since a voice everyone hears is a participant everyone agrees to.
+  (2) *Interact's rules*: called only by name ("Cai, …" in every interface language and Arabic
+  variety, read from the speaker's own track, with golden lines per language) and never
+  interjecting; it introduces itself aloud once as it joins (R87: its name, that it's an AI, whose
+  it is); aloud it says only what the call itself shares (what was said and shown in it) and, for
+  whoever asked, their own things they asked about (their free times, their actions), while anything
+  from another conversation or about someone not in the call goes to the asker alone, in writing;
+  what it's asked to do is prepared and done on the asker's tap, their own things with Undo (R110);
+  a spoken answer is short (about 300 characters at most), a longer one written in the call's
+  conversation; never in a private conversation, with anyone under 18 in the call, or in a customer
+  conversation (where the organization's agent speaks, R111). In every mode anyone may type a
+  question to Cai and have it answered to them alone, in writing, from what was said, citing its
+  lines. (3) *How Cai speaks* (ADR-17 amended): its answer, made speech by the provider already in
+  `processors.ts` (ElevenLabs' Flash, $0.04 a thousand characters on its page, read 2026-10-21), is
+  mixed into the outgoing audio of the member's browser that records the notes, so everyone in the
+  mesh hears it with no media service, and every screen shows "Cai is speaking" so the voice is
+  never taken for that person's; its time to a first word is the notes' path (the question's end,
+  its words, the model, the first sound), measured on a call before it's claimed. A call of phones
+  alone, one of more than eight and a reply as quick as a person's stay ADR-17's unit, the next step
+  once this is measured. (4) *Recording*: the voices of everyone who said yes and every shared
+  screen, recorded by one member's browser as the notes are (R82 (1), R85 (4)), sent in ten-second
+  pieces during the call (a recorder that drops loses at most those), a new part at each join so a
+  late joiner gets only what came after (R85 (2)); H.264 and AAC in MP4 where the browser records
+  them, which plays on every phone and browser, made seekable on the server without re-encoding;
+  cameras aren't recorded (the consent says so) and phones don't record (R82 (5)). (5) *Played with
+  the notes*: the recording on the call's line for whoever was in it, a line, a topic or a next step
+  opening it at its moment, the screen in step with the voices; what was on the screen read into
+  Cai's write-up from a frame at each change, on the light model within the asker's day (R107), so
+  "this one" and "these two fields" are named. (6) *Kept and deleted*: thirty days by default, the
+  notes staying after it; an organization's retention when shorter (R54); whoever asked may keep it
+  longer, counted against their storage; anyone in it deletes it for everyone (R52); never in a
+  private conversation, never with anyone under 18 in the call (R29); each person's words in the
+  notes stay theirs to delete. (7) *Shared on*: anyone in it may share the recording into a
+  conversation they're in, which the consent button says before anyone is recorded; a share points
+  at the recording and goes when it does. (8) *What the speech provider keeps*: ElevenLabs keeps
+  each transcript in the account's history by default, so Caime deletes each by its id once read
+  (built, I13a); not training on the audio is the account owner's setting there (⛔, the owner's to
+  set), and zero retention is ElevenLabs' enterprise contract. (9) *Better words now* (built, I13a):
+  an utterance ends after a second and a half of quiet, not 0.9 s (a sentence came out in pieces,
+  each heard alone and so heard worse), past twenty seconds at the next breath; the notes are heard
+  clean (Scribe's `no_verbatim`: no fillers or false starts, no surcharge) while a voice note keeps
+  its words as said; a speaker's lines one after another read as one paragraph. *Not adopted:* the
+  names of the people in the call as the provider's key terms, 20% on every minute, until the
+  bake-off shows names heard better for it. *Against the alternatives:* Meet, Teams and Zoom keep
+  cloud recording to paid tiers, and the free note-takers join a call as a bot rather than ask each
+  person; Otter's meeting agent answers by voice ("Hey Otter"), on Zoom alone at its launch (2025);
+  Caime's recording is on every plan, bounded by storage and the day's AI allowance, each person's
+  consent a labelled choice, the notes leading into the recording and knowing what was on the
+  screen, in the four interface languages and the Arabic varieties.

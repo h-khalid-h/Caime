@@ -1,8 +1,8 @@
 /**
  * A microphone that speaks (M16 F7): Chromium's fake device plays a file in place of its beep,
- * and Cai's notes cut what's said at its pauses, so the file is a second and a half of tone and a
- * second and a half of quiet, over and over. Written once where the config loads, for the browser
- * the notes spec runs in alone.
+ * and Cai's notes cut what's said at its pauses, so the file is a second and a half of tone and
+ * two and a half of quiet (past the second and a half that ends an utterance), over and over.
+ * Written once where the config loads, for the browser the notes spec runs in alone.
  */
 import { writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
@@ -11,11 +11,11 @@ import { join } from 'node:path';
 export function fakeSpeechFile(): string {
   const file = join(tmpdir(), 'caime-e2e-speech.wav');
   const rate = 16_000;
-  const samples = rate * 6;
+  const samples = rate * 8;
   const data = Buffer.alloc(samples * 2);
   for (let i = 0; i < samples; i++) {
     const t = i / rate;
-    const on = t % 3 < 1.5;
+    const on = t % 4 < 1.5;
     const v = on
       ? 0.3 * Math.sin(2 * Math.PI * 220 * t) + 0.15 * Math.sin(2 * Math.PI * 440 * t)
       : 0;

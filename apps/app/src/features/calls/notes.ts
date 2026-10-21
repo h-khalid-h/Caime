@@ -24,9 +24,15 @@ import { toast } from '@/ui/Toast';
 const TICK_MS = 50;
 /** Speech for this long starts an utterance. */
 const START_MS = 250;
-/** Quiet for this long ends one. */
-const END_MS = 900;
-/** An utterance is cut at this length (the server takes a little more). */
+/**
+ * Quiet for this long ends one: a pause between thoughts, not between words (M17 F8a: at 0.9 s a
+ * sentence came out in pieces, each heard alone and so heard worse).
+ */
+const END_MS = 1_500;
+/** Past this length, a breath's quiet ends it, so a long turn is cut between words. */
+const SOFT_MS = 20_000;
+const SOFT_END_MS = 300;
+/** An utterance is cut at this length whatever is said (the server takes a little more). */
 const MAX_MS = 30_000;
 /** Shorter than this, it isn't sent: a model invents words in near-silence (R82 (2)). */
 const MIN_MS = 500;
@@ -225,7 +231,7 @@ export function step(
     above,
     below,
     start: !s.speaking && above >= START_MS,
-    end: s.speaking && below >= END_MS,
+    end: s.speaking && (below >= END_MS || (s.speakingMs >= SOFT_MS && below >= SOFT_END_MS)),
     // At its longest while still speaking: cut here, and the next part starts at once.
     cut: s.speaking && below < END_MS && s.speakingMs >= MAX_MS,
   };

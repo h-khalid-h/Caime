@@ -56,6 +56,7 @@ import { registerProviderHealth } from './lib/provider-health';
 import { RateLimiter } from './lib/rate-limit';
 import { registerPreviewJob, startPreviewBackfill } from './lib/renditions';
 import { speechFor } from './lib/speech';
+import { registerSpeechForgetJob } from './lib/speech-forget';
 import { registerSystemJobs } from './lib/system-accounts';
 import { registerTranscribeJob } from './lib/transcribe';
 import { registerUpdateJobs } from './lib/updates';
@@ -416,6 +417,7 @@ export async function buildApp(config: Config, options: BuildOptions = {}): Prom
   registerGuestsAgain();
   registerTranscribeJob(afterTranscript);
   registerNotesJob();
+  registerSpeechForgetJob();
   registerNotesSummaryJob();
   registerLinkPreviewJob();
   registerMailJobs();

@@ -132,7 +132,14 @@ docs/           PRD, review, brand, competitive, architecture, roadmap, deploy (
   the unit's side too (Cai joins only a call whose participants all said yes, and leaves when
   anyone withdraws). Rejected: (a), for the reasons above. Out of scope here: joining other
   platforms' meetings (Zoom, Teams, Meet) as a bot, which would need its own decision against
-  R19 and R52's consent.
+  R19 and R52's consent. *Amended 2026-10-21 (R114 (3)), the owner having asked for Cai to talk:*
+  a third way, (c), comes first: Cai's answer, made speech by the speech provider already listed,
+  is mixed into the outgoing audio of the member's browser that records the notes, so every
+  device in the mesh hears it over the connections it already has, and every screen shows that
+  Cai is speaking. No media runs on the server and no new sub-processor joins; it holds where the
+  notes do (a call with a member's browser, eight at most), at the notes' latency. (b) stays the
+  step after, for a call of phones alone, one of more than eight and a reply as quick as a
+  person's, with the conditions above.
 
 ## Domain model
 

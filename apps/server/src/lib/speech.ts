@@ -44,6 +44,12 @@ export interface Transcript {
   text: string;
   /** The language the provider heard, as a BCP 47 tag when it says one ("ar", "en"), else null. */
   language: string | null;
+  /**
+   * The provider's own id for what it kept of the exchange, for `forget` once the words are
+   * Caime's (ElevenLabs keeps each transcript by default, M17 F8a); null where nothing is kept
+   * by id.
+   */
+  ref: string | null;
 }
 
 export interface SpeechInput {
@@ -52,12 +58,24 @@ export interface SpeechInput {
   name: string;
   /** The languages the note is likely in, for a provider that takes a hint. */
   languageHints: string[];
+  /**
+   * Fillers ("uh", "umm"), false starts and repeated words left out, where the provider does that
+   * itself at no extra cost (Scribe v2's `no_verbatim`): a call's notes, whose voices aren't kept,
+   * read as notes rather than as a recording would (M17 F8a). A voice note keeps its words as said.
+   */
+  clean?: boolean;
 }
 
 export interface SpeechToText {
   provider: SpeechProvider;
   model: string;
   transcribe(input: SpeechInput): Promise<AiResult<Transcript>>;
+  /**
+   * Deletes what the provider kept of a transcript by its `ref` (R85 (6): nothing of a voice kept
+   * past its words). Throws when the provider can't be reached or refuses, so the job tries again;
+   * one already gone counts as forgotten.
+   */
+  forget(ref: string): Promise<void>;
   /** The provider's cheapest authenticated read (R78: the provider probe). Throws when it fails. */
   ping(): Promise<void>;
 }
@@ -150,15 +168,30 @@ function openaiSpeech(base: string, key: string, model: string): SpeechToText {
       const text = tidy(json.text);
       if (!text) throw new AiError('declined', 'nothing heard', usageOf(model));
       return {
-        value: { text, language: typeof json.language === 'string' ? json.language : null },
+        value: {
+          text,
+          language: typeof json.language === 'string' ? json.language : null,
+          ref: null,
+        },
         usage: usageOf(model),
       };
     },
+    // Nothing is kept by id to delete: OpenAI's API keeps no transcription as an object.
+    forget: async () => {},
   };
 }
 
 /** ElevenLabs' `POST /v1/speech-to-text`: multipart, `text` and `language_code` back. */
 function elevenLabsSpeech(base: string, key: string, model: string): SpeechToText {
+  const forget = async (ref: string) => {
+    const res = await fetch(`${base}/v1/speech-to-text/transcripts/${encodeURIComponent(ref)}`, {
+      method: 'DELETE',
+      headers: { 'xi-api-key': key },
+      signal: AbortSignal.timeout(PING_MS),
+    });
+    if (!res.ok && res.status !== 404)
+      throw new Error(`speech provider answered ${res.status} to a delete`);
+  };
   return {
     provider: 'elevenlabs',
     model,
@@ -172,13 +205,25 @@ function elevenLabsSpeech(base: string, key: string, model: string): SpeechToTex
       );
       form.append('model_id', model);
       form.append('tag_audio_events', 'false');
+      // Scribe v2 leaves fillers and false starts out itself, at no surcharge (its API page).
+      if (input.clean && model.startsWith('scribe_v2')) form.append('no_verbatim', 'true');
       if (input.languageHints.length === 1) form.append('language_code', input.languageHints[0]!);
       const json = (await post(`${base}/v1/speech-to-text`, { 'xi-api-key': key }, form)) as {
         text?: unknown;
         language_code?: unknown;
+        transcription_id?: unknown;
       };
+      const ref =
+        typeof json.transcription_id === 'string' && json.transcription_id
+          ? json.transcription_id
+          : null;
       const text = tidy(json.text);
-      if (!text) throw new AiError('declined', 'nothing heard', usageOf(model));
+      if (!text) {
+        // Nothing heard: what it kept of a clip with no words goes at once, as well as it can,
+        // since a declined call hands its caller no ref to forget later.
+        if (ref) await forget(ref).catch(() => undefined);
+        throw new AiError('declined', 'nothing heard', usageOf(model));
+      }
       return {
         value: {
           text,
@@ -186,9 +231,11 @@ function elevenLabsSpeech(base: string, key: string, model: string): SpeechToTex
             typeof json.language_code === 'string'
               ? json.language_code.slice(0, 3).replace(/[_-]$/, '')
               : null,
+          ref,
         },
         usage: usageOf(model),
       };
     },
+    forget,
   };
 }

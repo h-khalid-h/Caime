@@ -7,7 +7,7 @@
  * asks Cai to catch them up, or to find the follow-ups, on what they heard (M16 F7d), the catch-up
  * labelled and kept nowhere, the follow-ups offered as their own suggestions.
  */
-import type { AiCatchUpView, CallNoteLineView, CallNotesSummaryView } from '@caime/core/api';
+import type { AiCatchUpView, CallNotesSummaryView } from '@caime/core/api';
 import { AI_LABEL } from '@caime/core/assist';
 import { formatClock } from '@caime/core/format';
 import { tr, trn } from '@caime/core/i18n';
@@ -31,10 +31,27 @@ import { Sheet } from '@/ui/Sheet';
 import { SkeletonRows } from '@/ui/Skeleton';
 import { Text } from '@/ui/Text';
 import { toast } from '@/ui/Toast';
+import { stillWriting, type Turn, turnsOf, turnText } from './turns';
 
 const LoadFailed = lazyPart(() => import('@/ui/LoadFailed').then((m) => m.LoadFailed));
 
 /** Cai's write-up of the call, as everyone who heard it all reads it (M16 F7e). */
+/** A turn's words, and a mark where Cai is still writing part of it. */
+function TurnWords({ turn }: { turn: Turn }) {
+  const text = turnText(turn);
+  if (text === null)
+    return (
+      <Text variant="body" color="textTertiary">
+        {tr('Cai is still writing this…')}
+      </Text>
+    );
+  return (
+    <Text variant="body" auto selectable>
+      {stillWriting(turn) ? `${text} …` : text}
+    </Text>
+  );
+}
+
 function WrittenNotes({ notes }: { notes: CallNotesSummaryView }) {
   const t = useTheme();
   const section = (title: string, items: string[], testID: string) =>
@@ -139,12 +156,14 @@ export function NotesSheet({
       setBusy(null);
     }
   };
-  const remove = async (line: CallNoteLineView) => {
+  // A turn's lines go together: the words someone sees as one paragraph are what they delete.
+  const remove = async (turn: Turn) => {
     try {
-      await endpoints.deleteCallNoteLine(callId, line.id);
-      await qc.invalidateQueries({ queryKey: qk.callNotes(callId) });
+      for (const line of turn.lines) await endpoints.deleteCallNoteLine(callId, line.id);
     } catch (e) {
       toast((e as Error).message, { tone: 'danger' });
+    } finally {
+      await qc.invalidateQueries({ queryKey: qk.callNotes(callId) });
     }
   };
   return (
@@ -233,41 +252,34 @@ export function NotesSheet({
               ) : null}
             </View>
           ) : null}
-          {lines.map((l) => (
+          {turnsOf(lines).map((turn) => (
             <View
-              key={l.id}
+              key={turn.id}
               style={{ flexDirection: 'row', gap: 10, alignItems: 'flex-start' }}
               testID="call-notes-line"
             >
               <Avatar
-                id={l.speaker.id}
-                name={l.speaker.displayName}
-                url={l.speaker.avatarUrl}
+                id={turn.speaker.id}
+                name={turn.speaker.displayName}
+                url={turn.speaker.avatarUrl}
                 size={32}
               />
               <View style={{ flex: 1, gap: 2 }}>
                 <View style={{ flexDirection: 'row', gap: 8, alignItems: 'baseline' }}>
                   <Text variant="label" numberOfLines={1} style={{ flexShrink: 1 }}>
-                    {l.mine ? tr('You') : l.speaker.displayName}
+                    {turn.mine ? tr('You') : turn.speaker.displayName}
                   </Text>
                   <Text variant="caption" color="textTertiary">
-                    {formatClock(l.at, timeZone, locale)}
+                    {formatClock(turn.at, timeZone, locale)}
                   </Text>
                 </View>
-                <Text
-                  variant="body"
-                  color={l.text === null ? 'textTertiary' : 'text'}
-                  auto={l.text !== null}
-                  selectable
-                >
-                  {l.text ?? tr('Cai is still writing this…')}
-                </Text>
+                <TurnWords turn={turn} />
               </View>
-              {l.mine ? (
+              {turn.mine ? (
                 <Pressable
                   accessibilityRole="button"
                   accessibilityLabel={tr('Delete my words')}
-                  onPress={() => void remove(l)}
+                  onPress={() => void remove(turn)}
                   hitSlop={8}
                   testID="call-notes-delete"
                 >

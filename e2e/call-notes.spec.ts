@@ -131,12 +131,14 @@ test.describe
       await expect(sheet.getByText('Sam Rivera').first()).toBeVisible();
       await page.screenshot({ path: 'e2e/screenshots/desktop-call-notes-sheet.png' });
 
-      // Noor deletes her own words; Sam's stay.
+      // Noor deletes her own words, a turn at a time (M17 F8a); Sam's stay.
       const mine = await page.getByTestId('call-notes-delete').count();
       expect(mine).toBeGreaterThan(0);
-      const before = await page.getByTestId('call-notes-line').count();
+      const theirs = await sheet.getByText('Sam Rivera').count();
       await page.getByTestId('call-notes-delete').first().click();
-      await expect(page.getByTestId('call-notes-line')).toHaveCount(before - 1);
+      await expect(page.getByTestId('call-notes-delete')).toHaveCount(mine - 1);
+      await expect(sheet.getByText('Sam Rivera').first()).toBeVisible();
+      expect(await sheet.getByText('Sam Rivera').count()).toBeLessThanOrEqual(theirs);
       expect(problems(noor, sam)).toEqual([]);
     });
 

@@ -1680,8 +1680,11 @@ A sphere is said as how you know someone, never "sphere".
   who stopped it, and a refusal to ask reads the same whatever its reason. A line is taken from
   the recorder's device alone (`recorder_id`, `recorder_device`; a member's browser, never a
   guest's), of a speaker who said yes, its length read from the file (`audioLengthMs`), heard in
-  the `call.note` job through `runAi('notes')` on the asker's allowance, its file dropped once
-  heard; the lines go with the call's line (`message_id`, erased with it) and each person's are
+  the `call.note` job through `runAi('notes')` on the asker's allowance, clean
+  (`SpeechInput.clean`, Scribe's `no_verbatim`; a voice note keeps its words as said), its file
+  dropped once heard and the provider's own copy of the words deleted by `forgetLater`
+  (`lib/speech-forget.ts`, a job of its own; a voice note's too: anything new that hears speech
+  forgets it there); the lines go with the call's line (`message_id`, erased with it) and each person's are
   in their export. The recorder is the web's alone (an analyser and a delay per track, a
   MediaRecorder per utterance, `step` cutting at pauses, two uploads at a time, everything under
   way dropped at a stop); while notes are asked for or on (core `notesAsked`), every way in offers
@@ -2423,8 +2426,8 @@ A sphere is said as how you know someone, never "sphere".
   offers what a text would have, once by fingerprint (a customer conversation's through
   `suggestBusiness`, a chat's follow-up check and topic), telling nobody again; the adult check
   is `minorOf`, so an age check's finding holds. A new
-  provider is an adapter in `speech.ts`, a name in `SPEECH_PROVIDER_NAMES` (the processors list
-  reads it) and a candidate in `scripts/speech-bakeoff.mjs`. The app records with expo-audio in
+  provider is an adapter in `speech.ts` (with `forget` for whatever it keeps by id), a name in
+  `SPEECH_PROVIDER_NAMES` (the processors list reads it) and a candidate in `scripts/speech-bakeoff.mjs`. The app records with expo-audio in
   `features/voice/Recorder.tsx` and plays in `VoiceNote.tsx`, both loaded lazily (the audio
   module stays out of the startup chunk); the E2E stand-in answers `/v1/audio/transcriptions`
   with fixed words. Recording a call (R52) uses this interface when it comes, never a second one.

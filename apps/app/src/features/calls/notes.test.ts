@@ -1,7 +1,8 @@
 /**
  * Where Cai's notes cut what's said (M16 F7, R82 (2)): an utterance starts after a quarter of a
- * second of speech above the room, ends after most of a second of quiet, is cut at its longest,
- * and the room's own level is learnt without speech ever becoming it.
+ * second of speech above the room, ends after a second and a half of quiet (M17 F8a), past twenty
+ * seconds at the next breath, is cut at its longest, and the room's own level is learnt without
+ * speech ever becoming it.
  */
 import { describe, expect, it, vi } from 'vitest';
 
@@ -38,10 +39,26 @@ function run(levels: number[], from: Partial<State> = {}) {
 }
 
 describe('cutting what’s said at its pauses (R82 (2))', () => {
-  it('starts after a quarter of a second of speech, and ends after most of a second of quiet', () => {
-    const levels = [...Array(10).fill(quiet), ...Array(20).fill(speech), ...Array(25).fill(quiet)];
-    // Five ticks of speech (250 ms) start it; eighteen of quiet (900 ms) end it.
-    expect(run(levels)).toEqual(['start@14', 'end@47']);
+  it('starts after a quarter of a second of speech, and ends after a second and a half of quiet', () => {
+    const levels = [...Array(10).fill(quiet), ...Array(20).fill(speech), ...Array(35).fill(quiet)];
+    // Five ticks of speech (250 ms) start it; thirty of quiet (1,500 ms) end it.
+    expect(run(levels)).toEqual(['start@14', 'end@59']);
+  });
+
+  it('keeps a sentence whole through a pause of a second (M17 F8a)', () => {
+    const levels = [
+      ...Array(20).fill(speech),
+      ...Array(20).fill(quiet),
+      ...Array(20).fill(speech),
+      ...Array(35).fill(quiet),
+    ];
+    expect(run(levels)).toEqual(['start@4', 'end@89']);
+  });
+
+  it('past twenty seconds, ends at the next breath rather than mid-word', () => {
+    const levels = [...Array(420).fill(speech), ...Array(6).fill(quiet), ...Array(40).fill(speech)];
+    // Twenty seconds in (tick 404), the first six ticks of quiet (300 ms) end it.
+    expect(run(levels)).toEqual(['start@4', 'end@425', 'start@430']);
   });
 
   it('never starts on a click, a breath or a door', () => {
@@ -54,9 +71,9 @@ describe('cutting what’s said at its pauses (R82 (2))', () => {
       ...Array(10).fill(speech),
       ...Array(10).fill(quiet),
       ...Array(10).fill(speech),
-      ...Array(20).fill(quiet),
+      ...Array(30).fill(quiet),
     ];
-    expect(run(levels)).toEqual(['start@4', 'end@47']);
+    expect(run(levels)).toEqual(['start@4', 'end@59']);
   });
 
   it('cuts at half a minute while still speaking, and the next part starts at once', () => {
@@ -69,9 +86,9 @@ describe('cutting what’s said at its pauses (R82 (2))', () => {
     const levels = [
       ...Array(40).fill(noisy),
       ...Array(10).fill(noisy + 15),
-      ...Array(30).fill(noisy),
+      ...Array(40).fill(noisy),
     ];
-    expect(run(levels, { room: noisy })).toEqual(['start@44', 'end@67']);
+    expect(run(levels, { room: noisy })).toEqual(['start@44', 'end@79']);
   });
 
   it('reads a level in decibels', () => {

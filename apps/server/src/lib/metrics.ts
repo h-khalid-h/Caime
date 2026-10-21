@@ -200,6 +200,11 @@ export function createMetrics(pool: pg.Pool) {
       'caime_call_notes_total',
       'Notes in calls by outcome (asked, started, a stop and its reason, a line heard or not).',
     ),
+    // What the speech provider kept of a transcript, deleted once read (M17 F8a): done or not.
+    speechForgotten: new Counter(
+      'caime_speech_forgotten_total',
+      'Transcripts deleted at the speech provider once read, by outcome (deleted, failed).',
+    ),
     // Writing to an organization before an account (R97 (1), M16 C1d): each step's outcome.
     publicWrites: new Counter(
       'caime_public_writes_total',

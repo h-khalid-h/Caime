@@ -334,7 +334,12 @@ Only speaking time is sent and paid for: the recorder (one member's browser in t
 voice's track at its pauses and sends each utterance as it ends, so silence and the other
 participants' quiet never reach the provider. Each utterance is one upload (WebM/Opus at 32 kbps,
 about 4 KB a second), one file row kept only until it's heard, and one `call.note` job that calls
-the speech provider once through `runAi` (feature `notes`) on the asker's day by cost (R107).
+the speech provider once through `runAi` (feature `notes`) on the asker's day by cost (R107), then
+one `speech.forget` job (a row and one DELETE, free) that deletes the copy ElevenLabs keeps of each
+transcript by default, as a voice note's is (M17 I13a). An utterance ends after a second and a
+half of quiet (0.9 s before I13a), past twenty seconds at the next breath, so a sentence is one
+utterance rather than several: fewer requests, each heard with its own context, and about the same
+quiet billed (up to 1.5 s at the end of each, against 0.9 s at the end of each of more).
 At the production provider's price (ElevenLabs Scribe v2, $0.22 an hour of audio, the price list's
 `usdPerEur` 1.1253), an hour of speech is €0.1955: Personal's €0.50 a day covers 2.56 hours of it,
 Pro's €2 10.23 hours, and a half-hour 1:1 where someone is speaking 80% of the time costs €0.078

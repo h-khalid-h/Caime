@@ -201,8 +201,9 @@ goes between the devices in it.</li>
 <li><strong>Cai&rsquo;s notes in a call.</strong> Only when someone in a call asks and everyone in
 it says yes, each by a button that says so. Then one browser in the call, of someone on Caime,
 sends each thing said, as it ends, to the speech-to-text provider named below, which turns it into
-words; Caime keeps the words, each under the name of whoever said it, and deletes the audio as
-soon as it&rsquo;s heard. Caime keeps who asked, each person&rsquo;s yes or no, and when the notes
+words; Caime keeps the words, each under the name of whoever said it, deletes the audio as soon
+as it&rsquo;s heard, and has the provider delete its own copy of the words once Caime has them (it
+keeps one by default), as it does for a voice note. Caime keeps who asked, each person&rsquo;s yes or no, and when the notes
 began and stopped. Whoever was in the call reads the notes from when they joined; anyone may delete
 their own words, and anyone&rsquo;s no, at any time, stops the notes for everyone from that moment.
 The notes go with the call&rsquo;s line in its conversation. Never in a private conversation, and

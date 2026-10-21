@@ -22,6 +22,7 @@ import { enqueue, registerJob } from './jobs';
 import { analyseText, messageViews, participantsOf } from './messages';
 import { assertAiAllowance } from './plans';
 import { SPEECH_MAX_BYTES, SPEECH_MAX_MS } from './speech';
+import { forgetLater } from './speech-forget';
 import { storageFor } from './storage';
 import { minorOf } from './users';
 
@@ -151,6 +152,8 @@ async function transcribe(
     if (err instanceof AppError && err.code === 'ai_busy') throw err;
     return;
   }
+  // The words are Caime's now: what the provider kept of them goes (M17 F8a).
+  await forgetLater(ctx, transcript.ref);
   const mark: TranscriptMark = {
     language: transcript.language,
     by: speech.provider,

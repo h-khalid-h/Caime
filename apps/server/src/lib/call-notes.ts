@@ -33,6 +33,7 @@ import { participantsOf } from './messages';
 import { assertNotesAllowed } from './notes-allowed';
 import { personViewsFor } from './people-batch';
 import { assertAiAllowance } from './plans';
+import { forgetLater } from './speech-forget';
 import { storageFor } from './storage';
 import { anyMinor } from './users';
 
@@ -643,6 +644,8 @@ async function hear(ctx: AppContext, payload: Record<string, unknown>): Promise<
             mime: file.mime,
             name: file.name,
             languageHints: hintsFor(prefs.language, speaker?.locale),
+            // Read as notes (M17 F8a): the voice isn't kept, so the words are all there is.
+            clean: true,
           })
           .then(
             (r) => ({ ...r, usage: { ...r.usage, audioMs } }),
@@ -660,6 +663,7 @@ async function hear(ctx: AppContext, payload: Record<string, unknown>): Promise<
       lineId,
       text ? { state: 'heard', body: text, language: heard.language } : { state: 'unheard' },
     );
+    await forgetLater(ctx, heard.ref);
   } catch (err) {
     // Busy: the job tries again. Anything else: the line isn't heard, and its audio goes.
     if (err instanceof AppError && err.code === 'ai_busy') throw err;

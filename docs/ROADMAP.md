@@ -4021,6 +4021,42 @@ clinic can sign for. I1 lands before launch.
       read (`AiCatchUpView.unread`, one count under `readableBy`) and, when it read only the
       latest of it, says so under the summary ("From the latest 39 of 45 new messages."), never
       passing for the whole. Verified: `ai.test.ts` (45 long messages: all 45 counted, the latest 39 read).
+- [ ] I13. Cai in a call in three modes, Notes, Record and Interact (R114; the owner's report and
+      brainstorm of 2026-10-21, ahead of I3):
+  - [x] I13a. Better words, and nothing left at the provider (S): an utterance ends after a second
+        and a half of quiet (was 0.9 s), past twenty seconds at the next breath; the notes heard
+        clean (Scribe's `no_verbatim`), a voice note as said; a speaker's lines one after another
+        one paragraph in the notes, deleted together; every transcript ElevenLabs keeps by default
+        deleted by its id once read (`speech.forget`, `lib/speech-forget.ts`), counted on
+        `caime_speech_forgotten_total`. Verified: `speech-provider.test.ts` (Scribe's fields, a
+        blank transcript forgotten at once, a delete asked again after the provider was away, a
+        call's line heard clean), `notes.test.ts`, `turns.test.ts`, `call-notes.test.ts`, the
+        notes E2E.
+  - [ ] ⛔ The owner: turn off ElevenLabs' use of the account's content for training ("Data use",
+        or its opt-out form); zero retention needs ElevenLabs' enterprise contract.
+  - [ ] I13b. Record (L): "Record" beside "Take notes", the labelled pair at a ring and a join
+        ("Answer, recorded", with what's kept and that it may be shared), the mark for everyone
+        throughout; voices and shared screens by one member's browser, ten-second pieces during the
+        call, a part at each join; MP4 (H.264, AAC) where the browser records it, made seekable on
+        the server without re-encoding; bytes an hour measured in the E2E before RESOURCES says one.
+  - [ ] I13c. Played with the notes (M): the recording on the call's line, lines, topics and next
+        steps opening it at their moment, screens in step with voices, on the web and on phones.
+  - [ ] I13d. Kept and deleted (S): thirty days by default, an organization's retention when
+        shorter, Keep by whoever asked against their storage, anyone in it deletes it for everyone;
+        erasure, the export and the privacy page.
+  - [ ] I13e. Shared on (S): into a conversation of the sharer's, as the consent said; gone with
+        the recording.
+  - [ ] I13f. Asked in writing (S): in every mode a question typed in the call, answered to the one
+        who asked from what was said, cited.
+  - [ ] I13g. Interact (L): the third mode and its labelled consent ("Answer, Cai joins in");
+        "Cai, …" by name in a person's own track (golden lines per language and variety); Cai's
+        introduction aloud once; a short spoken answer from what the call shares, mixed into the
+        recording browser's outgoing audio with "Cai is speaking" on every screen, anything
+        personal to the asker in writing; what it's asked to do on the asker's tap (R110); the
+        time to a first word measured on a call, the cost per answer in RESOURCES.
+  - [ ] I13h. What was on screen (M): a frame at each change of a shared screen while recording,
+        read into the write-up, and the screen as shown when Cai is asked about it in Interact, on
+        the light model within the asker's day.
 - [ ] I3. What did I miss (M; L with the summary): the Needs-you conversations since each was last
       read, by the rules, ranked as Attention ranks them, with a cited summary for whoever has
       assist on, cached by read position, in Cai's chat and on Attention.
@@ -5642,6 +5678,10 @@ clinic can sign for. I1 lands before launch.
 - 2026-10-20 — The French and Turkish catalogs come in two halves fetched side by side, as Arabic
   does: their largest download 48.9 KB where one was 95.2 KB of a chunk's 100; the first download
   448.8 KB of 450 (0.2 KB more: the two loaders).
+- 2026-10-21 — M17 I13a (R114, the owner's call report): call notes in whole sentences, heard
+  clean, a speaker's turn one paragraph; every transcript the speech provider keeps deleted once
+  read; Cai in a call decided in three modes (Notes, Record, Interact: Cai heard by name, answering
+  aloud through the recording browser, acting on a tap).
 - 2026-10-21 — M17 I3a: a catch-up that read only the latest of what's new says how much
   ("From the latest 39 of 45 new messages.").
 - 2026-10-21 — M17 I2c, and so I2: one way a wait is brought up (where it stands read once; the
