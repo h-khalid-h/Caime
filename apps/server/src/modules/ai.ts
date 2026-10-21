@@ -30,6 +30,7 @@ import {
   previewText,
   resolvePolicy,
   systemText,
+  truncate,
   writtenIn,
 } from '@caime/core';
 import { tr } from '@caime/core/i18n';
@@ -38,12 +39,13 @@ import { z } from 'zod';
 import type { AppContext } from '../context';
 import type { Conversation, Message } from '../db/schema';
 import { MESSAGE_COLUMNS } from '../db/schema';
-import { type AiResult, baseLanguage, languageName, type Transcript } from '../lib/ai';
+import { type AiResult, languageName, type Transcript } from '../lib/ai';
 import { aiGate } from '../lib/ai-gate';
 import { runAi } from '../lib/ai-run';
 import { maskFor, maskId, maskPayload } from '../lib/business';
 import { membership } from '../lib/conversation-views';
 import { AppError, notFound } from '../lib/errors';
+import { languageOf } from '../lib/i18n';
 import { readableBy } from '../lib/messages';
 import { activeRelationships, loadPolicies, policyTargetFor } from '../lib/relations';
 import { createSuggestion, suggestionView } from '../lib/suggest';
@@ -218,7 +220,7 @@ export async function aiRoutes(app: FastifyInstance, ctx: AppContext) {
   app.post('/ai/translate', async (req): Promise<AiTranslationView> => {
     const auth = requireAuth(req);
     const body = parse(AiTranslateBody, req.body);
-    const { ai, me } = await gate(auth.userId);
+    const { ai } = await gate(auth.userId);
     // One answer for "no such message" and "not yours to read", so ids can't be probed.
     const message = await ctx.db
       .selectFrom('messages')
@@ -234,10 +236,11 @@ export async function aiRoutes(app: FastifyInstance, ctx: AppContext) {
       .executeTakeFirst();
     if (!message || message.deleted_at || !message.body?.trim()) throw notFound(tr('That message'));
     await readable(auth.userId, message.conversation_id);
-    const to = body.to ?? baseLanguage(me.locale);
+    // Into the language they read Caime in, unless they asked for another (I1b).
+    const to = body.to ?? (await languageOf(ctx, auth.userId));
     const language = languageName(to);
     const translation = await run('translate', auth.userId, () =>
-      ai.translate({ text: message.body!.slice(0, 4000), to: language }),
+      ai.translate({ text: truncate(message.body!, 4000), to: language }),
     );
     return { translation, to, language, label: AI_LABEL };
   });
@@ -254,10 +257,11 @@ export async function aiRoutes(app: FastifyInstance, ctx: AppContext) {
       me.time_zone,
     );
     if (lines.length === 0) return { summary: null, label: null, newCount: 0 };
+    const language = languageName(await languageOf(ctx, auth.userId));
     const summary = await run('catch-up', auth.userId, () =>
       ai.catchUp({
         transcript,
-        language: languageName(baseLanguage(me.locale)),
+        language,
         today: today(me.time_zone),
       }),
     );
@@ -282,11 +286,12 @@ export async function aiRoutes(app: FastifyInstance, ctx: AppContext) {
       me.time_zone,
     );
     if (lines.length === 0) return { answer: null, label: null };
+    const language = languageName(writtenIn(question) ?? (await languageOf(ctx, auth.userId)));
     const answer = await run('ask', auth.userId, () =>
       ai.ask({
         transcript: { text: transcript.text, newFrom: null },
         question,
-        language: languageName(writtenIn(question) ?? baseLanguage(me.locale)),
+        language,
         today: today(me.time_zone),
       }),
     );

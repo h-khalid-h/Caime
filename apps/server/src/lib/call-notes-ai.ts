@@ -18,10 +18,11 @@ import {
 import { tr } from '@caime/core/i18n';
 import type { AppContext } from '../context';
 import type { Call } from '../db/schema';
-import { baseLanguage, languageName, type Transcript } from './ai';
+import { languageName, type Transcript } from './ai';
 import { aiGate } from './ai-gate';
 import { runAi } from './ai-run';
 import { notesFor } from './call-notes';
+import { languageOf } from './i18n';
 import { createSuggestion, suggestionView } from './suggest';
 import { transcriptClock, transcriptText } from './transcript';
 
@@ -90,10 +91,11 @@ export async function catchUpOnNotes(
   const { ai, me } = await aiGate(ctx, userId);
   const { transcript, lines } = await noteTranscript(ctx, call, userId, me.time_zone);
   if (!lines.length) return { summary: null, label: null, newCount: 0 };
+  const language = languageName(await languageOf(ctx, userId));
   const summary = await runAi(ctx, 'notes-catch-up', userId, () =>
     ai.catchUp({
       transcript,
-      language: languageName(baseLanguage(me.locale)),
+      language,
       today: transcriptClock(me.time_zone).day(ctx.now()),
     }),
   );

@@ -1678,4 +1678,16 @@ export const turkishServer: Catalog = {
   'Your notes from the call with {name} are ready.':
     '{name} ile yaptığınız aramanın notları hazır.',
   'Your notes from the call are ready.': 'Aramanın notları hazır.',
+  '{agentName} booked a time for the team to confirm':
+    '{agentName}, ekibin onaylayacağı bir randevu ayırdı',
+  '{agentName} took an order for the team to confirm':
+    '{agentName}, ekibin onaylayacağı bir sipariş aldı',
+  'I couldn’t book that time. Someone from {org} will answer you here.':
+    'Bu saati ayıramadım. {org} ekibinden biri size buradan yanıt verecek.',
+  'I couldn’t take that order. Someone from {org} will answer you here.':
+    'Bu siparişi alamadım. {org} ekibinden biri size buradan yanıt verecek.',
+  'That time isn’t open any more: answer it yourself.':
+    'Bu saat artık boş değil: kendiniz yanıtlayın.',
+  'That order can’t be taken as it stands now: answer it yourself.':
+    'Bu sipariş şu haliyle alınamıyor: kendiniz yanıtlayın.',
 };

@@ -5,6 +5,7 @@
  */
 import {
   type Analysis,
+  askedBy,
   decideNotification,
   detectEmergingTopic,
   firstName,
@@ -491,7 +492,14 @@ async function notifyBusiness(
             ? 'agent'
             : 'automated',
       },
-      [{ recipient: customer, addressed: true, isReplyToThem: replyToSender === customer.user_id }],
+      [
+        {
+          recipient: customer,
+          // A card that stands for their own ask (M17 I1c) tells them, but asks nothing of them.
+          addressed: askedBy(message.payload ?? {}, message.sender_id) !== customer.user_id,
+          isReplyToThem: replyToSender === customer.user_id,
+        },
+      ],
     );
 }
 

@@ -4,6 +4,7 @@ import { AGENT_CALLS_PER_CONVERSATION, uuidv4, uuidv7 } from '@caime/core';
 import { afterAll, beforeAll, beforeEach, describe, expect, it } from 'vitest';
 import { agentReply } from '../src/lib/agent';
 import { PROMPT_VERSIONS } from '../src/lib/ai';
+import { chargedUsd } from '../src/lib/ai-costs';
 import { runDueJobs } from '../src/lib/jobs';
 import { type Client, createTestApp, signup, type TestApp } from './helpers';
 
@@ -126,10 +127,16 @@ afterAll(async () => {
   await t.close();
   await new Promise((done) => stub.close(done));
 });
-beforeEach(() => {
+beforeEach(async () => {
   replies.length = 0;
   requests.length = 0;
   whileThinking = null;
+  // A call that failed is tried once more a little later (M17 I1d): never in the next test.
+  await t.ctx.db
+    .deleteFrom('jobs')
+    .where('kind', '=', 'agent.reply')
+    .where('done_at', 'is', null)
+    .execute();
 });
 const repliesToday = async () =>
   (await noor.get(`/v1/orgs/${orgId}/agent`)).agent.repliesToday as number;
@@ -214,11 +221,33 @@ describe('an organization’s AI agent (PRD §74–75)', () => {
     expect(asked.model).toBe('claude-haiku-5-5');
     const run = await t.ctx.db
       .selectFrom('ai_runs')
-      .select(['feature', 'input_tokens', 'cache_read_tokens', 'cache_creation_tokens'])
+      .select([
+        'feature',
+        'input_tokens',
+        'cache_read_tokens',
+        'cache_creation_tokens',
+        'output_tokens',
+        'cost_usd',
+      ])
       .where('feature', '=', 'agent')
       .orderBy('created_at', 'desc')
       .executeTakeFirstOrThrow();
-    expect(run).toEqual({
+    // Priced as it ran, as every run is (M16 G9): what the plan's backstop sums.
+    const { output_tokens, cost_usd, ...counted } = run;
+    expect(cost_usd).toBeCloseTo(
+      chargedUsd({
+        provider: 'anthropic',
+        model: 'claude-opus-5',
+        inputTokens: 300,
+        outputTokens: output_tokens,
+        cacheReadTokens: 120,
+        cacheCreationTokens: 30,
+        audioMs: null,
+      }),
+      9,
+    );
+    expect(cost_usd).toBeGreaterThan(0);
+    expect(counted).toEqual({
       feature: 'agent',
       input_tokens: 300,
       cache_read_tokens: 120,
@@ -457,7 +486,7 @@ describe('an organization’s AI agent (PRD §74–75)', () => {
     });
   });
 
-  it('stops for the day at what the plan includes, and when the model fails the team answers', async () => {
+  it('stops for the day at what the plan includes, and when the model fails twice the team answers', async () => {
     const bot = (
       await t.ctx.db
         .selectFrom('org_agents')
@@ -481,6 +510,21 @@ describe('an organization’s AI agent (PRD §74–75)', () => {
       .orderBy('created_at', 'desc')
       .executeTakeFirstOrThrow();
     expect(failed).toEqual({ feature: 'agent', outcome: 'unavailable' });
+    // Tried once more half a minute on (M17 I1d); failing again, the customer hears it was passed
+    // on, in its own words opening with who it is (R87), and the team has it.
+    replies.push({
+      status: 400,
+      json: { type: 'error', error: { type: 'invalid_request_error', message: 'not today' } },
+    });
+    t.clock.advance(30_000);
+    await agentTurn();
+    expect(requests).toHaveLength(2);
+    expect(
+      (await messages(busy.c, busy.conversationId)).filter((m) => m.aiAgent).map((m) => m.body),
+    ).toEqual([
+      `Hi Dina, I’m Nile Dental Assistant, the AI assistant for Nile Dental.\n${PASSED_ON}`,
+    ]);
+    expect((await threadOf(noor, busy.conversationId)).agentHandedOverAt).not.toBeNull();
 
     // Free includes 50 answers a day.
     await t.ctx.db
@@ -499,7 +543,7 @@ describe('an organization’s AI agent (PRD §74–75)', () => {
     const full = await newCustomer('Yara Full');
     await send(full.c, 'Are you open on Saturday?', full.conversationId);
     await agentTurn();
-    expect(requests).toHaveLength(1);
+    expect(requests).toHaveLength(2);
     await t.ctx.db
       .deleteFrom('ai_runs')
       .where('user_id', '=', bot)
@@ -526,7 +570,7 @@ describe('an organization’s AI agent (PRD §74–75)', () => {
     const costly = await newCustomer('Yara Costly');
     await send(costly.c, 'Are you open on Saturday?', costly.conversationId);
     await agentTurn();
-    expect(requests).toHaveLength(1);
+    expect(requests).toHaveLength(2);
     const plan = (await noor.get(`/v1/orgs/${orgId}`)).org.plan;
     expect(plan.used.agentRepliesToday).toBe(3);
     expect(plan.agentHeldUntil).toBe(new Date(spentAt.getTime() + 86_400_000).toISOString());
@@ -575,7 +619,10 @@ describe('an organization’s AI agent (PRD §74–75)', () => {
     expect(requests).toHaveLength(AGENT_CALLS_PER_CONVERSATION);
     expect((await threadOf(noor, burst.conversationId)).agentHandedOverAt).not.toBeNull();
     const said = (await messages(burst.c, burst.conversationId)).filter((m) => m.aiAgent);
-    expect(said.map((m) => m.body)).toEqual([PASSED_ON]);
+    // Its first word here, so it opens with who it is (R87).
+    expect(said.map((m) => m.body)).toEqual([
+      `Hi Bassem, I’m Nile Dental Assistant, the AI assistant for Nile Dental.\n${PASSED_ON}`,
+    ]);
     // None of it is an answer the plan counts.
     expect(await repliesToday()).toBe(before);
     const runs = await runsIn(burst.conversationId);
@@ -612,7 +659,7 @@ describe('an organization’s AI agent (PRD §74–75)', () => {
     expect(requests).toHaveLength(0);
     const said = (await messages(arabic.c, arabic.conversationId)).filter((m) => m.aiAgent);
     expect(said.map((m) => m.body)).toEqual([
-      'حوّلت محادثتك إلى فريق Nile Dental، وسيرد عليك أحدهم هنا.',
+      'مرحبًا Yasmin، أنا Nile Dental Assistant، مساعد الذكاء الاصطناعي لدى Nile Dental.\nحوّلت محادثتك إلى فريق Nile Dental، وسيرد عليك أحدهم هنا.',
     ]);
   });
 
@@ -702,7 +749,7 @@ describe('an organization’s AI agent (PRD §74–75)', () => {
     expect(logged.every((l) => l.actor_id === noor.user.id)).toBe(true);
   });
 
-  it('offers the open slots where the organization takes bookings, and books one as a card the customer confirms (R51)', async () => {
+  it('offers the open slots where the organization takes bookings, and books one as a card the team confirms (R51, M17 I1c)', async () => {
     // A new day, with the agent answering: what earlier tests used up or paused is behind.
     t.clock.advance(86_400_000 + 1);
     await noor.req('PUT', `/v1/orgs/${orgId}/agent`, {
@@ -741,8 +788,8 @@ describe('an organization’s AI agent (PRD §74–75)', () => {
     const [firstIso, firstLine] = offered[0]!.split(' · ');
     expect(new Date(firstIso!).getTime()).toBeGreaterThanOrEqual(now.getTime());
     expect(firstLine).toMatch(/^[A-Z][a-z]+day \d+ [A-Z][a-z]+, \d\d:\d\d$/);
-    // The customer picks the first: a requested appointment card from the organization follows
-    // its message, and the slot is taken.
+    // The customer picks the first: a requested appointment card from the organization, made
+    // before it says so (M17 I1c), its words after, and the slot is taken.
     await send(tariq, 'The first one, please', convo2);
     replies.push(
       agentSays('book', 'I’ve asked the team to confirm it. You’ll see it here.', {
@@ -753,16 +800,33 @@ describe('an organization’s AI agent (PRD §74–75)', () => {
     await agentTurn();
     const seen = await messages(tariq, convo2);
     expect(seen.at(-2)).toMatchObject({
-      body: 'I’ve asked the team to confirm it. You’ll see it here.',
-      aiAgent: true,
-    });
-    expect(seen.at(-1)).toMatchObject({
       kind: 'kit',
       aiAgent: true,
       automated: true,
-      payload: { kit: 'appointment', state: 'requested', fields: { title: 'Cleaning' } },
+      payload: {
+        kit: 'appointment',
+        state: 'requested',
+        fields: { title: 'Cleaning' },
+        // The customer's ask, so the team confirms it.
+        proposedBy: tariq.user.id,
+      },
     });
-    expect(seen.at(-1).payload.fields.start.at).toBe(new Date(firstIso!).toISOString());
+    expect(seen.at(-1)).toMatchObject({
+      body: 'I’ve asked the team to confirm it. You’ll see it here.',
+      aiAgent: true,
+    });
+    const card = seen.at(-2);
+    expect(card.payload.fields.start.at).toBe(new Date(firstIso!).toISOString());
+    // Nothing asks the customer for what they asked for themselves; the team is told.
+    const inbox = (await tariq.get('/v1/inbox?view=all')).conversations as any[];
+    expect(inbox.find((i) => i.id === convo2)?.section).not.toBe('needs_you');
+    const told = await t.ctx.db
+      .selectFrom('notifications')
+      .select('title')
+      .where('user_id', '=', noor.user.id)
+      .orderBy('created_at', 'desc')
+      .executeTakeFirstOrThrow();
+    expect(told.title).toBe('Nile Dental Assistant booked a time for the team to confirm');
     const slotsNow = (
       await tariq.get(
         `/v1/orgs/${orgId}/slots?from=${now.toISOString()}&to=${new Date(now.getTime() + 86_400_000).toISOString()}`,
@@ -778,14 +842,24 @@ describe('an organization’s AI agent (PRD §74–75)', () => {
     expect(bookings).toMatchObject([
       { customer: { displayName: 'Tariq Booker' }, state: 'requested' },
     ]);
-    await tariq.post(`/v1/messages/${seen.at(-1).id}/kit`, { to: 'confirmed' });
-    // A slot the model made up, or one taken meanwhile, is never booked: a person takes over.
+    // The team confirms what it booked, as a page's booking; the customer can't.
+    expect(
+      (await tariq.req('POST', `/v1/messages/${card.id}/kit`, { to: 'confirmed' })).statusCode,
+    ).toBe(403);
+    const confirmed = await noor.req('POST', `/v1/messages/${card.id}/kit`, { to: 'confirmed' });
+    expect(confirmed.statusCode, confirmed.body).toBe(200);
+    // A slot the model made up, or one taken meanwhile, is never booked: what it would have said
+    // never is, a fixed line says so in the customer's words, and a person takes over.
     const { c: dina, conversationId: convo3 } = await newCustomer('Dina Booker');
     await send(dina, 'Book me the same slot please', convo3);
     replies.push(agentSays('book', 'Done!', { bookAt: firstIso, bookFor: 'Cleaning' }));
     await agentTurn();
     const dinas = await messages(dina, convo3);
     expect(dinas.filter((m: any) => m.kind === 'kit')).toHaveLength(0);
+    expect(dinas.filter((m: any) => m.aiAgent).map((m: any) => m.body)).toEqual([
+      'Hi Dina, I’m Nile Dental Assistant, the AI assistant for Nile Dental.',
+      'I couldn’t book that time. Someone from Nile Dental will answer you here.',
+    ]);
     expect((await threadOf(noor, convo3)).agentHandedOverAt).not.toBeNull();
     await noor.req('PUT', `/v1/orgs/${orgId}/booking`, { booking: null });
   });
@@ -833,10 +907,14 @@ describe('an organization’s AI agent (PRD §74–75)', () => {
     expect(requests[at].messages[0].content).toContain(
       '<menu>\nkit · Whitening kit · EGP 250 · up to 2\n</menu>',
     );
-    // An Order card from the organization follows its message, fixed by the server as any order
-    // is, and the stock is taken.
+    // An Order card from the organization, made before it says so (M17 I1c), fixed by the server
+    // as any order is, and the stock is taken; its words after.
     const seen = await messages(mona, conversationId);
     expect(seen.at(-1)).toMatchObject({
+      body: 'I’ve written your order down for the team to confirm.',
+      aiAgent: true,
+    });
+    expect(seen.at(-2)).toMatchObject({
       kind: 'kit',
       aiAgent: true,
       automated: true,
@@ -863,7 +941,11 @@ describe('an organization’s AI agent (PRD §74–75)', () => {
     at = requests.length;
     await agentTurn();
     expect(requests[at].messages[0].content).toContain('kit · Whitening kit · EGP 250 · sold out');
-    expect((await messages(omid, soldOut)).filter((m: any) => m.kind === 'kit')).toHaveLength(0);
+    const omids = await messages(omid, soldOut);
+    expect(omids.filter((m: any) => m.kind === 'kit')).toHaveLength(0);
+    expect(omids.at(-1).body).toBe(
+      'I couldn’t take that order. Someone from Nile Dental will answer you here.',
+    );
     expect((await threadOf(noor, soldOut)).agentHandedOverAt).not.toBeNull();
     // Back in stock, an order with no way chosen where there are two is a person's too.
     await noor.req('PUT', `/v1/orgs/${orgId}/booking`, {
@@ -879,6 +961,27 @@ describe('an organization’s AI agent (PRD §74–75)', () => {
     expect((await messages(lena, noWay)).filter((m: any) => m.kind === 'kit')).toHaveLength(0);
     expect((await threadOf(noor, noWay)).agentHandedOverAt).not.toBeNull();
     await noor.req('PUT', `/v1/orgs/${orgId}/booking`, { booking: null, ordering: null });
+  });
+
+  it('never tells a customer something was done that nobody did (M17 I1c)', async () => {
+    const { c: hala, conversationId } = await newCustomer('Hala Claims');
+    await send(hala, 'Can you move my appointment to Monday?', conversationId);
+    replies.push(agentSays('answer', 'Your appointment is confirmed for Monday at 10:00.'));
+    await agentTurn();
+    // Nothing was moved, so that answer never reaches her: she hears it was passed on.
+    const said = (await messages(hala, conversationId)).filter((m) => m.aiAgent);
+    expect(said.map((m) => m.body)).toEqual([
+      `Hi Hala, I’m Nile Dental Assistant, the AI assistant for Nile Dental.\n${PASSED_ON}`,
+    ]);
+    expect((await threadOf(noor, conversationId)).agentHandedOverAt).not.toBeNull();
+    // What it will be once someone acts is no claim, and is answered as it was written.
+    const { c: hadi, conversationId: later } = await newCustomer('Hadi Later');
+    await send(hadi, 'Is my appointment confirmed?', later);
+    replies.push(agentSays('answer', 'Once the team has confirmed it, you’ll see it here.'));
+    await agentTurn();
+    expect(
+      (await messages(hadi, later)).filter((m) => m.aiAgent).map((m) => m.body.split('\n').at(-1)),
+    ).toEqual(['Once the team has confirmed it, you’ll see it here.']);
   });
 });
 
@@ -1316,16 +1419,24 @@ describe('its team checks its answers first, and sees what it couldn’t answer 
     expect((await messages(dana, conversationId)).filter((m) => m.kind === 'kit')).toEqual([]);
     await noor.post(`/v1/business/${conversationId}/agent-draft/send`, { seq: draft.seq });
     const seen = await messages(dana, conversationId);
-    // Its first words sent here, so they open with who it is (R87).
-    expect(seen.at(-2)).toMatchObject({
-      body: 'Hi Dana, I’m Nile Dental Assistant, the AI assistant for Nile Dental.\nI’ve asked the team to confirm it.',
-      aiAgent: true,
-    });
-    expect(seen.at(-1)).toMatchObject({
-      kind: 'kit',
-      aiAgent: true,
-      payload: { kit: 'appointment', state: 'requested', fields: { title: 'Cleaning' } },
-    });
+    // Its first words sent here (R87): who it is, then the card it made, then what it said.
+    expect(seen.slice(-3)).toMatchObject([
+      {
+        body: 'Hi Dana, I’m Nile Dental Assistant, the AI assistant for Nile Dental.',
+        aiAgent: true,
+      },
+      {
+        kind: 'kit',
+        aiAgent: true,
+        payload: {
+          kit: 'appointment',
+          state: 'requested',
+          fields: { title: 'Cleaning' },
+          proposedBy: dana.user.id,
+        },
+      },
+      { body: 'I’ve asked the team to confirm it.', aiAgent: true },
+    ]);
     await noor.req('PUT', `/v1/orgs/${orgId}/booking`, { booking: null });
   });
 

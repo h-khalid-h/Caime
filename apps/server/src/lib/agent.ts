@@ -11,7 +11,13 @@
  * each customer message once, answers at most AGENT_REPLIES_PER_CONVERSATION times in a
  * conversation a day and thinks at most AGENT_CALLS_PER_CONVERSATION times (answered or not),
  * and stops for the day at what the plan includes. Whenever it stays out, the team answers as
- * it would without one.
+ * it would without one, and the organization's own greeting and away message go as they would
+ * (M17 I1d); a call that fails is tried once more, then the customer hears it was passed on.
+ *
+ * What it books or orders is made before it says so (M17 I1c): the card first, its words after,
+ * so nothing it says stands beside a card that isn't there; a card it can't make is said in a
+ * fixed line and a person takes it. Its booking is the customer's ask (`proposedBy`), so the team
+ * confirms it, as it confirms a visitor's booking from a page.
  *
  * Its first message in a conversation opens with its introduction (R87), written by the rules
  * rather than the model so it always says who it is, that it's an AI and whom it answers for, in
@@ -34,14 +40,11 @@ import {
   AGENT_REPLIES_PER_CONVERSATION,
   type AgentCitation,
   type AgentDraftAction,
-  type AgentWhen,
-  type BookingHours,
   CITATION_CHARS,
   isBooked,
   isOrdered,
   knowledgePassages,
   ORG_ALLOWANCES,
-  openAt,
   orderableMax,
   tr,
   truncate,
@@ -52,8 +55,11 @@ import { firstName } from '@caime/core/format';
 import type { InterfaceLanguage } from '@caime/core/i18n';
 import { sql } from 'kysely';
 import type { AppContext } from '../context';
+import { claimsDone } from './agent-claims';
 import type { AgentDraft } from './agent-drafts';
+import { agentAnswersNow } from './agent-hours';
 import { type AgentReply, AiError, type AiUsage, PROMPT_VERSIONS } from './ai';
+import { chargedUsd } from './ai-costs';
 import { emitWebhook } from './apps';
 import { catalogLines, itemsFor, menuLines, openSlotsFor, orgHost, slotLine } from './booking';
 import { onCustomerMessage, publishThread, teamOf, threadViews } from './business';
@@ -63,6 +69,7 @@ import { inLanguage, languageOf } from './i18n';
 import { enqueue, registerJob } from './jobs';
 import { readableBy } from './messages';
 import { notify } from './notify';
+import { queueAutoReplies } from './org-replies';
 import { bookablePlaceLines } from './places';
 import { agentRepliesToday, agentSpent } from './plans';
 import { postAs } from './post-as';
@@ -79,6 +86,8 @@ const MESSAGE_CHARS = 1500;
 const AGENT_SLOT_DAYS = 14;
 const AGENT_SLOTS = 8;
 const DAY_MS = 86_400_000;
+/** How long before a call that failed is tried once more (M17 I1d). */
+const AGAIN_MS = 30_000;
 
 /** The organization's agent, if it's on: its user, its name and what it knows. */
 export async function activeAgent(ctx: Pick<AppContext, 'db'>, orgId: string) {
@@ -100,21 +109,15 @@ export async function activeAgent(ctx: Pick<AppContext, 'db'>, orgId: string) {
     .executeTakeFirst();
 }
 
-/**
- * Whether it answers now (M16 G6a): always, or, where it answers only while the organization is
- * closed, while its hours say so. Without hours nothing says it's open, so it answers. The
- * automatic replies read the same rule: while it's quiet, they greet.
- */
-export function agentAnswersNow(
-  answersWhen: AgentWhen,
-  hours: BookingHours | null,
-  now: Date,
-): boolean {
-  return answersWhen === 'always' || !hours || !openAt(hours, now);
-}
-
 /** Why it handed a conversation to the team, as `caime_agent_actions_total` counts it. */
-export type HandOverReason = 'unknown' | 'person' | 'limit' | 'refused' | 'none';
+export type HandOverReason =
+  | 'unknown'
+  | 'person'
+  | 'limit'
+  | 'refused'
+  | 'failed'
+  | 'claimed'
+  | 'none';
 
 /** The passages of what it was told that an answer rests on, as the team reads them under it. */
 export function citationsOf(knowledge: string, sources: readonly number[]): AgentCitation[] {
@@ -145,7 +148,11 @@ export async function queueAgent(
   );
 }
 
-/** One model call for the agent, recorded in `ai_runs` as every AI call is (never the text). */
+/**
+ * One model call for the agent, recorded in `ai_runs` as every AI call is (never the text), and
+ * priced as it ran (`chargedUsd`, as `runAi` prices one): what its plan's backstop sums
+ * (`agentSpent`) and, for a manager trying it, what their own day counts (M16 G9).
+ */
 async function recordRun(
   ctx: AppContext,
   feature: 'agent' | 'agent_try',
@@ -184,6 +191,17 @@ async function recordRun(
       latency_ms: Date.now() - started,
       outcome,
       prompt_hash: PROMPT_VERSIONS[feature] ?? null,
+      cost_usd: usage
+        ? chargedUsd({
+            provider: 'anthropic',
+            model: usage.model ?? ctx.ai?.model ?? null,
+            inputTokens: usage.inputTokens,
+            outputTokens: usage.outputTokens,
+            cacheReadTokens: usage.cacheReadTokens ?? null,
+            cacheCreationTokens: usage.cacheCreationTokens ?? null,
+            audioMs: null,
+          })
+        : null,
       created_at: ctx.now(),
     })
     .execute();
@@ -263,23 +281,25 @@ async function transcriptFor(
   const opens = (m: (typeof rows)[number]) =>
     m.sender_id === agentId &&
     (m.payload as { introduction?: unknown } | null)?.introduction === true;
-  const lines = rows.reverse().map((m) => ({
-    who:
-      m.sender_id === customerId
-        ? 'Customer'
-        : m.sender_id === agentId
-          ? 'You'
-          : m.sender_kind === 'human'
-            ? 'Team'
-            : 'Automated',
-    words: wordsFor(
-      opens(m) ? { ...m, body: (m.body ?? '').split('\n').slice(1).join('\n') } : m,
-      MESSAGE_CHARS,
-    ),
-  }));
+  const lines = rows
+    .reverse()
+    .map((m) => (opens(m) ? { ...m, body: (m.body ?? '').split('\n').slice(1).join('\n') } : m))
+    // Its introduction said alone, before a card it made (M17 I1c), leaves nothing to read.
+    .filter((m) => m.sender_id !== agentId || m.kind !== 'text' || (m.body ?? '').trim() !== '')
+    .map((m) => ({
+      who:
+        m.sender_id === customerId
+          ? 'Customer'
+          : m.sender_id === agentId
+            ? 'You'
+            : m.sender_kind === 'human'
+              ? 'Team'
+              : 'Automated',
+      words: wordsFor(m, MESSAGE_CHARS),
+    }));
   return {
     text: transcriptText(lines),
-    introduced: lines.some((l) => l.who === 'You'),
+    introduced: rows.some((m) => m.sender_id === agentId),
   };
 }
 
@@ -360,15 +380,16 @@ async function threadMoved(
 }
 
 /**
- * The people on the team hear that a conversation needs one of them now: handed to them, or a
- * draft of its answer waits for one of them to check (M16 G6b).
+ * The people on the team hear that a conversation needs one of them now: handed to them, a
+ * draft of its answer waits for one of them to check (M16 G6b), or a booking or an order it
+ * made waits for one of them to confirm (M17 I1c).
  */
 async function tellTeam(
   ctx: AppContext,
   orgId: string,
   conversationId: string,
   agentName: string,
-  why: 'handed' | 'drafted' = 'handed',
+  why: 'handed' | 'drafted' | 'booked' | 'ordered' = 'handed',
 ) {
   const [people, about] = await Promise.all([
     ctx.db
@@ -395,7 +416,11 @@ async function tellTeam(
       title: () =>
         why === 'drafted'
           ? tr('{agentName} drafted an answer for you to check', { agentName })
-          : tr('{agentName} handed a conversation to the team', { agentName }),
+          : why === 'booked'
+            ? tr('{agentName} booked a time for the team to confirm', { agentName })
+            : why === 'ordered'
+              ? tr('{agentName} took an order for the team to confirm', { agentName })
+              : tr('{agentName} handed a conversation to the team', { agentName }),
       body: () => `${about.customer_name ?? tr('A customer')} · ${about.org_name}`,
       data: { conversationId, orgId },
       groupKey: `conv:${conversationId}`,
@@ -444,6 +469,8 @@ function noPersonOnIt(alias: 't' | null) {
 export async function agentReply(ctx: AppContext, payload: Record<string, unknown>): Promise<void> {
   const conversationId = String(payload.conversationId);
   const seq = Number(payload.seq);
+  // The second look after a call that failed (M17 I1d).
+  const again = payload.again === true;
   const thread = await ctx.db
     .selectFrom('business_threads as t')
     .innerJoin('conversations as c', 'c.id', 't.conversation_id')
@@ -462,16 +489,17 @@ export async function agentReply(ctx: AppContext, payload: Record<string, unknow
       'o.booking_items',
       'o.ordering',
       'o.collections',
+      // Still its to answer: nobody on the team on it, not escalated, resolved or handed over.
+      sql<boolean>`${noPersonOnIt('t')} and t.escalated_at is null and t.resolved_at is null and t.agent_handed_over_at is null`.as(
+        'its_to_answer',
+      ),
     ])
     .where('t.conversation_id', '=', conversationId)
-    // Still its to answer: the customer's latest, nobody on the team answering, not handed over.
+    // The customer's latest, which nobody on the team answered and it hasn't dealt with: any
+    // other is the next message's to look at, or answered.
     .where('t.last_customer_seq', '=', String(seq))
     .where('t.last_team_seq', '<', String(seq))
     .where('t.agent_seq', '<', String(seq))
-    .where(noPersonOnIt('t'))
-    .where('t.escalated_at', 'is', null)
-    .where('t.resolved_at', 'is', null)
-    .where('t.agent_handed_over_at', 'is', null)
     .executeTakeFirst();
   // A closed or suspended organization's agent says nothing (R42, M16 B3).
   if (
@@ -481,24 +509,29 @@ export async function agentReply(ctx: AppContext, payload: Record<string, unknow
     thread.privacy_class === 'private'
   )
     return;
-  const agent = await activeAgent(ctx, thread.org_id);
+  const orgId = thread.org_id;
+  // It stays out of this one, and the organization's own words, held back for it when the
+  // message came, go as they would without it (M17 I1d): the greeting and the away message.
+  const stayOut = () => queueAutoReplies(ctx, orgId, conversationId, seq, { agentOut: true });
+  const agent = await activeAgent(ctx, orgId);
   if (!agent) return;
   // Only while the organization is closed, where it said so (M16 G6a): open, its team answers.
   if (!agentAnswersNow(agent.answers_when, thread.booking, ctx.now())) return;
+  if (!thread.its_to_answer) return stayOut();
   const customer = await ctx.db
     .selectFrom('users')
     .select(['birth_date', 'time_zone', 'age_minor_until', 'locale', 'display_name'])
     .where('id', '=', thread.customer_id)
     .executeTakeFirst();
+  if (!customer) return;
   // A person answers anyone under 18 (R29).
-  if (!customer || minorOf(customer, ctx.now())) return;
+  if (minorOf(customer, ctx.now())) return stayOut();
   // Past the day's answers, or what a day of them may cost (M16 G9), the team answers.
   if (
-    (await agentRepliesToday(ctx, thread.org_id)) >=
-      ORG_ALLOWANCES[thread.plan].agentRepliesPerDay ||
-    (await agentSpent(ctx, thread.org_id, thread.plan)).roomAt
+    (await agentRepliesToday(ctx, orgId)) >= ORG_ALLOWANCES[thread.plan].agentRepliesPerDay ||
+    (await agentSpent(ctx, orgId, thread.plan)).roomAt
   )
-    return;
+    return stayOut();
 
   // Deal with this message once, whatever happens next.
   const claim = () =>
@@ -546,20 +579,40 @@ export async function agentReply(ctx: AppContext, payload: Record<string, unknow
       .where('created_at', '>', dayAgo)
       .executeTakeFirstOrThrow(),
   ]);
-  if (answered.n >= AGENT_REPLIES_PER_CONVERSATION || thought.n >= AGENT_CALLS_PER_CONVERSATION) {
-    if (!(await claim())) return;
-    // Said without the model, so the customer isn't left wondering who answers now: in the
-    // language they write in, else theirs.
-    const language = await customerLanguage(ctx, thread.customer_id, await latestBody());
-    const passed = inLanguage(language, () =>
+  const customerId = thread.customer_id;
+  const language = async () => customerLanguage(ctx, customerId, await latestBody());
+  // Who it is, by the rules, in the language the customer wrote in (R87).
+  const introLine = async () =>
+    inLanguage(await language(), () =>
+      introduction(agent.name, thread.org_name, customer.display_name),
+    );
+  // Passed to the team in a line said without the model, so the customer isn't left wondering
+  // who answers now: in the language they write in, else theirs, opening with who it is where
+  // it hasn't said so here yet (R87).
+  const passOn = async (reason: HandOverReason, introduced: boolean) => {
+    const passed = inLanguage(await language(), () =>
       tr('I’ve passed this to the team at {org}. Someone will answer here.', {
         org: thread.org_name,
       }),
     );
-    await postAs(ctx, agent.bot_user_id, conversationId, passed).catch((err) =>
-      ctx.log.warn({ err, conversationId }, 'ai agent could not post'),
-    );
-    await handOver(ctx, thread.org_id, conversationId, agent, 'limit');
+    await postAs(
+      ctx,
+      agent.bot_user_id,
+      conversationId,
+      introduced
+        ? passed
+        : {
+            kind: 'text',
+            body: `${await introLine()}\n${passed}`,
+            payload: { introduction: true },
+          },
+      { serverPayload: !introduced },
+    ).catch((err) => ctx.log.warn({ err, conversationId }, 'ai agent could not post'));
+    await handOver(ctx, orgId, conversationId, agent, reason);
+  };
+  if (answered.n >= AGENT_REPLIES_PER_CONVERSATION || thought.n >= AGENT_CALLS_PER_CONVERSATION) {
+    if (!(await claim())) return;
+    await passOn('limit', await saidHere(ctx, conversationId, agent.bot_user_id));
     return;
   }
 
@@ -597,32 +650,55 @@ export async function agentReply(ctx: AppContext, payload: Record<string, unknow
     },
     conversationId,
   );
-  if (!reply) return;
+  // The call failed (M17 I1d): tried once more a little later; failing again, it passes the
+  // customer to the team in words of its own rather than leave them unanswered.
+  if (!reply) {
+    if (!again) {
+      await enqueue(
+        ctx,
+        'agent.reply',
+        { conversationId, seq, again: true },
+        {
+          runAt: new Date(ctx.now().getTime() + AGAIN_MS),
+          dedupeKey: `agent:${conversationId}:${seq}:again`,
+          maxAttempts: 2,
+        },
+      );
+      return;
+    }
+    if (await claim()) await passOn('failed', transcript.introduced);
+    return;
+  }
   // The conversation moved on while it thought (they wrote again, a person answered): the
   // answer goes nowhere, and the next message, if any, is looked at on its own.
   if (!(await claim())) {
     await discard(ctx, reply.runId);
     return;
   }
+  // Saying something was done that nobody did (M17 I1c: confirmed, booked, refunded, with
+  // nothing made): never sent, nor drafted; the customer hears it was passed on, and a person
+  // takes it.
+  if ((reply.action === 'answer' || reply.action === 'resolve') && claimsDone(reply.message)) {
+    await discard(ctx, reply.runId);
+    await passOn('claimed', transcript.introduced);
+    return;
+  }
   // What its answer rests on, for the team to read under it (M16 G6a).
   const cited = citationsOf(agent.knowledge, reply.sources);
   // Its first message here opens with who it is, by the rules (R87): a line of its own, which
   // the model never reads back, since it names the customer.
-  const body = transcript.introduced
-    ? reply.message
-    : `${inLanguage(await customerLanguage(ctx, thread.customer_id, await latestBody()), () =>
-        introduction(agent.name, thread.org_name, customer.display_name),
-      )}\n${reply.message}`;
+  const intro = transcript.introduced ? null : await introLine();
+  const body = intro ? `${intro}\n${reply.message}` : reply.message;
   // Its team checks it first (M16 G6b): nothing it wrote reaches the customer before; handing
   // over, it tells the team alone, since a person answers from here anyway.
   if (agent.review) {
     if (reply.action === 'hand_over') {
       await discard(ctx, reply.runId);
-      await handOver(ctx, thread.org_id, conversationId, agent, reply.reason ?? 'none', seq);
+      await handOver(ctx, orgId, conversationId, agent, reply.reason ?? 'none', seq);
       return;
     }
     await writeDraft(ctx, {
-      orgId: thread.org_id,
+      orgId,
       conversationId,
       seq,
       agent,
@@ -635,9 +711,31 @@ export async function agentReply(ctx: AppContext, payload: Record<string, unknow
     });
     return;
   }
+  // What it books or orders is made before it says so (M17 I1c); its introduction, when this is
+  // its first word here, goes first, alone, so the card never comes before who it is (R87).
+  const acts = reply.action === 'book' || reply.action === 'order';
+  let made: Made = null;
   try {
+    if (acts && intro)
+      await postAs(
+        ctx,
+        agent.bot_user_id,
+        conversationId,
+        { kind: 'text', body: intro, payload: { introduction: true } },
+        { serverPayload: true },
+      );
+    made = await makeCard(ctx, conversationId, agent, reply, offer, customerId);
+    if (made === 'refused') {
+      // Nothing it said is posted: a fixed line says so, and a person takes it.
+      await discard(ctx, reply.runId);
+      const line = inLanguage(await language(), () => refusedLine(reply.action, thread.org_name));
+      await postAs(ctx, agent.bot_user_id, conversationId, line);
+      await handOver(ctx, orgId, conversationId, agent, 'refused');
+      return;
+    }
+    const words = acts ? reply.message : body;
     const marks = {
-      ...(transcript.introduced ? {} : { introduction: true }),
+      ...(intro && !acts ? { introduction: true } : {}),
       ...(cited.length ? { cited } : {}),
     };
     const marked = Object.keys(marks).length > 0;
@@ -645,16 +743,36 @@ export async function agentReply(ctx: AppContext, payload: Record<string, unknow
       ctx,
       agent.bot_user_id,
       conversationId,
-      marked ? { kind: 'text', body, payload: marks } : body,
+      marked ? { kind: 'text', body: words, payload: marks } : words,
       { serverPayload: marked },
     );
   } catch (err) {
     // The customer blocked the organization, or it closed: nobody writes there now.
     ctx.log.warn({ err, conversationId }, 'ai agent could not post');
-    await discard(ctx, reply.runId);
+    if (!made) await discard(ctx, reply.runId);
     return;
   }
-  await carryOut(ctx, thread.org_id, conversationId, seq, agent, reply, offer);
+  await afterAnswer(ctx, orgId, conversationId, seq, agent, reply, made);
+}
+
+/** Whether it has written in this conversation before: its introduction is said once (R87). */
+async function saidHere(ctx: AppContext, conversationId: string, agentId: string) {
+  return Boolean(
+    await ctx.db
+      .selectFrom('messages')
+      .select('id')
+      .where('conversation_id', '=', conversationId)
+      .where('sender_id', '=', agentId)
+      .limit(1)
+      .executeTakeFirst(),
+  );
+}
+
+/** What it couldn't make, said in a fixed line in the customer's language (M17 I1c). */
+function refusedLine(action: Plan['action'], org: string): string {
+  return action === 'book'
+    ? tr('I couldn’t book that time. Someone from {org} will answer you here.', { org })
+    : tr('I couldn’t take that order. Someone from {org} will answer you here.', { org });
 }
 
 /**
@@ -731,28 +849,38 @@ const orderWayOf = (offer: Offer, plan: Plan) =>
  * its draft (M16 G6b): books one of the times it offered, writes an order down, closes the
  * conversation, or hands it to the team.
  */
-async function carryOut(
+/** What came of a booking or an order it decided on: made, refused, or nothing to make. */
+type Made = 'made' | 'refused' | null;
+
+/**
+ * What it books or orders, made before it says so (M17 I1c), as a card from the organization that
+ * stands for the customer's ask (`askedFor`): the team confirms it, as it confirms a visitor's
+ * booking from a page. 'refused' when the time isn't one it offered or went meanwhile, or the
+ * order isn't on the menu, is sold out or has no way chosen where there are two.
+ */
+async function makeCard(
   ctx: AppContext,
-  orgId: string,
   conversationId: string,
-  seq: number,
-  agent: { bot_user_id: string; name: string },
+  agent: { bot_user_id: string },
   plan: Plan,
   offer: Offer,
-) {
-  // Booked (R51): one of the slots it offered, still open, becomes an appointment card from the
-  // organization, which the customer confirms; the team sees it under Bookings meanwhile.
+  customerId: string,
+): Promise<Made> {
+  // Booked (R51): one of the slots it offered, still open, becomes an appointment card; the
+  // server checks the slot for that item as for any booking, and the team sees it under Bookings.
   if (plan.action === 'book') {
     const at = plan.bookAt ? new Date(plan.bookAt) : null;
     const stillOpen =
       at &&
       !Number.isNaN(at.getTime()) &&
       offer.open?.slots.some((d) => d.getTime() === at.getTime());
-    // The server checks the slot for that item as for any booking, and a refusal hands over.
+    if (!stillOpen || !at) return 'refused';
     const item = bookedItem(offer, plan);
-    let booked = false;
-    if (stillOpen && at) {
-      booked = await postAs(ctx, agent.bot_user_id, conversationId, {
+    return postAs(
+      ctx,
+      agent.bot_user_id,
+      conversationId,
+      {
         kind: 'kit',
         payload: {
           kit: 'appointment',
@@ -762,38 +890,59 @@ async function carryOut(
           },
           ...(item ? { booking: { itemId: item.id, quantity: 1 } } : {}),
         },
-      })
-        .then(() => true)
-        .catch((err) => {
-          ctx.log.warn({ err, conversationId }, 'ai agent could not book');
-          return false;
-        });
-    }
-    if (booked) ctx.metrics.agentActions.inc({ action: 'book', reason: 'none' });
-    // Not a slot it was given, or taken meanwhile: a person books it.
-    else await handOver(ctx, orgId, conversationId, agent, 'refused');
+      },
+      { askedFor: customerId },
+    )
+      .then(() => 'made' as const)
+      .catch((err) => {
+        ctx.log.warn({ err, conversationId }, 'ai agent could not book');
+        return 'refused' as const;
+      });
   }
-  // Ordered (R60): what the customer said they want from the menu becomes an Order card from the
-  // organization, checked against its catalog and stock as anyone's is; the team confirms it.
-  // Anything not on the menu, sold out, or a way not chosen where there are two: a person takes it.
+  // Ordered (R60): what the customer said they want from the menu becomes an Order card, checked
+  // against its catalog and stock as anyone's is.
   if (plan.action === 'order') {
     const onMenu = new Set(offer.orderable.filter((i) => orderableMax(i) > 0).map((i) => i.id));
     const lines = plan.orderLines ?? [];
     const way = orderWayOf(offer, plan);
-    let ordered = false;
-    if (offer.menu && lines.length && lines.every((l) => onMenu.has(l.itemId)) && way) {
-      ordered = await postAs(ctx, agent.bot_user_id, conversationId, {
+    if (!offer.menu || !lines.length || !lines.every((l) => onMenu.has(l.itemId)) || !way)
+      return 'refused';
+    return postAs(
+      ctx,
+      agent.bot_user_id,
+      conversationId,
+      {
         kind: 'kit',
         payload: { kit: 'order_status', fields: {}, order: { lines, fulfilment: way } },
-      })
-        .then(() => true)
-        .catch((err) => {
-          ctx.log.warn({ err, conversationId }, 'ai agent could not order');
-          return false;
-        });
-    }
-    if (ordered) ctx.metrics.agentActions.inc({ action: 'order', reason: 'none' });
-    else await handOver(ctx, orgId, conversationId, agent, 'refused');
+      },
+      { askedFor: customerId },
+    )
+      .then(() => 'made' as const)
+      .catch((err) => {
+        ctx.log.warn({ err, conversationId }, 'ai agent could not order');
+        return 'refused' as const;
+      });
+  }
+  return null;
+}
+
+/**
+ * What follows its words: a card it made waits on the team, who hear so; a hand-over or a close
+ * is carried out; each counted.
+ */
+async function afterAnswer(
+  ctx: AppContext,
+  orgId: string,
+  conversationId: string,
+  seq: number,
+  agent: { bot_user_id: string; name: string },
+  plan: Plan,
+  made: Made,
+) {
+  if (made === 'made') {
+    const booked = plan.action === 'book';
+    ctx.metrics.agentActions.inc({ action: booked ? 'book' : 'order', reason: 'none' });
+    await tellTeam(ctx, orgId, conversationId, agent.name, booked ? 'booked' : 'ordered');
   }
   if (plan.action === 'answer') ctx.metrics.agentActions.inc({ action: 'answer', reason: 'none' });
   if (plan.action === 'hand_over')
@@ -933,27 +1082,12 @@ export async function sendDraft(
   if (!agent)
     throw new AppError(409, 'conflict', tr('The AI agent is paused or gone: answer it yourself.'));
   const draft = taken.draft as AgentDraft;
-  await postAs(
-    ctx,
-    agent.bot_user_id,
-    conversationId,
-    {
-      kind: 'text',
-      body: taken.body,
-      payload: {
-        ...(draft.introduction ? { introduction: true } : {}),
-        ...(draft.cited.length ? { cited: draft.cited } : {}),
-        checkedBy: userId,
-      },
-    },
-    { serverPayload: true },
-  );
-  ctx.metrics.agentDrafts.inc({ outcome: 'sent' });
-  const customer = thread.customer_id
+  const customerId = thread.customer_id;
+  const customer = customerId
     ? await ctx.db
         .selectFrom('users')
         .select(['birth_date', 'time_zone', 'age_minor_until'])
-        .where('id', '=', thread.customer_id)
+        .where('id', '=', customerId)
         .executeTakeFirst()
     : undefined;
   const offer = await offerFor(
@@ -962,15 +1096,53 @@ export async function sendDraft(
     agent,
     customer ? !minorOf(customer, ctx.now()) : false,
   );
-  await carryOut(
+  const plan: Plan = { action: taken.action, reason: null, ...draft.plan };
+  // As the agent would (M17 I1c): what it books or orders made first, its introduction before it.
+  const acts = taken.action === 'book' || taken.action === 'order';
+  const intro =
+    draft.introduction && taken.body.endsWith(`\n${draft.message}`)
+      ? taken.body.slice(0, -draft.message.length - 1)
+      : null;
+  const checked = (marks: Record<string, unknown>) => ({ ...marks, checkedBy: userId });
+  if (acts && intro)
+    await postAs(
+      ctx,
+      agent.bot_user_id,
+      conversationId,
+      { kind: 'text', body: intro, payload: checked({ introduction: true }) },
+      { serverPayload: true },
+    );
+  const made =
+    acts && customerId ? await makeCard(ctx, conversationId, agent, plan, offer, customerId) : null;
+  if (acts && made !== 'made') {
+    // The time went or the order no longer fits since it was drafted: whoever sends it answers.
+    if (taken.run_id) await discard(ctx, taken.run_id);
+    ctx.metrics.agentDrafts.inc({ outcome: 'dropped' });
+    await publishThread(ctx, thread.org_id, conversationId);
+    throw new AppError(
+      409,
+      'conflict',
+      taken.action === 'book'
+        ? tr('That time isn’t open any more: answer it yourself.')
+        : tr('That order can’t be taken as it stands now: answer it yourself.'),
+    );
+  }
+  await postAs(
     ctx,
-    thread.org_id,
+    agent.bot_user_id,
     conversationId,
-    seq,
-    agent,
-    { action: taken.action, reason: null, ...draft.plan },
-    offer,
+    {
+      kind: 'text',
+      body: acts && intro ? draft.message : taken.body,
+      payload: checked({
+        ...(draft.introduction && !(acts && intro) ? { introduction: true } : {}),
+        ...(draft.cited.length ? { cited: draft.cited } : {}),
+      }),
+    },
+    { serverPayload: true },
   );
+  ctx.metrics.agentDrafts.inc({ outcome: 'sent' });
+  await afterAnswer(ctx, thread.org_id, conversationId, seq, agent, plan, made);
 }
 
 /**

@@ -205,9 +205,9 @@ Prices: https://platform.claude.com/docs/en/about-claude/pricing, read 2026-10-1
 | actions | 61,206 | 8,192 | €0.0091 | €0.18 | €0.36 |
 | notes-summary | 61,477 | 8,192 | €0.0091 | €0.18 | €0.36 |
 | brief | 16,825 | 4,096 | €0.0033 | €0.07 | €0.13 |
-| cai | 13,023 | 1,024 | €0.0016 | €0.03 | €0.06 |
-| friend | 11,801 | 512 | €0.0013 | €0.03 | €0.05 |
-| search | 1,929 | 512 | €0.0004 | €0.0080 | €0.02 |
+| cai | 13,023 | 2,048 | €0.0021 | €0.04 | €0.08 |
+| friend | 11,801 | 1,024 | €0.0015 | €0.03 | €0.06 |
+| search | 1,929 | 1,024 | €0.0006 | €0.01 | €0.03 |
 | search-answer | 15,766 | 4,096 | €0.0032 | €0.06 | €0.13 |
 | agent | 56,082 | 2,048 | €0.0059 | €0.12 | €0.24 |
 | transcribe | ten minutes of audio | — | €0.05 (OpenAI's estimate) | | |
@@ -303,8 +303,9 @@ sticker is answered from the account's own lines with one or two inserts; the fo
 about one's own open things read what's open in three queries (tasks with a filtered count, and
 the week's agreed cards), no model, from Cai or any friend. A friend without the model tells a
 tip: one count and one insert. Anything else goes to the model only for an adult with AI assist
-on, inside their daily allowance: the light model at low effort, Cai at most 1,024 tokens out and
-a friend 512, reading at most 12 messages (each clipped to 600 characters) and at most 20 lines
+on, inside their daily allowance: the light model at low effort, Cai at most 2,048 tokens out and
+a friend 1,024 (room for the light model's own thinking, which counts toward them: M17 I1e),
+reading at most 12 messages (each clipped to 600 characters) and at most 20 lines
 of open items; a friend reads only its own part of them (Panda, Momo, Zuzu), and the four others
 read none and run no query for it (R71). The accounts are eight rows seeded once by a migration;
 their ids are constants, so nothing looks them up. On devices the avatar's id check and the two

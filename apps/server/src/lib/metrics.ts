@@ -296,7 +296,7 @@ export function createMetrics(pool: pg.Pool) {
     ),
     agentActions: new Counter(
       'caime_agent_actions_total',
-      'What organizations’ AI agents did with customers’ messages, by action (answer, book, order, hand_over, resolve) and, handing over, why (unknown: what it was told doesn’t say; person: it needs a person; limit: a long conversation; refused: a booking or order it couldn’t make; none).',
+      'What organizations’ AI agents did with customers’ messages, by action (answer, book, order, hand_over, resolve) and, handing over, why (unknown: what it was told doesn’t say; person: it needs a person; limit: a long conversation; refused: a booking or order it couldn’t make; failed: the model didn’t answer twice; claimed: it said something was done that nobody did; none).',
     ),
     aiTokens: new Counter(
       'caime_ai_tokens_total',

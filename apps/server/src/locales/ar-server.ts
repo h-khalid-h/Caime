@@ -1733,4 +1733,13 @@ export const arServer: Catalog = {
   'That isn’t your chat with {name}.': 'هذه ليست المحادثة مع {name}.',
   'Your notes from the call with {name} are ready.': 'ملاحظات مكالمتك مع {name} جاهزة.',
   'Your notes from the call are ready.': 'ملاحظات المكالمة جاهزة.',
+  '{agentName} booked a time for the team to confirm': 'حجز {agentName} موعدًا بانتظار تأكيد الفريق',
+  '{agentName} took an order for the team to confirm': 'سجّل {agentName} طلبًا بانتظار تأكيد الفريق',
+  'I couldn’t book that time. Someone from {org} will answer you here.':
+    'تعذّر حجز هذا الموعد، وسيرد عليك أحد من فريق {org} هنا.',
+  'I couldn’t take that order. Someone from {org} will answer you here.':
+    'تعذّر تسجيل هذا الطلب، وسيرد عليك أحد من فريق {org} هنا.',
+  'That time isn’t open any more: answer it yourself.': 'لم يعد هذا الموعد متاحًا: أجب بنفسك.',
+  'That order can’t be taken as it stands now: answer it yourself.':
+    'لا يمكن تسجيل هذا الطلب كما هو الآن: أجب بنفسك.',
 };

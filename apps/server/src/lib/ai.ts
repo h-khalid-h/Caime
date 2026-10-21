@@ -632,12 +632,13 @@ export function createAiAssist(config: Config): AiAssist | null {
   // ask the most run on the top one only for whoever pays (M16 H7, docs/RESOURCES.md).
   const light = config.ANTHROPIC_MODEL_LIGHT || model;
   const tiered = (tier: ModelTier) => (tier === 'top' ? model : light);
-  // A declined request is re-run server-side on Anthropic's recommended fallback model.
-  const shared = {
-    model,
-    betas: ['server-side-fallback-2026-07-01'],
-    fallbacks: 'default' as const,
-  };
+  // A declined request is re-run server-side on Anthropic's recommended fallback model. The light
+  // model has none (a request it declines stays declined, and the platform asks that none be
+  // sent), so only a call on the top model asks for one.
+  const on = (m: string) =>
+    m === model
+      ? { model: m, betas: ['server-side-fallback-2026-07-01'], fallbacks: 'default' as const }
+      : { model: m };
 
   const usageOf = (reply: {
     model: string;
@@ -663,8 +664,7 @@ export function createAiAssist(config: Config): AiAssist | null {
   ): Promise<AiResult<string>> => {
     const reply = await client.beta.messages
       .create({
-        ...shared,
-        model: light,
+        ...on(light),
         max_tokens: maxTokens,
         output_config: { effort },
         system,
@@ -718,8 +718,7 @@ export function createAiAssist(config: Config): AiAssist | null {
     async findActions({ transcript, today, tier }) {
       const reply = await client.beta.messages
         .parse({
-          ...shared,
-          model: tiered(tier),
+          ...on(tiered(tier)),
           max_tokens: 8192,
           output_config: { effort: 'medium', format: betaZodOutputFormat(Found) },
           system: ACTIONS_SYSTEM(today),
@@ -750,8 +749,7 @@ export function createAiAssist(config: Config): AiAssist | null {
     async callNotes({ transcript, language, today, tier }) {
       const reply = await client.beta.messages
         .parse({
-          ...shared,
-          model: tiered(tier),
+          ...on(tiered(tier)),
           max_tokens: 8192,
           output_config: { effort: 'medium', format: betaZodOutputFormat(NotesOutput) },
           system: NOTES_SYSTEM(language, today),
@@ -806,9 +804,8 @@ export function createAiAssist(config: Config): AiAssist | null {
     async caiChat({ transcript, context, language, arabic, country, gender, today }) {
       const reply = await client.beta.messages
         .parse({
-          ...shared,
-          model: light,
-          max_tokens: 1024,
+          ...on(light),
+          max_tokens: 2048,
           output_config: { effort: 'low', format: betaZodOutputFormat(CaiOutput) },
           system: CAI_SYSTEM(language, voiceLines(arabic, country, gender), today),
           messages: [
@@ -861,14 +858,13 @@ export function createAiAssist(config: Config): AiAssist | null {
         FRIEND_SYSTEM(friend, language, voiceLines(arabic, country, gender), today),
         `<context>\n${context || '(nothing open)'}\n</context>\n<conversation>\n${transcript}\n</conversation>`,
         'low',
-        512,
+        1024,
       );
     },
     async answerFromFound({ found, question, language, today }) {
       const reply = await client.beta.messages
         .parse({
-          ...shared,
-          model: light,
+          ...on(light),
           max_tokens: 4096,
           output_config: { effort: 'low', format: betaZodOutputFormat(Answered) },
           system: FOUND_SYSTEM(language, today),
@@ -900,9 +896,8 @@ export function createAiAssist(config: Config): AiAssist | null {
     async understandSearch({ query }) {
       const reply = await client.beta.messages
         .parse({
-          ...shared,
-          model: light,
-          max_tokens: 512,
+          ...on(light),
+          max_tokens: 1024,
           output_config: { effort: 'low', format: betaZodOutputFormat(Understood) },
           system: SEARCH_SYSTEM,
           messages: [{ role: 'user', content: `<search>\n${query}\n</search>` }],
@@ -947,8 +942,7 @@ export function createAiAssist(config: Config): AiAssist | null {
       const passages = knowledgePassages(knowledge);
       const reply = await client.beta.messages
         .parse({
-          ...shared,
-          model: tiered(tier),
+          ...on(tiered(tier)),
           max_tokens: 2048,
           output_config: { effort: 'low', format: betaZodOutputFormat(AgentOutput) },
           // The rules and the organization's knowledge are the same for every question its

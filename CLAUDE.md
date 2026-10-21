@@ -1527,20 +1527,31 @@ A sphere is said as how you know someone, never "sphere".
   `maskPayload` takes it off for the customer and a forward drops it, so anything new that shows
   a customer a message goes through the mask. What it may do and when it answers are
   `org_agents.may_book`, `may_order` and `answers_when` (M16 G6a), read in `agentReply` and, for
-  the greeting, `queueAutoReplies` through `agentAnswersNow`; a hand-over says why on
-  `caime_agent_actions_total`. With `org_agents.review` on (M16 G6b) nothing it writes reaches
+  the greeting, `queueAutoReplies` through `agentAnswersNow` (`lib/agent-hours.ts`, so the two
+  read it without importing each other); a hand-over says why on `caime_agent_actions_total`.
+  What it books or orders is made before it says so (M17 I1c, `makeCard`): the card first, as the
+  customer's ask (`postAs(…, { askedFor })`, `payload.proposedBy`), so the team confirms it as it
+  confirms a page's booking, the customer's inbox reads nothing asked of them and the team is told
+  (`tellTeam` 'booked', 'ordered'); a card it can't make is a fixed line (`refusedLine`) and a
+  hand-over, never its words, and an answer that says something was done with nothing made
+  (`claimsDone`, `lib/agent-claims.ts`) is never sent or drafted. It's never silent (M17 I1d):
+  staying out of a message it would have answered (someone under 18, its day, a hand-over, a
+  person on it) it asks `queueAutoReplies(…, { agentOut: true })`, and a failed call is tried once
+  more (`again`) before `passOn` tells the customer it was passed to the team, opening with who it
+  is where it hasn't spoken there yet. With `org_agents.review` on (M16 G6b) nothing it writes reaches
   the customer unchecked: `agentReply` writes the conversation's one draft (`agent_drafts`,
   `writeDraft`; its run counted as written and discarded when it's let go, replaced or the agent
   removed, `dropDraftsOf`) and the team sends it
-  (`POST /business/:id/agent-draft/send`, the plan carried out by `carryOut` as the agent would),
+  (`POST /business/:id/agent-draft/send`, the plan carried out as the agent would: the card made
+  first, a time gone since answered `409`),
   takes it into a reply or lets it go (`…/drop`); `lib/agent-drafts.ts` reads drafts and the
   questions it couldn't answer (`agent_questions`, recorded by `handOver` for `unknown`) without
   importing the agent, and both go with erasure, closing and the export. Its nightly evaluation
   (M16 G6c) is `lib/agent-eval.ts` over `lib/agent-eval-set.ts`: the cases go through
   `supportAgent` itself on each model a plan gives it, so a change to its instructions is
   measured as customers meet it; a new rule it's given brings its case (scored by rules in
-  `scoreCase`, never by a model), and saying something was done is `claimsDone`, in every
-  interface language. A draft stands only while
+  `scoreCase`, never by a model), and saying something was done is `claimsDone` (the live check's
+  too), in every interface language. A draft stands only while
   it answers the customer's latest and nobody on the team has written since (`standing`). The E2E
   Messages stand-in answers as it from the passage of its knowledge nearest the question, citing
   its number.

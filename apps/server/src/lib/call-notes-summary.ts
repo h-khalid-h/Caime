@@ -29,7 +29,7 @@ import { aiGate } from './ai-gate';
 import { runAi } from './ai-run';
 import { readersOf } from './call-notes';
 import { AppError } from './errors';
-import { asReader } from './i18n';
+import { asReader, languageOf } from './i18n';
 import { enqueue, registerJob } from './jobs';
 import { notify } from './notify';
 import { createSuggestion } from './suggest';
@@ -231,7 +231,7 @@ async function writeNotes(ctx: AppContext, payload: Record<string, unknown>): Pr
       text: transcriptText(lines.map((l) => ({ who: l.speaker, words: l.text, at: time(l.at) }))),
       newFrom: null,
     };
-    const language = languageName(languageOfCall(lines, baseLanguage(me.locale)));
+    const language = languageName(languageOfCall(lines, await languageOf(ctx, asker.started_by)));
     made = await runAi(ctx, 'notes-summary', asker.started_by, () =>
       ai.callNotes({
         transcript,

@@ -29,7 +29,7 @@ import { formatDeadline, formatSoon } from '@caime/core/format';
 import { tr } from '@caime/core/i18n';
 import { sql } from 'kysely';
 import type { AppContext } from '../context';
-import { agentAnswersNow } from './agent';
+import { agentAnswersNow } from './agent-hours';
 import { onCustomerMessage } from './business';
 import { AppError } from './errors';
 import { inLanguage, languageOf } from './i18n';
@@ -171,13 +171,16 @@ async function repliesBot(ctx: AppContext, orgId: string): Promise<string | null
  * A customer wrote (registered at startup, run after the message is written): a greeting when
  * this message opened the conversation or a quiet fortnight, and an away message while the
  * organization is closed and nobody on its team is answering there, each queued once. Most
- * organizations have neither, and this is one query for them.
+ * organizations have neither, and this is one query for them. Its AI agent, staying out of a
+ * message it would have answered, asks again with `agentOut` (M17 I1d), so the customer isn't
+ * left with neither.
  */
 export async function queueAutoReplies(
   ctx: AppContext,
   orgId: string,
   conversationId: string,
   seq: number,
+  opts: { agentOut?: boolean } = {},
 ): Promise<void> {
   const org = await ctx.db
     .selectFrom('organizations as o')
@@ -203,7 +206,13 @@ export async function queueAutoReplies(
   // Its AI agent answers instead, and introduces itself (when Caime has a model to answer with),
   // unless it answers only while the organization is closed and it's open now (M16 G6a), or its
   // answers wait for the team to check them (M16 G6b): then the organization's own words go now.
-  if (org.agent_answers && ctx.ai && agentAnswersNow(org.agent_answers, hours, now)) return;
+  if (
+    !opts.agentOut &&
+    org.agent_answers &&
+    ctx.ai &&
+    agentAnswersNow(org.agent_answers, hours, now)
+  )
+    return;
   let greeted = false;
   if (org.greeting) {
     const before = await ctx.db

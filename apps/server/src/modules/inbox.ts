@@ -165,6 +165,8 @@ export async function buildInbox(
       .where('m.sender_id', '<>', userId)
       .where('m.deleted_at', 'is', null)
       .where((eb) => eb.or([eb('m.is_question', '=', true), eb('m.is_request', '=', true)]))
+      // A card that stands for my own ask (an agent's booking for me, M17 I1c) asks the others.
+      .where(sql<boolean>`(m.payload->>'proposedBy') is distinct from ${userId}`)
       .whereRef('m.seq', '>', 'p.last_sent_seq')
       .where((eb) =>
         eb.or([

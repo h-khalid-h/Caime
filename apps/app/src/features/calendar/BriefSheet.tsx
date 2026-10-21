@@ -69,7 +69,7 @@ export function BriefSheet({
       ) : (
         <View style={{ gap: 18 }} testID="brief">
           {b.summary ? (
-            <Section title={b.label ?? tr('Summary')}>
+            <Section title={b.label ? tr(b.label) : tr('Summary')}>
               <Text variant="body" auto>
                 {b.summary}
               </Text>

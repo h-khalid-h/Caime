@@ -25,13 +25,14 @@ import { zonedParts } from '@caime/core/time';
 import type { FastifyInstance } from 'fastify';
 import { sql } from 'kysely';
 import type { AppContext } from '../context';
-import { baseLanguage, languageName } from '../lib/ai';
+import { languageName } from '../lib/ai';
 import { aiGate } from '../lib/ai-gate';
 import { runAi } from '../lib/ai-run';
 import { maskId, masksFor } from '../lib/business';
 import { titleWithGroup } from '../lib/conversations';
 import { AppError } from '../lib/errors';
 import { recordEvent } from '../lib/events';
+import { languageOf } from '../lib/i18n';
 import { openIn, orgsClosedToApps } from '../lib/member-apps';
 import { fileView, notHiddenFor, readableBy } from '../lib/messages';
 import { personViewsFor } from '../lib/people-batch';
@@ -699,11 +700,12 @@ async function answerFromSearch(
     const done = t.status === 'done' ? ', done' : '';
     return `${n} ${when(t.createdAt, zone)} · To do: ${name(t.assignee.id, t.assignee.displayName)}, for ${name(t.owner.id, t.owner.displayName)}: ${oneLine(t.title, 200)}${due}${done}`;
   });
+  const language = languageName(writtenIn(question) ?? (await languageOf(ctx, me)));
   const answered = await runAi(ctx, 'search-answer', me, () =>
     ai.answerFromFound({
       found: lines.join('\n'),
       question,
-      language: languageName(writtenIn(question) ?? baseLanguage(person.locale)),
+      language,
       today: when(ctx.now().toISOString(), zone, false),
     }),
   );

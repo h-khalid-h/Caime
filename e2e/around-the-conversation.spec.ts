@@ -2605,7 +2605,8 @@ test.describe
       await customer.screenshot({ path: 'e2e/screenshots/phone-business-ai-agent.png' });
 
       // With bookable hours set (R51), it offers open slots and books the one Lina picks, as an
-      // appointment card she confirms; the team sees it under Bookings meanwhile.
+      // appointment card the team confirms (M17 I1c), made before it says so; the team sees it
+      // under Bookings.
       await page.goto(`/o/${handle}/setup`);
       await page.getByTestId('org-booking-hours').click();
       // Monday to Friday are offered first; every day, so the test's day is one of them.
@@ -2636,8 +2637,15 @@ test.describe
         .filter({ hasText: 'Check-up' });
       await expect(asked).toContainText('Lina Farah');
       await expect(asked).toContainText('Asked');
-      await booked.getByRole('button', { name: 'Confirm', exact: true }).click();
-      await expect(asked).toContainText('Confirmed');
+      // What she asked for asks nothing of her: the team confirms it, from the conversation.
+      await expect(booked.getByRole('button', { name: 'Confirm', exact: true })).toHaveCount(0);
+      await asked.click();
+      const toConfirm = page
+        .getByTestId('kit-appointment')
+        .filter({ hasText: 'Check-up', visible: true });
+      await toConfirm.getByRole('button', { name: 'Confirm', exact: true }).click();
+      await expect(toConfirm).toContainText('Confirmed');
+      await expect(booked).toContainText('Confirmed');
       // A customer picks a slot too, never types a time, while the hours are set.
       await customer
         .getByRole('button', { name: 'Share a photo, a file or a card' })

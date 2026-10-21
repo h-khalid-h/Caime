@@ -1755,4 +1755,16 @@ export const frServer: Catalog = {
   'Your notes from the call with {name} are ready.':
     'Vos notes de l’appel avec {name} sont prêtes.',
   'Your notes from the call are ready.': 'Vos notes de l’appel sont prêtes.',
+  '{agentName} booked a time for the team to confirm':
+    '{agentName} a réservé un créneau que l’équipe doit confirmer',
+  '{agentName} took an order for the team to confirm':
+    '{agentName} a pris une commande que l’équipe doit confirmer',
+  'I couldn’t book that time. Someone from {org} will answer you here.':
+    'Je n’ai pas pu réserver ce créneau. Quelqu’un de {org} vous répondra ici.',
+  'I couldn’t take that order. Someone from {org} will answer you here.':
+    'Je n’ai pas pu prendre cette commande. Quelqu’un de {org} vous répondra ici.',
+  'That time isn’t open any more: answer it yourself.':
+    'Ce créneau n’est plus libre : répondez vous-même.',
+  'That order can’t be taken as it stands now: answer it yourself.':
+    'Cette commande ne peut plus être prise telle quelle : répondez vous-même.',
 };

@@ -436,6 +436,70 @@ describe('a greeting and an away message (M16 H2)', () => {
     const team = await noor.get(`/v1/conversations/${nour.conversationId}`);
     expect(team.conversation.business.agentDraft).toMatchObject({ message: 'We open at nine.' });
   });
+
+  it('go when its AI agent stays out: its day spent, or a person on the conversation (M17 I1d)', async () => {
+    await noor.req('PUT', `/v1/orgs/${orgId}/agent`, {
+      name: 'Nile Dental Assistant',
+      knowledge:
+        'Nile Dental is open Sunday to Thursday 9am to 12pm. A check-up is 400 EGP. We are at 12 Nile Street.',
+      answersWhen: 'always',
+      review: false,
+    });
+    // 14:00 in Cairo on a Thursday: closed until Sunday.
+    t.clock.set('2026-10-01T11:00:00Z');
+    const bot = (
+      await t.ctx.db
+        .selectFrom('org_agents')
+        .select('bot_user_id')
+        .where('org_id', '=', orgId)
+        .executeTakeFirstOrThrow()
+    ).bot_user_id;
+    // Its day's answers spent: it stays out, and the organization's own words go as they would
+    // without it, rather than nothing at all.
+    const spent = Array.from({ length: 50 }, () => ({
+      id: uuidv7(),
+      user_id: bot,
+      feature: 'agent',
+      provider: 'anthropic',
+      outcome: 'ok',
+      created_at: t.clock.now,
+    }));
+    await t.ctx.db.insertInto('ai_runs').values(spent).execute();
+    const zaid = await customer('Zaid Spent');
+    await send(zaid.c, zaid.conversationId, 'Are you open now?');
+    await settle();
+    await settle();
+    const left = await messages(zaid.c, zaid.conversationId);
+    expect(left.filter((m) => m.payload?.autoReply).map((m) => m.payload.autoReply)).toEqual([
+      'greeting',
+      'away',
+    ]);
+    expect(left.filter((m) => m.aiAgent)).toEqual([]);
+    await t.ctx.db
+      .deleteFrom('ai_runs')
+      .where(
+        'id',
+        'in',
+        spent.map((r) => r.id),
+      )
+      .execute();
+    // It answers a new customer, introducing itself, so neither reply is sent; once Omar has
+    // the conversation and has stopped answering, her next message hears the away message.
+    const lara = await customer('Lara Taken');
+    await send(lara.c, lara.conversationId, 'Can I come on Sunday?');
+    await settle();
+    expect(await autoReplies(lara.c, lara.conversationId)).toEqual([]);
+    await send(omar, lara.conversationId, 'Let me check the diary.');
+    t.clock.set('2026-10-01T12:30:00Z');
+    await send(lara.c, lara.conversationId, 'Any news?');
+    await settle();
+    await settle();
+    const taken = await messages(lara.c, lara.conversationId);
+    expect(taken.filter((m) => m.payload?.autoReply).map((m) => m.payload.autoReply)).toEqual([
+      'away',
+    ]);
+    expect(taken.filter((m) => m.aiAgent)).toHaveLength(1);
+  });
 });
 
 describe('what an organization says by itself, kept and let go (M16 H2)', () => {

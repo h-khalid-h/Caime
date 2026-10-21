@@ -724,6 +724,12 @@ export interface SendOptions {
    * text message may carry one; a client's text carries none (review 2026-10-09 L9).
    */
   serverPayload?: boolean;
+  /**
+   * An organization's AI agent books or orders for its customer (M17 I1c): the card is theirs to
+   * have asked for (`proposedBy`), so the team confirms it as it confirms a page's booking. Only
+   * an appointment or an order in a customer conversation, for its customer, from the server.
+   */
+  askedFor?: string;
   /** The app whose token sends it: it sends only its own kinds of card (PRD §74). */
   app?: { id: string; orgId: string; scopes: string[] } | null;
   /** It came as mail (R75): more of it may come while a request waits, and it says so. */
@@ -1445,6 +1451,12 @@ export async function sendMessage(
       ...(payTo ? { payTo } : {}),
       ...(paying ? { share: { splitId: paying.splitId, payeeId: paying.payeeId } } : {}),
       ...(intake ? { form: intake } : {}),
+      ...(opts.askedFor &&
+      conversation.kind === 'business' &&
+      (card.kit === 'appointment' || card.kit === 'order_status') &&
+      members.some((p) => p.role === 'member' && p.user_id === opts.askedFor)
+        ? { proposedBy: opts.askedFor }
+        : {}),
     };
     kitMode = KIT_MODES[card.kit];
   } else if (body.kind === 'kit' && opts.trusted) {

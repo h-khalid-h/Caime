@@ -132,10 +132,11 @@ describe('AI assist (PRD §45, R17, R18)', () => {
     });
     const sent = last();
     expect(sent.path).toMatch(/^\/v1\/messages/);
-    expect(sent.headers['anthropic-beta']).toContain('server-side-fallback-2026-07-01');
+    // The light model has no server-side fallback, so none is asked for (I1e).
+    expect(String(sent.headers['anthropic-beta'] ?? '')).not.toContain('server-side-fallback');
+    expect(sent.body.fallbacks).toBeUndefined();
     expect(sent.body).toMatchObject({
       model: 'claude-test-light',
-      fallbacks: 'default',
       output_config: { effort: 'low' },
       messages: [
         { role: 'user', content: '<message>\nsend me the signed contract by friday\n</message>' },
@@ -170,6 +171,28 @@ describe('AI assist (PRD §45, R17, R18)', () => {
     expect(denied.statusCode).toBe(404);
     expect(denied.json()).toEqual(missing.json());
     expect(requests.length).toBe(before);
+  });
+
+  it('writes in the language the person reads Caime in, whatever their account was made in (I1b)', async () => {
+    // Made in English, switched to Arabic in Settings: Cai's words come in Arabic.
+    const lea = await signup(t, { displayName: 'Lea Langue' });
+    await lea.patch('/v1/me', { aiEnabled: true, preferences: { language: 'ar' } });
+    const zaid = await signup(t, { displayName: 'Zaid Talk' });
+    const c = await connect(lea, zaid);
+    const m = await say(zaid, c, 'Did the contract arrive?');
+    replies.push(message('هل وصل العقد؟'));
+    expect(await lea.post('/v1/ai/translate', { messageId: m.id })).toMatchObject({
+      to: 'ar',
+      language: 'Arabic',
+    });
+    expect(last().body.system).toContain('into Arabic');
+    replies.push(message('سأل زيد إن كان العقد قد وصل.'));
+    await lea.post(`/v1/conversations/${c}/catch-up`, {});
+    expect(last().body.system).toContain('in Arabic');
+    // A question still answers in the language it's asked in.
+    replies.push(message('He asked whether the contract arrived.'));
+    await lea.post(`/v1/conversations/${c}/ask`, { question: 'What did Zaid ask?' });
+    expect(last().body.system).toContain('in English');
   });
 
   it('catches the reader up on what arrived since they last read', async () => {

@@ -7,7 +7,7 @@
  * For work, customers, vendors and professionals, never family or friends; never from a private
  * conversation; nothing written anywhere but the reader's own notification, in their language.
  */
-import { type BriefView, KITS, type Sphere, tr, trn, truncate } from '@caime/core';
+import { AI_LABEL, type BriefView, KITS, type Sphere, tr, trn, truncate } from '@caime/core';
 import { initiativeOf, tellsBeforeMeetings } from '@caime/core/initiative';
 import { AGREED_STATES as AGREED } from '@caime/core/kit-states';
 import { SPACE_KIND_DEFS, type SpaceKind } from '@caime/core/spaces';
@@ -19,6 +19,7 @@ import { runAi } from './ai-run';
 import { customerMask, maskFor } from './business';
 import { membership } from './conversation-views';
 import { AppError } from './errors';
+import { languageOf } from './i18n';
 import { enqueue, registerJob } from './jobs';
 import { messagePreview, readableBy } from './messages';
 import { notify } from './notify';
@@ -45,7 +46,6 @@ const LOOKBACK_MS = 14 * 86_400_000;
 /** The model reads at most this many lines of the conversation since then. */
 const SUMMARY_LINES = 40;
 const SUMMARY_TTL_MS = 10 * 60_000;
-export const BRIEF_LABEL = 'AI summary';
 
 interface CardRow {
   id: string;
@@ -404,7 +404,7 @@ export async function briefFor(
     const summary = await summaryFor(ctx, userId, card, since);
     if (summary) {
       brief.summary = summary;
-      brief.label = BRIEF_LABEL;
+      brief.label = AI_LABEL;
     }
   }
   return brief;
@@ -424,7 +424,7 @@ async function summaryFor(
   if (cached !== undefined) return cached;
   const me = await ctx.db
     .selectFrom('users')
-    .select(['ai_enabled', 'birth_date', 'time_zone', 'age_minor_until', 'locale'])
+    .select(['ai_enabled', 'birth_date', 'time_zone', 'age_minor_until'])
     .where('id', '=', userId)
     .executeTakeFirstOrThrow();
   if (!me.ai_enabled || minorOf(me, ctx.now())) return null;
@@ -457,7 +457,7 @@ async function summaryFor(
   );
   // As every model reads a conversation (`lib/transcript.ts`): with each line's time on the
   // reader's clock, as the catch-up's prompt says its lines are.
-  const { time } = transcriptClock(me.time_zone || 'UTC');
+  const { time, day } = transcriptClock(me.time_zone || 'UTC');
   const lines = rows.reverse().map((m) => ({
     at: time(m.created_at),
     who:
@@ -468,11 +468,12 @@ async function summaryFor(
           : (names.get(m.sender_id ?? '') ?? 'Someone'),
     words: wordsFor(m, 400),
   }));
+  const language = languageName(await languageOf(ctx, userId));
   const text = await runAi(ctx, 'brief', userId, () =>
     ai.catchUp({
       transcript: { text: transcriptText(lines), newFrom: null },
-      language: languageName(me.locale.split('-')[0] || 'en'),
-      today: ctx.now().toISOString().slice(0, 10),
+      language,
+      today: day(ctx.now()),
     }),
   ).catch(() => null);
   summaries.set(key, text, ctx.now().getTime());

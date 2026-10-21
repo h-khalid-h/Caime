@@ -83,7 +83,8 @@ export async function runAi<T>(
       record('error', null);
       throw err;
     }
-    record(err.reason, err.usage);
+    // An answer cut off by its cap is counted apart: its room is what would change.
+    record(err.message === 'max_tokens' ? 'cut_off' : err.reason, err.usage);
     ctx.log.warn({ feature, reason: err.reason, detail: err.message }, 'ai assist failed');
     if (err.reason === 'declined')
       throw new AppError(422, 'ai_declined', tr('Cai can’t help with this one.'));

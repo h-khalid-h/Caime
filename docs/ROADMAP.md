@@ -3963,18 +3963,26 @@ met any of this: ranked by what it would cost the first people at launch, then b
 the three reasons to switch: nothing slips, ask anything in your language with sources, an agent a
 clinic can sign for. I1 lands before launch.
 
-- [ ] I1. Two bugs and the agent's honesty (S each, first): (a) the organization's agent's model
+- [x] I1. Two bugs and the agent's honesty (S each, first): (a) the organization's agent's model
       runs priced as every run is (`recordRun` writes `cost_usd`), so its plan's backstop trips
       and a manager's try counts against their own day; (b) every model answer in the language the
       person reads Caime in (`languageOf`: the catch-up, ask, translate, the call notes' catch-up,
       Ask Cai, the brief, the write-up's fallback), the brief's day on the reader's clock and its
-      summary labelled as every model answer is; (c) the agent books or orders before it speaks,
-      says a refusal in a fixed line, and the team confirms what it books for a customer (the
-      card's `proposedBy` the customer), as it confirms a page's booking; `claimsDone` on every
-      live answer and draft; (d) never silent: the away message or the greeting while the agent
-      stays out, a failed call tried once more; (e) the light model's calls leave room for
-      thinking within their caps (it thinks by default and that counts toward `max_tokens`, so 512
-      can end before any text) and send no `fallbacks`, which it doesn't have.
+      summary labelled as every model answer is; (c) the agent books or orders before it speaks
+      (`makeCard`), says a refusal in a fixed line (`refusedLine`), and the team confirms what it
+      books for a customer (the card's `proposedBy` the customer: the customer's inbox reads
+      nothing asked of them, the team is told), as it confirms a page's booking; `claimsDone` on
+      every live answer, before it's sent or drafted (moved to `lib/agent-claims.ts`); (d) never
+      silent: the away message or the greeting while the agent stays out (`agentOut`), a failed
+      call tried once more half a minute on, then the customer told it was passed on; (e) the
+      light model's calls leave room for thinking within their caps (Cai's 2,048, a friend's and
+      search's 1,024) and send no `fallbacks`, which it doesn't have. Verified: `agents.test.ts`
+      (the run's price; card before words; the team confirms and the customer can't; a refused
+      time, a sold-out order and a false claim each a fixed line and a hand-over; a failed call
+      tried again then passed on), `org-replies.test.ts` (greeting and away while it stays out),
+      `ai.test.ts` (translate, the catch-up and ask in the chosen language, a question in its own; no fallbacks on the light model), the E2E's
+      clinic (the team confirms the agent's booking from the conversation). Drafts are checked by
+      the team before they're sent, so a claim in one is held back as in a live answer.
 - [ ] I2. Nothing slips (M): a reminder the morning of a dated promise and a default time for an
       undated "remind me"; a wait nudged on its promised day and asked about by Attention after
       it, not after its creation; a pending card follows an edit and is let go when stale; "Done?"
@@ -5602,6 +5610,11 @@ clinic can sign for. I1 lands before launch.
 - 2026-10-20 — The French and Turkish catalogs come in two halves fetched side by side, as Arabic
   does: their largest download 48.9 KB where one was 95.2 KB of a chunk's 100; the first download
   448.8 KB of 450 (0.2 KB more: the two loaders).
+- 2026-10-21 — M17 I1: the agent's runs priced, so its backstop trips; AI answers in the
+  language a person reads Caime in; the agent makes a booking or an order before it says so, the
+  team confirms it, a refusal or a false claim is a fixed line and a hand-over; never silent (the
+  organization's greeting and away message while it stays out, a failed call tried again); the
+  light model's caps leave room for its thinking and it sends no fallbacks. Before launch.
 - 2026-10-21 — Intelligence review (docs/REVIEW-2026-10-21-INTELLIGENCE.md, R113): five slices
   against the best alternatives; ahead on people, behind on volume; two bugs found before anyone
   met them (the agent's runs unpriced, AI answers in the sign-up locale); the plan is M17, I1
