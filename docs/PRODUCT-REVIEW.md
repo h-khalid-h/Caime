@@ -2344,3 +2344,31 @@ with its reason, so it isn't proposed again without new facts.
   And F7d: the notes offer "Catch me up" and "Find follow-ups" on ask, read by the same instructions
   as a conversation's; the catch-up is kept nowhere, the follow-ups are the reader's suggestions by
   the line they came from, offered once (R12).
+- **R111 (2026-10-20) An organization's Cai answers its calls; the organization pays, never the
+  caller (owner's brainstorm with Cai: "calls received on Caime, answered by the organization's
+  Cai; the caller pays unless the organization makes calls free for Anyone, Members, Customers or
+  None; for free calls the organization's credit pays").** Checked against what Caime is, so
+  nothing is built twice. *What holds:* a clinic misses calls, and an assistant that answers when
+  nobody on the team can is worth paying for; it is the organization's own agent (G6: its
+  knowledge, what it may do, when it answers, its hand-over and the team's review) speaking
+  instead of writing, one agent across a chat and a call, never a second one. *What doesn't:* a
+  caller paying to reach an organization puts a price on exactly the contact the organization
+  wants, and would make Caime a biller of calls between people, which it never is (R62: Caime
+  never holds or moves money). A conversation that should be paid for is already one: a priced
+  item booked and held as a call on Caime (R58, R62, R65, R108), paid on its Pay card or the
+  organization's own checkout. *Decided:* (1) the voice minutes are the organization's, counted
+  against its plan by what they cost, as its agent's words are (R107's `agentEurPerDay`), with
+  more on a top-up through billing when it wants it (the owner's live Stripe account: told before
+  anything changes there); (2) who may reach the agent by voice is the organization's audience
+  setting, the one its catalog's items already use (everyone, its customers, nobody), never a
+  price; (3) the agent opens every call as it opens every chat (R87: its name, that it's an AI,
+  the organization), and R85's rules hold for anything it keeps. *Order, since none of it stands
+  on air:* (a) a customer can call an organization at all: its team rings, whoever answers takes
+  it, the customer sees the organization (R15), today its conversations hold no call; (b) a call
+  nobody on the team answers lands as the agent's offer in the thread, in writing, from the
+  agent that is there already; (c) the agent's voice, as ADR-17 decided: a media service beside
+  the container, or a provider's agent session the caller's browser joins, after the streaming
+  speech bake-off on Egyptian and Gulf Arabic with English inside, the time to the agent's first
+  word measured on a real call, and the cost per minute in RESOURCES.md (convention 13), the
+  provider in `processors.ts` and the DPA first. *Not adopted:* the caller paying; a credit of
+  Caime's own that people buy (the plan's allowance, and billing's top-up, are the one budget).

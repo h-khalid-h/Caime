@@ -3905,6 +3905,18 @@ graph) and the number that will show it; one that sharpens none is hygiene and s
       cache tokens kept), `speech.test.ts` (a transcript's length kept; a note with no length never
       sent), `plans.test.ts`, `product-metrics.test.ts`, the catalogs in four languages, and the
       full gate.
+- [ ] H8. An organization's Cai answers its calls (PRODUCT-REVIEW R111, decided 2026-10-21; the
+      owner's brainstorm, the caller paying left out: the organization pays, by what the minutes
+      cost, as its agent's words are, R107). In order, since none of it stands on air: (a) a
+      customer calls an organization: its team rings, whoever answers takes it, and the customer
+      sees the organization (R15), where today its conversations hold no call; (b) a call nobody
+      on the team answers lands as the agent's offer in the thread, in writing; (c) ⛔ the agent's
+      voice (ADR-17: a media service beside the container, or a provider's agent session the
+      caller's browser joins), after a streaming speech bake-off on Egyptian and Gulf Arabic with
+      English inside, its first word's time measured on a real call, the cost a minute in
+      RESOURCES.md, and the provider in `processors.ts` and the DPA first. Who may reach it by
+      voice is the organization's audience setting (everyone, its customers, nobody), never a
+      price; it opens as it opens every chat (R87).
 - [ ] ⛔ H, the owner's: a smaller paid tier; WhatsApp Business in the inbox and reminders by
       WhatsApp or SMS (Meta's approval); Stripe Connect live with local currencies.
 - [ ] R98, after C: places as a context for spaces (PRODUCT-REVIEW R98): `spaces.place` from
@@ -5504,6 +5516,8 @@ graph) and the number that will show it; one that sharpens none is hygiene and s
 - 2026-10-20 — The French and Turkish catalogs come in two halves fetched side by side, as Arabic
   does: their largest download 48.9 KB where one was 95.2 KB of a chunk's 100; the first download
   448.8 KB of 450 (0.2 KB more: the two loaders).
+- 2026-10-21 — R111 decided: an organization's Cai answers its calls, the organization pays and
+  the caller never does; built after customers can call an organization at all (H8).
 - 2026-10-20 — M16 G14: Cai and the friends get a message, a call, a meeting or a search ready
   when asked, in four languages, done on the person's tap: R110's second phase.
 - 2026-10-20 — M16 G13: Cai and the friends keep what they're asked to ("remind me to…", "add a
