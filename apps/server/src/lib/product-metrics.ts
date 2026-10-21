@@ -101,6 +101,8 @@ export async function productMetrics(ctx: AppContext, days: number): Promise<Pro
     labelled: number;
     waiting: number;
     waiting_closed: number;
+    waits_due: number;
+    waits_on_time: number;
     from_messages: number;
     from_messages_closed: number;
     notifications: number;
@@ -124,6 +126,12 @@ export async function productMetrics(ctx: AppContext, days: number): Promise<Pro
       (select count(*)::int from tasks where assignee_id is distinct from owner_id
         and created_at > ${from} and created_at <= ${to}
         and status in ('done', 'declined', 'cancelled')) as waiting_closed,
+      (select count(*)::int from tasks where assignee_id is distinct from owner_id
+        and due_at > ${ago(days + 7)} and due_at <= ${ago(7)}) as waits_due,
+      (select count(*)::int from tasks where assignee_id is distinct from owner_id
+        and due_at > ${ago(days + 7)} and due_at <= ${ago(7)}
+        and status in ('done', 'declined', 'cancelled')
+        and coalesce(completed_at, updated_at) <= due_at + interval '7 days') as waits_on_time,
       (select count(*)::int from tasks where message_id is not null
         and created_at > ${from} and created_at <= ${to}) as from_messages,
       (select count(*)::int from tasks where message_id is not null
@@ -321,6 +329,7 @@ export async function productMetrics(ctx: AppContext, days: number): Promise<Pro
         day28: rate(retention.d28, retention.d28_of),
       },
       needsYouPrecision: rate(measures.answered, measures.answered + measures.dismissed),
+      waitsClosedOnTime: rate(core.waits_on_time, core.waits_due),
       informationRetrieval: {
         found: rate(measures.found, measures.searches),
         medianSeconds:

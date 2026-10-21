@@ -1002,12 +1002,20 @@ export interface TasksResponse {
  * for (oldest first), what's coming up in the next three days, and at most one thing Cai would
  * ask about, a wait gone quiet, rather than assume it's still open or done.
  */
+/**
+ * Where a wait on someone stands (M17 I2), as every nudge about it says it: they said it would be
+ * done by a day that has passed (`promised`, `since` that day), nothing from them where it was
+ * asked since it was asked (`unanswered`, `since` then), or neither can be said (`waiting`). What
+ * arrived is offered "Mark done" instead of being asked about.
+ */
+export type WaitState = 'promised' | 'unanswered' | 'waiting';
+
 export interface AttentionHomeResponse {
   waiting: TaskView[];
   waitingCount: number;
   comingUp: CalendarItemView[];
   /** A wait with no news for three days or more, not asked about since: still waiting? */
-  ask: { taskId: string; since: string } | null;
+  ask: { taskId: string; since: string; state: WaitState } | null;
   /** Invitations to a group or a space, waiting for this person's answer (M16 B4). */
   invitations: PlaceInvitationView[];
 }
@@ -2394,6 +2402,11 @@ export interface ProductMetricsView {
     needsYouPrecision: Rate;
     /** Searches in the app that ended with something opened, and the median time it took. */
     informationRetrieval: { found: Rate; medianSeconds: number | null };
+    /**
+     * Nothing slips (M17 I2): of the waits on someone whose day came in the window a week
+     * earlier (so each has had its week), those closed within seven days of it.
+     */
+    waitsClosedOnTime: Rate;
   };
   value: { tasksFromMessages: number; suggestionsAccepted: Rate };
   /** Of the people who signed up in the window, those who came through someone's link. */

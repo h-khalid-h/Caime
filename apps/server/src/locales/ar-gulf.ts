@@ -298,4 +298,8 @@ export const gulfVoice: Catalog = {
     'هذا اجتماع عن «{title}» بينك وبين {name}: {when}، على Caime. أرسله؟',
   'Here’s a meeting for you and {name}: {when}, on Caime. Shall I send it?':
     'هذا اجتماع بينك وبين {name}: {when}، على Caime. أرسله؟',
+  '{name} said “{title}” would be done by now. Shall I send this?':
+    'موعد {name} لـ«{title}» فات. أرسلها؟',
+  'Still waiting on {name} for “{title}”. Shall I send this?':
+    'للحين ننتظر «{title}» من {name}. أرسلها؟',
 };

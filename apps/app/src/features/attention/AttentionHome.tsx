@@ -4,7 +4,7 @@
  * what's coming up; and, now and then, one question Cai asks rather than assume. When nothing
  * needs you, it says so, and that's the screen working.
  */
-import type { CalendarItemView, InboxItemView, TaskView } from '@caime/core/api';
+import type { CalendarItemView, InboxItemView, TaskView, WaitState } from '@caime/core/api';
 import { formatListTime, formatWhen } from '@caime/core/format';
 import { firstName, greetingKey, type HomeEntry, homeEntries, homeSummary } from '@caime/core/home';
 import { tr, trn } from '@caime/core/i18n';
@@ -135,7 +135,7 @@ function waitingLine(task: TaskView, now: Date, timeZone: string, locale: string
  * asks, never deciding it's still open or done on its own; "Still waiting" asks again in three
  * days (a reminder, so the reader hears of it), the others close the wait.
  */
-function CaiAsk({ task, since }: { task: TaskView; since: string }) {
+function CaiAsk({ task, since, state }: { task: TaskView; since: string; state: WaitState }) {
   const t = useTheme();
   const name = firstName(task.assignee.displayName);
   const qc = useQueryClient();
@@ -176,11 +176,28 @@ function CaiAsk({ task, since }: { task: TaskView; since: string }) {
         </Text>
       </View>
       <Text variant="body" auto>
-        {tr('I haven’t seen anything from {name} about “{title}” since {when}. Still waiting?', {
-          name: task.assignee.displayName,
-          title: task.title,
-          when: formatListTime(since, now, timeZone, locale),
-        })}
+        {
+          // Only what's true of where it stands (M17 I2, `lib/waits.ts`).
+          state === 'promised'
+            ? tr('{name} said “{title}” would be done by {when}. Still waiting?', {
+                name: task.assignee.displayName,
+                title: task.title,
+                when: formatListTime(since, now, timeZone, locale),
+              })
+            : state === 'unanswered'
+              ? tr(
+                  'I haven’t seen anything from {name} about “{title}” since {when}. Still waiting?',
+                  {
+                    name: task.assignee.displayName,
+                    title: task.title,
+                    when: formatListTime(since, now, timeZone, locale),
+                  },
+                )
+              : tr('Is “{title}” from {name} still to come?', {
+                  title: task.title,
+                  name: task.assignee.displayName,
+                })
+        }
       </Text>
       <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8 }}>
         {task.conversationId ? (
@@ -471,7 +488,9 @@ export function AttentionHome() {
                 {entries.map(entryRow)}
               </>
             ) : null}
-            {asked && home.data?.ask ? <CaiAsk task={asked} since={home.data.ask.since} /> : null}
+            {asked && home.data?.ask ? (
+              <CaiAsk task={asked} since={home.data.ask.since} state={home.data.ask.state} />
+            ) : null}
             {waiting.length ? (
               <>
                 <SectionTitle count={home.data?.waitingCount} testID="home-waiting">

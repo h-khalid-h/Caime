@@ -298,4 +298,8 @@ export const levantineVoice: Catalog = {
     'هيدا اجتماع عن «{title}» بينك وبين {name}: {when}، على Caime. بعته؟',
   'Here’s a meeting for you and {name}: {when}, on Caime. Shall I send it?':
     'هيدا اجتماع بينك وبين {name}: {when}، على Caime. بعته؟',
+  '{name} said “{title}” would be done by now. Shall I send this?':
+    'موعد {name} لـ«{title}» مرق. ببعتها؟',
+  'Still waiting on {name} for “{title}”. Shall I send this?':
+    'بعدنا ناطرين «{title}» من {name}. ببعتها؟',
 };

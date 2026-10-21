@@ -4002,8 +4002,20 @@ clinic can sign for. I1 lands before launch.
       message answers, else the only one), once an action; accepting marks it done, Undo opens it
       again. Verified: `delivered.test.ts` (12 deliveries and 12 near-misses in each language),
       `reminders.test.ts`.
-- [ ] I2. Nothing slips (M), the rest: a pending card follows an edit and is let go when stale;
-      the five no-reply paths made one. Number: waits closed within seven days of their due date.
+- [x] I2c. One way a wait is brought up, and cards that follow their words (S): where a wait
+      stands is read once (`waitStates`, `lib/waits.ts`: what was waited on arrived, they said it
+      would be done by a day now gone, nothing from them where it was asked since it was asked, or
+      none of these can be said), and every way it's brought up says that and nothing more: the
+      reminder on its day ("No reply from Omar yet", "Still waiting on Omar", "Omar sent
+      something. Is it done?"), Cai's follow-up (none for what arrived) and Attention's "Still
+      waiting?" (never about what arrived; its sentence by `ask.state`); an ask that became a wait
+      with its own day is that wait's to bring up, so the rule's "No reply from X yet" push and
+      the chat's "follow up?" stand down for it. A pending card follows an edit of its words (the
+      same card, the new day) and goes when they no longer say it, one already answered stays;
+      none waits for ever: a card goes a week past its day, a month after it without one, a "Mark
+      done" as soon as its action is closed. The number: waits closed within seven days of their
+      day (`core.waitsClosedOnTime` in the operator's product metrics). Verified:
+      `reminders.test.ts`, `product-metrics.test.ts`, and the Cai, messaging and suggestion suites.
 - [ ] I3. What did I miss (M; L with the summary): the Needs-you conversations since each was last
       read, by the rules, ranked as Attention ranks them, with a cited summary for whoever has
       assist on, cached by read position, in Cai's chat and on Attention; a catch-up past 200
@@ -5626,6 +5638,10 @@ clinic can sign for. I1 lands before launch.
 - 2026-10-20 — The French and Turkish catalogs come in two halves fetched side by side, as Arabic
   does: their largest download 48.9 KB where one was 95.2 KB of a chunk's 100; the first download
   448.8 KB of 450 (0.2 KB more: the two loaders).
+- 2026-10-21 — M17 I2c, and so I2: one way a wait is brought up (where it stands read once; the
+  reminder, Cai's follow-up and Attention's ask say only that; the "No reply" push and the chat's
+  "follow up?" leave an ask to the wait it became); a pending card follows its edited words and
+  goes once its moment has passed; the number, waits closed within a week of their day.
 - 2026-10-21 — M17 I2b: "Mark done" offered when whoever promised something sends it (a file, a
   link, "Sent!", "تم", "c'est fait", "gönderdim"), never closed by itself; Undo opens it again.
 - 2026-10-21 — M17 I2a: one rule for when an action reminds its owner (core `remindAtFor`): its

@@ -47,7 +47,7 @@ import {
   relationshipView,
 } from './relations';
 import { spaceConversationTitle, spaceRefs } from './spaces';
-import { createSuggestion } from './suggest';
+import { createSuggestion, tellLetGo } from './suggest';
 import { queueTranscription } from './transcribe';
 
 const BURST_WINDOW_MS = 10 * 60_000;
@@ -363,6 +363,8 @@ type Recipient = {
  * An edit's words are read again (docs/REVIEW-2026-10-05.md, intelligence M): what they now ask
  * or promise is offered as suggestions, each kind once per message (the fingerprint), with no
  * notification (the message was already told of) and nothing for a business or a private one.
+ * A card from them still pending says what they say now, and one they no longer say goes
+ * (M17 I2); one already answered stays as it was answered.
  */
 export async function afterEdit(
   ctx: AppContext,
@@ -403,7 +405,24 @@ export async function afterEdit(
     : null;
   const addressed = (userId: string) =>
     conversation.kind === 'direct' || message.mentions.includes(userId) || replyToSender === userId;
-  await suggest(ctx, conversation, message, analysis, sender, recipients, addressed);
+  // What the words still say, by person and card.
+  const said = new Set<string>();
+  await suggest(ctx, conversation, message, analysis, sender, recipients, addressed, {
+    edited: true,
+    said,
+  });
+  const gone = await ctx.db
+    .updateTable('suggestions')
+    .set({ status: 'expired', resolved_at: ctx.now() })
+    .where('message_id', '=', message.id)
+    .where('status', '=', 'pending')
+    .where('fingerprint', 'like', `msg:${message.id}:%`)
+    .$if(said.size > 0, (qb) =>
+      qb.where(sql<boolean>`user_id::text || ':' || fingerprint not in (${sql.join([...said])})`),
+    )
+    .returning(['id', 'user_id'])
+    .execute();
+  await tellLetGo(ctx, gone);
 }
 
 /**
@@ -1117,6 +1136,11 @@ async function suggest(
   sender: { id: string; display_name: string },
   recipients: Array<{ user_id: string; request_state: string | null }>,
   addressed: (userId: string) => boolean,
+  /**
+   * After an edit (M17 I2): a card still pending says what the words say now, and `said` gathers
+   * what they still say (person and fingerprint), so the rest can be let go.
+   */
+  opts: { edited?: boolean; said?: Set<string> } = {},
 ): Promise<void> {
   if (!analysis || conversation.privacy_class === 'private') return;
   const counterpartForSender =
@@ -1146,6 +1170,7 @@ async function suggest(
         }))
       )
         continue;
+      opts.said?.add(`${sender.id}:msg:${message.id}:${s.kind}`);
       await createSuggestion(ctx, {
         userId: sender.id,
         kind: s.kind,
@@ -1162,6 +1187,7 @@ async function suggest(
         dueAt: s.dueAt,
         dueText: s.dueText,
         fingerprint: `msg:${message.id}:${s.kind}`,
+        edited: opts.edited,
       });
     }
   });
@@ -1192,6 +1218,7 @@ async function suggest(
           }))
         )
           continue;
+        opts.said?.add(`${r.user_id}:msg:${message.id}:${s.kind}`);
         await createSuggestion(ctx, {
           userId: r.user_id,
           kind: s.kind,
@@ -1208,6 +1235,7 @@ async function suggest(
           dueAt: s.dueAt,
           dueText: s.dueText,
           fingerprint: `msg:${message.id}:${s.kind}`,
+          edited: opts.edited,
         });
       }
     });

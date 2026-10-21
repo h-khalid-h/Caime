@@ -3346,4 +3346,7 @@ export const arB: Catalog = {
   'What arrived': 'ما وصل',
   'Mark done': 'تم الإنجاز',
   'Marked done': 'أصبح منجزًا',
+  '{name} said “{title}” would be done by {when}. Still waiting?':
+    'موعد {name} لإنجاز «{title}» كان {when}. هل ما زال الانتظار قائمًا؟',
+  'Is “{title}” from {name} still to come?': 'هل ما زال «{title}» من {name} منتظرًا؟',
 };

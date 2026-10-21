@@ -3,7 +3,7 @@
  * own chat, and never in anyone's name without their tap.
  *
  * - A wait handed to Cai (`tasks.cai_follow_up`): at its remind time the reminders sweep asks
- *   `offerFollowUp`, which writes in Cai's chat who hasn't answered about what, with a
+ *   `offerFollowUp`, which writes in Cai's chat where it stands (`lib/waits.ts`), with a
  *   follow-up ready to send (`payload.followUp`), and tells its owner once. `sendFollowUp` sends
  *   that follow-up as its owner, in their conversation with whom it waits on, only on their tap
  *   and only once (its client id is the offer's), then watches again in three days.
@@ -32,6 +32,7 @@ import {
   systemAccountOf,
   tr,
   trn,
+  type WaitState,
   zonedParts,
   zonedTimeToUtc,
 } from '@caime/core';
@@ -203,7 +204,11 @@ async function followUpConversation(ctx: AppContext, t: Followed): Promise<strin
  * A wait's remind time came and its owner handed it to Cai: the offer in Cai's chat, and one
  * notification. False when there's nowhere to send a follow-up: then it's a plain reminder.
  */
-export async function offerFollowUp(ctx: AppContext, t: Followed): Promise<boolean> {
+export async function offerFollowUp(
+  ctx: AppContext,
+  t: Followed,
+  stands: WaitState,
+): Promise<boolean> {
   // Its title would go into Cai's chat: never one tied to a private conversation (R18).
   if (t.conversation_id) {
     const c = await ctx.db
@@ -223,11 +228,14 @@ export async function offerFollowUp(ctx: AppContext, t: Followed): Promise<boole
     .executeTakeFirst();
   if (!other) return false;
   const { id: chat } = await openSystemConversation(ctx, t.owner_id, cai());
+  // Where it stands, as the reminder would say it (M17 I2).
+  const words = { name: other.display_name, title: t.title };
   const line = () =>
-    tr('{name} hasn’t answered about “{title}” yet. Shall I send this?', {
-      name: other.display_name,
-      title: t.title,
-    });
+    stands === 'promised'
+      ? tr('{name} said “{title}” would be done by now. Shall I send this?', words)
+      : stands === 'unanswered'
+        ? tr('{name} hasn’t answered about “{title}” yet. Shall I send this?', words)
+        : tr('Still waiting on {name} for “{title}”. Shall I send this?', words);
   await asReader(ctx, t.owner_id, async () => {
     const draft = tr('Hi {name}, any news on “{title}”?', {
       name: firstName(other.display_name),

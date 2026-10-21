@@ -118,6 +118,19 @@ beforeAll(async () => {
       task(noor, sam, 'open', null), // waiting on Sam, still open
       task(noor, noor, 'open', first.id), // Noor's own, from a message, open
       { ...task(noor, sam, 'open', null), created_at: new Date(t0.getTime() - 40 * DAY) }, // too old
+      // Made long ago, due in the window a week back (M17 I2): one closed three days past its
+      // day, one still open past its week.
+      {
+        ...task(noor, sam, 'done', null),
+        created_at: new Date(t0.getTime() - 40 * DAY),
+        due_at: t0,
+        completed_at: new Date(t0.getTime() + 3 * DAY),
+      },
+      {
+        ...task(noor, sam, 'open', null),
+        created_at: new Date(t0.getTime() - 40 * DAY),
+        due_at: new Date(t0.getTime() - DAY),
+      },
     ])
     .execute();
   const suggestion = (status: 'accepted' | 'dismissed' | 'pending') => ({
@@ -208,6 +221,7 @@ describe('product metrics (PRD §82–83)', () => {
       },
       needsYouPrecision: { count: 1, of: 2, rate: 0.5 },
       informationRetrieval: { found: { count: 2, of: 3, rate: 0.667 }, medianSeconds: 7 },
+      waitsClosedOnTime: { count: 1, of: 2, rate: 0.5 },
     });
     // Two of the four came through a link, one of them a person's, and three people were active.
     expect(m.growth).toEqual({

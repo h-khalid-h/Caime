@@ -27,6 +27,8 @@ import {
 import { sweepRecords } from '../lib/retention';
 import { tellStockChanged } from '../lib/stock';
 import { storageFor } from '../lib/storage';
+import { letGoStale } from '../lib/suggest';
+import { waitLine, waitStates } from '../lib/waits';
 
 /** How many due reminders or held notifications one pass of a sweep takes. */
 export const SWEEP_BATCH = 200;
@@ -43,7 +45,7 @@ export function registerWorkers(): void {
     if (reply) return;
     const senderId = String(p.senderId);
     const otherId = String(p.otherId);
-    const [original, other, conversation, seat, hidden, blocked] = await Promise.all([
+    const [original, other, conversation, seat, hidden, blocked, wait] = await Promise.all([
       ctx.db
         .selectFrom('messages')
         .select(['body', 'deleted_at', 'created_at'])
@@ -73,10 +75,28 @@ export function registerWorkers(): void {
         .where('user_id', '=', senderId)
         .executeTakeFirst(),
       isBlockedEitherWay(ctx.db, senderId, otherId),
+      // Made a wait that reminds on its own day (M17 I2): that reminder is the one nudge.
+      ctx.db
+        .selectFrom('tasks')
+        .select('id')
+        .where('message_id', '=', String(p.messageId))
+        .where('owner_id', '=', senderId)
+        .where('status', 'in', ['open', 'accepted'])
+        .where('remind_at', 'is not', null)
+        .executeTakeFirst(),
     ]);
     // Only what they'd still want: a message they can still see, from someone they can still
     // hear from, and a rule that still says to remind them (it may have changed since).
-    if (!original || original.deleted_at || !other || !conversation || !seat || hidden || blocked)
+    if (
+      !original ||
+      original.deleted_at ||
+      !other ||
+      !conversation ||
+      !seat ||
+      hidden ||
+      blocked ||
+      wait
+    )
       return;
     const [policies, rels] = await Promise.all([
       loadPolicies(ctx.db, senderId),
@@ -138,7 +158,13 @@ export function registerWorkers(): void {
         )
         .returning(['id', 'owner_id', 'assignee_id', 'title', 'conversation_id', 'cai_follow_up'])
         .execute();
-      // A wait on someone says whose it is (M17 I2): their names, in one query for the batch.
+      // A wait on someone says whose it is and where it stands (M17 I2): their names and where
+      // each stands, a query each for the batch.
+      const states = await waitStates(
+        ctx.db,
+        due.filter((t) => t.assignee_id && t.assignee_id !== t.owner_id).map((t) => t.id),
+        ctx.now(),
+      );
       const others = [
         ...new Set(
           due.flatMap((t) =>
@@ -159,10 +185,13 @@ export function registerWorkers(): void {
       );
       // Four at a time (lib/batch.ts): a batch of due reminders was offered and told one by one.
       await eachLimit(due, 4, async (t) => {
-        // Handed to Cai (R68): its offer of a follow-up, in place of a bare reminder.
+        const stands = states.get(t.id)?.state;
+        // Handed to Cai (R68): its offer of a follow-up, in place of a bare reminder; never for
+        // what arrived, which asks to be marked done instead.
         if (
           t.cai_follow_up &&
-          (await offerFollowUp(ctx, t).catch((err) => {
+          stands !== 'arrived' &&
+          (await offerFollowUp(ctx, t, stands ?? 'waiting').catch((err) => {
             ctx.log.warn({ err, taskId: t.id }, 'cai follow-up not offered');
             return false;
           }))
@@ -176,7 +205,7 @@ export function registerWorkers(): void {
           body: () => {
             const name =
               t.assignee_id && t.assignee_id !== t.owner_id ? names.get(t.assignee_id) : undefined;
-            return name ? tr('{name} said it would be done by now', { name }) : tr('Reminder');
+            return name ? waitLine(stands ?? 'waiting', name) : tr('Reminder');
           },
           data: { taskId: t.id, conversationId: t.conversation_id },
         });
@@ -222,6 +251,15 @@ export function registerWorkers(): void {
 
   // What Caime records of how it's used goes when its time is up (lib/retention.ts).
   registerPeriodic({ name: 'records', everyMs: 86_400_000, background: true, run: sweepRecords });
+  // Cards nobody answered, let go once their moment has passed (M17 I2).
+  registerPeriodic({
+    name: 'suggestions-stale',
+    everyMs: 86_400_000,
+    background: true,
+    run: async (ctx) => {
+      await letGoStale(ctx);
+    },
+  });
   // A closed organization's export window over, what was its alone goes (DPA §12).
   registerPeriodic({
     name: 'closed-orgs',

@@ -2485,4 +2485,7 @@ export const turkishB: Catalog = {
   'What arrived': 'Gelenler',
   'Mark done': 'Yapıldı olarak işaretle',
   'Marked done': 'Yapıldı olarak işaretlendi',
+  '{name} said “{title}” would be done by {when}. Still waiting?':
+    '{name}, “{title}” için {when} demişti. Hâlâ bekliyor musunuz?',
+  'Is “{title}” from {name} still to come?': '{name} kişisinden “{title}” hâlâ bekleniyor mu?',
 };

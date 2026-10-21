@@ -1741,10 +1741,16 @@ export const arServer: Catalog = {
   'That time isn’t open any more: answer it yourself.': 'لم يعد هذا الموعد متاحًا: أجب بنفسك.',
   'That order can’t be taken as it stands now: answer it yourself.':
     'لا يمكن تسجيل هذا الطلب كما هو الآن: أجب بنفسك.',
-  '{name} said it would be done by now': 'حلّ الموعد الذي حدّده {name} لإنجاز هذا',
+  '{name} said it would be done by now': 'حلّ موعد {name} لإنجاز هذا',
   '{name} wrote “{words}”': 'رسالة {name}: «{words}»',
   'You wrote “{words}”': 'رسالتك: «{words}»',
   '{name} sent something here': 'وصل شيء من {name} هنا',
   'You sent something here': 'أرسلت شيئًا هنا',
   'That action was closed already.': 'هذا الإجراء مُغلق بالفعل.',
+  '{name} sent something. Is it done?': 'وصل شيء من {name}. هل أُنجز؟',
+  'Still waiting on {name}': 'لا يزال بانتظار {name}',
+  '{name} said “{title}” would be done by now. Shall I send this?':
+    'حلّ موعد {name} لإنجاز «{title}». هل أرسل هذه؟',
+  'Still waiting on {name} for “{title}”. Shall I send this?':
+    'ما زال «{title}» بانتظار {name}. هل أرسل هذه؟',
 };

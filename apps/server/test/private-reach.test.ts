@@ -155,13 +155,17 @@ describe('a private conversation keeps nothing on the server (R18, M16 G7)', () 
     expect((await digestText(t.ctx, ana.user.id)).text).not.toContain('Garden deposit');
     // And its follow-up is a plain reminder, never an offer in Cai's chat.
     expect(
-      await offerFollowUp(t.ctx, {
-        id: waitId,
-        owner_id: ana.user.id,
-        assignee_id: ben.user.id,
-        title: 'Garden deposit of 900',
-        conversation_id: secret,
-      }),
+      await offerFollowUp(
+        t.ctx,
+        {
+          id: waitId,
+          owner_id: ana.user.id,
+          assignee_id: ben.user.id,
+          title: 'Garden deposit of 900',
+          conversation_id: secret,
+        },
+        'unanswered',
+      ),
     ).toBe(false);
   });
 });

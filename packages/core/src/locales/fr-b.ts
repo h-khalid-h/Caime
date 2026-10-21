@@ -2572,4 +2572,7 @@ export const frB: Catalog = {
   'What arrived': 'Ce qui est arrivé',
   'Mark done': 'Marquer comme fait',
   'Marked done': 'Marqué comme fait',
+  '{name} said “{title}” would be done by {when}. Still waiting?':
+    '{name} avait dit que « {title} » serait fait pour {when}. Toujours en attente ?',
+  'Is “{title}” from {name} still to come?': '« {title} » de {name} est-il toujours attendu ?',
 };

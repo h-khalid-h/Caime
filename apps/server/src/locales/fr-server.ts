@@ -1772,4 +1772,10 @@ export const frServer: Catalog = {
   '{name} sent something here': '{name} a envoyé quelque chose ici',
   'You sent something here': 'Vous avez envoyé quelque chose ici',
   'That action was closed already.': 'Cette action est déjà close.',
+  '{name} sent something. Is it done?': '{name} a envoyé quelque chose. Est-ce fait ?',
+  'Still waiting on {name}': 'Toujours en attente de {name}',
+  '{name} said “{title}” would be done by now. Shall I send this?':
+    '{name} avait dit que « {title} » serait fait à cette heure. J’envoie ceci ?',
+  'Still waiting on {name} for “{title}”. Shall I send this?':
+    'Toujours en attente de {name} pour « {title} ». J’envoie ceci ?',
 };

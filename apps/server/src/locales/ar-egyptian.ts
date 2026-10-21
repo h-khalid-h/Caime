@@ -298,4 +298,8 @@ export const egyptianVoice: Catalog = {
     'ده اجتماع عن «{title}» بينك وبين {name}: {when}، على Caime. أبعته؟',
   'Here’s a meeting for you and {name}: {when}, on Caime. Shall I send it?':
     'ده اجتماع بينك وبين {name}: {when}، على Caime. أبعته؟',
+  '{name} said “{title}” would be done by now. Shall I send this?':
+    'معاد {name} لـ«{title}» عدّى. أبعت دي؟',
+  'Still waiting on {name} for “{title}”. Shall I send this?':
+    'لسه مستنيين «{title}» من {name}. أبعت دي؟',
 };

@@ -42,9 +42,11 @@ import { assertCanSend, messageViews, participantsOf, sendMessage } from '../lib
 import { notify } from '../lib/notify';
 import { placeInvitationsFor } from '../lib/place-invites';
 import { between } from '../lib/relations';
+import { letGoOffer } from '../lib/suggest';
 import { visibleTasksSql } from '../lib/task-visibility';
 import { taskViews } from '../lib/tasks';
 import { parse } from '../lib/validate';
+import { waitStates } from '../lib/waits';
 import { requireAuth } from '../plugins/auth';
 
 export type { TaskDirection };
@@ -231,12 +233,21 @@ export async function actionRoutes(app: FastifyInstance, ctx: AppContext) {
     const quietAfter = quietWaitAfterMs(initiativeOf(mine?.preferences));
     const quietSince = (t: (typeof rows)[number]) =>
       Math.max(t.created_at.getTime(), t.due_at?.getTime() ?? 0);
-    const quiet = rows.find(
+    const quietOnes = rows.filter(
       (t) =>
         quietAfter !== null &&
         now.getTime() - quietSince(t) >= quietAfter &&
         (!t.remind_at || t.remind_at.getTime() <= now.getTime()),
     );
+    // Where each stands (M17 I2): what arrived asks to be marked done instead, and the question
+    // says only what's true.
+    const standing = await waitStates(
+      ctx.db,
+      quietOnes.map((t) => t.id),
+      now,
+    );
+    const quiet = quietOnes.find((t) => standing.get(t.id)?.state !== 'arrived');
+    const stands = quiet ? standing.get(quiet.id) : undefined;
     return {
       invitations,
       waiting,
@@ -250,7 +261,17 @@ export async function actionRoutes(app: FastifyInstance, ctx: AppContext) {
             Date.parse(i.at) >= now.getTime() - 3_600_000,
         )
         .slice(0, COMING_UP_SHOWN),
-      ask: quiet ? { taskId: quiet.id, since: quiet.created_at.toISOString() } : null,
+      ask:
+        quiet && stands && stands.state !== 'arrived'
+          ? {
+              taskId: quiet.id,
+              since: (stands.state === 'unanswered'
+                ? stands.askedAt
+                : new Date(quietSince(quiet))
+              ).toISOString(),
+              state: stands.state,
+            }
+          : null,
     };
   });
 
@@ -490,6 +511,9 @@ export async function actionRoutes(app: FastifyInstance, ctx: AppContext) {
       status: updated.status,
     });
     await ctx.bus.publish(audienceOf(t), { type: 'task.updated', data: { id } });
+    // Closed by hand (M17 I2): a "Mark done" offered for it goes.
+    if (updated.status !== 'open' && updated.status !== 'accepted')
+      await letGoOffer(ctx, t.owner_id, `done:${id}`);
     if (t.shared && body.status && !isOwner) {
       // The person who asked hears back; their waiting item resolves with it (R13).
       const who = await ctx.db
@@ -525,6 +549,7 @@ export async function actionRoutes(app: FastifyInstance, ctx: AppContext) {
     if (t.owner_id !== auth.userId)
       throw forbidden(tr('Only the person who created this can delete it.'));
     await ctx.db.deleteFrom('tasks').where('id', '=', id).execute();
+    await letGoOffer(ctx, t.owner_id, `done:${id}`);
     await ctx.bus.publish(audienceOf(t), {
       type: 'task.deleted',
       data: { id },

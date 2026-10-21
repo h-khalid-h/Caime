@@ -1695,4 +1695,10 @@ export const turkishServer: Catalog = {
   '{name} sent something here': '{name} buraya bir şey gönderdi',
   'You sent something here': 'Buraya bir şey gönderdiniz',
   'That action was closed already.': 'Bu eylem zaten kapatıldı.',
+  '{name} sent something. Is it done?': '{name} bir şey gönderdi. Tamamlandı mı?',
+  'Still waiting on {name}': 'Hâlâ {name} bekleniyor',
+  '{name} said “{title}” would be done by now. Shall I send this?':
+    '{name}, “{title}” için şimdiye kadar biteceğini söylemişti. Bunu göndereyim mi?',
+  'Still waiting on {name} for “{title}”. Shall I send this?':
+    '“{title}” için hâlâ {name} bekleniyor. Bunu göndereyim mi?',
 };

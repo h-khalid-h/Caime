@@ -595,7 +595,16 @@ A sphere is said as how you know someone, never "sphere".
   core `saysDelivered` (`delivered.ts`, every interface language, its lines in
   `delivered.test.ts`): `offerDone` (`message-effects.ts`) offers the owner a `done` suggestion
   for the open, unshared action of that conversation waiting on the sender, which accepting marks
-  done and Undo opens again; nothing closes an action by itself (R12).
+  done and Undo opens again; nothing closes an action by itself (R12). Where a wait stands is
+  `waitStates` (`lib/waits.ts`, one query for a batch: `arrived`, `promised`, `unanswered`,
+  `waiting`) and its words `waitLine`: the reminder, Cai's follow-up (`offerFollowUp(…, stands)`,
+  none for what arrived) and Attention's ask (`ask.state`) read it, and a new way to bring a wait
+  up does too, never a sentence of its own; the rule's `follow_up_check` push and the inbox's
+  `followUpDue` stand down for an ask that became a wait with its own reminder. A pending card
+  follows its message's edit (`createSuggestion(…, { edited })` updates it, `afterEdit` lets go
+  what the words no longer say) and goes once stale (`letGoStale`, the daily
+  `suggestions-stale`: a week past its day, a month without one, a `done` offer once its action
+  is closed; `letGoOffer` at once when that's by hand).
 - Whose tasks a person sees is one rule, `visibleTasksSql(me)` (`lib/task-visibility.ts`): their
   own, and what's asked of them that was shared with them. Every reader of `tasks` for a person
   (Actions, the inbox's counts, Cai and the friends, the briefs, the calendar) puts it in its

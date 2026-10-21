@@ -84,6 +84,8 @@ export async function createSuggestion(
     fingerprint: string;
     /** Made because the person asked (Find actions): offered however little Cai does unasked. */
     asked?: boolean;
+    /** Its words were edited (M17 I2): a card still pending from them says what they say now. */
+    edited?: boolean;
   },
 ): Promise<string | null> {
   const user = await ctx.db
@@ -128,15 +130,106 @@ export async function createSuggestion(
       due_text: s.dueText ?? null,
       fingerprint: s.fingerprint,
     })
-    .onConflict((oc) => oc.columns(['user_id', 'fingerprint']).doNothing())
+    .onConflict((oc) =>
+      s.edited
+        ? oc
+            .columns(['user_id', 'fingerprint'])
+            .doUpdateSet((eb) => ({
+              title: eb.ref('excluded.title'),
+              rationale: eb.ref('excluded.rationale'),
+              confidence: eb.ref('excluded.confidence'),
+              payload: eb.ref('excluded.payload'),
+              due_at: eb.ref('excluded.due_at'),
+              due_text: eb.ref('excluded.due_text'),
+            }))
+            // Answered already, it stays as it was answered.
+            .where('suggestions.status', '=', 'pending')
+        : oc.columns(['user_id', 'fingerprint']).doNothing(),
+    )
     .returning('id')
     .executeTakeFirst();
   if (!row) return null;
   await ctx.bus.publish([s.userId], {
     type: 'suggestion.created',
-    data: { id, kind: s.kind, conversationId: s.conversationId ?? null },
+    data: { id: row.id, kind: s.kind, conversationId: s.conversationId ?? null },
   });
-  return id;
+  return row.id;
+}
+
+/** How long a card about what was said waits for an answer (M17 I2). */
+export const STALE_AFTER_DUE_DAYS = 7;
+export const STALE_UNDATED_DAYS = 30;
+/** The cards about what was said, whose moment passes; who someone is to you doesn't. */
+const STALE_KINDS = ['task', 'reminder', 'waiting', 'decision', 'topic', 'context', 'done'];
+const STALE_LOT = 500;
+
+/**
+ * Cards nobody answered, let go once their moment has passed (M17 I2): a week after the day they
+ * name, a month after they were offered without one, and a "Mark done" (I2b) as soon as its
+ * action was closed some other way. Daily, a lot at a time; each person's screens are told.
+ */
+export async function letGoStale(ctx: AppContext): Promise<number> {
+  const now = ctx.now();
+  const dueBefore = new Date(now.getTime() - STALE_AFTER_DUE_DAYS * 86_400_000);
+  const madeBefore = new Date(now.getTime() - STALE_UNDATED_DAYS * 86_400_000);
+  let total = 0;
+  for (;;) {
+    const gone = await ctx.db
+      .updateTable('suggestions')
+      .set({ status: 'expired', resolved_at: now })
+      .where('id', 'in', (eb) =>
+        eb
+          .selectFrom('suggestions')
+          .select('id')
+          .where('status', '=', 'pending')
+          .where('kind', 'in', STALE_KINDS)
+          .where((w) =>
+            w.or([
+              w.and([w('due_at', 'is not', null), w('due_at', '<', dueBefore)]),
+              w.and([w('due_at', 'is', null), w('created_at', '<', madeBefore)]),
+              w.and([
+                w('kind', '=', 'done'),
+                sql<boolean>`not exists (select 1 from tasks t
+                  where t.id = (suggestions.payload->>'taskId')::uuid
+                    and t.status in ('open', 'accepted'))`,
+              ]),
+            ]),
+          )
+          .limit(STALE_LOT)
+          .forUpdate()
+          .skipLocked(),
+      )
+      .returning(['id', 'user_id'])
+      .execute();
+    await tellLetGo(ctx, gone);
+    total += gone.length;
+    if (gone.length < STALE_LOT) return total;
+  }
+}
+
+/** A card let go goes from its person's screens, as an answered one does. */
+export async function tellLetGo(
+  ctx: AppContext,
+  gone: ReadonlyArray<{ id: string; user_id: string }>,
+): Promise<void> {
+  for (const g of gone)
+    await ctx.bus.publish([g.user_id], {
+      type: 'suggestion.resolved',
+      data: { id: g.id, status: 'expired' },
+    });
+}
+
+/** One card let go now: a "Mark done" whose action was closed or deleted by hand (M17 I2). */
+export async function letGoOffer(ctx: AppContext, userId: string, fingerprint: string) {
+  const gone = await ctx.db
+    .updateTable('suggestions')
+    .set({ status: 'expired', resolved_at: ctx.now() })
+    .where('user_id', '=', userId)
+    .where('fingerprint', '=', fingerprint)
+    .where('status', '=', 'pending')
+    .returning(['id', 'user_id'])
+    .execute();
+  await tellLetGo(ctx, gone);
 }
 
 /** Somewhere two people both are, as a reason one might know the other. */

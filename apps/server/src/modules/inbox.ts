@@ -191,6 +191,12 @@ export async function buildInbox(
         sql<number>`count(*) filter (where assignee_id = ${userId} and (owner_id = ${userId} or shared) and status in ('open','accepted') and ${overdueAtSql} >= ${now} and due_at < ${new Date(now.getTime() + 86_400_000)})::int`.as(
           'due_soon',
         ),
+        // My asks made waits that remind on their own day, still to come (M17 I2).
+        sql<
+          string[]
+        >`coalesce(array_agg(message_id::text) filter (where owner_id = ${userId} and assignee_id <> ${userId} and status in ('open','accepted') and message_id is not null and remind_at > ${now}), '{}')`.as(
+          'asks_waited',
+        ),
       ])
       .where('conversation_id', 'in', ids)
       // Never a private wait someone keeps on this person (lib/task-visibility.ts).
@@ -268,10 +274,12 @@ export async function buildInbox(
       !caimes && lastIsMine && (last.is_question || last.is_request)
         ? { at: last.created_at.toISOString() }
         : null;
+    // An ask made a wait with its own day is that wait's to bring up then (M17 I2), once.
     const followUpDue = Boolean(
       awaitingReply &&
         policy.followUpHours &&
-        now.getTime() - last!.created_at.getTime() > policy.followUpHours * 3_600_000,
+        now.getTime() - last!.created_at.getTime() > policy.followUpHours * 3_600_000 &&
+        !t?.asks_waited.includes(last!.id),
     );
     const waitingOnThem =
       r.kind === 'direct' && r.is_general && r.other_id ? (waitingOf.get(r.other_id) ?? 0) : 0;
