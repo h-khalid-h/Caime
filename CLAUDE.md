@@ -1420,9 +1420,16 @@ A sphere is said as how you know someone, never "sphere".
   its first word; `keptTitle` gives its title) and is kept on the spot by `keepAsked` through
   `createTask`, in a line whose `payload.kept` draws Undo and Open Actions (`KeptAction`); "it" is
   the `keep` of Cai's model answer (`caiChat` answers `{ reply, keep }`), else the person's words
-  before the ask. Anything new Cai is asked to do follows R110: what touches only the person's
-  own things is done and said with its Undo, what reaches anyone else is prepared and done on
-  their tap, never by Cai; the rest goes
+  before the ask. What they ask done with their people (M16 G14) is core `chatAct` (through
+  `chat-words.ts`, as `chatSave` reads): `offerAct` (`lib/cai-acts.ts`) finds whom it's for with
+  `peopleMeant` (`lib/people-named.ts`, the one reader of whom a person means) and puts the
+  offer on its line (`payload.offer`, core `CaiOfferPayload`), and `carryOutOffer` does it on
+  their tap through `postAs`; a question Cai asks for what's missing carries `payload.awaiting`,
+  which `answerAwaited` finishes with their next words; a drafted message is drawn by
+  `DraftOffer` (`features/cai/CaiOffer.tsx`, the one lazy module R68's follow-up is drawn from
+  too), never a look of its own. Anything new Cai is asked to do
+  follows R110: what touches only the person's own things is done and said with its Undo, what
+  reaches anyone else is prepared and done on their tap, never by Cai; the rest goes
   through `runAi('cai')`, or for a friend `runAi('friend')` in its own character (R71: `FRIENDS`
   in `lib/system-accounts.ts` holds its lines, tips, sticker, persona for the model and `reads`,
   the parts of what's open that are its to know), for adults with assist on, within the
@@ -1445,7 +1452,7 @@ A sphere is said as how you know someone, never "sphere".
 - Cai keeps going (R68, `lib/cai.ts`, `modules/cai.ts`): a wait handed to Cai is
   `tasks.cai_follow_up`, offered by `offerFollowUp` from the reminders sweep in place of a bare
   reminder (the offer is Cai's text message with `payload.followUp`, drawn by
-  `features/cai/FollowUpOffer.tsx` under it), and sent only by `sendFollowUp` on its owner's tap
+  `FollowUpOffer` in `features/cai/CaiOffer.tsx` under it), and sent only by `sendFollowUp` on its owner's tap
   (client id `follow-up:<offer id>`, so twice is once). The morning brief is
   `preferences.caiBrief` (HH:MM or null): `PATCH /me` queues the next `cai.brief` job when it
   changes, each run queues the next, and a job whose hour no longer matches does nothing. The

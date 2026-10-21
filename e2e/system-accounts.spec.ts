@@ -80,6 +80,23 @@ test('Cai and the Caime Friends answer like anyone you write to', async ({ brows
   await expect(visible(page, 'The venue deposit is due next Friday')).toBeVisible();
   await page.goBack();
 
+  // Asked to write to one of his people, Cai drafts it, and nothing goes until he taps (M16 G14).
+  await input.fill('Tell Sarah I’m on my way');
+  await page.getByTestId('composer-send').filter({ visible: true }).click();
+  await expect(
+    visible(page, /^Here’s a message for Sarah Smith\. Shall I send it\?/),
+  ).toBeVisible();
+  await page.getByTestId('offer-send').filter({ visible: true }).click();
+  await expect(page.getByTestId('offer-sent').filter({ visible: true })).toHaveText(
+    'Sent to Sarah',
+  );
+  // It went as his, in his chat with Sarah, once.
+  const read = await other.request.get(`/v1/conversations/${conversationId}/messages`, {
+    headers: CLIENT,
+  });
+  const theirs = ((await read.json()) as { messages: Array<{ body: string | null }> }).messages;
+  expect(theirs.filter((m) => m.body === 'I’m on my way')).toHaveLength(1);
+
   // Its page, by its handle like anyone's.
   await page.goto('/@cai');
   await expect(page.getByTestId('system-profile').filter({ visible: true })).toContainText(

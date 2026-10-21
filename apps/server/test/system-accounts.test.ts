@@ -31,7 +31,7 @@ const LUMI = friend('lumi');
 const ZUZU = friend('zuzu');
 
 /** Cai's model answers in a structure (M16 G13): its reply, and what it was asked to keep. */
-const caiSays = (reply: string, keep: unknown = null) => JSON.stringify({ reply, keep });
+const caiSays = (reply: string, keep: unknown = null) => JSON.stringify({ reply, keep, act: null });
 const open = (c: Client, userId: string) => c.post('/v1/conversations', { kind: 'direct', userId });
 const send = (c: Client, conversationId: string, body: string) =>
   c.post(`/v1/conversations/${conversationId}/messages`, { clientId: uuidv4(), body });

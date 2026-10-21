@@ -1714,4 +1714,21 @@ export const arServer: Catalog = {
   'Tell me when, and I’ll remind you then.': 'قل لي متى، وسأذكّرك حينها.',
   'What should I keep? Write it after “Remind me to” or “Add an action:”, and I’ll save it.':
     'ماذا أحفظ؟ اكتبه بعد «ذكّرني أن» أو «أضف مهمة:»، وسأحفظه.',
+  'Let’s look for “{query}” in your conversations.': 'لنبحث عن «{query}» في محادثاتك.',
+  'Which one do you mean: {names}?': 'من المقصود: {names}؟',
+  'You and {name} have no chat yet. Once you’ve written to {name}, you can call from it.':
+    'لا محادثة بينك وبين {name} بعد. بعد أول رسالة إلى {name}، تصبح المكالمة منها ممكنة.',
+  'Ready when you are: a video call with {name}.': 'جاهزة متى شئت: مكالمة فيديو مع {name}.',
+  'Ready when you are: a call with {name}.': 'جاهزة متى شئت: مكالمة مع {name}.',
+  'What should I tell {name}?': 'ماذا أقول لـ{name}؟',
+  'Here’s a message for {name}. Shall I send it?': 'هذه رسالة إلى {name}. أرسلها؟',
+  'When should the meeting with {name} be? A day and a time, like “tomorrow at 3”.':
+    'متى يكون الاجتماع مع {name}؟ يوم وساعة، مثل «غدًا الساعة 3».',
+  'Here’s a meeting about “{title}” for you and {name}: {when}, on Caime. Shall I send it?':
+    'هذا اجتماع عن «{title}» بينك وبين {name}: {when}، على Caime. أرسله؟',
+  'Here’s a meeting for you and {name}: {when}, on Caime. Shall I send it?':
+    'هذا اجتماع بينك وبين {name}: {when}، على Caime. أرسله؟',
+  'That one starts on your device.': 'هذا يبدأ من جهازك.',
+  'Open your chat with {name} first.': 'يلزم فتح المحادثة مع {name} أولًا.',
+  'That isn’t your chat with {name}.': 'هذه ليست المحادثة مع {name}.',
 };

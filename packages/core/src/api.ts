@@ -1073,6 +1073,34 @@ export interface FollowUpSentResponse {
   messageId: string;
 }
 
+/**
+ * What Cai or a friend offered to do for someone (M16 G14, R110), on its line's `payload.offer`:
+ * written by the server alone, done by the person's tap.
+ */
+export interface CaiOfferPayload {
+  kind: 'message' | 'call' | 'meeting' | 'find';
+  /** Whom it's for: one of their people. */
+  to?: { id: string; name: string };
+  /** Their chat with `to`; null when there's none yet (the app opens it as it sends). */
+  conversationId?: string | null;
+  /** A message's words, as they'll go. */
+  text?: string;
+  video?: boolean;
+  /** A meeting card's title, start and minutes, as it'll go. */
+  meeting?: { title: string; at: string; minutes: number };
+  /** What to look for, in Search. */
+  query?: string;
+  /** Done: what it sent, so a second tap sends nothing. */
+  doneId?: string;
+  doneAt?: string;
+}
+
+/** What Cai offered to do, done by its owner's tap (M16 G14): the message or the card it sent. */
+export interface OfferDoneResponse {
+  conversationId: string;
+  messageId: string;
+}
+
 export interface DecisionView {
   id: string;
   conversationId: string;

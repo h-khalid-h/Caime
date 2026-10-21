@@ -21,7 +21,7 @@ let hassan: Client;
 let mona: Client;
 const MOMO = SYSTEM_ACCOUNTS.find((a) => a.handle === 'momo')!.id;
 
-const caiSays = (reply: string, keep: unknown = null) => JSON.stringify({ reply, keep });
+const caiSays = (reply: string, keep: unknown = null) => JSON.stringify({ reply, keep, act: null });
 const open = async (c: Client, userId: string) =>
   (await c.post('/v1/conversations', { kind: 'direct', userId })).conversation.id as string;
 const send = (c: Client, conversationId: string, body: string) =>

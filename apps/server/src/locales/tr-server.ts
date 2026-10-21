@@ -1658,4 +1658,21 @@ export const turkishServer: Catalog = {
   'Tell me when, and I’ll remind you then.': 'Ne zaman olduğunu söyleyin, o zaman hatırlatayım.',
   'What should I keep? Write it after “Remind me to” or “Add an action:”, and I’ll save it.':
     'Neyi kaydedeyim? “Yeni görev:” diye başlayın ya da sonuna “hatırlat” yazın, kaydedeyim.',
+  'Let’s look for “{query}” in your conversations.': '“{query}” için konuşmalarınıza bakalım.',
+  'Which one do you mean: {names}?': 'Hangisini kastediyorsunuz: {names}?',
+  'You and {name} have no chat yet. Once you’ve written to {name}, you can call from it.':
+    '{name} ile henüz bir sohbetiniz yok. {name} kişisine yazdıktan sonra oradan arayabilirsiniz.',
+  'Ready when you are: a video call with {name}.': 'Hazır olduğunuzda: {name} ile görüntülü arama.',
+  'Ready when you are: a call with {name}.': 'Hazır olduğunuzda: {name} ile arama.',
+  'What should I tell {name}?': '{name} kişisine ne söyleyeyim?',
+  'Here’s a message for {name}. Shall I send it?': '{name} için bir mesaj. Göndereyim mi?',
+  'When should the meeting with {name} be? A day and a time, like “tomorrow at 3”.':
+    '{name} ile toplantı ne zaman olsun? Bir gün ve saat, “yarın saat 3” gibi.',
+  'Here’s a meeting about “{title}” for you and {name}: {when}, on Caime. Shall I send it?':
+    'Sizinle {name} için “{title}” konulu bir toplantı: {when}, Caime’de. Göndereyim mi?',
+  'Here’s a meeting for you and {name}: {when}, on Caime. Shall I send it?':
+    'Sizinle {name} için bir toplantı: {when}, Caime’de. Göndereyim mi?',
+  'That one starts on your device.': 'Bu, cihazınızdan başlar.',
+  'Open your chat with {name} first.': 'Önce {name} ile sohbetinizi açın.',
+  'That isn’t your chat with {name}.': 'Bu, {name} ile sohbetiniz değil.',
 };

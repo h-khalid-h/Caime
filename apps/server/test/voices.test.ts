@@ -1,7 +1,7 @@
 /**
  * Cai and the Caime Friends in the Arabic people speak (R72): each voice (`VOICES`, an overlay on
- * the standard catalog) has every line they say, by the rules, from `lib/system-accounts.ts` and
- * `lib/cai.ts`, in plural forms where it counts, with every placeholder, and nothing else: the
+ * the standard catalog) has every line they say, by the rules, from `lib/system-accounts.ts`,
+ * `lib/cai.ts` and `lib/cai-acts.ts`, in plural forms where it counts, with every placeholder, and nothing else: the
  * interface, a refusal and a name stay in Standard Arabic whoever reads them.
  */
 import { ar } from '@caime/core/locales/ar';
@@ -10,9 +10,24 @@ import { collectKeys } from '../../../scripts/i18n-keys.mjs';
 import { VOICES } from '../src/lib/i18n';
 import { arServer } from '../src/locales/ar-server';
 
-const SPEAKERS = ['apps/server/src/lib/system-accounts.ts', 'apps/server/src/lib/cai.ts'];
+const SPEAKERS = [
+  'apps/server/src/lib/system-accounts.ts',
+  'apps/server/src/lib/cai.ts',
+  'apps/server/src/lib/cai-acts.ts',
+];
 /** What those files say that isn't Cai or a friend talking: refusals, a name, a stand-in. */
-const NOT_SPOKEN = ['Someone', 'Cai', 'That follow-up', 'That wait', 'That’s no longer open.'];
+const NOT_SPOKEN = [
+  'Someone',
+  'Cai',
+  'That follow-up',
+  'That wait',
+  'That’s no longer open.',
+  'That message',
+  'Meeting',
+  'That one starts on your device.',
+  'Open your chat with {name} first.',
+  'That isn’t your chat with {name}.',
+];
 /** Said through a key core hands back (`greetingKey`): the brief's first line. */
 const GREETINGS = ['Good morning, {name}', 'Good afternoon, {name}', 'Good evening, {name}'];
 

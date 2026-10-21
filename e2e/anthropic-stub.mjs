@@ -74,7 +74,11 @@ function answer(body) {
       const before = said.at(-2);
       const title = before.split(/[.!?]/)[0].slice(0, 80);
       return reply(
-        JSON.stringify({ reply: '', keep: { title, details: before, when: null, remind: false } }),
+        JSON.stringify({
+          reply: '',
+          keep: { title, details: before, when: null, remind: false },
+          act: null,
+        }),
       );
     }
     const open = (between(content, '<context>', '</context>').match(/^• /gm) ?? []).length;
@@ -82,6 +86,7 @@ function answer(body) {
       JSON.stringify({
         reply: `About “${asked}”: here’s an idea. (${open} open things in mind.)`,
         keep: null,
+        act: null,
       }),
     );
   }

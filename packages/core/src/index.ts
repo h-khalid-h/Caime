@@ -14,6 +14,7 @@ export * from './bridges';
 export * from './business';
 export * from './calls';
 export * from './catalog';
+export * from './chat-act';
 export * from './chat-intent';
 export * from './chat-save';
 export * from './checkout';

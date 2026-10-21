@@ -1733,4 +1733,23 @@ export const frServer: Catalog = {
   'Tell me when, and I’ll remind you then.': 'Dites-moi quand, et je vous le rappellerai.',
   'What should I keep? Write it after “Remind me to” or “Add an action:”, and I’ll save it.':
     'Que dois-je garder ? Écrivez-le après « Rappelle-moi de » ou « Ajoute une tâche : », et je l’enregistre.',
+  'Let’s look for “{query}” in your conversations.':
+    'Cherchons « {query} » dans vos conversations.',
+  'Which one do you mean: {names}?': 'De qui s’agit-il : {names} ?',
+  'You and {name} have no chat yet. Once you’ve written to {name}, you can call from it.':
+    'Vous n’avez pas encore de conversation avec {name}. Une fois que vous aurez écrit à {name}, vous pourrez appeler depuis celle-ci.',
+  'Ready when you are: a video call with {name}.':
+    'Prêt quand vous l’êtes : un appel vidéo avec {name}.',
+  'Ready when you are: a call with {name}.': 'Prêt quand vous l’êtes : un appel avec {name}.',
+  'What should I tell {name}?': 'Que dois-je dire à {name} ?',
+  'Here’s a message for {name}. Shall I send it?': 'Voici un message pour {name}. Je l’envoie ?',
+  'When should the meeting with {name} be? A day and a time, like “tomorrow at 3”.':
+    'Quand doit avoir lieu la réunion avec {name} ? Un jour et une heure, comme « demain à 15h ».',
+  'Here’s a meeting about “{title}” for you and {name}: {when}, on Caime. Shall I send it?':
+    'Voici une réunion sur « {title} » entre vous et {name} : {when}, sur Caime. Je l’envoie ?',
+  'Here’s a meeting for you and {name}: {when}, on Caime. Shall I send it?':
+    'Voici une réunion entre vous et {name} : {when}, sur Caime. Je l’envoie ?',
+  'That one starts on your device.': 'Celui-ci se lance depuis votre appareil.',
+  'Open your chat with {name} first.': 'Ouvrez d’abord votre conversation avec {name}.',
+  'That isn’t your chat with {name}.': 'Ce n’est pas votre conversation avec {name}.',
 };

@@ -8,8 +8,11 @@
  * finds "أحمد", "ليلي" finds "ليلى"). Only people (`kind = 'human'`), never anyone known only
  * through an organization's conversation, whose team the customer sees as the organization
  * (R15). One query. Search's own `resolvePeople` finds a part of any sender's name, as a search
- * finds words; this is for naming someone.
+ * finds words; this is for naming someone. `peopleMeant` is a name or, failing one, a
+ * relationship ("my dentist"): whom Cai is asked about (G11) and whom it's asked to do something
+ * for (G14).
  */
+import { aboutRelationship, relationshipWords } from '@caime/core';
 import { foldArabic } from '@caime/core/fold';
 import { sql } from 'kysely';
 import type { AppContext } from '../context';
@@ -54,8 +57,9 @@ export const plainColumn = (column: string) =>
   sql<string>`translate(${sql.ref(column)}, ${FOLD_FROM}, ${FOLD_TO})`;
 
 /** Whether a name holds what was typed as whole words, as the reader compares them. */
-const holdsWhole = (name: string | null, typed: string) =>
-  Boolean(name) && ` ${plainName(name!).toLowerCase()} `.includes(` ${typed.toLowerCase()} `);
+export const holdsWhole = (name: string | null, typed: string) =>
+  Boolean(name) &&
+  ` ${plainName(name!).toLowerCase()} `.includes(` ${plainName(typed).toLowerCase()} `);
 
 export interface NamedPerson {
   id: string;
@@ -66,7 +70,8 @@ export async function peopleNamed(
   ctx: Pick<AppContext, 'db'>,
   me: string,
   name: string,
-  limit = 5,
+  /** `whole`: only a name holding every word typed, never one that only starts so (G14). */
+  { limit = 5, whole = false }: { limit?: number; whole?: boolean } = {},
 ): Promise<NamedPerson[]> {
   const typed = plainName(name.trim().replace(/^@/, '')).replace(/\s+/g, ' ');
   if (!typed) return [];
@@ -117,13 +122,51 @@ export async function peopleNamed(
     .orderBy('u.display_name')
     .limit(limit * 4)
     .execute();
-  const whole = rows.filter(
+  const wholly = rows.filter(
     (r) =>
       holdsWhole(r.display_name, typed) ||
       holdsWhole(r.nickname, typed) ||
       String(r.handle).toLowerCase() === typed.toLowerCase(),
   );
-  return (whole.length ? whole : rows)
+  return (wholly.length || whole ? wholly : rows)
     .slice(0, limit)
     .map((r) => ({ id: r.id, name: r.display_name }));
+}
+
+/**
+ * Whom someone means by the words: their own people by that name (`peopleNamed`), else, when the
+ * words name a relationship ("my dentist", "مديري"), the people they keep that relationship
+ * with, by its role (a doctor is one whichever sphere they were labelled in) or its sphere, or
+ * by a label of their own written that way ("Boss"). At most five.
+ */
+export async function peopleMeant(
+  ctx: Pick<AppContext, 'db'>,
+  me: string,
+  words: string,
+): Promise<NamedPerson[]> {
+  const named = await peopleNamed(ctx, me, words);
+  if (named.length) return named;
+  const relationship = aboutRelationship(words);
+  const label = plainName(relationshipWords(words));
+  if (!relationship && !label) return [];
+  const rows = await ctx.db
+    .selectFrom('relationships as r')
+    .innerJoin('users as u', 'u.id', 'r.subject_id')
+    .select(['u.id', 'u.display_name'])
+    .distinct()
+    .where('r.owner_id', '=', me)
+    .where('r.status', '=', 'active')
+    .where('u.kind', '=', 'human')
+    .where('u.deleted_at', 'is', null)
+    .where((eb) =>
+      eb.or([
+        ...(relationship?.role ? [eb('r.role', '=', relationship.role)] : []),
+        ...(relationship && !relationship.role ? [eb('r.sphere', '=', relationship.sphere)] : []),
+        ...(label ? [eb(plainColumn('r.role_label'), 'ilike', escapeLike(label))] : []),
+      ]),
+    )
+    .orderBy('u.display_name')
+    .limit(5)
+    .execute();
+  return rows.map((r) => ({ id: r.id, name: r.display_name }));
 }

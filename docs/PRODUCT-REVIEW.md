@@ -2295,9 +2295,10 @@ with its reason, so it isn't proposed again without new facts.
   the person's own things (an action, a reminder) is done; what reaches someone else (a message,
   a call, a meeting proposed, a payment asked for) is prepared, shown as what will go and to whom,
   and done on their tap, never sent by Cai (R68's follow-up rule); finding something is search's
-  own answer (R66), cited. *Built* (M16 G13): keeping actions and reminders. *Next* (G14): a message
-  drafted to one of their people, a call started, a meeting proposed, something found. *Later*:
-  what changes settings or money, each with its own confirmation. *Cost*: the rules ask nothing; "it"
+  own answer (R66), cited. *Built*: keeping actions and reminders (M16 G13); a message drafted to one of their people, a
+  call started, a meeting proposed and something found, each done on their tap and drawn as R68's
+  follow-up is, with what's missing asked and finished by their next words (G14). *Later*: what
+  changes settings or money, each with its own confirmation. *Cost*: the rules ask nothing; "it"
   without words is one light-model call for someone with AI assist, the call Cai makes to answer
   anything; nothing on the first download.
 - **R108 addendum (2026-10-20, M16 F6c).** A call held on Caime is joined by whoever it's with, an

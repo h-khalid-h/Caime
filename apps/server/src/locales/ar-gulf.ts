@@ -285,4 +285,18 @@ export const gulfVoice: Catalog = {
   'Tell me when, and I’ll remind you then.': 'قل لي متى وبذكّرك وقتها.',
   'What should I keep? Write it after “Remind me to” or “Add an action:”, and I’ll save it.':
     'وش أحفظ؟ اكتبه بعد «ذكّرني» أو «أضف مهمة:»، وأحفظه لك.',
+  'Let’s look for “{query}” in your conversations.': 'خلنا ندوّر على «{query}» في محادثاتك.',
+  'Which one do you mean: {names}?': 'منو المقصود فيهم: {names}؟',
+  'You and {name} have no chat yet. Once you’ve written to {name}, you can call from it.':
+    'ما فيه محادثة بينك وبين {name} للحين. بعد أول رسالة لـ{name}، تقدر تتصل منها.',
+  'Ready when you are: a video call with {name}.': 'جاهزة متى ما تبي: مكالمة فيديو مع {name}.',
+  'Ready when you are: a call with {name}.': 'جاهزة متى ما تبي: مكالمة مع {name}.',
+  'What should I tell {name}?': 'وش أقول لـ{name}؟',
+  'Here’s a message for {name}. Shall I send it?': 'هذي رسالة لـ{name}. أرسلها؟',
+  'When should the meeting with {name} be? A day and a time, like “tomorrow at 3”.':
+    'متى الاجتماع مع {name}؟ يوم وساعة، مثل «بكرة الساعة 3».',
+  'Here’s a meeting about “{title}” for you and {name}: {when}, on Caime. Shall I send it?':
+    'هذا اجتماع عن «{title}» بينك وبين {name}: {when}، على Caime. أرسله؟',
+  'Here’s a meeting for you and {name}: {when}, on Caime. Shall I send it?':
+    'هذا اجتماع بينك وبين {name}: {when}، على Caime. أرسله؟',
 };

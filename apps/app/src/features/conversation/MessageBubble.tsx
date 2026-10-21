@@ -1,4 +1,4 @@
-import type { FileView, MessageMailView, MessageView } from '@caime/core/api';
+import type { CaiOfferPayload, FileView, MessageMailView, MessageView } from '@caime/core/api';
 import { AI_LABEL } from '@caime/core/assist';
 import { emojiOnly } from '@caime/core/emoji';
 import {
@@ -29,7 +29,7 @@ import { Platform, View } from 'react-native';
 import { mediaHeaders, mediaUrl } from '@/api/client';
 import { Character } from '@/brand/Character';
 import { type Translation, useTranslations } from '@/features/assist/translations';
-import { FollowUpOffer, type FollowUpPayload } from '@/features/cai/FollowUpOffer';
+import type { FollowUpPayload } from '@/features/cai/CaiOffer';
 import type { KeptPayload } from '@/features/cai/KeptAction';
 import { CallNotesLink } from '@/features/calls/CallNotesLink';
 import {
@@ -63,6 +63,12 @@ const VoiceNote = lazy(() =>
 const VideoTile = lazy(() => import('@/features/media/VideoTile'));
 /** Undo and Open under what Cai kept for the reader (M16 G13), loaded with the first one shown. */
 const KeptAction = lazy(() => import('@/features/cai/KeptAction'));
+/** What Cai offered to do for the reader (M16 G14), done on their tap; loaded with the first. */
+const CaiOffer = lazy(() => import('@/features/cai/CaiOffer'));
+/** Cai's follow-up offer (R68): the same module, drawn as every drafted message is. */
+const FollowUpOffer = lazy(() =>
+  import('@/features/cai/CaiOffer').then((m) => ({ default: m.FollowUpOffer })),
+);
 
 export type Delivery = 'queued' | 'sending' | 'failed' | 'sent' | 'delivered' | 'read';
 
@@ -1012,6 +1018,10 @@ export const MessageBubble = memo(function MessageBubble({
   // Cai's offer of a follow-up (R68), sent or changed only by the reader's tap.
   const followUp = (m.payload as { followUp?: FollowUpPayload } | null)?.followUp;
   // What Cai or a friend kept as one of the reader's actions when asked (M16 G13).
+  // What Cai or a friend offered to do for them when asked (M16 G14): done on their tap.
+  const offer = systemHandleOf(m.senderId)
+    ? (m.payload as { offer?: CaiOfferPayload } | null)?.offer
+    : undefined;
   const kept = systemHandleOf(m.senderId)
     ? (m.payload as { kept?: KeptPayload } | null)?.kept
     : undefined;
@@ -1200,11 +1210,18 @@ export const MessageBubble = memo(function MessageBubble({
         ) : null}
       </View>
       {followUp && m.senderId === CAI_ID ? (
-        <FollowUpOffer messageId={m.id} offer={followUp} />
+        <Suspense fallback={null}>
+          <FollowUpOffer messageId={m.id} offer={followUp} />
+        </Suspense>
       ) : null}
       {kept ? (
         <Suspense fallback={null}>
           <KeptAction kept={kept} />
+        </Suspense>
+      ) : null}
+      {offer ? (
+        <Suspense fallback={null}>
+          <CaiOffer messageId={m.id} offer={offer} />
         </Suspense>
       ) : null}
       {m.reactions.length ? (

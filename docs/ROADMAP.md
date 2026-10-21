@@ -3684,6 +3684,43 @@ graph) and the number that will show it; one that sharpens none is hygiene and s
       accounts' and the voices' tests (each new line in every Arabic), the E2E
       `system-accounts.spec.ts` (a reminder kept and undone; "Save it as a task" kept from the
       line before and opened in Actions), and the full gate.
+- [x] G14. Cai does what it's asked with your people (2026-10-20, R110's second phase; the owner's
+      "not only actions, Cai shall be capable of handling any things"; advantage 2, the assistant
+      that keeps going, R68. The number: asks to write to someone, call them, meet them or find
+      something that end with it ready to send or start, all 49 of the golden set's in four
+      languages and none of its 22 near-misses, where Cai answered every one with directions).
+      Core `chatAct` reads the ask by the rules in the four interface languages, from its first
+      word once the polite lead and close are off (`chat-words.ts`, G13's `chatSave` reads through
+      it too): a message and its words in the person's own writing (`asWritten`: their quotes and
+      Arabic marks; "tell Sami to call me" goes as "Could you call me?", French's "de" as "Tu
+      peux … ?", Arabic and Turkish as written), a call (video or not), a meeting with its subject
+      and time, something to find. Whom it's for is found as Cai's G11 answers find anyone
+      (`peopleMeant`, moved beside `peopleNamed` in `lib/people-named.ts`: a name; a surname taken
+      from the words only for a name held whole; "my dentist"); two of a name, Cai asks which;
+      nobody, it says so. Cai's line carries the offer (`payload.offer`, core `CaiOfferPayload`),
+      shown as it will go, and the person's tap does it as theirs (`carryOutOffer`,
+      `POST /messages/:id/offer`, through `postAs`: once by its client id, a block or a request as
+      for any send): the message or the meeting card into their chat with that person (opened
+      first, as the app opens any, when there's none), a call started on the device, Search
+      opened on the words. Nothing reaches anyone without that tap. When the words, the time or
+      the person are missing, Cai asks, and the next words finish it within the hour
+      (`payload.awaiting`, `answerAwaited`, by the rules). What the rules don't read is Cai's
+      model's (`caiChat` answers `{ reply, keep, act }`, told it never sends, calls or schedules
+      anything itself), and a friend does what the rules read as Cai does. A drafted message and
+      R68's follow-up are drawn by one component (`DraftOffer`) in one module, loaded only when a
+      line carries an offer (`features/cai/CaiOffer.tsx`: as two lazy modules sharing it, it moved
+      into the first download, 0.7 KB). Left (R110): what changes settings or
+      money, each with its own confirmation. Costs: on devices, the first download 448.8 KB of 450 as before and the conversation's chunk 91.4 KB (91.6 before: R68's follow-up moved into the offers' module, 1.8 KB, loaded with the first offer shown); on the server, an ask the rules read asks no model, one they don't is answered within the one call Cai already makes (its request 13,023 tokens at most where it was 11,322 before G13 and G14 told it what to keep and do: €0.0016 a reply where it was €0.0015, the free month's €0.03 as before), and an offer carried out is one send. Verified:
+      `chat-act-golden.test.ts` (71 hand-labelled lines in four languages, every one read right,
+      and no line the rule answers or G13's keep read as an act), `cai-acts.test.ts` (a draft that
+      sends nothing until tapped, then once, as his; "ask Sarah to…" as his own question; a call
+      and a search; a meeting about its subject at the time said, as his card; the time asked for
+      and given in the next words, and the words too; two Samis asked between and the answer
+      taken, a surname picking one; nobody by a name; with AI assist, what the rules don't read
+      offered from the model's act, and a plain ask read by the rules with no model; a friend; a
+      block), the voices' and catalogs' tests (each new line in every Arabic), the E2E
+      `system-accounts.spec.ts` (a message drafted, sent on the tap, in Sarah's chat once), and
+      the full gate.
 - [ ] H. Business depth: a Business seat includes Pro; a cap on organizations per person; room
       checks inside the transaction; quick replies, away and greeting messages; customer notes,
       tags and fields; tax invoices (counsel); booking and revenue analytics; intake forms as
@@ -5467,6 +5504,8 @@ graph) and the number that will show it; one that sharpens none is hygiene and s
 - 2026-10-20 — The French and Turkish catalogs come in two halves fetched side by side, as Arabic
   does: their largest download 48.9 KB where one was 95.2 KB of a chunk's 100; the first download
   448.8 KB of 450 (0.2 KB more: the two loaders).
+- 2026-10-20 — M16 G14: Cai and the friends get a message, a call, a meeting or a search ready
+  when asked, in four languages, done on the person's tap: R110's second phase.
 - 2026-10-20 — M16 G13: Cai and the friends keep what they're asked to ("remind me to…", "add a
   task:", "save it as a task") on the spot, with Undo, in four languages: R110's first phase.
 - 2026-10-20 — M16 F6c: whoever is reached by mail (a page's booker, someone a meeting held on

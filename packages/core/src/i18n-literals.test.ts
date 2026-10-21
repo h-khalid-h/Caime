@@ -22,6 +22,10 @@ const DATA: ReadonlyArray<[file: string, text: string]> = [
   ['packages/core/src/ics.ts', 'An event needs a date or a start: {}'],
   ['packages/core/src/intelligence-fr.ts', 'revenir {}'],
   ['packages/core/src/intelligence-fr.ts', 'faire {}'],
+  // A message's words as a rule writes them in its writer's own language (M16 G14): "tell Sami
+  // to call me" goes as "Could you call me?", never in the reader's language.
+  ['packages/core/src/chat-act.ts', 'Could you {}?'],
+  ['packages/core/src/chat-act.ts', 'Tu peux {} ?'],
   // Words the code reads, never the interface's (M16 E1's wider rule): a print sheet's CSS, a
   // socket's close reason, the system monospace's names, a drive's own name, a feed's protocol line.
   [

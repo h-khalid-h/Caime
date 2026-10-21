@@ -17,12 +17,13 @@
 
 import {
   type AboutIntent,
+  type ActAsk,
   type ArabicVariety,
-  aboutRelationship,
   arabicVariety,
   type CharacterHandle,
   type ChatIntent,
   chatAbout,
+  chatAct,
   chatIntent,
   chatSave,
   firstFutureWhen,
@@ -42,7 +43,6 @@ import {
   type PaysShare,
   paySides,
   previewText,
-  relationshipWords,
   type SaveAsk,
   SYSTEM_ACCOUNTS,
   type SystemAccount,
@@ -59,19 +59,19 @@ import { sql } from 'kysely';
 import type { AppContext } from '../context';
 import { createTask } from './actions';
 import { todayForAgent } from './agent';
-import { type CaiAnswer, type CaiKeep, type FriendPersona, languageName } from './ai';
+import { type CaiAct, type CaiAnswer, type CaiKeep, type FriendPersona, languageName } from './ai';
 import { runAi } from './ai-run';
+import { type Act, answerAwaited, offerAct } from './cai-acts';
 import { ensureDirectConversation } from './conversations';
 import { AppError } from './errors';
 import { asReader, inLanguage, readerOf } from './i18n';
 import { registerJob } from './jobs';
 import { SYSTEM_REPLY_JOB } from './message-effects';
 import { readableBy } from './messages';
-import { type NamedPerson, peopleNamed, plainColumn, plainName } from './people-named';
+import { peopleMeant } from './people-named';
 import { assertAiAllowance } from './plans';
 import { postAs } from './post-as';
 import { visibleTasksSql } from './task-visibility';
-import { escapeLike } from './text';
 import { transcriptText, wordsFor } from './transcript';
 import { cardsAhead, dueCards } from './upcoming';
 import { minorOf } from './users';
@@ -384,7 +384,11 @@ async function systemReply(ctx: AppContext, payload: Record<string, unknown>): P
           intent: text ? chatIntent(text) : null,
           about: text ? chatAbout(text) : null,
           save: text ? chatSave(text) : null,
+          act: null,
         };
+        // Something to do for them (G14) when it's no ask to keep: "remind me to call Sami" is
+        // a reminder, never a call.
+        said.act = text && !said.save ? chatAct(text) : null;
         if (isCharacterHandle(account.handle))
           await friendSays(ctx, account, account.handle, conversationId, me, said, voice);
         else await caiSays(ctx, account, conversationId, me, said, voice);
@@ -421,6 +425,8 @@ interface Said {
   about: About | null;
   /** Something to keep (G13): a reminder or an action, and its words. */
   save: SaveAsk | null;
+  /** Something to do with one of their people, or to find (G14). */
+  act: ActAsk | null;
 }
 
 type About = { intent: AboutIntent; name: string };
@@ -449,6 +455,8 @@ async function friendSays(
   if (said.about) return say(await aboutAnswer(ctx, me, said.about));
   if (isOwnQuestion(said.intent)) return say(await ruleAnswer(ctx, me, said.intent));
   if (said.save) return keepAsked(ctx, account, conversationId, me, said, null);
+  if (said.act) return offerAct(ctx, account.id, conversationId, me, said.act);
+  if (await answerAwaited(ctx, account.id, conversationId, me, said)) return;
   switch (said.intent) {
     case 'greeting':
       await sticker(ctx, account, conversationId, friend);
@@ -505,6 +513,8 @@ async function caiSays(
   if (said.about) return say(await aboutAnswer(ctx, me, said.about));
   if (isOwnQuestion(said.intent)) return say(await ruleAnswer(ctx, me, said.intent));
   if (said.save) return keepAsked(ctx, account, conversationId, me, said, voice);
+  if (said.act) return offerAct(ctx, account.id, conversationId, me, said.act);
+  if (await answerAwaited(ctx, account.id, conversationId, me, said)) return;
   switch (said.intent) {
     case 'greeting':
       return say(
@@ -538,6 +548,22 @@ async function caiSays(
   // Asked in words the rules don't read ("could you jot that down for Monday?"): the model read
   // the ask, and it's kept as one the rules read would be.
   if (answer.keep) await keepIt(ctx, account, conversationId, me, answer.keep, said.id);
+  // Something to do that the rules didn't read ("could you check with Sarah whether the report
+  // is ready?"): offered as the rules' would be, the words the model drafted in their voice.
+  if (answer.act) await offerAct(ctx, account.id, conversationId, me, actOf(answer.act, said.text));
+}
+
+/** The model's act as the rules write one: its words a message's, a meeting's time or a query. */
+function actOf(a: CaiAct, text: string): Act {
+  return {
+    kind: a.kind,
+    who: a.who,
+    words: a.kind === 'meeting' ? a.when : a.text,
+    title: a.title,
+    video: a.video,
+    minutes: a.minutes,
+    lang: writtenIn(text) ?? 'en',
+  };
 }
 
 /** Cai's model on this conversation and what's open for them (R67), with what to keep (G13). */
@@ -988,40 +1014,6 @@ async function sharedWith(ctx: AppContext, me: string, ids: string[]): Promise<S
     .limit(200)
     .execute();
   return rows.map((r) => ({ id: r.id, chat: r.kind === 'direct', title: r.title, with: r.with }));
-}
-
-/**
- * Whom a question means: the person's own people by that name (`peopleNamed`), else, when the
- * words name a relationship ("my dentist", "مديري"), the people they keep that relationship
- * with, by its role (a doctor is one whichever sphere they were labelled in) or its sphere, or
- * by a label of their own written that way ("Boss"). At most five.
- */
-async function peopleMeant(ctx: AppContext, me: string, words: string): Promise<NamedPerson[]> {
-  const named = await peopleNamed(ctx, me, words);
-  if (named.length) return named;
-  const relationship = aboutRelationship(words);
-  const label = plainName(relationshipWords(words));
-  if (!relationship && !label) return [];
-  const rows = await ctx.db
-    .selectFrom('relationships as r')
-    .innerJoin('users as u', 'u.id', 'r.subject_id')
-    .select(['u.id', 'u.display_name'])
-    .distinct()
-    .where('r.owner_id', '=', me)
-    .where('r.status', '=', 'active')
-    .where('u.kind', '=', 'human')
-    .where('u.deleted_at', 'is', null)
-    .where((eb) =>
-      eb.or([
-        ...(relationship?.role ? [eb('r.role', '=', relationship.role)] : []),
-        ...(relationship && !relationship.role ? [eb('r.sphere', '=', relationship.sphere)] : []),
-        ...(label ? [eb(plainColumn('r.role_label'), 'ilike', escapeLike(label))] : []),
-      ]),
-    )
-    .orderBy('u.display_name')
-    .limit(5)
-    .execute();
-  return rows.map((r) => ({ id: r.id, name: r.display_name }));
 }
 
 /**

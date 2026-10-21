@@ -120,6 +120,7 @@ import type {
   OAuthAppsResponse,
   OAuthConsentView,
   OAuthRedirectResponse,
+  OfferDoneResponse,
   OkResponse,
   OrgAgentResponse,
   OrgAgentSetResponse,
@@ -1047,6 +1048,9 @@ export const endpoints = {
   /** Send the follow-up Cai offered, as yours (R68). */
   sendFollowUp: (offerId: string) =>
     api.post<FollowUpSentResponse>(`/messages/${offerId}/follow-up`, {}),
+  /** Do what Cai offered to do, as yours (M16 G14): into the chat it named, or the one opened. */
+  carryOutOffer: (offerId: string, conversationId: string | null) =>
+    api.post<OfferDoneResponse>(`/messages/${offerId}/offer`, { conversationId }),
   calendarFeed: () => api.get<CalendarFeedResponse>('/calendar/feed'),
   /** A new address, shown this once; any old one stops working. */
   newCalendarFeed: () => api.post<CalendarFeedCreatedResponse>('/calendar/feed', {}),

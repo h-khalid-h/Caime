@@ -285,4 +285,18 @@ export const levantineVoice: Catalog = {
   'Tell me when, and I’ll remind you then.': 'قلّي إيمتى ورح ذكّرك وقتها.',
   'What should I keep? Write it after “Remind me to” or “Add an action:”, and I’ll save it.':
     'شو بدك احفظ؟ اكتبه بعد «ذكّرني» أو «ضيف مهمة:»، وبحفظه.',
+  'Let’s look for “{query}” in your conversations.': 'خلّينا ندوّر على «{query}» بمحادثاتك.',
+  'Which one do you mean: {names}?': 'مين قصدك فيهن: {names}؟',
+  'You and {name} have no chat yet. Once you’ve written to {name}, you can call from it.':
+    'لسا ما في محادثة بينك وبين {name}. بعد أول رسالة لـ{name}، فيك تتصل منها.',
+  'Ready when you are: a video call with {name}.': 'جاهزة إيمتى ما بدك: مكالمة فيديو مع {name}.',
+  'Ready when you are: a call with {name}.': 'جاهزة إيمتى ما بدك: مكالمة مع {name}.',
+  'What should I tell {name}?': 'شو بقول لـ{name}؟',
+  'Here’s a message for {name}. Shall I send it?': 'هيدي رسالة لـ{name}. بعتها؟',
+  'When should the meeting with {name} be? A day and a time, like “tomorrow at 3”.':
+    'إيمتى الاجتماع مع {name}؟ يوم وساعة، متل «بكرا الساعة 3».',
+  'Here’s a meeting about “{title}” for you and {name}: {when}, on Caime. Shall I send it?':
+    'هيدا اجتماع عن «{title}» بينك وبين {name}: {when}، على Caime. بعته؟',
+  'Here’s a meeting for you and {name}: {when}, on Caime. Shall I send it?':
+    'هيدا اجتماع بينك وبين {name}: {when}، على Caime. بعته؟',
 };

@@ -9,6 +9,8 @@
  * taken off. Pure, no zod; the server's alone (the app never loads it).
  */
 
+import { askedWords, B, E, rx } from './chat-words';
+
 /** What was asked to be kept: a reminder or an action, and its words (null: "it", said before). */
 export interface SaveAsk {
   remind: boolean;
@@ -16,78 +18,6 @@ export interface SaveAsk {
   /** The language the ask was read in, for its words' case and joiners. */
   lang: 'en' | 'ar' | 'fr' | 'tr';
 }
-
-const B = '(?<![\\p{L}\\p{N}])';
-const E = '(?![\\p{L}\\p{N}])';
-/** A rule's pattern, written as a tagged template so its words read as the rules' own data. */
-const rx = (parts: TemplateStringsArray, ...values: string[]) =>
-  new RegExp(
-    parts.reduce((all, part, i) => all + part + (values[i] ?? ''), ''),
-    'iu',
-  );
-
-/** What only makes an ask polite or says whom it's for, before it: taken off first. */
-const LEAD = [
-  'hey',
-  'hi',
-  'ok',
-  'okay',
-  'so',
-  'and',
-  'also',
-  'then',
-  'oh',
-  'cai',
-  'caime',
-  'please',
-  'pls',
-  'plz',
-  'kindly',
-  'can you',
-  'could you',
-  'would you',
-  'will you',
-  'can u',
-  "i'd like you to",
-  'i need you to',
-  'i want you to',
-  'go ahead and',
-  'just',
-  'لو سمحت',
-  'لو سمحتي',
-  'من فضلك',
-  'رجاء',
-  'ارجوك',
-  'أرجوك',
-  'بليز',
-  'ممكن',
-  'يا كاي',
-  'كاي',
-  'طيب',
-  'تمام',
-  'خلاص',
-  "s'il te pla[iî]t",
-  "s'il vous pla[iî]t",
-  'stp',
-  'svp',
-  'tu peux',
-  'peux-tu',
-  'pourrais-tu',
-  'tu pourrais',
-  'est-ce que tu peux',
-  'merci de',
-  'bon',
-  'alors',
-  'et',
-  'lütfen',
-  'rica etsem',
-  'tamam',
-  'peki',
-];
-const LEADING = rx`^(?:(?:${LEAD.join('|')})${E}[\\s,،:!.-]*)+`;
-
-/** What only closes one: thanks, please, a name. */
-const TRAILING = rx`(?:[\\s,،]+(?:please|pls|thanks|thank you|thx|ty|cai|for me|لو سمحت|من فضلك|شكرا|يا كاي|s'il te pla[iî]t|stp|svp|merci|lütfen|teşekkürler|sağ ?ol))+[.!?؟]*$`;
 
 /** "It", "this", "that", in each language: the words point back at what was said before. */
 const POINTER = rx`^(?:${[
@@ -226,13 +156,13 @@ type Rule = {
 const RULES: Rule[] = [
   // ---- English
   {
-    re: rx`^remind me(?: again)?(?:${E}[\\s,:]*(?<rest>.*))?$`,
+    re: rx`^remind me(?: again)?(?:${E}[\s,:]*(?<rest>.*))?$`,
     remind: true,
     words: 'rest',
     lang: 'en',
   },
   {
-    re: rx`^(?:don'?t|do not) let me forget(?:${E}[\\s,:]*(?<rest>.*))?$`,
+    re: rx`^(?:don'?t|do not) let me forget(?:${E}[\s,:]*(?<rest>.*))?$`,
     remind: true,
     words: 'rest',
     lang: 'en',
@@ -256,25 +186,25 @@ const RULES: Rule[] = [
     lang: 'en',
   },
   {
-    re: rx`^(?:save|add|put|make|create|log|keep|set|new|start)(?: me)? ${EN_THING}(?: for me)?(?:\\s*[:\\-–—]\\s*|\\s+(?:to |that |about |saying |called )?)(?<rest>.+)$`,
+    re: rx`^(?:save|add|put|make|create|log|keep|set|new|start)(?: me)? ${EN_THING}(?: for me)?(?:\s*[:\-–—]\s*|\s+(?:to |that |about |saying |called )?)(?<rest>.+)$`,
     remind: 'thing',
     words: 'rest',
     lang: 'en',
   },
   {
-    re: rx`^(?:add|put|save|log|jot down|write down|note down) (?<before>.+?) (?:to|in|on|into|onto) ${EN_LIST}(?: for me)?(?<after>[\\s,].*)?$`,
+    re: rx`^(?:add|put|save|log|jot down|write down|note down) (?<before>.+?) (?:to|in|on|into|onto) ${EN_LIST}(?: for me)?(?<after>[\s,].*)?$`,
     remind: 'thing',
     words: 'before',
     lang: 'en',
   },
   {
-    re: rx`^(?:note|jot|write)(?: (?:this|that|it))? down\\s*[:\\-–—]\\s*(?<rest>.+)$`,
+    re: rx`^(?:note|jot|write)(?: (?:this|that|it))? down\s*[:\-–—]\s*(?<rest>.+)$`,
     remind: 'thing',
     words: 'rest',
     lang: 'en',
   },
   {
-    re: rx`^(?:new )?(?:task|action|to-?do|todo|reminder|action item)\\s*[:\\-–—]\\s*(?<rest>.+)$`,
+    re: rx`^(?:new )?(?:task|action|to-?do|todo|reminder|action item)\s*[:\-–—]\s*(?<rest>.+)$`,
     remind: 'thing',
     words: 'rest',
     lang: 'en',
@@ -282,43 +212,43 @@ const RULES: Rule[] = [
 
   // ---- Arabic (no marks; any hamza)
   {
-    re: rx`^(?:ت?[ذد]كرني|ت?[ذد]كريني|ت?[ذد]كرنى|ت?فكرني|ت?فكريني|ت?فكرنى|ت?نبهني|ت?نبهيني)(?:${E}\\s*(?<rest>.*))?$`,
+    re: rx`^(?:ت?[ذد]كرني|ت?[ذد]كريني|ت?[ذد]كرنى|ت?فكرني|ت?فكريني|ت?فكرنى|ت?نبهني|ت?نبهيني)(?:${E}\s*(?<rest>.*))?$`,
     remind: true,
     words: 'rest',
     lang: 'ar',
   },
   {
-    re: rx`^(?:لا تخليني|متخلينيش|ما تخليني|لا تخلني|ماتخلينيش|ماتخليني)\\s*[اأإ]?نس[ىي](?:ش)?(?:${E}\\s*(?<rest>.*))?$`,
+    re: rx`^(?:لا تخليني|متخلينيش|ما تخليني|لا تخلني|ماتخلينيش|ماتخليني)\s*[اأإ]?نس[ىي](?:ش)?(?:${E}\s*(?<rest>.*))?$`,
     remind: true,
     words: 'rest',
     lang: 'ar',
   },
   {
-    re: rx`^${AR_KEEP}${AR_OBJ}${AR_PTR}?\\s*${AR_INTO}\\s*${AR_THING}(?:\\s+(?:عندي|عند[يى]|لي|ليا|جديد[ةه]))?[.!؟?]*$`,
+    re: rx`^${AR_KEEP}${AR_OBJ}${AR_PTR}?\s*${AR_INTO}\s*${AR_THING}(?:\s+(?:عندي|عند[يى]|لي|ليا|جديد[ةه]))?[.!؟?]*$`,
     remind: 'thing',
     words: 'none',
     lang: 'ar',
   },
   {
-    re: rx`^(?:ت?[اأإ]?حفظ|ت?سجل|ت?خزن|ت?دون)(?:ها|ه|هم|يها|يه)${AR_PTR}?(?:\\s+(?:عندك|عندي|لي|ليا))?[.!؟?]*$`,
+    re: rx`^(?:ت?[اأإ]?حفظ|ت?سجل|ت?خزن|ت?دون)(?:ها|ه|هم|يها|يه)${AR_PTR}?(?:\s+(?:عندك|عندي|لي|ليا))?[.!؟?]*$`,
     remind: 'thing',
     words: 'none',
     lang: 'ar',
   },
   {
-    re: rx`^(?:ت?[اأإ]?ضيف|[اأإ]ضف|ت?سجل|ت?[اأإ]?عمل|[اأإ]نش[اأئ]|ت?حط|ت?خل[يى]|ت?زود)(?:\\s+لي|\\s+ليا)?\\s+(?:مهم[ةه]|[اأإ]جراء|تذكير|منبه)(?:\\s+جديد[ةه]?)?(?:\\s*[:\\-–—،,]\\s*|\\s+)(?<rest>.+)$`,
+    re: rx`^(?:ت?[اأإ]?ضيف|[اأإ]ضف|ت?سجل|ت?[اأإ]?عمل|[اأإ]نش[اأئ]|ت?حط|ت?خل[يى]|ت?زود)(?:\s+لي|\s+ليا)?\s+(?:مهم[ةه]|[اأإ]جراء|تذكير|منبه)(?:\s+جديد[ةه]?)?(?:\s*[:\-–—،,]\s*|\s+)(?<rest>.+)$`,
     remind: 'thing',
     words: 'rest',
     lang: 'ar',
   },
   {
-    re: rx`^(?:ت?[اأإ]?ضيف|[اأإ]ضف|ت?حط|ت?سجل|ت?زود|ت?نزل)\\s+(?<before>.+?)\\s+(?:ل|لل|في|فى|ع|على|[اأإ]لى)\\s*(?:ال)?(?:مهام[يى]?|[اأإ]جراءات[يى]?|تذكيرات[يى]?|قائمت[يى]|قائم[ةه]|ليستت[يى]|[اأإ]جندت[يى])[.!؟?]*$`,
+    re: rx`^(?:ت?[اأإ]?ضيف|[اأإ]ضف|ت?حط|ت?سجل|ت?زود|ت?نزل)\s+(?<before>.+?)\s+(?:ل|لل|في|فى|ع|على|[اأإ]لى)\s*(?:ال)?(?:مهام[يى]?|[اأإ]جراءات[يى]?|تذكيرات[يى]?|قائمت[يى]|قائم[ةه]|ليستت[يى]|[اأإ]جندت[يى])[.!؟?]*$`,
     remind: 'thing',
     words: 'before',
     lang: 'ar',
   },
   {
-    re: rx`^(?:مهم[ةه]|[اأإ]جراء|تذكير)(?:\\s+جديد[ةه]?)?\\s*[:\\-–—]\\s*(?<rest>.+)$`,
+    re: rx`^(?:مهم[ةه]|[اأإ]جراء|تذكير)(?:\s+جديد[ةه]?)?\s*[:\-–—]\s*(?<rest>.+)$`,
     remind: 'thing',
     words: 'rest',
     lang: 'ar',
@@ -326,19 +256,19 @@ const RULES: Rule[] = [
 
   // ---- French
   {
-    re: rx`^(?:rappelle|rappelez|rappelles)[- ]moi(?:${E}[\\s,:]*(?<rest>.*))?$|^me (?:le |la |l')?rappeler(?:${E}[\\s,:]*(?<rest2>.*))?$`,
+    re: rx`^(?:rappelle|rappelez|rappelles)[- ]moi(?:${E}[\s,:]*(?<rest>.*))?$|^me (?:le |la |l')?rappeler(?:${E}[\s,:]*(?<rest2>.*))?$`,
     remind: true,
     words: 'rest',
     lang: 'fr',
   },
   {
-    re: rx`^(?:fais|faites)[- ]moi penser(?:${E}[\\s,:]*(?<rest>.*))?$`,
+    re: rx`^(?:fais|faites)[- ]moi penser(?:${E}[\s,:]*(?<rest>.*))?$`,
     remind: true,
     words: 'rest',
     lang: 'fr',
   },
   {
-    re: rx`^n'oublie pas de me (?:le |la |l')?rappeler(?:${E}[\\s,:]*(?<rest>.*))?$`,
+    re: rx`^n'oublie pas de me (?:le |la |l')?rappeler(?:${E}[\s,:]*(?<rest>.*))?$`,
     remind: true,
     words: 'rest',
     lang: 'fr',
@@ -356,7 +286,7 @@ const RULES: Rule[] = [
     lang: 'fr',
   },
   {
-    re: rx`^(?:ajoute|ajoutez|crée|cree|créez|mets|note|enregistre|nouvelle|nouveau)(?:[- ]moi)? (?:une |un )?(?:nouvelle |nouveau )?(?:tâche|tache|action|rappel|to-?do)(?:\\s*[:\\-–—]\\s*|\\s+(?:pour |de |d'|que |qu')?)(?<rest>.+)$`,
+    re: rx`^(?:ajoute|ajoutez|crée|cree|créez|mets|note|enregistre|nouvelle|nouveau)(?:[- ]moi)? (?:une |un )?(?:nouvelle |nouveau )?(?:tâche|tache|action|rappel|to-?do)(?:\s*[:\-–—]\s*|\s+(?:pour |de |d'|que |qu')?)(?<rest>.+)$`,
     remind: 'thing',
     words: 'rest',
     lang: 'fr',
@@ -368,7 +298,7 @@ const RULES: Rule[] = [
     lang: 'fr',
   },
   {
-    re: rx`^(?:nouvelle )?(?:tâche|tache|action|rappel)\\s*[:\\-–—]\\s*(?<rest>.+)$`,
+    re: rx`^(?:nouvelle )?(?:tâche|tache|action|rappel)\s*[:\-–—]\s*(?<rest>.+)$`,
     remind: 'thing',
     words: 'rest',
     lang: 'fr',
@@ -376,43 +306,43 @@ const RULES: Rule[] = [
 
   // ---- Turkish (the verb last, or first as it's spoken)
   {
-    re: rx`^(?:bana )?hatırlat(?:ır mısın|abilir misin|ır mısınız|ın)?(?:${E}[\\s,:]*(?<rest>.*))?$`,
+    re: rx`^(?:bana )?hatırlat(?:ır mısın|abilir misin|ır mısınız|ın)?(?:${E}[\s,:]*(?<rest>.*))?$`,
     remind: true,
     words: 'rest',
     lang: 'tr',
   },
   {
-    re: rx`^(?<before>.+?)\\s+hatırlat(?:ır mısın|abilir misin|ır mısınız|ın)?[.!?]*$`,
+    re: rx`^(?<before>.+?)\s+hatırlat(?:ır mısın|abilir misin|ır mısınız|ın)?[.!?]*$`,
     remind: true,
     words: 'before',
     lang: 'tr',
   },
   {
-    re: rx`^(?:(?:bunu|şunu|onu|bunları)\\s+)?(?:bir\\s+)?(?:görev|eylem|yapılacak(?: iş)?|hatırlatıcı|hatırlatma|iş)(?:\\s+olarak)?\\s+(?:kaydet|ekle|yap|oluştur|gir)(?:ır mısın|abilir misin)?[.!?]*$`,
+    re: rx`^(?:(?:bunu|şunu|onu|bunları)\s+)?(?:bir\s+)?(?:görev|eylem|yapılacak(?: iş)?|hatırlatıcı|hatırlatma|iş)(?:\s+olarak)?\s+(?:kaydet|ekle|yap|oluştur|gir)(?:ır mısın|abilir misin)?[.!?]*$`,
     remind: 'thing',
     words: 'none',
     lang: 'tr',
   },
   {
-    re: rx`^(?:(?:bunu|şunu|onu|bunları)\\s+)?(?:görevlerime|eylemlerime|eylemlere|görevlere|yapılacaklara|yapılacaklarıma|yapılacaklar listeme|listeme|hatırlatıcılarıma|işlerime)\\s+(?:ekle|kaydet|yaz|koy)(?:ır mısın|abilir misin)?[.!?]*$`,
+    re: rx`^(?:(?:bunu|şunu|onu|bunları)\s+)?(?:görevlerime|eylemlerime|eylemlere|görevlere|yapılacaklara|yapılacaklarıma|yapılacaklar listeme|listeme|hatırlatıcılarıma|işlerime)\s+(?:ekle|kaydet|yaz|koy)(?:ır mısın|abilir misin)?[.!?]*$`,
     remind: 'thing',
     words: 'none',
     lang: 'tr',
   },
   {
-    re: rx`^(?:bunu|şunu|onu|bunları)\\s+(?:kaydet|not al|bir kenara yaz)(?:ır mısın|abilir misin)?[.!?]*$`,
+    re: rx`^(?:bunu|şunu|onu|bunları)\s+(?:kaydet|not al|bir kenara yaz)(?:ır mısın|abilir misin)?[.!?]*$`,
     remind: 'thing',
     words: 'none',
     lang: 'tr',
   },
   {
-    re: rx`^(?<before>.+?)\\s+(?:görevlerime|eylemlerime|eylemlere|görevlere|yapılacaklara|yapılacaklarıma|yapılacaklar listeme|listeme|işlerime)\\s+(?:ekle|kaydet|yaz|koy)(?:ır mısın|abilir misin)?[.!?]*$`,
+    re: rx`^(?<before>.+?)\s+(?:görevlerime|eylemlerime|eylemlere|görevlere|yapılacaklara|yapılacaklarıma|yapılacaklar listeme|listeme|işlerime)\s+(?:ekle|kaydet|yaz|koy)(?:ır mısın|abilir misin)?[.!?]*$`,
     remind: 'thing',
     words: 'before',
     lang: 'tr',
   },
   {
-    re: rx`^(?:yeni\\s+)?(?:görev|eylem|hatırlatıcı|yapılacak)(?:\\s+ekle)?\\s*[:\\-–—]\\s*(?<rest>.+)$`,
+    re: rx`^(?:yeni\s+)?(?:görev|eylem|hatırlatıcı|yapılacak)(?:\s+ekle)?\s*[:\-–—]\s*(?<rest>.+)$`,
     remind: 'thing',
     words: 'rest',
     lang: 'tr',
@@ -422,20 +352,10 @@ const RULES: Rule[] = [
 /** Kept as a reminder by what it's kept as ("a reminder", "تذكير", "rappel"). */
 const REMINDER_WORD = rx`${B}(?:reminder|تذكير|منبه|rappel|hatırlatıcı|hatırlatma)`;
 
-/** As people type it, no longer: no Arabic marks, plain quotes, single spaces. */
-function prepared(text: string): string {
-  return text.replace(/[ً-ْٰـ]/g, '').replace(/[’‘`]/g, "'").replace(/\s+/g, ' ').trim();
-}
-
 /** What someone asked Cai or a friend to keep, or null when the message asks nothing like it. */
 export function chatSave(text: string): SaveAsk | null {
-  let t = prepared(text);
-  if (!t || t.length > 600) return null;
-  t = t
-    .replace(LEADING, '')
-    .replace(TRAILING, '')
-    .replace(/[\s.!?؟]+$/u, '')
-    .trim();
+  const t = askedWords(text, 600);
+  if (!t) return null;
   for (const rule of RULES) {
     const m = rule.re.exec(t);
     if (!m) continue;
@@ -454,9 +374,9 @@ export function chatSave(text: string): SaveAsk | null {
 }
 
 /** The joiners a kept thing's words open with once the ask is gone: "to", "إن", "de", "bana". */
-const OPENERS = rx`^(?:(?:to|about|of|that|re|for|me to|me|ب(?=ال)|ب(?=\\s)|ان|أن|إن|اني|أني|إني|انني|أنني|باني|بأني|بإني|بان|بأن|عشان|علشان|ل(?=ال)|de|d'|que|qu'|à|a|pour|bana)(?:${E}|(?<=')|(?<=ب)|(?<=ل))[\\s,:]*)+`;
+const OPENERS = rx`^(?:(?:to|about|of|that|re|for|me to|me|ب(?=ال)|ب(?=\s)|ان|أن|إن|اني|أني|إني|انني|أنني|باني|بأني|بإني|بان|بأن|عشان|علشان|ل(?=ال)|de|d'|que|qu'|à|a|pour|bana)(?:${E}|(?<=')|(?<=ب)|(?<=ل))[\s,:]*)+`;
 /** And close with, once a time is cut from their end: "at", "on", "by", "and". */
-const CLOSERS = rx`(?:[\\s,،]+(?:at|on|by|to|for|and|في|على|الساعة|le|à|à partir de|saat|de))+$`;
+const CLOSERS = rx`(?:[\s,،]+(?:at|on|by|to|for|and|في|على|الساعة|le|à|à partir de|saat|de))+$`;
 
 /**
  * A kept thing's title from its words: the time it's for cut out (`dateText`, as the date reader
