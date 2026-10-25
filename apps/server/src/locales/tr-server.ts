@@ -1728,4 +1728,24 @@ export const turkishServer: Catalog = {
     'Bir kayıt müşteri konuşmasına paylaşılmaz.',
   'A call’s recording is shared from its notes by someone who was in it.':
     'Bir aramanın kaydı, notlarından, aramada bulunan biri tarafından paylaşılır.',
+  'I’ve written that to you.': 'Bunu sana yazdım.',
+  'Saved to your actions.': 'Eylemlerine kaydedildi.',
+  'Say what to keep after “remind me to”.':
+    '“Bana hatırlat” dedikten sonra neyi saklayacağımı söyle.',
+  'I’ve prepared that in our chat, for you to send.':
+    'Bunu sohbetimizde hazırladım; göndermek sana kalmış.',
+  'I’ve prepared that in our chat.': 'Bunu sohbetimizde hazırladım.',
+  'I can’t answer that here yet.': 'Buna burada henüz cevap veremiyorum.',
+  'Nothing has been said yet for me to answer from.':
+    'Henüz cevap verebileceğim bir şey söylenmedi.',
+  'Hi, I’m Cai, Caime’s AI assistant. Say my name and I’ll answer from the call; whatever I say goes in the notes.':
+    'Merhaba, ben Cai, Caime’in yapay zekâ asistanıyım. Adımı söyleyin, aramadan cevap vereyim; söylediğim her şey notlara girer.',
+  'Only the device recording the call plays Cai’s voice.':
+    'Cai’nin sesini yalnızca aramayı kaydeden cihaz çalar.',
+  'That sound': 'O ses',
+  'Cai can’t join in on this Caime yet.': 'Cai bu Caime’de henüz aramaya katılamıyor.',
+  'Cai is already being asked to join this call.': 'Cai’nin bu aramaya katılması zaten isteniyor.',
+  'What should I keep? Say it after “Remind me to” or “Add an action:”.':
+    'Neyi saklayayım? “Bana hatırlat” veya “Bir eylem ekle:” dedikten sonra söyle.',
+  'You asked in a call: “{words}”': 'Bir aramada şunu istedin: “{words}”',
 };

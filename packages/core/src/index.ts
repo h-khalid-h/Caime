@@ -12,6 +12,7 @@ export * from './billing';
 export * from './booking';
 export * from './bridges';
 export * from './business';
+export * from './cai-call';
 export * from './calls';
 export * from './catalog';
 export * from './chat-act';

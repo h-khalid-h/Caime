@@ -2920,6 +2920,10 @@ export type RealtimeDataEvent =
       type: 'call.notes';
       data: { callId: string; conversationId: string; group: boolean; notes: CallNotesView };
     }
+  /** Cai speaks in a call (M17 I13g): the words to everyone, the sound to the recorder's device. */
+  | { type: 'call.cai'; data: CaiSpokenView }
+  /** What Cai wrote to one person in a call (M17 I13g), to their devices alone. */
+  | { type: 'call.cai.written'; data: CaiWrittenView }
   | { type: 'presence'; data: { userId: string; state: PresenceState; at: string } }
   /** Someone's devices for private conversations changed: seal for the new set (R18). */
   | { type: 'devices.changed'; data: { userId: string; conversationIds: string[] } }
@@ -3231,8 +3235,9 @@ export type CallNotesWhy =
  */
 export interface CallNotesSwitchView {
   id: string;
-  /** The mode asked for: Record, or Notes alone. */
+  /** The mode asked for: Record, Cai joining in, both, or Notes alone. */
   records: boolean;
+  interacts: boolean;
   askedBy: { id: string; displayName: string };
   /** Of the people in the call now, those who said yes to the switch. */
   yes: string[];
@@ -3259,11 +3264,43 @@ export interface CallNotesView {
    * shared screen kept with the notes, so every choice offered names it ("Answer, Cai records").
    */
   records: boolean;
+  /**
+   * Cai joins in (R114 (3), M17 I13g): called by name it answers aloud from what the call shares,
+   * so every choice offered names it ("Answer, Cai joins in"); what's one person's own it writes
+   * to them alone.
+   */
+  interacts: boolean;
   startedAt: string | null;
   stoppedAt: string | null;
   why: CallNotesWhy | null;
   /** Another mode asked while this one is on (M17 I13b2); null: none. */
   switching: CallNotesSwitchView | null;
+}
+
+/**
+ * Cai speaks in a call (R114 (3), M17 I13g): what it says and until when, to everyone in the call;
+ * the sound's address to the recorder's device alone, which plays it into the call.
+ */
+export interface CaiSpokenView {
+  callId: string;
+  utteranceId: string;
+  text: string;
+  /** How long it plays, when known. */
+  ms: number | null;
+  until: string;
+  /** The sound, for the one device that plays it; null for everyone else. */
+  url: string | null;
+}
+
+/**
+ * What Cai wrote to one person in a call (M17 I13g): their own things, or what it prepared for
+ * them in their chat with it; to their devices alone, kept nowhere.
+ */
+export interface CaiWrittenView {
+  callId: string;
+  text: string;
+  /** Where to continue, when there's somewhere: Cai's chat. */
+  open: 'cai' | null;
 }
 
 /** One thing said in a call while Cai took notes, as someone who was in it reads it. */

@@ -226,6 +226,9 @@ LINK_PREVIEWS=true
 # --- Voice notes into words, after the owner's bake-off (docs/SPEECH.md)
 # SPEECH_PROVIDER=<openai or elevenlabs>
 # SPEECH_API_KEY=<the provider's key>
+# --- Cai's voice in a call (R114, "Answer, Cai joins in"), once the notes' provider is chosen
+# TTS_PROVIDER=elevenlabs
+# TTS_VOICE_ID=<the voice Cai speaks with>
 ```
 
 Checked live on 2026-10-14 after the 03:03 deploy: no placeholder left, the privacy page names
@@ -296,6 +299,7 @@ Content-Security-Policy, and links in notifications. Everything below is optiona
 | `ANTHROPIC_API_KEY` | — | AI assist (rewrite, translate, catch me up, find follow-ups). Without it the AI settings don't appear and Caime uses its heuristics (R17). Each person still turns it on for themselves. |
 | `SPEECH_BASE_URL` | — | Another speech-to-text endpoint (a gateway, or the stand-in the tests run), as `ANTHROPIC_BASE_URL` is for the model. |
 | `SPEECH_PROVIDER`, `SPEECH_API_KEY`, `SPEECH_MODEL` | — | Voice notes into words (PRD §46, docs/SPEECH.md): `openai` or `elevenlabs`, its key, and the model (the provider's default when unset). Off without the first two; each person's AI assist switch still decides for their own notes. ⛔ Set after the owner's bake-off on real clips. |
+| `TTS_PROVIDER`, `TTS_API_KEY`, `TTS_VOICE_ID`, `TTS_MODEL`, `TTS_BASE_URL` | — | Cai's voice in a call (PRODUCT-REVIEW R114, M17 I13g, "Answer, Cai joins in"): `elevenlabs`, its key (the speech-to-text key when that's ElevenLabs too), the voice it speaks with, the model (`eleven_flash_v2_5` when unset) and another endpoint for the stand-in. Off without the provider and a voice: the mode isn't offered. ⛔ Set with the speech provider. |
 | `ANTHROPIC_MODEL` | `claude-opus-5-5` | The top model: finding follow-ups on a paid plan and the agents of organizations on Business or Enterprise (M16 H7). Sonnet 5.5 halves what they cost (`docs/RESOURCES.md`, "What a person costs"). |
 | `ANTHROPIC_MODEL_LIGHT` | `claude-haiku-5-5` | Everything else, and those two on a free plan: rewrite, translate, catch-up, Cai and the friends, search, the brief (short, frequent, forgiving). Set it to `ANTHROPIC_MODEL`'s value to run everything on one model. |
 | `ANTHROPIC_BASE_URL` | — | Another Messages API endpoint, such as a gateway. |

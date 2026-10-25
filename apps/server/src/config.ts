@@ -107,6 +107,17 @@ const Env = z.object({
   /** Another endpoint for it (a gateway, or the local stand-in the tests run). */
   SPEECH_BASE_URL: z.string().url().optional(),
   /**
+   * Text to speech for Cai's voice in a call (R114 (3), M17 I13g): the provider, its key (the
+   * speech-to-text key when it's the same company), the voice and the model (the provider's
+   * default when unset). Off without the provider and a voice; nobody hears Cai without it.
+   */
+  TTS_PROVIDER: z.enum(['elevenlabs']).optional(),
+  TTS_API_KEY: z.string().optional(),
+  TTS_VOICE_ID: z.string().optional(),
+  TTS_MODEL: z.string().optional(),
+  /** Another endpoint for it (a gateway, or the local stand-in the tests run). */
+  TTS_BASE_URL: z.string().url().optional(),
+  /**
    * Caime Mail (R75): the domain every handle is an address at (handle@MAIL_DOMAIN), the
    * provider that receives and sends it, its token, and the secret its webhooks carry. Off
    * without the domain and the provider.

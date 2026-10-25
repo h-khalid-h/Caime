@@ -197,6 +197,12 @@ const AT_BOUNDS: ReadonlyArray<{
         today,
       }),
   },
+  // lib/cai-interact.ts: the same lines, a question said aloud at a line's length (M17 I13g).
+  {
+    feature: 'interact',
+    call: (ai) =>
+      ai.interact({ transcript: transcript(24_000), question: x(800), language: 'English', today }),
+  },
   {
     feature: 'actions',
     tiered: true,

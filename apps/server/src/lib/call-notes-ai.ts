@@ -44,7 +44,7 @@ interface NoteLine {
 }
 
 /** What the reader may read of the notes, newest kept within the budget, numbered oldest first. */
-async function noteTranscript(
+export async function noteTranscript(
   ctx: AppContext,
   call: Call,
   viewerId: string,

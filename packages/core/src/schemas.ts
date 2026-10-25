@@ -685,6 +685,8 @@ export const CallNotesAskBody = z
     deviceId: CallDevice,
     canRecord: z.boolean().default(false),
     records: z.boolean().default(false),
+    /** Cai joins in (R114 (3), M17 I13g): answers aloud when called by name. */
+    interacts: z.boolean().default(false),
   })
   .strict();
 

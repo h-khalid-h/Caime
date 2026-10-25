@@ -202,6 +202,16 @@ describe('notes in a call between two (R85)', () => {
     });
   });
 
+  it('Cai joining in is refused where this Caime has no voice for it (M17 I13g)', async () => {
+    const res = await noor.req('POST', `/v1/calls/${callId}/notes`, {
+      deviceId: 'noor-tab-1',
+      canRecord: true,
+      interacts: true,
+    });
+    expect(res.statusCode).toBe(503);
+    expect(res.json().error.code).toBe('ai_unavailable');
+  });
+
   it('keeps only what the recorder sends, hears it, and deletes the audio', async () => {
     // Sam's device isn't the recorder: refused.
     expect((await line(sam, callId, 'sam-phone-1', sam.user.id)).statusCode).toBe(403);

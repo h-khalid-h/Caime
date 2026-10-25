@@ -1775,4 +1775,21 @@ export const arServer: Catalog = {
   'A recording isn’t shared into a customer conversation.': 'لا يُشارك تسجيل في محادثة عميل.',
   'A call’s recording is shared from its notes by someone who was in it.':
     'تسجيل المكالمة يشاركه من كان فيها، من ملاحظاتها.',
+  'I’ve written that to you.': 'كتبتُ لك ذلك.',
+  'Saved to your actions.': 'حُفظ في إجراءاتك.',
+  'Say what to keep after “remind me to”.': 'قل ما تريد حفظه بعد «ذكّرني أن».',
+  'I’ve prepared that in our chat, for you to send.': 'أعددتُ ذلك في محادثتنا، لترسله أنت.',
+  'I’ve prepared that in our chat.': 'أعددتُ ذلك في محادثتنا.',
+  'I can’t answer that here yet.': 'لا أستطيع الإجابة عن ذلك هنا بعد.',
+  'Nothing has been said yet for me to answer from.': 'لم يُقل شيء بعد لأجيب منه.',
+  'Hi, I’m Cai, Caime’s AI assistant. Say my name and I’ll answer from the call; whatever I say goes in the notes.':
+    'مرحبًا، أنا كاي، مساعد كايم بالذكاء الاصطناعي. قل اسمي وسأجيب مما قيل في المكالمة؛ وكل ما أقوله يُدوَّن في الملاحظات.',
+  'Only the device recording the call plays Cai’s voice.':
+    'الجهاز الذي يسجّل المكالمة وحده يشغّل صوت كاي.',
+  'That sound': 'ذلك الصوت',
+  'Cai can’t join in on this Caime yet.': 'لا يستطيع كاي المشاركة على هذا الكايم بعد.',
+  'Cai is already being asked to join this call.': 'كاي مطلوب بالفعل للمشاركة في هذه المكالمة.',
+  'What should I keep? Say it after “Remind me to” or “Add an action:”.':
+    'ماذا أحفظ؟ قله بعد «ذكّرني أن» أو «أضف إجراءً:».',
+  'You asked in a call: “{words}”': 'طلبك في مكالمة: «{words}»',
 };

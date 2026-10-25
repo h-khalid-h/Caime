@@ -302,4 +302,7 @@ export const levantineVoice: Catalog = {
     'موعد {name} لـ«{title}» مرق. ببعتها؟',
   'Still waiting on {name} for “{title}”. Shall I send this?':
     'بعدنا ناطرين «{title}» من {name}. ببعتها؟',
+  'What should I keep? Say it after “Remind me to” or “Add an action:”.':
+    'شو بدك احفظ؟ قوله بعد «ذكّرني» أو «ضيف إجراء:».',
+  'You asked in a call: “{words}”': 'طلبك في مكالمة: «{words}»',
 };

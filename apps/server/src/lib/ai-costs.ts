@@ -87,6 +87,21 @@ export const SPEECH_PRICES: Readonly<Record<string, Readonly<Record<string, numb
 };
 export const SPEECH_PRICES_READ = '2026-10-19';
 
+/**
+ * Text to speech, US dollars a character, as the provider's API pricing page listed it on the
+ * day beside it (ElevenLabs: Flash and Turbo $0.04, Multilingual v2 $0.08, each per 1,000
+ * characters, https://elevenlabs.io/pricing/api). An utterance's characters are kept as its
+ * input tokens (M17 I13g).
+ */
+export const TTS_PRICES: Readonly<Record<string, Readonly<Record<string, number>>>> = {
+  elevenlabs: {
+    eleven_flash_v2_5: 0.04 / 1000,
+    eleven_turbo_v2_5: 0.04 / 1000,
+    eleven_multilingual_v2: 0.08 / 1000,
+  },
+};
+export const TTS_PRICES_READ = '2026-10-25';
+
 /** What a call used, as `ai_runs` keeps it. */
 export interface CallUse {
   provider: string;
@@ -109,6 +124,8 @@ export interface CallUse {
 export function costUsd(use: CallUse): number | null {
   if (use.provider !== 'anthropic') {
     if (use.model === null) return 0;
+    const perCharacter = TTS_PRICES[use.provider]?.[use.model];
+    if (perCharacter !== undefined) return (use.inputTokens ?? 0) * perCharacter;
     const perMinute = SPEECH_PRICES[use.provider]?.[use.model];
     if (perMinute === undefined || use.audioMs === null) return null;
     return (use.audioMs / 60_000) * perMinute;
@@ -134,6 +151,11 @@ export function chargedUsd(use: CallUse): number {
   const priced = costUsd(use);
   if (priced !== null) return priced;
   if (use.provider !== 'anthropic') {
+    // Words spoken, never a recording: the dearest voice; else the dearest ear.
+    if (use.audioMs === null && use.inputTokens) {
+      const perCharacter = Math.max(...Object.values(TTS_PRICES).flatMap((p) => Object.values(p)));
+      return use.inputTokens * perCharacter;
+    }
     const perMinute = Math.max(...Object.values(SPEECH_PRICES).flatMap((p) => Object.values(p)));
     return ((use.audioMs ?? SPEECH_MAX_MS) / 60_000) * perMinute;
   }

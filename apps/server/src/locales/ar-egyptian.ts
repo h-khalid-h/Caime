@@ -302,4 +302,7 @@ export const egyptianVoice: Catalog = {
     'معاد {name} لـ«{title}» عدّى. أبعت دي؟',
   'Still waiting on {name} for “{title}”. Shall I send this?':
     'لسه مستنيين «{title}» من {name}. أبعت دي؟',
+  'What should I keep? Say it after “Remind me to” or “Add an action:”.':
+    'أحفظ إيه؟ قوله بعد «فكّرني» أو «ضيف إجراء:».',
+  'You asked in a call: “{words}”': 'طلبك في مكالمة: «{words}»',
 };

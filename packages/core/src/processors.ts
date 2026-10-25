@@ -89,6 +89,14 @@ export const SUB_PROCESSORS: readonly SubProcessor[] = [
     when: 'configured',
   },
   {
+    id: 'tts',
+    name: 'The text-to-speech provider the operator sets',
+    does: 'Gives Cai its voice in a call whose people all asked Cai to join in.',
+    receives:
+      'The words Cai says aloud, and nothing else: never anyone’s voice, name or words, and nothing from a private conversation.',
+    when: 'configured',
+  },
+  {
     id: 'mail',
     name: 'The email provider the operator sets (SMTP)',
     does: 'Sends Caime’s mail: a confirmation code, a password reset link.',

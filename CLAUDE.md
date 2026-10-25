@@ -1757,6 +1757,29 @@ A sphere is said as how you know someone, never "sphere".
   which `recordingTimeline.ts` turns into a part and an offset; anything in the notes with a
   moment (a turn, and each part of the write-up, which keeps `at` beside its line number when
   it's written) asks through the sheet's one `Moment`, never a player of its own.
+- Cai joins in a call (R114 (3), M17 I13g; `lib/cai-interact.ts`, `lib/tts.ts`, core
+  `cai-call.ts`): the third mode is `call_notes.interacts`, asked with the notes as Record is
+  (`askNotes(…, { records, interacts })`, a switch mid-call the same), refused `503 ai_unavailable`
+  without a voice (`ctx.tts`: `TTS_PROVIDER`, its key or the speech key when that's ElevenLabs
+  too, `TTS_VOICE_ID`; a processor on the privacy page and in the DPA draft, probed in provider
+  health, priced by character in `ai-costs.ts`). The notes never import it: `registerCaiInteract`
+  (app.ts) registers hooks (`registerInteractHooks`) the hear job and `reconcileNotes` call, so a
+  line heard with the mode on queues `call.cai` and the notes begun in it `call.cai.intro`. A
+  line calls Cai by core `calledCai` (its name as speech-to-text writes it in every language and
+  Arabic variety, then a question or a request; off when someone in the call is called Kai,
+  `callPeopleNames`), measured by `cai-call-golden.test.ts`: a new form joins its lists with a
+  golden line, never a rule in the job. The answer is the chat's rules first (R110): one person's
+  own things (`ruleAnswer`) written to them alone (`call.cai.written`, kept nowhere), something
+  to keep kept in their Cai chat (`keepFromWords`), something to do prepared there
+  (`offerInChat`), else the light model from `noteTranscript` (`ai.interact`, `SPOKEN_MAX`); the
+  words go to the voice (`runAi('speak')`, characters as input tokens, `forgetLater(…, 'tts')`),
+  the sound to a `cai/` key served to the notes' recorder device alone
+  (`GET /calls/:id/cai/:utteranceId?deviceId=`, no store) and swept after an hour
+  (`cai-utterances`), `call.cai` to everyone in the call, and Cai's words into the notes as its own
+  line (`speaker_id = CAI_ID`), so the write-up reads what everyone heard; a line heard within an
+  utterance's window that repeats its words is an echo (core `echoes`), dropped. Cai introduces
+  itself aloud once a row (`introduced_at`, R87). Anything new Cai says in a call goes through
+  `speak` there, never a second voice path.
 - A meeting's guests (R83, R84): invited by address from an accepted meeting card held here
   (`features/kits/MeetingGuests.tsx`: Invite a guest, the sheet lazy; the card that moved says
   so and opens the space), or by a link the inviter sends themselves (H6, `inviteGuestByLink`: a

@@ -107,6 +107,7 @@ describe('why Cai stopped, in words that name nobody (R85)', () => {
       waitingOn: [],
       recorderDevice: null,
       records,
+      interacts: false,
       startedAt: null,
       stoppedAt: null,
       why,

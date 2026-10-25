@@ -16,6 +16,7 @@ import {
   type AiActionsView,
   AiAskBody,
   type AiCatchUpView,
+  CallDeviceBody,
   CallNoteLineQuery,
   CallNotesAnswerBody,
   type CallNotesAnswerView,
@@ -36,6 +37,7 @@ import type { OkResponse } from '@caime/core/api';
 import type { FastifyInstance, FastifyReply } from 'fastify';
 import { z } from 'zod';
 import type { AppContext } from '../context';
+import { utteranceFor } from '../lib/cai-interact';
 import {
   answerNotes,
   askNotes,
@@ -69,6 +71,7 @@ import { requireAuth } from '../plugins/auth';
 
 export async function callNotesRoutes(app: FastifyInstance, ctx: AppContext) {
   const callParam = z.object({ id: z.string().uuid() });
+  const utteranceParam = z.object({ id: z.string().uuid(), utteranceId: z.string().uuid() });
   const lineParam = z.object({ id: z.string().uuid(), lineId: z.string().uuid() });
 
   /** How the notes stand now, read after the change. */
@@ -82,7 +85,10 @@ export async function callNotesRoutes(app: FastifyInstance, ctx: AppContext) {
     const { id } = parse(callParam, req.params);
     const body = parse(CallNotesAskBody, req.body);
     const call = await callForNotes(ctx, id, auth.userId);
-    await askNotes(ctx, call, auth.userId, body, body.records);
+    await askNotes(ctx, call, auth.userId, body, {
+      records: body.records,
+      interacts: body.interacts,
+    });
     return stateOf(id, auth.userId);
   });
 
@@ -252,6 +258,22 @@ export async function callNotesRoutes(app: FastifyInstance, ctx: AppContext) {
     const part = await playablePart(ctx, call, auth.userId, partId);
     // Kept by the browser an hour at most: a recording deleted for everyone stops playing.
     return streamFile(req, reply, storage, part, true, 'private, max-age=3600');
+  });
+
+  /**
+   * The sound of what Cai just said (M17 I13g), for the one device that plays it into the call:
+   * the notes' recorder, on the device it records from.
+   */
+  app.get('/calls/:id/cai/:utteranceId', async (req, reply): Promise<FastifyReply> => {
+    const auth = requireAuth(req);
+    const { id, utteranceId } = parse(utteranceParam, req.params);
+    const { deviceId } = parse(CallDeviceBody, req.query);
+    const call = await callForNotes(ctx, id, auth.userId);
+    const sound = await utteranceFor(ctx, call, auth.userId, deviceId, utteranceId);
+    return reply
+      .header('content-type', sound.mime)
+      .header('cache-control', 'private, no-store')
+      .send(storage.read(sound.storage_key));
   });
 
   /** The recording deleted for everyone by someone who was in the call (R52); the notes stay. */

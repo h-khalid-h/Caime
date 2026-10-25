@@ -32,12 +32,14 @@ import { writeSetting } from './settings';
 import { SPEECH_PROVIDER_NAMES } from './speech';
 import { filesBucket } from './storage';
 import { stripe } from './stripe';
+import { TTS_PROVIDER_NAMES } from './tts';
 import { whatsappFor } from './whatsapp';
 
 export const PROVIDERS = [
   'stripe',
   'anthropic',
   'speech',
+  'tts',
   'smtp',
   'mail-in',
   'expo',
@@ -98,6 +100,9 @@ export function providerProbes(ctx: AppContext): ProviderProbe[] {
       name: SPEECH_PROVIDER_NAMES[speech.provider],
       check: () => speech.ping(),
     });
+  const tts = ctx.tts;
+  if (tts)
+    probes.push({ id: 'tts', name: TTS_PROVIDER_NAMES[tts.provider], check: () => tts.ping() });
   const age = ctx.age;
   if (age) probes.push({ id: 'age', name: AGE_PROVIDER_NAMES[age.id], check: () => age.ping() });
   const whatsapp = whatsappFor(config);

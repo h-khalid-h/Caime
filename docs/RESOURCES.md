@@ -194,8 +194,8 @@ the pricing page for the agent).
 
 Produced by `COST_TABLE=<file> pnpm vitest run test/ai-costs.test.ts` in `apps/server`
 (2026-10-19; the cai and friend rows again on 2026-10-20, with what M16 G13 and G14 tell them;
-notes-summary on 2026-10-21, M16 F7e's write-up of a call's notes; notes-ask on 2026-10-25, M17
-I13f's question about a call):
+notes-summary on 2026-10-21, M16 F7e's write-up of a call's notes; notes-ask and interact on
+2026-10-25, M17 I13f's question about a call and I13g's answer aloud in one):
 each feature's request at the bounds the code sets, measured from what the real
 prompt builders send to a stand-in (system and message characters; output at its `max_tokens`),
 read at a token a character, a ceiling no language's words reach; a voice note at ten minutes,
@@ -210,6 +210,7 @@ Prices: https://platform.claude.com/docs/en/about-claude/pricing, read 2026-10-1
 | catch-up | 60,825 | 4,096 | €0.0072 | €0.14 | €0.29 |
 | ask | 61,192 | 4,096 | €0.0073 | €0.15 | €0.29 |
 | notes-ask | 25,315 | 4,096 | €0.0041 | €0.08 | €0.16 |
+| interact | 25,996 | 512 | €0.0025 | €0.05 | €0.10 |
 | actions | 61,206 | 8,192 | €0.0091 | €0.18 | €0.36 |
 | notes-summary | 61,477 | 8,192 | €0.0091 | €0.18 | €0.36 |
 | brief | 16,825 | 4,096 | €0.0033 | €0.07 | €0.13 |
@@ -219,6 +220,7 @@ Prices: https://platform.claude.com/docs/en/about-claude/pricing, read 2026-10-1
 | search-answer | 15,766 | 4,096 | €0.0032 | €0.06 | €0.13 |
 | agent | 56,082 | 2,048 | €0.0059 | €0.12 | €0.24 |
 | transcribe | ten minutes of audio | — | €0.05 (OpenAI's estimate) | | |
+| speak | 280 characters (`SPOKEN_MAX`) | — | €0.0100 (ElevenLabs Flash v2.5, $0.04 per 1,000 characters, its API pricing page read 2026-10-25) | | |
 
 | Plan | Model for the heavy work | Allowance | Dearest call | A month at every allowance | An assumed month |
 | --- | --- | --- | --- | --- | --- |

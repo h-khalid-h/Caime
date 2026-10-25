@@ -13,6 +13,7 @@ import type { Metrics } from './lib/metrics';
 import type { TxtResolver } from './lib/orgs';
 import type { RateLimiter } from './lib/rate-limit';
 import type { SpeechToText } from './lib/speech';
+import type { TextToSpeech } from './lib/tts';
 
 export interface AppContext {
   config: Config;
@@ -26,6 +27,8 @@ export interface AppContext {
   ai: AiAssist | null;
   /** Speech to text for voice notes (docs/SPEECH.md), or null: nothing is transcribed. */
   speech: SpeechToText | null;
+  /** Cai's voice in a call (R114 (3), M17 I13g), or null: Cai never speaks aloud. */
+  tts: TextToSpeech | null;
   /** Who checks an age when Caime asks (M16 B7), or null: nobody is asked. */
   age: AgeProvider | null;
   /** DNS TXT lookups for domain verification (tests stand in for them). */

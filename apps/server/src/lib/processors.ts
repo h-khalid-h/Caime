@@ -9,6 +9,7 @@ import { AGE_PROVIDER_NAMES } from './age-provider';
 import { mailOn } from './mail-address';
 import { MAIL_PROVIDER_NAMES, SMTP_HOST_PROVIDERS } from './mail-provider';
 import { SPEECH_PROVIDER_NAMES } from './speech';
+import { TTS_PROVIDER_NAMES, ttsFor } from './tts';
 import { ageChecksOn } from './users';
 
 /** Who sends Caime's mail: the company behind a known SMTP host, else the host itself. */
@@ -38,6 +39,8 @@ export function processorsFor(config: Config): SubProcessor[] {
     if (p.id === 'cloudflare' && config.CLOUDFLARE_TURN_KEY_ID) list.push(p);
     if (p.id === 'speech' && config.SPEECH_PROVIDER && config.SPEECH_API_KEY)
       list.push({ ...p, name: SPEECH_PROVIDER_NAMES[config.SPEECH_PROVIDER] });
+    if (p.id === 'tts' && config.TTS_PROVIDER && ttsFor(config))
+      list.push({ ...p, name: TTS_PROVIDER_NAMES[config.TTS_PROVIDER] });
     // The phone apps push through Expo once they exist, whether or not a token raises the limit.
     if (p.id === 'expo') list.push(p);
     const mail = p.id === 'mail' ? mailSender(config.SMTP_URL) : null;

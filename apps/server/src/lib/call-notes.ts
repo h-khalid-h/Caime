@@ -107,7 +107,7 @@ export async function readersOf(db: Db, call: Call): Promise<Map<string, Date>> 
   return from;
 }
 
-async function callById(db: Db, callId: string): Promise<Call | undefined> {
+export async function callById(db: Db, callId: string): Promise<Call | undefined> {
   return db.selectFrom('calls').selectAll().where('id', '=', callId).executeTakeFirst();
 }
 
@@ -199,6 +199,7 @@ export async function notesViewOf(db: Db, call: Call): Promise<CallNotesView | n
     waitingOn: waiting.map((id) => ({ id, displayName: names.get(id) ?? '' })),
     recorderDevice: notes.state === 'on' ? notes.recorder_device : null,
     records: notes.records,
+    interacts: notes.interacts,
     startedAt: notes.started_at?.toISOString() ?? null,
     stoppedAt: notes.stopped_at?.toISOString() ?? null,
     why: notes.why,
@@ -206,12 +207,43 @@ export async function notesViewOf(db: Db, call: Call): Promise<CallNotesView | n
       ? {
           id: switching.id,
           records: switching.records,
+          interacts: switching.interacts,
           askedBy: person(switching.started_by),
           yes: here.filter((id) => saidSwitch.get(id) === 'yes'),
           waitingOn: waitingSwitch.map((id) => ({ id, displayName: names.get(id) ?? '' })),
         }
       : null,
   };
+}
+
+/** Who may see a call: a 1:1 call's two, a group call's whole conversation. */
+export async function callAudience(ctx: AppContext, call: Call): Promise<string[]> {
+  return call.is_group
+    ? (await participantsOf(ctx.db, call.conversation_id)).map((p) => p.user_id)
+    : [call.caller_id, call.callee_id].filter(isId);
+}
+
+/** The first names of everyone in the call now, for Cai to tell its own name from theirs (I13g). */
+export async function callPeopleNames(db: Db, call: Call): Promise<string[]> {
+  const asked = await askedIn(db, call);
+  const names = await namesOf(
+    db,
+    asked.map((p) => p.userId),
+  );
+  return [...names.values()];
+}
+
+/**
+ * What Cai joining in a call does (M17 I13g, `lib/cai-interact.ts`), registered at start so the
+ * notes never import it: a line heard, and the notes begun in that mode.
+ */
+export interface InteractHooks {
+  lineHeard(ctx: AppContext, lineId: string): Promise<void>;
+  started(ctx: AppContext, callId: string): Promise<void>;
+}
+let interact: InteractHooks | null = null;
+export function registerInteractHooks(hooks: InteractHooks): void {
+  interact = hooks;
 }
 
 /**
@@ -221,9 +253,7 @@ export async function notesViewOf(db: Db, call: Call): Promise<CallNotesView | n
 async function publishNotes(ctx: AppContext, call: Call): Promise<void> {
   const notes = await notesViewOf(ctx.db, call);
   if (!notes) return;
-  const to = call.is_group
-    ? (await participantsOf(ctx.db, call.conversation_id)).map((p) => p.user_id)
-    : [call.caller_id, call.callee_id].filter(isId);
+  const to = await callAudience(ctx, call);
   await ctx.bus.publish(to, {
     type: 'call.notes',
     data: { callId: call.id, conversationId: call.conversation_id, group: call.is_group, notes },
@@ -303,6 +333,11 @@ export async function reconcileNotes(ctx: AppContext, callId: string): Promise<b
   // the old recorder was sending is finished.
   if ((changed && changed.outcome !== 'started') || switched?.outcome === 'switched')
     await finishOpenParts(ctx, callId);
+  // Begun with Cai joining in (M17 I13g): it introduces itself once.
+  if (changed?.outcome === 'started' || switched?.outcome === 'switched')
+    await interact?.started(ctx, callId).catch((err) => {
+      ctx.log.warn({ err, callId }, 'cai introduction not queued');
+    });
   return true;
 }
 
@@ -536,22 +571,37 @@ async function saveAnswer(
     .execute();
 }
 
+/** The mode asked for (R114): notes alone, with a recording, with Cai joining in, or both. */
+export interface NotesMode {
+  records?: boolean;
+  interacts?: boolean;
+}
+
+const sameMode = (row: { records: boolean; interacts: boolean }, mode: NotesMode) =>
+  row.records === Boolean(mode.records) && row.interacts === Boolean(mode.interacts);
+
 /**
- * Ask Cai to take notes, and to record the call too when `records` (R114 (1)): the asker's yes,
- * and everyone else in the call asked.
+ * Ask Cai to take notes, and to record the call too when `records` (R114 (1)), or to join in
+ * when `interacts` (R114 (3), M17 I13g): the asker's yes, and everyone else in the call asked.
  */
 export async function askNotes(
   ctx: AppContext,
   call: Call,
   userId: string,
   choice: NotesChoice,
-  records = false,
+  mode: NotesMode = {},
 ): Promise<void> {
   await mayAsk(ctx, call, userId, choice.deviceId);
+  const records = Boolean(mode.records);
+  const interacts = Boolean(mode.interacts);
+  // Cai joins in only with a voice to speak with, and from a browser that can play it into the
+  // call (the recorder's): a phone asks in writing (I13f).
+  if (interacts && !ctx.tts)
+    throw new AppError(503, 'ai_unavailable', tr('Cai can’t join in on this Caime yet.'));
   await ctx.db.transaction().execute(async (trx) => {
     const live = await liveNotesOf(trx, call.id);
     if (live) {
-      if (live.records === records) {
+      if (sameMode(live, mode)) {
         // Asked already (by them, or by someone else at the same moment): this is a yes to it.
         await saveAnswer(trx, live.id, userId, 'yes', choice, ctx.now());
         return;
@@ -562,15 +612,17 @@ export async function askNotes(
         throw new AppError(
           409,
           'conflict',
-          live.records
-            ? tr('Cai is already being asked to record this call.')
-            : tr('Cai is already being asked to take notes in this call.'),
+          live.interacts
+            ? tr('Cai is already being asked to join this call.')
+            : live.records
+              ? tr('Cai is already being asked to record this call.')
+              : tr('Cai is already being asked to take notes in this call.'),
         );
       const asked = await switchingOf(trx, call.id);
       if (asked) {
         // The same switch asked by someone else: a yes to it. The other way round is the mode
         // already on.
-        if (asked.records === records)
+        if (sameMode(asked, mode))
           await saveAnswer(trx, asked.id, userId, 'yes', choice, ctx.now());
         return;
       }
@@ -584,6 +636,7 @@ export async function askNotes(
           state: 'switching',
           switch: true,
           records,
+          interacts,
           asked_at: ctx.now(),
         })
         .onConflict((oc) =>
@@ -607,6 +660,7 @@ export async function askNotes(
         started_by: userId,
         state: 'asking',
         records,
+        interacts,
         asked_at: ctx.now(),
       })
       // The partial unique index is named by its own predicate, written as it is (no parameters).
@@ -833,7 +887,16 @@ async function hear(ctx: AppContext, payload: Record<string, unknown>): Promise<
   const line = await ctx.db
     .selectFrom('call_note_lines as l')
     .innerJoin('call_notes as n', 'n.id', 'l.notes_id')
-    .select(['l.id', 'l.file_id', 'l.state', 'l.speaker_id', 'n.started_by', 'n.call_id'])
+    .select([
+      'l.id',
+      'l.file_id',
+      'l.state',
+      'l.speaker_id',
+      'n.started_by',
+      'n.call_id',
+      'n.state as notesState',
+      'n.interacts',
+    ])
     .where('l.id', '=', lineId)
     .executeTakeFirst();
   if (line?.state !== 'waiting') return;
@@ -903,6 +966,11 @@ async function hear(ctx: AppContext, payload: Record<string, unknown>): Promise<
       text ? { state: 'heard', body: text, language: heard.language } : { state: 'unheard' },
     );
     await forgetLater(ctx, heard.ref);
+    // With Cai joining in (M17 I13g), what was heard may be an echo of its voice or a call to it.
+    if (text && line.interacts && line.notesState === 'on')
+      await interact?.lineHeard(ctx, lineId).catch((err) => {
+        ctx.log.warn({ err, lineId }, 'cai answer not queued');
+      });
   } catch (err) {
     // Busy: the job tries again. Anything else: the line isn't heard, and its audio goes.
     if (err instanceof AppError && err.code === 'ai_busy') throw err;
@@ -940,7 +1008,7 @@ async function stopForAllowance(ctx: AppContext, callId: string): Promise<void> 
 }
 
 /** Whoever reads the notes hears that they changed: words heard, a line deleted. */
-async function tellReaders(ctx: AppContext, call: Call): Promise<void> {
+export async function tellReaders(ctx: AppContext, call: Call): Promise<void> {
   const readers = [...(await readersOf(ctx.db, call)).keys()];
   if (readers.length)
     await ctx.bus.publish(readers, { type: 'callnotes.changed', data: { callId: call.id } });

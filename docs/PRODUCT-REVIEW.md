@@ -2523,7 +2523,15 @@ with its reason, so it isn't proposed again without new facts.
   recording does; every consent line now says anyone in it may share it on. *Built (M17 I13f,
   2026-10-25):* asked in writing: in any mode, a question typed to Cai is answered to the asker
   alone, in writing, from the notes they may read, in the language it's asked in, with the lines
-  it rests on; kept nowhere; from the Cai round in the call and from the notes after. *Not yet:*
+  it rests on; kept nowhere; from the Cai round in the call and from the notes after. *Built
+  (M17 I13g, the server's side, 2026-10-25):* Cai joins in: the third mode asked with the notes;
+  called by name (rules in every language and Arabic variety, off where someone in the call is
+  called Kai) it answers aloud from the notes on the light model, under 280 characters; what is
+  one person's own (their open things, something to keep, something to do) is done as their Cai
+  chat does it and written to them alone, never said; its words voiced by the provider the
+  operator sets, the sound for the recorder's browser alone, its line in the notes, an echo of
+  its own voice dropped, its introduction once. *Not yet:* the app's side of joining in (the mode
+  on every way in, the voice played into the call, "Cai is speaking"), its E2E and first-word time;
   a share into a customer conversation (the mask; calls with organizations are M16 H8a), the
   screen in step on a phone, and H.264 measured on a real Chrome call (the test browser records
   VP9 and Opus).

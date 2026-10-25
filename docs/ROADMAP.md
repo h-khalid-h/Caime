@@ -4117,7 +4117,22 @@ clinic can sign for. I1 lands before launch.
         introduction aloud once; a short spoken answer from what the call shares, mixed into the
         recording browser's outgoing audio with "Cai is speaking" on every screen, anything
         personal to the asker in writing; what it's asked to do on the asker's tap (R110); the
-        time to a first word measured on a call, the cost per answer in RESOURCES.
+        time to a first word measured on a call, the cost per answer in RESOURCES. Built so far
+        (the server's side, 2026-10-25): the mode `interacts` asked with the notes as Record is
+        (`askNotes` by mode, a switch mid-call too), refused where this Caime has no voice; Cai's
+        name heard by rules in every language and Arabic variety (core `calledCai`, measured by
+        `cai-call-golden.test.ts`; off when someone in the call is called Kai); a line that calls
+        it answered by `lib/cai-interact.ts`: one person's own things written to them alone (the
+        chat's rules), what they ask kept or prepared in their Cai chat, else a spoken answer from
+        the notes on the light model (`interact`, under `SPOKEN_MAX`); its words to the voice
+        provider (`lib/tts.ts`, ElevenLabs Flash v2.5, priced by character, forgotten there by
+        id), the sound served to the recorder's device alone, `call.cai` to everyone and Cai's
+        line in the notes; a microphone's echo of its words dropped; its introduction aloud once;
+        the sound swept after an hour. Verified: `cai-interact.test.ts`, `cai-call-golden.test.ts`,
+        `call-notes.test.ts`, `ai-costs.test.ts`, `dpa-draft.test.ts`. Not yet (next): the app's
+        side (the mode offered on every way in, the recorder's browser playing the voice into the
+        call and the recording, "Cai is speaking", the written answer shown), the E2E with a voice
+        stand-in, the first-word time measured.
   - [ ] I13h. What was on screen (M): a frame at each change of a shared screen while recording,
         read into the write-up, and the screen as shown when Cai is asked about it in Interact, on
         the light model within the asker's day.
@@ -5807,6 +5822,14 @@ have yet, each sized:
 - 2026-10-20 — The French and Turkish catalogs come in two halves fetched side by side, as Arabic
   does: their largest download 48.9 KB where one was 95.2 KB of a chunk's 100; the first download
   448.8 KB of 450 (0.2 KB more: the two loaders).
+- 2026-10-25 — M17 I13g, the server's side (R114 (3)): Cai joins in. The third mode asked with
+  the notes; Cai's name heard by rules in every language and Arabic variety (a golden set); a
+  line that calls it answered by the chat's rules for one person's own things (written to them
+  alone, kept, prepared) and by the light model from the notes aloud; the words voiced by
+  ElevenLabs (`lib/tts.ts`, a processor named on the privacy page and in the DPA draft, priced
+  by character), the sound for the recorder's device alone, Cai's line in the notes, an echo
+  dropped, the introduction once. Verified: `cai-interact.test.ts`, `cai-call-golden.test.ts`,
+  `call-notes.test.ts`, `ai-costs.test.ts`. The app's side and the E2E follow.
 - 2026-10-25 — M17 I13f (R114 (2)): asked in writing. A question typed to Cai in any mode is
   answered to the asker alone from the notes they may read, in the language it's asked in, with
   the lines it rests on, kept nowhere; from the Cai round in the call and from the notes sheet

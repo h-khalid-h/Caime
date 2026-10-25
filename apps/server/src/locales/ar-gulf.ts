@@ -302,4 +302,7 @@ export const gulfVoice: Catalog = {
     'موعد {name} لـ«{title}» فات. أرسلها؟',
   'Still waiting on {name} for “{title}”. Shall I send this?':
     'للحين ننتظر «{title}» من {name}. أرسلها؟',
+  'What should I keep? Say it after “Remind me to” or “Add an action:”.':
+    'وش أحفظ؟ قله بعد «ذكّرني» أو «أضف إجراء:».',
+  'You asked in a call: “{words}”': 'طلبك في مكالمة: «{words}»',
 };

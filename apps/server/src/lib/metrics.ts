@@ -206,6 +206,16 @@ export function createMetrics(pool: pg.Pool) {
       'caime_call_recordings_total',
       'Call recordings by outcome (part_started, ready, kept_as_recorded, kept, let_go, deleted, expired, shared, share_gone).',
     ),
+    // Cai joining in a call (R114 (3), M17 I13g): what it did with a line that called it.
+    caiInteract: new Counter(
+      'caime_cai_interact_total',
+      'Cai in a call by outcome (spoken, written, saved, offered, no_answer, echo, allowance, introduced, failed).',
+    ),
+    caiInteractSeconds: new Histogram(
+      'caime_cai_interact_seconds',
+      'Time from a line heard that called Cai to its answer ready, by outcome.',
+      [0.5, 1, 2, 3, 5, 8, 13, 21],
+    ),
     // What the speech provider kept of a transcript, deleted once read (M17 F8a): done or not.
     speechForgotten: new Counter(
       'caime_speech_forgotten_total',

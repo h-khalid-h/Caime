@@ -1329,6 +1329,10 @@ export interface CallNotesTable {
     | null;
   /** The Record mode (R114): what's said and shown kept as a recording, beside the notes. */
   records: Generated<boolean>;
+  /** The Interact mode (R114 (3), M17 I13g): Cai, called by name, answers aloud in the call. */
+  interacts: Generated<boolean>;
+  /** When Cai introduced itself aloud as it joined (R87), once a row. */
+  introduced_at: NullableTimestamp;
   /** Until when the recording is kept: thirty days, or an organization's shorter retention. */
   recording_until: NullableTimestamp;
   /** Deleted for everyone by someone in it: the notes stay (R52). */
@@ -1350,6 +1354,22 @@ export interface CallNoteAnswersTable {
 }
 
 /** One utterance of a call's notes: its words once heard, its audio only until then (R85 (5)). */
+/**
+ * What Cai said in a call it joined (R114 (3), M17 I13g): the words, their sound for the
+ * recorder's browser (kept an hour), and when, the window a microphone's echo is dropped in.
+ */
+export interface CallCaiUtterancesTable {
+  id: string;
+  call_id: string;
+  notes_id: string;
+  text: string;
+  storage_key: string | null;
+  mime: Generated<string>;
+  spoken_from: Date;
+  spoken_until: Date;
+  created_at: Generated<Date>;
+}
+
 export interface CallNoteLinesTable {
   id: string;
   notes_id: string;
@@ -1809,6 +1829,7 @@ export interface Database {
   call_notes: CallNotesTable;
   call_note_answers: CallNoteAnswersTable;
   call_note_lines: CallNoteLinesTable;
+  call_cai_utterances: CallCaiUtterancesTable;
   call_recording_parts: CallRecordingPartsTable;
   call_recording_shares: CallRecordingSharesTable;
   call_note_summaries: CallNoteSummariesTable;

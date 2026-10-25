@@ -29,6 +29,7 @@ import { registerBriefJob } from './lib/briefs';
 import { Bus } from './lib/bus';
 import { businessRealtime } from './lib/business';
 import { registerCaiJobs } from './lib/cai';
+import { registerCaiInteract } from './lib/cai-interact';
 import { registerCalendarPush } from './lib/calendar-push';
 import { registerNotesJob } from './lib/call-notes';
 import { registerNotesSummaryJob } from './lib/call-notes-summary';
@@ -60,6 +61,7 @@ import { speechFor } from './lib/speech';
 import { registerSpeechForgetJob } from './lib/speech-forget';
 import { registerSystemJobs } from './lib/system-accounts';
 import { registerTranscribeJob } from './lib/transcribe';
+import { ttsFor } from './lib/tts';
 import { registerUpdateJobs } from './lib/updates';
 import { registerVaultReseal, startVaultReseal } from './lib/vault-reseal';
 import { accountRoutes } from './modules/account';
@@ -203,6 +205,7 @@ export async function buildApp(config: Config, options: BuildOptions = {}): Prom
     metrics,
     ai: createAiAssist(config),
     speech: speechFor(config),
+    tts: ttsFor(config),
     age: ageProviderFor(config),
     mail: options.mail ?? createMailer(config, app.log),
     mailProvider: mailProviderFor(config),
@@ -420,6 +423,7 @@ export async function buildApp(config: Config, options: BuildOptions = {}): Prom
   registerNotesJob();
   registerRecordingJobs();
   registerSpeechForgetJob();
+  registerCaiInteract();
   registerNotesSummaryJob();
   registerLinkPreviewJob();
   registerMailJobs();

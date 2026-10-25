@@ -1806,4 +1806,25 @@ export const frServer: Catalog = {
     'Un enregistrement ne se partage pas dans une conversation client.',
   'A call’s recording is shared from its notes by someone who was in it.':
     'L’enregistrement d’un appel se partage depuis ses notes, par une personne qui y était.',
+  'I’ve written that to you.': 'Je te l’ai écrit.',
+  'Saved to your actions.': 'Enregistré dans tes actions.',
+  'Say what to keep after “remind me to”.': 'Dis ce qu’il faut garder après « rappelle-moi de ».',
+  'I’ve prepared that in our chat, for you to send.':
+    'Je l’ai préparé dans notre conversation, à toi de l’envoyer.',
+  'I’ve prepared that in our chat.': 'Je l’ai préparé dans notre conversation.',
+  'I can’t answer that here yet.': 'Je ne peux pas encore répondre à ça ici.',
+  'Nothing has been said yet for me to answer from.':
+    'Rien n’a encore été dit à partir de quoi répondre.',
+  'Hi, I’m Cai, Caime’s AI assistant. Say my name and I’ll answer from the call; whatever I say goes in the notes.':
+    'Bonjour, je suis Caï, l’assistant IA de Caime. Dites mon nom et je répondrai à partir de l’appel ; tout ce que je dis va dans les notes.',
+  'Only the device recording the call plays Cai’s voice.':
+    'Seul l’appareil qui enregistre l’appel joue la voix de Caï.',
+  'That sound': 'Ce son',
+  'Cai can’t join in on this Caime yet.':
+    'Caï ne peut pas encore se joindre à l’appel sur ce Caime.',
+  'Cai is already being asked to join this call.':
+    'On demande déjà à Caï de se joindre à cet appel.',
+  'What should I keep? Say it after “Remind me to” or “Add an action:”.':
+    'Que dois-je garder ? Dis-le après « Rappelle-moi de » ou « Ajoute une action : ».',
+  'You asked in a call: “{words}”': 'Tu as demandé dans un appel : « {words} »',
 };

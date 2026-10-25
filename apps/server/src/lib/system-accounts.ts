@@ -83,7 +83,7 @@ const WEEK_MS = 7 * 86_400_000;
 const PACK = 'caishy-friends';
 
 /** What's open for someone, by part: what each friend may read of it (Cai reads it all). */
-type OpenPart = 'waiting' | 'asked' | 'mine' | 'coming';
+export type OpenPart = 'waiting' | 'asked' | 'mine' | 'coming';
 
 interface Friend {
   /** Its hello when the conversation opens, and its answer to a greeting (keys, said in the reader's language). */
@@ -725,6 +725,59 @@ async function keepIt(
   );
 }
 
+/**
+ * Something to keep, asked of Cai out loud in a call (M17 I13g): kept as Cai's chat keeps it
+ * (an action, a reminder), its line posted there with its Undo, and what that line says.
+ */
+export async function keepFromWords(
+  ctx: AppContext,
+  userId: string,
+  text: string,
+): Promise<{ kept: boolean; line: string }> {
+  const account = systemAccountByHandle('cai');
+  const { id: conversationId } = await openSystemConversation(ctx, userId, account);
+  const me = await person(ctx, userId);
+  const ask = chatSave(text);
+  const nothing = () => ({
+    kept: false,
+    line: tr('What should I keep? Say it after “Remind me to” or “Add an action:”.'),
+  });
+  if (!ask?.words) return nothing();
+  const opts = { now: ctx.now(), timeZone: me.time_zone, locale: safeLocale(me.locale) };
+  const when = firstFutureWhen(ask.words, opts) ?? null;
+  const title = keptTitle(
+    ask.words,
+    when && ask.words.includes(when.text) ? when.text : null,
+    ask.lang,
+  );
+  if (!title) return nothing();
+  // The ask as said, Cai's line to point the action at: the words are the person's own.
+  const anchor = await postAs(
+    ctx,
+    account.id,
+    conversationId,
+    tr('You asked in a call: “{words}”', { words: truncate(text, 300) }),
+  );
+  const kept = await keepIt(
+    ctx,
+    account,
+    conversationId,
+    me,
+    { title, details: null, when: when?.text ?? null, remind: ask.remind },
+    anchor.message.id,
+    when,
+  );
+  return { kept: true, line: kept.message.body ?? title };
+}
+
+/** Something to do with one's people, asked of Cai in a call (M17 I13g): offered in Cai's chat. */
+export async function offerInChat(ctx: AppContext, userId: string, act: ActAsk): Promise<void> {
+  const account = systemAccountByHandle('cai');
+  const { id: conversationId } = await openSystemConversation(ctx, userId, account);
+  const me = await person(ctx, userId);
+  await offerAct(ctx, account.id, conversationId, me, act);
+}
+
 /** What the model is told of how to speak: the language, their Arabic, where they live. */
 const spoken = (voice: Voice) => ({
   language: languageName(voice.language),
@@ -922,7 +975,7 @@ function dueDayOf(now: Date, zone: string): Date {
  * the server keeps and a model reads later (the conversation's transcript), so nothing an older
  * row ties to a private conversation is in it (R18, M16 G7).
  */
-async function ruleAnswer(ctx: AppContext, me: Person, intent: OpenPart): Promise<string> {
+export async function ruleAnswer(ctx: AppContext, me: Person, intent: OpenPart): Promise<string> {
   const open = await openFor(ctx, me, { forModel: true });
   const list = (head: string, lines: string[], total: number) => {
     const rest = total - lines.length;
