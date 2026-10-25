@@ -683,6 +683,9 @@ export const endpoints = {
   setOrgDomain: (id: string, domain: string) =>
     request<OrgResponse>('PUT', `/orgs/${id}/domain`, { body: { domain } }),
   checkOrgDomain: (id: string) => api.post<OrgResponse>(`/orgs/${id}/domain/check`),
+  /** The product's own organization takes @caime, once its domain is the product's (2026-10-25). */
+  claimOrgHandle: (id: string, handle: string) =>
+    api.post<OrgResponse>(`/orgs/${id}/handle/claim`, { handle }),
   removeOrgDomain: (id: string) => api.del<OrgResponse>(`/orgs/${id}/domain`),
   /** Its owner closes it (R42). */
   closeOrg: (id: string) => api.post<OkResponse>(`/orgs/${id}/close`),

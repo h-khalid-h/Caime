@@ -9,11 +9,11 @@ import type { Catalog } from '@caime/core/i18n';
 export const egyptianVoice: Catalog = {
   'Hi, I’m Caishy! Ask me anything about Caime, or just say hi.':
     'أهلًا، أنا Caishy! اسألني أي حاجة عن Caime، أو قول أهلًا وبس.',
-  'I welcome people to Caime and keep the Caishy Friends stickers. Ask me how anything here works.':
-    'أنا اللي بستقبل الناس في Caime وعندي ملصقات Caishy Friends. اسألني أي حاجة هنا بتشتغل إزاي.',
+  'I welcome people to Caime and keep the Caime Friends stickers. Ask me how anything here works.':
+    'أنا اللي بستقبل الناس في Caime وعندي ملصقات Caime Friends. اسألني أي حاجة هنا بتشتغل إزاي.',
   'Aww, any time!': 'يا سلام، في أي وقت!',
-  'Send a sticker from the button beside an empty message box. The Caishy Friends pack is free.':
-    'ابعت ملصق من الزرار اللي جنب خانة الرسالة وهي فاضية. مجموعة Caishy Friends ببلاش.',
+  'Send a sticker from the button beside an empty message box. The Caime Friends pack is free.':
+    'ابعت ملصق من الزرار اللي جنب خانة الرسالة وهي فاضية. مجموعة Caime Friends ببلاش.',
   'Press and hold a message, or point at it on a computer, to react, reply or save it.':
     'دوس دوسة طويلة على الرسالة، أو حط الماوس عليها على الكمبيوتر، علشان تتفاعل معاها أو ترد عليها أو تحفظها.',
   'Your picture at the top opens you and your settings.': 'صورتك اللي فوق بتفتح صفحتك وإعداداتك.',

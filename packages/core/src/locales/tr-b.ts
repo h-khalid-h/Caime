@@ -2650,4 +2650,8 @@ export const turkishB: Catalog = {
   'Where this comes from': 'Bunun kaynağı',
   'Only to keep younger people safer, and never shown to anyone. Correct it here if it was typed wrong; your country and time zone are in Language and region.':
     'Yalnızca gençleri daha iyi korumak için; kimseye gösterilmez. Yanlış yazıldıysa burada düzeltin; ülkeniz ve saat diliminiz Dil ve bölge’de.',
+  '{domain} is Caime’s own domain, so this organization may take @{handle}.':
+    '{domain}, Caime’in kendi alan adı; bu yüzden bu kuruluş @{handle} adını alabilir.',
+  'Take @{handle}': '@{handle} adını al',
+  'This organization is @{handle} now': 'Bu kuruluş artık @{handle}',
 };

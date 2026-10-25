@@ -9,11 +9,11 @@ import type { Catalog } from '@caime/core/i18n';
 export const levantineVoice: Catalog = {
   'Hi, I’m Caishy! Ask me anything about Caime, or just say hi.':
     'مرحبا، أنا Caishy! اسألني شو ما بدك عن Caime، أو قول مرحبا وبس.',
-  'I welcome people to Caime and keep the Caishy Friends stickers. Ask me how anything here works.':
-    'أنا يلّي بستقبل الناس بـCaime وعندي ملصقات Caishy Friends. اسألني كيف بيشتغل أي شي هون.',
+  'I welcome people to Caime and keep the Caime Friends stickers. Ask me how anything here works.':
+    'أنا يلّي بستقبل الناس بـCaime وعندي ملصقات Caime Friends. اسألني كيف بيشتغل أي شي هون.',
   'Aww, any time!': 'يا هلا، بأي وقت!',
-  'Send a sticker from the button beside an empty message box. The Caishy Friends pack is free.':
-    'ابعت ملصق من الزر يلّي جنب خانة الرسالة لما تكون فاضية. مجموعة Caishy Friends ببلاش.',
+  'Send a sticker from the button beside an empty message box. The Caime Friends pack is free.':
+    'ابعت ملصق من الزر يلّي جنب خانة الرسالة لما تكون فاضية. مجموعة Caime Friends ببلاش.',
   'Press and hold a message, or point at it on a computer, to react, reply or save it.':
     'كبوس كبسة طويلة عالرسالة، أو حط الماوس عليها عالكمبيوتر، لتتفاعل معها أو ترد عليها أو تحفظها.',
   'Your picture at the top opens you and your settings.': 'صورتك يلّي فوق بتفتح صفحتك وإعداداتك.',

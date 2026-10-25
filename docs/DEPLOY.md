@@ -321,9 +321,11 @@ Plans are bought in the app once Stripe is set up; until then, an operator sets 
 (`/v1/admin`). In Stripe (the same steps in test mode first, if the account has it):
 
 1. **Products and prices.** A product for Pro and one for Business, each with a monthly and a
-   yearly recurring price whose **lookup keys** are `caishy_pro_month`, `caishy_pro_year`,
-   `caishy_business_month` and `caishy_business_year` (named before the rename to Caime, and
-   kept: the live prices are found by them). The app shows whatever those prices are,
+   yearly recurring price whose **lookup keys** are `caime_pro_month`, `caime_pro_year`,
+   `caime_business_month` and `caime_business_year`. Prices made before the product took its
+   one name (2026-10-25) carry `caishy_…` keys, which are still read (a price under the new key
+   first): move each to its `caime_…` key with `transfer_lookup_key` when convenient, and
+   nothing else changes. The app shows whatever those prices are,
    found by their keys; to change a price, make a new one and move the key to it
    (`transfer_lookup_key`), and people already paying keep theirs.
 2. **Webhook.** An endpoint at `https://<PUBLIC_URL>/v1/billing/webhook` for
@@ -341,7 +343,7 @@ at a time for each subscription, so events that come late, out of order or two a
 nothing wrongly. Each event is handled once; one that failed is handled when Stripe sends it
 again. A subscription is Caime's by its price's lookup key, or, once the key has moved to a new
 price, by what the server already knew of it and by whom its Checkout was for (the
-`caishy_payer` metadata), so people on an old price are followed to the end.
+`caime_payer` metadata; `caishy_payer` on one begun before 2026-10-25), so people on an old price are followed to the end.
 
 - **The plan follows what's paid.** It's on while a subscription is active, in a trial, or
   retrying a failed payment (`past_due`), and goes back to Personal or Free when it ends. A lower
@@ -653,8 +655,12 @@ curl -X PUT https://caime.example.com/v1/admin/orgs/nile.dental/plan \
 Nobody can sign up as, change their handle to, or make an organization with @caime, @support
 and the other reserved handles (`RESERVED_HANDLES` in `packages/core/src/schemas.ts`; what and
 why in `docs/SECURITY.md`). They're told the handle isn't available, as for one that's taken.
-The operator gives one to the product's own account or organization, found by the handle it has
-now: make the organization (or the account) with any free handle, then move it. Only a reserved
+The product's own organization takes @caime itself (2026-10-25): make it with any free handle,
+verify the product's domain on its setup screen (`cai.me`, `PUBLIC_URL`'s name; the usual TXT
+record), and its owner or an admin presses **Take @caime** there (`POST /v1/orgs/:id/handle/claim`,
+audited with who did it). Nothing else is given that way: for any other reserved handle, or a
+person, the operator gives one to the product's own account or organization, found by the handle
+it has now: make the organization (or the account) with any free handle, then move it. Only a reserved
 handle is given this way, only while nobody else has it (`409 handle_taken` says someone does),
 and each is written to the audit log:
 

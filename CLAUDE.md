@@ -1,6 +1,6 @@
 # Caime — operating manual
 
-Caime (formerly CONNIQT) is a relationship-aware communication platform for iOS, Android and Web:
+Caime is a relationship-aware communication platform for iOS, Android and Web:
 **messaging that understands your relationships.** The primary domain object is the
 **connection** between two people, not the chat. This file is how any session picks up the work
 without re-deriving decisions.
@@ -41,14 +41,14 @@ pnpm install                 # once; hoisted node_modules (ADR-1)
 pnpm check                   # lint + migrations lint + typecheck + all tests: run before every commit
 pnpm migrations:lint         # this release's migrations against origin/production (git fetch origin production first)
 pnpm test                    # all packages, app logic included (server tests need Postgres: TEST_DATABASE_URL,
-                             #   default postgres://caishy:caishy-dev@127.0.0.1:5432/postgres)
+                             #   default postgres://caime:caime-dev@127.0.0.1:5432/postgres)
 pnpm dev:server              # API on :8787 (DATABASE_URL; see apps/server/.env.example)
 pnpm dev:app                 # Expo dev server; press w for web (talks to :8787)
 pnpm dev:phone               # Expo Go on a phone against the live Caime (docs/DEPLOY.md, Expo Go)
 pnpm build                   # web export (apps/app/dist) + server bundle (apps/server/dist)
 pnpm budget                  # initial web JS, gzip, under 450 KB; every later chunk under 100 KB
 pnpm e2e                     # Playwright against the bundle; set E2E_DATABASE_URL
-                             #   (default .../caishy_e2e, create it first)
+                             #   (default .../caime_e2e, create it first)
 pnpm start                   # run the bundled server (what the Docker image runs)
 docker build -t caime .     # the production image (docs/DEPLOY.md)
 ```
@@ -138,7 +138,9 @@ These are rules, not preferences.
 ## Vocabulary
 
 One word per concept in what people read (docs/REVIEW-2026-10-17.md §10); the code may keep its
-older name. **Organization** (never "business" for the thing itself; "Business" is the plan, the
+older name. **Caime** is the product's one name (owner, 2026-10-25): **Cai** leads its AIs, and
+Caishy and the others are its AI members, the **Caime Friends** (never "Caishy Friends"); neither
+Caishy nor CONNIQT names the product. @caime is the product's own organization, @cai is Cai's. **Organization** (never "business" for the thing itself; "Business" is the plan, the
 inbox tab and "Verified business"). **Action** in the interface, `tasks` in code; never "task" in a
 key. **Promise** in the interface, `commitment` in code. **Card** in the interface, `kit` only in
 code and the developer API; never "kit" in a refusal. The **Customer** sphere (how you know
@@ -517,7 +519,12 @@ A sphere is said as how you know someone, never "sphere".
   new route, page or character needs its name there (`paths.test.ts` and brand's
   `characters.test.ts` fail otherwise). Anything that lets someone take a handle checks it with
   `assertHandleAvailable` (`lib/handles.ts`), which answers a reserved handle exactly as a taken
-  one; only the operator's `/v1/admin/{people,orgs}/:handle/handle` gives one out.
+  one; only the operator's `/v1/admin/{people,orgs}/:handle/handle` gives one out, but for core
+  `PRODUCT_HANDLE` (@caime), which the organization whose verified domain is the product's own
+  (`productDomain`, `PUBLIC_URL`'s name: cai.me) takes from its setup screen
+  (`POST /orgs/:id/handle/claim`, `OrgView.claimableHandles`, the "Take @caime" button in
+  `OrgVerification`). Both go through `moveHandle` (`lib/handles.ts`: the per-handle lock, a hold
+  let go, the old handle held), and a new way to give a reserved handle does too.
 - Handles are made by one engine (R94, `docs/HANDLES.md`, core `handle-engine.ts`, policy
   `HANDLE_POLICY_VERSION`): `personCandidates` and `orgCandidates` rank what a name could have,
   `GET /v1/handles/candidates` returns the free ones (then the best with 2, 3… never at random),
@@ -983,6 +990,10 @@ A sphere is said as how you know someone, never "sphere".
   `avatar_file_id` too. The app draws an organization only through `OrgMark` (its logo, else
   its kind's icon), and picks the year it began with `YearField`, never a text field.
 - DNS in server tests: set `t.ctx.dns` to a stub resolver (see `orgs.test.ts`).
+- The local and CI Postgres role is `caime` (password `caime-dev`; databases `caime`, `caime_e2e`
+  and the tests' `caime_test_template`). A container whose setup still makes the earlier `caishy`
+  role gets the new one once, as that role: `psql -h 127.0.0.1 -U caishy -d postgres -c "create
+  role caime login superuser password 'caime-dev'"`, then `createdb caime_e2e` as `caime`.
 - Server tests make a database each (`caime_t_<hex>`), and `test/global-setup.ts` drops every
   `caime_t_*` with force when a run starts: never start a one-off `vitest run` while another
   run (or `pnpm check`) is going, or the other run's files fail with "database … does not exist"
@@ -2007,7 +2018,9 @@ A sphere is said as how you know someone, never "sphere".
   `animations: 'disabled'`. Photos to upload come from `photo()` in `e2e/helpers.ts`, through
   `page.waitForEvent('filechooser')`.
 - Billing: `lib/billing.ts` and `modules/billing.ts` (Stripe, with fetch in `lib/stripe.ts`, API
-  version pinned). Prices are found by lookup key (`caime_<plan>_<interval>`), never by id. The
+  version pinned). Prices are found by lookup key (`caime_<plan>_<interval>`; the live account's earlier `caishy_…`
+  keys are read too, `earlierLookupKey`, a `caime_` price first), never by id; Checkout's metadata
+  is `caime_payer` (`caishy_payer` still read). The
   webhook takes the raw body (its own content-type parser), checks the signature, and applies
   what `GET /v1/subscriptions/:id` says, never the event's copy, in `syncSubscription` under an
   advisory lock per subscription (a listing's copy is used only once it has ended). A plan's

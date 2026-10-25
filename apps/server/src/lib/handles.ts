@@ -8,10 +8,10 @@
  * year, whoever had it included: only the handle and the days are kept, never whose it was. An
  * organization's handle stays with it, closed or not (its row stays).
  */
-import { type ClosedOrgView, isReservedHandle } from '@caime/core';
+import { type ClosedOrgView, isReservedHandle, normalizeDomain } from '@caime/core';
 import { handleSkeleton } from '@caime/core/handle-engine';
 import { tr } from '@caime/core/i18n';
-import type { Kysely, Transaction } from 'kysely';
+import { type Kysely, sql, type Transaction } from 'kysely';
 import type { Database } from '../db/schema';
 import { AppError, conflict } from './errors';
 import { dayOf, KEPT_DAYS } from './retention';
@@ -226,6 +226,44 @@ export async function assertHandleAvailable(
   if (closed)
     throw new AppError(409, 'handle_closed_org', closedOrgMessage(closed), { closedOrg: closed });
   if (await handleHeld(db, handle, now)) throw conflict('handle_taken', HANDLE_UNAVAILABLE());
+}
+
+/**
+ * The product's own domain (owner, 2026-10-25: cai.me), `PUBLIC_URL`'s name as an organization's
+ * domain is kept: the organization that proves it is the product's own and may take @caime.
+ */
+export function productDomain(config: { PUBLIC_URL: string }): string | null {
+  return normalizeDomain(config.PUBLIC_URL);
+}
+
+/**
+ * A handle nobody may take moved to a person or an organization: the operator's
+ * `/v1/admin/{people,orgs}/:handle/handle`, and the product's own organization taking @caime
+ * (`POST /orgs/:id/handle/claim`). Only while nobody else has it (`handle_taken`); one handle's
+ * moves go one at a time, since people and organizations are two tables and a move into each at
+ * once would both find it free; a hold on it is let go and the handle it had is held from
+ * everyone, as any let go of is. Whether anything moved; the caller audits.
+ */
+export async function moveHandle(
+  db: Kysely<Database>,
+  to: { of: 'person' | 'organization'; id: string; handle: string },
+  handle: string,
+  now: Date,
+): Promise<boolean> {
+  if (to.handle.toLowerCase() === handle) return false;
+  await db.transaction().execute(async (trx) => {
+    await sql`select pg_advisory_xact_lock(hashtext(${`handle:${handle}`}))`.execute(trx);
+    const theirs = to.of === 'person' ? { userId: to.id } : { orgId: to.id };
+    if (await handleTaken(trx, handle, theirs))
+      throw conflict('handle_taken', tr('Someone else has that handle.'));
+    const change = { handle, updated_at: now };
+    if (to.of === 'person')
+      await trx.updateTable('users').set(change).where('id', '=', to.id).execute();
+    else await trx.updateTable('organizations').set(change).where('id', '=', to.id).execute();
+    await trx.deleteFrom('released_handles').where('handle', '=', handle).execute();
+    await releaseHandle(trx, to.handle, now);
+  });
+  return true;
 }
 
 /** What whoever asks for a closed organization's handle is told. */

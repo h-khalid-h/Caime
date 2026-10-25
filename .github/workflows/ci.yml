@@ -20,18 +20,18 @@ jobs:
       postgres:
         image: postgres:16
         env:
-          POSTGRES_USER: caishy
-          POSTGRES_PASSWORD: caishy-dev
-          POSTGRES_DB: caishy
+          POSTGRES_USER: caime
+          POSTGRES_PASSWORD: caime-dev
+          POSTGRES_DB: caime
         ports: ['5432:5432']
         options: >-
-          --health-cmd "pg_isready -U caishy"
+          --health-cmd "pg_isready -U caime"
           --health-interval 5s
           --health-timeout 5s
           --health-retries 20
     env:
-      DATABASE_URL: postgres://caishy:caishy-dev@localhost:5432/caishy
-      E2E_DATABASE_URL: postgres://caishy:caishy-dev@localhost:5432/caishy_e2e
+      DATABASE_URL: postgres://caime:caime-dev@localhost:5432/caime
+      E2E_DATABASE_URL: postgres://caime:caime-dev@localhost:5432/caime_e2e
     steps:
       - uses: actions/checkout@v4
         with:
@@ -60,7 +60,7 @@ jobs:
         run: pnpm budget
       - name: End-to-end
         run: |
-          psql "$DATABASE_URL" -c "create database caishy_e2e"
+          psql "$DATABASE_URL" -c "create database caime_e2e"
           pnpm exec playwright install --with-deps chromium
           pnpm e2e
       - uses: actions/upload-artifact@v4
@@ -105,11 +105,11 @@ jobs:
           cache-to: type=gha,mode=max,ignore-error=true
       - name: Smoke-test the image
         run: |
-          docker network create caishy
-          docker run -d --name db --network caishy -e POSTGRES_USER=caishy -e POSTGRES_PASSWORD=caishy -e POSTGRES_DB=caishy postgres:16
-          for i in $(seq 1 30); do docker exec db pg_isready -U caishy && break; sleep 1; done
-          docker run -d --name app --network caishy -p 8787:8787 \
-            -e DATABASE_URL=postgres://caishy:caishy@db:5432/caishy \
+          docker network create caime
+          docker run -d --name db --network caime -e POSTGRES_USER=caime -e POSTGRES_PASSWORD=caime -e POSTGRES_DB=caime postgres:16
+          for i in $(seq 1 30); do docker exec db pg_isready -U caime && break; sleep 1; done
+          docker run -d --name app --network caime -p 8787:8787 \
+            -e DATABASE_URL=postgres://caime:caime@db:5432/caime \
             -e PUBLIC_URL=http://localhost:8787 \
             caime:${{ github.sha }}
           for i in $(seq 1 60); do curl -fsS http://localhost:8787/v1/readyz && break; sleep 1; done

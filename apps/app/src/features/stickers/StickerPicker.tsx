@@ -20,7 +20,7 @@ export function StickerPicker({
     <Sheet
       open={open}
       onClose={onClose}
-      title={tr('Caishy Friends')}
+      title={tr('Caime Friends')}
       subtitle={tr('Stickers for when words aren’t enough')}
     >
       <View style={{ flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'center', gap: 6 }}>

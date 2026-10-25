@@ -11,10 +11,11 @@ import { tr } from '@caime/core/i18n';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import Plus from 'lucide-react-native/icons/plus';
 import X from 'lucide-react-native/icons/x';
-import { useState } from 'react';
-import { View } from 'react-native';
+import { useRef, useState } from 'react';
+import { type TextInput, View } from 'react-native';
 import { endpoints } from '@/api/endpoints';
 import { qk } from '@/api/keys';
+import { useEmptied } from '@/lib/emptied';
 import { useNow, useUserClock } from '@/lib/time';
 import { putAnswer } from '@/state/cache';
 import { useMe } from '@/state/session';
@@ -48,6 +49,8 @@ export function CustomerRecord({
   const q = useQuery({ queryKey: key, queryFn: () => endpoints.customerRecord(orgId, customerId) });
   const [adding, setAdding] = useState(false);
   const [tag, setTag] = useState('');
+  const tagBox = useRef<TextInput>(null);
+  const { empty: emptyTag, echoes: echoesTag } = useEmptied(tagBox);
   // The tags the team uses, offered while one is being added.
   const inUse = useQuery({
     queryKey: qk.customerTags(orgId),
@@ -82,10 +85,10 @@ export function CustomerRecord({
   const addTag = async (raw: string) => {
     const next = raw.trim();
     if (!next || record.tags.some((x) => sameTag(x, next))) {
-      setTag('');
+      emptyTag(setTag);
       return;
     }
-    if (await save({ tags: [...record.tags, next] })) setTag('');
+    if (await save({ tags: [...record.tags, next] })) emptyTag(setTag);
   };
   const openField = (f: CustomerField) => {
     setValue(record.fields[f.id] ?? '');
@@ -143,7 +146,10 @@ export function CustomerRecord({
         <View style={{ paddingHorizontal: 16, paddingTop: 8, gap: 6 }}>
           <TextField
             value={tag}
-            onChangeText={setTag}
+            ref={tagBox}
+            onChangeText={(v) => {
+              if (!echoesTag(tag, v)) setTag(v);
+            }}
             placeholder={tr('VIP, new patient, wholesale…')}
             maxLength={TAG_CHARS}
             accessibilityLabel={tr('A tag')}

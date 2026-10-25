@@ -2744,4 +2744,8 @@ export const frB: Catalog = {
   'Where this comes from': 'D’où cela vient',
   'Only to keep younger people safer, and never shown to anyone. Correct it here if it was typed wrong; your country and time zone are in Language and region.':
     'Uniquement pour mieux protéger les plus jeunes, et jamais montrée à personne. Corrigez-la ici si elle a été mal saisie ; votre pays et votre fuseau horaire sont dans Langue et région.',
+  '{domain} is Caime’s own domain, so this organization may take @{handle}.':
+    '{domain} est le domaine de Caime lui-même : cette organisation peut donc prendre @{handle}.',
+  'Take @{handle}': 'Prendre @{handle}',
+  'This organization is @{handle} now': 'Cette organisation est maintenant @{handle}',
 };

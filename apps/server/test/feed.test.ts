@@ -150,7 +150,7 @@ describe('a person’s feed (M16 G5)', () => {
   it('never waits on a transaction in another database on the same server', async () => {
     const elsewhere = new pg.Client({
       connectionString:
-        process.env.TEST_DATABASE_URL ?? 'postgres://caishy:caishy-dev@127.0.0.1:5432/postgres',
+        process.env.TEST_DATABASE_URL ?? 'postgres://caime:caime-dev@127.0.0.1:5432/postgres',
     });
     await elsewhere.connect();
     try {

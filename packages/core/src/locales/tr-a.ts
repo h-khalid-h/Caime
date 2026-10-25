@@ -2116,7 +2116,6 @@ export const turkishA: Catalog = {
   'Keep a group together': 'Bir grubu bir arada tutun',
   'A space holds a family, a team, a project or a club: its people, and conversations everyone can find.':
     'Alan bir aileyi, ekibi, projeyi ya da kulübü bir araya getirir: kişilerini ve herkesin bulabileceği konuşmaları.',
-  'Caishy Friends': 'Caishy ve Arkadaşları',
   'Stickers for when words aren’t enough': 'Sözler yetmediğinde çıkartmalar',
   'Send sticker: {label}': 'Çıkartma gönder: {label}',
   'Caishy smiling': 'Caishy gülümsüyor',

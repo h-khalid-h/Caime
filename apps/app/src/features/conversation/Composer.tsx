@@ -54,6 +54,7 @@ import { type KitChoice, KitForm, type KitStart, kitsOffered } from '@/features/
 import { STICKER_PACK } from '@/features/stickers/pack';
 import { StickerPicker } from '@/features/stickers/StickerPicker';
 import type { Recorded } from '@/features/voice/Recorder';
+import { useEmptied } from '@/lib/emptied';
 import { canTakePhoto, photoToUpload, pickFromLibrary, takePhoto } from '@/lib/photos';
 import { realtime } from '@/realtime/client';
 import { applyEditToInbox, upsertMessage } from '@/state/cache';
@@ -122,8 +123,6 @@ export interface ComposerProps {
  * eight on a desktop, then scrolling inside.
  */
 const MIN_H = 40;
-/** How long after a send a change arriving into the emptied box is the keyboard's echo, never typing. */
-const SENT_ECHO_MS = 400;
 const LINE = 22;
 const PAD = (MIN_H - LINE) / 2;
 const MAX_LINES = { phone: 5, desktop: 8 };
@@ -266,14 +265,11 @@ export const Composer = forwardRef<ComposerHandle, ComposerProps>(function Compo
   const [startingOver, setStartingOver] = useState(false);
   const blocked = whyNotWritten(where, conversation.privacyClass === 'private', thisDevice);
   const input = useRef<TextInput>(null);
-  /** When the box was last emptied by a send; the keyboard's echo of the words is dropped until `SENT_ECHO_MS` on. */
-  const sentAt = useRef(0);
-  /** The box emptied after a send: the state, and on a phone the native field too, since a controlled value alone left the keyboard's own text standing. */
-  const clearBox = useCallback(() => {
-    sentAt.current = Date.now();
-    setText('');
-    if (Platform.OS !== 'web') input.current?.clear();
-  }, []);
+  // The box emptied after a send: the state, and on a phone the native field too, since a
+  // controlled value alone left the keyboard's own text standing (the owner's report of
+  // 2026-10-25, a sent message staying in the composer).
+  const { empty, echoes } = useEmptied(input);
+  const clearBox = useCallback(() => empty(setText), [empty]);
   const enterPref = usePrefs((p) => p.enterToSend);
   const enterSends = enterPref ?? Platform.OS === 'web';
 
@@ -392,19 +388,8 @@ export const Composer = forwardRef<ComposerHandle, ComposerProps>(function Compo
       setEditText(v);
       return;
     }
-    // A phone's keyboard can hand the words just sent back as the box is cleared (iOS commits an
-    // autocorrection as the text is replaced and reports the text it corrected), so a sent
-    // message stayed in the composer as if it hadn't gone (the owner's report of 2026-10-25):
-    // more than a letter arriving within a moment of the send, into an empty box, is that echo.
-    if (
-      Platform.OS !== 'web' &&
-      text === '' &&
-      v.length > 1 &&
-      Date.now() - sentAt.current < SENT_ECHO_MS
-    ) {
-      input.current?.clear();
-      return;
-    }
+    // The keyboard's echo of the words just sent, into the emptied box (lib/emptied.ts).
+    if (echoes(text, v)) return;
     // Typing on at the end keeps the caret there, whenever the input says so.
     if (caret >= text.length) setCaret(v.length);
     if (settled !== null && v.charAt(settled) !== '@') setSettled(null);

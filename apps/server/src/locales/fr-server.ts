@@ -340,8 +340,8 @@ export const frServer: Catalog = {
   'A super-app. No wallet, no marketplace, no feed, no scripts from anyone else.':
     'Une super-application. Pas de portefeuille, pas de place de marché, pas de fil d’actualité, aucun script de tiers.',
   'the characters': 'les personnages',
-  'Caishy and friends (Momo, Panda, Lumi, Pico, Niko and Zuzu) appear where there is something to celebrate or nothing yet to show, never beside your invoice.':
-    'Caishy et ses amis (Momo, Panda, Lumi, Pico, Niko et Zuzu) apparaissent là où il y a quelque chose à fêter ou rien encore à montrer, jamais à côté de votre facture.',
+  'The Caime Friends (Caishy, Momo, Panda, Lumi, Pico, Niko and Zuzu) appear where there is something to celebrate or nothing yet to show, never beside your invoice.':
+    'Les amis de Caime (Caishy, Momo, Panda, Lumi, Pico, Niko et Zuzu) apparaissent là où il y a quelque chose à fêter ou rien encore à montrer, jamais à côté de votre facture.',
   'how it’s built': 'comment c’est fait',
   'One codebase for the server, the web and the phones. Every change is tested end to end against the real server before it ships, and only what passed goes live.':
     'Une seule base de code pour le serveur, le web et les téléphones. Chaque changement est testé de bout en bout sur le vrai serveur avant d’être livré, et seul ce qui passe les tests est mis en ligne.',
@@ -973,8 +973,8 @@ export const frServer: Catalog = {
   'Only a person pays by card.': 'Seule une personne peut payer par carte.',
   'Paying by card can’t start right now':
     'Le paiement par carte ne peut pas démarrer pour le moment',
-  'Send a sticker from the button beside an empty message box. The Caishy Friends pack is free.':
-    'Envoyez un sticker avec le bouton à côté de la zone de message, quand elle est vide. Le pack Les amis de Caishy est gratuit.',
+  'Send a sticker from the button beside an empty message box. The Caime Friends pack is free.':
+    'Envoyez un sticker avec le bouton à côté de la zone de message, quand elle est vide. Le pack Les amis de Caime est gratuit.',
   'Press and hold a message, or point at it on a computer, to react, reply or save it.':
     'Appuyez longuement sur un message, ou survolez-le sur ordinateur, pour réagir, répondre ou l’enregistrer.',
   'Your picture at the top opens you and your settings.':
@@ -1028,8 +1028,8 @@ export const frServer: Catalog = {
     'La page d’une personne se souvient de ce qui reste ouvert entre vous deux.',
   'Hi, I’m Caishy! Ask me anything about Caime, or just say hi.':
     'Coucou, c’est Caishy ! Posez-moi n’importe quelle question sur Caime, ou dites simplement bonjour.',
-  'I welcome people to Caime and keep the Caishy Friends stickers. Ask me how anything here works.':
-    'J’accueille chacun dans Caime et je garde les stickers Caishy Friends. Demandez-moi comment marche tout ce qui est ici.',
+  'I welcome people to Caime and keep the Caime Friends stickers. Ask me how anything here works.':
+    'J’accueille chacun dans Caime et je garde les stickers Caime Friends. Demandez-moi comment marche tout ce qui est ici.',
   'Aww, any time!': 'Oh, avec plaisir !',
   'I cheer you on when you’re all caught up. Ask me what needs you, or what’s coming up.':
     'Je vous encourage quand vous êtes à jour. Demandez-moi ce qui a besoin de vous, ou ce qui arrive.',

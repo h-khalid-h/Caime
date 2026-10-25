@@ -1,5 +1,5 @@
 /**
- * The Caishy Friends as vector art (docs/BRAND.md "Characters"). Flat recreations of the brand
+ * The Caime Friends as vector art (docs/BRAND.md "Characters"). Flat recreations of the brand
  * boards' characters, built from shared parts so every size — app icon, sticker, empty state —
  * stays consistent. Each builder returns SVG markup for a 256×256 viewBox.
  */

@@ -5,7 +5,7 @@ The condition this project works toward, kept under 4,000 characters so it can b
 
 ---
 
-Build and ship Caime (formerly Caishy, and CONNIQT), a relationship-aware communication platform,
+Build and ship Caime, a relationship-aware communication platform,
 in github.com/h-khalid-h/Caime: production-grade on iOS, Android and Web, deployed on EasyPanel
 with HTTPS, at cai.me once the owner has the domain (R34–R36).
 

@@ -338,8 +338,8 @@ export const turkishServer: Catalog = {
   'A super-app. No wallet, no marketplace, no feed, no scripts from anyone else.':
     'Bir süper uygulama. Cüzdan yok, pazar yeri yok, akış yok, başkalarının betikleri yok.',
   'the characters': 'karakterler',
-  'Caishy and friends (Momo, Panda, Lumi, Pico, Niko and Zuzu) appear where there is something to celebrate or nothing yet to show, never beside your invoice.':
-    'Caishy ve arkadaşları (Momo, Panda, Lumi, Pico, Niko ve Zuzu) kutlanacak bir şey olduğunda ya da henüz gösterilecek bir şey olmadığında ortaya çıkar; faturanızın yanında asla.',
+  'The Caime Friends (Caishy, Momo, Panda, Lumi, Pico, Niko and Zuzu) appear where there is something to celebrate or nothing yet to show, never beside your invoice.':
+    'Caime Arkadaşları (Caishy, Momo, Panda, Lumi, Pico, Niko ve Zuzu) kutlanacak bir şey olduğunda ya da henüz gösterilecek bir şey olmadığında ortaya çıkar; faturanızın yanında asla.',
   'how it’s built': 'nasıl yapılıyor',
   'One codebase for the server, the web and the phones. Every change is tested end to end against the real server before it ships, and only what passed goes live.':
     'Sunucu, web ve telefonlar için tek kod tabanı. Her değişiklik yayına çıkmadan önce gerçek sunucuya karşı uçtan uca test edilir; yalnızca testi geçen yayına alınır.',
@@ -923,8 +923,8 @@ export const turkishServer: Catalog = {
   'Stripe can’t be asked right now': 'Stripe’a şu anda ulaşılamıyor',
   'Only a person pays by card.': 'Kartla yalnızca bir kişi ödeyebilir.',
   'Paying by card can’t start right now': 'Kartla ödeme şu anda başlatılamıyor',
-  'Send a sticker from the button beside an empty message box. The Caishy Friends pack is free.':
-    'Boş mesaj kutusunun yanındaki düğmeden çıkartma gönderin. Caishy ve Arkadaşları paketi ücretsiz.',
+  'Send a sticker from the button beside an empty message box. The Caime Friends pack is free.':
+    'Boş mesaj kutusunun yanındaki düğmeden çıkartma gönderin. Caime Arkadaşları paketi ücretsiz.',
   'Press and hold a message, or point at it on a computer, to react, reply or save it.':
     'Tepki vermek, yanıtlamak ya da kaydetmek için bir mesaja basılı tutun veya bilgisayarda üzerine gelin.',
   'Your picture at the top opens you and your settings.':
@@ -976,8 +976,8 @@ export const turkishServer: Catalog = {
     'Bir kişinin sayfası ikiniz arasında açık olanları hatırlar.',
   'Hi, I’m Caishy! Ask me anything about Caime, or just say hi.':
     'Merhaba, ben Caishy! Bana Caime hakkında her şeyi sorun ya da sadece merhaba deyin.',
-  'I welcome people to Caime and keep the Caishy Friends stickers. Ask me how anything here works.':
-    'Herkesi Caime’e ben karşılarım ve Caishy Friends çıkartmalarına göz kulak olurum. Buradaki her şeyin nasıl çalıştığını bana sorun.',
+  'I welcome people to Caime and keep the Caime Friends stickers. Ask me how anything here works.':
+    'Herkesi Caime’e ben karşılarım ve Caime Friends çıkartmalarına göz kulak olurum. Buradaki her şeyin nasıl çalıştığını bana sorun.',
   'Aww, any time!': 'Ne demek, her zaman!',
   'I cheer you on when you’re all caught up. Ask me what needs you, or what’s coming up.':
     'Her şeyi hallettiğinizde sizi ben alkışlarım. Bana sizi neyin beklediğini ya da sırada ne olduğunu sorun.',

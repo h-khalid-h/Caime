@@ -2206,7 +2206,6 @@ export const arA: Catalog = {
   'Keep a group together': 'أبقِ المجموعة معًا',
   'A space holds a family, a team, a project or a club: its people, and conversations everyone can find.':
     'المساحة تجمع عائلة أو فريقًا أو مشروعًا أو ناديًا: أفراده، ومحادثات يجدها الجميع.',
-  'Caishy Friends': 'أصدقاء كايشي',
   'Stickers for when words aren’t enough': 'ملصقات حين لا تكفي الكلمات',
   'Send sticker: {label}': 'إرسال ملصق: {label}',
   'Caishy smiling': 'كايشي يبتسم',

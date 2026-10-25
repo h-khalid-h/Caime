@@ -16,6 +16,7 @@ import {
   type BilledPlan,
   type BillingInterval,
   type BillingView,
+  earlierLookupKey,
   fromLookupKey,
   isPaying,
   PLAN_NAMES,
@@ -86,18 +87,23 @@ async function stripePrices(ctx: AppContext): Promise<Map<string, StripePrice>> 
   if (!s) return new Map();
   const held = prices.get(ctx);
   if (held && ctx.now().getTime() - held.at < PRICES_FOR_MS) return held.byKey;
+  // The live account's prices may still carry the earlier keys: both are asked for.
   const lookup_keys = BILLED_PLANS.flatMap((p) =>
-    BILLING_INTERVALS.map((i) => priceLookupKey(p, i)),
+    BILLING_INTERVALS.flatMap((i) => [priceLookupKey(p, i), earlierLookupKey(p, i)]),
   );
   const list = await s.get<{ data: StripePrice[] }>('/v1/prices', {
     lookup_keys,
     active: true,
     limit: 10,
   });
+  // Kept by the key Caime names it with now, a price under that key before one under the earlier.
   const byKey = new Map<string, StripePrice>();
-  for (const p of list.data)
-    if (p.active && p.lookup_key && p.unit_amount != null && fromLookupKey(p.lookup_key))
-      byKey.set(p.lookup_key, p);
+  for (const p of list.data) {
+    const which = p.active && p.unit_amount != null ? fromLookupKey(p.lookup_key) : null;
+    if (!which) continue;
+    const key = priceLookupKey(which.plan, which.interval);
+    if (!byKey.has(key) || p.lookup_key === key) byKey.set(key, p);
+  }
   prices.set(ctx, { at: ctx.now().getTime(), byKey });
   return byKey;
 }
@@ -239,8 +245,7 @@ async function customerFor(
     {
       name: who.name,
       email: who.email ?? undefined,
-      metadata:
-        'userId' in payer ? { caishy_user_id: payer.userId } : { caishy_org_id: payer.orgId },
+      metadata: 'userId' in payer ? { caime_user_id: payer.userId } : { caime_org_id: payer.orgId },
     },
     // Asked twice at once (two taps), Stripe makes one customer; a new one once it's gone.
     `caime-customer-${livemode(ctx) ? 'live' : 'test'}-${payerKey(payer)}${after ? `-after-${after}` : ''}`,
@@ -375,7 +380,7 @@ export async function startCheckout(
       success_url: `${back}?billing=done`,
       cancel_url: `${back}?billing=cancelled`,
       client_reference_id: 'userId' in payer ? payer.userId : payer.orgId,
-      subscription_data: { metadata: { caishy_payer: payerKey(payer) } },
+      subscription_data: { metadata: { caime_payer: payerKey(payer) } },
       allow_promotion_codes: true,
       // Paying under this is the consumer's express request that the plan start now (the EU's
       // Consumer Rights Directive, Arts. 7(3) and 8(8)), which the terms' section 6 relies on.
@@ -432,7 +437,8 @@ function planOfSubscription(
     every === 'month' || every === 'year' ? every : held?.interval;
   if (!interval) return null;
   if (held) return { plan: held.plan, interval };
-  const payer = sub.metadata?.caishy_payer ?? '';
+  // Subscriptions begun before the one name carry it as `caishy_payer`.
+  const payer = sub.metadata?.caime_payer ?? sub.metadata?.caishy_payer ?? '';
   if (payer.startsWith('user:')) return { plan: 'pro', interval };
   if (payer.startsWith('org:')) return { plan: 'business', interval };
   return null;

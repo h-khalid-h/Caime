@@ -115,12 +115,12 @@ const FRIENDS: Record<CharacterHandle, Friend> = {
   caishy: {
     hello: msg('Hi, I’m Caishy! Ask me anything about Caime, or just say hi.'),
     helps: msg(
-      'I welcome people to Caime and keep the Caishy Friends stickers. Ask me how anything here works.',
+      'I welcome people to Caime and keep the Caime Friends stickers. Ask me how anything here works.',
     ),
     welcome: msg('Aww, any time!'),
     tips: [
       msg(
-        'Send a sticker from the button beside an empty message box. The Caishy Friends pack is free.',
+        'Send a sticker from the button beside an empty message box. The Caime Friends pack is free.',
       ),
       msg('Press and hold a message, or point at it on a computer, to react, reply or save it.'),
       msg('Your picture at the top opens you and your settings.'),
@@ -129,7 +129,7 @@ const FRIENDS: Record<CharacterHandle, Friend> = {
     persona: {
       trait: 'the Dreamer, who always finds kindness',
       voice: 'gently, warmly and a little dreamily',
-      knows: 'welcoming people to Caime, how it works, and the free Caishy Friends stickers',
+      knows: 'welcoming people to Caime, how it works, and the free Caime Friends stickers',
     },
     reads: [],
   },

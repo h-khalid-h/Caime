@@ -1526,6 +1526,12 @@ export interface OrgDomainView {
 export interface OrgView extends OrgSummaryView {
   createdAt: string;
   /**
+   * The reserved handles this organization may take itself (owner, 2026-10-25): `@caime`, for its
+   * owner and admins once its verified domain is the product's own (`PUBLIC_URL`'s, cai.me) and
+   * nobody holds it; empty for everyone else.
+   */
+  claimableHandles: string[];
+  /**
    * Suspended by Caime (M16 B3), for its team: since when and why. Nothing is written as it or
    * to it, its page answers as nobody's and its apps' tokens are refused until it's lifted.
    */

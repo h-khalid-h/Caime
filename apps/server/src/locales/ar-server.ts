@@ -311,8 +311,8 @@ export const arServer: Catalog = {
   'A super-app. No wallet, no marketplace, no feed, no scripts from anyone else.':
     'ليس تطبيقًا لكل شيء. لا محفظة، ولا سوق، ولا موجز أخبار، ولا نصوص برمجية من أحد غيرنا.',
   'the characters': 'الشخصيات',
-  'Caishy and friends (Momo, Panda, Lumi, Pico, Niko and Zuzu) appear where there is something to celebrate or nothing yet to show, never beside your invoice.':
-    'يظهر كايشي وأصدقاؤه (مومو وباندا ولومي وبيكو ونيكو وزوزو) حين يكون هناك ما يُحتفى به أو حين لا يوجد ما يُعرض بعد، ولا يظهرون أبدًا بجانب فاتورتك.',
+  'The Caime Friends (Caishy, Momo, Panda, Lumi, Pico, Niko and Zuzu) appear where there is something to celebrate or nothing yet to show, never beside your invoice.':
+    'يظهر أصدقاء Caime (كايشي ومومو وباندا ولومي وبيكو ونيكو وزوزو) حين يكون هناك ما يُحتفى به أو حين لا يوجد ما يُعرض بعد، ولا يظهرون أبدًا بجانب فاتورتك.',
   'how it’s built': 'كيف بُني',
   'One codebase for the server, the web and the phones. Every change is tested end to end against the real server before it ships, and only what passed goes live.':
     'قاعدة كود واحدة للخادم والويب والهواتف. يُختبر كل تغيير من طرف إلى طرف على الخادم الحقيقي قبل إطلاقه، ولا يصل إلى المستخدمين إلا ما نجح.',
@@ -928,8 +928,8 @@ export const arServer: Catalog = {
   'Stripe can’t be asked right now': 'تعذّر التواصل مع Stripe الآن',
   'Only a person pays by card.': 'الدفع بالبطاقة لشخص فقط، لا لتطبيق.',
   'Paying by card can’t start right now': 'تعذّر بدء الدفع بالبطاقة الآن',
-  'Send a sticker from the button beside an empty message box. The Caishy Friends pack is free.':
-    'أرسل ملصقًا من الزر بجوار مربع الرسالة حين يكون فارغًا. حزمة أصدقاء كايشي مجانية.',
+  'Send a sticker from the button beside an empty message box. The Caime Friends pack is free.':
+    'أرسل ملصقًا من الزر بجوار مربع الرسالة حين يكون فارغًا. حزمة أصدقاء Caime مجانية.',
   'Press and hold a message, or point at it on a computer, to react, reply or save it.':
     'اضغط مطولًا على رسالة، أو مرّر المؤشر فوقها على الحاسوب، لتتفاعل معها أو تردّ عليها أو تحفظها.',
   'Your picture at the top opens you and your settings.': 'صورتك في الأعلى تفتح صفحتك وإعداداتك.',
@@ -979,8 +979,8 @@ export const arServer: Catalog = {
     'صفحة كل شخص تتذكّر ما هو مفتوح بينكما.',
   'Hi, I’m Caishy! Ask me anything about Caime, or just say hi.':
     'مرحبًا، أنا Caishy! اسألني أي شيء عن Caime، أو قل مرحبًا فقط.',
-  'I welcome people to Caime and keep the Caishy Friends stickers. Ask me how anything here works.':
-    'أرحّب بالجميع في Caime وأعتني بملصقات Caishy Friends. اسألني كيف يعمل أي شيء هنا.',
+  'I welcome people to Caime and keep the Caime Friends stickers. Ask me how anything here works.':
+    'أرحّب بالجميع في Caime وأعتني بملصقات Caime Friends. اسألني كيف يعمل أي شيء هنا.',
   'Aww, any time!': 'بكل سرور، في أي وقت!',
   'I cheer you on when you’re all caught up. Ask me what needs you, or what’s coming up.':
     'أحتفل معك حين لا يبقى شيء بانتظارك. اسألني ما الذي يحتاج إليك، أو ما القادم.',

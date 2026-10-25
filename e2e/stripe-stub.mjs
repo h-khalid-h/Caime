@@ -19,9 +19,10 @@ const CONNECT_SECRET = process.env.CONNECT_WEBHOOK_SECRET ?? 'whsec_e2e_connect_
 const CONNECT_WEBHOOK =
   process.env.CONNECT_WEBHOOK_URL ?? 'http://localhost:8787/v1/checkout/stripe/webhook';
 
+// Pro on Caime's keys, Business on the live account's earlier ones (DEPLOY.md, Stripe): both are read.
 const PRICES = [
-  ['price_pro_m', 'caishy_pro_month', 600],
-  ['price_pro_y', 'caishy_pro_year', 6000],
+  ['price_pro_m', 'caime_pro_month', 600],
+  ['price_pro_y', 'caime_pro_year', 6000],
   ['price_biz_m', 'caishy_business_month', 2900],
   ['price_biz_y', 'caishy_business_year', 29000],
 ].map(([id, lookup_key, unit_amount]) => ({
@@ -159,7 +160,7 @@ const server = createServer(async (req, res) => {
       status: 'active',
       cancel_at_period_end: false,
       current_period_end: Math.floor(Date.now() / 1000) + 30 * 86_400,
-      metadata: s.payer ? { caishy_payer: s.payer } : {},
+      metadata: s.payer ? { caime_payer: s.payer } : {},
       items: {
         data: [
           {
@@ -319,7 +320,7 @@ const server = createServer(async (req, res) => {
       status: 'open',
       customer: params.get('customer'),
       price: params.get('line_items[0][price]'),
-      payer: params.get('subscription_data[metadata][caishy_payer]'),
+      payer: params.get('subscription_data[metadata][caime_payer]'),
       success_url: params.get('success_url'),
       cancel_url: params.get('cancel_url'),
     });

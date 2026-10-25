@@ -1,7 +1,7 @@
 import type { Character, Expression } from '@caime/brand/characters';
 import { msg } from '@caime/core/i18n';
 
-/** Caishy Friends, the first sticker pack (BRAND.md B3): the characters say what words can't. */
+/** The Caime Friends, the first sticker pack (BRAND.md B3): the characters say what words can't. */
 export const STICKER_PACK = 'caishy-friends';
 
 export interface StickerDef {

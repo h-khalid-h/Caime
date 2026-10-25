@@ -3538,4 +3538,8 @@ export const arB: Catalog = {
   'Where this comes from': 'من أين جاء هذا',
   'Only to keep younger people safer, and never shown to anyone. Correct it here if it was typed wrong; your country and time zone are in Language and region.':
     'فقط لحماية الأصغر سنًا، ولا يُعرض لأحد أبدًا. صحّحه هنا إن كُتب خطأ؛ بلدك ومنطقتك الزمنية في «اللغة والمنطقة».',
+  '{domain} is Caime’s own domain, so this organization may take @{handle}.':
+    '{domain} هو نطاق Caime نفسه، لذا يمكن لهذه المؤسسة أن تتخذ @{handle} اسمًا لها.',
+  'Take @{handle}': 'اعتماد @{handle}',
+  'This organization is @{handle} now': 'أصبحت هذه المؤسسة @{handle}',
 };

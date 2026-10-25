@@ -5,6 +5,7 @@
  */
 import type { OrgView } from '@caime/core/api';
 import { tr } from '@caime/core/i18n';
+import { router } from 'expo-router';
 import BadgeCheck from 'lucide-react-native/icons/badge-check';
 import { useState } from 'react';
 import { View } from 'react-native';
@@ -41,6 +42,21 @@ export function OrgVerification({ org, refresh }: { org: OrgView; refresh: (o: O
     }
   };
   const [joining, setJoining] = useState(false);
+  // The product's own organization takes @caime (2026-10-25): its setup's address follows it.
+  const [claiming, setClaiming] = useState(false);
+  const claim = async (handle: string) => {
+    setClaiming(true);
+    try {
+      const r = await endpoints.claimOrgHandle(org.id, handle);
+      refresh(r.org);
+      toast(tr('This organization is @{handle} now', { handle: r.org.handle }));
+      router.replace({ pathname: '/o/[handle]/setup', params: { handle: r.org.handle } });
+    } catch (e) {
+      toast((e as Error).message, { tone: 'danger' });
+    } finally {
+      setClaiming(false);
+    }
+  };
   const joinByDomain = async (on: boolean) => {
     setJoining(true);
     try {
@@ -87,6 +103,26 @@ export function OrgVerification({ org, refresh }: { org: OrgView; refresh: (o: O
             testID="org-join-by-domain"
           />
         </View>
+        {org.claimableHandles.length ? (
+          <View style={{ marginTop: 12, gap: 8 }}>
+            <Text variant="caption" color="textSecondary">
+              {tr('{domain} is Caime’s own domain, so this organization may take @{handle}.', {
+                domain: d.name,
+                handle: org.claimableHandles[0],
+              })}
+            </Text>
+            {org.claimableHandles.map((handle) => (
+              <Button
+                key={handle}
+                label={tr('Take @{handle}', { handle })}
+                size="sm"
+                loading={claiming}
+                onPress={() => void claim(handle)}
+                testID={`org-claim-${handle}`}
+              />
+            ))}
+          </View>
+        ) : null}
       </Card>
     );
   if (!d || changing)

@@ -65,9 +65,11 @@ export interface StripeStub {
   close(): Promise<void>;
 }
 
+// Pro's prices carry the keys Caime names them with now, Business's the earlier ones the live
+// account was first made with (owner, 2026-10-25): every billing test reads both.
 export const PRICES = [
-  { id: 'price_pro_m', lookup_key: 'caishy_pro_month', unit_amount: 600 },
-  { id: 'price_pro_y', lookup_key: 'caishy_pro_year', unit_amount: 6000 },
+  { id: 'price_pro_m', lookup_key: 'caime_pro_month', unit_amount: 600 },
+  { id: 'price_pro_y', lookup_key: 'caime_pro_year', unit_amount: 6000 },
   { id: 'price_biz_m', lookup_key: 'caishy_business_month', unit_amount: 2900 },
   { id: 'price_biz_y', lookup_key: 'caishy_business_year', unit_amount: 29000 },
 ].map((p) => ({
@@ -256,7 +258,7 @@ export async function stripeStub(): Promise<StripeStub> {
       s.status = 'complete';
       const price = PRICES.find((p) => p.id === s.price);
       if (!price) throw new Error(`No price ${s.price}`);
-      const payer = s.params.get('subscription_data[metadata][caishy_payer]');
+      const payer = s.params.get('subscription_data[metadata][caime_payer]');
       const subscription = start(
         s.customer,
         {
@@ -267,7 +269,7 @@ export async function stripeStub(): Promise<StripeStub> {
           recurring: price.recurring,
         },
         status,
-        payer ? { caishy_payer: payer } : {},
+        payer ? { caime_payer: payer } : {},
       );
       return {
         subscription,

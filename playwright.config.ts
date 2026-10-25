@@ -168,8 +168,7 @@ export default defineConfig({
             HOST: '127.0.0.1',
             PUBLIC_URL: BASE,
             DATABASE_URL:
-              process.env.E2E_DATABASE_URL ??
-              'postgres://caishy:caishy-dev@127.0.0.1:5432/caishy_e2e',
+              process.env.E2E_DATABASE_URL ?? 'postgres://caime:caime-dev@127.0.0.1:5432/caime_e2e',
             DATA_DIR: join(tmpdir(), 'caime-e2e'),
             WEB_DIR: 'apps/app/dist',
             LOG_LEVEL: 'warn',

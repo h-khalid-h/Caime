@@ -21,12 +21,14 @@ import {
   methodsFor,
   nextOwner,
   normalizeDomain,
+  normalizeHandle,
   OrgDomainBody,
   type OrgDoorView,
   OrgMemberBody,
   OrgMembersBody,
   type OrgRole,
   ownsOrg,
+  PRODUCT_HANDLE,
   recordMatches,
   UpdateOrgBody,
   uuidv7,
@@ -73,7 +75,14 @@ import { domainStanding, takesByDomain } from '../lib/domain-join';
 import { qrPath } from '../lib/door';
 import { AppError, badRequest, conflict, forbidden, notFound } from '../lib/errors';
 import { currencyOf, currentZone, defaultZoneOf, isCountry } from '../lib/geo';
-import { assertHandleAvailable, claimLost } from '../lib/handles';
+import {
+  assertHandleAvailable,
+  claimLost,
+  HANDLE_UNAVAILABLE,
+  handleTaken,
+  moveHandle,
+  productDomain,
+} from '../lib/handles';
 import { orgInsights } from '../lib/insights';
 import { mailAddressOf } from '../lib/mail-address';
 import { fieldsOf } from '../lib/org-customers';
@@ -232,9 +241,21 @@ async function orgView(ctx: AppContext, viewerId: string, org: Organization): Pr
       ? { joinableAs: null, joinOnceConfirmed: null }
       : domainStanding(ctx.db, org, viewerId, ctx.now()),
   ]);
+  // The product's own organization may take @caime itself (owner, 2026-10-25), once its domain is
+  // proven the product's: only its owner and admins are told.
+  const claimableHandles =
+    seat &&
+    canManageOrg(seat.role) &&
+    org.verified_at &&
+    org.domain === productDomain(ctx.config) &&
+    org.handle !== PRODUCT_HANDLE &&
+    !(await handleTaken(ctx.db, PRODUCT_HANDLE, { orgId: org.id }))
+      ? [PRODUCT_HANDLE]
+      : [];
   return {
     ...summary,
     createdAt: org.created_at.toISOString(),
+    claimableHandles,
     // Suspended by Caime (M16 B3): its team is told since when and why.
     suspension:
       seat && org.suspended_at
@@ -872,6 +893,43 @@ export async function orgRoutes(app: FastifyInstance, ctx: AppContext) {
       .where('user_id', '=', userId)
       .execute();
     return { ok: true };
+  });
+
+  /**
+   * The product's own organization takes @caime (owner, 2026-10-25): its owner or an admin, once
+   * its verified domain is the product's own (`productDomain`, PUBLIC_URL's: cai.me), through the
+   * operator's one way of moving a reserved handle (`moveHandle`), audited with who did it. Any
+   * other organization, handle or domain is answered as a taken handle is, so nothing says which
+   * names are kept; @cai is Cai's and the AI members' handles are theirs, so they're never this.
+   */
+  app.post('/orgs/:id/handle/claim', async (req): Promise<OrgResponse> => {
+    const auth = requireAuth(req);
+    const { id } = parse(idParam, req.params);
+    const { handle } = parse(z.object({ handle: z.string().trim().min(1).max(40) }), req.body);
+    const org = await orgById(ctx.db, id);
+    await managerSeat(ctx.db, auth.userId, id);
+    const wanted = normalizeHandle(handle);
+    if (
+      wanted !== PRODUCT_HANDLE ||
+      !org.verified_at ||
+      org.suspended_at ||
+      org.domain !== productDomain(ctx.config)
+    )
+      throw conflict('handle_taken', HANDLE_UNAVAILABLE());
+    const from = org.handle;
+    if (await moveHandle(ctx.db, { of: 'organization', id, handle: from }, wanted, ctx.now())) {
+      await audit(ctx.db, {
+        actorId: auth.userId,
+        action: 'handle.claimed',
+        target: id,
+        ip: req.ip,
+        metadata: { of: 'organization', from, to: wanted, by: 'domain' },
+      });
+      forgetSitemaps();
+      const people = (await team(ctx, id)).filter((m) => m.kind === 'human').map((m) => m.user_id);
+      await ctx.bus.publish(people, { type: 'business.updated', data: { orgId: id } });
+    }
+    return { org: await orgView(ctx, auth.userId, await orgById(ctx.db, id)) };
   });
 
   /** The domain to verify, and a new token for its TXT record. Changing it unverifies. */

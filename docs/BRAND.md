@@ -67,7 +67,7 @@ on, or the nearest to it; roles derived from the palette are listed further down
   celebrations, stickers, the marketing site). *Quiet* on working surfaces (inbox, conversation,
   business inbox, settings): type, colour, rounded shapes and the heart carry the brand there, not
   characters. No mascot sits next to a customer's invoice.
-- **B3 — Characters are friends, not features.** They become the **Caishy Friends** stickers and
+- **B3 — Characters are friends, not features.** They become the **Caime Friends** stickers and
   the guides of empty states — the LINE and KakaoTalk precedent: characters give a messenger
   warmth, memorability and a revenue line (premium sticker packs in Pro) without a feed or a shop.
   Each character has one job that fits its personality (matrix below).
@@ -267,7 +267,7 @@ writes first and never notifies, and its page says it's not a person. Cai, Caime
 (@cai), wears the icon mark, not a character, and is the one that writes first (a follow-up
 offer, the morning brief; R68).
 
-**Caishy Friends stickers** (free pack, "A little cuteness goes a long way."): built on the v3
+**Caime Friends stickers** (free pack, "A little cuteness goes a long way."): built on the v3
 expressions and poses — hi (waving), thanks (holding a heart), love (shy), yay (excited), ok
 (wink), sorry (sad), wow (surprised), hmm (curious), good night (sleepy), grr (angry, cute), on
 my way (walking), congrats (jumping), be kind, dream big. Die-cut with a white outline and made

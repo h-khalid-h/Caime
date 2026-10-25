@@ -15,13 +15,21 @@ export type BilledPlan = (typeof BILLED_PLANS)[number];
 
 /** A price's lookup key in Stripe: prices are found by these, never by id. */
 export const priceLookupKey = (plan: BilledPlan, interval: BillingInterval) =>
+  `caime_${plan}_${interval}`;
+
+/**
+ * The key the live account's prices were first made with, before the product took its one name
+ * (owner, 2026-10-25): still found beside `priceLookupKey`'s, a price under the new key first,
+ * until Stripe's own keys are moved (docs/DEPLOY.md, "Billing").
+ */
+export const earlierLookupKey = (plan: BilledPlan, interval: BillingInterval) =>
   `caishy_${plan}_${interval}`;
 
 /** Which plan and interval a lookup key is for, or null for a price that isn't Caime's. */
 export function fromLookupKey(
   key: string | null | undefined,
 ): { plan: BilledPlan; interval: BillingInterval } | null {
-  const m = /^caishy_(pro|business)_(month|year)$/.exec(key ?? '');
+  const m = /^(?:caime|caishy)_(pro|business)_(month|year)$/.exec(key ?? '');
   return m ? { plan: m[1] as BilledPlan, interval: m[2] as BillingInterval } : null;
 }
 

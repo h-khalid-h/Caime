@@ -42,7 +42,6 @@ import { tr } from '@caime/core/i18n';
 import { LISTING_CHECKS } from '@caime/core/marketplace';
 import { REPORT_REASON_CHOICES } from '@caime/core/report-reasons';
 import type { FastifyInstance, FastifyRequest } from 'fastify';
-import { sql } from 'kysely';
 import { z } from 'zod';
 import type { AppContext } from '../context';
 import { agentEvalKept } from '../lib/agent-eval';
@@ -58,7 +57,7 @@ import { backupDir, lastBackup, listBackups, runBackup } from '../lib/backup';
 import { endBillingOf, paysThroughBilling } from '../lib/billing';
 import { connectionsForOperator } from '../lib/connected-accounts';
 import { AppError, badRequest, conflict, mailUnavailable, notFound } from '../lib/errors';
-import { handleHeld, handleTaken, releaseHandle } from '../lib/handles';
+import { handleHeld, moveHandle, releaseHandle } from '../lib/handles';
 import { enqueue, retryJob, troubledJobs } from '../lib/jobs';
 import {
   appealViews,
@@ -697,22 +696,7 @@ export async function adminRoutes(app: FastifyInstance, ctx: AppContext) {
     to: { of: 'person' | 'organization'; id: string; handle: string },
     handle: string,
   ): Promise<void> {
-    if (to.handle.toLowerCase() === handle) return;
-    await ctx.db.transaction().execute(async (trx) => {
-      // People and organizations are two tables, so a claim for each at once would both find
-      // the handle free: one handle's claims go one at a time.
-      await sql`select pg_advisory_xact_lock(hashtext(${`handle:${handle}`}))`.execute(trx);
-      const theirs = to.of === 'person' ? { userId: to.id } : { orgId: to.id };
-      if (await handleTaken(trx, handle, theirs))
-        throw conflict('handle_taken', tr('Someone else has that handle.'));
-      const change = { handle, updated_at: ctx.now() };
-      if (to.of === 'person')
-        await trx.updateTable('users').set(change).where('id', '=', to.id).execute();
-      else await trx.updateTable('organizations').set(change).where('id', '=', to.id).execute();
-      // A held one is someone's again, so nothing's held; the one it had is let go of, as any is.
-      await trx.deleteFrom('released_handles').where('handle', '=', handle).execute();
-      await releaseHandle(trx, to.handle, ctx.now());
-    });
+    if (!(await moveHandle(ctx.db, to, handle, ctx.now()))) return;
     await audit(ctx.db, {
       actorId: null,
       action: 'handle.claimed',

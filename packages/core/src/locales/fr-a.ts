@@ -2210,7 +2210,6 @@ export const frA: Catalog = {
   'Keep a group together': 'Rassemblez un groupe',
   'A space holds a family, a team, a project or a club: its people, and conversations everyone can find.':
     'Un espace réunit une famille, une équipe, un projet ou un club : ses membres, et des conversations que tout le monde retrouve.',
-  'Caishy Friends': 'Les amis de Caishy',
   'Stickers for when words aren’t enough': 'Des stickers pour quand les mots ne suffisent pas',
   'Send sticker: {label}': 'Envoyer le sticker : {label}',
   'Caishy smiling': 'Caishy sourit',

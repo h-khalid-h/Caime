@@ -134,7 +134,7 @@ describe('billing (PRD §84, R25)', () => {
     expect(stub.customers.size).toBe(1);
     const customer = stub.customers.get(a?.customer ?? '');
     expect(customer?.params.get('email')).toBe('noor@example.com');
-    expect(customer?.params.get('metadata[caishy_user_id]')).toBe(noor.user.id);
+    expect(customer?.params.get('metadata[caime_user_id]')).toBe(noor.user.id);
     expect(a?.price).toBe('price_pro_y');
     expect(b?.price).toBe('price_pro_m');
     expect(Object.fromEntries(a?.params ?? [])).toMatchObject({
@@ -142,7 +142,7 @@ describe('billing (PRD §84, R25)', () => {
       'line_items[0][quantity]': '1',
       success_url: 'http://localhost:8787/settings/plan?billing=done',
       cancel_url: 'http://localhost:8787/settings/plan?billing=cancelled',
-      'subscription_data[metadata][caishy_payer]': `user:${noor.user.id}`,
+      'subscription_data[metadata][caime_payer]': `user:${noor.user.id}`,
     });
     // Only the newest can be paid: the one before it closed as the new one opened.
     expect([a?.status, b?.status]).toEqual(['expired', 'open']);
@@ -175,7 +175,7 @@ describe('billing (PRD §84, R25)', () => {
     const [a, b] = both.map((r) => stub.sessions.get(sessionOf(r.json().url)));
     expect(a?.customer).toBe(b?.customer);
     const theirs = [...stub.customers.values()].filter(
-      (c) => c.params.get('metadata[caishy_user_id]') === dee.user.id,
+      (c) => c.params.get('metadata[caime_user_id]') === dee.user.id,
     );
     expect(theirs).toHaveLength(1);
     expect([a?.status, b?.status].filter((s) => s === 'open')).toHaveLength(1);
@@ -392,7 +392,7 @@ describe('billing (PRD §84, R25)', () => {
       `http://localhost:8787/o/${org.handle}?billing=done`,
     );
     const customer = stub.customers.get(session?.customer ?? '');
-    expect(customer?.params.get('metadata[caishy_org_id]')).toBe(org.id);
+    expect(customer?.params.get('metadata[caime_org_id]')).toBe(org.id);
     expect(customer?.params.get('name')).toBe('Haddad Clinic');
     expect(customer?.params.get('email')).toBe('noor@example.com');
     const { subscription, event } = stub.pay(sessionOf(bought.json().url));

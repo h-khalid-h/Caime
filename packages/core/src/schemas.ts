@@ -116,7 +116,8 @@ export const RESERVED_HANDLES: readonly string[] = [
   // The server's own paths at the root, answered before any page.
   'healthz',
   'readyz',
-  // The product, by every name it has had. Caishy is also the first of its characters.
+  // The product, Caime; Caishy, one of its AI members (BRAND.md); CONNIQT, an early working name
+  // the product never had; and Cai, who leads its AIs.
   'caime',
   'caishy',
   'conniqt',
@@ -254,15 +255,23 @@ export const RESERVED_HANDLES: readonly string[] = [
 ];
 
 /**
- * The product's names, which no handle may carry even among other words (@caime.support,
- * @the_caime, @caime2, @cai.me). Not "cai": it's people's name too (a Welsh given name, a common
- * Chinese surname: R34), so only @cai itself is kept.
+ * The product's one name (owner, 2026-10-25): the product is Caime, and @caime is its own
+ * organization's handle, which only that organization takes (`claimProductHandle` on the server).
  */
-const PRODUCT_NAMES = new Set(['caime', 'caishy', 'conniqt']);
+export const PRODUCT_HANDLE = 'caime';
+
+/**
+ * Names no handle may carry even among other words (@caime.support, @the_caime, @caime2,
+ * @cai.me): the product's, Caishy's (one of its AI members, who greets everyone and keeps the
+ * stickers, so a handle wearing it reads as Caime's own), and CONNIQT (an early working name, kept
+ * from anyone who'd pose as the product by it). Not "cai": it's people's name too (a Welsh given
+ * name, a common Chinese surname: R34), so only @cai itself is kept.
+ */
+const PROTECTED_NAMES = new Set([PRODUCT_HANDLE, 'caishy', 'conniqt']);
 const RESERVED = new Set(RESERVED_HANDLES);
-/** What a product name can be run together with and still read as the product. */
+/** What a protected name can be run together with and still read as the product. */
 const ALONGSIDE = [
-  ...PRODUCT_NAMES,
+  ...PROTECTED_NAMES,
   ...RESERVED_HANDLES,
   ...['the', 'real', 'get', 'try', 'join', 'use', 'my', 'hey', 'hi', 'hq', 'inc', 'ai', 'co', 'io'],
 ];
@@ -282,9 +291,9 @@ export function isReservedHandle(handle: string): boolean {
   return [...words, words.join('')].some(readsAsProduct);
 }
 
-/** Whether `text` is a product name, alone or run together with others of ALONGSIDE only. */
+/** Whether `text` is a protected name, alone or run together with others of ALONGSIDE only. */
 function readsAsProduct(text: string): boolean {
-  // How the first i letters read: 0 not as known words, 1 as words without a product name, 2 with.
+  // How the first i letters read: 0 not as known words, 1 as words without a protected name, 2 with.
   const read = new Array<number>(text.length + 1).fill(0);
   read[0] = 1;
   for (let i = 0; i < text.length; i++) {
@@ -292,7 +301,7 @@ function readsAsProduct(text: string): boolean {
     for (const word of ALONGSIDE) {
       if (!text.startsWith(word, i)) continue;
       const end = i + word.length;
-      read[end] = Math.max(read[end]!, PRODUCT_NAMES.has(word) ? 2 : read[i]!);
+      read[end] = Math.max(read[end]!, PROTECTED_NAMES.has(word) ? 2 : read[i]!);
     }
   }
   return read[text.length] === 2;

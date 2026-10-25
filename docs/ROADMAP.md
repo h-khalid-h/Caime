@@ -12,7 +12,7 @@ Legend: `[x]` done and verified · `[~]` in progress or partial (note says what 
 - [x] Monorepo (pnpm, hoisted), TypeScript, Biome, shared configs
 - [x] Docs: PRD, product review, brand, competitive strategy, architecture, roadmap, goal
 - [x] CLAUDE.md operating manual
-- [x] GitHub repository [`h-khalid-h/Caime`](https://github.com/h-khalid-h/Caime) (formerly Caishy), `main`
+- [x] GitHub repository [`h-khalid-h/Caime`](https://github.com/h-khalid-h/Caime), `main`
 - [x] One API contract (`packages/core/src/api.ts`); server views annotated against it
 
 ## M1 — Core domain (`packages/core`)
@@ -194,7 +194,7 @@ Legend: `[x]` done and verified · `[~]` in progress or partial (note says what 
       while a deploy restarts the server), a page is always the network's while there is one,
       and nothing the API answers is kept (`sw.test.ts`, `web.test.ts`, E2E). Opened offline,
       it says Offline, not Connecting
-- [x] Stickers (Caishy Friends, 16): sent, and arrive live (E2E)
+- [x] Stickers (the Caime Friends, 16): sent, and arrive live (E2E)
 - [~] Native: iOS and Android bundles export (Hermes); not yet run on a device or simulator.
       Share links open the app only once it claims its domain (iOS associated domains, Android
       app links, and the two files the server would serve under `/.well-known/`)
@@ -484,9 +484,10 @@ super-app brainstorm the product takes, and what it leaves with the reason, is R
 
 - [x] The name everywhere (R34): the apps and their store identity (`me.cai.app`), the server
       and its headers, cookie, metrics and webhook signatures, the pages, the wordmark ("Caıme",
-      the heart its dot) and the docs. What keeps its name: the characters, Caishy included,
-      and the Caishy Friends; Stripe's price keys and metadata; the repository, image, database
-      and EasyPanel names; deployed migrations; and this log
+      the heart its dot) and the docs. What keeps its name: the characters, Caishy among them (one
+      of Caime's AI members, the Caime Friends; never the product, as CONNIQT isn't: the owner,
+      2026-10-25); Stripe's earlier `caishy_…` price keys and metadata, still read beside the
+      `caime_…` ones; the EasyPanel project's name; deployed migrations; and this log
 - [~] `cai.me` is Caime's (the owner, 2026-10-13) and serves it: `https://cai.me/v1/readyz`
       answered `{"ok":true}` on 2026-10-13, `PUBLIC_URL=https://cai.me`, and the service answers
       to `cai.me`, `www.cai.me` and `caime.datac.com` (checked through EasyPanel's API); a page
@@ -4311,6 +4312,9 @@ have yet, each sized:
 
 ## Log
 
+Entries written before the name was settled call the product by its working names, Caishy or
+CONNIQT; they mean Caime. Caishy is one of Caime's AI members, and Cai leads them.
+
 - 2026-09-26 — Session 1: docs written; brand system adopted from the owner's board (vector
   recreation pending); monorepo scaffolding started.
 - 2026-09-26 — Session 1 (cont.): core engines (105 tests), brand tokens (49 tests), server M2–M4
@@ -5898,6 +5902,21 @@ have yet, each sized:
 - 2026-10-20 — The French and Turkish catalogs come in two halves fetched side by side, as Arabic
   does: their largest download 48.9 KB where one was 95.2 KB of a chunk's 100; the first download
   448.8 KB of 450 (0.2 KB more: the two loaders).
+- 2026-10-25 — The owner's follow-ups the same day. @caime for the product's own organization:
+  the organization whose verified domain is the product's (`PUBLIC_URL`'s, cai.me; caime.com isn't
+  ours) takes it from its setup screen ("Take @caime", `POST /orgs/:id/handle/claim`), by its
+  owner or an admin, through the operator's one move (`moveHandle`), audited with who did it; any
+  other organization, domain or handle (@cai is Cai's, the AI members' theirs) is answered as a
+  taken handle. One name, Caime: Caishy is one of Caime's AI members and CONNIQT no name of the
+  product (README, CLAUDE.md, GOAL, PRD, PRODUCT-REVIEW, BRAND, SECURITY); the sticker pack reads
+  "Caime Friends" in every language; Stripe's lookup keys are `caime_…` with the live account's
+  earlier `caishy_…` keys still read until they're moved, and Checkout's metadata `caime_payer`
+  (`caishy_payer` still read); the test and CI databases are `caime`. Every box that empties after
+  a send (Ask Cai about a call or a conversation, a customer's tag) drops the keyboard's echo as
+  the composer does (`lib/emptied.ts`). Verified: `product-handle.test.ts`, `billing.test.ts`
+  (both key forms), `emptied.test.ts`, the catalogs and voices. Not ours to change from here: the
+  EasyPanel project and its default domains (`caishy-…easypanel.host`), the live Stripe keys, the
+  environment's setup script (it makes the `caishy` role) and the comments of committed migrations.
 - 2026-10-25 — The owner's two bugs: a date of birth typed wrong at sign-up is corrected by its
   owner in Settings · Profile (`PUT /me/birth-date`: a real day, old enough where they live, three
   a day, audited without the date; an age check's finding still holds), where only the operator's

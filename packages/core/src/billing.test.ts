@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import {
+  earlierLookupKey,
   fromLookupKey,
   isPaying,
   minorDigits,
@@ -11,9 +12,20 @@ import {
 
 describe('billing', () => {
   it('prices are found by lookup keys, and only Caime’s count', () => {
-    expect(priceLookupKey('pro', 'month')).toBe('caishy_pro_month');
+    expect(priceLookupKey('pro', 'month')).toBe('caime_pro_month');
+    expect(fromLookupKey('caime_business_year')).toEqual({ plan: 'business', interval: 'year' });
+    // The keys the live account's prices were first made with are still read (2026-10-25).
+    expect(earlierLookupKey('business', 'year')).toBe('caishy_business_year');
     expect(fromLookupKey('caishy_business_year')).toEqual({ plan: 'business', interval: 'year' });
-    for (const other of [null, undefined, '', 'caishy_enterprise_month', 'x_caishy_pro_month'])
+    for (const other of [
+      null,
+      undefined,
+      '',
+      'caime_enterprise_month',
+      'caishy_enterprise_month',
+      'x_caime_pro_month',
+      'x_caishy_pro_month',
+    ])
       expect(fromLookupKey(other)).toBeNull();
   });
 

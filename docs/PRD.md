@@ -1,7 +1,8 @@
 # Caime — Full Product Requirements Document
 
-> **Caime** (formerly **Caime**, and before that **CONNIQT**). Every mention of Caime or CONNIQT
-> in earlier drafts refers to Caime. The name, and what of a later super-app brainstorm the
+> **Caime** is the product's one name (owner, 2026-10-25). CONNIQT in earlier drafts, and any
+> mention of Caishy as the product, mean Caime: Caishy is one of Caime's AI members, and Cai leads
+> them. The name, and what of a later super-app brainstorm the
 > product takes and leaves, are refinements R34–R40 in `PRODUCT-REVIEW.md`.
 >
 > This document is the product source of truth. Section numbers 1–90 are stable and are cited

@@ -1248,7 +1248,7 @@ ${main}
         tr('the characters'),
         esc(
           tr(
-            'Caishy and friends (Momo, Panda, Lumi, Pico, Niko and Zuzu) appear where there is something to celebrate or nothing yet to show, never beside your invoice.',
+            'The Caime Friends (Caishy, Momo, Panda, Lumi, Pico, Niko and Zuzu) appear where there is something to celebrate or nothing yet to show, never beside your invoice.',
           ),
         ),
       ],

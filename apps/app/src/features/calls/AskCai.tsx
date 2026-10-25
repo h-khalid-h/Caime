@@ -9,9 +9,10 @@ import { AI_LABEL, ASK_MAX } from '@caime/core/assist';
 import { formatClock } from '@caime/core/format';
 import { tr } from '@caime/core/i18n';
 import Sparkles from 'lucide-react-native/icons/sparkles';
-import { useState } from 'react';
-import { View } from 'react-native';
+import { useRef, useState } from 'react';
+import { type TextInput, View } from 'react-native';
 import { endpoints } from '@/api/endpoints';
+import { useEmptied } from '@/lib/emptied';
 import { useUserClock } from '@/lib/time';
 import { useTheme } from '@/theme/theme';
 import { Button } from '@/ui/Button';
@@ -38,6 +39,8 @@ export function AskCai({
   const t = useTheme();
   const { timeZone, locale } = useUserClock();
   const [question, setQuestion] = useState('');
+  const questionBox = useRef<TextInput>(null);
+  const { empty: emptyAsked, echoes: echoesAsked } = useEmptied(questionBox);
   const [asking, setAsking] = useState(false);
   const [asked, setAsked] = useState<Asked | null>(null);
   const ask = async () => {
@@ -46,7 +49,7 @@ export function AskCai({
     setAsking(true);
     try {
       setAsked({ question: q, answer: await endpoints.askAboutCall(callId, q) });
-      setQuestion('');
+      emptyAsked(setQuestion);
     } catch (e) {
       toast((e as Error).message, { tone: 'danger' });
     } finally {
@@ -66,7 +69,10 @@ export function AskCai({
             label={tr('Your question')}
             placeholder={tr('What did we agree on the price?')}
             value={question}
-            onChangeText={setQuestion}
+            ref={questionBox}
+            onChangeText={(v) => {
+              if (!echoesAsked(question, v)) setQuestion(v);
+            }}
             maxLength={ASK_MAX}
             returnKeyType="send"
             onSubmitEditing={() => void ask()}

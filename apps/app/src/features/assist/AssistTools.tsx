@@ -5,10 +5,11 @@ import { useQueryClient } from '@tanstack/react-query';
 import ListChecks from 'lucide-react-native/icons/list-checks';
 import MessageCircleQuestion from 'lucide-react-native/icons/message-circle-question-mark';
 import Sparkles from 'lucide-react-native/icons/sparkles';
-import { lazy, Suspense, useState } from 'react';
-import { View } from 'react-native';
+import { lazy, Suspense, useRef, useState } from 'react';
+import { type TextInput, View } from 'react-native';
 import { endpoints } from '@/api/endpoints';
 import { qk } from '@/api/keys';
+import { useEmptied } from '@/lib/emptied';
 import { useTheme } from '@/theme/theme';
 import { Button } from '@/ui/Button';
 import { Text } from '@/ui/Text';
@@ -46,6 +47,8 @@ export function AssistTools({
   const result = useCatchUps((s) => s.byId[conversationId]);
   const [finding, setFinding] = useState(false);
   const [question, setQuestion] = useState('');
+  const questionBox = useRef<TextInput>(null);
+  const { empty: emptyAsked, echoes: echoesAsked } = useEmptied(questionBox);
   const [asking, setAsking] = useState(false);
   const [answer, setAnswer] = useState<Answer | null>(null);
 
@@ -61,7 +64,7 @@ export function AssistTools({
     try {
       const r = await endpoints.askConversation(conversationId, q);
       setAnswer({ question: q, answer: r.answer, label: r.label, sources: r.sources });
-      setQuestion('');
+      emptyAsked(setQuestion);
     } catch (e) {
       toast((e as Error).message, { tone: 'danger' });
     } finally {
@@ -162,7 +165,10 @@ export function AssistTools({
           label={tr('Ask about this conversation')}
           placeholder={tr('What did we decide about the date?')}
           value={question}
-          onChangeText={setQuestion}
+          ref={questionBox}
+          onChangeText={(v) => {
+            if (!echoesAsked(question, v)) setQuestion(v);
+          }}
           maxLength={ASK_MAX}
           returnKeyType="send"
           onSubmitEditing={() => void ask()}

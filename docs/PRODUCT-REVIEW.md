@@ -215,7 +215,7 @@ to feel right to each of them.
 
 - **R33 — The brand board is adopted, calibrated for communication.** Identity (wordmark with the
   heart-dotted *i*, the character mark, palette, Nunito + Inter, voice) is Caime everywhere; the
-  characters become the Caishy Friends stickers and the guides of empty states; the board's shop,
+  characters become the Caime Friends stickers and the guides of empty states; the board's shop,
   collectibles and story feed are out of scope (PRD §85). Details and rules: `BRAND.md`.
 
 ## 17. The name, and a super-app brainstorm (2026-09-28)
@@ -231,9 +231,11 @@ with its reason, so it isn't proposed again without new facts.
 - **R34 — The product is Caime.** One name everywhere: the apps, the pages, the wordmark (the
   same heavy rounded lettering, with the pink heart over the dotless *i*), links, and the
   assistance layer ("Suggested by Caime"; an organization's agent is "Caime Support Agent").
-  Formerly Caishy, and before that CONNIQT. The rest of the brand stands (R33): palette, type,
-  voice, and the characters with their names, including Caishy *The Dreamer*, who keeps leading
-  the Caishy Friends stickers, a mascot with a name of its own as Duolingo's is Duo. The assistant
+  Caime is the product's one name (owner, 2026-10-25): Caishy is one of Caime's AI members, never
+  the product, and CONNIQT was only a working name. The rest of the brand stands (R33): palette,
+  type, voice, and the characters with their names, Caishy *The Dreamer* among them, who greets
+  people and keeps the Caime Friends stickers with the others, as Duolingo's Duo is a member of
+  its product and not its name; Cai leads Caime's AIs (R66, R67). The assistant
   gets no human name ("Cai"): a person's name on an AI blurs the line §75 keeps sharp, and Cai is
   also people's name (a Welsh given name, a common Chinese surname). *Amended by R66:* "Cai" is used as
   Caime's short name (not a persona's) where the intelligence is asked for.

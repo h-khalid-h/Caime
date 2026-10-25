@@ -6,10 +6,10 @@
 import pg from 'pg';
 import { migrate } from '../src/db/migrate';
 
-export const TEMPLATE = 'caishy_test_template';
+export const TEMPLATE = 'caime_test_template';
 
 export function adminUrl(): string {
-  return process.env.TEST_DATABASE_URL ?? 'postgres://caishy:caishy-dev@127.0.0.1:5432/postgres';
+  return process.env.TEST_DATABASE_URL ?? 'postgres://caime:caime-dev@127.0.0.1:5432/postgres';
 }
 
 export function urlFor(database: string): string {

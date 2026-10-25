@@ -28,7 +28,9 @@ separate (an organization proves its domain, R42).
 ## 3. What nobody may take
 
 - **Reserved** (`RESERVED_HANDLES`, `isReservedHandle`): the product's names (alone or run into
-  other words), its characters, staff words, its pages and routes. Only the operator gives one out.
+  other words), its characters, staff words, its pages and routes. Only the operator gives one out,
+  but for @caime, which the organization that proves the product's own domain (cai.me) takes from
+  its setup screen (2026-10-25).
 - **Generic words alone** (`GENERIC_WORDS`, `isGenericHandle`; owner's rule 2026-10-15): a handle
   made only of words that say what someone is to someone, praise or filler ("customers",
   "best.team", "the_family", "employees", "top1") names nobody in particular and would let one
@@ -102,7 +104,7 @@ organization and a handle change; never a 500). Sign-up is idempotent per addres
 | A handle is changed or an account deleted | The old one is held from everyone, its owner included, for a year (`releaseHandle`), then free. Only the handle and the days are kept, never whose it was. |
 | An organization closes | Unverified: its handle is held a year. Verified: kept for whoever proves its domain again (R42). |
 | Suspension | The handle stays with the account; nobody new finds it. |
-| Impersonation | The operator moves or reclaims a handle (`/v1/admin/{people,orgs}/:handle/handle`), audited. |
+| Impersonation | The operator moves or reclaims a handle (`/v1/admin/{people,orgs}/:handle/handle`), audited; @caime goes only to the organization that proves cai.me (`moveHandle`, the same move). |
 | Policy upgrade | Never renames anyone: the engine proposes new handles only. |
 
 *Differs from the proposal* (aliases that redirect): a redirect would have to remember whose a
