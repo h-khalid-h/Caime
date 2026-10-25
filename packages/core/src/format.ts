@@ -94,9 +94,16 @@ function sameDay(
 
 /**
  * Inbox timestamps: "now", "5m", "3:42 PM", "Yesterday", "Tue", "Sep 12", "12/09/2025".
- * Always the viewer's time zone and locale.
+ * Always the viewer's time zone and locale; something due on a day, not at a time, is "Today"
+ * on its day (R119).
  */
-export function formatListTime(iso: string, now: Date, timeZone: string, locale = 'en'): string {
+export function formatListTime(
+  iso: string,
+  now: Date,
+  timeZone: string,
+  locale = 'en',
+  hasTime = true,
+): string {
   const t = new Date(iso);
   const diff = now.getTime() - t.getTime();
   if (diff < 60_000 && diff > -60_000) return tr('now');
@@ -104,6 +111,7 @@ export function formatListTime(iso: string, now: Date, timeZone: string, locale 
   const p = zonedParts(t, timeZone);
   const n = zonedParts(now, timeZone);
   if (sameDay(p, n)) {
+    if (!hasTime) return tr('Today');
     return dateFormat(locale, { hour: 'numeric', minute: '2-digit', timeZone }).format(t);
   }
   const yesterday = new Date(Date.UTC(n.year, n.month - 1, n.day - 1));
@@ -131,9 +139,16 @@ export function formatListTime(iso: string, now: Date, timeZone: string, locale 
 
 /**
  * When something happened, as a sentence goes on ("used …", "allowed …"): "just now",
- * "15 min ago", "at 7:00 AM", "yesterday", "on Sat", "on Aug 1", "on Aug 1, 2025".
+ * "15 min ago", "at 7:00 AM", "yesterday", "on Sat", "on Aug 1", "on Aug 1, 2025". A day without
+ * a time is "today" on its day, never its first minute (R119).
  */
-export function formatWhen(iso: string, now: Date, timeZone: string, locale = 'en'): string {
+export function formatWhen(
+  iso: string,
+  now: Date,
+  timeZone: string,
+  locale = 'en',
+  hasTime = true,
+): string {
   const t = new Date(iso);
   const diff = now.getTime() - t.getTime();
   if (diff < 60_000 && diff > -60_000) return tr('just now');
@@ -141,7 +156,8 @@ export function formatWhen(iso: string, now: Date, timeZone: string, locale = 'e
     return tr('{minutes} min ago', { minutes: Math.floor(diff / 60_000) });
   const p = zonedParts(t, timeZone);
   const n = zonedParts(now, timeZone);
-  if (sameDay(p, n)) return tr('at {clock}', { clock: formatClock(iso, timeZone, locale) });
+  if (sameDay(p, n))
+    return hasTime ? tr('at {clock}', { clock: formatClock(iso, timeZone, locale) }) : tr('today');
   const y = new Date(Date.UTC(n.year, n.month - 1, n.day - 1));
   if (sameDay(p, { year: y.getUTCFullYear(), month: y.getUTCMonth() + 1, day: y.getUTCDate() }))
     return tr('yesterday');

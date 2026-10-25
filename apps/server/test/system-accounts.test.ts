@@ -151,6 +151,8 @@ describe('Cai (R67)', () => {
     expect(said).toContain('Coming up this week:');
     expect(said).toContain('INV-7731');
     expect(said).toContain('1,200');
+    // Due on Friday the 25th as written, said so in New York too, never the evening before (R119).
+    expect(said.split('\n').find((l) => l.includes('INV-7731'))).toMatch(/\bFri\b/);
     // Paid, it's no longer coming up.
     await hassan.post(`/v1/messages/${invoice.message.id}/kit`, { to: 'paid' });
     await send(hassan, cai, 'what is coming up?');

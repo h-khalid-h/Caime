@@ -271,12 +271,13 @@ export async function actionRoutes(app: FastifyInstance, ctx: AppContext) {
       waiting,
       waitingCount: count.n,
       comingUp: items
-        // A wait is listed with the waits, not twice; something overdue already needs you.
+        // A wait is listed with the waits, not twice; something overdue already needs you. What's
+        // due on a day stays all of its day (R119).
         .filter(
           (i) =>
             i.state !== 'overdue' &&
             i.state !== 'waiting' &&
-            Date.parse(i.at) >= now.getTime() - 3_600_000,
+            (i.on !== null || Date.parse(i.at) >= now.getTime() - 3_600_000),
         )
         .slice(0, COMING_UP_SHOWN),
       ask:

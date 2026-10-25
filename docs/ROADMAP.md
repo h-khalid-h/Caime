@@ -4378,6 +4378,29 @@ clinic can sign for. I1 lands before launch.
       lines, `<now>` after the conversation, the rule in the rules and no clock in the cached
       prefix), `agents.test.ts` (the customer's lines timed, `<now>`), `agent-eval.test.ts`,
       `ai-costs.test.ts`; the E2E stand-in reads lines with or without a time.
+- [x] I19a. A day is a day (R119, the owner's Date and Time Convention through the council,
+      review §8; `docs/TIME.md`): a Pay card's or an invoice's due day was filed as its midnight
+      UTC and an action due on a day as its first moment on its owner's clock, so a reader west of
+      UTC saw an invoice a day early and a colleague in another zone an action on the day before.
+      Now the calendar's items carry `on` (the day as written; an action's on its owner's clock,
+      `zonesOf`), `at` is that day's first moment on the reader's clock, and the window is cut by
+      its own days on that clock; Attention keeps what's due today all day and says "Today", not
+      its first minute (`formatListTime`, `formatWhen` with `hasTime`); Cai's coming up says the
+      day as written; the feed files an action's day on its owner's clock. `time-names.test.ts`
+      holds every date and time column to the suffix its type takes (279 in 105 tables; the four
+      named before it listed). Verified: `calendar.test.ts` (an invoice and a day-only action read
+      from Toronto, UTC, Riyadh and Kiritimati: the same day each, in the calendar and the feed;
+      today's due day on Attention late in the day; the action overdue the day after),
+      `time-names.test.ts`, `system-accounts.test.ts`.
+  - [ ] I19b. An action's due day as a day of its own (`tasks.due_on`, a batched backfill from
+        `due_at` on the owner's clock, read by every view, the app's sheet and Cai), so a change of
+        the owner's zone moves no day.
+  - [ ] I19c. A meeting's start keeps the zone it was set in (`fields.start.zone`, its UTC
+        derived; a start set before a change of a country's rules derived again), as a series
+        already reads its proposer's clock.
+  - [ ] I19d. A date's history (level 2): each move of a meeting's time, an action's due or a
+        promise's day kept with `replan` or `correction` in the change's transaction, erased with
+        what it's about; Cai and the brief say what slipped from `replan` alone.
 
 ## M18 — The standards pass (the owner's brief of 2026-10-25)
 
@@ -6535,3 +6558,11 @@ CONNIQT; they mean Caime. Caishy is one of Caime's AI members, and Cai leads the
 - 2026-10-15 — R93: a person reached by email offers "Write by email" (their mail conversation)
   rather than Connect, which failed with "That person wasn't found" (owner's report); the profile
   says "Reached by email" once.
+- 2026-10-25 — The owner's Date and Time Convention through the council (review §8): adopted as
+  Caime's (`docs/TIME.md`, R119), level 1 for every field and held to the schema
+  (`time-names.test.ts`: 279 date and time columns in 105 tables, the four named before it
+  listed), level 2 for the dates that move, not level 3. What it found first is fixed (M17 I19a):
+  an invoice's due day read a day early west of UTC, and an action due on a day read on the day
+  before or after by someone in another zone; a day is now a day for every reader, in the
+  calendar, Attention, Cai's coming up and the feed, tested from Toronto, UTC, Riyadh and
+  Kiritimati.

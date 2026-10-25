@@ -3545,4 +3545,5 @@ export const arB: Catalog = {
   'Use {time} instead': 'استخدام {time} بدلًا منه',
   'Another time suggested': 'تم اقتراح وقت آخر',
   'Suggest it': 'اقتراح هذا الوقت',
+  today: 'اليوم',
 };

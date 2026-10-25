@@ -1,4 +1,5 @@
 import { uuidv4 } from '@caime/core';
+import { dayIn } from '@caime/core/series';
 import { sql } from 'kysely';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { type Client, createTestApp, signup, type TestApp } from './helpers';
@@ -758,5 +759,67 @@ describe('what’s coming up (PRD §41)', () => {
     ]);
     expect((await view(eli)).map((u) => u.messageId)).toEqual([dinner.id]);
     expect(surprise.id).toBeTruthy();
+  });
+});
+
+describe('a day is a day (R119)', () => {
+  it('files a due day and an action due on a day on that day for every reader, from UTC−5 to UTC+14', async () => {
+    const was = t.clock.now.toISOString();
+    try {
+      t.clock.set('2027-03-08T12:00:00Z');
+      const hala = await signup(t, { displayName: 'Hala Days', timeZone: 'Africa/Cairo' });
+      for (const zone of ['America/Toronto', 'UTC', 'Asia/Riyadh', 'Pacific/Kiritimati']) {
+        const reader = await signup(t, { displayName: 'Reader Days', timeZone: zone });
+        const withReader = await connect(hala, reader);
+        const invoice = await card(hala, withReader, 'invoice', {
+          reference: 'INV-310',
+          amount: { value: 90, currency: 'EGP' },
+          due: '2027-03-10',
+        });
+        // 12 March on Hala's clock, without a time: 22:00 UTC on the 11th.
+        const lease = (
+          await hala.post('/v1/tasks', {
+            title: 'Sign the lease',
+            assigneeId: reader.user.id,
+            shared: true,
+            conversationId: withReader,
+            dueAt: '2027-03-11T22:00:00.000Z',
+            dueHasTime: false,
+          })
+        ).task;
+        const items = (
+          await reader.get('/v1/calendar?from=2027-03-01T00:00:00Z&to=2027-04-01T00:00:00Z')
+        ).items as Array<{ id: string; at: string; on: string | null; state: string }>;
+        const owed = items.find((i) => i.id === invoice.id);
+        const due = items.find((i) => i.id === lease.id);
+        expect(owed, zone).toMatchObject({ on: '2027-03-10', hasTime: false, state: 'open' });
+        expect(dayIn(new Date(owed!.at), zone), zone).toBe('2027-03-10');
+        expect(due, zone).toMatchObject({ on: '2027-03-12', hasTime: false, state: 'open' });
+        expect(dayIn(new Date(due!.at), zone), zone).toBe('2027-03-12');
+        // Their calendar app has both all day, on the same days.
+        const url = (await reader.post('/v1/calendar/feed', {})).url as string;
+        const all = await lines(url);
+        expect(event(all, `invoice-${invoice.id}@caime`), zone).toContain(
+          'DTSTART;VALUE=DATE:20270310',
+        );
+        expect(event(all, `task-${lease.id}@caime`), zone).toContain('DTSTART;VALUE=DATE:20270312');
+        // On its day, the due day is coming up all day, also late on it; then it's past.
+        const late = new Date(Date.parse(owed!.at) + 20 * 3_600_000).toISOString();
+        t.clock.set(late);
+        const home = await reader.get('/v1/attention');
+        expect(
+          home.comingUp.map((i: { id: string }) => i.id),
+          zone,
+        ).toContain(invoice.id);
+        t.clock.set(new Date(Date.parse(due!.at) + 30 * 3_600_000).toISOString());
+        const after = (
+          await reader.get('/v1/calendar?from=2027-03-01T00:00:00Z&to=2027-04-01T00:00:00Z')
+        ).items as Array<{ id: string; state: string }>;
+        expect(after.find((i) => i.id === lease.id)?.state, zone).toBe('overdue');
+        t.clock.set('2027-03-08T12:00:00Z');
+      }
+    } finally {
+      t.clock.set(was);
+    }
   });
 });

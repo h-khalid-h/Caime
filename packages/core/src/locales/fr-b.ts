@@ -2751,4 +2751,5 @@ export const frB: Catalog = {
   'Use {time} instead': 'Prendre {time} à la place',
   'Another time suggested': 'Autre horaire proposé',
   'Suggest it': 'Le proposer',
+  today: 'aujourd’hui',
 };

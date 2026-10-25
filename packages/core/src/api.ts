@@ -1681,7 +1681,16 @@ export interface CalendarItemView {
   /** A card's place in its conversation (R83: where Join opens it); null for a task. */
   seq: number | null;
   title: string;
+  /**
+   * When it is. For what's kept by a day (`on`), that day's first moment on the reader's clock,
+   * so a list files it on its own day.
+   */
   at: string;
+  /**
+   * Kept by a day, not a time (R119): a Pay card's or an invoice's due day as written, an
+   * action's due day on its owner's clock. The same day for every reader; null for a time.
+   */
+  on: string | null;
   hasTime: boolean;
   /** A meeting's or an appointment's end, when it has a time. */
   endAt: string | null;

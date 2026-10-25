@@ -326,7 +326,9 @@ export interface CardDue {
   seq: number;
   kit: DueKit;
   title: string;
-  /** Midnight UTC of its due day, as `card_start_at` keeps it. */
+  /** Its due day as written (`YYYY-MM-DD`): the same day for everyone (R119). */
+  on: string;
+  /** Midnight UTC of that day, as `card_start_at` keeps it: for order, never for a reader's day. */
   at: Date;
   amount: { value: number; currency: string } | null;
   state: string;
@@ -384,6 +386,7 @@ export async function dueCards(
       seq: Number(row.seq),
       kit,
       title: payload.title || (kit === 'invoice' ? 'Invoice' : 'Pay'),
+      on: day as string,
       at,
       amount,
       state: payload.state ?? '',

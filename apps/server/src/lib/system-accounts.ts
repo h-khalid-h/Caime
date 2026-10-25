@@ -76,6 +76,7 @@ import {
 import { type Act, answerAwaited, offerAct } from './cai-acts';
 import { speakReply } from './cai-voice';
 import { caimeDayText, productOrgId } from './caime-day';
+import { dayStart } from './calendar';
 import { ensureDirectConversation } from './conversations';
 import { AppError } from './errors';
 import { freeAnswer } from './free-time';
@@ -1178,8 +1179,9 @@ export async function openFor(
   const ahead = [
     ...soon,
     ...cards.map((c) => ({ at: c.at, hasTime: c.hasTime, title: c.title })),
+    // On its day as written, on the person's clock (R119): never its midnight UTC.
     ...owed.map((c) => ({
-      at: c.at,
+      at: dayStart(c.on, zone),
       hasTime: false,
       title: c.amount
         ? `${c.title}: ${formatAmount(c.amount.value, c.amount.currency, locale)}`

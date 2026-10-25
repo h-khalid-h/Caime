@@ -130,7 +130,9 @@ function HomeRow({
 /** Whom a wait is on, and since when, as the home says it. */
 function waitingLine(task: TaskView, now: Date, timeZone: string, locale: string): string {
   return task.dueAt
-    ? tr('Expected {when}', { when: formatWhen(task.dueAt, now, timeZone, locale) })
+    ? tr('Expected {when}', {
+        when: formatWhen(task.dueAt, now, timeZone, locale, task.dueHasTime),
+      })
     : tr('Asked {when}', { when: formatWhen(task.createdAt, now, timeZone, locale) });
 }
 
@@ -576,7 +578,7 @@ export function AttentionHome() {
                     line={
                       item.with?.displayName ?? item.org?.name ?? item.conversationTitle ?? null
                     }
-                    when={formatListTime(item.at, now, timeZone, locale)}
+                    when={formatListTime(item.at, now, timeZone, locale, item.hasTime)}
                     onPress={() => openItem(item)}
                     testID={`home-coming-${item.id}`}
                   />

@@ -2659,3 +2659,22 @@ with its reason, so it isn't proposed again without new facts.
   else) and to ask rather than assume; the time now is beside the conversation, never in a cached
   system prompt. Whatever the rules answer about time (when someone's free, what's due, what's
   waiting) reads the person's clock already. Built: M17 I18.
+- **R119 (2026-10-25) Time, named and kept as what it is.** The owner handed over a Date and Time
+  Convention (dated 2026-10-23) as more of R118's time-aware intelligence: every date named
+  `object.event[.qualifier].time` with seven suffixes (`on`, `at`, `local`, `in`, `from`,
+  `until`, `known_at`), days counted in a declared zone, future wall-clock times kept with their
+  zone, device clocks untrusted, ranges from-included and until-excluded, a history for dates that
+  move, an object registry. Through the council (`docs/REVIEW-2026-10-25-CAI.md` §8). *Decided:*
+  adopted as Caime's (`docs/TIME.md`): level 1 for every field, held to the schema by
+  `time-names.test.ts` (the four columns named before it listed with their meaning, a list that
+  only shrinks, each renamed when a slice touches it); level 2, a date's history (`replan` or
+  `correction`), for the dates people are told about; not level 3 (Caime holds no money, R62).
+  *What it found, fixed in order of who it hurts:* (a) a Pay card's or an invoice's due day was
+  filed as midnight UTC, so anyone west of UTC saw it a day early: a day is now a day for every
+  reader (`CalendarItemView.on`, the calendar, Attention's coming up, Cai's coming up, the feed;
+  built, M17 I19a); (b) an action due on a day, shared with someone in another zone, read as the
+  day before or after: its day is its owner's (I19a for the calendar and the feed, I19b as a day
+  of its own, `tasks.due_on`); (c) a meeting's start keeps the zone it was set in, so a change of
+  a country's rules moves no meeting (I19c); (d) each move of a meeting's time, an action's due or
+  a promise's day kept with its reason, so Cai can say what slipped (I19d). *The number:* days
+  shown on another day than their own, zero, in a test across UTC−5, UTC, UTC+3 and UTC+14.

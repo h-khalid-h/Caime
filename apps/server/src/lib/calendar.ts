@@ -19,7 +19,15 @@ import { tr } from '@caime/core/i18n';
 import { HELD_APPOINTMENT_STATES } from '@caime/core/kit-states';
 import { cardEndMs } from '@caime/core/meetings';
 import { isRepeat } from '@caime/core/repeat';
-import { isDay, occurrencesBetween, seriesAgreed, seriesOf, timesAYear } from '@caime/core/series';
+import {
+  dayIn,
+  isDay,
+  occurrencesBetween,
+  seriesAgreed,
+  seriesOf,
+  timesAYear,
+} from '@caime/core/series';
+import { zonedTimeToUtc } from '@caime/core/time';
 import { sql } from 'kysely';
 import type { AppContext } from '../context';
 import { ORG_COLUMNS } from '../db/schema';
@@ -44,7 +52,27 @@ export function minutesOf(c: {
   return Math.round((cardEndMs(at, c) - at) / 60_000);
 }
 const MAX_ITEMS = 500;
-const dayOf = (at: Date) => new Date(Math.floor(at.getTime() / 86_400_000) * 86_400_000);
+const DAY_MS = 86_400_000;
+
+/**
+ * The first moment of a day on a reader's clock (R119): where a list files what's kept by a day,
+ * so it sits on that day for everyone, wherever they are.
+ */
+export function dayStart(on: string, zone: string): Date {
+  const [year, month, day] = on.split('-').map(Number) as [number, number, number];
+  return zonedTimeToUtc({ year, month, day }, zone);
+}
+
+/** Each person's clock, for the days kept by it (R119): one query for the set. */
+export async function zonesOf(ctx: AppContext, ids: string[]): Promise<Map<string, string>> {
+  if (!ids.length) return new Map();
+  const rows = await ctx.db
+    .selectFrom('users')
+    .select(['id', 'time_zone'])
+    .where('id', 'in', [...new Set(ids)])
+    .execute();
+  return new Map(rows.map((r) => [r.id, r.time_zone || 'UTC']));
+}
 
 export interface Window {
   from: Date;
@@ -180,7 +208,10 @@ function groupLine(about: ConversationAbout | undefined, cardTitle: string): str
 /**
  * Someone's calendar between two instants: their open actions with a due date (as the feed
  * lists them: their own, and what they were asked and accepted), and the meetings and
- * appointments in their conversations, agreed or asked. Soonest first.
+ * appointments in their conversations, agreed or asked. Soonest first. What's kept by a day (a
+ * Pay card's or an invoice's due day, an action due on a day) is on that day for every reader
+ * (R119): `on` says it, and `at` is its first moment on the reader's clock, so a list files it
+ * there; it's in the window when its day is one of the window's days on that clock.
  */
 export async function calendarItems(
   ctx: AppContext,
@@ -188,8 +219,15 @@ export async function calendarItems(
   window: Window,
   taskViews: (rows: Awaited<ReturnType<typeof overdueTasks>>) => Promise<TaskView[]>,
 ): Promise<CalendarItemView[]> {
+  // A day's items are looked for two days further each way (a day kept as its midnight UTC, or as
+  // its first moment on an owner's clock, can lie a day and more from the reader's: UTC−12 to
+  // UTC+14), then cut by the window's own days on the reader's clock.
+  const wide = {
+    from: new Date(window.from.getTime() - 2 * DAY_MS),
+    until: new Date(window.until.getTime() + 2 * DAY_MS),
+  };
   const [tasks, cards, owed] = await Promise.all([
-    overdueTasks(ctx, userId, window),
+    overdueTasks(ctx, userId, wide),
     // With the times of repeating meetings ahead of the one posted (R58).
     cardsAhead(ctx, userId, {
       ...window,
@@ -197,10 +235,16 @@ export async function calendarItems(
       agreedOnly: false,
       series: { now: ctx.now() },
     }),
-    // A due day is kept as its midnight UTC: a window that starts later in the day still has it.
-    dueCards(ctx, userId, { ...window, from: dayOf(window.from), limit: MAX_ITEMS }),
+    dueCards(ctx, userId, { ...wide, limit: MAX_ITEMS }),
   ]);
-  const views = await taskViews(tasks);
+  const [views, zones] = await Promise.all([
+    taskViews(tasks),
+    zonesOf(ctx, [userId, ...tasks.map((t) => t.owner_id)]),
+  ]);
+  const zone = zones.get(userId) ?? 'UTC';
+  const firstDay = dayIn(window.from, zone);
+  const lastDay = dayIn(new Date(window.until.getTime() - 1), zone);
+  const inWindow = (on: string) => on >= firstDay && on <= lastDay;
   const conversationIds = [
     ...cards.map((c) => c.conversationId),
     ...owed.map((c) => c.conversationId),
@@ -243,6 +287,7 @@ export async function calendarItems(
       seq: c.seq,
       title: c.title,
       at: c.at.toISOString(),
+      on: null,
       hasTime: c.hasTime,
       endAt: c.hasTime ? new Date(c.at.getTime() + minutes * 60_000).toISOString() : null,
       place: c.place,
@@ -260,13 +305,15 @@ export async function calendarItems(
   }
   // What's owed by a day (M14): on its day, all day, overdue only when said so.
   for (const c of owed) {
+    if (!inWindow(c.on)) continue;
     const a = about.get(c.conversationId);
     items.push({
       kind: c.kit,
       id: c.messageId,
       seq: c.seq,
       title: c.title,
-      at: c.at.toISOString(),
+      at: dayStart(c.on, zone).toISOString(),
+      on: c.on,
       hasTime: false,
       endAt: null,
       place: null,
@@ -286,6 +333,9 @@ export async function calendarItems(
     const waiting = t.direction === 'waiting' || t.direction === 'i_asked';
     const other = t.direction === 'asked_me' ? t.owner.id : waiting ? t.assignee.id : null;
     const due = new Date(t.dueAt);
+    // Due on a day: its owner's day, wherever it's read (R119); past it, it's overdue.
+    const on = t.dueHasTime ? null : dayIn(due, zones.get(t.owner.id) ?? zone);
+    if (on ? !inWindow(on) : due < window.from || due > window.until) continue;
     items.push({
       kind: 'task',
       id: t.id,
@@ -293,7 +343,8 @@ export async function calendarItems(
       title: waiting
         ? tr('Waiting on {name}: {title}', { name: t.assignee.displayName, title: t.title })
         : t.title,
-      at: t.dueAt,
+      at: on ? dayStart(on, zone).toISOString() : t.dueAt,
+      on,
       hasTime: t.dueHasTime,
       endAt: null,
       place: null,
@@ -304,7 +355,7 @@ export async function calendarItems(
       ...withOf(other && other !== userId ? other : null),
       org: a?.org ?? null,
       conversationTitle: a?.title ?? null,
-      state: waiting ? 'waiting' : due < now && t.dueHasTime ? 'overdue' : 'open',
+      state: waiting ? 'waiting' : (on ? on < dayIn(now, zone) : due < now) ? 'overdue' : 'open',
     });
   }
   return items.sort((x, y) => x.at.localeCompare(y.at)).slice(0, MAX_ITEMS);

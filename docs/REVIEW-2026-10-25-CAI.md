@@ -306,3 +306,82 @@ money between people or puts anyone's private label in front of anyone else.
 4. *The number:* of the conversations Cai answered for someone, the share the receiver acted on
    within a day (a reply, a booking confirmed, a call back); for the snippet, conversations started
    from organizations' own websites.
+
+## 8. The council on the owner's Date and Time Convention (R119)
+
+The owner handed over a Date and Time Convention ("TimeStandard", 2026-10-23, twelve pages), as
+more of "time aware intelligence", with "Caime never went into real production yet". It names
+every date `object.event[.qualifier].time` with seven suffixes (`on` a day, `at` a moment in UTC,
+`local` a wall-clock time with its IANA zone, `in` a period, `from` and `until` a range included
+and excluded, `known_at` when recorded), three qualifiers (`requested`, `planned`, `due`), days
+counted in a declared reference zone, future wall-clock times kept with their zone, device clocks
+untrusted, six core rules, an append-only history for dates that move (`replan` against
+`correction`), and an object registry; in three levels adopted whole.
+
+**The seats.** The Architect proposed adopting it as Caime's, renaming every date column to it
+while there are no real users. The Specialist was a data architect who has run time conventions
+across calendar and billing systems in several countries (time-zone database changes, all-day
+events, plan-against-actual reporting). The Newcomers were a customer in Toronto paying a Cairo
+clinic's invoice, an assistant in Dubai sharing an action with a colleague in London, and the
+other coding agents about to join (`AGENTS.md`).
+
+**Turning points.**
+
+1. *Evidence before adoption: does Caime break it where it hurts?* Measured on the schema: 279
+   date and time columns in 105 tables; 4 without one of the suffixes
+   (`billing_subscriptions.current_period_end`, `call_note_answers.at`, `relationship_events.at`,
+   `users.birth_date`) and 13 whose `_at` names no event that happened (`start_at`, `end_at`,
+   `due_at`, `remind_at`, `run_at`, `deadline_at`, `delivery_at`, `effects_at`,
+   `messages.card_start_at`, `automations.last_run_at` is a cache and fine). Most of Caime already
+   speaks it: `<event>_at` in UTC, `seq` for order (ADR-9), the server's clock for receipts.
+2. *The Newcomer in Toronto, and a real bug it found:* a Pay card's or an invoice's due day is
+   kept as a day in the card (`fields.due`, "2026-10-30") but filed as midnight UTC
+   (`cardStartAt`, `lib/kits.ts`; `dueCards`, `lib/upcoming.ts`), and the app files a calendar
+   item under the viewer's own day (`formatDayHeading(item.at, …)`, `CalendarList.tsx`): anyone
+   west of UTC sees it a day early, "due" on the 29th. *Fixed first:* a day stays a day to every
+   reader (the convention's "a day is never padded to midnight").
+3. *The Newcomer in Dubai:* an action due on a day without a time is stored as that day's start
+   on its owner's clock (`instantOf(picked, timeZone)`, `AddTaskSheet.tsx`), so a colleague in
+   London reads the day before. *Fixed second:* an action's due day is a day (`on`), shown on its
+   day to whoever reads it.
+4. *Specialist, first principles: future wall-clock times.* A meeting at 10:00 in Cairo is kept as
+   a UTC instant (`fields.start.at`) and no zone; when a zone's rules change, it's an hour off.
+   Not hypothetical in Caime's markets: Egypt brought summer time back in 2023 with weeks of
+   notice, Lebanon reversed a change within two days. A series already reads its proposer's wall
+   clock (`occurrenceAt`); a single card doesn't. *Fixed third:* a card's start keeps the zone it
+   was set in (`local`), its UTC derived, and a start set before a rule change is derived again.
+5. *Adversary: renaming those columns now is churn for spelling.* The compiler would catch every use
+   (Kysely's types), but each rename is two releases under convention 7 and touches readers the
+   E2E covers, for no person's gain. *Build less:* the suffix rule holds for every new field, by a
+   test over the live schema (`time-names.test.ts`), with the four that break the suffix listed by
+   name and meaning, a list that only shrinks, and the dozen that keep a plan in an `_at` named in
+   `docs/TIME.md`; each is renamed when a slice touches it anyway. Accepted out loud: half a
+   level would be ambiguous; a written list with
+   their meaning is not.
+6. *Specialist, second-order: "time aware" is plan against fact.* Caime holds plans everywhere (a
+   meeting agreed, a booking confirmed, an action's due, a promise's day) and their facts (the
+   call that started, the action done, what arrived); it doesn't keep how a plan moved. *Decided:*
+   level 2 for the dates people are told about: each move of a card's time, an action's due or a
+   promise's day kept with `replan` or `correction`, in the change's own transaction, so Cai can
+   say "this moved twice" and a brief counts slips by `replan` alone. Kept with what it's about and
+   erased with it.
+7. *Adversary: level 3 (finance, legal entities, contracts) isn't Caime's.* Accepted: Caime never
+   holds or moves money (R62); an invoice's due day is an organization's or floating day, which
+   level 1 covers.
+
+**The Conductor's decision.** Adopt the convention as Caime's (`docs/TIME.md`): level 1 for every
+field, enforced on the schema, the earlier names listed and renamed as they're touched; level 2
+for the dates that move; not level 3. Fix what it found, in order of who it hurts.
+
+1. *The plan:* (a) a due day stays a day: `CalendarItemView.on` for anything kept by a day, the app
+   files it by that day and never by the viewer's zone (the calendar, Coming up, the ICS feed as an
+   all-day event); (b) an action's due day as a day for everyone it's shared with; (c) a card's
+   start keeps its zone; (d) the history of moved dates, read by Cai and the brief;
+   (e) `time-names.test.ts` and the registry. Done when each has its test (a reader at UTC−5 sees a
+   due day on its day; a London reader sees a Dubai action's day; a start re-derived under a
+   changed rule).
+2. *Decided against:* renaming every column now; level 3; storing a day as any midnight.
+3. *Open risks:* a reader that still files by `at` (the test names them); a provider calendar that
+   reads an all-day event its own way (the ICS feed writes `VALUE=DATE`).
+4. *The number:* days shown on another day than their own, zero, in a test across UTC−5, UTC,
+   UTC+3 and UTC+14.

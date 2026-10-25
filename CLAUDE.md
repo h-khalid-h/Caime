@@ -140,6 +140,13 @@ These are rules, not preferences.
     and Search each a set of their own), and it answers in the language it was written in. The model is asked only for what the rules don't answer, for
     whoever may use it, on the latest model by default. A new language brings its readers and
     their golden lines with its catalog.
+18. **Time says what it is** (R119, `docs/TIME.md`). A date or time is named for the kind it
+    holds and stored as that kind: `_at` a moment (timestamptz, UTC), `_on` a day (date), `_local`
+    a wall-clock time beside its IANA zone, `_from` included and `_until` excluded
+    (`time-names.test.ts` holds the schema to it; the names before it are listed, a list that only
+    shrinks). A day is never padded to a midnight for a reader: what's kept by a day is shown on
+    that day to everyone, wherever they are; a device's clock is never a record's time; order is
+    `seq`.
 
 ## Vocabulary
 
@@ -642,7 +649,11 @@ A sphere is said as how you know someone, never "sphere".
   them (`cardsAhead` reads both from the business thread), so the feed, Attention's coming up,
   Cai, `busyNow` and the brief all answer for them alone. Nothing on it changes a date: a card
   is moved in its
-  conversation. The app shows it as the Actions tab's Calendar segment and the Business inbox's
+  conversation. What's kept by a day (a Pay card's or an invoice's due day, an action due on a
+  day: its owner's day, `zonesOf`) carries `CalendarItemView.on`, its `at` that day's first
+  moment on the reader's clock (`dayStart`), and it's in a window when its day is one of the
+  window's days on that clock (R119, I19a): a new reader of a day files it by `on`, never by an
+  instant. The app shows it as the Actions tab's Calendar segment and the Business inbox's
   Bookings view (both loaded when shown), keyed by an hourly window so the query is one an hour,
   and `realtime/apply.ts` invalidates `['calendar']` and `['org-calendar']` on a kit message
   event. A new dated thing (a booking slot, an event) joins `calendarItems`, never a list of
@@ -2361,7 +2372,8 @@ A sphere is said as how you know someone, never "sphere".
   `orgRef` selects `ORG_REF_COLUMNS`. When a card is for is `messages.card_start_at` (migration 0066 and
   0067, `cardStartAt` in `lib/kits.ts`, written on send; a test that inserts a card by hand
   writes it too): a meeting's or an appointment's start, a Pay card's or an invoice's due day
-  (M14, midnight UTC of the date). The calendar, the slots, the briefs and search read cards by
+  (M14, midnight UTC of the date, for order alone: a reader's day is the card's own `fields.due`,
+  `CardDue.on`, R119). The calendar, the slots, the briefs and search read cards by
   it, never `payload->'fields'->'start'`, and when one ends is core `cardEndMs` (`meetings.ts`:
   its booking's end, else its minutes up to a day, else `CARD_MINUTES`), for every reader of an
   end (the calendar, the join window, the guests, a series, the slots, a booker's mail), never
@@ -2750,7 +2762,7 @@ A sphere is said as how you know someone, never "sphere".
 
 Read the whole diff before running anything. Check the refusals in `CONTRIBUTING.md` first (they
 end a review), then run `pnpm check`, the budget and the E2E on the branch, then read it against
-conventions 1–17 and the product review. Verify every number and every "verified" claim against
+conventions 1–18 and the product review. Verify every number and every "verified" claim against
 output, not the description. Accept with small fixes named, request changes naming file and rule,
 or refuse with one reason and a roadmap line if the idea is worth keeping. Never merge on a red
 check, a contributor's own approval or a bot's.

@@ -2657,4 +2657,5 @@ export const turkishB: Catalog = {
   'Use {time} instead': 'Bunun yerine {time}',
   'Another time suggested': 'Başka bir saat önerildi',
   'Suggest it': 'Öner',
+  today: 'bugün',
 };
