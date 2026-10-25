@@ -4286,10 +4286,54 @@ clinic can sign for. I1 lands before launch.
       tappable.
 - [ ] I10. Groups (M): whom a promise or an ask is for by the names in it (`peopleMeant`), and
       "everyone".
-- [ ] I11. Cai by voice, and a reply drafted in a conversation (M each).
+- [ ] I11. Cai by voice, and a reply drafted in a conversation (M each). Cai by voice is I14.
 - [ ] I12. Calls and files in answers, then meaning (L): a call's lines and write-up as passages;
       Office and PDF text indexed; search by meaning after I5, with its processor in the DPA and
       erasure removing what it kept.
+- [ ] I14. Cai hears, sees and answers aloud in its chat (R115, `docs/REVIEW-2026-10-25-CAI.md`).
+  - [x] I14a. A voice note to Cai heard and answered, aloud when spoken to (S–M, 2026-10-25):
+        Cai's and the friends' chats take voice notes (the composer's microphone is there; the
+        refusal names voice notes); the note goes through the one transcription path and
+        `afterTranscript` answers it in the chat as typed words are (`queueSystemReply`), or, when
+        it won't be heard, `noteUnheard` (handed to `registerTranscribeJob`) answers with why:
+        no speech provider (at once, from `effectsOf`), AI assist off, under 18, the day's
+        allowance used, too long, or a recording the provider couldn't make out (a busy provider
+        too, so nobody waits on retries). When they spoke, a line of up to `SPOKEN_REPLY_MAX`
+        (400) characters comes back as Cai's voice note (`lib/cai-voice.ts`: `ctx.tts` through
+        `runAi('speak')` on their allowance, `forgetLater`, a file of Cai's own, its length read
+        from the MP3's frames by `mp3LengthUs`, `payload.spoken`, its words drawn under the note
+        without a "Transcript" caption); a longer answer and one carrying sources or an offer is
+        written. `caime_cai_voice_total{outcome}`. Verified: `cai-voice.test.ts` (4: heard and
+        said back with its length, a long one written and a list said as a sentence, assist off
+        and an unreadable note answered with why, no provider answered at once),
+        `audio-length.test.ts` (MP3 by frames, past an ID3 tag and the encoder's frame), the
+        voices' overlays, the Cai E2E's voice note.
+  - [ ] I14b. A photo to Cai seen (M): the light model reads its preview with the words and
+        what's open, answering with `reply`, `keep` and `act`; priced per image.
+  - [ ] I14c. "Read it to me", and a spoken answer played on its own on a phone.
+- [ ] I15. Cai runs each scope, as it runs Caime (R115).
+  - [x] I15a. An organization's day answered (M, the council's §6 in the review): "how is the
+        clinic doing" (core `chatOrg`, golden lines in four languages) and the brief read
+        `lib/org-day.ts` (the inbox's own "Needs a reply" by core `customerWaiting`, how many of
+        those the AI agent answered, its answers waiting to be sent by the inbox's `STANDING_DRAFT`,
+        the questions it couldn't answer still open, bookings today on the organization's clock,
+        orders open; `ORGS_TOLD` and "and N more"), each block ending at the inbox's link, the brief
+        offered once while it's off (`payload.briefOffer`), help naming it to whoever runs one, the
+        digest's `teamWeeks` on the same `orgsRunBy`. Five batched queries for every organization
+        someone runs, no model. Verified: `cai-org.test.ts` (8: the counts equal to
+        `GET /orgs/:id/inbox`'s `customer_waiting`, the words, a name or handle or first words found,
+        the brief, Cai's answer and its one offer, Cairo's Arabic for someone in Egypt, nobody
+        else's, help), `chat-org-golden.test.ts`, the dialects' overlays (`voices.test.ts` reads
+        `org-day.ts`).
+  - [ ] I15a2. The slipping tell (S): a customer in "Needs a reply" past the reply target during
+        open hours with nobody on it, told once to the managers, under Cai's initiative setting.
+  - [ ] I15b. Caime's own day for its operators (M): the product organization's owner and admins
+        hear the platform's state on ask and in the brief, and are told when a condition crosses
+        (a provider down on two probes, a backup old or not copied, the audit chain failing, new
+        dead jobs, a child-safety report waiting) and when it clears; counts only, an unread gauge
+        said as unread; acting stays with the operator's token until a passkey at the moment of
+        acting (I15d).
+  - [ ] I15c. = I8, whose numbers an organization's answers then read.
 
 ## M18 — The standards pass (the owner's brief of 2026-10-25)
 
@@ -5948,6 +5992,28 @@ CONNIQT; they mean Caime. Caishy is one of Caime's AI members, and Cai leads the
 - 2026-10-20 — The French and Turkish catalogs come in two halves fetched side by side, as Arabic
   does: their largest download 48.9 KB where one was 95.2 KB of a chunk's 100; the first download
   448.8 KB of 450 (0.2 KB more: the two loaders).
+- 2026-10-25 — M17 I15a, an organization's day: whoever runs one asks Cai "how is the clinic
+  doing" (or "كيف وضع العيادة", "comment va la clinique", "klinikte işler nasıl") and hears the
+  Business inbox's own numbers in what to do, how many the AI agent answered with nobody on the
+  team yet, its answers waiting to be sent, the questions it couldn't answer, today's bookings on
+  the organization's clock and orders open, ending at the inbox; the morning brief says the same
+  for the organizations with something today, and Cai offers the brief once while it's off.
+- 2026-10-25 — The council pass (`.claude/skills/council/`, CLAUDE.md's session start): the owner's
+  two deliberation prompts read, kept where they pay (an attacked first draft, the newcomer's
+  reading, first principles and second-order effects, a plan that must move, a decision rather
+  than a summary) and rebuilt where they don't (no objection invented for a quota, evidence or a
+  stated test behind every claim, "don't build" allowed, the turning points recorded instead of a
+  transcript), for decisions costly to undo only. First run on I15: the brief is off by default
+  and the digest's waiting count disagreed with the inbox, so I15a is answered on ask with the
+  inbox's own numbers, a slipping tell follows (I15a2), and Caime's own day becomes a pager that
+  clears (I15b).
+- 2026-10-25 — R115 and M17 I14a (the owner: "Caime's AI chatting, talking, listening, watching,
+  acting, interacting… Caime itself run by its intelligence led by Cai, and each person or
+  organization for their own scope"): read in `docs/REVIEW-2026-10-25-CAI.md` (one intelligence,
+  scoped: a person, an organization, Caime itself; the modes at Cai's own door). First slice: a
+  voice note to Cai or a friend is heard and answered as typed words, said back as Cai's voice note
+  when it's short, and a note it can't hear is answered with why. Planned: I14b photos, I15a an
+  organization's day, I15b Caime's own day for its operators.
 - 2026-10-25 — M17 I7a, a calendar-aware Cai: "when am I free Thursday" and "am I free tomorrow
   at 3" answered by the rules from what holds the person's day (their agreed cards, their connected
   calendars' busy times) inside the hours that count as their day, in every interface language; a

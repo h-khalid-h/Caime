@@ -1437,6 +1437,16 @@ export interface CallRecordingFramesTable {
  * the sharer's that points at the call; this row finds every share of a call when its recording
  * goes, so nothing reads messages' payload for it.
  */
+/**
+ * Cai's answers said aloud in its chat (M17 I14a): the sound's file, the message it was said in
+ * (null once that's gone) and when, for the sweep that lets the sound go.
+ */
+export interface CaiSpokenTable {
+  file_id: string;
+  message_id: string | null;
+  created_at: Generated<Date>;
+}
+
 export interface CallRecordingSharesTable {
   message_id: string;
   call_id: string;
@@ -1858,6 +1868,7 @@ export interface Database {
   call_recording_parts: CallRecordingPartsTable;
   call_recording_frames: CallRecordingFramesTable;
   call_recording_shares: CallRecordingSharesTable;
+  cai_spoken: CaiSpokenTable;
   call_note_summaries: CallNoteSummariesTable;
   e2ee_devices: E2eeDevicesTable;
   billing_customers: BillingCustomersTable;

@@ -48,7 +48,7 @@ import {
 } from './relations';
 import { spaceConversationTitle, spaceRefs } from './spaces';
 import { createSuggestion, tellLetGo } from './suggest';
-import { queueTranscription } from './transcribe';
+import { queueTranscription, type UnheardWhy } from './transcribe';
 
 const BURST_WINDOW_MS = 10 * 60_000;
 const LEVEL_RANK = { activity: 0, attention: 1, urgency: 2 } as const;
@@ -174,8 +174,16 @@ export function registerEffectsSweep(): void {
 /** Cai's and the Caime Friends' answers (R67, `lib/system-accounts.ts` registers the job). */
 export const SYSTEM_REPLY_JOB = 'system.reply';
 
-/** Someone wrote to one of Caime's own: it answers in a moment (a message in parts, once). */
-async function queueSystemReply(ctx: AppContext, message: Message, accountId: string) {
+/**
+ * Someone wrote to one of Caime's own: it answers in a moment (a message in parts, once). A voice
+ * note is answered once it's heard (M17 I14a), or with why it couldn't be (`unheard`).
+ */
+async function queueSystemReply(
+  ctx: AppContext,
+  message: Message,
+  accountId: string,
+  unheard?: UnheardWhy,
+) {
   await enqueue(
     ctx,
     SYSTEM_REPLY_JOB,
@@ -184,6 +192,7 @@ async function queueSystemReply(ctx: AppContext, message: Message, accountId: st
       seq: Number(message.seq),
       accountId,
       personId: message.sender_id,
+      ...(unheard ? { unheard } : {}),
     },
     {
       runAt: new Date(ctx.now().getTime() + 800),
@@ -227,8 +236,16 @@ async function effectsOf(ctx: AppContext, message: Message, read: Analysis | nul
     const caimes = members.find((m) => systemAccountOf(m.user_id));
     if (caimes) {
       // Mail someone sent themselves lands here (R91): kept, not answered.
-      if (caimes.user_id !== sender.id && message.channel !== 'mail')
-        await queueSystemReply(ctx, message, caimes.user_id);
+      if (caimes.user_id === sender.id || message.channel === 'mail') return;
+      // A voice note is answered once it's in words (M17 I14a); without a way to hear it, at once.
+      if (message.kind === 'voice' && ctx.speech) await queueTranscription(ctx, message);
+      else
+        await queueSystemReply(
+          ctx,
+          message,
+          caimes.user_id,
+          message.kind === 'voice' ? 'unavailable' : undefined,
+        );
       return;
     }
   }
@@ -426,6 +443,38 @@ export async function afterEdit(
 }
 
 /**
+ * The one of Caime's own (Cai or a Caime Friend) a person's message was written to: its id, or
+ * null for any other conversation, and for what Caime's own wrote itself.
+ */
+async function systemPartyOf(ctx: AppContext, message: Message): Promise<string | null> {
+  const others = await ctx.db
+    .selectFrom('participants as p')
+    .innerJoin('conversations as c', 'c.id', 'p.conversation_id')
+    .select('p.user_id')
+    .where('p.conversation_id', '=', message.conversation_id)
+    .where('c.kind', '=', 'direct')
+    .where('p.user_id', '<>', message.sender_id ?? '')
+    .execute();
+  const caimes = others.find((o) => systemAccountOf(o.user_id));
+  return caimes && !systemAccountOf(message.sender_id ?? '') ? caimes.user_id : null;
+}
+
+/**
+ * A voice note that won't be put into words (M17 I14a): written to Cai or a friend, it's answered
+ * with why, so it's never met by silence; anywhere else it stays a note, as before.
+ */
+export async function noteUnheard(
+  ctx: AppContext,
+  message: Message,
+  why: UnheardWhy,
+): Promise<boolean> {
+  const caimes = await systemPartyOf(ctx, message);
+  if (!caimes) return false;
+  await queueSystemReply(ctx, message, caimes, why);
+  return true;
+}
+
+/**
  * A voice note's words, once heard (M16 G8, `lib/transcribe.ts`): what they ask, promise or
  * decide is offered as a text's would have been when it was sent, each kind once per message
  * (the fingerprint), with nobody told again (the note was). A customer conversation files them
@@ -437,7 +486,14 @@ export async function afterTranscript(
   message: Message,
   analysis: Analysis | null,
 ): Promise<void> {
-  if (!analysis || !message.sender_id || message.forwarded_from_id || message.sealed) return;
+  if (!message.sender_id || message.sealed) return;
+  // Said to Cai or a Caime Friend (M17 I14a): answered as typed words are, and nothing else.
+  const caimes = await systemPartyOf(ctx, message);
+  if (caimes) {
+    await queueSystemReply(ctx, message, caimes);
+    return;
+  }
+  if (!analysis || message.forwarded_from_id) return;
   const conversation = await ctx.db
     .selectFrom('conversations')
     .selectAll()

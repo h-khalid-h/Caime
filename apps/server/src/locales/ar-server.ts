@@ -1019,7 +1019,8 @@ export const arServer: Catalog = {
   'Nothing you said you’d do is open.': 'لا شيء مما وعدت به مفتوح.',
   'Coming up this week:': 'قادم هذا الأسبوع:',
   'Nothing is coming up this week.': 'لا شيء قادم هذا الأسبوع.',
-  '{name} reads words and stickers.': 'مع {name}، الكلمات والملصقات فقط.',
+  '{name} reads words, stickers and voice notes.':
+    'مع {name}، الكلمات والملصقات والرسائل الصوتية فقط.',
   '{name} talks in one conversation.': 'لـ{name} محادثة واحدة فقط.',
   'And {n} more in Actions.': {
     zero: 'ولا أمر آخر في «الإجراءات».',
@@ -1833,4 +1834,86 @@ export const arServer: Catalog = {
     'أقترح {when} لـ«{title}» بدلًا من {from}؟ ستُطلب موافقة {name}.',
   'Shall I suggest {when} for “{title}”, in place of {from}? Everyone in it will be asked to agree.':
     'أقترح {when} لـ«{title}» بدلًا من {from}؟ ستُطلب موافقة الجميع فيه.',
+  'I can’t hear voice notes here yet. Write it to me, and I’ll answer.':
+    'لا أسمع الرسائل الصوتية هنا بعد. اكتبها لي، وسأجيب.',
+  'I hear voice notes with AI assist on: Settings, then AI assist. Or write it to me.':
+    'أسمع الرسائل الصوتية مع تشغيل مساعدة الذكاء الاصطناعي: الإعدادات، ثم مساعدة الذكاء الاصطناعي. أو اكتبها لي.',
+  'That’s today’s AI assist used, so I couldn’t hear that one. Write it to me, and I’ll answer.':
+    'انتهت مساعدة الذكاء الاصطناعي لليوم، فلم أسمع هذه. اكتبها لي، وسأجيب.',
+  'That one’s longer than I can hear. Send a shorter one, or write it to me.':
+    'هذه أطول مما أستطيع سماعه. أرسل أقصر منها، أو اكتبها لي.',
+  'Write it to me, and I’ll answer.': 'اكتبها لي، وسأجيب.',
+  'I couldn’t make that one out. Try again, or write it to me.':
+    'لم أتبيّن هذه. جرّب مرة أخرى، أو اكتبها لي.',
+  '• {n} customers waiting for a reply, the longest since {when}': {
+    zero: '• لا أحد ينتظر ردًا ({when})',
+    one: '• عميل واحد ينتظر ردًا منذ {when}',
+    two: '• عميلان ينتظران ردًا، أقدمهما منذ {when}',
+    few: '• {n} عملاء ينتظرون ردًا، أقدمهم منذ {when}',
+    many: '• {n} عميلًا ينتظرون ردًا، أقدمهم منذ {when}',
+    other: '• {n} عميل ينتظرون ردًا، أقدمهم منذ {when}',
+  },
+  '• The AI agent answered all {n}; nobody on the team has yet': {
+    zero: '• لا ردود من وكيل الذكاء الاصطناعي بعد',
+    one: '• ردّ وكيل الذكاء الاصطناعي على المحادثة، ولا رد من الفريق بعد',
+    two: '• ردّ وكيل الذكاء الاصطناعي على المحادثتين، ولا رد من الفريق بعد',
+    few: '• ردّ وكيل الذكاء الاصطناعي على المحادثات الـ{n} كلها، ولا رد من الفريق بعد',
+    many: '• ردّ وكيل الذكاء الاصطناعي على المحادثات الـ{n} كلها، ولا رد من الفريق بعد',
+    other: '• ردّ وكيل الذكاء الاصطناعي على المحادثات الـ{n} كلها، ولا رد من الفريق بعد',
+  },
+  '• The AI agent answered {n} of them; nobody on the team has yet': {
+    zero: '• لم يرد وكيل الذكاء الاصطناعي في أي محادثة بعد',
+    one: '• ردّ وكيل الذكاء الاصطناعي في محادثة واحدة، ولا رد من الفريق بعد',
+    two: '• ردّ وكيل الذكاء الاصطناعي في محادثتين، ولا رد من الفريق بعد',
+    few: '• ردّ وكيل الذكاء الاصطناعي في {n} محادثات، ولا رد من الفريق بعد',
+    many: '• ردّ وكيل الذكاء الاصطناعي في {n} محادثة، ولا رد من الفريق بعد',
+    other: '• ردّ وكيل الذكاء الاصطناعي في {n} محادثة، ولا رد من الفريق بعد',
+  },
+  '• {n} answers the AI agent wrote are waiting for you to send': {
+    zero: '• لا ردود كتبها وكيل الذكاء الاصطناعي بانتظار إرسالك',
+    one: '• رد واحد كتبه وكيل الذكاء الاصطناعي بانتظار إرسالك',
+    two: '• ردّان كتبهما وكيل الذكاء الاصطناعي بانتظار إرسالك',
+    few: '• {n} ردود كتبها وكيل الذكاء الاصطناعي بانتظار إرسالك',
+    many: '• {n} ردًا كتبها وكيل الذكاء الاصطناعي بانتظار إرسالك',
+    other: '• {n} رد كتبها وكيل الذكاء الاصطناعي بانتظار إرسالك',
+  },
+  '• {n} questions the AI agent couldn’t answer: teach it in its setup': {
+    zero: '• لا أسئلة لم يُجب عنها وكيل الذكاء الاصطناعي',
+    one: '• سؤال واحد لم يُجب عنه وكيل الذكاء الاصطناعي: علّمه من إعداداته',
+    two: '• سؤالان لم يُجب عنهما وكيل الذكاء الاصطناعي: علّمه من إعداداته',
+    few: '• {n} أسئلة لم يُجب عنها وكيل الذكاء الاصطناعي: علّمه من إعداداته',
+    many: '• {n} سؤالًا لم يُجب عنها وكيل الذكاء الاصطناعي: علّمه من إعداداته',
+    other: '• {n} سؤال لم يُجب عنها وكيل الذكاء الاصطناعي: علّمه من إعداداته',
+  },
+  '• {n} bookings today, the first at {time}': {
+    zero: '• لا حجوزات اليوم ({time})',
+    one: '• حجز واحد اليوم، في {time}',
+    two: '• حجزان اليوم، أولهما في {time}',
+    few: '• {n} حجوزات اليوم، أولها في {time}',
+    many: '• {n} حجزًا اليوم، أولها في {time}',
+    other: '• {n} حجز اليوم، أولها في {time}',
+  },
+  'Something needs the team at {n} more of your organizations: ask me about one by name.': {
+    zero: 'لا شيء ينتظر الفريق في منظماتك الأخرى.',
+    one: 'وفي منظمة أخرى من منظماتك شيء ينتظر الفريق: اسألني عنها باسمها.',
+    two: 'وفي منظمتين أخريين من منظماتك ما ينتظر الفريق: اسألني عن أي منهما باسمها.',
+    few: 'وفي {n} منظمات أخرى من منظماتك ما ينتظر الفريق: اسألني عن أي منها باسمها.',
+    many: 'وفي {n} منظمة أخرى من منظماتك ما ينتظر الفريق: اسألني عن أي منها باسمها.',
+    other: 'وفي {n} منظمة أخرى من منظماتك ما ينتظر الفريق: اسألني عن أي منها باسمها.',
+  },
+  'And {n} more organizations you run: ask me about one by name.': {
+    zero: 'ولا منظمات أخرى لك.',
+    one: 'ولك منظمة أخرى: اسألني عنها باسمها.',
+    two: 'ولك منظمتان أخريان: اسألني عن أي منهما باسمها.',
+    few: 'ولك {n} منظمات أخرى: اسألني عن أي منها باسمها.',
+    many: 'ولك {n} منظمة أخرى: اسألني عن أي منها باسمها.',
+    other: 'ولك {n} منظمة أخرى: اسألني عن أي منها باسمها.',
+  },
+  'At {org} today:': 'في {org} اليوم:',
+  'Nothing needs the team at {org} today.': 'لا شيء ينتظر الفريق في {org} اليوم.',
+  'Its inbox: {link}': 'صندوق رسائلها: {link}',
+  'I can tell you this every morning: Settings, then Cai, then the morning brief.':
+    'أستطيع أن أخبرك بهذا كل صباح: الإعدادات، ثم Cai، ثم الموجز الصباحي.',
+  'And ask how one of your organizations is doing: who’s waiting for a reply, what the AI agent left for you and today’s bookings.':
+    'واسألني عن حال إحدى منظماتك: من ينتظر ردًا، وما تركه لك وكيل الذكاء الاصطناعي، وحجوزات اليوم.',
 };

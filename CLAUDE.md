@@ -11,7 +11,11 @@ without re-deriving decisions.
 2. Skim `docs/PRODUCT-REVIEW.md` (refinements R1–R98 override the PRD) and `docs/ARCHITECTURE.md`
    (ADRs). Open `docs/PRD.md` (cited as `PRD §n`) and `docs/BRAND.md` when a task touches them.
    A slice of product work names the unfair advantage it sharpens and the number that shows it
-   (`docs/REVIEW-2026-10-17.md` §14); adoption and friction are optimised in its service.
+   (`docs/REVIEW-2026-10-17.md` §14); adoption and friction are optimised in its service. A
+   decision costly to undo (a new R entry, what an AI may know or do, money, minors, privacy, a
+   public surface, a contraction) goes through the council first (`.claude/skills/council/`),
+   its turning points recorded in the decision's own document; a fix, or a slice under an entry
+   already decided, doesn't.
 3. Run `pnpm install` then `pnpm check`. If anything is red, fixing it comes first.
 4. Check the latest CI run on GitHub (`h-khalid-h/Caime`, workflow `CI`). A red `main` is work now.
 5. At the end of a work block: update `docs/ROADMAP.md` (tick only what is verified, add a log
@@ -1519,6 +1523,20 @@ A sphere is said as how you know someone, never "sphere".
   one of them, or as an organization's agent, is `postAs` (`lib/post-as.ts`). What picks people
   (`kind = 'human'`) already leaves them out; a new path that could give one a task, a call, a
   card or a connection refuses it with `systemAccountOf`. Model output reads "Suggested by Cai".
+  A voice note to one is heard (M17 I14a): `effectsOf` queues its transcription (or, with no
+  speech provider, the reply at once), `afterTranscript` queues the reply for the words, and
+  `noteUnheard` (the transcription job's second hook) has it answer with why when it won't be
+  heard; when they spoke, `sayBack` says a line of up to `SPOKEN_REPLY_MAX` back through
+  `speakReply` (`lib/cai-voice.ts`: the one voice path, a file of Cai's, `payload.spoken`), else
+  writes it. A new line Cai says goes through `say`, never `postAs` directly, so it's said back
+  where it should be (a line that carries a mark, as the brief's offer does, posts with
+  `serverPayload` and is only written). An organization's day (M17 I15a, `lib/org-day.ts`):
+  `orgsRunBy` (its `MANAGING_ROLES`) and `orgDays` read every organization someone runs in one
+  round, Cai's answer to core `chatOrg` (`orgAnswer`) and the brief (`teamDays`) say it through
+  `orgDayText`, and the digest's `teamWeeks` takes the same `orgsRunBy`; every number is the
+  Business inbox's own (core `customerWaiting`, the drafts' `STANDING_DRAFT`, the open
+  questions), so a new line about an organization reads what its inbox reads, never a count of
+  its own.
 - How Cai and the friends speak Arabic (R72) is core `arabicVariety` (`arabic-variety.ts`): what
   the person chose (`preferences.arabicVariety`, Settings · Cai), else what they write in
   (`writtenVariety`: words only one variety says; a shared or Standard word is in no list), else

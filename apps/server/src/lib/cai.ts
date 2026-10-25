@@ -27,7 +27,6 @@ import {
   type CaiResponse,
   type FollowUpSentResponse,
   firstName,
-  MANAGING_ROLES,
   type SuggestionKind,
   systemAccountOf,
   tr,
@@ -52,6 +51,7 @@ import { asReader } from './i18n';
 import { enqueue, registerJob } from './jobs';
 import { messageViews } from './messages';
 import { notify } from './notify';
+import { anythingToday, ORGS_TOLD, orgDays, orgDayText, orgsRunBy } from './org-day';
 import { postAs } from './post-as';
 import { pairKey } from './relations';
 import { openFor, openSystemConversation, person } from './system-accounts';
@@ -71,8 +71,6 @@ const DIGEST_AT = '09:00';
 const QUIET = { sinceDays: 42, quietDays: 14, atLeast: 4, shown: 3 };
 /** The week ahead's first few, by when. */
 const AHEAD_SHOWN = 3;
-/** The organizations someone runs that the digest looks at (R87), by name. */
-const ORGS_SHOWN = 3;
 
 /**
  * The week at each organization someone runs (R87): from the business inbox they already see as
@@ -80,17 +78,7 @@ const ORGS_SHOWN = 3;
  * in two queries for them all; an organization with nothing to say is left out.
  */
 async function teamWeeks(ctx: AppContext, userId: string, now: Date): Promise<string[]> {
-  const orgs = await ctx.db
-    .selectFrom('org_members as m')
-    .innerJoin('organizations as o', 'o.id', 'm.org_id')
-    .select(['o.id', 'o.name'])
-    .where('m.user_id', '=', userId)
-    .where('m.left_at', 'is', null)
-    .where('m.role', 'in', [...MANAGING_ROLES])
-    .where('o.archived_at', 'is', null)
-    .orderBy('o.name')
-    .limit(ORGS_SHOWN)
-    .execute();
+  const orgs = (await orgsRunBy(ctx, userId)).slice(0, ORGS_TOLD);
   if (!orgs.length) return [];
   const ids = orgs.map((o) => o.id);
   const weekAgo = new Date(now.getTime() - WEEK_MS);
@@ -367,6 +355,35 @@ export function briefJitterMs(userId: string): number {
   return (h >>> 0) % BRIEF_SPREAD_MS;
 }
 
+/**
+ * Today at the organizations someone runs, for the brief (M17 I15a): those with something for the
+ * team, `ORGS_TOLD` at most and how many more, each ending at its inbox; nothing for the rest.
+ */
+async function teamDays(
+  ctx: AppContext,
+  me: { id: string; time_zone: string; locale: string },
+  now: Date,
+): Promise<string[]> {
+  const orgs = await orgsRunBy(ctx, me.id);
+  if (!orgs.length) return [];
+  const busy = (await orgDays(ctx, orgs, now)).filter(anythingToday);
+  const told = busy.slice(0, ORGS_TOLD);
+  const reader = { zone: me.time_zone || 'UTC', locale: me.locale };
+  const more = busy.length - told.length;
+  return [
+    ...told.map((d) => orgDayText(ctx, d, now, reader)),
+    ...(more
+      ? [
+          trn(
+            more,
+            'Something needs the team at one more of your organizations: ask me about it by name.',
+            'Something needs the team at {n} more of your organizations: ask me about one by name.',
+          ),
+        ]
+      : []),
+  ];
+}
+
 /** Queue someone's next brief, if they asked for one (idempotent: one job per day and hour). */
 export async function scheduleBrief(ctx: AppContext, userId: string): Promise<void> {
   const me = await ctx.db
@@ -423,10 +440,12 @@ export async function briefText(
   const today = open.coming.length
     ? [tr('Today:'), ...open.coming]
     : [tr('Nothing is planned for today.')];
+  const teams = await teamDays(ctx, me, now);
   const text = [
     `${tr(greetingKey(now, me.time_zone), { name: firstName(me.display_name) })}.`,
     ...today,
     ...counts,
+    ...teams,
     tr('Ask me about any of it.'),
   ].join('\n');
   const summary = open.coming[0]?.replace(/^• /, '') ?? counts[0] ?? today[0] ?? '';

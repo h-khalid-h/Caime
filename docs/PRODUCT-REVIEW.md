@@ -2576,3 +2576,31 @@ with its reason, so it isn't proposed again without new facts.
   a share into a customer conversation (the mask; calls with organizations are M16 H8a), the
   screen in step on a phone, and H.264 measured on a real Chrome call (the test browser records
   VP9 and Opus).
+- **R115 (2026-10-25) Cai leads, in every mode and every scope.** The owner: "Caime's AI now is
+  capable of chatting, talking, listening, watching, acting, interacting… Caime itself shall be
+  running by its intelligence led by Cai. Same for each person or organization using Caime, for
+  their own scope, like Caime do." Read against the code at `118686a`
+  (`docs/REVIEW-2026-10-25-CAI.md`): the engine is ahead, the front doors weren't. Cai's own chat
+  refused a voice note and a photo (`messages.ts`: "reads words and stickers"), Cai spoke only in a
+  call, an organization's owner got numbers on a setup screen and no daily word, and Caime's own
+  operators read `/metrics` with a token. *Decided:* (1) *One intelligence, scoped.* A scope is
+  whose facts Cai reads, who hears what it says and what it may do on their tap: a person (their
+  own), an organization (its business inbox as its managers see it, its catalog, cards and agent,
+  never a team member's own conversations; for its owner and admins, R87), and Caime itself (the
+  platform's own state, never anyone's content; for the product organization's owner and admins,
+  the organization whose verified domain is `PUBLIC_URL`'s, which takes @caime by that proof). The
+  same capacities in each: know, watch, tell, answer, act on a tap (R110), learn only from what was
+  accepted (R12), prove. Caime is one organization among them, told and answered by the same
+  organization brief, plus the platform's lines only it has. (2) *Every mode at Cai's own door.*
+  A voice note to Cai or a Caime Friend is heard by the one transcription path (G8) and answered
+  as typed words are; when someone spoke, a short answer comes back as Cai's voice note with its
+  words under it (the one voice path, `ctx.tts`, on their allowance), a list is written; a note it
+  can't hear is answered with why. A photo is read by the light model from its preview (I14b).
+  (3) *Acting as the operator stays behind the operator's token* until a re-authenticated way
+  exists: a session that could suspend people needs a passkey at the moment of acting and its own
+  audit row. Cai tells and answers; the operator acts. (4) *Spoken only when spoken to*, or asked
+  to read: speaking every answer spends the voice provider on words nobody hears. Built: I14a (a
+  voice note heard and answered aloud) and I15a (an organization's day, on ask and in the brief,
+  every number the Business inbox's own; the council's first decision, review §6). *Not yet:*
+  I14b (photos), I15a2 (the slipping tell), I15b (Caime's own day), "read it to me", and the reply
+  played on its own on a phone.

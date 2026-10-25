@@ -979,10 +979,13 @@ export async function sendMessage(
     if (other) {
       if (await isBlockedEitherWay(ctx.db, senderId, other.user_id))
         throw forbidden(tr('You can’t message this person.'));
-      // Cai and the Caime Friends read words and stickers (R67): no cards, files or voice.
+      // Cai and the Caime Friends read words, stickers and voice notes (R67, M17 I14a): no
+      // cards or files.
       const caimes = systemAccountOf(other.user_id);
-      if (caimes && body.kind !== 'text' && body.kind !== 'sticker')
-        throw badRequest(tr('{name} reads words and stickers.', { name: caimes.name }));
+      if (caimes && body.kind !== 'text' && body.kind !== 'sticker' && body.kind !== 'voice')
+        throw badRequest(
+          tr('{name} reads words, stickers and voice notes.', { name: caimes.name }),
+        );
       // Replying accepts their request, even one declined before.
       if (me.request_state === 'pending' || me.request_state === 'declined') acceptRequest = true;
       // Declined, it reads to the sender as still unanswered, as a connection request does.

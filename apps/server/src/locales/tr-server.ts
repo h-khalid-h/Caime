@@ -1017,7 +1017,8 @@ export const turkishServer: Catalog = {
   'Nothing you said you’d do is open.': 'Yapacağınızı söylediğiniz açık bir şey yok.',
   'Coming up this week:': 'Bu hafta sırada:',
   'Nothing is coming up this week.': 'Bu hafta sırada bir şey yok.',
-  '{name} reads words and stickers.': '{name} yalnızca yazı ve çıkartma okur.',
+  '{name} reads words, stickers and voice notes.':
+    '{name} yalnızca yazı, çıkartma ve sesli mesaj okur.',
   '{name} talks in one conversation.': '{name} ile tek bir sohbet olur.',
   'And {n} more in Actions.': {
     one: 'Ve “Eylemler”de bir tane daha.',
@@ -1788,4 +1789,55 @@ export const turkishServer: Catalog = {
     '“{title}” için {from} yerine {when} önereyim mi? Onay için şuna sorulacak: {name}.',
   'Shall I suggest {when} for “{title}”, in place of {from}? Everyone in it will be asked to agree.':
     '“{title}” için {from} yerine {when} önereyim mi? Onay için buradaki herkese sorulacak.',
+  'I can’t hear voice notes here yet. Write it to me, and I’ll answer.':
+    'Burada sesli mesajları henüz duyamıyorum. Bana yazın, yanıtlayayım.',
+  'I hear voice notes with AI assist on: Settings, then AI assist. Or write it to me.':
+    'Yapay zekâ yardımı açıkken sesli mesajları duyarım: Ayarlar, sonra Yapay zekâ yardımı. Ya da bana yazın.',
+  'That’s today’s AI assist used, so I couldn’t hear that one. Write it to me, and I’ll answer.':
+    'Bugünkü yapay zekâ yardımı bitti, bu yüzden bunu duyamadım. Bana yazın, yanıtlayayım.',
+  'That one’s longer than I can hear. Send a shorter one, or write it to me.':
+    'Bu, duyabileceğimden uzun. Daha kısa bir tane gönderin ya da bana yazın.',
+  'Write it to me, and I’ll answer.': 'Bana yazın, yanıtlayayım.',
+  'I couldn’t make that one out. Try again, or write it to me.':
+    'Bunu anlayamadım. Yeniden deneyin ya da bana yazın.',
+  '• {n} customers waiting for a reply, the longest since {when}': {
+    one: '• Bir müşteri yanıt bekliyor (şu zamandan beri: {when})',
+    other: '• {n} müşteri yanıt bekliyor (en eskisi şu zamandan beri: {when})',
+  },
+  '• The AI agent answered all {n}; nobody on the team has yet': {
+    one: '• AI temsilcisi yanıtladı; ekipten henüz kimse yanıtlamadı',
+    other: '• AI temsilcisi {n} konuşmanın hepsini yanıtladı; ekipten henüz kimse yanıtlamadı',
+  },
+  '• The AI agent answered {n} of them; nobody on the team has yet': {
+    one: '• AI temsilcisi bunlardan birini yanıtladı; ekipten henüz kimse yanıtlamadı',
+    other: '• AI temsilcisi bunlardan {n} tanesini yanıtladı; ekipten henüz kimse yanıtlamadı',
+  },
+  '• {n} answers the AI agent wrote are waiting for you to send': {
+    one: '• AI temsilcisinin yazdığı bir yanıt göndermenizi bekliyor',
+    other: '• AI temsilcisinin yazdığı {n} yanıt göndermenizi bekliyor',
+  },
+  '• {n} questions the AI agent couldn’t answer: teach it in its setup': {
+    one: '• AI temsilcisinin yanıtlayamadığı bir soru: ayarlarından ona öğretin',
+    other: '• AI temsilcisinin yanıtlayamadığı {n} soru: ayarlarından ona öğretin',
+  },
+  '• {n} bookings today, the first at {time}': {
+    one: '• Bugün bir rezervasyon, saat {time}',
+    other: '• Bugün {n} rezervasyon, ilki saat {time}',
+  },
+  'Something needs the team at {n} more of your organizations: ask me about one by name.': {
+    one: 'Kuruluşlarınızdan birinde daha ekibi bekleyen bir şey var: adıyla bana sorun.',
+    other:
+      'Kuruluşlarınızdan {n} tanesinde daha ekibi bekleyen bir şey var: birini adıyla bana sorun.',
+  },
+  'And {n} more organizations you run: ask me about one by name.': {
+    one: 'Yönettiğiniz bir kuruluş daha var: adıyla bana sorun.',
+    other: 'Yönettiğiniz {n} kuruluş daha var: birini adıyla bana sorun.',
+  },
+  'At {org} today:': '{org} bugün:',
+  'Nothing needs the team at {org} today.': '{org} ekibini bugün bekleyen bir şey yok.',
+  'Its inbox: {link}': 'Gelen kutusu: {link}',
+  'I can tell you this every morning: Settings, then Cai, then the morning brief.':
+    'Bunu size her sabah söyleyebilirim: Ayarlar, sonra Cai, sonra Sabah özeti.',
+  'And ask how one of your organizations is doing: who’s waiting for a reply, what the AI agent left for you and today’s bookings.':
+    'Kuruluşlarınızdan birinin nasıl gittiğini de sorun: kim yanıt bekliyor, AI temsilcisi size ne bıraktı ve bugünün rezervasyonları.',
 };

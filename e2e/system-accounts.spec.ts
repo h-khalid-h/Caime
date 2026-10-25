@@ -6,7 +6,7 @@
  */
 import { randomUUID } from 'node:crypto';
 import { expect, test } from '@playwright/test';
-import { apiSignUp, CLIENT, newPerson, visible } from './helpers';
+import { AI_STUB, apiSignUp, CLIENT, newPerson, TTS_STUB, visible } from './helpers';
 
 const suffix = Math.random().toString(36).slice(2, 7);
 
@@ -43,9 +43,9 @@ test('Cai and the Caime Friends answer like anyone you write to', async ({ brows
   await page.waitForURL(/\/c\//);
   await expect(visible(page, /^Hi Hassan, I’m Cai\. /)).toBeVisible();
   await expect(visible(page, 'Caime’s assistant')).toBeVisible();
-  // Words and stickers only: no calls, no voice notes, nothing to attach.
+  // Words, stickers and voice notes (M17 I14a): no calls, nothing to attach.
   await expect(page.getByTestId('call-voice').filter({ visible: true })).toHaveCount(0);
-  await expect(page.getByTestId('composer-voice').filter({ visible: true })).toHaveCount(0);
+  await expect(page.getByTestId('composer-attach').filter({ visible: true })).toHaveCount(0);
   const input = page.getByTestId('composer-input').filter({ visible: true });
   await input.fill('What am I waiting for?');
   await page.getByTestId('composer-send').filter({ visible: true }).click();
@@ -76,6 +76,25 @@ test('Cai and the Caime Friends answer like anyone you write to', async ({ brows
   await input.fill('Plan a dinner for four');
   await page.getByTestId('composer-send').filter({ visible: true }).click();
   await expect(visible(page, /About “Plan a dinner for four”: here’s an idea\./)).toBeVisible();
+
+  // Spoken to, Cai hears and answers aloud (M17 I14a): the speech stand-in hears the fake
+  // microphone say "Thank you!", and the answer comes back as Cai's voice note, its words under it.
+  await page.request.post(`${AI_STUB}/say`, { data: { text: 'Thank you!' } });
+  await page.getByTestId('composer-voice').filter({ visible: true }).click();
+  const recorder = page.getByTestId('voice-recorder').filter({ visible: true });
+  await expect(recorder).toContainText('Recording');
+  await page.waitForTimeout(1_500);
+  await page.getByTestId('voice-stop').filter({ visible: true }).click();
+  await expect(recorder).toContainText('Ready to send');
+  await page.getByTestId('voice-send').filter({ visible: true }).click();
+  await expect(page.getByTestId('voice-spoken').filter({ visible: true }).last()).toHaveText(
+    'Any time!',
+    { timeout: 30_000 },
+  );
+  const voiced = (await (await page.request.get(`${TTS_STUB}/requests`)).json()) as {
+    spoken: Array<{ text: string }>;
+  };
+  expect(voiced.spoken.map((s) => s.text)).toContain('Any time!');
 
   // A question about one of their people (M17 I4): what search finds goes to the model with the
   // question, and the reply cites it, a chip to the message in Sarah's chat.

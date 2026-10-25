@@ -905,7 +905,7 @@ export const Composer = forwardRef<ComposerHandle, ComposerProps>(function Compo
         >
           {privately || caimes ? null : (
             // Photos, files and cards aren't sealed yet: a private conversation is text for now.
-            // Cai and the Caime Friends read words and stickers (R67).
+            // Cai and the Caime Friends read words, stickers and voice notes (R67, M17 I14a).
             <IconButton
               icon={Plus}
               label={tr('Share a photo, a file or a card')}
@@ -1079,7 +1079,7 @@ export const Composer = forwardRef<ComposerHandle, ComposerProps>(function Compo
               hitSlop={2}
               testID="composer-send"
             />
-          ) : privately || caimes ? null : (
+          ) : privately ? null : (
             <IconButton
               icon={Mic}
               label={tr('Record a voice note')}

@@ -17,7 +17,14 @@ export async function postAs(
   conversationId: string,
   what:
     | string
-    | { kind: 'text' | 'kit' | 'sticker'; body?: string; payload?: unknown; replyToId?: string },
+    | {
+        kind: 'text' | 'kit' | 'sticker' | 'voice';
+        body?: string;
+        payload?: unknown;
+        replyToId?: string;
+        /** A voice note's sound (Cai answering aloud, M17 I14a): files of the sender's own. */
+        fileIds?: string[];
+      },
   opts: { clientId?: string; echo?: boolean; serverPayload?: boolean; askedFor?: string } = {},
 ): Promise<{ message: Message; created: boolean }> {
   const clientId = opts.clientId ?? `agent:${uuidv4()}`;

@@ -501,6 +501,59 @@ export function wavLengthUs(buf: Buffer): number | null {
   return null;
 }
 
+// ---- MP3 -------------------------------------------------------------------------------------
+
+/** Layer III's bitrates in kbit/s by index: MPEG-1's, then MPEG-2's and 2.5's. */
+const MP3_KBPS = [
+  [0, 32, 40, 48, 56, 64, 80, 96, 112, 128, 160, 192, 224, 256, 320],
+  [0, 8, 16, 24, 32, 40, 48, 56, 64, 80, 96, 112, 128, 144, 160],
+] as const;
+/** Sample rates by version bits (`00` 2.5, `10` 2, `11` 1) and index. */
+const MP3_RATES: Record<number, readonly number[]> = {
+  0: [11_025, 12_000, 8_000],
+  2: [22_050, 24_000, 16_000],
+  3: [44_100, 48_000, 32_000],
+};
+
+/**
+ * An MP3's length by the Layer III frames it holds, each a fixed number of samples at its rate
+ * (Cai's spoken answers, M17 I14a): never the bitrate times the size, which a variable rate or an
+ * ID3 tag would throw off. A Xing or Info frame (the encoder's own header) holds no sound.
+ */
+export function mp3LengthUs(buf: Buffer): number | null {
+  let at = 0;
+  // An ID3v2 tag first: ten bytes, then its size in seven-bit bytes (and a footer when flagged).
+  if (buf.length >= 10 && buf.toString('latin1', 0, 3) === 'ID3') {
+    const size =
+      ((buf[6]! & 0x7f) << 21) |
+      ((buf[7]! & 0x7f) << 14) |
+      ((buf[8]! & 0x7f) << 7) |
+      (buf[9]! & 0x7f);
+    at = 10 + size + (buf[5]! & 0x10 ? 10 : 0);
+  }
+  let us = 0;
+  let frames = 0;
+  while (at + 4 <= buf.length) {
+    const h = buf.readUInt32BE(at);
+    // Frame sync, then Layer III (`01`).
+    if ((h & 0xffe00000) >>> 0 !== 0xffe00000 || ((h >>> 17) & 3) !== 1) break;
+    const version = (h >>> 19) & 3;
+    const rates = MP3_RATES[version];
+    const kbps = MP3_KBPS[version === 3 ? 0 : 1][(h >>> 12) & 15];
+    const rate = rates?.[(h >>> 10) & 3];
+    if (!rates || !kbps || !rate) return null;
+    const samples = version === 3 ? 1152 : 576;
+    const length = Math.floor(((samples / 8) * kbps * 1000) / rate) + ((h >>> 9) & 1);
+    if (at + length > buf.length) break;
+    const head = buf.toString('latin1', at + 4, Math.min(at + 4 + 40, at + length));
+    if (!(frames === 0 && (head.includes('Xing') || head.includes('Info'))))
+      us += (samples * 1_000_000) / rate;
+    frames += 1;
+    at += length;
+  }
+  return us > 0 ? Math.round(us) : null;
+}
+
 /** How long a recording is, in milliseconds, read from its bytes; null when it can't be. */
 export function audioLengthMs(bytes: Buffer, mime: string): number | null {
   let us: number | null;
@@ -514,7 +567,9 @@ export function audioLengthMs(bytes: Buffer, mime: string): number | null {
             ? mp4LengthUs(bytes)
             : mime === 'audio/wav'
               ? wavLengthUs(bytes)
-              : null;
+              : mime === 'audio/mpeg'
+                ? mp3LengthUs(bytes)
+                : null;
   } catch {
     // A box or an element that says it runs past the file: not a recording read for certain.
     return null;

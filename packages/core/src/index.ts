@@ -18,6 +18,7 @@ export * from './catalog';
 export * from './chat-act';
 export * from './chat-free';
 export * from './chat-intent';
+export * from './chat-org';
 export * from './chat-save';
 export * from './checkout';
 export * from './contact-invites';

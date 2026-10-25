@@ -211,6 +211,11 @@ export function createMetrics(pool: pg.Pool) {
       'caime_cai_interact_total',
       'Cai in a call by outcome (spoken, written, saved, offered, no_answer, echo, allowance, introduced, failed, screen_asked, no_screen).',
     ),
+    // A voice note to Cai or a Caime Friend (M17 I14a): heard, or why not; and Cai's answers spoken.
+    caiVoice: new Counter(
+      'caime_cai_voice_total',
+      'Voice notes to Cai and the Caime Friends by outcome (heard, unavailable, assist, minor, allowance, long, unclear), and answers spoken back (spoken, written, let_go).',
+    ),
     // What someone missed (M17 I3): a recap asked for, by where and whether the model summed it up.
     recaps: new Counter(
       'caime_recaps_total',

@@ -140,6 +140,26 @@ function wav(seconds: number, claimed = seconds) {
   return Buffer.concat([header, data]);
 }
 
+/**
+ * An MP3 as the voice provider sends Cai's words (M17 I14a): MPEG-2 Layer III at 22,050 Hz and
+ * 32 kbit/s, 104-byte frames of 576 samples, behind an ID3 tag and the encoder's Info frame.
+ */
+function mp3(frames: number): Buffer {
+  const frame = (fill: string) => {
+    const f = Buffer.alloc(104);
+    f.writeUInt32BE(0xfff340c0, 0);
+    f.write(fill, 36, 'latin1');
+    return f;
+  };
+  const tag = Buffer.concat([Buffer.from('ID3\x04\x00\x00', 'latin1'), Buffer.from([0, 0, 0, 5])]);
+  return Buffer.concat([
+    tag,
+    Buffer.from('TALB\x00', 'latin1'),
+    frame('Info'),
+    ...Array.from({ length: frames }, () => frame('')),
+  ]);
+}
+
 describe('a recording’s length, read from its bytes (M16 G12)', () => {
   it('reads a browser’s recordings as they play', () => {
     // Two seconds recorded; the last packet still in the encoder when it stopped.
@@ -157,6 +177,15 @@ describe('a recording’s length, read from its bytes (M16 G12)', () => {
   it('reads Ogg Opus by its packets, and a WAV by its bytes', () => {
     expect(audioLengthMs(ogg(50), 'audio/ogg')).toBe(1_000);
     expect(audioLengthMs(wav(2), 'audio/wav')).toBe(2_000);
+  });
+
+  it('reads an MP3 by its frames, past its tag and the encoder’s own frame', () => {
+    expect(audioLengthMs(mp3(100), 'audio/mpeg')).toBe(Math.ceil((100 * 576 * 1000) / 22_050));
+    // A frame cut short at the end isn't played.
+    const whole = mp3(10);
+    expect(audioLengthMs(whole.subarray(0, whole.length - 50), 'audio/mpeg')).toBe(
+      Math.ceil((9 * 576 * 1000) / 22_050),
+    );
   });
 
   it('counts what plays, never what a header says', () => {

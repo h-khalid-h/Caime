@@ -854,7 +854,10 @@ export const MessageBubble = memo(function MessageBubble({
             mine={mine}
           />
         </Suspense>
-        {text ? (
+        {text && (m.payload as { spoken?: unknown }).spoken === true ? (
+          // Cai's answer said aloud (M17 I14a): its own words under its voice, no transcript.
+          <View testID="voice-spoken">{bodyText}</View>
+        ) : text ? (
           <View style={{ gap: 2 }} testID="voice-transcript">
             <Text variant="caption" color={meta}>
               {heard ? tr('Transcript · {label}', { label: tr(AI_LABEL) }) : tr('Transcript')}

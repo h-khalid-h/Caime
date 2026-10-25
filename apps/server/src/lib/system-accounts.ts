@@ -26,6 +26,7 @@ import {
   chatAct,
   chatFree,
   chatIntent,
+  chatOrg,
   chatSave,
   firstFutureWhen,
   firstName,
@@ -41,6 +42,7 @@ import {
   kitStateLabel,
   LARGE_GROUP,
   msg,
+  type OrgAsk,
   type PaysShare,
   parseSearchQuery,
   paySides,
@@ -72,6 +74,7 @@ import {
   sourceOfSearch,
 } from './answers';
 import { type Act, answerAwaited, offerAct } from './cai-acts';
+import { speakReply } from './cai-voice';
 import { ensureDirectConversation } from './conversations';
 import { AppError } from './errors';
 import { freeAnswer } from './free-time';
@@ -80,10 +83,12 @@ import { registerJob } from './jobs';
 import { SYSTEM_REPLY_JOB } from './message-effects';
 import { readableBy } from './messages';
 import { missedText, readMissed, summariseMissed } from './missed';
+import { ORGS_TOLD, orgDays, orgDayText, orgNamed, orgsRunBy } from './org-day';
 import { peopleMeant } from './people-named';
 import { assertAiAllowance } from './plans';
 import { postAs } from './post-as';
 import { visibleTasksSql } from './task-visibility';
+import type { UnheardWhy } from './transcribe';
 import { transcriptText, wordsFor } from './transcript';
 import { cardsAhead, dueCards } from './upcoming';
 import { minorOf } from './users';
@@ -371,7 +376,8 @@ async function systemReply(ctx: AppContext, payload: Record<string, unknown>): P
     .executeTakeFirst();
   if (!latest || Number(latest.seq) !== Number(payload.seq) || latest.sender_id !== personId)
     return;
-  const text = latest.kind === 'text' ? (latest.body ?? '') : '';
+  // A voice note is answered by its words once heard (M17 I14a), as typed words are.
+  const text = latest.kind === 'text' || latest.kind === 'voice' ? (latest.body ?? '') : '';
   // Answered in the language it was written in ("السلام عليكم" from an English account is
   // answered in Arabic), else the account's; in Arabic, in theirs (R72): the one they chose,
   // else the one they wrote in, else the one where they live.
@@ -384,12 +390,20 @@ async function systemReply(ctx: AppContext, payload: Record<string, unknown>): P
     chosen: reader.choice !== 'auto',
     country: reader.country,
     gender: reader.gender,
+    aloud: latest.kind === 'voice' && Boolean(text),
   };
+  if (latest.kind === 'voice')
+    ctx.metrics.caiVoice.inc({ outcome: text ? 'heard' : unheardWhy(payload.unheard) });
   await inLanguage(
     language,
     async () => {
       try {
         const me = await person(ctx, personId);
+        // A voice note it couldn't hear is answered with why, never with silence.
+        if (latest.kind === 'voice' && !text) {
+          await postAs(ctx, account.id, conversationId, unheardLine(unheardWhy(payload.unheard)));
+          return;
+        }
         const said: Said = {
           id: latest.id,
           seq: Number(latest.seq),
@@ -401,6 +415,7 @@ async function systemReply(ctx: AppContext, payload: Record<string, unknown>): P
           free: text ? chatFree(text) : false,
           save: text ? chatSave(text) : null,
           act: null,
+          org: text ? chatOrg(text) : null,
         };
         // Something to do for them (G14) when it's no ask to keep: "remind me to call Sami" is
         // a reminder, never a call.
@@ -428,6 +443,127 @@ interface Voice {
   country: string | null;
   /** How they said to be addressed (R81), told the model as it's told their language. */
   gender: Gender | null;
+  /** They spoke (M17 I14a): a short answer is said back as well as written. */
+  aloud: boolean;
+}
+
+const UNHEARD: readonly UnheardWhy[] = [
+  'unavailable',
+  'assist',
+  'minor',
+  'allowance',
+  'long',
+  'unclear',
+];
+const unheardWhy = (why: unknown): UnheardWhy =>
+  UNHEARD.includes(why as UnheardWhy) ? (why as UnheardWhy) : 'unclear';
+
+/** Why a voice note wasn't heard, in Cai's words: what to do instead, never a dead end. */
+function unheardLine(why: UnheardWhy): string {
+  switch (why) {
+    case 'unavailable':
+      return tr('I can’t hear voice notes here yet. Write it to me, and I’ll answer.');
+    case 'assist':
+      return tr(
+        'I hear voice notes with AI assist on: Settings, then AI assist. Or write it to me.',
+      );
+    case 'allowance':
+      return tr(
+        'That’s today’s AI assist used, so I couldn’t hear that one. Write it to me, and I’ll answer.',
+      );
+    case 'long':
+      return tr('That one’s longer than I can hear. Send a shorter one, or write it to me.');
+    case 'minor':
+      return tr('Write it to me, and I’ll answer.');
+    case 'unclear':
+      return tr('I couldn’t make that one out. Try again, or write it to me.');
+  }
+}
+
+/**
+ * A line of Cai's or a friend's: said back as a voice note too when they spoke (M17 I14a) and it's
+ * short enough to say, for an adult with AI assist on; otherwise written, as always.
+ */
+async function sayBack(
+  ctx: AppContext,
+  account: SystemAccount,
+  conversationId: string,
+  me: Person,
+  voice: Voice,
+  line: string,
+): Promise<void> {
+  if (
+    voice.aloud &&
+    me.ai_enabled &&
+    !minorOf(me, ctx.now()) &&
+    (await speakReply(ctx, account.id, conversationId, me.id, line, voice.language))
+  )
+    return;
+  await postAs(ctx, account.id, conversationId, line);
+}
+
+/**
+ * How the organizations someone runs are doing today (M17 I15a, the council in
+ * docs/REVIEW-2026-10-25-CAI.md §6): the one the question names, or every one they run
+ * (`ORGS_TOLD` at most, and how many more), by the rules, each ending at its inbox; while their
+ * morning brief is off, Cai offers it once, in a line of its own. False when they run none or the
+ * name is none of theirs: then it's another question.
+ */
+async function orgAnswer(
+  ctx: AppContext,
+  account: SystemAccount,
+  conversationId: string,
+  me: Person,
+  ask: OrgAsk,
+  say: (line: string) => Promise<void>,
+): Promise<boolean> {
+  const runs = await orgsRunBy(ctx, me.id);
+  const named = ask.name ? orgNamed(runs, ask.name) : runs;
+  if (!named.length) return false;
+  const told = named.slice(0, ORGS_TOLD);
+  const now = ctx.now();
+  const reader = { zone: me.time_zone || 'UTC', locale: me.locale };
+  const days = await orgDays(ctx, told, now);
+  const more = named.length - told.length;
+  await say(
+    [
+      ...days.map((d) => orgDayText(ctx, d, now, reader)),
+      ...(more
+        ? [
+            trn(
+              more,
+              'And one more organization you run: ask me about it by name.',
+              'And {n} more organizations you run: ask me about one by name.',
+            ),
+          ]
+        : []),
+    ].join('\n\n'),
+  );
+  const [prefs, offered] = await Promise.all([
+    ctx.db.selectFrom('users').select('preferences').where('id', '=', me.id).executeTakeFirst(),
+    ctx.db
+      .selectFrom('messages')
+      .select('id')
+      .where('conversation_id', '=', conversationId)
+      .where('sender_id', '=', account.id)
+      .where(sql<boolean>`payload ? 'briefOffer'`)
+      .limit(1)
+      .executeTakeFirst(),
+  ]);
+  const brief = (prefs?.preferences as { caiBrief?: string | null } | null)?.caiBrief;
+  if (!brief && !offered)
+    await postAs(
+      ctx,
+      account.id,
+      conversationId,
+      {
+        kind: 'text',
+        body: tr('I can tell you this every morning: Settings, then Cai, then the morning brief.'),
+        payload: { briefOffer: true },
+      },
+      { serverPayload: true },
+    );
+  return true;
 }
 
 /** The message being answered: its kind, its words and what the rules read in them. */
@@ -447,6 +583,8 @@ interface Said {
   save: SaveAsk | null;
   /** Something to do with one of their people, or to find (G14). */
   act: ActAsk | null;
+  /** How an organization they run is doing (M17 I15a), with the name as typed, if any. */
+  org: OrgAsk | null;
 }
 
 type About = { intent: AboutIntent; name: string };
@@ -469,7 +607,7 @@ async function friendSays(
   voice: Voice,
 ) {
   const friend = FRIENDS[handle];
-  const say = (line: string) => postAs(ctx, account.id, conversationId, line);
+  const say = (line: string) => sayBack(ctx, account, conversationId, me, voice, line);
   // A sticker is answered with its own.
   if (said.kind === 'sticker') return sticker(ctx, account, conversationId, friend);
   if (said.about) return say(await aboutAnswer(ctx, me, said.about));
@@ -531,11 +669,12 @@ async function caiSays(
   said: Said,
   voice: Voice,
 ) {
-  const say = (line: string) => postAs(ctx, account.id, conversationId, line);
+  const say = (line: string) => sayBack(ctx, account, conversationId, me, voice, line);
   if (said.about) return say(await aboutAnswer(ctx, me, said.about));
   if (said.free) return say(await freeAnswer(ctx, me, said.text));
   if (isOwnQuestion(said.intent)) return say(await ruleAnswer(ctx, me, said.intent));
   if (said.intent === 'missed') return say(await missedAnswer(ctx, me, true));
+  if (said.org && (await orgAnswer(ctx, account, conversationId, me, said.org, say))) return;
   if (said.save) return keepAsked(ctx, account, conversationId, me, said, voice);
   if (said.act) return offerAct(ctx, account.id, conversationId, me, said.act);
   if (await answerAwaited(ctx, account.id, conversationId, me, said)) return;
@@ -549,8 +688,15 @@ async function caiSays(
           more(ctx, me),
         ),
       );
-    case 'help':
-      return say([tr(HELP), tr(ABOUT_HELP), more(ctx, me)].filter(Boolean).join(' '));
+    case 'help': {
+      // Whoever runs an organization hears they can ask how it's doing (M17 I15a).
+      const runs = (await orgsRunBy(ctx, me.id)).length > 0;
+      return say(
+        [tr(HELP), tr(ABOUT_HELP), runs ? tr(ORG_HELP) : '', more(ctx, me)]
+          .filter(Boolean)
+          .join(' '),
+      );
+    }
     case 'thanks':
       return say(tr('Any time!'));
   }
@@ -880,6 +1026,10 @@ async function modelSays<T extends string | CaiAnswer>(
 
 const HELP = msg(
   'I can always tell you what you’re waiting on, what’s asked of you, what you said you’d do and what’s coming up this week. Just ask, in your own words.',
+);
+/** What Cai says of the organizations someone runs (M17 I15a), after `ABOUT_HELP`. */
+const ORG_HELP = msg(
+  'And ask how one of your organizations is doing: who’s waiting for a reply, what the AI agent left for you and today’s bookings.',
 );
 /** What Cai says it knows about one person (G11), after `HELP` when asked how it can help. */
 const ABOUT_HELP = msg(

@@ -63,10 +63,20 @@ export type HeardWords = (
   analysis: Analysis | null,
 ) => Promise<void>;
 
+/** Why a note wasn't put into words: it stays a note, and Cai says why when it was for Cai. */
+export type UnheardWhy = 'unavailable' | 'assist' | 'minor' | 'allowance' | 'long' | 'unclear';
+
+/**
+ * A note that won't be heard (M17 I14a): true when something answered for it (Cai's chat, which
+ * is never silent), so a busy provider isn't tried again behind an answer already given.
+ */
+export type UnheardNote = (ctx: AppContext, message: Message, why: UnheardWhy) => Promise<boolean>;
+
 async function transcribe(
   ctx: AppContext,
   payload: Record<string, unknown>,
   heard: HeardWords,
+  unheard: UnheardNote,
 ): Promise<void> {
   const speech = ctx.speech;
   const messageId = String(payload.messageId ?? '');
@@ -93,8 +103,16 @@ async function transcribe(
     ])
     .where('id', '=', m.sender_id)
     .executeTakeFirst();
+  if (!sender) return;
   // Under 18 by the date of birth or by a check of their age (M16 B7): no model hears them.
-  if (!sender?.ai_enabled || minorOf(sender, ctx.now())) return;
+  if (minorOf(sender, ctx.now())) {
+    await unheard(ctx, m, 'minor');
+    return;
+  }
+  if (!sender.ai_enabled) {
+    await unheard(ctx, m, 'assist');
+    return;
+  }
   const file = await ctx.db
     .selectFrom('message_files as mf')
     .innerJoin('files as f', 'f.id', 'mf.file_id')
@@ -104,15 +122,25 @@ async function transcribe(
     .where('f.status', '=', 'ready')
     .orderBy('f.created_at')
     .executeTakeFirst();
-  if (!file) return;
+  if (!file) {
+    await unheard(ctx, m, 'unclear');
+    return;
+  }
   // `size` is a bigint column, read as text.
   const size = Number(file.size);
-  if (size > SPEECH_MAX_BYTES) return;
+  if (size > SPEECH_MAX_BYTES) {
+    await unheard(ctx, m, 'long');
+    return;
+  }
   try {
     await assertAiAllowance(ctx, sender.id);
   } catch (err) {
-    // Out of assists today: the note stays as it is, and nothing is said (it was never promised).
-    if (err instanceof AppError) return;
+    // Out of assists today: the note stays as it is, and nothing is said in a conversation (it was
+    // never promised); Cai, written to, says so.
+    if (err instanceof AppError) {
+      await unheard(ctx, m, 'allowance');
+      return;
+    }
     throw err;
   }
   const bytes = await readAll(ctx, file.storage_key, size);
@@ -120,7 +148,10 @@ async function transcribe(
   // recording itself as it plays (M16 G12), never the one its device said, and a recording whose
   // length can't be read for certain isn't sent.
   const audioMs = audioLengthMs(bytes, file.mime);
-  if (audioMs === null || audioMs > SPEECH_MAX_MS) return;
+  if (audioMs === null || audioMs > SPEECH_MAX_MS) {
+    await unheard(ctx, m, audioMs === null ? 'unclear' : 'long');
+    return;
+  }
   const prefs = (sender.preferences ?? {}) as { language?: string };
   let transcript: Awaited<ReturnType<typeof speech.transcribe>>['value'];
   try {
@@ -148,8 +179,13 @@ async function transcribe(
       speech.provider,
     );
   } catch (err) {
-    // Nothing heard, or the provider declined: the note stays a note. Busy: the job tries again.
-    if (err instanceof AppError && err.code === 'ai_busy') throw err;
+    // Nothing heard, or the provider declined: the note stays a note. Busy: the job tries again,
+    // unless Cai has already said it couldn't hear it just now.
+    if (err instanceof AppError && err.code === 'ai_busy') {
+      if (await unheard(ctx, m, 'unclear')) return;
+      throw err;
+    }
+    await unheard(ctx, m, 'unclear');
     return;
   }
   // The words are Caime's now: what the provider kept of them goes (M17 F8a).
@@ -206,6 +242,6 @@ async function readAll(ctx: AppContext, key: string, size: number): Promise<Buff
   return Buffer.concat(chunks);
 }
 
-export function registerTranscribeJob(heard: HeardWords): void {
-  registerJob(TRANSCRIBE_JOB, (ctx, payload) => transcribe(ctx, payload, heard));
+export function registerTranscribeJob(heard: HeardWords, unheard: UnheardNote): void {
+  registerJob(TRANSCRIBE_JOB, (ctx, payload) => transcribe(ctx, payload, heard, unheard));
 }

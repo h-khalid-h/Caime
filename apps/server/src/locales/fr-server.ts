@@ -1069,7 +1069,8 @@ export const frServer: Catalog = {
   'Nothing you said you’d do is open.': 'Rien de ce que vous avez promis n’est en suspens.',
   'Coming up this week:': 'Cette semaine :',
   'Nothing is coming up this week.': 'Rien de prévu cette semaine.',
-  '{name} reads words and stickers.': 'Avec {name}, des mots et des stickers seulement.',
+  '{name} reads words, stickers and voice notes.':
+    'Avec {name}, des mots, des stickers et des messages vocaux seulement.',
   '{name} talks in one conversation.': '{name} n’a qu’une conversation.',
   'And {n} more in Actions.': {
     one: 'Et une de plus dans Actions.',
@@ -1869,4 +1870,56 @@ export const frServer: Catalog = {
     'Je propose {when} pour « {title} », à la place de {from} ? On demandera son accord à {name}.',
   'Shall I suggest {when} for “{title}”, in place of {from}? Everyone in it will be asked to agree.':
     'Je propose {when} pour « {title} », à la place de {from} ? On demandera leur accord à tous.',
+  'I can’t hear voice notes here yet. Write it to me, and I’ll answer.':
+    'Je n’entends pas encore les messages vocaux ici. Écrivez-le-moi, et je vous réponds.',
+  'I hear voice notes with AI assist on: Settings, then AI assist. Or write it to me.':
+    'J’entends les messages vocaux avec l’assistance IA activée : Réglages, puis Assistance IA. Ou écrivez-le-moi.',
+  'That’s today’s AI assist used, so I couldn’t hear that one. Write it to me, and I’ll answer.':
+    'L’assistance IA du jour est épuisée, je n’ai donc pas pu entendre celui-ci. Écrivez-le-moi, et je vous réponds.',
+  'That one’s longer than I can hear. Send a shorter one, or write it to me.':
+    'Celui-ci est plus long que ce que je peux entendre. Envoyez-en un plus court, ou écrivez-le-moi.',
+  'Write it to me, and I’ll answer.': 'Écrivez-le-moi, et je vous réponds.',
+  'I couldn’t make that one out. Try again, or write it to me.':
+    'Je n’ai pas bien compris celui-ci. Réessayez, ou écrivez-le-moi.',
+  '• {n} customers waiting for a reply, the longest since {when}': {
+    one: '• Un client attend une réponse depuis {when}',
+    other: '• {n} clients attendent une réponse, le premier depuis {when}',
+  },
+  '• The AI agent answered all {n}; nobody on the team has yet': {
+    one: '• L’agent IA y a répondu ; personne de l’équipe pour l’instant',
+    other: '• L’agent IA a répondu aux {n} ; personne de l’équipe pour l’instant',
+  },
+  '• The AI agent answered {n} of them; nobody on the team has yet': {
+    one: '• L’agent IA a répondu à l’un d’eux ; personne de l’équipe pour l’instant',
+    other: '• L’agent IA a répondu à {n} d’entre eux ; personne de l’équipe pour l’instant',
+  },
+  '• {n} answers the AI agent wrote are waiting for you to send': {
+    one: '• Une réponse écrite par l’agent IA attend que vous l’envoyiez',
+    other: '• {n} réponses écrites par l’agent IA attendent que vous les envoyiez',
+  },
+  '• {n} questions the AI agent couldn’t answer: teach it in its setup': {
+    one: '• Une question restée sans réponse de l’agent IA : complétez ce qu’il sait dans ses réglages',
+    other:
+      '• {n} questions restées sans réponse de l’agent IA : complétez ce qu’il sait dans ses réglages',
+  },
+  '• {n} bookings today, the first at {time}': {
+    one: '• Une réservation aujourd’hui, à {time}',
+    other: '• {n} réservations aujourd’hui, la première à {time}',
+  },
+  'Something needs the team at {n} more of your organizations: ask me about one by name.': {
+    one: 'Quelque chose attend l’équipe dans une autre de vos organisations : demandez-moi en la nommant.',
+    other:
+      'Quelque chose attend l’équipe dans {n} autres de vos organisations : demandez-moi en nommant l’une d’elles.',
+  },
+  'And {n} more organizations you run: ask me about one by name.': {
+    one: 'Et une autre organisation que vous dirigez : demandez-moi en la nommant.',
+    other: 'Et {n} autres organisations que vous dirigez : demandez-moi en nommant l’une d’elles.',
+  },
+  'At {org} today:': 'Chez {org} aujourd’hui :',
+  'Nothing needs the team at {org} today.': 'Rien n’attend l’équipe chez {org} aujourd’hui.',
+  'Its inbox: {link}': 'Sa boîte de réception : {link}',
+  'I can tell you this every morning: Settings, then Cai, then the morning brief.':
+    'Je peux vous le dire chaque matin : Réglages, puis Cai, puis Point du matin.',
+  'And ask how one of your organizations is doing: who’s waiting for a reply, what the AI agent left for you and today’s bookings.':
+    'Et demandez-moi où en est l’une de vos organisations : qui attend une réponse, ce que l’agent IA vous a laissé et les réservations du jour.',
 };

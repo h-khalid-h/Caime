@@ -91,7 +91,7 @@ export const SUB_PROCESSORS: readonly SubProcessor[] = [
   {
     id: 'tts',
     name: 'The text-to-speech provider the operator sets',
-    does: 'Gives Cai its voice in a call whose people all asked Cai to join in.',
+    does: 'Gives Cai its voice: in a call whose people all asked Cai to join in, and in Cai’s chat to answer someone who spoke to it with AI assist on.',
     receives:
       'The words Cai says aloud, and nothing else: never anyone’s voice, name or words, and nothing from a private conversation.',
     when: 'configured',

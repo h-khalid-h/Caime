@@ -34,7 +34,7 @@ export interface AgentDraft {
  * A draft stands while it answers the customer's latest message, nobody on the team has written
  * since, and the conversation is open; anything else made it moot.
  */
-const standing = sql<boolean>`t.last_customer_seq = d.seq and t.last_team_seq < d.seq and t.resolved_at is null and t.erased_at is null`;
+export const STANDING_DRAFT = sql<boolean>`t.last_customer_seq = d.seq and t.last_team_seq < d.seq and t.resolved_at is null and t.erased_at is null`;
 
 /** The draft waiting in a conversation for its team, or null. */
 export async function draftFor(
@@ -46,7 +46,7 @@ export async function draftFor(
     .innerJoin('business_threads as t', 't.conversation_id', 'd.conversation_id')
     .select(['d.seq', 'd.action', 'd.body', 'd.draft', 'd.created_at'])
     .where('d.conversation_id', '=', conversationId)
-    .where(standing)
+    .where(STANDING_DRAFT)
     .executeTakeFirst();
   if (!row) return null;
   const draft = row.draft as AgentDraft;
@@ -73,7 +73,7 @@ export async function draftedIn(
     .innerJoin('business_threads as t', 't.conversation_id', 'd.conversation_id')
     .select('d.conversation_id')
     .where('d.conversation_id', 'in', conversationIds)
-    .where(standing)
+    .where(STANDING_DRAFT)
     .execute();
   return new Set(rows.map((r) => r.conversation_id));
 }
