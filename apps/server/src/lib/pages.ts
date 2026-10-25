@@ -154,7 +154,9 @@ searchable, by the speech-to-text provider named below when this Caime has one; 
 Cai can take notes, only once everyone in it has said yes. Asked to sum up what you missed, Caime
 sends the AI provider the new messages of the conversations with something unread (who wrote,
 when, in which conversation, and the words; never a private conversation, a notice, a request
-or one you put aside), and keeps the summary in memory for half an hour, for you alone.</li>
+or one you put aside), and keeps the summary in memory for half an hour, for you alone. A
+question you ask Cai in its chat goes to the AI provider with what search finds for it in your
+own messages, and the answer says which messages it rests on.</li>
 <li>You can download your data, and delete your account, whenever you like.</li>
 </ul>
 </section>

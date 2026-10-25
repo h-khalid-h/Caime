@@ -332,7 +332,7 @@ export function ContextPanel({
               <Text variant="body" color="textSecondary">
                 {m.summary}
               </Text>
-              {aiReady ? <AssistTools conversationId={conversation.id} /> : null}
+              {aiReady ? <AssistTools conversationId={conversation.id} onJump={onJump} /> : null}
             </Section>
             {m.upcoming.length ? (
               <Section title={tr('Coming up')}>

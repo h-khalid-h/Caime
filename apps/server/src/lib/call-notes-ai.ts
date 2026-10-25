@@ -11,6 +11,7 @@ import {
   AI_LABEL,
   type AiActionsView,
   type AiCatchUpView,
+  type AnswerSourceView,
   type CallNotesAnswerView,
   firstFutureWhen,
   firstName,
@@ -25,6 +26,7 @@ import type { Call } from '../db/schema';
 import { languageName, type Transcript } from './ai';
 import { aiGate } from './ai-gate';
 import { runAi } from './ai-run';
+import { countAnswer } from './answers';
 import { notesFor } from './call-notes';
 import { languageOf } from './i18n';
 import { createSuggestion, suggestionView } from './suggest';
@@ -95,16 +97,32 @@ export async function catchUpOnNotes(
   const { ai, me } = await aiGate(ctx, userId);
   const { transcript, lines } = await noteTranscript(ctx, call, userId, me.time_zone);
   // A call's notes are read whole: nothing new is left out (M17 I3).
-  if (!lines.length) return { summary: null, label: null, newCount: 0, unread: 0 };
+  if (!lines.length) return { summary: null, label: null, newCount: 0, unread: 0, sources: [] };
   const language = languageName(await languageOf(ctx, userId));
-  const summary = await runAi(ctx, 'notes-catch-up', userId, () =>
+  const caught = await runAi(ctx, 'notes-catch-up', userId, () =>
     ai.catchUp({
       transcript,
       language,
       today: transcriptClock(me.time_zone).day(ctx.now()),
     }),
   );
-  return { summary, label: AI_LABEL, newCount: 0, unread: 0 };
+  // The lines it rests on (M17 I4), as the reader may read them, each a tap to its moment.
+  const seen = new Set<string>();
+  const sources: AnswerSourceView[] = [];
+  for (const n of caught.sources) {
+    const l = lines[n - 1];
+    if (!l || seen.has(l.id)) continue;
+    seen.add(l.id);
+    sources.push({
+      kind: 'note',
+      lineId: l.id,
+      at: l.at.toISOString(),
+      speaker: l.speaker,
+      text: previewText(l.text, 120),
+    });
+  }
+  countAnswer(ctx, 'notes-catch-up', sources.length);
+  return { summary: caught.summary, label: AI_LABEL, newCount: 0, unread: 0, sources };
 }
 
 /**

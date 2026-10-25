@@ -4201,10 +4201,24 @@ clinic can sign for. I1 lands before launch.
       `caime_recaps_total{where,kind}` and the product metrics' `ai.recaps`. Verified:
       `missed.test.ts` (core and server), the golden set, the cost row (€0.0041 at the bound),
       `e2e/attention.spec.ts`, `e2e/system-accounts.spec.ts`.
-- [ ] I4. One cited answer engine (M): Cai's chat answers questions about people and what they said
+- [x] I4. One cited answer engine (M): Cai's chat answers questions about people and what they said
       through Search's engine with its sources; "Ask about this conversation" is that engine scoped
       to it; one answering prompt; the model keeps the rules' time phrase; catch-ups and briefs cite
-      their lines. Number: the share of answers with a source.
+      their lines. Number: the share of answers with a source. Built 2026-10-25: `lib/answers.ts`
+      (`searchPassages` over `runSearch`'s own rows, moved to `lib/search-run.ts`;
+      `conversationPassages` over the transcript's lines, `lib/transcript-of.ts`, shared by the
+      catch-up, the follow-ups and Ask; `answerFrom`, one prompt `FOUND_SYSTEM` by scope, a period
+      the rules read kept in the person's words), every answer's sources as what they stand for
+      (`AnswerSourceView`: a message opened at its line, an action, a decision, a note's moment);
+      Ask answers with `sources`, the catch-up (`AiCatchUpView.sources`), the brief
+      (`BriefView.sources`) and a call's catch-up (kind `note`) with the lines they rest on
+      (`ai.catchUp` structured); a question in Cai's chat (`is_question`) takes what search finds
+      for it into the one model call as `<found>` and the reply posts `payload.sources`, drawn as
+      chips (`AnswerSources`, lazy everywhere: the panel's jump inside the conversation, the
+      route elsewhere, a brief's after the sheet has gone). The number: `caime_answers_total{where,
+      cited}`. Verified: `answers.test.ts`, `ai.test.ts`, `call-notes.test.ts`, `ai-costs.test.ts`
+      (the chat's bound grew by the passages: €0.0026 a call), the app's guards, the E2E (a cited
+      catch-up and Ask in the conversation, Cai's cited answer landing on Sarah's message).
 - [ ] I5. Arabic-first retrieval (M): a folded index built concurrently (hamza and alef forms, ة/ه,
       ى/ي, accents, dotted İ), queries and names folded the same way, relevance with recency, the
       unread index dropped in a later release; a retrieval golden set per language.
@@ -5884,6 +5898,13 @@ have yet, each sized:
 - 2026-10-20 — The French and Turkish catalogs come in two halves fetched side by side, as Arabic
   does: their largest download 48.9 KB where one was 95.2 KB of a chunk's 100; the first download
   448.8 KB of 450 (0.2 KB more: the two loaders).
+- 2026-10-25 — M17 I4, one cited answer engine: Search's answer, Ask about a conversation and
+  Cai's chat answer from numbered passages through one prompt and one builder (`lib/answers.ts`),
+  each answer naming the messages, actions, decisions or notes it rests on, drawn as chips that
+  open the line; the catch-up and the brief cite theirs too; a time the rules read in a question
+  stays in the person's words. Search's engine and the transcript builder moved into `lib/` so the
+  chat and the routes share them. Verified: the server tests, the guards and both E2E specs. Next:
+  I5.
 - 2026-10-25 — M17 I3b/I3c, what you missed (R66): one recap of the unread, by the rules
   (asked of you, promised, decided, coming up) for every conversation with something new but
   the ones put aside, on Attention above Needs-you and in Cai's chat in every language, summed

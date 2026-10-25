@@ -41,6 +41,7 @@ import {
   LARGE_GROUP,
   msg,
   type PaysShare,
+  parseSearchQuery,
   paySides,
   previewText,
   type SaveAsk,
@@ -62,6 +63,13 @@ import { createTask } from './actions';
 import { todayForAgent } from './agent';
 import { type CaiAct, type CaiAnswer, type CaiKeep, type FriendPersona, languageName } from './ai';
 import { runAi } from './ai-run';
+import {
+  type AnswerPassage,
+  countAnswer,
+  type SearchSource,
+  searchPassages,
+  sourceOfSearch,
+} from './answers';
 import { type Act, answerAwaited, offerAct } from './cai-acts';
 import { ensureDirectConversation } from './conversations';
 import { AppError } from './errors';
@@ -350,7 +358,7 @@ async function systemReply(ctx: AppContext, payload: Record<string, unknown>): P
   // Only the latest of theirs, and only while nothing has answered it: a newer one has its job.
   const latest = await ctx.db
     .selectFrom('messages')
-    .select(['id', 'seq', 'sender_id', 'kind', 'body'])
+    .select(['id', 'seq', 'sender_id', 'kind', 'body', 'is_question'])
     .where('conversation_id', '=', conversationId)
     .where('deleted_at', 'is', null)
     .where('kind', '<>', 'system')
@@ -383,6 +391,7 @@ async function systemReply(ctx: AppContext, payload: Record<string, unknown>): P
           seq: Number(latest.seq),
           kind: latest.kind,
           text,
+          isQuestion: Boolean(latest.is_question),
           intent: text ? chatIntent(text) : null,
           about: text ? chatAbout(text) : null,
           save: text ? chatSave(text) : null,
@@ -422,6 +431,8 @@ interface Said {
   seq: number;
   kind: string;
   text: string;
+  /** A question, as the message intelligence read it when it was sent (M17 I4). */
+  isQuestion: boolean;
   intent: ChatIntent | null;
   /** A question about one person (G11), with the name or the relationship as typed. */
   about: About | null;
@@ -544,11 +555,27 @@ async function caiSays(
   const answer = await modelSays(
     ctx,
     me,
-    () => caiAnswer(ctx, conversationId, me, voice),
+    () => caiAnswer(ctx, conversationId, me, voice, said),
     tr(HELP),
   );
   if (typeof answer === 'string') return say(answer);
-  if (answer.reply) await say(answer.reply);
+  // A reply that rests on what search found carries its sources (M17 I4), each a tap to the
+  // message, the action or the decision; a question answered from passages is counted as one.
+  const sources = answer.sources
+    .map((n) => answer.found[n - 1])
+    .filter((p): p is AnswerPassage<SearchSource> => Boolean(p))
+    .map((p) => sourceOfSearch(p.source));
+  if (answer.found.length) countAnswer(ctx, 'chat', sources.length);
+  if (answer.reply)
+    await (sources.length
+      ? postAs(
+          ctx,
+          account.id,
+          conversationId,
+          { kind: 'text', body: answer.reply, payload: { sources } },
+          { serverPayload: true },
+        )
+      : say(answer.reply));
   // Asked in words the rules don't read ("could you jot that down for Monday?"): the model read
   // the ask, and it's kept as one the rules read would be.
   if (answer.keep) await keepIt(ctx, account, conversationId, me, answer.keep, said.id);
@@ -570,21 +597,42 @@ function actOf(a: CaiAct, text: string): Act {
   };
 }
 
-/** Cai's model on this conversation and what's open for them (R67), with what to keep (G13). */
-async function caiAnswer(ctx: AppContext, conversationId: string, me: Person, voice: Voice) {
-  const [transcript, open] = await Promise.all([
+/**
+ * Cai's model on this conversation and what's open for them (R67), with what to keep (G13) and,
+ * for a question, what search found in their own messages (M17 I4: the rules' reading of the
+ * question, `runSearch`'s own rows as numbered passages, so the reply can rest on them and cite
+ * them); the passages come back with the answer, for the sources the reply names.
+ */
+async function caiAnswer(
+  ctx: AppContext,
+  conversationId: string,
+  me: Person,
+  voice: Voice,
+  said: Said,
+): Promise<CaiAnswer & { found: AnswerPassage<SearchSource>[] }> {
+  const [transcript, open, found] = await Promise.all([
     transcriptOf(ctx, conversationId, me.id, 'Cai'),
     openFor(ctx, me, { forModel: true }),
+    said.isQuestion && said.text.trim()
+      ? searchPassages(
+          ctx,
+          me.id,
+          parseSearchQuery(said.text, { now: ctx.now() }),
+          me.time_zone || 'UTC',
+        )
+      : Promise.resolve([]),
   ]);
   const ai = ctx.ai!;
-  return runAi(ctx, 'cai', me.id, () =>
+  const answer = await runAi(ctx, 'cai', me.id, () =>
     ai.caiChat({
       transcript,
       context: contextLines(open),
+      found: found.length ? found.map((p) => p.text).join('\n') : null,
       ...spoken(voice),
       today: todayForAgent(ctx.now(), me.time_zone),
     }),
   );
+  return { ...answer, found };
 }
 
 /**
@@ -625,7 +673,12 @@ async function keepAsked(
     );
   // "Save it": Cai's model says what "it" is, as it would for an ask it read itself.
   if (voice && mayAskModel(ctx, me)) {
-    const answer = await modelSays(ctx, me, () => caiAnswer(ctx, conversationId, me, voice), '');
+    const answer = await modelSays(
+      ctx,
+      me,
+      () => caiAnswer(ctx, conversationId, me, voice, said),
+      '',
+    );
     if (typeof answer !== 'string' && answer.keep)
       return keepIt(
         ctx,

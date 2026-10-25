@@ -1,10 +1,11 @@
+import type { AnswerSourceView } from '@caime/core/api';
 import { AI_LABEL, ASK_MAX } from '@caime/core/assist';
 import { tr, trn } from '@caime/core/i18n';
 import { useQueryClient } from '@tanstack/react-query';
 import ListChecks from 'lucide-react-native/icons/list-checks';
 import MessageCircleQuestion from 'lucide-react-native/icons/message-circle-question-mark';
 import Sparkles from 'lucide-react-native/icons/sparkles';
-import { useState } from 'react';
+import { lazy, Suspense, useState } from 'react';
 import { View } from 'react-native';
 import { endpoints } from '@/api/endpoints';
 import { qk } from '@/api/keys';
@@ -15,14 +16,31 @@ import { TextField } from '@/ui/TextField';
 import { toast } from '@/ui/Toast';
 import { catchUp, useCatchUps } from './catchUp';
 
-type Answer = { question: string; answer: string | null; label: string | null };
+type Answer = {
+  question: string;
+  answer: string | null;
+  label: string | null;
+  sources: AnswerSourceView[];
+};
+
+/** Where an answer's words came from (M17 I4), loaded when there is one. */
+const AnswerSources = lazy(() =>
+  import('@/features/assist/AnswerSources').then((m) => ({ default: m.AnswerSources })),
+);
 
 /**
  * AI assist for a whole conversation (PRD §45): catch me up, find its follow-ups, and ask it a
  * question (R67). All are suggestions: the summary and the answer are labelled and kept nowhere,
  * and follow-ups arrive as offers to accept or dismiss.
  */
-export function AssistTools({ conversationId }: { conversationId: string }) {
+export function AssistTools({
+  conversationId,
+  onJump,
+}: {
+  conversationId: string;
+  /** Opens a cited message at its place in this conversation (the panel's jump). */
+  onJump?: (seq: number) => void;
+}) {
   const t = useTheme();
   const qc = useQueryClient();
   const result = useCatchUps((s) => s.byId[conversationId]);
@@ -31,13 +49,18 @@ export function AssistTools({ conversationId }: { conversationId: string }) {
   const [asking, setAsking] = useState(false);
   const [answer, setAnswer] = useState<Answer | null>(null);
 
+  // A cited message is in this conversation: jump to it rather than open the route again.
+  const jumpTo = (source: AnswerSourceView) => {
+    if (source.kind === 'message' && onJump) onJump(source.seq);
+    else void import('@/features/assist/AnswerSources').then((m) => m.openSource(source));
+  };
   const ask = async () => {
     const q = question.trim();
     if (!q || asking) return;
     setAsking(true);
     try {
       const r = await endpoints.askConversation(conversationId, q);
-      setAnswer({ question: q, answer: r.answer, label: r.label });
+      setAnswer({ question: q, answer: r.answer, label: r.label, sources: r.sources });
       setQuestion('');
     } catch (e) {
       toast((e as Error).message, { tone: 'danger' });
@@ -112,6 +135,11 @@ export function AssistTools({ conversationId }: { conversationId: string }) {
               <Text variant="body" auto={result.summary} selectable>
                 {result.summary}
               </Text>
+              {result.sources.length ? (
+                <Suspense fallback={null}>
+                  <AnswerSources sources={result.sources} onOpen={jumpTo} testID="summary-source" />
+                </Suspense>
+              ) : null}
               {result.unread > result.newCount ? (
                 // Read only the latest of what's new (M17 I3): said, never passing for the whole.
                 <Text variant="caption" color="textSecondary" testID="assist-summary-window">
@@ -177,6 +205,11 @@ export function AssistTools({ conversationId }: { conversationId: string }) {
               <Text variant="body" auto={answer.answer} selectable>
                 {answer.answer}
               </Text>
+              {answer.sources.length ? (
+                <Suspense fallback={null}>
+                  <AnswerSources sources={answer.sources} onOpen={jumpTo} />
+                </Suspense>
+              ) : null}
             </>
           ) : (
             <Text variant="body" color="textSecondary">

@@ -1139,6 +1139,14 @@ export interface FollowUpSentResponse {
  * What Cai or a friend offered to do for someone (M16 G14, R110), on its line's `payload.offer`:
  * written by the server alone, done by the person's tap.
  */
+/**
+ * On a line of Cai's that answered from the person's own messages (M17 I4): where its words came
+ * from, each a tap to the message, the action or the decision.
+ */
+export interface CaiAnsweredPayload {
+  sources: AnswerSourceView[];
+}
+
 export interface CaiOfferPayload {
   kind: 'message' | 'call' | 'meeting' | 'find';
   /** Whom it's for: one of their people. */
@@ -1715,6 +1723,8 @@ export interface BriefView {
   files: Array<{ id: string; name: string; kind: string }>;
   summary: string | null;
   label: string | null;
+  /** The messages the summary rests on (M17 I4); empty without a summary. */
+  sources: AnswerSourceView[];
 }
 
 export interface CalendarView {
@@ -2650,6 +2660,25 @@ export interface AiTranslationView {
   label: string;
 }
 
+/**
+ * Where an answer's words came from (M17 I4): a message, opened at its line; an action or a
+ * decision; a line of a call's notes. Every answer the model gives from passages carries them.
+ */
+export type AnswerSourceView =
+  | {
+      kind: 'message';
+      conversationId: string;
+      messageId: string;
+      seq: number;
+      /** The conversation's title for the reader; null inside the conversation it's from. */
+      title: string | null;
+      who: string;
+      at: string;
+    }
+  | { kind: 'decision'; id: string; title: string; conversationId: string | null }
+  | { kind: 'task'; id: string; title: string; conversationId: string | null }
+  | { kind: 'note'; lineId: string; at: string; speaker: string; text: string };
+
 export interface AiCatchUpView {
   /** Null when there is nothing to read yet. */
   summary: string | null;
@@ -2661,6 +2690,8 @@ export interface AiCatchUpView {
    * catch-up read only the latest of it, which the app then says.
    */
   unread: number;
+  /** The lines the summary rests on (M17 I4), the most telling first; each a tap to its message. */
+  sources: AnswerSourceView[];
 }
 
 /**
@@ -2671,6 +2702,8 @@ export interface AiAnswerView {
   /** Null when the conversation has nothing to answer from yet. */
   answer: string | null;
   label: string | null;
+  /** The messages the answer rests on (M17 I4), the most telling first. */
+  sources: AnswerSourceView[];
 }
 
 /**

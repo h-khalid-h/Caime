@@ -7,7 +7,16 @@
  * For work, customers, vendors and professionals, never family or friends; never from a private
  * conversation; nothing written anywhere but the reader's own notification, in their language.
  */
-import { AI_LABEL, type BriefView, KITS, type Sphere, tr, trn, truncate } from '@caime/core';
+import {
+  AI_LABEL,
+  type AnswerSourceView,
+  type BriefView,
+  KITS,
+  type Sphere,
+  tr,
+  trn,
+  truncate,
+} from '@caime/core';
 import { initiativeOf, tellsBeforeMeetings } from '@caime/core/initiative';
 import { AGREED_STATES as AGREED } from '@caime/core/kit-states';
 import { SPACE_KIND_DEFS, type SpaceKind } from '@caime/core/spaces';
@@ -16,6 +25,7 @@ import type { AppContext } from '../context';
 import { MESSAGE_COLUMNS, type Message } from '../db/schema';
 import { languageName } from './ai';
 import { runAi } from './ai-run';
+import { countAnswer } from './answers';
 import { customerMask, maskFor } from './business';
 import { membership } from './conversation-views';
 import { AppError } from './errors';
@@ -234,7 +244,9 @@ export function briefLine(
 }
 
 /** A card's summary for one reader, ten minutes; null is a summary that couldn't be had. */
-const summaries = new TtlCache<string, string | null>(5_000, SUMMARY_TTL_MS);
+/** A card's summary with the lines it rests on, for one reader; null is one that couldn't be had. */
+type Summed = { text: string; sources: AnswerSourceView[] } | null;
+const summaries = new TtlCache<string, Summed>(5_000, SUMMARY_TTL_MS);
 
 /**
  * The brief as the reader sees it: their own view of the conversation (a customer's names the
@@ -399,11 +411,13 @@ export async function briefFor(
     files: files.map((f) => ({ id: f.id, name: f.name, kind: f.kind })),
     summary: null,
     label: null,
+    sources: [],
   };
   if (opts.withModel && conversation.privacy_class === 'standard' && count.n > 0) {
     const summary = await summaryFor(ctx, userId, card, since);
     if (summary) {
-      brief.summary = summary;
+      brief.summary = summary.text;
+      brief.sources = summary.sources;
       brief.label = AI_LABEL;
     }
   }
@@ -416,7 +430,7 @@ async function summaryFor(
   userId: string,
   card: CardRow,
   since: Date,
-): Promise<string | null> {
+): Promise<Summed> {
   const ai = ctx.ai;
   if (!ai) return null;
   const key = `${userId}:${card.id}`;
@@ -469,15 +483,39 @@ async function summaryFor(
     words: wordsFor(m, 400),
   }));
   const language = languageName(await languageOf(ctx, userId));
-  const text = await runAi(ctx, 'brief', userId, () =>
+  const caught = await runAi(ctx, 'brief', userId, () =>
     ai.catchUp({
       transcript: { text: transcriptText(lines), newFrom: null },
       language,
       today: day(ctx.now()),
     }),
   ).catch(() => null);
-  summaries.set(key, text, ctx.now().getTime());
-  return text;
+  if (!caught) {
+    summaries.set(key, null, ctx.now().getTime());
+    return null;
+  }
+  // The lines it rests on, each a tap to its message (M17 I4): `rows` is oldest first here.
+  const seen = new Set<string>();
+  const sources: AnswerSourceView[] = [];
+  for (const n of caught.sources) {
+    const m = rows[n - 1];
+    const line = lines[n - 1];
+    if (!m || !line || seen.has(m.id)) continue;
+    seen.add(m.id);
+    sources.push({
+      kind: 'message',
+      conversationId: card.conversation_id,
+      messageId: m.id,
+      seq: Number(m.seq),
+      title: null,
+      who: line.who,
+      at: m.created_at.toISOString(),
+    });
+  }
+  countAnswer(ctx, 'brief', sources.length);
+  const summary = { text: caught.summary, sources };
+  summaries.set(key, summary, ctx.now().getTime());
+  return summary;
 }
 
 export function registerBriefJob(): void {

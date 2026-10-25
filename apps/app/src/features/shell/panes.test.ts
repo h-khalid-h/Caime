@@ -41,6 +41,8 @@ const LAZY_EVERYWHERE = [
   '@/ui/LoadFailed',
   '@/features/saved/SaveSheet',
   '@/features/conversation/SharedFiles',
+  // Where an answer's words came from (M17 I4): the Ask panel, a brief, Cai's bubble, the notes.
+  '@/features/assist/AnswerSources',
   // Choosing a day (tasks, a mute, a card's form, another time for a card: M16 F5 put it in the
   // first download, 2.7 KB, from the cards every conversation route draws).
   '@/features/when/WhenSheet',

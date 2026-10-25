@@ -135,9 +135,10 @@ These are known and tracked in `docs/ROADMAP.md`. None is hidden behind a featur
   apps (these not yet tried on a phone itself), and a private conversation's files, voice notes
   and cards aren't built: it takes text.
 - **AI assist reads other people's messages** when someone asks it to catch up, find
-  follow-ups, answer a question about a standard conversation, or sum up what they missed
+  follow-ups, answer a question about a standard conversation, sum up what they missed
   (M17 I3: the unread lines of at most eight conversations, thirty each, never a private one or
-  one they put aside); they aren't asked first. The
+  one they put aside), or ask Cai a question in its chat (M17 I4: what search finds for it in
+  their own messages, at most twelve rows, goes with the question); they aren't asked first. The
   answer, like the summary, is shown to the one who asked and kept nowhere (the recap's summary
   in memory for half an hour, by read position, on the one instance that made it). A private conversation is the
   answer: AI never reads one. A message can also try to steer what the model writes; what it

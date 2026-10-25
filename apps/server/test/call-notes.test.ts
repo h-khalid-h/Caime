@@ -544,12 +544,20 @@ describe('Cai on the notes, on ask (M16 F7d)', () => {
     await t.ctx.flush();
 
     // A catch-up, labelled as Cai's and kept nowhere; the model read both, the reader as "You".
-    modelSays('Noor will send the contract by Friday; Sam confirms the venue.');
+    modelSays(
+      JSON.stringify({
+        summary: 'Noor will send the contract by Friday; Sam confirms the venue.',
+        sources: [2],
+      }),
+    );
     const caught = await noor.post(`/v1/calls/${callId}/notes/catch-up`, {});
     expect(caught).toMatchObject({
       summary: 'Noor will send the contract by Friday; Sam confirms the venue.',
       label: 'Suggested by Cai',
     });
+    // The line it rests on, as the reader may read it (M17 I4).
+    expect(caught.sources).toHaveLength(1);
+    expect(caught.sources[0]).toMatchObject({ kind: 'note', speaker: 'Sam Notes' });
 
     // A question typed to Cai (M17 I13f): answered to the asker alone, the lines it rests on
     // returned as they may read them (Sam's second line here), kept nowhere.

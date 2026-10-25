@@ -7,13 +7,19 @@ import type { BriefView } from '@caime/core/api';
 import { formatDue, formatListTime } from '@caime/core/format';
 import { tr, trn } from '@caime/core/i18n';
 import { useQuery } from '@tanstack/react-query';
+import { lazy, Suspense } from 'react';
 import { View } from 'react-native';
 import { endpoints } from '@/api/endpoints';
 import { qk } from '@/api/keys';
 import { useNow, useUserClock } from '@/lib/time';
-import { Sheet } from '@/ui/Sheet';
+import { afterSheet, Sheet } from '@/ui/Sheet';
 import { SkeletonRows } from '@/ui/Skeleton';
 import { Text } from '@/ui/Text';
+
+/** Where the summary's words came from (M17 I4): the messages, each a tap to its place. */
+const AnswerSources = lazy(() =>
+  import('@/features/assist/AnswerSources').then((m) => ({ default: m.AnswerSources })),
+);
 
 function Section({ title, children }: { title: string; children: React.ReactNode }) {
   return (
@@ -73,6 +79,23 @@ export function BriefSheet({
               <Text variant="body" auto>
                 {b.summary}
               </Text>
+              {b.sources.length ? (
+                <Suspense fallback={null}>
+                  <AnswerSources
+                    sources={b.sources}
+                    onOpen={(source) => {
+                      // The message is in its conversation: hand on once the sheet has gone.
+                      onClose();
+                      afterSheet(() => {
+                        void import('@/features/assist/AnswerSources').then((m) =>
+                          m.openSource(source),
+                        );
+                      });
+                    }}
+                    testID="brief-source"
+                  />
+                </Suspense>
+              ) : null}
             </Section>
           ) : null}
           {b.decisions.length ? (

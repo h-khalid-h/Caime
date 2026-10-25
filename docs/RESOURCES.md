@@ -39,7 +39,7 @@ Each call is paid for by the token, so what is sent is bounded and what is repea
 | Rewrite, translate | `ANTHROPIC_MODEL_LIGHT` (Haiku 5.5 unless set, M16 H7) | low | a draft of 4,000 characters, a message's first 4,000 | 8,192 tokens |
 | Catch me up | the light model | low | 200 messages, 60,000 characters, 1,500 a message | 4,096 tokens |
 | Find follow-ups | `ANTHROPIC_MODEL` on a paid plan, the light model on Personal (core `aiModel`) | medium | the same transcript, structured output | 8,192 tokens |
-| A question about a conversation (R67) | the light model | low | the same transcript and the question (300 characters) | 4,096 tokens |
+| A question about a conversation (R67, M17 I4) | the light model | low | the transcript's lines as numbered passages (the same 60,000 characters) and the question (300 characters); the answer names the lines it rests on | 4,096 tokens |
 | What you missed, summed up (M17 I3) | the light model | low | the unread of at most 8 conversations, 30 lines each, 40,000 characters, each line 280 | 1,024 tokens |
 | An organization's agent | `ANTHROPIC_MODEL` on Business and Enterprise, the light model on Free (core `agentModel`) | low | its knowledge (8,000 characters, a sentence a numbered line, M16 G6a: a few tokens more, sent as a cached system block) and the last 20 messages; no slots or menu where it may not book or take orders, and no call at all while it answers only when closed and the organization is open | 2,048 tokens, clipped to 1,500 characters, with at most five passage numbers and a reason |
 
@@ -212,8 +212,8 @@ Prices: https://platform.claude.com/docs/en/about-claude/pricing, read 2026-10-1
 | --- | --- | --- | --- | --- | --- |
 | rewrite | 4,579 | 8,192 | €0.0040 | €0.08 | €0.16 |
 | translate | 4,294 | 8,192 | €0.0040 | €0.08 | €0.16 |
-| catch-up | 60,825 | 4,096 | €0.0072 | €0.14 | €0.29 |
-| ask | 61,192 | 4,096 | €0.0073 | €0.15 | €0.29 |
+| catch-up | 60,983 | 4,096 | €0.0072 | €0.14 | €0.29 |
+| ask | 61,328 | 4,096 | €0.0073 | €0.15 | €0.29 |
 | notes-ask | 25,315 | 4,096 | €0.0041 | €0.08 | €0.16 |
 | interact | 26,198 | 512 | €0.0026 | €0.05 | €0.10 |
 | interact-screen | 27,427 | 512 | €0.0027 | €0.05 | €0.11 |
@@ -221,8 +221,8 @@ Prices: https://platform.claude.com/docs/en/about-claude/pricing, read 2026-10-1
 | frame | 1,818 | 512 | €0.0004 | €0.0078 | €0.02 |
 | actions | 61,206 | 8,192 | €0.0091 | €0.18 | €0.36 |
 | notes-summary | 61,719 | 8,192 | €0.0091 | €0.18 | €0.37 |
-| brief | 16,825 | 4,096 | €0.0033 | €0.07 | €0.13 |
-| cai | 13,023 | 2,048 | €0.0021 | €0.04 | €0.08 |
+| brief | 16,983 | 4,096 | €0.0033 | €0.07 | €0.13 |
+| cai | 19,042 | 2,048 | €0.0026 | €0.05 | €0.10 |
 | friend | 11,801 | 1,024 | €0.0015 | €0.03 | €0.06 |
 | search | 1,929 | 1,024 | €0.0006 | €0.01 | €0.03 |
 | search-answer | 15,766 | 4,096 | €0.0032 | €0.06 | €0.13 |
@@ -247,7 +247,7 @@ measured once a key is set.
 
 | Plan | Model for the heavy work | Allowance | Dearest call | A month at every allowance | An assumed month |
 | --- | --- | --- | --- | --- | --- |
-| personal | light | €0.50 a day | €0.05 | €16.60 | €0.11 |
+| personal | light | €0.50 a day | €0.05 | €16.60 | €0.12 |
 | pro | top | €2.00 a day | €0.36 | €70.89 | €0.52 |
 | business | top | €2.00 a day | €0.36 | €70.89 | €0.52 |
 | enterprise | top | €10.00 a day | €0.36 | €310.89 | €0.52 |

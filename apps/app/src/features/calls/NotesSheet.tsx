@@ -16,7 +16,7 @@ import ListChecks from 'lucide-react-native/icons/list-checks';
 import MessageCircleQuestion from 'lucide-react-native/icons/message-circle-question-mark';
 import Sparkles from 'lucide-react-native/icons/sparkles';
 import Trash from 'lucide-react-native/icons/trash';
-import { useState } from 'react';
+import { lazy, Suspense, useState } from 'react';
 import { View } from 'react-native';
 import { endpoints } from '@/api/endpoints';
 import { qk } from '@/api/keys';
@@ -34,6 +34,11 @@ import { Text } from '@/ui/Text';
 import { toast } from '@/ui/Toast';
 import { CallRecording } from './CallRecording';
 import { stillWriting, type Turn, turnsOf, turnText } from './turns';
+
+/** Where the catch-up's words came from (M17 I4): the lines, each a moment to play. */
+const AnswerSources = lazy(() =>
+  import('@/features/assist/AnswerSources').then((m) => ({ default: m.AnswerSources })),
+);
 
 const LoadFailed = lazyPart(() => import('@/ui/LoadFailed').then((m) => m.LoadFailed));
 const AskCai = lazyPart(() => import('./AskCai').then((m) => m.AskCai));
@@ -345,6 +350,17 @@ export function NotesSheet({
                       <Text variant="body" auto selectable>
                         {caughtUp.summary}
                       </Text>
+                      {caughtUp.sources.length ? (
+                        <Suspense fallback={null}>
+                          <AnswerSources
+                            sources={caughtUp.sources}
+                            onOpen={(s) => {
+                              if (s.kind === 'note' && play) play(s.at);
+                            }}
+                            testID="call-notes-source"
+                          />
+                        </Suspense>
+                      ) : null}
                     </>
                   ) : (
                     <Text variant="body" color="textSecondary">

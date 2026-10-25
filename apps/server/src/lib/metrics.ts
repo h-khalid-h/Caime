@@ -216,6 +216,11 @@ export function createMetrics(pool: pg.Pool) {
       'caime_recaps_total',
       'Recaps of what someone missed, by where (chat, attention) and kind (rules, summary).',
     ),
+    // Answers from passages (M17 I4): the share with a source is the number the engine is held to.
+    answers: new Counter(
+      'caime_answers_total',
+      'Answers from passages by where (search-answer, ask, chat, catch-up, brief, notes-catch-up) and whether any source was cited (yes, no).',
+    ),
     caiInteractSeconds: new Histogram(
       'caime_cai_interact_seconds',
       'Time from a line heard that called Cai to its answer ready, by outcome.',

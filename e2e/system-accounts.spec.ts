@@ -76,6 +76,26 @@ test('Cai and the Caime Friends answer like anyone you write to', async ({ brows
   await input.fill('Plan a dinner for four');
   await page.getByTestId('composer-send').filter({ visible: true }).click();
   await expect(visible(page, /About “Plan a dinner for four”: here’s an idea\./)).toBeVisible();
+
+  // A question about one of their people (M17 I4): what search finds goes to the model with the
+  // question, and the reply cites it, a chip to the message in Sarah's chat.
+  await input.fill('What did Sarah say about the deck?');
+  await page.getByTestId('composer-send').filter({ visible: true }).click();
+  await expect(
+    visible(
+      page,
+      /From what you have: Sarah Smith said “Could you review the deck before Monday\?”\./,
+    ),
+  ).toBeVisible();
+  const cited = page.getByTestId('answer-source').filter({ visible: true });
+  await expect(cited).toHaveCount(1);
+  await expect(cited).toContainText('Sarah Smith');
+  await cited.click();
+  await page.waitForURL(new RegExp(`/c/${conversationId}\\?seq=\\d+`));
+  await expect(visible(page, 'Could you review the deck before Monday?')).toBeVisible();
+  await page.goBack();
+  await page.waitForURL(/\/c\//);
+  await expect(visible(page, /Caime’s assistant/)).toBeVisible();
   await page.screenshot({ path: 'e2e/screenshots/phone-cai.png', animations: 'disabled' });
 
   // Asked to keep something, Cai keeps it (M16 G13): by the rules, with Undo under the line.

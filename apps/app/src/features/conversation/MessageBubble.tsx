@@ -1,4 +1,10 @@
-import type { CaiOfferPayload, FileView, MessageMailView, MessageView } from '@caime/core/api';
+import type {
+  AnswerSourceView,
+  CaiOfferPayload,
+  FileView,
+  MessageMailView,
+  MessageView,
+} from '@caime/core/api';
 import { AI_LABEL } from '@caime/core/assist';
 import { emojiOnly } from '@caime/core/emoji';
 import {
@@ -67,6 +73,10 @@ const RecordingShare = lazy(() => import('@/features/calls/RecordingShare'));
 const KeptAction = lazy(() => import('@/features/cai/KeptAction'));
 /** What Cai offered to do for the reader (M16 G14), done on their tap; loaded with the first. */
 const CaiOffer = lazy(() => import('@/features/cai/CaiOffer'));
+/** Where a line of Cai's got its words (M17 I4): each source a tap to the message. */
+const AnswerSources = lazy(() =>
+  import('@/features/assist/AnswerSources').then((m) => ({ default: m.AnswerSources })),
+);
 /** Cai's follow-up offer (R68): the same module, drawn as every drafted message is. */
 const FollowUpOffer = lazy(() =>
   import('@/features/cai/CaiOffer').then((m) => ({ default: m.FollowUpOffer })),
@@ -1048,6 +1058,10 @@ export const MessageBubble = memo(function MessageBubble({
   const kept = systemHandleOf(m.senderId)
     ? (m.payload as { kept?: KeptPayload } | null)?.kept
     : undefined;
+  // What Cai's answer rests on (M17 I4): the messages, actions and decisions search found.
+  const citedSources = systemHandleOf(m.senderId)
+    ? (m.payload as { sources?: AnswerSourceView[] } | null)?.sources
+    : undefined;
 
   // What a screen reader says of the bubble, every word in the reader's language: a photo, a
   // card or a voice note without words reads as its preview does in the inbox, less the emoji.
@@ -1245,6 +1259,11 @@ export const MessageBubble = memo(function MessageBubble({
       {offer ? (
         <Suspense fallback={null}>
           <CaiOffer messageId={m.id} offer={offer} />
+        </Suspense>
+      ) : null}
+      {citedSources?.length ? (
+        <Suspense fallback={null}>
+          <AnswerSources sources={citedSources} />
         </Suspense>
       ) : null}
       {m.reactions.length ? (

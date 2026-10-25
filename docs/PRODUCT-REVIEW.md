@@ -839,6 +839,11 @@ with its reason, so it isn't proposed again without new facts.
   for whoever has AI assist on, cited, kept only by read position for half an hour; and "what
   did I miss" asked of Cai in any interface language, answered from the same. A conversation's
   own catch-up (R67) stays what it was; this is the whole day's.
+  *Built* (M17 I4, 2026-10-25): one cited answer engine. "Ask Cai" in Search, "Ask about this
+  conversation" and a question in Cai's chat answer from numbered passages through one prompt,
+  and every answer names what it rests on: chips that open the message at its line, the action or
+  the decision; a catch-up and a brief cite their lines too; a time the person wrote ("last
+  week") stays in their words. The number is the share of answers with a source.
 - **R67 — Caime's own accounts: @cai, @caime and the Caime Friends (owner's idea, 2026-10-05),
   with the harmony review of R63–R66.** Checked against PRD §75 (an AI never passes for a
   person), BRAND.md (characters are not AI; never on money, security or business surfaces),

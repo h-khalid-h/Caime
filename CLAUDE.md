@@ -1031,6 +1031,23 @@ A sphere is said as how you know someone, never "sphere".
   `missed` (`chatIntent`, golden lines) all read it; counted on `caime_recaps_total{where,kind}`.
   A new thing a recap should say joins `missedKindOf` and the catalogs' `{kind}: {text}` keys,
   never a second reader of the unread.
+- One cited answer engine (M17 I4, `lib/answers.ts`): a question is answered from numbered
+  passages ("[n] when · who · where: text") by `answerFrom` through the one prompt `FOUND_SYSTEM`
+  (its scope `search` or `conversation`; a `period` the rules read in the question, kept in the
+  person's words), and what the model cites comes back as what it stands for
+  (`AnswerSourceView`: a message to open at its `seq`, a decision, an action, a note's moment).
+  Search's answer builds its passages with `searchPassages` over `runSearch` (now
+  `lib/search-run.ts`, so the chat may read it), Ask with `conversationPassages` over
+  `transcriptOf` (`lib/transcript-of.ts`, the one transcript builder for the catch-up, the
+  follow-ups and Ask); the catch-up and the brief (`ai.catchUp`, structured: `summary` and
+  `sources`) and a call's catch-up carry `sources` the same way (`citedLines`). Cai's chat
+  (`caiAnswer`) hands a question's found passages (`Said.isQuestion`, the message's own
+  `is_question`) to its one model call as `<found>` and posts the reply with `payload.sources`
+  through `postAs(…, { serverPayload: true })`; the app draws every source list with
+  `features/assist/AnswerSources` (lazy everywhere: the panel's `onJump` inside the conversation,
+  `openSource` elsewhere, a sheet through `afterSheet`). Every answer from passages anywhere is
+  counted by `countAnswer` on `caime_answers_total{where, cited}`: a new place that answers from
+  passages builds them here and counts there, never a prompt or a source shape of its own.
 - An organization's own checkout (R65, `lib/checkout.ts`, `modules/checkout.ts`): Stripe Connect
   with the platform's key and `Stripe-Account` (`stripe(ctx, account)`), never a second Stripe
   client. Its owner connects through `connectUrl` (a one-time `checkout_states` token) and the

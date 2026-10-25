@@ -31,6 +31,7 @@ import {
   PRICES,
   SPEECH_PRICES,
 } from '../src/lib/ai-costs';
+import { ANSWER_FROM, PASSAGE_CHARS } from '../src/lib/answers';
 import { DEFAULT_MODEL, SPEECH_PROVIDERS, speechFor } from '../src/lib/speech';
 import { type Client, createTestApp, signup, type TestApp } from './helpers';
 
@@ -197,10 +198,18 @@ const AT_BOUNDS: ReadonlyArray<{
     feature: 'catch-up',
     call: (ai) => ai.catchUp({ transcript: transcript(60_000), language: 'English', today }),
   },
+  // lib/answers.ts: the transcript's lines as passages (the same 60,000 characters), a question.
   {
     feature: 'ask',
     call: (ai) =>
-      ai.ask({ transcript: transcript(60_000), question: x(ASK_MAX), language: 'English', today }),
+      ai.answerFromFound({
+        found: x(60_000),
+        question: x(ASK_MAX),
+        language: 'English',
+        today,
+        scope: 'conversation',
+        period: null,
+      }),
   },
   // lib/call-notes-ai.ts: NOTES_CHARS of a call's lines, a question at ASK_MAX (M17 I13f).
   {
@@ -272,6 +281,8 @@ const AT_BOUNDS: ReadonlyArray<{
       ai.caiChat({
         transcript: x(12 * 600),
         context: x(20 * 120),
+        // What search found for a question (M17 I4): ANSWER_FROM passages of PASSAGE_CHARS.
+        found: x(ANSWER_FROM * (PASSAGE_CHARS + 60)),
         language: 'English',
         arabic,
         country: 'EG',
@@ -299,7 +310,14 @@ const AT_BOUNDS: ReadonlyArray<{
   {
     feature: 'search-answer',
     call: (ai) =>
-      ai.answerFromFound({ found: x(36 * 400), question: x(ASK_MAX), language: 'English', today }),
+      ai.answerFromFound({
+        found: x(36 * 400),
+        question: x(ASK_MAX),
+        language: 'English',
+        today,
+        scope: 'search',
+        period: null,
+      }),
   },
   // lib/agent.ts: the last 20 messages of 1,500 characters; core AGENT_KNOWLEDGE_MAX; 8 slots;
   // a catalog and a menu of core BOOKING_ITEMS_MAX (50) items, a line each.
@@ -382,6 +400,7 @@ describe('what a person costs (M16 H7)', () => {
         ai.caiChat({
           transcript: x(500),
           context: x(500),
+          found: null,
           language: 'English',
           arabic,
           country: 'EG',

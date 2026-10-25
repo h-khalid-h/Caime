@@ -27,9 +27,9 @@ import {
   firstFutureWhen,
   firstName,
   PERSON_ALLOWANCES,
+  parseSearchQuery,
   previewText,
   resolvePolicy,
-  systemText,
   truncate,
   writtenIn,
 } from '@caime/core';
@@ -38,36 +38,23 @@ import type { FastifyInstance } from 'fastify';
 import { sql } from 'kysely';
 import { z } from 'zod';
 import type { AppContext } from '../context';
-import type { Conversation, Message } from '../db/schema';
-import { MESSAGE_COLUMNS } from '../db/schema';
-import { type AiResult, languageName, type Transcript } from '../lib/ai';
+import type { Conversation } from '../db/schema';
+import { type AiResult, languageName } from '../lib/ai';
 import { aiGate } from '../lib/ai-gate';
 import { runAi } from '../lib/ai-run';
-import { maskFor, maskId, maskPayload } from '../lib/business';
+import { answerFrom, citedLines, conversationPassages, countAnswer } from '../lib/answers';
+import { maskFor } from '../lib/business';
 import { membership } from '../lib/conversation-views';
 import { AppError, notFound } from '../lib/errors';
 import { languageOf } from '../lib/i18n';
 import { readableBy } from '../lib/messages';
 import { activeRelationships, loadPolicies, policyTargetFor } from '../lib/relations';
 import { createSuggestion, suggestionView } from '../lib/suggest';
-import { transcriptClock, transcriptText, wordsFor } from '../lib/transcript';
+import { transcriptClock } from '../lib/transcript';
+import { transcriptOf } from '../lib/transcript-of';
 import { minorOf } from '../lib/users';
 import { parse } from '../lib/validate';
 import { requireAuth } from '../plugins/auth';
-
-/** How much of a conversation a model reads: the newest messages, within both limits. */
-const TRANSCRIPT_MESSAGES = 200;
-const TRANSCRIPT_CHARS = 60_000;
-const MESSAGE_CHARS = 1_500;
-
-interface Line {
-  n: number;
-  messageId: string;
-  senderId: string | null;
-  speaker: string;
-  text: string;
-  at: Date;
-}
 
 const quoted = (s: string, max = 100) => `“${previewText(s, max)}”`;
 
@@ -113,85 +100,6 @@ export async function aiRoutes(app: FastifyInstance, ctx: AppContext) {
       activeRelationships(ctx.db, userId, [other.user_id]),
     ]);
     return resolvePolicy(policies, policyTargetFor(rels[0], conversation.connection_id)).aiTone;
-  }
-
-  /** What the viewer sees of the conversation, newest last, with names rather than ids. */
-  async function transcriptOf(
-    viewerId: string,
-    conversationId: string,
-    lastReadSeq: number,
-    timeZone: string,
-  ): Promise<{ transcript: Transcript; lines: Line[]; newCount: number }> {
-    const rows = (await ctx.db
-      .selectFrom('messages')
-      .select(MESSAGE_COLUMNS)
-      .where('conversation_id', '=', conversationId)
-      .where(readableBy(viewerId, ctx.now()))
-      .orderBy('seq', 'desc')
-      .limit(TRANSCRIPT_MESSAGES)
-      .execute()) as Message[];
-    // A customer's transcript names the organization, never who on its team wrote (R15).
-    const mask = await maskFor(ctx.db, conversationId, viewerId);
-    const senderIds = [...new Set(rows.map((m) => m.sender_id).filter((x): x is string => !!x))];
-    const names = new Map(
-      senderIds.length
-        ? (
-            await ctx.db
-              .selectFrom('users')
-              .select(['id', 'display_name'])
-              .where('id', 'in', senderIds)
-              .execute()
-          ).map((u) => [u.id, u.display_name])
-        : [],
-    );
-    const { time } = transcriptClock(timeZone);
-    // Newest first until the budget is spent, then numbered oldest first.
-    const kept: Array<{ m: Message; text: string; speaker: string }> = [];
-    let budget = TRANSCRIPT_CHARS;
-    for (const m of rows) {
-      const text =
-        m.kind === 'system'
-          ? systemText(mask ? maskPayload(m.payload, mask) : m.payload, viewerId)
-          : wordsFor(m, MESSAGE_CHARS);
-      if (!text.trim()) continue;
-      const speaker =
-        m.kind === 'system'
-          ? 'Caime'
-          : m.sender_id === viewerId
-            ? 'You'
-            : mask
-              ? mask.orgName
-              : (names.get(m.sender_id ?? '') ?? 'Someone');
-      budget -= text.length + speaker.length + 32;
-      if (budget < 0 && kept.length > 0) break;
-      kept.push({ m, text, speaker });
-    }
-    kept.reverse();
-    const lineOf = new Map(kept.map((k, i) => [k.m.id, i + 1]));
-    const lines: Line[] = kept.map((k, i) => ({
-      n: i + 1,
-      messageId: k.m.id,
-      senderId: mask ? maskId(mask, k.m.sender_id) : k.m.sender_id,
-      speaker: k.speaker,
-      text: k.text,
-      at: k.m.created_at,
-    }));
-    const isNew = (k: (typeof kept)[number]) =>
-      Number(k.m.seq) > lastReadSeq && k.m.sender_id !== viewerId && k.m.kind !== 'system';
-    const firstNew = kept.findIndex(isNew);
-    const text = transcriptText(
-      kept.map((k) => ({
-        at: time(k.m.created_at),
-        who: k.speaker,
-        replyTo: k.m.reply_to_id ? lineOf.get(k.m.reply_to_id) : undefined,
-        words: k.text,
-      })),
-    );
-    return {
-      transcript: { text, newFrom: firstNew >= 0 ? firstNew + 1 : null },
-      lines,
-      newCount: kept.filter(isNew).length,
-    };
   }
 
   /**
@@ -269,25 +177,29 @@ export async function aiRoutes(app: FastifyInstance, ctx: AppContext) {
     const { ai, me } = await gate(auth.userId);
     const { me: seat } = await readable(auth.userId, id);
     const [{ transcript, lines, newCount }, unread] = await Promise.all([
-      transcriptOf(auth.userId, id, Number(seat.last_read_seq), me.time_zone),
+      transcriptOf(ctx, auth.userId, id, Number(seat.last_read_seq), me.time_zone),
       unreadSince(auth.userId, id, Number(seat.last_read_seq)),
     ]);
-    if (lines.length === 0) return { summary: null, label: null, newCount: 0, unread };
+    if (lines.length === 0) return { summary: null, label: null, newCount: 0, unread, sources: [] };
     const language = languageName(await languageOf(ctx, auth.userId));
-    const summary = await run('catch-up', auth.userId, () =>
+    const caught = await run('catch-up', auth.userId, () =>
       ai.catchUp({
         transcript,
         language,
         today: today(me.time_zone),
       }),
     );
-    return { summary, label: AI_LABEL, newCount, unread };
+    // The lines it rests on, each a tap to its message (M17 I4).
+    const sources = citedLines(lines, id, caught.sources);
+    countAnswer(ctx, 'catch-up', sources.length);
+    return { summary: caught.summary, label: AI_LABEL, newCount, unread, sources };
   });
 
   /**
-   * A question about the conversation, answered from what the asker reads of it (R67): the same
-   * transcript as a catch-up (never a private conversation, a hidden or deleted message, or who
-   * on an organization's team wrote), in the language the question is asked in, kept nowhere.
+   * A question about the conversation, answered from what the asker reads of it (R67) through the
+   * one answer engine (M17 I4): the same lines as a catch-up (never a private conversation, a
+   * hidden or deleted message, or who on an organization's team wrote), in the language the
+   * question is asked in, the messages it rests on as `sources`, kept nowhere.
    */
   app.post('/conversations/:id/ask', async (req): Promise<AiAnswerView> => {
     const auth = requireAuth(req);
@@ -295,23 +207,26 @@ export async function aiRoutes(app: FastifyInstance, ctx: AppContext) {
     const { question } = parse(AiAskBody, req.body);
     const { ai, me } = await gate(auth.userId);
     const { me: seat } = await readable(auth.userId, id);
-    const { transcript, lines } = await transcriptOf(
+    const { lines } = await transcriptOf(
+      ctx,
       auth.userId,
       id,
       Number(seat.last_read_seq),
       me.time_zone,
     );
-    if (lines.length === 0) return { answer: null, label: null };
+    if (lines.length === 0) return { answer: null, label: null, sources: [] };
     const language = languageName(writtenIn(question) ?? (await languageOf(ctx, auth.userId)));
-    const answer = await run('ask', auth.userId, () =>
-      ai.ask({
-        transcript: { text: transcript.text, newFrom: null },
-        question,
-        language,
-        today: today(me.time_zone),
-      }),
-    );
-    return { answer, label: AI_LABEL };
+    const { answer, cited } = await answerFrom(ctx, auth.userId, 'ask', {
+      ai,
+      question,
+      passages: conversationPassages(lines, id, me.time_zone),
+      scope: 'conversation',
+      // A time in the question ("last week") is kept as they wrote it.
+      period: parseSearchQuery(question, { now: ctx.now() }).period?.label ?? null,
+      language,
+      today: today(me.time_zone),
+    });
+    return { answer, label: AI_LABEL, sources: cited };
   });
 
   app.post('/conversations/:id/ai/actions', async (req): Promise<AiActionsView> => {
@@ -323,6 +238,7 @@ export async function aiRoutes(app: FastifyInstance, ctx: AppContext) {
     // they wait for from it is the conversation's own state; the team's are ordinary ones.
     const mask = conversation.kind === 'business' ? await maskFor(ctx.db, id, auth.userId) : null;
     const { transcript, lines } = await transcriptOf(
+      ctx,
       auth.userId,
       id,
       Number(seat.last_read_seq),

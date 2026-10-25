@@ -2647,4 +2647,5 @@ export const turkishB: Catalog = {
     other: 'Ve {n} konuşma daha sizi bekliyor.',
   },
   'Sum it up': 'Özetle',
+  'Where this comes from': 'Bunun kaynağı',
 };

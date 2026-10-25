@@ -1964,6 +1964,9 @@ test.describe
       await expect(summary).toContainText(
         /Caught up on \d+ messages\. The latest is from Alex Chen\./,
       );
+      // The line it rests on (M17 I4), a chip to its message.
+      await expect(summary.getByTestId('summary-source')).toHaveCount(1);
+      await expect(summary.getByTestId('summary-source')).toContainText('Alex Chen');
       await expect(page.getByText(/^\d+ new messages$/)).toHaveCount(0);
 
       await page.getByTestId('assist-find').filter({ visible: true }).click();
@@ -1983,6 +1986,9 @@ test.describe
       await expect(answer).toContainText(
         /About “What does the printer need\?”: \d+ messages, the latest from Alex Chen\./,
       );
+      // Through the one answer engine (M17 I4): the passage it rests on, a chip to the message.
+      await expect(answer.getByTestId('answer-source')).toHaveCount(1);
+      await expect(answer.getByTestId('answer-source')).toContainText('Alex Chen');
 
       // The hover buttons beside a message open its actions (they used to vanish under the pointer).
       await visible(page, 'هل وصل العقد؟').hover();

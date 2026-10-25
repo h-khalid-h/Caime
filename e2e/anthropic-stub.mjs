@@ -28,6 +28,14 @@ const between = (s, open, close) => {
   return start >= 0 && end > start ? s.slice(start + open.length, end).trim() : '';
 };
 
+/** "[n] when · who[ · where]: text" passages of what was found (M17 I4). */
+const passagesOf = (content) =>
+  between(content, '<found>', '</found>')
+    .split('\n')
+    .map((l) => /^\[(\d+)\] [^·]+ · ([^:·]+?)(?: · [^:]+)?: (.*)$/.exec(l))
+    .filter(Boolean)
+    .map((m) => ({ n: Number(m[1]), speaker: m[2].trim(), text: m[3] }));
+
 /** "[n] time · name: text" lines of a transcript. */
 const linesOf = (content) =>
   between(content, '<conversation>', '</conversation>')
@@ -97,6 +105,19 @@ function answer(body) {
       );
     }
     const open = (between(content, '<context>', '</context>').match(/^• /gm) ?? []).length;
+    // A question with what search found (M17 I4): the reply rests on the first passage.
+    const found = passagesOf(content);
+    if (found.length) {
+      const first = found[0];
+      return reply(
+        JSON.stringify({
+          reply: `From what you have: ${first.speaker} said “${first.text}”.`,
+          keep: null,
+          act: null,
+          sources: [first.n],
+        }),
+      );
+    }
     return reply(
       JSON.stringify({
         reply: `About “${asked}”: here’s an idea. (${open} open things in mind.)`,
@@ -106,13 +127,17 @@ function answer(body) {
     );
   }
   if (system.includes('question about a conversation')) {
-    // A question about the conversation (R67): it names the question and what it read.
+    // A question about the conversation (R67, through the one answer engine, M17 I4): it names
+    // the question and what it read, and cites the latest passage.
     calls.push('ask');
     const question = between(content, '<question>', '</question>');
-    const lines = linesOf(content);
+    const lines = passagesOf(content);
     const last = lines[lines.length - 1];
     return reply(
-      `About “${question}”: ${lines.length} messages, the latest from ${last?.speaker ?? 'nobody'}.`,
+      JSON.stringify({
+        answer: `About “${question}”: ${lines.length} messages, the latest from ${last?.speaker ?? 'nobody'}.`,
+        sources: last ? [last.n] : [],
+      }),
     );
   }
   if (system.includes('You write the notes of a call')) {
@@ -132,11 +157,15 @@ function answer(body) {
     );
   }
   if (system.includes('catch someone up')) {
+    // A catch-up (and a brief's summary) with the lines it rests on (M17 I4): the latest one.
     calls.push('catch-up');
     const lines = linesOf(content);
     const last = lines[lines.length - 1];
     return reply(
-      `Caught up on ${lines.length} messages. The latest is from ${last?.speaker ?? 'nobody'}.`,
+      JSON.stringify({
+        summary: `Caught up on ${lines.length} messages. The latest is from ${last?.speaker ?? 'nobody'}.`,
+        sources: last ? [last.n] : [],
+      }),
     );
   }
   if (system.includes('find the follow-ups')) {

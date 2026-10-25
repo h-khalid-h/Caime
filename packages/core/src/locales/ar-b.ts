@@ -3535,4 +3535,5 @@ export const arB: Catalog = {
     other: 'و{n} محادثة أخرى تحتاجك.',
   },
   'Sum it up': 'لخّصه',
+  'Where this comes from': 'من أين جاء هذا',
 };

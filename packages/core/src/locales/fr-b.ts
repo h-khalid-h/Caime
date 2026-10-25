@@ -2741,4 +2741,5 @@ export const frB: Catalog = {
     other: 'Et {n} autres conversations ont besoin de vous.',
   },
   'Sum it up': 'Résumer',
+  'Where this comes from': 'D’où cela vient',
 };
