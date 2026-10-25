@@ -36,6 +36,7 @@ import { customerMask, maskFor } from '../lib/business';
 import { calendarItems } from '../lib/calendar';
 import { canEditConversation, contextVisible } from '../lib/contexts';
 import { membership, sendSystem } from '../lib/conversation-views';
+import { keepDueMove } from '../lib/date-moves';
 import { dueOnSql, overdueAtSql } from '../lib/due';
 import { badRequest, forbidden, notFound } from '../lib/errors';
 import { recordEvent } from '../lib/events';
@@ -501,40 +502,46 @@ export async function actionRoutes(app: FastifyInstance, ctx: AppContext) {
           reminded_at: null,
         };
     }
-    const updated = await ctx.db
-      .updateTable('tasks')
-      .set({
-        ...(body.title !== undefined ? { title: body.title } : {}),
-        ...(body.notes !== undefined ? { notes: body.notes } : {}),
-        ...(body.dueAt !== undefined ? { due_at: body.dueAt } : {}),
-        ...(body.dueHasTime !== undefined ? { due_has_time: body.dueHasTime } : {}),
-        // Its day, kept beside it (R119): moved with it, gone once it has a time.
-        ...(body.dueAt !== undefined || body.dueHasTime !== undefined
-          ? {
-              due_on: dueOnSql(
-                body.dueAt !== undefined ? body.dueAt : t.due_at,
-                body.dueHasTime ?? t.due_has_time,
-                t.owner_id,
-              ),
-            }
-          : {}),
-        ...(body.remindAt !== undefined ? { remind_at: body.remindAt, reminded_at: null } : {}),
-        ...(moved ?? {}),
-        // Only a wait on someone else is Cai's to follow up (R68).
-        ...(body.caiFollowUp !== undefined
-          ? { cai_follow_up: body.caiFollowUp && Boolean(t.assignee_id) && t.assignee_id !== me }
-          : {}),
-        ...(body.status !== undefined ? { status: body.status } : {}),
-        ...(done
-          ? { completed_at: ctx.now(), completed_by: me }
-          : body.status === 'open'
-            ? { completed_at: null, completed_by: null }
+    const updated = await ctx.db.transaction().execute(async (trx) => {
+      const row = await trx
+        .updateTable('tasks')
+        .set({
+          ...(body.title !== undefined ? { title: body.title } : {}),
+          ...(body.notes !== undefined ? { notes: body.notes } : {}),
+          ...(body.dueAt !== undefined ? { due_at: body.dueAt } : {}),
+          ...(body.dueHasTime !== undefined ? { due_has_time: body.dueHasTime } : {}),
+          // Its day, kept beside it (R119): moved with it, gone once it has a time.
+          ...(body.dueAt !== undefined || body.dueHasTime !== undefined
+            ? {
+                due_on: dueOnSql(
+                  body.dueAt !== undefined ? body.dueAt : t.due_at,
+                  body.dueHasTime ?? t.due_has_time,
+                  t.owner_id,
+                ),
+              }
             : {}),
-        updated_at: ctx.now(),
-      })
-      .where('id', '=', id)
-      .returningAll()
-      .executeTakeFirstOrThrow();
+          ...(body.remindAt !== undefined ? { remind_at: body.remindAt, reminded_at: null } : {}),
+          ...(moved ?? {}),
+          // Only a wait on someone else is Cai's to follow up (R68).
+          ...(body.caiFollowUp !== undefined
+            ? { cai_follow_up: body.caiFollowUp && Boolean(t.assignee_id) && t.assignee_id !== me }
+            : {}),
+          ...(body.status !== undefined ? { status: body.status } : {}),
+          ...(done
+            ? { completed_at: ctx.now(), completed_by: me }
+            : body.status === 'open'
+              ? { completed_at: null, completed_by: null }
+              : {}),
+          updated_at: ctx.now(),
+        })
+        .where('id', '=', id)
+        .returningAll()
+        .executeTakeFirstOrThrow();
+      // A due that existed and moved is kept in its history (R119 level 2, M17 I19d).
+      if (body.dueAt !== undefined || body.dueHasTime !== undefined)
+        await keepDueMove(trx, t, row, me, ctx.now());
+      return row;
+    });
     await recordEvent(ctx.db, done ? 'task.completed' : 'task.updated', me, {
       taskId: id,
       status: updated.status,

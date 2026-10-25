@@ -673,6 +673,26 @@ export interface SavedItemsTable {
   created_at: Generated<Date>;
 }
 
+/**
+ * A date's history (R119 level 2, M17 I19d): one move of a card's start or an action's due, kept
+ * in the change's own transaction, never updated, gone with what it's about (migration 0161).
+ */
+export interface DateMovesTable {
+  id: string;
+  message_id: string | null;
+  task_id: string | null;
+  field: 'start' | 'due';
+  value_at: NullableTimestamp;
+  previous_at: NullableTimestamp;
+  value_on: string | null;
+  previous_on: string | null;
+  /** `replan`, the plan truly moved; `correction`, a wrong value fixed. Slips count replans. */
+  reason: 'replan' | 'correction';
+  source: 'person' | 'rules';
+  by_id: string | null;
+  known_at: Generated<Date>;
+}
+
 export type TaskStatus = 'open' | 'accepted' | 'declined' | 'done' | 'cancelled';
 
 export interface TasksTable {
@@ -1815,6 +1835,7 @@ export interface Database {
   saved_items: SavedItemsTable;
   released_handles: ReleasedHandlesTable;
   tasks: TasksTable;
+  date_moves: DateMovesTable;
   calendar_feeds: CalendarFeedsTable;
   connected_accounts: ConnectedAccountsTable;
   own_addresses: OwnAddressesTable;

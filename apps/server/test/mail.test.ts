@@ -2259,6 +2259,18 @@ describe('invitations from someone’s calendar (M16 F4)', () => {
     expect(card?.payload.state).toBe('proposed');
     expect(card?.payload.fields?.start?.at).toBe(later.toISOString());
     expect(card?.payload.invitation?.sequence).toBe(1);
+    // Its history keeps the move, made by its organizer (R119 level 2, M17 I19d).
+    const movesOf = () =>
+      t.ctx.db
+        .selectFrom('date_moves')
+        .select(['reason', 'source', 'by_id', 'value_at'])
+        .where('message_id', '=', before!)
+        .execute();
+    const moves = await movesOf();
+    expect(moves.map((m) => [m.reason, m.source, m.value_at?.toISOString()])).toEqual([
+      ['replan', 'person', later.toISOString()],
+    ]);
+    expect(moves[0]!.by_id).not.toBeNull();
     const told = (await noor.get('/v1/notifications')).notifications as Array<{
       title: string;
     }>;
@@ -2297,6 +2309,8 @@ describe('invitations from someone’s calendar (M16 F4)', () => {
     card = await theCard();
     expect(card?.payload.state).toBe('declined');
     expect(card?.payload.fields?.place).toBe('Room 4');
+    // Called off, stood again and moved to another room at the same time: no other move.
+    expect(await movesOf()).toHaveLength(1);
   });
 
   it('is never held on Caime: no guests to ask, nothing that starts it here, and the calendar knows', async () => {

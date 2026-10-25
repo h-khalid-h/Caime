@@ -32,6 +32,7 @@ import { pickProvider, rebookingFor } from './booking';
 import type { CustomerMask } from './business';
 import { afterCardMove } from './card-moves';
 import { expireCheckout, stillPayableAfter } from './checkout';
+import { recordMove } from './date-moves';
 import { badRequest } from './errors';
 import { cardStartAt } from './kits';
 import { queueCardUpdate } from './mail-out';
@@ -274,7 +275,7 @@ export async function retimeCard(
     const card = (now?.payload ?? {}) as CardPayload;
     if (!now || now.deleted_at || card.state !== from) return null;
     // The card keeps its clock (R119, M17 I19c): the new time on the zone it was set in.
-    const was = card.fields?.start as { zone?: unknown } | undefined;
+    const was = card.fields?.start as { zone?: unknown; at?: unknown } | undefined;
     const at = { at: input.start.toISOString(), hasTime: true };
     const fields = {
       ...(card.fields ?? {}),
@@ -292,7 +293,7 @@ export async function retimeCard(
         { state: to, by: input.actorId, at: ctx.now().toISOString() },
       ].slice(-50),
     };
-    return trx
+    const moved = await trx
       .updateTable('messages')
       .set({
         payload: sql`payload || ${JSON.stringify(next)}::jsonb`,
@@ -301,6 +302,22 @@ export async function retimeCard(
       .where('id', '=', m.id)
       .returning(MESSAGE_COLUMNS)
       .executeTakeFirstOrThrow();
+    // Its history (R119 level 2, M17 I19d): the plan moved, by whoever suggested the time.
+    const before = typeof was?.at === 'string' ? was.at : null;
+    await recordMove(
+      trx,
+      {
+        of: { messageId: m.id },
+        field: 'start',
+        value: { at: input.start },
+        previous: { at: before ? new Date(before) : null },
+        reason: 'replan',
+        source: 'person',
+        byId: input.actorId,
+      },
+      ctx.now(),
+    );
+    return moved;
   });
   if (!row) return 'conflict';
   const view = await afterCardMove(ctx, row, {

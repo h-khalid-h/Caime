@@ -28,6 +28,7 @@ import { runAi } from './ai-run';
 import { countAnswer } from './answers';
 import { customerMask, maskFor } from './business';
 import { membership } from './conversation-views';
+import { replansOf } from './date-moves';
 import { dueAtForSql } from './due';
 import { AppError } from './errors';
 import { languageOf } from './i18n';
@@ -229,11 +230,15 @@ async function briefJob(ctx: AppContext, payload: Record<string, unknown>): Prom
   }
 }
 
-/** "2 decisions · 1 promise open · 3 questions unanswered · 2 files", or that nothing is open. */
+/**
+ * "Moved twice · 2 decisions · 1 promise open · 3 questions unanswered · 2 files", or that
+ * nothing is open.
+ */
 export function briefLine(
-  b: Pick<BriefView, 'decisions' | 'promises' | 'questions' | 'files'>,
+  b: Pick<BriefView, 'moved' | 'decisions' | 'promises' | 'questions' | 'files'>,
 ): string {
   const parts = [
+    b.moved ? trn(b.moved, 'Moved once', 'Moved {n} times') : null,
     b.decisions.length ? trn(b.decisions.length, '{n} decision', '{n} decisions') : null,
     b.promises.length ? trn(b.promises.length, '{n} promise open', '{n} promises open') : null,
     b.questions.length
@@ -244,7 +249,6 @@ export function briefLine(
   return parts.length ? parts.join(' · ') : tr('Nothing open between you since last time.');
 }
 
-/** A card's summary for one reader, ten minutes; null is a summary that couldn't be had. */
 /** A card's summary with the lines it rests on, for one reader; null is one that couldn't be had. */
 type Summed = { text: string; sources: AnswerSourceView[] } | null;
 const summaries = new TtlCache<string, Summed>(5_000, SUMMARY_TTL_MS);
@@ -373,6 +377,11 @@ export async function briefFor(
       .where('created_at', '>=', since)
       .executeTakeFirstOrThrow(),
   ]);
+  // What slipped (R119, M17 I19d): the plan moving, counted in one query for the card and its promises.
+  const moves = await replansOf(ctx.db, {
+    messageIds: [card.id],
+    taskIds: [...mine, ...theirs].map((t) => t.id),
+  });
   const myLast = Number(lastMine?.seq ?? 0);
   const questions = (asked as Message[])
     .filter((m) => Number(m.seq) > myLast)
@@ -389,6 +398,7 @@ export async function briefFor(
     at: start.toISOString(),
     since: since.toISOString(),
     messages: count.n,
+    moved: moves.get(card.id) ?? 0,
     decisions: decided.map((d) => ({
       id: d.id,
       title: d.title,
@@ -400,12 +410,14 @@ export async function briefFor(
         title: t.title,
         dueAt: t.due_at?.toISOString() ?? null,
         direction: 'mine' as const,
+        moved: moves.get(t.id) ?? 0,
       })),
       ...theirs.map((t) => ({
         id: t.id,
         title: t.title,
         dueAt: t.due_at?.toISOString() ?? null,
         direction: 'theirs' as const,
+        moved: moves.get(t.id) ?? 0,
       })),
     ],
     questions,

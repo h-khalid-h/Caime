@@ -2381,7 +2381,13 @@ A sphere is said as how you know someone, never "sphere".
   meeting's or an appointment's start keeps its clock (M17 I19c): `fields.start.zone` and `local`
   beside `at`, written by `onClock` (core `card-clock.ts`) in `sendMessage` and `retimeCard` alone,
   and `rezoneCards` (`lib/card-zones.ts`) moves the cards ahead back to it when the server's tz
-  rules change; a new path that writes a card's start pins it the same way. When a card is for is
+  rules change; a new path that writes a card's start pins it the same way. Each move of a card's
+  time or an action's due is kept (M17 I19d, `lib/date-moves.ts`): `recordMove` in the change's
+  own transaction, `replan` for the plan moving (`retimeCard`, an invitation's organizer,
+  `keepDueMove` in `PATCH /tasks/:id`), `correction` for `rezoneCard`, a first value never; what
+  slipped is `replansOf` (the brief's `moved`, Cai's open lists), so a new path that moves a date
+  records it there, and one that erases a card or an action takes its moves with it
+  (`eraseMessagesWhere`, the cascade). When a card is for is
   `messages.card_start_at` (migration 0066 and 0067, `cardStartAt` in `lib/kits.ts`, written on
   send; a test that inserts a card by hand writes it too): a meeting's or an appointment's start, a
   Pay card's or an invoice's due day (M14, midnight UTC of the date, for order alone: a reader's day

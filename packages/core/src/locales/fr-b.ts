@@ -2761,4 +2761,5 @@ export const frB: Catalog = {
     one: 'Cai en regarde une à la fois',
     other: 'Cai en regarde jusqu’à {n} à la fois',
   },
+  'Moved {n} times': { one: 'Date changée une fois', other: 'Date changée {n} fois' },
 };

@@ -25,6 +25,7 @@ import type { AppContext } from '../context';
 import { MESSAGE_COLUMNS, type Message, type UserRow } from '../db/schema';
 import { queueCalendarPush } from './calendar-push';
 import { afterCardMove } from './card-moves';
+import { recordMove } from './date-moves';
 import { askAgain, mayMove, moveCard } from './kit-moves';
 import { cardStartAt } from './kits';
 import { calendarOf } from './mail-calendar';
@@ -213,6 +214,21 @@ async function retimed(
       history: history.slice(-50),
       invitation: { ...now.invitation, sequence: inv.sequence },
     };
+    // Its history (R119 level 2, M17 I19d): the plan moved, by its organizer.
+    const before = (now.fields?.start as { at?: unknown } | undefined)?.at;
+    await recordMove(
+      trx,
+      {
+        of: { messageId: card.id },
+        field: 'start',
+        value: { at: new Date((fields.start as { at: string }).at) },
+        previous: { at: typeof before === 'string' ? new Date(before) : null },
+        reason: 'replan',
+        source: 'person',
+        byId: organizerId,
+      },
+      ctx.now(),
+    );
     return trx
       .updateTable('messages')
       .set({

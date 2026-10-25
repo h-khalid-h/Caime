@@ -17,6 +17,7 @@ import type { AppContext } from '../context';
 import { MESSAGE_COLUMNS, type Message } from '../db/schema';
 import { queueBrief } from './briefs';
 import { queueCalendarPush } from './calendar-push';
+import { recordMove } from './date-moves';
 import { registerPeriodic } from './jobs';
 import { queueCardUpdate } from './mail-out';
 import { queueMeetingStart } from './meeting-start';
@@ -91,6 +92,20 @@ async function rezoneCard(ctx: AppContext, id: string): Promise<boolean> {
       // A calendar that has it by mail takes the new instant as the invitation's next version.
       sequence: (card.sequence ?? 0) + 1,
     };
+    // Its history (M17 I19d): a wrong instant fixed by the rules, never a slip of the plan.
+    await recordMove(
+      trx,
+      {
+        of: { messageId: id },
+        field: 'start',
+        value: { at: to },
+        previous: { at: typeof start.at === 'string' ? new Date(start.at) : null },
+        reason: 'correction',
+        source: 'rules',
+        byId: null,
+      },
+      ctx.now(),
+    );
     return trx
       .updateTable('messages')
       .set({ payload: sql`payload || ${JSON.stringify(next)}::jsonb`, card_start_at: to })

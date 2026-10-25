@@ -97,6 +97,15 @@ the field), `value`, `previous`, `known_at`, `reason` (`initial`, `replan`: the 
 is about (an erasure takes its history with it). What slipped is counted from `replan` alone, which
 is what Cai reads to say "this has moved twice".
 
+Built (M17 I19d) as `date_moves` (migration 0161, `lib/date-moves.ts`): a meeting's or an
+appointment's time given another (by whoever suggested it, or an invitation's organizer by mail)
+and an action's due moved to another day, or to another instant when both sides have one, are
+`replan` by the person; a card put back on its clock when a zone's rules changed (I19c) is
+`correction` by the rules. The first value is the record's own (a card as sent, an action's first
+due) and never a row; `initial` stays a reason for a reader that needs one. A promise is an action
+here, so its day is its due, and a booking's slot is its card's time. The brief says "Moved twice"
+of its card and of each promise still open, and so do Cai's lists of what's open and coming up.
+
 ## Registry
 
 | Object | Events (states) | Reference | Precision |

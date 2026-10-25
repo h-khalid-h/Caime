@@ -491,4 +491,12 @@ export const gulfVoice: Catalog = {
   'I can look at photos with AI assist on: Settings, then AI assist.':
     'أقدر أشوف الصور إذا مساعدة الذكاء الاصطناعي شغّالة: الإعدادات، بعدين مساعدة الذكاء الاصطناعي.',
   'I can’t look at photos on this Caime yet.': 'للحين ما أقدر أشوف الصور على Caime هذا.',
+  'Moved {n} times': {
+    zero: 'موعده ما تغيّر',
+    one: 'موعده تغيّر مرة',
+    two: 'موعده تغيّر مرتين',
+    few: 'موعده تغيّر {n} مرات',
+    many: 'موعده تغيّر {n} مرة',
+    other: 'موعده تغيّر {n} مرة',
+  },
 };

@@ -74,6 +74,12 @@ export function BriefSheet({
         )
       ) : (
         <View style={{ gap: 18 }} testID="brief">
+          {b.moved ? (
+            // What slipped (R119): the plan moving, never a time put back on its own clock.
+            <Text variant="body" color="textSecondary" testID="brief-moved">
+              {trn(b.moved, 'Moved once', 'Moved {n} times')}
+            </Text>
+          ) : null}
           {b.summary ? (
             <Section title={b.label ? tr(b.label) : tr('Summary')}>
               <Text variant="body" auto>
@@ -113,6 +119,7 @@ export function BriefSheet({
                 <Text key={p.id} variant="body" auto>
                   {p.direction === 'mine' ? tr('You: {title}', { title: p.title }) : p.title}
                   {p.dueAt ? ` · ${formatDue(p.dueAt, now, timeZone, locale)}` : ''}
+                  {p.moved ? ` · ${trn(p.moved, 'Moved once', 'Moved {n} times')}` : ''}
                 </Text>
               ))}
             </Section>
@@ -136,6 +143,7 @@ export function BriefSheet({
             </Section>
           ) : null}
           {!b.summary &&
+          !b.moved &&
           !b.decisions.length &&
           !b.promises.length &&
           !b.questions.length &&

@@ -80,6 +80,7 @@ import { speakReply } from './cai-voice';
 import { caimeDayText, productOrgId } from './caime-day';
 import { dayStart } from './calendar';
 import { ensureDirectConversation } from './conversations';
+import { replansOf } from './date-moves';
 import { AppError } from './errors';
 import { freeAnswer } from './free-time';
 import { asReader, inLanguage, readerOf } from './i18n';
@@ -1172,8 +1173,9 @@ export interface Open {
 }
 
 /**
- * What's open for someone, in their words: three queries whatever they have (convention 14).
- * The model's copy leaves out anything from a private conversation (R18).
+ * What's open for someone, in their words: five queries whatever they have (convention 14).
+ * The model's copy leaves out anything from a private conversation (R18). What slipped says so
+ * (R119, M17 I19d): an action's due or a card's time moved, counted from the plan moving alone.
  */
 export async function openFor(
   ctx: AppContext,
@@ -1200,6 +1202,7 @@ export async function openFor(
       .leftJoin('users as a', 'a.id', 't.assignee_id')
       .leftJoin('users as o', 'o.id', 't.owner_id')
       .select([
+        't.id',
         't.owner_id',
         't.assignee_id',
         't.title',
@@ -1235,6 +1238,15 @@ export async function openFor(
     // What's owed by a day in the window (M14), today's included: the cards the calendar shows.
     dueCards(ctx, me.id, { from: dueDayOf(now, zone), until, limit: COMING_COUNTED }),
   ]);
+  const moves = await replansOf(ctx.db, {
+    taskIds: rows.map((r) => r.id),
+    // A time of a series not yet posted has no card of its own to have moved.
+    messageIds: cards.filter((c) => !c.projected).map((c) => c.messageId),
+  });
+  const moved = (id: string) => {
+    const n = moves.get(id) ?? 0;
+    return n ? ` · ${trn(n, 'Moved once', 'Moved {n} times')}` : '';
+  };
   // An action due on a day is said on its own day (R119), never its owner's 09:00 read here.
   const dueAt = (r: { due_at: Date | null; due_on: string | null }) =>
     r.due_on ? dayStart(r.due_on, zone) : r.due_at;
@@ -1253,10 +1265,15 @@ export async function openFor(
           ? r.due_on >= dayIn(now, zone) && dayStart(r.due_on, zone) < until
           : r.due_at.getTime() >= now.getTime() && r.due_at.getTime() < until.getTime()),
     )
-    .map((r) => ({ at: dueAt(r)!, hasTime: r.due_has_time, title: r.title }));
+    .map((r) => ({ at: dueAt(r)!, hasTime: r.due_has_time, title: r.title, id: r.id }));
   const ahead = [
     ...soon,
-    ...cards.map((c) => ({ at: c.at, hasTime: c.hasTime, title: c.title })),
+    ...cards.map((c) => ({
+      at: c.at,
+      hasTime: c.hasTime,
+      title: c.title,
+      id: c.projected ? null : c.messageId,
+    })),
     // On its day as written, on the person's clock (R119): never its midnight UTC.
     ...owed.map((c) => ({
       at: dayStart(c.on, zone),
@@ -1264,19 +1281,32 @@ export async function openFor(
       title: c.amount
         ? `${c.title}: ${formatAmount(c.amount.value, c.amount.currency, locale)}`
         : c.title,
+      id: null,
     })),
   ].sort((a, b) => a.at.getTime() - b.at.getTime());
   const coming = ahead
     .slice(0, SHOWN)
-    .map((c) => line(formatWhenAt(c.at.toISOString(), c.hasTime, now, zone, locale), c.title));
+    .map(
+      (c) =>
+        line(formatWhenAt(c.at.toISOString(), c.hasTime, now, zone, locale), c.title) +
+        (c.id ? moved(c.id) : ''),
+    );
   return {
     waiting: waiting
       .slice(0, SHOWN)
-      .map((r) => line(r.assignee ?? tr('Someone'), r.title) + due(dueAt(r), r.due_has_time)),
+      .map(
+        (r) =>
+          line(r.assignee ?? tr('Someone'), r.title) + due(dueAt(r), r.due_has_time) + moved(r.id),
+      ),
     asked: asked
       .slice(0, SHOWN)
-      .map((r) => line(r.owner ?? tr('Someone'), r.title) + due(dueAt(r), r.due_has_time)),
-    mine: mine.slice(0, SHOWN).map((r) => line(r.title) + due(dueAt(r), r.due_has_time)),
+      .map(
+        (r) =>
+          line(r.owner ?? tr('Someone'), r.title) + due(dueAt(r), r.due_has_time) + moved(r.id),
+      ),
+    mine: mine
+      .slice(0, SHOWN)
+      .map((r) => line(r.title) + due(dueAt(r), r.due_has_time) + moved(r.id)),
     coming,
     counts: { ...counts, coming: Math.min(ahead.length, COMING_COUNTED) },
   };

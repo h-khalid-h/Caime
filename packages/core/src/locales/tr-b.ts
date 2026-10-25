@@ -2667,4 +2667,5 @@ export const turkishB: Catalog = {
     one: 'Cai bir seferde birine bakar',
     other: 'Cai bir seferde en fazla {n} tanesine bakar',
   },
+  'Moved {n} times': { one: 'Tarihi bir kez değişti', other: 'Tarihi {n} kez değişti' },
 };

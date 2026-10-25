@@ -89,6 +89,10 @@ export async function eraseMessagesWhere(
         resolved_at = coalesce(resolved_at, ${now})
       where message_id in (select id from gone)
     ),
+    -- And how its time moved (R119 level 2, M17 I19d): kept with it, gone with it.
+    moves_gone as (
+      delete from date_moves where message_id in (select id from gone)
+    ),
     mail_gone as (
       update mail_messages set subject = null, from_address = '', in_reply_to = null,
         references_ids = '{}', delivery_detail = null, html = null, signature = null

@@ -491,4 +491,12 @@ export const egyptianVoice: Catalog = {
   'I can look at photos with AI assist on: Settings, then AI assist.':
     'أقدر أبص على الصور لو مساعدة الذكاء الاصطناعي شغالة: الإعدادات، وبعدين مساعدة الذكاء الاصطناعي.',
   'I can’t look at photos on this Caime yet.': 'لسه مقدرش أبص على الصور على Caime ده.',
+  'Moved {n} times': {
+    zero: 'ميعاده ما اتغيّرش',
+    one: 'ميعاده اتغيّر مرة',
+    two: 'ميعاده اتغيّر مرتين',
+    few: 'ميعاده اتغيّر {n} مرات',
+    many: 'ميعاده اتغيّر {n} مرة',
+    other: 'ميعاده اتغيّر {n} مرة',
+  },
 };

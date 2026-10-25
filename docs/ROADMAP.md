@@ -4435,9 +4435,16 @@ clinic can sign for. I1 lands before launch.
         from London kept on Cairo's clock, a card ahead under old rules moved back with its
         sequence and calendar while a past one and one without a clock stay, the pass doing
         nothing again under the same rules).
-  - [ ] I19d. A date's history (level 2): each move of a meeting's time, an action's due or a
+  - [x] I19d. A date's history (level 2): each move of a meeting's time, an action's due or a
         promise's day kept with `replan` or `correction` in the change's transaction, erased with
-        what it's about; Cai and the brief say what slipped from `replan` alone.
+        what it's about; Cai and the brief say what slipped from `replan` alone. (2026-10-25:
+        `date_moves`, migration 0161, written by `recordMove` inside `retimeCard`, an invitation's
+        organizer's new time and `PATCH /tasks/:id` (`keepDueMove`: a due that existed, moved to
+        another day, or another instant when both have one) as `replan`, and inside `rezoneCard`
+        as `correction`; a first value is no move; gone with its card (`eraseMessagesWhere`) or
+        its action (cascade). `replansOf` counts them in one query for `BriefView.moved` and each
+        promise's, the brief's notice and sheet, and Cai's open lists. `date-moves.test.ts` (4)
+        and the mail test's organizer's move.)
 
 ## M18 — The standards pass (the owner's brief of 2026-10-25)
 
@@ -6621,3 +6628,7 @@ CONNIQT; they mean Caime. Caishy is one of Caime's AI members, and Cai leads the
   in two halves beside it (`E2E_HALF` in `playwright.config.ts`: the two longest files, and the
   rest, so a new spec always runs; 58 and 116 of 174 tests, 6.9 minutes each by the local
   timings). The image waits on all three.
+- 2026-10-25 — M17 I19d: a date's history. Every move of a card's time (another time suggested, an
+  invitation's organizer's new time, the zone's rules) and of an action's due is kept in the
+  change's transaction as `replan` or `correction`; the brief, its notice and Cai's lists say
+  "Moved twice" from the replans alone. Server tests (date-moves 4, mail, briefs), the gate.

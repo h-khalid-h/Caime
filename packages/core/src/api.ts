@@ -1747,6 +1747,11 @@ export interface BriefView {
   since: string;
   /** Messages since then, counted. */
   messages: number;
+  /**
+   * How many times its time was moved to another (R119, M17 I19d): the plan moving alone, never
+   * a time put back on its own clock.
+   */
+  moved: number;
   decisions: Array<{ id: string; title: string; decidedAt: string }>;
   /** `mine`: you promised them; `theirs`: they promised you. */
   promises: Array<{
@@ -1754,6 +1759,8 @@ export interface BriefView {
     title: string;
     dueAt: string | null;
     direction: 'mine' | 'theirs';
+    /** How many times its due day moved. */
+    moved: number;
   }>;
   /** Their questions since your last message: still unanswered. */
   questions: Array<{ messageId: string; preview: string; at: string }>;

@@ -491,4 +491,12 @@ export const levantineVoice: Catalog = {
   'I can look at photos with AI assist on: Settings, then AI assist.':
     'فيني شوف الصور إذا مساعدة الذكاء الاصطناعي شغّالة: الإعدادات، بعدين مساعدة الذكاء الاصطناعي.',
   'I can’t look at photos on this Caime yet.': 'لسّا ما فيني شوف الصور على Caime هيدا.',
+  'Moved {n} times': {
+    zero: 'موعدو ما تغيّر',
+    one: 'موعدو تغيّر مرة',
+    two: 'موعدو تغيّر مرتين',
+    few: 'موعدو تغيّر {n} مرات',
+    many: 'موعدو تغيّر {n} مرة',
+    other: 'موعدو تغيّر {n} مرة',
+  },
 };
