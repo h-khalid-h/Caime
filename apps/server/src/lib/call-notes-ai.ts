@@ -4,17 +4,21 @@
  * "You") and the follow-ups in it, each offered as the reader's own suggestion by the line it came
  * from. They're read as a conversation is, by the same instructions as a conversation's catch-up
  * and follow-ups; the catch-up is kept nowhere, and nothing is drawn from the notes unless asked.
+ * A question typed to Cai in any mode (R114 (2), M17 I13f) is answered the same way, to the asker
+ * alone, citing the lines it rests on; kept nowhere.
  */
 import {
   AI_LABEL,
   type AiActionsView,
   type AiCatchUpView,
+  type CallNotesAnswerView,
   firstFutureWhen,
   firstName,
   PERSON_ALLOWANCES,
   previewText,
   truncate,
 } from '@caime/core';
+import { writtenIn } from '@caime/core/chat-intent';
 import { tr } from '@caime/core/i18n';
 import type { AppContext } from '../context';
 import type { Call } from '../db/schema';
@@ -101,6 +105,45 @@ export async function catchUpOnNotes(
     }),
   );
   return { summary, label: AI_LABEL, newCount: 0, unread: 0 };
+}
+
+/**
+ * A question typed to Cai about the call (R114 (2), M17 I13f): answered from what the asker may
+ * read of the notes, in the language it's asked in, with the lines it rests on, kept nowhere.
+ */
+export async function askAboutNotes(
+  ctx: AppContext,
+  call: Call,
+  userId: string,
+  question: string,
+): Promise<CallNotesAnswerView> {
+  const { ai, me } = await aiGate(ctx, userId);
+  const { transcript, lines } = await noteTranscript(ctx, call, userId, me.time_zone);
+  if (!lines.length) return { answer: null, label: null, cited: [] };
+  const language = languageName(writtenIn(question) ?? (await languageOf(ctx, userId)));
+  const { answer, sources } = await runAi(ctx, 'notes-ask', userId, () =>
+    ai.askNotes({
+      transcript,
+      question,
+      language,
+      today: transcriptClock(me.time_zone).day(ctx.now()),
+    }),
+  );
+  const cited = sources.flatMap((n) => {
+    const line = lines[n - 1];
+    return line
+      ? [
+          {
+            lineId: line.id,
+            at: line.at.toISOString(),
+            speaker: line.speaker,
+            mine: line.mine,
+            text: line.text,
+          },
+        ]
+      : [];
+  });
+  return { answer, label: AI_LABEL, cited };
 }
 
 /**

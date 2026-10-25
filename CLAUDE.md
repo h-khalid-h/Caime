@@ -1705,8 +1705,11 @@ A sphere is said as how you know someone, never "sphere".
   is offered once), Cai's own initiative and only to whoever has AI assist on; a deleted line
   takes back what came of it and writes them again, the latest ask alone (`requested_at`). Someone who
   came in later asks instead (`lib/call-notes-ai.ts`, M16 F7d): a catch-up kept nowhere and
-  follow-ups by line. Anything new drawn from a call's notes joins the write-up, never a summary
-  of its own. The E2E runs in a project of its own (`chromium-speech`) whose microphone
+  follow-ups by line; and anyone in the call, in any mode, types a question to Cai (R114 (2),
+  M17 I13f, `askAboutNotes`, `POST /calls/:id/notes/ask`): answered to them alone from the same
+  lines, in the language asked, the cited lines returned as they may read them, kept nowhere
+  (`AskCai`, from the Cai round and the notes sheet, lazy everywhere). Anything new drawn from
+  a call's notes joins the write-up, never a summary of its own. The E2E runs in a project of its own (`chromium-speech`) whose microphone
   speaks and pauses (`e2e/fake-speech.ts`).
 - Cai records a call (R114, M17 I13b; `lib/call-recording.ts`, `features/calls/recording.ts`):
   the Record mode is `call_notes.records`, asked with the notes (`askNotes(…, records)`; another

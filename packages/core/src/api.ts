@@ -2617,6 +2617,19 @@ export interface AiAnswerView {
   label: string | null;
 }
 
+/**
+ * A question typed to Cai about a call, in any mode (R114 (2), M17 I13f): answered to the asker
+ * alone from what they may read of the notes, citing its lines (as they may read them), kept
+ * nowhere.
+ */
+export interface CallNotesAnswerView {
+  /** Null when nothing has been said yet to answer from. */
+  answer: string | null;
+  label: string | null;
+  /** The lines the answer rests on, the most telling first. */
+  cited: Array<{ lineId: string; at: string; speaker: string; mine: boolean; text: string }>;
+}
+
 export interface AiActionsView {
   /** New suggestions, also in GET /suggestions; things already suggested or tracked are left out. */
   found: SuggestionView[];

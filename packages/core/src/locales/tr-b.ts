@@ -2569,4 +2569,13 @@ export const turkishB: Catalog = {
     'Konuşmadaki herkes, saklandığı sürece oynatabilir; kayıt gidince o da gider.',
   'There’s no conversation to share it into yet.': 'Henüz paylaşılacak bir konuşma yok.',
   'Shared into {n} conversations': { one: 'Paylaşıldı', other: '{n} konuşmaya paylaşıldı' },
+  'Ask Cai about the call': 'Cai’ye aramayı sor',
+  'Answered to you alone, from what was said; nothing is kept.':
+    'Yalnızca size, söylenenlerden yanıtlanır; hiçbir şey saklanmaz.',
+  'Your question': 'Sorunuz',
+  'What did we agree on the price?': 'Fiyat konusunda ne kararlaştırdık?',
+  'From the call': 'Aramadan',
+  'Nothing has been said yet to answer from.': 'Yanıtlanacak bir şey henüz söylenmedi.',
+  'A question about the call, answered to you alone from the notes.':
+    'Arama hakkında bir soru, notlardan yalnızca size yanıtlanır.',
 };

@@ -136,6 +136,18 @@ test.describe
       await expect(written.getByTestId('call-notes-next')).toContainText('Follow up on the call');
       // Written up, there's nothing to ask for: the catch-up is for someone who came in later.
       await expect(page.getByTestId('call-notes-catch-up')).toHaveCount(0);
+      // A question typed to Cai (M17 I13f): answered to Noor alone, the line it rests on under it.
+      await page.getByTestId('call-notes-ask').click();
+      await page.getByTestId('ask-cai-question').fill('Is the contract signed?');
+      await page.getByTestId('ask-cai-send').click();
+      await expect(page.getByTestId('ask-cai-answer')).toContainText('Is the contract signed?');
+      await expect(page.getByTestId('ask-cai-answer')).toContainText('Suggested by Cai');
+      await expect(page.getByTestId('ask-cai-cited-line')).toHaveCount(1);
+      await page.screenshot({ path: 'e2e/screenshots/desktop-call-notes-ask.png' });
+      await page.keyboard.press('Escape');
+      await expect(page.getByTestId('ask-cai-question')).toHaveCount(0);
+      if (!(await page.getByTestId('call-notes-lines').isVisible()))
+        await page.getByTestId('call-notes-open').first().click();
       const sheet = page.getByTestId('call-notes-lines');
       await expect(sheet).toBeVisible();
       await expect(sheet.getByText('Hi Noor, the contract is signed.').first()).toBeVisible();

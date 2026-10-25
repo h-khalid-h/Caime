@@ -217,6 +217,19 @@ function answer(body) {
     // Its introduction is Caime's, written by the rules (R87): the model only answers.
     return say('answer', best.sentence, { sources: [best.n] });
   }
+  if (system.includes('question about a call')) {
+    // A question typed to Cai about a call (M17 I13f): its first line, cited.
+    calls.push('notes-ask');
+    const question = between(content, '<question>', '</question>');
+    const [first] = linesOf(content);
+    return reply(
+      JSON.stringify(
+        first
+          ? { answer: `About “${question}”: ${first.speaker} said “${first.text}”.`, sources: [1] }
+          : { answer: 'Nothing was said about that.', sources: [] },
+      ),
+    );
+  }
   if (system.includes('what search found in their own messages')) {
     // "Ask Cai" in Search (R66): the first passage found, cited.
     calls.push('search-answer');

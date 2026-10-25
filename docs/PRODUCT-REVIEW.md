@@ -2520,7 +2520,10 @@ with its reason, so it isn't proposed again without new facts.
   conversations they're in (never a private one, never a customer conversation, never to someone
   reached by mail), as a message of theirs that points at it; whoever is in that conversation
   plays the parts the sharer could, while it's kept; never forwarded; a share goes when the
-  recording does; every consent line now says anyone in it may share it on. *Not yet:* a share
-  into a customer conversation (the mask; calls with organizations are M16 H8a), the screen in
-  step on a phone, and H.264 measured on a real Chrome call (the test browser records VP9 and
-  Opus).
+  recording does; every consent line now says anyone in it may share it on. *Built (M17 I13f,
+  2026-10-25):* asked in writing: in any mode, a question typed to Cai is answered to the asker
+  alone, in writing, from the notes they may read, in the language it's asked in, with the lines
+  it rests on; kept nowhere; from the Cai round in the call and from the notes after. *Not yet:*
+  a share into a customer conversation (the mask; calls with organizations are M16 H8a), the
+  screen in step on a phone, and H.264 measured on a real Chrome call (the test browser records
+  VP9 and Opus).

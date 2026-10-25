@@ -14,9 +14,11 @@ import { type Readable, Transform } from 'node:stream';
 import { pipeline } from 'node:stream/promises';
 import {
   type AiActionsView,
+  AiAskBody,
   type AiCatchUpView,
   CallNoteLineQuery,
   CallNotesAnswerBody,
+  type CallNotesAnswerView,
   CallNotesAskBody,
   type CallNotesResponse,
   type CallNotesStateResponse,
@@ -46,7 +48,7 @@ import {
   saveLine,
   stopNotes,
 } from '../lib/call-notes';
-import { catchUpOnNotes, findNoteFollowUps } from '../lib/call-notes-ai';
+import { askAboutNotes, catchUpOnNotes, findNoteFollowUps } from '../lib/call-notes-ai';
 import { afterLineDeleted, summaryFor } from '../lib/call-notes-summary';
 import {
   appendPiece,
@@ -169,6 +171,13 @@ export async function callNotesRoutes(app: FastifyInstance, ctx: AppContext) {
     const auth = requireAuth(req);
     const { id } = parse(callParam, req.params);
     return findNoteFollowUps(ctx, await callForNotes(ctx, id, auth.userId), auth.userId);
+  });
+  /** A question typed to Cai, in any mode (R114 (2), M17 I13f): answered to the asker alone. */
+  app.post('/calls/:id/notes/ask', async (req): Promise<CallNotesAnswerView> => {
+    const auth = requireAuth(req);
+    const { id } = parse(callParam, req.params);
+    const { question } = parse(AiAskBody, req.body);
+    return askAboutNotes(ctx, await callForNotes(ctx, id, auth.userId), auth.userId, question);
   });
 
   // ---- The recording (R114 (4), M17 I13b) ------------------------------------------------

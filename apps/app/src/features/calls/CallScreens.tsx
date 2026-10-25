@@ -312,7 +312,7 @@ function OneToOneCallLayer() {
               {phase === 'active' || phase === 'outgoing' ? (
                 // Asked while it rings, the ring itself asks (R85 (1): the caller's consent is
                 // starting with Cai).
-                <NotesRound notes={call.notes} testID="call-notes" />
+                <NotesRound callId={call.id} notes={call.notes} testID="call-notes" />
               ) : null}
               <Round
                 icon={PhoneOff}

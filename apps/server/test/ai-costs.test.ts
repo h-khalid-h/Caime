@@ -186,6 +186,17 @@ const AT_BOUNDS: ReadonlyArray<{
     call: (ai) =>
       ai.ask({ transcript: transcript(60_000), question: x(ASK_MAX), language: 'English', today }),
   },
+  // lib/call-notes-ai.ts: NOTES_CHARS of a call's lines, a question at ASK_MAX (M17 I13f).
+  {
+    feature: 'notes-ask',
+    call: (ai) =>
+      ai.askNotes({
+        transcript: transcript(24_000),
+        question: x(ASK_MAX),
+        language: 'English',
+        today,
+      }),
+  },
   {
     feature: 'actions',
     tiered: true,

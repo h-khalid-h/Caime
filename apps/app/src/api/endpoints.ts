@@ -40,6 +40,7 @@ import type {
   CalendarFeedResponse,
   CalendarView,
   CallHistoryResponse,
+  CallNotesAnswerView,
   CallNotesResponse,
   CallNotesStateResponse,
   CallRecordingPartResponse,
@@ -855,6 +856,9 @@ export const endpoints = {
   callNotes: (id: string) => api.get<CallNotesResponse>(`/calls/${id}/notes`),
   /** Cai on a call's notes, on ask (M16 F7d): a catch-up, and the follow-ups as suggestions. */
   catchUpCallNotes: (id: string) => api.post<AiCatchUpView>(`/calls/${id}/notes/catch-up`, {}),
+  /** A question typed to Cai about the call (M17 I13f): answered to the asker alone, cited. */
+  askAboutCall: (id: string, question: string) =>
+    api.post<CallNotesAnswerView>(`/calls/${id}/notes/ask`, { question }),
   callNoteFollowUps: (id: string) => api.post<AiActionsView>(`/calls/${id}/notes/follow-ups`, {}),
   deleteCallNoteLine: (id: string, lineId: string) =>
     api.del<OkResponse>(`/calls/${id}/notes/lines/${lineId}`),

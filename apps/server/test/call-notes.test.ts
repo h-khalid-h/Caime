@@ -539,6 +539,24 @@ describe('Cai on the notes, on ask (M16 F7d)', () => {
       label: 'Suggested by Cai',
     });
 
+    // A question typed to Cai (M17 I13f): answered to the asker alone, the lines it rests on
+    // returned as they may read them (Sam's second line here), kept nowhere.
+    modelSays(JSON.stringify({ answer: 'Sam will confirm the venue.', sources: [2, 9] }));
+    const asked = await noor.post(`/v1/calls/${callId}/notes/ask`, {
+      question: 'Who confirms the venue?',
+    });
+    expect(asked).toMatchObject({
+      answer: 'Sam will confirm the venue.',
+      label: 'Suggested by Cai',
+    });
+    expect(asked.cited).toHaveLength(1);
+    expect(asked.cited[0]).toMatchObject({
+      speaker: 'Sam Notes',
+      mine: false,
+      text: 'Great, and I will confirm the venue.',
+    });
+    expect(typeof asked.cited[0].lineId).toBe('string');
+
     // Follow-ups, each the reader's suggestion by the line it came from, tied to the call's line.
     const found = {
       items: [

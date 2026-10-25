@@ -2661,4 +2661,13 @@ export const frB: Catalog = {
   'There’s no conversation to share it into yet.':
     'Aucune conversation où le partager pour l’instant.',
   'Shared into {n} conversations': { one: 'Partagé', other: 'Partagé dans {n} conversations' },
+  'Ask Cai about the call': 'Demander à Cai à propos de l’appel',
+  'Answered to you alone, from what was said; nothing is kept.':
+    'Répondu à vous seul, d’après ce qui a été dit ; rien n’est conservé.',
+  'Your question': 'Votre question',
+  'What did we agree on the price?': 'Qu’avons-nous convenu pour le prix ?',
+  'From the call': 'Dans l’appel',
+  'Nothing has been said yet to answer from.': 'Rien n’a encore été dit pour pouvoir répondre.',
+  'A question about the call, answered to you alone from the notes.':
+    'Une question sur l’appel, répondue à vous seul d’après les notes.',
 };

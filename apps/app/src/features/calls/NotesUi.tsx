@@ -9,10 +9,13 @@ import { notesAsked, RECORDING_DAYS } from '@caime/core/calls';
 import { joinNames } from '@caime/core/format';
 import { tr } from '@caime/core/i18n';
 import CircleDot from 'lucide-react-native/icons/circle-dot';
+import MessageCircleQuestion from 'lucide-react-native/icons/message-circle-question-mark';
 import NotebookPen from 'lucide-react-native/icons/notebook-pen';
 import Square from 'lucide-react-native/icons/square';
 import { useState } from 'react';
 import { View } from 'react-native';
+import { useSession } from '@/state/session';
+import { lazyPart } from '@/ui/Lazy';
 import { Pressable } from '@/ui/Pressable';
 import { Text } from '@/ui/Text';
 import { INK, OVER_VIDEO, Round } from './callUi';
@@ -20,14 +23,27 @@ import { answerNotes, askNotes, stopNotes } from './notes';
 
 const first = (name: string) => name.split(' ')[0] || name;
 
+const AskCai = lazyPart(() => import('./AskCai').then((m) => m.AskCai));
+
 /**
  * The control in a call's row: Cai, which offers Take notes or Record (R114 (1)), each saying what
  * it keeps, so whoever asks chooses knowing; while one is asked for (or another mode asked beside
  * it, M17 I13b2) it withdraws the ask; while one is on it offers the other mode (asked of everyone
  * again, the one under way going on until they have) and Stop. One round, so the row fits a phone.
  */
-export function NotesRound({ notes, testID }: { notes: CallNotesView | null; testID: string }) {
+export function NotesRound({
+  callId,
+  notes,
+  testID,
+}: {
+  callId: string;
+  notes: CallNotesView | null;
+  testID: string;
+}) {
   const [choosing, setChoosing] = useState(false);
+  // A question typed to Cai about the call (M17 I13f), for whoever may use AI assist.
+  const [asking, setAsking] = useState(false);
+  const assisted = useSession((s) => Boolean(s.user?.aiEnabled && !s.user.minor));
   if (notes?.state === 'asking' || notes?.switching)
     return (
       <Round
@@ -93,6 +109,18 @@ export function NotesRound({ notes, testID }: { notes: CallNotesView | null; tes
                   testID={`${testID}-record`}
                 />
               )}
+              {assisted ? (
+                <Mode
+                  icon={MessageCircleQuestion}
+                  label={tr('Ask Cai')}
+                  detail={tr('A question about the call, answered to you alone from the notes.')}
+                  onPress={() => {
+                    setChoosing(false);
+                    setAsking(true);
+                  }}
+                  testID={`${testID}-ask`}
+                />
+              ) : null}
               <Mode
                 icon={Square}
                 label={tr('Stop Cai')}
@@ -129,6 +157,9 @@ export function NotesRound({ notes, testID }: { notes: CallNotesView | null; tes
             </>
           )}
         </View>
+      ) : null}
+      {asking ? (
+        <AskCai callId={callId} open={asking} onClose={() => setAsking(false)} play={null} />
       ) : null}
     </View>
   );

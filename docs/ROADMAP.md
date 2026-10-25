@@ -4102,8 +4102,16 @@ clinic can sign for. I1 lands before launch.
         `mail.test.ts`, `kit-cards.test.ts`, the notes E2E (shared into the circle, played by
         Sam, no Forward, gone with Delete). Not yet: into a customer conversation (the mask;
         calls with organizations are M16 H8a).
-  - [ ] I13f. Asked in writing (S): in every mode a question typed in the call, answered to the one
-        who asked from what was said, cited.
+  - [x] I13f. Asked in writing (S): in every mode a question typed in the call, answered to the one
+        who asked from what was said, cited. Built: `POST /calls/:id/notes/ask` answers a question
+        from what the asker may read of the notes (the catch-up's lines, newest within the budget),
+        on the light model, in the language it's asked in, to the asker alone, kept nowhere, with
+        the lines it rests on returned as they may read them (`askAboutNotes`, `notes-ask`); the
+        app asks from the Cai round while notes are on and from the notes sheet after (`AskCai`,
+        lazy everywhere), a cited line playing the recording from its moment where one is
+        playable. Verified: `call-notes.test.ts` (the answer and its cited line), `ai-costs.test.ts`
+        (the `notes-ask` row), the notes E2E (asked from the sheet, the answer labelled Cai's with
+        its cited line).
   - [ ] I13g. Interact (L): the third mode and its labelled consent ("Answer, Cai joins in");
         "Cai, …" by name in a person's own track (golden lines per language and variety); Cai's
         introduction aloud once; a short spoken answer from what the call shares, mixed into the
@@ -5799,6 +5807,10 @@ have yet, each sized:
 - 2026-10-20 — The French and Turkish catalogs come in two halves fetched side by side, as Arabic
   does: their largest download 48.9 KB where one was 95.2 KB of a chunk's 100; the first download
   448.8 KB of 450 (0.2 KB more: the two loaders).
+- 2026-10-25 — M17 I13f (R114 (2)): asked in writing. A question typed to Cai in any mode is
+  answered to the asker alone from the notes they may read, in the language it's asked in, with
+  the lines it rests on, kept nowhere; from the Cai round in the call and from the notes sheet
+  after. Verified: `call-notes.test.ts`, `ai-costs.test.ts`, the notes E2E.
 - 2026-10-25 — M17 I13e (R114 (7)): a recording shared on. Anyone who was in the call shares it,
   once recorded, into conversations they're in, as a message of theirs that points at it
   (`call_recording_shares`, migration 0149); whoever is there plays the parts the sharer could,

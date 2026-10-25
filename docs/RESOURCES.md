@@ -194,7 +194,8 @@ the pricing page for the agent).
 
 Produced by `COST_TABLE=<file> pnpm vitest run test/ai-costs.test.ts` in `apps/server`
 (2026-10-19; the cai and friend rows again on 2026-10-20, with what M16 G13 and G14 tell them;
-notes-summary on 2026-10-21, M16 F7e's write-up of a call's notes):
+notes-summary on 2026-10-21, M16 F7e's write-up of a call's notes; notes-ask on 2026-10-25, M17
+I13f's question about a call):
 each feature's request at the bounds the code sets, measured from what the real
 prompt builders send to a stand-in (system and message characters; output at its `max_tokens`),
 read at a token a character, a ceiling no language's words reach; a voice note at ten minutes,
@@ -208,6 +209,7 @@ Prices: https://platform.claude.com/docs/en/about-claude/pricing, read 2026-10-1
 | translate | 4,294 | 8,192 | €0.0040 | €0.08 | €0.16 |
 | catch-up | 60,825 | 4,096 | €0.0072 | €0.14 | €0.29 |
 | ask | 61,192 | 4,096 | €0.0073 | €0.15 | €0.29 |
+| notes-ask | 25,315 | 4,096 | €0.0041 | €0.08 | €0.16 |
 | actions | 61,206 | 8,192 | €0.0091 | €0.18 | €0.36 |
 | notes-summary | 61,477 | 8,192 | €0.0091 | €0.18 | €0.36 |
 | brief | 16,825 | 4,096 | €0.0033 | €0.07 | €0.13 |

@@ -47,6 +47,8 @@ const LAZY_EVERYWHERE = [
   // Where to send something on: a forward, a recording shared (M17 I13e), from the conversation
   // and from the notes sheet.
   '@/features/conversation/SendToSheet',
+  // A question typed to Cai about a call (M17 I13f), from the call and from the notes sheet.
+  '@/features/calls/AskCai',
 ];
 
 const files = readdirSync(src, { recursive: true })

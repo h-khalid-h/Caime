@@ -434,7 +434,9 @@ export function GroupCallLayer() {
                   testID="group-call-camera"
                 />
               ) : null}
-              {phase === 'in' ? <NotesRound notes={call.notes} testID="group-call-notes" /> : null}
+              {phase === 'in' ? (
+                <NotesRound callId={call.id} notes={call.notes} testID="group-call-notes" />
+              ) : null}
               <Round
                 icon={PhoneOff}
                 label={tr('Leave')}

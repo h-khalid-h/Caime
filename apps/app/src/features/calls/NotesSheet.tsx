@@ -13,6 +13,7 @@ import { formatClock } from '@caime/core/format';
 import { tr, trn } from '@caime/core/i18n';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import ListChecks from 'lucide-react-native/icons/list-checks';
+import MessageCircleQuestion from 'lucide-react-native/icons/message-circle-question-mark';
 import Sparkles from 'lucide-react-native/icons/sparkles';
 import Trash from 'lucide-react-native/icons/trash';
 import { useState } from 'react';
@@ -35,6 +36,7 @@ import { CallRecording } from './CallRecording';
 import { stillWriting, type Turn, turnsOf, turnText } from './turns';
 
 const LoadFailed = lazyPart(() => import('@/ui/LoadFailed').then((m) => m.LoadFailed));
+const AskCai = lazyPart(() => import('./AskCai').then((m) => m.AskCai));
 
 /** A turn's words, and a mark where Cai is still writing part of it. */
 function TurnWords({ turn }: { turn: Turn }) {
@@ -197,6 +199,8 @@ export function NotesSheet({
   const heard = lines.some((l) => l.text !== null);
   const [caughtUp, setCaughtUp] = useState<AiCatchUpView | null>(null);
   const [busy, setBusy] = useState<'catch-up' | 'follow-ups' | null>(null);
+  // A question typed to Cai about the call (M17 I13f), answered to this reader alone.
+  const [asking, setAsking] = useState(false);
   const catchUp = async () => {
     setBusy('catch-up');
     try {
@@ -278,6 +282,21 @@ export function NotesSheet({
             <Text variant="caption" color="textTertiary" testID="call-notes-writing">
               {tr('Cai is writing the notes…')}
             </Text>
+          ) : null}
+          {assisted && heard ? (
+            <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8 }}>
+              <Button
+                label={tr('Ask Cai')}
+                icon={MessageCircleQuestion}
+                size="sm"
+                variant="secondary"
+                onPress={() => setAsking(true)}
+                testID="call-notes-ask"
+              />
+            </View>
+          ) : null}
+          {asking ? (
+            <AskCai callId={callId} open={asking} onClose={() => setAsking(false)} play={play} />
           ) : null}
           {assisted && heard && !written && !writingUp ? (
             <View style={{ gap: 10 }}>

@@ -3447,4 +3447,13 @@ export const arB: Catalog = {
     many: 'تمت المشاركة في {n} محادثة',
     other: 'تمت المشاركة في {n} محادثة',
   },
+  'Ask Cai about the call': 'اسأل Cai عن المكالمة',
+  'Answered to you alone, from what was said; nothing is kept.':
+    'يُجاب عليك وحدك، مما قيل؛ لا يُحفظ شيء.',
+  'Your question': 'سؤالك',
+  'What did we agree on the price?': 'على ماذا اتفقنا بخصوص السعر؟',
+  'From the call': 'من المكالمة',
+  'Nothing has been said yet to answer from.': 'لم يُقل شيء بعد للإجابة منه.',
+  'A question about the call, answered to you alone from the notes.':
+    'سؤال عن المكالمة، يُجاب عليك وحدك من الملاحظات.',
 };
