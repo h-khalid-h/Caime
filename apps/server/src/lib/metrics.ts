@@ -167,6 +167,8 @@ export interface ProviderHealth {
   latencyMs: number;
   checkedAt: number;
   error: string | null;
+  /** How many checks in a row found it down (M17 I15b: two say it's down, never a blip). */
+  downs?: number;
 }
 export const providerState = new Map<string, ProviderHealth>();
 
@@ -215,6 +217,12 @@ export function createMetrics(pool: pg.Pool) {
     caiVoice: new Counter(
       'caime_cai_voice_total',
       'Voice notes to Cai and the Caime Friends by outcome (heard, unavailable, assist, minor, allowance, long, unclear), and answers spoken back (spoken, written, let_go).',
+    ),
+    // What Cai told unasked of a scope it watches (M17 I15b): Caime's own state, by what crossed
+    // or cleared (provider, backup, audit, jobs, child_safety).
+    caiTells: new Counter(
+      'caime_cai_tells_total',
+      'What Cai told unasked of a scope it watches, by scope (caime), kind and outcome (crossed, cleared).',
     ),
     // What someone missed (M17 I3): a recap asked for, by where and whether the model summed it up.
     recaps: new Counter(

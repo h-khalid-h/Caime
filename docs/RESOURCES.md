@@ -364,6 +364,17 @@ query). Forgetting writes one field. The settings screen and the offer's buttons
 their own routes; what the first download gained (Attention's "Write to", the brief's preference,
 three endpoints) is 0.2 KB: 449.8 KB gzip, measured 2026-10-06.
 
+## Caime's own day (M17 I15b)
+
+The watch is one periodic task an hour on one instance: the product organization's id, the kept
+settings in one read, the last backup, one statement counting jobs failed for good and reports
+about a child's safety (both on partial indexes), then one settings row written. A message and a
+notification go to each of the product organization's managers only when something crossed or
+cleared, so a healthy hour says nothing. The answer and the brief add three reads for a handful of
+operators: who joined in the last day (`users` by `created_at`, unindexed, as the operator's product
+metrics count sign-ups), the day's AI spend (`ai_runs_created`), and reports and appeals waiting
+(partial indexes). No model and no timer of its own beyond the hour.
+
 ## Cai's notes in calls (R82, R85, R109; M16 F7)
 
 Only speaking time is sent and paid for: the recorder (one member's browser in the call) cuts each

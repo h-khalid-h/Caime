@@ -75,6 +75,7 @@ import {
 } from './answers';
 import { type Act, answerAwaited, offerAct } from './cai-acts';
 import { speakReply } from './cai-voice';
+import { caimeDayText, productOrgId } from './caime-day';
 import { ensureDirectConversation } from './conversations';
 import { AppError } from './errors';
 import { freeAnswer } from './free-time';
@@ -523,11 +524,19 @@ async function orgAnswer(
   const told = named.slice(0, ORGS_TOLD);
   const now = ctx.now();
   const reader = { zone: me.time_zone || 'UTC', locale: me.locale };
-  const days = await orgDays(ctx, told, now);
+  const [days, product] = await Promise.all([orgDays(ctx, told, now), productOrgId(ctx)]);
   const more = named.length - told.length;
+  // The product's own organization says Caime's own lines under its own (M17 I15b).
+  const texts = await Promise.all(
+    days.map(async (d) =>
+      d.id === product
+        ? `${orgDayText(ctx, d, now, reader)}\n${await caimeDayText(ctx, now, reader)}`
+        : orgDayText(ctx, d, now, reader),
+    ),
+  );
   await say(
     [
-      ...days.map((d) => orgDayText(ctx, d, now, reader)),
+      ...texts,
       ...(more
         ? [
             trn(

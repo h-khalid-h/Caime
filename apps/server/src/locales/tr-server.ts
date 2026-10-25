@@ -1840,4 +1840,52 @@ export const turkishServer: Catalog = {
     'Bunu size her sabah söyleyebilirim: Ayarlar, sonra Cai, sonra Sabah özeti.',
   'And ask how one of your organizations is doing: who’s waiting for a reply, what the AI agent left for you and today’s bookings.':
     'Kuruluşlarınızdan birinin nasıl gittiğini de sorun: kim yanıt bekliyor, AI temsilcisi size ne bıraktı ve bugünün rezervasyonları.',
+  '{name} isn’t answering: two checks in a row failed.':
+    '{name} yanıt vermiyor: üst üste iki kontrol başarısız oldu.',
+  '{name} answers again.': '{name} yeniden yanıt veriyor.',
+  'No backup has been made yet.': 'Henüz hiç yedek alınmadı.',
+  'The last backup is older than a day.': 'Son yedek bir günden eski.',
+  'The last backup wasn’t copied off the server.': 'Son yedek sunucunun dışına kopyalanmadı.',
+  'Backups are made and copied again.': 'Yedekler yeniden alınıyor ve kopyalanıyor.',
+  'The audit log’s chain failed its check: the operator’s token reads it.':
+    'Denetim kaydının zinciri kontrolünü geçemedi: operatörün anahtarı onu okur.',
+  'The audit log’s chain checks out again.': 'Denetim kaydının zinciri yeniden sağlam.',
+  'Every job that failed for good has been dealt with.':
+    'Kalıcı olarak başarısız olan tüm işler halledildi.',
+  'No report about a child’s safety is waiting.':
+    'Bir çocuğun güvenliğiyle ilgili bekleyen şikâyet yok.',
+  'Caime itself:': 'Caime’nin durumu:',
+  '• AI in the last day: {amount}': '• Son bir günde yapay zekâ: {amount}',
+  '• Running {version}': '• Çalışan sürüm: {version}',
+  '• Backups are off on this server': '• Bu sunucuda yedekler kapalı',
+  '• Last backup {when}': '• Son yedek: {when}',
+  '• Nobody joined in the last day': '• Son bir günde kimse katılmadı',
+  '{n} jobs failed for good: the operator’s token retries them.': {
+    one: 'Bir iş kalıcı olarak başarısız oldu: operatörün anahtarı onu yeniden dener.',
+    other: '{n} iş kalıcı olarak başarısız oldu: operatörün anahtarı onları yeniden dener.',
+  },
+  '{n} reports about a child’s safety are waiting.': {
+    one: 'Bir çocuğun güvenliğiyle ilgili bir şikâyet bekliyor.',
+    other: 'Çocukların güvenliğiyle ilgili {n} şikâyet bekliyor.',
+  },
+  '• All {n} providers answer': {
+    one: '• Tek sağlayıcı yanıt veriyor',
+    other: '• {n} sağlayıcının hepsi yanıt veriyor',
+  },
+  '• {n} checks haven’t run lately, so they aren’t known': {
+    one: '• Bir kontrol son zamanlarda çalışmadı, durumu bilinmiyor',
+    other: '• {n} kontrol son zamanlarda çalışmadı, durumları bilinmiyor',
+  },
+  '• {n} reports waiting': {
+    one: '• Bekleyen bir şikâyet',
+    other: '• Bekleyen {n} şikâyet',
+  },
+  '• {n} appeals waiting': {
+    one: '• Bekleyen bir itiraz',
+    other: '• Bekleyen {n} itiraz',
+  },
+  '• {n} people joined in the last day': {
+    one: '• Son bir günde bir kişi katıldı',
+    other: '• Son bir günde {n} kişi katıldı',
+  },
 };

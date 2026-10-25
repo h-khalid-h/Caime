@@ -28,7 +28,7 @@ import { MAIL_PROVIDER_NAMES } from './mail-provider';
 import { type ProviderHealth, providerState } from './metrics';
 import { postForm, providerClient } from './provider-consent';
 import { s3Head } from './s3';
-import { writeSetting } from './settings';
+import { readSettings, writeSetting } from './settings';
 import { SPEECH_PROVIDER_NAMES } from './speech';
 import { filesBucket } from './storage';
 import { stripe } from './stripe';
@@ -205,6 +205,11 @@ const withinProbe = <T>(p: Promise<T>): Promise<T> =>
 /** Run every probe once, in parallel; record each outcome; say what's down in the log. */
 export async function checkProviders(ctx: AppContext): Promise<ProviderHealthView[]> {
   const probes = providerProbes(ctx);
+  // What the last check found, wherever it ran: down twice in a row is down (M17 I15b).
+  const before =
+    (await readSettings<Record<string, ProviderHealth>>(ctx.db, [PROVIDERS_SETTING])).get(
+      PROVIDERS_SETTING,
+    ) ?? {};
   await Promise.all(
     probes.map(async (probe) => {
       const started = Date.now();
@@ -213,11 +218,13 @@ export async function checkProviders(ctx: AppContext): Promise<ProviderHealthVie
         await withinProbe(probe.check());
         state = { up: true, latencyMs: Date.now() - started, checkedAt: Date.now(), error: null };
       } catch (err) {
+        const last = before[probe.id];
         state = {
           up: false,
           latencyMs: Date.now() - started,
           checkedAt: Date.now(),
           error: errorLine(err),
+          downs: (last && !last.up ? (last.downs ?? 1) : 0) + 1,
         };
         ctx.log.warn({ provider: probe.id, detail: state.error }, 'provider down');
       }

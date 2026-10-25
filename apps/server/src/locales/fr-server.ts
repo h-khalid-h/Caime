@@ -1922,4 +1922,53 @@ export const frServer: Catalog = {
     'Je peux vous le dire chaque matin : Réglages, puis Cai, puis Point du matin.',
   'And ask how one of your organizations is doing: who’s waiting for a reply, what the AI agent left for you and today’s bookings.':
     'Et demandez-moi où en est l’une de vos organisations : qui attend une réponse, ce que l’agent IA vous a laissé et les réservations du jour.',
+  '{name} isn’t answering: two checks in a row failed.':
+    '{name} ne répond pas : deux vérifications de suite ont échoué.',
+  '{name} answers again.': '{name} répond de nouveau.',
+  'No backup has been made yet.': 'Aucune sauvegarde n’a encore été faite.',
+  'The last backup is older than a day.': 'La dernière sauvegarde date de plus d’un jour.',
+  'The last backup wasn’t copied off the server.':
+    'La dernière sauvegarde n’a pas été copiée hors du serveur.',
+  'Backups are made and copied again.': 'Les sauvegardes sont de nouveau faites et copiées.',
+  'The audit log’s chain failed its check: the operator’s token reads it.':
+    'La chaîne du journal d’audit a échoué à sa vérification : le jeton de l’opérateur la lit.',
+  'The audit log’s chain checks out again.': 'La chaîne du journal d’audit est de nouveau intègre.',
+  'Every job that failed for good has been dealt with.':
+    'Toutes les tâches en échec définitif ont été traitées.',
+  'No report about a child’s safety is waiting.':
+    'Plus aucun signalement concernant la sécurité d’un enfant n’attend.',
+  'Caime itself:': 'L’état de Caime :',
+  '• AI in the last day: {amount}': '• IA sur le dernier jour : {amount}',
+  '• Running {version}': '• Version en service : {version}',
+  '• Backups are off on this server': '• Les sauvegardes sont désactivées sur ce serveur',
+  '• Last backup {when}': '• Dernière sauvegarde : {when}',
+  '• Nobody joined in the last day': '• Personne n’a rejoint Caime ce dernier jour',
+  '{n} jobs failed for good: the operator’s token retries them.': {
+    one: 'Une tâche a échoué définitivement : le jeton de l’opérateur la relance.',
+    other: '{n} tâches ont échoué définitivement : le jeton de l’opérateur les relance.',
+  },
+  '{n} reports about a child’s safety are waiting.': {
+    one: 'Un signalement concernant la sécurité d’un enfant attend.',
+    other: '{n} signalements concernant la sécurité d’enfants attendent.',
+  },
+  '• All {n} providers answer': {
+    one: '• Le seul fournisseur répond',
+    other: '• Les {n} fournisseurs répondent',
+  },
+  '• {n} checks haven’t run lately, so they aren’t known': {
+    one: '• Une vérification n’a pas tourné récemment, son état est inconnu',
+    other: '• {n} vérifications n’ont pas tourné récemment, leur état est inconnu',
+  },
+  '• {n} reports waiting': {
+    one: '• Un signalement en attente',
+    other: '• {n} signalements en attente',
+  },
+  '• {n} appeals waiting': {
+    one: '• Un recours en attente',
+    other: '• {n} recours en attente',
+  },
+  '• {n} people joined in the last day': {
+    one: '• Une personne a rejoint Caime ce dernier jour',
+    other: '• {n} personnes ont rejoint Caime ce dernier jour',
+  },
 };

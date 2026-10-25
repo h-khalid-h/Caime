@@ -2601,6 +2601,8 @@ with its reason, so it isn't proposed again without new facts.
   audit row. Cai tells and answers; the operator acts. (4) *Spoken only when spoken to*, or asked
   to read: speaking every answer spends the voice provider on words nobody hears. Built: I14a (a
   voice note heard and answered aloud) and I15a (an organization's day, on ask and in the brief,
-  every number the Business inbox's own; the council's first decision, review §6). *Not yet:*
-  I14b (photos), I15a2 (the slipping tell), I15b (Caime's own day), "read it to me", and the reply
-  played on its own on a phone.
+  every number the Business inbox's own; the council's first decision, review §6) and I15b
+  (Caime's own day: the product organization's owner and admins told once when a platform
+  condition crosses and again when it clears, and the platform's lines in its answer and brief,
+  counts only, a check that hasn't run said as not known). *Not yet:* I14b (photos), I15a2 (the
+  slipping tell), "read it to me", and the reply played on its own on a phone.

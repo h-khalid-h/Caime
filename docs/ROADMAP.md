@@ -4327,12 +4327,26 @@ clinic can sign for. I1 lands before launch.
         `org-day.ts`).
   - [ ] I15a2. The slipping tell (S): a customer in "Needs a reply" past the reply target during
         open hours with nobody on it, told once to the managers, under Cai's initiative setting.
-  - [ ] I15b. Caime's own day for its operators (M): the product organization's owner and admins
-        hear the platform's state on ask and in the brief, and are told when a condition crosses
-        (a provider down on two probes, a backup old or not copied, the audit chain failing, new
-        dead jobs, a child-safety report waiting) and when it clears; counts only, an unread gauge
-        said as unread; acting stays with the operator's token until a passkey at the moment of
-        acting (I15d).
+  - [x] I15b. Caime's own day for its operators (M, the council's §6 point 5): the product
+        organization (verified at `PUBLIC_URL`'s domain, `productOrgId`) has its owner and admins
+        told in their Cai chat by the hourly `caime.watch` (`watchPlatform`, one instance) when a
+        condition crosses and again when it clears (`lib/caime-day.ts`, `platformConditions`: a
+        provider down on two checks in a row, `ProviderHealth.downs`; the last backup missing,
+        older than a day or not copied off the server; the audit chain failing its check; jobs
+        failed for good; a report about a child's safety waiting), once until it clears and again
+        only for more (`WATCH_SETTING`), with an attention notification when anything crossed,
+        counted on `caime_cai_tells_total{scope,kind,outcome}`. Its answer to "how is Caime doing"
+        and its brief add Caime's own lines under the organization's (`caimeDayText`: what's wrong,
+        every provider answering, a check that hasn't run said as not known, the last backup,
+        reports and appeals waiting, who joined in the last day as product metrics count sign-ups,
+        the day's AI spend, the version answering). Counts only, no model; acting stays with the
+        operator's token until a passkey at the moment of acting (I15d). Verified:
+        `caime-day.test.ts` (4: nothing while all checks out and on one failed probe; what crossed
+        told once, to the owner and not to a team member who doesn't run it; more of the same told
+        again, then what cleared; an old backup told, and the answer with a check not known, the
+        joined count and the version). Not yet: first conversations since yesterday (product
+        metrics has them). ⛔ for production: cai.me's domain verified on the product
+        organization (the owner's), or nobody hears it.
   - [ ] I15c. = I8, whose numbers an organization's answers then read.
 
 ## M18 — The standards pass (the owner's brief of 2026-10-25)
@@ -5992,6 +6006,12 @@ CONNIQT; they mean Caime. Caishy is one of Caime's AI members, and Cai leads the
 - 2026-10-20 — The French and Turkish catalogs come in two halves fetched side by side, as Arabic
   does: their largest download 48.9 KB where one was 95.2 KB of a chunk's 100; the first download
   448.8 KB of 450 (0.2 KB more: the two loaders).
+- 2026-10-25 — M17 I15b, Caime's own day: the owner and admins of the organization that is Caime
+  (verified at `PUBLIC_URL`'s domain) hear from Cai when a provider fails two checks in a row, the
+  backup goes stale or isn't copied off the server, the audit chain fails its check, a job fails
+  for good or a report about a child's safety waits, once, and again when it clears; asked "how is
+  Caime doing", Cai adds the platform's lines under the organization's. Counts only; the operator's
+  token still acts.
 - 2026-10-25 — M17 I15a, an organization's day: whoever runs one asks Cai "how is the clinic
   doing" (or "كيف وضع العيادة", "comment va la clinique", "klinikte işler nasıl") and hears the
   Business inbox's own numbers in what to do, how many the AI agent answered with nobody on the

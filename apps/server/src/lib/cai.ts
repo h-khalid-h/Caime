@@ -27,6 +27,7 @@ import {
   type CaiResponse,
   type FollowUpSentResponse,
   firstName,
+  MANAGING_ROLES,
   type SuggestionKind,
   systemAccountOf,
   tr,
@@ -45,15 +46,17 @@ import { sql } from 'kysely';
 import type { AppContext } from '../context';
 import { MESSAGE_COLUMNS } from '../db/schema';
 import { assertCanWrite } from './blocks';
+import { type Condition, caimeDayText, platformConditions, productOrgId } from './caime-day';
 import { membership } from './conversation-views';
 import { badRequest, notFound } from './errors';
 import { asReader } from './i18n';
-import { enqueue, registerJob } from './jobs';
+import { enqueue, registerJob, registerPeriodic } from './jobs';
 import { messageViews } from './messages';
 import { notify } from './notify';
 import { anythingToday, ORGS_TOLD, orgDays, orgDayText, orgsRunBy } from './org-day';
 import { postAs } from './post-as';
 import { pairKey } from './relations';
+import { readSettings, writeSetting } from './settings';
 import { openFor, openSystemConversation, person } from './system-accounts';
 import { visibleTasksSql } from './task-visibility';
 import { cardsAhead } from './upcoming';
@@ -366,12 +369,21 @@ async function teamDays(
 ): Promise<string[]> {
   const orgs = await orgsRunBy(ctx, me.id);
   if (!orgs.length) return [];
-  const busy = (await orgDays(ctx, orgs, now)).filter(anythingToday);
+  // The product's own organization always says Caime's own lines (M17 I15b).
+  const product = await productOrgId(ctx);
+  const busy = (await orgDays(ctx, orgs, now)).filter((d) => anythingToday(d) || d.id === product);
   const told = busy.slice(0, ORGS_TOLD);
   const reader = { zone: me.time_zone || 'UTC', locale: me.locale };
   const more = busy.length - told.length;
+  const texts = await Promise.all(
+    told.map(async (d) =>
+      d.id === product
+        ? `${orgDayText(ctx, d, now, reader)}\n${await caimeDayText(ctx, now, reader)}`
+        : orgDayText(ctx, d, now, reader),
+    ),
+  );
   return [
-    ...told.map((d) => orgDayText(ctx, d, now, reader)),
+    ...texts,
     ...(more
       ? [
           trn(
@@ -772,7 +784,82 @@ export async function forgetLearned(
     .execute();
 }
 
+/** What Cai last told of Caime's own state (M17 I15b): each condition told bad, with its count. */
+export const WATCH_SETTING = 'caime.watch';
+
+/**
+ * Caime's own state watched for whoever runs it (M17 I15b): each condition that crossed since the
+ * last look is told to the product organization's owner and admins in their Cai chat, once, with
+ * a notification; and again when it clears. More jobs failed or more reports waiting is told
+ * again; a check that hasn't run changes nothing. Hourly, on one instance.
+ */
+export async function watchPlatform(ctx: AppContext): Promise<void> {
+  const orgId = await productOrgId(ctx);
+  if (!orgId) return;
+  const now = ctx.now();
+  const before =
+    (await readSettings<Record<string, { count?: number }>>(ctx.db, [WATCH_SETTING])).get(
+      WATCH_SETTING,
+    ) ?? {};
+  const conditions = await platformConditions(ctx, now);
+  const crossed: Condition[] = [];
+  const cleared: Condition[] = [];
+  const told: Record<string, { count?: number }> = {};
+  for (const c of conditions) {
+    const was = before[c.key];
+    if (c.state === 'bad') {
+      if (!was || (c.count ?? 0) > (was.count ?? 0)) crossed.push(c);
+      told[c.key] = c.count === undefined ? {} : { count: c.count };
+    } else if (c.state === 'fine') {
+      if (was) cleared.push(c);
+    } else if (was) told[c.key] = was;
+  }
+  if (crossed.length || cleared.length) {
+    const managers = await ctx.db
+      .selectFrom('org_members as m')
+      .innerJoin('users as u', 'u.id', 'm.user_id')
+      .select('u.id')
+      .where('m.org_id', '=', orgId)
+      .where('m.left_at', 'is', null)
+      .where('m.role', 'in', [...MANAGING_ROLES])
+      .where('u.kind', '=', 'human')
+      .where('u.deleted_at', 'is', null)
+      .where('u.suspended_at', 'is', null)
+      .execute();
+    for (const { id: userId } of managers) {
+      const { id: chat } = await openSystemConversation(ctx, userId, cai());
+      const lines = await asReader(ctx, userId, async () => [
+        ...crossed.map((c) => `• ${c.bad()}`),
+        ...cleared.map((c) => `• ${c.cleared()}`),
+      ]);
+      const text = await asReader(ctx, userId, async () =>
+        [tr('Caime itself:'), ...lines].join('\n'),
+      );
+      await postAs(ctx, CAI_ID, chat, text);
+      await notify(ctx, {
+        userId,
+        kind: 'reminder',
+        level: crossed.length ? 'attention' : 'activity',
+        title: () => tr('Cai'),
+        body: lines[0]?.replace(/^• /, '') ?? '',
+        data: { conversationId: chat },
+      });
+    }
+    for (const c of crossed)
+      ctx.metrics.caiTells.inc({ scope: 'caime', kind: c.key.split(':')[0]!, outcome: 'crossed' });
+    for (const c of cleared)
+      ctx.metrics.caiTells.inc({ scope: 'caime', kind: c.key.split(':')[0]!, outcome: 'cleared' });
+  }
+  await writeSetting(ctx.db, WATCH_SETTING, told, now);
+}
+
 export function registerCaiJobs(): void {
+  registerPeriodic({
+    name: 'caime.watch',
+    everyMs: 3_600_000,
+    background: true,
+    run: watchPlatform,
+  });
   registerJob(BRIEF_JOB, briefJob);
   registerJob(DIGEST_JOB, digestJob);
 }

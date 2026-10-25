@@ -1536,7 +1536,14 @@ A sphere is said as how you know someone, never "sphere".
   `orgDayText`, and the digest's `teamWeeks` takes the same `orgsRunBy`; every number is the
   Business inbox's own (core `customerWaiting`, the drafts' `STANDING_DRAFT`, the open
   questions), so a new line about an organization reads what its inbox reads, never a count of
-  its own.
+  its own. Caime's own day (M17 I15b, `lib/caime-day.ts`): the product organization
+  (`productOrgId`, verified at `productDomain`) is the one scope with the platform's lines;
+  `platformConditions` reads what the periodic tasks keep (`providers.last` with its `downs`,
+  `backup.last`, `audit.last`) and two counts, `caimeDayText` says them under its day, and the
+  hourly `caime.watch` (`watchPlatform`, `WATCH_SETTING`) tells its managers what crossed, once
+  until it clears or grows, and what cleared, on `caime_cai_tells_total`. A new platform condition
+  joins `platformConditions` with its crossing and clearing lines, never a tell of its own; one
+  whose check can't be read is `unread`, said as not known and never taken as fine.
 - How Cai and the friends speak Arabic (R72) is core `arabicVariety` (`arabic-variety.ts`): what
   the person chose (`preferences.arabicVariety`, Settings · Cai), else what they write in
   (`writtenVariety`: words only one variety says; a shared or Standard word is in no list), else
