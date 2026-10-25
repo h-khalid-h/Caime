@@ -660,23 +660,75 @@ export const CallDeviceBody = z.object({ deviceId: CallDevice }).strict();
  */
 const NotesAnswer = z.enum(['yes', 'no']);
 
+/**
+ * The ask a yes was given to (M17 I13b): a yes counts only for the ask it was shown, so one given
+ * to notes alone never becomes consent to a recording asked a moment later (R114 (1)).
+ */
+const NotesId = z.string().uuid().optional();
+
 /** Answer a ring, or join a group call, on this device: with Cai taking notes or without. */
 export const CallEntryBody = z
   .object({
     deviceId: CallDevice,
     notes: NotesAnswer.optional(),
+    notesId: NotesId,
     canRecord: z.boolean().optional(),
   })
   .strict();
 
-/** Ask Cai to take notes in the call this device is in. */
+/**
+ * Ask Cai to take notes in the call this device is in, and to record it too (R114 (1): Record is
+ * the notes with the voices and shared screens kept).
+ */
 export const CallNotesAskBody = z
-  .object({ deviceId: CallDevice, canRecord: z.boolean().default(false) })
+  .object({
+    deviceId: CallDevice,
+    canRecord: z.boolean().default(false),
+    records: z.boolean().default(false),
+  })
   .strict();
 
 /** Answer the ask, on the device in the call. */
 export const CallNotesAnswerBody = z
-  .object({ deviceId: CallDevice, answer: NotesAnswer, canRecord: z.boolean().default(false) })
+  .object({
+    deviceId: CallDevice,
+    answer: NotesAnswer,
+    notesId: NotesId,
+    canRecord: z.boolean().default(false),
+  })
+  .strict();
+
+/** The kinds of file a browser records a call's voices or a shared screen in (M17 I13b). */
+export const RECORDING_TYPES = [
+  'audio/mp4',
+  'audio/webm',
+  'audio/ogg',
+  'video/mp4',
+  'video/webm',
+] as const;
+
+/**
+ * A part of a call's recording begun on the device recording (R114 (4)): everyone's voices,
+ * mixed, or one person's shared screen, from a moment on.
+ */
+export const CallRecordingPartBody = z
+  .object({
+    deviceId: CallDevice,
+    kind: z.enum(['voices', 'screen']),
+    /** Whose screen it is (a screen part's alone). */
+    shownBy: z.string().uuid().optional(),
+    mime: z.enum(RECORDING_TYPES),
+    /** When it begins, in milliseconds since 1970. */
+    at: z.number().int().min(0),
+  })
+  .strict();
+
+/** The device recording, ending a part. */
+export const CallRecordingDeviceQuery = z.object({ deviceId: CallDevice }).strict();
+
+/** The device recording, sending a part's next piece from where it says the server has it. */
+export const CallRecordingPieceQuery = z
+  .object({ deviceId: CallDevice, offset: z.coerce.number().int().min(0) })
   .strict();
 
 /** One thing said, from the device recording (M16 F7, R82 (2)): who said it, and when. */

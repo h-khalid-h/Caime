@@ -351,6 +351,25 @@ Asked (M16 F7d), "Catch me up" is one light-model call and "Find follow-ups" one
 tier, each on the asker's day by cost, over at most 24,000 characters of the notes: under the
 60,000 a conversation's catch-up and follow-ups may read, which `ai-costs.test.ts` measures.
 
+## A call Cai records (R114, M17 I13b)
+
+The browser that takes the notes also records: one AudioContext mixing the voices into one
+MediaRecorder, and one MediaRecorder per screen shown, each handing over a piece every ten seconds,
+sent as one PUT (spooled to the instance's disk, then appended under the part's row lock, as an
+upload's chunk is). Measured in the E2E (Playwright's Chromium, 2026-10-24, `call-notes.spec.ts`
+prints them): the voices, Opus at 32 kbps, 11 MB an hour; a shown screen, VP9 at a 1 Mbps cap
+with a keyframe every ten seconds, 162 MB an hour for the fake camera's moving pattern, which is
+near the worst a screen does (the cap's ceiling is 450 MB an hour); a spreadsheet at 1080p and 15
+frames a second, measured apart (the lab script, 2026-10-21), 68 MB an hour. An hour's call with a
+sheet shown for half of it is so about 45 MB, kept thirty days on the server's disk or bucket (or
+fewer where an organization keeps less) and counted against nobody's storage. Making a part
+seekable is a copy into an MP4 without re-encoding (a minute of a 1080p screen: 75 ms and 10 MB
+of memory, mediabunny 1.62.0), never a transcode, in one job per part. Nothing of a recording
+reaches an AI provider; the notes beside it cost what notes cost (above). No timer or poll: a part
+is finished by its recorder, by the end of the notes (a job a minute on, for the piece on its
+way), or by the daily sweep, which also deletes what's past its day. Not yet measured: a real
+Chrome's H.264 and AAC in MP4, which Playwright's open-source Chromium doesn't record.
+
 ## Meetings with guests (R84)
 
 An invitation is one mail (the transactional sender, with its calendar part), one token row and,

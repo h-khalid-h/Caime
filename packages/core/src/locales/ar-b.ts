@@ -3350,4 +3350,44 @@ export const arB: Catalog = {
     'موعد {name} لإنجاز «{title}» كان {when}. هل ما زال الانتظار قائمًا؟',
   'Is “{title}” from {name} still to come?': 'هل ما زال «{title}» من {name} منتظرًا؟',
   'From the latest {count} of {total} new messages.': 'من آخر {count} من أصل {total} رسالة جديدة.',
+  'Screen shown by {name}': 'شاشة {name}',
+  'Everyone’s voices': 'أصوات الجميع',
+  'This part couldn’t be kept.': 'تعذّر حفظ هذا الجزء.',
+  'Getting it ready to play…': 'جارٍ تجهيزه للتشغيل…',
+  'Being recorded…': 'جارٍ التسجيل…',
+  'The recording was deleted for everyone.': 'حُذف التسجيل للجميع.',
+  'The recording was deleted. The notes stay.': 'حُذف التسجيل، وتبقى الملاحظات.',
+  'Being recorded': 'قيد التسجيل',
+  'Kept until {day}, then deleted for everyone.': 'محفوظ حتى {day}، ثم يُحذف للجميع.',
+  'Delete the recording for everyone who was in the call? The notes stay.':
+    'حذف التسجيل لكل من كان في المكالمة؟ تبقى الملاحظات.',
+  'Delete the recording': 'حذف التسجيل',
+  'Play the screen': 'تشغيل الشاشة',
+  'Play the voices': 'تشغيل الأصوات',
+  'Screen shown in the call': 'الشاشة المعروضة في المكالمة',
+  'The call’s voices': 'أصوات المكالمة',
+  'Answer, Cai records': 'رد، ويسجّل Cai',
+  'Join, Cai records': 'انضمام، ويسجّل Cai',
+  'Written by Cai from what was said, under each person’s name, beside the call’s recording. You can delete your own words.':
+    'دوّنها Cai مما قيل، تحت اسم كل شخص، بجانب تسجيل المكالمة. وحذف كلماتك متاح لك.',
+  Record: 'تسجيل',
+  'Cai is recording': 'Cai يسجّل',
+  'Asking {names} to let Cai record': 'بانتظار موافقة {names} على تسجيل Cai',
+  '{name} asks Cai to record': 'طلب أن يسجّل Cai: {name}',
+  'Cai keeps what’s said and any screen shown as a recording, with notes under each person’s name, for everyone in the call for {days} days. Cameras aren’t recorded. Anyone can stop it or delete it.':
+    'يحفظ Cai ما يُقال وأي شاشة تُعرض في تسجيل، مع ملاحظات تحت اسم كل شخص، لكل من في المكالمة مدة {days} يومًا. لا تُسجَّل الكاميرات، ويمكن لأي شخص إيقافه أو حذفه.',
+  'Let Cai record': 'نعم، يسجّل Cai',
+  'Not this time: Cai isn’t recording.': 'ليس هذه المرة: Cai لا يسجّل.',
+  'Someone is in the call without Cai, so Cai stopped recording.':
+    'في المكالمة من انضم دون Cai، لذا توقّف Cai عن التسجيل.',
+  'Cai stopped recording.': 'توقّف Cai عن التسجيل.',
+  '{name} asks Cai to record this call: the voices and any screen shown, kept {days} days for everyone in it.':
+    'طلب أن يسجّل Cai هذه المكالمة، أي الأصوات وأي شاشة تُعرض، وتُحفظ {days} يومًا لكل من فيها: {name}',
+  'Cai is recording this call: the voices and any screen shown, kept {days} days for everyone in it.':
+    'يسجّل Cai هذه المكالمة، أي الأصوات وأي شاشة تُعرض، وتُحفظ {days} يومًا لكل من فيها.',
+  'Cai is asked to record this call: the voices and any screen shown, kept {days} days for everyone in it.':
+    'طُلب من Cai تسجيل هذه المكالمة، أي الأصوات وأي شاشة تُعرض، وتُحفظ {days} يومًا لكل من فيها.',
+  'What’s said, as words. Voices aren’t kept.': 'ما يُقال، كلمات مكتوبة. لا تُحفظ الأصوات.',
+  'The notes, and the voices and any screen shown, kept {days} days.':
+    'الملاحظات، والأصوات وأي شاشة تُعرض، تُحفظ {days} يومًا.',
 };

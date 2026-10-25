@@ -378,7 +378,7 @@ export async function answer(notes?: 'yes' | 'no'): Promise<void> {
     const { call: answered } = await endpoints.acceptCall(
       call.id,
       DEVICE_ID,
-      notes ? { answer: notes, canRecord: canRecordNotes() } : undefined,
+      notes ? { answer: notes, canRecord: canRecordNotes(), notesId: call.notes?.id } : undefined,
     );
     // It ended meanwhile (the event came before the answer): nothing to start.
     if (current()?.id !== call.id || store().phase !== 'connecting') return;
@@ -441,7 +441,7 @@ export async function startSharing(): Promise<void> {
   screen = track;
   // The browser's own "Stop sharing" ends it too.
   track.onended = () => void stopSharing();
-  store().patch({ sharing: true });
+  store().patch({ sharing: true, screen: track });
   tellState();
 }
 
@@ -455,7 +455,7 @@ export async function stopSharing(): Promise<void> {
   await videoSender()
     ?.replaceTrack(store().local?.getVideoTracks()[0] ?? null)
     .catch(() => {});
-  store().patch({ sharing: false });
+  store().patch({ sharing: false, screen: null });
   tellState();
 }
 

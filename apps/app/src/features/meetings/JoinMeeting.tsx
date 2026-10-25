@@ -34,6 +34,7 @@ import {
   joinGroupCall,
   startGroupCall,
 } from '@/features/calls/calls';
+import { joinWithCai } from '@/features/calls/notesWords';
 import { useNow, useUserClock } from '@/lib/time';
 import { useCall } from '@/state/calls';
 import { useGroupCall } from '@/state/groupCall';
@@ -260,7 +261,7 @@ function GuestMeeting({ view, space }: { view: JoinView; space: NonNullable<Join
             // joining without answering would stop them for everyone.
             <View style={{ gap: 8 }}>
               <Button
-                label={tr('Join, Cai takes notes')}
+                label={joinWithCai(on.notes)}
                 onPress={() => void joinGroupCall(on, 'yes')}
                 testID="guest-join-with-notes"
               />

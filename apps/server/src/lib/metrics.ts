@@ -200,6 +200,12 @@ export function createMetrics(pool: pg.Pool) {
       'caime_call_notes_total',
       'Notes in calls by outcome (asked, started, a stop and its reason, a line heard or not).',
     ),
+    // Cai's recordings of calls (R114, M17 I13b): parts begun, made ready (or kept as they were
+    // recorded), and recordings deleted by someone in them or at their day.
+    callRecordings: new Counter(
+      'caime_call_recordings_total',
+      'Call recordings by outcome (part_started, ready, kept_as_recorded, deleted, expired).',
+    ),
     // What the speech provider kept of a transcript, deleted once read (M17 F8a): done or not.
     speechForgotten: new Counter(
       'caime_speech_forgotten_total',

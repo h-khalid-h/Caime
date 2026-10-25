@@ -1704,6 +1704,27 @@ A sphere is said as how you know someone, never "sphere".
   follow-ups by line. Anything new drawn from a call's notes joins the write-up, never a summary
   of its own. The E2E runs in a project of its own (`chromium-speech`) whose microphone
   speaks and pauses (`e2e/fake-speech.ts`).
+- Cai records a call (R114, M17 I13b; `lib/call-recording.ts`, `features/calls/recording.ts`):
+  the Record mode is `call_notes.records`, asked with the notes (`askNotes(…, records)`, another
+  mode while one is live is a 409), and every yes counts only for the ask it was shown (`notesId`
+  on the answer and on a ring answered or a call joined, `staleYes`); every way in names the mode
+  through `features/calls/notesWords.ts`. The notes' recorder records too: everyone's voices mixed
+  as one part (a new part at each join, so a later joiner plays only what came after: the reader
+  is whoever had joined by a part's `created_at`, the server's clock) and each shown screen as a
+  part of its own (`call_recording_parts`, `shown_by`), never a camera. Parts arrive in pieces of
+  about ten seconds at their offset under the part's row lock (`appendPiece`, spooled first, as an
+  upload's chunk); a piece lands only while the notes are on, or within `LATE_MS` of an end that
+  was nobody's no (`mayStillTake`); whatever stops or hands over the notes calls
+  `finishOpenParts` (`lib/recording-finish.ts`, apart so the notes' rules don't import the
+  recording). The `call.recording.finish` job copies a part into an MP4 without re-encoding
+  (`remux`, mediabunny, pinned), keeps it as recorded when it can't, fails one with nothing to
+  play; played by byte ranges through `lib/file-stream.ts`. It's kept core `RECORDING_DAYS`, or an
+  organization's shorter retention (`recording_until`), swept daily (`call-recordings`), deleted
+  for everyone by anyone in it (`deleteRecording`, stopping it first), and erased with the call's
+  line (`eraseMessagesWhere` names its keys as `recording` rows, which `dropErasedFiles` hands
+  on). Its bytes are the server's, counted on nobody's storage; it never reaches an AI provider.
+  A new place that reads or keeps a recording goes through `recordingFor`/`playablePart` and
+  their reader rule.
 - A meeting's guests (R83, R84): invited by address from an accepted meeting card held here
   (`features/kits/MeetingGuests.tsx`: Invite a guest, the sheet lazy; the card that moved says
   so and opens the space), or by a link the inviter sends themselves (H6, `inviteGuestByLink`: a

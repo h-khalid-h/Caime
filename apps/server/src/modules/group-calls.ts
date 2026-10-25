@@ -254,7 +254,7 @@ export async function groupCallRoutes(app: FastifyInstance, ctx: AppContext) {
   app.post('/group-calls/:id/join', async (req): Promise<GroupCallResponse> => {
     const auth = requireAuth(req);
     const { id } = parse(callParam, req.params);
-    const { deviceId, notes, canRecord } = parse(CallEntryBody, req.body);
+    const { deviceId, notes, notesId, canRecord } = parse(CallEntryBody, req.body);
     paced(auth.userId, id);
     const { call, outsider } = await theirs(auth.userId, id);
     if (call.state === 'ended')
@@ -304,7 +304,7 @@ export async function groupCallRoutes(app: FastifyInstance, ctx: AppContext) {
         id,
         auth.userId,
         notes,
-        { deviceId, canRecord: canRecord ?? false },
+        { deviceId, canRecord: canRecord ?? false, notesId },
         now,
       );
       await trx

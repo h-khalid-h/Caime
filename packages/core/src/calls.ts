@@ -122,3 +122,9 @@ export function callResult(input: {
  */
 export const notesAsked = (notes: { state: string } | null | undefined): boolean =>
   notes?.state === 'asking' || notes?.state === 'on';
+
+/**
+ * How many days a call's recording is kept (R114 (6), M17 I13b), unless an organization keeps its
+ * conversations fewer: the consent says it, the server deletes it then.
+ */
+export const RECORDING_DAYS = 30;

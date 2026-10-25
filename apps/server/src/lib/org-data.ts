@@ -33,7 +33,8 @@ import { storageFor } from './storage';
 type Q = Kysely<Database> | Transaction<Database>;
 
 export interface Erased {
-  what: 'saved' | 'gone' | 'stock' | 'file';
+  /** `recording`: a call recording's stored bytes, by their key (M17 I13b). */
+  what: 'saved' | 'gone' | 'stock' | 'file' | 'recording';
   id: string;
   conversation_id: string | null;
 }
@@ -106,6 +107,11 @@ export async function eraseMessagesWhere(
       select file_id from call_note_lines
       where notes_id in (select id from notes_gone) and file_id is not null
     ),
+    -- And its recording (M17 I13b): its rows go with the notes, its bytes after the commit.
+    recording_gone as (
+      select storage_key from call_recording_parts
+      where notes_id in (select id from notes_gone) and state <> 'deleted'
+    ),
     ${stockBackCtes(sql`select id from gone`, now)}
     select distinct 'saved' as what, user_id::text as id, null as conversation_id
     from saved_gone
@@ -116,6 +122,8 @@ export async function eraseMessagesWhere(
       select file_id from assets_gone union select file_id from files_gone
       union select file_id from album_gone union select file_id from note_audio
     ) f where file_id is not null
+    union all
+    select 'recording', storage_key, null from recording_gone
     union all
     select 'link', url, null from linked
     union all
@@ -133,11 +141,17 @@ export async function eraseMessagesWhere(
  * album and an avatar keep theirs): their rows go in `trx`, and the caller removes their bytes
  * once it commits (`removeStored`), so a removal, a disappearance and an erasure leave none.
  */
-export function dropErasedFiles(trx: Q, rows: Erased[]): Promise<StoredKeys[]> {
-  return dropUnusedFiles(
-    trx,
-    rows.filter((r) => r.what === 'file').map((r) => r.id),
-  );
+export async function dropErasedFiles(trx: Q, rows: Erased[]): Promise<StoredKeys[]> {
+  const recordings = rows
+    .filter((r) => r.what === 'recording')
+    .map((r) => ({ storage_key: r.id, thumb_key: null, preview_key: null }));
+  return [
+    ...(await dropUnusedFiles(
+      trx,
+      rows.filter((r) => r.what === 'file').map((r) => r.id),
+    )),
+    ...recordings,
+  ];
 }
 
 /**

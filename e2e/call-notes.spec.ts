@@ -6,7 +6,10 @@
  * it; the call's line opens the notes, speaker by speaker, and each may delete their own words. A
  * second call answered without Cai never starts it. A meeting proposed with "Cai takes notes"
  * (M16 F7c) says so on its card, and its Join asks as it starts the call. Asked, Cai catches the
- * reader up on the notes and finds their follow-ups (M16 F7d).
+ * reader up on the notes and finds their follow-ups (M16 F7d). Recorded (R114, M17 I13b): asked as
+ * itself, the ring says what's kept, the asker's browser sends the voices and a shared screen in
+ * pieces, the server makes each seekable, both play them from the notes, and either deletes the
+ * recording for everyone.
  */
 import { type BrowserContext, expect, type Page, test } from '@playwright/test';
 import { apiSignUp, CLIENT, newPerson, visible } from './helpers';
@@ -71,6 +74,7 @@ test.describe
 
       // Noor asks before Sam answers: the ring then asks for her, and says so.
       await page.getByTestId('call-notes').click();
+      await page.getByTestId('call-notes-take').click();
       await expect(page.getByTestId('call-notes-asking')).toHaveText(
         'Asking Sam to let Cai take notes',
       );
@@ -149,6 +153,7 @@ test.describe
       await page.getByTestId('call-voice').click();
       await expect(sam.page.getByTestId('call-incoming')).toBeVisible();
       await page.getByTestId('call-notes').click();
+      await page.getByTestId('call-notes-take').click();
       await expect(sam.page.getByTestId('call-accept-without-notes')).toBeVisible();
       await sam.page.getByTestId('call-accept-without-notes').click();
       await expect(visible(page, 'Not this time: Cai isn’t taking notes.')).toBeVisible({
@@ -194,6 +199,110 @@ test.describe
       });
       await page.getByTestId('call-hangup').click();
       await expect(page.getByTestId('call-screen')).toHaveCount(0);
+      expect(problems(noor, sam)).toEqual([]);
+    });
+
+    test('recorded: asked as itself, the voices and a shown screen kept, played, deleted for everyone', async () => {
+      test.setTimeout(180_000);
+      const { page } = noor;
+      await page.goto(`/c/${convo}`);
+      await sam.page.goto('/');
+      await page.getByTestId('call-voice').click();
+      await expect(sam.page.getByTestId('call-incoming')).toBeVisible();
+
+      // Noor asks Cai to record: the ring says what's kept, and its Answer says it records.
+      // Cai offers both, each saying what it keeps.
+      await page.getByTestId('call-notes').click();
+      await expect(page.getByTestId('call-notes-record')).toContainText('kept 30 days');
+      await page.getByTestId('call-notes-record').click();
+      await expect(page.getByTestId('call-notes-asking')).toHaveText(
+        'Asking Sam to let Cai record',
+      );
+      await expect(sam.page.getByTestId('call-incoming-notes')).toHaveText(
+        'Noor asks Cai to record this call: the voices and any screen shown, kept 30 days for everyone in it.',
+      );
+      await expect(sam.page.getByTestId('call-accept-with-notes')).toHaveAccessibleName(
+        'Answer, Cai records',
+      );
+      await sam.page.screenshot({ path: 'e2e/screenshots/desktop-call-record-ring.png' });
+      await sam.page.getByTestId('call-accept-with-notes').click();
+      await expect(page.getByTestId('call-notes-on')).toHaveText('Cai is recording', {
+        timeout: 20_000,
+      });
+      await expect(sam.page.getByTestId('call-notes-on')).toHaveText('Cai is recording');
+
+      const callId = await page.evaluate(async (c) => {
+        const r = await fetch('/v1/calls/live', { headers: { 'x-caime-client': 'web' } });
+        const { call } = (await r.json()) as { call: { id: string; conversationId: string } };
+        return call.conversationId === c ? call.id : '';
+      }, convo);
+      expect(callId).not.toBe('');
+      type Part = { kind: string; state: string; bytes: number; durationMs: number | null };
+      const recording = () =>
+        page.request
+          .get(`/v1/calls/${callId}/notes`, { headers: CLIENT })
+          .then((r) => r.json())
+          .then((b: { recording: { state: string; parts: Part[] } | null }) => b.recording);
+
+      // Noor shows her screen: a part of its own, beside the voices, each sent in pieces.
+      await page.getByTestId('call-share').click();
+      await expect(sam.page.getByTestId('call-theirs')).toContainText('sharing their screen');
+      await page.screenshot({ path: 'e2e/screenshots/desktop-call-recording.png' });
+      await expect
+        .poll(
+          async () => {
+            const parts = (await recording())?.parts ?? [];
+            return ['voices', 'screen'].every((k) =>
+              parts.some((p) => p.kind === k && p.bytes > 0),
+            );
+          },
+          { timeout: 40_000 },
+        )
+        .toBe(true);
+      await page.getByTestId('call-share').click();
+      await page.getByTestId('call-hangup').click();
+      await expect(page.getByTestId('call-screen')).toHaveCount(0);
+
+      // Made seekable once over, both play them from the notes.
+      await expect
+        .poll(async () => (await recording())?.parts.map((p) => p.state), { timeout: 45_000 })
+        .toEqual(['ready', 'ready']);
+      await page.getByTestId('call-notes-open').first().click();
+      const voices = page.getByTestId('call-recording-voices');
+      await expect(voices).toBeVisible();
+      await expect(page.getByTestId('call-recording-screen')).toBeVisible();
+      await expect(page.getByTestId('call-recording-until')).toBeVisible();
+      // Its length comes from its own index: it seeks without being played through.
+      const length = await voices.evaluate(
+        (el: HTMLMediaElement) =>
+          new Promise<number>((done) => {
+            if (el.readyState >= 1) done(el.duration);
+            else el.addEventListener('loadedmetadata', () => done(el.duration), { once: true });
+          }),
+      );
+      expect(Number.isFinite(length)).toBe(true);
+      expect(length).toBeGreaterThan(5);
+      await page.screenshot({ path: 'e2e/screenshots/desktop-call-recording-sheet.png' });
+      // What a part takes, an hour of it, as recorded here (the fake camera's moving pattern is
+      // the worst a screen does; a still sheet takes far less).
+      const sizes = ((await recording())?.parts ?? []).map((p) => ({
+        kind: p.kind,
+        seconds: (p.durationMs ?? 0) / 1000,
+        mbAnHour: p.durationMs
+          ? Math.round(((p.bytes * 3600) / (p.durationMs / 1000) / 1e6) * 10) / 10
+          : null,
+      }));
+      test.info().annotations.push({ type: 'recording sizes', description: JSON.stringify(sizes) });
+      console.log('recording sizes', JSON.stringify(sizes));
+
+      // Sam deletes it for everyone; the notes stay.
+      await sam.page.goto(`/c/${convo}`);
+      await sam.page.getByTestId('call-notes-open').first().click();
+      await sam.page.getByTestId('call-recording-delete').click();
+      await sam.page.getByTestId('call-recording-delete-confirm').click();
+      await expect(sam.page.getByTestId('call-recording-deleted')).toBeVisible();
+      await expect(page.getByTestId('call-recording-deleted')).toBeVisible({ timeout: 20_000 });
+      expect((await recording())?.state).toBe('deleted');
       expect(problems(noor, sam)).toEqual([]);
     });
   });

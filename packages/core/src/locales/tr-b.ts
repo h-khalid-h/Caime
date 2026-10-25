@@ -2490,4 +2490,45 @@ export const turkishB: Catalog = {
   'Is “{title}” from {name} still to come?': '{name} kişisinden “{title}” hâlâ bekleniyor mu?',
   'From the latest {count} of {total} new messages.':
     '{total} yeni mesajın son {count} tanesinden.',
+  'Screen shown by {name}': '{name} tarafından paylaşılan ekran',
+  'Everyone’s voices': 'Herkesin sesi',
+  'This part couldn’t be kept.': 'Bu bölüm saklanamadı.',
+  'Getting it ready to play…': 'Oynatmaya hazırlanıyor…',
+  'Being recorded…': 'Kaydediliyor…',
+  'The recording was deleted for everyone.': 'Kayıt herkes için silindi.',
+  'The recording was deleted. The notes stay.': 'Kayıt silindi. Notlar kalıyor.',
+  'Being recorded': 'Kaydediliyor',
+  'Kept until {day}, then deleted for everyone.':
+    '{day} tarihine kadar saklanır, sonra herkes için silinir.',
+  'Delete the recording for everyone who was in the call? The notes stay.':
+    'Kayıt, aramadaki herkes için silinsin mi? Notlar kalır.',
+  'Delete the recording': 'Kaydı sil',
+  'Play the screen': 'Ekranı oynat',
+  'Play the voices': 'Sesleri oynat',
+  'Screen shown in the call': 'Aramada paylaşılan ekran',
+  'The call’s voices': 'Aramanın sesleri',
+  'Answer, Cai records': 'Yanıtla, Cai kaydetsin',
+  'Join, Cai records': 'Katıl, Cai kaydetsin',
+  'Written by Cai from what was said, under each person’s name, beside the call’s recording. You can delete your own words.':
+    'Söylenenlerden, her kişinin adı altında, aramanın kaydının yanında Cai yazdı. Kendi sözlerinizi silebilirsiniz.',
+  Record: 'Kaydet',
+  'Cai is recording': 'Cai kaydediyor',
+  'Asking {names} to let Cai record': 'Cai’nin kaydetmesi için onay bekleniyor: {names}',
+  '{name} asks Cai to record': 'Cai’nin kaydetmesini isteyen: {name}',
+  'Cai keeps what’s said and any screen shown as a recording, with notes under each person’s name, for everyone in the call for {days} days. Cameras aren’t recorded. Anyone can stop it or delete it.':
+    'Cai, söylenenleri ve paylaşılan her ekranı, her kişinin adı altındaki notlarla birlikte bir kayıt olarak aramadaki herkes için {days} gün saklar. Kameralar kaydedilmez. Herkes durdurabilir veya silebilir.',
+  'Let Cai record': 'Cai kaydetsin',
+  'Not this time: Cai isn’t recording.': 'Bu sefer değil: Cai kaydetmiyor.',
+  'Someone is in the call without Cai, so Cai stopped recording.':
+    'Aramada Cai olmadan biri var, bu yüzden Cai kaydı durdurdu.',
+  'Cai stopped recording.': 'Cai kaydı durdurdu.',
+  '{name} asks Cai to record this call: the voices and any screen shown, kept {days} days for everyone in it.':
+    'Cai’nin bu aramayı kaydetmesini isteyen: {name}. Sesler ve paylaşılan her ekran, aramadaki herkes için {days} gün saklanır.',
+  'Cai is recording this call: the voices and any screen shown, kept {days} days for everyone in it.':
+    'Cai bu aramayı kaydediyor: sesler ve paylaşılan her ekran, aramadaki herkes için {days} gün saklanır.',
+  'Cai is asked to record this call: the voices and any screen shown, kept {days} days for everyone in it.':
+    'Cai’den bu aramayı kaydetmesi istendi: sesler ve paylaşılan her ekran, aramadaki herkes için {days} gün saklanır.',
+  'What’s said, as words. Voices aren’t kept.': 'Söylenenler, yazıya dökülür. Sesler saklanmaz.',
+  'The notes, and the voices and any screen shown, kept {days} days.':
+    'Notlar, sesler ve paylaşılan her ekran {days} gün saklanır.',
 };

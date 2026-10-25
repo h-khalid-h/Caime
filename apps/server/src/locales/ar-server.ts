@@ -1753,4 +1753,14 @@ export const arServer: Catalog = {
     'حلّ موعد {name} لإنجاز «{title}». هل أرسل هذه؟',
   'Still waiting on {name} for “{title}”. Shall I send this?':
     'ما زال «{title}» بانتظار {name}. هل أرسل هذه؟',
+  'This device isn’t recording that call.': 'هذا الجهاز لا يسجّل تلك المكالمة.',
+  'This call’s recording can’t hold any more parts.': 'لا يتّسع تسجيل هذه المكالمة لأجزاء أخرى.',
+  'That piece of the recording is too large.': 'هذه القطعة من التسجيل كبيرة جدًا.',
+  'That recording': 'ذلك التسجيل',
+  'That part of the recording has ended.': 'انتهى هذا الجزء من التسجيل.',
+  'Cai isn’t recording that call any more.': 'لم يعد Cai يسجّل تلك المكالمة.',
+  'That part of the recording is as long as it can be.': 'بلغ هذا الجزء من التسجيل أقصى طول له.',
+  'Cai is already recording this call.': 'يسجّل Cai هذه المكالمة بالفعل.',
+  'Cai is already taking notes in this call: stop them to ask for a recording.':
+    'يدوّن Cai ملاحظات هذه المكالمة بالفعل: أوقِف التدوين لطلب تسجيل.',
 };

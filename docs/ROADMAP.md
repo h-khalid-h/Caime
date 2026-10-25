@@ -4034,11 +4034,21 @@ clinic can sign for. I1 lands before launch.
         notes E2E.
   - [ ] ⛔ The owner: turn off ElevenLabs' use of the account's content for training ("Data use",
         or its opt-out form); zero retention needs ElevenLabs' enterprise contract.
-  - [ ] I13b. Record (L): "Record" beside "Take notes", the labelled pair at a ring and a join
-        ("Answer, recorded", with what's kept and that it may be shared), the mark for everyone
-        throughout; voices and shared screens by one member's browser, ten-second pieces during the
-        call, a part at each join; MP4 (H.264, AAC) where the browser records it, made seekable on
-        the server without re-encoding; bytes an hour measured in the E2E before RESOURCES says one.
+  - [x] I13b. Record (L): Cai's round offers Take notes or Record, each saying what it keeps; the
+        ring, the join, the banner, a meeting's
+        card and a guest's page say "Cai records" and what's kept for how long; "Cai is recording"
+        for everyone; a yes counts only for the ask it was shown (`notesId`); the voices mixed and
+        each shown screen as parts, ten-second pieces at their offset, a new voices part at each
+        join; nothing after a no, the piece on its way kept after an end that was nobody's no;
+        each part copied into a seekable MP4 without re-encoding (mediabunny), played by byte
+        ranges by whoever had joined when it began; thirty days or an organization's fewer, the
+        daily sweep, Delete for everyone, erased with the call's line, in the export; bytes an hour
+        measured (RESOURCES). Verified: `call-recording.test.ts` (9: the ask and a stale yes,
+        pieces and offsets, the remux and byte ranges, the late piece, a Stop, a joiner's parts,
+        the day, Delete, erasure), the notes E2E's recorded call (two browsers, a shared screen,
+        both parts played, deleted for everyone). Not yet: a real Chrome's H.264 measured.
+  - [ ] I13b2. Another mode mid-call (S): asked of everyone again while the one under way goes on
+        (today: stop, then ask again).
   - [ ] I13c. Played with the notes (M): the recording on the call's line, lines, topics and next
         steps opening it at their moment, screens in step with voices, on the web and on phones.
   - [ ] I13d. Kept and deleted (S): thirty days by default, an organization's retention when
@@ -5678,6 +5688,12 @@ clinic can sign for. I1 lands before launch.
 - 2026-10-20 — The French and Turkish catalogs come in two halves fetched side by side, as Arabic
   does: their largest download 48.9 KB where one was 95.2 KB of a chunk's 100; the first download
   448.8 KB of 450 (0.2 KB more: the two loaders).
+- 2026-10-24 — M17 I13b (R114): Cai records a call. Record beside Take notes, every way in naming
+  it, a yes bound to the ask it was shown; voices and shown screens recorded by the notes' browser
+  in ten-second pieces, made seekable without re-encoding, played from the notes by who was there
+  when each part began, kept thirty days, deleted for everyone by anyone in it. Measured: voices 11
+  MB an hour, a moving screen 162 MB an hour (a sheet 68). Server 1382 tests, app 265, core 873;
+  the E2E 165 passed with reading-flow's 5 passing again after its run crossed midnight.
 - 2026-10-21 — M17 I13a (R114, the owner's call report): call notes in whole sentences, heard
   clean, a speaker's turn one paragraph; every transcript the speech provider keeps deleted once
   read; Cai in a call decided in three modes (Notes, Record, Interact: Cai heard by name, answering

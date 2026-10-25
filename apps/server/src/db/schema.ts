@@ -1323,6 +1323,12 @@ export interface CallNotesTable {
     | 'no_recorder'
     | 'allowance'
     | null;
+  /** The Record mode (R114): what's said and shown kept as a recording, beside the notes. */
+  records: Generated<boolean>;
+  /** Until when the recording is kept: thirty days, or an organization's shorter retention. */
+  recording_until: NullableTimestamp;
+  /** Deleted for everyone by someone in it: the notes stay (R52). */
+  recording_deleted_at: NullableTimestamp;
   created_at: Generated<Date>;
 }
 
@@ -1347,6 +1353,30 @@ export interface CallNoteLinesTable {
   body: string | null;
   language: string | null;
   state: Generated<'waiting' | 'heard' | 'unheard'>;
+  created_at: Generated<Date>;
+}
+
+/**
+ * A part of a call's recording (R114, M17 I13b): the voices of everyone who said yes, mixed, or
+ * one screen as it was shown, sent in pieces by the recording browser and made seekable once it
+ * ends; read by whoever was in the call when it began.
+ */
+export interface CallRecordingPartsTable {
+  id: string;
+  notes_id: string;
+  call_id: string;
+  kind: 'voices' | 'screen';
+  shown_by: string | null;
+  recorder_id: string | null;
+  recorder_device: string;
+  storage_key: string;
+  mime: string;
+  bytes: BigIntCol;
+  started_at: Date;
+  ended_at: NullableTimestamp;
+  duration_ms: number | null;
+  state: Generated<'recording' | 'finishing' | 'ready' | 'failed' | 'deleted'>;
+  last_piece_at: NullableTimestamp;
   created_at: Generated<Date>;
 }
 
@@ -1760,6 +1790,7 @@ export interface Database {
   call_notes: CallNotesTable;
   call_note_answers: CallNoteAnswersTable;
   call_note_lines: CallNoteLinesTable;
+  call_recording_parts: CallRecordingPartsTable;
   call_note_summaries: CallNoteSummariesTable;
   e2ee_devices: E2eeDevicesTable;
   billing_customers: BillingCustomersTable;

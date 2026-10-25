@@ -1,6 +1,6 @@
 import { radii } from '@caime/brand/tokens';
 import type { CallPersonView } from '@caime/core/api';
-import { notesAsked } from '@caime/core/calls';
+import { notesAsked, RECORDING_DAYS } from '@caime/core/calls';
 import { joinNames } from '@caime/core/format';
 import { listed, tr } from '@caime/core/i18n';
 import Mic from 'lucide-react-native/icons/mic';
@@ -40,6 +40,7 @@ import {
   toggleGroupMute,
 } from './group';
 import { NotesAsk, NotesLine, NotesRound } from './NotesUi';
+import { joinWithCai } from './notesWords';
 
 const first = (name: string) => name.split(' ')[0] ?? name;
 
@@ -265,9 +266,19 @@ export function GroupCallLayer() {
             style={{ color: '#FFFFFFDD' }}
             testID="group-call-incoming-notes"
           >
-            {call.notes?.state === 'on'
-              ? tr('Cai is taking notes in this call.')
-              : tr('Cai is asked to take notes in this call.')}
+            {call.notes?.records
+              ? call.notes.state === 'on'
+                ? tr(
+                    'Cai is recording this call: the voices and any screen shown, kept {days} days for everyone in it.',
+                    { days: RECORDING_DAYS },
+                  )
+                : tr(
+                    'Cai is asked to record this call: the voices and any screen shown, kept {days} days for everyone in it.',
+                    { days: RECORDING_DAYS },
+                  )
+              : call.notes?.state === 'on'
+                ? tr('Cai is taking notes in this call.')
+                : tr('Cai is asked to take notes in this call.')}
           </Text>
         ) : null}
       </View>
@@ -369,7 +380,7 @@ export function GroupCallLayer() {
                   />
                   <Round
                     icon={video ? Video : Phone}
-                    label={tr('Join, Cai takes notes')}
+                    label={joinWithCai(call.notes)}
                     tone="go"
                     onPress={() => void joinGroupCall(undefined, 'yes')}
                     focusRef={primary}

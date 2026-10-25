@@ -42,6 +42,8 @@ import type {
   CallHistoryResponse,
   CallNotesResponse,
   CallNotesStateResponse,
+  CallRecordingPartResponse,
+  CallRecordingPieceResponse,
   CallResponse,
   CheckoutSettledResponse,
   ClosedOrgExportsResponse,
@@ -228,8 +230,11 @@ export interface NotesChoice {
   answer: 'yes' | 'no';
   /** This device can be the one that records (a browser with a recorder). */
   canRecord: boolean;
+  /** The ask the choice was shown (M17 I13b): a yes counts for that ask alone. */
+  notesId?: string;
 }
-const notesBody = (n?: NotesChoice) => (n ? { notes: n.answer, canRecord: n.canRecord } : {});
+const notesBody = (n?: NotesChoice) =>
+  n ? { notes: n.answer, canRecord: n.canRecord, notesId: n.notesId } : {};
 
 const q = (params: Record<string, string | number | boolean | null | undefined>) => {
   const s = Object.entries(params)
@@ -798,12 +803,43 @@ export const endpoints = {
   callAlive: (id: string, deviceId: string) =>
     api.post<CallResponse>(`/calls/${id}/alive`, { deviceId }),
   // Cai's notes in a call (M16 F7, R85): asked, answered, stopped, read, one's own words deleted
-  askCallNotes: (id: string, body: { deviceId: string; canRecord: boolean }) =>
+  askCallNotes: (id: string, body: { deviceId: string; canRecord: boolean; records?: boolean }) =>
     api.post<CallNotesStateResponse>(`/calls/${id}/notes`, body),
   answerCallNotes: (
     id: string,
-    body: { deviceId: string; answer: 'yes' | 'no'; canRecord: boolean },
+    body: { deviceId: string; answer: 'yes' | 'no'; canRecord: boolean; notesId?: string },
   ) => api.post<CallNotesStateResponse>(`/calls/${id}/notes/answer`, body),
+  /** A part of the call's recording begun on this device (M17 I13b): the voices, or a screen. */
+  startRecordingPart: (
+    id: string,
+    body: {
+      deviceId: string;
+      kind: 'voices' | 'screen';
+      shownBy?: string;
+      mime: string;
+      at: number;
+    },
+  ) => api.post<CallRecordingPartResponse>(`/calls/${id}/recording/parts`, body),
+  /** A part's next piece, at the offset this device has sent up to. */
+  recordingPiece: (
+    id: string,
+    partId: string,
+    piece: { deviceId: string; offset: number; bytes: Blob },
+    signal?: AbortSignal,
+  ) =>
+    request<CallRecordingPieceResponse>(
+      'PUT',
+      `/calls/${id}/recording/parts/${partId}${q({ deviceId: piece.deviceId, offset: piece.offset })}`,
+      {
+        raw: piece.bytes,
+        headers: { 'content-type': 'application/offset+octet-stream' },
+        signal,
+      },
+    ),
+  finishRecordingPart: (id: string, partId: string, deviceId: string) =>
+    api.post<OkResponse>(`/calls/${id}/recording/parts/${partId}/finish${q({ deviceId })}`, {}),
+  /** The recording deleted for everyone; the notes stay (R52). */
+  deleteCallRecording: (id: string) => api.del<OkResponse>(`/calls/${id}/recording`),
   stopCallNotes: (id: string) => api.post<CallNotesStateResponse>(`/calls/${id}/notes/stop`, {}),
   callNotes: (id: string) => api.get<CallNotesResponse>(`/calls/${id}/notes`),
   /** Cai on a call's notes, on ask (M16 F7d): a catch-up, and the follow-ups as suggestions. */

@@ -130,6 +130,7 @@ export async function buildExport(ctx: AppContext, me: string, now: Date) {
     groupCalls,
     noteAnswers,
     noteWords,
+    recordings,
     reports,
     security,
     activity,
@@ -656,6 +657,33 @@ export async function buildExport(ctx: AppContext, me: string, now: Date) {
       .where('l.speaker_id', '=', me)
       .where('l.state', '=', 'heard')
       .orderBy('l.spoken_at')
+      .execute(),
+    // The recordings of calls they were in that they may play (M17 I13b): what each is and until
+    // when it's kept, never its bytes, which play from the call while it's kept.
+    db
+      .selectFrom('call_recording_parts as p')
+      .innerJoin('call_notes as n', 'n.id', 'p.notes_id')
+      .innerJoin('calls as c', 'c.id', 'p.call_id')
+      .select(['n.conversation_id', 'p.kind', 'p.started_at', 'p.duration_ms', 'n.recording_until'])
+      .where('p.state', '=', 'ready')
+      .where((eb) =>
+        eb.or([
+          eb.and([
+            eb('c.is_group', '=', false),
+            eb('c.answered_at', 'is not', null),
+            eb.or([eb('c.caller_id', '=', me), eb('c.callee_id', '=', me)]),
+          ]),
+          eb.exists(
+            eb
+              .selectFrom('call_members as m')
+              .select('m.user_id')
+              .whereRef('m.call_id', '=', 'p.call_id')
+              .where('m.user_id', '=', me)
+              .whereRef('m.joined_at', '<=', 'p.created_at'),
+          ),
+        ]),
+      )
+      .orderBy('p.started_at')
       .execute(),
     // Reports they made. Those about them stay with the people who run Caime: they'd name who made them.
     db
@@ -1546,6 +1574,13 @@ export async function buildExport(ctx: AppContext, me: string, now: Date) {
       at: l.spoken_at.toISOString(),
       text: l.body,
       language: l.language,
+    })),
+    callRecordings: recordings.map((r) => ({
+      conversationId: r.conversation_id,
+      kind: r.kind,
+      startedAt: r.started_at.toISOString(),
+      durationMs: r.duration_ms,
+      keptUntil: iso(r.recording_until),
     })),
     reports: reports.map((r) => ({
       about: r.person_name

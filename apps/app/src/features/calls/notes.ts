@@ -91,9 +91,13 @@ export function stopLine(notes: CallNotesView): string | null {
   if (notes.state !== 'stopped' && notes.state !== 'declined') return null;
   switch (notes.why) {
     case 'declined':
-      return tr('Not this time: Cai isn’t taking notes.');
+      return notes.records
+        ? tr('Not this time: Cai isn’t recording.')
+        : tr('Not this time: Cai isn’t taking notes.');
     case 'joined_without':
-      return tr('Someone is in the call without Cai, so Cai stopped taking notes.');
+      return notes.records
+        ? tr('Someone is in the call without Cai, so Cai stopped recording.')
+        : tr('Someone is in the call without Cai, so Cai stopped taking notes.');
     case 'no_recorder':
       return tr('Cai takes notes when someone in the call is on Caime in a browser.');
     case 'allowance':
@@ -103,7 +107,7 @@ export function stopLine(notes: CallNotesView): string | null {
     case 'ended':
       return null;
     default:
-      return tr('Cai stopped taking notes.');
+      return notes.records ? tr('Cai stopped recording.') : tr('Cai stopped taking notes.');
   }
 }
 
@@ -121,14 +125,18 @@ function refused(e: unknown): void {
   toast(e instanceof ApiError ? e.message : tr('Something went wrong.'), { tone: 'danger' });
 }
 
-/** Ask Cai to take notes in the call on this device: this person's own yes (R85 (1)). */
-export async function askNotes(): Promise<void> {
+/**
+ * Ask Cai to take notes in the call on this device, or to record it too (R114 (1)): this
+ * person's own yes (R85 (1)).
+ */
+export async function askNotes(records = false): Promise<void> {
   const call = held();
   if (!call) return;
   try {
     const { notes } = await endpoints.askCallNotes(call.id, {
       deviceId: DEVICE_ID,
       canRecord: canRecordNotes(),
+      records,
     });
     const now = held();
     if (now?.id === call.id) show(call.id, conversationOf(), call.group, notes);
@@ -146,6 +154,8 @@ export async function answerNotes(answer: 'yes' | 'no'): Promise<void> {
       deviceId: DEVICE_ID,
       answer,
       canRecord: canRecordNotes(),
+      // The ask this person was shown: a yes counts for it alone (R114 (1)).
+      notesId: call.notes?.id,
     });
     if (held()?.id === call.id) show(call.id, conversationOf(), call.group, notes);
   } catch (e) {

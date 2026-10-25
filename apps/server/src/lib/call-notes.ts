@@ -33,6 +33,7 @@ import { participantsOf } from './messages';
 import { assertNotesAllowed } from './notes-allowed';
 import { personViewsFor } from './people-batch';
 import { assertAiAllowance } from './plans';
+import { finishOpenParts } from './recording-finish';
 import { forgetLater } from './speech-forget';
 import { storageFor } from './storage';
 import { anyMinor } from './users';
@@ -169,6 +170,7 @@ export async function notesViewOf(db: Db, call: Call): Promise<CallNotesView | n
     yes: here.filter((id) => said.get(id) === 'yes'),
     waitingOn: waiting.map((id) => ({ id, displayName: names.get(id) ?? '' })),
     recorderDevice: notes.state === 'on' ? notes.recorder_device : null,
+    records: notes.records,
     startedAt: notes.started_at?.toISOString() ?? null,
     stoppedAt: notes.stopped_at?.toISOString() ?? null,
     why: notes.why,
@@ -285,6 +287,8 @@ export async function reconcileNotes(ctx: AppContext, callId: string): Promise<b
   if (!changed) return false;
   ctx.metrics.callNotes.inc({ outcome: changed.outcome });
   await publishNotes(ctx, changed.call);
+  // Stopped, or recorded on another device now: what the old recorder was sending is finished.
+  if (changed.outcome !== 'started') await finishOpenParts(ctx, callId);
   return true;
 }
 
@@ -342,7 +346,16 @@ export interface NotesChoice {
   deviceId: string;
   /** This device can record (a browser with a recorder): it may be the one that does. */
   canRecord: boolean;
+  /**
+   * The ask this choice was shown (M17 I13b): a yes counts only for it, so a yes to notes alone
+   * never becomes consent to a recording asked a moment later (R114 (1)).
+   */
+  notesId?: string;
 }
+
+/** A yes given to another ask than the live one is no answer to it: they're asked again. */
+const staleYes = (live: { id: string }, answer: 'yes' | 'no', choice: NotesChoice) =>
+  answer === 'yes' && Boolean(choice.notesId) && choice.notesId !== live.id;
 
 async function saveAnswer(
   db: Db,
@@ -373,17 +386,30 @@ async function saveAnswer(
     .execute();
 }
 
-/** Ask Cai to take notes: the asker's yes, and everyone else in the call asked. */
+/**
+ * Ask Cai to take notes, and to record the call too when `records` (R114 (1)): the asker's yes,
+ * and everyone else in the call asked.
+ */
 export async function askNotes(
   ctx: AppContext,
   call: Call,
   userId: string,
   choice: NotesChoice,
+  records = false,
 ): Promise<void> {
   await mayAsk(ctx, call, userId, choice.deviceId);
   await ctx.db.transaction().execute(async (trx) => {
     const live = await liveNotesOf(trx, call.id);
     if (live) {
+      // Another mode than the one under way is asked of everyone once it's stopped.
+      if (live.records !== records)
+        throw new AppError(
+          409,
+          'conflict',
+          live.records
+            ? tr('Cai is already recording this call.')
+            : tr('Cai is already taking notes in this call: stop them to ask for a recording.'),
+        );
       // Asked already (by them, or by someone else at the same moment): this is a yes to it.
       await saveAnswer(trx, live.id, userId, 'yes', choice, ctx.now());
       return;
@@ -397,6 +423,7 @@ export async function askNotes(
         conversation_id: call.conversation_id,
         started_by: userId,
         state: 'asking',
+        records,
         asked_at: ctx.now(),
       })
       // The partial unique index is named by its own predicate, written as it is (no parameters).
@@ -425,7 +452,8 @@ export async function answerNotes(
   if (!asked.some((p) => p.userId === userId && p.device === choice.deviceId)) throw notInCall();
   const live = await liveNotesOf(ctx.db, call.id);
   if (!live) return;
-  await saveAnswer(ctx.db, live.id, userId, answer, choice, ctx.now());
+  if (!staleYes(live, answer, choice))
+    await saveAnswer(ctx.db, live.id, userId, answer, choice, ctx.now());
   await settleAndTell(ctx, call.id);
 }
 
@@ -443,7 +471,8 @@ export async function answerOnEntry(
 ): Promise<void> {
   if (!answer) return;
   const live = await liveNotesOf(trx, callId);
-  if (live) await saveAnswer(trx, live.id, userId, answer, choice, at);
+  if (live && !staleYes(live, answer, choice))
+    await saveAnswer(trx, live.id, userId, answer, choice, at);
 }
 
 /** Stop Cai, for everyone, from now (R85 (2)): anyone in the call, any time. */
@@ -472,6 +501,7 @@ export async function stopNotes(ctx: AppContext, call: Call, userId: string): Pr
   if (!stopped) return;
   ctx.metrics.callNotes.inc({ outcome: 'stopped' });
   await publishNotes(ctx, call);
+  await finishOpenParts(ctx, call.id);
 }
 
 /**
@@ -691,6 +721,7 @@ async function stopForAllowance(ctx: AppContext, callId: string): Promise<void> 
   ctx.metrics.callNotes.inc({ outcome: 'allowance' });
   const call = await callById(ctx.db, callId);
   if (call) await publishNotes(ctx, call);
+  await finishOpenParts(ctx, callId);
 }
 
 /** Whoever reads the notes hears that they changed: words heard, a line deleted. */
@@ -747,6 +778,7 @@ export async function notesFor(
     lines: view,
     summary: null,
     summaryState: null,
+    recording: null,
   };
 }
 

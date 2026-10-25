@@ -197,7 +197,7 @@ what it&rsquo;s called and what it&rsquo;s for, who sent each message and when, 
 answers, reactions, and who has read what. Private conversations carry text only.</li>
 <li><strong>Your calls.</strong> Who called whom, voice or video, when, for how long, and whether
 it was answered, missed or declined. What&rsquo;s said and shown in a call isn&rsquo;t kept: it
-goes between the devices in it.</li>
+goes between the devices in it, unless everyone in it agrees to Cai recording it (below).</li>
 <li><strong>Cai&rsquo;s notes in a call.</strong> Only when someone in a call asks and everyone in
 it says yes, each by a button that says so. Then one browser in the call, of someone on Caime,
 sends each thing said, as it ends, to the speech-to-text provider named below, which turns it into
@@ -212,6 +212,17 @@ asked. A meeting may say ahead that Cai takes notes in its call; everyone is sti
 join. Whoever was in the call may ask Cai to catch them up on the notes or find their follow-ups:
 what they may read of the notes goes to the AI provider named below for that answer alone, the
 catch-up is kept nowhere, and the follow-ups are kept as their own suggestions.</li>
+<li><strong>A call Cai records.</strong> Only when someone in a call asks Cai to record it and
+everyone in it says yes, each by a button that says Cai records; anyone&rsquo;s no stops it for
+everyone from that moment, and nothing more is taken. The same browser that takes the notes
+records everyone&rsquo;s voices, together, and any screen someone shows, each as a part of its
+own; cameras are never recorded. It sends them to Caime in pieces of about ten seconds while the
+call goes on, and Caime keeps them, with the notes, for thirty days (fewer where an organization
+keeps its conversations for less), then deletes them for everyone. Someone who joins later plays
+only what was recorded after they joined. Anyone who was in the call may delete the recording for
+everyone at any time; the notes stay. It goes with the call&rsquo;s line too, and your export lists
+the recordings you may play. It isn&rsquo;t sent to any AI provider. Never in a private
+conversation, and never with anyone under 18 in the call.</li>
 <li><strong>Meetings with guests.</strong> When you invite someone to a meeting by email address,
 Caime keeps the address, who invited them and when, and gives the meeting its own group, where the
 guest sees only that meeting. Their link to join is kept only as a fingerprint, and ends when

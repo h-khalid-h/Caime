@@ -249,7 +249,7 @@ export async function callRoutes(app: FastifyInstance, ctx: AppContext) {
   app.post('/calls/:id/accept', async (req): Promise<CallResponse> => {
     const auth = requireAuth(req);
     const { id } = parse(callParam, req.params);
-    const { deviceId, notes, canRecord } = parse(CallEntryBody, req.body);
+    const { deviceId, notes, notesId, canRecord } = parse(CallEntryBody, req.body);
     const call = await mine(auth.userId, id);
     if (call.callee_id !== auth.userId) throw forbidden(tr('Only the person called can answer.'));
     // Never rung for them (they were on another call): nothing to answer.
@@ -269,7 +269,7 @@ export async function callRoutes(app: FastifyInstance, ctx: AppContext) {
         id,
         auth.userId,
         notes,
-        { deviceId, canRecord: canRecord ?? false },
+        { deviceId, canRecord: canRecord ?? false, notesId },
         ctx.now(),
       );
       return trx

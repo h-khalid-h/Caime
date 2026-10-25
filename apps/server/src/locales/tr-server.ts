@@ -1701,4 +1701,16 @@ export const turkishServer: Catalog = {
     '{name}, “{title}” için şimdiye kadar biteceğini söylemişti. Bunu göndereyim mi?',
   'Still waiting on {name} for “{title}”. Shall I send this?':
     '“{title}” için hâlâ {name} bekleniyor. Bunu göndereyim mi?',
+  'This device isn’t recording that call.': 'Bu cihaz o aramayı kaydetmiyor.',
+  'This call’s recording can’t hold any more parts.':
+    'Bu aramanın kaydına daha fazla bölüm eklenemez.',
+  'That piece of the recording is too large.': 'Kaydın bu parçası çok büyük.',
+  'That recording': 'Bu kayıt',
+  'That part of the recording has ended.': 'Kaydın bu bölümü sona erdi.',
+  'Cai isn’t recording that call any more.': 'Cai artık o aramayı kaydetmiyor.',
+  'That part of the recording is as long as it can be.':
+    'Kaydın bu bölümü olabileceği en uzun hâline ulaştı.',
+  'Cai is already recording this call.': 'Cai bu aramayı zaten kaydediyor.',
+  'Cai is already taking notes in this call: stop them to ask for a recording.':
+    'Cai bu aramada zaten not alıyor: kayıt istemek için notları durdurun.',
 };

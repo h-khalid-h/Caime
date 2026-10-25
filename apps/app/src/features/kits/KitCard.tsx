@@ -38,6 +38,7 @@ import {
   joinDirect,
   joinGroupMeeting,
 } from '@/features/calls/calls';
+import { joinWithCai } from '@/features/calls/notesWords';
 import { useCardAction } from '@/features/conversation/cardActions';
 import { copyText } from '@/lib/clipboard';
 import { leaveFor, openLink } from '@/lib/links';
@@ -251,6 +252,12 @@ export function KitCard({ m, mine }: { m: MessageView; mine: boolean }) {
     s.call?.conversationId === m.conversationId ? (s.call.notes?.state ?? null) : null,
   );
   const liveNotes = call === 'group' ? groupNotes : call === 'direct' ? directNotes : null;
+  // Recorded too (R114): every way in names it.
+  const groupRecords = useGroupCall((s) => s.on[m.conversationId]?.notes?.records === true);
+  const directRecords = useCall(
+    (s) => s.call?.conversationId === m.conversationId && s.call.notes?.records === true,
+  );
+  const liveRecords = call === 'group' ? groupRecords : call === 'direct' && directRecords;
   const notesLive = notesAsked(liveNotes ? { state: liveNotes } : null);
   // Never opened is null: the sheet loads the first time it's asked for.
   const [receiptOpen, setReceiptOpen] = useState<boolean | null>(null);
@@ -351,7 +358,7 @@ export function KitCard({ m, mine }: { m: MessageView; mine: boolean }) {
       ? notesLive || (p.fields?.notes === 'cai' && mayAskNotes)
         ? [
             {
-              label: tr('Join, Cai takes notes'),
+              label: joinWithCai(notesLive ? { records: liveRecords } : null),
               testID: 'kit-join-with-notes',
               onPress: () => join('yes'),
             },

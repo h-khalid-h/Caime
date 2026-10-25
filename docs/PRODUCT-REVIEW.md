@@ -2490,3 +2490,16 @@ with its reason, so it isn't proposed again without new facts.
   Caime's recording is on every plan, bounded by storage and the day's AI allowance, each person's
   consent a labelled choice, the notes leading into the recording and knowing what was on the
   screen, in the four interface languages and the Arabic varieties.
+  *Built (M17 I13b, 2026-10-24):* Cai's one round in the call's row offers Take notes or Record,
+  each saying what it keeps (two rounds pushed Leave off a phone's row), a ring's and a join's
+  choice saying "Answer, Cai records" with what's kept and for how long, "Cai is recording" for
+  everyone; a yes counts only for the ask it was shown (an earlier "take notes" never becomes a
+  yes to a recording asked after it). The voices, mixed, and each shown screen are parts sent in
+  ten-second pieces at their offset, a new voices part at each join; a piece lands while it's on,
+  or within a minute of an end that was nobody's no; each part is copied into an MP4 with its index
+  without re-encoding (a part that can't be is kept as recorded, one with nothing in it fails);
+  played by byte ranges from the notes by whoever had joined when it began; thirty days or an
+  organization's fewer; deleted for everyone by anyone in it; erased with the call's line; in the
+  export as facts. *Not yet:* changing mode mid-call (stop, then ask again), the player in step
+  with the notes (I13c), Keep (I13d), sharing on (I13e, so the consent doesn't promise it yet), and
+  H.264 measured on a real Chrome call (the test browser records VP9 and Opus).

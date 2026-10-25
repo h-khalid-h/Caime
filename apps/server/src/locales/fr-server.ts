@@ -1778,4 +1778,17 @@ export const frServer: Catalog = {
     '{name} avait dit que « {title} » serait fait à cette heure. J’envoie ceci ?',
   'Still waiting on {name} for “{title}”. Shall I send this?':
     'Toujours en attente de {name} pour « {title} ». J’envoie ceci ?',
+  'This device isn’t recording that call.': 'Cet appareil n’enregistre pas cet appel.',
+  'This call’s recording can’t hold any more parts.':
+    'L’enregistrement de cet appel ne peut plus recevoir de parties.',
+  'That piece of the recording is too large.':
+    'Ce morceau de l’enregistrement est trop volumineux.',
+  'That recording': 'Cet enregistrement',
+  'That part of the recording has ended.': 'Cette partie de l’enregistrement est terminée.',
+  'Cai isn’t recording that call any more.': 'Cai n’enregistre plus cet appel.',
+  'That part of the recording is as long as it can be.':
+    'Cette partie de l’enregistrement a atteint sa longueur maximale.',
+  'Cai is already recording this call.': 'Cai enregistre déjà cet appel.',
+  'Cai is already taking notes in this call: stop them to ask for a recording.':
+    'Cai prend déjà des notes dans cet appel : arrêtez-les pour demander un enregistrement.',
 };

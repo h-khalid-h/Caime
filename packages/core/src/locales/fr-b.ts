@@ -2577,4 +2577,47 @@ export const frB: Catalog = {
   'Is “{title}” from {name} still to come?': '« {title} » de {name} est-il toujours attendu ?',
   'From the latest {count} of {total} new messages.':
     'D’après les {count} derniers des {total} nouveaux messages.',
+  'Screen shown by {name}': 'Écran partagé par {name}',
+  'Everyone’s voices': 'Les voix de tout le monde',
+  'This part couldn’t be kept.': 'Cette partie n’a pas pu être conservée.',
+  'Getting it ready to play…': 'Préparation pour la lecture…',
+  'Being recorded…': 'Enregistrement en cours…',
+  'The recording was deleted for everyone.': 'L’enregistrement a été supprimé pour tout le monde.',
+  'The recording was deleted. The notes stay.':
+    'L’enregistrement a été supprimé. Les notes restent.',
+  'Being recorded': 'Enregistrement en cours',
+  'Kept until {day}, then deleted for everyone.':
+    'Conservé jusqu’au {day}, puis supprimé pour tout le monde.',
+  'Delete the recording for everyone who was in the call? The notes stay.':
+    'Supprimer l’enregistrement pour toutes les personnes de l’appel ? Les notes restent.',
+  'Delete the recording': 'Supprimer l’enregistrement',
+  'Play the screen': 'Lire l’écran',
+  'Play the voices': 'Lire les voix',
+  'Screen shown in the call': 'Écran partagé dans l’appel',
+  'The call’s voices': 'Les voix de l’appel',
+  'Answer, Cai records': 'Répondre, Cai enregistre',
+  'Join, Cai records': 'Rejoindre, Cai enregistre',
+  'Written by Cai from what was said, under each person’s name, beside the call’s recording. You can delete your own words.':
+    'Écrites par Cai à partir de ce qui a été dit, sous le nom de chaque personne, à côté de l’enregistrement de l’appel. Vous pouvez supprimer vos propres mots.',
+  Record: 'Enregistrer',
+  'Cai is recording': 'Cai enregistre',
+  'Asking {names} to let Cai record': 'En attente de l’accord de {names} pour que Cai enregistre',
+  '{name} asks Cai to record': '{name} demande à Cai d’enregistrer',
+  'Cai keeps what’s said and any screen shown as a recording, with notes under each person’s name, for everyone in the call for {days} days. Cameras aren’t recorded. Anyone can stop it or delete it.':
+    'Cai garde ce qui est dit et tout écran partagé dans un enregistrement, avec des notes sous le nom de chaque personne, pour toutes les personnes de l’appel pendant {days} jours. Les caméras ne sont pas enregistrées. Chacun peut l’arrêter ou le supprimer.',
+  'Let Cai record': 'Laisser Cai enregistrer',
+  'Not this time: Cai isn’t recording.': 'Pas cette fois : Cai n’enregistre pas.',
+  'Someone is in the call without Cai, so Cai stopped recording.':
+    'Quelqu’un est dans l’appel sans Cai, donc Cai a arrêté d’enregistrer.',
+  'Cai stopped recording.': 'Cai a arrêté d’enregistrer.',
+  '{name} asks Cai to record this call: the voices and any screen shown, kept {days} days for everyone in it.':
+    '{name} demande à Cai d’enregistrer cet appel : les voix et tout écran partagé, gardés {days} jours pour toutes les personnes de l’appel.',
+  'Cai is recording this call: the voices and any screen shown, kept {days} days for everyone in it.':
+    'Cai enregistre cet appel : les voix et tout écran partagé, gardés {days} jours pour toutes les personnes de l’appel.',
+  'Cai is asked to record this call: the voices and any screen shown, kept {days} days for everyone in it.':
+    'Il est demandé à Cai d’enregistrer cet appel : les voix et tout écran partagé, gardés {days} jours pour toutes les personnes de l’appel.',
+  'What’s said, as words. Voices aren’t kept.':
+    'Ce qui est dit, en mots. Les voix ne sont pas gardées.',
+  'The notes, and the voices and any screen shown, kept {days} days.':
+    'Les notes, ainsi que les voix et tout écran partagé, gardés {days} jours.',
 };

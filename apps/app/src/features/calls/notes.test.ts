@@ -98,7 +98,7 @@ describe('cutting what’s said at its pauses (R82 (2))', () => {
 });
 
 describe('why Cai stopped, in words that name nobody (R85)', () => {
-  const notes = (why: string, state = 'stopped') =>
+  const notes = (why: string, state = 'stopped', records = false) =>
     ({
       id: 'n',
       state,
@@ -106,6 +106,7 @@ describe('why Cai stopped, in words that name nobody (R85)', () => {
       yes: [],
       waitingOn: [],
       recorderDevice: null,
+      records,
       startedAt: null,
       stoppedAt: null,
       why,
@@ -118,5 +119,13 @@ describe('why Cai stopped, in words that name nobody (R85)', () => {
     expect(stopLine(notes('stopped'))).toBe('Cai stopped taking notes.');
     expect(stopLine(notes('ended'))).toBeNull();
     expect(stopLine(notes('stopped', 'on'))).toBeNull();
+    // A recording says it's the recording that stopped (R114).
+    expect(stopLine(notes('declined', 'declined', true))).toBe(
+      'Not this time: Cai isn’t recording.',
+    );
+    expect(stopLine(notes('joined_without', 'stopped', true))).toBe(
+      'Someone is in the call without Cai, so Cai stopped recording.',
+    );
+    expect(stopLine(notes('stopped', 'stopped', true))).toBe('Cai stopped recording.');
   });
 });

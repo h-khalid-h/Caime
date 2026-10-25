@@ -31,6 +31,7 @@ import { Sheet } from '@/ui/Sheet';
 import { SkeletonRows } from '@/ui/Skeleton';
 import { Text } from '@/ui/Text';
 import { toast } from '@/ui/Toast';
+import { CallRecording } from './CallRecording';
 import { stillWriting, type Turn, turnsOf, turnText } from './turns';
 
 const LoadFailed = lazyPart(() => import('@/ui/LoadFailed').then((m) => m.LoadFailed));
@@ -123,6 +124,9 @@ export function NotesSheet({
   });
   const lines = notes.data?.lines ?? [];
   const written = notes.data?.summary ?? null;
+  // Recorded too (R114): the recording leads, the notes under it.
+  const recording = notes.data?.recording ?? null;
+  const recorded = recording !== null && recording.state !== 'deleted';
   const writingUp = notes.data?.summaryState === 'writing';
   const writing = lines.filter((l) => l.text === null).length;
   // Cai on what was said (M16 F7d), for whoever may use AI assist, once something was heard.
@@ -171,10 +175,21 @@ export function NotesSheet({
       open={open}
       onClose={onClose}
       title={tr('Notes from the call')}
-      subtitle={tr(
-        'Written by Cai from what was said, under each person’s name. Voices weren’t kept. You can delete your own words.',
-      )}
+      subtitle={
+        recorded
+          ? tr(
+              'Written by Cai from what was said, under each person’s name, beside the call’s recording. You can delete your own words.',
+            )
+          : tr(
+              'Written by Cai from what was said, under each person’s name. Voices weren’t kept. You can delete your own words.',
+            )
+      }
     >
+      {recording ? (
+        <View style={{ marginBottom: 14 }}>
+          <CallRecording callId={callId} recording={recording} />
+        </View>
+      ) : null}
       {notes.isPending ? (
         <SkeletonRows count={4} />
       ) : notes.isError && !notes.data ? (
@@ -183,7 +198,7 @@ export function NotesSheet({
           error={notes.error}
           onRetry={() => void notes.refetch()}
         />
-      ) : lines.length === 0 ? (
+      ) : lines.length === 0 && recording ? null : lines.length === 0 ? (
         <EmptyState
           title={tr('Nothing was said while Cai took notes')}
           body={tr('Words that are still being written show here once they are.')}

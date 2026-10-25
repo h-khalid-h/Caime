@@ -32,6 +32,8 @@ interface CallStore {
   cameraOff: boolean;
   /** This device is showing its screen instead of its camera. */
   sharing: boolean;
+  /** The screen it's showing, while it is: Cai records it when the call is recorded (R114). */
+  screen: MediaStreamTrack | null;
   theirs: TheirState | null;
   /** Why it ended, when there's something to say. */
   note: string | null;
@@ -47,6 +49,7 @@ const idle = {
   muted: false,
   cameraOff: false,
   sharing: false,
+  screen: null,
   theirs: null,
   note: null,
 };

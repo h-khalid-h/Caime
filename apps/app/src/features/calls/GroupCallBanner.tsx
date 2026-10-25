@@ -11,6 +11,7 @@ import { useTheme } from '@/theme/theme';
 import { Button } from '@/ui/Button';
 import { Text } from '@/ui/Text';
 import { checkGroupCallIn, groupCallsSupported, joinGroupCall } from './calls';
+import { joinWithCai } from './notesWords';
 
 /**
  * While a call is on in a group, its conversation says so and offers to join it: who's in it,
@@ -62,7 +63,7 @@ export function GroupCallBanner({ conversationId }: { conversationId: string }) 
         // Cai's notes are asked for or on: each way in says what it does (R85 (1)).
         <View style={{ gap: 6 }}>
           <Button
-            label={tr('Join, Cai takes notes')}
+            label={joinWithCai(on.notes)}
             size="sm"
             onPress={() => void joinGroupCall(on, 'yes')}
             testID="group-call-banner-join-with-notes"

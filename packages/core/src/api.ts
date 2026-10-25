@@ -3225,6 +3225,11 @@ export interface CallNotesView {
   waitingOn: Array<{ id: string; displayName: string }>;
   /** The device recording while it's on: a member's browser in the call. */
   recorderDevice: string | null;
+  /**
+   * Cai records the call too (R114 (1), M17 I13b): the voices of everyone who said yes and every
+   * shared screen kept with the notes, so every choice offered names it ("Answer, Cai records").
+   */
+  records: boolean;
   startedAt: string | null;
   stoppedAt: string | null;
   why: CallNotesWhy | null;
@@ -3268,6 +3273,48 @@ export interface CallNotesResponse {
   summary: CallNotesSummaryView | null;
   /** Being written, written, or none to write (assist off, nothing heard); null: not theirs. */
   summaryState: 'writing' | 'written' | 'none' | null;
+  /** The call's recording, the parts this reader was in the call for (M17 I13b); null: none. */
+  recording: CallRecordingView | null;
+}
+
+/**
+ * A call's recording (R114 (4), M17 I13b), as someone who was in it may play it: its parts from
+ * when they were in the call, each made seekable once it ends.
+ */
+export interface CallRecordingView {
+  /** Still being recorded, recorded, or deleted (the notes stay). */
+  state: 'recording' | 'recorded' | 'deleted';
+  /** When it's deleted for everyone (thirty days on, or an organization's shorter retention). */
+  until: string | null;
+  parts: CallRecordingPartView[];
+}
+
+/** One part of a recording: everyone's voices from a moment on, or one person's shared screen. */
+export interface CallRecordingPartView {
+  id: string;
+  kind: 'voices' | 'screen';
+  /** Whose screen a screen part is. */
+  shownBy: CallPersonView | null;
+  startedAt: string;
+  endedAt: string | null;
+  /** Its length as its own file says, once it's ready. */
+  durationMs: number | null;
+  /** Being recorded, being made ready to play, ready, or lost (nothing of it could be read). */
+  state: 'recording' | 'finishing' | 'ready' | 'failed';
+  mime: string;
+  bytes: number;
+  /** Where it plays from (byte ranges), once it's ready. */
+  url: string | null;
+}
+
+/** `POST /calls/:id/recording/parts`: the part begun, to send its pieces to. */
+export interface CallRecordingPartResponse {
+  partId: string;
+}
+
+/** A piece of a part kept: how many bytes of it the server has. */
+export interface CallRecordingPieceResponse {
+  offset: number;
 }
 
 /** What the notes' routes answer with: how they stand now. */

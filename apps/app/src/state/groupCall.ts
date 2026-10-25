@@ -40,6 +40,8 @@ interface GroupCallStore {
   muted: boolean;
   cameraOff: boolean;
   sharing: boolean;
+  /** The screen this device is showing, while it is: recorded when the call is (R114). */
+  screen: MediaStreamTrack | null;
   note: string | null;
   /** The call on in each group, by conversation, for its banner. */
   on: Record<string, GroupCallView>;
@@ -59,6 +61,7 @@ const idle = {
   muted: false,
   cameraOff: false,
   sharing: false,
+  screen: null,
   note: null,
 };
 

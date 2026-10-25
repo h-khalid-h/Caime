@@ -185,7 +185,7 @@ function lookForRings(): void {
 function finish(note: string | null, until?: Promise<unknown>): void {
   const call = current();
   release(until);
-  store().patch({ phase: 'ended', note, local: null, peers: {}, sharing: false });
+  store().patch({ phase: 'ended', note, local: null, peers: {}, sharing: false, screen: null });
   setTimeout(() => {
     if (current()?.id !== call?.id || store().phase !== 'ended') return;
     store().reset();
@@ -626,7 +626,7 @@ export async function joinGroupCall(target?: GroupCallView, notes?: 'yes' | 'no'
     const { call: joined } = await endpoints.joinGroupCall(
       call.id,
       DEVICE_ID,
-      notes ? { answer: notes, canRecord: canRecordNotes() } : undefined,
+      notes ? { answer: notes, canRecord: canRecordNotes(), notesId: call.notes?.id } : undefined,
     );
     // A later join from this device answers for itself.
     if (attempt !== joins) return;
@@ -722,7 +722,7 @@ export async function startGroupSharing(): Promise<void> {
       .catch(() => {});
   // The browser's own "Stop sharing" ends it too.
   track.onended = () => void stopGroupSharing();
-  store().patch({ sharing: true });
+  store().patch({ sharing: true, screen: track });
   tellState();
 }
 
@@ -738,7 +738,7 @@ export async function stopGroupSharing(): Promise<void> {
     await videoSender(peer.pc)
       ?.replaceTrack(camera)
       .catch(() => {});
-  store().patch({ sharing: false });
+  store().patch({ sharing: false, screen: null });
   tellState();
 }
 
