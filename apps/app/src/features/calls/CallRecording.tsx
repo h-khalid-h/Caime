@@ -21,7 +21,8 @@ import { toast } from '@/ui/Toast';
 
 const RecordingPlayer = lazy(() => import('./RecordingPlayer'));
 
-function PartRow({ part, width }: { part: CallRecordingPartView; width: number }) {
+/** What a part is, and how it stands while it isn't ready to play. */
+function PartRow({ part }: { part: CallRecordingPartView }) {
   const { timeZone, locale } = useUserClock();
   const what =
     part.kind === 'screen'
@@ -43,11 +44,7 @@ function PartRow({ part, width }: { part: CallRecordingPartView; width: number }
           {facts}
         </Text>
       </View>
-      {part.state === 'ready' && part.url ? (
-        <Suspense fallback={null}>
-          <RecordingPlayer part={{ ...part, url: part.url }} width={width} />
-        </Suspense>
-      ) : (
+      {part.state === 'ready' ? null : (
         <Text variant="caption" color="textTertiary" testID={`call-recording-${part.state}`}>
           {part.state === 'failed'
             ? tr('This part couldn’t be kept.')
@@ -63,9 +60,12 @@ function PartRow({ part, width }: { part: CallRecordingPartView; width: number }
 export function CallRecording({
   callId,
   recording,
+  seek,
 }: {
   callId: string;
   recording: CallRecordingView;
+  /** A moment a line of the notes asked to play from (M17 I13c). */
+  seek: { at: string; n: number } | null;
 }) {
   const t = useTheme();
   const qc = useQueryClient();
@@ -105,8 +105,11 @@ export function CallRecording({
           {recording.state === 'recording' ? tr('Being recorded') : tr('Recording')}
         </Text>
       </View>
+      <Suspense fallback={null}>
+        <RecordingPlayer parts={recording.parts} width={playerWidth} seek={seek} />
+      </Suspense>
       {recording.parts.map((part) => (
-        <PartRow key={part.id} part={part} width={playerWidth} />
+        <PartRow key={part.id} part={part} />
       ))}
       {recording.until ? (
         <Text variant="caption" color="textTertiary" testID="call-recording-until">

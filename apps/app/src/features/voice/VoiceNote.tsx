@@ -7,10 +7,11 @@ import { chooseRate, rateChosen, VoiceNoteView } from './VoiceNoteView';
 /**
  * How a note plays on a phone (R88): out loud with the ringer switched off, as anything someone
  * pressed play on does, and with recording off, so headphones play it at their full quality.
- * Set once, before the first note plays (the recorder sets it back when it's done).
+ * Set once, before the first note plays (the recorder sets it back when it's done); a call's
+ * recording plays the same way.
  */
 let playable: Promise<void> | null = null;
-const readyToPlay = () =>
+export const readyToPlay = () =>
   (playable ??= setAudioModeAsync({ playsInSilentMode: true, allowsRecording: false }).catch(
     () => {},
   ));

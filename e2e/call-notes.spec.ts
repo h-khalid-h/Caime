@@ -8,8 +8,8 @@
  * (M16 F7c) says so on its card, and its Join asks as it starts the call. Asked, Cai catches the
  * reader up on the notes and finds their follow-ups (M16 F7d). Recorded (R114, M17 I13b): asked as
  * itself, the ring says what's kept, the asker's browser sends the voices and a shared screen in
- * pieces, the server makes each seekable, both play them from the notes, and either deletes the
- * recording for everyone.
+ * pieces, the server makes each seekable, both play them from the notes (a line opening the voices
+ * at its moment, the screen in step), and either deletes the recording for everyone.
  */
 import { type BrowserContext, expect, type Page, test } from '@playwright/test';
 import { apiSignUp, CLIENT, newPerson, visible } from './helpers';
@@ -282,6 +282,19 @@ test.describe
       );
       expect(Number.isFinite(length)).toBe(true);
       expect(length).toBeGreaterThan(5);
+      // A line of the notes, and a topic of Cai's write-up, open the voices at their moment
+      // (M17 I13c).
+      const playsFrom = async (testID: string) => {
+        const from = page.getByTestId(testID).first();
+        await expect(from).toBeVisible({ timeout: 30_000 });
+        await from.click();
+        await expect
+          .poll(() => voices.evaluate((el: HTMLMediaElement) => !el.paused && el.currentTime > 0))
+          .toBe(true);
+        await voices.evaluate((el: HTMLMediaElement) => el.pause());
+      };
+      await playsFrom('call-notes-play-from');
+      await playsFrom('call-notes-topic-play');
       await page.screenshot({ path: 'e2e/screenshots/desktop-call-recording-sheet.png' });
       // What a part takes, an hour of it, as recorded here (the fake camera's moving pattern is
       // the worst a screen does; a still sheet takes far less).

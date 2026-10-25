@@ -4049,8 +4049,19 @@ clinic can sign for. I1 lands before launch.
         both parts played, deleted for everyone). Not yet: a real Chrome's H.264 measured.
   - [ ] I13b2. Another mode mid-call (S): asked of everyone again while the one under way goes on
         (today: stop, then ask again).
-  - [ ] I13c. Played with the notes (M): the recording on the call's line, lines, topics and next
+  - [x] I13c. Played with the notes (M): the recording on the call's line, lines, topics and next
         steps opening it at their moment, screens in step with voices, on the web and on phones.
+        Built: one player beside the notes; each turn's time, and each topic, decision and next
+        step of Cai's write-up (the model names the line a topic came up on; the write-up keeps
+        each part's moment, so a line deleted later moves none), plays the voices from there, the
+        part that covers it or the next after a gap; on the web the shown screen plays muted
+        beside them, kept in step with where the voices are and whether they play; on a phone the
+        voices play in the app as a voice note does (speed, anywhere along them) and a screen opens
+        in the phone's own player. Verified: `recordingTimeline.test.ts` (the part at a moment,
+        the next after a gap, the screen at a moment), `call-notes.test.ts` (the write-up's
+        moments are its lines'), the notes E2E's recorded call (a line's time and a topic each play
+        the voices from their moment). Not yet: a phone tried (built, as calls are), the screen in
+        step on a phone.
   - [ ] I13d. Kept and deleted (S): thirty days by default, an organization's retention when
         shorter, Keep by whoever asked against their storage, anyone in it deletes it for everyone;
         erasure, the export and the privacy page.
@@ -5688,7 +5699,7 @@ clinic can sign for. I1 lands before launch.
 - 2026-10-20 — The French and Turkish catalogs come in two halves fetched side by side, as Arabic
   does: their largest download 48.9 KB where one was 95.2 KB of a chunk's 100; the first download
   448.8 KB of 450 (0.2 KB more: the two loaders).
-- 2026-10-24 — M17 I13b (R114): Cai records a call. Record beside Take notes, every way in naming
+- 2026-10-24 — M17 I13b (R114): Cai records a call. Record offered beside Take notes, every way in naming
   it, a yes bound to the ask it was shown; voices and shown screens recorded by the notes' browser
   in ten-second pieces, made seekable without re-encoding, played from the notes by who was there
   when each part began, kept thirty days, deleted for everyone by anyone in it. Measured: voices 11

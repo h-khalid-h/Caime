@@ -2504,7 +2504,6 @@ export const turkishB: Catalog = {
     'Kayıt, aramadaki herkes için silinsin mi? Notlar kalır.',
   'Delete the recording': 'Kaydı sil',
   'Play the screen': 'Ekranı oynat',
-  'Play the voices': 'Sesleri oynat',
   'Screen shown in the call': 'Aramada paylaşılan ekran',
   'The call’s voices': 'Aramanın sesleri',
   'Answer, Cai records': 'Yanıtla, Cai kaydetsin',
@@ -2531,4 +2530,5 @@ export const turkishB: Catalog = {
   'What’s said, as words. Voices aren’t kept.': 'Söylenenler, yazıya dökülür. Sesler saklanmaz.',
   'The notes, and the voices and any screen shown, kept {days} days.':
     'Notlar, sesler ve paylaşılan her ekran {days} gün saklanır.',
+  'Play from {time}': '{time} anından oynat',
 };

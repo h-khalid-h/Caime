@@ -3363,7 +3363,6 @@ export const arB: Catalog = {
     'حذف التسجيل لكل من كان في المكالمة؟ تبقى الملاحظات.',
   'Delete the recording': 'حذف التسجيل',
   'Play the screen': 'تشغيل الشاشة',
-  'Play the voices': 'تشغيل الأصوات',
   'Screen shown in the call': 'الشاشة المعروضة في المكالمة',
   'The call’s voices': 'أصوات المكالمة',
   'Answer, Cai records': 'رد، ويسجّل Cai',
@@ -3390,4 +3389,5 @@ export const arB: Catalog = {
   'What’s said, as words. Voices aren’t kept.': 'ما يُقال، كلمات مكتوبة. لا تُحفظ الأصوات.',
   'The notes, and the voices and any screen shown, kept {days} days.':
     'الملاحظات، والأصوات وأي شاشة تُعرض، تُحفظ {days} يومًا.',
+  'Play from {time}': 'تشغيل من {time}',
 };

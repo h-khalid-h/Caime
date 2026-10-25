@@ -614,6 +614,7 @@ describe('Cai’s notes of the call, once it’s over (M16 F7e)', () => {
       topics: [
         {
           title: 'The event',
+          line: 1,
           points: ['Noor sends the venue contract.', 'Sam books the caterer.'],
         },
       ],
@@ -629,11 +630,18 @@ describe('Cai’s notes of the call, once it’s over (M16 F7e)', () => {
     await work();
     const read = await noor.get(`/v1/calls/${callId}/notes`);
     expect(read.summaryState).toBe('written');
+    // Each part opens the recording at the moment of the line it rests on (M17 I13c).
+    const said = (read.lines as Array<{ at: string }>).map((l) => l.at);
     expect(read.summary).toEqual({
       summary: 'Noor and Sam split the event work.',
-      topics: notes.topics,
-      decisions: ['Sam books the caterer'],
-      nextSteps: notes.nextSteps.map(({ who, what, due }) => ({ who, what, due })),
+      topics: notes.topics.map(({ title, points }) => ({ title, points, at: said[0] })),
+      decisions: [{ text: 'Sam books the caterer', at: said[1] }],
+      nextSteps: notes.nextSteps.map(({ who, what, due, line }) => ({
+        who,
+        what,
+        due,
+        at: said[line - 1],
+      })),
       label: 'Suggested by Cai',
     });
     expect((await sam.get(`/v1/calls/${callId}/notes`)).summary.summary).toBe(

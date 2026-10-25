@@ -108,7 +108,7 @@ function answer(body) {
     return reply(
       JSON.stringify({
         summary: `A call of ${lines.length} lines, opened by ${first?.speaker ?? 'nobody'}.`,
-        topics: [{ title: 'What was said', points: lines.slice(0, 2).map((l) => l.text) }],
+        topics: [{ title: 'What was said', line: 1, points: lines.slice(0, 2).map((l) => l.text) }],
         decisions: [],
         nextSteps: first
           ? [{ who: first.speaker, what: 'Follow up on the call', due: null, line: 1 }]

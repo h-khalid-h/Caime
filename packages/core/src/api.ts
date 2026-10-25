@@ -3255,10 +3255,14 @@ export interface CallNoteLineView {
  */
 export interface CallNotesSummaryView {
   summary: string;
-  topics: Array<{ title: string; points: string[] }>;
-  decisions: string[];
+  /**
+   * Each part with `at`, when the line it rests on was said, which opens the recording there (M17
+   * I13c); null for one written before that, or a line the model didn't name.
+   */
+  topics: Array<{ title: string; points: string[]; at: string | null }>;
+  decisions: Array<{ text: string; at: string | null }>;
   /** Whose step it is as the notes name them (null: nobody in particular), and by when. */
-  nextSteps: Array<{ who: string | null; what: string; due: string | null }>;
+  nextSteps: Array<{ who: string | null; what: string; due: string | null; at: string | null }>;
   label: string;
 }
 

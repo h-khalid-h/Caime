@@ -2500,6 +2500,11 @@ with its reason, so it isn't proposed again without new facts.
   without re-encoding (a part that can't be is kept as recorded, one with nothing in it fails);
   played by byte ranges from the notes by whoever had joined when it began; thirty days or an
   organization's fewer; deleted for everyone by anyone in it; erased with the call's line; in the
-  export as facts. *Not yet:* changing mode mid-call (stop, then ask again), the player in step
-  with the notes (I13c), Keep (I13d), sharing on (I13e, so the consent doesn't promise it yet), and
-  H.264 measured on a real Chrome call (the test browser records VP9 and Opus).
+  export as facts. *Built (M17 I13c, 2026-10-25):* played with the notes: each turn's time and
+  each topic, decision and next step of Cai's write-up plays the voices from its moment (the
+  write-up keeps the moment of the line each part rests on, so deleting a line moves none); on the
+  web the shown screen plays beside them in step, on a phone the voices play in the app like a
+  voice note and a screen in the phone's player. *Not yet:* changing mode mid-call (stop, then
+  ask again), Keep (I13d), sharing on (I13e, so the consent doesn't promise it yet), the screen in
+  step on a phone, and H.264 measured on a real Chrome call (the test browser records VP9 and
+  Opus).

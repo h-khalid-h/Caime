@@ -36,7 +36,6 @@ import { stillWriting, type Turn, turnsOf, turnText } from './turns';
 
 const LoadFailed = lazyPart(() => import('@/ui/LoadFailed').then((m) => m.LoadFailed));
 
-/** Cai's write-up of the call, as everyone who heard it all reads it (M16 F7e). */
 /** A turn's words, and a mark where Cai is still writing part of it. */
 function TurnWords({ turn }: { turn: Turn }) {
   const text = turnText(turn);
@@ -53,18 +52,68 @@ function TurnWords({ turn }: { turn: Turn }) {
   );
 }
 
-function WrittenNotes({ notes }: { notes: CallNotesSummaryView }) {
+/** A moment of the call: pressed, the recording plays from it (M17 I13c); else only its time. */
+function Moment({
+  at,
+  play,
+  testID,
+}: {
+  at: string;
+  play: ((at: string) => void) | null;
+  testID: string;
+}) {
+  const { timeZone, locale } = useUserClock();
+  const time = formatClock(at, timeZone, locale);
+  if (!play)
+    return (
+      <Text variant="caption" color="textTertiary">
+        {time}
+      </Text>
+    );
+  return (
+    <Pressable
+      accessibilityRole="button"
+      accessibilityLabel={tr('Play from {time}', { time })}
+      onPress={() => play(at)}
+      hitSlop={6}
+      testID={testID}
+    >
+      <Text variant="caption" color="accentStrong">
+        {time}
+      </Text>
+    </Pressable>
+  );
+}
+
+type Part = { text: string; at: string | null };
+/** A part as a copy cached before I13c holds it: its words alone. */
+const partOf = (p: Part | string): Part => (typeof p === 'string' ? { text: p, at: null } : p);
+
+/**
+ * Cai's write-up of the call, as everyone who heard it all reads it (M16 F7e): each topic,
+ * decision and step at the moment it came up, which plays the recording from there (M17 I13c).
+ */
+function WrittenNotes({
+  notes,
+  play,
+}: {
+  notes: CallNotesSummaryView;
+  play: ((at: string) => void) | null;
+}) {
   const t = useTheme();
-  const section = (title: string, items: string[], testID: string) =>
+  const section = (title: string, items: Part[], testID: string) =>
     items.length ? (
       <View style={{ gap: 4 }} testID={testID}>
         <Text variant="overline" color="textSecondary">
           {title}
         </Text>
         {items.map((item) => (
-          <Text key={item} variant="body" auto selectable>
-            {`• ${item}`}
-          </Text>
+          <View key={item.text} style={{ flexDirection: 'row', gap: 8, alignItems: 'baseline' }}>
+            <Text variant="body" auto selectable style={{ flex: 1 }}>
+              {`• ${item.text}`}
+            </Text>
+            {item.at ? <Moment at={item.at} play={play} testID={`${testID}-play`} /> : null}
+          </View>
         ))}
       </View>
     ) : null;
@@ -85,9 +134,12 @@ function WrittenNotes({ notes }: { notes: CallNotesSummaryView }) {
       </Text>
       {notes.topics.map((topic) => (
         <View key={topic.title} style={{ gap: 4 }} testID="call-notes-topic">
-          <Text variant="label" auto>
-            {topic.title}
-          </Text>
+          <View style={{ flexDirection: 'row', gap: 8, alignItems: 'baseline' }}>
+            <Text variant="label" auto style={{ flex: 1 }}>
+              {topic.title}
+            </Text>
+            {topic.at ? <Moment at={topic.at} play={play} testID="call-notes-topic-play" /> : null}
+          </View>
           {topic.points.map((point) => (
             <Text key={point} variant="body" auto selectable>
               {`• ${point}`}
@@ -95,10 +147,13 @@ function WrittenNotes({ notes }: { notes: CallNotesSummaryView }) {
           ))}
         </View>
       ))}
-      {section(tr('Decided'), notes.decisions, 'call-notes-decided')}
+      {section(tr('Decided'), notes.decisions.map(partOf), 'call-notes-decided')}
       {section(
         tr('Next steps'),
-        notes.nextSteps.map((s) => [s.who, s.what, s.due].filter(Boolean).join(' · ')),
+        notes.nextSteps.map((s) => ({
+          text: [s.who, s.what, s.due].filter(Boolean).join(' · '),
+          at: s.at ?? null,
+        })),
         'call-notes-next',
       )}
     </View>
@@ -116,7 +171,6 @@ export function NotesSheet({
 }) {
   const t = useTheme();
   const qc = useQueryClient();
-  const { timeZone, locale } = useUserClock();
   const notes = useQuery({
     queryKey: qk.callNotes(callId),
     queryFn: () => endpoints.callNotes(callId),
@@ -127,6 +181,12 @@ export function NotesSheet({
   // Recorded too (R114): the recording leads, the notes under it.
   const recording = notes.data?.recording ?? null;
   const recorded = recording !== null && recording.state !== 'deleted';
+  // A moment of the notes, asked of the player beside them (M17 I13c), once the voices play.
+  const [seek, setSeek] = useState<{ at: string; n: number } | null>(null);
+  const playable = Boolean(
+    recording?.parts.some((p) => p.kind === 'voices' && p.state === 'ready'),
+  );
+  const play = playable ? (at: string) => setSeek((s) => ({ at, n: (s?.n ?? 0) + 1 })) : null;
   const writingUp = notes.data?.summaryState === 'writing';
   const writing = lines.filter((l) => l.text === null).length;
   // Cai on what was said (M16 F7d), for whoever may use AI assist, once something was heard.
@@ -187,7 +247,7 @@ export function NotesSheet({
     >
       {recording ? (
         <View style={{ marginBottom: 14 }}>
-          <CallRecording callId={callId} recording={recording} />
+          <CallRecording callId={callId} recording={recording} seek={seek} />
         </View>
       ) : null}
       {notes.isPending ? (
@@ -205,7 +265,7 @@ export function NotesSheet({
         />
       ) : (
         <View style={{ gap: 14 }} testID="call-notes-lines">
-          {written ? <WrittenNotes notes={written} /> : null}
+          {written ? <WrittenNotes notes={written} play={play} /> : null}
           {writingUp ? (
             <Text variant="caption" color="textTertiary" testID="call-notes-writing">
               {tr('Cai is writing the notes…')}
@@ -284,9 +344,7 @@ export function NotesSheet({
                   <Text variant="label" numberOfLines={1} style={{ flexShrink: 1 }}>
                     {turn.mine ? tr('You') : turn.speaker.displayName}
                   </Text>
-                  <Text variant="caption" color="textTertiary">
-                    {formatClock(turn.at, timeZone, locale)}
-                  </Text>
+                  <Moment at={turn.at} play={play} testID="call-notes-play-from" />
                 </View>
                 <TurnWords turn={turn} />
               </View>

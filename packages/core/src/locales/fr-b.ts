@@ -2592,7 +2592,6 @@ export const frB: Catalog = {
     'Supprimer l’enregistrement pour toutes les personnes de l’appel ? Les notes restent.',
   'Delete the recording': 'Supprimer l’enregistrement',
   'Play the screen': 'Lire l’écran',
-  'Play the voices': 'Lire les voix',
   'Screen shown in the call': 'Écran partagé dans l’appel',
   'The call’s voices': 'Les voix de l’appel',
   'Answer, Cai records': 'Répondre, Cai enregistre',
@@ -2620,4 +2619,5 @@ export const frB: Catalog = {
     'Ce qui est dit, en mots. Les voix ne sont pas gardées.',
   'The notes, and the voices and any screen shown, kept {days} days.':
     'Les notes, ainsi que les voix et tout écran partagé, gardés {days} jours.',
+  'Play from {time}': 'Lire à partir de {time}',
 };

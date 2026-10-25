@@ -1724,7 +1724,12 @@ A sphere is said as how you know someone, never "sphere".
   line (`eraseMessagesWhere` names its keys as `recording` rows, which `dropErasedFiles` hands
   on). Its bytes are the server's, counted on nobody's storage; it never reaches an AI provider.
   A new place that reads or keeps a recording goes through `recordingFor`/`playablePart` and
-  their reader rule.
+  their reader rule. It plays beside the notes (M17 I13c): `RecordingPlayer` (`.web`: the voices
+  in the browser's player, the shown screen muted beside them in step; a phone's: the voices
+  through expo-audio as a voice note, a screen in the phone's player) takes a `seek` of a moment,
+  which `recordingTimeline.ts` turns into a part and an offset; anything in the notes with a
+  moment (a turn, and each part of the write-up, which keeps `at` beside its line number when
+  it's written) asks through the sheet's one `Moment`, never a player of its own.
 - A meeting's guests (R83, R84): invited by address from an accepted meeting card held here
   (`features/kits/MeetingGuests.tsx`: Invite a guest, the sheet lazy; the card that moved says
   so and opens the space), or by a link the inviter sends themselves (H6, `inviteGuestByLink`: a

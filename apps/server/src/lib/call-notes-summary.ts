@@ -177,12 +177,31 @@ async function wholeReaders(ctx: AppContext, call: Call, firstAt: Date): Promise
   return [...from].filter(([, at]) => at.getTime() <= firstAt.getTime()).map(([id]) => id);
 }
 
-const stateOf = (
-  ctx: AppContext,
-  callId: string,
-  state: 'written' | 'none',
-  summary?: NotesSummary,
-) =>
+/** A part of the write-up as it's kept: with the moment its line was said (M17 I13c). */
+type Moment = { at?: string | null };
+/**
+ * The write-up as it's kept: each topic, decision and next step with the moment of the line it
+ * rests on, so a reader opens the recording there (M17 I13c); a line number alone would point
+ * elsewhere once a line before it is deleted. One written before I13c has no moments.
+ */
+interface KeptNotes extends Omit<NotesSummary, 'topics' | 'decisions' | 'nextSteps'> {
+  topics: Array<Omit<NotesSummary['topics'][number], 'line'> & Moment>;
+  decisions: Array<NotesSummary['decisions'][number] & Moment>;
+  nextSteps: Array<NotesSummary['nextSteps'][number] & Moment>;
+}
+
+/** Each part of the write-up with the moment of the line it names (none for a line it doesn't). */
+function withMoments(made: NotesSummary, lines: Line[]): KeptNotes {
+  const at = (n: number) => lines[n - 1]?.at.toISOString() ?? null;
+  return {
+    ...made,
+    topics: made.topics.map(({ line, ...t }) => ({ ...t, at: at(line) })),
+    decisions: made.decisions.map((d) => ({ ...d, at: at(d.line) })),
+    nextSteps: made.nextSteps.map((s) => ({ ...s, at: at(s.line) })),
+  };
+}
+
+const stateOf = (ctx: AppContext, callId: string, state: 'written' | 'none', summary?: KeptNotes) =>
   ctx.db
     .updateTable('call_note_summaries')
     .set({
@@ -250,7 +269,7 @@ async function writeNotes(ctx: AppContext, payload: Record<string, unknown>): Pr
     if (!(err instanceof AppError)) ctx.log.warn({ err, callId }, 'call notes not written');
     return void (await stateOf(ctx, callId, 'none'));
   }
-  await stateOf(ctx, callId, 'written', made);
+  await stateOf(ctx, callId, 'written', withMoments(made, lines));
   const readers = await wholeReaders(ctx, call, lines[0]!.at);
   // Everyone who heard it all reads them and is told; what Cai draws from them is offered only to
   // whoever has AI assist on, as anything Cai finds for them is (M16 F7d).
@@ -450,16 +469,21 @@ export async function summaryFor(
   const from = (await readersOf(ctx.db, call)).get(viewerId);
   if (!from || (first?.at && from.getTime() > new Date(first.at).getTime()))
     return { summary: null, summaryState: null };
-  const s = row.summary as NotesSummary | null;
+  const s = row.summary as KeptNotes | null;
   return {
     summaryState: row.state as 'writing' | 'written' | 'none',
     summary:
       row.state === 'written' && s
         ? {
             summary: s.summary,
-            topics: s.topics,
-            decisions: s.decisions.map((d) => d.text),
-            nextSteps: s.nextSteps.map((n) => ({ who: n.who, what: n.what, due: n.due })),
+            topics: s.topics.map((x) => ({ title: x.title, points: x.points, at: x.at ?? null })),
+            decisions: s.decisions.map((d) => ({ text: d.text, at: d.at ?? null })),
+            nextSteps: s.nextSteps.map((n) => ({
+              who: n.who,
+              what: n.what,
+              due: n.due,
+              at: n.at ?? null,
+            })),
             label: AI_LABEL,
           }
         : null,
