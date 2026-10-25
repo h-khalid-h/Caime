@@ -10,6 +10,7 @@ from running something (CLAUDE.md convention 13); the date says when.
 | Budget | Now | How it's held |
 | --- | --- | --- |
 | `GET /v1/inbox` for a signed-in person | p50 54 ms, p99 98 ms at 871 req/s (2026-09-30, one 4-core instance with Postgres beside it); p50 65 ms, p99 126 ms at 725 req/s for a person with nothing in it yet (2026-10-04, this container, `autocannon -c 50 -d 10` against the bundled server) | The inbox is one query per list, never per row; anything new the inbox shows joins that query |
+| `POST /v1/conversations/:id/messages` into a group of 41, every member on a socket | 187 sends/s sustained, p50 237 ms, p97.5 508 ms, p99 593 ms, none refused, every socket hearing every send (2026-10-25, this container: 4 cores with Postgres beside it, `node scripts/load-send.mjs http://127.0.0.1:8787 40 50 10`: 41 senders on 50 connections for 10 s, 1,906 sends); a single send with nobody else sending, p50 31 ms (2026-10-25, a group of 21) | A send writes under the conversation's row, tells everyone in one batch (M16 D2b) and leaves its effects to the outbox (A3); one person sends at most 120 a minute, so the load is many people's |
 | A visitor's page (`/@handle`, `/o/handle`, `/i/token`) | p99 61 ms at 1,356 req/s (2026-09-30). 2026-10-04, this container: an organization's page p99 65 ms at 1,050 req/s (one read); a person's page p99 226 ms at 520 req/s, 2.9 ms alone on one connection (three reads: the person, then the headline and the organizations together, from four in a row before; the organization's miss is looked up with the person, not before) | Rendered from the template in memory, no script served, `cache-control: no-cache` so a change shows at once |
 | `/v1/healthz` | p99 15 ms at 7,920 req/s (2026-09-30); p99 14 ms at 9,437 req/s (2026-10-04, this container) | No query |
 | The inbox | `GET /v1/inbox?view=all` for one person in 300 conversations of 40 messages: p50 61 ms (from 127 ms); in 2,000: p50 377 ms (from 1,010 ms; the placing query counts what's unread and what mentions me in one pass over the messages past my mark, a lateral join, not two subqueries), the last messages 57 ms (`inbox-scale.test.ts`, `INBOX_CONVERSATIONS`, `INBOX_EXPLAIN=1` prints the plans; 2026-09-30, this container). One build serves both the Attention and the All view: the app sections the list itself (core `inboxSections`), so a launch costs one build, not two | Every person's view is one of a fixed number of batched queries (`personViewsFor`, maps, never a search per row); the day where someone is comes from one cached formatter per zone and one reading per instant (`zonedParts`), since the age check runs for every person listed |
@@ -267,7 +268,7 @@ said as one: the operator's `ai.cost.byPlan` replaces it. What the tables say:
 A pull request states, under **Resources**, what the change costs on each of the three: queries
 or jobs added, AI tokens per use and how often, bytes on the device or timers running. "Nothing
 new" is a fine answer when it is true. A number claimed is a number measured: `pnpm budget`,
-`autocannon`, Lighthouse, or a test that counts queries or requests.
+`autocannon`, Lighthouse, `scripts/load-send.mjs` (the write path: a group on sockets, everyone sending, M18 J5), or a test that counts queries or requests.
 
 ## Bookings (R51)
 
