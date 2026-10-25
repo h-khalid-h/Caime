@@ -495,13 +495,20 @@ describe('reserved handles (R35)', () => {
       ]);
       expect(holders.flat(), handle).toHaveLength(1);
     }
-    // The same one given twice at once is given, both times (and what it had, held once).
+    // The same one given twice at once is given once, and what it had held once. Both are
+    // addressed by the old handle: one that found the person before the other's move landed is
+    // given it too (200, under the handle's lock), one that looked after finds that handle names
+    // nobody any more (404); which happens is the race's, never two moves.
     const twice = await signup(t, { displayName: 'Twice' });
     const both = await Promise.all([
       give('people', twice.user.handle, 'trust'),
       give('people', twice.user.handle, 'trust'),
     ]);
-    expect(both.map((r) => r.statusCode)).toEqual([200, 200]);
+    const codes = both.map((r) => r.statusCode).sort();
+    expect([
+      [200, 200],
+      [200, 404],
+    ]).toContainEqual(codes);
     expect((await twice.get('/v1/me')).user.handle).toBe('trust');
     const had = await t.ctx.db
       .selectFrom('released_handles')
