@@ -140,10 +140,11 @@ export async function startPart(
 }
 
 /**
- * Whether a piece may still land: while the notes are on, or, the call over or its recorder
- * gone, within a minute (the piece that was on its way). Never after someone's no.
+ * Whether a piece may still land (a frame of a shown screen too, M17 I13h): while the notes are
+ * on, or, the call over or its recorder gone, within a minute (the piece that was on its way).
+ * Never after someone's no.
  */
-function mayStillTake(
+export function mayStillTake(
   notes: { state: string; why: string | null; stopped_at: Date | null },
   now: Date,
 ): boolean {
@@ -398,10 +399,11 @@ async function finish(ctx: AppContext, payload: Record<string, unknown>): Promis
 }
 
 /**
- * Who plays a part: a 1:1 call's two, once it was answered; in a group call, whoever had joined
- * by the time it began on the server's clock (R85 (2): never what came before they joined).
+ * Who plays a part (and sees its frames, M17 I13h): a 1:1 call's two, once it was answered; in a
+ * group call, whoever had joined by the time it began on the server's clock (R85 (2): never what
+ * came before they joined).
  */
-async function readerOf(
+export async function readerOf(
   db: Db,
   call: Call,
   viewerId: string,
@@ -468,7 +470,7 @@ export async function recordingFor(
     .execute();
   if (!notes.length) return null;
   if (notes.some((n) => n.recording_deleted_at))
-    return { state: 'deleted', until: null, keptBy: null, mayKeep: false, parts: [] };
+    return { state: 'deleted', until: null, keptBy: null, mayKeep: false, parts: [], frames: [] };
   const reads = await readerOf(ctx.db, call, via?.sharedBy ?? viewerId);
   const parts = (
     await ctx.db
@@ -493,6 +495,21 @@ export async function recordingFor(
   ).filter(reads);
   const live = notes.some((n) => n.state === 'on');
   if (!parts.length && !live) return null;
+  // What each shown screen showed (M17 I13h): the frames of the screen parts this reader plays.
+  const screens = parts.filter((p) => p.kind === 'screen');
+  const frames = screens.length
+    ? await ctx.db
+        .selectFrom('call_recording_frames')
+        .select(['id', 'part_id', 'at_ms', 'read'])
+        .where(
+          'part_id',
+          'in',
+          screens.map((p) => p.id),
+        )
+        .orderBy('at_ms')
+        .orderBy('id')
+        .execute()
+    : [];
   const keptBy = notes.find((n) => n.kept_by)?.kept_by ?? null;
   const shownBy = [
     ...new Set([...parts.map((p) => p.shown_by), keptBy].filter((id): id is string => Boolean(id))),
@@ -540,6 +557,7 @@ export async function recordingFor(
     live || view.some((p) => p.state === 'recording' || p.state === 'finishing')
       ? 'recording'
       : 'recorded';
+  const partOf = new Map(parts.map((p) => [p.id, p]));
   return {
     state,
     until: keptBy || !until.length ? null : new Date(Math.min(...until)).toISOString(),
@@ -547,6 +565,22 @@ export async function recordingFor(
     // Whoever asked keeps it or lets it go, once it's recorded (M17 I13d); never from a share.
     mayKeep: !via && state === 'recorded' && notes.some((n) => n.started_by === viewerId),
     parts: view,
+    frames: frames.flatMap((f) => {
+      const part = partOf.get(f.part_id);
+      if (!part) return [];
+      return [
+        {
+          id: f.id,
+          partId: f.part_id,
+          at: new Date(part.started_at.getTime() + f.at_ms).toISOString(),
+          shownBy: person(part.shown_by),
+          read: f.read?.trim() ? f.read : null,
+          url: via
+            ? `/v1/messages/${via.messageId}/recording/frames/${f.id}`
+            : `/v1/calls/${call.id}/recording/frames/${f.id}`,
+        },
+      ];
+    }),
   };
 }
 
@@ -719,7 +753,16 @@ async function dropRecording(
       .where('state', '<>', 'deleted')
       .returning('storage_key')
       .execute();
-    return { keys: parts.map((p) => p.storage_key), callIds: calls.map((c) => c.call_id) };
+    // The frames of its shown screens go with it (M17 I13h).
+    const frames = await trx
+      .deleteFrom('call_recording_frames')
+      .where('notes_id', 'in', notesIds)
+      .returning('storage_key')
+      .execute();
+    return {
+      keys: [...parts, ...frames].map((p) => p.storage_key),
+      callIds: calls.map((c) => c.call_id),
+    };
   });
   const storage = storageFor(ctx.config);
   for (const key of keys)

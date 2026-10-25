@@ -9,7 +9,8 @@
  * it ends. A no stops everything at once and drops what was on its way (R85 (2)); a call that
  * ends, or a recorder that hands over, sends its last piece first. While Cai joins in (M17
  * I13g), its voice is one of the voices in the mix (voice.ts), so the recording holds what
- * everyone heard.
+ * everyone heard. Each shown screen is watched for what it shows (M17 I13h, screenFrames.ts): a
+ * frame at each change, kept with the part and read into the write-up.
  *
  * Part of the calls (stack.ts), loaded with them; never on a phone (the server never names one).
  */
@@ -21,6 +22,7 @@ import { DEVICE_ID, useCall } from '@/state/calls';
 import { useGroupCall } from '@/state/groupCall';
 import { useSession } from '@/state/session';
 import { canRecordNotes } from './notes';
+import { watchScreen } from './screenFrames';
 import { caiVoiceStream } from './voice';
 
 /** A piece is this long: what a recorder that drops can lose. */
@@ -77,8 +79,18 @@ interface Part {
   /** Given up: nothing more of it is sent. */
   dead: boolean;
   finished: boolean;
+  /** When it began on this device's clock: a frame's moment is counted from it (M17 I13h). */
+  startedAt: number;
   /** The track a screen part records. */
   track?: MediaStreamTrack;
+  /** Stops watching a screen part for its frames (M17 I13h). */
+  frames?: () => void;
+}
+
+/** A screen part's frames stop with it, whatever ended it. */
+function stopFrames(part: Part): void {
+  part.frames?.();
+  part.frames = undefined;
 }
 
 /** The call being recorded on this device, and for which ask. */
@@ -148,6 +160,7 @@ async function pump(part: Part): Promise<void> {
       }
       part.dead = true;
       part.queue.length = 0;
+      stopFrames(part);
       if (sent === 'refused') {
         if (recording) givenUp.add(recording.notesId);
         stopAll(false);
@@ -186,18 +199,20 @@ function begin(
   } catch {
     return null;
   }
+  const startedAt = Date.now();
   const part: Part = {
     callId,
     kind,
     shownBy,
     recorder,
+    startedAt,
     id: endpoints
       .startRecordingPart(callId, {
         deviceId: DEVICE_ID,
         kind,
         shownBy,
         mime: type.split(';')[0] ?? type,
-        at: Date.now(),
+        at: startedAt,
       })
       .then((r) => r.partId)
       .catch(() => {
@@ -234,6 +249,7 @@ function begin(
 /** End a part: with its last piece (a call over), or dropping it (a no). */
 function end(part: Part | null, keepLast: boolean): void {
   if (!part) return;
+  stopFrames(part);
   if (!keepLast) {
     part.dead = true;
     part.queue.length = 0;
@@ -257,6 +273,7 @@ function lose(part: Part): void {
     stopAll(true);
     return;
   }
+  stopFrames(part);
   if (part.recorder.state !== 'inactive') part.recorder.stop();
   if (part === voicesPart) voicesPart = null;
   if (part.shownBy && screens.get(part.shownBy) === part) screens.delete(part.shownBy);
@@ -393,6 +410,8 @@ function followScreens(now: Here): void {
       const part = begin(now.callId, 'screen', new MediaStream([shown.track]), who);
       if (part) {
         part.track = shown.track;
+        // What it shows, a frame at each change (M17 I13h).
+        part.frames = watchScreen(part, shown.track);
         screens.set(who, part);
       }
     };

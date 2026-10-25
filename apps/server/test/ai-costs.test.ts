@@ -11,6 +11,7 @@ import type { AddressInfo } from 'node:net';
 import {
   AGENT_KNOWLEDGE_MAX,
   ASK_MAX,
+  FRAME_EDGE,
   ORG_ALLOWANCES,
   PERSON_ALLOWANCES,
   uuidv4,
@@ -138,14 +139,28 @@ describe('the price list (M16 H7)', () => {
 });
 
 /** The system prompt as text, a string or blocks (the agent's), and the messages' words. */
+/**
+ * An image is charged by its pixels, about one token per 750 (the platform's vision guide, read
+ * 2026-10-25): a frame of a shared screen at its largest, FRAME_EDGE wide at 16:9, counted at a
+ * token a character as the text is.
+ */
+const FRAME_TOKENS = Math.ceil((FRAME_EDGE * ((FRAME_EDGE * 9) / 16)) / 750);
+const blockChars = (b: { type?: string; text?: string }): number =>
+  b.type === 'image' ? FRAME_TOKENS : (b.text ?? '').length;
 const sentChars = (body: any): number =>
   (Array.isArray(body.system)
     ? body.system.map((b: { text?: string }) => b.text ?? '').join('')
     : String(body.system ?? '')
   ).length +
   (body.messages as Array<{ content: unknown }>)
-    .map((m) => (typeof m.content === 'string' ? m.content : JSON.stringify(m.content)))
-    .join('').length;
+    .map((m) =>
+      typeof m.content === 'string'
+        ? m.content.length
+        : Array.isArray(m.content)
+          ? m.content.reduce((n: number, b) => n + blockChars(b), 0)
+          : JSON.stringify(m.content).length,
+    )
+    .reduce((a, b) => a + b, 0);
 
 const x = (n: number) => 'x'.repeat(n);
 const today = 'Monday, 19 October 2026';
@@ -202,6 +217,16 @@ const AT_BOUNDS: ReadonlyArray<{
     feature: 'interact',
     call: (ai) =>
       ai.interact({ transcript: transcript(24_000), question: x(800), language: 'English', today }),
+  },
+  // lib/call-frames.ts: one frame of a shared screen at its largest, read for the write-up (M17
+  // I13h); the write-up reads at most FRAMES_IN_NOTES of them.
+  {
+    feature: 'frame',
+    call: (ai) =>
+      ai.readFrame({
+        image: { data: x(FRAME_TOKENS), mediaType: 'image/jpeg' },
+        language: 'English',
+      }),
   },
   {
     feature: 'actions',

@@ -45,6 +45,11 @@ const systemText = (system) =>
 
 function answer(body) {
   const system = systemText(body.system);
+  if (system.includes('screen someone shared')) {
+    // What a shared screen showed at a moment (M17 I13h): read as a fixed line.
+    calls.push('frame');
+    return reply('A moving test pattern with colour bars and a counter.');
+  }
   const content = String(body.messages?.[0]?.content ?? '');
   if (system.includes('Rewrite the message')) {
     calls.push('rewrite');

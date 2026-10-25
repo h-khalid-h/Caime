@@ -112,6 +112,11 @@ export async function eraseMessagesWhere(
       select storage_key from call_recording_parts
       where notes_id in (select id from notes_gone) and state <> 'deleted'
     ),
+    -- And the frames of its shown screens (M17 I13h).
+    frames_gone as (
+      select storage_key from call_recording_frames
+      where notes_id in (select id from notes_gone)
+    ),
     ${stockBackCtes(sql`select id from gone`, now)}
     select distinct 'saved' as what, user_id::text as id, null as conversation_id
     from saved_gone
@@ -124,6 +129,8 @@ export async function eraseMessagesWhere(
     ) f where file_id is not null
     union all
     select 'recording', storage_key, null from recording_gone
+    union all
+    select 'recording', storage_key, null from frames_gone
     union all
     select 'link', url, null from linked
     union all

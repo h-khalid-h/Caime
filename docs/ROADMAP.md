@@ -4148,7 +4148,27 @@ clinic can sign for. I1 lands before launch.
         phone that records (the server never names one).
   - [ ] I13h. What was on screen (M): a frame at each change of a shared screen while recording,
         read into the write-up, and the screen as shown when Cai is asked about it in Interact, on
-        the light model within the asker's day.
+        the light model within the asker's day. Built so far (h1, 2026-10-25): while Cai records,
+        the recorder's browser samples each shown screen every two seconds as a small grey picture
+        (`features/calls/frames.ts`, `screenFrames.ts`: a change past 6 % of its cells, held on two
+        samples, so a flash or a cursor is skipped) and sends a JPEG of it at most 1280 wide at its
+        moment into the screen's part (`POST /calls/:id/recording/parts/:partId/frames`, kept under
+        the part's lock at the server's cadence: one every five seconds, 120 a part, `lib/call-frames.ts`,
+        migration 0151, through `images.run`, nothing of the device's metadata kept); the frames
+        are on the recording's view for whoever plays the part (`CallRecordingView.frames`, served
+        by `GET …/recording/frames/:frameId`, through a share too), drawn as a strip "What was on
+        screen" in the notes sheet whose taps play the recording from that moment, counted against
+        the keeper's storage, listed in the export (`screenFrames`), and gone with the recording,
+        the call's line and the sweep. The write-up reads up to eight of them once (`screenLines`:
+        the first, the last and the rest spread evenly, each by `runAi('frame')` on the light model
+        and the asker's allowance, kept as `read` so a write-up written again reads nothing twice)
+        as lines from "Screen (Name's)", which its topics, decisions and next steps cite like any
+        line and whose moments open the recording. Verified: `call-frames.test.ts` (the recorder's
+        device alone, the cadence and the cap, the reader rule, dropped with the recording and
+        erased with the line, eight of twenty read and cited, none read twice, the export),
+        `ai-costs.test.ts` (a frame at its largest), the app's `frames.test.ts`, and the recording
+        E2E (frames kept while the pattern moves, the strip, the stand-in asked and its reading kept).
+        Not yet (h2): the screen as shown when Cai is asked about it in Interact.
 - [ ] I3. What did I miss (M; L with the summary): the Needs-you conversations since each was last
       read, by the rules, ranked as Attention ranks them, with a cited summary for whoever has
       assist on, cached by read position, in Cai's chat and on Attention.
@@ -5835,6 +5855,12 @@ have yet, each sized:
 - 2026-10-20 — The French and Turkish catalogs come in two halves fetched side by side, as Arabic
   does: their largest download 48.9 KB where one was 95.2 KB of a chunk's 100; the first download
   448.8 KB of 450 (0.2 KB more: the two loaders).
+- 2026-10-25 — M17 I13h (h1), what was on screen (R114 (1) and (4)): while Cai records, a frame of
+  each shown screen at each change of it, kept with the recording under its part (the server's
+  cadence, through `images.run`), on the recording's view and in a strip of the notes sheet that
+  plays from each moment, and read into the write-up once, eight at most, as lines from the screen
+  the notes cite. Verified: `call-frames.test.ts`, the app's `frames.test.ts`, the recording E2E.
+  Next: h2, the screen as shown when Cai is asked about it in Interact.
 - 2026-10-25 — M17 I13g, the app's side (R114 (3)): Cai joins in, on every screen. The mode
   offered and named on every way in, the consent saying what everyone hears, the recorder's
   browser playing Cai's voice into the call and the recording in its microphone's place, "Cai is

@@ -1791,6 +1791,28 @@ A sphere is said as how you know someone, never "sphere".
   the notes go on hearing the microphone alone. A mode's words on every way in are
   `notesWords.ts` (light, shared: the labels alone) and `ringWords.ts` (the ring's sentences, in
   the stack); a new mode joins `askNotes(mode)`, the Cai round, `NotesAsk`, both and the catalogs.
+- What was on a shared screen (R114 (1) and (4), M17 I13h; `lib/call-frames.ts`, the app's
+  `features/calls/frames.ts` and `screenFrames.ts`): while Cai records, the recorder's browser
+  watches each screen part (`recording.ts` starts `watchScreen` with it and stops it with it):
+  every `FRAME_SAMPLE_MS` a grey sample of `FRAME_CELLS` cells, a change past `FRAME_CHANGE_SHARE`
+  of them held on two samples (`FrameWatch`, pure, tested), and a JPEG at most `FRAME_EDGE` wide
+  sent at its moment into the part (`POST /calls/:id/recording/parts/:partId/frames`, `image/jpeg`
+  spooled as a piece is); `addFrame` keeps it under the part's row lock at the server's cadence
+  (`FRAME_MIN_MS`, `FRAMES_PER_PART_MAX`, `mayStillTake` as a piece; too soon or past the most
+  answers `frameId: null`, never an error), through `images.run` to `recordings/frames/…`
+  (constants in core `calls.ts`, so the device and the server agree). A frame follows its part:
+  `recordingFor` lists `frames` for the parts the reader plays (`CallRecordingFrameView`, its
+  `url` by the call or by a share), `playableFrame` serves it by `readerOf`, `dropRecording`,
+  `eraseMessagesWhere` (`frames_gone`) and the sweep take it with the recording, `storageUsed`
+  counts it for the keeper, and the export counts them (`screenFrames`). The write-up reads them
+  through `screenLines` (`FRAMES_IN_NOTES` picked by `framesToRead`: the first, the last, the rest
+  spread; each unread one through `runAi('frame')` → `ai.readFrame`, kept as `read`, an empty
+  string for one the model declined, so nothing is read twice), merged with the heard lines in
+  time order as `Line.screen` (`whoOf`: "Screen (Name's)", which `NOTES_SYSTEM` explains; a
+  step's quote reads "{name}'s screen showed …"); `wholeReaders` still counts from the first
+  heard word. The notes sheet draws them as `ScreenFrames` in `CallRecording` (a tap asks the
+  sheet's `play`). Anything new drawn from a shown screen goes through the frames, never a
+  second capture; a camera is never sampled.
 - A meeting's guests (R83, R84): invited by address from an accepted meeting card held here
   (`features/kits/MeetingGuests.tsx`: Invite a guest, the sheet lazy; the card that moved says
   so and opens the space), or by a link the inviter sends themselves (H6, `inviteGuestByLink`: a

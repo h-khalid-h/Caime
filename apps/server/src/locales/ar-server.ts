@@ -1792,4 +1792,9 @@ export const arServer: Catalog = {
   'What should I keep? Say it after “Remind me to” or “Add an action:”.':
     'ماذا أحفظ؟ قله بعد «ذكّرني أن» أو «أضف إجراءً:».',
   'You asked in a call: “{words}”': 'طلبك في مكالمة: «{words}»',
+  'That picture of the screen is too large.': 'صورة الشاشة هذه كبيرة جدًا.',
+  'That isn’t a picture Caime reads.': 'هذه ليست صورة يقرؤها Caime.',
+  'Only a shown screen has frames.': 'اللقطات للشاشة المعروضة وحدها.',
+  'Your screen showed {quote}': 'ظهر على شاشتك {quote}',
+  '{name}’s screen showed {quote}': 'ظهر على شاشة {name} {quote}',
 };

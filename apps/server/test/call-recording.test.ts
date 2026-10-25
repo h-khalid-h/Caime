@@ -350,6 +350,7 @@ describe('recorded in pieces, made seekable, played by who was in it (R114 (4))'
       keptBy: null,
       mayKeep: false,
       parts: [],
+      frames: [],
     });
     expect((await noor.req('GET', url)).statusCode).toBe(404);
   });

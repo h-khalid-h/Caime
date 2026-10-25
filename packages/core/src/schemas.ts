@@ -733,6 +733,11 @@ export const CallRecordingPieceQuery = z
   .object({ deviceId: CallDevice, offset: z.coerce.number().int().min(0) })
   .strict();
 
+/** The device recording, sending a frame of a shown screen at its moment into the part (M17 I13h). */
+export const CallRecordingFrameQuery = z
+  .object({ deviceId: CallDevice, at: z.coerce.number().int().min(0) })
+  .strict();
+
 /** One thing said, from the device recording (M16 F7, R82 (2)): who said it, and when. */
 export const CallNoteLineQuery = z
   .object({

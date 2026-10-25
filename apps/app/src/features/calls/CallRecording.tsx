@@ -4,15 +4,22 @@
  * player, a phone's own), until when it's kept, Keep past that day for whoever asked (M17 I13d:
  * against their storage, until they stop keeping it), Share into a conversation of one's own
  * (M17 I13e: as a message that points at it and goes when it does), and Delete for everyone
- * (R52), asked once more before it goes. The notes stay when it does.
+ * (R52), asked once more before it goes. The notes stay when it does. What was on each shared
+ * screen (M17 I13h) is a strip of frames at their moments, each playing the recording from there.
  */
-import type { CallRecordingPartView, CallRecordingView } from '@caime/core/api';
+import type {
+  CallRecordingFrameView,
+  CallRecordingPartView,
+  CallRecordingView,
+} from '@caime/core/api';
 import { formatClock, formatDuration, formatWhenAt } from '@caime/core/format';
 import { tr, trn } from '@caime/core/i18n';
 import { useQueryClient } from '@tanstack/react-query';
+import { Image } from 'expo-image';
 import CircleDot from 'lucide-react-native/icons/circle-dot';
 import { lazy, Suspense, useState } from 'react';
-import { useWindowDimensions, View } from 'react-native';
+import { ScrollView, useWindowDimensions, View } from 'react-native';
+import { mediaHeaders, mediaUrl } from '@/api/client';
 import { endpoints } from '@/api/endpoints';
 import { qk } from '@/api/keys';
 import { useNow, useUserClock } from '@/lib/time';
@@ -20,6 +27,7 @@ import { useSession } from '@/state/session';
 import { useTheme } from '@/theme/theme';
 import { Button } from '@/ui/Button';
 import { lazyPart } from '@/ui/Lazy';
+import { Pressable } from '@/ui/Pressable';
 import { Text } from '@/ui/Text';
 import { toast } from '@/ui/Toast';
 
@@ -64,11 +72,71 @@ function PartRow({ part }: { part: CallRecordingPartView }) {
   );
 }
 
+/**
+ * What was on screen (M17 I13h): a frame at each change of a shared screen, at its moment, which
+ * plays the recording from there as a line of the notes does.
+ */
+function ScreenFrames({
+  frames,
+  play,
+}: {
+  frames: CallRecordingFrameView[];
+  play: ((at: string) => void) | null;
+}) {
+  const t = useTheme();
+  const { timeZone, locale } = useUserClock();
+  if (!frames.length) return null;
+  return (
+    <View style={{ gap: 6 }} testID="call-recording-frames">
+      <Text variant="overline" color="textSecondary">
+        {tr('What was on screen')}
+      </Text>
+      <ScrollView horizontal showsHorizontalScrollIndicator={false}>
+        <View style={{ flexDirection: 'row', gap: 8 }}>
+          {frames.map((frame) => {
+            const time = formatClock(frame.at, timeZone, locale);
+            return (
+              <Pressable
+                key={frame.id}
+                accessibilityRole="button"
+                accessibilityLabel={
+                  frame.read
+                    ? tr('The screen at {time}: {what}', { time, what: frame.read })
+                    : tr('The screen at {time}', { time })
+                }
+                disabled={!play}
+                onPress={() => play?.(frame.at)}
+                style={{ gap: 2, width: 96 }}
+                testID="call-recording-frame"
+              >
+                <Image
+                  source={{ uri: mediaUrl(frame.url) ?? frame.url, headers: mediaHeaders() }}
+                  contentFit="cover"
+                  style={{
+                    width: 96,
+                    height: 54,
+                    borderRadius: t.radii.sm,
+                    backgroundColor: t.c.surfaceMuted,
+                  }}
+                />
+                <Text variant="caption" color={play ? 'accentStrong' : 'textTertiary'}>
+                  {time}
+                </Text>
+              </Pressable>
+            );
+          })}
+        </View>
+      </ScrollView>
+    </View>
+  );
+}
+
 export function CallRecording({
   callId,
   conversationId,
   recording,
   seek,
+  play,
 }: {
   callId: string;
   /** The call's own conversation: never offered to share into. */
@@ -76,6 +144,8 @@ export function CallRecording({
   recording: CallRecordingView;
   /** A moment a line of the notes asked to play from (M17 I13c). */
   seek: { at: string; n: number } | null;
+  /** Asks that moment of the player (null while the voices can't play yet). */
+  play: ((at: string) => void) | null;
 }) {
   const t = useTheme();
   const qc = useQueryClient();
@@ -137,6 +207,7 @@ export function CallRecording({
       {recording.parts.map((part) => (
         <PartRow key={part.id} part={part} />
       ))}
+      <ScreenFrames frames={recording.frames ?? []} play={play} />
       {recording.keptBy ? (
         <Text variant="caption" color="textTertiary" testID="call-recording-kept">
           {recording.keptBy.id === meId

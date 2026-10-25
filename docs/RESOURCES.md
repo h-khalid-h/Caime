@@ -195,7 +195,9 @@ the pricing page for the agent).
 Produced by `COST_TABLE=<file> pnpm vitest run test/ai-costs.test.ts` in `apps/server`
 (2026-10-19; the cai and friend rows again on 2026-10-20, with what M16 G13 and G14 tell them;
 notes-summary on 2026-10-21, M16 F7e's write-up of a call's notes; notes-ask and interact on
-2026-10-25, M17 I13f's question about a call and I13g's answer aloud in one):
+2026-10-25, M17 I13f's question about a call and I13g's answer aloud in one; frame on 2026-10-25,
+M17 I13h's reading of one frame of a shared screen, counted at its pixels over 750 as the platform
+charges an image, and notes-summary again with the line the screens add to its instructions):
 each feature's request at the bounds the code sets, measured from what the real
 prompt builders send to a stand-in (system and message characters; output at its `max_tokens`),
 read at a token a character, a ceiling no language's words reach; a voice note at ten minutes,
@@ -211,8 +213,9 @@ Prices: https://platform.claude.com/docs/en/about-claude/pricing, read 2026-10-1
 | ask | 61,192 | 4,096 | €0.0073 | €0.15 | €0.29 |
 | notes-ask | 25,315 | 4,096 | €0.0041 | €0.08 | €0.16 |
 | interact | 25,996 | 512 | €0.0025 | €0.05 | €0.10 |
+| frame | 1,818 | 512 | €0.0004 | €0.0078 | €0.02 |
 | actions | 61,206 | 8,192 | €0.0091 | €0.18 | €0.36 |
-| notes-summary | 61,477 | 8,192 | €0.0091 | €0.18 | €0.36 |
+| notes-summary | 61,719 | 8,192 | €0.0091 | €0.18 | €0.37 |
 | brief | 16,825 | 4,096 | €0.0033 | €0.07 | €0.13 |
 | cai | 13,023 | 2,048 | €0.0021 | €0.04 | €0.08 |
 | friend | 11,801 | 1,024 | €0.0015 | €0.03 | €0.06 |
@@ -221,6 +224,12 @@ Prices: https://platform.claude.com/docs/en/about-claude/pricing, read 2026-10-1
 | agent | 56,082 | 2,048 | €0.0059 | €0.12 | €0.24 |
 | transcribe | ten minutes of audio | — | €0.05 (OpenAI's estimate) | | |
 | speak | 280 characters (`SPOKEN_MAX`) | — | €0.0100 (ElevenLabs Flash v2.5, $0.04 per 1,000 characters, its API pricing page read 2026-10-25) | | |
+
+What was on a shared screen (M17 I13h) costs the write-up at most `FRAMES_IN_NOTES` (8) readings
+of `frame`, €0.0032 on the light model, read once and kept, never again for a write-up written
+again; a call's recording keeps at most 120 frames a screen part, each a JPEG at most 1280 wide
+(about 100–200 KB of a slide, counted against whoever keeps the recording), sampled on the
+recording browser alone from a 48 × 27 grey picture every two seconds.
 
 Cai's answer in a call (M17 I13g) is `interact` and `speak` together, at most €0.0125 on the
 light model. From the words that call it by name being heard to its answer at the voice

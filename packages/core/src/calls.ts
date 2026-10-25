@@ -128,3 +128,21 @@ export const notesAsked = (notes: { state: string } | null | undefined): boolean
  * conversations fewer: the consent says it, the server deletes it then.
  */
 export const RECORDING_DAYS = 30;
+
+/**
+ * What was on a shared screen (R114 (1) and (4), M17 I13h): while Cai records, the recording's
+ * browser keeps a frame of each screen shown at each change of it, which the write-up reads. The
+ * screen is sampled every `FRAME_SAMPLE_MS` as a grey picture of `FRAME_CELLS` cells; a change is
+ * `FRAME_CHANGE_SHARE` of them moved past `FRAME_CHANGE_LEVEL` on two samples running (a flash, a
+ * cursor passing, is skipped); a frame is at most `FRAME_EDGE` wide, one every `FRAME_MIN_MS` at
+ * most and `FRAMES_PER_PART_MAX` a part, which the server holds to whatever the device sends.
+ */
+export const FRAME_SAMPLE_MS = 2_000;
+export const FRAME_CELLS = { width: 48, height: 27 } as const;
+export const FRAME_CHANGE_LEVEL = 24;
+export const FRAME_CHANGE_SHARE = 0.06;
+export const FRAME_EDGE = 1280;
+export const FRAME_MIN_MS = 5_000;
+export const FRAMES_PER_PART_MAX = 120;
+/** How many frames the write-up reads at most: the first, the last and the rest spread evenly. */
+export const FRAMES_IN_NOTES = 8;

@@ -259,6 +259,7 @@ export function NotesSheet({
             conversationId={conversationId}
             recording={recording}
             seek={seek}
+            play={play}
           />
         </View>
       ) : null}

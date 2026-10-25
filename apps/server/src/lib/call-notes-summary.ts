@@ -9,7 +9,9 @@
  * so "Find follow-ups" never offers it twice); in a call of two the other waits on it; a decision is
  * the asker's to record. Nothing here sends anything: the notes are on the call's line, its people
  * are told once, and they go with that line. A line someone deletes writes them again without it,
- * and what was drawn from it and not yet answered goes.
+ * and what was drawn from it and not yet answered goes. What the screens shared in the call showed
+ * (M17 I13h) is read in beside what was said, as lines from each screen (`screenLines`), so the
+ * topics and decisions cite a slide as they cite a sentence.
  */
 import {
   AI_LABEL,
@@ -27,6 +29,7 @@ import type { Call } from '../db/schema';
 import { baseLanguage, languageName, type NotesSummary } from './ai';
 import { aiGate } from './ai-gate';
 import { runAi } from './ai-run';
+import { screenLines } from './call-frames';
 import { readersOf } from './call-notes';
 import { AppError } from './errors';
 import { asReader, languageOf } from './i18n';
@@ -114,7 +117,16 @@ interface Line {
   text: string;
   at: Date;
   language: string | null;
+  /** What this person's shared screen showed (M17 I13h), as Cai read it, rather than their words. */
+  screen?: boolean;
 }
+
+/** The words and the screens together, in the order they came (M17 I13h). */
+const inOrder = (lines: Line[]): Line[] =>
+  [...lines].sort((a, b) => a.at.getTime() - b.at.getTime() || a.id.localeCompare(b.id));
+
+/** How a line's speaker reads to the model: a person by name, a screen as theirs. */
+const whoOf = (l: Line): string => (l.screen ? `Screen (${firstName(l.speaker)}'s)` : l.speaker);
 
 /** Every heard line of a call's notes, oldest first, its two ends kept when it ran long. */
 async function linesOf(ctx: AppContext, callId: string) {
@@ -243,14 +255,22 @@ async function writeNotes(ctx: AppContext, payload: Record<string, unknown>): Pr
     .executeTakeFirst();
   if (!asker?.started_by) return void (await stateOf(ctx, callId, 'none'));
   let made: NotesSummary;
+  /** What was said and what was shown, together, as the write-up reads and cites them. */
+  let all: Line[] = lines;
   try {
     const { ai, me, plan } = await aiGate(ctx, asker.started_by);
     const { time, day } = transcriptClock(me.time_zone);
+    const language = languageName(languageOfCall(lines, await languageOf(ctx, asker.started_by)));
+    // The screens shared (M17 I13h), each frame read once on the asker's allowance.
+    const screens = await screenLines(ctx, call, ai, asker.started_by, language);
+    all = inOrder([
+      ...lines,
+      ...screens.map((s) => ({ ...s, language: null, screen: true as const })),
+    ]);
     const transcript = {
-      text: transcriptText(lines.map((l) => ({ who: l.speaker, words: l.text, at: time(l.at) }))),
+      text: transcriptText(all.map((l) => ({ who: whoOf(l), words: l.text, at: time(l.at) }))),
       newFrom: null,
     };
-    const language = languageName(languageOfCall(lines, await languageOf(ctx, asker.started_by)));
     made = await runAi(ctx, 'notes-summary', asker.started_by, () =>
       ai.callNotes({
         transcript,
@@ -269,7 +289,7 @@ async function writeNotes(ctx: AppContext, payload: Record<string, unknown>): Pr
     if (!(err instanceof AppError)) ctx.log.warn({ err, callId }, 'call notes not written');
     return void (await stateOf(ctx, callId, 'none'));
   }
-  await stateOf(ctx, callId, 'written', withMoments(made, lines));
+  await stateOf(ctx, callId, 'written', withMoments(made, all));
   const readers = await wholeReaders(ctx, call, lines[0]!.at);
   // Everyone who heard it all reads them and is told; what Cai draws from them is offered only to
   // whoever has AI assist on, as anything Cai finds for them is (M16 F7d).
@@ -285,7 +305,7 @@ async function writeNotes(ctx: AppContext, payload: Record<string, unknown>): Pr
         ).map((u) => u.id)
       : [],
   );
-  await offerSteps(ctx, call, asker, lines, made, readers, assisted);
+  await offerSteps(ctx, call, asker, all, made, readers, assisted);
   // Told once, when they're first written: a line deleted since writes them again, unannounced.
   if (!row.written_at) await tellWritten(ctx, call, lines, readers);
   const everyone = [...(await readersOf(ctx.db, call)).keys()];
@@ -327,10 +347,17 @@ async function offerSteps(
     return first.length === 1 ? first[0]!.id : null;
   };
   const quote = (at: Line, readerId: string) =>
-    tr('{speaker} said {quote}', {
-      speaker: at.speakerId === readerId ? tr('You') : firstName(at.speaker),
-      quote: `“${previewText(at.text, 100)}”`,
-    });
+    at.screen
+      ? at.speakerId === readerId
+        ? tr('Your screen showed {quote}', { quote: `“${previewText(at.text, 100)}”` })
+        : tr('{name}’s screen showed {quote}', {
+            name: firstName(at.speaker),
+            quote: `“${previewText(at.text, 100)}”`,
+          })
+      : tr('{speaker} said {quote}', {
+          speaker: at.speakerId === readerId ? tr('You') : firstName(at.speaker),
+          quote: `“${previewText(at.text, 100)}”`,
+        });
   for (const step of made.nextSteps) {
     const at = lines[step.line - 1];
     const owner = named(step.who);

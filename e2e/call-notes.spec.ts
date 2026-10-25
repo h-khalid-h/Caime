@@ -260,11 +260,15 @@ test.describe
       }, convo);
       expect(callId).not.toBe('');
       type Part = { kind: string; state: string; bytes: number; durationMs: number | null };
+      type Frame = { partId: string; at: string; read: string | null };
       const recording = () =>
         page.request
           .get(`/v1/calls/${callId}/notes`, { headers: CLIENT })
           .then((r) => r.json())
-          .then((b: { recording: { state: string; parts: Part[] } | null }) => b.recording);
+          .then(
+            (b: { recording: { state: string; parts: Part[]; frames: Frame[] } | null }) =>
+              b.recording,
+          );
 
       // Noor shows her screen: a part of its own, beside the voices, each sent in pieces.
       await page.getByTestId('call-share').click();
@@ -281,6 +285,13 @@ test.describe
           { timeout: 40_000 },
         )
         .toBe(true);
+      // What was on the screen (M17 I13h): a frame at the screen's first picture. Chromium's fake
+      // screen (a disc whose wedge turns, and a timer) moves under FRAME_CHANGE_SHARE of its cells
+      // between samples (2 % measured over 3 s), so no second frame is kept here: the change rule
+      // is frames.test.ts's and the cadence call-frames.test.ts's.
+      await expect
+        .poll(async () => ((await recording())?.frames ?? []).length, { timeout: 30_000 })
+        .toBeGreaterThanOrEqual(1);
       await page.getByTestId('call-share').click();
       await page.getByTestId('call-hangup').click();
       await expect(page.getByTestId('call-screen')).toHaveCount(0);
@@ -317,6 +328,26 @@ test.describe
       };
       await playsFrom('call-notes-play-from');
       await playsFrom('call-notes-topic-play');
+      // The frames at their moments, each playing the recording from there; the write-up read them
+      // (the Messages stand-in was asked for each), and keeps what it read on the frame.
+      await expect(page.getByTestId('call-recording-frames')).toBeVisible();
+      await playsFrom('call-recording-frame');
+      await expect
+        .poll(
+          async () =>
+            (
+              (await (await page.request.get(`${AI_STUB}/requests`)).json()) as {
+                calls: string[];
+              }
+            ).calls.includes('frame'),
+          { timeout: 30_000 },
+        )
+        .toBe(true);
+      await expect
+        .poll(async () => ((await recording())?.frames ?? [])[0]?.read ?? null, {
+          timeout: 30_000,
+        })
+        .toBe('A moving test pattern with colour bars and a counter.');
       await page.screenshot({ path: 'e2e/screenshots/desktop-call-recording-sheet.png' });
       // What a part takes, an hour of it, as recorded here (the fake camera's moving pattern is
       // the worst a screen does; a still sheet takes far less).

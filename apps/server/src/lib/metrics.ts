@@ -204,7 +204,7 @@ export function createMetrics(pool: pg.Pool) {
     // recorded), and recordings deleted by someone in them or at their day.
     callRecordings: new Counter(
       'caime_call_recordings_total',
-      'Call recordings by outcome (part_started, ready, kept_as_recorded, kept, let_go, deleted, expired, shared, share_gone).',
+      'Call recordings by outcome (part_started, frame, ready, kept_as_recorded, kept, let_go, deleted, expired, shared, share_gone).',
     ),
     // Cai joining in a call (R114 (3), M17 I13g): what it did with a line that called it.
     caiInteract: new Counter(

@@ -2727,4 +2727,7 @@ export const frB: Catalog = {
   'Answer, Cai joins in': 'Répondre, Cai participe',
   'Join, Cai records and joins in': 'Rejoindre, Cai enregistre et participe',
   'Join, Cai joins in': 'Rejoindre, Cai participe',
+  'What was on screen': 'Ce qui était à l’écran',
+  'The screen at {time}: {what}': 'L’écran à {time} : {what}',
+  'The screen at {time}': 'L’écran à {time}',
 };

@@ -203,7 +203,8 @@ async function aiSpent(ctx: AppContext, userId: string, plan: Plan) {
 
 /**
  * What someone's files take up: finished uploads, and those under way at their full size; and
- * the call recordings they keep past their day (M17 I13d), ready parts' bytes.
+ * the call recordings they keep past their day (M17 I13d), ready parts' bytes with the frames of
+ * their shown screens (M17 I13h).
  */
 async function storageUsed(ctx: AppContext, userId: string, db: Q = ctx.db): Promise<number> {
   const files = await db
@@ -219,7 +220,13 @@ async function storageUsed(ctx: AppContext, userId: string, db: Q = ctx.db): Pro
     .where('n.kept_by', '=', userId)
     .where('p.state', '=', 'ready')
     .executeTakeFirstOrThrow();
-  return Number(files.bytes) + Number(kept.bytes);
+  const frames = await db
+    .selectFrom('call_recording_frames as f')
+    .innerJoin('call_notes as n', 'n.id', 'f.notes_id')
+    .select(sql<string>`coalesce(sum(f.bytes), 0)::text`.as('bytes'))
+    .where('n.kept_by', '=', userId)
+    .executeTakeFirstOrThrow();
+  return Number(files.bytes) + Number(kept.bytes) + Number(frames.bytes);
 }
 
 /**

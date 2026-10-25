@@ -1827,4 +1827,9 @@ export const frServer: Catalog = {
   'What should I keep? Say it after “Remind me to” or “Add an action:”.':
     'Que dois-je garder ? Dis-le après « Rappelle-moi de » ou « Ajoute une action : ».',
   'You asked in a call: “{words}”': 'Tu as demandé dans un appel : « {words} »',
+  'That picture of the screen is too large.': 'Cette image de l’écran est trop grande.',
+  'That isn’t a picture Caime reads.': 'Ce n’est pas une image que Caime lit.',
+  'Only a shown screen has frames.': 'Seul un écran partagé a des images.',
+  'Your screen showed {quote}': 'Ton écran montrait {quote}',
+  '{name}’s screen showed {quote}': 'L’écran de {name} montrait {quote}',
 };

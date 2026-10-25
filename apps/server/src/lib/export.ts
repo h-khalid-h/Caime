@@ -664,13 +664,19 @@ export async function buildExport(ctx: AppContext, me: string, now: Date) {
       .selectFrom('call_recording_parts as p')
       .innerJoin('call_notes as n', 'n.id', 'p.notes_id')
       .innerJoin('calls as c', 'c.id', 'p.call_id')
-      .select([
+      .select((eb) => [
         'n.conversation_id',
         'p.kind',
         'p.started_at',
         'p.duration_ms',
         'n.recording_until',
         'n.kept_by',
+        // The frames kept of a shown screen (M17 I13h), by their count.
+        eb
+          .selectFrom('call_recording_frames as f')
+          .select(eb.fn.countAll<string>().as('n'))
+          .whereRef('f.part_id', '=', 'p.id')
+          .as('frames'),
       ])
       .where('p.state', '=', 'ready')
       .where((eb) =>
@@ -1587,6 +1593,7 @@ export async function buildExport(ctx: AppContext, me: string, now: Date) {
       kind: r.kind,
       startedAt: r.started_at.toISOString(),
       durationMs: r.duration_ms,
+      screenFrames: Number(r.frames ?? 0),
       keptUntil: r.kept_by ? null : iso(r.recording_until),
       keptByYou: r.kept_by === me,
     })),

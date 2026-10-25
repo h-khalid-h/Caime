@@ -2633,4 +2633,7 @@ export const turkishB: Catalog = {
   'Answer, Cai joins in': 'Yanıtla, Cai katılsın',
   'Join, Cai records and joins in': 'Katıl, Cai kaydetsin ve katılsın',
   'Join, Cai joins in': 'Katıl, Cai katılsın',
+  'What was on screen': 'Ekranda ne vardı',
+  'The screen at {time}: {what}': '{time} anındaki ekran: {what}',
+  'The screen at {time}': '{time} anındaki ekran',
 };

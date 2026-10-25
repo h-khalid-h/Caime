@@ -3364,6 +3364,24 @@ export interface CallRecordingView {
   /** Whether this reader may keep it or let it go: they asked for it, and it's recorded. */
   mayKeep: boolean;
   parts: CallRecordingPartView[];
+  /** What was on each shared screen, at each change of it (M17 I13h), of the parts listed. */
+  frames: CallRecordingFrameView[];
+}
+
+/**
+ * What a shared screen showed at a moment (M17 I13h): a frame the recording's browser kept at a
+ * change of the screen, and what Cai read of it once the write-up read it.
+ */
+export interface CallRecordingFrameView {
+  id: string;
+  /** The screen part it's of. */
+  partId: string;
+  at: string;
+  shownBy: CallPersonView | null;
+  /** What the screen showed, as Cai read it for the write-up; null until then, or never read. */
+  read: string | null;
+  /** Where its picture is. */
+  url: string;
 }
 
 /** One part of a recording: everyone's voices from a moment on, or one person's shared screen. */
@@ -3403,6 +3421,11 @@ export interface CallRecordingPartResponse {
 /** A piece of a part kept: how many bytes of it the server has. */
 export interface CallRecordingPieceResponse {
   offset: number;
+}
+
+/** A frame of a shown screen (M17 I13h): kept, or null when it came too soon or past the part's most. */
+export interface CallRecordingFrameResponse {
+  frameId: string | null;
 }
 
 /** What the notes' routes answer with: how they stand now. */

@@ -3510,4 +3510,7 @@ export const arB: Catalog = {
   'Answer, Cai joins in': 'رد، ويشارك Cai',
   'Join, Cai records and joins in': 'انضمام، ويسجّل Cai ويشارك',
   'Join, Cai joins in': 'انضمام، ويشارك Cai',
+  'What was on screen': 'ما كان على الشاشة',
+  'The screen at {time}: {what}': 'الشاشة في {time}: {what}',
+  'The screen at {time}': 'الشاشة في {time}',
 };

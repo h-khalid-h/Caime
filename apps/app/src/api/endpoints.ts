@@ -43,6 +43,7 @@ import type {
   CallNotesAnswerView,
   CallNotesResponse,
   CallNotesStateResponse,
+  CallRecordingFrameResponse,
   CallRecordingPartResponse,
   CallRecordingPieceResponse,
   CallResponse,
@@ -843,6 +844,17 @@ export const endpoints = {
     ),
   finishRecordingPart: (id: string, partId: string, deviceId: string) =>
     api.post<OkResponse>(`/calls/${id}/recording/parts/${partId}/finish${q({ deviceId })}`, {}),
+  /** A frame of a shown screen at its moment into its part (M17 I13h); `frameId` null: not kept. */
+  recordingFrame: (
+    id: string,
+    partId: string,
+    frame: { deviceId: string; at: number; bytes: Blob },
+  ) =>
+    request<CallRecordingFrameResponse>(
+      'POST',
+      `/calls/${id}/recording/parts/${partId}/frames${q({ deviceId: frame.deviceId, at: frame.at })}`,
+      { raw: frame.bytes, headers: { 'content-type': 'image/jpeg' } },
+    ),
   /** The recording deleted for everyone; the notes stay (R52). */
   deleteCallRecording: (id: string) => api.del<OkResponse>(`/calls/${id}/recording`),
   /** Kept past its day by whoever asked, against their storage (M17 I13d); or let go again. */

@@ -24,6 +24,8 @@ import {
   type CallNotesResponse,
   type CallNotesStateResponse,
   CallRecordingDeviceQuery,
+  CallRecordingFrameQuery,
+  type CallRecordingFrameResponse,
   CallRecordingPartBody,
   type CallRecordingPartResponse,
   CallRecordingPieceQuery,
@@ -38,6 +40,7 @@ import type { FastifyInstance, FastifyReply } from 'fastify';
 import { z } from 'zod';
 import type { AppContext } from '../context';
 import { utteranceFor } from '../lib/cai-interact';
+import { addFrame, FRAME_MAX_BYTES, playableFrame } from '../lib/call-frames';
 import {
   answerNotes,
   askNotes,
@@ -64,7 +67,12 @@ import {
 } from '../lib/call-recording';
 import { AppError, badRequest } from '../lib/errors';
 import { streamFile } from '../lib/file-stream';
-import { playableShare, recordingShareView, shareRecording } from '../lib/recording-shares';
+import {
+  frameShare,
+  playableShare,
+  recordingShareView,
+  shareRecording,
+} from '../lib/recording-shares';
 import { storageFor } from '../lib/storage';
 import { parse } from '../lib/validate';
 import { requireAuth } from '../plugins/auth';
@@ -189,6 +197,7 @@ export async function callNotesRoutes(app: FastifyInstance, ctx: AppContext) {
   // ---- The recording (R114 (4), M17 I13b) ------------------------------------------------
 
   const partParam = z.object({ id: z.string().uuid(), partId: z.string().uuid() });
+  const frameParam = z.object({ id: z.string().uuid(), frameId: z.string().uuid() });
   const storage = storageFor(ctx.config);
 
   /** A part begun on the device recording: everyone's voices from now, or a shared screen. */
@@ -239,6 +248,55 @@ export async function callNotesRoutes(app: FastifyInstance, ctx: AppContext) {
       }
     },
   );
+
+  /**
+   * A frame of a shown screen at its moment into its part (M17 I13h), from the device recording,
+   * as a JPEG: spooled first as a piece is, so the part's lock never waits on a network, and kept
+   * only at the cadence the server holds (null says it wasn't).
+   */
+  app.addContentTypeParser('image/jpeg', (_req, payload, done) => done(null, payload));
+  app.post(
+    '/calls/:id/recording/parts/:partId/frames',
+    async (req): Promise<CallRecordingFrameResponse> => {
+      const auth = requireAuth(req);
+      const { id, partId } = parse(partParam, req.params);
+      const q = parse(CallRecordingFrameQuery, req.query);
+      // A frame every five seconds from up to eight screens, retries besides.
+      ctx.limiter.hit(`call-recording-frame:${id}`, ctx.config.isTest ? 10_000 : 1200, 600_000);
+      const call = await callForNotes(ctx, id, auth.userId);
+      const spool = join(tmpdir(), `caime-frame-${randomUUID()}`);
+      let seen = 0;
+      const capped = new Transform({
+        transform(chunk: Buffer, _enc, done) {
+          seen += chunk.length;
+          if (seen > FRAME_MAX_BYTES)
+            done(new AppError(413, 'too_large', tr('That picture of the screen is too large.')));
+          else done(null, chunk);
+        },
+      });
+      try {
+        await pipeline(req.body as Readable, capped, createWriteStream(spool));
+        const frameId = await addFrame(ctx, call, auth.userId, {
+          partId,
+          deviceId: q.deviceId,
+          at: q.at,
+          spool,
+        });
+        return { frameId };
+      } finally {
+        await rm(spool, { force: true });
+      }
+    },
+  );
+
+  /** A frame as whoever may play its part sees it. */
+  app.get('/calls/:id/recording/frames/:frameId', async (req, reply): Promise<FastifyReply> => {
+    const auth = requireAuth(req);
+    const { id, frameId } = parse(frameParam, req.params);
+    const call = await callForNotes(ctx, id, auth.userId);
+    const frame = await playableFrame(ctx, call, auth.userId, frameId);
+    return streamFile(req, reply, storage, frame, true, 'private, max-age=3600');
+  });
 
   /** A part ended by its recorder: made ready to play. */
   app.post('/calls/:id/recording/parts/:partId/finish', async (req): Promise<OkResponse> => {
@@ -324,5 +382,11 @@ export async function callNotesRoutes(app: FastifyInstance, ctx: AppContext) {
     const { id, partId } = parse(partParam, req.params);
     const part = await playableShare(ctx, id, auth.userId, partId);
     return streamFile(req, reply, storage, part, true, 'private, max-age=3600');
+  });
+  app.get('/messages/:id/recording/frames/:frameId', async (req, reply): Promise<FastifyReply> => {
+    const auth = requireAuth(req);
+    const { id, frameId } = parse(frameParam, req.params);
+    const frame = await frameShare(ctx, id, auth.userId, frameId);
+    return streamFile(req, reply, storage, frame, true, 'private, max-age=3600');
   });
 }

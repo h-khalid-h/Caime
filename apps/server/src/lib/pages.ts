@@ -226,7 +226,12 @@ organization&rsquo;s own retention. Anyone who was in the call may share the rec
 conversation they&rsquo;re in, where whoever is in that conversation plays the parts the sharer
 could, for as long as it&rsquo;s kept; a share goes when the recording does, and is never
 forwarded on. It goes with the call&rsquo;s line too, and your export lists
-the recordings you may play and whether you keep each. It isn&rsquo;t sent to any AI provider.
+the recordings you may play and whether you keep each. While a screen is shown, the same browser
+also keeps a still picture of it at each change (one every five seconds at most, never a camera),
+kept with the recording for the same people and time; Cai&rsquo;s notes of the call read up to
+eight of those pictures once, through the AI provider named below, so the notes can say what was
+on screen, and what Cai read stays with the picture. Nothing else of the recording, no voice and no
+screen video, is sent to any AI provider.
 Never in a private conversation, and never with anyone under 18 in the call.</li>
 <li><strong>Cai joining in a call.</strong> Only when someone in a call asks Cai to join in and
 everyone in it says yes, each by a button that says so. Then, when someone calls Cai by name, it

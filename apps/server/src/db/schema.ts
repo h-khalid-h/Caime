@@ -1408,6 +1408,26 @@ export interface CallRecordingPartsTable {
 }
 
 /**
+ * A frame of a shown screen kept with the recording (R114 (1) and (4), M17 I13h): one at each
+ * change of the screen, at its moment into its part, and what Cai read of it for the write-up.
+ */
+export interface CallRecordingFramesTable {
+  id: string;
+  part_id: string;
+  notes_id: string;
+  call_id: string;
+  /** Milliseconds into its part. */
+  at_ms: number;
+  storage_key: string;
+  bytes: Generated<number>;
+  width: number;
+  height: number;
+  /** What the screen showed, as Cai read it for the write-up; null until then. */
+  read: string | null;
+  created_at: Generated<Date>;
+}
+
+/**
  * A call's recording shared into a conversation (R114 (7), M17 I13e): the share is a message of
  * the sharer's that points at the call; this row finds every share of a call when its recording
  * goes, so nothing reads messages' payload for it.
@@ -1831,6 +1851,7 @@ export interface Database {
   call_note_lines: CallNoteLinesTable;
   call_cai_utterances: CallCaiUtterancesTable;
   call_recording_parts: CallRecordingPartsTable;
+  call_recording_frames: CallRecordingFramesTable;
   call_recording_shares: CallRecordingSharesTable;
   call_note_summaries: CallNoteSummariesTable;
   e2ee_devices: E2eeDevicesTable;

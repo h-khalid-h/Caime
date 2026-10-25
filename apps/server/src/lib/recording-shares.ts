@@ -15,6 +15,7 @@ import { tr } from '@caime/core';
 import type { AppContext } from '../context';
 import type { Call } from '../db/schema';
 import { assertCanWrite } from './blocks';
+import { playableFrame } from './call-frames';
 import { playablePart, recordingFor, type ShareVia } from './call-recording';
 import { membership } from './conversation-views';
 import { AppError, badRequest, notFound } from './errors';
@@ -67,6 +68,17 @@ export async function playableShare(
 ) {
   const { call, via } = await shareFor(ctx, messageId, viewerId);
   return playablePart(ctx, call, viewerId, partId, via);
+}
+
+/** `GET /messages/:id/recording/frames/:frameId`: a frame of a share (M17 I13h), by the sharer's reading. */
+export async function frameShare(
+  ctx: AppContext,
+  messageId: string,
+  viewerId: string,
+  frameId: string,
+) {
+  const { call, via } = await shareFor(ctx, messageId, viewerId);
+  return playableFrame(ctx, call, viewerId, frameId, via);
 }
 
 /**

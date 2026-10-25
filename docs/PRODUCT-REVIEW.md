@@ -2536,7 +2536,16 @@ with its reason, so it isn't proposed again without new facts.
   recording and into what it sends everyone in its microphone's place, one utterance after
   another; "Cai is speaking" on every screen; what Cai wrote to one person shown to them alone.
   The time from the call by name to the answer at the voice: 2910 ms with the stand-ins (the
-  notes E2E); a real provider's waits for a key. *Not yet:* what Cai is asked to do carried out
+  notes E2E); a real provider's waits for a key. *Built (M17 I13h, what was on screen, h1,
+  2026-10-25):* while Cai records, the recorder's browser keeps a frame of each shown screen at
+  each change of it (a flash or a cursor skipped), at most 1280 wide, one every five seconds and
+  120 a part, kept with the recording for whoever plays that part, shown as a strip at their
+  moments that plays the recording from there, and read into the write-up once (eight at most,
+  the first, the last and the rest spread, on the light model and the asker's allowance) as
+  lines from the screen, which the topics, decisions and next steps cite like any sentence;
+  they go with the recording, the call's line and the sweep, count against the keeper's storage
+  and are listed in the export. *Not yet:* the screen as shown when Cai is asked about it in
+  Interact (h2); what Cai is asked to do carried out
   on the asker's tap from the call itself (it's prepared in their Cai chat, where the tap is);
   a share into a customer conversation (the mask; calls with organizations are M16 H8a), the
   screen in step on a phone, and H.264 measured on a real Chrome call (the test browser records

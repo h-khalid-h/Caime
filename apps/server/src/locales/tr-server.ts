@@ -1748,4 +1748,9 @@ export const turkishServer: Catalog = {
   'What should I keep? Say it after “Remind me to” or “Add an action:”.':
     'Neyi saklayayım? “Bana hatırlat” veya “Bir eylem ekle:” dedikten sonra söyle.',
   'You asked in a call: “{words}”': 'Bir aramada şunu istedin: “{words}”',
+  'That picture of the screen is too large.': 'Bu ekran görüntüsü çok büyük.',
+  'That isn’t a picture Caime reads.': 'Bu, Caime’in okuduğu bir görüntü değil.',
+  'Only a shown screen has frames.': 'Kareler yalnızca paylaşılan ekrana ait olur.',
+  'Your screen showed {quote}': 'Ekranında şu vardı: {quote}',
+  '{name}’s screen showed {quote}': '{name} adlı kişinin ekranında şu vardı: {quote}',
 };
