@@ -6616,3 +6616,8 @@ CONNIQT; they mean Caime. Caishy is one of Caime's AI members, and Cai leads the
   time-zone rules change, the cards ahead are moved back to their clock in one pass over a partial
   index, their calendars and invitations with them. Two tests that failed CI on `main` by chance
   (a uuid holding "4417", a race's order) now check what they meant.
+- 2026-10-25 — CI: one job in series reached 29.5 of its 30 minutes and the next run (1d6b4ee) was
+  cancelled at the limit. The limit stays; the checks run in one job and the build, budget and E2E
+  in two halves beside it (`E2E_HALF` in `playwright.config.ts`: the two longest files, and the
+  rest, so a new spec always runs; 58 and 116 of 174 tests, 6.9 minutes each by the local
+  timings). The image waits on all three.

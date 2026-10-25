@@ -11,7 +11,7 @@ concurrency:
 
 jobs:
   check:
-    name: Lint, typecheck, test, build, e2e
+    name: Lint, typecheck, test
     # Pinned while ubuntu-latest moves to 26.04 (from 2026-10-19): Playwright has no browsers for
     # it yet (it names the host ubuntu26.04-x64 and stops), so the E2E failed before a test ran.
     runs-on: ubuntu-24.04
@@ -31,7 +31,6 @@ jobs:
           --health-retries 20
     env:
       DATABASE_URL: postgres://caime:caime-dev@localhost:5432/caime
-      E2E_DATABASE_URL: postgres://caime:caime-dev@localhost:5432/caime_e2e
     steps:
       - uses: actions/checkout@v4
         with:
@@ -55,6 +54,45 @@ jobs:
         run: pnpm audit --prod --audit-level=high
       - run: pnpm typecheck
       - run: pnpm test
+
+  # The production bundle and the E2E beside the checks, in two halves at once: one job doing all
+  # of it in series reached 29.5 of its 30 minutes (2026-10-25) and the next was cancelled. Each
+  # half (playwright.config.ts, `E2E_HALF`: the two longest files, and the rest) builds what it
+  # tests and starts from an empty database.
+  e2e:
+    name: Build, budget, end-to-end (${{ matrix.half }})
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    strategy:
+      # Both halves report, so one red half never hides the other's failures.
+      fail-fast: false
+      matrix:
+        half: [longest, rest]
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_USER: caime
+          POSTGRES_PASSWORD: caime-dev
+          POSTGRES_DB: caime
+        ports: ['5432:5432']
+        options: >-
+          --health-cmd "pg_isready -U caime"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 20
+    env:
+      DATABASE_URL: postgres://caime:caime-dev@localhost:5432/caime
+      E2E_DATABASE_URL: postgres://caime:caime-dev@localhost:5432/caime_e2e
+      E2E_HALF: ${{ matrix.half }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: .nvmrc
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
       - run: pnpm build
       - name: Web performance budget
         run: pnpm budget
@@ -66,7 +104,7 @@ jobs:
       - uses: actions/upload-artifact@v4
         if: always()
         with:
-          name: e2e
+          name: e2e-${{ matrix.half }}
           path: |
             e2e/screenshots
             playwright-report
@@ -75,9 +113,9 @@ jobs:
 
   image:
     name: Build and smoke-test the image, then release
-    needs: check
+    needs: [check, e2e]
     if: github.event_name == 'push' && github.ref == 'refs/heads/main'
-    # The image is built and smoke-tested where the check ran.
+    # The image is built and smoke-tested once both have passed.
     runs-on: ubuntu-24.04
     timeout-minutes: 30
     permissions:

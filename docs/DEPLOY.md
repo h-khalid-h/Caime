@@ -42,7 +42,8 @@ Since 2026-09-28 the products, the webhook and the portal are named Caime.
 The first real delivery is the one that proves the signing secret matches the endpoint.
 
 Only what passed CI is deployed. A push to `main` runs every check (lint, typecheck, the tests on
-real Postgres, the web budget, the end-to-end suite, then the image's smoke test); the last step
+real Postgres in one job; beside it, the web budget and the end-to-end suite in two halves at once,
+`E2E_HALF` in `playwright.config.ts`; then the image's smoke test); the last step
 of a green run fast-forwards `production` to that commit (`.github/workflows/ci.yml`, "Release to
 production"), and EasyPanel builds from `production`. A red run moves nothing, so production keeps
 the last commit that passed. `EASYPANEL_DEPLOY_WEBHOOK` stays unset for this service: with it,

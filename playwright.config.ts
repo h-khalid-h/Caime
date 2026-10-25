@@ -34,6 +34,31 @@ const STRIPE_KEY = 'sk_test_e2e_0123456789abcdef';
 const STRIPE_WEBHOOK_SECRET = 'whsec_e2e_0123456789abcdef';
 const STRIPE_CONNECT_WEBHOOK_SECRET = 'whsec_e2e_connect_0123456789';
 
+/**
+ * CI runs the E2E in two halves at once (`E2E_HALF`, .github/workflows/ci.yml): the two longest
+ * files, about half the run between them, and everything else, so a new spec always runs. Unset,
+ * everything runs. Playwright's own shards split by count, which put both in one half.
+ */
+const LONGEST = /(around-the-conversation|a11y)\.spec\.ts$/;
+const HALF = process.env.E2E_HALF;
+if (HALF && HALF !== 'longest' && HALF !== 'rest') throw new Error('E2E_HALF is longest or rest');
+
+/** Cai's notes in a call (M16 F7): a microphone that speaks and pauses, from a file. */
+const speech = {
+  name: 'chromium-speech',
+  testMatch: /call-notes\.spec\.ts/,
+  use: {
+    ...devices['Desktop Chrome'],
+    launchOptions: {
+      args: [
+        '--use-fake-ui-for-media-stream',
+        '--use-fake-device-for-media-stream',
+        `--use-file-for-fake-audio-capture=${fakeSpeechFile()}`,
+      ],
+    },
+  },
+};
+
 export default defineConfig({
   testDir: './e2e',
   timeout: 90_000,
@@ -60,7 +85,8 @@ export default defineConfig({
   projects: [
     {
       name: 'chromium',
-      testIgnore: /call-notes\.spec\.ts/,
+      ...(HALF === 'longest' ? { testMatch: LONGEST } : {}),
+      testIgnore: HALF === 'rest' ? [/call-notes\.spec\.ts/, LONGEST] : /call-notes\.spec\.ts/,
       use: {
         ...devices['Desktop Chrome'],
         // Calls: a test pattern and a tone stand in for a camera and a microphone.
@@ -69,21 +95,7 @@ export default defineConfig({
         },
       },
     },
-    {
-      // Cai's notes in a call (M16 F7): a microphone that speaks and pauses, from a file.
-      name: 'chromium-speech',
-      testMatch: /call-notes\.spec\.ts/,
-      use: {
-        ...devices['Desktop Chrome'],
-        launchOptions: {
-          args: [
-            '--use-fake-ui-for-media-stream',
-            '--use-fake-device-for-media-stream',
-            `--use-file-for-fake-audio-capture=${fakeSpeechFile()}`,
-          ],
-        },
-      },
-    },
+    ...(HALF === 'longest' ? [] : [speech]),
   ],
   webServer: process.env.E2E_BASE_URL
     ? undefined
