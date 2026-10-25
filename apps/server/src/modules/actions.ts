@@ -18,9 +18,11 @@ import type {
   AttentionHomeResponse,
   DecisionsResponse,
   IdResponse,
+  MissedResponse,
   OkResponse,
   TaskResponse,
 } from '@caime/core/api';
+import { AI_LABEL } from '@caime/core/assist';
 import { initiativeOf, quietWaitAfterMs } from '@caime/core/initiative';
 import type { FastifyInstance } from 'fastify';
 import { sql } from 'kysely';
@@ -39,6 +41,7 @@ import { badRequest, forbidden, notFound } from '../lib/errors';
 import { recordEvent } from '../lib/events';
 import { actionOpenIn, assertOpenToApps, orgsClosedToApps } from '../lib/member-apps';
 import { assertCanSend, messageViews, participantsOf, sendMessage } from '../lib/messages';
+import { readMissed, summariseMissed } from '../lib/missed';
 import { notify } from '../lib/notify';
 import { placeInvitationsFor } from '../lib/place-invites';
 import { between } from '../lib/relations';
@@ -207,6 +210,20 @@ export async function actionRoutes(app: FastifyInstance, ctx: AppContext) {
    * The Attention home's own part (R66): waiting on others, coming up, and the one wait Cai asks
    * about. What needs the reader comes from the inbox, which the app already holds.
    */
+  /**
+   * What this person missed (M17 I3, R66): the Needs-you conversations with something new, each
+   * with what the rules read in it; `summary=1` adds the model's cited summary for someone with
+   * AI assist on (refused as any assist is otherwise), cached by read position.
+   */
+  app.get('/attention/missed', async (req): Promise<MissedResponse> => {
+    const auth = requireAuth(req);
+    const { summary } = parse(z.object({ summary: z.enum(['1']).optional() }).strict(), req.query);
+    const read = await readMissed(ctx, auth.userId, await orgsClosedToApps(ctx, auth));
+    const summed = summary === '1' ? await summariseMissed(ctx, auth.userId, read) : null;
+    ctx.metrics.recaps.inc({ where: 'attention', kind: summary === '1' ? 'summary' : 'rules' });
+    return { ...read.view, summary: summed, label: summed ? AI_LABEL : null };
+  });
+
   app.get('/attention', async (req): Promise<AttentionHomeResponse> => {
     const auth = requireAuth(req);
     const me = auth.userId;

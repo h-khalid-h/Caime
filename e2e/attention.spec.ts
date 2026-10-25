@@ -43,6 +43,9 @@ test('the first screen is what needs you, and the rest of the day around it', as
     },
   });
   expect(waited.ok(), await waited.text()).toBe(true);
+  // AI assist on, so the recap below offers its summary (the Messages stand-in answers it).
+  const on = await phone.request.patch('/v1/me', { headers: CLIENT, data: { aiEnabled: true } });
+  expect(on.ok(), await on.text()).toBe(true);
 
   const { page, errors } = await newPerson(phone);
   await page.goto('/');
@@ -50,15 +53,32 @@ test('the first screen is what needs you, and the rest of the day around it', as
   await expect(home.getByText(/^Good (morning|afternoon|evening), Hassan$/)).toBeVisible();
   await expect(page.getByTestId('home-summary')).toHaveText('1 thing needs you.');
   await expect(page.getByTestId('home-needs')).toBeVisible();
-  await expect(home.getByText(ask)).toBeVisible();
+  // The ask is in the Needs-you row and, above it, in what he missed (M17 I3).
+  await expect(home.getByText(ask).first()).toBeVisible();
+
+  // What he missed since he last looked: Sarah's ask, read by the rules; summed up on request,
+  // cited, and the citation opens the conversation at that message.
+  await expect(page.getByTestId('home-missed')).toBeVisible();
+  await expect(page.getByTestId('missed-count')).toHaveText('1 new message in 1 conversation');
+  const missedLine = page.getByTestId('missed-line').first();
+  await expect(missedLine).toContainText('Asked of you');
+  await expect(missedLine).toContainText(ask);
+  await expect(page.getByTestId('missed-summary')).toHaveCount(0);
+  await page.getByTestId('missed-summarise').click();
+  await expect(page.getByTestId('missed-summary')).toContainText(
+    'Sarah asked you for the contract by Friday.',
+  );
+  await expect(page.getByTestId('missed-summary')).toContainText('Suggested by Cai');
+  await expect(page.getByTestId('missed-source')).toHaveCount(1);
   await expect(page.getByTestId('home-waiting')).toContainText('Waiting on others');
   await expect(home.getByText('Sarah Smith · Access approval')).toBeVisible();
   await expect(page.getByTestId('tab-index')).toContainText('Attention');
   await page.screenshot({ path: 'e2e/screenshots/phone-attention.png', animations: 'disabled' });
 
-  // The conversation says what's open between them, above the composer.
-  await home.getByText(ask).click();
-  await page.waitForURL(/\/c\//);
+  // The citation lands in the conversation at the message it cites; the conversation says
+  // what's open between them, above the composer.
+  await page.getByTestId('missed-source').click();
+  await page.waitForURL(/\/c\/.*[?&]seq=\d+/);
   await expect(page.getByTestId('conversation-open').filter({ visible: true })).toContainText(
     '1 open',
   );

@@ -2636,4 +2636,15 @@ export const turkishB: Catalog = {
   'What was on screen': 'Ekranda ne vardı',
   'The screen at {time}: {what}': '{time} anındaki ekran: {what}',
   'The screen at {time}': '{time} anındaki ekran',
+  Promised: 'Söz verildi',
+  '{kind}: {text}': '{kind}: {text}',
+  'Open {title}': '{title} sohbetini aç',
+  'What you missed': 'Kaçırdıklarınız',
+  '{messages} in {conversations}': '{conversations} içinde {messages}',
+  '{n} conversations': { one: '{n} konuşma', other: '{n} konuşma' },
+  'And {n} more conversations need you.': {
+    one: 'Ve {n} konuşma daha sizi bekliyor.',
+    other: 'Ve {n} konuşma daha sizi bekliyor.',
+  },
+  'Sum it up': 'Özetle',
 };

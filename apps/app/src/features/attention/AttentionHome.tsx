@@ -59,6 +59,10 @@ const InvitationsCard = lazyPart(() =>
 const HomeScreenCard = lazyPart(() =>
   import('@/features/push/HomeScreenCard').then((m) => m.HomeScreenCard),
 );
+/** What you missed (M17 I3): shown while a Needs-you conversation has something new. */
+const MissedCard = lazyPart(() =>
+  import('@/features/attention/MissedCard').then((m) => m.MissedCard),
+);
 const appleTab =
   isWeb &&
   typeof window !== 'undefined' &&
@@ -482,6 +486,7 @@ export function AttentionHome() {
           />
         ) : (
           <>
+            {needs.some((item) => item.unreadCount > 0) ? <MissedCard /> : null}
             {needs.length ? (
               <>
                 <SectionTitle testID="home-needs">{tr('Needs you')}</SectionTitle>

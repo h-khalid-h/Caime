@@ -52,6 +52,24 @@ test('Cai and the Caime Friends answer like anyone you write to', async ({ brows
   await expect(visible(page, /You’re waiting on one thing:/)).toBeVisible();
   await expect(visible(page, /Sarah Smith · Access approval/)).toBeVisible();
 
+  // What he missed (M17 I3): Sarah's ask since he last read her chat, by the rules alone.
+  const sarahAsks = await other.request.post(`/v1/conversations/${conversationId}/messages`, {
+    headers: CLIENT,
+    data: {
+      clientId: randomUUID(),
+      kind: 'text',
+      body: 'Could you review the deck before Monday?',
+    },
+  });
+  expect(sarahAsks.ok(), await sarahAsks.text()).toBe(true);
+  await input.fill('What did I miss?');
+  await page.getByTestId('composer-send').filter({ visible: true }).click();
+  await expect(visible(page, /You missed 1 new message in 1 conversation\./)).toBeVisible();
+  await expect(visible(page, /Sarah Smith · 1 new/)).toBeVisible();
+  await expect(
+    visible(page, /Asked of you: Could you review the deck before Monday\?/),
+  ).toBeVisible();
+
   // Anything else is the model's, with AI assist on.
   const on = await page.request.patch('/v1/me', { headers: CLIENT, data: { aiEnabled: true } });
   expect(on.ok()).toBe(true);

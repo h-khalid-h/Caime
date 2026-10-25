@@ -1021,6 +1021,60 @@ export interface AttentionHomeResponse {
 }
 
 /**
+ * What someone missed (M17 I3, R66): the Needs-you conversations with something new, ranked as
+ * Attention ranks them, each with what the rules read in what others wrote since this person last
+ * read (asked of them, promised, decided, coming up), and, asked for with AI assist on, a summary
+ * that cites its lines. `GET /attention/missed`; Cai's chat answers "what did I miss" from it.
+ */
+export interface MissedResponse {
+  conversations: MissedConversationView[];
+  /** Everything others wrote since this person last read, across the conversations listed. */
+  unread: number;
+  /** Needs-you conversations with something new beyond the ones listed. */
+  more: number;
+  summary: MissedSummaryView | null;
+  label: string | null;
+}
+
+export interface MissedConversationView {
+  id: string;
+  title: string;
+  kind: ConversationKind;
+  /** What others wrote since this person last read. */
+  unread: number;
+  /** The first message they haven't read, for a tap to open the conversation there. */
+  firstNewSeq: number;
+  /** What the rules read, the newest of each kind, at most `MISSED_SHOWN`. */
+  lines: MissedLineView[];
+}
+
+/** What a new message is to its reader: asked of them, a promise, a decision, or a card ahead. */
+export type MissedKind = 'ask' | 'promise' | 'decision' | 'coming';
+
+export interface MissedLineView {
+  kind: MissedKind;
+  seq: number;
+  messageId: string;
+  /** Who wrote it as the reader sees them: a person by name, an organization's team as it. */
+  who: string;
+  text: string;
+  at: string;
+}
+
+/** The model's summary of what was missed, each source a line it rests on (R66: cited). */
+export interface MissedSummaryView {
+  text: string;
+  sources: MissedSourceView[];
+}
+
+export interface MissedSourceView {
+  conversationId: string;
+  title: string;
+  seq: number;
+  messageId: string;
+}
+
+/**
  * An invitation to a group or a space (M16 B4): only what lets someone decide, as a join link's
  * page says it (the place, its kind, how many are in it, who asked); nothing of what's in it.
  */
@@ -2446,6 +2500,8 @@ export interface ProductMetricsView {
     calls: number;
     ok: number;
     byFeature: Record<string, { ok: number; other: number }>;
+    /** Recaps of what someone missed the model summed up (M17 I3), and per active person. */
+    recaps: { summaries: number; perActivePerson: Rate };
     cost: AiCostView;
   };
   business: {

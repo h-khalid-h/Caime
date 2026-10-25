@@ -54,6 +54,7 @@ import {
   writtenIn,
   zonedParts,
 } from '@caime/core';
+import type { MissedSummaryView } from '@caime/core/api';
 import type { Gender } from '@caime/core/i18n';
 import { sql } from 'kysely';
 import type { AppContext } from '../context';
@@ -68,6 +69,7 @@ import { asReader, inLanguage, readerOf } from './i18n';
 import { registerJob } from './jobs';
 import { SYSTEM_REPLY_JOB } from './message-effects';
 import { readableBy } from './messages';
+import { missedText, readMissed, summariseMissed } from './missed';
 import { peopleMeant } from './people-named';
 import { assertAiAllowance } from './plans';
 import { postAs } from './post-as';
@@ -454,6 +456,7 @@ async function friendSays(
   if (said.kind === 'sticker') return sticker(ctx, account, conversationId, friend);
   if (said.about) return say(await aboutAnswer(ctx, me, said.about));
   if (isOwnQuestion(said.intent)) return say(await ruleAnswer(ctx, me, said.intent));
+  if (said.intent === 'missed') return say(await missedAnswer(ctx, me, false));
   if (said.save) return keepAsked(ctx, account, conversationId, me, said, null);
   if (said.act) return offerAct(ctx, account.id, conversationId, me, said.act);
   if (await answerAwaited(ctx, account.id, conversationId, me, said)) return;
@@ -512,6 +515,7 @@ async function caiSays(
   const say = (line: string) => postAs(ctx, account.id, conversationId, line);
   if (said.about) return say(await aboutAnswer(ctx, me, said.about));
   if (isOwnQuestion(said.intent)) return say(await ruleAnswer(ctx, me, said.intent));
+  if (said.intent === 'missed') return say(await missedAnswer(ctx, me, true));
   if (said.save) return keepAsked(ctx, account, conversationId, me, said, voice);
   if (said.act) return offerAct(ctx, account.id, conversationId, me, said.act);
   if (await answerAwaited(ctx, account.id, conversationId, me, said)) return;
@@ -968,6 +972,26 @@ export async function openFor(
 function dueDayOf(now: Date, zone: string): Date {
   const p = zonedParts(now, zone);
   return new Date(Date.UTC(p.year, p.month - 1, p.day));
+}
+
+/**
+ * "What did I miss" (M17 I3): the Needs-you conversations with something new and what the rules
+ * read in them; Cai adds the model's summary for someone with AI assist on and an allowance (a
+ * friend answers by the rules alone), counted as any recap is.
+ */
+async function missedAnswer(ctx: AppContext, me: Person, withModel: boolean): Promise<string> {
+  const read = await readMissed(ctx, me.id, []);
+  let summary: MissedSummaryView | null = null;
+  if (withModel && read.view.conversations.length && mayAskModel(ctx, me)) {
+    try {
+      summary = await summariseMissed(ctx, me.id, read);
+    } catch (err) {
+      // No allowance left, or the model away: the rules' recap stands on its own.
+      if (!(err instanceof AppError)) throw err;
+    }
+  }
+  ctx.metrics.recaps.inc({ where: 'chat', kind: summary ? 'summary' : 'rules' });
+  return missedText(read.view, summary);
 }
 
 /**

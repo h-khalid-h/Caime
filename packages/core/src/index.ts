@@ -45,6 +45,7 @@ export * from './locale';
 export * from './location';
 export * from './marketplace';
 export * from './mentions';
+export * from './missed';
 export * from './opening';
 export * from './orgs';
 export * from './payments';

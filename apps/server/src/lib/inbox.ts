@@ -1,0 +1,385 @@
+/**
+ * The Attention inbox (PRD §19–§20, §63; PRODUCT-REVIEW R7, R8). Gathers every signal for every
+ * conversation in a fixed number of queries, then runs the same attention engine the clients run.
+ */
+
+import type { InboxItemView, InboxResponse, OrgRef, Sphere } from '@caime/core';
+import {
+  type AttentionInput,
+  attentionHeadline,
+  classifyAttention,
+  currentPriority,
+  inboxSections,
+  isSystemKind,
+  resolvePolicy,
+  systemText,
+  tr,
+} from '@caime/core';
+import { sql } from 'kysely';
+import type { AppContext } from '../context';
+import { columnsOf, MESSAGE_COLUMNS } from '../db/schema';
+import { maskPayload, orgRef } from './business';
+import { conversationTitle, conversationTopic } from './conversation-titles';
+import { overdueAtSql } from './due';
+import { openIn } from './member-apps';
+import { messagePreview } from './messages';
+import { personViewsFor } from './people-batch';
+import { activeRelationships, loadPolicies, policyTargetFor, relationshipView } from './relations';
+import { spaceRefs } from './spaces';
+import { visibleTasksSql } from './task-visibility';
+
+export async function buildInbox(
+  ctx: AppContext,
+  userId: string,
+  /** Organizations that keep their conversations from this request (M16 G3): left out. */
+  closed: readonly string[] = [],
+): Promise<InboxResponse & { conversations: InboxItemView[] }> {
+  const now = ctx.now();
+  const me = await ctx.db
+    .selectFrom('users')
+    .select(['time_zone'])
+    .where('id', '=', userId)
+    .executeTakeFirstOrThrow();
+
+  const rows = await ctx.db
+    .selectFrom('participants as p')
+    .innerJoin('conversations as c', 'c.id', 'p.conversation_id')
+    // What's unread, and what mentions me in it, from one pass over the messages past my mark.
+    .leftJoinLateral(
+      (eb) =>
+        eb
+          .selectFrom('messages as m')
+          .select([
+            sql<number>`count(*) filter (where m.sender_id is distinct from ${userId} and m.kind <> 'system')::int`.as(
+              'unread',
+            ),
+            sql<number>`count(*) filter (where ${userId}::uuid = any(m.mentions))::int`.as(
+              'unread_mentions',
+            ),
+          ])
+          .whereRef('m.conversation_id', '=', 'c.id')
+          .whereRef('m.seq', '>', 'p.last_read_seq')
+          .where('m.deleted_at', 'is', null)
+          .as('u'),
+      (join) => join.onTrue(),
+    )
+    .select([
+      'c.id',
+      'c.kind',
+      'c.title',
+      'c.is_general',
+      'c.notice',
+      'c.parent_id',
+      'c.connection_id',
+      'c.direct_key',
+      'c.last_seq',
+      'c.last_message_at',
+      'c.created_at',
+      'c.privacy_class',
+      'c.space_id',
+      // A group's topic goes by its group's name, with its own as the topic (PRD §58).
+      sql<
+        string | null
+      >`(select g.title from conversations g where g.id = c.parent_id and c.kind = 'group')`.as(
+        'group_title',
+      ),
+      'p.last_read_seq',
+      'p.attention',
+      'p.muted_until',
+      'p.archived_at',
+      'p.pinned_at',
+      'p.marked_unread_at',
+      'p.request_state',
+      'p.dismissed_seq',
+      'p.draft',
+      sql<number>`coalesce(u.unread, 0)`.as('unread'),
+      sql<number>`coalesce(u.unread_mentions, 0)`.as('unread_mentions'),
+      // Where I last wrote, kept on my row (M16 D1), never looked for among the messages.
+      'p.last_sent_seq',
+      sql<number>`(select count(*)::int from participants x where x.conversation_id = c.id and x.left_at is null)`.as(
+        'member_count',
+      ),
+      sql<
+        string | null
+      >`(select x.user_id::text from participants x where x.conversation_id = c.id and x.user_id <> ${userId} and x.left_at is null limit 1)`.as(
+        'other_id',
+      ),
+      sql<
+        string | null
+      >`(select x.request_state from participants x where x.conversation_id = c.id and x.user_id <> ${userId} limit 1)`.as(
+        'other_request_state',
+      ),
+    ])
+    .where('p.user_id', '=', userId)
+    .where('p.left_at', 'is', null)
+    // An organization's conversations are in its Business inbox, not its team's own (PRD §38).
+    .where('p.role', '<>', 'agent')
+    .$if(closed.length > 0, (qb) => qb.where(openIn(userId, closed, sql.ref('c.id'))))
+    .execute();
+
+  const ids = rows.map((r) => r.id);
+  if (ids.length === 0) {
+    return {
+      sections: [],
+      counts: {},
+      headline: attentionHeadline({}),
+      conversations: [] as never[],
+    };
+  }
+
+  const [lastMessages, pending, tasks, waitingByPerson] = await Promise.all([
+    // Each conversation knows its last seq (`last_seq`), so this is one index lookup per
+    // conversation on (conversation_id, seq), never a pass over every message in them.
+    ctx.db
+      .selectFrom('messages as m')
+      .innerJoin('conversations as lc', (j) =>
+        j.onRef('lc.id', '=', 'm.conversation_id').onRef('lc.last_seq', '=', 'm.seq'),
+      )
+      .select(columnsOf('m', MESSAGE_COLUMNS))
+      .where('m.conversation_id', 'in', ids)
+      .execute(),
+    // The latest message from someone else since I last wrote that asks me something: in a
+    // one-to-one or a customer's conversation anything that asks, in a group only what names me
+    // or answers me. One row a conversation, past my own mark (M16 D1).
+    ctx.db
+      .selectFrom('messages as m')
+      .innerJoin('participants as p', (j) =>
+        j.onRef('p.conversation_id', '=', 'm.conversation_id').on('p.user_id', '=', userId),
+      )
+      .innerJoin('conversations as c', 'c.id', 'm.conversation_id')
+      // Whose message it answers comes with it, so nothing lists everything I ever sent.
+      .leftJoin('messages as r', 'r.id', 'm.reply_to_id')
+      .distinctOn('m.conversation_id')
+      .select(['m.conversation_id', 'm.seq', 'm.is_question', 'm.is_request', 'm.created_at'])
+      .where('m.conversation_id', 'in', ids)
+      .where('m.sender_id', 'is not', null)
+      .where('m.sender_id', '<>', userId)
+      .where('m.deleted_at', 'is', null)
+      .where((eb) => eb.or([eb('m.is_question', '=', true), eb('m.is_request', '=', true)]))
+      // A card that stands for my own ask (an agent's booking for me, M17 I1c) asks the others.
+      .where(sql<boolean>`(m.payload->>'proposedBy') is distinct from ${userId}`)
+      .whereRef('m.seq', '>', 'p.last_sent_seq')
+      .where((eb) =>
+        eb.or([
+          eb('c.kind', 'in', ['direct', 'business']),
+          sql<boolean>`${userId}::uuid = any(m.mentions)`,
+          eb('r.sender_id', '=', userId),
+        ]),
+      )
+      .orderBy('m.conversation_id')
+      .orderBy('m.seq', 'desc')
+      .execute(),
+    ctx.db
+      .selectFrom('tasks')
+      .select([
+        'conversation_id',
+        sql<number>`count(*) filter (where assignee_id = ${userId} and owner_id <> ${userId} and shared and status in ('open','accepted'))::int`.as(
+          'requests_to_me',
+        ),
+        sql<number>`count(*) filter (where assignee_id = ${userId} and (owner_id = ${userId} or shared) and status in ('open','accepted') and ${overdueAtSql} < ${now})::int`.as(
+          'overdue',
+        ),
+        sql<number>`count(*) filter (where assignee_id = ${userId} and (owner_id = ${userId} or shared) and status in ('open','accepted') and ${overdueAtSql} >= ${now} and due_at < ${new Date(now.getTime() + 86_400_000)})::int`.as(
+          'due_soon',
+        ),
+        // My asks made waits that remind on their own day, still to come (M17 I2).
+        sql<
+          string[]
+        >`coalesce(array_agg(message_id::text) filter (where owner_id = ${userId} and assignee_id <> ${userId} and status in ('open','accepted') and message_id is not null and remind_at > ${now}), '{}')`.as(
+          'asks_waited',
+        ),
+      ])
+      .where('conversation_id', 'in', ids)
+      // Never a private wait someone keeps on this person (lib/task-visibility.ts).
+      .where(visibleTasksSql(userId))
+      .groupBy('conversation_id')
+      .execute(),
+    ctx.db
+      .selectFrom('tasks')
+      .select(['assignee_id', sql<number>`count(*)::int`.as('n')])
+      .where('owner_id', '=', userId)
+      .where('assignee_id', '<>', userId)
+      .where('status', 'in', ['open', 'accepted'])
+      .groupBy('assignee_id')
+      .execute(),
+  ]);
+
+  const directOthers = rows
+    .filter((r) => r.kind === 'direct' && r.other_id)
+    .map((r) => r.other_id!);
+  const [people, rels, policies] = await Promise.all([
+    personViewsFor(ctx, userId, directOthers),
+    activeRelationships(ctx.db, userId, directOthers),
+    loadPolicies(ctx.db, userId),
+  ]);
+  // A customer's conversations with organizations: the organization is who they talk to (R15).
+  const businessIds = rows.filter((r) => r.kind === 'business').map((r) => r.id);
+  const orgs = new Map<string, OrgRef>();
+  // Written for an organization of theirs (R64): its name tells the two apart.
+  const asOrgs = new Map<string, string>();
+  if (businessIds.length)
+    for (const o of await ctx.db
+      .selectFrom('business_threads as t')
+      .innerJoin('organizations as g', 'g.id', 't.org_id')
+      .leftJoin('organizations as a', 'a.id', 't.customer_org_id')
+      .select([
+        't.conversation_id',
+        'a.name as as_name',
+        'g.id',
+        'g.name',
+        'g.handle',
+        'g.kind',
+        'g.domain',
+        'g.verified_at',
+        'g.country',
+        'g.avatar_file_id',
+      ])
+      .where('t.conversation_id', 'in', businessIds)
+      .execute()) {
+      orgs.set(o.conversation_id, orgRef(o));
+      if (o.as_name) asOrgs.set(o.conversation_id, o.as_name);
+    }
+  const spaces = await spaceRefs(
+    ctx.db,
+    rows.map((r) => r.space_id),
+  );
+
+  // Each list read once into a map: a conversation's row is found, never searched for.
+  const lastOf = new Map(lastMessages.map((m) => [m.conversation_id, m]));
+  const tasksOf = new Map(tasks.map((x) => [x.conversation_id, x]));
+  const pendingOf = new Map(pending.map((m) => [m.conversation_id, m]));
+  const waitingOf = new Map(waitingByPerson.map((w) => [w.assignee_id, w.n]));
+  const relOf = new Map<string, (typeof rels)[number]>();
+  for (const x of rels) if (!relOf.has(x.subject_id)) relOf.set(x.subject_id, x);
+  const conversations = rows.map((r): InboxItemView => {
+    const last = lastOf.get(r.id);
+    const t = tasksOf.get(r.id);
+    const other = r.other_id && r.kind === 'direct' ? people.get(r.other_id) : undefined;
+    const rel = r.kind === 'direct' && r.other_id ? relOf.get(r.other_id) : undefined;
+    const policy = resolvePolicy(policies, policyTargetFor(rel, r.connection_id));
+    const inbound = pendingOf.get(r.id);
+    // Cai and the Caime Friends never need you, and you never wait on them (R67).
+    const caimes = isSystemKind(other?.kind);
+    const lastIsMine = last !== undefined && last.sender_id === userId && last.kind !== 'system';
+    const awaitingReply =
+      !caimes && lastIsMine && (last.is_question || last.is_request)
+        ? { at: last.created_at.toISOString() }
+        : null;
+    // An ask made a wait with its own day is that wait's to bring up then (M17 I2), once.
+    const followUpDue = Boolean(
+      awaitingReply &&
+        policy.followUpHours &&
+        now.getTime() - last!.created_at.getTime() > policy.followUpHours * 3_600_000 &&
+        !t?.asks_waited.includes(last!.id),
+    );
+    const waitingOnThem =
+      r.kind === 'direct' && r.is_general && r.other_id ? (waitingOf.get(r.other_id) ?? 0) : 0;
+    const input: AttentionInput = {
+      archived: r.archived_at !== null,
+      pinned: r.pinned_at !== null,
+      isMessageRequest: r.request_state === 'pending',
+      isNotice: r.notice,
+      mutedUntil: r.muted_until?.toISOString() ?? null,
+      override: r.attention as AttentionInput['override'],
+      unreadCount: r.unread,
+      unreadMentions: r.unread_mentions,
+      lastActivityAt: (r.last_message_at ?? r.created_at).toISOString(),
+      pendingInbound:
+        !caimes && inbound
+          ? {
+              isQuestion: inbound.is_question,
+              isRequest: inbound.is_request,
+              at: inbound.created_at.toISOString(),
+              dismissed: Number(inbound.seq) <= Number(r.dismissed_seq),
+            }
+          : null,
+      awaitingReply,
+      followUpDue,
+      openRequestsToMe: t?.requests_to_me ?? 0,
+      overdueToMe: t?.overdue ?? 0,
+      dueSoonToMe: t?.due_soon ?? 0,
+      waitingOnThem,
+      relationship: rel
+        ? {
+            priorityNow: currentPriority(policy, now, me.time_zone),
+            label: relationshipView(rel, other?.gender ?? null).label,
+          }
+        : r.kind === 'direct'
+          ? { priorityNow: currentPriority(policy, now, me.time_zone), label: null }
+          : null,
+    };
+    const result = classifyAttention(input, now);
+    const space = r.space_id ? (spaces.get(r.space_id) ?? null) : null;
+    const org = orgs.get(r.id) ?? null;
+    // Anyone but me in a customer's conversation reads as the organization.
+    const shownSender = (id: string | null) => (org && id !== null && id !== userId ? org.id : id);
+    return {
+      id: r.id,
+      kind: r.kind,
+      title: conversationTitle(r, { org, asOrg: asOrgs.get(r.id) ?? null, space, other }),
+      space,
+      org,
+      topic: conversationTopic(r),
+      isGeneral: r.is_general,
+      parentId: r.parent_id,
+      privacyClass: r.privacy_class,
+      other: other ?? null,
+      relationship: rel
+        ? {
+            label: relationshipView(rel, other?.gender ?? null).label,
+            sphere: rel.sphere as Sphere,
+          }
+        : null,
+      memberCount: r.member_count,
+      lastMessage: last
+        ? {
+            id: last.id,
+            seq: Number(last.seq),
+            senderId: shownSender(last.sender_id),
+            kind: last.kind,
+            preview:
+              r.privacy_class === 'private'
+                ? tr('Encrypted message')
+                : last.kind === 'system'
+                  ? systemText(
+                      org
+                        ? maskPayload(last.payload, {
+                            conversationId: r.id,
+                            orgId: org.id,
+                            orgName: org.name,
+                            customerId: userId,
+                            customerOrgId: null,
+                          })
+                        : last.payload,
+                      userId,
+                    )
+                  : messagePreview(last),
+            mine: last.kind !== 'system' && last.sender_id === userId,
+            createdAt: last.created_at.toISOString(),
+          }
+        : null,
+      unreadCount: r.unread,
+      unreadMentions: r.unread_mentions,
+      markedUnread: r.marked_unread_at !== null,
+      lastActivityAt: (r.last_message_at ?? r.created_at).toISOString(),
+      pinned: input.pinned ?? false,
+      muted: input.mutedUntil !== null && Date.parse(input.mutedUntil) > now.getTime(),
+      archived: input.archived,
+      attention: r.attention,
+      draft: r.draft,
+      request:
+        r.request_state === 'pending'
+          ? 'incoming'
+          : r.other_request_state === 'pending' || r.other_request_state === 'declined'
+            ? 'outgoing'
+            : null,
+      lastSeq: Number(r.last_seq),
+      section: result.section,
+      reasons: result.reasons,
+      rank: result.rank,
+    };
+  });
+
+  const { sections, counts } = inboxSections(conversations);
+  return { sections, counts, headline: attentionHeadline(counts), conversations };
+}

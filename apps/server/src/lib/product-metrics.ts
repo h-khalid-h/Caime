@@ -365,6 +365,13 @@ export async function productMetrics(ctx: AppContext, days: number): Promise<Pro
       calls: ai.reduce((n, r) => n + r.n, 0),
       ok: ai.filter((r) => r.outcome === 'ok').reduce((n, r) => n + r.n, 0),
       byFeature,
+      // What someone missed, summed up (M17 I3): recaps per active person in the window, from
+      // the runs kept; a recap by the rules alone leaves no row and is counted on
+      // `caime_recaps_total` instead.
+      recaps: {
+        summaries: byFeature.missed?.ok ?? 0,
+        perActivePerson: rate(byFeature.missed?.ok ?? 0, engagement.people),
+      },
       cost: await aiSpend(ctx, { from, to, days, active: engagement.people }),
     },
     business: {

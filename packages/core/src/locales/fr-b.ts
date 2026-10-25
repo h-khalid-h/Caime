@@ -2730,4 +2730,15 @@ export const frB: Catalog = {
   'What was on screen': 'Ce qui était à l’écran',
   'The screen at {time}: {what}': 'L’écran à {time} : {what}',
   'The screen at {time}': 'L’écran à {time}',
+  Promised: 'Promis',
+  '{kind}: {text}': '{kind} : {text}',
+  'Open {title}': 'Ouvrir {title}',
+  'What you missed': 'Ce que vous avez manqué',
+  '{messages} in {conversations}': '{messages} dans {conversations}',
+  '{n} conversations': { one: '{n} conversation', other: '{n} conversations' },
+  'And {n} more conversations need you.': {
+    one: 'Et {n} autre conversation a besoin de vous.',
+    other: 'Et {n} autres conversations ont besoin de vous.',
+  },
+  'Sum it up': 'Résumer',
 };

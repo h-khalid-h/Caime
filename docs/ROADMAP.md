@@ -4183,9 +4183,24 @@ clinic can sign for. I1 lands before launch.
         let go, none shown, none in time), the golden set, `ai-costs.test.ts` (`interact-screen`),
         and the notes E2E (the screen shared, asked, the stand-in asked with a picture, answered
         aloud).
-- [ ] I3. What did I miss (M; L with the summary): the Needs-you conversations since each was last
+- [x] I3. What did I miss (M; L with the summary): the Needs-you conversations since each was last
       read, by the rules, ranked as Attention ranks them, with a cited summary for whoever has
-      assist on, cached by read position, in Cai's chat and on Attention.
+      assist on, cached by read position, in Cai's chat and on Attention. Built 2026-10-25 (I3b,
+      I3c): `GET /v1/attention/missed` (`lib/missed.ts`) reads every conversation with something
+      unread but what the person put aside (notices, requests, archived, quiet, private, Cai's
+      own chats), Needs-you first as the inbox ranks them, eight at most, and the others' words
+      since the person last read each (thirty a conversation, one query for the batch) through
+      the message intelligence as they were written: asked of you, promised, decided, coming up
+      (core `missedKindOf`, `missedLinesShown`); "What you missed" on Attention
+      (`MissedCard`, lazy, only while something needs them) with each line opening the
+      conversation at that message; "Sum it up" for whoever has AI assist on (`?summary=1`,
+      `runAi('missed')` on the light model, the passages numbered, the answer cited by
+      message), kept in memory by read position for half an hour so a second look asks nothing;
+      "what did I miss" in Cai's and the friends' chats in every language (core `chatIntent`
+      `missed`, golden lines) answered from the same, the summary added where it may. Counted on
+      `caime_recaps_total{where,kind}` and the product metrics' `ai.recaps`. Verified:
+      `missed.test.ts` (core and server), the golden set, the cost row (€0.0041 at the bound),
+      `e2e/attention.spec.ts`, `e2e/system-accounts.spec.ts`.
 - [ ] I4. One cited answer engine (M): Cai's chat answers questions about people and what they said
       through Search's engine with its sources; "Ask about this conversation" is that engine scoped
       to it; one answering prompt; the model keeps the rules' time phrase; catch-ups and briefs cite
@@ -5869,6 +5884,13 @@ have yet, each sized:
 - 2026-10-20 — The French and Turkish catalogs come in two halves fetched side by side, as Arabic
   does: their largest download 48.9 KB where one was 95.2 KB of a chunk's 100; the first download
   448.8 KB of 450 (0.2 KB more: the two loaders).
+- 2026-10-25 — M17 I3b/I3c, what you missed (R66): one recap of the unread, by the rules
+  (asked of you, promised, decided, coming up) for every conversation with something new but
+  the ones put aside, on Attention above Needs-you and in Cai's chat in every language, summed
+  up and cited by the light model for whoever has assist on, kept by read position for half an
+  hour. The inbox's builder moved to `lib/inbox.ts` so the recap and the route share it.
+  Verified: the server and core tests, the golden set, the cost row and both E2E specs. I3 is
+  done; next: I4.
 - 2026-10-25 — M17 I13h (h1), what was on screen (R114 (1) and (4)): while Cai records, a frame of
   each shown screen at each change of it, kept with the recording under its part (the server's
   cadence, through `images.run`), on the recording's view and in a strip of the notes sheet that

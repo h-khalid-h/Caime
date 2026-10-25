@@ -158,6 +158,9 @@ export const qk = {
   allTasks: ['tasks'] as const,
   /** The Attention home's own part (R66): waiting, coming up, the one question. */
   attentionHome: ['attention-home'] as const,
+  /** What this person missed (M17 I3): the rules' recap, and the summary under the same prefix. */
+  missed: ['attention-missed'] as const,
+  missedSummary: ['attention-missed', 'summary'] as const,
   cai: ['cai'] as const,
   /** Every conversation's view, for what changes in all of them at once (its open line). */
   allConversationViews: ['conversation'] as const,

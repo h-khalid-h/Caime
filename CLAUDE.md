@@ -1013,6 +1013,24 @@ A sphere is said as how you know someone, never "sphere".
   events refresh open conversation views (`qk.allConversationViews`). What a relationship
   changes is `policyEffects` (core `policy.ts`), read from the person's effective rule, on
   `PersonRule`.
+- What someone missed (M17 I3, `lib/missed.ts`): `readMissed` reads the inbox once (`buildInbox`,
+  now `lib/inbox.ts`, which the inbox route shares) and keeps every conversation with something
+  unread but what the person put aside (`LEFT_ALONE`: notices, requests, archived, quiet; a
+  private one, R18; Cai's and the friends' chats, whose words are answers), Needs-you first by
+  the inbox's own `rank`, `MISSED_CONVERSATIONS` at most, then the others' words since
+  `participants.last_read_seq` in one window query (`MISSED_LINES` a conversation, `readableBy`,
+  never a system line) through `analyzeMessage` as they were written, sorted by core
+  `missedKindOf` (a card ahead, else asked of you, promised, decided) and cut by
+  `missedLinesShown`. `summariseMissed` is the one model call (`runAi('missed')`, `aiGate`,
+  `MISSED_CHARS`), cached in a `TtlCache` by a fingerprint of the read positions for
+  `SUMMARY_TTL_MS`, its sources mapped back by passage number; `missedText` writes the chat's
+  words. `GET /attention/missed` (`?summary=1`), `MissedCard` on Attention (lazy, under
+  `qk.missed`/`qk.missedSummary`, shown only while something needs them, asked again by
+  `realtime/apply.ts` wherever the inbox is for a message, a read or a conversation put aside)
+  and the chat intent
+  `missed` (`chatIntent`, golden lines) all read it; counted on `caime_recaps_total{where,kind}`.
+  A new thing a recap should say joins `missedKindOf` and the catalogs' `{kind}: {text}` keys,
+  never a second reader of the unread.
 - An organization's own checkout (R65, `lib/checkout.ts`, `modules/checkout.ts`): Stripe Connect
   with the platform's key and `Stripe-Account` (`stripe(ctx, account)`), never a second Stripe
   client. Its owner connects through `connectUrl` (a one-time `checkout_states` token) and the

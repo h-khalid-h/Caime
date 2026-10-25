@@ -40,6 +40,7 @@ Each call is paid for by the token, so what is sent is bounded and what is repea
 | Catch me up | the light model | low | 200 messages, 60,000 characters, 1,500 a message | 4,096 tokens |
 | Find follow-ups | `ANTHROPIC_MODEL` on a paid plan, the light model on Personal (core `aiModel`) | medium | the same transcript, structured output | 8,192 tokens |
 | A question about a conversation (R67) | the light model | low | the same transcript and the question (300 characters) | 4,096 tokens |
+| What you missed, summed up (M17 I3) | the light model | low | the unread of at most 8 conversations, 30 lines each, 40,000 characters, each line 280 | 1,024 tokens |
 | An organization's agent | `ANTHROPIC_MODEL` on Business and Enterprise, the light model on Free (core `agentModel`) | low | its knowledge (8,000 characters, a sentence a numbered line, M16 G6a: a few tokens more, sent as a cached system block) and the last 20 messages; no slots or menu where it may not book or take orders, and no call at all while it answers only when closed and the organization is open | 2,048 tokens, clipped to 1,500 characters, with at most five passage numbers and a reason |
 
 - **Allowances** (`packages/core/src/plans.ts`): 10 AI calls a day on Personal, 200 on Pro and
@@ -216,6 +217,7 @@ Prices: https://platform.claude.com/docs/en/about-claude/pricing, read 2026-10-1
 | notes-ask | 25,315 | 4,096 | €0.0041 | €0.08 | €0.16 |
 | interact | 26,198 | 512 | €0.0026 | €0.05 | €0.10 |
 | interact-screen | 27,427 | 512 | €0.0027 | €0.05 | €0.11 |
+| missed | 41,111 | 1,024 | €0.0041 | €0.08 | €0.16 |
 | frame | 1,818 | 512 | €0.0004 | €0.0078 | €0.02 |
 | actions | 61,206 | 8,192 | €0.0091 | €0.18 | €0.36 |
 | notes-summary | 61,719 | 8,192 | €0.0091 | €0.18 | €0.37 |

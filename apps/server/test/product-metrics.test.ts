@@ -245,6 +245,8 @@ describe('product metrics (PRD §82–83)', () => {
       calls: 3,
       ok: 2,
       byFeature: { rewrite: { ok: 2, other: 0 }, translate: { ok: 0, other: 1 } },
+      // No recap was summed up in the window (M17 I3).
+      recaps: { summaries: 0, perActivePerson: { count: 0, of: 3, rate: 0 } },
       // Calls that kept no tokens cost nothing (ai-costs.test.ts prices real ones, M16 H7).
       cost: {
         eur: 0,

@@ -118,6 +118,7 @@ import type {
   MessageResponse,
   MessagesPage,
   MessagesResponse,
+  MissedResponse,
   MyDevicesResponse,
   NotificationsResponse,
   OAuthAppCreatedResponse,
@@ -695,6 +696,9 @@ export const endpoints = {
     ),
   /** The Attention home's own part (R66). */
   attentionHome: () => api.get<AttentionHomeResponse>('/attention'),
+  /** What this person missed (M17 I3): the rules' recap, with the model's cited summary on ask. */
+  missed: (summary: boolean) =>
+    api.get<MissedResponse>(`/attention/missed${summary ? '?summary=1' : ''}`),
   // An organization's own checkout (R65): connected by its owner, paid into by card
   orgCheckout: (orgId: string) => api.get<OrgCheckoutResponse>(`/orgs/${orgId}/checkout`),
   connectCheckout: (orgId: string) => api.post<UrlResponse>(`/orgs/${orgId}/checkout/connect`),

@@ -1835,4 +1835,11 @@ export const frServer: Catalog = {
   'I can’t see a screen right now.': 'Je ne vois pas d’écran pour l’instant.',
   'Only the device recording the call shows Cai the screen.':
     'Seul l’appareil qui enregistre l’appel montre l’écran à Cai.',
+  'Asked of you: {text}': 'Demandé de vous : {text}',
+  'Promised: {text}': 'Promis : {text}',
+  'Decided: {text}': 'Décidé : {text}',
+  'Coming up: {text}': 'À venir : {text}',
+  'Nothing new since you last looked.': 'Rien de nouveau depuis votre dernier passage.',
+  'You missed {messages} in {conversations}.': 'Vous avez manqué {messages} dans {conversations}.',
+  'In short: {summary}': 'En bref : {summary}',
 };

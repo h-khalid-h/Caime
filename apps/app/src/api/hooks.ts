@@ -150,6 +150,25 @@ export const useDirectoryApp = (id: string | null) =>
     enabled: Boolean(id),
   });
 
+/**
+ * What this person missed (M17 I3): asked when Attention shows it and again once stale (half a
+ * minute; a read moves the server's recap), never on every message.
+ */
+export const useMissed = (enabled = true) =>
+  useQuery({
+    queryKey: qk.missed,
+    queryFn: () => endpoints.missed(false),
+    staleTime: 30_000,
+    enabled,
+  });
+/** The model's cited summary of it, asked for by a tap and kept while the recap is the same. */
+export const useMissedSummary = (asked: boolean) =>
+  useQuery({
+    queryKey: qk.missedSummary,
+    queryFn: () => endpoints.missed(true),
+    staleTime: 10 * 60_000,
+    enabled: asked,
+  });
 /** Whether this server offers AI assist, and whether this person turned it on. */
 /** Whether the server has AI assist; asked only once something needs to know (`enabled`). */
 export const useAiStatus = (enabled = true) =>

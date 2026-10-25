@@ -152,8 +152,10 @@ export function applyEvent(qc: QueryClient, event: RealtimeEvent, me: string): v
       // A group of many (M16 D2b): nobody's ticks are shown there, so nothing says it arrived,
       // and its every message is no reason for hundreds of devices to read their inboxes again.
       const crowd = item !== null && isLargeGroup(item.kind, item.memberCount);
-      if (!item) invalidate(qk.inbox);
-      else {
+      if (!item) {
+        invalidate(qk.inbox);
+        invalidate(qk.missed);
+      } else {
         // The patch carries the row (preview, unread, order). What it can't know is a move
         // between sections, which only a message to me can make (a mention, a question or a
         // request; in a crowd a question or request only when it answers me, as the server
@@ -162,7 +164,11 @@ export function applyEvent(qc: QueryClient, event: RealtimeEvent, me: string): v
         // A crowd's patch stands until the next read.
         const asks = (m.isQuestion || m.isRequest) && (!crowd || m.replyTo?.senderId === me);
         const moves = !mine && (m.mentions.includes(me) || asks);
-        if (moves || !crowd) invalidate(qk.inbox, moves ? 1200 : 15_000);
+        if (moves || !crowd) {
+          invalidate(qk.inbox, moves ? 1200 : 15_000);
+          // What they missed (M17 I3) is read from the same unread: again when the inbox is.
+          invalidate(qk.missed, moves ? 1200 : 15_000);
+        }
       }
       if (!mine && !crowd) ackDelivered(m.conversationId, m.seq);
       // Dates, amounts, open items and what's shared are read from messages: refresh them.
@@ -201,6 +207,7 @@ export function applyEvent(qc: QueryClient, event: RealtimeEvent, me: string): v
         deletedAt: new Date().toISOString(),
       }));
       invalidate(qk.inbox);
+      invalidate(qk.missed);
       // What it shared, and what was read from it, go with it; a dated card leaves the calendar.
       invalidate(qk.memory(event.data.conversationId));
       invalidate(qk.assets(event.data.conversationId));
@@ -213,6 +220,7 @@ export function applyEvent(qc: QueryClient, event: RealtimeEvent, me: string): v
     case 'message.hidden':
       removeMessage(qc, event.data.conversationId, event.data.id);
       invalidate(qk.inbox);
+      invalidate(qk.missed);
       invalidate(qk.memory(event.data.conversationId));
       invalidate(qk.assets(event.data.conversationId));
       invalidate(qk.pins(event.data.conversationId));
@@ -282,7 +290,11 @@ export function applyEvent(qc: QueryClient, event: RealtimeEvent, me: string): v
           },
         };
       });
-      if (userId === me) invalidate(qk.inbox);
+      if (userId === me) {
+        invalidate(qk.inbox);
+        // A conversation read leaves what they missed (M17 I3).
+        invalidate(qk.missed);
+      }
       return;
     }
     case 'typing':
@@ -301,6 +313,8 @@ export function applyEvent(qc: QueryClient, event: RealtimeEvent, me: string): v
       const id = typeof event.data.conversationId === 'string' ? event.data.conversationId : null;
       // The inbox's one list is under its key (`qk.inboxAll` too).
       invalidate(qk.inbox);
+      // Archived, muted or marked quiet, a conversation leaves what they missed (M17 I3).
+      invalidate(qk.missed);
       if (id) {
         invalidate(qk.conversation(id));
         invalidate(qk.memory(id));

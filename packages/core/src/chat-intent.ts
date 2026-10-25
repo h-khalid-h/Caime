@@ -12,7 +12,15 @@ import type { InterfaceLanguage } from './i18n';
 import { latinScores } from './latin-language';
 import { relationshipFromWord, type Sphere } from './taxonomy';
 
-export type ChatIntent = 'waiting' | 'asked' | 'mine' | 'coming' | 'greeting' | 'help' | 'thanks';
+export type ChatIntent =
+  | 'waiting'
+  | 'asked'
+  | 'mine'
+  | 'coming'
+  | 'missed'
+  | 'greeting'
+  | 'help'
+  | 'thanks';
 
 /** Letters only, the way people type them: Arabic without its marks or letter variants, any case. */
 export function foldForIntent(text: string): string {
@@ -33,6 +41,8 @@ export function foldForIntent(text: string): string {
 const B = '(?<![\\p{L}\\p{N}])';
 const E = '(?![\\p{L}\\p{N}])';
 const re = (alternatives: string[]) => new RegExp(`${B}(?:${alternatives.join('|')})${E}`, 'u');
+/** The message's end, past a question mark, a full stop or a space left there. */
+const WHOLE = '(?=[\\s?!.،,؟…]*$)';
 
 /**
  * Each a question about one's own open things, as people say it (folded: Arabic without hamza
@@ -110,6 +120,45 @@ const QUESTIONS: Array<[ChatIntent, RegExp]> = [
       'ne söz verdim',
       'ne yapmam gerekiyor',
     ]),
+  ],
+  [
+    // What they missed (M17 I3): the whole message, since "what did I miss in the meeting" or
+    // "what's new in Paris" asks something else; a "?" or a "." may follow. Turkish puts the
+    // topic first ("Paris'te yeni ne var"), so its forms start the message too.
+    'missed',
+    re(
+      [
+        'what (?:did|have) i miss(?:ed)?(?: (?:today|this week|while i was (?:away|out|gone|offline)|since (?:yesterday|this morning|last night)))?$',
+        'did i miss (?:anything|something|much)(?: (?:today|this week|while i was (?:away|out|gone|offline)))?$',
+        'anything i missed$',
+        "what(?:'?s| is) new(?: (?:for me|with me|today|since (?:yesterday|this morning|last night)))?$",
+        'anything new(?: for me)?$',
+        'what happened while i was (?:away|out|gone|offline)$',
+        'catch me up(?: on (?:everything|my chats|my messages))?$',
+        'bring me up to (?:speed|date)$',
+        'ماذا فاتني$',
+        'ما الذي فاتني$',
+        'هل فاتني (?:شيء|شي|اي شيء|اي شي)$',
+        '(?:ايه|ايش|شو|وش|شنو) (?:اللي )?فاتني$',
+        'فاتني (?:ايه|ايش|شو|وش|شنو)$',
+        'ما الجديد$',
+        '(?:ايه|ايش|شو|وش|شنو) (?:اللي )?(?:الجديد|جديد)$',
+        'في جديد$',
+        'فيه جديد$',
+        "qu'est-ce que j'ai (?:raté|manqué|loupé)$",
+        "j'ai (?:raté|manqué|loupé) quoi$",
+        "est-ce que j'ai (?:raté|manqué|loupé) quelque chose$",
+        'quoi de neuf$',
+        "qu'est-ce qui s'est passé pendant mon absence$",
+        '^(?:cai,? )?neyi kaçırdım$',
+        '^(?:cai,? )?ne kaçırdım$',
+        '^(?:cai,? )?bir şey kaçırdım mı$',
+        '^(?:cai,? )?ben yokken ne(?:ler)? oldu$',
+        '^(?:cai,? )?neler oldu$',
+        '^(?:cai,? )?yeni ne var$',
+        '^(?:cai,? )?ne var ne yok$',
+      ].map((p) => p.replace(/\$$/, WHOLE)),
+    ),
   ],
   [
     'coming',

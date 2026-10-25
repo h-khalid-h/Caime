@@ -1756,4 +1756,11 @@ export const turkishServer: Catalog = {
   'I can’t see a screen right now.': 'Şu anda bir ekran göremiyorum.',
   'Only the device recording the call shows Cai the screen.':
     'Ekranı Cai’ye yalnızca aramayı kaydeden cihaz gösterir.',
+  'Asked of you: {text}': 'Sizden istenen: {text}',
+  'Promised: {text}': 'Söz verildi: {text}',
+  'Decided: {text}': 'Karar verildi: {text}',
+  'Coming up: {text}': 'Yaklaşan: {text}',
+  'Nothing new since you last looked.': 'Son baktığınızdan beri yeni bir şey yok.',
+  'You missed {messages} in {conversations}.': '{conversations} içinde {messages} kaçırdınız.',
+  'In short: {summary}': 'Kısacası: {summary}',
 };

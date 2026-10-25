@@ -833,6 +833,12 @@ with its reason, so it isn't proposed again without new facts.
   Open: the brainstorm says another app is named Caime on Google Play. A search on 2026-10-05
   found none under that name, but a search isn't clearance: a trademark and store-name check is
   the owner's before the store builds.
+  *Built* (M17 I3, 2026-10-25): "What you missed" above Needs-you, the unread of every
+  conversation not put aside read by the rules since the person last looked (asked of you,
+  promised, decided, coming up), each line opening the conversation at that message; "Sum it up"
+  for whoever has AI assist on, cited, kept only by read position for half an hour; and "what
+  did I miss" asked of Cai in any interface language, answered from the same. A conversation's
+  own catch-up (R67) stays what it was; this is the whole day's.
 - **R67 — Caime's own accounts: @cai, @caime and the Caime Friends (owner's idea, 2026-10-05),
   with the harmony review of R63–R66.** Checked against PRD §75 (an AI never passes for a
   person), BRAND.md (characters are not AI; never on money, security or business surfaces),

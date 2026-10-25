@@ -267,6 +267,13 @@ function answer(body) {
       ),
     );
   }
+  if (system.includes('what they missed in Caime')) {
+    // What someone missed, summed up (M17 I3): the first passage, cited.
+    calls.push('missed');
+    return reply(
+      JSON.stringify({ answer: 'Sarah asked you for the contract by Friday.', sources: [1] }),
+    );
+  }
   if (system.includes('what search found in their own messages')) {
     // "Ask Cai" in Search (R66): the first passage found, cited.
     calls.push('search-answer');

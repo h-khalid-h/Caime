@@ -12,6 +12,7 @@ import {
   AGENT_KNOWLEDGE_MAX,
   ASK_MAX,
   FRAME_EDGE,
+  MISSED_CHARS,
   ORG_ALLOWANCES,
   PERSON_ALLOWANCES,
   uuidv4,
@@ -230,6 +231,12 @@ const AT_BOUNDS: ReadonlyArray<{
         today,
         image: { data: x(FRAME_TOKENS), mediaType: 'image/jpeg' },
       }),
+  },
+  // lib/missed.ts: what someone missed, summed up from the new lines of their Needs-you
+  // conversations at the bound the server sends them (MISSED_CHARS; M17 I3c).
+  {
+    feature: 'missed',
+    call: (ai) => ai.missed({ passages: x(MISSED_CHARS), language: 'English', today }),
   },
   // lib/call-frames.ts: one frame of a shared screen at its largest, read for the write-up (M17
   // I13h); the write-up reads at most FRAMES_IN_NOTES of them.

@@ -1800,4 +1800,11 @@ export const arServer: Catalog = {
   'I can’t see a screen right now.': 'لا أرى شاشة الآن.',
   'Only the device recording the call shows Cai the screen.':
     'الجهاز الذي يسجّل المكالمة وحده يُري Cai الشاشة.',
+  'Asked of you: {text}': 'مطلوب منك: {text}',
+  'Promised: {text}': 'وعد: {text}',
+  'Decided: {text}': 'تقرر: {text}',
+  'Coming up: {text}': 'قادم: {text}',
+  'Nothing new since you last looked.': 'لا جديد منذ آخر مرة اطلعت فيها.',
+  'You missed {messages} in {conversations}.': 'فاتك {messages} في {conversations}.',
+  'In short: {summary}': 'باختصار: {summary}',
 };

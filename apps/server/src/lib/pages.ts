@@ -151,7 +151,10 @@ private conversation, what messages say is encrypted end to end: Caime can&rsquo
 <li>AI assist is off until you turn it on, and nothing from a private conversation is ever sent
 to it. With it on, your voice notes are turned into words too, shown under the note and
 searchable, by the speech-to-text provider named below when this Caime has one; and in a call,
-Cai can take notes, only once everyone in it has said yes.</li>
+Cai can take notes, only once everyone in it has said yes. Asked to sum up what you missed, Caime
+sends the AI provider the new messages of the conversations with something unread (who wrote,
+when, in which conversation, and the words; never a private conversation, a notice, a request
+or one you put aside), and keeps the summary in memory for half an hour, for you alone.</li>
 <li>You can download your data, and delete your account, whenever you like.</li>
 </ul>
 </section>
