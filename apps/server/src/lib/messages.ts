@@ -19,6 +19,7 @@ import {
   initialKitState,
   isCardKit,
   KIT_MODES,
+  type KitWhen,
   kitHeadline,
   kitsFor,
   LocationPayload,
@@ -47,6 +48,7 @@ import {
   VoicePayload,
   viewable,
 } from '@caime/core';
+import { onClock } from '@caime/core/card-clock';
 import { currencyOfCountry } from '@caime/core/countries';
 import { tr, trn } from '@caime/core/i18n';
 import { AGREED_STATES, cardAsks } from '@caime/core/kit-states';
@@ -1457,6 +1459,14 @@ export async function sendMessage(
     // An order written down by hand says which it is.
     if (card.kit === 'order_status' && !order && !card.fields.reference)
       throw badRequest(tr('{label} is needed.', { label: tr('Order number') }));
+    // A meeting's or an appointment's start keeps the clock it was set on (R119, M17 I19c): a
+    // series' own, a booking's host's, else its sender's; its instant is derived again from it
+    // when that zone's rules change (`rezoneCards`). Never a device's own zone.
+    if ((card.kit === 'meeting' || card.kit === 'appointment') && card.fields.start)
+      card.fields.start = onClock(
+        card.fields.start as KitWhen,
+        series?.zone ?? catalogHost?.hours?.timeZone ?? (sender.time_zone || 'UTC'),
+      );
     payload = {
       kit: card.kit,
       label: card.def.name,

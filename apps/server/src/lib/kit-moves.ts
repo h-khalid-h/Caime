@@ -22,6 +22,7 @@ import {
   retimeBlock,
   standsAside,
 } from '@caime/core';
+import { onClock } from '@caime/core/card-clock';
 import { msg, tr } from '@caime/core/i18n';
 import { AGREED_STATES } from '@caime/core/kit-states';
 import { sql } from 'kysely';
@@ -272,9 +273,12 @@ export async function retimeCard(
       .executeTakeFirst();
     const card = (now?.payload ?? {}) as CardPayload;
     if (!now || now.deleted_at || card.state !== from) return null;
+    // The card keeps its clock (R119, M17 I19c): the new time on the zone it was set in.
+    const was = card.fields?.start as { zone?: unknown } | undefined;
+    const at = { at: input.start.toISOString(), hasTime: true };
     const fields = {
       ...(card.fields ?? {}),
-      start: { at: input.start.toISOString(), hasTime: true },
+      start: typeof was?.zone === 'string' ? onClock(at, was.zone) : at,
       ...(input.durationMinutes ? { durationMinutes: input.durationMinutes } : {}),
     };
     const next = {

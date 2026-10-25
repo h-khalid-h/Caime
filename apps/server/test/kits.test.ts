@@ -59,7 +59,13 @@ describe('kit cards (PRD §41)', () => {
       title: 'Venue walkthrough',
       fields: {
         title: 'Venue walkthrough',
-        start: { at: '2026-10-02T11:00:00.000Z', hasTime: true },
+        // On its sender's clock (M17 I19c): Noor is in Cairo, UTC+3 in October.
+        start: {
+          at: '2026-10-02T11:00:00.000Z',
+          hasTime: true,
+          zone: 'Africa/Cairo',
+          local: '2026-10-02T14:00',
+        },
         durationMinutes: 45,
       },
       state: 'proposed',

@@ -2371,30 +2371,33 @@ A sphere is said as how you know someone, never "sphere".
   that lists a conversation's people takes them from `personViewsFor`. `createTestApp` counts
   the server's queries (`t.queries()`): a scale test says what a path costs, with a ceiling.
 - A person or an organization is read with `.select(USER_COLUMNS)` or `.select(ORG_COLUMNS)`
-  (`db/schema.ts`; `UserRow`, `OrgRow`), never `selectAll()`, which carried the five catalog
-  jsonb columns (`CATALOG_COLUMNS`) with every presence change, sender and person in a view:
+  (`db/schema.ts`; `UserRow`, `OrgRow`), never `selectAll()`, which carried the five catalog jsonb
+  columns (`CATALOG_COLUMNS`) with every presence change, sender and person in a view:
   `columns.test.ts` holds the lists to the tables, and `select-all.test.ts` (M16 D1) holds the
-  source, from its syntax tree, so an alias, a join or a `where` hides nothing and
-  `returningAll()` counts: a whole person or organization only in the functions it names (an
-  export, `orgById`, the public pages, an item's photo, a profile), a whole message nowhere. A
-  join selects `columnsOf('u', USER_COLUMNS)`, never `selectAll('u')`, and what builds an
-  `orgRef` selects `ORG_REF_COLUMNS`. When a card is for is `messages.card_start_at` (migration 0066 and
-  0067, `cardStartAt` in `lib/kits.ts`, written on send; a test that inserts a card by hand
-  writes it too): a meeting's or an appointment's start, a Pay card's or an invoice's due day
-  (M14, midnight UTC of the date, for order alone: a reader's day is the card's own `fields.due`,
-  `CardDue.on`, R119). The calendar, the slots, the briefs and search read cards by
-  it, never `payload->'fields'->'start'`, and when one ends is core `cardEndMs` (`meetings.ts`:
-  its booking's end, else its minutes up to a day, else `CARD_MINUTES`), for every reader of an
-  end (the calendar, the join window, the guests, a series, the slots, a booker's mail), never
-  a default of its own; `lib/upcoming.ts` is the one reader of a person's
-  cards (`visibleCards`: `cardsAhead` for what's planned, `dueCards` for what's owed, the same
-  visibility and the team member's "theirs to do"), and `calendarItems`, the ICS and Cai's
-  coming-up list all take both, so a new dated card joins there once. A card that asks (core
-  `ASKING_STATES`, `cardAsks` in `kit-states.ts`: a proposal, a request, an invoice sent, an order
-  placed) is `is_request` on send and `afterCardMove` clears or sets it with each move, so the
-  inbox says "Asked you to do something" until the move that answers it. A booking from the catalog is checked once before the
-  transaction (fast refusals) and again inside it under `pg_advisory_xact_lock` on the host
-  (`slotAsk` in `sendMessage`): two bookings of the last place at once leave one refused.
+  source, from its syntax tree, so an alias, a join or a `where` hides nothing and `returningAll()`
+  counts: a whole person or organization only in the functions it names (an export, `orgById`, the
+  public pages, an item's photo, a profile), a whole message nowhere. A join selects `columnsOf('u',
+  USER_COLUMNS)`, never `selectAll('u')`, and what builds an `orgRef` selects `ORG_REF_COLUMNS`. A
+  meeting's or an appointment's start keeps its clock (M17 I19c): `fields.start.zone` and `local`
+  beside `at`, written by `onClock` (core `card-clock.ts`) in `sendMessage` and `retimeCard` alone,
+  and `rezoneCards` (`lib/card-zones.ts`) moves the cards ahead back to it when the server's tz
+  rules change; a new path that writes a card's start pins it the same way. When a card is for is
+  `messages.card_start_at` (migration 0066 and 0067, `cardStartAt` in `lib/kits.ts`, written on
+  send; a test that inserts a card by hand writes it too): a meeting's or an appointment's start, a
+  Pay card's or an invoice's due day (M14, midnight UTC of the date, for order alone: a reader's day
+  is the card's own `fields.due`, `CardDue.on`, R119). The calendar, the slots, the briefs and
+  search read cards by it, never `payload->'fields'->'start'`, and when one ends is core `cardEndMs`
+  (`meetings.ts`: its booking's end, else its minutes up to a day, else `CARD_MINUTES`), for every
+  reader of an end (the calendar, the join window, the guests, a series, the slots, a booker's
+  mail), never a default of its own; `lib/upcoming.ts` is the one reader of a person's cards
+  (`visibleCards`: `cardsAhead` for what's planned, `dueCards` for what's owed, the same visibility
+  and the team member's "theirs to do"), and `calendarItems`, the ICS and Cai's coming-up list all
+  take both, so a new dated card joins there once. A card that asks (core `ASKING_STATES`,
+  `cardAsks` in `kit-states.ts`: a proposal, a request, an invoice sent, an order placed) is
+  `is_request` on send and `afterCardMove` clears or sets it with each move, so the inbox says
+  "Asked you to do something" until the move that answers it. A booking from the catalog is checked
+  once before the transaction (fast refusals) and again inside it under `pg_advisory_xact_lock` on
+  the host (`slotAsk` in `sendMessage`): two bookings of the last place at once leave one refused.
 - A route module imports no other module and `lib/` never imports a module (`modules.test.ts`
   fails on either): what two modules share lives in `lib/` (`lib/tasks.ts` `taskViews`,
   `lib/relationships.ts` `createRelationship` and `mayClassify`, `lib/space-members.ts`

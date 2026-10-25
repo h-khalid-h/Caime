@@ -4417,9 +4417,24 @@ clinic can sign for. I1 lands before launch.
         same day in Actions, by `dueAt` on each one's clock and in the feed; the owner moves to Los
         Angeles and the day stays; a time given lets the day go; the fill reads a day kept only as
         `due_at`), and the briefs', profile's, export's, actions' and tokens' tests unchanged.
-  - [ ] I19c. A meeting's start keeps the zone it was set in (`fields.start.zone`, its UTC
-        derived; a start set before a change of a country's rules derived again), as a series
-        already reads its proposer's clock.
+  - [x] I19c. A meeting's or an appointment's start keeps the clock it was set on (M,
+        2026-10-25): `fields.start` carries `zone` and `local` (the wall-clock minute there) beside
+        `at`, written by the server alone through core `onClock` (`card-clock.ts`) in
+        `sendMessage` (a series' zone, a booking's host's, else the sender's; a device's own
+        dropped) and kept by `retimeCard` on the card's own zone; an invitation by mail keeps
+        none, since its organizer's calendar sends its own updates. `rezoneCards`
+        (`lib/card-zones.ts`, the daily `cards-rezone` task, background) reads the cards ahead
+        through the partial index of cards that keep a clock (migration 0160, built concurrently)
+        only when the tz database the server runs on changed since its last pass
+        (`process.versions.tz`), and moves each whose clock now reads another instant under its
+        row lock: `card_start_at` with it, its invitation one sequence on, its people shown it,
+        their calendars put in step, an agreed one's brief and start notice queued for the new
+        time, nobody notified; `caime_cards_rezoned_total`. Verified: `card-clock.test.ts` (core:
+        the clock written and read, a moved instant found, an unknown zone and a device's seconds
+        no move; server: the sender's zone kept and a device's dropped, another time suggested
+        from London kept on Cairo's clock, a card ahead under old rules moved back with its
+        sequence and calendar while a past one and one without a clock stay, the pass doing
+        nothing again under the same rules).
   - [ ] I19d. A date's history (level 2): each move of a meeting's time, an action's due or a
         promise's day kept with `replan` or `correction` in the change's transaction, erased with
         what it's about; Cai and the brief say what slipped from `replan` alone.
@@ -6596,3 +6611,8 @@ CONNIQT; they mean Caime. Caishy is one of Caime's AI members, and Cai leads the
   as it answers words, keeping or offering what it's asked; Cai says why when it can't look. The
   cost table again for every row since I18's time lines (the agent's assumed month €11.82 on
   Business, its €29 covering 73 answers a day on Opus 5.5).
+- 2026-10-25 — M17 I19c: a meeting's or an appointment's start keeps the clock it was set on
+  (zone and wall-clock minute beside the instant, server-written), and when the server's
+  time-zone rules change, the cards ahead are moved back to their clock in one pass over a partial
+  index, their calendars and invitations with them. Two tests that failed CI on `main` by chance
+  (a uuid holding "4417", a race's order) now check what they meant.

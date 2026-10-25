@@ -63,7 +63,9 @@ zone. The reference for a day:
 A meeting at 10:00 in Cairo next month is kept as `10:00` and `Africa/Cairo`, its UTC derived;
 zone rules change, sometimes with days of notice (Egypt brought summer time back in 2023, Lebanon
 changed it within two days), and a UTC fixed in advance is then an hour off. Once it has happened,
-it's an ordinary `at`.
+it's an ordinary `at`. In Caime a card's `fields.start` carries `zone` and `local` beside `at`
+(core `card-clock.ts`, written by the server alone), and `rezoneCards` moves the cards ahead back
+to their clock when the server's tz database changes (M17 I19c).
 
 A device's clock is untrusted: what a phone or a browser says is kept as it said, with its source,
 and Caime's own receipt is the row's `created_at`; neither replaces the other. Order is decided by

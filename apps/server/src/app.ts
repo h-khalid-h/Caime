@@ -37,6 +37,7 @@ import { registerNotesSummaryJob } from './lib/call-notes-summary';
 import { registerRecordingJobs } from './lib/call-recording';
 import { registerCallSweep } from './lib/calls';
 import { canonicalLocation } from './lib/canonical-host';
+import { registerCardZones } from './lib/card-zones';
 import { deferredQueue } from './lib/deferred';
 import { createMailer, type Mailer } from './lib/email';
 import { AppError } from './lib/errors';
@@ -424,6 +425,7 @@ export async function buildApp(config: Config, options: BuildOptions = {}): Prom
   registerSpokenSweep();
   registerNotesJob();
   registerRecordingJobs();
+  registerCardZones();
   registerSpeechForgetJob();
   registerCaiInteract();
   registerNotesSummaryJob();

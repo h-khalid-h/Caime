@@ -218,6 +218,12 @@ export function createMetrics(pool: pg.Pool) {
       'caime_cai_voice_total',
       'Voice notes to Cai and the Caime Friends by outcome (heard, unavailable, assist, minor, allowance, long, unclear), and answers spoken back (spoken, written, let_go).',
     ),
+    // Meetings and appointments ahead moved to where their own clock now falls (M17 I19c), when
+    // the time-zone rules changed.
+    cardsRezoned: new Counter(
+      'caime_cards_rezoned_total',
+      'Meeting and appointment cards ahead moved to where their own clock now falls after a time-zone rules change.',
+    ),
     // A photo to Cai (M17 I14b): seen and answered, or why not.
     caiPhotos: new Counter(
       'caime_cai_photos_total',

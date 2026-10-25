@@ -144,7 +144,13 @@ describe('a calendar-aware Cai (M17 I7)', () => {
     });
     const sent = await hassan.post(`/v1/messages/${line.id}/offer`, { instead: true });
     const meeting = (await messages(sarah, chat)).find((m) => m.id === sent.messageId);
-    expect(meeting.payload.fields.start).toEqual({ at: '2026-10-21T09:00:00.000Z', hasTime: true });
+    expect(meeting.payload.fields.start).toEqual({
+      at: '2026-10-21T09:00:00.000Z',
+      hasTime: true,
+      // On its sender's clock (M17 I19c).
+      zone: 'Africa/Cairo',
+      local: '2026-10-21T12:00',
+    });
     // The offer says it went, at the time it went.
     const done = (await messages(hassan, cai)).find((m) => m.id === line.id);
     expect(done.payload.offer).toMatchObject({
@@ -183,7 +189,12 @@ describe('a calendar-aware Cai (M17 I7)', () => {
     const done = await hassan.post(`/v1/messages/${line.id}/offer`, {});
     expect(done).toEqual({ conversationId: chat, messageId: review.id });
     const moved = (await messages(sarah, chat)).find((m) => m.id === review.id);
-    expect(moved.payload.fields.start).toEqual({ at: '2026-10-22T08:00:00.000Z', hasTime: true });
+    expect(moved.payload.fields.start).toEqual({
+      at: '2026-10-22T08:00:00.000Z',
+      hasTime: true,
+      zone: 'Africa/Cairo',
+      local: '2026-10-22T11:00',
+    });
     expect(moved.payload.proposedBy).toBe(hassan.user.id);
     // Twice is once.
     expect(await hassan.post(`/v1/messages/${line.id}/offer`, {})).toEqual(done);

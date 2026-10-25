@@ -287,6 +287,13 @@ export { kitStateLabel, kitStateTone } from './kit-states';
 export interface KitWhen {
   at: string;
   hasTime: boolean;
+  /**
+   * A meeting's or an appointment's clock (R119, M17 I19c): the zone it was set in and its
+   * wall-clock minute there, written by the server alone (`onClock`, core `card-clock.ts`), so the
+   * instant is derived again when the zone's rules change. Never taken from a device.
+   */
+  zone?: string;
+  local?: string;
 }
 export interface KitAmount {
   value: number;
