@@ -1120,7 +1120,7 @@ A sphere is said as how you know someone, never "sphere".
 - React Native Web drops `accessibilityState`; the app's `Pressable` (`src/ui/Pressable.tsx`)
   turns it into ARIA on the web (a selected link is `aria-current="page"`, a tab or option
   `aria-selected`, a button `aria-pressed`). Use that `Pressable`, and assert state in E2E with
-  `toBeChecked()` and friends rather than by styling. `e2e/a11y.spec.ts` runs axe (WCAG 2.1 AA)
+  `toBeChecked()` and friends rather than by styling. `e2e/a11y.spec.ts` runs axe (WCAG 2.2 AA: 2.1's rules and 2.2's target size; the 2.2 criteria axe can't automate are checked by hand, ROADMAP M18 J1)
   over the primary screens in all four interface languages and every visitor page, and fails on
   a serious or critical violation: a name for a screen reader goes on a `View` with a role (`accessible`,
   `accessibilityRole="image"` for a mark, a dot or an icon's meaning, `text` for a line read as
@@ -2421,7 +2421,11 @@ A sphere is said as how you know someone, never "sphere".
   answer to a send is `addSentMessage`: the echo and whatever happened to the message since (its
   words heard) come through the socket, and the answer, written before them and read after them
   under load, adds the message where the socket hasn't and never replaces what it brought.
-- A chat brought over from WhatsApp (R45) is read on the device by `@caime/core/whatsapp`
+- A chat brought over from WhatsApp (R45), or from Telegram (M18 J6: Telegram Desktop's JSON
+  export, read by `@caime/core/telegram` into the same `ImportedChat`, told from WhatsApp's file by
+  `looksLikeTelegram`, landing through the same routes with `source: 'telegram'`; the sources are
+  core `IMPORT_SOURCES` in `imports.ts`, and a new one joins that list, the sheet and the server's
+  `titleOf`), is read on the device by `@caime/core/whatsapp`
   (pure: no zod, so the app takes it by subpath; every export shape gets a case in
   `whatsapp.test.ts`) and lands through `POST /conversations/import` (`modules/imports.ts`),
   which inserts rows itself, past `sendMessage`, so nothing is notified, suggested or moved by

@@ -360,7 +360,9 @@ with its reason, so it isn't proposed again without new facts.
 
 - **R45 — A chat from before Caime comes along.** The first days with someone on Caime are empty
   where WhatsApp had years, and that emptiness is what sends people back. So a one-to-one with
-  someone you're connected with offers to bring over your WhatsApp chat with them: the person
+  someone you're connected with offers to bring over your WhatsApp chat with them (and since M18
+  J6 a Telegram chat, from Telegram Desktop's JSON export, read by `@caime/core/telegram` into the
+  same shape and landing the same way): the person
   exports it on their phone (without media), picks the file, and it's read on the device
   (`@caime/core/whatsapp`: Android's and iOS's lines, 12- and 24-hour clocks, day- or month-first
   dates decided from the file or asked, continuations, WhatsApp's own lines and media notes

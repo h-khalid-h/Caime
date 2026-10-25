@@ -1,5 +1,5 @@
 /**
- * The accessibility pass: axe (WCAG 2.1 A and AA) over the primary screens, signed in on a
+ * The accessibility pass: axe (WCAG 2.2 A and AA, M18 J1) over the primary screens, signed in on a
  * phone and a desktop, in every interface language (English, Arabic right to left, French and
  * Turkish), and over the pages a visitor gets. A serious or critical violation fails; everything
  * found is written to the report, so a regression shows where it is.
@@ -19,7 +19,8 @@ async function audit(page: Page, screen: string, found: Found[]) {
   await page.waitForLoadState('networkidle');
   await page.waitForTimeout(600);
   const results = await new AxeBuilder({ page })
-    .withTags(['wcag2a', 'wcag2aa', 'wcag21a', 'wcag21aa'])
+    // WCAG 2.2 AA too (M18 J1): axe automates its target-size rule; the rest is checked by hand.
+    .withTags(['wcag2a', 'wcag2aa', 'wcag21a', 'wcag21aa', 'wcag22a', 'wcag22aa'])
     .analyze();
   for (const v of results.violations)
     found.push({

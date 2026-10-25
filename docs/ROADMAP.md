@@ -4125,27 +4125,55 @@ the golden sets and `agent-eval` the eval sets of what the rules and the agent a
 session discipline is CLAUDE.md's "Start of every session". What it asks for that Caime doesn't
 have yet, each sized:
 
-- [ ] J1. WCAG 2.2 AA (S): `e2e/a11y.spec.ts` runs axe's `wcag22aa` tags beside 2.1's (target
-      size 24 px, focus not obscured, redundant entry, accessible authentication: passkeys) and
-      every finding is fixed; the privacy page and SECURITY say 2.2.
-- [ ] J2. Prompt caching where it pays (S): a `cache_control` on each stable system block long
-      enough for the provider's floor (Cai's and the friends', the notes', the brief's; the agent's
-      knowledge already has one), measured by `cacheReadTokens` on `ai_runs` and held by
-      `ai-costs.test.ts`; a block under the floor is left alone (the mark costs, the cache never
-      hits).
-- [ ] J3. The nightly agent evaluation through the Batches API (S): half the price for the one
-      job nobody waits on; `runAi` records each answer as any run.
+- [x] J1. WCAG 2.2 AA (S, 2026-10-25): `e2e/a11y.spec.ts` runs axe's `wcag22a` and `wcag22aa`
+      tags beside 2.1's; axe 4.13 automates one 2.2 rule, target size (24 px), and found nothing
+      on the signed-in screens in all four languages nor on the visitor pages (2 passed, 2.6 min).
+      The 2.2 AA criteria axe can't automate, read by hand against the code: 2.4.11 focus not
+      obscured (the places' heads and the phone's bar are outside the lists, which scroll under
+      nothing fixed over their rows); 2.5.7 dragging (a swipe to reply has the hover's Reply and
+      the long press's sheet, a voice note's scrub is also a tap along its bars); 3.2.6 consistent
+      help (one help address, `HELP_URL`, in Settings and the site's foot); 3.3.7 redundant entry
+      (sign-up asks each fact once; onboarding asks none of them again); 3.3.8 accessible
+      authentication (a password with paste allowed and passkeys; a code is copied from the mail
+      it came in). Nothing claims 2.1 any more (CLAUDE.md, the spec's head); the privacy page
+      names no level.
+- [x] J2. Prompt caching where it pays (S, 2026-10-25). Measured first: the floor is 512 tokens
+      on every 5.x model (the provider's page, read that day); Cai's rules are about 850 with the
+      voice lines and a friend's over the floor with its facts, and a chat repeats them within
+      five minutes; the agent's are already in its knowledge's cached prefix; every other system
+      prompt is under the floor (the notes' about 350, catch-up's 210, Ask's 180), where a mark
+      caches nothing. So Cai's and the friends' blocks are marked (`cached` in `lib/ai.ts`,
+      `system-accounts.test.ts` holds both), nothing else; what it earns is read on
+      `ai_runs.cache_read_tokens`. RESOURCES says the rule.
+- [x] J3. The nightly agent evaluation through the Batches API (S): measured and declined
+      (2026-10-25). 24 cases on two models a night, about 1,500 tokens in and 150 out each: on
+      Opus 5.5 ($4 and $20 a million) about $0.22, on Haiku 5.5 about $0.005, so about $7 a
+      month, which a batch would halve. A job type with a day-long poll, a results reader and a
+      stand-in for $3.50 a month fails convention 14's own arithmetic; it comes back when the
+      evaluation grows (a hundred cases, or every organization's agent evaluated on its own
+      knowledge).
 - [ ] J4. Eval sets for the model features (M): notes-summary, catch-up, the brief, Cai's answers
       and search's understanding, each a file of realistic inputs with pass criteria scored by
       rules (never by a model), run on `EVAL=1` with a key, baseline tokens, cost, latency and
       scores in RESOURCES.md; a prompt change is kept only at or above its baseline. ⛔ needs
       `ANTHROPIC_API_KEY` in a session (unset here).
-- [ ] J5. The write path load-tested (S): a send with its fan-out and the socket's delivery
-      under `autocannon` against the bundle, as the inbox was on 2026-09-30, numbers in
-      RESOURCES.md beside it.
-- [ ] J6. A Telegram chat imported (M): its JSON export read on the device as WhatsApp's is (core,
-      no zod, every shape a case in its test), landing through the same `POST /conversations/import`
-      (R45); Signal exports nothing, so the switch from it is the invite link.
+- [x] J5. The write path load-tested (S, 2026-10-25): `scripts/load-send.mjs` signs a group up
+      on the bundled server (every member on a socket, everyone sending, since one person may
+      send 120 a minute), sends on 50 connections for 10 s and counts what the sockets heard. A
+      group of 41 on this container (4 cores, Postgres beside it): 1,906 sends, 187 a second,
+      p50 237 ms, p99 593 ms, none refused, every socket hearing every send, no server error; a
+      send with nobody else sending p50 31 ms. In RESOURCES beside the inbox's numbers.
+      (`autocannon`'s `-I` id replacement sends nothing in its current version, so the script
+      has senders of its own.)
+- [x] J6. A Telegram chat imported (M, 2026-10-25): Telegram Desktop's JSON export read on the
+      device by `@caime/core/telegram` (words as a string or in pieces, media counted and left
+      out with its caption kept, Telegram's own lines, an account's export holding one chat;
+      `telegram.test.ts`, 5 cases) into the same shape as WhatsApp's, the one sheet telling the
+      files apart and offering "Bring over a WhatsApp or Telegram chat", the same routes with
+      `source: 'telegram'` (core `IMPORT_SOURCES`; the topic named "Telegram", its line saying
+      so). Verified: `import.test.ts` (8, with the metrics counting it), the conversation E2E's
+      Telegram case beside WhatsApp's (2 passed). Signal exports nothing, so the switch from it
+      stays the invite link.
 
 ## Log
 
@@ -5736,6 +5764,10 @@ have yet, each sized:
 - 2026-10-20 — The French and Turkish catalogs come in two halves fetched side by side, as Arabic
   does: their largest download 48.9 KB where one was 95.2 KB of a chunk's 100; the first download
   448.8 KB of 450 (0.2 KB more: the two loaders).
+- 2026-10-25 — M18 J1, J2, J3, J5, J6 (J4 waits on a key): the a11y run at WCAG 2.2 AA found
+  nothing; Cai's and the friends' prompts cached (the floor measured first, the rest left alone);
+  the batch API declined on the arithmetic; the write path measured at 187 sends a second into a
+  group of 41 on sockets; a Telegram chat brought over through the WhatsApp import's shape.
 - 2026-10-25 — M18 opened: the owner's mission brief read against what Caime has (GOAL, ROADMAP,
   COMPETITIVE, `main`, the reviews: nothing made twice); J1–J6 are what it found missing.
 - 2026-10-25 — M17 I13c (R114): the recording played from the notes. Each turn's time and each

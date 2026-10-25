@@ -91,8 +91,10 @@ The other person must be able to join in under a minute without installing anyth
 - **Handles as links:** `cai.me/@hassan` works on any device.
 - **Free core forever** (R23): nobody hits a paywall before value.
 - **Single-player value** (R2): waiting items, reminders and decisions help from day one.
-- **Continuity (later):** import of exported WhatsApp chats; in the EU, the Digital Markets Act
-  interoperability route to WhatsApp as a long-term lever.
+- **Continuity (built):** a WhatsApp chat or group brought over from its export (R45, M16 C3g)
+  and a Telegram chat from Telegram Desktop's (M18 J6), read on the device, landing as a topic
+  dated as written; Signal exports nothing, so the switch from it is the invite link. In the EU,
+  the Digital Markets Act interoperability route to WhatsApp stays the long-term lever.
 - *Metrics:* activation (classified connection + first message within 24 h), invite acceptance
   rate, K-factor, week-4 retention.
 
@@ -126,5 +128,5 @@ Honest failure modes to watch, each with the metric that would reveal it:
   of the load (R12).
 - The attention inbox feels like it hides things → "All chats" usage dominates and Needs You
   dismissals exceed 10% → tighten Needs You to explicit signals only (R8).
-- The other side doesn't join → invite acceptance under 30% → shorten join further and add
-  continuity import.
+- The other side doesn't join → invite acceptance under 30% → shorten join further (the
+  continuity import is built: WhatsApp, Telegram).
