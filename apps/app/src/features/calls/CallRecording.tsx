@@ -1,8 +1,9 @@
 /**
  * A call's recording beside its notes (R114, M17 I13b), for whoever was in the call when each
  * part began: everyone's voices, and each screen shown, each played where it is (the browser's
- * player, a phone's own), until when it's kept, and Delete for everyone (R52), asked once more
- * before it goes. The notes stay when it does.
+ * player, a phone's own), until when it's kept, Keep past that day for whoever asked (M17 I13d:
+ * against their storage, until they stop keeping it), and Delete for everyone (R52), asked once
+ * more before it goes. The notes stay when it does.
  */
 import type { CallRecordingPartView, CallRecordingView } from '@caime/core/api';
 import { formatClock, formatDuration, formatWhenAt } from '@caime/core/format';
@@ -14,6 +15,7 @@ import { useWindowDimensions, View } from 'react-native';
 import { endpoints } from '@/api/endpoints';
 import { qk } from '@/api/keys';
 import { useNow, useUserClock } from '@/lib/time';
+import { useSession } from '@/state/session';
 import { useTheme } from '@/theme/theme';
 import { Button } from '@/ui/Button';
 import { Text } from '@/ui/Text';
@@ -72,9 +74,24 @@ export function CallRecording({
   const now = useNow();
   const { timeZone, locale } = useUserClock();
   const { width } = useWindowDimensions();
+  const meId = useSession((s) => s.user?.id);
   const [confirming, setConfirming] = useState(false);
   const [deleting, setDeleting] = useState(false);
+  const [keeping, setKeeping] = useState(false);
   const playerWidth = Math.min(480, width - 64);
+  // Whoever asked keeps it past its day, against their storage, or stops keeping it (M17 I13d).
+  const keep = async (toKeep: boolean) => {
+    setKeeping(true);
+    try {
+      await (toKeep ? endpoints.keepCallRecording(callId) : endpoints.letGoCallRecording(callId));
+      toast(toKeep ? tr('The recording is kept.') : tr('The recording goes at its day again.'));
+    } catch (e) {
+      toast((e as Error).message, { tone: 'danger' });
+    } finally {
+      setKeeping(false);
+      await qc.invalidateQueries({ queryKey: qk.callNotes(callId) });
+    }
+  };
   const remove = async () => {
     setDeleting(true);
     try {
@@ -111,12 +128,28 @@ export function CallRecording({
       {recording.parts.map((part) => (
         <PartRow key={part.id} part={part} />
       ))}
-      {recording.until ? (
+      {recording.keptBy ? (
+        <Text variant="caption" color="textTertiary" testID="call-recording-kept">
+          {recording.keptBy.id === meId
+            ? tr('Kept against your storage.')
+            : tr('Kept by {name}, against their storage.', { name: recording.keptBy.displayName })}
+        </Text>
+      ) : recording.until ? (
         <Text variant="caption" color="textTertiary" testID="call-recording-until">
           {tr('Kept until {day}, then deleted for everyone.', {
             day: formatWhenAt(recording.until, false, now, timeZone, locale),
           })}
         </Text>
+      ) : null}
+      {recording.mayKeep && !confirming ? (
+        <Button
+          label={recording.keptBy ? tr('Stop keeping it') : tr('Keep the recording')}
+          size="sm"
+          variant="secondary"
+          loading={keeping}
+          onPress={() => void keep(!recording.keptBy)}
+          testID={recording.keptBy ? 'call-recording-let-go' : 'call-recording-keep'}
+        />
       ) : null}
       {confirming ? (
         <View style={{ gap: 8 }}>
@@ -133,7 +166,7 @@ export function CallRecording({
               testID="call-recording-delete-confirm"
             />
             <Button
-              label={tr('Keep it')}
+              label={tr('Cancel')}
               size="sm"
               variant="secondary"
               disabled={deleting}

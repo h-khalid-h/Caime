@@ -201,15 +201,25 @@ async function aiSpent(ctx: AppContext, userId: string, plan: Plan) {
   );
 }
 
-/** What someone's files take up: finished uploads, and those under way at their full size. */
+/**
+ * What someone's files take up: finished uploads, and those under way at their full size; and
+ * the call recordings they keep past their day (M17 I13d), ready parts' bytes.
+ */
 async function storageUsed(ctx: AppContext, userId: string, db: Q = ctx.db): Promise<number> {
-  const row = await db
+  const files = await db
     .selectFrom('files')
     .select(sql<string>`coalesce(sum(size), 0)::text`.as('bytes'))
     .where('owner_id', '=', userId)
     .where('status', '<>', 'failed')
     .executeTakeFirstOrThrow();
-  return Number(row.bytes);
+  const kept = await db
+    .selectFrom('call_recording_parts as p')
+    .innerJoin('call_notes as n', 'n.id', 'p.notes_id')
+    .select(sql<string>`coalesce(sum(p.bytes), 0)::text`.as('bytes'))
+    .where('n.kept_by', '=', userId)
+    .where('p.state', '=', 'ready')
+    .executeTakeFirstOrThrow();
+  return Number(files.bytes) + Number(kept.bytes);
 }
 
 /**

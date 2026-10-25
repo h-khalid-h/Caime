@@ -12,7 +12,9 @@
  * the call ending or its recorder leaving (the piece that was on its way then). A recording goes
  * thirty days on, or sooner where an organization keeps less (R54); anyone who was in it deletes
  * it for everyone (R52); erasing the call's line takes it too (`eraseMessagesWhere`). Its bytes
- * are the server's, never counted against anyone's storage while it's kept for the thirty days.
+ * are the server's, never counted against anyone's storage while it's kept for the thirty days;
+ * whoever asked for it may keep it past its day (M17 I13d, `keepRecording`), and then its bytes
+ * count against their storage until they let it go, never past an organization's retention.
  */
 import { createReadStream } from 'node:fs';
 import { stat } from 'node:fs/promises';
@@ -24,7 +26,7 @@ import {
   tr,
   uuidv7,
 } from '@caime/core';
-import type { Kysely, Transaction } from 'kysely';
+import { type Kysely, sql, type Transaction } from 'kysely';
 import type { AppContext } from '../context';
 import type { Call, CallRecordingPartsTable, Database } from '../db/schema';
 import { readersOf, stopNotes } from './call-notes';
@@ -32,6 +34,7 @@ import { AppError, badRequest, forbidden, notFound } from './errors';
 import { enqueue, registerJob, registerPeriodic } from './jobs';
 import { retentionFor } from './messages';
 import { personViewsFor } from './people-batch';
+import { assertStorage, lockStorage } from './plans';
 import { finishOpenParts, LATE_MS, RECORDING_FINISH_JOB } from './recording-finish';
 import { storageFor } from './storage';
 
@@ -442,13 +445,13 @@ export async function recordingFor(
 ): Promise<CallRecordingView | null> {
   const notes = await ctx.db
     .selectFrom('call_notes')
-    .select(['state', 'recording_until', 'recording_deleted_at'])
+    .select(['state', 'started_by', 'kept_by', 'recording_until', 'recording_deleted_at'])
     .where('call_id', '=', call.id)
     .where('records', '=', true)
     .execute();
   if (!notes.length) return null;
   if (notes.some((n) => n.recording_deleted_at))
-    return { state: 'deleted', until: null, parts: [] };
+    return { state: 'deleted', until: null, keptBy: null, mayKeep: false, parts: [] };
   const reads = await readerOf(ctx.db, call, viewerId);
   const parts = (
     await ctx.db
@@ -473,8 +476,9 @@ export async function recordingFor(
   ).filter(reads);
   const live = notes.some((n) => n.state === 'on');
   if (!parts.length && !live) return null;
+  const keptBy = notes.find((n) => n.kept_by)?.kept_by ?? null;
   const shownBy = [
-    ...new Set(parts.map((p) => p.shown_by).filter((id): id is string => Boolean(id))),
+    ...new Set([...parts.map((p) => p.shown_by), keptBy].filter((id): id is string => Boolean(id))),
   ];
   const [shown, names] = await Promise.all([
     personViewsFor(ctx, viewerId, shownBy),
@@ -510,14 +514,102 @@ export async function recordingFor(
     bytes: Number(p.bytes),
     url: p.state === 'ready' ? `/v1/calls/${call.id}/recording/${p.id}` : null,
   }));
+  const state =
+    live || view.some((p) => p.state === 'recording' || p.state === 'finishing')
+      ? 'recording'
+      : 'recorded';
   return {
-    state:
-      live || view.some((p) => p.state === 'recording' || p.state === 'finishing')
-        ? 'recording'
-        : 'recorded',
-    until: until.length ? new Date(Math.min(...until)).toISOString() : null,
+    state,
+    until: keptBy || !until.length ? null : new Date(Math.min(...until)).toISOString(),
+    keptBy: person(keptBy),
+    // Whoever asked keeps it or lets it go, once it's recorded (M17 I13d).
+    mayKeep: state === 'recorded' && notes.some((n) => n.started_by === viewerId),
     parts: view,
   };
+}
+
+/**
+ * Whoever asked Cai to record the call keeps its recording past its day, or lets it go (M17
+ * I13d, R114 (6)): kept, its bytes count against their storage (counted under their lock, as a
+ * file is), never past an organization's retention, which is the organization's own promise
+ * (R54); let go, it goes at its day, or at the next sweep when that has passed. Only once it's
+ * recorded, so what's counted is all of it.
+ */
+export async function keepRecording(
+  ctx: AppContext,
+  call: Call,
+  userId: string,
+  keep: boolean,
+): Promise<void> {
+  const now = ctx.now();
+  const changed = await ctx.db.transaction().execute(async (trx) => {
+    await lockStorage(trx, userId);
+    const notes = await trx
+      .selectFrom('call_notes')
+      .select(['id', 'state', 'started_by', 'kept_by', 'recording_deleted_at'])
+      .where('call_id', '=', call.id)
+      .where('records', '=', true)
+      .forNoKeyUpdate()
+      .execute();
+    if (!notes.length || notes.some((n) => n.recording_deleted_at))
+      throw notFound(tr('That recording'));
+    const mine = notes.filter((n) => n.started_by === userId);
+    if (!mine.length)
+      throw forbidden(tr('Only whoever asked Cai to record this call may keep its recording.'));
+    const parts = await trx
+      .selectFrom('call_recording_parts')
+      .select(['state', 'bytes'])
+      .where(
+        'notes_id',
+        'in',
+        mine.map((n) => n.id),
+      )
+      .where('state', '<>', 'deleted')
+      .execute();
+    if (
+      notes.some((n) => n.state === 'on' || n.state === 'asking') ||
+      parts.some((p) => p.state === 'recording' || p.state === 'finishing')
+    )
+      throw new AppError(
+        409,
+        'conflict',
+        tr('The recording can be kept once the call is over and it’s ready to play.'),
+      );
+    const ids = mine.map((n) => n.id);
+    if (keep) {
+      if (mine.every((n) => n.kept_by === userId)) return false;
+      if ((await retentionFor(trx, call.conversation_id, null)) !== null)
+        throw new AppError(
+          409,
+          'conflict',
+          tr(
+            'This organization keeps its conversations for a set time, so the recording can’t be kept past its day.',
+          ),
+        );
+      const bytes = parts.reduce((sum, p) => sum + Number(p.bytes), 0);
+      await assertStorage(ctx, userId, bytes, trx);
+      await trx
+        .updateTable('call_notes')
+        .set({ kept_by: userId, kept_at: now })
+        .where('id', 'in', ids)
+        .execute();
+      return true;
+    }
+    if (!mine.some((n) => n.kept_by)) return false;
+    await trx
+      .updateTable('call_notes')
+      .set({
+        kept_by: null,
+        kept_at: null,
+        recording_until: sql`greatest(recording_until, ${now})`,
+      })
+      .where('id', 'in', ids)
+      .execute();
+    return true;
+  });
+  if (!changed) return;
+  ctx.metrics.callRecordings.inc({ outcome: keep ? 'kept' : 'let_go' });
+  await tellReaders(ctx, call.id);
 }
 
 /** A part this person may play, ready: its stored bytes, else not found. */
@@ -604,6 +696,7 @@ export async function sweepRecordings(ctx: AppContext): Promise<void> {
       .select('id')
       .where('records', '=', true)
       .where('recording_deleted_at', 'is', null)
+      .where('kept_by', 'is', null)
       .where('recording_until', '<', now)
       .limit(SWEEP_BATCH)
       .execute();

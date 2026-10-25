@@ -1791,4 +1791,10 @@ export const frServer: Catalog = {
   'Cai is already recording this call.': 'Cai enregistre déjà cet appel.',
   'Cai is already taking notes in this call: stop them to ask for a recording.':
     'Cai prend déjà des notes dans cet appel : arrêtez-les pour demander un enregistrement.',
+  'Only whoever asked Cai to record this call may keep its recording.':
+    'Seule la personne qui a demandé à Cai d’enregistrer cet appel peut garder l’enregistrement.',
+  'The recording can be kept once the call is over and it’s ready to play.':
+    'L’enregistrement peut être gardé une fois l’appel terminé et l’enregistrement prêt à être lu.',
+  'This organization keeps its conversations for a set time, so the recording can’t be kept past its day.':
+    'Cette organisation garde ses conversations pour une durée fixée, l’enregistrement ne peut donc pas être gardé au-delà de sa date.',
 };

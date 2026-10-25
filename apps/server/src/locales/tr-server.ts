@@ -1713,4 +1713,10 @@ export const turkishServer: Catalog = {
   'Cai is already recording this call.': 'Cai bu aramayı zaten kaydediyor.',
   'Cai is already taking notes in this call: stop them to ask for a recording.':
     'Cai bu aramada zaten not alıyor: kayıt istemek için notları durdurun.',
+  'Only whoever asked Cai to record this call may keep its recording.':
+    'Bu aramanın kaydını yalnızca Cai’den kayıt isteyen kişi saklayabilir.',
+  'The recording can be kept once the call is over and it’s ready to play.':
+    'Kayıt, arama bittikten ve oynatmaya hazır olduktan sonra saklanabilir.',
+  'This organization keeps its conversations for a set time, so the recording can’t be kept past its day.':
+    'Bu kuruluş konuşmalarını belirli bir süre sakladığından kayıt gününden sonra saklanamaz.',
 };

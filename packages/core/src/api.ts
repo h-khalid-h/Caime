@@ -3288,8 +3288,15 @@ export interface CallNotesResponse {
 export interface CallRecordingView {
   /** Still being recorded, recorded, or deleted (the notes stay). */
   state: 'recording' | 'recorded' | 'deleted';
-  /** When it's deleted for everyone (thirty days on, or an organization's shorter retention). */
+  /**
+   * When it's deleted for everyone (thirty days on, or an organization's shorter retention);
+   * null while someone keeps it.
+   */
   until: string | null;
+  /** Who keeps it past its day, against their storage (M17 I13d); null: nobody. */
+  keptBy: CallPersonView | null;
+  /** Whether this reader may keep it or let it go: they asked for it, and it's recorded. */
+  mayKeep: boolean;
   parts: CallRecordingPartView[];
 }
 

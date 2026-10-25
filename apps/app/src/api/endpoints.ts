@@ -841,6 +841,9 @@ export const endpoints = {
     api.post<OkResponse>(`/calls/${id}/recording/parts/${partId}/finish${q({ deviceId })}`, {}),
   /** The recording deleted for everyone; the notes stay (R52). */
   deleteCallRecording: (id: string) => api.del<OkResponse>(`/calls/${id}/recording`),
+  /** Kept past its day by whoever asked, against their storage (M17 I13d); or let go again. */
+  keepCallRecording: (id: string) => api.post<OkResponse>(`/calls/${id}/recording/keep`, {}),
+  letGoCallRecording: (id: string) => api.del<OkResponse>(`/calls/${id}/recording/keep`),
   stopCallNotes: (id: string) => api.post<CallNotesStateResponse>(`/calls/${id}/notes/stop`, {}),
   callNotes: (id: string) => api.get<CallNotesResponse>(`/calls/${id}/notes`),
   /** Cai on a call's notes, on ask (M16 F7d): a catch-up, and the follow-ups as suggestions. */

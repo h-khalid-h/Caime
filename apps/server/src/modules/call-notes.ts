@@ -49,6 +49,7 @@ import {
   appendPiece,
   deleteRecording,
   finishPart,
+  keepRecording,
   PIECE_MAX_BYTES,
   playablePart,
   recordingFor,
@@ -246,6 +247,22 @@ export async function callNotesRoutes(app: FastifyInstance, ctx: AppContext) {
     const { id } = parse(callParam, req.params);
     const call = await callForNotes(ctx, id, auth.userId);
     await deleteRecording(ctx, call, auth.userId);
+    return { ok: true };
+  });
+
+  /** Kept past its day by whoever asked, against their storage (M17 I13d); or let go again. */
+  app.post('/calls/:id/recording/keep', async (req): Promise<OkResponse> => {
+    const auth = requireAuth(req);
+    const { id } = parse(callParam, req.params);
+    const call = await callForNotes(ctx, id, auth.userId);
+    await keepRecording(ctx, call, auth.userId, true);
+    return { ok: true };
+  });
+  app.delete('/calls/:id/recording/keep', async (req): Promise<OkResponse> => {
+    const auth = requireAuth(req);
+    const { id } = parse(callParam, req.params);
+    const call = await callForNotes(ctx, id, auth.userId);
+    await keepRecording(ctx, call, auth.userId, false);
     return { ok: true };
   });
 }

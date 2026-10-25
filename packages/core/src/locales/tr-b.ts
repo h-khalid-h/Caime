@@ -2532,4 +2532,10 @@ export const turkishB: Catalog = {
     'O grupta konuşulanlar “{title}” içinde bir konu olarak saklanır. İçindeki herkes görür.',
   'In WhatsApp, open the chat, then Export chat, without media: a phone saves a text file, an iPhone a .zip. In Telegram Desktop, open the chat, then Export chat history as JSON: the result.json. Pick the file here as it is. Photos and files don’t come along; the words do, dated as they were written.':
     'WhatsApp’ta sohbeti açın, ardından medya olmadan Sohbeti dışa aktar’a dokunun: telefon bir metin dosyası, iPhone bir .zip kaydeder. Telegram Desktop’ta sohbeti açın, ardından sohbet geçmişini JSON olarak dışa aktarın: result.json dosyası. Dosyayı burada olduğu gibi seçin. Fotoğraflar ve dosyalar gelmez; sözler yazıldıkları tarihle gelir.',
+  'Keep the recording': 'Kaydı sakla',
+  'Stop keeping it': 'Saklamayı bırak',
+  'Kept by {name}, against their storage.': '{name} saklıyor; kendi depolama alanından sayılır.',
+  'Kept against your storage.': 'Depolama alanınızdan sayılarak saklanıyor.',
+  'The recording is kept.': 'Kayıt saklandı.',
+  'The recording goes at its day again.': 'Kayıt yine gününde silinecek.',
 };

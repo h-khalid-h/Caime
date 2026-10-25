@@ -2506,7 +2506,11 @@ with its reason, so it isn't proposed again without new facts.
   each topic, decision and next step of Cai's write-up plays the voices from its moment (the
   write-up keeps the moment of the line each part rests on, so deleting a line moves none); on the
   web the shown screen plays beside them in step, on a phone the voices play in the app like a
-  voice note and a screen in the phone's player. *Not yet:* changing mode mid-call (stop, then
-  ask again), Keep (I13d), sharing on (I13e, so the consent doesn't promise it yet), the screen in
+  voice note and a screen in the phone's player. *Built (M17 I13d, 2026-10-25):* kept past its
+  day by whoever asked, once it's recorded, its bytes counted against their storage as a file's
+  are (refused without room), never past an organization's retention; the sweep leaves a kept
+  one alone; "Stop keeping it" hands it back to its day; the notes say who keeps it, the export
+  whether you do, the privacy page the rule. *Not yet:* changing mode mid-call (stop, then
+  ask again), sharing on (I13e, so the consent doesn't promise it yet), the screen in
   step on a phone, and H.264 measured on a real Chrome call (the test browser records VP9 and
   Opus).

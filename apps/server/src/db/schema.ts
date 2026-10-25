@@ -1329,6 +1329,9 @@ export interface CallNotesTable {
   recording_until: NullableTimestamp;
   /** Deleted for everyone by someone in it: the notes stay (R52). */
   recording_deleted_at: NullableTimestamp;
+  /** Kept past its day by whoever asked (M17 I13d), its bytes against their storage. */
+  kept_by: string | null;
+  kept_at: NullableTimestamp;
   created_at: Generated<Date>;
 }
 

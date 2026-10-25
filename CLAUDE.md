@@ -1726,7 +1726,11 @@ A sphere is said as how you know someone, never "sphere".
   organization's shorter retention (`recording_until`), swept daily (`call-recordings`), deleted
   for everyone by anyone in it (`deleteRecording`, stopping it first), and erased with the call's
   line (`eraseMessagesWhere` names its keys as `recording` rows, which `dropErasedFiles` hands
-  on). Its bytes are the server's, counted on nobody's storage; it never reaches an AI provider.
+  on). Its bytes are the server's, counted on nobody's storage, until whoever asked keeps it past
+  its day (M17 I13d, `keepRecording`, `POST`/`DELETE /calls/:id/recording/keep`: once recorded,
+  under their `lockStorage` through `assertStorage`, counted by `storageUsed` while
+  `call_notes.kept_by` is theirs, never where `retentionFor` says an organization's retention
+  applies, left alone by the sweep, let go back to its day); it never reaches an AI provider.
   A new place that reads or keeps a recording goes through `recordingFor`/`playablePart` and
   their reader rule. It plays beside the notes (M17 I13c): `RecordingPlayer` (`.web`: the voices
   in the browser's player, the shown screen muted beside them in step; a phone's: the voices

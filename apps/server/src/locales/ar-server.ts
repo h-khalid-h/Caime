@@ -1763,4 +1763,10 @@ export const arServer: Catalog = {
   'Cai is already recording this call.': 'يسجّل Cai هذه المكالمة بالفعل.',
   'Cai is already taking notes in this call: stop them to ask for a recording.':
     'يدوّن Cai ملاحظات هذه المكالمة بالفعل: أوقِف التدوين لطلب تسجيل.',
+  'Only whoever asked Cai to record this call may keep its recording.':
+    'لا يحتفظ بتسجيل هذه المكالمة إلا من طلب من Cai تسجيلها.',
+  'The recording can be kept once the call is over and it’s ready to play.':
+    'يمكن الاحتفاظ بالتسجيل بعد انتهاء المكالمة وجاهزيته للتشغيل.',
+  'This organization keeps its conversations for a set time, so the recording can’t be kept past its day.':
+    'تحتفظ هذه المؤسسة بمحادثاتها لمدة محددة، لذا لا يمكن الاحتفاظ بالتسجيل بعد يومه.',
 };

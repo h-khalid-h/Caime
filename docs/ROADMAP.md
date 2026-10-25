@@ -4062,9 +4062,18 @@ clinic can sign for. I1 lands before launch.
         moments are its lines'), the notes E2E's recorded call (a line's time and a topic each play
         the voices from their moment). Not yet: a phone tried (built, as calls are), the screen in
         step on a phone.
-  - [ ] I13d. Kept and deleted (S): thirty days by default, an organization's retention when
+  - [x] I13d. Kept and deleted (S): thirty days by default, an organization's retention when
         shorter, Keep by whoever asked against their storage, anyone in it deletes it for everyone;
-        erasure, the export and the privacy page.
+        erasure, the export and the privacy page. Built: the thirty days, an organization's fewer,
+        Delete, erasure and the export were I13b's; Keep is whoever asked's (`keepRecording`,
+        `POST`/`DELETE /calls/:id/recording/keep`), once it's recorded, counted against their
+        storage under their lock as a file is (`storageUsed` sums the kept parts; Settings · Plan
+        shows it), never past an organization's retention (R54), left alone by the sweep, let go
+        back to its day (one already past goes at the next sweep); the notes say who keeps it, the
+        export whether you do, the privacy page the rule. Verified: `call-recording.test.ts` (not
+        while recording, not by someone who didn't ask, refused without room, kept and counted,
+        the sweep leaving it, let go and counted no more, gone at the next sweep), the notes E2E
+        (Keep, Stop keeping it, nothing offered to who didn't ask).
   - [ ] I13e. Shared on (S): into a conversation of the sharer's, as the consent said; gone with
         the recording.
   - [ ] I13f. Asked in writing (S): in every mode a question typed in the call, answered to the one
@@ -5764,6 +5773,12 @@ have yet, each sized:
 - 2026-10-20 — The French and Turkish catalogs come in two halves fetched side by side, as Arabic
   does: their largest download 48.9 KB where one was 95.2 KB of a chunk's 100; the first download
   448.8 KB of 450 (0.2 KB more: the two loaders).
+- 2026-10-25 — M17 I13d (R114): a recording kept past its day. Whoever asked Cai to record keeps
+  it once it's recorded, its bytes counted against their storage under their lock (refused
+  without room, as a file is; shown in Settings · Plan), never past an organization's retention;
+  the sweep leaves a kept one alone; Stop keeping it hands it back to its day, one already past
+  going at the next sweep; the notes say who keeps it, the export whether you do, the privacy
+  page the rule. Verified: `call-recording.test.ts`, the notes E2E.
 - 2026-10-25 — M18 J1, J2, J3, J5, J6 (J4 waits on a key): the a11y run at WCAG 2.2 AA found
   nothing; Cai's and the friends' prompts cached (the floor measured first, the rest left alone);
   the batch API declined on the arithmetic; the write path measured at 187 sends a second into a

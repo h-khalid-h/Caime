@@ -2621,4 +2621,10 @@ export const frB: Catalog = {
     'Ce qui s’est dit dans ce groupe, gardé comme sujet de « {title} ». Tous ses membres le voient.',
   'In WhatsApp, open the chat, then Export chat, without media: a phone saves a text file, an iPhone a .zip. In Telegram Desktop, open the chat, then Export chat history as JSON: the result.json. Pick the file here as it is. Photos and files don’t come along; the words do, dated as they were written.':
     'Dans WhatsApp, ouvrez la discussion, puis Exporter la discussion, sans fichiers multimédias : un téléphone enregistre un fichier texte, un iPhone un .zip. Dans Telegram Desktop, ouvrez la discussion, puis Exporter l’historique au format JSON : le fichier result.json. Choisissez le fichier ici tel quel. Les photos et les fichiers ne suivent pas ; les mots, oui, datés comme ils ont été écrits.',
+  'Keep the recording': 'Garder l’enregistrement',
+  'Stop keeping it': 'Ne plus le garder',
+  'Kept by {name}, against their storage.': 'Gardé par {name}, sur son espace de stockage.',
+  'Kept against your storage.': 'Gardé sur votre espace de stockage.',
+  'The recording is kept.': 'L’enregistrement est gardé.',
+  'The recording goes at its day again.': 'L’enregistrement partira de nouveau à sa date.',
 };

@@ -308,9 +308,22 @@ test.describe
       test.info().annotations.push({ type: 'recording sizes', description: JSON.stringify(sizes) });
       console.log('recording sizes', JSON.stringify(sizes));
 
+      // Noor, who asked, keeps it past its day against their storage, then stops keeping it
+      // (M17 I13d); Sam, who didn't ask, is offered neither.
+      await page.getByTestId('call-recording-keep').click();
+      await expect(page.getByTestId('call-recording-kept')).toHaveText(
+        'Kept against your storage.',
+      );
+      await expect(page.getByTestId('call-recording-until')).toHaveCount(0);
+      await page.getByTestId('call-recording-let-go').click();
+      await expect(page.getByTestId('call-recording-until')).toBeVisible();
+      await expect(page.getByTestId('call-recording-kept')).toHaveCount(0);
+
       // Sam deletes it for everyone; the notes stay.
       await sam.page.goto(`/c/${convo}`);
       await sam.page.getByTestId('call-notes-open').first().click();
+      await expect(sam.page.getByTestId('call-recording-until')).toBeVisible();
+      await expect(sam.page.getByTestId('call-recording-keep')).toHaveCount(0);
       await sam.page.getByTestId('call-recording-delete').click();
       await sam.page.getByTestId('call-recording-delete-confirm').click();
       await expect(sam.page.getByTestId('call-recording-deleted')).toBeVisible();

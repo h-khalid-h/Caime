@@ -9,6 +9,7 @@ import { readFileSync } from 'node:fs';
 import { createServer, type Server } from 'node:http';
 import type { AddressInfo } from 'node:net';
 import { join } from 'node:path';
+import { PERSON_ALLOWANCES, uuidv7 } from '@caime/core';
 import { sql } from 'kysely';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { sweepRecordings } from '../src/lib/call-recording';
@@ -343,7 +344,13 @@ describe('recorded in pieces, made seekable, played by who was in it (R114 (4))'
     expect((await omar.req('DELETE', `/v1/calls/${callId}/recording`)).statusCode).toBe(404);
     expect((await sam.req('DELETE', `/v1/calls/${callId}/recording`)).statusCode).toBe(200);
     for (const key of keys) expect(await storage.size(key)).toBeNull();
-    expect(await recordingOf(noor, callId)).toEqual({ state: 'deleted', until: null, parts: [] });
+    expect(await recordingOf(noor, callId)).toEqual({
+      state: 'deleted',
+      until: null,
+      keptBy: null,
+      mayKeep: false,
+      parts: [],
+    });
     expect((await noor.req('GET', url)).statusCode).toBe(404);
   });
 });
@@ -508,5 +515,60 @@ describe('kept thirty days, and gone with the call’s line (R114 (6))', () => {
         .where('call_id', '=', callId)
         .executeTakeFirst(),
     ).toBeUndefined();
+  });
+
+  it('whoever asked keeps it past its day, against their storage, and stops keeping it (M17 I13d)', async () => {
+    const { callId } = await recordedCall();
+    const partId = (
+      await startPart(noor, callId, { deviceId: 'noor-tab-1', kind: 'voices', mime: 'audio/webm' })
+    ).json().partId;
+    await sendAll(noor, callId, partId, 'noor-tab-1', voice);
+    // Not while it's being recorded: what's counted is all of it.
+    expect((await noor.req('POST', `/v1/calls/${callId}/recording/keep`, {})).statusCode).toBe(409);
+    await finish(noor, callId, partId, 'noor-tab-1');
+    await noor.req('POST', `/v1/calls/${callId}/end`, { deviceId: 'noor-tab-1' });
+    await work();
+    // Sam was in it, but didn't ask; Noor did.
+    expect((await sam.req('POST', `/v1/calls/${callId}/recording/keep`, {})).statusCode).toBe(403);
+    expect(await recordingOf(sam, callId)).toMatchObject({ keptBy: null, mayKeep: false });
+    expect(await recordingOf(noor, callId)).toMatchObject({ keptBy: null, mayKeep: true });
+    // Against Noor's storage: with no room, it isn't kept.
+    const used = (await noor.get('/v1/me/plan')).used.storageBytes as number;
+    const fileId = uuidv7();
+    await t.ctx.db
+      .insertInto('files')
+      .values({
+        id: fileId,
+        owner_id: noor.user.id,
+        storage_key: 'files/nearly-full',
+        name: 'archive.mov',
+        mime: 'video/quicktime',
+        size: PERSON_ALLOWANCES.personal.storageBytes - used - 1,
+        kind: 'video',
+        status: 'ready',
+      })
+      .execute();
+    const full = await noor.req('POST', `/v1/calls/${callId}/recording/keep`, {});
+    expect(full.statusCode).toBe(403);
+    expect(full.json().error.code).toBe('plan_limit');
+    await t.ctx.db.deleteFrom('files').where('id', '=', fileId).execute();
+    expect((await noor.req('POST', `/v1/calls/${callId}/recording/keep`, {})).statusCode).toBe(200);
+    const kept = await recordingOf(noor, callId);
+    expect(kept).toMatchObject({ until: null, keptBy: { id: noor.user.id }, mayKeep: true });
+    const bytes = (kept.parts as Array<{ bytes: number }>).reduce((sum, p) => sum + p.bytes, 0);
+    expect(bytes).toBeGreaterThan(0);
+    expect((await noor.get('/v1/me/plan')).used.storageBytes).toBe(used + bytes);
+    expect((await recordingOf(sam, callId)).keptBy.displayName).toBe('Noor Records');
+    // The sweep leaves a kept one alone past its day.
+    t.clock.advance(31 * 86_400_000);
+    await sweepRecordings(t.ctx);
+    expect((await recordingOf(sam, callId)).state).toBe('recorded');
+    // Noor stops keeping it: its bytes leave their storage, and it goes at the next sweep.
+    expect((await noor.req('DELETE', `/v1/calls/${callId}/recording/keep`)).statusCode).toBe(200);
+    expect((await noor.get('/v1/me/plan')).used.storageBytes).toBe(used);
+    expect((await recordingOf(noor, callId)).keptBy).toBeNull();
+    t.clock.advance(60_000);
+    await sweepRecordings(t.ctx);
+    expect((await recordingOf(sam, callId)).state).toBe('deleted');
   });
 });

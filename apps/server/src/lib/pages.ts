@@ -220,9 +220,11 @@ own; cameras are never recorded. It sends them to Caime in pieces of about ten s
 call goes on, and Caime keeps them, with the notes, for thirty days (fewer where an organization
 keeps its conversations for less), then deletes them for everyone. Someone who joins later plays
 only what was recorded after they joined. Anyone who was in the call may delete the recording for
-everyone at any time; the notes stay. It goes with the call&rsquo;s line too, and your export lists
-the recordings you may play. It isn&rsquo;t sent to any AI provider. Never in a private
-conversation, and never with anyone under 18 in the call.</li>
+everyone at any time; the notes stay. Whoever asked for it may keep it past that day, and then
+it counts against their storage until they let it go or someone deletes it; never past an
+organization&rsquo;s own retention. It goes with the call&rsquo;s line too, and your export lists
+the recordings you may play and whether you keep each. It isn&rsquo;t sent to any AI provider.
+Never in a private conversation, and never with anyone under 18 in the call.</li>
 <li><strong>Meetings with guests.</strong> When you invite someone to a meeting by email address,
 Caime keeps the address, who invited them and when, and gives the meeting its own group, where the
 guest sees only that meeting. Their link to join is kept only as a fingerprint, and ends when

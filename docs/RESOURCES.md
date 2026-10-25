@@ -368,7 +368,9 @@ with a keyframe every ten seconds, 162 MB an hour for the fake camera's moving p
 near the worst a screen does (the cap's ceiling is 450 MB an hour); a spreadsheet at 1080p and 15
 frames a second, measured apart (the lab script, 2026-10-21), 68 MB an hour. An hour's call with a
 sheet shown for half of it is so about 45 MB, kept thirty days on the server's disk or bucket (or
-fewer where an organization keeps less) and counted against nobody's storage. Making a part
+fewer where an organization keeps less) and counted against nobody's storage, unless whoever asked
+keeps it past its day (M17 I13d): then its ready parts' bytes count against their plan's storage
+as a file's do, until they stop keeping it or anyone in the call deletes it. Making a part
 seekable is a copy into an MP4 without re-encoding (a minute of a 1080p screen: 75 ms and 10 MB
 of memory, mediabunny 1.62.0), never a transcode, in one job per part. Nothing of a recording
 reaches an AI provider; the notes beside it cost what notes cost (above). No timer or poll: a part

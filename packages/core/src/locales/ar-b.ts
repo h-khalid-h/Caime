@@ -3395,4 +3395,19 @@ export const arB: Catalog = {
     'ما قيل في تلك المجموعة، محفوظ كموضوع في «{title}». يراه كل من فيها.',
   'In WhatsApp, open the chat, then Export chat, without media: a phone saves a text file, an iPhone a .zip. In Telegram Desktop, open the chat, then Export chat history as JSON: the result.json. Pick the file here as it is. Photos and files don’t come along; the words do, dated as they were written.':
     'في واتساب، افتح المحادثة، ثم تصدير الدردشة، بدون وسائط: يحفظ الهاتف ملفًا نصيًا ويحفظ آيفون ملف ‎.zip. في تيليغرام على الحاسوب، افتح المحادثة، ثم تصدير سجل الدردشة بصيغة JSON: ملف result.json. اختر الملف هنا كما هو. لا تُنقل الصور والملفات؛ تُنقل الكلمات مؤرخةً كما كُتبت.',
+  'Keep the recording': {
+    toWoman: 'احتفظي بالتسجيل',
+    toMan: 'احتفظ بالتسجيل',
+    other: 'احتفظ بالتسجيل',
+  },
+  'Stop keeping it': {
+    toWoman: 'توقفي عن الاحتفاظ به',
+    toMan: 'توقف عن الاحتفاظ به',
+    other: 'توقف عن الاحتفاظ به',
+  },
+  'Kept by {name}, against their storage.':
+    'محفوظ لدى {name}، ومحسوب من مساحة التخزين المتاحة لهذا الحساب.',
+  'Kept against your storage.': 'محفوظ ومحسوب من مساحة التخزين المتاحة لك.',
+  'The recording is kept.': 'تم الاحتفاظ بالتسجيل.',
+  'The recording goes at its day again.': 'سيُحذف التسجيل في يومه من جديد.',
 };
