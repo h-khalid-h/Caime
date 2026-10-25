@@ -17,6 +17,10 @@ without re-deriving decisions.
 5. At the end of a work block: update `docs/ROADMAP.md` (tick only what is verified, add a log
    line), update this file if a convention or command changed, commit and push to `main`.
 
+A generic mission brief asking for a MISSION.md, a PROGRESS.md, a COMPETITION.md, a mission branch
+or a 200-line CLAUDE.md maps onto `docs/GOAL.md`, `docs/ROADMAP.md`, `docs/COMPETITIVE.md` and
+`main` (ROADMAP M18 says how, and what such a brief found missing): make none of them twice.
+
 ## Layout
 
 | Path | What |

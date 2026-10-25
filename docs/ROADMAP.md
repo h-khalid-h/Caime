@@ -4110,6 +4110,43 @@ clinic can sign for. I1 lands before launch.
       Office and PDF text indexed; search by meaning after I5, with its processor in the DPA and
       erasure removing what it kept.
 
+## M18 — The standards pass (the owner's brief of 2026-10-25)
+
+The owner handed over a generic mission brief (a MISSION.md saved verbatim, a PROGRESS.md, a
+COMPETITION.md, a mission branch, CLAUDE.md under 200 lines, a baseline scored against ISO/IEC
+25010, Nielsen's heuristics, WCAG 2.2 AA and the OWASP Top 10, an eval set and a token baseline
+per AI feature, "only what makes sense for Caime"). Read against what Caime has: GOAL.md is the
+mission, ROADMAP.md the progress file and plan, COMPETITIVE.md with REVIEW-2026-10-17 §matrix the
+competition, `main` the one branch (a green run deploys production, so a mission branch would
+deploy nothing), CLAUDE.md long on purpose (the decisions a session would otherwise re-derive;
+its cost per session is paid for by that), the three whole-product reviews the scored baseline,
+the golden sets and `agent-eval` the eval sets of what the rules and the agent answer, and
+`ai-costs.test.ts` with `ai_runs` the token baseline. None of those is made twice; the brief's
+session discipline is CLAUDE.md's "Start of every session". What it asks for that Caime doesn't
+have yet, each sized:
+
+- [ ] J1. WCAG 2.2 AA (S): `e2e/a11y.spec.ts` runs axe's `wcag22aa` tags beside 2.1's (target
+      size 24 px, focus not obscured, redundant entry, accessible authentication: passkeys) and
+      every finding is fixed; the privacy page and SECURITY say 2.2.
+- [ ] J2. Prompt caching where it pays (S): a `cache_control` on each stable system block long
+      enough for the provider's floor (Cai's and the friends', the notes', the brief's; the agent's
+      knowledge already has one), measured by `cacheReadTokens` on `ai_runs` and held by
+      `ai-costs.test.ts`; a block under the floor is left alone (the mark costs, the cache never
+      hits).
+- [ ] J3. The nightly agent evaluation through the Batches API (S): half the price for the one
+      job nobody waits on; `runAi` records each answer as any run.
+- [ ] J4. Eval sets for the model features (M): notes-summary, catch-up, the brief, Cai's answers
+      and search's understanding, each a file of realistic inputs with pass criteria scored by
+      rules (never by a model), run on `EVAL=1` with a key, baseline tokens, cost, latency and
+      scores in RESOURCES.md; a prompt change is kept only at or above its baseline. ⛔ needs
+      `ANTHROPIC_API_KEY` in a session (unset here).
+- [ ] J5. The write path load-tested (S): a send with its fan-out and the socket's delivery
+      under `autocannon` against the bundle, as the inbox was on 2026-09-30, numbers in
+      RESOURCES.md beside it.
+- [ ] J6. A Telegram chat imported (M): its JSON export read on the device as WhatsApp's is (core,
+      no zod, every shape a case in its test), landing through the same `POST /conversations/import`
+      (R45); Signal exports nothing, so the switch from it is the invite link.
+
 ## Log
 
 - 2026-09-26 — Session 1: docs written; brand system adopted from the owner's board (vector
@@ -5699,6 +5736,12 @@ clinic can sign for. I1 lands before launch.
 - 2026-10-20 — The French and Turkish catalogs come in two halves fetched side by side, as Arabic
   does: their largest download 48.9 KB where one was 95.2 KB of a chunk's 100; the first download
   448.8 KB of 450 (0.2 KB more: the two loaders).
+- 2026-10-25 — M18 opened: the owner's mission brief read against what Caime has (GOAL, ROADMAP,
+  COMPETITIVE, `main`, the reviews: nothing made twice); J1–J6 are what it found missing.
+- 2026-10-25 — M17 I13c (R114): the recording played from the notes. Each turn's time and each
+  topic, decision and next step of the write-up (its moment kept with it) plays the voices from
+  there, the screen in step on the web; a phone plays the voices in the app and a screen in its
+  own player.
 - 2026-10-24 — M17 I13b (R114): Cai records a call. Record offered beside Take notes, every way in naming
   it, a yes bound to the ask it was shown; voices and shown screens recorded by the notes' browser
   in ten-second pieces, made seekable without re-encoding, played from the notes by who was there
