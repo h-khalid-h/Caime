@@ -4220,9 +4220,25 @@ clinic can sign for. I1 lands before launch.
       cited}`. Verified: `answers.test.ts`, `ai.test.ts`, `call-notes.test.ts`, `ai-costs.test.ts`
       (the chat's bound grew by the passages: €0.0026 a call), the app's guards, the E2E (a cited
       catch-up and Ask in the conversation, Cai's cited answer landing on Sarah's message).
-- [ ] I5. Arabic-first retrieval (M): a folded index built concurrently (hamza and alef forms, ة/ه,
-      ى/ي, accents, dotted İ), queries and names folded the same way, relevance with recency, the
-      unread index dropped in a later release; a retrieval golden set per language.
+- [x] I5. Arabic-first retrieval (M): one fold on the device and in the database (`caime_fold`,
+      0153, core `foldForFind` step for step: hamza and alef forms, ة/ه, ى/ي, marks and tatweel,
+      accents, dotted and dotless i, ø ł œ æ), the index's text adding each Arabic word bare of its
+      article or a joined "و" (`caime_find_text`: "عرض" finds "العرض", "عقد" "والعقد", "احمد"
+      "وأحمد", as WhatsApp's substring search would, while a word's end never matches); folded
+      expression indexes built concurrently for messages and actions (0154, 0155) and in place for
+      decisions; every match in Search (messages, actions, decisions, people, organizations,
+      titles), the decisions list, Cai's names (`peopleNamed`) and People search folded the same
+      way; the newest hundred matches ranked by whole words over starts, words side by side and
+      age, the words marked where they were found (`lib/found-text.ts`, never `ts_headline`, whose
+      query never folded); the first `search` column and its index dropped (0156, contracts after
+      7b975b0). Verified: `retrieval-golden.test.ts` (54 hand-labelled lines in Arabic, French,
+      Turkish and English, each found or not as labelled and marked where found; the two folds
+      equal on every line; the plan on the folded index; the order; a person found by "ayse",
+      "isik" and "AYŞE"), `found-text.test.ts`, `fold.test.ts`, `cai-about.test.ts` (the fold
+      against the database), the search-related suites. Next: `search_all`, `tasks.search`,
+      `decisions.search` and their indexes go in the release after (contracts after this one);
+      People search still compares a stranger's name over every account, and a candidates-first
+      query is due before accounts number in the hundreds of thousands (RESOURCES).
 - [ ] I6. Evaluations for every model path (M–L): `lib/evals/` from the agent's, scored by rules
       first (follow-ups by line, faithful summaries and write-ups, Cai's keep and act, search
       readings, translations, the agent with a catalog, a menu, moves and every variety), nightly
@@ -5902,6 +5918,15 @@ CONNIQT; they mean Caime. Caishy is one of Caime's AI members, and Cai leads the
 - 2026-10-20 — The French and Turkish catalogs come in two halves fetched side by side, as Arabic
   does: their largest download 48.9 KB where one was 95.2 KB of a chunk's 100; the first download
   448.8 KB of 450 (0.2 KB more: the two loaders).
+- 2026-10-25 — M17 I5, Arabic-first retrieval: search reads words as people type them in every
+  interface language, by rules. One fold on the device and in the database; an Arabic word found
+  without its article or a joined "و" (the draft had "عرض" miss "العرض", which WhatsApp's
+  substring search finds: worse than the alternative, so the index holds both forms); folded
+  indexes built concurrently; names, titles, organizations, actions and decisions folded too; the
+  best answer first, a newer one ahead of an older one as good, the words marked where found. The
+  keyboard-echo hook got a web twin, so the four boxes that use it stopped putting the phone's rule
+  in the first download. Verified: a golden set of 54 hand-labelled lines across the four
+  languages, the folds held equal, the plan on the index, the server's search suites.
 - 2026-10-25 — The owner's follow-ups the same day. @caime for the product's own organization:
   the organization whose verified domain is the product's (`PUBLIC_URL`'s, cai.me; caime.com isn't
   ours) takes it from its setup screen ("Take @caime", `POST /orgs/:id/handle/claim`), by its

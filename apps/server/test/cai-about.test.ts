@@ -7,9 +7,10 @@
  * is said so, and nothing an older row ties to a private conversation is said (R18).
  */
 import { CAI_ID, SYSTEM_ACCOUNTS, uuidv4, uuidv7 } from '@caime/core';
+import { foldForFind } from '@caime/core/fold';
+import { sql } from 'kysely';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { runDueJobs } from '../src/lib/jobs';
-import { FOLD_FROM, FOLD_TO, plainName } from '../src/lib/people-named';
 import { type Client, createTestApp, signup, type TestApp } from './helpers';
 
 let t: TestApp;
@@ -195,16 +196,19 @@ describe('Cai about one person (M16 G11)', () => {
     expect(all).not.toContain('Garden deposit');
   });
 
-  it('compares names with the same letters the database writes', () => {
-    expect([...FOLD_FROM].length).toBeGreaterThan([...FOLD_TO].length);
-    [...FOLD_TO].forEach((plain, i) => {
-      expect([[...FOLD_FROM][i], plainName([...FOLD_FROM][i]!)]).toEqual([
-        [...FOLD_FROM][i],
-        plain,
-      ]);
-    });
-    // What the database drops, the reader drops too.
-    for (const dropped of [...FOLD_FROM].slice([...FOLD_TO].length))
-      expect(plainName(`a${dropped}b`)).toBe('ab');
+  it('compares names with the fold the database writes (M17 I5: caime_fold is foldForFind)', async () => {
+    const names = [
+      'Ayşe Işık',
+      'Hélène Œuvre',
+      'Søren Łukasz',
+      'أَحْمَد',
+      'ليلى فاطمة',
+      'محـــمد',
+      'İlkay',
+    ];
+    for (const name of names) {
+      const { rows } = await sql<{ f: string }>`select caime_fold(${name}) as f`.execute(t.ctx.db);
+      expect([name, rows[0]!.f]).toEqual([name, foldForFind(name)]);
+    }
   });
 });

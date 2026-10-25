@@ -3,9 +3,9 @@
  * their connections and whoever they're in a chat or a group with now (never through a request
  * still waiting on them), by a word of the name
  * they go by, the nickname they were given, or their handle. A whole word wins over the start of
- * one ("Ana" is Ana Lopez before Anabel), and a name is compared as people type it: without
- * accents ("Ayse" finds Ayşe, "Helene" Hélène) and with Arabic's letter forms as one ("احمد"
- * finds "أحمد", "ليلي" finds "ليلى"). Only people (`kind = 'human'`), never anyone known only
+ * one ("Ana" is Ana Lopez before Anabel), and a name is compared as people type it, folded as
+ * search folds it (`caime_fold`, M17 I5): without accents ("Ayse" finds Ayşe, "Helene" Hélène,
+ * "isik" Işık) and with Arabic's letter forms as one ("احمد" finds "أحمد", "ليلي" finds "ليلى"). Only people (`kind = 'human'`), never anyone known only
  * through an organization's conversation, whose team the customer sees as the organization
  * (R15). One query. Search's own `resolvePeople` finds a part of any sender's name, as a search
  * finds words; this is for naming someone. `peopleMeant` is a name or, failing one, a
@@ -13,53 +13,15 @@
  * for (G14).
  */
 import { aboutRelationship, relationshipWords } from '@caime/core';
-import { foldArabic } from '@caime/core/fold';
+import { foldForFind } from '@caime/core/fold';
 import { sql } from 'kysely';
 import type { AppContext } from '../context';
+import { foldSql } from './fold-sql';
 import { escapeLike } from './text';
 
-/** Letters the database writes plainly before it compares, each with its plain letter. */
-const PAIRS: ReadonlyArray<readonly [string, string]> = [
-  ['ÀÁÂÃÄÅàáâãäå', 'AAAAAAaaaaaa'],
-  ['Çç', 'Cc'],
-  ['ÈÉÊËèéêë', 'EEEEeeee'],
-  ['ÌÍÎÏİìíîïı', 'IIIIIiiiii'],
-  ['Ññ', 'Nn'],
-  ['ÒÓÔÕÖØòóôõöø', 'OOOOOOoooooo'],
-  ['ÙÚÛÜùúûü', 'UUUUuuuu'],
-  ['Ýýÿ', 'Yyy'],
-  ['Şş', 'Ss'],
-  ['Ğğ', 'Gg'],
-  ['أإآٱ', 'اااا'],
-  ['ى', 'ي'],
-  ['ة', 'ه'],
-];
-/**
- * What `foldArabic` drops (Arabic's marks, U+064B to U+0670, and the tatweel), which the database
- * drops too: `translate` deletes a letter with no pair.
- */
-const DROPPED = [...Array.from({ length: 0x0670 - 0x064b + 1 }, (_, i) => 0x064b + i), 0x0640]
-  .map((code) => String.fromCharCode(code))
-  .join('');
-export const FOLD_FROM = PAIRS.map(([from]) => from).join('') + DROPPED;
-export const FOLD_TO = PAIRS.map(([, to]) => to).join('');
-
-/** A name as the query compares it, the way `FOLD_FROM` and `FOLD_TO` write it; case is `ilike`'s. */
-export function plainName(name: string): string {
-  return foldArabic(name.normalize('NFKD').replace(/[̀-ͯ]/g, '').normalize('NFC'))
-    .replace(/ı/g, 'i')
-    .replace(/Ø/g, 'O')
-    .replace(/ø/g, 'o');
-}
-
-/** A column as the query compares it: `plainName`'s letters, written by the database. */
-export const plainColumn = (column: string) =>
-  sql<string>`translate(${sql.ref(column)}, ${FOLD_FROM}, ${FOLD_TO})`;
-
-/** Whether a name holds what was typed as whole words, as the reader compares them. */
+/** Whether a name holds what was typed as whole words, folded as search folds them (M17 I5). */
 export const holdsWhole = (name: string | null, typed: string) =>
-  Boolean(name) &&
-  ` ${plainName(name!).toLowerCase()} `.includes(` ${plainName(typed).toLowerCase()} `);
+  Boolean(name) && ` ${foldForFind(name!)} `.includes(` ${foldForFind(typed)} `);
 
 export interface NamedPerson {
   id: string;
@@ -73,7 +35,7 @@ export async function peopleNamed(
   /** `whole`: only a name holding every word typed, never one that only starts so (G14). */
   { limit = 5, whole = false }: { limit?: number; whole?: boolean } = {},
 ): Promise<NamedPerson[]> {
-  const typed = plainName(name.trim().replace(/^@/, '')).replace(/\s+/g, ' ');
+  const typed = foldForFind(name.trim().replace(/^@/, '')).replace(/\s+/g, ' ');
   if (!typed) return [];
   const start = `${escapeLike(typed)}%`;
   const word = `% ${escapeLike(typed)}%`;
@@ -112,10 +74,10 @@ export async function peopleNamed(
     .where('u.deleted_at', 'is', null)
     .where((eb) =>
       eb.or([
-        eb(plainColumn('u.display_name'), 'ilike', start),
-        eb(plainColumn('u.display_name'), 'ilike', word),
-        eb(plainColumn('s.nickname'), 'ilike', start),
-        eb(plainColumn('s.nickname'), 'ilike', word),
+        eb(foldSql('u.display_name'), 'like', start),
+        eb(foldSql('u.display_name'), 'like', word),
+        eb(foldSql('s.nickname'), 'like', start),
+        eb(foldSql('s.nickname'), 'like', word),
         sql<boolean>`u.handle::text ilike ${start}`,
       ]),
     )
@@ -126,7 +88,7 @@ export async function peopleNamed(
     (r) =>
       holdsWhole(r.display_name, typed) ||
       holdsWhole(r.nickname, typed) ||
-      String(r.handle).toLowerCase() === typed.toLowerCase(),
+      String(r.handle).toLowerCase() === typed,
   );
   return (wholly.length || whole ? wholly : rows)
     .slice(0, limit)
@@ -147,7 +109,7 @@ export async function peopleMeant(
   const named = await peopleNamed(ctx, me, words);
   if (named.length) return named;
   const relationship = aboutRelationship(words);
-  const label = plainName(relationshipWords(words));
+  const label = foldForFind(relationshipWords(words));
   if (!relationship && !label) return [];
   const rows = await ctx.db
     .selectFrom('relationships as r')
@@ -162,7 +124,7 @@ export async function peopleMeant(
       eb.or([
         ...(relationship?.role ? [eb('r.role', '=', relationship.role)] : []),
         ...(relationship && !relationship.role ? [eb('r.sphere', '=', relationship.sphere)] : []),
-        ...(label ? [eb(plainColumn('r.role_label'), 'ilike', escapeLike(label))] : []),
+        ...(label ? [eb(foldSql('r.role_label'), '=', label)] : []),
       ]),
     )
     .orderBy('u.display_name')

@@ -2644,13 +2644,25 @@ A sphere is said as how you know someone, never "sphere".
   placeholders), whose hash every run keeps as `prompt_hash` (M16 G6a). A new field the model may fill joins `SearchUnderstanding`, `fromUnderstanding`'s
   checks, the prompt in `lib/ai.ts` and both stand-ins (`test/ai.test.ts` queues a reply;
   `e2e/anthropic-stub.mjs` answers the "search someone typed" prompt from the words).
-  Words are matched against `messages.search_all` (migration 0065: the body with a card's
-  title, reference, summary and what was booked, the joiners the parser keeps inside a token
-  cut to spaces, so "INV-7731" and "7731" both find the invoice; `prefixQuery` splits what's
-  typed the same way), a period matches when a message was written or, for a card, when it's
-  for (`CARD_START`), a card's snippet is its title and reference, and an organization is found
-  through the business threads the searcher writes in (`handle`, `conversationId`; the app
-  opens the conversation). A new thing a card says of itself joins the index's expression.
+  Words are matched folded (M17 I5, `lib/fold-sql.ts`): the database's `caime_fold` is core's
+  `foldForFind` step for step (accents, case, Arabic's marks and letter forms, ı ø ł œ æ;
+  `retrieval-golden.test.ts` holds them equal), and `caime_find_text` adds each Arabic word
+  bare of its article or a joined "و" ("العرض" is also "عرض"; `bareArabic` its twin), so a word
+  typed bare finds it while a word's end never matches. A message is matched through
+  `messageVectorSql`, the very expression `messages_search_fold` (0154, built concurrently) holds
+  over `caime_search_text` (the body with a card's title, reference, summary and what was booked,
+  the joiners the parser keeps inside a token cut to spaces, so "INV-7731" and "7731" both find
+  the invoice; `foldedPrefixQuery` splits what's typed the same way); an action or a decision
+  through `titleNotesVectorSql`; a name, a title or an organization through `foldSql` with
+  `like`, never `ilike` on the raw column. The newest `RANK_WINDOW` matches are read and ordered
+  by `relevance` (`lib/found-text.ts`: whole words over starts, words side by side, a month's age
+  halving it), and `markSnippet` marks the words where they were found, folded as the index reads
+  them (never `ts_headline`). A period matches when a message was written or, for a card, when
+  it's for (`CARD_START`), a card's snippet is its title and reference, and an organization is
+  found through the business threads the searcher writes in (`handle`, `conversationId`; the app
+  opens the conversation). A new thing a card says of itself joins `caime_search_text`, in a new
+  migration with a new index built concurrently; a new language's letters join both folds with
+  golden lines (`fixtures/retrieval-golden.ts`, hand-labelled, a near miss for each rule).
   The rules read every interface language: `RULES` and `PERIOD_RULES` in `search.ts` hold each
   language's shapes (written for Arabic as it's folded: `tolerant` accepts any alef, "ى" or "ة"),
   a relationship word matches its label in the reader's language too (`relationshipFromWord`:

@@ -515,8 +515,11 @@ export interface MessagesTable {
    * set a grace ahead by the send, cleared once the effects are done, null where none are wanted.
    */
   effects_at: NullableTimestamp;
-  search: ColumnType<string, never, never>;
-  /** The words and what a card says of itself (title, reference, summary, booking), indexed. */
+  /**
+   * The words and what a card says of itself (title, reference, summary, booking), indexed (0065):
+   * read by nothing since M17 I5, whose folded index (`messages_search_fold`, 0154) is an
+   * expression over the row, and dropped in a later release.
+   */
   search_all: ColumnType<string, never, never>;
   /** What sent it when its sender didn't type it in Caime: their token's name, or an app's. */
   sent_via: string | null;
@@ -1872,10 +1875,10 @@ export type Relationship = Selectable<RelationshipsTable>;
 export type Conversation = Selectable<ConversationsTable>;
 export type Participant = Selectable<ParticipantsTable>;
 /**
- * Every column of a message but `search` and `search_all`, the tsvectors only the search query
- * reads, and `tx`, the transaction only the feed orders by (M16 G5): a message is selected with
- * these (`.select(MESSAGE_COLUMNS)`), never `selectAll()`, which shipped the vector with every row
- * read (`messaging.test.ts` holds this list to the table).
+ * Every column of a message but `search_all`, the tsvector search read until M17 I5, and `tx`,
+ * the transaction only the feed orders by (M16 G5): a message is selected with these
+ * (`.select(MESSAGE_COLUMNS)`), never `selectAll()`, which shipped the vector with every row read
+ * (`messaging.test.ts` holds this list to the table).
  */
 export const MESSAGE_COLUMNS = [
   'id',
@@ -1906,8 +1909,8 @@ export const MESSAGE_COLUMNS = [
   'pinned_by',
   'card_start_at',
   'effects_at',
-] as const satisfies ReadonlyArray<Exclude<keyof MessagesTable, 'search' | 'search_all' | 'tx'>>;
-export type Message = Selectable<Omit<MessagesTable, 'search' | 'search_all' | 'tx'>>;
+] as const satisfies ReadonlyArray<Exclude<keyof MessagesTable, 'search_all' | 'tx'>>;
+export type Message = Selectable<Omit<MessagesTable, 'search_all' | 'tx'>>;
 export type Space = Selectable<SpacesTable>;
 export type SpaceMember = Selectable<SpaceMembersTable>;
 export type Organization = Selectable<OrganizationsTable>;

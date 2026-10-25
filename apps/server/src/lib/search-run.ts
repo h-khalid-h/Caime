@@ -4,12 +4,20 @@
  * `SearchResults`. Shared by the search route, "Ask Cai" in Search and Cai's chat (M17 I4), so
  * whatever search leaves out, no answer ever sees.
  */
-import type { SearchResponse, SearchResults } from '@caime/core';
-import { MATCH_END, MATCH_START, type ParsedQuery } from '@caime/core';
+import type { ParsedQuery, SearchResponse, SearchResults } from '@caime/core';
+import { foldForFind } from '@caime/core/fold';
 import { sql } from 'kysely';
 import type { AppContext } from '../context';
 import { maskId, masksFor } from './business';
 import { titleWithGroup } from './conversations';
+import {
+  foldedPrefixQuery,
+  foldSql,
+  messageTextSql,
+  messageVectorSql,
+  titleNotesVectorSql,
+} from './fold-sql';
+import { markSnippet, relevance } from './found-text';
 import { openIn } from './member-apps';
 import { fileView, notHiddenFor, readableBy } from './messages';
 import { personViewsFor } from './people-batch';
@@ -18,27 +26,25 @@ import { visibleTasksSql } from './task-visibility';
 import { taskViews } from './tasks';
 import { escapeLike } from './text';
 
-const SNIPPET_MARKS = MATCH_START + MATCH_END;
-
 /** Anywhere in a field, what's typed taken literally (its `%` and `_` too). */
 const like = (s: string) => `%${escapeLike(s)}%`;
 
 /**
- * The words typed as a prefix tsquery: `'contr':* & 'invoic':*`, each word quoted so nothing in
- * it reads as an operator; empty when the text holds no word (punctuation alone).
+ * Anywhere in a field folded as the database folds (`foldSql`), what's typed folded the same way
+ * (M17 I5): "احمد" finds "أحمد", "isik" finds "Işık", "cafe" finds "Café".
  */
+const folded = (s: string) => like(foldForFind(s));
+
+/** A handle starts with what's typed, its "@" aside. */
+const handleStarts = (s: string) => `${escapeLike(s.replace(/^@/, ''))}%`;
+
 /**
- * What's typed, as prefixes of the lexemes `search_all` holds (migration 0065 cuts the text at
- * the same joiners, so "INV-7731" and "7731" both find the invoice).
+ * The newest messages that match the words, read to rank: the order is the best answer first
+ * (`relevance`), among these, so a person with years of messages pays for a page, never all.
  */
-function prefixQuery(text: string): string {
-  const words = text
-    .toLowerCase()
-    .split(/[^\p{L}\p{N}]+/u)
-    .filter(Boolean)
-    .slice(0, 12);
-  return words.map((w) => `'${w.replace(/'/g, "''")}':*`).join(' & ');
-}
+const RANK_WINDOW = 100;
+/** Characters of a message read for its snippet and its rank. */
+const RANK_CHARS = 2000;
 
 /** Resolve a name in the query to people the searcher knows (connections or conversation partners). */
 async function resolvePeople(ctx: AppContext, me: string, name: string): Promise<string[]> {
@@ -51,9 +57,9 @@ async function resolvePeople(ctx: AppContext, me: string, name: string): Promise
     .where('u.id', '<>', me)
     .where((eb) =>
       eb.or([
-        eb('u.display_name', 'ilike', like(name)),
-        eb('s.nickname', 'ilike', like(name)),
-        sql<boolean>`u.handle::text ilike ${`${escapeLike(name.replace(/^@/, ''))}%`}`,
+        eb(foldSql('u.display_name'), 'like', folded(name)),
+        eb(foldSql('s.nickname'), 'like', folded(name)),
+        sql<boolean>`u.handle::text ilike ${handleStarts(name)}`,
       ]),
     )
     .where((eb) =>
@@ -111,11 +117,11 @@ export async function runSearch(
       .$if(Boolean(text) && !parsed.relationship, (qb) =>
         qb.where((eb) =>
           eb.or([
-            eb('u.display_name', 'ilike', like(text)),
-            eb('s.nickname', 'ilike', like(text)),
-            eb('r.org_name', 'ilike', like(text)),
-            eb('r.role_label', 'ilike', like(text)),
-            sql<boolean>`u.handle::text ilike ${`${escapeLike(text.replace(/^@/, ''))}%`}`,
+            eb(foldSql('u.display_name'), 'like', folded(text)),
+            eb(foldSql('s.nickname'), 'like', folded(text)),
+            eb(foldSql('r.org_name'), 'like', folded(text)),
+            eb(foldSql('r.role_label'), 'like', folded(text)),
+            sql<boolean>`u.handle::text ilike ${handleStarts(text)}`,
           ]),
         ),
       )
@@ -134,8 +140,8 @@ export async function runSearch(
             .where('c.status', '=', 'active')
             .where((eb) =>
               eb.or([
-                eb('u.display_name', 'ilike', like(text)),
-                eb('s.nickname', 'ilike', like(text)),
+                eb(foldSql('u.display_name'), 'like', folded(text)),
+                eb(foldSql('s.nickname'), 'like', folded(text)),
               ]),
             )
             .limit(limit)
@@ -163,9 +169,9 @@ export async function runSearch(
         ])
         .where('owner_id', '=', me)
         .where('status', '=', 'active')
-        .where('org_name', 'ilike', like(text))
+        .where(foldSql('org_name'), 'like', folded(text))
         // One organization however its name was written.
-        .groupBy(sql`lower(org_name)`)
+        .groupBy(foldSql('org_name'))
         .limit(5)
         .execute();
       // And the organizations written to (a clinic, a shop): their conversation opens.
@@ -174,7 +180,7 @@ export async function runSearch(
         .innerJoin('organizations as o', 'o.id', 't.org_id')
         .select(['o.name', 'o.handle', 't.conversation_id'])
         .where('t.customer_id', '=', me)
-        .where('o.name', 'ilike', like(text))
+        .where(foldSql('o.name'), 'like', folded(text))
         .$if(keeps, (qb) => qb.where(open('t.conversation_id')))
         .orderBy('t.updated_at', 'desc')
         .limit(5)
@@ -188,7 +194,7 @@ export async function runSearch(
         })),
         ...orgs
           .filter(
-            (o) => !written.some((w) => w.name.toLowerCase() === (o.org_name ?? '').toLowerCase()),
+            (o) => !written.some((w) => foldForFind(w.name) === foldForFind(o.org_name ?? '')),
           )
           .map((o) => ({ name: o.org_name, people: o.people })),
       ];
@@ -232,10 +238,9 @@ export async function runSearch(
           'c.title as conversation_title',
           'c.kind as conversation_kind',
           text
-            ? // Matches are marked with two private-use characters, removed from the text first so
-              // nothing a person typed can be mistaken for a marker (core format.ts snippetParts).
-              // A card has no words: its title and reference stand in.
-              sql<string>`ts_headline('simple', translate(coalesce(m.body, concat_ws(' · ', m.payload->>'title', m.payload->'fields'->>'reference', m.payload->'fields'->>'summary')), ${SNIPPET_MARKS}, ''), websearch_to_tsquery('simple', ${text}), ${`StartSel=${MATCH_START},StopSel=${MATCH_END},MaxWords=18,MinWords=6`})`.as(
+            ? // Read to rank and to mark (`found-text.ts`). A card has no words: its title,
+              // reference and summary stand in.
+              sql<string>`left(coalesce(m.body, concat_ws(' · ', m.payload->>'title', m.payload->'fields'->>'reference', m.payload->'fields'->>'summary'), ''), ${RANK_CHARS})`.as(
                 'snippet',
               )
             : sql<string>`left(coalesce(m.body, m.payload->>'title', ''), 140)`.as('snippet'),
@@ -246,13 +251,14 @@ export async function runSearch(
         .where(readableBy(me, ctx.now(), 'm'))
         .where('c.privacy_class', '=', 'standard')
         .where('m.kind', '<>', 'system')
-        // Words as prefixes against the GIN index ("contr" finds "contract"); only a query too
-        // short to index (one or two characters) falls back to a substring scan.
+        // Words as prefixes against the folded index (M17 I5: "contr" finds "contract", "احمد"
+        // finds "أحمد", "عرض" finds "العرض"); only a query too short to index (one or two
+        // characters) falls back to a substring of the folded text.
         .$if(Boolean(text), (qb) =>
           qb.where((eb) =>
-            text.length >= 3 && prefixQuery(text)
-              ? sql<boolean>`m.search_all @@ to_tsquery('simple', ${prefixQuery(text)})`
-              : eb(sql`coalesce(m.body, m.payload->>'title')`, 'ilike', like(text)),
+            text.length >= 3 && foldedPrefixQuery(text)
+              ? sql<boolean>`${messageVectorSql('m')} @@ to_tsquery('simple', ${foldedPrefixQuery(text)})`
+              : eb(messageTextSql('m'), 'like', folded(text)),
           ),
         )
         .$if(Boolean(personIds?.length), (qb) =>
@@ -262,14 +268,30 @@ export async function runSearch(
             .where((eb) => eb.or([eb('c.kind', '<>', 'business'), eb('p.role', '=', 'agent')])),
         )
         .orderBy('m.created_at', 'desc')
-        .limit(limit)
+        .orderBy('m.id', 'desc')
+        .limit(text ? RANK_WINDOW : limit)
         .execute();
+      // The best answer first, a newer one before an older one that answers as well; then the
+      // words marked where they were found.
+      const now = ctx.now().getTime();
+      const ranked = text
+        ? rows
+            .map((r) => ({ r, score: relevance(r.snippet, text, now - r.created_at.getTime()) }))
+            .sort(
+              (a, b) =>
+                b.score - a.score ||
+                b.r.created_at.getTime() - a.r.created_at.getTime() ||
+                b.r.id.localeCompare(a.r.id),
+            )
+            .slice(0, limit)
+            .map(({ r }) => ({ ...r, snippet: markSnippet(r.snippet, text) }))
+        : rows;
       const masks = await masksFor(
         ctx,
         me,
-        rows.filter((r) => r.conversation_kind === 'business').map((r) => r.conversation_id),
+        ranked.filter((r) => r.conversation_kind === 'business').map((r) => r.conversation_id),
       );
-      results.messages = rows.map((r) => {
+      results.messages = ranked.map((r) => {
         const mask = masks.get(r.conversation_id);
         const masked = mask && r.sender_id !== me;
         return {
@@ -362,7 +384,7 @@ export async function runSearch(
         )
         .$if(Boolean(text) && scope === 'all', (qb) =>
           qb.where((eb) =>
-            eb.or([eb('a.title', 'ilike', like(text)), eb('a.url', 'ilike', like(text))]),
+            eb.or([eb(foldSql('a.title'), 'like', folded(text)), eb('a.url', 'ilike', like(text))]),
           ),
         )
         .orderBy('a.created_at', 'desc')
@@ -457,8 +479,14 @@ export async function runSearch(
       } else if (parsed.direction === 'i_asked' || scope === 'waiting')
         q = q.where('assignee_id', 'in', personIds);
     }
-    if (text && scope === 'all')
-      q = q.where(sql<boolean>`search @@ websearch_to_tsquery('simple', ${text})`);
+    if (text && scope === 'all') {
+      const words = foldedPrefixQuery(text);
+      q = q.where(
+        words
+          ? sql<boolean>`${titleNotesVectorSql('tasks')} @@ to_tsquery('simple', ${words})`
+          : sql<boolean>`false`,
+      );
+    }
     const rows = await q
       .orderBy(sql`due_at`, (ob) => ob.asc().nullsLast())
       .limit(limit)
@@ -486,8 +514,12 @@ export async function runSearch(
       .$if(Boolean(text), (qb) =>
         qb.where((eb) =>
           eb.or([
-            sql<boolean>`d.search @@ websearch_to_tsquery('simple', ${text})`,
-            eb('d.title', 'ilike', like(text)),
+            ...(foldedPrefixQuery(text)
+              ? [
+                  sql<boolean>`${titleNotesVectorSql('d')} @@ to_tsquery('simple', ${foldedPrefixQuery(text)})`,
+                ]
+              : []),
+            eb(foldSql('d.title'), 'like', folded(text)),
           ]),
         ),
       )
@@ -521,7 +553,10 @@ export async function runSearch(
       ])
       .where('p.left_at', 'is', null)
       .where((eb) =>
-        eb.or([eb('c.title', 'ilike', like(text)), eb('x.title', 'ilike', like(text))]),
+        eb.or([
+          eb(foldSql('c.title'), 'like', folded(text)),
+          eb(foldSql('x.title'), 'like', folded(text)),
+        ]),
       )
       .orderBy('c.last_message_at', (ob) => ob.desc().nullsLast())
       .limit(limit)

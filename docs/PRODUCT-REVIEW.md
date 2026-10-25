@@ -113,7 +113,12 @@ change or dismiss.
   summaries have deterministic implementations that run on every client and the server, so the
   product works with no AI provider at all. When an account enables AI, a model improves quality
   (rewrite, translate, summarize, natural-language search). All model output is labelled
-  "Suggested by Caime" and is never applied without a tap.
+  "Suggested by Caime" and is never applied without a tap. *Built (M17 I5, 2026-10-25): search
+  reads words as people type them in every interface language, by rules: one fold on the device
+  and in the database (accents, case, Arabic's marks and letter forms), an Arabic word found
+  without its article or a joined "و" as WhatsApp's substring search finds it, the best answer
+  first with a newer one ahead of an older one as good, and the words marked where they were
+  found; a hand-labelled golden set per language holds it.*
 - **R18 — Two conversation privacy classes, said plainly.** *Standard* conversations are
   encrypted in transit and at rest by the platform and get server features (search, AI, push
   previews). *Private* conversations are end-to-end encrypted and say what that costs: no server

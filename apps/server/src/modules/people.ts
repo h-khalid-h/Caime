@@ -23,6 +23,7 @@ import type {
   ContactsMatchResponse,
   PeopleSearchResponse,
 } from '@caime/core/api';
+import { foldForFind } from '@caime/core/fold';
 import { tr } from '@caime/core/i18n';
 import type { FastifyInstance } from 'fastify';
 import { sql } from 'kysely';
@@ -33,6 +34,7 @@ import { AssetsQuery, assetsPage, conversationsBetween } from '../lib/assets';
 import { itemsFor, personHost } from '../lib/booking';
 import { busyNow } from '../lib/calendar';
 import { notFound } from '../lib/errors';
+import { foldSql } from '../lib/fold-sql';
 import { notHiddenFor, readableBy } from '../lib/messages';
 import { orgsOf } from '../lib/orgs';
 import { personViewsFor } from '../lib/people-batch';
@@ -210,7 +212,9 @@ export async function peopleRoutes(app: FastifyInstance, ctx: AppContext) {
       ? (addressValue('phone', q) ?? toInternational(q, me.country))
       : null;
     const like = `${escapeLike(term)}%`;
-    const contains = `%${escapeLike(term)}%`;
+    // A name is compared folded, as Search folds it (M17 I5): "isik" finds Işık, "احمد" أحمد.
+    const name = foldForFind(q.replace(/^@/, ''));
+    const contains = `%${escapeLike(name)}%`;
 
     const rows = await ctx.db
       .selectFrom('users as u')
@@ -227,7 +231,7 @@ export async function peopleRoutes(app: FastifyInstance, ctx: AppContext) {
         'u.time_zone',
         'u.age_minor_until',
         sql<boolean>`c.id is not null`.as('is_connection'),
-        sql<number>`greatest(similarity(u.display_name, ${term}), similarity(u.handle::text, ${term}), coalesce(similarity(s.nickname, ${term}), 0))`.as(
+        sql<number>`greatest(similarity(${foldSql('u.display_name')}, ${name}), similarity(u.handle::text, ${term}), coalesce(similarity(${foldSql('s.nickname')}, ${name}), 0))`.as(
           'score',
         ),
       ])
@@ -255,9 +259,9 @@ export async function peopleRoutes(app: FastifyInstance, ctx: AppContext) {
           eb.and([
             sql<boolean>`c.id is not null`,
             eb.or([
-              eb('u.display_name', 'ilike', contains),
+              eb(foldSql('u.display_name'), 'like', contains),
               sql<boolean>`u.handle::text ilike ${like}`,
-              eb('s.nickname', 'ilike', contains),
+              eb(foldSql('s.nickname'), 'like', contains),
             ]),
           ]),
           // Everyone else, only as their privacy allows.
@@ -265,8 +269,8 @@ export async function peopleRoutes(app: FastifyInstance, ctx: AppContext) {
             sql<boolean>`coalesce((u.privacy->>'discoverByHandle')::boolean, true)`,
             eb.or([
               sql<boolean>`u.handle::text ilike ${like}`,
-              sql<boolean>`similarity(u.display_name, ${term}) > 0.35`,
-              eb('u.display_name', 'ilike', contains),
+              sql<boolean>`similarity(${foldSql('u.display_name')}, ${name}) > 0.35`,
+              eb(foldSql('u.display_name'), 'like', contains),
             ]),
           ]),
           ...(number

@@ -39,6 +39,7 @@ import { membership, sendSystem } from '../lib/conversation-views';
 import { overdueAtSql } from '../lib/due';
 import { badRequest, forbidden, notFound } from '../lib/errors';
 import { recordEvent } from '../lib/events';
+import { foldedPrefixQuery, titleNotesVectorSql } from '../lib/fold-sql';
 import { actionOpenIn, assertOpenToApps, orgsClosedToApps } from '../lib/member-apps';
 import { assertCanSend, messageViews, participantsOf, sendMessage } from '../lib/messages';
 import { readMissed, summariseMissed } from '../lib/missed';
@@ -598,9 +599,15 @@ export async function actionRoutes(app: FastifyInstance, ctx: AppContext) {
       .where('d.status', '=', 'active')
       .$if(Boolean(q.conversationId), (qb) => qb.where('d.conversation_id', '=', q.conversationId!))
       .$if(Boolean(q.contextId), (qb) => qb.where('d.context_id', '=', q.contextId!))
-      .$if(Boolean(q.q), (qb) =>
-        qb.where(sql<boolean>`d.search @@ websearch_to_tsquery('simple', ${q.q})`),
-      )
+      // Words as prefixes, folded as search folds them (M17 I5).
+      .$if(Boolean(q.q), (qb) => {
+        const words = foldedPrefixQuery(q.q!);
+        return qb.where(
+          words
+            ? sql<boolean>`${titleNotesVectorSql('d')} @@ to_tsquery('simple', ${words})`
+            : sql<boolean>`false`,
+        );
+      })
       .orderBy('d.decided_at', 'desc')
       .limit(200)
       .execute();
