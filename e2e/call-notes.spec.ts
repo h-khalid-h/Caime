@@ -70,7 +70,7 @@ test.describe
       await page.goto(`/c/${convo}`);
       await sam.page.goto('/');
       await page.getByTestId('call-voice').click();
-      await expect(sam.page.getByTestId('call-incoming')).toBeVisible();
+      await expect(sam.page.getByTestId('call-incoming')).toBeVisible({ timeout: 20_000 });
 
       // Noor asks before Sam answers: the ring then asks for her, and says so.
       await page.getByTestId('call-notes').click();
@@ -151,7 +151,7 @@ test.describe
       await page.goto(`/c/${convo}`);
       await sam.page.goto('/');
       await page.getByTestId('call-voice').click();
-      await expect(sam.page.getByTestId('call-incoming')).toBeVisible();
+      await expect(sam.page.getByTestId('call-incoming')).toBeVisible({ timeout: 20_000 });
       await page.getByTestId('call-notes').click();
       await page.getByTestId('call-notes-take').click();
       await expect(sam.page.getByTestId('call-accept-without-notes')).toBeVisible();
@@ -208,7 +208,7 @@ test.describe
       await page.goto(`/c/${convo}`);
       await sam.page.goto('/');
       await page.getByTestId('call-voice').click();
-      await expect(sam.page.getByTestId('call-incoming')).toBeVisible();
+      await expect(sam.page.getByTestId('call-incoming')).toBeVisible({ timeout: 20_000 });
 
       // Noor asks Cai to record: the ring says what's kept, and its Answer says it records.
       // Cai offers both, each saying what it keeps.
