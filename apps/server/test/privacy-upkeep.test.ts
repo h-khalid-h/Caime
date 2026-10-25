@@ -197,9 +197,12 @@ describe('what Caime keeps, and for how long', () => {
         .select(['id', 'user_id', 'status', 'title', 'rationale', 'payload'])
         .where('message_id', '=', m.id)
         .execute();
+    // What an offer says, never its ids (a uuid may hold those digits by chance).
+    const words = (rows: Awaited<ReturnType<typeof offers>>) =>
+      JSON.stringify(rows.map((o) => [o.title, o.rationale, o.payload]));
     const made = await offers();
     expect(made.length).toBeGreaterThan(0);
-    expect(JSON.stringify(made)).toContain('4417');
+    expect(words(made)).toContain('4417');
     // One already turned down keeps nothing of it either.
     const first = made[0];
     await (first?.user_id === noor.user.id ? noor : alex).post(
@@ -209,7 +212,7 @@ describe('what Caime keeps, and for how long', () => {
     await alex.del(`/v1/messages/${m.id}`);
     const after = await offers();
     expect(after).toHaveLength(made.length);
-    expect(JSON.stringify(after)).not.toContain('4417');
+    expect(words(after)).not.toContain('4417');
     expect(after.every((o) => o.status !== 'pending')).toBe(true);
   });
 
