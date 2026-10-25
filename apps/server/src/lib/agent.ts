@@ -74,7 +74,7 @@ import { bookablePlaceLines } from './places';
 import { agentRepliesToday, agentSpent } from './plans';
 import { postAs } from './post-as';
 import { stockFor, withStock } from './stock';
-import { transcriptText, wordsFor } from './transcript';
+import { transcriptClock, transcriptText, wordsFor } from './transcript';
 import { minorOf } from './users';
 
 /** How long it waits after a customer writes, so a message sent in three parts is read whole. */
@@ -249,13 +249,15 @@ export async function askAgent(
 
 /**
  * The conversation as the agent reads it: who wrote, never their name, oldest first; its own
- * introduction left out (it names the customer).
+ * introduction left out (it names the customer); each line with when it was written, on the
+ * customer's clock as its "today" is, and the time now beside it (R118).
  */
 async function transcriptFor(
   ctx: AppContext,
   conversationId: string,
   customerId: string,
   agentId: string,
+  timeZone: string,
 ) {
   const rows = await ctx.db
     .selectFrom('messages as m')
@@ -267,6 +269,7 @@ async function transcriptFor(
       'm.body',
       'm.payload',
       'm.deleted_at',
+      'm.created_at',
       'u.kind as sender_kind',
     ])
     .where('m.conversation_id', '=', conversationId)
@@ -278,6 +281,7 @@ async function transcriptFor(
     .execute();
   // Its introduction, the first line of its first message, names the customer: never shown to
   // the model (R87).
+  const { time } = transcriptClock(timeZone);
   const opens = (m: (typeof rows)[number]) =>
     m.sender_id === agentId &&
     (m.payload as { introduction?: unknown } | null)?.introduction === true;
@@ -287,6 +291,7 @@ async function transcriptFor(
     // Its introduction said alone, before a card it made (M17 I1c), leaves nothing to read.
     .filter((m) => m.sender_id !== agentId || m.kind !== 'text' || (m.body ?? '').trim() !== '')
     .map((m) => ({
+      at: time(m.created_at),
       who:
         m.sender_id === customerId
           ? 'Customer'
@@ -300,6 +305,7 @@ async function transcriptFor(
   return {
     text: transcriptText(lines),
     introduced: rows.some((m) => m.sender_id === agentId),
+    now: time(ctx.now()),
   };
 }
 
@@ -621,6 +627,7 @@ export async function agentReply(ctx: AppContext, payload: Record<string, unknow
     conversationId,
     thread.customer_id,
     agent.bot_user_id,
+    customer.time_zone || 'UTC',
   );
   const offer = await offerFor(ctx, thread, agent, !minorOf(customer, ctx.now()));
   const { items, menu, open } = offer;
@@ -644,6 +651,7 @@ export async function agentReply(ctx: AppContext, payload: Record<string, unknow
       conversation: transcript.text,
       introduced: transcript.introduced,
       today: todayForAgent(ctx.now(), customer.time_zone),
+      now: transcript.now,
       slots: slots || null,
       catalog,
       menu,

@@ -4348,6 +4348,36 @@ clinic can sign for. I1 lands before launch.
         metrics has them). ⛔ for production: cai.me's domain verified on the product
         organization (the owner's), or nobody hears it.
   - [ ] I15c. = I8, whose numbers an organization's answers then read.
+- [ ] I16. Cai answers for you, when you turn it on (R116; the council in
+      `docs/REVIEW-2026-10-25-CAI.md` §7).
+  - [ ] I16a. In writing (L): `preferences.caiAnswers` (who: people who aren't my contacts, the
+        spheres I pick; when: first for strangers, after N minutes unanswered, while busy; the
+        spheres I cover and a monthly limit), the stranger's two choices ("Leave my message",
+        free; "Talk to Cai now", their own allowance), Cai's line for the receiver (an ADR first:
+        a line from a non-member in a direct conversation, never from the receiver's account),
+        what Cai may say built with the caller as the viewer through the privacy evaluator, R87's
+        introduction, the summary to the receiver with what to do, ring-through for chosen
+        spheres, `runAi` on the payer's id, `caime_cai_answers_total{scope,payer,outcome}`, not
+        for anyone under 18, nothing in a private conversation.
+  - [ ] I16b. A person's unanswered call answered by Cai (L), after H8a and R111's voice path; a
+        minute measured on a real call first.
+- [ ] I17. Caime as infrastructure, from an organization's own website (R117).
+  - [ ] I17a. The website snippet (M): `/o/<handle>/widget` and a snippet from the setup's door,
+        the chat and the booking and ordering forms on the visitor-page shape (R97), framed only
+        by the organization's verified domain (`frame-ancestors`), counted on `growth.door`.
+  - [ ] I17b. Platforms embed the same parts for their organizations (apps, sign-in with Caime),
+        when one asks: a council of its own first.
+- [x] I18. Time-aware intelligence (R118, the owner's report from Momo's chat): Cai's and the
+      Friends' transcript (`transcriptOf` in `lib/system-accounts.ts`) and the organization's
+      agent's (`transcriptFor` in `lib/agent.ts`, on the customer's clock as its "today" is)
+      carry each line's time, `<now>` stands beside the conversation (never in the cached system
+      prompt), and one rule (`TIME_RULE` in `lib/ai.ts`) tells each model to read the gaps: a step
+      isn't done seconds after it was given, so it asks how it went; the agent's nightly
+      evaluation reads its cases a minute apart. The catch-up, Ask, the brief and the call's notes
+      read times already. Verified: `system-accounts.test.ts` (the times on Cai's and Momo's
+      lines, `<now>` after the conversation, the rule in the rules and no clock in the cached
+      prefix), `agents.test.ts` (the customer's lines timed, `<now>`), `agent-eval.test.ts`,
+      `ai-costs.test.ts`; the E2E stand-in reads lines with or without a time.
 
 ## M18 — The standards pass (the owner's brief of 2026-10-25)
 
@@ -4413,6 +4443,16 @@ have yet, each sized:
       so). Verified: `import.test.ts` (8, with the metrics counting it), the conversation E2E's
       Telegram case beside WhatsApp's (2 passed). Signal exports nothing, so the switch from it
       stays the invite link.
+- [x] J7. Several coding agents at once (the owner's notes, 2026-10-25): `AGENTS.md`, the file
+      Codex, Cursor, Gemini CLI and the rest read on entering a repository, says who leads (Cai
+      Code: reviews and merges, the only agent that pushes to `main`) and the names the others go
+      by (Caishy Code, Zuzu Code… after the Caime Friends), how an item is claimed (a draft pull
+      request `[<Name> Code] <id>: <what>` from `<name>/<slug>`), where parallel work collides
+      (migration numbers, catalogs, the docs, the shared web budget) and the line every commit
+      ends with (`Co-Authored-By: Caime Intelligence (<Name> Code) <noreply@cai.me>`, no model or
+      vendor named); `CONTRIBUTING.md` points there. CI already runs every pull request without
+      secrets and deploys only `main`. ⛔ Branch protection on `main` (a pull request and the CI
+      check required, pushes to the lead and the owner) is the owner's GitHub setting.
 
 ## Log
 
@@ -6006,6 +6046,14 @@ CONNIQT; they mean Caime. Caishy is one of Caime's AI members, and Cai leads the
 - 2026-10-20 — The French and Turkish catalogs come in two halves fetched side by side, as Arabic
   does: their largest download 48.9 KB where one was 95.2 KB of a chunk's 100; the first download
   448.8 KB of 450 (0.2 KB more: the two loaders).
+- 2026-10-25 — The owner's notes of the evening through the council (review §7): Cai answers for
+  a person when they turn it on, written first, on the allowance of whoever chose it (the
+  receiver's for the relationships they cover, the caller's own on their tap; never money between
+  people, R116, R111 amended); Caime as infrastructure starts at an organization's own website and
+  stays its own network, never a white label (R117); and time-aware intelligence (R118, I18):
+  Momo answered "Done" seconds after its steps as if they were done, because its transcript
+  carried no times; every model that reads a conversation now reads each line's time and the
+  time now. `AGENTS.md` and the commit line for the coding agents that join Cai Code (J7).
 - 2026-10-25 — M17 I15b, Caime's own day: the owner and admins of the organization that is Caime
   (verified at `PUBLIC_URL`'s domain) hear from Cai when a provider fails two checks in a row, the
   backup goes stale or isn't copied off the server, the audit chain fails its check, a job fails

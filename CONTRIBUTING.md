@@ -7,7 +7,8 @@ lead session that maintains this repository, or the owner). Nothing reaches `mai
 
 ## Before you start
 
-1. Read `CLAUDE.md` (the operating manual: conventions, commands, working notes), then
+1. Read `CLAUDE.md` (the operating manual: conventions, commands, working notes; an AI agent
+   starts at `AGENTS.md`), then
    `docs/ROADMAP.md` (what is done, in progress, blocked), `docs/PRODUCT-REVIEW.md` (R1 onward
    override the PRD) and `docs/RESOURCES.md` (the budgets your change is measured against).
 2. Pick work from the roadmap, or say in the pull request which PRD section or refinement it
@@ -78,9 +79,14 @@ alone: a contributor's own approval, a bot's approval or a green CI is not one.
 
 ## For AI agents in particular
 
+- Start at `AGENTS.md`: who leads (Cai Code), the names agents go by (after the Caime Friends:
+  Caishy Code, Zuzu Code…), how a roadmap item is claimed with a draft pull request, where
+  parallel work collides (migration numbers, catalogs, the docs, the shared web budget) and the
+  line every commit ends with (`Co-Authored-By: Caime Intelligence (<Name> Code)
+  <noreply@cai.me>`, no model or vendor named).
 - Read `.claude/skills/steward/SKILL.md` before driving a pull request: it says how CI, review
   threads and check-ins are handled in this repository.
-- Say in the description that an agent made the change, and which session or run, so the
+- Say in the description which agent made the change (its name) and which session or run, so the
   reviewer knows what to verify most carefully: an agent's claim to have run something is
   checked by its output, so paste the last lines of `pnpm check`, the budget and the E2E.
 - Never push to `main`, `production` or anyone else's branch; never open a second pull request

@@ -90,7 +90,7 @@ import { assertAiAllowance } from './plans';
 import { postAs } from './post-as';
 import { visibleTasksSql } from './task-visibility';
 import type { UnheardWhy } from './transcribe';
-import { transcriptText, wordsFor } from './transcript';
+import { transcriptClock, transcriptText, wordsFor } from './transcript';
 import { cardsAhead, dueCards } from './upcoming';
 import { minorOf } from './users';
 
@@ -651,14 +651,15 @@ async function friendSays(
     me,
     async () => {
       const [transcript, open] = await Promise.all([
-        transcriptOf(ctx, conversationId, me.id, account.name),
+        transcriptOf(ctx, conversationId, me, account.name),
         friend.reads.length ? openFor(ctx, me, { forModel: true }) : null,
       ]);
       const ai = ctx.ai!;
       return runAi(ctx, 'friend', me.id, () =>
         ai.friendChat({
           friend: personaOf(handle),
-          transcript,
+          transcript: transcript.text,
+          now: transcript.now,
           context: open ? contextLines(open, friend.reads) : '',
           ...spoken(voice),
           today: todayForAgent(ctx.now(), me.time_zone),
@@ -776,7 +777,7 @@ async function caiAnswer(
   said: Said,
 ): Promise<CaiAnswer & { found: AnswerPassage<SearchSource>[] }> {
   const [transcript, open, found] = await Promise.all([
-    transcriptOf(ctx, conversationId, me.id, 'Cai'),
+    transcriptOf(ctx, conversationId, me, 'Cai'),
     openFor(ctx, me, { forModel: true }),
     said.isQuestion && said.text.trim()
       ? searchPassages(
@@ -790,7 +791,8 @@ async function caiAnswer(
   const ai = ctx.ai!;
   const answer = await runAi(ctx, 'cai', me.id, () =>
     ai.caiChat({
-      transcript,
+      transcript: transcript.text,
+      now: transcript.now,
       context: contextLines(open),
       found: found.length ? found.map((p) => p.text).join('\n') : null,
       ...spoken(voice),
@@ -1057,12 +1059,15 @@ export function publicFacts(handle: 'cai' | CharacterHandle): { helps: string; t
 
 /**
  * The conversation as the model reads it: "Person" and the account's own name ("Cai", "Panda"),
- * oldest first, never the person's name.
+ * oldest first, never the person's name; each line with when it was written on the person's
+ * clock, and the time now beside it, so the gaps are read (R118: "Done" seconds after a step
+ * isn't the step done).
  */
-async function transcriptOf(ctx: AppContext, conversationId: string, personId: string, as: string) {
+async function transcriptOf(ctx: AppContext, conversationId: string, me: Person, as: string) {
+  const personId = me.id;
   const rows = await ctx.db
     .selectFrom('messages')
-    .select(['sender_id', 'kind', 'body', 'payload', 'deleted_at'])
+    .select(['sender_id', 'kind', 'body', 'payload', 'deleted_at', 'created_at'])
     .where('conversation_id', '=', conversationId)
     // What the person may read (M16 D3): what they deleted for themselves never reaches the model.
     .where(readableBy(personId, ctx.now()))
@@ -1070,12 +1075,17 @@ async function transcriptOf(ctx: AppContext, conversationId: string, personId: s
     .orderBy('seq', 'desc')
     .limit(TRANSCRIPT_MESSAGES)
     .execute();
-  return transcriptText(
-    rows.reverse().map((m) => ({
-      who: m.sender_id === personId ? 'Person' : as,
-      words: wordsFor(m, 600),
-    })),
-  );
+  const { time } = transcriptClock(me.time_zone || 'UTC');
+  return {
+    text: transcriptText(
+      rows.reverse().map((m) => ({
+        at: time(m.created_at),
+        who: m.sender_id === personId ? 'Person' : as,
+        words: wordsFor(m, 600),
+      })),
+    ),
+    now: time(ctx.now()),
+  };
 }
 
 export interface Open {

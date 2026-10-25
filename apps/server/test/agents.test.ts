@@ -197,7 +197,11 @@ describe('an organization’s AI agent (PRD §74–75)', () => {
     );
     const content = asked.messages[0].content as string;
     expect(content).not.toContain(KNOWLEDGE);
-    expect(content).toContain('[1] Customer: Hi! Are you open on Saturday?');
+    // Each line with when it was written, and the time now beside the conversation (R118).
+    expect(content).toMatch(
+      /\[1\] \w{3} \d{1,2} \w{3} \d{2}:\d{2} · Customer: Hi! Are you open on Saturday\?/,
+    );
+    expect(content).toMatch(/<now>\w{3} \d{1,2} \w{3} \d{2}:\d{2}<\/now>/);
     // Its introduction is Caime's, written by the rules (R87): the model only answers.
     expect(content).toContain('Caime opens your message with your introduction');
     // Nobody's name or address reaches the model.
@@ -278,7 +282,7 @@ describe('an organization’s AI agent (PRD §74–75)', () => {
     await agentTurn();
     expect(requests).toHaveLength(1);
     const content = requests[0].messages[0].content as string;
-    expect(content).toMatch(/\[\d+\] You: Yes: on Saturday/);
+    expect(content).toMatch(/\[\d+\] [^\n]* · You: Yes: on Saturday/);
     // Its introduction named her: the model never reads it.
     expect(content).not.toContain('Lina');
     expect(content).not.toContain('AI assistant for');

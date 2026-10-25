@@ -83,7 +83,8 @@ function answer(body) {
     // A Caime Friend (R71): in its own name, about what it was asked.
     calls.push('friend');
     const name = /You are (\S+), one of the Caime Friends/.exec(system)?.[1] ?? 'A friend';
-    const asked = [...content.matchAll(/\] Person: (.*)$/gm)].at(-1)?.[1]?.trim() ?? '';
+    const asked =
+      [...content.matchAll(/\] (?:[^\n]* · )?Person: (.*)$/gm)].at(-1)?.[1]?.trim() ?? '';
     return reply(`${name} here! About “${asked}”, let’s see.`);
   }
   if (system.includes('You are Cai, the assistant inside Caime')) {
@@ -91,7 +92,7 @@ function answer(body) {
     // keep what was said before ("save it as a task", M16 G13), it keeps the person's words
     // before the ask, their first sentence the title.
     calls.push('cai');
-    const said = [...content.matchAll(/\] Person: (.*)$/gm)].map((m) => m[1].trim());
+    const said = [...content.matchAll(/\] (?:[^\n]* · )?Person: (.*)$/gm)].map((m) => m[1].trim());
     const asked = said.at(-1) ?? '';
     if (/\b(?:save|keep)\b.*\b(?:it|this|that)\b/i.test(asked) && said.length > 1) {
       const before = said.at(-2);
@@ -194,9 +195,9 @@ function answer(body) {
     const asked =
       between(content, '<conversation>', '</conversation>')
         .split('\n')
-        .filter((l) => /^\[\d+\] Customer: /.test(l))
+        .filter((l) => /^\[\d+\] (?:[^\n]* · )?Customer: /.test(l))
         .pop()
-        ?.replace(/^\[\d+\] Customer: /, '') ?? '';
+        ?.replace(/^\[\d+\] (?:[^\n]* · )?Customer: /, '') ?? '';
     const say = (action, message, extra = {}) =>
       reply(
         JSON.stringify({
@@ -225,7 +226,7 @@ function answer(body) {
     const offeredBefore = /Which suits you\?/.test(
       between(content, '<conversation>', '</conversation>')
         .split('\n')
-        .filter((l) => /^\[\d+\] You: /.test(l))
+        .filter((l) => /^\[\d+\] (?:[^\n]* · )?You: /.test(l))
         .pop() ?? '',
     );
     if (slots.length && (/\b(book|appointment|slot)\b/i.test(asked) || offeredBefore)) {

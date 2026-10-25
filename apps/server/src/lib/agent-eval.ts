@@ -51,6 +51,12 @@ export function scoreCase(c: EvalCase, reply: AgentReply): AgentEvalFinding[] {
   return found;
 }
 
+/**
+ * A turn's time as a customer's conversation carries it (R118): the clinic's day, a minute apart,
+ * the time now a minute after the last.
+ */
+const evalTime = (i: number) => `Mon 19 Oct 10:${String(i).padStart(2, '0')}`;
+
 /** A case as the agent reads it in a conversation, on the tier's model. */
 function inputFor(c: EvalCase, tier: ModelTier): AgentInput {
   return {
@@ -59,9 +65,12 @@ function inputFor(c: EvalCase, tier: ModelTier): AgentInput {
     agentName: EVAL_CLINIC.agentName,
     country: EVAL_CLINIC.country,
     knowledge: EVAL_CLINIC.knowledge,
-    conversation: transcriptText(c.turns.map(([who, words]) => ({ who, words }))),
+    conversation: transcriptText(
+      c.turns.map(([who, words], i) => ({ who, words, at: evalTime(i) })),
+    ),
     introduced: c.turns.some(([who]) => who === 'You'),
     today: EVAL_CLINIC.today,
+    now: evalTime(c.turns.length),
     slots: c.slots ? EVAL_SLOTS : null,
     catalog: null,
     menu: null,

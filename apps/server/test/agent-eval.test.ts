@@ -145,9 +145,9 @@ const reply = (r: Partial<AgentReply>): AgentReply => ({
 function caseOf(body: any): EvalCase {
   const said = String(body.messages[0].content)
     .split('\n')
-    .filter((l) => /^\[\d+\] Customer: /.test(l))
+    .filter((l) => /^\[\d+\] (?:[^\n]* · )?Customer: /.test(l))
     .at(-1)
-    ?.replace(/^\[\d+\] Customer: /, '');
+    ?.replace(/^\[\d+\] (?:[^\n]* · )?Customer: /, '');
   const found = EVAL_CASES.find((c) => c.turns.at(-1)?.[1] === said);
   if (!found) throw new Error(`no case says ${said}`);
   return found;

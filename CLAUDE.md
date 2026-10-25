@@ -120,8 +120,10 @@ These are rules, not preferences.
     repeats, and never widens a budget to fit.
 15. **Changes come as pull requests.** Anyone else, person or AI agent, contributes through
     `CONTRIBUTING.md`: a pull request against `main`, CI green, reviewed against these
-    conventions by the reviewer (this session, or the owner), who alone merges. Only the reviewer
-    and the owner push to `main`.
+    conventions by the reviewer (this session, Cai Code, or the owner), who alone merges. Only the
+    reviewer and the owner push to `main`. A coding agent starts at `AGENTS.md` (its name, after
+    the Caime Friends; claiming an item; where parallel work collides), and every commit ends with
+    `Co-Authored-By: Caime Intelligence (<Name> Code) <noreply@cai.me>`, naming no model or vendor.
 16. **Sharp at every size** (R70). An image is drawn from the rendition made for its size on a 3x
     screen, through core's `imageFor` (`renditions.ts`: the 480-px thumbnail up to 160 points,
     the 1280-px preview above it, the cleaned original for a viewer that zooms), never a smaller
@@ -2398,7 +2400,10 @@ A sphere is said as how you know someone, never "sphere".
   voice note's words whole, else what the message is; `transcriptText`, numbered lines with
   what each replies to; `transcriptClock`, the reader's own clock), for Cai and the friends,
   catch-up and ask, the brief and the agent: a new feature that hands a model a conversation
-  builds its lines there. A sweep over due rows
+  builds its lines there, each with its time on the reader's clock (`at`, `transcriptClock`), and
+  where it asks about what happens next it passes the time now as `<now>` beside the conversation
+  (never in a cached system prompt) with `TIME_RULE` (`lib/ai.ts`) in its rules (R118: Cai, the
+  Friends and the agent; Momo once took "Done" seconds after its steps for the steps done). A sweep over due rows
   (reminders, held notifications) takes `SWEEP_BATCH` at a time and runs `background: true`,
   so nothing holds the job loop; a check per item in a loop (the AI actions route) is a query
   for the set first. Every model call's usage carries `cacheReadTokens` and

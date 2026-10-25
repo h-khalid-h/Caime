@@ -180,7 +180,14 @@ describe('Cai (R67)', () => {
     ]);
     const content = asked.messages[0].content as string;
     expect(content).toContain('• Sarah Smith · Access approval');
-    expect(content).toMatch(/\[\d+\] Person: Write a short toast/);
+    // Time-aware (R118): each line says when it was written on the person's clock, the time now
+    // stands beside the conversation (never in the cached rules), and the rules say to read the gaps.
+    expect(content).toMatch(
+      /\[\d+\] \w{3} \d{1,2} \w{3} \d{2}:\d{2} · Person: Write a short toast/,
+    );
+    expect(content).toMatch(/<\/conversation>\n<now>\w{3} \d{1,2} \w{3} \d{2}:\d{2}<\/now>$/);
+    expect(JSON.stringify(asked.system)).toContain('read the gaps');
+    expect(JSON.stringify(asked.system)).not.toMatch(/\d{2}:\d{2}/);
     expect(content).not.toContain('Hassan Khalid');
     // A failure answers in words, with what the rules still do.
     await send(hassan, cai, 'And a poem?');
@@ -348,8 +355,8 @@ describe('the Caime Friends (R67, R71)', () => {
     // What's asked of him is Momo's to know; what he waits on is Panda's.
     expect(content).toContain('• Sarah Smith · Book the venue');
     expect(content).not.toContain('Access approval');
-    expect(content).toMatch(/\[\d+\] Momo: /);
-    expect(content).toMatch(/\[\d+\] Person: Any idea for the weekend\?/);
+    expect(content).toMatch(/\[\d+\] [^\n]* · Momo: /);
+    expect(content).toMatch(/\[\d+\] [^\n]* · Person: Any idea for the weekend\?/);
     expect(content).not.toContain('Hassan Khalid');
     // A friend with nothing of theirs to know reads nothing open, and asks nothing to find out.
     const lumi = (await open(hassan, LUMI)).conversation.id;

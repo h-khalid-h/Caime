@@ -351,7 +351,11 @@ the reader cache that already held their language holds their choice and country
 row, one more column), what they write is read for a dialect by a word list in memory, and the
 Egyptian, Gulf and Levantine lines are three overlays of 71 entries made into translators once at
 start. The model is told it in one sentence of 173 characters at most (variety and country), so
-a model answer costs what it did.
+a model answer costs what it did. Reading the times (R118, M17 I18) adds 19 characters a line
+("Wed 23 Sep 14:05 · "), at most 228 for Cai's or a friend's 12 lines and 380 for the agent's 20,
+and 28 for the time now; the rule that explains them, 347 characters, sits in the cached system
+prompt, read from the cache after the first message. No query: the times were already in the
+rows read.
 
 ## Cai keeps going (R68)
 

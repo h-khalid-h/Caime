@@ -192,3 +192,117 @@ that is Caime.
    set (the tell uses the plan's default and says so).
 6. *The number:* the share of organizations whose owner or an admin hears from Cai about it in
    their first week (an answer or a tell), on `caime_cai_tells_total` and the chat's answers.
+
+## 7. The council on the owner's notes of the evening (R116, R117, R118)
+
+The owner's notes, read back: (1) when turned on in settings, Cai takes over a chat or a call for a
+person or an organization, adds a person when one is needed, and stays in; (2) the AI's cost is
+paid by whoever starts it or whoever receives it, by the receiver's settings, so that receiving
+isn't a cost unless the receiver chooses to cover it, for everyone or for some relationships, with
+limits; (3) Cai speaks the caller's language and accent, in the receiver's tone and by the
+receiver's rules; (4) Cai knows who it's talking to (the relationship, the history) and treats an
+unknown person properly; (5) Caime becomes infrastructure other platforms (a LinkedIn) use to give
+their organizations and people chat and calls, as Stripe is for payments, starting from "chat,
+call, book, order: website"; (6) from Momo answering "Done" seconds after a step as if it were done:
+"time aware intelligence" across all of Caime's intelligence.
+
+**The seats.** The Architect proposed three decisions: time-awareness now, as a defect; "Cai answers
+for you" as an R entry, written first and spoken later; Caime as infrastructure, built as a product
+for platforms. The Specialist for (1) to (4) was a conversational-AI product lead who has shipped
+call screening and an AI receptionist at a carrier's scale; for (5), a developer-platform lead who
+built an embeddable payments and messaging product used inside other companies' apps. The
+Newcomers were a freelance designer in Cairo turning it on between two clients, on a small phone in
+Arabic; a stranger writing to her for the first time; and the owner himself in Momo's chat.
+
+**Turning points.**
+
+1. *Adversary: the caller paying was refused once (R111), and Caime never moves money between
+   people (R62).* Checked: R111's reason was "a caller paying to reach an organization puts a price
+   on exactly the contact the organization wants, and would make Caime a biller of calls between
+   people". *Fixed:* what's paid is **whose AI allowance** a conversation with Cai spends (R107:
+   `aiEurPerDay`, the plan's own budget, counted by cost), never a payment from one person to
+   another. The caller spends their own allowance only on their own tap; the receiver covers
+   chosen relationships from theirs, up to a monthly limit. R62 holds; R111 is amended, not
+   reversed: an organization still covers the audience it chose, by default.
+2. *Newcomer (the stranger): "a robot answered, and now I pay?"* *Fixed:* the first thing Cai says is
+   who it is and for whom (R87), and the stranger chooses with one tap: "Leave my message for
+   Sara" (free, the plain message request, as today) or "Talk to Cai now" (a few minutes of their own
+   allowance, said in words, never a price). Nobody spends anything they didn't choose.
+3. *Adversary: Cai can't speak in a one-to-one as a third member or as the receiver.* Evidence: a
+   direct conversation is two people (`sendMessage` takes "the other" as the one participant who
+   isn't the sender, `lib/messages.ts` near the direct-conversation block), and a line from Sara's
+   own account written by a model would be impersonation. *Fixed:* Cai's lines in it are Cai's,
+   marked as answering for Sara, never from her account and never making Cai a participant; how a
+   direct conversation carries a line from a non-member is an ADR before any code.
+4. *Adversary: principal-awareness leaks what's private.* Cai knows how Sara labelled the caller
+   (convention 2) and her other conversations. *Fixed:* what Cai may say to a caller is built with
+   the caller as the viewer, through the privacy evaluator: Sara's profile as the caller may see it,
+   her busy or free only where `busy` allows, her public booking items, and the two's own
+   conversation. The label and the history shape what Cai does (who may ring through, how formal it
+   is) and are never said. A test holds that no label word and no other conversation's line reaches
+   the caller.
+5. *Specialist, second-order (abuse at a hundred times the scale):* an answering AI invites people
+   who probe it, and a covered budget invites draining. *Mitigated:* strangers are on their own
+   allowance by default and covered spheres are Sara's labelled people only, with a cap a day per
+   caller; Cai answering never accepts a message request (one message until answered still holds);
+   the caller's words are information to the model, never instructions, with eval cases for it;
+   measured on `caime_cai_answers_total{outcome}` (handed over, refused, out of allowance).
+6. *Adversary: under 18 and the law.* *Fixed:* not offered to anyone under 18 as a receiver in this
+   phase (R29: they take requests from shared connections at most anyway). The EU AI Act's
+   transparency duty (a person talking to an AI is told so, Art. 50) is met by the introduction,
+   said before a word is heard; what the caller says is written down for the receiver, which the
+   introduction says, and no audio is kept (R114's rules).
+7. *Specialist, cost:* by the price list in `lib/ai-costs.ts`, a minute of Cai on a call is about
+   €0.025 (hearing: $0.22 an hour; speaking: about 400 characters at $0.04 a thousand; the light
+   model's turns), so the free plan's €0.50 a day is about twenty minutes, and a written answer is
+   a fraction of a cent: an estimate from the list, to be measured on a real call before voice
+   ships (convention 13). *Fixed:* written first, voice after R111's voice path (H8a, then the
+   streaming bake-off ADR-17 names).
+8. *Adversary, on (5): a white-label CPaaS is another business.* Twilio, Sendbird, Stream and Agora
+   have years of SDKs, SLAs and per-user pricing; Caime has no users yet, and a white-labelled silo
+   of another company's users can't hold Caime's one relationship graph (convention 1). *Build
+   less:* Caime's infrastructure is its network, not a white label. Its first step is the owner's
+   own first line, "website": an organization puts Caime's chat, booking, ordering and, after H8a,
+   calls on its own site with one snippet, on the shape every visitor's page already has (R97: a
+   page state, a form, a redirect, a sealed claim) and everyone in it a Caime person. Platforms then
+   embed the same parts for their organizations through apps (R74) and sign-in with Caime; an
+   account model for platforms, as Stripe's connected accounts are, waits for a platform that asks,
+   with its own council.
+9. *Newcomer (the owner, in Momo's chat):* Momo said "Yay, you've covered the whole tour!" seconds
+   after the steps, and then that it couldn't see the clock. Evidence: the transcript Cai and the
+   Friends read carries no times (`transcriptOf` in `lib/system-accounts.ts` passes no `at`), nor
+   does the organization's agent's (`lib/agent.ts`); the catch-up, Ask, the brief and the notes
+   already do. *Fixed now:* a defect under R113, so no council was needed for it: every model that
+   reads a conversation reads each line's time on its reader's clock and the time now, and is told
+   to read the gaps.
+
+**The Conductor's decision.** Caime's intelligence is time-aware from today, Cai answers for a person
+in writing on the payer's own allowance chosen by them, and Caime's infrastructure starts at an
+organization's own website: each is the smallest step that stands on what's built, and none moves
+money between people or puts anyone's private label in front of anyone else.
+
+1. *The plan:*
+   - M17 I18 (time-aware, now): `at` on Cai's and the Friends' lines on the person's clock and on the
+     agent's on the organization's, `<now>` beside the conversation (not in the cached system
+     prompt, R107's cache), and one rule in the prompts; an agent eval case that answers "done"
+     seconds after a step. Done when the tests see the times and the case scores.
+   - M17 I16a (Cai answers for you, in writing): `preferences.caiAnswers` (who: people who aren't
+     my contacts, my labelled spheres; when: first for strangers, or when I haven't answered in N
+     minutes, or while I'm busy; which spheres I cover and the monthly limit), the stranger's
+     two-way choice, Cai's line for her, the context through the privacy evaluator, the summary to
+     Sara with what to do, ring-through for the spheres she picks, `runAi` on the payer's id.
+   - M17 I16b: a person's unanswered call answered by Cai, after H8a and the voice path.
+   - M17 I17a (the website snippet): `/o/<handle>/widget` and a snippet from the setup's door, the
+     chat and the booking and ordering forms on the visitor-page shape, `frame-ancestors` limited to
+     the organization's verified domain, counted on `growth.door`.
+   - M17 I17b: platforms, when one asks: its own council.
+2. *Decided against:* a white-label platform for other companies' users; money from one person to
+   another for Cai's time; Cai writing as the receiver or joining a one-to-one; Cai answering for
+   someone under 18; voice before the streaming bake-off; anything in a private conversation (R18).
+3. *Open risks:* people find Cai answering rude to their contacts (watched by how many turn it off
+   within a week); strangers won't spend their allowance (the two choices' ratio); callers probing
+   it (eval cases, hand-overs by reason); the snippet framed somewhere it shouldn't be (only the
+   verified domain may frame it).
+4. *The number:* of the conversations Cai answered for someone, the share the receiver acted on
+   within a day (a reply, a booking confirmed, a call back); for the snippet, conversations started
+   from organizations' own websites.

@@ -288,6 +288,7 @@ const AT_BOUNDS: ReadonlyArray<{
         country: 'EG',
         gender: null,
         today,
+        now: 'Wed 23 Sep 14:05',
       }),
   },
   {
@@ -302,6 +303,7 @@ const AT_BOUNDS: ReadonlyArray<{
         country: 'EG',
         gender: null,
         today,
+        now: 'Wed 23 Sep 14:05',
       }),
   },
   // core ASK_MAX: a question that reads like a sentence, from Search's answer.
@@ -406,6 +408,7 @@ describe('what a person costs (M16 H7)', () => {
           country: 'EG',
           gender: null,
           today,
+          now: 'Wed 23 Sep 14:05',
         }),
       ),
     );
