@@ -202,6 +202,7 @@ import type { RewriteStyle } from '@caime/core/assist';
 import type { AutomationWhen } from '@caime/core/automations';
 import type { BilledPlan, BillingInterval, BillingView } from '@caime/core/billing';
 import type { ContactAccount } from '@caime/core/contact-return';
+import type { ImportSource } from '@caime/core/imports';
 import type { IntakeFormInput } from '@caime/core/intake';
 import type { SuggestionKind } from '@caime/core/intelligence';
 import type { AiUse, AppPricing } from '@caime/core/marketplace';
@@ -494,10 +495,10 @@ export const endpoints = {
   /** A link's card before it's sent (M16 E4c), read once by the server for everyone. */
   linkPreview: (url: string) => api.get<LinkPreviewResponse>(`/links/preview${q({ url })}`),
   /** A topic of a one-to-one or a group (PRD §58): the conversation it is. */
-  /** A chat brought over from WhatsApp (R45): lands as a topic with that person. */
+  /** A chat brought over from WhatsApp or Telegram (R45, M18 J6): a topic with that person. */
   importChat: (body: {
     userId: string;
-    source: 'whatsapp';
+    source: ImportSource;
     title?: string;
     messages: Array<{ at: string; mine: boolean; text: string }>;
   }) => api.post<ImportChatView>('/conversations/import', body),
@@ -505,7 +506,7 @@ export const endpoints = {
   importGroupChat: (
     conversationId: string,
     body: {
-      source: 'whatsapp';
+      source: ImportSource;
       title?: string;
       authors: Array<{ name: string; userId: string | null }>;
       messages: Array<{ at: string; author: number; text: string }>;

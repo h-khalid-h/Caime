@@ -53,7 +53,7 @@ import { FILE_LINK_AUDIENCES, FILE_LINK_DAYS, FILE_LINK_DEFAULT_DAYS } from './f
 import { foldForFind } from './fold';
 import { isGenericHandle } from './handle-engine';
 import { msg } from './i18n';
-import { IMPORT_MAX_MESSAGES, IMPORT_MAX_TEXT } from './imports';
+import { IMPORT_MAX_MESSAGES, IMPORT_MAX_TEXT, IMPORT_SOURCES } from './imports';
 import { INITIATIVES } from './initiative';
 import {
   FORM_INTRO_CHARS,
@@ -1232,7 +1232,7 @@ export const TopicBody = z.object({
  */
 export const ImportChatBody = z.object({
   userId: z.string().uuid(),
-  source: z.literal('whatsapp'),
+  source: z.enum(IMPORT_SOURCES),
   /** The topic's name; "WhatsApp" if left out. */
   title: z.string().trim().min(1).max(80).optional(),
   messages: z
@@ -1257,7 +1257,7 @@ export const IMPORT_MAX_AUTHORS = 1024;
  * alone, and each message naming one of them by its place in `authors`.
  */
 export const ImportGroupChatBody = z.object({
-  source: z.literal('whatsapp'),
+  source: z.enum(IMPORT_SOURCES),
   /** The topic's name; "WhatsApp" if left out. */
   title: z.string().trim().min(1).max(80).optional(),
   authors: z

@@ -3709,6 +3709,68 @@ test.describe
       expect([...errors, ...alex.errors]).toEqual([]);
     });
 
+    test('a Telegram chat is brought over the same way, from its JSON export (M18 J6)', async () => {
+      const { page, errors } = noor;
+      await page.goto(`/c/${convo}`);
+      await page.getByTestId('import-whatsapp').filter({ visible: true }).click();
+      const chooser = page.waitForEvent('filechooser');
+      await page.getByTestId('import-pick').click();
+      const message = (date: string, from: string, text: unknown, more = {}) => ({
+        type: 'message',
+        date,
+        from,
+        from_id: `user_${from.replace(/\s/g, '')}`,
+        text,
+        ...more,
+      });
+      await (await chooser).setFiles({
+        name: 'result.json',
+        mimeType: 'application/json',
+        buffer: Buffer.from(
+          JSON.stringify({
+            name: 'Alex Chen',
+            type: 'personal_chat',
+            id: 42,
+            messages: [
+              {
+                type: 'service',
+                date: '2024-03-13T09:00:00',
+                actor: 'Alex Chen',
+                action: 'pin_message',
+                text: '',
+              },
+              message('2024-03-13T09:02:00', 'Noor Haddad', 'Telegram too: still on for Thursday?'),
+              message('2024-03-13T09:05:00', 'Alex Chen', [
+                'Yes. Call me at ',
+                { type: 'phone', text: '+20 100 000 0000' },
+                ' if it moves.',
+              ]),
+              message('2024-03-13T09:06:00', 'Alex Chen', '', { photo: 'photos/photo_1.jpg' }),
+              message('2024-03-14T10:31:00', 'Noor Haddad', `Here now ${stamp}`),
+            ],
+          }),
+        ),
+      });
+      // Read on this device, as WhatsApp's is: the words, the media left out, who's who.
+      await expect(page.getByTestId('import-summary')).toContainText(
+        /3 messages · Mar 13, 2024 to Mar 14, 2024 · a photo or file the export left out/,
+      );
+      await expect(page.getByRole('radio', { name: /Noor Haddad/ })).toBeChecked();
+      await page.getByTestId('import-confirm').click();
+      await page.waitForURL((url) => !url.pathname.endsWith(convo));
+      await expect(visible(page, '3 messages brought over')).toBeVisible();
+      await expect(
+        visible(page, 'You brought this chat over from Telegram. What’s above was written there.'),
+      ).toBeVisible();
+      await expect(visible(page, 'Yes. Call me at +20 100 000 0000 if it moves.')).toBeVisible();
+      await expect(page.getByTestId('message-imported').filter({ visible: true })).toHaveCount(3);
+      // Its own topic beside the WhatsApp one, named for where it came from.
+      const phone = alex.page;
+      await phone.goto('/chats');
+      await expect(visible(phone, 'Noor Haddad · Telegram')).toBeVisible();
+      expect([...errors, ...alex.errors]).toEqual([]);
+    });
+
     test('email, at last: Lina confirms her address from the code, and Noor resets a forgotten password from the link', async () => {
       if (!linaContext) throw new Error('The link test signs Lina up first.');
       // Sign-up sent Lina six digits; Security takes them.

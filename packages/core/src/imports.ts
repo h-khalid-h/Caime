@@ -7,3 +7,7 @@
 export const IMPORT_MAX_MESSAGES = 20_000;
 /** A message longer than this is cut where WhatsApp itself would have (its limit is 65,536). */
 export const IMPORT_MAX_TEXT = 10_000;
+
+/** Where a chat may be brought over from (R45; Telegram since M18 J6). */
+export const IMPORT_SOURCES = ['whatsapp', 'telegram'] as const;
+export type ImportSource = (typeof IMPORT_SOURCES)[number];

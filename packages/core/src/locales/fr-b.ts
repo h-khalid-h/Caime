@@ -1869,13 +1869,8 @@ export const frB: Catalog = {
   'Make it your own Caime account, free: the meeting, its people and what was said stay yours.':
     'Faites-en votre propre compte Caime, gratuit : la réunion, ses participants et ce qui s’y est dit restent à vous.',
   'Keep this': 'La garder',
-  'Bring over a WhatsApp group': 'Importer un groupe WhatsApp',
   'No chat was found in that file. Is it the exported chat?':
     'Aucune discussion n’a été trouvée dans ce fichier. Est-ce bien la discussion exportée ?',
-  'What was said in the WhatsApp group, kept as a topic of “{title}”. Everyone in it sees it.':
-    'Ce qui s’est dit dans le groupe WhatsApp, gardé comme sujet de « {title} ». Tous ses membres le voient.',
-  'In WhatsApp, open the chat, then Export chat, without media. A phone saves a text file, an iPhone a .zip: pick either here as it is. Photos and files don’t come along; the words do, dated as they were written.':
-    'Dans WhatsApp, ouvrez la discussion, puis Exporter la discussion, sans fichiers multimédias. Un téléphone enregistre un fichier texte, un iPhone un .zip : choisissez l’un ou l’autre ici tel quel. Les photos et fichiers ne suivent pas ; les mots, si, datés comme ils ont été écrits.',
   'Who the others are here': 'Qui sont les autres ici',
   'Not in this group: keep the name': 'Pas dans ce groupe : garder le nom',
   '{name} is in': '{name} a rejoint',
@@ -2620,4 +2615,10 @@ export const frB: Catalog = {
   'The notes, and the voices and any screen shown, kept {days} days.':
     'Les notes, ainsi que les voix et tout écran partagé, gardés {days} jours.',
   'Play from {time}': 'Lire à partir de {time}',
+  'Bring over a WhatsApp or Telegram chat': 'Importer une discussion WhatsApp ou Telegram',
+  'Bring over a WhatsApp or Telegram group': 'Importer un groupe WhatsApp ou Telegram',
+  'What was said in that group, kept as a topic of “{title}”. Everyone in it sees it.':
+    'Ce qui s’est dit dans ce groupe, gardé comme sujet de « {title} ». Tous ses membres le voient.',
+  'In WhatsApp, open the chat, then Export chat, without media: a phone saves a text file, an iPhone a .zip. In Telegram Desktop, open the chat, then Export chat history as JSON: the result.json. Pick the file here as it is. Photos and files don’t come along; the words do, dated as they were written.':
+    'Dans WhatsApp, ouvrez la discussion, puis Exporter la discussion, sans fichiers multimédias : un téléphone enregistre un fichier texte, un iPhone un .zip. Dans Telegram Desktop, ouvrez la discussion, puis Exporter l’historique au format JSON : le fichier result.json. Choisissez le fichier ici tel quel. Les photos et les fichiers ne suivent pas ; les mots, oui, datés comme ils ont été écrits.',
 };

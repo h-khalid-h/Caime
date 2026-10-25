@@ -456,7 +456,12 @@ export function systemText(payload: unknown, viewerId?: string | null): string {
         ? tr('You’re no longer an admin')
         : tr('{name} is no longer an admin', { name: p.name ?? tr('Someone') });
     case 'imported': {
-      const from = p.source === 'whatsapp' ? 'WhatsApp' : tr('another app');
+      const from =
+        p.source === 'whatsapp'
+          ? 'WhatsApp'
+          : p.source === 'telegram'
+            ? 'Telegram'
+            : tr('another app');
       return tr('{by} brought this chat over from {from}. What’s above was written there.', {
         by,
         from,

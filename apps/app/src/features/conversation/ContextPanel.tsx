@@ -580,8 +580,8 @@ function Topics({
           <FileText size={14} color={t.c.accentStrong} />
           <Text variant="captionStrong" color="link">
             {into.kind === 'group'
-              ? tr('Bring over a WhatsApp group')
-              : tr('Bring over a WhatsApp chat')}
+              ? tr('Bring over a WhatsApp or Telegram group')
+              : tr('Bring over a WhatsApp or Telegram chat')}
           </Text>
         </Pressable>
       ) : null}

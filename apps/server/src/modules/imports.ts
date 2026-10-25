@@ -1,5 +1,6 @@
 import { ImportChatBody, type ImportChatView, ImportGroupChatBody, uuidv7 } from '@caime/core';
 import { tr } from '@caime/core/i18n';
+import type { ImportSource } from '@caime/core/imports';
 import { canEditConversation } from '@caime/core/permissions';
 import type { FastifyInstance } from 'fastify';
 import { sql } from 'kysely';
@@ -35,11 +36,14 @@ interface Landing {
  * follow whatever the topic holds already (a word someone wrote in the moment since it was
  * made), under its row's lock, which is the one a message's sequence number takes.
  */
+/** What a topic brought over is called when the person named it nothing else. */
+const titleOf = (source: ImportSource) => (source === 'telegram' ? 'Telegram' : 'WhatsApp');
+
 async function land(
   ctx: AppContext,
   by: string,
   conversationId: string,
-  source: 'whatsapp',
+  source: ImportSource,
   lines: Landing[],
   group: boolean,
 ): Promise<number> {
@@ -141,7 +145,7 @@ export async function importRoutes(app: FastifyInstance, ctx: AppContext) {
         ctx,
         auth.userId,
         general.id,
-        body.title ?? 'WhatsApp',
+        body.title ?? titleOf(body.source),
       );
       const imported = await land(
         ctx,
@@ -211,7 +215,7 @@ export async function importRoutes(app: FastifyInstance, ctx: AppContext) {
         ctx,
         auth.userId,
         id,
-        body.title ?? 'WhatsApp',
+        body.title ?? titleOf(body.source),
         'standard',
         { forImport: true },
       );

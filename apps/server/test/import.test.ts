@@ -120,6 +120,34 @@ describe('a chat brought over from WhatsApp (R45)', () => {
     expect(JSON.stringify(found.results)).toContain(conversationId);
   });
 
+  it('from Telegram the same way: the topic named for it, its line saying so (M18 J6)', async () => {
+    // Connected by the test before: their general conversation is the one a direct opens.
+    const general = (
+      await noor.req('POST', '/v1/conversations', { kind: 'direct', userId: alex.user.id })
+    ).json().conversation.id as string;
+    const r = await noor.req('POST', '/v1/conversations/import', {
+      userId: alex.user.id,
+      source: 'telegram',
+      messages: lines.slice(0, 2),
+    });
+    expect(r.statusCode).toBe(201);
+    const { conversationId, imported } = r.json();
+    expect(imported).toBe(2);
+    const { conversation } = await alex.get(`/v1/conversations/${conversationId}`);
+    expect(conversation).toMatchObject({ parentId: general, name: 'Telegram' });
+    const { messages } = await alex.get(`/v1/conversations/${conversationId}/messages`);
+    for (const m of messages.slice(0, 2))
+      expect(m.payload).toEqual({ imported: { source: 'telegram', by: noor.user.id } });
+    expect(messages[2]?.payload).toMatchObject({ event: 'imported', source: 'telegram', count: 2 });
+    // Anything else isn't a place a chat comes from.
+    const other = await noor.req('POST', '/v1/conversations/import', {
+      userId: alex.user.id,
+      source: 'signal',
+      messages: lines.slice(0, 1),
+    });
+    expect(other.statusCode).toBe(400);
+  });
+
   it('refuses an empty import, and one the other person has blocked', async () => {
     const empty = await noor.req('POST', '/v1/conversations/import', {
       userId: alex.user.id,
@@ -253,8 +281,8 @@ describe('a WhatsApp group brought over (M16 C3g)', () => {
   it('counts for the product’s metrics: chats and groups brought over, and their lines', async () => {
     t.clock.set(new Date(Date.now() + 60_000).toISOString());
     const { imports } = (await productMetrics(t.ctx, 30)).growth;
-    // The one-to-one above (three lines) and this group (three lines).
-    expect(imports).toEqual({ chats: 1, groups: 1, messages: 6 });
+    // The one-to-one above (three lines), the Telegram one (two) and this group (three lines).
+    expect(imports).toEqual({ chats: 2, groups: 1, messages: 8 });
   });
 
   it('comes over into a new topic, never into one of the same name already there', async () => {

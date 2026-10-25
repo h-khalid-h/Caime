@@ -1,6 +1,7 @@
 import { tr, trn } from '@caime/core/i18n';
-import { IMPORT_MAX_MESSAGES } from '@caime/core/imports';
-import { otherAuthor, parseWhatsApp, type WhatsAppChat } from '@caime/core/whatsapp';
+import { IMPORT_MAX_MESSAGES, type ImportSource } from '@caime/core/imports';
+import { looksLikeTelegram, parseTelegram } from '@caime/core/telegram';
+import { type ImportedChat, otherAuthor, parseWhatsApp } from '@caime/core/whatsapp';
 import { useQueryClient } from '@tanstack/react-query';
 import * as DocumentPicker from 'expo-document-picker';
 import { useState } from 'react';
@@ -33,9 +34,13 @@ export type ImportInto =
 /** A name kept as itself (nobody here), as the group's "who's who" offers it. */
 const KEEP_NAME = 'name';
 
+/** What a topic brought over is called when the person names it nothing else. */
+const titleOf = (source: ImportSource) => (source === 'telegram' ? 'Telegram' : 'WhatsApp');
+
 /**
- * Bringing a WhatsApp chat over (R45). The person exports the chat on their phone ("Export
- * chat", without media: a text file, or on an iPhone a .zip, unzipped here), picks it, says which
+ * Bringing a WhatsApp or a Telegram chat over (R45, M18 J6). The person exports the chat ("Export
+ * chat" in WhatsApp, without media: a text file, or on an iPhone a .zip, unzipped here; "Export
+ * chat history" as JSON in Telegram Desktop), picks it, says which
  * name in it is theirs, and it lands as a topic with the other person, dated as written, every
  * message marked as imported. A group's export (M16 C3g) comes into a group they run the same way,
  * each other name taken as one of its people (matched by name, changeable) or kept as the name
@@ -61,9 +66,15 @@ export function WhatsAppImport({
   const [mine, setMine] = useState<string | null>(null);
   // Who each other name in a group's export is, where it was changed from the match by name.
   const [taken, setTaken] = useState<Record<string, string>>({});
-  const [title, setTitle] = useState('WhatsApp');
+  const [source, setSource] = useState<ImportSource>('whatsapp');
+  const [title, setTitle] = useState(titleOf('whatsapp'));
   const [busy, setBusy] = useState(false);
-  const chat: WhatsAppChat | null = text === null ? null : parseWhatsApp(text, { dayFirst });
+  const chat: ImportedChat | null =
+    text === null
+      ? null
+      : source === 'telegram'
+        ? parseTelegram(text)
+        : parseWhatsApp(text, { dayFirst });
   const forGroup = into.kind === 'group';
   // Their own name in the file, if it reads like the one they use here.
   const guess =
@@ -88,7 +99,13 @@ export function WhatsAppImport({
     const res = await DocumentPicker.getDocumentAsync({
       multiple: false,
       copyToCacheDirectory: true,
-      type: ['text/plain', 'text/*', 'application/zip', 'application/x-zip-compressed'],
+      type: [
+        'text/plain',
+        'text/*',
+        'application/json',
+        'application/zip',
+        'application/x-zip-compressed',
+      ],
     });
     if (res.canceled) return;
     const asset = res.assets[0];
@@ -104,10 +121,14 @@ export function WhatsAppImport({
         : blob
           ? await blob.text()
           : await (await fetch(asset.uri)).text();
-      if (read === null) {
+      // Telegram's file is JSON; WhatsApp's is lines. One that's neither has no chat in it.
+      const from: ImportSource = read !== null && looksLikeTelegram(read) ? 'telegram' : 'whatsapp';
+      if (read === null || (from === 'telegram' && parseTelegram(read) === null)) {
         toast(tr('No chat was found in that file. Is it the exported chat?'), { tone: 'danger' });
         return;
       }
+      setSource(from);
+      setTitle((was) => (was === titleOf(source) ? titleOf(from) : was));
       setText(read);
       setFileName(asset.name);
       setMine(null);
@@ -125,7 +146,7 @@ export function WhatsAppImport({
       const { conversationId, imported } =
         into.kind === 'group'
           ? await endpoints.importGroupChat(into.conversationId, {
-              source: 'whatsapp',
+              source,
               title: title.trim() || undefined,
               authors: chat.authors.map((a) => {
                 const who = a === chosen ? me.id : whoIs(a);
@@ -139,7 +160,7 @@ export function WhatsAppImport({
             })
           : await endpoints.importChat({
               userId: into.userId,
-              source: 'whatsapp',
+              source,
               title: title.trim() || undefined,
               messages: lines.map((m) => ({
                 at: m.at.toISOString(),
@@ -174,12 +195,18 @@ export function WhatsAppImport({
     <Sheet
       open
       onClose={onClose}
-      title={forGroup ? tr('Bring over a WhatsApp group') : tr('Bring over a WhatsApp chat')}
+      title={
+        forGroup
+          ? tr('Bring over a WhatsApp or Telegram group')
+          : tr('Bring over a WhatsApp or Telegram chat')
+      }
       subtitle={
         into.kind === 'group'
           ? tr(
-              'What was said in the WhatsApp group, kept as a topic of “{title}”. Everyone in it sees it.',
-              { title: into.title },
+              'What was said in that group, kept as a topic of “{title}”. Everyone in it sees it.',
+              {
+                title: into.title,
+              },
             )
           : tr('What you and {name} said there, kept as a topic here. Only you two see it.', {
               name: into.name,
@@ -201,7 +228,7 @@ export function WhatsAppImport({
         {!chat ? (
           <Text variant="body" color="textSecondary">
             {tr(
-              'In WhatsApp, open the chat, then Export chat, without media. A phone saves a text file, an iPhone a .zip: pick either here as it is. Photos and files don’t come along; the words do, dated as they were written.',
+              'In WhatsApp, open the chat, then Export chat, without media: a phone saves a text file, an iPhone a .zip. In Telegram Desktop, open the chat, then Export chat history as JSON: the result.json. Pick the file here as it is. Photos and files don’t come along; the words do, dated as they were written.',
             )}
           </Text>
         ) : (

@@ -26,6 +26,9 @@ export interface ImportedMessage {
   text: string;
 }
 
+/** A chat as any export is read into: WhatsApp's text, or Telegram's JSON (`telegram.ts`). */
+export type ImportedChat = WhatsAppChat;
+
 export interface WhatsAppChat {
   /** People's messages, in the file's order, media notes left out. */
   messages: ImportedMessage[];

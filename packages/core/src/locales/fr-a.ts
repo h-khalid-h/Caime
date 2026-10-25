@@ -985,7 +985,6 @@ export const frA: Catalog = {
   Topics: 'Sujets',
   '{title}, topic': '{title}, sujet',
   'Start a topic': 'Ouvrir un sujet',
-  'Bring over a WhatsApp chat': 'Importer une discussion WhatsApp',
   'A conversation of its own, with everyone in {title}.':
     'Une conversation à part, avec tous les membres de {title}.',
   'A conversation of its own with {title}, on one subject.':

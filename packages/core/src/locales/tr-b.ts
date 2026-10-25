@@ -1803,13 +1803,8 @@ export const turkishB: Catalog = {
   'Make it your own Caime account, free: the meeting, its people and what was said stay yours.':
     'Kendi Caime hesabınız yapın, ücretsiz: toplantı, katılımcıları ve konuşulanlar sizde kalır.',
   'Keep this': 'Saklayın',
-  'Bring over a WhatsApp group': 'WhatsApp grubunu içe aktar',
   'No chat was found in that file. Is it the exported chat?':
     'Bu dosyada sohbet bulunamadı. Dışa aktarılan sohbet bu mu?',
-  'What was said in the WhatsApp group, kept as a topic of “{title}”. Everyone in it sees it.':
-    'WhatsApp grubunda konuşulanlar “{title}” içinde bir konu olarak saklanır. İçindeki herkes görür.',
-  'In WhatsApp, open the chat, then Export chat, without media. A phone saves a text file, an iPhone a .zip: pick either here as it is. Photos and files don’t come along; the words do, dated as they were written.':
-    'WhatsApp’ta sohbeti açın, ardından medya olmadan Sohbeti dışa aktar’a dokunun. Telefon bir metin dosyası, iPhone bir .zip kaydeder: ikisinden birini burada olduğu gibi seçin. Fotoğraflar ve dosyalar aktarılmaz; yazılanlar, yazıldıkları tarihle birlikte aktarılır.',
   'Who the others are here': 'Diğerleri burada kim',
   'Not in this group: keep the name': 'Bu grupta değil: adı koru',
   '{name} is in': '{name} katıldı',
@@ -2531,4 +2526,10 @@ export const turkishB: Catalog = {
   'The notes, and the voices and any screen shown, kept {days} days.':
     'Notlar, sesler ve paylaşılan her ekran {days} gün saklanır.',
   'Play from {time}': '{time} anından oynat',
+  'Bring over a WhatsApp or Telegram chat': 'WhatsApp veya Telegram sohbetini içe aktar',
+  'Bring over a WhatsApp or Telegram group': 'WhatsApp veya Telegram grubunu içe aktar',
+  'What was said in that group, kept as a topic of “{title}”. Everyone in it sees it.':
+    'O grupta konuşulanlar “{title}” içinde bir konu olarak saklanır. İçindeki herkes görür.',
+  'In WhatsApp, open the chat, then Export chat, without media: a phone saves a text file, an iPhone a .zip. In Telegram Desktop, open the chat, then Export chat history as JSON: the result.json. Pick the file here as it is. Photos and files don’t come along; the words do, dated as they were written.':
+    'WhatsApp’ta sohbeti açın, ardından medya olmadan Sohbeti dışa aktar’a dokunun: telefon bir metin dosyası, iPhone bir .zip kaydeder. Telegram Desktop’ta sohbeti açın, ardından sohbet geçmişini JSON olarak dışa aktarın: result.json dosyası. Dosyayı burada olduğu gibi seçin. Fotoğraflar ve dosyalar gelmez; sözler yazıldıkları tarihle gelir.',
 };

@@ -2553,17 +2553,8 @@ export const arB: Catalog = {
   'Make it your own Caime account, free: the meeting, its people and what was said stay yours.':
     'حساب Caime خاص بك، مجانًا: يبقى لك الاجتماع ومن فيه وما قيل فيه.',
   'Keep this': 'الاحتفاظ به',
-  'Bring over a WhatsApp group': {
-    toWoman: 'انقلي مجموعة من واتساب',
-    toMan: 'انقل مجموعة من واتساب',
-    other: 'انقل مجموعة من واتساب',
-  },
   'No chat was found in that file. Is it the exported chat?':
     'لم يُعثر على محادثة في هذا الملف. هل هو المحادثة المُصدَّرة؟',
-  'What was said in the WhatsApp group, kept as a topic of “{title}”. Everyone in it sees it.':
-    'ما قيل في مجموعة واتساب، محفوظ كموضوع في «{title}». يراه كل من فيها.',
-  'In WhatsApp, open the chat, then Export chat, without media. A phone saves a text file, an iPhone a .zip: pick either here as it is. Photos and files don’t come along; the words do, dated as they were written.':
-    'في واتساب، افتح المحادثة، ثم تصدير الدردشة، بدون وسائط. يحفظ الهاتف ملفًا نصيًا ويحفظ آيفون ملف ‎.zip: اختر أيًّا منهما هنا كما هو. لا تُنقل الصور والملفات؛ تُنقل الكلمات مؤرخةً كما كُتبت.',
   'Who the others are here': 'من هم الآخرون هنا',
   'Not in this group: keep the name': 'ليس في هذه المجموعة: يبقى الاسم',
   '{name} is in': 'تم قبول {name}',
@@ -3390,4 +3381,18 @@ export const arB: Catalog = {
   'The notes, and the voices and any screen shown, kept {days} days.':
     'الملاحظات، والأصوات وأي شاشة تُعرض، تُحفظ {days} يومًا.',
   'Play from {time}': 'تشغيل من {time}',
+  'Bring over a WhatsApp or Telegram chat': {
+    toWoman: 'انقلي محادثة من واتساب أو تيليغرام',
+    toMan: 'انقل محادثة من واتساب أو تيليغرام',
+    other: 'انقل محادثة من واتساب أو تيليغرام',
+  },
+  'Bring over a WhatsApp or Telegram group': {
+    toWoman: 'انقلي مجموعة من واتساب أو تيليغرام',
+    toMan: 'انقل مجموعة من واتساب أو تيليغرام',
+    other: 'انقل مجموعة من واتساب أو تيليغرام',
+  },
+  'What was said in that group, kept as a topic of “{title}”. Everyone in it sees it.':
+    'ما قيل في تلك المجموعة، محفوظ كموضوع في «{title}». يراه كل من فيها.',
+  'In WhatsApp, open the chat, then Export chat, without media: a phone saves a text file, an iPhone a .zip. In Telegram Desktop, open the chat, then Export chat history as JSON: the result.json. Pick the file here as it is. Photos and files don’t come along; the words do, dated as they were written.':
+    'في واتساب، افتح المحادثة، ثم تصدير الدردشة، بدون وسائط: يحفظ الهاتف ملفًا نصيًا ويحفظ آيفون ملف ‎.zip. في تيليغرام على الحاسوب، افتح المحادثة، ثم تصدير سجل الدردشة بصيغة JSON: ملف result.json. اختر الملف هنا كما هو. لا تُنقل الصور والملفات؛ تُنقل الكلمات مؤرخةً كما كُتبت.',
 };

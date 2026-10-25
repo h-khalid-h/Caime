@@ -1048,11 +1048,6 @@ export const arA: Catalog = {
   Topics: 'الموضوعات',
   '{title}, topic': '{title}، موضوع',
   'Start a topic': { toWoman: 'ابدئي موضوعًا', toMan: 'ابدأ موضوعًا', other: 'ابدأ موضوعًا' },
-  'Bring over a WhatsApp chat': {
-    toWoman: 'انقلي محادثة من واتساب',
-    toMan: 'انقل محادثة من واتساب',
-    other: 'انقل محادثة من واتساب',
-  },
   'A conversation of its own, with everyone in {title}.':
     'محادثة قائمة بذاتها، مع كل من في {title}.',
   'A conversation of its own with {title}, on one subject.':

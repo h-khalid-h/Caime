@@ -941,7 +941,6 @@ export const turkishA: Catalog = {
   Topics: 'Konular',
   '{title}, topic': '{title}, konu',
   'Start a topic': 'Konu aç',
-  'Bring over a WhatsApp chat': 'WhatsApp sohbetini içe aktar',
   'A conversation of its own, with everyone in {title}.':
     '{title} içindeki herkesle ayrı bir konuşma.',
   'A conversation of its own with {title}, on one subject.':
