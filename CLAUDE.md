@@ -1812,7 +1812,16 @@ A sphere is said as how you know someone, never "sphere".
   step's quote reads "{name}'s screen showed …"); `wholeReaders` still counts from the first
   heard word. The notes sheet draws them as `ScreenFrames` in `CallRecording` (a tap asks the
   sheet's `play`). Anything new drawn from a shown screen goes through the frames, never a
-  second capture; a camera is never sampled.
+  second capture; a camera is never sampled. Interact looks at the screen when asked (h2): a
+  question core `asksAboutScreen` reads (rules per language and variety, held by the golden
+  set's `screen` lines) makes `onLine` (`lib/cai-interact.ts`) publish `call.cai.frame` to the
+  recorder's device alone and queue itself again `FRAME_WAIT_MS` on (`:waited`); the device
+  answers with one picture (`takeCaiFrame`: `shrinkFrame`, a key under `cai/frames/`, a `:framed`
+  job) or none (`noCaiFrame`), and whichever job runs first claims the line
+  (`call_note_lines.cai_answered_at`, migration 0152; let go on `ai_busy` so the retry answers)
+  and answers, with the picture as `ai.interact`'s `image` or "I can't see a screen right now";
+  the picture is removed as the answer ends, and a late one is let go unread. The app's
+  `voice.ts` captures its own screen or a sharing peer's picture (`captureTrack`), never a camera.
 - A meeting's guests (R83, R84): invited by address from an accepted meeting card held here
   (`features/kits/MeetingGuests.tsx`: Invite a guest, the sheet lazy; the card that moved says
   so and opens the space), or by a link the inviter sends themselves (H6, `inviteGuestByLink`: a

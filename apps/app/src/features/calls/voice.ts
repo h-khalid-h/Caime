@@ -8,17 +8,26 @@
  * microphone is mixed in as it is (muted, it's silent; Cai still goes out, since Cai isn't the
  * person), the notes go on hearing the microphone alone (Cai's words go into them from the
  * server), and what a microphone picks up of Cai from the speakers the server drops as an echo.
- * Utterances play one after another.
+ * Utterances play one after another. Asked about the screen (M17 I13h), Cai asks this device,
+ * the recorder, for a picture of the screen shown now (`call.cai.frame`): its own, or the one a
+ * peer is sharing, as a JPEG, or that there's none; never a camera.
  *
  * Part of the calls (stack.ts), loaded with them; on a phone only the words (the server never
  * names one).
  */
-import type { CaiSpokenView, CaiWrittenView, RealtimeEvent } from '@caime/core/api';
+import type {
+  CaiFrameAskView,
+  CaiSpokenView,
+  CaiWrittenView,
+  RealtimeEvent,
+} from '@caime/core/api';
 import { create } from 'zustand';
 import { mediaHeaders } from '@/api/client';
+import { endpoints } from '@/api/endpoints';
 import { API_URL } from '@/lib/config';
 import { DEVICE_ID, useCall } from '@/state/calls';
 import { useGroupCall } from '@/state/groupCall';
+import { captureTrack } from './screenFrames';
 
 interface CaiVoiceStore {
   /** Cai speaking now in the call on this device, and until when (on this device's clock). */
@@ -51,6 +60,45 @@ export function onCaiEvent(event: RealtimeEvent): void {
     if (playing?.callId === data.callId) enqueue(data);
   } else if (event.type === 'call.cai.written') {
     useCaiVoice.getState().patch({ written: event.data });
+  } else if (event.type === 'call.cai.frame') {
+    if (event.data.deviceId === DEVICE_ID) void sendScreen(event.data);
+  }
+}
+
+/** The screen shown in the call now, this device's own or a peer's, or null. */
+function shownScreen(callId: string): MediaStreamTrack | null {
+  const group = useGroupCall.getState();
+  if (group.call?.id === callId) {
+    if (group.screen) return group.screen;
+    for (const p of Object.values(group.peers)) {
+      const picture = p.stream?.getVideoTracks()[0];
+      if (p.theirs?.sharing && picture) return picture;
+    }
+    return null;
+  }
+  const one = useCall.getState();
+  if (one.call?.id === callId) {
+    if (one.screen) return one.screen;
+    const picture = one.remote?.getVideoTracks()[0];
+    if (one.theirs?.sharing && picture) return picture;
+  }
+  return null;
+}
+
+/** Cai asked for the screen (M17 I13h): one picture of it, or that there's none; errors answered without. */
+async function sendScreen(ask: CaiFrameAskView): Promise<void> {
+  const track = shownScreen(ask.callId);
+  const blob = track ? await captureTrack(track) : null;
+  try {
+    if (blob)
+      await endpoints.caiFrame(ask.callId, {
+        deviceId: DEVICE_ID,
+        lineId: ask.lineId,
+        bytes: blob,
+      });
+    else await endpoints.caiNoFrame(ask.callId, { deviceId: DEVICE_ID, lineId: ask.lineId });
+  } catch {
+    // The server answers without it a moment later.
   }
 }
 

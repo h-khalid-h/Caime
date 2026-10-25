@@ -1832,4 +1832,7 @@ export const frServer: Catalog = {
   'Only a shown screen has frames.': 'Seul un écran partagé a des images.',
   'Your screen showed {quote}': 'Ton écran montrait {quote}',
   '{name}’s screen showed {quote}': 'L’écran de {name} montrait {quote}',
+  'I can’t see a screen right now.': 'Je ne vois pas d’écran pour l’instant.',
+  'Only the device recording the call shows Cai the screen.':
+    'Seul l’appareil qui enregistre l’appel montre l’écran à Cai.',
 };

@@ -1797,4 +1797,7 @@ export const arServer: Catalog = {
   'Only a shown screen has frames.': 'اللقطات للشاشة المعروضة وحدها.',
   'Your screen showed {quote}': 'ظهر على شاشتك {quote}',
   '{name}’s screen showed {quote}': 'ظهر على شاشة {name} {quote}',
+  'I can’t see a screen right now.': 'لا أرى شاشة الآن.',
+  'Only the device recording the call shows Cai the screen.':
+    'الجهاز الذي يسجّل المكالمة وحده يُري Cai الشاشة.',
 };

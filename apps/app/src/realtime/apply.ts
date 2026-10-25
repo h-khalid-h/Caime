@@ -125,7 +125,9 @@ export function applyEvent(qc: QueryClient, event: RealtimeEvent, me: string): v
       return;
     case 'call.cai':
     case 'call.cai.written':
-      // Cai spoke in a call, or wrote to this person in it (M17 I13g).
+    case 'call.cai.frame':
+      // Cai spoke in a call, wrote to this person in it (M17 I13g), or asks the recorder for a
+      // picture of the screen (M17 I13h).
       onCaiEvent(event);
       return;
     case 'callnotes.changed':

@@ -13,6 +13,8 @@ export interface CaiCallLine {
   variety?: 'egyptian' | 'gulf' | 'levantine' | 'maghrebi';
   /** What Cai is asked, or null when it isn't called. */
   question: string | null;
+  /** The question asks about what's on a shared screen (M17 I13h): Cai looks before it answers. */
+  screen?: true;
 }
 
 export const CAI_CALL_GOLDEN: CaiCallLine[] = [
@@ -308,4 +310,156 @@ export const CAI_CALL_GOLDEN: CaiCallLine[] = [
   { text: 'Kay’a sözleşmeyi göndermesini söyledim', lang: 'tr', question: null },
   { text: 'Cai', lang: 'tr', question: null },
   { text: 'bir kahve alabilir miyim', lang: 'tr', question: null },
+  // ---- About the screen (M17 I13h): called, and asking what's shown
+  {
+    text: "Cai, what's on the screen?",
+    lang: 'en',
+    question: "what's on the screen?",
+    screen: true,
+  },
+  {
+    text: 'Cai, can you read this slide?',
+    lang: 'en',
+    question: 'can you read this slide?',
+    screen: true,
+  },
+  {
+    text: 'Cai, what does this chart show?',
+    lang: 'en',
+    question: 'what does this chart show?',
+    screen: true,
+  },
+  {
+    text: 'what are we looking at, Cai?',
+    lang: 'en',
+    question: 'what are we looking at',
+    screen: true,
+  },
+  {
+    text: 'Cai, summarise the numbers on this page',
+    lang: 'en',
+    question: 'summarise the numbers on this page',
+    screen: true,
+  },
+  // ---- English: called, but not about the screen
+  {
+    text: 'Cai, remind me to book the table for dinner',
+    lang: 'en',
+    question: 'remind me to book the table for dinner',
+  },
+  {
+    text: 'Cai, what page are we on in the contract talks?',
+    lang: 'en',
+    question: 'what page are we on in the contract talks?',
+  },
+  { text: 'كاي، ماذا على الشاشة؟', lang: 'ar', question: 'ماذا على الشاشة؟', screen: true },
+  { text: 'كاي، ما المعروض الآن؟', lang: 'ar', question: 'ما المعروض الآن؟', screen: true },
+  { text: 'كاي، اقرأ هذه الشريحة', lang: 'ar', question: 'اقرأ هذه الشريحة', screen: true },
+  { text: 'كاي، ماذا قررنا بشأن الموعد؟', lang: 'ar', question: 'ماذا قررنا بشأن الموعد؟' },
+  {
+    text: 'كاي، إيه اللي على الشاشة؟',
+    lang: 'ar',
+    variety: 'egyptian',
+    question: 'إيه اللي على الشاشة؟',
+    screen: true,
+  },
+  {
+    text: 'كاي، شايف الجدول ده؟',
+    lang: 'ar',
+    variety: 'egyptian',
+    question: 'شايف الجدول ده؟',
+    screen: true,
+  },
+  {
+    text: 'كاي، اقرا السلايد دي',
+    lang: 'ar',
+    variety: 'egyptian',
+    question: 'اقرا السلايد دي',
+    screen: true,
+  },
+  {
+    text: 'كاي، فكرني أحجز الترابيزة بكرة',
+    lang: 'ar',
+    variety: 'egyptian',
+    question: 'فكرني أحجز الترابيزة بكرة',
+  },
+  {
+    text: 'كاي، وش اللي عالشاشة؟',
+    lang: 'ar',
+    variety: 'gulf',
+    question: 'وش اللي عالشاشة؟',
+    screen: true,
+  },
+  {
+    text: 'كاي، تشوف الرسم هذا؟',
+    lang: 'ar',
+    variety: 'gulf',
+    question: 'تشوف الرسم هذا؟',
+    screen: true,
+  },
+  {
+    text: 'كاي، متى الاجتماع الجاي؟',
+    lang: 'ar',
+    variety: 'gulf',
+    question: 'متى الاجتماع الجاي؟',
+  },
+  {
+    text: 'كاي، شو اللي عالشاشة؟',
+    lang: 'ar',
+    variety: 'levantine',
+    question: 'شو اللي عالشاشة؟',
+    screen: true,
+  },
+  {
+    text: 'كاي، اقرا هالصفحة',
+    lang: 'ar',
+    variety: 'levantine',
+    question: 'اقرا هالصفحة',
+    screen: true,
+  },
+  {
+    text: 'كاي، شايف هاد الجدول؟',
+    lang: 'ar',
+    variety: 'levantine',
+    question: 'شايف هاد الجدول؟',
+    screen: true,
+  },
+  { text: 'كاي، شو قررنا عالسعر؟', lang: 'ar', variety: 'levantine', question: 'شو قررنا عالسعر؟' },
+  {
+    text: 'كاي، شنو كاين فالشاشة؟',
+    lang: 'ar',
+    variety: 'maghrebi',
+    question: 'شنو كاين فالشاشة؟',
+    screen: true,
+  },
+  {
+    text: 'كاي، شوف هاد الصورة',
+    lang: 'ar',
+    variety: 'maghrebi',
+    question: 'شوف هاد الصورة',
+    screen: true,
+  },
+  { text: 'كاي، شحال خلصنا؟', lang: 'ar', variety: 'maghrebi', question: 'شحال خلصنا؟' },
+  {
+    text: "Cai, qu'est-ce qu'il y a à l'écran ?",
+    lang: 'fr',
+    question: "qu'est-ce qu'il y a à l'écran ?",
+    screen: true,
+  },
+  { text: 'Cai, tu vois ce tableau ?', lang: 'fr', question: 'tu vois ce tableau ?', screen: true },
+  { text: 'Cai, lis cette diapo', lang: 'fr', question: 'lis cette diapo', screen: true },
+  {
+    text: 'Cai, quand est la prochaine réunion ?',
+    lang: 'fr',
+    question: 'quand est la prochaine réunion ?',
+  },
+  { text: 'Cai, ekranda ne var?', lang: 'tr', question: 'ekranda ne var?', screen: true },
+  {
+    text: 'Cai, bu tabloyu okur musun?',
+    lang: 'tr',
+    question: 'bu tabloyu okur musun?',
+    screen: true,
+  },
+  { text: 'Cai, ne görüyorsun?', lang: 'tr', question: 'ne görüyorsun?', screen: true },
+  { text: 'Cai, toplantı saat kaçta?', lang: 'tr', question: 'toplantı saat kaçta?' },
 ];

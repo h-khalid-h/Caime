@@ -1380,6 +1380,8 @@ export interface CallNoteLinesTable {
   body: string | null;
   language: string | null;
   state: Generated<'waiting' | 'heard' | 'unheard'>;
+  /** Cai answered this line's call to it (M17 I13h): claimed by the first job to answer, once. */
+  cai_answered_at: NullableTimestamp;
   created_at: Generated<Date>;
 }
 

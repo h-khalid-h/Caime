@@ -2924,6 +2924,8 @@ export type RealtimeDataEvent =
   | { type: 'call.cai'; data: CaiSpokenView }
   /** What Cai wrote to one person in a call (M17 I13g), to their devices alone. */
   | { type: 'call.cai.written'; data: CaiWrittenView }
+  /** Cai, asked about the screen, asks the recording device for a picture of it (M17 I13h). */
+  | { type: 'call.cai.frame'; data: CaiFrameAskView }
   | { type: 'presence'; data: { userId: string; state: PresenceState; at: string } }
   /** Someone's devices for private conversations changed: seal for the new set (R18). */
   | { type: 'devices.changed'; data: { userId: string; conversationIds: string[] } }
@@ -3294,6 +3296,24 @@ export interface CaiSpokenView {
  * What Cai wrote to one person in a call (M17 I13g): their own things, or what it prepared for
  * them in their chat with it; to their devices alone, kept nowhere.
  */
+/**
+ * Cai was asked about the screen (M17 I13h): the recording device sends a picture of the screen
+ * shown now (`POST /calls/:id/cai/frame`), or says there's none (`…/frame/none`), for the line
+ * that asked; Cai answers without one a moment later either way.
+ */
+export interface CaiFrameAskView {
+  callId: string;
+  /** The line of the notes that asked. */
+  lineId: string;
+  /** The one device asked: the notes' recorder. */
+  deviceId: string;
+}
+
+/** The recording device answered Cai's ask (M17 I13h): `taken` false once the line was answered already. */
+export interface CaiFrameResponse {
+  taken: boolean;
+}
+
 export interface CaiWrittenView {
   callId: string;
   text: string;

@@ -38,6 +38,21 @@ import { storageFor } from './storage';
 export const FRAME_MAX_BYTES = 2 * 1024 * 1024;
 const QUALITY = 80;
 
+/**
+ * A picture of a screen as Caime keeps or reads it: decoded through `images.run`, at most
+ * `FRAME_EDGE` wide, a JPEG with nothing of the device's metadata; null for one that can't be read.
+ */
+export async function shrinkFrame(spool: string) {
+  return images
+    .run(() =>
+      sharp(spool, { limitInputPixels: IMAGE_PIXELS_MAX })
+        .resize({ width: FRAME_EDGE, height: FRAME_EDGE, fit: 'inside', withoutEnlargement: true })
+        .jpeg({ quality: QUALITY })
+        .toBuffer({ resolveWithObject: true }),
+    )
+    .catch(() => null);
+}
+
 const notRecording = () => forbidden(tr('This device isn’t recording that call.'));
 
 /**
@@ -55,14 +70,7 @@ export async function addFrame(
   const size = (await stat(frame.spool)).size;
   if (size > FRAME_MAX_BYTES)
     throw new AppError(413, 'too_large', tr('That picture of the screen is too large.'));
-  const picture = await images
-    .run(() =>
-      sharp(frame.spool, { limitInputPixels: IMAGE_PIXELS_MAX })
-        .resize({ width: FRAME_EDGE, height: FRAME_EDGE, fit: 'inside', withoutEnlargement: true })
-        .jpeg({ quality: QUALITY })
-        .toBuffer({ resolveWithObject: true }),
-    )
-    .catch(() => null);
+  const picture = await shrinkFrame(frame.spool);
   if (!picture) throw badRequest(tr('That isn’t a picture Caime reads.'));
   const storage = storageFor(ctx.config);
   const now = ctx.now();
@@ -171,7 +179,7 @@ export function framesToRead(n: number, most = FRAMES_IN_NOTES): number[] {
 }
 
 /** A frame's bytes, as the model is sent them. */
-async function base64Of(ctx: AppContext, key: string): Promise<string> {
+export async function base64Of(ctx: AppContext, key: string): Promise<string> {
   const chunks: Buffer[] = [];
   for await (const chunk of storageFor(ctx.config).read(key)) chunks.push(chunk as Buffer);
   return Buffer.concat(chunks).toString('base64');

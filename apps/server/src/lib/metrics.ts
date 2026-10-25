@@ -209,7 +209,7 @@ export function createMetrics(pool: pg.Pool) {
     // Cai joining in a call (R114 (3), M17 I13g): what it did with a line that called it.
     caiInteract: new Counter(
       'caime_cai_interact_total',
-      'Cai in a call by outcome (spoken, written, saved, offered, no_answer, echo, allowance, introduced, failed).',
+      'Cai in a call by outcome (spoken, written, saved, offered, no_answer, echo, allowance, introduced, failed, screen_asked, no_screen).',
     ),
     caiInteractSeconds: new Histogram(
       'caime_cai_interact_seconds',

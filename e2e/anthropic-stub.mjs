@@ -50,7 +50,15 @@ function answer(body) {
     calls.push('frame');
     return reply('A moving test pattern with colour bars and a counter.');
   }
-  const content = String(body.messages?.[0]?.content ?? '');
+  const first = body.messages?.[0]?.content;
+  /** The words of the request: a string, or the text blocks beside a picture (M17 I13h). */
+  const content = Array.isArray(first)
+    ? first
+        .filter((b) => b.type === 'text')
+        .map((b) => b.text ?? '')
+        .join('\n')
+    : String(first ?? '');
+  const withImage = Array.isArray(first) && first.some((b) => b.type === 'image');
   if (system.includes('Rewrite the message')) {
     calls.push('rewrite');
     const draft = between(content, '<message>', '</message>');
@@ -225,12 +233,22 @@ function answer(body) {
     return say('answer', best.sentence, { sources: [best.n] });
   }
   if (system.includes('you have joined a call')) {
-    // Cai called by name in a call (M17 I13g): a short spoken answer, citing the first line.
+    // Cai called by name in a call (M17 I13g): a short spoken answer, citing the first line; asked
+    // about the screen with a picture of it (M17 I13h), what the picture shows.
+    if (withImage) {
+      calls.push('interact-screen');
+      return reply(
+        JSON.stringify({
+          answer: 'I can see a moving test pattern with colour bars.',
+          sources: [],
+        }),
+      );
+    }
     calls.push('interact');
-    const [first] = linesOf(content);
+    const [line] = linesOf(content);
     return reply(
       JSON.stringify(
-        first
+        line
           ? { answer: 'You agreed to go ahead, early in the call.', sources: [1] }
           : { answer: 'Nothing was said about that yet.', sources: [] },
       ),

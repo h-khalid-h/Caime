@@ -197,7 +197,9 @@ Produced by `COST_TABLE=<file> pnpm vitest run test/ai-costs.test.ts` in `apps/s
 notes-summary on 2026-10-21, M16 F7e's write-up of a call's notes; notes-ask and interact on
 2026-10-25, M17 I13f's question about a call and I13g's answer aloud in one; frame on 2026-10-25,
 M17 I13h's reading of one frame of a shared screen, counted at its pixels over 750 as the platform
-charges an image, and notes-summary again with the line the screens add to its instructions):
+charges an image, and notes-summary again with the line the screens add to its instructions;
+interact again and interact-screen on 2026-10-25, M17 I13h's answer in a call with a picture of the
+screen beside the notes, the picture counted as a frame is):
 each feature's request at the bounds the code sets, measured from what the real
 prompt builders send to a stand-in (system and message characters; output at its `max_tokens`),
 read at a token a character, a ceiling no language's words reach; a voice note at ten minutes,
@@ -212,7 +214,8 @@ Prices: https://platform.claude.com/docs/en/about-claude/pricing, read 2026-10-1
 | catch-up | 60,825 | 4,096 | €0.0072 | €0.14 | €0.29 |
 | ask | 61,192 | 4,096 | €0.0073 | €0.15 | €0.29 |
 | notes-ask | 25,315 | 4,096 | €0.0041 | €0.08 | €0.16 |
-| interact | 25,996 | 512 | €0.0025 | €0.05 | €0.10 |
+| interact | 26,198 | 512 | €0.0026 | €0.05 | €0.10 |
+| interact-screen | 27,427 | 512 | €0.0027 | €0.05 | €0.11 |
 | frame | 1,818 | 512 | €0.0004 | €0.0078 | €0.02 |
 | actions | 61,206 | 8,192 | €0.0091 | €0.18 | €0.36 |
 | notes-summary | 61,719 | 8,192 | €0.0091 | €0.18 | €0.37 |
@@ -229,7 +232,10 @@ What was on a shared screen (M17 I13h) costs the write-up at most `FRAMES_IN_NOT
 of `frame`, €0.0032 on the light model, read once and kept, never again for a write-up written
 again; a call's recording keeps at most 120 frames a screen part, each a JPEG at most 1280 wide
 (about 100–200 KB of a slide, counted against whoever keeps the recording), sampled on the
-recording browser alone from a 48 × 27 grey picture every two seconds.
+recording browser alone from a 48 × 27 grey picture every two seconds. Asked about the screen in
+Interact (h2), one answer costs `interact-screen`, €0.0027 on the light model, the picture of the
+screen beside the notes; the picture is deleted as soon as Cai has answered, and none is asked for
+unless the question is about the screen.
 
 Cai's answer in a call (M17 I13g) is `interact` and `speak` together, at most €0.0125 on the
 light model. From the words that call it by name being heard to its answer at the voice

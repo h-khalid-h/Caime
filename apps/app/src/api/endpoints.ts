@@ -35,6 +35,7 @@ import type {
   BriefView,
   BusinessInboxView,
   BusinessSummaryView,
+  CaiFrameResponse,
   CaiResponse,
   CalendarFeedCreatedResponse,
   CalendarFeedResponse,
@@ -844,6 +845,15 @@ export const endpoints = {
     ),
   finishRecordingPart: (id: string, partId: string, deviceId: string) =>
     api.post<OkResponse>(`/calls/${id}/recording/parts/${partId}/finish${q({ deviceId })}`, {}),
+  /** Cai asked about the screen (M17 I13h): this device's picture of it, or that there's none. */
+  caiFrame: (id: string, frame: { deviceId: string; lineId: string; bytes: Blob }) =>
+    request<CaiFrameResponse>(
+      'POST',
+      `/calls/${id}/cai/frame${q({ deviceId: frame.deviceId, lineId: frame.lineId })}`,
+      { raw: frame.bytes, headers: { 'content-type': 'image/jpeg' } },
+    ),
+  caiNoFrame: (id: string, body: { deviceId: string; lineId: string }) =>
+    api.post<CaiFrameResponse>(`/calls/${id}/cai/frame/none`, body),
   /** A frame of a shown screen at its moment into its part (M17 I13h); `frameId` null: not kept. */
   recordingFrame: (
     id: string,

@@ -1753,4 +1753,7 @@ export const turkishServer: Catalog = {
   'Only a shown screen has frames.': 'Kareler yalnızca paylaşılan ekrana ait olur.',
   'Your screen showed {quote}': 'Ekranında şu vardı: {quote}',
   '{name}’s screen showed {quote}': '{name} adlı kişinin ekranında şu vardı: {quote}',
+  'I can’t see a screen right now.': 'Şu anda bir ekran göremiyorum.',
+  'Only the device recording the call shows Cai the screen.':
+    'Ekranı Cai’ye yalnızca aramayı kaydeden cihaz gösterir.',
 };

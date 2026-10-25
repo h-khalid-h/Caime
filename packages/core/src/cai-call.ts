@@ -93,6 +93,30 @@ function someoneNamedCai(names: readonly string[]): boolean {
  * What a line says to Cai, or null: the name first (after a "hey" or a "يا") and then a question
  * or a request, or the name last after a comma; nothing where someone in the call is called that.
  */
+/**
+ * The screen, named in any interface language and Arabic variety. A boundary is a letter's absence
+ * (`\p{L}`), never `\b`, which knows ASCII letters alone: "l'écran", "عالشاشة".
+ */
+const SCREEN_WORD =
+  /(?<![\p{L}])(?:screens?|écrans?|ecrans?|ekran\p{L}*|(?:ال|ع|عال|فال|بال|لل)?شاش(?:ة|ات|ت[يهكن]?)?\p{M}*)(?![\p{L}])/iu;
+/** What's shown or looked at, said as such. */
+const SHOWN =
+  /(?<![\p{L}])(?:(?:what(?:'s| is| are)?|whatever)\s+(?:we\s+|you\s+|i\s+|they\s+)?(?:are\s+|'re\s+)?(?:looking at|seeing|shown|showing|displayed|on display|being shared|presenting)|what (?:do|can) you see|can you see (?:the|this|that|my|it|what)|being (?:shared|shown|presented)|on (?:the\s+)?(?:display|projector)|المعروض|المعروضة|اللي معروض|اللي معروضة|الظاهر|الظاهرة|اللي ظاهر|اللي باين|اللي قدامك|اللي قدامنا|شايف|شايفة|شايفين|تشوف|تشوفي|تشوفو|كتشوف|معروض|معروضة|ce qu(?:'|’)on voit|ce que (?:tu|vous|je) vo(?:is|yez|yons)|tu vois|vous voyez|affiché|affichée|partagé|partagée|ne g(?:ö|o)r(?:ü|u)yorsun(?:uz)?|g(?:ö|o)rd(?:ü|u)(?:ğ|g)(?:ü|u)n(?:üz|uz)?|g(?:ö|o)sterilen|payla(?:ş|s)(?:ı|i)lan)(?![\p{L}])/iu;
+/** This slide, chart, table, page or picture: named as the one in view, never a table for dinner. */
+const THIS_THING =
+  /(?<![\p{L}])(?:(?:this|that|the current|the last|the next|the first|the second|the previous)\s+(?:slides?|charts?|graphs?|tables?|pages?|figures?|diagrams?|images?|pictures?|photos?|spreadsheets?|sheets?|dashboards?|decks?|documents?|docs?|maps?|numbers?|totals?|rows?|columns?|cells?|lines?|tabs?|windows?|forms?|invoices?)(?![\p{L}])|(?:read|describe|explain|summari[sz]e|go over|zoom in on|look at)\s+(?:the|this|that|my)\s+(?:slides?|charts?|graphs?|tables?|pages?|figures?|diagrams?|images?|pictures?|photos?|spreadsheets?|sheets?|dashboards?|decks?|documents?|docs?|maps?|numbers?|totals?|rows?|columns?|cells?|lines?|tabs?|windows?|forms?|invoices?)(?![\p{L}])|(?:ه[اذ]ا|هذه|هذي|ده|دي|دا|هاد|هاي|هادي|هيدا|هيدي|هالـ?|ها)\s*(?:ال)?(?:شريحة|سلايد|جدول|رسم|رسمة|صفحة|صورة|جراف|رقم|أرقام|ارقام|مخطط|ملف|شيت|عرض|خريطة)(?![\p{L}])|(?:ال)?(?:شريحة|سلايد|جدول|رسم|رسمة|صفحة|صورة|جراف|رقم|أرقام|ارقام|مخطط|ملف|شيت|عرض|خريطة)\p{M}*\s+(?:دي|ده|دا|هاي|هاد|هذه|هذا|هذي|هادي)(?![\p{L}])|(?:cette|ce|cet)\s+(?:diapo|diapositive|slide|graphique|graph|tableau|page|figure|schéma|schema|image|photo|carte|document|doc|chiffre|feuille|fenêtre|fenetre)(?![\p{L}])|(?:lis|lire|décris|decris|explique|résume|resume)\s+(?:la|le|cette|ce|cet)\s+(?:diapo|diapositive|slide|graphique|graph|tableau|page|figure|schéma|schema|image|photo|carte|document|doc|chiffre|feuille|fenêtre|fenetre)(?![\p{L}])|(?:bu|şu|su)\s+(?:slayt|grafik|tablo|sayfa|şekil|sekil|görsel|gorsel|resim|fotoğraf|fotograf|harita|belge|rakam|sütun|sutun|satır|satir)\p{L}*(?![\p{L}]))/iu;
+/**
+ * Whether a question to Cai asks about what's on a shared screen (M17 I13h, R114 (1)): the screen
+ * itself, what's shown or looked at, or this slide, chart, table, page or picture, in every
+ * interface language and Arabic variety. Rules alone (measured by `cai-call-golden.test.ts`), so
+ * Cai asks the recording device for a picture only when it's about to be asked about one.
+ */
+export function asksAboutScreen(question: string): boolean {
+  const q = question.trim();
+  if (!q) return false;
+  return SCREEN_WORD.test(q) || SHOWN.test(q) || THIS_THING.test(q);
+}
+
 export function calledCai(text: string, names: readonly string[] = []): CaiCall | null {
   const line = text.trim();
   if (!line || someoneNamedCai(names)) return null;

@@ -10,11 +10,17 @@
  * what everyone heard. A line heard while Cai spoke that repeats its words is a microphone's echo,
  * dropped. Cai introduces itself aloud once as it joins (R87). Everything is counted on the
  * asker's allowance as the notes are (R107); the sound is kept an hour for the recorder to fetch,
- * then swept.
+ * then swept. Asked about the screen (M17 I13h, R114 (1): core `asksAboutScreen`), Cai first asks
+ * the recording device for a picture of the screen shown now (`call.cai.frame`), which that
+ * device answers with one (`takeCaiFrame`, kept at `cai/frames/…` for this answer alone) or with
+ * none (`noCaiFrame`); the answer comes from the first of the line's jobs to arrive (the picture,
+ * or the wait of `FRAME_WAIT_MS`), which claims the line (`cai_answered_at`), so it's answered
+ * once, and the picture goes as soon as it's answered. Never kept beyond that.
  */
+import { stat } from 'node:fs/promises';
 import { Readable } from 'node:stream';
 import { chatAct, chatIntent, chatSave, SPOKEN_MAX, truncate, uuidv7 } from '@caime/core';
-import { calledCai, echoes } from '@caime/core/cai-call';
+import { asksAboutScreen, calledCai, echoes } from '@caime/core/cai-call';
 import { writtenIn } from '@caime/core/chat-intent';
 import { tr } from '@caime/core/i18n';
 import { CAI_ID } from '@caime/core/system-ids';
@@ -22,6 +28,7 @@ import type { AppContext } from '../context';
 import type { Call } from '../db/schema';
 import { AiError, languageName } from './ai';
 import { runAi } from './ai-run';
+import { base64Of, FRAME_MAX_BYTES, shrinkFrame } from './call-frames';
 import {
   callAudience,
   callById,
@@ -30,7 +37,7 @@ import {
   tellReaders,
 } from './call-notes';
 import { noteTranscript } from './call-notes-ai';
-import { AppError, forbidden, notFound } from './errors';
+import { AppError, badRequest, forbidden, notFound } from './errors';
 import { inLanguage, languageOf } from './i18n';
 import { enqueue, registerJob, registerPeriodic } from './jobs';
 import { assertAiAllowance } from './plans';
@@ -48,6 +55,11 @@ const MS_PER_CHARACTER = 65;
 const MIN_SPOKEN_MS = 1_500;
 /** A line heard this close to an utterance may be its echo through a microphone. */
 const ECHO_SLACK_MS = 2_000;
+/** How long Cai waits for the recording device's picture of the screen before answering without it. */
+export const FRAME_WAIT_MS = 10_000;
+
+/** What Cai has of the screen for an answer (M17 I13h): a picture, none shown, or none in time. */
+type Screen = { key: string } | 'none' | 'waited' | null;
 
 const OWN: readonly OpenPart[] = ['waiting', 'asked', 'mine', 'coming'];
 
@@ -60,7 +72,9 @@ type Outcome =
   | 'echo'
   | 'allowance'
   | 'introduced'
-  | 'failed';
+  | 'failed'
+  | 'screen_asked'
+  | 'no_screen';
 
 /** The notes on in a call with Cai joining in, or null. */
 async function liveInteract(ctx: AppContext, callId: string) {
@@ -185,11 +199,20 @@ async function isEcho(
 }
 
 /** What Cai answers, by the rules first (R110), else from the notes on the light model. */
+/** Whether the rules answer a question without the model: then no picture of the screen is asked. */
+function byRules(question: string): boolean {
+  const intent = chatIntent(question);
+  return Boolean(
+    (intent && OWN.includes(intent as OpenPart)) || chatSave(question) || chatAct(question),
+  );
+}
+
 async function answerCall(
   ctx: AppContext,
   call: Call,
   line: { notesId: string; speaker_id: string; started_by: string },
   question: string,
+  screen: Screen = null,
 ): Promise<Outcome> {
   const asker = line.speaker_id;
   const payer = line.started_by;
@@ -230,9 +253,18 @@ async function answerCall(
       await say(tr('I can’t answer that here yet.'));
       return 'no_answer';
     }
+    // Asked about the screen with none to look at (M17 I13h): said, never guessed from the notes.
+    if ((screen === 'none' || screen === 'waited') && asksAboutScreen(question)) {
+      await say(tr('I can’t see a screen right now.'));
+      return 'no_screen';
+    }
     const me = await person(ctx, asker);
     const { transcript, lines } = await noteTranscript(ctx, call, asker, me.time_zone);
-    if (!lines.length) {
+    const image =
+      screen && typeof screen === 'object'
+        ? { data: await base64Of(ctx, screen.key), mediaType: 'image/jpeg' as const }
+        : undefined;
+    if (!lines.length && !image) {
       await say(tr('Nothing has been said yet for me to answer from.'));
       return 'no_answer';
     }
@@ -242,6 +274,7 @@ async function answerCall(
         question,
         language: languageName(language),
         today: transcriptClock(me.time_zone).day(ctx.now()),
+        image,
       }),
     );
     await say(truncate(answer, SPOKEN_MAX));
@@ -280,6 +313,50 @@ async function onLine(ctx: AppContext, payload: Record<string, unknown>): Promis
   }
   const asked = calledCai(body, await callPeopleNames(ctx.db, call));
   if (!asked) return;
+  const screen: Screen =
+    typeof payload.frameKey === 'string'
+      ? { key: payload.frameKey }
+      : payload.noScreen === true
+        ? 'none'
+        : payload.waited === true
+          ? 'waited'
+          : null;
+  // Asked about the screen (M17 I13h): the recording device is asked for its picture first, once,
+  // and the answer waits for it or for FRAME_WAIT_MS, whichever comes first.
+  if (screen === null && ctx.ai && asksAboutScreen(asked.question) && !byRules(asked.question)) {
+    const notes = await liveInteract(ctx, call.id);
+    if (notes?.recorder_id && notes.recorder_device) {
+      await ctx.bus.publish([notes.recorder_id], {
+        type: 'call.cai.frame',
+        data: { callId: call.id, lineId: line.id, deviceId: notes.recorder_device },
+      });
+      await enqueue(
+        ctx,
+        CAI_JOB,
+        { lineId: line.id, waited: true },
+        {
+          runAt: new Date(ctx.now().getTime() + FRAME_WAIT_MS),
+          dedupeKey: `${CAI_JOB}:${line.id}:waited`,
+        },
+      );
+      ctx.metrics.caiInteract.inc({ outcome: 'screen_asked' });
+      return;
+    }
+  }
+  // Answered once: the first of the line's jobs to get here answers; a picture that comes later
+  // goes unread.
+  const storage = storageFor(ctx.config);
+  const claimed = await ctx.db
+    .updateTable('call_note_lines')
+    .set({ cai_answered_at: ctx.now() })
+    .where('id', '=', line.id)
+    .where('cai_answered_at', 'is', null)
+    .returning('id')
+    .executeTakeFirst();
+  if (!claimed) {
+    if (screen && typeof screen === 'object') await storage.remove(screen.key).catch(() => {});
+    return;
+  }
   const started = Date.now();
   let outcome: Outcome;
   try {
@@ -288,15 +365,93 @@ async function onLine(ctx: AppContext, payload: Record<string, unknown>): Promis
       call,
       { notesId: line.notesId, speaker_id: line.speaker_id, started_by: line.started_by },
       asked.question,
+      screen,
     );
   } catch (err) {
-    // Busy: the job tries again. Anything else is this one answer lost, logged.
-    if (err instanceof AppError && err.code === 'ai_busy') throw err;
+    // Busy: the job tries again, the line its to answer again. Anything else is this one answer
+    // lost, logged.
+    if (err instanceof AppError && err.code === 'ai_busy') {
+      await ctx.db
+        .updateTable('call_note_lines')
+        .set({ cai_answered_at: null })
+        .where('id', '=', line.id)
+        .execute();
+      throw err;
+    }
     ctx.log.warn({ err, callId: call.id }, 'cai could not answer in the call');
     outcome = 'failed';
+  } finally {
+    if (screen && typeof screen === 'object') await storage.remove(screen.key).catch(() => {});
   }
   ctx.metrics.caiInteract.inc({ outcome });
   ctx.metrics.caiInteractSeconds.observe({ outcome }, (Date.now() - started) / 1000);
+}
+
+/** The line Cai asked about the screen for, from the device it asked, while it still waits. */
+async function askedLine(
+  ctx: AppContext,
+  call: Call,
+  userId: string,
+  deviceId: string,
+  lineId: string,
+) {
+  const notes = await liveInteract(ctx, call.id);
+  if (!notes || notes.recorder_id !== userId || notes.recorder_device !== deviceId)
+    throw forbidden(tr('Only the device recording the call shows Cai the screen.'));
+  const line = await ctx.db
+    .selectFrom('call_note_lines')
+    .select(['id', 'cai_answered_at'])
+    .where('id', '=', lineId)
+    .where('notes_id', '=', notes.id)
+    .executeTakeFirst();
+  if (!line) throw notFound(tr('That line'));
+  return line;
+}
+
+/**
+ * The recording device's picture of the screen shown now (M17 I13h), for the line that asked:
+ * shrunk as a frame is, kept at a key of its own for this answer alone, and the answer queued.
+ * One for a line already answered is let go.
+ */
+export async function takeCaiFrame(
+  ctx: AppContext,
+  call: Call,
+  userId: string,
+  frame: { deviceId: string; lineId: string; spool: string },
+): Promise<boolean> {
+  const line = await askedLine(ctx, call, userId, frame.deviceId, frame.lineId);
+  if (line.cai_answered_at) return false;
+  if ((await stat(frame.spool)).size > FRAME_MAX_BYTES)
+    throw new AppError(413, 'too_large', tr('That picture of the screen is too large.'));
+  const picture = await shrinkFrame(frame.spool);
+  if (!picture) throw badRequest(tr('That isn’t a picture Caime reads.'));
+  const key = `cai/frames/${call.id}/${line.id}.jpg`;
+  await storageFor(ctx.config).write(key, Readable.from(picture.data));
+  await enqueue(
+    ctx,
+    CAI_JOB,
+    { lineId: line.id, frameKey: key },
+    { dedupeKey: `${CAI_JOB}:${line.id}:framed` },
+  );
+  return true;
+}
+
+/** The recording device says no screen is shown (M17 I13h): Cai answers so at once. */
+export async function noCaiFrame(
+  ctx: AppContext,
+  call: Call,
+  userId: string,
+  ask: { deviceId: string; lineId: string },
+): Promise<boolean> {
+  const line = await askedLine(ctx, call, userId, ask.deviceId, ask.lineId);
+  if (line.cai_answered_at) return false;
+  await enqueue(
+    ctx,
+    CAI_JOB,
+    { lineId: line.id, noScreen: true },
+    { dedupeKey: `${CAI_JOB}:${line.id}:framed` },
+  );
+  return true;
 }
 
 /** Cai introduces itself aloud once as it joins (R87): who it is, that it's an AI, what it does. */

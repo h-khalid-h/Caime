@@ -16,6 +16,9 @@ import {
   type AiActionsView,
   AiAskBody,
   type AiCatchUpView,
+  CaiFrameQuery,
+  type CaiFrameResponse,
+  CaiNoFrameBody,
   CallDeviceBody,
   CallNoteLineQuery,
   CallNotesAnswerBody,
@@ -39,7 +42,7 @@ import type { OkResponse } from '@caime/core/api';
 import type { FastifyInstance, FastifyReply } from 'fastify';
 import { z } from 'zod';
 import type { AppContext } from '../context';
-import { utteranceFor } from '../lib/cai-interact';
+import { noCaiFrame, takeCaiFrame, utteranceFor } from '../lib/cai-interact';
 import { addFrame, FRAME_MAX_BYTES, playableFrame } from '../lib/call-frames';
 import {
   answerNotes,
@@ -332,6 +335,48 @@ export async function callNotesRoutes(app: FastifyInstance, ctx: AppContext) {
       .header('content-type', sound.mime)
       .header('cache-control', 'private, no-store')
       .send(storage.read(sound.storage_key));
+  });
+
+  /**
+   * Cai asked about the screen (M17 I13h): the recording device's picture of the screen shown
+   * now, for the line that asked, as a JPEG spooled as a frame is; or that no screen is shown.
+   * `taken` false: the line was answered already (the wait ran out first).
+   */
+  app.post('/calls/:id/cai/frame', async (req): Promise<CaiFrameResponse> => {
+    const auth = requireAuth(req);
+    const { id } = parse(callParam, req.params);
+    const q = parse(CaiFrameQuery, req.query);
+    ctx.limiter.hit(`cai-frame:${id}`, ctx.config.isTest ? 10_000 : 120, 600_000);
+    const call = await callForNotes(ctx, id, auth.userId);
+    const spool = join(tmpdir(), `caime-cai-frame-${randomUUID()}`);
+    let seen = 0;
+    const capped = new Transform({
+      transform(chunk: Buffer, _enc, done) {
+        seen += chunk.length;
+        if (seen > FRAME_MAX_BYTES)
+          done(new AppError(413, 'too_large', tr('That picture of the screen is too large.')));
+        else done(null, chunk);
+      },
+    });
+    try {
+      await pipeline(req.body as Readable, capped, createWriteStream(spool));
+      return {
+        taken: await takeCaiFrame(ctx, call, auth.userId, {
+          deviceId: q.deviceId,
+          lineId: q.lineId,
+          spool,
+        }),
+      };
+    } finally {
+      await rm(spool, { force: true });
+    }
+  });
+  app.post('/calls/:id/cai/frame/none', async (req): Promise<CaiFrameResponse> => {
+    const auth = requireAuth(req);
+    const { id } = parse(callParam, req.params);
+    const body = parse(CaiNoFrameBody, req.body);
+    const call = await callForNotes(ctx, id, auth.userId);
+    return { taken: await noCaiFrame(ctx, call, auth.userId, body) };
   });
 
   /** The recording deleted for everyone by someone who was in the call (R52); the notes stay. */

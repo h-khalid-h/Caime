@@ -4146,9 +4146,9 @@ clinic can sign for. I1 lands before launch.
         voice key and a Messages key), what it's asked to do carried out on the asker's tap from
         the call (today it's prepared in their Cai chat, where the tap is), and Cai's voice from a
         phone that records (the server never names one).
-  - [ ] I13h. What was on screen (M): a frame at each change of a shared screen while recording,
+  - [x] I13h. What was on screen (M): a frame at each change of a shared screen while recording,
         read into the write-up, and the screen as shown when Cai is asked about it in Interact, on
-        the light model within the asker's day. Built so far (h1, 2026-10-25): while Cai records,
+        the light model within the asker's day. Built (h1, 2026-10-25): while Cai records,
         the recorder's browser samples each shown screen every two seconds as a small grey picture
         (`features/calls/frames.ts`, `screenFrames.ts`: a change past 6 % of its cells, held on two
         samples, so a flash or a cursor is skipped) and sends a JPEG of it at most 1280 wide at its
@@ -4168,7 +4168,21 @@ clinic can sign for. I1 lands before launch.
         erased with the line, eight of twenty read and cited, none read twice, the export),
         `ai-costs.test.ts` (a frame at its largest), the app's `frames.test.ts`, and the recording
         E2E (frames kept while the pattern moves, the strip, the stand-in asked and its reading kept).
-        Not yet (h2): the screen as shown when Cai is asked about it in Interact.
+        Built (h2, 2026-10-25): a question to Cai about the screen (core `asksAboutScreen`: the
+        screen, what's shown, this slide, chart, table, page or picture, in every interface
+        language and Arabic variety, measured by `cai-call-golden.test.ts`) makes Cai ask the
+        recording device for one picture of the screen shown now (`call.cai.frame` to that
+        device alone; `features/calls/voice.ts` captures its own screen or the one a peer shares,
+        never a camera, and answers `POST /calls/:id/cai/frame` or `…/frame/none`); the answer
+        comes from the first of the line's jobs to arrive (the picture, or `FRAME_WAIT_MS`), which
+        claims the line (`call_note_lines.cai_answered_at`, migration 0152), so it's answered once;
+        the picture goes to the light model beside the notes (`ai.interact` with `image`) and is
+        deleted as soon as Cai has answered; with none shown, or none in time, Cai says it can't
+        see a screen. Verified: `cai-interact.test.ts` (asked of the recorder alone, the model
+        asked with the picture, the picture gone, the wait answering nothing more, a late picture
+        let go, none shown, none in time), the golden set, `ai-costs.test.ts` (`interact-screen`),
+        and the notes E2E (the screen shared, asked, the stand-in asked with a picture, answered
+        aloud).
 - [ ] I3. What did I miss (M; L with the summary): the Needs-you conversations since each was last
       read, by the rules, ranked as Attention ranks them, with a cited summary for whoever has
       assist on, cached by read position, in Cai's chat and on Attention.
@@ -5860,7 +5874,13 @@ have yet, each sized:
   cadence, through `images.run`), on the recording's view and in a strip of the notes sheet that
   plays from each moment, and read into the write-up once, eight at most, as lines from the screen
   the notes cite. Verified: `call-frames.test.ts`, the app's `frames.test.ts`, the recording E2E.
-  Next: h2, the screen as shown when Cai is asked about it in Interact.
+- 2026-10-25 — M17 I13h (h2), the screen as shown when Cai is asked about it in Interact
+  (R114 (1)): a question about the screen (core `asksAboutScreen`, golden lines in every language
+  and variety) makes Cai ask the recording device for one picture of the screen shown now, the
+  answer claimed once by whichever comes first (the picture or the wait), the picture read by the
+  light model beside the notes and deleted as soon as Cai has answered, "I can't see a screen
+  right now" when there's none. Verified: `cai-interact.test.ts`, the golden set, the cost row
+  and the notes E2E. I13h is done; next: I3b/I3c.
 - 2026-10-25 — M17 I13g, the app's side (R114 (3)): Cai joins in, on every screen. The mode
   offered and named on every way in, the consent saying what everyone hears, the recorder's
   browser playing Cai's voice into the call and the recording in its microphone's place, "Cai is

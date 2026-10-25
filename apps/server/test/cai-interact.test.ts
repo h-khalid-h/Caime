@@ -4,14 +4,18 @@
  * notes on the light model, says what's one person's own to them in writing alone, keeps what
  * it's asked to keep and says so, drops a microphone's echo of its own words, and serves the
  * sound of what it said to the recorder's device alone; everything counted on the asker's
- * allowance, the sound swept after an hour, the words kept as Cai's lines in the notes.
+ * allowance, the sound swept after an hour, the words kept as Cai's lines in the notes. Asked
+ * about the screen (M17 I13h), it looks at the recorder's picture of it first, answers once, and
+ * says when it can't see one.
  */
 import { createServer, type Server } from 'node:http';
 import type { AddressInfo } from 'node:net';
 import { uuidv4 } from '@caime/core';
 import { CAI_ID } from '@caime/core/system-ids';
+import sharp from 'sharp';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import type { BusMessage } from '../src/lib/bus';
+import { FRAME_WAIT_MS } from '../src/lib/cai-interact';
 import { runDueJobs, runPeriodic } from '../src/lib/jobs';
 import { storageFor } from '../src/lib/storage';
 import { type Client, createTestApp, signup, type TestApp, until } from './helpers';
@@ -107,6 +111,16 @@ const work = async () => {
 const events: BusMessage[] = [];
 const spokenEvents = () => events.filter((m) => m.event.type === 'call.cai');
 const writtenEvents = () => events.filter((m) => m.event.type === 'call.cai.written');
+const frameAsks = () => events.filter((m) => m.event.type === 'call.cai.frame');
+
+/** The recorder's picture of the screen, for the line Cai asked about it for (M17 I13h). */
+const caiFrame = (callId: string, deviceId: string, lineId: string, bytes: Buffer) =>
+  t.app.inject({
+    method: 'POST',
+    url: `/v1/calls/${callId}/cai/frame?deviceId=${deviceId}&lineId=${lineId}`,
+    payload: bytes,
+    headers: { 'content-type': 'image/jpeg', authorization: `Bearer ${noor.token}` },
+  });
 
 beforeAll(async () => {
   stub = createServer(async (req, res) => {
@@ -161,7 +175,12 @@ beforeAll(async () => {
     TTS_BASE_URL: base,
   });
   t.ctx.bus.subscribe((m) => {
-    if (m.event.type === 'call.cai' || m.event.type === 'call.cai.written') events.push(m);
+    if (
+      m.event.type === 'call.cai' ||
+      m.event.type === 'call.cai.written' ||
+      m.event.type === 'call.cai.frame'
+    )
+      events.push(m);
   });
   noor = await signup(t, { displayName: 'Noor Voice' });
   sam = await signup(t, { displayName: 'Sam Voice' });
@@ -342,6 +361,76 @@ describe('Cai joins in a call (R114 (3), M17 I13g)', () => {
       .executeTakeFirstOrThrow();
     expect(dropped).toMatchObject({ state: 'unheard', body: null });
     expect(spoken).toHaveLength(before);
+  });
+
+  it('asked about the screen, looks at the recorder’s picture of it before answering (M17 I13h)', async () => {
+    const storage = storageFor(t.ctx.config);
+    const picture = await sharp({
+      create: { width: 640, height: 360, channels: 3, background: { r: 30, g: 60, b: 200 } },
+    })
+      .jpeg()
+      .toBuffer();
+    // The recorder's device is asked for a picture, to it alone, and nothing is answered yet.
+    const before = spoken.length;
+    await heard(callId, sam.user.id, "Cai, what's on the screen?");
+    expect(frameAsks()).toHaveLength(1);
+    const ask = frameAsks()[0]!;
+    expect([...ask.userIds]).toEqual([noor.user.id]);
+    expect(ask.event.data).toMatchObject({ callId, deviceId: 'noor-tab-1' });
+    const { lineId } = ask.event.data as { lineId: string };
+    expect(spoken).toHaveLength(before);
+    // Not from the recorder's device.
+    expect((await caiFrame(callId, 'sam-tab-1', lineId, picture)).statusCode).toBe(403);
+    // The recorder's picture: the model is asked with it beside the notes, and Cai answers.
+    modelSays(JSON.stringify({ answer: 'A slide titled Budget 2027.', sources: [] }));
+    const sent = await caiFrame(callId, 'noor-tab-1', lineId, picture);
+    expect(sent.statusCode, sent.body).toBe(200);
+    expect(sent.json()).toEqual({ taken: true });
+    await work();
+    await until(() => spoken.length > before, 5_000, 'the screen answered');
+    expect(spoken[before]!.text).toBe('A slide titled Budget 2027.');
+    const req = JSON.parse(asked.at(-1)!) as {
+      messages: Array<{ content: Array<{ type: string; source?: { media_type: string } }> }>;
+    };
+    expect(req.messages[0]!.content.map((b) => b.type)).toEqual(['image', 'text']);
+    expect(req.messages[0]!.content[0]?.source?.media_type).toBe('image/jpeg');
+    // The picture went with the answer; the wait, when its time comes, answers nothing more.
+    expect(await storage.size(`cai/frames/${callId}/${lineId}.jpg`)).toBeNull();
+    t.clock.advance(FRAME_WAIT_MS + 1_000);
+    await work();
+    expect(spoken).toHaveLength(before + 1);
+    // A picture for a line answered already is let go.
+    expect((await caiFrame(callId, 'noor-tab-1', lineId, picture)).json()).toEqual({
+      taken: false,
+    });
+  });
+
+  it('says it can’t see a screen when the recorder has none, or doesn’t answer in time', async () => {
+    const before = spoken.length;
+    const askedBefore = asked.length;
+    await heard(callId, noor.user.id, 'Cai, what does this chart show?');
+    const ask = frameAsks().at(-1)!.event.data as { lineId: string };
+    expect(
+      (
+        await noor.req('POST', `/v1/calls/${callId}/cai/frame/none`, {
+          deviceId: 'noor-tab-1',
+          lineId: ask.lineId,
+        })
+      ).json(),
+    ).toEqual({ taken: true });
+    await work();
+    await until(() => spoken.length > before, 5_000, 'no screen said');
+    expect(spoken[before]!.text).toBe('I can’t see a screen right now.');
+    // No model asked for it.
+    expect(asked).toHaveLength(askedBefore);
+    // Nothing from the device: the wait answers the same once FRAME_WAIT_MS has passed.
+    await heard(callId, sam.user.id, 'Cai, can you read this slide?');
+    expect(spoken).toHaveLength(before + 1);
+    t.clock.advance(FRAME_WAIT_MS + 1_000);
+    await work();
+    await until(() => spoken.length > before + 1, 5_000, 'the wait answered');
+    expect(spoken[before + 1]!.text).toBe('I can’t see a screen right now.');
+    expect(asked).toHaveLength(askedBefore);
   });
 
   it('lets the sound go after an hour; Cai’s words stay in the notes', async () => {

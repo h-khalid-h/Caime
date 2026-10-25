@@ -218,6 +218,19 @@ const AT_BOUNDS: ReadonlyArray<{
     call: (ai) =>
       ai.interact({ transcript: transcript(24_000), question: x(800), language: 'English', today }),
   },
+  // lib/cai-interact.ts: the same, asked about the screen, with a picture of it at its largest
+  // (M17 I13h).
+  {
+    feature: 'interact-screen',
+    call: (ai) =>
+      ai.interact({
+        transcript: transcript(24_000),
+        question: x(800),
+        language: 'English',
+        today,
+        image: { data: x(FRAME_TOKENS), mediaType: 'image/jpeg' },
+      }),
+  },
   // lib/call-frames.ts: one frame of a shared screen at its largest, read for the write-up (M17
   // I13h); the write-up reads at most FRAMES_IN_NOTES of them.
   {

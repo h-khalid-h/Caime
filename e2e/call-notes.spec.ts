@@ -530,6 +530,21 @@ test.describe
         calls: string[];
       };
       expect(requests.calls).toContain('interact');
+
+      // Asked about the screen (M17 I13h): Noor shows theirs, "Cai, what's on the screen?" makes
+      // Cai ask this browser for a picture of it, and the model answers with the picture.
+      await page.getByTestId('call-share').click();
+      await expect(sam.page.getByTestId('call-theirs')).toContainText('sharing their screen');
+      await page.request.post(`${AI_STUB}/say`, { data: { text: "Cai, what's on the screen?" } });
+      await expect
+        .poll(async () => (await spoken()).length, { timeout: 60_000 })
+        .toBeGreaterThanOrEqual(3);
+      expect((await spoken())[2]?.text).toContain('test pattern');
+      expect(
+        ((await (await page.request.get(`${AI_STUB}/requests`)).json()) as { calls: string[] })
+          .calls,
+      ).toContain('interact-screen');
+      await page.getByTestId('call-share').click();
       await page.getByTestId('call-hangup').click();
       await expect(page.getByTestId('call-screen')).toHaveCount(0);
       expect(problems(noor, sam)).toEqual([]);

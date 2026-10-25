@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { calledCai, echoes } from './cai-call';
+import { asksAboutScreen, calledCai, echoes } from './cai-call';
 import { CAI_CALL_GOLDEN, type CaiCallLine } from './fixtures/cai-call-golden';
 
 /**
@@ -52,6 +52,18 @@ describe('Cai called by name (golden set)', () => {
     expect(calledCai('Cai, what did we decide?', ['Kaya', 'Noor'])).not.toBeNull();
     expect(calledCai('كاي، شو قررنا؟', ['كاي أحمد'])).toBeNull();
   });
+
+  for (const group of GROUPS) {
+    it(`${group.name}: reads what asks about the screen, and nothing else (M17 I13h)`, () => {
+      const lines = CAI_CALL_GOLDEN.filter(group.pick).filter((l) => l.question);
+      const about = lines.filter((l) => l.screen);
+      expect(about.length).toBeGreaterThanOrEqual(2);
+      const wrong = lines
+        .filter((l) => asksAboutScreen(l.question ?? '') !== Boolean(l.screen))
+        .map((l) => `${l.text} → ${asksAboutScreen(l.question ?? '')}`);
+      expect(wrong, wrong.join('\n')).toEqual([]);
+    });
+  }
 
   it('hears an echo of what Cai just said', () => {
     const spoken =

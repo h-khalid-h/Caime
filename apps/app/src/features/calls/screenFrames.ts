@@ -41,6 +41,34 @@ async function frameOf(video: HTMLVideoElement): Promise<Blob | null> {
 }
 
 /**
+ * One picture of a shown screen, now (M17 I13h): for Cai, asked about the screen, from the track
+ * as it plays; null where nothing could be drawn within a moment.
+ */
+export async function captureTrack(track: MediaStreamTrack): Promise<Blob | null> {
+  if (typeof document === 'undefined') return null;
+  const video = document.createElement('video');
+  video.muted = true;
+  video.playsInline = true;
+  video.srcObject = new MediaStream([track]);
+  try {
+    await new Promise<void>((done, fail) => {
+      const timer = setTimeout(() => fail(new Error('no picture')), 3_000);
+      video.onloadeddata = () => {
+        clearTimeout(timer);
+        done();
+      };
+      void video.play().catch(() => {});
+    });
+    return video.videoWidth ? await frameOf(video) : null;
+  } catch {
+    return null;
+  } finally {
+    video.pause();
+    video.srcObject = null;
+  }
+}
+
+/**
  * Watch a shown screen for the part recording it, sending a frame at each change; the function
  * returned stops it (the part ended, lost or dropped).
  */

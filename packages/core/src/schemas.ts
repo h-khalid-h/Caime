@@ -738,6 +738,10 @@ export const CallRecordingFrameQuery = z
   .object({ deviceId: CallDevice, at: z.coerce.number().int().min(0) })
   .strict();
 
+/** The recording device answering Cai's ask for a picture of the screen (M17 I13h), for a line. */
+export const CaiFrameQuery = z.object({ deviceId: CallDevice, lineId: z.string().uuid() }).strict();
+export const CaiNoFrameBody = CaiFrameQuery;
+
 /** One thing said, from the device recording (M16 F7, R82 (2)): who said it, and when. */
 export const CallNoteLineQuery = z
   .object({

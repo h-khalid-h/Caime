@@ -2544,8 +2544,12 @@ with its reason, so it isn't proposed again without new facts.
   the first, the last and the rest spread, on the light model and the asker's allowance) as
   lines from the screen, which the topics, decisions and next steps cite like any sentence;
   they go with the recording, the call's line and the sweep, count against the keeper's storage
-  and are listed in the export. *Not yet:* the screen as shown when Cai is asked about it in
-  Interact (h2); what Cai is asked to do carried out
+  and are listed in the export. *Built (M17 I13h, h2, 2026-10-25):* asked about the screen
+  ("what's on the screen", "this slide", "ce tableau", "ekranda ne var", in every language and
+  variety by the rules), Cai asks the recording browser for one picture of the screen shown now,
+  answers from it beside the notes on the light model, once, and deletes the picture as soon as
+  it has answered; with none shown, or none within ten seconds, it says it can't see a screen.
+  *Not yet:* what Cai is asked to do carried out
   on the asker's tap from the call itself (it's prepared in their Cai chat, where the tap is);
   a share into a customer conversation (the mask; calls with organizations are M16 H8a), the
   screen in step on a phone, and H.264 measured on a real Chrome call (the test browser records

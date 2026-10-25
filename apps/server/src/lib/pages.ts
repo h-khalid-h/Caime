@@ -241,7 +241,9 @@ alone, in the call and in their chat with it, and never says. Cai&rsquo;s own wo
 text-to-speech provider named below, which turns them into sound; nothing anyone says, and no
 one&rsquo;s name, goes to it, and Caime has it delete what it kept of each exchange. The sound is
 kept an hour for the one browser that plays it, and what Cai said stays in the notes as its own
-line. Anyone&rsquo;s no, at any time, stops it for everyone.</li>
+line. Asked about a shared screen, Cai asks the same browser for one picture of the screen shown
+at that moment (never a camera), sends it with the question to the AI provider named below, and
+deletes it as soon as it has answered. Anyone&rsquo;s no, at any time, stops it for everyone.</li>
 <li><strong>Meetings with guests.</strong> When you invite someone to a meeting by email address,
 Caime keeps the address, who invited them and when, and gives the meeting its own group, where the
 guest sees only that meeting. Their link to join is kept only as a fingerprint, and ends when
