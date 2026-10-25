@@ -12,7 +12,9 @@ concurrency:
 jobs:
   check:
     name: Lint, typecheck, test, build, e2e
-    runs-on: ubuntu-latest
+    # Pinned while ubuntu-latest moves to 26.04 (from 2026-10-19): Playwright has no browsers for
+    # it yet (it names the host ubuntu26.04-x64 and stops), so the E2E failed before a test ran.
+    runs-on: ubuntu-24.04
     timeout-minutes: 30
     services:
       postgres:
@@ -75,7 +77,8 @@ jobs:
     name: Build and smoke-test the image, then release
     needs: check
     if: github.event_name == 'push' && github.ref == 'refs/heads/main'
-    runs-on: ubuntu-latest
+    # The image is built and smoke-tested where the check ran.
+    runs-on: ubuntu-24.04
     timeout-minutes: 30
     permissions:
       # write: to move the production branch forward once this commit has passed everything.
