@@ -487,4 +487,8 @@ export const gulfVoice: Catalog = {
     many: '• انضموا {n} شخص في آخر يوم',
     other: '• انضموا {n} شخص في آخر يوم',
   },
+  'I couldn’t open that photo. Send it again?': 'ما قدرت أفتح هالصورة. ترسلها مرة ثانية؟',
+  'I can look at photos with AI assist on: Settings, then AI assist.':
+    'أقدر أشوف الصور إذا مساعدة الذكاء الاصطناعي شغّالة: الإعدادات، بعدين مساعدة الذكاء الاصطناعي.',
+  'I can’t look at photos on this Caime yet.': 'للحين ما أقدر أشوف الصور على Caime هذا.',
 };

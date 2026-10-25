@@ -487,4 +487,8 @@ export const levantineVoice: Catalog = {
     many: '• انضموا {n} شخص بآخر يوم',
     other: '• انضموا {n} شخص بآخر يوم',
   },
+  'I couldn’t open that photo. Send it again?': 'ما قدرت افتح هالصورة. بتبعتها مرة تانية؟',
+  'I can look at photos with AI assist on: Settings, then AI assist.':
+    'فيني شوف الصور إذا مساعدة الذكاء الاصطناعي شغّالة: الإعدادات، بعدين مساعدة الذكاء الاصطناعي.',
+  'I can’t look at photos on this Caime yet.': 'لسّا ما فيني شوف الصور على Caime هيدا.',
 };

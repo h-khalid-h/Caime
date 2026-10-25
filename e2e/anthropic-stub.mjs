@@ -92,6 +92,16 @@ function answer(body) {
     // keep what was said before ("save it as a task", M16 G13), it keeps the person's words
     // before the ask, their first sentence the title.
     calls.push('cai');
+    // Photos sent to Cai (M17 I14b) come as pictures before the words: it says how many it saw.
+    const photos = Array.isArray(first) ? first.filter((b) => b.type === 'image').length : 0;
+    if (photos)
+      return reply(
+        JSON.stringify({
+          reply: `I see ${photos === 1 ? 'one photo' : `${photos} photos`}: a plain test picture.`,
+          keep: null,
+          act: null,
+        }),
+      );
     const said = [...content.matchAll(/\] (?:[^\n]* · )?Person: (.*)$/gm)].map((m) => m[1].trim());
     const asked = said.at(-1) ?? '';
     if (/\b(?:save|keep)\b.*\b(?:it|this|that)\b/i.test(asked) && said.length > 1) {

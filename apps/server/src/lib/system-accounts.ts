@@ -75,6 +75,7 @@ import {
   sourceOfSearch,
 } from './answers';
 import { type Act, answerAwaited, offerAct } from './cai-acts';
+import { type CaiPhoto, photoKeysOf, readPhotos } from './cai-photos';
 import { speakReply } from './cai-voice';
 import { caimeDayText, productOrgId } from './caime-day';
 import { dayStart } from './calendar';
@@ -379,14 +380,17 @@ async function systemReply(ctx: AppContext, payload: Record<string, unknown>): P
     .executeTakeFirst();
   if (!latest || Number(latest.seq) !== Number(payload.seq) || latest.sender_id !== personId)
     return;
-  // A voice note is answered by its words once heard (M17 I14a), as typed words are.
+  // A voice note is answered by its words once heard (M17 I14a), as typed words are; a photo's
+  // caption is its words (M17 I14b), read by the model with the picture, never by the rules alone
+  // ("save this" means the picture).
   const text = latest.kind === 'text' || latest.kind === 'voice' ? (latest.body ?? '') : '';
+  const words = text || (latest.kind === 'media' ? (latest.body ?? '') : '');
   // Answered in the language it was written in ("السلام عليكم" from an English account is
   // answered in Arabic), else the account's; in Arabic, in theirs (R72): the one they chose,
   // else the one they wrote in, else the one where they live.
   const reader = await readerOf(ctx, personId);
-  const language = writtenIn(text) ?? reader.language;
-  const variety = arabicVariety({ choice: reader.choice, written: text, country: reader.country });
+  const language = writtenIn(words) ?? reader.language;
+  const variety = arabicVariety({ choice: reader.choice, written: words, country: reader.country });
   const voice: Voice = {
     language,
     variety,
@@ -411,7 +415,7 @@ async function systemReply(ctx: AppContext, payload: Record<string, unknown>): P
           id: latest.id,
           seq: Number(latest.seq),
           kind: latest.kind,
-          text,
+          text: words,
           isQuestion: Boolean(latest.is_question),
           intent: text ? chatIntent(text) : null,
           about: text ? chatAbout(text) : null,
@@ -419,6 +423,10 @@ async function systemReply(ctx: AppContext, payload: Record<string, unknown>): P
           save: text ? chatSave(text) : null,
           act: null,
           org: text ? chatOrg(text) : null,
+          photos:
+            latest.kind === 'media' && !isCharacterHandle(account.handle)
+              ? await photoKeysOf(ctx, latest.id)
+              : null,
         };
         // Something to do for them (G14) when it's no ask to keep: "remind me to call Sami" is
         // a reminder, never a call.
@@ -596,7 +604,14 @@ interface Said {
   act: ActAsk | null;
   /** How an organization they run is doing (M17 I15a), with the name as typed, if any. */
   org: OrgAsk | null;
+  /**
+   * The photos of a message of pictures to Cai (M17 I14b), where each is read from; null for any
+   * other message. Such a message is the model's to look at: the rules never read its caption alone.
+   */
+  photos: PhotoKey[] | null;
 }
+
+type PhotoKey = { key: string; mediaType: CaiPhoto['mediaType'] };
 
 type About = { intent: AboutIntent; name: string };
 
@@ -682,6 +697,17 @@ async function caiSays(
   voice: Voice,
 ) {
   const say = (line: string) => sayBack(ctx, account, conversationId, me, voice, line);
+  // Photos are the model's to look at (M17 I14b), or Cai says why it can't.
+  if (said.photos) {
+    const why = photosUnseen(ctx, me, said.photos.length);
+    if (why) {
+      ctx.metrics.caiPhotos.inc({ outcome: why });
+      return say(photoLine(why));
+    }
+    const seen = await caiAnswers(ctx, account, conversationId, me, said, voice);
+    ctx.metrics.caiPhotos.inc({ outcome: seen ? 'seen' : 'failed' });
+    return;
+  }
   if (said.about) return say(await aboutAnswer(ctx, me, said.about));
   if (said.free) return say(await freeAnswer(ctx, me, said.text));
   if (isOwnQuestion(said.intent)) return say(await ruleAnswer(ctx, me, said.intent));
@@ -719,13 +745,55 @@ async function caiSays(
         : tr('That one’s beyond me.');
     return say(`${why} ${tr(HELP)}`);
   }
+  await caiAnswers(ctx, account, conversationId, me, said, voice);
+}
+
+type PhotosUnseen = 'unreadable' | 'unavailable' | 'minor' | 'assist';
+
+/** Why Cai can't look at a message's photos (M17 I14b), or null when it can. */
+function photosUnseen(ctx: AppContext, me: Person, readable: number): PhotosUnseen | null {
+  if (!readable) return 'unreadable';
+  if (!ctx.ai) return 'unavailable';
+  if (minorOf(me, ctx.now())) return 'minor';
+  return me.ai_enabled ? null : 'assist';
+}
+
+function photoLine(why: PhotosUnseen): string {
+  switch (why) {
+    case 'unreadable':
+      return tr('I couldn’t open that photo. Send it again?');
+    case 'unavailable':
+      return tr('I can’t look at photos on this Caime yet.');
+    case 'assist':
+      return tr('I can look at photos with AI assist on: Settings, then AI assist.');
+    case 'minor':
+      return tr('That one’s beyond me.');
+  }
+}
+
+/**
+ * Cai's model answers (R67): the reply with what it rests on, and what to keep or do that the rules
+ * didn't read. Whether the model answered, rather than said why it couldn't.
+ */
+async function caiAnswers(
+  ctx: AppContext,
+  account: SystemAccount,
+  conversationId: string,
+  me: Person,
+  said: Said,
+  voice: Voice,
+): Promise<boolean> {
+  const say = (line: string) => sayBack(ctx, account, conversationId, me, voice, line);
   const answer = await modelSays(
     ctx,
     me,
     () => caiAnswer(ctx, conversationId, me, voice, said),
     tr(HELP),
   );
-  if (typeof answer === 'string') return say(answer);
+  if (typeof answer === 'string') {
+    await say(answer);
+    return false;
+  }
   // A reply that rests on what search found carries its sources (M17 I4), each a tap to the
   // message, the action or the decision; a question answered from passages is counted as one.
   const sources = answer.sources
@@ -749,6 +817,7 @@ async function caiSays(
   // Something to do that the rules didn't read ("could you check with Sarah whether the report
   // is ready?"): offered as the rules' would be, the words the model drafted in their voice.
   if (answer.act) await offerAct(ctx, account.id, conversationId, me, actOf(answer.act, said.text));
+  return true;
 }
 
 /** The model's act as the rules write one: its words a message's, a meeting's time or a query. */
@@ -778,7 +847,7 @@ async function caiAnswer(
   voice: Voice,
   said: Said,
 ): Promise<CaiAnswer & { found: AnswerPassage<SearchSource>[] }> {
-  const [transcript, open, found] = await Promise.all([
+  const [transcript, open, found, photos] = await Promise.all([
     transcriptOf(ctx, conversationId, me, 'Cai'),
     openFor(ctx, me, { forModel: true }),
     said.isQuestion && said.text.trim()
@@ -789,6 +858,8 @@ async function caiAnswer(
           me.time_zone || 'UTC',
         )
       : Promise.resolve([]),
+    // The pictures themselves (M17 I14b), read for this one call.
+    said.photos?.length ? readPhotos(ctx, said.photos) : Promise.resolve(undefined),
   ]);
   const ai = ctx.ai!;
   const answer = await runAi(ctx, 'cai', me.id, () =>
@@ -799,6 +870,7 @@ async function caiAnswer(
       found: found.length ? found.map((p) => p.text).join('\n') : null,
       ...spoken(voice),
       today: todayForAgent(ctx.now(), me.time_zone),
+      ...(photos ? { photos } : {}),
     }),
   );
   return { ...answer, found };

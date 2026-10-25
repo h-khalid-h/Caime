@@ -4308,8 +4308,23 @@ clinic can sign for. I1 lands before launch.
         and an unreadable note answered with why, no provider answered at once),
         `audio-length.test.ts` (MP3 by frames, past an ID3 tag and the encoder's frame), the
         voices' overlays, the Cai E2E's voice note.
-  - [ ] I14b. A photo to Cai seen (M): the light model reads its preview with the words and
-        what's open, answering with `reply`, `keep` and `act`; priced per image.
+  - [x] I14b. A photo to Cai seen (M, 2026-10-25): Cai's chat takes photos (the composer's "+"
+        offers the camera and photos alone, `CAI_PHOTOS_MAX` = 3, a browser's extra ones left out
+        with a word; the server refuses a fourth, a video or a file, and a friend's chat still
+        takes none). Each photo reaches Cai's one model call as its preview rendition, the 1,280-px
+        WebP the server keeps (R70), else its thumbnail, else the picture as it came where the
+        model reads its kind and it's 3.5 MB at most (`lib/cai-photos.ts`), shown before
+        `<context>` and read for that call alone; Cai's rules say what's seen, never who anyone is
+        or how they look. The rules never read a photo's caption alone ("save this" means the
+        picture): the model answers it with `reply`, `keep` and `act` as it answers words. Without
+        AI assist, under 18, with no model or a photo it can't open, Cai says which, never nothing;
+        `caime_cai_photos_total{outcome}`. Priced: €0.0033 at its bound on Haiku 5.5 where the same
+        call without photos is €0.0027 (RESOURCES, cost table `cai-photos`); the privacy page names
+        the photos among what Cai's provider receives. Verified: `cai-photo.test.ts` (4: the
+        preview shown before the words and the run recorded, three at most and pictures alone, a
+        caption's ask kept as the model reads it, assist off in Egyptian Arabic, a friend refused, a
+        failed call answered), the voices' overlays, the cost test, the Cai E2E (a photo sent from
+        the "+" and answered).
   - [ ] I14c. "Read it to me", and a spoken answer played on its own on a phone.
 - [ ] I15. Cai runs each scope, as it runs Caime (R115).
   - [x] I15a. An organization's day answered (M, the council's §6 in the review): "how is the
@@ -6576,3 +6591,8 @@ CONNIQT; they mean Caime. Caishy is one of Caime's AI members, and Cai leads the
 - 2026-10-25 — M17 I19b: an action due on a day keeps its day (`tasks.due_on`, filled in batches
   from `due_at` on its owner's clock); everyone reads that day, wherever they are and wherever its
   owner moves (the view's `dueAt` is the day's 09:00 on the reader's own clock).
+- 2026-10-25 — M17 I14b (R115): a photo to Cai is seen. Cai's chat offers photos (three at most,
+  pictures alone); the light model is shown each one's preview before the conversation and answers
+  as it answers words, keeping or offering what it's asked; Cai says why when it can't look. The
+  cost table again for every row since I18's time lines (the agent's assumed month €11.82 on
+  Business, its €29 covering 73 answers a day on Opus 5.5).

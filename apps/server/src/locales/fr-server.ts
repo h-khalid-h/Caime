@@ -1971,4 +1971,14 @@ export const frServer: Catalog = {
     one: '• Une personne a rejoint Caime ce dernier jour',
     other: '• {n} personnes ont rejoint Caime ce dernier jour',
   },
+  'Cai reads words, photos, stickers and voice notes.':
+    'Avec Cai, des mots, des photos, des stickers et des messages vocaux seulement.',
+  'Cai looks at photos, not videos or files.':
+    'Cai regarde les photos, pas les vidéos ni les fichiers.',
+  'I couldn’t open that photo. Send it again?':
+    'Je n’ai pas pu ouvrir cette photo. Vous la renvoyez ?',
+  'I can look at photos with AI assist on: Settings, then AI assist.':
+    'Je peux regarder des photos avec l’assistance IA activée : Réglages, puis Assistance IA.',
+  'I can’t look at photos on this Caime yet.':
+    'Je ne peux pas encore regarder de photos sur ce Caime.',
 };

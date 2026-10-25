@@ -1888,4 +1888,12 @@ export const turkishServer: Catalog = {
     one: '• Son bir günde bir kişi katıldı',
     other: '• Son bir günde {n} kişi katıldı',
   },
+  'Cai reads words, photos, stickers and voice notes.':
+    'Cai yalnızca yazı, fotoğraf, çıkartma ve sesli mesaj okur.',
+  'Cai looks at photos, not videos or files.':
+    'Cai fotoğraflara bakar; videolara ya da dosyalara bakmaz.',
+  'I couldn’t open that photo. Send it again?': 'Bu fotoğrafı açamadım. Yeniden gönderir misiniz?',
+  'I can look at photos with AI assist on: Settings, then AI assist.':
+    'AI yardımı açıkken fotoğraflara bakabilirim: Ayarlar, sonra AI yardımı.',
+  'I can’t look at photos on this Caime yet.': 'Bu Caime’de henüz fotoğraflara bakamıyorum.',
 };

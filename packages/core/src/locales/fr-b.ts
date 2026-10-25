@@ -2752,4 +2752,13 @@ export const frB: Catalog = {
   'Another time suggested': 'Autre horaire proposé',
   'Suggest it': 'Le proposer',
   today: 'aujourd’hui',
+  'Show Cai a photo': 'Montrer une photo à Cai',
+  'Cai looks at {n} photos at a time.': {
+    one: 'Cai regarde une photo à la fois.',
+    other: 'Cai regarde {n} photos à la fois.',
+  },
+  'Cai looks at up to {n} at a time': {
+    one: 'Cai en regarde une à la fois',
+    other: 'Cai en regarde jusqu’à {n} à la fois',
+  },
 };

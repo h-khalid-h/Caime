@@ -2604,8 +2604,12 @@ with its reason, so it isn't proposed again without new facts.
   every number the Business inbox's own; the council's first decision, review §6) and I15b
   (Caime's own day: the product organization's owner and admins told once when a platform
   condition crosses and again when it clears, and the platform's lines in its answer and brief,
-  counts only, a check that hasn't run said as not known). *Not yet:* I14b (photos), I15a2 (the
-  slipping tell), "read it to me", and the reply played on its own on a phone.
+  counts only, a check that hasn't run said as not known) and I14b (a photo to Cai: up to three,
+  pictures alone, each shown to the light model as the preview the server already keeps, before the
+  conversation, and answered as words are, with what to keep or do; the rules never read a photo's
+  caption alone, since "save this" means the picture; never a friend's, and Cai says why when it
+  can't look). *Not yet:* I15a2 (the slipping tell), "read it to me", and the reply played on its
+  own on a phone.
 - **R116 (2026-10-25) Cai answers for you, when you turn it on; on the allowance of whoever chose
   it.** The owner's notes: "if enabled in settings, chat and/or call could be taken over by AI, and
   it could add an available human if needed, the AI remains in the chat or the call; the cost of

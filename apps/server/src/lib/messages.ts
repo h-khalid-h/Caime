@@ -48,7 +48,7 @@ import {
   viewable,
 } from '@caime/core';
 import { currencyOfCountry } from '@caime/core/countries';
-import { tr } from '@caime/core/i18n';
+import { tr, trn } from '@caime/core/i18n';
 import { AGREED_STATES, cardAsks } from '@caime/core/kit-states';
 import {
   MAIL_FOLLOW_UP_AFTER_MS,
@@ -59,6 +59,7 @@ import {
 import { heldOnCaime } from '@caime/core/meetings';
 import { isRepeat, repeatsIn } from '@caime/core/repeat';
 import { dayIn, type MeetingSeries } from '@caime/core/series';
+import { CAI_ID, CAI_PHOTOS_MAX } from '@caime/core/system-ids';
 import type { Kysely, SqlBool, Transaction } from 'kysely';
 import { sql } from 'kysely';
 import type { AppContext } from '../context';
@@ -933,6 +934,8 @@ export async function sendMessage(
   }
 
   let acceptRequest = false;
+  // Photos to Cai (M17 I14b): read by its model, so only pictures go.
+  let photosToCai = false;
   const unanswered = (message: string) => new AppError(403, 'awaiting_acceptance', message);
   if (conversation.kind === 'business') {
     // The team wrote first (R14): one message until the customer answers or accepts it, and a
@@ -979,12 +982,21 @@ export async function sendMessage(
     if (other) {
       if (await isBlockedEitherWay(ctx.db, senderId, other.user_id))
         throw forbidden(tr('You can’t message this person.'));
-      // Cai and the Caime Friends read words, stickers and voice notes (R67, M17 I14a): no
-      // cards or files.
+      // Cai and the Caime Friends read words, stickers and voice notes (R67, M17 I14a), and Cai
+      // looks at photos (M17 I14b): no cards or files.
       const caimes = systemAccountOf(other.user_id);
-      if (caimes && body.kind !== 'text' && body.kind !== 'sticker' && body.kind !== 'voice')
+      photosToCai = caimes?.id === CAI_ID && body.kind === 'media';
+      if (
+        caimes &&
+        !photosToCai &&
+        body.kind !== 'text' &&
+        body.kind !== 'sticker' &&
+        body.kind !== 'voice'
+      )
         throw badRequest(
-          tr('{name} reads words, stickers and voice notes.', { name: caimes.name }),
+          caimes.id === CAI_ID
+            ? tr('Cai reads words, photos, stickers and voice notes.')
+            : tr('{name} reads words, stickers and voice notes.', { name: caimes.name }),
         );
       // Replying accepts their request, even one declined before.
       if (me.request_state === 'pending' || me.request_state === 'declined') acceptRequest = true;
@@ -1116,6 +1128,16 @@ export async function sendMessage(
       .execute();
     if (files.length !== new Set(body.fileIds).size)
       throw badRequest(tr('One of the attachments isn’t available.'));
+    if (photosToCai && files.some((f) => f.kind !== 'image'))
+      throw badRequest(tr('Cai looks at photos, not videos or files.'));
+    if (photosToCai && files.length > CAI_PHOTOS_MAX)
+      throw badRequest(
+        trn(
+          CAI_PHOTOS_MAX,
+          'Cai looks at one photo at a time.',
+          'Cai looks at {n} photos at a time.',
+        ),
+      );
   }
 
   const sender = await ctx.db

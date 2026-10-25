@@ -32,7 +32,7 @@ import { runAi } from './ai-run';
 import { mayStillTake, readerOf, type ShareVia } from './call-recording';
 import { AppError, badRequest, forbidden, notFound } from './errors';
 import { IMAGE_PIXELS_MAX, images } from './renditions';
-import { storageFor } from './storage';
+import { base64Of, storageFor } from './storage';
 
 /** The most a frame may be as sent: a screen at 1280 wide is well under a megabyte. */
 export const FRAME_MAX_BYTES = 2 * 1024 * 1024;
@@ -176,13 +176,6 @@ export function framesToRead(n: number, most = FRAMES_IN_NOTES): number[] {
   const picks = new Set<number>();
   for (let k = 0; k < most; k++) picks.add(Math.round((k * (n - 1)) / (most - 1)));
   return [...picks].sort((a, b) => a - b);
-}
-
-/** A frame's bytes, as the model is sent them. */
-export async function base64Of(ctx: AppContext, key: string): Promise<string> {
-  const chunks: Buffer[] = [];
-  for await (const chunk of storageFor(ctx.config).read(key)) chunks.push(chunk as Buffer);
-  return Buffer.concat(chunks).toString('base64');
 }
 
 /**

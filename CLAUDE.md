@@ -1548,7 +1548,11 @@ A sphere is said as how you know someone, never "sphere".
   `speakReply` (`lib/cai-voice.ts`: the one voice path, a file of Cai's, `payload.spoken`), else
   writes it. A new line Cai says goes through `say`, never `postAs` directly, so it's said back
   where it should be (a line that carries a mark, as the brief's offer does, posts with
-  `serverPayload` and is only written). An organization's day (M17 I15a, `lib/org-day.ts`):
+  `serverPayload` and is only written). A photo to Cai (M17 I14b) is read from its preview rendition through
+  `lib/cai-photos.ts` (`photoKeysOf`, `readPhotos`, at most core `CAI_PHOTOS_MAX`; `base64Of` in
+  `lib/storage.ts`, the frames' too) and shown to `caiChat` before its words, kept nowhere; the
+  rules never read its caption alone, a friend takes none, and a new place that shows a model a
+  picture sends a rendition, never the original where one exists. An organization's day (M17 I15a, `lib/org-day.ts`):
   `orgsRunBy` (its `MANAGING_ROLES`) and `orgDays` read every organization someone runs in one
   round, Cai's answer to core `chatOrg` (`orgAnswer`) and the brief (`teamDays`) say it through
   `orgDayText`, and the digest's `teamWeeks` takes the same `orgsRunBy`; every number is the

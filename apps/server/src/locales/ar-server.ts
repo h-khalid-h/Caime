@@ -1989,4 +1989,11 @@ export const arServer: Catalog = {
     many: '• انضم {n} شخصًا في آخر يوم',
     other: '• انضم {n} شخص في آخر يوم',
   },
+  'Cai reads words, photos, stickers and voice notes.':
+    'مع Cai، الكلمات والصور والملصقات والرسائل الصوتية فقط.',
+  'Cai looks at photos, not videos or files.': 'ينظر Cai في الصور، لا في الفيديوهات أو الملفات.',
+  'I couldn’t open that photo. Send it again?': 'تعذّر عليّ فتح هذه الصورة. هل ترسلها مرة أخرى؟',
+  'I can look at photos with AI assist on: Settings, then AI assist.':
+    'أستطيع النظر في الصور مع تشغيل مساعدة الذكاء الاصطناعي: الإعدادات، ثم مساعدة الذكاء الاصطناعي.',
+  'I can’t look at photos on this Caime yet.': 'لا أستطيع النظر في الصور على Caime هذا بعد.',
 };

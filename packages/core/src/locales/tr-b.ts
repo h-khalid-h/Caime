@@ -2658,4 +2658,13 @@ export const turkishB: Catalog = {
   'Another time suggested': 'Başka bir saat önerildi',
   'Suggest it': 'Öner',
   today: 'bugün',
+  'Show Cai a photo': 'Cai’ye fotoğraf göster',
+  'Cai looks at {n} photos at a time.': {
+    one: 'Cai bir seferde bir fotoğrafa bakar.',
+    other: 'Cai bir seferde {n} fotoğrafa bakar.',
+  },
+  'Cai looks at up to {n} at a time': {
+    one: 'Cai bir seferde birine bakar',
+    other: 'Cai bir seferde en fazla {n} tanesine bakar',
+  },
 };

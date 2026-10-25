@@ -164,3 +164,13 @@ export function storageFor(config: Config): Storage {
     ? s3Storage(bucket, config.FILES_S3_PREFIX, config.DATA_DIR)
     : diskStorage(config.DATA_DIR);
 }
+
+/**
+ * A small stored picture whole, as base64, as a model is sent it (a call's frame, a photo to Cai):
+ * never a file of any size, which is streamed.
+ */
+export async function base64Of(ctx: { config: Config }, key: string): Promise<string> {
+  const chunks: Buffer[] = [];
+  for await (const chunk of storageFor(ctx.config).read(key)) chunks.push(chunk as Buffer);
+  return Buffer.concat(chunks).toString('base64');
+}

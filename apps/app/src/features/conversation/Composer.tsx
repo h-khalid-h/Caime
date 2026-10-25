@@ -13,7 +13,7 @@ import { firstLinkIn } from '@caime/core/link-text';
 import { SUBJECT_MAX, subjectFromText } from '@caime/core/mail';
 import { mentionAt, mentionCandidates, mentionedIn, mentionText } from '@caime/core/mentions';
 import { matchingReplies, quickReplyQuery } from '@caime/core/quick-replies';
-import { isSystemKind } from '@caime/core/system-ids';
+import { CAI_PHOTOS_MAX, isSystemKind } from '@caime/core/system-ids';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import * as DocumentPicker from 'expo-document-picker';
 import { router } from 'expo-router';
@@ -168,6 +168,8 @@ export const Composer = forwardRef<ComposerHandle, ComposerProps>(function Compo
   // what's being written stays on this device (never mirrored to the account, nor kept).
   const privately = where.private;
   const caimes = isSystemKind(conversation.other?.person.kind);
+  // Cai looks at photos too (M17 I14b); the Caime Friends read words, stickers and voice notes.
+  const toCai = conversation.other?.person.kind === 'assistant';
   // Nobody is seen typing in a group of many (M16 D2b), so nothing says it.
   const crowd = isLargeGroup(conversation.kind, conversation.participants.length);
   const stored = useDrafts((s) => (privately ? s.local[id] : s.drafts[id]));
@@ -615,17 +617,27 @@ export const Composer = forwardRef<ComposerHandle, ComposerProps>(function Compo
 
   const pickPhotos = async () => {
     const res = await pickFromLibrary({
-      mediaTypes: ['images', 'videos'],
+      mediaTypes: toCai ? ['images'] : ['images', 'videos'],
       allowsMultipleSelection: true,
-      selectionLimit: 10,
+      selectionLimit: toCai ? CAI_PHOTOS_MAX : 10,
       quality: 0.9,
     });
     if (res.canceled) return;
+    // A browser's chooser takes no limit: Cai is sent the first it looks at.
+    const assets = toCai ? res.assets.slice(0, CAI_PHOTOS_MAX) : res.assets;
+    if (assets.length < res.assets.length)
+      toast(
+        trn(
+          CAI_PHOTOS_MAX,
+          'Cai looks at one photo at a time.',
+          'Cai looks at {n} photos at a time.',
+        ),
+      );
     // A photo is shrunk on the device first (lib/photoSize.ts): a phone's is far bigger than
     // shown. A video goes as it is (M16 E4b); the server clears where it was filmed.
     await sendFiles(
       await Promise.all(
-        res.assets.map((a, i) =>
+        assets.map((a, i) =>
           photoToUpload(a, a.type === 'video' ? `video-${i + 1}.mp4` : `photo-${i + 1}.jpg`),
         ),
       ),
@@ -903,12 +915,13 @@ export const Composer = forwardRef<ComposerHandle, ComposerProps>(function Compo
           }}
           testID="composer-row"
         >
-          {privately || caimes ? null : (
+          {privately || (caimes && !toCai) ? null : (
             // Photos, files and cards aren't sealed yet: a private conversation is text for now.
-            // Cai and the Caime Friends read words, stickers and voice notes (R67, M17 I14a).
+            // The Caime Friends read words, stickers and voice notes (R67, M17 I14a); Cai looks at
+            // photos too (M17 I14b).
             <IconButton
               icon={Plus}
-              label={tr('Share a photo, a file or a card')}
+              label={toCai ? tr('Show Cai a photo') : tr('Share a photo, a file or a card')}
               size={24}
               onPress={() => setAttach(true)}
               disabled={Boolean(editing)}
@@ -1115,74 +1128,86 @@ export const Composer = forwardRef<ComposerHandle, ComposerProps>(function Compo
           ) : null}
           <ListRow
             icon={ImageIcon}
-            title={tr('Photos and videos')}
-            subtitle={tr('Location data is removed before anyone sees them')}
+            title={toCai ? tr('Photos') : tr('Photos and videos')}
+            subtitle={
+              toCai
+                ? trn(
+                    CAI_PHOTOS_MAX,
+                    'Cai looks at one at a time',
+                    'Cai looks at up to {n} at a time',
+                  )
+                : tr('Location data is removed before anyone sees them')
+            }
             onPress={fromSheet(() => void pickPhotos())}
             testID="attach-photos"
           />
-          <ListRow
-            icon={FileText}
-            title={tr('A file')}
-            subtitle={tr('Documents, PDFs, anything up to 100 MB')}
-            onPress={fromSheet(() => void pickFiles())}
-            testID="attach-file"
-          />
-          {drives.map((a) => (
-            <ListRow
-              key={a.id}
-              icon={Cloud}
-              title={ACCOUNT_DRIVE_NAMES[a.provider]}
-              subtitle={tr('A file from {email}', {
-                email: a.email ?? ACCOUNT_DRIVE_NAMES[a.provider],
-              })}
-              onPress={fromSheet(() =>
-                a.provider === 'google' ? void pickFromGoogleDrive(a) : setDrive(a),
-              )}
-              testID={`attach-drive-${a.provider}`}
-            />
-          ))}
-          {plainKits.map((k) => (
-            <ListRow
-              key={k.id}
-              icon={KIT_ICONS[k.id as KitChoice]}
-              title={tr(PLAIN_KITS[k.id as KitChoice] ?? k.name)}
-              subtitle={tr(k.description)}
-              testID={`kit-option-${k.id}`}
-              onPress={fromSheet(() => setKit(k.id as KitChoice))}
-            />
-          ))}
-          {cardKits.length || own?.length ? (
+          {toCai ? null : (
             <>
-              <Text
-                variant="overline"
-                color="textTertiary"
-                style={{ paddingHorizontal: 20, paddingTop: 14, paddingBottom: 4 }}
-              >
-                {tr('Cards')}
-              </Text>
-              {cardKits.map((k) => (
+              <ListRow
+                icon={FileText}
+                title={tr('A file')}
+                subtitle={tr('Documents, PDFs, anything up to 100 MB')}
+                onPress={fromSheet(() => void pickFiles())}
+                testID="attach-file"
+              />
+              {drives.map((a) => (
+                <ListRow
+                  key={a.id}
+                  icon={Cloud}
+                  title={ACCOUNT_DRIVE_NAMES[a.provider]}
+                  subtitle={tr('A file from {email}', {
+                    email: a.email ?? ACCOUNT_DRIVE_NAMES[a.provider],
+                  })}
+                  onPress={fromSheet(() =>
+                    a.provider === 'google' ? void pickFromGoogleDrive(a) : setDrive(a),
+                  )}
+                  testID={`attach-drive-${a.provider}`}
+                />
+              ))}
+              {plainKits.map((k) => (
                 <ListRow
                   key={k.id}
                   icon={KIT_ICONS[k.id as KitChoice]}
-                  // Caime's own kits are named by keys; an organization's own as it wrote them.
-                  title={tr(k.name)}
+                  title={tr(PLAIN_KITS[k.id as KitChoice] ?? k.name)}
                   subtitle={tr(k.description)}
                   testID={`kit-option-${k.id}`}
                   onPress={fromSheet(() => setKit(k.id as KitChoice))}
                 />
               ))}
-              {own?.map((k) => (
-                <ListRow
-                  key={`${k.app.id}:${k.key}`}
-                  icon={iconNamed(k.icon)}
-                  title={k.name}
-                  subtitle={k.description || tr('From {name}', { name: k.app.name })}
-                  testID={`kit-option-custom-${k.key}`}
-                  onPress={fromSheet(() => setCustom(k))}
-                />
-              ))}
+              {cardKits.length || own?.length ? (
+                <>
+                  <Text
+                    variant="overline"
+                    color="textTertiary"
+                    style={{ paddingHorizontal: 20, paddingTop: 14, paddingBottom: 4 }}
+                  >
+                    {tr('Cards')}
+                  </Text>
+                  {cardKits.map((k) => (
+                    <ListRow
+                      key={k.id}
+                      icon={KIT_ICONS[k.id as KitChoice]}
+                      // Caime's own kits are named by keys; an organization's own as it wrote them.
+                      title={tr(k.name)}
+                      subtitle={tr(k.description)}
+                      testID={`kit-option-${k.id}`}
+                      onPress={fromSheet(() => setKit(k.id as KitChoice))}
+                    />
+                  ))}
+                  {own?.map((k) => (
+                    <ListRow
+                      key={`${k.app.id}:${k.key}`}
+                      icon={iconNamed(k.icon)}
+                      title={k.name}
+                      subtitle={k.description || tr('From {name}', { name: k.app.name })}
+                      testID={`kit-option-custom-${k.key}`}
+                      onPress={fromSheet(() => setCustom(k))}
+                    />
+                  ))}
+                </>
+              ) : null}
             </>
-          ) : null}
+          )}
         </View>
       </Sheet>
       {drive ? (

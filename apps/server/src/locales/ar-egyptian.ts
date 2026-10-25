@@ -487,4 +487,8 @@ export const egyptianVoice: Catalog = {
     many: '• {n} شخص انضموا في آخر يوم',
     other: '• {n} شخص انضموا في آخر يوم',
   },
+  'I couldn’t open that photo. Send it again?': 'معرفتش أفتح الصورة دي. تبعتها تاني؟',
+  'I can look at photos with AI assist on: Settings, then AI assist.':
+    'أقدر أبص على الصور لو مساعدة الذكاء الاصطناعي شغالة: الإعدادات، وبعدين مساعدة الذكاء الاصطناعي.',
+  'I can’t look at photos on this Caime yet.': 'لسه مقدرش أبص على الصور على Caime ده.',
 };

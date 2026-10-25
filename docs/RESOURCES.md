@@ -29,6 +29,7 @@ from running something (CLAUDE.md convention 13); the date says when.
 | Search, folded (M17 I5) | A message search is one read of the folded GIN index (`messages_search_fold`, an expression over the row, so no column is stored for it) for the newest 100 matches the searcher may read, each read up to 2,000 characters, then ranked and marked in memory (`lib/found-text.ts`, no further query); actions and decisions read their own folded indexes, names fold per row inside lists already bounded by the person's own people. A send writes one stored vector and two index entries where it wrote two and two: the first `search` column and its index are gone (0156), and `search_all` with its index goes in the release after, leaving one index entry and no stored vector | A new reader of message words folds through `lib/fold-sql.ts` and names its index's expression; the window is a constant, never widened to fit a big inbox. People search still compares a stranger's name over every account (an `or` across tables keeps the trigram index out): a candidates-first query is the next step, before accounts number in the hundreds of thousands |
 | When someone is free (M17 I7) | A move reads their cards of the next two weeks once (100 at most), whom it's with in one query, the card, and the free-time reads once; the tap is the card's own retime. "When am I free" is three queries by the rules (their cards over the day, their calendars' busy times, their hours) plus a read of a connected calendar only when the last is older than `ACCOUNT_FRESH_SECONDS`, as a slot offered is; a meeting Cai prepares asks the same once; no model, no row kept | The coming-up answer counts what's ahead up to 50 (`COMING_COUNTED`) where it read five: two queries a little wider, never a scan of the calendar |
 | Cai hears and answers aloud (M17 I14a) | A voice note to Cai is one transcription (the note's length, ten minutes at most, on the sender's allowance) and the answer it would have had typed; spoken to, an answer of up to 400 characters is said back once (`speak`, at most €0.0143 at the voice provider's character price) and kept as an MP3 of about 4 KB a second (a 15-second answer about 60 KB) | The sound is Cai's, counted on nobody's storage, so it's kept 30 days and then let go by one daily sweep over `cai_spoken` (the answer stays as its words); nothing is spoken that wasn't spoken to, a list is written, and nothing polls |
+| Cai looks at a photo (M17 I14b) | A message of up to three photos to Cai is one call of Cai's on the light model with each photo's preview (the 1,280-px WebP the server already keeps, R70), read from storage for that call and sent once: at its bound €0.0033 where the same call without them is €0.0027 (the cost table's cai-photos) | Nothing new is kept: no copy, no reading of the picture, no rendition made for it; a picture without a preview goes as it came only up to 3.5 MB, and a video or a file never goes |
 | Uploads | 100 MB a file, 10 a request; photos resized to fit 4096 px, thumbnails to 480 px, metadata stripped; storage counted against the plan (`storageBytes`) | Uploads under way count at full size; one that doesn't fit is deleted, not kept |
 | Logs | `info` in development, `warn` in production (`LOG_LEVEL`); never a message, a name or a token | Log once per request, at the end; count the rest with `ctx.metrics` |
 | Retention | security records 365 days, ended sign-ins 30, activity 30, app deliveries 30, spent invites 30, held handles 365, a passkey ceremony's challenge five minutes (swept daily), done and dead jobs 7, notifications 180 (`lib/retention.ts`; the privacy page says the last) | New records that grow with use get a row here and a sweep |
@@ -203,7 +204,9 @@ notes-summary on 2026-10-21, M16 F7e's write-up of a call's notes; notes-ask and
 M17 I13h's reading of one frame of a shared screen, counted at its pixels over 750 as the platform
 charges an image, and notes-summary again with the line the screens add to its instructions;
 interact again and interact-screen on 2026-10-25, M17 I13h's answer in a call with a picture of the
-screen beside the notes, the picture counted as a frame is):
+screen beside the notes, the picture counted as a frame is; every row again on 2026-10-25 for M17
+I18's time on each line and the time now, with cai-photos, M17 I14b's three photos to Cai, each a
+preview at its largest, a 1,280-px square, counted at its pixels over 750):
 each feature's request at the bounds the code sets, measured from what the real
 prompt builders send to a stand-in (system and message characters; output at its `max_tokens`),
 read at a token a character, a ceiling no language's words reach; a voice note at ten minutes,
@@ -225,11 +228,12 @@ Prices: https://platform.claude.com/docs/en/about-claude/pricing, read 2026-10-1
 | actions | 61,206 | 8,192 | €0.0091 | €0.18 | €0.36 |
 | notes-summary | 61,719 | 8,192 | €0.0091 | €0.18 | €0.37 |
 | brief | 16,983 | 4,096 | €0.0033 | €0.07 | €0.13 |
-| cai | 19,042 | 2,048 | €0.0026 | €0.05 | €0.10 |
-| friend | 11,801 | 1,024 | €0.0015 | €0.03 | €0.06 |
+| cai | 19,869 | 2,048 | €0.0027 | €0.05 | €0.11 |
+| cai-photos | 26,424 | 2,048 | €0.0033 | €0.07 | €0.13 |
+| friend | 12,184 | 1,024 | €0.0015 | €0.03 | €0.06 |
 | search | 1,929 | 1,024 | €0.0006 | €0.01 | €0.03 |
 | search-answer | 15,766 | 4,096 | €0.0032 | €0.06 | €0.13 |
-| agent | 56,082 | 2,048 | €0.0059 | €0.12 | €0.24 |
+| agent | 56,437 | 2,048 | €0.0059 | €0.12 | €0.24 |
 | transcribe | ten minutes of audio | — | €0.05 (OpenAI's estimate) | | |
 | speak | 280 characters (`SPOKEN_MAX`) | — | €0.0100 (ElevenLabs Flash v2.5, $0.04 per 1,000 characters, its API pricing page read 2026-10-25) | | |
 
@@ -251,14 +255,14 @@ measured once a key is set.
 | Plan | Model for the heavy work | Allowance | Dearest call | A month at every allowance | An assumed month |
 | --- | --- | --- | --- | --- | --- |
 | personal | light | €0.50 a day | €0.05 | €16.60 | €0.12 |
-| pro | top | €2.00 a day | €0.36 | €70.89 | €0.52 |
-| business | top | €2.00 a day | €0.36 | €70.89 | €0.52 |
-| enterprise | top | €10.00 a day | €0.36 | €310.89 | €0.52 |
-| organization free | light | 50 answers or €0.30 a day | €0.0059 | €8.84 | €0.28 |
-| organization business | top | 2,000 answers or €30.00 a day | €0.24 | €907.07 | €11.40 |
-| organization enterprise | top | 20,000 answers or €300.00 a day | €0.24 | €9,007.07 | €11.40 |
+| pro | top | €2.00 a day | €0.36 | €70.89 | €0.53 |
+| business | top | €2.00 a day | €0.36 | €70.89 | €0.53 |
+| enterprise | top | €10.00 a day | €0.36 | €310.89 | €0.53 |
+| organization free | light | 50 answers or €0.30 a day | €0.0059 | €8.89 | €0.30 |
+| organization business | top | 2,000 answers or €30.00 a day | €0.24 | €907.11 | €11.82 |
+| organization enterprise | top | 20,000 answers or €300.00 a day | €0.24 | €9,007.11 | €11.82 |
 
-On Sonnet 5.5 a Business agent's month at its allowance is €903.54; a free organization's on the top model, as before M16 H7, €353.62. Business's €29 covers its agent up to 76 answers a day of the assumed size on Opus 5.5, 152 on Sonnet 5.5 and 3,053 on Haiku 5.5.
+On Sonnet 5.5 a Business agent's month at its allowance is €903.56; a free organization's on the top model, as before M16 H7, €355.52. Business's €29 covers its agent up to 73 answers a day of the assumed size on Opus 5.5, 147 on Sonnet 5.5 and 2,944 on Haiku 5.5.
 
 The assumed month (in `typicalMonth`: a rewrite, a catch-up, two questions to Cai, half a minute
 of a voice note and one search for follow-ups a day, read at about 2.7 characters a token from
@@ -278,11 +282,11 @@ said as one: the operator's `ai.cost.byPlan` replaces it. What the tables say:
   is €70.89, where 200 calls a day of finding follow-ups on Opus 5.5 reached €2,178.96; its assumed
   month stays €0.52. An organization's agent keeps its answers a day and gains a backstop by cost
   (`agentEurPerDay`: €0.30, €30, €300), set above a day of its count at the assumed answer (the
-  test holds it there), so a Business agent's month at its edge is €907.07 where it was
+  test holds it there), so a Business agent's month at its edge is €907.11 where it was
   €14,061.74, and an ordinary clinic's day never meets it. A search's reading on the light model is
   €0.0004 at its bound, a 1,250th of a free day, where it was one of ten assists.
-- **Business's €29 covers its agent up to about 76 answers a day on Opus 5.5** at the assumed
-  size, 152 on Sonnet 5.5 and 3,053 on Haiku 5.5. A clinic busier than that costs more than it
+- **Business's €29 covers its agent up to about 73 answers a day on Opus 5.5** at the assumed
+  size, 147 on Sonnet 5.5 and 2,944 on Haiku 5.5. A clinic busier than that costs more than it
   pays, up to the backstop; setting `ANTHROPIC_MODEL` to Sonnet 5.5 halves it (⛔ the owner's
   choice: price and model).
 - **A voice note's length is the device's word.** The server sends a recording only with a stated

@@ -4,6 +4,8 @@
  * migration 0059.
  */
 export const CAI_ID = '00000000-0000-4000-8000-00000000ca10';
+/** How many photos Cai looks at in one message (M17 I14b): the app picks no more, the server takes no more. */
+export const CAI_PHOTOS_MAX = 3;
 /** Caishy, the first of the Caime Friends: where they're met. */
 export const CAISHY_ID = '00000000-0000-4000-8000-00000000ca11';
 

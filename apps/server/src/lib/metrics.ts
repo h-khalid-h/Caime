@@ -218,6 +218,11 @@ export function createMetrics(pool: pg.Pool) {
       'caime_cai_voice_total',
       'Voice notes to Cai and the Caime Friends by outcome (heard, unavailable, assist, minor, allowance, long, unclear), and answers spoken back (spoken, written, let_go).',
     ),
+    // A photo to Cai (M17 I14b): seen and answered, or why not.
+    caiPhotos: new Counter(
+      'caime_cai_photos_total',
+      'Messages of photos to Cai by outcome (seen, failed, unreadable, unavailable, assist, minor).',
+    ),
     // What Cai told unasked of a scope it watches (M17 I15b): Caime's own state, by what crossed
     // or cleared (provider, backup, audit, jobs, child_safety).
     caiTells: new Counter(

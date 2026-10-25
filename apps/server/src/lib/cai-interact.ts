@@ -28,7 +28,7 @@ import type { AppContext } from '../context';
 import type { Call } from '../db/schema';
 import { AiError, languageName } from './ai';
 import { runAi } from './ai-run';
-import { base64Of, FRAME_MAX_BYTES, shrinkFrame } from './call-frames';
+import { FRAME_MAX_BYTES, shrinkFrame } from './call-frames';
 import {
   callAudience,
   callById,
@@ -42,7 +42,7 @@ import { inLanguage, languageOf } from './i18n';
 import { enqueue, registerJob, registerPeriodic } from './jobs';
 import { assertAiAllowance } from './plans';
 import { forgetLater } from './speech-forget';
-import { storageFor } from './storage';
+import { base64Of, storageFor } from './storage';
 import { keepFromWords, type OpenPart, offerInChat, person, ruleAnswer } from './system-accounts';
 import { transcriptClock } from './transcript';
 

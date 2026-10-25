@@ -18,6 +18,8 @@ import {
   uuidv4,
   uuidv7,
 } from '@caime/core';
+import { RENDITION_EDGES } from '@caime/core/renditions';
+import { CAI_PHOTOS_MAX } from '@caime/core/system-ids';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import type { Config } from '../src/config';
 import { type AiAssist, createAiAssist, type FriendPersona } from '../src/lib/ai';
@@ -147,8 +149,21 @@ describe('the price list (M16 H7)', () => {
  * token a character as the text is.
  */
 const FRAME_TOKENS = Math.ceil((FRAME_EDGE * ((FRAME_EDGE * 9) / 16)) / 750);
-const blockChars = (b: { type?: string; text?: string }): number =>
-  b.type === 'image' ? FRAME_TOKENS : (b.text ?? '').length;
+/**
+ * A photo sent to Cai (M17 I14b) is its preview rendition, a WebP of `RENDITION_EDGES.preview` on
+ * its long edge: counted at its largest, a square that size.
+ */
+const PHOTO_TOKENS = Math.ceil((RENDITION_EDGES.preview * RENDITION_EDGES.preview) / 750);
+const blockChars = (b: {
+  type?: string;
+  text?: string;
+  source?: { media_type?: string };
+}): number =>
+  b.type === 'image'
+    ? b.source?.media_type === 'image/webp'
+      ? PHOTO_TOKENS
+      : FRAME_TOKENS
+    : (b.text ?? '').length;
 const sentChars = (body: any): number =>
   (Array.isArray(body.system)
     ? body.system.map((b: { text?: string }) => b.text ?? '').join('')
@@ -289,6 +304,26 @@ const AT_BOUNDS: ReadonlyArray<{
         gender: null,
         today,
         now: 'Wed 23 Sep 14:05',
+      }),
+  },
+  // lib/cai-photos.ts: Cai's request with the most photos it looks at, each a preview at its largest.
+  {
+    feature: 'cai-photos',
+    call: (ai) =>
+      ai.caiChat({
+        transcript: x(12 * 600),
+        context: x(20 * 120),
+        found: x(ANSWER_FROM * (PASSAGE_CHARS + 60)),
+        language: 'English',
+        arabic,
+        country: 'EG',
+        gender: null,
+        today,
+        now: 'Wed 23 Sep 14:05',
+        photos: Array.from({ length: CAI_PHOTOS_MAX }, () => ({
+          data: 'AAAA',
+          mediaType: 'image/webp' as const,
+        })),
       }),
   },
   {

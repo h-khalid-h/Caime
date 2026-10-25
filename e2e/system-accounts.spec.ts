@@ -6,7 +6,7 @@
  */
 import { randomUUID } from 'node:crypto';
 import { expect, test } from '@playwright/test';
-import { AI_STUB, apiSignUp, CLIENT, newPerson, TTS_STUB, visible } from './helpers';
+import { AI_STUB, apiSignUp, CLIENT, newPerson, photo, TTS_STUB, visible } from './helpers';
 
 const suffix = Math.random().toString(36).slice(2, 7);
 
@@ -43,9 +43,14 @@ test('Cai and the Caime Friends answer like anyone you write to', async ({ brows
   await page.waitForURL(/\/c\//);
   await expect(visible(page, /^Hi Hassan, I’m Cai\. /)).toBeVisible();
   await expect(visible(page, 'Caime’s assistant')).toBeVisible();
-  // Words, stickers and voice notes (M17 I14a): no calls, nothing to attach.
+  // Words, stickers, voice notes and photos (M17 I14a, I14b): no calls, and photos alone to attach.
   await expect(page.getByTestId('call-voice').filter({ visible: true })).toHaveCount(0);
-  await expect(page.getByTestId('composer-attach').filter({ visible: true })).toHaveCount(0);
+  await page.getByTestId('composer-attach').filter({ visible: true }).click();
+  await expect(page.getByTestId('attach-photos')).toBeVisible();
+  await expect(page.getByTestId('attach-photos')).toContainText('Cai looks at up to 3 at a time');
+  await expect(page.getByTestId('attach-file')).toHaveCount(0);
+  await page.keyboard.press('Escape');
+  await expect(page.getByTestId('attach-photos')).toHaveCount(0);
   const input = page.getByTestId('composer-input').filter({ visible: true });
   await input.fill('What am I waiting for?');
   await page.getByTestId('composer-send').filter({ visible: true }).click();
@@ -76,6 +81,20 @@ test('Cai and the Caime Friends answer like anyone you write to', async ({ brows
   await input.fill('Plan a dinner for four');
   await page.getByTestId('composer-send').filter({ visible: true }).click();
   await expect(visible(page, /About “Plan a dinner for four”: here’s an idea\./)).toBeVisible();
+
+  // A photo, seen (M17 I14b): the model is shown its preview with the conversation, and answers.
+  await page.getByTestId('composer-attach').filter({ visible: true }).click();
+  const chooser = page.waitForEvent('filechooser');
+  await page.getByTestId('attach-photos').click();
+  await (await chooser).setFiles([
+    {
+      name: 'receipt.png',
+      mimeType: 'image/png',
+      buffer: photo(800, 600, [240, 240, 240], [200, 200, 200]),
+    },
+  ]);
+  await expect(page.getByTestId('message-photo').filter({ visible: true })).toHaveCount(1);
+  await expect(visible(page, 'I see one photo: a plain test picture.')).toBeVisible();
 
   // Spoken to, Cai hears and answers aloud (M17 I14a): the speech stand-in hears the fake
   // microphone say "Thank you!", and the answer comes back as Cai's voice note, its words under it.
