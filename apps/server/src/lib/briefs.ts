@@ -28,6 +28,7 @@ import { runAi } from './ai-run';
 import { countAnswer } from './answers';
 import { customerMask, maskFor } from './business';
 import { membership } from './conversation-views';
+import { dueAtForSql } from './due';
 import { AppError } from './errors';
 import { languageOf } from './i18n';
 import { enqueue, registerJob } from './jobs';
@@ -312,7 +313,7 @@ export async function briefFor(
       .execute(),
     ctx.db
       .selectFrom('tasks')
-      .select(['id', 'title', 'due_at'])
+      .select(['id', 'title', dueAtForSql(userId).as('due_at')])
       .where('conversation_id', '=', card.conversation_id)
       .where('assignee_id', '=', userId)
       .where(visibleTasksSql(userId))
@@ -323,7 +324,7 @@ export async function briefFor(
     otherIds.length
       ? ctx.db
           .selectFrom('tasks')
-          .select(['id', 'title', 'due_at'])
+          .select(['id', 'title', dueAtForSql(userId).as('due_at')])
           .where('conversation_id', '=', card.conversation_id)
           .where('owner_id', '=', userId)
           .where('assignee_id', 'in', otherIds)

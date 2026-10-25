@@ -388,6 +388,8 @@ export function pendingTaskView(
     owner: { id: me.id, displayName: me.displayName },
     assignee: { id: me.id, displayName: me.displayName },
     dueAt: op.body.dueAt ?? null,
+    // Its day is the server's to keep (R119); until it's sent, `dueAt` on this clock says it.
+    dueOn: null,
     dueHasTime: op.body.dueHasTime ?? false,
     remindAt: null,
     caiFollowUp: false,

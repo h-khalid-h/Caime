@@ -822,4 +822,78 @@ describe('a day is a day (R119)', () => {
       t.clock.set(was);
     }
   });
+
+  it('keeps an action’s due day as a day of its own (I19b): the same for everyone, and when its owner moves', async () => {
+    const was = t.clock.now.toISOString();
+    try {
+      t.clock.set('2027-04-05T12:00:00Z');
+      const owner = await signup(t, { displayName: 'Rana Days', timeZone: 'Africa/Cairo' });
+      const readers: Array<{ reader: Client; zone: string; conversationId: string }> = [];
+      for (const zone of ['Pacific/Honolulu', 'Pacific/Kiritimati']) {
+        const reader = await signup(t, { displayName: 'Reader Days', timeZone: zone });
+        const conversationId = await connect(owner, reader);
+        readers.push({ reader, zone, conversationId });
+      }
+      // 12 April without a time, as the app sends it: 09:00 of the day on Rana's clock.
+      const made: Array<{ id: string }> = [];
+      for (const { reader, conversationId } of readers)
+        made.push(
+          (
+            await owner.post('/v1/tasks', {
+              title: 'Sign the lease',
+              assigneeId: reader.user.id,
+              shared: true,
+              conversationId,
+              dueAt: '2027-04-12T07:00:00.000Z',
+              dueHasTime: false,
+            })
+          ).task,
+        );
+      expect(made[0]).toMatchObject({ dueOn: '2027-04-12', dueHasTime: false });
+      const read = async () => {
+        for (const [i, { reader, zone }] of readers.entries()) {
+          const tasks = (await reader.get('/v1/tasks?view=all')).tasks as Array<{
+            id: string;
+            dueOn: string | null;
+            dueAt: string;
+          }>;
+          const task = tasks.find((x) => x.id === made[i]!.id);
+          expect(task?.dueOn, zone).toBe('2027-04-12');
+          // Where a list puts it on their own clock: its day.
+          expect(dayIn(new Date(task!.dueAt), zone), zone).toBe('2027-04-12');
+          const url = (await reader.post('/v1/calendar/feed', {})).url as string;
+          expect(event(await lines(url), `task-${made[i]!.id}@caime`), zone).toContain(
+            'DTSTART;VALUE=DATE:20270412',
+          );
+        }
+      };
+      await read();
+      // Rana moves to Los Angeles: the day stays where it was put.
+      await owner.patch('/v1/me', { timeZone: 'America/Los_Angeles' });
+      await read();
+      const own = (await owner.get('/v1/tasks?view=all')).tasks.find(
+        (x: { id: string }) => x.id === made[0]!.id,
+      );
+      expect(own.dueOn).toBe('2027-04-12');
+      // A time given, the day is let go; taken off again, it's kept anew.
+      const timed = await owner.patch(`/v1/tasks/${made[0]!.id}`, {
+        dueAt: '2027-04-13T16:00:00.000Z',
+        dueHasTime: true,
+      });
+      expect(timed.task.dueOn).toBeNull();
+      // The fill (0158): a day the release before kept only as due_at is read on its owner's clock.
+      await sql`update tasks set due_on = null, due_has_time = false, due_at = '2027-04-20T16:00:00Z' where id = ${made[1]!.id}::uuid`.execute(
+        t.ctx.db,
+      );
+      await sql`call fill_tasks_due_on()`.execute(t.ctx.db);
+      const filled = await t.ctx.db
+        .selectFrom('tasks')
+        .select('due_on')
+        .where('id', '=', made[1]!.id)
+        .executeTakeFirstOrThrow();
+      expect(filled.due_on).toBe('2027-04-20');
+    } finally {
+      t.clock.set(was);
+    }
+  });
 });

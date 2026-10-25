@@ -36,7 +36,7 @@ import { customerMask, maskFor } from '../lib/business';
 import { calendarItems } from '../lib/calendar';
 import { canEditConversation, contextVisible } from '../lib/contexts';
 import { membership, sendSystem } from '../lib/conversation-views';
-import { overdueAtSql } from '../lib/due';
+import { dueOnSql, overdueAtSql } from '../lib/due';
 import { badRequest, forbidden, notFound } from '../lib/errors';
 import { recordEvent } from '../lib/events';
 import { foldedPrefixQuery, titleNotesVectorSql } from '../lib/fold-sql';
@@ -508,6 +508,16 @@ export async function actionRoutes(app: FastifyInstance, ctx: AppContext) {
         ...(body.notes !== undefined ? { notes: body.notes } : {}),
         ...(body.dueAt !== undefined ? { due_at: body.dueAt } : {}),
         ...(body.dueHasTime !== undefined ? { due_has_time: body.dueHasTime } : {}),
+        // Its day, kept beside it (R119): moved with it, gone once it has a time.
+        ...(body.dueAt !== undefined || body.dueHasTime !== undefined
+          ? {
+              due_on: dueOnSql(
+                body.dueAt !== undefined ? body.dueAt : t.due_at,
+                body.dueHasTime ?? t.due_has_time,
+                t.owner_id,
+              ),
+            }
+          : {}),
         ...(body.remindAt !== undefined ? { remind_at: body.remindAt, reminded_at: null } : {}),
         ...(moved ?? {}),
         // Only a wait on someone else is Cai's to follow up (R68).

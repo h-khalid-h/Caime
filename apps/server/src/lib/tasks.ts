@@ -7,6 +7,7 @@ import type { TaskDirection, TaskView } from '@caime/core';
 import type { AppContext } from '../context';
 import type { Task } from '../db/schema';
 import { MESSAGE_COLUMNS } from '../db/schema';
+import { dueDay, dueInstant } from './due';
 import { messagePreview } from './messages';
 
 export function directionOf(
@@ -20,14 +21,17 @@ export function directionOf(
 
 export async function taskViews(ctx: AppContext, rows: Task[], me: string): Promise<TaskView[]> {
   const userIds = [
-    ...new Set(rows.flatMap((t) => (t.assignee_id ? [t.owner_id, t.assignee_id] : [t.owner_id]))),
+    ...new Set([
+      me,
+      ...rows.flatMap((t) => (t.assignee_id ? [t.owner_id, t.assignee_id] : [t.owner_id])),
+    ]),
   ];
   const messageIds = rows.map((t) => t.message_id).filter((x): x is string => Boolean(x));
   const [users, messages] = await Promise.all([
     userIds.length
       ? ctx.db
           .selectFrom('users')
-          .select(['id', 'display_name'])
+          .select(['id', 'display_name', 'time_zone'])
           .where('id', 'in', userIds)
           .execute()
       : [],
@@ -40,7 +44,9 @@ export async function taskViews(ctx: AppContext, rows: Task[], me: string): Prom
       : [],
   ]);
   const name = (id: string) => users.find((u) => u.id === id)?.display_name ?? 'Someone';
+  const zoneOf = (id: string) => users.find((u) => u.id === id)?.time_zone || 'UTC';
   return rows.map((t) => {
+    const dueOn = dueDay(t, zoneOf(t.owner_id));
     const m = messages.find((x) => x.id === t.message_id);
     const snap = t.relationship_snapshot as { label?: string } | null;
     return {
@@ -54,7 +60,10 @@ export async function taskViews(ctx: AppContext, rows: Task[], me: string): Prom
       assignee: t.assignee_id
         ? { id: t.assignee_id, displayName: name(t.assignee_id) }
         : { id: null, displayName: 'Deleted account' },
-      dueAt: t.due_at?.toISOString() ?? null,
+      dueAt: dueOn
+        ? dueInstant(dueOn, zoneOf(me)).toISOString()
+        : (t.due_at?.toISOString() ?? null),
+      dueOn,
       dueHasTime: t.due_has_time,
       remindAt: t.remind_at?.toISOString() ?? null,
       caiFollowUp: t.cai_follow_up,

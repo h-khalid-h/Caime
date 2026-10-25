@@ -8,6 +8,7 @@ import { initiativeOf } from '@caime/core/initiative';
 import type { Kysely, Transaction } from 'kysely';
 import type { AppContext } from '../context';
 import type { Database, Task } from '../db/schema';
+import { dueOnSql } from './due';
 import { badRequest } from './errors';
 import { recordEvent } from './events';
 
@@ -130,6 +131,7 @@ export async function createTask(db: Q, ctx: AppContext, t: NewTask): Promise<Ta
       notes: t.notes ?? null,
       due_at: t.dueAt ?? null,
       due_has_time: t.dueHasTime ?? false,
+      due_on: dueOnSql(t.dueAt, t.dueHasTime ?? false, t.ownerId),
       remind_at: remindAt,
       conversation_id: t.conversationId ?? null,
       message_id: t.messageId ?? null,

@@ -33,6 +33,7 @@ import { provenEmailHolders, provenPhoneHolders } from '../lib/addresses';
 import { AssetsQuery, assetsPage, conversationsBetween } from '../lib/assets';
 import { itemsFor, personHost } from '../lib/booking';
 import { busyNow } from '../lib/calendar';
+import { dueAtForSql } from '../lib/due';
 import { notFound } from '../lib/errors';
 import { foldSql } from '../lib/fold-sql';
 import { notHiddenFor, readableBy } from '../lib/messages';
@@ -532,7 +533,7 @@ export async function peopleRoutes(app: FastifyInstance, ctx: AppContext) {
           : [],
         ctx.db
           .selectFrom('tasks')
-          .select(['id', 'title', 'due_at', 'conversation_id'])
+          .select(['id', 'title', dueAtForSql(auth.userId).as('due_at'), 'conversation_id'])
           .where('owner_id', '=', auth.userId)
           .where('assignee_id', '=', id)
           .where('status', 'in', ['open', 'accepted'])
@@ -542,7 +543,7 @@ export async function peopleRoutes(app: FastifyInstance, ctx: AppContext) {
           .execute(),
         ctx.db
           .selectFrom('tasks')
-          .select(['id', 'title', 'due_at', 'conversation_id'])
+          .select(['id', 'title', dueAtForSql(auth.userId).as('due_at'), 'conversation_id'])
           .where('assignee_id', '=', auth.userId)
           .where((w) =>
             w.or([

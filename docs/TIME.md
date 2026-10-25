@@ -131,7 +131,9 @@ Until then a due day is read as a day: a Pay card's or an invoice's `fields.due`
 written, and `messages.card_start_at` keeps it as its midnight UTC for order alone, never for a
 reader's day; an action due on a day (`due_has_time` false) is due on its owner's day, its `due_at`
 the first moment of it on their clock. Every reader of either says the day (`CalendarItemView.on`),
-and a list files it by that day on its reader's clock.
+and a list files it by that day on its reader's clock. An action due on a day keeps that day in
+`tasks.due_on` (I19b), written beside `due_at` on its owner's clock, so neither a reader's zone nor a
+move of the owner's moves it.
 
 ## What the intelligence reads (R118)
 

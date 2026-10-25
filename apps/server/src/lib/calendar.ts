@@ -237,10 +237,7 @@ export async function calendarItems(
     }),
     dueCards(ctx, userId, { ...wide, limit: MAX_ITEMS }),
   ]);
-  const [views, zones] = await Promise.all([
-    taskViews(tasks),
-    zonesOf(ctx, [userId, ...tasks.map((t) => t.owner_id)]),
-  ]);
+  const [views, zones] = await Promise.all([taskViews(tasks), zonesOf(ctx, [userId])]);
   const zone = zones.get(userId) ?? 'UTC';
   const firstDay = dayIn(window.from, zone);
   const lastDay = dayIn(new Date(window.until.getTime() - 1), zone);
@@ -333,8 +330,9 @@ export async function calendarItems(
     const waiting = t.direction === 'waiting' || t.direction === 'i_asked';
     const other = t.direction === 'asked_me' ? t.owner.id : waiting ? t.assignee.id : null;
     const due = new Date(t.dueAt);
-    // Due on a day: its owner's day, wherever it's read (R119); past it, it's overdue.
-    const on = t.dueHasTime ? null : dayIn(due, zones.get(t.owner.id) ?? zone);
+    // Due on a day: its own day as kept on its owner's clock (`dueOn`), wherever it's read
+    // (R119); past it, it's overdue.
+    const on = t.dueOn;
     if (on ? !inWindow(on) : due < window.from || due > window.until) continue;
     items.push({
       kind: 'task',

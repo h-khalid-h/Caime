@@ -4392,9 +4392,16 @@ clinic can sign for. I1 lands before launch.
       from Toronto, UTC, Riyadh and Kiritimati: the same day each, in the calendar and the feed;
       today's due day on Attention late in the day; the action overdue the day after),
       `time-names.test.ts`, `system-accounts.test.ts`.
-  - [ ] I19b. An action's due day as a day of its own (`tasks.due_on`, a batched backfill from
-        `due_at` on the owner's clock, read by every view, the app's sheet and Cai), so a change of
-        the owner's zone moves no day.
+  - [x] I19b. An action's due day as a day of its own: `tasks.due_on` (0158, filled a thousand at
+        a time by `fill_tasks_due_on`, 0159), written beside `due_at` by `dueOnSql` in the two
+        writes there are (`createTask`, `PATCH /tasks/:id`), on the owner's clock as it's written;
+        `TaskView.dueOn`, and its `dueAt` that day's 09:00 on the reader's clock (`dueInstant`; in
+        SQL `dueAtForSql` for the brief and a profile's promises), so every list in the app puts it
+        on its day without a change; the calendar, the feed and Cai's lists say the kept day.
+        Verified: `calendar.test.ts` (an owner in Cairo, readers in Honolulu and Kiritimati: the
+        same day in Actions, by `dueAt` on each one's clock and in the feed; the owner moves to Los
+        Angeles and the day stays; a time given lets the day go; the fill reads a day kept only as
+        `due_at`), and the briefs', profile's, export's, actions' and tokens' tests unchanged.
   - [ ] I19c. A meeting's start keeps the zone it was set in (`fields.start.zone`, its UTC
         derived; a start set before a change of a country's rules derived again), as a series
         already reads its proposer's clock.
@@ -6566,3 +6573,6 @@ CONNIQT; they mean Caime. Caishy is one of Caime's AI members, and Cai leads the
   before or after by someone in another zone; a day is now a day for every reader, in the
   calendar, Attention, Cai's coming up and the feed, tested from Toronto, UTC, Riyadh and
   Kiritimati.
+- 2026-10-25 — M17 I19b: an action due on a day keeps its day (`tasks.due_on`, filled in batches
+  from `due_at` on its owner's clock); everyone reads that day, wherever they are and wherever its
+  owner moves (the view's `dueAt` is the day's 09:00 on the reader's own clock).

@@ -970,7 +970,13 @@ export interface TaskView {
   owner: { id: string; displayName: string };
   /** `id` is null when the person it waited on deleted their account. */
   assignee: { id: string | null; displayName: string };
+  /**
+   * When it's due. Due on a day (`dueOn`), that day's 09:00 on the reader's clock, as its owner's
+   * is kept, so a reader anywhere reads it on its day.
+   */
   dueAt: string | null;
+  /** The day it's due on when it has no time, the same for every reader (R119). */
+  dueOn: string | null;
   dueHasTime: boolean;
   remindAt: string | null;
   /** Its owner handed it to Cai (R68): Cai offers a follow-up at the remind time. */

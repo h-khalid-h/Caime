@@ -629,6 +629,11 @@ A sphere is said as how you know someone, never "sphere".
   what the words no longer say) and goes once stale (`letGoStale`, the daily
   `suggestions-stale`: a week past its day, a month without one, a `done` offer once its action
   is closed; `letGoOffer` at once when that's by hand).
+- An action due on a day keeps its day (R119, I19b): `tasks.due_on`, written beside `due_at` by
+  `dueOnSql` (`lib/due.ts`) on its owner's clock in the statement that writes it (`createTask`,
+  `PATCH /tasks/:id`: a new write of `due_at` writes it too), and read as that day by everyone:
+  `TaskView.dueOn`, its `dueAt` that day's 09:00 on the reader's clock (`dueDay`, `dueInstant`;
+  `dueAtForSql` in a query), never a day read back from `due_at` through a zone.
 - Whose tasks a person sees is one rule, `visibleTasksSql(me)` (`lib/task-visibility.ts`): their
   own, and what's asked of them that was shared with them. Every reader of `tasks` for a person
   (Actions, the inbox's counts, Cai and the friends, the briefs, the calendar) puts it in its

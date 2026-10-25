@@ -685,6 +685,11 @@ export interface TasksTable {
   status: Defaulted<TaskStatus>;
   due_at: NullableTimestamp;
   due_has_time: Defaulted<boolean>;
+  /**
+   * The day it's due on when it has no time (R119, I19b): read on its owner's clock as `due_at` is
+   * written (`dueOnSql`) and kept, so no reader's zone or a move of the owner's moves it.
+   */
+  due_on: string | null;
   remind_at: NullableTimestamp;
   reminded_at: NullableTimestamp;
   conversation_id: string | null;

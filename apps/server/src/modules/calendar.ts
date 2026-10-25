@@ -62,7 +62,6 @@ import {
   minutesOf,
   orgBookings,
   overdueTasks,
-  zonesOf,
 } from '../lib/calendar';
 import { cardEventText } from '../lib/card-events';
 import { hashToken, newToken } from '../lib/crypto';
@@ -142,14 +141,7 @@ export async function calendarEvents(
   // never from a message request they haven't accepted (or declined). What's ahead comes first,
   // so however much is overdue, what's coming is there.
   const rows = await overdueTasks(ctx, userId, { from, until });
-  const [views, zones] = await Promise.all([
-    taskViews(ctx, rows, userId),
-    // An action due on a day is due on its owner's day, wherever it's read (R119).
-    zonesOf(
-      ctx,
-      rows.filter((r) => !r.due_has_time).map((r) => r.owner_id),
-    ),
-  ]);
+  const views = await taskViews(ctx, rows, userId);
   // Meetings and appointments agreed in conversations they're still in, never one taken back.
   // A meeting that repeats (R58) is there each time ahead, as one event a time before and after
   // its card is posted (`meetingUid`).
@@ -204,7 +196,8 @@ export async function calendarEvents(
         url,
         ...(t.dueHasTime
           ? { start: due, end: new Date(due.getTime() + TASK_MINUTES * 60_000) }
-          : { date: localDate(due, zones.get(row.owner_id) ?? timeZone) }),
+          : // An action due on a day is due on its own day, wherever it's read (R119).
+            { date: t.dueOn ?? localDate(due, timeZone) }),
         updated: row.updated_at as Date,
       });
     });

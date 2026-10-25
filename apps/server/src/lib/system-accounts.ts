@@ -60,6 +60,7 @@ import {
 } from '@caime/core';
 import type { MissedSummaryView } from '@caime/core/api';
 import type { Gender } from '@caime/core/i18n';
+import { dayIn } from '@caime/core/series';
 import { sql } from 'kysely';
 import type { AppContext } from '../context';
 import { createTask } from './actions';
@@ -1132,6 +1133,7 @@ export async function openFor(
         't.title',
         't.due_at',
         't.due_has_time',
+        't.due_on',
         'a.display_name as assignee',
         'o.display_name as owner',
       ])
@@ -1161,6 +1163,9 @@ export async function openFor(
     // What's owed by a day in the window (M14), today's included: the cards the calendar shows.
     dueCards(ctx, me.id, { from: dueDayOf(now, zone), until, limit: COMING_COUNTED }),
   ]);
+  // An action due on a day is said on its own day (R119), never its owner's 09:00 read here.
+  const dueAt = (r: { due_at: Date | null; due_on: string | null }) =>
+    r.due_on ? dayStart(r.due_on, zone) : r.due_at;
   const due = (at: Date | null, hasTime: boolean) =>
     at ? ` · ${formatDue(at.toISOString(), now, zone, locale, hasTime)}` : '';
   const line = (...parts: Array<string | null>) => `• ${parts.filter(Boolean).join(' · ')}`;
@@ -1172,10 +1177,11 @@ export async function openFor(
       (r) =>
         r.assignee_id === me.id &&
         r.due_at &&
-        r.due_at.getTime() >= now.getTime() &&
-        r.due_at.getTime() < until.getTime(),
+        (r.due_on
+          ? r.due_on >= dayIn(now, zone) && dayStart(r.due_on, zone) < until
+          : r.due_at.getTime() >= now.getTime() && r.due_at.getTime() < until.getTime()),
     )
-    .map((r) => ({ at: r.due_at!, hasTime: r.due_has_time, title: r.title }));
+    .map((r) => ({ at: dueAt(r)!, hasTime: r.due_has_time, title: r.title }));
   const ahead = [
     ...soon,
     ...cards.map((c) => ({ at: c.at, hasTime: c.hasTime, title: c.title })),
@@ -1194,11 +1200,11 @@ export async function openFor(
   return {
     waiting: waiting
       .slice(0, SHOWN)
-      .map((r) => line(r.assignee ?? tr('Someone'), r.title) + due(r.due_at, r.due_has_time)),
+      .map((r) => line(r.assignee ?? tr('Someone'), r.title) + due(dueAt(r), r.due_has_time)),
     asked: asked
       .slice(0, SHOWN)
-      .map((r) => line(r.owner ?? tr('Someone'), r.title) + due(r.due_at, r.due_has_time)),
-    mine: mine.slice(0, SHOWN).map((r) => line(r.title) + due(r.due_at, r.due_has_time)),
+      .map((r) => line(r.owner ?? tr('Someone'), r.title) + due(dueAt(r), r.due_has_time)),
+    mine: mine.slice(0, SHOWN).map((r) => line(r.title) + due(dueAt(r), r.due_has_time)),
     coming,
     counts: { ...counts, coming: Math.min(ahead.length, COMING_COUNTED) },
   };
