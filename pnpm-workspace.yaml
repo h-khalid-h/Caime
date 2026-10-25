@@ -23,6 +23,10 @@ overrides:
   # copy can't find them, and @simplewebauthn/server's EC signatures failed to parse (R36). The
   # 2.8.0 pin is @postalsys/vmc's, in mailauth's BIMI, which the server never loads.
   '@peculiar/asn1-schema': ^2.11.0
+  # GHSA-xjj6-f33q-929c: undici 8.0.0 to 8.12.1 (mailauth pins 8.11.2), a denial of service on a
+  # response with too many content encodings: the patch release, same API. Goes when mailauth's
+  # own pin reaches 8.12.2.
+  mailauth>undici: 8.12.3
 
 # Advisories without a fixed release yet, both in Expo's command line (the web export and the dev
 # server): neither package is in the server image (`pnpm deploy --prod` of the server alone) or
@@ -33,3 +37,6 @@ auditConfig:
     - GHSA-86w9-cpqp-85rv
     # braces <= 3.0.3, stack exhaustion on a deeply nested glob: metro's file map, our own globs.
     - GHSA-vfj7-8cjw-p6xm
+    # zod < 4.6.6, constrained collections: our own zod is 4.6.7 (server, core); Expo's command
+    # line keeps zod 3, which has no fixed release.
+    - GHSA-mrhx-c7xc-m3w5
