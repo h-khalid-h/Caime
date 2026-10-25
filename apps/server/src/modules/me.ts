@@ -2,10 +2,12 @@
  * The account owner's profile, preferences and privacy (PRD §34).
  */
 import {
+  BirthDateBody,
   clampForMinor,
   Handle,
   type PlanUsageView,
   PrivacyBody,
+  plausibleBirthDate,
   safeLocale,
   UpdateMeBody,
 } from '@caime/core';
@@ -30,6 +32,7 @@ import { z } from 'zod';
 import type { AppContext } from '../context';
 import type { UserUpdate } from '../db/schema';
 import { USER_COLUMNS } from '../db/schema';
+import { audit } from '../lib/audit';
 import { scheduleBrief, scheduleDigest } from '../lib/cai';
 import { badRequest } from '../lib/errors';
 import { currentZone, isCountry } from '../lib/geo';
@@ -248,6 +251,44 @@ export async function meRoutes(app: FastifyInstance, ctx: AppContext) {
     if (briefChanged) await scheduleBrief(ctx, auth.userId);
     if (digestChanged) await scheduleDigest(ctx, auth.userId);
     return { user: meView(user, ctx.now(), ctx.config) };
+  });
+
+  /**
+   * A date of birth typed wrong at sign-up, corrected by its owner (the owner's report of
+   * 2026-10-25): a real day, old enough for Caime where they live (`tooYoung`, as sign-up refuses;
+   * an account that can't be kept at that age is deleted, never redated), three a day. The
+   * under-18 rules follow at once, since `privacyOf` and `minorOf` read it on every request; a
+   * check of their age that found them under 18 still holds for its year whatever is declared
+   * (M16 B7: the stricter reading wins), and a date that says under 18 holds against a check that
+   * read adult. Audited without the date.
+   */
+  app.put('/me/birth-date', async (req): Promise<UserResponse> => {
+    const auth = requireAuth(req);
+    const { birthDate } = parse(BirthDateBody, req.body);
+    ctx.limiter.hit(`birth-date:${auth.userId}`, ctx.config.isTest ? 1000 : 3, 86_400_000);
+    const current = await load(auth.userId);
+    const now = ctx.now();
+    if (!plausibleBirthDate(birthDate, now, current.time_zone))
+      throw badRequest(tr('Enter the day you were born.'), {
+        fields: [{ path: 'birthDate', message: 'Enter the day you were born.' }],
+      });
+    if (!oldEnoughIn(ctx.config.MINIMUM_AGE, current.country, birthDate, now, current.time_zone))
+      throw tooYoung(ctx.config.MINIMUM_AGE, current.country);
+    if (birthDate !== current.birth_date) {
+      await ctx.db
+        .updateTable('users')
+        .set({ birth_date: birthDate, updated_at: now })
+        .where('id', '=', auth.userId)
+        .execute();
+      await audit(ctx.db, {
+        actorId: auth.userId,
+        action: 'account.birth_date',
+        target: auth.userId,
+      });
+      await ctx.bus.publish([auth.userId], { type: 'me.updated', data: { id: auth.userId } });
+    }
+    const user = await load(auth.userId);
+    return { user: meView(user, now, ctx.config) };
   });
 
   app.put('/me/privacy', async (req): Promise<PrivacyResponse> => {

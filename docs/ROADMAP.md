@@ -5898,6 +5898,15 @@ have yet, each sized:
 - 2026-10-20 — The French and Turkish catalogs come in two halves fetched side by side, as Arabic
   does: their largest download 48.9 KB where one was 95.2 KB of a chunk's 100; the first download
   448.8 KB of 450 (0.2 KB more: the two loaders).
+- 2026-10-25 — The owner's two bugs: a date of birth typed wrong at sign-up is corrected by its
+  owner in Settings · Profile (`PUT /me/birth-date`: a real day, old enough where they live, three
+  a day, audited without the date; an age check's finding still holds), where only the operator's
+  route could before; a sent message no longer stays in the composer: on a phone the box is cleared
+  natively after a send and the keyboard's echo of the words (iOS commits an autocorrection as the
+  text is replaced) is dropped for a moment (`SENT_ECHO_MS`), and a draft save that was in flight
+  when the message went is taken back (`state/drafts.ts`), so no device shows the sent words as a
+  draft again. Verified: `account.test.ts`, `drafts.test.ts`, the E2E's profile change; the phone's
+  clear is the React Native fix for that keyboard and waits for the owner's phone to confirm.
 - 2026-10-25 — M17 I4, one cited answer engine: Search's answer, Ask about a conversation and
   Cai's chat answer from numbered passages through one prompt and one builder (`lib/answers.ts`),
   each answer naming the messages, actions, decisions or notes it rests on, drawn as chips that

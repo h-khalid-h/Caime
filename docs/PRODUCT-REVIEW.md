@@ -189,7 +189,7 @@ to feel right to each of them.
   word.
 - **R29 — Age-aware safety.** The minimum age is 13 (16 where local law requires), asked once as a
   date of birth and never shown to anyone: an age is exact, from the day someone turns it where
-  they live (29 February counts as 1 March in other years), and can't be changed in the app. Accounts under 18 get protective defaults: discoverable
+  they live (29 February counts as 1 March in other years), and is corrected in Settings · Profile when it was typed wrong (a real day, old enough where they live; a check of their age that found them under 18 still holds, M16 B7). Accounts under 18 get protective defaults: discoverable
   by handle only (never by email), message requests only from people who share a connection, no
   location sharing. Adults can never find an under-18 account through people search.
 - **R30 — Comfortable for older adults and for anyone on a hard day.** Text follows the system

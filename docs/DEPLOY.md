@@ -857,9 +857,9 @@ reports and appeals as they come (`caime_reports_total{from,reason}`,
 curl -X PUT -H "Authorization: Bearer $ADMIN_TOKEN" -H 'content-type: application/json' \
   -d '{"suspended": true, "reason": "Selling counterfeit goods"}' \
   https://caime.example.com/v1/admin/orgs/nile.dental/suspension
-# A date of birth corrected at its owner's request (from their account's own address): a real
-# day, never under the age Caime asks where they live (suspend instead); the audit log names the
-# operator, never the date.
+# A date of birth corrected at its owner's request (from their account's own address) where they
+# can't do it themselves in Settings · Profile: a real day, never under the age Caime asks where
+# they live (suspend instead); the audit log names the operator, never the date.
 curl -X PUT -H "Authorization: Bearer $ADMIN_TOKEN" -H 'content-type: application/json' \
   -d '{"birthDate": "2009-04-02"}' https://caime.example.com/v1/admin/people/noor/birth-date
 # A person suspended with the reason they'll read when they next sign in.

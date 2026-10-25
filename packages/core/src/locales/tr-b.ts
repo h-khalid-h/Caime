@@ -2648,4 +2648,6 @@ export const turkishB: Catalog = {
   },
   'Sum it up': 'Özetle',
   'Where this comes from': 'Bunun kaynağı',
+  'Only to keep younger people safer, and never shown to anyone. Correct it here if it was typed wrong; your country and time zone are in Language and region.':
+    'Yalnızca gençleri daha iyi korumak için; kimseye gösterilmez. Yanlış yazıldıysa burada düzeltin; ülkeniz ve saat diliminiz Dil ve bölge’de.',
 };

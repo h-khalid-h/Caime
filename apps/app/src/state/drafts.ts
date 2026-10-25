@@ -23,6 +23,8 @@ interface DraftState {
 
 const timers = new Map<string, ReturnType<typeof setTimeout>>();
 const synced = new Map<string, string>();
+/** How many times each conversation's draft was cleared: a save begun before a clear is stale. */
+const cleared = new Map<string, number>();
 
 function sync(conversationId: string, text: string): void {
   const existing = timers.get(conversationId);
@@ -33,14 +35,30 @@ function sync(conversationId: string, text: string): void {
       timers.delete(conversationId);
       const value = text.trim() ? text : null;
       if ((synced.get(conversationId) ?? null) === value) return;
+      const epoch = cleared.get(conversationId) ?? 0;
       // Marked synced only once the account has it: a failed request leaves it to the next
-      // keystroke's sync, or the next sync of this conversation, to try again.
+      // keystroke's sync, or the next sync of this conversation, to try again. A save that was
+      // on its way when the message went (the send cleared the draft, on the device and on the
+      // account) would put the sent words back as the account's draft, which every other device
+      // then shows as "Draft:" and in its composer: such a save is followed by taking it back.
       void endpoints
         .updateConversation(conversationId, { draft: value })
-        .then(() => synced.set(conversationId, value ?? ''))
+        .then(() => {
+          if ((cleared.get(conversationId) ?? 0) !== epoch) return takeBack(conversationId);
+          synced.set(conversationId, value ?? '');
+        })
         .catch(() => {});
     }, 1500),
   );
+}
+
+function takeBack(conversationId: string): Promise<void> {
+  return endpoints
+    .updateConversation(conversationId, { draft: null })
+    .then(() => {
+      synced.set(conversationId, '');
+    })
+    .catch(() => {});
 }
 
 export const useDrafts = create<DraftState>()(
@@ -58,6 +76,7 @@ export const useDrafts = create<DraftState>()(
         const t = timers.get(conversationId);
         if (t) clearTimeout(t);
         timers.delete(conversationId);
+        cleared.set(conversationId, (cleared.get(conversationId) ?? 0) + 1);
         synced.set(conversationId, '');
         set((s) => {
           const next = { ...s.drafts };
@@ -71,6 +90,7 @@ export const useDrafts = create<DraftState>()(
         for (const t of timers.values()) clearTimeout(t);
         timers.clear();
         synced.clear();
+        cleared.clear();
         set({ drafts: {}, local: {} });
       },
     }),

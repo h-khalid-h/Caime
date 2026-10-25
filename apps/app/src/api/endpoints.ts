@@ -365,6 +365,8 @@ export const endpoints = {
     api.post<UrlResponse>('/billing/portal', orgId ? { orgId } : {}),
   deleteAccount: (password: string) => request<OkResponse>('DELETE', '/me', { body: { password } }),
   updateMe: (patch: Record<string, unknown>) => api.patch<UserResponse>('/me', patch),
+  /** A date of birth typed wrong at sign-up, corrected (YYYY-MM-DD). */
+  updateBirthDate: (birthDate: string) => api.put<UserResponse>('/me/birth-date', { birthDate }),
   updatePrivacy: (body: Record<string, unknown>) => api.put<PrivacyResponse>('/me/privacy', body),
   /** Every country named in `locale`'s language, and the one the device suggests (lib/geo.ts). */
   countries: (locale: string, timeZone?: string, region?: string) =>

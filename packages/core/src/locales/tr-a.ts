@@ -484,8 +484,6 @@ export const turkishA: Catalog = {
   'About you (optional)': 'Hakkınızda (isteğe bağlı)',
   '{n} left': '{n} kaldı',
   'Date of birth': 'Doğum tarihi',
-  'Only to keep younger people safer, and never shown to anyone. If it’s wrong, Help says how to correct it. Your country and time zone are in Language and region.':
-    'Yalnızca gençleri daha güvende tutmak için kullanılır ve kimseye gösterilmez. Yanlışsa nasıl düzelteceğiniz Yardım bölümünde anlatılır. Ülkeniz ve saat diliminiz Dil ve bölge altındadır.',
   Emoji: 'Emoji',
   'Status emoji, {statusEmoji}': 'Durum emojisi, {statusEmoji}',
   'Opens the emoji to choose from': 'Emoji seçiciyi açar',

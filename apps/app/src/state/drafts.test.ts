@@ -45,6 +45,37 @@ describe('drafts', () => {
     expect(kept).not.toContain('4471');
   });
 
+  it('take back a save that was on its way when the message went (2026-10-25)', async () => {
+    const { useDrafts } = await import('./drafts');
+    // The account hears the draft 1.5 s after the last keystroke; the message goes while that
+    // request is still in flight, and the send clears the draft here and on the account.
+    let land: (() => void) | undefined;
+    h.endpoints.updateConversation.mockImplementationOnce(
+      () =>
+        new Promise<object>((resolve) => {
+          land = () => resolve({});
+        }),
+    );
+    useDrafts.getState().set('standard-1', 'Did you update its due dates');
+    await vi.advanceTimersByTimeAsync(1500);
+    expect(h.endpoints.updateConversation).toHaveBeenCalledTimes(1);
+    useDrafts.getState().clear('standard-1');
+    expect(useDrafts.getState().drafts['standard-1']).toBeUndefined();
+    // The stale save lands after the send: it's taken back, so no device shows the sent words
+    // as a draft again.
+    land?.();
+    await vi.advanceTimersByTimeAsync(10);
+    expect(h.endpoints.updateConversation).toHaveBeenCalledTimes(2);
+    expect(h.endpoints.updateConversation).toHaveBeenLastCalledWith('standard-1', { draft: null });
+    // A save that landed before any clear is kept as synced: cleared later, nothing is sent.
+    useDrafts.getState().set('standard-2', 'half a thought');
+    await vi.advanceTimersByTimeAsync(1600);
+    expect(h.endpoints.updateConversation).toHaveBeenCalledTimes(3);
+    useDrafts.getState().clear('standard-2');
+    await vi.advanceTimersByTimeAsync(1600);
+    expect(h.endpoints.updateConversation).toHaveBeenCalledTimes(3);
+  });
+
   it('are all forgotten on signing out', async () => {
     const { useDrafts } = await import('./drafts');
     useDrafts.getState().set('standard-1', 'half a thought');

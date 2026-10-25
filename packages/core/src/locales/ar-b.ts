@@ -3536,4 +3536,6 @@ export const arB: Catalog = {
   },
   'Sum it up': 'لخّصه',
   'Where this comes from': 'من أين جاء هذا',
+  'Only to keep younger people safer, and never shown to anyone. Correct it here if it was typed wrong; your country and time zone are in Language and region.':
+    'فقط لحماية الأصغر سنًا، ولا يُعرض لأحد أبدًا. صحّحه هنا إن كُتب خطأ؛ بلدك ومنطقتك الزمنية في «اللغة والمنطقة».',
 };

@@ -56,6 +56,7 @@ export type AuditAction =
   | 'session.revoked'
   | 'account.exported'
   | 'account.deleted'
+  | 'account.birth_date'
   | 'token.created'
   | 'token.revoked'
   | 'connected_account.connected'

@@ -1284,3 +1284,38 @@ describe('recovery codes at the first quiet moment (R56)', () => {
     expect((await fresh.get('/v1/me')).user.recoveryCodesSeen).toBe(true);
   });
 });
+
+describe('a date of birth corrected by its owner (2026-10-25)', () => {
+  it('takes a real day, old enough where they live, and the rules follow at once', async () => {
+    const noor = await signup(t, { displayName: 'Noor Correcting', birthDate: '1990-05-17' });
+    expect(noor.user.birthDate).toBe('1990-05-17');
+    // Typed wrong at sign-up: the year a decade out.
+    const fixed = await noor.put('/v1/me/birth-date', { birthDate: '1980-05-17' });
+    expect(fixed.user.birthDate).toBe('1980-05-17');
+    expect((await noor.get('/v1/me')).user.birthDate).toBe('1980-05-17');
+    // Not a day, or a day that hasn't come: refused on the field.
+    const notADay = await noor.req('PUT', '/v1/me/birth-date', { birthDate: '1990-02-30' });
+    expect(notADay.statusCode).toBe(400);
+    const ahead = await noor.req('PUT', '/v1/me/birth-date', { birthDate: '2999-01-01' });
+    expect(ahead.statusCode).toBe(400);
+    expect(ahead.json().error.details.fields[0].path).toBe('birthDate');
+    // Too young for Caime where they live: refused as sign-up refuses, nothing changed.
+    const year = t.ctx.now().getUTCFullYear();
+    const tooYoung = await noor.req('PUT', '/v1/me/birth-date', { birthDate: `${year - 5}-01-01` });
+    expect(tooYoung.statusCode).toBe(400);
+    expect(tooYoung.json().error.code).toBe('too_young');
+    expect((await noor.get('/v1/me')).user.birthDate).toBe('1980-05-17');
+    // Under 18 by the corrected date: the protections follow on the next request (R29).
+    const minor = await noor.put('/v1/me/birth-date', { birthDate: `${year - 15}-01-01` });
+    expect(minor.user.minor).toBe(true);
+    expect(JSON.stringify((await noor.get('/v1/me')).user.privacy)).not.toContain('"everyone"');
+    // Audited, without the date.
+    const rows = await sql<{
+      metadata: unknown;
+    }>`select metadata from audit_log where action = 'account.birth_date' and target = ${noor.user.id}`.execute(
+      t.ctx.db,
+    );
+    expect(rows.rows.length).toBeGreaterThanOrEqual(2);
+    expect(JSON.stringify(rows.rows)).not.toContain('1980-05-17');
+  });
+});

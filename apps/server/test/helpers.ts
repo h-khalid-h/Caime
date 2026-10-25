@@ -86,6 +86,7 @@ export interface Client {
   get<T = any>(url: string, opts?: { headers?: Record<string, string> }): Promise<T>;
   post<T = any>(url: string, body?: unknown): Promise<T>;
   patch<T = any>(url: string, body?: unknown): Promise<T>;
+  put<T = any>(url: string, body?: unknown): Promise<T>;
   del<T = any>(url: string): Promise<T>;
 }
 
@@ -173,6 +174,7 @@ export function clientFor(
     get: async (url, opts) => ok(await req('GET', url, undefined, opts?.headers)),
     post: async (url, body) => ok(await req('POST', url, body ?? {})),
     patch: async (url, body) => ok(await req('PATCH', url, body ?? {})),
+    put: async (url, body) => ok(await req('PUT', url, body ?? {})),
     del: async (url) => ok(await req('DELETE', url)),
   };
 }

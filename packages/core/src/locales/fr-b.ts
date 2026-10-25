@@ -2742,4 +2742,6 @@ export const frB: Catalog = {
   },
   'Sum it up': 'Résumer',
   'Where this comes from': 'D’où cela vient',
+  'Only to keep younger people safer, and never shown to anyone. Correct it here if it was typed wrong; your country and time zone are in Language and region.':
+    'Uniquement pour mieux protéger les plus jeunes, et jamais montrée à personne. Corrigez-la ici si elle a été mal saisie ; votre pays et votre fuseau horaire sont dans Langue et région.',
 };

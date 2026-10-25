@@ -594,8 +594,8 @@ now; reports about you, which would say who made them; secrets, which Caime keep
 or never shows; and the server&rsquo;s own log. To ask about anything in it, or not in it, write to
 ${mail}.</li>
 <li><strong>Correct it:</strong> change your name, @handle, photo, pronouns, gender, About you and status
-in You &rarr; Profile at any time. To correct your email address or your date of birth, write
-to ${mail}.</li>
+in You &rarr; Profile at any time, and your date of birth there too if it was typed wrong. To
+correct your email address, write to ${mail}.</li>
 <li><strong>Delete it:</strong> You &rarr; Security &rarr; Delete your account.</li>
 <li><strong>Choose who sees what:</strong> You &rarr; Privacy decides who sees your profile photo,
 About you, pronouns, gender, status, when you&rsquo;re online, when you were last seen and when

@@ -17,7 +17,8 @@ import { Avatar } from '@/ui/Avatar';
 import { Button } from '@/ui/Button';
 import { Chip, ChoiceChips } from '@/ui/Chip';
 import { ChoiceSheet } from '@/ui/ChoiceSheet';
-import { formatDay } from '@/ui/dates';
+import { DateField } from '@/ui/DateField';
+import { dayOf, formatDay, yearsBefore } from '@/ui/dates';
 import { EmojiSheet } from '@/ui/EmojiSheet';
 import { Pressable } from '@/ui/Pressable';
 import { Text } from '@/ui/Text';
@@ -37,6 +38,9 @@ const STATUSES: Array<{ emoji: string; text: string }> = [
 ];
 type Presence = 'auto' | 'available' | 'busy' | 'away' | 'invisible';
 
+/** As sign-up's picker bounds it: nobody born more than this many years ago. */
+const OLDEST_YEARS = 120;
+
 export default function Profile() {
   const me = useMe();
   const t = useTheme();
@@ -49,6 +53,8 @@ export default function Profile() {
   const [statusEmoji, setStatusEmoji] = useState(me.statusEmoji ?? '');
   const [statusText, setStatusText] = useState(me.statusText ?? '');
   const [presence, setPresence] = useState<Presence>(me.presence);
+  const [birthDate, setBirthDate] = useState<string | null>(me.birthDate);
+  const [birthBusy, setBirthBusy] = useState(false);
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [busy, setBusy] = useState(false);
   const [photoBusy, setPhotoBusy] = useState(false);
@@ -78,6 +84,25 @@ export default function Profile() {
       toast((e as Error).message, { tone: 'danger' });
     } finally {
       setBusy(false);
+    }
+  };
+
+  // A date of birth typed wrong at sign-up (the owner's report of 2026-10-25): a real day, old
+  // enough where they live, saved on its own; the server says the rules the day must keep.
+  const today = dayOf(new Date());
+  const oldest = yearsBefore(today, OLDEST_YEARS);
+  const saveBirthDate = async () => {
+    if (!birthDate || birthDate === me.birthDate) return;
+    setBirthBusy(true);
+    try {
+      const res = await endpoints.updateBirthDate(birthDate);
+      useSession.getState().setUser(res.user);
+      toast(tr('Saved'));
+    } catch (e) {
+      if (e instanceof ApiError) setErrors((prev) => ({ ...prev, ...e.fieldErrors() }));
+      toast((e as Error).message, { tone: 'danger' });
+    } finally {
+      setBirthBusy(false);
     }
   };
 
@@ -245,13 +270,38 @@ export default function Profile() {
         <Group
           title={tr('Date of birth')}
           footer={tr(
-            'Only to keep younger people safer, and never shown to anyone. If it’s wrong, Help says how to correct it. Your country and time zone are in Language and region.',
+            'Only to keep younger people safer, and never shown to anyone. Correct it here if it was typed wrong; your country and time zone are in Language and region.',
           )}
         >
-          <View style={{ padding: 16 }}>
+          <View style={{ padding: 16, gap: 12 }}>
             <Text variant="body" testID="profile-birth-date">
               {formatDay(me.birthDate, me.locale)}
             </Text>
+            <DateField
+              label={tr('Date of birth')}
+              value={birthDate}
+              onChange={(day) => {
+                setBirthDate(day);
+                setErrors((e) => {
+                  if (!e.birthDate) return e;
+                  const { birthDate: _gone, ...rest } = e;
+                  return rest;
+                });
+              }}
+              min={oldest}
+              max={today}
+              memorable
+              error={errors.birthDate}
+              testID="profile-birth-date-field"
+            />
+            {birthDate && birthDate !== me.birthDate ? (
+              <Button
+                label={tr('Save')}
+                onPress={() => void saveBirthDate()}
+                loading={birthBusy}
+                testID="profile-birth-date-save"
+              />
+            ) : null}
           </View>
         </Group>
       ) : null}

@@ -2667,6 +2667,18 @@ A sphere is said as how you know someone, never "sphere".
   was saved of it (`dropSaved`, then `tellSaved`; the retention job does it in its own SQL),
   as it drops the message's assets and pin. A group's topic changes its disappearing messages
   only through its group, which passes them on.
+- A date of birth is corrected by its owner (2026-10-25, `PUT /me/birth-date` in `modules/me.ts`:
+  `plausibleBirthDate`, `oldEnoughIn` as sign-up checks, three a day, `account.birth_date` audited
+  without the date, `me.updated`), from Settings · Profile's Date of birth row; the operator's
+  `PUT /admin/people/:handle/birth-date` stays for whoever writes in. The under-18 rules read the
+  date on every request (`minorOf`, `privacyOf`), and a check's `age_minor_until` holds whatever is
+  declared: nothing else gates it. The composer empties its box through `clearBox` (the state, and
+  on a phone the native field: a controlled value alone left the keyboard's own text standing) and
+  drops a change arriving into the emptied box within `SENT_ECHO_MS` of a send (iOS commits an
+  autocorrection as the text is replaced and reports the text it corrected); `state/drafts.ts`
+  takes back a draft save that was in flight when the conversation was cleared (`cleared` epochs),
+  since the send had cleared the account's draft and the stale save would put the sent words back
+  on every device.
 
 ## Reviewing a contribution
 

@@ -508,8 +508,6 @@ export const frA: Catalog = {
   'About you (optional)': 'À propos de vous (facultatif)',
   '{n} left': '{n} restants',
   'Date of birth': 'Date de naissance',
-  'Only to keep younger people safer, and never shown to anyone. If it’s wrong, Help says how to correct it. Your country and time zone are in Language and region.':
-    'Uniquement pour mieux protéger les plus jeunes, et jamais montrée à personne. Si elle est erronée, l’Aide explique comment la corriger. Votre pays et votre fuseau horaire sont dans Langue et région.',
   Emoji: 'Emoji',
   'Status emoji, {statusEmoji}': 'Emoji de statut, {statusEmoji}',
   'Opens the emoji to choose from': 'Ouvre le choix des emojis',

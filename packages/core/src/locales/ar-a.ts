@@ -565,8 +565,6 @@ export const arA: Catalog = {
   'About you (optional)': 'نبذة عنك (اختياري)',
   '{n} left': 'بقي {n}',
   'Date of birth': 'تاريخ الميلاد',
-  'Only to keep younger people safer, and never shown to anyone. If it’s wrong, Help says how to correct it. Your country and time zone are in Language and region.':
-    'فقط لحماية الأصغر سنًا، ولا يُعرض لأحد أبدًا. إن كان خطأً، تجد في المساعدة طريقة تصحيحه. بلدك ومنطقتك الزمنية في «اللغة والمنطقة».',
   Emoji: 'رمز تعبيري',
   'Status emoji, {statusEmoji}': 'رمز الحالة التعبيري، {statusEmoji}',
   'Opens the emoji to choose from': 'يفتح قائمة الرموز التعبيرية',
