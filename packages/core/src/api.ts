@@ -3279,7 +3279,7 @@ export interface CallNotesView {
 
 /**
  * Cai speaks in a call (R114 (3), M17 I13g): what it says and until when, to everyone in the call;
- * the sound's address to the recorder's device alone, which plays it into the call.
+ * the notes' recorder device fetches the sound by the utterance's id and plays it into the call.
  */
 export interface CaiSpokenView {
   callId: string;
@@ -3288,8 +3288,6 @@ export interface CaiSpokenView {
   /** How long it plays, when known. */
   ms: number | null;
   until: string;
-  /** The sound, for the one device that plays it; null for everyone else. */
-  url: string | null;
 }
 
 /**

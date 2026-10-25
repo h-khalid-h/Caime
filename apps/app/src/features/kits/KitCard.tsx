@@ -258,6 +258,12 @@ export function KitCard({ m, mine }: { m: MessageView; mine: boolean }) {
     (s) => s.call?.conversationId === m.conversationId && s.call.notes?.records === true,
   );
   const liveRecords = call === 'group' ? groupRecords : call === 'direct' && directRecords;
+  // Joining in too (R114 (3)): the same.
+  const groupInteracts = useGroupCall((s) => s.on[m.conversationId]?.notes?.interacts === true);
+  const directInteracts = useCall(
+    (s) => s.call?.conversationId === m.conversationId && s.call.notes?.interacts === true,
+  );
+  const liveInteracts = call === 'group' ? groupInteracts : call === 'direct' && directInteracts;
   const notesLive = notesAsked(liveNotes ? { state: liveNotes } : null);
   // Never opened is null: the sheet loads the first time it's asked for.
   const [receiptOpen, setReceiptOpen] = useState<boolean | null>(null);
@@ -358,7 +364,9 @@ export function KitCard({ m, mine }: { m: MessageView; mine: boolean }) {
       ? notesLive || (p.fields?.notes === 'cai' && mayAskNotes)
         ? [
             {
-              label: joinWithCai(notesLive ? { records: liveRecords } : null),
+              label: joinWithCai(
+                notesLive ? { records: liveRecords, interacts: liveInteracts } : null,
+              ),
               testID: 'kit-join-with-notes',
               onPress: () => join('yes'),
             },

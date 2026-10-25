@@ -1,5 +1,5 @@
 import { radii } from '@caime/brand/tokens';
-import { notesAsked, RECORDING_DAYS } from '@caime/core/calls';
+import { notesAsked } from '@caime/core/calls';
 import { tr } from '@caime/core/i18n';
 import Mic from 'lucide-react-native/icons/mic';
 import MicOff from 'lucide-react-native/icons/mic-off';
@@ -38,8 +38,9 @@ import {
   toggleMute,
 } from './engine';
 import { GroupCallLayer } from './GroupCallLayer';
-import { NotesAsk, NotesLine, NotesRound } from './NotesUi';
+import { CaiWritten, NotesAsk, NotesLine, NotesRound } from './NotesUi';
 import { answerWithCai } from './notesWords';
+import { ringAsk } from './ringWords';
 
 /**
  * The call screen (PRD §47), over everything while a call rings or runs: who it's with, how
@@ -169,23 +170,14 @@ function OneToOneCallLayer() {
             style={{ color: '#FFFFFFDD', paddingHorizontal: 24, ...OVER_VIDEO }}
             testID="call-incoming-notes"
           >
-            {call.notes?.records
-              ? tr(
-                  '{name} asks Cai to record this call: the voices and any screen shown, kept {days} days for everyone in it; anyone in it may share it on.',
-                  {
-                    name: other.displayName.split(' ')[0] || other.displayName,
-                    days: RECORDING_DAYS,
-                  },
-                )
-              : tr('{name} asks Cai to take notes in this call.', {
-                  name: other.displayName.split(' ')[0] || other.displayName,
-                })}
+            {ringAsk(call.notes, other.displayName.split(' ')[0] || other.displayName)}
           </Text>
         ) : null}
       </View>
       {phase === 'active' ? (
         <View style={{ position: 'absolute', bottom: 150 + insets.bottom, left: 0, right: 0 }}>
           <NotesAsk notes={call.notes} me={me} />
+          <CaiWritten callId={call.id} />
         </View>
       ) : null}
       {sharing && phase === 'active' ? (

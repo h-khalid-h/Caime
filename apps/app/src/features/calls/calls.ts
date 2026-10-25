@@ -116,3 +116,7 @@ export function onGroupCallEvent(event: RealtimeEvent): void {
 export function onNotesEvent(event: RealtimeEvent): void {
   void callStackOr('live', live).then((stack) => stack?.onNotesEvent(event));
 }
+/** Cai spoke in a call, or wrote to this person in it (M17 I13g): the screens, and the recorder's browser, follow. */
+export function onCaiEvent(event: RealtimeEvent): void {
+  void callStackOr('live', live).then((stack) => stack?.onCaiEvent(event));
+}

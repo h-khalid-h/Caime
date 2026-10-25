@@ -8,6 +8,8 @@ import { createServer } from 'node:http';
 
 const port = Number(process.env.PORT ?? 8799);
 const calls = [];
+/** Words a test says the next thing heard in a call was (M17 I13g), in order; else the fixed ones. */
+const toSay = [];
 
 const reply = (text) => ({
   id: `msg_stub_${calls.length}`,
@@ -217,6 +219,18 @@ function answer(body) {
     // Its introduction is Caime's, written by the rules (R87): the model only answers.
     return say('answer', best.sentence, { sources: [best.n] });
   }
+  if (system.includes('you have joined a call')) {
+    // Cai called by name in a call (M17 I13g): a short spoken answer, citing the first line.
+    calls.push('interact');
+    const [first] = linesOf(content);
+    return reply(
+      JSON.stringify(
+        first
+          ? { answer: 'You agreed to go ahead, early in the call.', sources: [1] }
+          : { answer: 'Nothing was said about that yet.', sources: [] },
+      ),
+    );
+  }
   if (system.includes('question about a call')) {
     // A question typed to Cai about a call (M17 I13f): its first line, cited.
     calls.push('notes-ask');
@@ -286,6 +300,15 @@ createServer(async (req, res) => {
   }
   if (req.method === 'DELETE' && req.url === '/requests') {
     calls.length = 0;
+    toSay.length = 0;
+    res.writeHead(204);
+    return res.end();
+  }
+  // What a microphone said next (M17 I13g): the speech stand-in answers it once, then the fixed words.
+  if (req.method === 'POST' && req.url === '/say') {
+    let said = '';
+    for await (const chunk of req) said += chunk;
+    toSay.push(String(JSON.parse(said || '{}').text ?? ''));
     res.writeHead(204);
     return res.end();
   }
@@ -298,7 +321,7 @@ createServer(async (req, res) => {
     res.writeHead(200, { 'content-type': 'application/json' });
     return res.end(
       JSON.stringify({
-        text: bytes > 100 ? 'Hi Noor, the contract is signed.' : '',
+        text: bytes > 100 ? (toSay.shift() ?? 'Hi Noor, the contract is signed.') : '',
         language: 'en',
       }),
     );

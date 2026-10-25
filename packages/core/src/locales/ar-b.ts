@@ -3456,4 +3456,58 @@ export const arB: Catalog = {
   'Nothing has been said yet to answer from.': 'لم يُقل شيء بعد للإجابة منه.',
   'A question about the call, answered to you alone from the notes.':
     'سؤال عن المكالمة، يُجاب عليك وحدك من الملاحظات.',
+  '{name} asks Cai to record this call and join in: the voices and any screen shown, kept {days} days for everyone in it; it answers aloud when called by name, and everyone hears it.':
+    'يطلب {name} أن يسجّل Cai هذه المكالمة ويشارك فيها، أي الأصوات وأي شاشة تُعرض، وتُحفظ {days} يومًا لكل من فيها؛ ويجيب بصوت مسموع حين يُنادى باسمه، ويسمعه الجميع.',
+  '{name} asks Cai to join in this call: it answers aloud when called by name, from what’s said in it, and everyone hears it.':
+    'يطلب {name} أن يشارك Cai في هذه المكالمة: يجيب بصوت مسموع حين يُنادى باسمه، مما يُقال فيها، ويسمعه الجميع.',
+  'Cai is recording this call and joining in: the voices and any screen shown, kept {days} days for everyone in it; it answers aloud when called by name.':
+    'Cai يسجّل هذه المكالمة ويشارك فيها، أي الأصوات وأي شاشة تُعرض، وتُحفظ {days} يومًا لكل من فيها؛ ويجيب بصوت مسموع حين يُنادى باسمه.',
+  'Cai is asked to record this call and join in: the voices and any screen shown, kept {days} days for everyone in it; it answers aloud when called by name.':
+    'طُلب من Cai تسجيل هذه المكالمة والمشاركة فيها، أي الأصوات وأي شاشة تُعرض، وتُحفظ {days} يومًا لكل من فيها؛ ويجيب بصوت مسموع حين يُنادى باسمه.',
+  'Cai is joining in this call: it answers aloud when called by name, from what’s said in it.':
+    'Cai يشارك في هذه المكالمة: يجيب بصوت مسموع حين يُنادى باسمه، مما يُقال فيها.',
+  'Cai is asked to join in this call: it answers aloud when called by name, from what’s said in it.':
+    'طُلب من Cai المشاركة في هذه المكالمة: يجيب بصوت مسموع حين يُنادى باسمه، مما يُقال فيها.',
+  'Stop joining in': 'إيقاف المشاركة',
+  'Asks everyone again; Cai answers aloud until they agree.':
+    'يُسأل الجميع من جديد؛ يواصل Cai الإجابة بصوت مسموع حتى يوافقوا.',
+  'Join in too': 'المشاركة أيضًا',
+  'Asks everyone again; Cai answers aloud when called by name from then on.':
+    'يُسأل الجميع من جديد؛ ومن حينها يجيب Cai بصوت مسموع حين يُنادى باسمه.',
+  'Join in': 'المشاركة',
+  'Cai answers aloud when someone calls it by name, from what’s said in the call. Everyone hears it; nothing of anyone’s own things is said.':
+    'يجيب Cai بصوت مسموع حين يناديه أحد باسمه، مما يُقال في المكالمة. يسمعه الجميع، ولا يُقال شيء من أمور أي شخص الخاصة.',
+  'Cai is recording and joining in': 'Cai يسجّل ويشارك',
+  'Cai is joining in': 'Cai يشارك',
+  'Asking {names} to let Cai join in too': 'بانتظار موافقة {names} على مشاركة Cai أيضًا',
+  'Asking {names} to go on without Cai joining in':
+    'بانتظار موافقة {names} على المتابعة من دون مشاركة Cai',
+  'Cai is speaking': 'Cai يتكلم',
+  'Asking {names} to let Cai record and join in': 'بانتظار موافقة {names} على تسجيل Cai ومشاركته',
+  'Asking {names} to let Cai join in': 'بانتظار موافقة {names} على مشاركة Cai',
+  '{name} asks Cai to join in too': 'طلب أن يشارك Cai أيضًا: {name}',
+  '{name} asks to go on without Cai joining in': 'طلب المتابعة من دون مشاركة Cai: {name}',
+  'From now, Cai would also answer aloud when someone calls it by name, from what’s said in the call: everyone hears it, and it never says anyone’s own calendar or messages.':
+    'من الآن، يجيب Cai أيضًا بصوت مسموع حين يناديه أحد باسمه، مما يُقال في المكالمة: يسمعه الجميع، ولا يذكر أبدًا تقويم أي شخص أو رسائله.',
+  'From now, Cai would stop answering aloud and go on as before.':
+    'من الآن، يتوقف Cai عن الإجابة بصوت مسموع ويواصل كما كان.',
+  'Let Cai join in': 'نعم، يشارك Cai',
+  'Go on without Cai joining in': 'المتابعة من دون مشاركة Cai',
+  '{name} asks Cai to record and join in': 'طلب أن يسجّل Cai ويشارك: {name}',
+  '{name} asks Cai to join in': 'طلب أن يشارك Cai: {name}',
+  'Cai keeps what’s said and any screen shown as a recording, with notes under each person’s name, for everyone in the call for {days} days, and answers aloud when someone calls it by name: everyone hears it. Cameras aren’t recorded. Anyone can stop it, delete it or share it on.':
+    'يحفظ Cai ما يُقال وأي شاشة تُعرض في تسجيل، مع ملاحظات تحت اسم كل شخص، لكل من في المكالمة مدة {days} يومًا، ويجيب بصوت مسموع حين يناديه أحد باسمه: يسمعه الجميع. لا تُسجَّل الكاميرات، ويمكن لأي شخص إيقافه أو حذفه أو مشاركته.',
+  'Cai writes down what’s said, under each person’s name, for everyone in the call, and answers aloud when someone calls it by name, from what’s said in it: everyone hears it, and it never says anyone’s own calendar or messages. Voices aren’t kept, and anyone can stop it.':
+    'يدوّن Cai ما يُقال، تحت اسم كل شخص، لكل من في المكالمة، ويجيب بصوت مسموع حين يناديه أحد باسمه، مما يُقال فيها: يسمعه الجميع، ولا يذكر أبدًا تقويم أي شخص أو رسائله. لا تُحفظ الأصوات، ويمكن لأي شخص إيقافه.',
+  'Let Cai record and join in': 'نعم، يسجّل Cai ويشارك',
+  'Cai wrote to you': 'كتب لك Cai',
+  'Open Cai’s chat': 'فتح محادثة Cai',
+  OK: 'حسنًا',
+  'Cai joins in now.': 'Cai يشارك الآن.',
+  'Cai no longer joins in.': 'Cai لم يعد يشارك.',
+  'Not this time: Cai goes on joining in.': 'ليس هذه المرة: Cai يواصل المشاركة.',
+  'Answer, Cai records and joins in': 'رد، ويسجّل Cai ويشارك',
+  'Answer, Cai joins in': 'رد، ويشارك Cai',
+  'Join, Cai records and joins in': 'انضمام، ويسجّل Cai ويشارك',
+  'Join, Cai joins in': 'انضمام، ويشارك Cai',
 };

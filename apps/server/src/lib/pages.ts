@@ -228,6 +228,15 @@ could, for as long as it&rsquo;s kept; a share goes when the recording does, and
 forwarded on. It goes with the call&rsquo;s line too, and your export lists
 the recordings you may play and whether you keep each. It isn&rsquo;t sent to any AI provider.
 Never in a private conversation, and never with anyone under 18 in the call.</li>
+<li><strong>Cai joining in a call.</strong> Only when someone in a call asks Cai to join in and
+everyone in it says yes, each by a button that says so. Then, when someone calls Cai by name, it
+answers aloud from the notes alone, and everyone in the call hears it; what is one person&rsquo;s
+own (their open things, something they ask Cai to keep or to do) Cai writes to that person
+alone, in the call and in their chat with it, and never says. Cai&rsquo;s own words go to the
+text-to-speech provider named below, which turns them into sound; nothing anyone says, and no
+one&rsquo;s name, goes to it, and Caime has it delete what it kept of each exchange. The sound is
+kept an hour for the one browser that plays it, and what Cai said stays in the notes as its own
+line. Anyone&rsquo;s no, at any time, stops it for everyone.</li>
 <li><strong>Meetings with guests.</strong> When you invite someone to a meeting by email address,
 Caime keeps the address, who invited them and when, and gives the meeting its own group, where the
 guest sees only that meeting. Their link to join is kept only as a fingerprint, and ends when

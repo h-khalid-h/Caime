@@ -20,6 +20,10 @@ export const ACCOUNTS_STUB = `http://127.0.0.1:${Number(process.env.E2E_ACCOUNTS
 export const AGEMIN_STUB = `http://127.0.0.1:${Number(process.env.E2E_AGEMIN_STUB_PORT ?? 8793)}`;
 /** A site on the web, for link previews (M16 E4c): `e2e/web-stub.mjs`. */
 export const WEB_STUB = `http://127.0.0.1:${Number(process.env.E2E_WEB_STUB_PORT ?? 8792)}`;
+/** A stand-in for the Messages API (e2e/anthropic-stub.mjs), so AI assist runs without a key. */
+export const AI_STUB = `http://127.0.0.1:${Number(process.env.E2E_AI_STUB_PORT ?? 8799)}`;
+/** A stand-in for the text-to-speech provider (e2e/tts-stub.mjs): Cai's voice in a call. */
+export const TTS_STUB = `http://127.0.0.1:${Number(process.env.E2E_TTS_STUB_PORT ?? 8791)}`;
 
 /** What the mail stand-in (e2e/smtp-stub.mjs) received for an address, oldest first. */
 export async function mailsTo(

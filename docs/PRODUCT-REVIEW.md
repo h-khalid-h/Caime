@@ -2530,8 +2530,14 @@ with its reason, so it isn't proposed again without new facts.
   one person's own (their open things, something to keep, something to do) is done as their Cai
   chat does it and written to them alone, never said; its words voiced by the provider the
   operator sets, the sound for the recorder's browser alone, its line in the notes, an echo of
-  its own voice dropped, its introduction once. *Not yet:* the app's side of joining in (the mode
-  on every way in, the voice played into the call, "Cai is speaking"), its E2E and first-word time;
+  its own voice dropped, its introduction once. *Built (M17 I13g, the app's side,
+  2026-10-25):* the mode offered from the Cai round and named on every way in, the consent saying
+  that everyone hears it; the recorder's browser plays Cai's voice to its speakers, into the
+  recording and into what it sends everyone in its microphone's place, one utterance after
+  another; "Cai is speaking" on every screen; what Cai wrote to one person shown to them alone.
+  The time from the call by name to the answer at the voice: 2910 ms with the stand-ins (the
+  notes E2E); a real provider's waits for a key. *Not yet:* what Cai is asked to do carried out
+  on the asker's tap from the call itself (it's prepared in their Cai chat, where the tap is);
   a share into a customer conversation (the mask; calls with organizations are M16 H8a), the
   screen in step on a phone, and H.264 measured on a real Chrome call (the test browser records
   VP9 and Opus).

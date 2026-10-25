@@ -534,6 +534,8 @@ describe('Cai on the notes, on ask (M16 F7d)', () => {
     );
     const now = Date.now();
     expect((await line(noor, callId, 'noor-tab-1', noor.user.id, wav(), now)).statusCode).toBe(200);
+    // Heard one at a time: two heard at once take the stand-in's answers in either order.
+    await work();
     expect(
       (await line(noor, callId, 'noor-tab-1', sam.user.id, wav(), now + 5_000)).statusCode,
     ).toBe(200);

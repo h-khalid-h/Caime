@@ -1,6 +1,6 @@
 import { radii } from '@caime/brand/tokens';
 import type { CallPersonView } from '@caime/core/api';
-import { notesAsked, RECORDING_DAYS } from '@caime/core/calls';
+import { notesAsked } from '@caime/core/calls';
 import { joinNames } from '@caime/core/format';
 import { listed, tr } from '@caime/core/i18n';
 import Mic from 'lucide-react-native/icons/mic';
@@ -39,8 +39,9 @@ import {
   toggleGroupCamera,
   toggleGroupMute,
 } from './group';
-import { NotesAsk, NotesLine, NotesRound } from './NotesUi';
+import { CaiWritten, NotesAsk, NotesLine, NotesRound } from './NotesUi';
 import { joinWithCai } from './notesWords';
+import { groupRingLine } from './ringWords';
 
 const first = (name: string) => name.split(' ')[0] ?? name;
 
@@ -266,19 +267,7 @@ export function GroupCallLayer() {
             style={{ color: '#FFFFFFDD' }}
             testID="group-call-incoming-notes"
           >
-            {call.notes?.records
-              ? call.notes.state === 'on'
-                ? tr(
-                    'Cai is recording this call: the voices and any screen shown, kept {days} days for everyone in it; anyone in it may share it on.',
-                    { days: RECORDING_DAYS },
-                  )
-                : tr(
-                    'Cai is asked to record this call: the voices and any screen shown, kept {days} days for everyone in it; anyone in it may share it on.',
-                    { days: RECORDING_DAYS },
-                  )
-              : call.notes?.state === 'on'
-                ? tr('Cai is taking notes in this call.')
-                : tr('Cai is asked to take notes in this call.')}
+            {groupRingLine(call.notes)}
           </Text>
         ) : null}
       </View>
@@ -346,6 +335,7 @@ export function GroupCallLayer() {
       {phase === 'in' ? (
         <View style={{ paddingBottom: 8 }}>
           <NotesAsk notes={call.notes} me={me.id} />
+          <CaiWritten callId={call.id} />
         </View>
       ) : null}
       {phase === 'ended' ? null : (

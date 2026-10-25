@@ -27,6 +27,7 @@ import { checkLiveGroupCall } from './group';
 import { errorName, media, mediaTrouble } from './media';
 import { canRecordNotes } from './notes';
 import { callsAvailable, canShareScreen } from './rtc';
+import { onOutgoingAudio, outgoingAudioTrack } from './voice';
 
 export const callsSupported = callsAvailable;
 /** Where a page can share its screen (desktop browsers; not phones, not the phone apps yet). */
@@ -78,6 +79,13 @@ const mineOn = (c: CallView) =>
  * first call, never at load: the session store and this engine import each other.
  */
 let watching = false;
+
+// Cai's voice (M17 I13g): sent in the microphone's place while Cai joins in, the microphone back
+// after; on the connection that's up, as the next one takes it from the start.
+onOutgoingAudio((track) => {
+  const sender = pc?.getSenders().find((s) => s.track?.kind === 'audio');
+  void sender?.replaceTrack(track ?? store().local?.getAudioTracks()[0] ?? null).catch(() => {});
+});
 function watchSignOut(): void {
   if (watching) return;
   watching = true;
@@ -250,7 +258,9 @@ async function connect(local: MediaStream): Promise<RTCPeerConnection> {
   relayed = relay;
   const peer = new RTCPeerConnection({ iceServers });
   const remote = new MediaStream();
-  for (const track of local.getTracks()) peer.addTrack(track, local);
+  // While Cai joins in, this device sends its microphone with Cai's voice (voice.ts).
+  for (const track of local.getTracks())
+    peer.addTrack((track.kind === 'audio' && outgoingAudioTrack()) || track, local);
   // Created the same way on both devices (negotiated, id 0), so neither waits for the other's.
   const channel = peer.createDataChannel('state', { negotiated: true, id: 0 });
   channel.onopen = tellState;

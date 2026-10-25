@@ -10,10 +10,12 @@ import {
   ACCOUNTS_STUB,
   ADMIN_TOKEN,
   AGEMIN_STUB,
+  AI_STUB,
   DNS_STUB,
   MAIL_STUB,
   MAIL_WEBHOOK_SECRET,
   METRICS_TOKEN,
+  TTS_STUB,
   WEB_STUB,
 } from './e2e/helpers';
 
@@ -23,8 +25,6 @@ process.env.PW_EXPERIMENTAL_SERVICE_WORKER_NETWORK_EVENTS ??= '1';
 
 const PORT = Number(process.env.E2E_PORT ?? 8787);
 const BASE = process.env.E2E_BASE_URL ?? `http://localhost:${PORT}`;
-/** A stand-in for the Messages API (e2e/anthropic-stub.mjs), so AI assist runs without a key. */
-const AI_STUB = `http://127.0.0.1:${Number(process.env.E2E_AI_STUB_PORT ?? 8799)}`;
 const DNS_PORT = Number(process.env.E2E_DNS_PORT ?? 8853);
 const SMTP_STUB = `http://127.0.0.1:${Number(process.env.E2E_SMTP_STUB_PORT ?? 8795)}`;
 const SMTP_PORT = Number(process.env.E2E_SMTP_PORT ?? 8825);
@@ -147,6 +147,13 @@ export default defineConfig({
           env: { PORT: new URL(WEB_STUB).port },
         },
         {
+          // Cai's voice in a call (M17 I13g): the text-to-speech provider's stand-in.
+          command: 'node e2e/tts-stub.mjs',
+          url: `${TTS_STUB}/health`,
+          reuseExistingServer: !process.env.CI,
+          env: { PORT: new URL(TTS_STUB).port },
+        },
+        {
           command: 'node --enable-source-maps apps/server/dist/server.js',
           url: `${BASE}/v1/readyz`,
           reuseExistingServer: !process.env.CI,
@@ -172,6 +179,11 @@ export default defineConfig({
             SPEECH_PROVIDER: 'openai',
             SPEECH_API_KEY: 'e2e-stub',
             SPEECH_BASE_URL: AI_STUB,
+            // Cai's voice in a call (M17 I13g), answered by its own stand-in.
+            TTS_PROVIDER: 'elevenlabs',
+            TTS_API_KEY: 'e2e-stub',
+            TTS_VOICE_ID: 'e2e-voice',
+            TTS_BASE_URL: TTS_STUB,
             ADMIN_TOKEN,
             METRICS_TOKEN,
             DNS_SERVERS: `127.0.0.1:${DNS_PORT}`,

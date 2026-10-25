@@ -32,6 +32,7 @@ import { checkLiveCall } from './engine';
 import { errorName, media, mediaTrouble } from './media';
 import { askNotes, canRecordNotes } from './notes';
 import { callsAvailable } from './rtc';
+import { onOutgoingAudio, outgoingAudioTrack } from './voice';
 
 export const groupCallsSupported = callsAvailable;
 
@@ -83,6 +84,15 @@ let ringTimer: ReturnType<typeof setTimeout> | null = null;
 let screen: MediaStreamTrack | null = null;
 let iceServers: RTCIceServer[] = [];
 let lastRefresh = 0;
+
+// Cai's voice (M17 I13g): sent in the microphone's place on every connection while Cai joins in,
+// the microphone back after; a connection opened meanwhile takes it from the start.
+onOutgoingAudio((track) => {
+  for (const peer of peers.values()) {
+    const sender = peer.pc.getSenders().find((s) => s.track?.kind === 'audio');
+    void sender?.replaceTrack(track ?? store().local?.getAudioTracks()[0] ?? null).catch(() => {});
+  }
+});
 /** Calls this device has heard ended: nothing later brings one back. */
 const over = new Set<string>();
 /** Calls turned down or left on this device: they don't ring here again. */
@@ -334,7 +344,8 @@ function openPeer(
   if (!local || peers.has(key)) return;
   const pc = new RTCPeerConnection({ iceServers });
   const remote = new MediaStream();
-  for (const track of local.getAudioTracks()) pc.addTrack(track, local);
+  // While Cai joins in, this device sends its microphone with Cai's voice (voice.ts).
+  for (const track of local.getAudioTracks()) pc.addTrack(outgoingAudioTrack() ?? track, local);
   const picture = screen ?? local.getVideoTracks()[0] ?? null;
   if (picture) pc.addTrack(picture, local);
   // Made the same way on both devices (negotiated, id 0), so neither waits for the other's.

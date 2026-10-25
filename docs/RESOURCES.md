@@ -222,6 +222,12 @@ Prices: https://platform.claude.com/docs/en/about-claude/pricing, read 2026-10-1
 | transcribe | ten minutes of audio | — | €0.05 (OpenAI's estimate) | | |
 | speak | 280 characters (`SPOKEN_MAX`) | — | €0.0100 (ElevenLabs Flash v2.5, $0.04 per 1,000 characters, its API pricing page read 2026-10-25) | | |
 
+Cai's answer in a call (M17 I13g) is `interact` and `speak` together, at most €0.0125 on the
+light model. From the words that call it by name being heard to its answer at the voice
+provider: 2910 ms with the stand-ins (the speech, the model and the voice each answering at
+once; the notes E2E prints it), which is the server's own share; what a real provider adds is
+measured once a key is set.
+
 | Plan | Model for the heavy work | Allowance | Dearest call | A month at every allowance | An assumed month |
 | --- | --- | --- | --- | --- | --- |
 | personal | light | €0.50 a day | €0.05 | €16.60 | €0.11 |

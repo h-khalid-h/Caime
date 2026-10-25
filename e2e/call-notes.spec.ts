@@ -9,10 +9,12 @@
  * reader up on the notes and finds their follow-ups (M16 F7d). Recorded (R114, M17 I13b): asked as
  * itself, the ring says what's kept, the asker's browser sends the voices and a shared screen in
  * pieces, the server makes each seekable, both play them from the notes (a line opening the voices
- * at its moment, the screen in step), and either deletes the recording for everyone.
+ * at its moment, the screen in step), and either deletes the recording for everyone. Joining in
+ * (R114 (3), M17 I13g): asked as itself, Cai introduces itself aloud, and called by name it
+ * answers aloud for everyone from the notes, through the voice stand-in (e2e/tts-stub.mjs).
  */
 import { type BrowserContext, expect, type Page, test } from '@playwright/test';
-import { apiSignUp, CLIENT, newPerson, visible } from './helpers';
+import { AI_STUB, apiSignUp, CLIENT, newPerson, TTS_STUB, visible } from './helpers';
 
 const stamp = Date.now().toString(36);
 
@@ -411,6 +413,92 @@ test.describe
         timeout: 20_000,
       });
       await expect(sam.page.getByTestId('call-notes-on')).toHaveText('Cai is recording');
+      await page.getByTestId('call-hangup').click();
+      await expect(page.getByTestId('call-screen')).toHaveCount(0);
+      expect(problems(noor, sam)).toEqual([]);
+    });
+
+    test('Cai joins in (R114 (3), M17 I13g): asked as itself, introduced aloud, called by name, answered aloud for everyone', async () => {
+      test.setTimeout(150_000);
+      const { page } = noor;
+      await page.request.delete(`${AI_STUB}/requests`);
+      await page.request.delete(`${TTS_STUB}/requests`);
+      await page.goto(`/c/${convo}`);
+      await sam.page.goto('/');
+      await page.getByTestId('call-voice').click();
+      await expect(sam.page.getByTestId('call-incoming')).toBeVisible({ timeout: 20_000 });
+
+      // Noor asks Cai to join in: the mode says what it does, the ring says it to Sam, and the
+      // Answer names it (R85 (1)).
+      await page.getByTestId('call-notes').click();
+      await expect(page.getByTestId('call-notes-join')).toContainText('Everyone hears it');
+      await page.getByTestId('call-notes-join').click();
+      await expect(page.getByTestId('call-notes-asking')).toHaveText(
+        'Asking Sam to let Cai join in',
+      );
+      await expect(sam.page.getByTestId('call-incoming-notes')).toHaveText(
+        'Noor asks Cai to join in this call: it answers aloud when called by name, from what’s said in it, and everyone hears it.',
+      );
+      await expect(sam.page.getByTestId('call-accept-with-notes')).toHaveAccessibleName(
+        'Answer, Cai joins in',
+      );
+      await sam.page.screenshot({ path: 'e2e/screenshots/desktop-call-join-in-ring.png' });
+      await sam.page.getByTestId('call-accept-with-notes').click();
+      await expect(page.getByTestId('call-notes-on')).toHaveText('Cai is joining in', {
+        timeout: 20_000,
+      });
+      await expect(sam.page.getByTestId('call-notes-on')).toHaveText('Cai is joining in');
+
+      // Cai introduces itself aloud once as it joins (R87): the voice stand-in was asked for it,
+      // and both screens say Cai is speaking while it does.
+      const spoken = () =>
+        page.request
+          .get(`${TTS_STUB}/requests`)
+          .then((r) => r.json())
+          .then((b: { spoken: Array<{ text: string }> }) => b.spoken);
+      await expect
+        .poll(async () => (await spoken()).length, { timeout: 30_000 })
+        .toBeGreaterThanOrEqual(1);
+      expect((await spoken())[0]?.text).toContain('I’m Cai');
+      await expect(page.getByTestId('call-cai-speaking')).toHaveText('Cai is speaking', {
+        timeout: 20_000,
+      });
+      await expect(sam.page.getByTestId('call-cai-speaking')).toHaveText('Cai is speaking');
+      await page.screenshot({ path: 'e2e/screenshots/desktop-call-join-in.png' });
+
+      // Called by name: the next thing a microphone says is "Cai, what did we decide?" (the
+      // speech stand-in hears it once), and Cai answers aloud from the notes, for everyone: the
+      // model asked, the voice asked again, its own line in the notes, and the time it took.
+      const callId = await page.evaluate(async (c) => {
+        const r = await fetch('/v1/calls/live', { headers: { 'x-caime-client': 'web' } });
+        const { call } = (await r.json()) as { call: { id: string; conversationId: string } };
+        return call.conversationId === c ? call.id : '';
+      }, convo);
+      expect(callId).not.toBe('');
+      const asked = Date.now();
+      await page.request.post(`${AI_STUB}/say`, { data: { text: 'Cai, what did we decide?' } });
+      await expect
+        .poll(async () => (await spoken()).length, { timeout: 60_000 })
+        .toBeGreaterThanOrEqual(2);
+      console.log(
+        `Cai's answer reached the voice ${Date.now() - asked} ms after it was called (stand-ins)`,
+      );
+      expect((await spoken())[1]?.text).toContain('agreed to go ahead');
+      const lines = () =>
+        page.request
+          .get(`/v1/calls/${callId}/notes`, { headers: CLIENT })
+          .then((r) => r.json())
+          .then((b: { lines?: Array<{ text: string | null }> }) => b.lines ?? []);
+      await expect
+        .poll(
+          async () => (await lines()).some((l) => l.text?.includes('agreed to go ahead') ?? false),
+          { timeout: 30_000 },
+        )
+        .toBe(true);
+      const requests = (await (await page.request.get(`${AI_STUB}/requests`)).json()) as {
+        calls: string[];
+      };
+      expect(requests.calls).toContain('interact');
       await page.getByTestId('call-hangup').click();
       await expect(page.getByTestId('call-screen')).toHaveCount(0);
       expect(problems(noor, sam)).toEqual([]);

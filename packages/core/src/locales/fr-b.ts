@@ -2670,4 +2670,61 @@ export const frB: Catalog = {
   'Nothing has been said yet to answer from.': 'Rien n’a encore été dit pour pouvoir répondre.',
   'A question about the call, answered to you alone from the notes.':
     'Une question sur l’appel, répondue à vous seul d’après les notes.',
+  '{name} asks Cai to record this call and join in: the voices and any screen shown, kept {days} days for everyone in it; it answers aloud when called by name, and everyone hears it.':
+    '{name} demande à Cai d’enregistrer cet appel et d’y participer : les voix et tout écran partagé, gardés {days} jours pour toutes les personnes de l’appel ; il répond à voix haute quand on l’appelle par son nom, et tout le monde l’entend.',
+  '{name} asks Cai to join in this call: it answers aloud when called by name, from what’s said in it, and everyone hears it.':
+    '{name} demande à Cai de participer à cet appel : il répond à voix haute quand on l’appelle par son nom, d’après ce qui s’y dit, et tout le monde l’entend.',
+  'Cai is recording this call and joining in: the voices and any screen shown, kept {days} days for everyone in it; it answers aloud when called by name.':
+    'Cai enregistre cet appel et y participe : les voix et tout écran partagé, gardés {days} jours pour toutes les personnes de l’appel ; il répond à voix haute quand on l’appelle par son nom.',
+  'Cai is asked to record this call and join in: the voices and any screen shown, kept {days} days for everyone in it; it answers aloud when called by name.':
+    'Il est demandé à Cai d’enregistrer cet appel et d’y participer : les voix et tout écran partagé, gardés {days} jours pour toutes les personnes de l’appel ; il répond à voix haute quand on l’appelle par son nom.',
+  'Cai is joining in this call: it answers aloud when called by name, from what’s said in it.':
+    'Cai participe à cet appel : il répond à voix haute quand on l’appelle par son nom, d’après ce qui s’y dit.',
+  'Cai is asked to join in this call: it answers aloud when called by name, from what’s said in it.':
+    'Il est demandé à Cai de participer à cet appel : il répond à voix haute quand on l’appelle par son nom, d’après ce qui s’y dit.',
+  'Stop joining in': 'Ne plus participer',
+  'Asks everyone again; Cai answers aloud until they agree.':
+    'Redemande à tout le monde ; Cai répond à voix haute jusqu’à leur accord.',
+  'Join in too': 'Participer aussi',
+  'Asks everyone again; Cai answers aloud when called by name from then on.':
+    'Redemande à tout le monde ; dès lors, Cai répond à voix haute quand on l’appelle par son nom.',
+  'Join in': 'Participer',
+  'Cai answers aloud when someone calls it by name, from what’s said in the call. Everyone hears it; nothing of anyone’s own things is said.':
+    'Cai répond à voix haute quand quelqu’un l’appelle par son nom, d’après ce qui se dit dans l’appel. Tout le monde l’entend ; rien de ce qui est propre à chacun n’est dit.',
+  'Cai is recording and joining in': 'Cai enregistre et participe',
+  'Cai is joining in': 'Cai participe',
+  'Asking {names} to let Cai join in too':
+    'En attente de l’accord de {names} pour que Cai participe aussi',
+  'Asking {names} to go on without Cai joining in':
+    'En attente de l’accord de {names} pour continuer sans la participation de Cai',
+  'Cai is speaking': 'Cai parle',
+  'Asking {names} to let Cai record and join in':
+    'En attente de l’accord de {names} pour que Cai enregistre et participe',
+  'Asking {names} to let Cai join in': 'En attente de l’accord de {names} pour que Cai participe',
+  '{name} asks Cai to join in too': '{name} demande à Cai de participer aussi',
+  '{name} asks to go on without Cai joining in':
+    '{name} demande de continuer sans la participation de Cai',
+  'From now, Cai would also answer aloud when someone calls it by name, from what’s said in the call: everyone hears it, and it never says anyone’s own calendar or messages.':
+    'Dès maintenant, Cai répondrait aussi à voix haute quand quelqu’un l’appelle par son nom, d’après ce qui se dit dans l’appel : tout le monde l’entend, et il ne dit jamais rien de l’agenda ni des messages de quiconque.',
+  'From now, Cai would stop answering aloud and go on as before.':
+    'Dès maintenant, Cai cesserait de répondre à voix haute et continuerait comme avant.',
+  'Let Cai join in': 'Laisser Cai participer',
+  'Go on without Cai joining in': 'Continuer sans la participation de Cai',
+  '{name} asks Cai to record and join in': '{name} demande à Cai d’enregistrer et de participer',
+  '{name} asks Cai to join in': '{name} demande à Cai de participer',
+  'Cai keeps what’s said and any screen shown as a recording, with notes under each person’s name, for everyone in the call for {days} days, and answers aloud when someone calls it by name: everyone hears it. Cameras aren’t recorded. Anyone can stop it, delete it or share it on.':
+    'Cai garde ce qui est dit et tout écran partagé dans un enregistrement, avec des notes sous le nom de chaque personne, pour toutes les personnes de l’appel pendant {days} jours, et répond à voix haute quand quelqu’un l’appelle par son nom : tout le monde l’entend. Les caméras ne sont pas enregistrées. Chacun peut l’arrêter, le supprimer ou le partager.',
+  'Cai writes down what’s said, under each person’s name, for everyone in the call, and answers aloud when someone calls it by name, from what’s said in it: everyone hears it, and it never says anyone’s own calendar or messages. Voices aren’t kept, and anyone can stop it.':
+    'Cai note ce qui est dit, sous le nom de chaque personne, pour toutes les personnes de l’appel, et répond à voix haute quand quelqu’un l’appelle par son nom, d’après ce qui s’y dit : tout le monde l’entend, et il ne dit jamais rien de l’agenda ni des messages de quiconque. Les voix ne sont pas gardées, et chacun peut l’arrêter.',
+  'Let Cai record and join in': 'Laisser Cai enregistrer et participer',
+  'Cai wrote to you': 'Cai vous a écrit',
+  'Open Cai’s chat': 'Ouvrir la discussion avec Cai',
+  OK: 'OK',
+  'Cai joins in now.': 'Cai participe maintenant.',
+  'Cai no longer joins in.': 'Cai ne participe plus.',
+  'Not this time: Cai goes on joining in.': 'Pas cette fois : Cai continue de participer.',
+  'Answer, Cai records and joins in': 'Répondre, Cai enregistre et participe',
+  'Answer, Cai joins in': 'Répondre, Cai participe',
+  'Join, Cai records and joins in': 'Rejoindre, Cai enregistre et participe',
+  'Join, Cai joins in': 'Rejoindre, Cai participe',
 };

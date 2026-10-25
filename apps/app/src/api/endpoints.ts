@@ -806,8 +806,10 @@ export const endpoints = {
   callAlive: (id: string, deviceId: string) =>
     api.post<CallResponse>(`/calls/${id}/alive`, { deviceId }),
   // Cai's notes in a call (M16 F7, R85): asked, answered, stopped, read, one's own words deleted
-  askCallNotes: (id: string, body: { deviceId: string; canRecord: boolean; records?: boolean }) =>
-    api.post<CallNotesStateResponse>(`/calls/${id}/notes`, body),
+  askCallNotes: (
+    id: string,
+    body: { deviceId: string; canRecord: boolean; records?: boolean; interacts?: boolean },
+  ) => api.post<CallNotesStateResponse>(`/calls/${id}/notes`, body),
   answerCallNotes: (
     id: string,
     body: { deviceId: string; answer: 'yes' | 'no'; canRecord: boolean; notesId?: string },

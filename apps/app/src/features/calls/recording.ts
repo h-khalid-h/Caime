@@ -7,17 +7,21 @@
  * in pieces of about ten seconds as it's recorded, each at the offset the server has it to, so a
  * device that drops loses at most the piece under way; the server makes each part seekable once
  * it ends. A no stops everything at once and drops what was on its way (R85 (2)); a call that
- * ends, or a recorder that hands over, sends its last piece first.
+ * ends, or a recorder that hands over, sends its last piece first. While Cai joins in (M17
+ * I13g), its voice is one of the voices in the mix (voice.ts), so the recording holds what
+ * everyone heard.
  *
  * Part of the calls (stack.ts), loaded with them; never on a phone (the server never names one).
  */
 import type { CallNotesView } from '@caime/core/api';
+import { CAI_ID } from '@caime/core/system-ids';
 import { ApiError } from '@/api/client';
 import { endpoints } from '@/api/endpoints';
 import { DEVICE_ID, useCall } from '@/state/calls';
 import { useGroupCall } from '@/state/groupCall';
 import { useSession } from '@/state/session';
 import { canRecordNotes } from './notes';
+import { caiVoiceStream } from './voice';
 
 /** A piece is this long: what a recorder that drops can lose. */
 const PIECE_MS = 10_000;
@@ -306,6 +310,8 @@ function here(): Here | null {
     const v = new Map<string, MediaStream>();
     const s = new Map<string, { track: MediaStreamTrack; own: boolean }>();
     if (group.local) v.set(me, group.local);
+    const cai = caiVoiceStream();
+    if (cai) v.set(CAI_ID, cai);
     if (group.screen) s.set(me, { track: group.screen, own: true });
     for (const p of Object.values(group.peers)) {
       if (p.stream) v.set(p.person.id, p.stream);
@@ -323,6 +329,8 @@ function here(): Here | null {
     const s = new Map<string, { track: MediaStreamTrack; own: boolean }>();
     if (one.local) v.set(me, one.local);
     if (one.remote) v.set(other, one.remote);
+    const cai = caiVoiceStream();
+    if (cai) v.set(CAI_ID, cai);
     if (one.screen) s.set(me, { track: one.screen, own: true });
     const picture = one.remote?.getVideoTracks()[0];
     if (one.theirs?.sharing && picture) s.set(other, { track: picture, own: false });

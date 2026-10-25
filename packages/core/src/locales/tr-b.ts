@@ -2578,4 +2578,59 @@ export const turkishB: Catalog = {
   'Nothing has been said yet to answer from.': 'Yanıtlanacak bir şey henüz söylenmedi.',
   'A question about the call, answered to you alone from the notes.':
     'Arama hakkında bir soru, notlardan yalnızca size yanıtlanır.',
+  '{name} asks Cai to record this call and join in: the voices and any screen shown, kept {days} days for everyone in it; it answers aloud when called by name, and everyone hears it.':
+    '{name}, Cai’nin bu aramayı kaydetmesini ve katılmasını istiyor: sesler ve paylaşılan her ekran, aramadaki herkes için {days} gün saklanır; adıyla çağrıldığında sesli yanıt verir ve herkes duyar.',
+  '{name} asks Cai to join in this call: it answers aloud when called by name, from what’s said in it, and everyone hears it.':
+    '{name}, Cai’nin bu aramaya katılmasını istiyor: adıyla çağrıldığında aramada söylenenlerden sesli yanıt verir ve herkes duyar.',
+  'Cai is recording this call and joining in: the voices and any screen shown, kept {days} days for everyone in it; it answers aloud when called by name.':
+    'Cai bu aramayı kaydediyor ve katılıyor: sesler ve paylaşılan her ekran, aramadaki herkes için {days} gün saklanır; adıyla çağrıldığında sesli yanıt verir.',
+  'Cai is asked to record this call and join in: the voices and any screen shown, kept {days} days for everyone in it; it answers aloud when called by name.':
+    'Cai’den bu aramayı kaydetmesi ve katılması istendi: sesler ve paylaşılan her ekran, aramadaki herkes için {days} gün saklanır; adıyla çağrıldığında sesli yanıt verir.',
+  'Cai is joining in this call: it answers aloud when called by name, from what’s said in it.':
+    'Cai bu aramaya katılıyor: adıyla çağrıldığında aramada söylenenlerden sesli yanıt verir.',
+  'Cai is asked to join in this call: it answers aloud when called by name, from what’s said in it.':
+    'Cai’den bu aramaya katılması istendi: adıyla çağrıldığında aramada söylenenlerden sesli yanıt verir.',
+  'Stop joining in': 'Katılmayı bitir',
+  'Asks everyone again; Cai answers aloud until they agree.':
+    'Herkese yeniden sorar; onaylayana kadar Cai sesli yanıt vermeye devam eder.',
+  'Join in too': 'Katılsın da',
+  'Asks everyone again; Cai answers aloud when called by name from then on.':
+    'Herkese yeniden sorar; o andan sonra Cai adıyla çağrıldığında sesli yanıt verir.',
+  'Join in': 'Katılsın',
+  'Cai answers aloud when someone calls it by name, from what’s said in the call. Everyone hears it; nothing of anyone’s own things is said.':
+    'Biri adıyla çağırdığında Cai aramada söylenenlerden sesli yanıt verir. Herkes duyar; kimsenin kendine ait şeyleri söylenmez.',
+  'Cai is recording and joining in': 'Cai kaydediyor ve katılıyor',
+  'Cai is joining in': 'Cai katılıyor',
+  'Asking {names} to let Cai join in too': 'Cai’nin katılması da için onay bekleniyor: {names}',
+  'Asking {names} to go on without Cai joining in':
+    'Cai katılmadan devam etmek için onay bekleniyor: {names}',
+  'Cai is speaking': 'Cai konuşuyor',
+  'Asking {names} to let Cai record and join in':
+    'Cai’nin kaydetmesi ve katılması için onay bekleniyor: {names}',
+  'Asking {names} to let Cai join in': 'Cai’nin katılması için onay bekleniyor: {names}',
+  '{name} asks Cai to join in too': 'Cai’nin katılmasını da isteyen: {name}',
+  '{name} asks to go on without Cai joining in': 'Cai katılmadan devam etmeyi isteyen: {name}',
+  'From now, Cai would also answer aloud when someone calls it by name, from what’s said in the call: everyone hears it, and it never says anyone’s own calendar or messages.':
+    'Bundan sonra Cai, biri adıyla çağırdığında aramada söylenenlerden sesli de yanıt verir: herkes duyar ve kimsenin takvimini ya da mesajlarını asla söylemez.',
+  'From now, Cai would stop answering aloud and go on as before.':
+    'Bundan sonra Cai sesli yanıt vermeyi bırakır ve eskisi gibi devam eder.',
+  'Let Cai join in': 'Cai katılsın',
+  'Go on without Cai joining in': 'Cai katılmadan devam et',
+  '{name} asks Cai to record and join in': 'Cai’nin kaydetmesini ve katılmasını isteyen: {name}',
+  '{name} asks Cai to join in': 'Cai’nin katılmasını isteyen: {name}',
+  'Cai keeps what’s said and any screen shown as a recording, with notes under each person’s name, for everyone in the call for {days} days, and answers aloud when someone calls it by name: everyone hears it. Cameras aren’t recorded. Anyone can stop it, delete it or share it on.':
+    'Cai, söylenenleri ve paylaşılan her ekranı, her kişinin adı altındaki notlarla birlikte bir kayıt olarak aramadaki herkes için {days} gün saklar ve biri adıyla çağırdığında sesli yanıt verir: herkes duyar. Kameralar kaydedilmez. Herkes durdurabilir, silebilir veya paylaşabilir.',
+  'Cai writes down what’s said, under each person’s name, for everyone in the call, and answers aloud when someone calls it by name, from what’s said in it: everyone hears it, and it never says anyone’s own calendar or messages. Voices aren’t kept, and anyone can stop it.':
+    'Cai söylenenleri her kişinin adı altında aramadaki herkes için yazar ve biri adıyla çağırdığında aramada söylenenlerden sesli yanıt verir: herkes duyar ve kimsenin takvimini ya da mesajlarını asla söylemez. Sesler saklanmaz ve herkes durdurabilir.',
+  'Let Cai record and join in': 'Cai kaydetsin ve katılsın',
+  'Cai wrote to you': 'Cai size yazdı',
+  'Open Cai’s chat': 'Cai sohbetini aç',
+  OK: 'Tamam',
+  'Cai joins in now.': 'Cai artık katılıyor.',
+  'Cai no longer joins in.': 'Cai artık katılmıyor.',
+  'Not this time: Cai goes on joining in.': 'Bu sefer değil: Cai katılmaya devam ediyor.',
+  'Answer, Cai records and joins in': 'Yanıtla, Cai kaydetsin ve katılsın',
+  'Answer, Cai joins in': 'Yanıtla, Cai katılsın',
+  'Join, Cai records and joins in': 'Katıl, Cai kaydetsin ve katılsın',
+  'Join, Cai joins in': 'Katıl, Cai katılsın',
 };

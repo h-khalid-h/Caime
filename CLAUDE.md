@@ -1779,7 +1779,18 @@ A sphere is said as how you know someone, never "sphere".
   line (`speaker_id = CAI_ID`), so the write-up reads what everyone heard; a line heard within an
   utterance's window that repeats its words is an echo (core `echoes`), dropped. Cai introduces
   itself aloud once a row (`introduced_at`, R87). Anything new Cai says in a call goes through
-  `speak` there, never a second voice path.
+  `speak` there, never a second voice path. The app's side is `features/calls/voice.ts` (in the
+  calls stack): `onCaiEvent` keeps "Cai is speaking" (`useCaiVoice.speaking`, until the server's
+  `until`; the recorder until the sound ends) and what Cai wrote to this person
+  (`CaiWritten` in `NotesUi`, dismissed by them), and on the notes' recorder device with the mode
+  on it fetches each utterance's sound (`GET /calls/:id/cai/:utteranceId?deviceId=`), decodes it
+  and plays it through its own AudioContext to the speakers, into `caiVoiceStream()` (a voice in
+  the recording's mix, `recording.ts`) and into `outgoing`, the microphone's source and Cai's
+  together, whose track the engines send in the microphone's place (`outgoingAudioTrack()` as a
+  connection opens, `onOutgoingAudio` replacing it on the ones up, the microphone back after);
+  the notes go on hearing the microphone alone. A mode's words on every way in are
+  `notesWords.ts` (light, shared: the labels alone) and `ringWords.ts` (the ring's sentences, in
+  the stack); a new mode joins `askNotes(mode)`, the Cai round, `NotesAsk`, both and the catalogs.
 - A meeting's guests (R83, R84): invited by address from an accepted meeting card held here
   (`features/kits/MeetingGuests.tsx`: Invite a guest, the sheet lazy; the card that moved says
   so and opens the space), or by a link the inviter sends themselves (H6, `inviteGuestByLink`: a

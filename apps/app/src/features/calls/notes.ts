@@ -87,12 +87,22 @@ export function onNotesEvent(event: RealtimeEvent): void {
   // Another mode asked beside the notes (M17 I13b2): it took over, or not this time.
   if (was?.switching && !notes.switching && notes.state === 'on') {
     if (notes.id === was.switching.id)
-      toast(notes.records ? tr('Cai is recording now.') : tr('Cai is taking notes only now.'));
+      toast(
+        notes.interacts !== was.interacts
+          ? notes.interacts
+            ? tr('Cai joins in now.')
+            : tr('Cai no longer joins in.')
+          : notes.records
+            ? tr('Cai is recording now.')
+            : tr('Cai is taking notes only now.'),
+      );
     else if (notes.id === was.id)
       toast(
-        was.records
-          ? tr('Not this time: Cai goes on recording.')
-          : tr('Not this time: Cai goes on taking notes.'),
+        was.interacts && !was.switching.interacts
+          ? tr('Not this time: Cai goes on joining in.')
+          : was.records
+            ? tr('Not this time: Cai goes on recording.')
+            : tr('Not this time: Cai goes on taking notes.'),
       );
   }
 }
@@ -140,17 +150,20 @@ function refused(e: unknown): void {
 }
 
 /**
- * Ask Cai to take notes in the call on this device, or to record it too (R114 (1)): this
- * person's own yes (R85 (1)).
+ * Ask Cai to take notes in the call on this device, to record it too (R114 (1)) or to join in
+ * (R114 (3)): this person's own yes (R85 (1)).
  */
-export async function askNotes(records = false): Promise<void> {
+export async function askNotes(
+  mode: { records?: boolean; interacts?: boolean } = {},
+): Promise<void> {
   const call = held();
   if (!call) return;
   try {
     const { notes } = await endpoints.askCallNotes(call.id, {
       deviceId: DEVICE_ID,
       canRecord: canRecordNotes(),
-      records,
+      records: mode.records ?? false,
+      interacts: mode.interacts ?? false,
     });
     const now = held();
     if (now?.id === call.id) show(call.id, conversationOf(), call.group, notes);
