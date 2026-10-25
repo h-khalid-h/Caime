@@ -63,7 +63,7 @@ test('a WhatsApp group from an iPhone comes into the group as a topic, each line
   const { page, errors } = await newPerson(noorContext);
   await page.goto(`/c/${group}`);
   const entry = page.getByTestId('import-whatsapp').filter({ visible: true });
-  await expect(entry).toHaveText('Bring over a WhatsApp group');
+  await expect(entry).toHaveText('Bring over a WhatsApp or Telegram group');
   await entry.click();
   const chooser = page.waitForEvent('filechooser');
   await page.getByTestId('import-pick').click();
