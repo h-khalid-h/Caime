@@ -198,7 +198,7 @@ export function createMetrics(pool: pg.Pool) {
     // and each utterance heard or not.
     callNotes: new Counter(
       'caime_call_notes_total',
-      'Notes in calls by outcome (asked, started, a stop and its reason, a line heard or not).',
+      'Notes in calls by outcome (asked, started, handed_over, a stop and its reason, a line heard or not; switch_asked, switched, switch_declined for another mode mid-call).',
     ),
     // Cai's recordings of calls (R114, M17 I13b): parts begun, made ready (or kept as they were
     // recorded), and recordings deleted by someone in them or at their day.

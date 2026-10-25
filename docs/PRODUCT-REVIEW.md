@@ -2510,7 +2510,11 @@ with its reason, so it isn't proposed again without new facts.
   day by whoever asked, once it's recorded, its bytes counted against their storage as a file's
   are (refused without room), never past an organization's retention; the sweep leaves a kept
   one alone; "Stop keeping it" hands it back to its day; the notes say who keeps it, the export
-  whether you do, the privacy page the rule. *Not yet:* changing mode mid-call (stop, then
-  ask again), sharing on (I13e, so the consent doesn't promise it yet), the screen in
-  step on a phone, and H.264 measured on a real Chrome call (the test browser records VP9 and
-  Opus).
+  whether you do, the privacy page the rule. *Built (M17 I13b2, 2026-10-25):* another mode
+  mid-call asks everyone again, the mode under way going on until they have all said yes (a
+  `switching` row beside the live one, answered by its own id, settled right after it; anyone's
+  no, Stop asking or the call's end declines it and the mode under way goes on; everyone's yes
+  stops that one as replaced and the switch is on, the recorder kept where it can be); the round
+  offers "Record too" or "Notes only" beside Stop while one is on. *Not yet:* sharing on (I13e, so
+  the consent doesn't promise it yet), the screen in step on a phone, and H.264 measured on a
+  real Chrome call (the test browser records VP9 and Opus).

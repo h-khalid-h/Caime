@@ -1709,8 +1709,14 @@ A sphere is said as how you know someone, never "sphere".
   of its own. The E2E runs in a project of its own (`chromium-speech`) whose microphone
   speaks and pauses (`e2e/fake-speech.ts`).
 - Cai records a call (R114, M17 I13b; `lib/call-recording.ts`, `features/calls/recording.ts`):
-  the Record mode is `call_notes.records`, asked with the notes (`askNotes(…, records)`, another
-  mode while one is live is a 409), and every yes counts only for the ask it was shown (`notesId`
+  the Record mode is `call_notes.records`, asked with the notes (`askNotes(…, records)`; another
+  mode while one is still being asked is a 409, while one is on it's asked of everyone again
+  beside it, M17 I13b2: a `switching` row (migration 0148, one per call), answered by its own id,
+  settled by `settleSwitch` right after the live row in `reconcileNotes`, declined by anyone's no,
+  Stop asking (`stopNotes` withdraws it alone; `{ all: true }` for the recording's delete) or
+  the mode under way ending, and once everyone said yes the live row stops as `'replaced'` and
+  the switch is on; `CallNotesView.switching` carries it, the round offers it and
+  `NotesAsk`/`NotesLine` show it), and every yes counts only for the ask it was shown (`notesId`
   on the answer and on a ring answered or a call joined, `staleYes`); every way in names the mode
   through `features/calls/notesWords.ts`. The notes' recorder records too: everyone's voices mixed
   as one part (a new part at each join, so a later joiner plays only what came after: the reader

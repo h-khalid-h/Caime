@@ -4047,8 +4047,18 @@ clinic can sign for. I1 lands before launch.
         pieces and offsets, the remux and byte ranges, the late piece, a Stop, a joiner's parts,
         the day, Delete, erasure), the notes E2E's recorded call (two browsers, a shared screen,
         both parts played, deleted for everyone). Not yet: a real Chrome's H.264 measured.
-  - [ ] I13b2. Another mode mid-call (S): asked of everyone again while the one under way goes on
-        (today: stop, then ask again).
+  - [x] I13b2. Another mode mid-call (S): asked of everyone again while the one under way goes on
+        (was: stop, then ask again). Built: the ask is a `switching` row beside the live one
+        (migration 0148; never while one is still being asked, a 409), answered by its own id
+        (`notesId`, so a yes to the notes is no yes to the switch), settled right after the live
+        row (`settleSwitch`): anyone's no, Stop asking, the mode under way ending or nobody able
+        to record declines it and the mode under way goes on; everyone's yes stops that one as
+        'replaced' and the switch is on, its recorder kept where it can be, the old parts
+        finished. The round offers "Record too" or "Notes only" beside Stop while one is on, the
+        line says who's still asked, the ask reads as any, and the outcome is one toast. Verified:
+        `call-notes.test.ts` (asked, a line still landing, declined, asked again, a stale yes, taken
+        over with the notes row replaced, the other way withdrawn alone, declined with the call's
+        end), the notes E2E (declined, then taken over, both screens).
   - [x] I13c. Played with the notes (M): the recording on the call's line, lines, topics and next
         steps opening it at their moment, screens in step with voices, on the web and on phones.
         Built: one player beside the notes; each turn's time, and each topic, decision and next
@@ -5773,6 +5783,12 @@ have yet, each sized:
 - 2026-10-20 — The French and Turkish catalogs come in two halves fetched side by side, as Arabic
   does: their largest download 48.9 KB where one was 95.2 KB of a chunk's 100; the first download
   448.8 KB of 450 (0.2 KB more: the two loaders).
+- 2026-10-25 — M17 I13b2 (R114): another mode mid-call. Asked while one is on, the other mode is
+  a `switching` row beside the live notes, asked of everyone again and answered by its own id; the
+  mode under way goes on until they have all said yes (then it stops as replaced and the switch
+  is on, the recorder kept where it can be), and anyone's no, Stop asking or the call's end
+  declines it. The round offers "Record too" or "Notes only" beside Stop while one is on; the
+  outcome is one toast. Verified: `call-notes.test.ts`, the notes E2E.
 - 2026-10-25 — M17 I13d (R114): a recording kept past its day. Whoever asked Cai to record keeps
   it once it's recorded, its bytes counted against their storage under their lock (refused
   without room, as a file is; shown in Settings · Plan), never past an organization's retention;

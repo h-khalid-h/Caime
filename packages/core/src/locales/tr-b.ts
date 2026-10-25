@@ -2538,4 +2538,26 @@ export const turkishB: Catalog = {
   'Kept against your storage.': 'Depolama alanınızdan sayılarak saklanıyor.',
   'The recording is kept.': 'Kayıt saklandı.',
   'The recording goes at its day again.': 'Kayıt yine gününde silinecek.',
+  'Record too': 'Kaydı da başlat',
+  'Notes only': 'Yalnızca notlar',
+  'Asks everyone again; the notes go on until they agree.':
+    'Herkese yeniden sorar; onaylayana kadar notlar sürer.',
+  'Asks everyone again; the recording goes on until they agree, then stops.':
+    'Herkese yeniden sorar; onaylayana kadar kayıt sürer, sonra durur.',
+  'Stops recording and the notes, for everyone, from now.':
+    'Kaydı ve notları herkes için şimdi durdurur.',
+  'Stops the notes, for everyone, from now.': 'Notları herkes için şimdi durdurur.',
+  'Asking {names} to let Cai record too': 'Cai’nin kaydı da yapması için onay bekleniyor: {names}',
+  'Asking {names} to let Cai take notes only':
+    'Cai’nin yalnızca not alması için onay bekleniyor: {names}',
+  '{name} asks Cai to record too': 'Cai’nin kaydı da yapmasını isteyen: {name}',
+  '{name} asks Cai to take notes only': 'Cai’nin yalnızca not almasını isteyen: {name}',
+  'From now, Cai would keep what’s said and any screen shown as a recording for everyone in the call for {days} days, beside the notes. Cameras aren’t recorded. Anyone can stop it or delete it.':
+    'Şu andan itibaren Cai, söylenenleri ve paylaşılan ekranları notların yanında aramadaki herkes için {days} gün kayıt olarak saklar. Kameralar kaydedilmez. Herkes durdurabilir veya silebilir.',
+  'The recording would stop here and Cai would go on with the notes alone. Voices aren’t kept from then on.':
+    'Kayıt burada durur ve Cai yalnızca notlarla devam eder. Bundan sonra sesler saklanmaz.',
+  'Cai is recording now.': 'Cai artık kaydediyor.',
+  'Cai is taking notes only now.': 'Cai artık yalnızca not alıyor.',
+  'Not this time: Cai goes on recording.': 'Bu sefer değil: Cai kaydetmeye devam ediyor.',
+  'Not this time: Cai goes on taking notes.': 'Bu sefer değil: Cai not almaya devam ediyor.',
 };

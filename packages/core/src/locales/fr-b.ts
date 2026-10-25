@@ -2627,4 +2627,28 @@ export const frB: Catalog = {
   'Kept against your storage.': 'Gardé sur votre espace de stockage.',
   'The recording is kept.': 'L’enregistrement est gardé.',
   'The recording goes at its day again.': 'L’enregistrement partira de nouveau à sa date.',
+  'Record too': 'Enregistrer aussi',
+  'Notes only': 'Notes seulement',
+  'Asks everyone again; the notes go on until they agree.':
+    'Redemande à tout le monde ; les notes continuent jusqu’à leur accord.',
+  'Asks everyone again; the recording goes on until they agree, then stops.':
+    'Redemande à tout le monde ; l’enregistrement continue jusqu’à leur accord, puis s’arrête.',
+  'Stops recording and the notes, for everyone, from now.':
+    'Arrête l’enregistrement et les notes, pour tout le monde, dès maintenant.',
+  'Stops the notes, for everyone, from now.':
+    'Arrête les notes, pour tout le monde, dès maintenant.',
+  'Asking {names} to let Cai record too':
+    'En attente de l’accord de {names} pour que Cai enregistre aussi',
+  'Asking {names} to let Cai take notes only':
+    'En attente de l’accord de {names} pour que Cai ne prenne que des notes',
+  '{name} asks Cai to record too': '{name} demande à Cai d’enregistrer aussi',
+  '{name} asks Cai to take notes only': '{name} demande à Cai de ne prendre que des notes',
+  'From now, Cai would keep what’s said and any screen shown as a recording for everyone in the call for {days} days, beside the notes. Cameras aren’t recorded. Anyone can stop it or delete it.':
+    'Dès maintenant, Cai garderait ce qui se dit et tout écran partagé comme enregistrement pour tous les participants pendant {days} jours, à côté des notes. Les caméras ne sont pas enregistrées. N’importe qui peut l’arrêter ou le supprimer.',
+  'The recording would stop here and Cai would go on with the notes alone. Voices aren’t kept from then on.':
+    'L’enregistrement s’arrêterait ici et Cai continuerait avec les notes seulement. Les voix ne sont plus gardées ensuite.',
+  'Cai is recording now.': 'Cai enregistre maintenant.',
+  'Cai is taking notes only now.': 'Cai ne prend plus que des notes.',
+  'Not this time: Cai goes on recording.': 'Pas cette fois : Cai continue d’enregistrer.',
+  'Not this time: Cai goes on taking notes.': 'Pas cette fois : Cai continue de prendre des notes.',
 };

@@ -3208,7 +3208,23 @@ export type CallNotesWhy =
   /** Nobody who said yes is in the call on Caime in a browser (R82 (5), R85 (4)). */
   | 'no_recorder'
   /** What the asker may spend on AI today is spent (R107). */
-  | 'allowance';
+  | 'allowance'
+  /** Another mode took over, everyone having said yes to it (M17 I13b2). */
+  | 'replaced';
+
+/**
+ * Another mode asked while one is on (R114, M17 I13b2): everyone in the call is asked again, and
+ * the mode under way goes on until they have all said yes; anyone's no leaves it as it is.
+ */
+export interface CallNotesSwitchView {
+  id: string;
+  /** The mode asked for: Record, or Notes alone. */
+  records: boolean;
+  askedBy: { id: string; displayName: string };
+  /** Of the people in the call now, those who said yes to the switch. */
+  yes: string[];
+  waitingOn: Array<{ id: string; displayName: string }>;
+}
 
 /**
  * Cai taking notes in a call (M16 F7, R82 phase 1 under R85), the same for everyone who may see
@@ -3233,6 +3249,8 @@ export interface CallNotesView {
   startedAt: string | null;
   stoppedAt: string | null;
   why: CallNotesWhy | null;
+  /** Another mode asked while this one is on (M17 I13b2); null: none. */
+  switching: CallNotesSwitchView | null;
 }
 
 /** One thing said in a call while Cai took notes, as someone who was in it reads it. */

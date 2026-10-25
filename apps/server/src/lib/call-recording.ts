@@ -54,7 +54,7 @@ const STALE_MS = 60 * 60_000;
 /** What the daily sweep takes at a time. */
 const SWEEP_BATCH = 200;
 /** Why the notes stopped when a piece already on its way may still land: nobody said no. */
-const LATE_OK = new Set(['ended', 'no_recorder', 'allowance']);
+const LATE_OK = new Set(['ended', 'no_recorder', 'allowance', 'replaced']);
 
 const notRecording = () => forbidden(tr('This device isn’t recording that call.'));
 
@@ -674,7 +674,7 @@ export async function deleteRecording(ctx: AppContext, call: Call, userId: strin
     .execute();
   if (!notes.length) throw notFound(tr('That recording'));
   if (notes.some((n) => n.state === 'on' || n.state === 'asking'))
-    await stopNotes(ctx, call, userId);
+    await stopNotes(ctx, call, userId, { all: true });
   await dropRecording(
     ctx,
     notes.map((n) => n.id),

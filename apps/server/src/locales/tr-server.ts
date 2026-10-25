@@ -1710,13 +1710,14 @@ export const turkishServer: Catalog = {
   'Cai isn’t recording that call any more.': 'Cai artık o aramayı kaydetmiyor.',
   'That part of the recording is as long as it can be.':
     'Kaydın bu bölümü olabileceği en uzun hâline ulaştı.',
-  'Cai is already recording this call.': 'Cai bu aramayı zaten kaydediyor.',
-  'Cai is already taking notes in this call: stop them to ask for a recording.':
-    'Cai bu aramada zaten not alıyor: kayıt istemek için notları durdurun.',
   'Only whoever asked Cai to record this call may keep its recording.':
     'Bu aramanın kaydını yalnızca Cai’den kayıt isteyen kişi saklayabilir.',
   'The recording can be kept once the call is over and it’s ready to play.':
     'Kayıt, arama bittikten ve oynatmaya hazır olduktan sonra saklanabilir.',
   'This organization keeps its conversations for a set time, so the recording can’t be kept past its day.':
     'Bu kuruluş konuşmalarını belirli bir süre sakladığından kayıt gününden sonra saklanamaz.',
+  'Cai is already being asked to record this call.':
+    'Cai’den bu aramayı kaydetmesi zaten isteniyor.',
+  'Cai is already being asked to take notes in this call.':
+    'Cai’den bu aramada not alması zaten isteniyor.',
 };

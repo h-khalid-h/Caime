@@ -10,6 +10,7 @@ import { joinNames } from '@caime/core/format';
 import { tr } from '@caime/core/i18n';
 import CircleDot from 'lucide-react-native/icons/circle-dot';
 import NotebookPen from 'lucide-react-native/icons/notebook-pen';
+import Square from 'lucide-react-native/icons/square';
 import { useState } from 'react';
 import { View } from 'react-native';
 import { Pressable } from '@/ui/Pressable';
@@ -21,31 +22,37 @@ const first = (name: string) => name.split(' ')[0] || name;
 
 /**
  * The control in a call's row: Cai, which offers Take notes or Record (R114 (1)), each saying what
- * it keeps, so whoever asks chooses knowing; once either is asked for or on, it stops it. One
- * round, so the row fits a phone.
+ * it keeps, so whoever asks chooses knowing; while one is asked for (or another mode asked beside
+ * it, M17 I13b2) it withdraws the ask; while one is on it offers the other mode (asked of everyone
+ * again, the one under way going on until they have) and Stop. One round, so the row fits a phone.
  */
 export function NotesRound({ notes, testID }: { notes: CallNotesView | null; testID: string }) {
   const [choosing, setChoosing] = useState(false);
-  if (notesAsked(notes))
+  if (notes?.state === 'asking' || notes?.switching)
     return (
       <Round
-        icon={notes?.records ? CircleDot : NotebookPen}
-        label={notes?.state === 'on' ? tr('Stop Cai') : tr('Stop asking')}
+        icon={(notes.switching?.records ?? notes.records) ? CircleDot : NotebookPen}
+        label={tr('Stop asking')}
         on
         onPress={() => void stopNotes()}
         testID={testID}
       />
     );
+  const on = notesAsked(notes);
   const ask = (records: boolean) => {
     setChoosing(false);
     void askNotes(records);
   };
+  const stop = () => {
+    setChoosing(false);
+    void stopNotes();
+  };
   return (
     <View>
       <Round
-        icon={NotebookPen}
+        icon={on && notes?.records ? CircleDot : NotebookPen}
         label={tr('Cai')}
-        on={choosing}
+        on={on || choosing}
         onPress={() => setChoosing((c) => !c)}
         testID={testID}
       />
@@ -65,22 +72,59 @@ export function NotesRound({ notes, testID }: { notes: CallNotesView | null; tes
             backgroundColor: '#1F1D2BF2',
           }}
         >
-          <Mode
-            icon={NotebookPen}
-            label={tr('Take notes')}
-            detail={tr('What’s said, as words. Voices aren’t kept.')}
-            onPress={() => ask(false)}
-            testID={`${testID}-take`}
-          />
-          <Mode
-            icon={CircleDot}
-            label={tr('Record')}
-            detail={tr('The notes, and the voices and any screen shown, kept {days} days.', {
-              days: RECORDING_DAYS,
-            })}
-            onPress={() => ask(true)}
-            testID={`${testID}-record`}
-          />
+          {on && notes ? (
+            <>
+              {notes.records ? (
+                <Mode
+                  icon={NotebookPen}
+                  label={tr('Notes only')}
+                  detail={tr(
+                    'Asks everyone again; the recording goes on until they agree, then stops.',
+                  )}
+                  onPress={() => ask(false)}
+                  testID={`${testID}-take`}
+                />
+              ) : (
+                <Mode
+                  icon={CircleDot}
+                  label={tr('Record too')}
+                  detail={tr('Asks everyone again; the notes go on until they agree.')}
+                  onPress={() => ask(true)}
+                  testID={`${testID}-record`}
+                />
+              )}
+              <Mode
+                icon={Square}
+                label={tr('Stop Cai')}
+                detail={
+                  notes.records
+                    ? tr('Stops recording and the notes, for everyone, from now.')
+                    : tr('Stops the notes, for everyone, from now.')
+                }
+                onPress={stop}
+                testID={`${testID}-stop`}
+              />
+            </>
+          ) : (
+            <>
+              <Mode
+                icon={NotebookPen}
+                label={tr('Take notes')}
+                detail={tr('What’s said, as words. Voices aren’t kept.')}
+                onPress={() => ask(false)}
+                testID={`${testID}-take`}
+              />
+              <Mode
+                icon={CircleDot}
+                label={tr('Record')}
+                detail={tr('The notes, and the voices and any screen shown, kept {days} days.', {
+                  days: RECORDING_DAYS,
+                })}
+                onPress={() => ask(true)}
+                testID={`${testID}-record`}
+              />
+            </>
+          )}
         </View>
       ) : null}
     </View>
@@ -128,19 +172,43 @@ function Mode({
 
 /** What the notes are doing, under the call's name: on, or who's still being asked. */
 export function NotesLine({ notes, me }: { notes: CallNotesView | null; me: string }) {
-  if (notes?.state === 'on')
+  if (notes?.state === 'on') {
+    // Another mode asked beside it (M17 I13b2): whoever said yes to it sees who's still asked.
+    const sw = notes.switching;
+    const switching =
+      sw && sw.yes.includes(me) && sw.waitingOn.length
+        ? sw.records
+          ? tr('Asking {names} to let Cai record too', {
+              names: joinNames(sw.waitingOn.map((p) => first(p.displayName))),
+            })
+          : tr('Asking {names} to let Cai take notes only', {
+              names: joinNames(sw.waitingOn.map((p) => first(p.displayName))),
+            })
+        : null;
     return (
-      <View
-        style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}
-        accessibilityRole="text"
-        testID="call-notes-on"
-      >
-        <View style={{ width: 8, height: 8, borderRadius: 4, backgroundColor: '#FF4D4F' }} />
-        <Text variant="caption" style={{ color: '#FFFFFF', ...OVER_VIDEO }}>
-          {notes.records ? tr('Cai is recording') : tr('Cai is taking notes')}
-        </Text>
+      <View style={{ gap: 2 }}>
+        <View
+          style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}
+          accessibilityRole="text"
+          testID="call-notes-on"
+        >
+          <View style={{ width: 8, height: 8, borderRadius: 4, backgroundColor: '#FF4D4F' }} />
+          <Text variant="caption" style={{ color: '#FFFFFF', ...OVER_VIDEO }}>
+            {notes.records ? tr('Cai is recording') : tr('Cai is taking notes')}
+          </Text>
+        </View>
+        {switching ? (
+          <Text
+            variant="caption"
+            style={{ color: '#FFFFFFDD', ...OVER_VIDEO }}
+            testID="call-notes-switching"
+          >
+            {switching}
+          </Text>
+        ) : null}
       </View>
     );
+  }
   if (notes?.state !== 'asking' || !notes.yes.includes(me)) return null;
   return (
     <Text
@@ -161,6 +229,53 @@ export function NotesLine({ notes, me }: { notes: CallNotesView | null; me: stri
 
 /** Asked to let Cai take notes: yes or not now, each said on its button (R85 (1)). */
 export function NotesAsk({ notes, me }: { notes: CallNotesView | null; me: string }) {
+  // Another mode asked while one is on (M17 I13b2): the same labelled choice, answered to it.
+  const sw = notes?.state === 'on' ? notes.switching : null;
+  if (sw?.waitingOn.some((p) => p.id === me))
+    return (
+      <View
+        accessibilityRole="alert"
+        testID="call-notes-ask"
+        style={{
+          alignSelf: 'center',
+          maxWidth: 380,
+          marginHorizontal: 16,
+          padding: 16,
+          gap: 10,
+          borderRadius: 16,
+          backgroundColor: '#FFFFFF1F',
+        }}
+      >
+        <Text variant="label" style={{ color: '#FFFFFF' }}>
+          {sw.records
+            ? tr('{name} asks Cai to record too', { name: first(sw.askedBy.displayName) })
+            : tr('{name} asks Cai to take notes only', { name: first(sw.askedBy.displayName) })}
+        </Text>
+        <Text variant="caption" style={{ color: '#FFFFFFCC' }}>
+          {sw.records
+            ? tr(
+                'From now, Cai would keep what’s said and any screen shown as a recording for everyone in the call for {days} days, beside the notes. Cameras aren’t recorded. Anyone can stop it or delete it.',
+                { days: RECORDING_DAYS },
+              )
+            : tr(
+                'The recording would stop here and Cai would go on with the notes alone. Voices aren’t kept from then on.',
+              )}
+        </Text>
+        <View style={{ flexDirection: 'row', gap: 8, flexWrap: 'wrap' }}>
+          <Choice
+            label={sw.records ? tr('Let Cai record') : tr('Let Cai take notes')}
+            strong
+            onPress={() => void answerNotes('yes', sw.id)}
+            testID="call-notes-yes"
+          />
+          <Choice
+            label={tr('Not now')}
+            onPress={() => void answerNotes('no', sw.id)}
+            testID="call-notes-no"
+          />
+        </View>
+      </View>
+    );
   if (notes?.state !== 'asking' || !notes.waitingOn.some((p) => p.id === me)) return null;
   return (
     <View

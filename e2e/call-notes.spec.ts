@@ -114,6 +114,7 @@ test.describe
 
       // Anyone stops it, for everyone (R85 (2)).
       await sam.page.getByTestId('call-notes').click();
+      await sam.page.getByTestId('call-notes-stop').click();
       await expect(page.getByTestId('call-notes-on')).toHaveCount(0);
       await expect(visible(page, 'Cai stopped taking notes.')).toBeVisible();
       await page.getByTestId('call-hangup').click();
@@ -329,6 +330,48 @@ test.describe
       await expect(sam.page.getByTestId('call-recording-deleted')).toBeVisible();
       await expect(page.getByTestId('call-recording-deleted')).toBeVisible({ timeout: 20_000 });
       expect((await recording())?.state).toBe('deleted');
+      expect(problems(noor, sam)).toEqual([]);
+    });
+
+    test('another mode mid-call asks everyone again while the one under way goes on (M17 I13b2)', async () => {
+      test.setTimeout(120_000);
+      const { page } = noor;
+      await page.goto(`/c/${convo}`);
+      await sam.page.goto('/');
+      await page.getByTestId('call-voice').click();
+      await expect(sam.page.getByTestId('call-incoming')).toBeVisible({ timeout: 20_000 });
+      await page.getByTestId('call-notes').click();
+      await page.getByTestId('call-notes-take').click();
+      await sam.page.getByTestId('call-accept-with-notes').click();
+      await expect(page.getByTestId('call-notes-on')).toHaveText('Cai is taking notes', {
+        timeout: 20_000,
+      });
+
+      // Noor asks to record too: Sam is asked again while the notes go on; not this time.
+      await page.getByTestId('call-notes').click();
+      await page.getByTestId('call-notes-record').click();
+      await expect(page.getByTestId('call-notes-switching')).toHaveText(
+        'Asking Sam to let Cai record too',
+      );
+      await expect(sam.page.getByTestId('call-notes-ask')).toContainText(
+        'Noor asks Cai to record too',
+      );
+      await expect(sam.page.getByTestId('call-notes-on')).toHaveText('Cai is taking notes');
+      await sam.page.getByTestId('call-notes-no').click();
+      await expect(page.getByTestId('call-notes-switching')).toHaveCount(0);
+      await expect(page.getByTestId('call-notes-on')).toHaveText('Cai is taking notes');
+
+      // Asked again, Sam lets Cai record: the recording takes over, for both.
+      await page.getByTestId('call-notes').click();
+      await page.getByTestId('call-notes-record').click();
+      await expect(sam.page.getByTestId('call-notes-ask')).toBeVisible();
+      await sam.page.getByTestId('call-notes-yes').click();
+      await expect(page.getByTestId('call-notes-on')).toHaveText('Cai is recording', {
+        timeout: 20_000,
+      });
+      await expect(sam.page.getByTestId('call-notes-on')).toHaveText('Cai is recording');
+      await page.getByTestId('call-hangup').click();
+      await expect(page.getByTestId('call-screen')).toHaveCount(0);
       expect(problems(noor, sam)).toEqual([]);
     });
   });

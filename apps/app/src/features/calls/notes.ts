@@ -84,6 +84,17 @@ export function onNotesEvent(event: RealtimeEvent): void {
     const line = stopLine(notes);
     if (line) toast(line);
   }
+  // Another mode asked beside the notes (M17 I13b2): it took over, or not this time.
+  if (was?.switching && !notes.switching && notes.state === 'on') {
+    if (notes.id === was.switching.id)
+      toast(notes.records ? tr('Cai is recording now.') : tr('Cai is taking notes only now.'));
+    else if (notes.id === was.id)
+      toast(
+        was.records
+          ? tr('Not this time: Cai goes on recording.')
+          : tr('Not this time: Cai goes on taking notes.'),
+      );
+  }
 }
 
 /** Why Cai stopped, or didn't start, in words that name nobody (R85). */
@@ -105,6 +116,9 @@ export function stopLine(notes: CallNotesView): string | null {
     case 'minor':
       return tr('Cai can’t take notes in this call.');
     case 'ended':
+      return null;
+    // Another mode took over (M17 I13b2): the switch's own line says so.
+    case 'replaced':
       return null;
     default:
       return notes.records ? tr('Cai stopped recording.') : tr('Cai stopped taking notes.');
@@ -145,8 +159,11 @@ export async function askNotes(records = false): Promise<void> {
   }
 }
 
-/** Yes or no to Cai taking notes, asked by someone in the call. */
-export async function answerNotes(answer: 'yes' | 'no'): Promise<void> {
+/**
+ * Yes or no to Cai taking notes, asked by someone in the call; `notesId` names the ask answered
+ * when it isn't the live notes' (another mode asked beside them, M17 I13b2).
+ */
+export async function answerNotes(answer: 'yes' | 'no', notesId?: string): Promise<void> {
   const call = held();
   if (!call) return;
   try {
@@ -155,7 +172,7 @@ export async function answerNotes(answer: 'yes' | 'no'): Promise<void> {
       answer,
       canRecord: canRecordNotes(),
       // The ask this person was shown: a yes counts for it alone (R114 (1)).
-      notesId: call.notes?.id,
+      notesId: notesId ?? call.notes?.id,
     });
     if (held()?.id === call.id) show(call.id, conversationOf(), call.group, notes);
   } catch (e) {

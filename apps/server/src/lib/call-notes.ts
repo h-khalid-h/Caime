@@ -11,6 +11,9 @@
  * Whether it's on is decided in one place, `reconcileNotes`, under the notes' row lock, from the
  * call as it is: after an ask, an answer or a stop here, a 1:1 call answered or ended, and any
  * change to who's in a group call (`settleGroupCall`, a join). Nothing else moves its state.
+ * Another mode asked while one is on (R114, M17 I13b2) is a row of its own beside the live one
+ * (`switching`), asked of everyone again and settled right after it (`settleSwitch`): the mode
+ * under way goes on until they have all said yes, then stops as 'replaced' and the switch is it.
  */
 import {
   type CallNoteLineView,
@@ -118,6 +121,16 @@ async function liveNotesOf(db: Db, callId: string) {
     .executeTakeFirst();
 }
 
+/** Another mode asked while one is on (M17 I13b2), if any: a row beside the live one. */
+async function switchingOf(db: Db, callId: string) {
+  return db
+    .selectFrom('call_notes')
+    .selectAll()
+    .where('call_id', '=', callId)
+    .where('state', '=', 'switching')
+    .executeTakeFirst();
+}
+
 const isId = (x: string | null | undefined): x is string => Boolean(x);
 
 /** People's names as everyone sees them (one face per person, R99). */
@@ -136,37 +149,52 @@ async function namesOf(db: Db, ids: string[]): Promise<Map<string, string>> {
  * the call says why Cai stopped. Never who said no, nor who stopped it.
  */
 export async function notesViewOf(db: Db, call: Call): Promise<CallNotesView | null> {
+  // The live row leads; over, the latest. A switch asked beside the live one (M17 I13b2) rides
+  // on `switching`, never as the notes themselves (`switch` stays on a declined one), and one
+  // that took over is the notes from then on.
   const notes = await db
     .selectFrom('call_notes')
     .selectAll()
     .where('call_id', '=', call.id)
+    .where('switch', '=', false)
+    .orderBy(sql`case when state in ('asking', 'on') then 0 else 1 end`)
     .orderBy('asked_at', 'desc')
     .orderBy('id', 'desc')
     .limit(1)
     .executeTakeFirst();
   if (!notes) return null;
+  const switching = notes.state === 'on' ? await switchingOf(db, call.id) : undefined;
   const [answers, asked] = await Promise.all([
     db
       .selectFrom('call_note_answers')
-      .select(['user_id', 'answer'])
-      .where('notes_id', '=', notes.id)
+      .select(['notes_id', 'user_id', 'answer'])
+      .where('notes_id', 'in', [notes.id, switching?.id].filter(isId))
       .execute(),
     askedIn(db, call),
   ]);
-  const said = new Map(answers.map((a) => [a.user_id, a.answer]));
+  const saidTo = (id: string) =>
+    new Map(answers.filter((a) => a.notes_id === id).map((a) => [a.user_id, a.answer]));
+  const said = saidTo(notes.id);
   // Who said yes, and who hasn't answered, only while it's asked or on: once it's over, who
   // didn't say yes would tell who said no.
   const live = notes.state === 'asking' || notes.state === 'on';
   const here = live ? asked.map((p) => p.userId) : [];
   const waiting = notes.state === 'asking' ? here.filter((id) => !said.has(id)) : [];
-  const names = await namesOf(db, [notes.started_by, ...waiting].filter(isId));
+  const saidSwitch = switching ? saidTo(switching.id) : new Map<string, string>();
+  const waitingSwitch = switching ? here.filter((id) => !saidSwitch.has(id)) : [];
+  const names = await namesOf(
+    db,
+    [notes.started_by, ...waiting, switching?.started_by, ...waitingSwitch].filter(isId),
+  );
+  const person = (id: string | null) => ({
+    id: id ?? '',
+    displayName: (id && names.get(id)) || tr('Deleted account'),
+  });
   return {
     id: notes.id,
-    state: notes.state,
-    askedBy: {
-      id: notes.started_by ?? '',
-      displayName: (notes.started_by && names.get(notes.started_by)) || tr('Deleted account'),
-    },
+    // Never a switching row: the query leaves those to `switching`.
+    state: notes.state as CallNotesView['state'],
+    askedBy: person(notes.started_by),
     yes: here.filter((id) => said.get(id) === 'yes'),
     waitingOn: waiting.map((id) => ({ id, displayName: names.get(id) ?? '' })),
     recorderDevice: notes.state === 'on' ? notes.recorder_device : null,
@@ -174,6 +202,15 @@ export async function notesViewOf(db: Db, call: Call): Promise<CallNotesView | n
     startedAt: notes.started_at?.toISOString() ?? null,
     stoppedAt: notes.stopped_at?.toISOString() ?? null,
     why: notes.why,
+    switching: switching
+      ? {
+          id: switching.id,
+          records: switching.records,
+          askedBy: person(switching.started_by),
+          yes: here.filter((id) => saidSwitch.get(id) === 'yes'),
+          waitingOn: waitingSwitch.map((id) => ({ id, displayName: names.get(id) ?? '' })),
+        }
+      : null,
   };
 }
 
@@ -241,35 +278,8 @@ export async function reconcileNotes(ctx: AppContext, callId: string): Promise<b
     const allYes = asked.every((p) => said.get(p.userId)?.answer === 'yes');
     if (notes.state === 'on' && !allYes) return end('joined_without');
     if (notes.state === 'asking' && !allYes) return null;
-    // Everyone in it said yes. The recorder is a member's browser in the call (never a guest's,
-    // R85 (4)) on the device they said yes on: one still recording stays, else the asker's, else
-    // whoever said yes first.
-    const members = new Set(
-      (
-        await trx
-          .selectFrom('users')
-          .select('id')
-          .where('id', 'in', ids)
-          .where('kind', '=', 'human')
-          .execute()
-      ).map((u) => u.id),
-    );
-    const can = (p: Asked) => {
-      const a = said.get(p.userId);
-      return Boolean(members.has(p.userId) && a?.can_record && p.device && a.device === p.device);
-    };
-    const keep = asked.find(
-      (p) => p.userId === notes.recorder_id && p.device === notes.recorder_device && can(p),
-    );
-    const next =
-      keep ??
-      asked.find((p) => p.userId === notes.started_by && can(p)) ??
-      asked
-        .filter(can)
-        .sort(
-          (a, b) =>
-            (said.get(a.userId)?.at.getTime() ?? 0) - (said.get(b.userId)?.at.getTime() ?? 0),
-        )[0];
+    // Everyone in it said yes.
+    const { keep, next } = await recorderFor(trx, asked, said, notes);
     if (!next) return end('no_recorder');
     if (notes.state === 'on' && keep) return null;
     await trx
@@ -284,12 +294,152 @@ export async function reconcileNotes(ctx: AppContext, callId: string): Promise<b
       .execute();
     return { call, outcome: notes.state === 'asking' ? 'started' : 'handed_over' };
   });
-  if (!changed) return false;
-  ctx.metrics.callNotes.inc({ outcome: changed.outcome });
-  await publishNotes(ctx, changed.call);
-  // Stopped, or recorded on another device now: what the old recorder was sending is finished.
-  if (changed.outcome !== 'started') await finishOpenParts(ctx, callId);
+  const switched = await settleSwitch(ctx, callId);
+  if (!changed && !switched) return false;
+  if (changed) ctx.metrics.callNotes.inc({ outcome: changed.outcome });
+  if (switched) ctx.metrics.callNotes.inc({ outcome: switched.outcome });
+  await publishNotes(ctx, (changed ?? switched)?.call as Call);
+  // Stopped, recorded on another device now, or taken over by another mode (M17 I13b2): what
+  // the old recorder was sending is finished.
+  if ((changed && changed.outcome !== 'started') || switched?.outcome === 'switched')
+    await finishOpenParts(ctx, callId);
   return true;
+}
+
+type Answered = { user_id: string; device: string | null; can_record: boolean; at: Date };
+
+/**
+ * Who records, once everyone in it said yes: a member's browser in the call (never a guest's,
+ * R85 (4)) on the device they said yes on: one still recording stays (`keep`), else the asker's,
+ * else whoever said yes first.
+ */
+async function recorderFor(
+  trx: Transaction<Database>,
+  asked: Asked[],
+  said: Map<string, Answered>,
+  notes: { recorder_id: string | null; recorder_device: string | null; started_by: string | null },
+): Promise<{ keep: Asked | undefined; next: Asked | undefined }> {
+  const ids = asked.map((p) => p.userId);
+  const members = new Set(
+    (
+      await trx
+        .selectFrom('users')
+        .select('id')
+        .where('id', 'in', ids)
+        .where('kind', '=', 'human')
+        .execute()
+    ).map((u) => u.id),
+  );
+  const can = (p: Asked) => {
+    const a = said.get(p.userId);
+    return Boolean(members.has(p.userId) && a?.can_record && p.device && a.device === p.device);
+  };
+  const keep = asked.find(
+    (p) => p.userId === notes.recorder_id && p.device === notes.recorder_device && can(p),
+  );
+  const next =
+    keep ??
+    asked.find((p) => p.userId === notes.started_by && can(p)) ??
+    asked
+      .filter(can)
+      .sort(
+        (a, b) => (said.get(a.userId)?.at.getTime() ?? 0) - (said.get(b.userId)?.at.getTime() ?? 0),
+      )[0];
+  return { keep, next };
+}
+
+/**
+ * Another mode asked while one is on (R114, M17 I13b2), settled after the live row under its
+ * own lock: declined by anyone's no, by the mode under way ending (with its reason), or when
+ * nobody who said yes can record; once everyone in the call has said yes to it, the mode under
+ * way stops ('replaced') and the switch takes over, its recorder chosen as a start's is (the
+ * one recording stays where it can). Nothing moves while anyone is still asked.
+ */
+async function settleSwitch(
+  ctx: AppContext,
+  callId: string,
+): Promise<{ call: Call; outcome: 'switched' | 'switch_declined' } | null> {
+  return ctx.db.transaction().execute(async (trx) => {
+    const sw = await trx
+      .selectFrom('call_notes')
+      .selectAll()
+      .where('call_id', '=', callId)
+      .where('state', '=', 'switching')
+      .forNoKeyUpdate()
+      .executeTakeFirst();
+    if (!sw) return null;
+    const call = await callById(trx, callId);
+    if (!call) return null;
+    const live = await trx
+      .selectFrom('call_notes')
+      .selectAll()
+      .where('call_id', '=', callId)
+      .where('state', '=', 'on')
+      .forNoKeyUpdate()
+      .executeTakeFirst();
+    const decline = async (why: CallNotesWhy) => {
+      await trx
+        .updateTable('call_notes')
+        .set({ state: 'declined', why, stopped_at: ctx.now() })
+        .where('id', '=', sw.id)
+        .execute();
+      return { call, outcome: 'switch_declined' as const };
+    };
+    if (!live) {
+      // With the notes it was asked beside: for their reason.
+      const ended = await trx
+        .selectFrom('call_notes')
+        .select('why')
+        .where('call_id', '=', callId)
+        .where('state', 'in', ['stopped', 'declined'])
+        .where('switch', '=', false)
+        .orderBy('stopped_at', 'desc')
+        .limit(1)
+        .executeTakeFirst();
+      return decline(ended?.why ?? (call.state === 'ended' ? 'ended' : 'stopped'));
+    }
+    if (call.state === 'ended') return decline('ended');
+    const asked = await askedIn(trx, call);
+    const answers = await trx
+      .selectFrom('call_note_answers')
+      .select(['user_id', 'answer', 'device', 'can_record', 'at'])
+      .where('notes_id', '=', sw.id)
+      .orderBy('at')
+      .execute();
+    const said = new Map(answers.map((a) => [a.user_id, a]));
+    if (asked.some((p) => said.get(p.userId)?.answer === 'no')) return decline('declined');
+    if (asked.length < 2 || !asked.every((p) => said.get(p.userId)?.answer === 'yes')) return null;
+    const { next } = await recorderFor(trx, asked, said, {
+      recorder_id: live.recorder_id,
+      recorder_device: live.recorder_device,
+      started_by: sw.started_by,
+    });
+    if (!next) return decline('no_recorder');
+    // The row it replaces stops first: one live row a call (the index), then the switch is it.
+    await trx
+      .updateTable('call_notes')
+      .set({
+        state: 'stopped',
+        why: 'replaced',
+        stopped_at: ctx.now(),
+        recorder_id: null,
+        recorder_device: null,
+      })
+      .where('id', '=', live.id)
+      .execute();
+    await trx
+      .updateTable('call_notes')
+      .set({
+        state: 'on',
+        switch: false,
+        started_at: ctx.now(),
+        recorder_id: next.userId,
+        recorder_device: next.device,
+      })
+      .where('id', '=', sw.id)
+      .execute();
+    return { call, outcome: 'switched' as const };
+  });
 }
 
 /**
@@ -401,17 +551,50 @@ export async function askNotes(
   await ctx.db.transaction().execute(async (trx) => {
     const live = await liveNotesOf(trx, call.id);
     if (live) {
-      // Another mode than the one under way is asked of everyone once it's stopped.
-      if (live.records !== records)
+      if (live.records === records) {
+        // Asked already (by them, or by someone else at the same moment): this is a yes to it.
+        await saveAnswer(trx, live.id, userId, 'yes', choice, ctx.now());
+        return;
+      }
+      // Another mode while one is still asked is answered first; while one is on, it's asked
+      // of everyone again beside it, the mode under way going on until they have (M17 I13b2).
+      if (live.state !== 'on')
         throw new AppError(
           409,
           'conflict',
           live.records
-            ? tr('Cai is already recording this call.')
-            : tr('Cai is already taking notes in this call: stop them to ask for a recording.'),
+            ? tr('Cai is already being asked to record this call.')
+            : tr('Cai is already being asked to take notes in this call.'),
         );
-      // Asked already (by them, or by someone else at the same moment): this is a yes to it.
-      await saveAnswer(trx, live.id, userId, 'yes', choice, ctx.now());
+      const asked = await switchingOf(trx, call.id);
+      if (asked) {
+        // The same switch asked by someone else: a yes to it. The other way round is the mode
+        // already on.
+        if (asked.records === records)
+          await saveAnswer(trx, asked.id, userId, 'yes', choice, ctx.now());
+        return;
+      }
+      const made = await trx
+        .insertInto('call_notes')
+        .values({
+          id: uuidv7(),
+          call_id: call.id,
+          conversation_id: call.conversation_id,
+          started_by: userId,
+          state: 'switching',
+          switch: true,
+          records,
+          asked_at: ctx.now(),
+        })
+        .onConflict((oc) =>
+          oc.column('call_id').where(sql<boolean>`state = 'switching'`).doNothing(),
+        )
+        .returning('id')
+        .executeTakeFirst();
+      const switchId = made?.id ?? (await switchingOf(trx, call.id))?.id;
+      if (!switchId) return;
+      if (made) ctx.metrics.callNotes.inc({ outcome: 'switch_asked' });
+      await saveAnswer(trx, switchId, userId, 'yes', choice, ctx.now());
       return;
     }
     const id = uuidv7();
@@ -450,10 +633,14 @@ export async function answerNotes(
 ): Promise<void> {
   const asked = await askedIn(ctx.db, call);
   if (!asked.some((p) => p.userId === userId && p.device === choice.deviceId)) throw notInCall();
+  // An answer to the switch asked beside the live notes (M17 I13b2) names it; else it's the
+  // live notes' (and a yes to another ask than theirs is no answer).
   const live = await liveNotesOf(ctx.db, call.id);
-  if (!live) return;
-  if (!staleYes(live, answer, choice))
-    await saveAnswer(ctx.db, live.id, userId, answer, choice, ctx.now());
+  const switching = await switchingOf(ctx.db, call.id);
+  const target = switching && choice.notesId === switching.id ? switching : live;
+  if (!target) return;
+  if (!staleYes(target, answer, choice))
+    await saveAnswer(ctx.db, target.id, userId, answer, choice, ctx.now());
   await settleAndTell(ctx, call.id);
 }
 
@@ -476,15 +663,37 @@ export async function answerOnEntry(
 }
 
 /** Stop Cai, for everyone, from now (R85 (2)): anyone in the call, any time. */
-export async function stopNotes(ctx: AppContext, call: Call, userId: string): Promise<void> {
+export async function stopNotes(
+  ctx: AppContext,
+  call: Call,
+  userId: string,
+  opts: { all?: boolean } = {},
+): Promise<void> {
   const asked = await askedIn(ctx.db, call);
   if (!asked.some((p) => p.userId === userId)) throw notInCall();
+  // A switch asked beside the live notes (M17 I13b2) is withdrawn on its own: the mode under
+  // way goes on. `all` (the recording deleted while it's being made) stops everything.
+  if (!opts.all) {
+    const switching = await switchingOf(ctx.db, call.id);
+    if (switching) {
+      await ctx.db
+        .updateTable('call_notes')
+        .set({ state: 'declined', why: 'stopped', stopped_at: ctx.now(), stopped_by: userId })
+        .where('id', '=', switching.id)
+        .execute();
+      ctx.metrics.callNotes.inc({ outcome: 'switch_declined' });
+      await publishNotes(ctx, call);
+      return;
+    }
+  }
   const stopped = await ctx.db
     .updateTable('call_notes')
     .set((eb) => ({
       state: eb
         .case()
         .when('state', '=', 'asking')
+        .then('declined' as const)
+        .when('state', '=', 'switching')
         .then('declined' as const)
         .else('stopped' as const)
         .end(),
@@ -495,10 +704,10 @@ export async function stopNotes(ctx: AppContext, call: Call, userId: string): Pr
       recorder_device: null,
     }))
     .where('call_id', '=', call.id)
-    .where('state', 'in', ['asking', 'on'])
+    .where('state', 'in', ['asking', 'on', 'switching'])
     .returning('id')
-    .executeTakeFirst();
-  if (!stopped) return;
+    .execute();
+  if (!stopped.length) return;
   ctx.metrics.callNotes.inc({ outcome: 'stopped' });
   await publishNotes(ctx, call);
   await finishOpenParts(ctx, call.id);
@@ -704,20 +913,26 @@ async function hear(ctx: AppContext, payload: Record<string, unknown>): Promise<
 }
 
 async function stopForAllowance(ctx: AppContext, callId: string): Promise<void> {
+  // A switch asked beside them (M17 I13b2) goes with them: it was for the same allowance.
   const stopped = await ctx.db
     .updateTable('call_notes')
-    .set({
-      state: 'stopped',
-      why: 'allowance',
+    .set((eb) => ({
+      state: eb
+        .case()
+        .when('state', '=', 'switching')
+        .then('declined' as const)
+        .else('stopped' as const)
+        .end(),
+      why: 'allowance' as const,
       stopped_at: ctx.now(),
       recorder_id: null,
       recorder_device: null,
-    })
+    }))
     .where('call_id', '=', callId)
-    .where('state', '=', 'on')
+    .where('state', 'in', ['on', 'switching'])
     .returning('id')
-    .executeTakeFirst();
-  if (!stopped) return;
+    .execute();
+  if (!stopped.length) return;
   ctx.metrics.callNotes.inc({ outcome: 'allowance' });
   const call = await callById(ctx.db, callId);
   if (call) await publishNotes(ctx, call);

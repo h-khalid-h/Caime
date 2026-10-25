@@ -110,6 +110,7 @@ describe('why Cai stopped, in words that name nobody (R85)', () => {
       startedAt: null,
       stoppedAt: null,
       why,
+      switching: null,
     }) as Parameters<typeof stopLine>[0];
   it('says each reason, and nothing when the call simply ended', () => {
     expect(stopLine(notes('declined', 'declined'))).toBe('Not this time: Cai isn’t taking notes.');

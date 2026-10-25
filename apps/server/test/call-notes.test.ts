@@ -854,3 +854,121 @@ describe('Cai’s notes of the call, once it’s over (M16 F7e)', () => {
     await sam.patch('/v1/me', { aiEnabled: true });
   });
 });
+
+describe('another mode mid-call (R114, M17 I13b2)', () => {
+  it('asks everyone again while the one under way goes on, and takes over once they all said yes', async () => {
+    const callId = await ring();
+    expect((await ask(noor, callId, 'noor-tab-1')).statusCode).toBe(200);
+    const answered = await sam.req('POST', `/v1/calls/${callId}/accept`, {
+      deviceId: 'sam-tab-1',
+      notes: 'yes',
+    });
+    const notesId = answered.json().call.notes.id as string;
+    expect(answered.json().call.notes).toMatchObject({ state: 'on', records: false });
+    // Noor asks to record too: a switch beside the notes, Sam waited on, the notes still on.
+    const asked = await noor.req('POST', `/v1/calls/${callId}/notes`, {
+      deviceId: 'noor-tab-1',
+      canRecord: true,
+      records: true,
+    });
+    expect(asked.statusCode, asked.body).toBe(200);
+    expect(asked.json().notes).toMatchObject({
+      id: notesId,
+      state: 'on',
+      records: false,
+      switching: { records: true, yes: [noor.user.id], waitingOn: [{ id: sam.user.id }] },
+    });
+    const firstSwitch = asked.json().notes.switching.id as string;
+    // A line still lands on the notes under way.
+    expect((await line(noor, callId, 'noor-tab-1', sam.user.id)).statusCode).toBe(200);
+    // Sam's no to the switch leaves the notes as they are.
+    const no = await sam.req('POST', `/v1/calls/${callId}/notes/answer`, {
+      deviceId: 'sam-tab-1',
+      answer: 'no',
+      canRecord: true,
+      notesId: firstSwitch,
+    });
+    expect(no.json().notes).toMatchObject({ id: notesId, state: 'on', switching: null });
+    // Asked again: a yes carrying the notes' own id is no answer to it; a yes to the switch
+    // takes over, the notes stopping as replaced, the recording on with the same recorder.
+    const again = await noor.req('POST', `/v1/calls/${callId}/notes`, {
+      deviceId: 'noor-tab-1',
+      canRecord: true,
+      records: true,
+    });
+    const secondSwitch = again.json().notes.switching.id as string;
+    expect(secondSwitch).not.toBe(firstSwitch);
+    const stale = await sam.req('POST', `/v1/calls/${callId}/notes/answer`, {
+      deviceId: 'sam-tab-1',
+      answer: 'yes',
+      canRecord: true,
+      notesId,
+    });
+    expect(stale.json().notes.switching.waitingOn.map((p: { id: string }) => p.id)).toEqual([
+      sam.user.id,
+    ]);
+    const yes = await sam.req('POST', `/v1/calls/${callId}/notes/answer`, {
+      deviceId: 'sam-tab-1',
+      answer: 'yes',
+      canRecord: true,
+      notesId: secondSwitch,
+    });
+    expect(yes.json().notes).toMatchObject({
+      id: secondSwitch,
+      state: 'on',
+      records: true,
+      recorderDevice: 'noor-tab-1',
+      switching: null,
+    });
+    expect(
+      await t.ctx.db
+        .selectFrom('call_notes')
+        .select(['state', 'why'])
+        .where('id', '=', notesId)
+        .executeTakeFirstOrThrow(),
+    ).toEqual({ state: 'stopped', why: 'replaced' });
+    // The other way round, withdrawn by Stop asking alone: the recording goes on.
+    const back = await sam.req('POST', `/v1/calls/${callId}/notes`, {
+      deviceId: 'sam-tab-1',
+      canRecord: true,
+      records: false,
+    });
+    expect(back.json().notes.switching).toMatchObject({ records: false });
+    const withdrawn = await noor.req('POST', `/v1/calls/${callId}/notes/stop`, {});
+    expect(withdrawn.json().notes).toMatchObject({
+      id: secondSwitch,
+      state: 'on',
+      records: true,
+      switching: null,
+    });
+    // The lines of both rows read as one set of notes.
+    await work();
+    const read = await noor.req('GET', `/v1/calls/${callId}/notes`);
+    expect(read.json().lines.length).toBeGreaterThan(0);
+    // Stop ends it; a switch asked while one is still asked (not on) is still a 409.
+    expect((await noor.req('POST', `/v1/calls/${callId}/notes/stop`, {})).json().notes.state).toBe(
+      'stopped',
+    );
+    await noor.req('POST', `/v1/calls/${callId}/end`, { deviceId: 'noor-tab-1' });
+  });
+
+  it('is declined with the mode under way when that ends', async () => {
+    const callId = await ring();
+    await ask(noor, callId, 'noor-tab-1');
+    await sam.req('POST', `/v1/calls/${callId}/accept`, { deviceId: 'sam-tab-1', notes: 'yes' });
+    const asked = await noor.req('POST', `/v1/calls/${callId}/notes`, {
+      deviceId: 'noor-tab-1',
+      canRecord: true,
+      records: true,
+    });
+    const switchId = asked.json().notes.switching.id as string;
+    await noor.req('POST', `/v1/calls/${callId}/end`, { deviceId: 'noor-tab-1' });
+    expect(
+      await t.ctx.db
+        .selectFrom('call_notes')
+        .select(['state', 'why'])
+        .where('id', '=', switchId)
+        .executeTakeFirstOrThrow(),
+    ).toEqual({ state: 'declined', why: 'ended' });
+  });
+});

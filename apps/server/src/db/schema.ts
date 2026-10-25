@@ -1304,7 +1304,10 @@ export interface CallNotesTable {
   conversation_id: string;
   /** Who asked, whose day's allowance pays for hearing it (R107). */
   started_by: string | null;
-  state: 'asking' | 'on' | 'stopped' | 'declined';
+  /** 'switching': another mode asked while one is on (M17 I13b2), beside the live row. */
+  state: 'asking' | 'on' | 'stopped' | 'declined' | 'switching';
+  /** Asked beside a live row (M17 I13b2): never read as the notes unless it took over. */
+  switch: Generated<boolean>;
   /** The browser recording while it's on: a member's, never a guest's (R85 (4)). */
   recorder_id: string | null;
   recorder_device: string | null;
@@ -1322,6 +1325,7 @@ export interface CallNotesTable {
     | 'ended'
     | 'no_recorder'
     | 'allowance'
+    | 'replaced'
     | null;
   /** The Record mode (R114): what's said and shown kept as a recording, beside the notes. */
   records: Generated<boolean>;

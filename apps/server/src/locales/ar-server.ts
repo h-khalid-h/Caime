@@ -1760,13 +1760,13 @@ export const arServer: Catalog = {
   'That part of the recording has ended.': 'انتهى هذا الجزء من التسجيل.',
   'Cai isn’t recording that call any more.': 'لم يعد Cai يسجّل تلك المكالمة.',
   'That part of the recording is as long as it can be.': 'بلغ هذا الجزء من التسجيل أقصى طول له.',
-  'Cai is already recording this call.': 'يسجّل Cai هذه المكالمة بالفعل.',
-  'Cai is already taking notes in this call: stop them to ask for a recording.':
-    'يدوّن Cai ملاحظات هذه المكالمة بالفعل: أوقِف التدوين لطلب تسجيل.',
   'Only whoever asked Cai to record this call may keep its recording.':
     'لا يحتفظ بتسجيل هذه المكالمة إلا من طلب من Cai تسجيلها.',
   'The recording can be kept once the call is over and it’s ready to play.':
     'يمكن الاحتفاظ بالتسجيل بعد انتهاء المكالمة وجاهزيته للتشغيل.',
   'This organization keeps its conversations for a set time, so the recording can’t be kept past its day.':
     'تحتفظ هذه المؤسسة بمحادثاتها لمدة محددة، لذا لا يمكن الاحتفاظ بالتسجيل بعد يومه.',
+  'Cai is already being asked to record this call.': 'يُطلب من Cai تسجيل هذه المكالمة بالفعل.',
+  'Cai is already being asked to take notes in this call.':
+    'يُطلب من Cai تدوين ملاحظات هذه المكالمة بالفعل.',
 };

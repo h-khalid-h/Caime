@@ -3410,4 +3410,25 @@ export const arB: Catalog = {
   'Kept against your storage.': 'محفوظ ومحسوب من مساحة التخزين المتاحة لك.',
   'The recording is kept.': 'تم الاحتفاظ بالتسجيل.',
   'The recording goes at its day again.': 'سيُحذف التسجيل في يومه من جديد.',
+  'Record too': 'التسجيل أيضًا',
+  'Notes only': 'الملاحظات فقط',
+  'Asks everyone again; the notes go on until they agree.':
+    'يُسأل الجميع من جديد؛ تستمر الملاحظات حتى يوافقوا.',
+  'Asks everyone again; the recording goes on until they agree, then stops.':
+    'يُسأل الجميع من جديد؛ يستمر التسجيل حتى يوافقوا، ثم يتوقف.',
+  'Stops recording and the notes, for everyone, from now.':
+    'يوقف التسجيل والملاحظات للجميع من الآن.',
+  'Stops the notes, for everyone, from now.': 'يوقف الملاحظات للجميع من الآن.',
+  'Asking {names} to let Cai record too': 'بانتظار موافقة {names} على تسجيل Cai أيضًا',
+  'Asking {names} to let Cai take notes only': 'بانتظار موافقة {names} على اكتفاء Cai بالملاحظات',
+  '{name} asks Cai to record too': 'طلب أن يسجّل Cai أيضًا: {name}',
+  '{name} asks Cai to take notes only': 'طلب أن يكتفي Cai بالملاحظات: {name}',
+  'From now, Cai would keep what’s said and any screen shown as a recording for everyone in the call for {days} days, beside the notes. Cameras aren’t recorded. Anyone can stop it or delete it.':
+    'من الآن، يحتفظ Cai بما يُقال وبأي شاشة تُعرض كتسجيل لكل من في المكالمة لمدة {days} يومًا، إلى جانب الملاحظات. لا تُسجَّل الكاميرات. يمكن لأي شخص إيقافه أو حذفه.',
+  'The recording would stop here and Cai would go on with the notes alone. Voices aren’t kept from then on.':
+    'يتوقف التسجيل هنا ويواصل Cai الملاحظات وحدها. لا تُحفظ الأصوات من الآن فصاعدًا.',
+  'Cai is recording now.': 'Cai يسجّل الآن.',
+  'Cai is taking notes only now.': 'Cai يكتفي بالملاحظات الآن.',
+  'Not this time: Cai goes on recording.': 'ليس هذه المرة: Cai يواصل التسجيل.',
+  'Not this time: Cai goes on taking notes.': 'ليس هذه المرة: Cai يواصل تدوين الملاحظات.',
 };
