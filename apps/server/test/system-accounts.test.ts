@@ -174,6 +174,10 @@ describe('Cai (R67)', () => {
     expect(requests).toHaveLength(1);
     const asked = requests[0];
     expect(JSON.stringify(asked.system)).toContain('You are Cai');
+    // Cai's rules are the chat's one cached prefix (M18 J2): the next message hits it.
+    expect(asked.system).toEqual([
+      expect.objectContaining({ type: 'text', cache_control: { type: 'ephemeral' } }),
+    ]);
     const content = asked.messages[0].content as string;
     expect(content).toContain('• Sarah Smith · Access approval');
     expect(content).toMatch(/\[\d+\] Person: Write a short toast/);
@@ -336,6 +340,8 @@ describe('the Caime Friends (R67, R71)', () => {
     const asked = requests.at(-1);
     const system = JSON.stringify(asked.system);
     expect(system).toContain('You are Momo, one of the Caime Friends');
+    // A friend's rules too: one cached prefix a chat (M18 J2).
+    expect(asked.system[0]).toMatchObject({ cache_control: { type: 'ephemeral' } });
     expect(system).toContain('the Cheerful');
     expect(system).toContain('Panda (@panda) knows waiting and follow-ups');
     const content = asked.messages[0].content as string;

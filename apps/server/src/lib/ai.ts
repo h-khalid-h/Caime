@@ -656,8 +656,18 @@ export function createAiAssist(config: Config): AiAssist | null {
     cacheCreationTokens: reply.usage.cache_creation_input_tokens ?? 0,
   });
 
+  /**
+   * A system prompt as its call's one cached prefix (M18 J2, docs/RESOURCES.md): for a prompt
+   * over the provider's floor (512 tokens on the 5.x models) that the same person's next call
+   * repeats within five minutes, a chat's. One under the floor is sent as it is: the mark would
+   * cache nothing and a cached prefix nobody repeats costs a quarter more.
+   */
+  const cached = (text: string) => [
+    { type: 'text' as const, text, cache_control: { type: 'ephemeral' as const } },
+  ];
+
   const text = async (
-    system: string,
+    system: string | ReturnType<typeof cached>,
     content: string,
     effort: 'low' | 'medium',
     maxTokens: number,
@@ -808,7 +818,9 @@ export function createAiAssist(config: Config): AiAssist | null {
           ...on(light),
           max_tokens: 2048,
           output_config: { effort: 'low', format: betaZodOutputFormat(CaiOutput) },
-          system: CAI_SYSTEM(language, voiceLines(arabic, country, gender), today),
+          // Cai's rules are the same for every message of a chat (its voice and the day in them):
+          // one cached prefix, hit by the person's next message.
+          system: cached(CAI_SYSTEM(language, voiceLines(arabic, country, gender), today)),
           messages: [
             {
               role: 'user',
@@ -856,7 +868,7 @@ export function createAiAssist(config: Config): AiAssist | null {
     },
     async friendChat({ friend, transcript, context, language, arabic, country, gender, today }) {
       return text(
-        FRIEND_SYSTEM(friend, language, voiceLines(arabic, country, gender), today),
+        cached(FRIEND_SYSTEM(friend, language, voiceLines(arabic, country, gender), today)),
         `<context>\n${context || '(nothing open)'}\n</context>\n<conversation>\n${transcript}\n</conversation>`,
         'low',
         1024,

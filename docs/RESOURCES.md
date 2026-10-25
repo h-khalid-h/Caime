@@ -46,8 +46,13 @@ Each call is paid for by the token, so what is sent is bounded and what is repea
   waits three seconds so a person on the team can answer first.
 - **Caching**: the agent's rules and knowledge are the same for every question its customers
   ask, so they are one system prefix marked `cache_control: ephemeral`; only the conversation is
-  new. Anything else that repeats a long prefix (a transcript asked about twice within minutes)
-  does the same. Short prompts are below the cache's minimum and cost nothing to mark.
+  new. Cai's and the friends' rules are the same for every message of a chat and over the floor
+  (512 tokens on the 5.x models; Cai's is about 850 with its voice lines), so they're one marked
+  prefix too, hit by the person's next message within five minutes (M18 J2). Anything else that
+  repeats a long prefix (a transcript asked about twice within minutes) does the same. Every
+  other system prompt is under the floor (the notes' about 350, catch-up's 210): a mark there
+  caches nothing, and a cached prefix nobody repeats would cost a quarter more, so they stay
+  unmarked. What a mark earns is read on `ai_runs.cache_read_tokens`.
 - **Server-side fallback** (`server-side-fallback-2026-07-01`): a declined request is re-run
   once on Anthropic's recommended fallback, never retried by Caime in a loop; two SDK retries
   on transport errors, a 45 s deadline.
