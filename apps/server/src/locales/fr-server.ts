@@ -1798,4 +1798,12 @@ export const frServer: Catalog = {
     'On demande déjà à Cai d’enregistrer cet appel.',
   'Cai is already being asked to take notes in this call.':
     'On demande déjà à Cai de prendre des notes dans cet appel.',
+  'The recording can be shared once the call is over and it’s ready to play.':
+    'L’enregistrement peut être partagé une fois l’appel terminé et prêt à être lu.',
+  'A recording isn’t shared into a private conversation.':
+    'Un enregistrement ne se partage pas dans une conversation privée.',
+  'A recording isn’t shared into a customer conversation.':
+    'Un enregistrement ne se partage pas dans une conversation client.',
+  'A call’s recording is shared from its notes by someone who was in it.':
+    'L’enregistrement d’un appel se partage depuis ses notes, par une personne qui y était.',
 };

@@ -269,11 +269,11 @@ export function GroupCallLayer() {
             {call.notes?.records
               ? call.notes.state === 'on'
                 ? tr(
-                    'Cai is recording this call: the voices and any screen shown, kept {days} days for everyone in it.',
+                    'Cai is recording this call: the voices and any screen shown, kept {days} days for everyone in it; anyone in it may share it on.',
                     { days: RECORDING_DAYS },
                   )
                 : tr(
-                    'Cai is asked to record this call: the voices and any screen shown, kept {days} days for everyone in it.',
+                    'Cai is asked to record this call: the voices and any screen shown, kept {days} days for everyone in it; anyone in it may share it on.',
                     { days: RECORDING_DAYS },
                   )
               : call.notes?.state === 'on'

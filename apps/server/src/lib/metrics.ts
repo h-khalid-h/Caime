@@ -204,7 +204,7 @@ export function createMetrics(pool: pg.Pool) {
     // recorded), and recordings deleted by someone in them or at their day.
     callRecordings: new Counter(
       'caime_call_recordings_total',
-      'Call recordings by outcome (part_started, ready, kept_as_recorded, kept, let_go, deleted, expired).',
+      'Call recordings by outcome (part_started, ready, kept_as_recorded, kept, let_go, deleted, expired, shared, share_gone).',
     ),
     // What the speech provider kept of a transcript, deleted once read (M17 F8a): done or not.
     speechForgotten: new Counter(

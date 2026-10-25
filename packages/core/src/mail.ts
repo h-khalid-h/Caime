@@ -113,9 +113,12 @@ export function notByMail(kind: string, payload: unknown, oneToOne = false): Not
     fields?: Record<string, unknown>;
     live?: unknown;
     invitation?: unknown;
+    recording?: unknown;
   };
   switch (kind) {
     case 'text':
+      // A call's recording shared on (R114 (7)) plays in Caime alone.
+      return p.recording ? 'kind' : null;
     case 'media':
     case 'file':
     case 'voice':

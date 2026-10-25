@@ -1544,6 +1544,8 @@ export const ForwardBody = z.object({
   conversationIds: z.array(z.string().uuid()).min(1).max(20),
   clientId: z.string().min(8).max(64),
 });
+/** `POST /calls/:id/recording/share` (R114 (7), M17 I13e): where to, as a forward says it. */
+export const ShareRecordingBody = ForwardBody;
 export const MembersBody = z.object({ userIds: z.array(z.string().uuid()).min(1).max(100) });
 
 // --- Actions, decisions, contexts --------------------------------------------------------------

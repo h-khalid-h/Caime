@@ -25,6 +25,9 @@ import {
   type CallRecordingPartResponse,
   CallRecordingPieceQuery,
   type CallRecordingPieceResponse,
+  type MessageIdsResponse,
+  type RecordingShareResponse,
+  ShareRecordingBody,
   tr,
 } from '@caime/core';
 import type { OkResponse } from '@caime/core/api';
@@ -57,6 +60,7 @@ import {
 } from '../lib/call-recording';
 import { AppError, badRequest } from '../lib/errors';
 import { streamFile } from '../lib/file-stream';
+import { playableShare, recordingShareView, shareRecording } from '../lib/recording-shares';
 import { storageFor } from '../lib/storage';
 import { parse } from '../lib/validate';
 import { requireAuth } from '../plugins/auth';
@@ -264,5 +268,30 @@ export async function callNotesRoutes(app: FastifyInstance, ctx: AppContext) {
     const call = await callForNotes(ctx, id, auth.userId);
     await keepRecording(ctx, call, auth.userId, false);
     return { ok: true };
+  });
+
+  /**
+   * Shared on (R114 (7), M17 I13e): by someone who was in the call, into conversations they're
+   * in, as a message of theirs that points at the recording and goes when it does.
+   */
+  app.post('/calls/:id/recording/share', async (req): Promise<MessageIdsResponse> => {
+    const auth = requireAuth(req);
+    const { id } = parse(callParam, req.params);
+    const body = parse(ShareRecordingBody, req.body);
+    const call = await callForNotes(ctx, id, auth.userId);
+    return shareRecording(ctx, call, auth.userId, body.conversationIds, body.clientId);
+  });
+
+  /** A share, as whoever is in its conversation plays it: the parts the sharer could. */
+  app.get('/messages/:id/recording', async (req): Promise<RecordingShareResponse> => {
+    const auth = requireAuth(req);
+    const { id } = parse(callParam, req.params);
+    return recordingShareView(ctx, id, auth.userId);
+  });
+  app.get('/messages/:id/recording/:partId', async (req, reply): Promise<FastifyReply> => {
+    const auth = requireAuth(req);
+    const { id, partId } = parse(partParam, req.params);
+    const part = await playableShare(ctx, id, auth.userId, partId);
+    return streamFile(req, reply, storage, part, true, 'private, max-age=3600');
   });
 }

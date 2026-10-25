@@ -15,6 +15,9 @@
  * are the server's, never counted against anyone's storage while it's kept for the thirty days;
  * whoever asked for it may keep it past its day (M17 I13d, `keepRecording`), and then its bytes
  * count against their storage until they let it go, never past an organization's retention.
+ * Anyone who was in it shares it into a conversation of theirs (R114 (7), M17 I13e,
+ * `lib/recording-shares.ts`): a share is read through its message (`via`) and goes when the
+ * recording does (`dropSharesOf`, and the sweep for one gone any other way).
  */
 import { createReadStream } from 'node:fs';
 import { stat } from 'node:fs/promises';
@@ -33,6 +36,7 @@ import { readersOf, stopNotes } from './call-notes';
 import { AppError, badRequest, forbidden, notFound } from './errors';
 import { enqueue, registerJob, registerPeriodic } from './jobs';
 import { retentionFor } from './messages';
+import { removeForEveryone } from './moderation';
 import { personViewsFor } from './people-batch';
 import { assertStorage, lockStorage } from './plans';
 import { finishOpenParts, LATE_MS, RECORDING_FINISH_JOB } from './recording-finish';
@@ -437,11 +441,24 @@ async function tellReaders(ctx: AppContext, callId: string): Promise<void> {
   if (to.length) await ctx.bus.publish(to, { type: 'callnotes.changed', data: { callId } });
 }
 
-/** The call's recording as this person may play it: the parts they were in the call for. */
+/**
+ * A share of the recording (R114 (7), M17 I13e): read through the share's message, the parts its
+ * sharer could play, by the share's own addresses.
+ */
+export interface ShareVia {
+  messageId: string;
+  sharedBy: string;
+}
+
+/**
+ * The call's recording as this person may play it: the parts they were in the call for, or,
+ * through a share (`via`), the parts its sharer was.
+ */
 export async function recordingFor(
   ctx: AppContext,
   call: Call,
   viewerId: string,
+  via?: ShareVia,
 ): Promise<CallRecordingView | null> {
   const notes = await ctx.db
     .selectFrom('call_notes')
@@ -452,7 +469,7 @@ export async function recordingFor(
   if (!notes.length) return null;
   if (notes.some((n) => n.recording_deleted_at))
     return { state: 'deleted', until: null, keptBy: null, mayKeep: false, parts: [] };
-  const reads = await readerOf(ctx.db, call, viewerId);
+  const reads = await readerOf(ctx.db, call, via?.sharedBy ?? viewerId);
   const parts = (
     await ctx.db
       .selectFrom('call_recording_parts')
@@ -512,7 +529,12 @@ export async function recordingFor(
     state: p.state === 'deleted' ? 'failed' : p.state,
     mime: p.mime,
     bytes: Number(p.bytes),
-    url: p.state === 'ready' ? `/v1/calls/${call.id}/recording/${p.id}` : null,
+    url:
+      p.state !== 'ready'
+        ? null
+        : via
+          ? `/v1/messages/${via.messageId}/recording/${p.id}`
+          : `/v1/calls/${call.id}/recording/${p.id}`,
   }));
   const state =
     live || view.some((p) => p.state === 'recording' || p.state === 'finishing')
@@ -522,8 +544,8 @@ export async function recordingFor(
     state,
     until: keptBy || !until.length ? null : new Date(Math.min(...until)).toISOString(),
     keptBy: person(keptBy),
-    // Whoever asked keeps it or lets it go, once it's recorded (M17 I13d).
-    mayKeep: state === 'recorded' && notes.some((n) => n.started_by === viewerId),
+    // Whoever asked keeps it or lets it go, once it's recorded (M17 I13d); never from a share.
+    mayKeep: !via && state === 'recorded' && notes.some((n) => n.started_by === viewerId),
     parts: view,
   };
 }
@@ -612,8 +634,17 @@ export async function keepRecording(
   await tellReaders(ctx, call.id);
 }
 
-/** A part this person may play, ready: its stored bytes, else not found. */
-export async function playablePart(ctx: AppContext, call: Call, viewerId: string, partId: string) {
+/**
+ * A part this person may play, ready: its stored bytes, else not found. Through a share (`via`),
+ * one its sharer could play.
+ */
+export async function playablePart(
+  ctx: AppContext,
+  call: Call,
+  viewerId: string,
+  partId: string,
+  via?: ShareVia,
+) {
   const part = await ctx.db
     .selectFrom('call_recording_parts as p')
     .innerJoin('call_notes as n', 'n.id', 'p.notes_id')
@@ -623,7 +654,7 @@ export async function playablePart(ctx: AppContext, call: Call, viewerId: string
     .where('p.state', '=', 'ready')
     .where('n.recording_deleted_at', 'is', null)
     .executeTakeFirst();
-  if (!part || !(await readerOf(ctx.db, call, viewerId))(part))
+  if (!part || !(await readerOf(ctx.db, call, via?.sharedBy ?? viewerId))(part))
     throw notFound(tr('That recording'));
   const day = part.started_at.toISOString().slice(0, 10);
   const ext = part.mime.endsWith('mp4') ? 'mp4' : part.mime.endsWith('ogg') ? 'ogg' : 'webm';
@@ -635,10 +666,46 @@ export async function playablePart(ctx: AppContext, call: Call, viewerId: string
   };
 }
 
-/** Delete these notes' recording for everyone: its bytes go, the notes stay. Says how many. */
-async function dropRecording(ctx: AppContext, notesIds: string[], why: string): Promise<number> {
+/**
+ * Every share of these calls' recordings goes with them (R114 (7), M17 I13e): each removed for
+ * everyone in the conversation it was shared into, as any message taken down.
+ */
+async function dropSharesOf(
+  ctx: AppContext,
+  callIds: string[],
+  actorId: string | null,
+): Promise<number> {
+  if (!callIds.length) return 0;
+  const shares = await ctx.db
+    .selectFrom('call_recording_shares as s')
+    .innerJoin('messages as m', 'm.id', 's.message_id')
+    .select(['m.id', 'm.conversation_id', 'm.pinned_at'])
+    .where('s.call_id', 'in', callIds)
+    .where('m.deleted_at', 'is', null)
+    .execute();
+  for (const m of shares) await removeForEveryone(ctx, m, actorId);
+  if (shares.length) ctx.metrics.callRecordings.inc({ outcome: 'share_gone' }, shares.length);
+  return shares.length;
+}
+
+/**
+ * Delete these notes' recording for everyone: its bytes go, and every share of it, the notes
+ * stay. Says how many parts went.
+ */
+async function dropRecording(
+  ctx: AppContext,
+  notesIds: string[],
+  why: string,
+  actorId: string | null = null,
+): Promise<number> {
   if (!notesIds.length) return 0;
-  const keys = await ctx.db.transaction().execute(async (trx) => {
+  const { keys, callIds } = await ctx.db.transaction().execute(async (trx) => {
+    const calls = await trx
+      .selectFrom('call_notes')
+      .select('call_id')
+      .distinct()
+      .where('id', 'in', notesIds)
+      .execute();
     await trx
       .updateTable('call_notes')
       .set({ recording_deleted_at: ctx.now() })
@@ -652,11 +719,12 @@ async function dropRecording(ctx: AppContext, notesIds: string[], why: string): 
       .where('state', '<>', 'deleted')
       .returning('storage_key')
       .execute();
-    return parts.map((p) => p.storage_key);
+    return { keys: parts.map((p) => p.storage_key), callIds: calls.map((c) => c.call_id) };
   });
   const storage = storageFor(ctx.config);
   for (const key of keys)
     await storage.remove(key).catch((err) => ctx.log.warn({ err, key }, `${why}: not removed`));
+  await dropSharesOf(ctx, callIds, actorId);
   return keys.length;
 }
 
@@ -679,14 +747,47 @@ export async function deleteRecording(ctx: AppContext, call: Call, userId: strin
     ctx,
     notes.map((n) => n.id),
     'recording deleted',
+    userId,
   );
   ctx.metrics.callRecordings.inc({ outcome: 'deleted' });
   await tellReaders(ctx, call.id);
 }
 
 /**
- * Daily: recordings past their day go for everyone (R114 (6)), and a part whose recorder went
- * quiet without ending it is finished with what it sent.
+ * A share whose recording went any other way (the call's line erased with it) goes at the next
+ * sweep (R114 (7)): the tile reads as gone until then.
+ */
+async function sweepGoneShares(ctx: AppContext): Promise<void> {
+  for (;;) {
+    const gone = await ctx.db
+      .selectFrom('call_recording_shares as s')
+      .innerJoin('messages as m', 'm.id', 's.message_id')
+      .select(['m.id', 'm.conversation_id', 'm.pinned_at'])
+      .where('m.deleted_at', 'is', null)
+      .where((eb) =>
+        eb.not(
+          eb.exists(
+            eb
+              .selectFrom('call_notes as n')
+              .select('n.id')
+              .whereRef('n.call_id', '=', 's.call_id')
+              .where('n.records', '=', true)
+              .where('n.recording_deleted_at', 'is', null),
+          ),
+        ),
+      )
+      .limit(SWEEP_BATCH)
+      .execute();
+    for (const m of gone) await removeForEveryone(ctx, m, null);
+    if (gone.length) ctx.metrics.callRecordings.inc({ outcome: 'share_gone' }, gone.length);
+    if (gone.length < SWEEP_BATCH) break;
+  }
+}
+
+/**
+ * Daily: recordings past their day go for everyone (R114 (6)), with every share of them, a share
+ * whose recording went any other way goes too, and a part whose recorder went quiet without
+ * ending it is finished with what it sent.
  */
 export async function sweepRecordings(ctx: AppContext): Promise<void> {
   const now = ctx.now();
@@ -709,6 +810,7 @@ export async function sweepRecordings(ctx: AppContext): Promise<void> {
     ctx.metrics.callRecordings.inc({ outcome: 'expired' }, due.length);
     if (due.length < SWEEP_BATCH) break;
   }
+  await sweepGoneShares(ctx);
   const stale = await ctx.db
     .selectFrom('call_recording_parts')
     .select('id')

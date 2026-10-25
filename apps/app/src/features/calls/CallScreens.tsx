@@ -171,7 +171,7 @@ function OneToOneCallLayer() {
           >
             {call.notes?.records
               ? tr(
-                  '{name} asks Cai to record this call: the voices and any screen shown, kept {days} days for everyone in it.',
+                  '{name} asks Cai to record this call: the voices and any screen shown, kept {days} days for everyone in it; anyone in it may share it on.',
                   {
                     name: other.displayName.split(' ')[0] || other.displayName,
                     days: RECORDING_DAYS,

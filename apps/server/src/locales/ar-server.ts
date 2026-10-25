@@ -1769,4 +1769,10 @@ export const arServer: Catalog = {
   'Cai is already being asked to record this call.': 'يُطلب من Cai تسجيل هذه المكالمة بالفعل.',
   'Cai is already being asked to take notes in this call.':
     'يُطلب من Cai تدوين ملاحظات هذه المكالمة بالفعل.',
+  'The recording can be shared once the call is over and it’s ready to play.':
+    'يمكن مشاركة التسجيل بعد انتهاء المكالمة وحين يصبح جاهزًا للتشغيل.',
+  'A recording isn’t shared into a private conversation.': 'لا يُشارك تسجيل في محادثة خاصة.',
+  'A recording isn’t shared into a customer conversation.': 'لا يُشارك تسجيل في محادثة عميل.',
+  'A call’s recording is shared from its notes by someone who was in it.':
+    'تسجيل المكالمة يشاركه من كان فيها، من ملاحظاتها.',
 };

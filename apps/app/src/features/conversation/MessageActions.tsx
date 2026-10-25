@@ -52,6 +52,8 @@ const DECISION_MAX = 300;
 function forwardable(m: MessageView): boolean {
   if (m.sealed) return false;
   if (m.kind === 'location') return !(m.payload as { live?: unknown }).live;
+  // A call's recording is shared on only from its notes, by someone who was in it (R114 (7)).
+  if (m.kind === 'text' && (m.payload as { recording?: unknown }).recording) return false;
   return ['text', 'media', 'file', 'voice', 'sticker', 'contact'].includes(m.kind);
 }
 

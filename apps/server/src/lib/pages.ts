@@ -222,7 +222,10 @@ keeps its conversations for less), then deletes them for everyone. Someone who j
 only what was recorded after they joined. Anyone who was in the call may delete the recording for
 everyone at any time; the notes stay. Whoever asked for it may keep it past that day, and then
 it counts against their storage until they let it go or someone deletes it; never past an
-organization&rsquo;s own retention. It goes with the call&rsquo;s line too, and your export lists
+organization&rsquo;s own retention. Anyone who was in the call may share the recording into a
+conversation they&rsquo;re in, where whoever is in that conversation plays the parts the sharer
+could, for as long as it&rsquo;s kept; a share goes when the recording does, and is never
+forwarded on. It goes with the call&rsquo;s line too, and your export lists
 the recordings you may play and whether you keep each. It isn&rsquo;t sent to any AI provider.
 Never in a private conversation, and never with anyone under 18 in the call.</li>
 <li><strong>Meetings with guests.</strong> When you invite someone to a meeting by email address,

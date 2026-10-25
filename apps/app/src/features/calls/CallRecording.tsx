@@ -2,12 +2,13 @@
  * A call's recording beside its notes (R114, M17 I13b), for whoever was in the call when each
  * part began: everyone's voices, and each screen shown, each played where it is (the browser's
  * player, a phone's own), until when it's kept, Keep past that day for whoever asked (M17 I13d:
- * against their storage, until they stop keeping it), and Delete for everyone (R52), asked once
- * more before it goes. The notes stay when it does.
+ * against their storage, until they stop keeping it), Share into a conversation of one's own
+ * (M17 I13e: as a message that points at it and goes when it does), and Delete for everyone
+ * (R52), asked once more before it goes. The notes stay when it does.
  */
 import type { CallRecordingPartView, CallRecordingView } from '@caime/core/api';
 import { formatClock, formatDuration, formatWhenAt } from '@caime/core/format';
-import { tr } from '@caime/core/i18n';
+import { tr, trn } from '@caime/core/i18n';
 import { useQueryClient } from '@tanstack/react-query';
 import CircleDot from 'lucide-react-native/icons/circle-dot';
 import { lazy, Suspense, useState } from 'react';
@@ -18,10 +19,14 @@ import { useNow, useUserClock } from '@/lib/time';
 import { useSession } from '@/state/session';
 import { useTheme } from '@/theme/theme';
 import { Button } from '@/ui/Button';
+import { lazyPart } from '@/ui/Lazy';
 import { Text } from '@/ui/Text';
 import { toast } from '@/ui/Toast';
 
 const RecordingPlayer = lazy(() => import('./RecordingPlayer'));
+const SendToSheet = lazyPart(() =>
+  import('@/features/conversation/SendToSheet').then((m) => m.SendToSheet),
+);
 
 /** What a part is, and how it stands while it isn't ready to play. */
 function PartRow({ part }: { part: CallRecordingPartView }) {
@@ -61,10 +66,13 @@ function PartRow({ part }: { part: CallRecordingPartView }) {
 
 export function CallRecording({
   callId,
+  conversationId,
   recording,
   seek,
 }: {
   callId: string;
+  /** The call's own conversation: never offered to share into. */
+  conversationId: string;
   recording: CallRecordingView;
   /** A moment a line of the notes asked to play from (M17 I13c). */
   seek: { at: string; n: number } | null;
@@ -78,6 +86,7 @@ export function CallRecording({
   const [confirming, setConfirming] = useState(false);
   const [deleting, setDeleting] = useState(false);
   const [keeping, setKeeping] = useState(false);
+  const [sharing, setSharing] = useState(false);
   const playerWidth = Math.min(480, width - 64);
   // Whoever asked keeps it past its day, against their storage, or stops keeping it (M17 I13d).
   const keep = async (toKeep: boolean) => {
@@ -149,6 +158,34 @@ export function CallRecording({
           loading={keeping}
           onPress={() => void keep(!recording.keptBy)}
           testID={recording.keptBy ? 'call-recording-let-go' : 'call-recording-keep'}
+        />
+      ) : null}
+      {/* Shared into a conversation of one's own (R114 (7)), once it's recorded. */}
+      {recording.state === 'recorded' && !confirming ? (
+        <Button
+          label={tr('Share into a conversation')}
+          size="sm"
+          variant="secondary"
+          onPress={() => setSharing(true)}
+          testID="call-recording-share"
+        />
+      ) : null}
+      {sharing ? (
+        <SendToSheet
+          exclude={conversationId}
+          title={tr('Share the recording')}
+          subtitle={tr(
+            'Whoever is in the conversation can play it while it’s kept; it goes when the recording does.',
+          )}
+          nowhere={tr('There’s no conversation to share it into yet.')}
+          testID="recording-share"
+          onSend={async (conversationIds, clientId) => {
+            await endpoints.shareCallRecording(callId, conversationIds, clientId);
+            toast(trn(conversationIds.length, 'Shared', 'Shared into {n} conversations'));
+            void qc.invalidateQueries({ queryKey: qk.inbox });
+            void qc.invalidateQueries({ queryKey: qk.inboxAll });
+          }}
+          onClose={() => setSharing(false)}
         />
       ) : null}
       {confirming ? (

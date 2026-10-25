@@ -3364,22 +3364,22 @@ export const arB: Catalog = {
   'Cai is recording': 'Cai يسجّل',
   'Asking {names} to let Cai record': 'بانتظار موافقة {names} على تسجيل Cai',
   '{name} asks Cai to record': 'طلب أن يسجّل Cai: {name}',
-  'Cai keeps what’s said and any screen shown as a recording, with notes under each person’s name, for everyone in the call for {days} days. Cameras aren’t recorded. Anyone can stop it or delete it.':
-    'يحفظ Cai ما يُقال وأي شاشة تُعرض في تسجيل، مع ملاحظات تحت اسم كل شخص، لكل من في المكالمة مدة {days} يومًا. لا تُسجَّل الكاميرات، ويمكن لأي شخص إيقافه أو حذفه.',
+  'Cai keeps what’s said and any screen shown as a recording, with notes under each person’s name, for everyone in the call for {days} days. Cameras aren’t recorded. Anyone can stop it, delete it or share it on.':
+    'يحفظ Cai ما يُقال وأي شاشة تُعرض في تسجيل، مع ملاحظات تحت اسم كل شخص، لكل من في المكالمة مدة {days} يومًا. لا تُسجَّل الكاميرات، ويمكن لأي شخص إيقافه أو حذفه أو مشاركته.',
   'Let Cai record': 'نعم، يسجّل Cai',
   'Not this time: Cai isn’t recording.': 'ليس هذه المرة: Cai لا يسجّل.',
   'Someone is in the call without Cai, so Cai stopped recording.':
     'في المكالمة من انضم دون Cai، لذا توقّف Cai عن التسجيل.',
   'Cai stopped recording.': 'توقّف Cai عن التسجيل.',
-  '{name} asks Cai to record this call: the voices and any screen shown, kept {days} days for everyone in it.':
-    'طلب أن يسجّل Cai هذه المكالمة، أي الأصوات وأي شاشة تُعرض، وتُحفظ {days} يومًا لكل من فيها: {name}',
-  'Cai is recording this call: the voices and any screen shown, kept {days} days for everyone in it.':
-    'يسجّل Cai هذه المكالمة، أي الأصوات وأي شاشة تُعرض، وتُحفظ {days} يومًا لكل من فيها.',
-  'Cai is asked to record this call: the voices and any screen shown, kept {days} days for everyone in it.':
-    'طُلب من Cai تسجيل هذه المكالمة، أي الأصوات وأي شاشة تُعرض، وتُحفظ {days} يومًا لكل من فيها.',
+  '{name} asks Cai to record this call: the voices and any screen shown, kept {days} days for everyone in it; anyone in it may share it on.':
+    'طلب أن يسجّل Cai هذه المكالمة، أي الأصوات وأي شاشة تُعرض، وتُحفظ {days} يومًا لكل من فيها، ويجوز لأي منهم مشاركتها: {name}',
+  'Cai is recording this call: the voices and any screen shown, kept {days} days for everyone in it; anyone in it may share it on.':
+    'يسجّل Cai هذه المكالمة، أي الأصوات وأي شاشة تُعرض، وتُحفظ {days} يومًا لكل من فيها، ويجوز لأي منهم مشاركتها.',
+  'Cai is asked to record this call: the voices and any screen shown, kept {days} days for everyone in it; anyone in it may share it on.':
+    'طُلب من Cai تسجيل هذه المكالمة، أي الأصوات وأي شاشة تُعرض، وتُحفظ {days} يومًا لكل من فيها، ويجوز لأي منهم مشاركتها.',
   'What’s said, as words. Voices aren’t kept.': 'ما يُقال، كلمات مكتوبة. لا تُحفظ الأصوات.',
-  'The notes, and the voices and any screen shown, kept {days} days.':
-    'الملاحظات، والأصوات وأي شاشة تُعرض، تُحفظ {days} يومًا.',
+  'The notes, and the voices and any screen shown, kept {days} days; anyone in the call may share it on.':
+    'الملاحظات، والأصوات وأي شاشة تُعرض، تُحفظ {days} يومًا، ويجوز لأي من في المكالمة مشاركتها.',
   'Play from {time}': 'تشغيل من {time}',
   'Bring over a WhatsApp or Telegram chat': {
     toWoman: 'انقلي محادثة من واتساب أو تيليغرام',
@@ -3423,12 +3423,28 @@ export const arB: Catalog = {
   'Asking {names} to let Cai take notes only': 'بانتظار موافقة {names} على اكتفاء Cai بالملاحظات',
   '{name} asks Cai to record too': 'طلب أن يسجّل Cai أيضًا: {name}',
   '{name} asks Cai to take notes only': 'طلب أن يكتفي Cai بالملاحظات: {name}',
-  'From now, Cai would keep what’s said and any screen shown as a recording for everyone in the call for {days} days, beside the notes. Cameras aren’t recorded. Anyone can stop it or delete it.':
-    'من الآن، يحتفظ Cai بما يُقال وبأي شاشة تُعرض كتسجيل لكل من في المكالمة لمدة {days} يومًا، إلى جانب الملاحظات. لا تُسجَّل الكاميرات. يمكن لأي شخص إيقافه أو حذفه.',
+  'From now, Cai would keep what’s said and any screen shown as a recording for everyone in the call for {days} days, beside the notes. Cameras aren’t recorded. Anyone can stop it, delete it or share it on.':
+    'من الآن، يحتفظ Cai بما يُقال وبأي شاشة تُعرض كتسجيل لكل من في المكالمة لمدة {days} يومًا، إلى جانب الملاحظات. لا تُسجَّل الكاميرات. يمكن لأي شخص إيقافه أو حذفه أو مشاركته.',
   'The recording would stop here and Cai would go on with the notes alone. Voices aren’t kept from then on.':
     'يتوقف التسجيل هنا ويواصل Cai الملاحظات وحدها. لا تُحفظ الأصوات من الآن فصاعدًا.',
   'Cai is recording now.': 'Cai يسجّل الآن.',
   'Cai is taking notes only now.': 'Cai يكتفي بالملاحظات الآن.',
   'Not this time: Cai goes on recording.': 'ليس هذه المرة: Cai يواصل التسجيل.',
   'Not this time: Cai goes on taking notes.': 'ليس هذه المرة: Cai يواصل تدوين الملاحظات.',
+  'Call recording': 'تسجيل مكالمة',
+  'Call recording · {when}': 'تسجيل مكالمة · {when}',
+  'The recording is gone.': 'لم يعد التسجيل موجودًا.',
+  'Share into a conversation': 'مشاركة في محادثة',
+  'Share the recording': 'مشاركة التسجيل',
+  'Whoever is in the conversation can play it while it’s kept; it goes when the recording does.':
+    'يمكن لمن في المحادثة تشغيله ما دام محفوظًا، ويزول بزوال التسجيل.',
+  'There’s no conversation to share it into yet.': 'لا محادثة لمشاركته فيها بعد.',
+  'Shared into {n} conversations': {
+    zero: 'لم يُشارك',
+    one: 'تمت المشاركة',
+    two: 'تمت المشاركة في محادثتين',
+    few: 'تمت المشاركة في {n} محادثات',
+    many: 'تمت المشاركة في {n} محادثة',
+    other: 'تمت المشاركة في {n} محادثة',
+  },
 };

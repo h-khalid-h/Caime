@@ -1738,7 +1738,17 @@ A sphere is said as how you know someone, never "sphere".
   `call_notes.kept_by` is theirs, never where `retentionFor` says an organization's retention
   applies, left alone by the sweep, let go back to its day); it never reaches an AI provider.
   A new place that reads or keeps a recording goes through `recordingFor`/`playablePart` and
-  their reader rule. It plays beside the notes (M17 I13c): `RecordingPlayer` (`.web`: the voices
+  their reader rule. Shared on (R114 (7), M17 I13e, `lib/recording-shares.ts`): anyone who was
+  in the call shares it, once recorded, into conversations they're in (`POST
+  /calls/:id/recording/share`; never private, never a customer conversation, never to someone
+  reached by mail: `notByMail`), as a text of theirs with `payload.recording = { callId }` (the
+  server's mark; a device's text carries no payload) indexed by `call_recording_shares`
+  (migration 0149: never an index on messages' payload); whoever is in that conversation plays
+  the parts the sharer could (`recordingFor(…, via)`, `GET /messages/:id/recording` and
+  `…/:partId`), the forward route and `forwardable` refuse it, and a share goes when the
+  recording does (`dropSharesOf` from `dropRecording`, the daily sweep for one gone any other
+  way: `removeForEveryone` each); the app's `SendToSheet` (ForwardSheet's list, lazy everywhere)
+  sends it and `RecordingShare` draws it in the bubble. It plays beside the notes (M17 I13c): `RecordingPlayer` (`.web`: the voices
   in the browser's player, the shown screen muted beside them in step; a phone's: the voices
   through expo-audio as a voice note, a screen in the phone's player) takes a `seek` of a moment,
   which `recordingTimeline.ts` turns into a part and an offset; anything in the notes with a

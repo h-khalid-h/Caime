@@ -1187,6 +1187,9 @@ export async function messageRoutes(app: FastifyInstance, ctx: AppContext) {
     const live = m.kind === 'location' && Boolean((m.payload as { live?: unknown } | null)?.live);
     if (m.kind === 'system' || m.kind === 'kit' || m.kind === 'poll' || live)
       throw badRequest(tr('Cards, polls and live locations stay where they were shared.'));
+    // A call's recording is shared on only by someone who was in the call (R114 (7)).
+    if ((m.payload as { recording?: unknown } | null)?.recording)
+      throw badRequest(tr('A call’s recording is shared from its notes by someone who was in it.'));
     const kind = m.kind;
     const files = await ctx.db
       .selectFrom('message_files')

@@ -10,7 +10,14 @@ import { Text } from '@/ui/Text';
 
 const NotesSheet = lazyPart(() => import('./NotesSheet').then((m) => m.NotesSheet));
 
-export function CallNotesLink({ callId }: { callId: string }) {
+export function CallNotesLink({
+  callId,
+  conversationId,
+}: {
+  callId: string;
+  /** The call's own conversation: never offered to share its recording into (M17 I13e). */
+  conversationId: string;
+}) {
   const [open, setOpen] = useState(false);
   return (
     <>
@@ -25,7 +32,14 @@ export function CallNotesLink({ callId }: { callId: string }) {
           {tr('Notes from the call')}
         </Text>
       </Pressable>
-      {open ? <NotesSheet callId={callId} open={open} onClose={() => setOpen(false)} /> : null}
+      {open ? (
+        <NotesSheet
+          callId={callId}
+          conversationId={conversationId}
+          open={open}
+          onClose={() => setOpen(false)}
+        />
+      ) : null}
     </>
   );
 }

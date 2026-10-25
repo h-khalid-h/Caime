@@ -4084,8 +4084,24 @@ clinic can sign for. I1 lands before launch.
         while recording, not by someone who didn't ask, refused without room, kept and counted,
         the sweep leaving it, let go and counted no more, gone at the next sweep), the notes E2E
         (Keep, Stop keeping it, nothing offered to who didn't ask).
-  - [ ] I13e. Shared on (S): into a conversation of the sharer's, as the consent said; gone with
-        the recording.
+  - [x] I13e. Shared on (S): into a conversation of the sharer's, as the consent said; gone with
+        the recording. Built: anyone who was in the call shares it, once recorded, into
+        conversations they're in (never a private one, never a customer conversation, never to
+        someone reached by mail), as a message of theirs that points at the recording
+        (`payload.recording`, the server's mark; `call_recording_shares` finds it again,
+        migration 0149); whoever is in that conversation plays the parts the sharer could, by the
+        share's own addresses, while it's kept; the forward route and the actions refuse to
+        forward one; a share goes when the recording does (deleted or expired: at once; the
+        call's line erased: at the next sweep), the tile reading as gone meanwhile; every consent
+        line says anyone in it may share it on, and the privacy page says the rule. Verified:
+        `call-recording.test.ts` (shared into a group and played there by someone who wasn't in
+        the call, nothing for someone outside it, never by the call's own address, never
+        forwarded, gone with Delete; refused while recording, by someone who wasn't in the call,
+        into a private or a customer conversation, all or none; a late joiner's share carries
+        only their parts; a share whose recording went with the call's line goes at the sweep),
+        `mail.test.ts`, `kit-cards.test.ts`, the notes E2E (shared into the circle, played by
+        Sam, no Forward, gone with Delete). Not yet: into a customer conversation (the mask;
+        calls with organizations are M16 H8a).
   - [ ] I13f. Asked in writing (S): in every mode a question typed in the call, answered to the one
         who asked from what was said, cited.
   - [ ] I13g. Interact (L): the third mode and its labelled consent ("Answer, Cai joins in");
@@ -5783,6 +5799,12 @@ have yet, each sized:
 - 2026-10-20 — The French and Turkish catalogs come in two halves fetched side by side, as Arabic
   does: their largest download 48.9 KB where one was 95.2 KB of a chunk's 100; the first download
   448.8 KB of 450 (0.2 KB more: the two loaders).
+- 2026-10-25 — M17 I13e (R114 (7)): a recording shared on. Anyone who was in the call shares it,
+  once recorded, into conversations they're in, as a message of theirs that points at it
+  (`call_recording_shares`, migration 0149); whoever is there plays the parts the sharer could,
+  by the share's own addresses; never forwarded; gone when the recording goes (at once with
+  Delete or its day, at the next sweep when the call's line was erased); the consent lines say
+  so. Verified: `call-recording.test.ts`, `mail.test.ts`, `kit-cards.test.ts`, the notes E2E.
 - 2026-10-25 — M17 I13b2 (R114): another mode mid-call. Asked while one is on, the other mode is
   a `switching` row beside the live notes, asked of everyone again and answered by its own id; the
   mode under way goes on until they have all said yes (then it stops as replaced and the switch

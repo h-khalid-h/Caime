@@ -105,6 +105,8 @@ export const qk = {
   callsPage: (filter: string, limit: number) => ['calls', filter, limit] as const,
   /** What was said in a call while Cai took notes (M16 F7). */
   callNotes: (callId: string) => ['call-notes', callId] as const,
+  /** A call's recording shared into a conversation, by the share's message (M17 I13e). */
+  recordingShare: (messageId: string) => ['recording-share', messageId] as const,
   relationshipHistory: (id: string) => ['relationship-history', id] as const,
   connections: ['connections'] as const,
   /** Updates: the organizations someone follows, and each one's updates (PRD §59). */

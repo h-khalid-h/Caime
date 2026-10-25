@@ -3336,6 +3336,17 @@ export interface CallRecordingPartView {
   url: string | null;
 }
 
+/**
+ * `GET /messages/:id/recording`: a call's recording shared into a conversation (R114 (7), M17
+ * I13e), as whoever is in that conversation may play it: the parts the sharer could play, by the
+ * share's own addresses; `recording` null, or `deleted`, once it's gone (the share goes with it).
+ */
+export interface RecordingShareResponse {
+  recording: CallRecordingView | null;
+  /** When the call was. */
+  callAt: string;
+}
+
 /** `POST /calls/:id/recording/parts`: the part begun, to send its pieces to. */
 export interface CallRecordingPartResponse {
   partId: string;

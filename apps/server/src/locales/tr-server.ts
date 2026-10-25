@@ -1720,4 +1720,12 @@ export const turkishServer: Catalog = {
     'Cai’den bu aramayı kaydetmesi zaten isteniyor.',
   'Cai is already being asked to take notes in this call.':
     'Cai’den bu aramada not alması zaten isteniyor.',
+  'The recording can be shared once the call is over and it’s ready to play.':
+    'Kayıt, arama bittikten ve oynatılmaya hazır olduktan sonra paylaşılabilir.',
+  'A recording isn’t shared into a private conversation.':
+    'Bir kayıt özel bir konuşmaya paylaşılmaz.',
+  'A recording isn’t shared into a customer conversation.':
+    'Bir kayıt müşteri konuşmasına paylaşılmaz.',
+  'A call’s recording is shared from its notes by someone who was in it.':
+    'Bir aramanın kaydı, notlarından, aramada bulunan biri tarafından paylaşılır.',
 };

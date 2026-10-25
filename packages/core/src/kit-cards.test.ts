@@ -194,6 +194,15 @@ describe('how a card reads', () => {
         deleted: false,
       }),
     ).toBe('Meeting: Venue walkthrough');
+    // A call's recording shared on (R114 (7)): a text with the server's mark and no words.
+    expect(
+      messagePreview({
+        kind: 'text',
+        body: null,
+        payload: { recording: { callId: 'c1' } },
+        deleted: false,
+      }),
+    ).toBe('🎙 Call recording');
     expect(
       messagePreview({
         kind: 'kit',

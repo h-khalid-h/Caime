@@ -162,10 +162,13 @@ function WrittenNotes({
 
 export function NotesSheet({
   callId,
+  conversationId,
   open,
   onClose,
 }: {
   callId: string;
+  /** The call's own conversation, which a share of its recording never offers (M17 I13e). */
+  conversationId: string;
   open: boolean;
   onClose: () => void;
 }) {
@@ -247,7 +250,12 @@ export function NotesSheet({
     >
       {recording ? (
         <View style={{ marginBottom: 14 }}>
-          <CallRecording callId={callId} recording={recording} seek={seek} />
+          <CallRecording
+            callId={callId}
+            conversationId={conversationId}
+            recording={recording}
+            seek={seek}
+          />
         </View>
       ) : null}
       {notes.isPending ? (

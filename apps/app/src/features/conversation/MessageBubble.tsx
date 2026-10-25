@@ -25,7 +25,7 @@ import Languages from 'lucide-react-native/icons/languages';
 import Pin from 'lucide-react-native/icons/pin';
 import UserRound from 'lucide-react-native/icons/user-round';
 import { lazy, memo, type ReactNode, Suspense, useEffect, useMemo, useRef, useState } from 'react';
-import { Platform, View } from 'react-native';
+import { Platform, useWindowDimensions, View } from 'react-native';
 import { mediaHeaders, mediaUrl } from '@/api/client';
 import { Character } from '@/brand/Character';
 import { type Translation, useTranslations } from '@/features/assist/translations';
@@ -61,6 +61,8 @@ const VoiceNote = lazy(() =>
 );
 /** A video's player loads with the first video shown (M16 E4b). */
 const VideoTile = lazy(() => import('@/features/media/VideoTile'));
+// A call's recording shared into the conversation (R114 (7), M17 I13e), drawn when one is.
+const RecordingShare = lazy(() => import('@/features/calls/RecordingShare'));
 /** Undo and Open under what Cai kept for the reader (M16 G13), loaded with the first one shown. */
 const KeptAction = lazy(() => import('@/features/cai/KeptAction'));
 /** What Cai offered to do for the reader (M16 G14), done on their tap; loaded with the first. */
@@ -479,6 +481,9 @@ export const MessageBubble = memo(function MessageBubble({
       ? stickerById((m.payload as { sticker?: string }).sticker)
       : undefined;
   const time = formatClock(m.createdAt, timeZone, locale);
+  const { width: screenWidth } = useWindowDimensions();
+  // A shared recording's player, inside the bubble (M17 I13e).
+  const shareWidth = Math.min(300, screenWidth - 120);
 
   if (m.kind === 'system') {
     // A topic started from here opens from its line (PRD §58).
@@ -525,7 +530,7 @@ export const MessageBubble = memo(function MessageBubble({
         ) : (
           line
         )}
-        {notesOf ? <CallNotesLink callId={notesOf} /> : null}
+        {notesOf ? <CallNotesLink callId={notesOf} conversationId={m.conversationId} /> : null}
       </View>
     );
   }
@@ -874,6 +879,24 @@ export const MessageBubble = memo(function MessageBubble({
     );
   } else if (m.kind === 'kit') {
     content = <KitCard m={m} mine={mine} />;
+  } else if (m.kind === 'text' && (m.payload as { recording?: unknown }).recording) {
+    // A call's recording shared on (R114 (7)): the server's mark on a text with no words.
+    content = (
+      <Suspense
+        fallback={
+          <View
+            style={{
+              width: shareWidth,
+              height: 48,
+              borderRadius: t.radii.sm,
+              backgroundColor: t.c.surfaceMuted,
+            }}
+          />
+        }
+      >
+        <RecordingShare messageId={m.id} width={shareWidth} fg={fg} meta={meta} />
+      </Suspense>
+    );
   } else if (m.sealed && !text) {
     // Opening it, or why this device can't show it.
     content = (

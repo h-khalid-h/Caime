@@ -33,6 +33,8 @@ test.describe
     let noor: { page: Page; errors: string[] };
     let sam: { page: Page; errors: string[] };
     let convo: string;
+    /** A group of the two, where a recording is shared on (M17 I13e). */
+    let circle: string;
 
     test.beforeAll(async ({ browser }) => {
       noorContext = await browser.newContext({ viewport: { width: 1280, height: 860 } });
@@ -55,6 +57,11 @@ test.describe
         { headers: CLIENT, data: {} },
       );
       convo = (await accepted.json()).conversationId;
+      const group = await noorContext.request.post('/v1/conversations', {
+        headers: CLIENT,
+        data: { kind: 'group', title: 'Notes circle', memberIds: [samId] },
+      });
+      circle = (await group.json()).conversation.id;
       noor = await newPerson(noorContext);
       sam = await newPerson(samContext);
     });
@@ -220,7 +227,7 @@ test.describe
         'Asking Sam to let Cai record',
       );
       await expect(sam.page.getByTestId('call-incoming-notes')).toHaveText(
-        'Noor asks Cai to record this call: the voices and any screen shown, kept 30 days for everyone in it.',
+        'Noor asks Cai to record this call: the voices and any screen shown, kept 30 days for everyone in it; anyone in it may share it on.',
       );
       await expect(sam.page.getByTestId('call-accept-with-notes')).toHaveAccessibleName(
         'Answer, Cai records',
@@ -320,7 +327,26 @@ test.describe
       await expect(page.getByTestId('call-recording-until')).toBeVisible();
       await expect(page.getByTestId('call-recording-kept')).toHaveCount(0);
 
-      // Sam deletes it for everyone; the notes stay.
+      // Noor shares it into their circle (M17 I13e): the call's own chat isn't offered; Sam plays
+      // it there, and its actions offer no Forward.
+      await page.getByTestId('call-recording-share').click();
+      await expect(page.getByTestId('recording-share-to')).toHaveCount(1);
+      await page.getByTestId('recording-share-to').click();
+      await page.getByTestId('recording-share-send').click();
+      await expect(visible(page, 'Shared')).toBeVisible();
+      await sam.page.goto(`/c/${circle}`);
+      await expect(sam.page.getByTestId('recording-share')).toBeVisible();
+      await expect(sam.page.getByTestId('recording-share-until')).toBeVisible();
+      await expect(sam.page.getByTestId('call-recording-voices')).toBeVisible();
+      await sam.page.screenshot({ path: 'e2e/screenshots/desktop-recording-shared.png' });
+      await sam.page.getByTestId('recording-share').hover();
+      await sam.page.getByRole('button', { name: 'React', exact: true }).click();
+      await expect(sam.page.getByTestId('message-save')).toBeVisible();
+      await expect(sam.page.getByTestId('message-forward')).toHaveCount(0);
+      await sam.page.keyboard.press('Escape');
+      await expect(sam.page.getByTestId('message-save')).toHaveCount(0);
+
+      // Sam deletes it for everyone; the notes stay, and the share goes with it.
       await sam.page.goto(`/c/${convo}`);
       await sam.page.getByTestId('call-notes-open').first().click();
       await expect(sam.page.getByTestId('call-recording-until')).toBeVisible();
@@ -330,6 +356,9 @@ test.describe
       await expect(sam.page.getByTestId('call-recording-deleted')).toBeVisible();
       await expect(page.getByTestId('call-recording-deleted')).toBeVisible({ timeout: 20_000 });
       expect((await recording())?.state).toBe('deleted');
+      await sam.page.goto(`/c/${circle}`);
+      await expect(sam.page.getByTestId('recording-share')).toHaveCount(0);
+      await expect(visible(sam.page, 'Message deleted')).toBeVisible();
       expect(problems(noor, sam)).toEqual([]);
     });
 

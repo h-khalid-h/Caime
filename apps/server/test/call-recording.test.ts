@@ -572,3 +572,212 @@ describe('kept thirty days, and gone with the call’s line (R114 (6))', () => {
     expect((await recordingOf(sam, callId)).state).toBe('deleted');
   });
 });
+
+describe('shared on (R114 (7), M17 I13e)', () => {
+  /** A 1:1 call recorded, one part of it ready, the call over. */
+  async function recordedAndOver() {
+    const { callId } = await recordedCall();
+    const partId = (
+      await startPart(noor, callId, { deviceId: 'noor-tab-1', kind: 'voices', mime: 'audio/webm' })
+    ).json().partId as string;
+    await sendAll(noor, callId, partId, 'noor-tab-1', voice);
+    await finish(noor, callId, partId, 'noor-tab-1');
+    await noor.req('POST', `/v1/calls/${callId}/end`, { deviceId: 'noor-tab-1' });
+    await work();
+    return { callId, partId };
+  }
+  const groupOf = async (title: string, memberIds: string[]) =>
+    (await noor.post('/v1/conversations', { kind: 'group', title, memberIds })).conversation
+      .id as string;
+  const share = (c: Client, callId: string, conversationIds: string[]) =>
+    c.req('POST', `/v1/calls/${callId}/recording/share`, {
+      conversationIds,
+      clientId: uuidv7(),
+    });
+  const messagesIn = async (c: Client, conversationId: string) =>
+    (await c.get(`/v1/conversations/${conversationId}/messages`)).messages as Array<{
+      id: string;
+      kind: string;
+      body: string | null;
+      payload: { recording?: { callId: string } };
+      deletedAt: string | null;
+    }>;
+
+  it('anyone who was in it shares it into a conversation of theirs, where whoever is in it plays the parts the sharer could', async () => {
+    const { callId, partId } = await recordedAndOver();
+    const circle = await groupOf('Shared circle', [sam.user.id, omar.user.id]);
+    const shared = await share(sam, callId, [circle]);
+    expect(shared.statusCode, shared.body).toBe(200);
+    const [messageId] = shared.json().messageIds as string[];
+    await t.ctx.flush();
+    // A message of the sharer's that points at the recording, with no words of its own.
+    const m = (await messagesIn(omar, circle)).find((x) => x.id === messageId);
+    expect(m).toMatchObject({ kind: 'text', body: null, payload: { recording: { callId } } });
+    // Omar, who wasn't in the call, plays it there: the sharer's parts, by the share's addresses.
+    const view = await omar.get(`/v1/messages/${messageId}/recording`);
+    expect(view.recording).toMatchObject({ state: 'recorded', mayKeep: false });
+    expect(view.recording.parts.map((p: { id: string; url: string }) => [p.id, p.url])).toEqual([
+      [partId, `/v1/messages/${messageId}/recording/${partId}`],
+    ]);
+    expect(typeof view.callAt).toBe('string');
+    const played = await omar.req('GET', `/v1/messages/${messageId}/recording/${partId}`);
+    expect(played.statusCode).toBe(200);
+    expect(played.rawPayload.length).toBeGreaterThan(0);
+    // The call's own address stays its people's: Omar has none.
+    expect((await omar.req('GET', `/v1/calls/${callId}/recording/${partId}`)).statusCode).toBe(404);
+    // Someone outside the conversation has nothing.
+    const lina = await signup(t, { displayName: 'Lina Outside' });
+    expect((await lina.req('GET', `/v1/messages/${messageId}/recording`)).statusCode).toBe(404);
+    expect(
+      (await lina.req('GET', `/v1/messages/${messageId}/recording/${partId}`)).statusCode,
+    ).toBe(404);
+    // Never forwarded on: the consent said who may share it.
+    const forwarded = await omar.req('POST', `/v1/messages/${messageId}/forward`, {
+      conversationIds: [circle],
+      clientId: uuidv7(),
+    });
+    expect(forwarded.statusCode).toBe(400);
+    // Deleted for everyone, the share goes with it.
+    expect((await noor.req('DELETE', `/v1/calls/${callId}/recording`)).statusCode).toBe(200);
+    expect(
+      (await messagesIn(omar, circle)).find((x) => x.id === messageId)?.deletedAt,
+    ).not.toBeNull();
+    expect((await omar.req('GET', `/v1/messages/${messageId}/recording`)).statusCode).toBe(404);
+  });
+
+  it('refused while recording, by someone who wasn’t in the call, into a private or a customer conversation', async () => {
+    const { callId } = await recordedCall();
+    const circle = await groupOf('Refused circle', [sam.user.id, omar.user.id]);
+    // Still being recorded.
+    expect((await noor.req('GET', `/v1/calls/${callId}/notes`)).json().notes.state).toBe('on');
+    const partId = (
+      await startPart(noor, callId, { deviceId: 'noor-tab-1', kind: 'voices', mime: 'audio/webm' })
+    ).json().partId as string;
+    await sendAll(noor, callId, partId, 'noor-tab-1', voice);
+    expect((await share(noor, callId, [circle])).statusCode).toBe(409);
+    await finish(noor, callId, partId, 'noor-tab-1');
+    await noor.req('POST', `/v1/calls/${callId}/end`, { deviceId: 'noor-tab-1' });
+    await work();
+    // Omar wasn't in the call.
+    expect((await share(omar, callId, [circle])).statusCode).toBe(404);
+    // Never into a private conversation (R18).
+    await t.ctx.db
+      .updateTable('conversations')
+      .set({ privacy_class: 'private' })
+      .where('id', '=', circle)
+      .execute();
+    expect((await share(noor, callId, [circle])).statusCode).toBe(400);
+    await t.ctx.db
+      .updateTable('conversations')
+      .set({ privacy_class: 'standard' })
+      .where('id', '=', circle)
+      .execute();
+    // Never into a customer conversation (the mask, R15).
+    const org = await noor.post('/v1/orgs', {
+      country: 'EG',
+      name: 'Shared Clinic',
+      handle: `shared.clinic.${uuidv7().slice(-6)}`,
+      kind: 'business',
+    });
+    const thread = await sam.post(`/v1/orgs/${org.org.id}/conversations`);
+    expect((await share(sam, callId, [thread.conversationId])).statusCode).toBe(400);
+    // All or none: a refused one refuses the lot.
+    expect((await share(sam, callId, [circle, thread.conversationId])).statusCode).toBe(400);
+    expect((await messagesIn(sam, circle)).some((m) => m.payload.recording)).toBe(false);
+    // The circle alone is fine.
+    expect((await share(sam, callId, [circle])).statusCode).toBe(200);
+  });
+
+  it('whoever joined later shares only what came after they joined', async () => {
+    const trip = await groupOf('Shared trip', [sam.user.id, omar.user.id]);
+    const started = await noor.req('POST', `/v1/conversations/${trip}/group-calls`, {
+      kind: 'voice',
+      deviceId: 'noor-tab-1',
+    });
+    const callId = started.json().call.id as string;
+    await sam.req('POST', `/v1/group-calls/${callId}/join`, { deviceId: 'sam-tab-1' });
+    const notesId = (
+      await noor.req('POST', `/v1/calls/${callId}/notes`, {
+        deviceId: 'noor-tab-1',
+        canRecord: true,
+        records: true,
+      })
+    ).json().notes.id;
+    await sam.req('POST', `/v1/calls/${callId}/notes/answer`, {
+      deviceId: 'sam-tab-1',
+      answer: 'yes',
+      notesId,
+    });
+    const before = (
+      await startPart(noor, callId, { deviceId: 'noor-tab-1', kind: 'voices', mime: 'audio/webm' })
+    ).json().partId;
+    await sendAll(noor, callId, before, 'noor-tab-1', voice);
+    t.clock.advance(60_000);
+    await omar.req('POST', `/v1/group-calls/${callId}/join`, {
+      deviceId: 'omar-tab-1',
+      notes: 'yes',
+      notesId,
+    });
+    await finish(noor, callId, before, 'noor-tab-1');
+    t.clock.advance(1_000);
+    const after = (
+      await startPart(noor, callId, { deviceId: 'noor-tab-1', kind: 'voices', mime: 'audio/webm' })
+    ).json().partId;
+    await sendAll(noor, callId, after, 'noor-tab-1', voice);
+    await finish(noor, callId, after, 'noor-tab-1');
+    for (const [c, d] of [
+      [sam, 'sam-tab-1'],
+      [omar, 'omar-tab-1'],
+      [noor, 'noor-tab-1'],
+    ] as const)
+      await c.req('POST', `/v1/group-calls/${callId}/leave`, { deviceId: d });
+    await work();
+    // Omar shares into a chat with Noor alone: Noor, who was there for all of it, plays only
+    // what Omar could.
+    const omarNoor = (
+      await omar.post('/v1/conversations', {
+        kind: 'group',
+        title: 'Omar and Noor',
+        memberIds: [noor.user.id],
+      })
+    ).conversation.id as string;
+    const shared = await share(omar, callId, [omarNoor]);
+    expect(shared.statusCode, shared.body).toBe(200);
+    const [messageId] = shared.json().messageIds as string[];
+    const view = await noor.get(`/v1/messages/${messageId}/recording`);
+    expect(view.recording.parts.map((p: { id: string }) => p.id)).toEqual([after]);
+    expect(
+      (await noor.req('GET', `/v1/messages/${messageId}/recording/${before}`)).statusCode,
+    ).toBe(404);
+    expect((await noor.req('GET', `/v1/messages/${messageId}/recording/${after}`)).statusCode).toBe(
+      200,
+    );
+  });
+
+  it('a share whose recording went with the call’s line goes at the next sweep', async () => {
+    const { callId } = await recordedAndOver();
+    const circle = await groupOf('Swept circle', [sam.user.id, omar.user.id]);
+    const [messageId] = (await share(noor, callId, [circle])).json().messageIds as string[];
+    await t.ctx.flush();
+    const callLine = (await messagesIn(sam, noorSam)).find(
+      (m) => m.kind === 'system' && (m.payload as { callId?: string }).callId === callId,
+    );
+    expect(callLine).toBeDefined();
+    await t.ctx.db.transaction().execute(async (trx) => {
+      const rows = await eraseMessagesWhere(
+        trx,
+        sql`select ${callLine?.id}::uuid as id`,
+        t.ctx.now(),
+      );
+      return dropErasedFiles(trx, rows);
+    });
+    // The share reads as gone at once, and goes at the sweep.
+    const view = await omar.get(`/v1/messages/${messageId}/recording`);
+    expect(view.recording).toBeNull();
+    expect((await messagesIn(omar, circle)).find((x) => x.id === messageId)?.deletedAt).toBeNull();
+    await sweepRecordings(t.ctx);
+    expect(
+      (await messagesIn(omar, circle)).find((x) => x.id === messageId)?.deletedAt,
+    ).not.toBeNull();
+  });
+});

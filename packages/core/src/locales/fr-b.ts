@@ -2597,23 +2597,23 @@ export const frB: Catalog = {
   'Cai is recording': 'Cai enregistre',
   'Asking {names} to let Cai record': 'En attente de l’accord de {names} pour que Cai enregistre',
   '{name} asks Cai to record': '{name} demande à Cai d’enregistrer',
-  'Cai keeps what’s said and any screen shown as a recording, with notes under each person’s name, for everyone in the call for {days} days. Cameras aren’t recorded. Anyone can stop it or delete it.':
-    'Cai garde ce qui est dit et tout écran partagé dans un enregistrement, avec des notes sous le nom de chaque personne, pour toutes les personnes de l’appel pendant {days} jours. Les caméras ne sont pas enregistrées. Chacun peut l’arrêter ou le supprimer.',
+  'Cai keeps what’s said and any screen shown as a recording, with notes under each person’s name, for everyone in the call for {days} days. Cameras aren’t recorded. Anyone can stop it, delete it or share it on.':
+    'Cai garde ce qui est dit et tout écran partagé dans un enregistrement, avec des notes sous le nom de chaque personne, pour toutes les personnes de l’appel pendant {days} jours. Les caméras ne sont pas enregistrées. Chacun peut l’arrêter, le supprimer ou le partager.',
   'Let Cai record': 'Laisser Cai enregistrer',
   'Not this time: Cai isn’t recording.': 'Pas cette fois : Cai n’enregistre pas.',
   'Someone is in the call without Cai, so Cai stopped recording.':
     'Quelqu’un est dans l’appel sans Cai, donc Cai a arrêté d’enregistrer.',
   'Cai stopped recording.': 'Cai a arrêté d’enregistrer.',
-  '{name} asks Cai to record this call: the voices and any screen shown, kept {days} days for everyone in it.':
-    '{name} demande à Cai d’enregistrer cet appel : les voix et tout écran partagé, gardés {days} jours pour toutes les personnes de l’appel.',
-  'Cai is recording this call: the voices and any screen shown, kept {days} days for everyone in it.':
-    'Cai enregistre cet appel : les voix et tout écran partagé, gardés {days} jours pour toutes les personnes de l’appel.',
-  'Cai is asked to record this call: the voices and any screen shown, kept {days} days for everyone in it.':
-    'Il est demandé à Cai d’enregistrer cet appel : les voix et tout écran partagé, gardés {days} jours pour toutes les personnes de l’appel.',
+  '{name} asks Cai to record this call: the voices and any screen shown, kept {days} days for everyone in it; anyone in it may share it on.':
+    '{name} demande à Cai d’enregistrer cet appel : les voix et tout écran partagé, gardés {days} jours pour toutes les personnes de l’appel ; chacune peut le partager.',
+  'Cai is recording this call: the voices and any screen shown, kept {days} days for everyone in it; anyone in it may share it on.':
+    'Cai enregistre cet appel : les voix et tout écran partagé, gardés {days} jours pour toutes les personnes de l’appel ; chacune peut le partager.',
+  'Cai is asked to record this call: the voices and any screen shown, kept {days} days for everyone in it; anyone in it may share it on.':
+    'Il est demandé à Cai d’enregistrer cet appel : les voix et tout écran partagé, gardés {days} jours pour toutes les personnes de l’appel ; chacune peut le partager.',
   'What’s said, as words. Voices aren’t kept.':
     'Ce qui est dit, en mots. Les voix ne sont pas gardées.',
-  'The notes, and the voices and any screen shown, kept {days} days.':
-    'Les notes, ainsi que les voix et tout écran partagé, gardés {days} jours.',
+  'The notes, and the voices and any screen shown, kept {days} days; anyone in the call may share it on.':
+    'Les notes, ainsi que les voix et tout écran partagé, gardés {days} jours ; toute personne de l’appel peut les partager.',
   'Play from {time}': 'Lire à partir de {time}',
   'Bring over a WhatsApp or Telegram chat': 'Importer une discussion WhatsApp ou Telegram',
   'Bring over a WhatsApp or Telegram group': 'Importer un groupe WhatsApp ou Telegram',
@@ -2643,12 +2643,22 @@ export const frB: Catalog = {
     'En attente de l’accord de {names} pour que Cai ne prenne que des notes',
   '{name} asks Cai to record too': '{name} demande à Cai d’enregistrer aussi',
   '{name} asks Cai to take notes only': '{name} demande à Cai de ne prendre que des notes',
-  'From now, Cai would keep what’s said and any screen shown as a recording for everyone in the call for {days} days, beside the notes. Cameras aren’t recorded. Anyone can stop it or delete it.':
-    'Dès maintenant, Cai garderait ce qui se dit et tout écran partagé comme enregistrement pour tous les participants pendant {days} jours, à côté des notes. Les caméras ne sont pas enregistrées. N’importe qui peut l’arrêter ou le supprimer.',
+  'From now, Cai would keep what’s said and any screen shown as a recording for everyone in the call for {days} days, beside the notes. Cameras aren’t recorded. Anyone can stop it, delete it or share it on.':
+    'Dès maintenant, Cai garderait ce qui se dit et tout écran partagé comme enregistrement pour tous les participants pendant {days} jours, à côté des notes. Les caméras ne sont pas enregistrées. N’importe qui peut l’arrêter, le supprimer ou le partager.',
   'The recording would stop here and Cai would go on with the notes alone. Voices aren’t kept from then on.':
     'L’enregistrement s’arrêterait ici et Cai continuerait avec les notes seulement. Les voix ne sont plus gardées ensuite.',
   'Cai is recording now.': 'Cai enregistre maintenant.',
   'Cai is taking notes only now.': 'Cai ne prend plus que des notes.',
   'Not this time: Cai goes on recording.': 'Pas cette fois : Cai continue d’enregistrer.',
   'Not this time: Cai goes on taking notes.': 'Pas cette fois : Cai continue de prendre des notes.',
+  'Call recording': 'Enregistrement d’appel',
+  'Call recording · {when}': 'Enregistrement d’appel · {when}',
+  'The recording is gone.': 'L’enregistrement n’existe plus.',
+  'Share into a conversation': 'Partager dans une conversation',
+  'Share the recording': 'Partager l’enregistrement',
+  'Whoever is in the conversation can play it while it’s kept; it goes when the recording does.':
+    'Les personnes de la conversation peuvent l’écouter tant qu’il est gardé ; il disparaît avec l’enregistrement.',
+  'There’s no conversation to share it into yet.':
+    'Aucune conversation où le partager pour l’instant.',
+  'Shared into {n} conversations': { one: 'Partagé', other: 'Partagé dans {n} conversations' },
 };

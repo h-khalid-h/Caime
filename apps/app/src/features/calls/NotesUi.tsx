@@ -117,9 +117,12 @@ export function NotesRound({ notes, testID }: { notes: CallNotesView | null; tes
               <Mode
                 icon={CircleDot}
                 label={tr('Record')}
-                detail={tr('The notes, and the voices and any screen shown, kept {days} days.', {
-                  days: RECORDING_DAYS,
-                })}
+                detail={tr(
+                  'The notes, and the voices and any screen shown, kept {days} days; anyone in the call may share it on.',
+                  {
+                    days: RECORDING_DAYS,
+                  },
+                )}
                 onPress={() => ask(true)}
                 testID={`${testID}-record`}
               />
@@ -254,7 +257,7 @@ export function NotesAsk({ notes, me }: { notes: CallNotesView | null; me: strin
         <Text variant="caption" style={{ color: '#FFFFFFCC' }}>
           {sw.records
             ? tr(
-                'From now, Cai would keep what’s said and any screen shown as a recording for everyone in the call for {days} days, beside the notes. Cameras aren’t recorded. Anyone can stop it or delete it.',
+                'From now, Cai would keep what’s said and any screen shown as a recording for everyone in the call for {days} days, beside the notes. Cameras aren’t recorded. Anyone can stop it, delete it or share it on.',
                 { days: RECORDING_DAYS },
               )
             : tr(
@@ -299,7 +302,7 @@ export function NotesAsk({ notes, me }: { notes: CallNotesView | null; me: strin
       <Text variant="caption" style={{ color: '#FFFFFFCC' }}>
         {notes.records
           ? tr(
-              'Cai keeps what’s said and any screen shown as a recording, with notes under each person’s name, for everyone in the call for {days} days. Cameras aren’t recorded. Anyone can stop it or delete it.',
+              'Cai keeps what’s said and any screen shown as a recording, with notes under each person’s name, for everyone in the call for {days} days. Cameras aren’t recorded. Anyone can stop it, delete it or share it on.',
               { days: RECORDING_DAYS },
             )
           : tr(

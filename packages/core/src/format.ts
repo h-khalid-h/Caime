@@ -540,9 +540,12 @@ export function messagePreview(m: {
     label?: unknown;
     live?: unknown;
     video?: unknown;
+    recording?: unknown;
   };
   switch (m.kind) {
     case 'text':
+      // A call's recording shared on (R114 (7)): the server's mark, no words of its own.
+      if (payload.recording) return `🎙 ${tr('Call recording')}`;
       return previewText(m.body ?? '');
     case 'media': {
       // The server marks a message of videos alone (M16 E4b).

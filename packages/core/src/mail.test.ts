@@ -114,6 +114,8 @@ describe('notByMail (M16 F3)', () => {
     ])
       expect(notByMail('kit', { kit })).toBe('kind');
     expect(notByMail('location', { lat: 30, lng: 31, live: { minutes: 15 } })).toBe('live');
+    // A call's recording shared on plays in Caime alone (R114 (7)).
+    expect(notByMail('text', { recording: { callId: 'c1' } })).toBe('kind');
     expect(notByMail('kit', meeting({ place: 'Café Riche', repeat: 'week' }))).toBe('repeats');
     expect(notByMail('kit', { kit: 'appointment', fields: { repeat: 'month' } })).toBe('repeats');
     // Held on Caime: nobody joins its call from a mail, but in a one-to-one, where the mail

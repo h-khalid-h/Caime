@@ -1388,6 +1388,18 @@ export interface CallRecordingPartsTable {
 }
 
 /**
+ * A call's recording shared into a conversation (R114 (7), M17 I13e): the share is a message of
+ * the sharer's that points at the call; this row finds every share of a call when its recording
+ * goes, so nothing reads messages' payload for it.
+ */
+export interface CallRecordingSharesTable {
+  message_id: string;
+  call_id: string;
+  shared_by: string | null;
+  created_at: Generated<Date>;
+}
+
+/**
  * Cai's notes of a call, written once it's over (M16 F7e, R112): one row a call, for whoever was
  * in it for all of it; gone with the call's line.
  */
@@ -1798,6 +1810,7 @@ export interface Database {
   call_note_answers: CallNoteAnswersTable;
   call_note_lines: CallNoteLinesTable;
   call_recording_parts: CallRecordingPartsTable;
+  call_recording_shares: CallRecordingSharesTable;
   call_note_summaries: CallNoteSummariesTable;
   e2ee_devices: E2eeDevicesTable;
   billing_customers: BillingCustomersTable;

@@ -2515,6 +2515,12 @@ with its reason, so it isn't proposed again without new facts.
   `switching` row beside the live one, answered by its own id, settled right after it; anyone's
   no, Stop asking or the call's end declines it and the mode under way goes on; everyone's yes
   stops that one as replaced and the switch is on, the recorder kept where it can be); the round
-  offers "Record too" or "Notes only" beside Stop while one is on. *Not yet:* sharing on (I13e, so
-  the consent doesn't promise it yet), the screen in step on a phone, and H.264 measured on a
-  real Chrome call (the test browser records VP9 and Opus).
+  offers "Record too" or "Notes only" beside Stop while one is on. *Built (M17 I13e,
+  2026-10-25):* shared on: anyone who was in the call shares the recording, once recorded, into
+  conversations they're in (never a private one, never a customer conversation, never to someone
+  reached by mail), as a message of theirs that points at it; whoever is in that conversation
+  plays the parts the sharer could, while it's kept; never forwarded; a share goes when the
+  recording does; every consent line now says anyone in it may share it on. *Not yet:* a share
+  into a customer conversation (the mask; calls with organizations are M16 H8a), the screen in
+  step on a phone, and H.264 measured on a real Chrome call (the test browser records VP9 and
+  Opus).

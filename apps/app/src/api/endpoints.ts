@@ -164,6 +164,7 @@ import type {
   PushKeyResponse,
   QuickRepliesResponse,
   ReceiptResponse,
+  RecordingShareResponse,
   RecoveryCodesResponse,
   RelationshipHistoryView,
   RelationshipResponse,
@@ -844,6 +845,12 @@ export const endpoints = {
   /** Kept past its day by whoever asked, against their storage (M17 I13d); or let go again. */
   keepCallRecording: (id: string) => api.post<OkResponse>(`/calls/${id}/recording/keep`, {}),
   letGoCallRecording: (id: string) => api.del<OkResponse>(`/calls/${id}/recording/keep`),
+  /** Shared into conversations the sharer is in (R114 (7), M17 I13e), as a message of theirs. */
+  shareCallRecording: (id: string, conversationIds: string[], clientId: string) =>
+    api.post<MessageIdsResponse>(`/calls/${id}/recording/share`, { conversationIds, clientId }),
+  /** A shared recording, as whoever is in the share's conversation plays it. */
+  recordingShare: (messageId: string) =>
+    api.get<RecordingShareResponse>(`/messages/${messageId}/recording`),
   stopCallNotes: (id: string) => api.post<CallNotesStateResponse>(`/calls/${id}/notes/stop`, {}),
   callNotes: (id: string) => api.get<CallNotesResponse>(`/calls/${id}/notes`),
   /** Cai on a call's notes, on ask (M16 F7d): a catch-up, and the follow-ups as suggestions. */
