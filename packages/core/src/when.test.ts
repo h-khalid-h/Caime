@@ -152,6 +152,15 @@ describe('parseWhen — the recent past, days of the month, evenings', () => {
     expect(one('tomorrow morning at 10')).toMatchObject({ date: '2026-09-24', time: '10:00' });
   });
 
+  it("an hour said with o'clock", () => {
+    expect(one("let's meet at 3 o'clock tomorrow")).toMatchObject({
+      date: '2026-09-24',
+      time: '15:00',
+    });
+    expect(one("move my 11 o'clock").time).toBe('11:00');
+    expect(parseWhen('around the clock', ny)).toEqual([]);
+  });
+
   it('Arabic durations and half hours', () => {
     expect(one('رح أبعتلك الملف بعد أسبوعين', cairo).date).toBe('2026-10-09');
     expect(one('خلال 3 أيام', cairo).date).toBe('2026-09-28');
@@ -220,6 +229,12 @@ describe('parseWhen — French', () => {
     expect(one('à minuit', paris).time).toBe('00:00');
     expect(one('dîner à 8h', paris).time).toBe('20:00');
     expect(one('8h du soir', paris).time).toBe('20:00');
+    // Right after a day, an hour is that day's, whatever else the words are.
+    expect(one('jeudi 16h', paris)).toMatchObject({ date: '2026-09-24', time: '16:00' });
+    expect(one('demain 9h', paris)).toMatchObject({ date: '2026-09-24', time: '09:00' });
+    // Alone, an hour is French's only when the reader is told the words are.
+    expect(one('15h', paris).time).toBe('15:00');
+    expect(parseWhen('15h', ny)).toEqual([]);
   });
 
   it('the recent past is past', () => {

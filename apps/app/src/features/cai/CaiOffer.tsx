@@ -1,5 +1,5 @@
 import type { CaiOfferPayload } from '@caime/core/api';
-import { firstName } from '@caime/core/format';
+import { firstName, formatClock } from '@caime/core/format';
 import { tr } from '@caime/core/i18n';
 import { useQueryClient } from '@tanstack/react-query';
 import { router } from 'expo-router';
@@ -8,6 +8,7 @@ import { View } from 'react-native';
 import { endpoints } from '@/api/endpoints';
 import { qk } from '@/api/keys';
 import { callsSupported, startCall } from '@/features/calls/calls';
+import { useUserClock } from '@/lib/time';
 import { Button } from '@/ui/Button';
 import { Text } from '@/ui/Text';
 import { toast } from '@/ui/Toast';
@@ -37,6 +38,7 @@ function DraftOffer({
   sent: sentBefore,
   send,
   change,
+  instead,
   testID,
 }: {
   /** Whom it's for, by their name as it's shown. */
@@ -45,6 +47,8 @@ function DraftOffer({
   send: () => Promise<unknown>;
   /** Opens it to change first; left out where it can't be (a meeting's card). */
   change?: () => void;
+  /** Sends it another way Cai offered beside it (M17 I7: a meeting at the free time). */
+  instead?: { label: string; send: () => Promise<unknown> };
   testID: string;
 }) {
   const [busy, setBusy] = useState(false);
@@ -63,10 +67,10 @@ function DraftOffer({
         {tr('Sent to {name}', { name })}
       </Text>
     );
-  const press = async () => {
+  const press = async (how = send) => {
     setBusy(true);
     try {
-      await send();
+      await how();
       setSent(true);
       toast(tr('Sent to {name}', { name }));
     } catch (e) {
@@ -87,6 +91,16 @@ function DraftOffer({
         onPress={() => void press()}
         testID={`${testID}-send`}
       />
+      {instead ? (
+        <Button
+          label={instead.label}
+          size="sm"
+          variant="secondary"
+          disabled={busy}
+          onPress={() => void press(instead.send)}
+          testID={`${testID}-instead`}
+        />
+      ) : null}
       {change ? (
         <Button
           label={tr('Change it first')}
@@ -94,6 +108,73 @@ function DraftOffer({
           variant="secondary"
           onPress={change}
           testID={`${testID}-edit`}
+        />
+      ) : null}
+    </View>
+  );
+}
+
+/**
+ * Under Cai's offer to give one of the reader's meetings another time (M17 I7): suggest it, or the
+ * free time Cai found beside it, as the card's own "Suggest another time" does; once suggested,
+ * the conversation it's in opens from here.
+ */
+function MoveOffer({
+  messageId,
+  offer,
+  row,
+}: {
+  messageId: string;
+  offer: CaiOfferPayload;
+  row: object;
+}) {
+  const clock = useUserClock();
+  const [busy, setBusy] = useState(false);
+  const [doneHere, setDone] = useState(false);
+  const move = offer.move;
+  if (!move || !offer.conversationId) return null;
+  const id = offer.conversationId;
+  const open = () => router.navigate({ pathname: '/c/[id]', params: { id } });
+  if (offer.doneId || doneHere)
+    return (
+      <View style={row} testID="offer-move-done">
+        <Text variant="caption" color="textSecondary">
+          {tr('Another time suggested')}
+        </Text>
+        <Button label={tr('Open')} size="sm" variant="secondary" onPress={open} />
+      </View>
+    );
+  const press = async (instead: boolean) => {
+    setBusy(true);
+    try {
+      await endpoints.carryOutOffer(messageId, id, instead);
+      setDone(true);
+      toast(tr('Another time suggested'));
+    } catch (e) {
+      toast((e as Error).message, { tone: 'danger' });
+    } finally {
+      setBusy(false);
+    }
+  };
+  return (
+    <View style={row} testID="offer-move">
+      <Button
+        label={tr('Suggest it')}
+        size="sm"
+        loading={busy}
+        onPress={() => void press(false)}
+        testID="offer-move-send"
+      />
+      {move.instead ? (
+        <Button
+          label={tr('Use {time} instead', {
+            time: formatClock(move.instead, clock.timeZone, clock.locale),
+          })}
+          size="sm"
+          variant="secondary"
+          disabled={busy}
+          onPress={() => void press(true)}
+          testID="offer-move-instead"
         />
       ) : null}
     </View>
@@ -136,6 +217,7 @@ export default function CaiOffer({
   messageId: string;
   offer: CaiOfferPayload;
 }) {
+  const clock = useUserClock();
   const row = {
     flexDirection: 'row',
     flexWrap: 'wrap',
@@ -157,6 +239,7 @@ export default function CaiOffer({
         />
       </View>
     );
+  if (offer.kind === 'move') return <MoveOffer messageId={messageId} offer={offer} row={row} />;
   if (!offer.to) return null;
   const name = firstName(offer.to.name);
   if (offer.kind === 'call') {
@@ -190,6 +273,16 @@ export default function CaiOffer({
       to={offer.to.name}
       sent={Boolean(offer.doneId)}
       send={async () => endpoints.carryOutOffer(messageId, await chat())}
+      instead={
+        offer.meeting?.instead
+          ? {
+              label: tr('Use {time} instead', {
+                time: formatClock(offer.meeting.instead, clock.timeZone, clock.locale),
+              }),
+              send: async () => endpoints.carryOutOffer(messageId, await chat(), true),
+            }
+          : undefined
+      }
       change={
         offer.kind === 'message'
           ? () =>

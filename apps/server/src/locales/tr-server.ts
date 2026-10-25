@@ -1763,4 +1763,29 @@ export const turkishServer: Catalog = {
   'Nothing new since you last looked.': 'Son baktığınızdan beri yeni bir şey yok.',
   'You missed {messages} in {conversations}.': '{conversations} içinde {messages} kaçırdınız.',
   'In short: {summary}': 'Kısacası: {summary}',
+  'Busy in your calendar': 'Takviminizde dolu',
+  '{when} is free, until {until}.': '{when} boş, {until} saatine kadar.',
+  '{when} is taken: {what}.': '{when} dolu: {what}.',
+  'Nothing else is free that day.': 'O gün başka boş zaman yok.',
+  'The next free time that day: {next}.': 'O gün bir sonraki boş zaman: {next}.',
+  '{day} isn’t one of your working days.': '{day} çalışma günlerinizden biri değil.',
+  'Busy: {items}.': 'Dolu: {items}.',
+  'Nothing is planned.': 'Planlanmış bir şey yok.',
+  '{day}: you’re free all day, {hours}.': '{day}: bütün gün boşsunuz, {hours}.',
+  '{day}: nothing is free in your day, {hours}.': '{day}: gününüzde boş zaman yok, {hours}.',
+  '{day}: you’re free {times}.': '{day}: boş zamanlarınız {times}.',
+  'Asked, not yet agreed: {items}.': 'İstendi, henüz kararlaştırılmadı: {items}.',
+  'You have {what} then; {time} is free that day.': 'O saatte {what} var; o gün {time} boş.',
+  'You have {what} then, and nothing else is free that day.':
+    'O saatte {what} var ve o gün başka boş zaman yok.',
+  'I can’t find that among your meetings and appointments in the next two weeks.':
+    'Önümüzdeki iki hafta içindeki toplantı ve randevularınız arasında bunu bulamıyorum.',
+  'Which one do you mean?': 'Hangisini kastediyorsunuz?',
+  'When should “{title}” move to? A day or a time, like “tomorrow at 3”.':
+    '“{title}” ne zamana taşınsın? Bir gün ya da saat, “yarın saat 3” gibi.',
+  '“{title}” is at that time already.': '“{title}” zaten o saatte.',
+  'Shall I suggest {when} for “{title}”, in place of {from}? {name} will be asked to agree.':
+    '“{title}” için {from} yerine {when} önereyim mi? Onay için şuna sorulacak: {name}.',
+  'Shall I suggest {when} for “{title}”, in place of {from}? Everyone in it will be asked to agree.':
+    '“{title}” için {from} yerine {when} önereyim mi? Onay için buradaki herkese sorulacak.',
 };

@@ -305,4 +305,31 @@ export const gulfVoice: Catalog = {
   'What should I keep? Say it after “Remind me to” or “Add an action:”.':
     'وش أحفظ؟ قله بعد «ذكّرني» أو «أضف إجراء:».',
   'You asked in a call: “{words}”': 'طلبك في مكالمة: «{words}»',
+  'Busy in your calendar': 'وقت محجوز في تقويمك',
+  '{when} is free, until {until}.': '{when} فاضي، لين {until}.',
+  '{when} is taken: {what}.': '{when} محجوز: {what}.',
+  'Nothing else is free that day.': 'ما فيه وقت فاضي غيره ذاك اليوم.',
+  'The next free time that day: {next}.': 'أقرب وقت فاضي ذاك اليوم: {next}.',
+  '{day} isn’t one of your working days.': '{day} مو من أيام دوامك.',
+  'Busy: {items}.': 'اللي ماخذ وقتك: {items}.',
+  'Nothing is planned.': 'ما فيه شي مخطط له.',
+  '{day}: you’re free all day, {hours}.': '{day}: يومك كله فاضي، {hours}.',
+  '{day}: nothing is free in your day, {hours}.': '{day}: ما فيه وقت فاضي في يومك، {hours}.',
+  '{day}: you’re free {times}.': '{day}: الأوقات الفاضية {times}.',
+  'Asked, not yet agreed: {items}.': 'مطلوبة وما صار عليها اتفاق: {items}.',
+  'You have {what} then; {time} is free that day.':
+    'عندك {what} ذاك الوقت؛ و{time} فاضي ذاك اليوم.',
+  'You have {what} then, and nothing else is free that day.':
+    'عندك {what} ذاك الوقت، وما فيه وقت فاضي غيره ذاك اليوم.',
+  'I can’t find that among your meetings and appointments in the next two weeks.':
+    'ما لقيت هذا بين اجتماعاتك ومواعيدك خلال الأسبوعين الجايين.',
+  'Which one do you mean?': 'أيهم المقصود؟',
+  'When should “{title}” move to? A day or a time, like “tomorrow at 3”.':
+    'لمتى ننقل «{title}»؟ يوم أو ساعة، مثل «بكرة الساعة 3».',
+  '“{title}” is at that time already.': '«{title}» في هذا الوقت أصلًا.',
+  'Shall I suggest {when} for “{title}”, in place of {from}? {name} will be asked to agree.':
+    'أقترح {when} لـ«{title}» بدال {from}؟ بنطلب موافقة {name}.',
+  'Shall I suggest {when} for “{title}”, in place of {from}? Everyone in it will be asked to agree.':
+    'أقترح {when} لـ«{title}» بدال {from}؟ بنطلب موافقة الكل فيه.',
+  'That time has passed. Choose a later one.': 'هالوقت فات. اختار وقت بعده.',
 };

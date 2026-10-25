@@ -2654,4 +2654,7 @@ export const turkishB: Catalog = {
     '{domain}, Caime’in kendi alan adı; bu yüzden bu kuruluş @{handle} adını alabilir.',
   'Take @{handle}': '@{handle} adını al',
   'This organization is @{handle} now': 'Bu kuruluş artık @{handle}',
+  'Use {time} instead': 'Bunun yerine {time}',
+  'Another time suggested': 'Başka bir saat önerildi',
+  'Suggest it': 'Öner',
 };

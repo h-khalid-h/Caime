@@ -2317,7 +2317,11 @@ with its reason, so it isn't proposed again without new facts.
   and done on their tap, never sent by Cai (R68's follow-up rule); finding something is search's
   own answer (R66), cited. *Built*: keeping actions and reminders (M16 G13); a message drafted to one of their people, a
   call started, a meeting proposed and something found, each done on their tap and drawn as R68's
-  follow-up is, with what's missing asked and finished by their next words (G14). *Later*: what
+  follow-up is, with what's missing asked and finished by their next words (G14); when they're
+  free, answered from their own day by the rules, and a meeting it prepares warned of what it meets
+  with the next free time offered beside it, taken only on that tap (M17 I7a); a meeting of theirs
+  moved when they ask ("move my 3pm to tomorrow"), as another time suggested to the other side on
+  their tap (I7b). *Later*: what
   changes settings or money, each with its own confirmation. *Cost*: the rules ask nothing; "it"
   without words is one light-model call for someone with AI assist, the call Cai makes to answer
   anything; nothing on the first download.

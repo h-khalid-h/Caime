@@ -1842,4 +1842,31 @@ export const frServer: Catalog = {
   'Nothing new since you last looked.': 'Rien de nouveau depuis votre dernier passage.',
   'You missed {messages} in {conversations}.': 'Vous avez manqué {messages} dans {conversations}.',
   'In short: {summary}': 'En bref : {summary}',
+  'Busy in your calendar': 'Créneau pris dans votre agenda',
+  '{when} is free, until {until}.': '{when} est libre, jusqu’à {until}.',
+  '{when} is taken: {what}.': '{when} est pris : {what}.',
+  'Nothing else is free that day.': 'Rien d’autre n’est libre ce jour-là.',
+  'The next free time that day: {next}.': 'Le prochain créneau libre ce jour-là : {next}.',
+  '{day} isn’t one of your working days.': '{day} n’est pas l’un de vos jours de travail.',
+  'Busy: {items}.': 'Déjà prévu : {items}.',
+  'Nothing is planned.': 'Rien n’est prévu.',
+  '{day}: you’re free all day, {hours}.': '{day} : vous êtes libre toute la journée, {hours}.',
+  '{day}: nothing is free in your day, {hours}.':
+    '{day} : rien n’est libre dans votre journée, {hours}.',
+  '{day}: you’re free {times}.': '{day} : vous êtes libre {times}.',
+  'Asked, not yet agreed: {items}.': 'Demandé, pas encore convenu : {items}.',
+  'You have {what} then; {time} is free that day.':
+    'Vous avez {what} à ce moment-là ; {time} est libre ce jour-là.',
+  'You have {what} then, and nothing else is free that day.':
+    'Vous avez {what} à ce moment-là, et rien d’autre n’est libre ce jour-là.',
+  'I can’t find that among your meetings and appointments in the next two weeks.':
+    'Je ne trouve pas cela parmi vos réunions et rendez-vous des deux prochaines semaines.',
+  'Which one do you mean?': 'Lequel voulez-vous dire ?',
+  'When should “{title}” move to? A day or a time, like “tomorrow at 3”.':
+    'À quand déplacer « {title} » ? Un jour ou une heure, comme « demain à 15h ».',
+  '“{title}” is at that time already.': '« {title} » est déjà à cette heure-là.',
+  'Shall I suggest {when} for “{title}”, in place of {from}? {name} will be asked to agree.':
+    'Je propose {when} pour « {title} », à la place de {from} ? On demandera son accord à {name}.',
+  'Shall I suggest {when} for “{title}”, in place of {from}? Everyone in it will be asked to agree.':
+    'Je propose {when} pour « {title} », à la place de {from} ? On demandera leur accord à tous.',
 };

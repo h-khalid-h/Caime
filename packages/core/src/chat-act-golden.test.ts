@@ -24,6 +24,7 @@ const read = (text: string) => {
         words: a.words,
         ...(a.title ? { title: a.title } : {}),
         ...(a.video ? { video: true } : {}),
+        ...(a.kind === 'move' ? { from: a.from } : {}),
       }
     : null;
 };
@@ -45,7 +46,7 @@ describe('asks to do something', () => {
   it('holds each act and near-misses in each language', () => {
     for (const lang of LANGUAGES) {
       const lines = ACT_GOLDEN.filter((l) => l.lang === lang);
-      for (const kind of ['message', 'call', 'meeting', 'find'] as const)
+      for (const kind of ['message', 'call', 'meeting', 'find', 'move'] as const)
         expect(lines.filter((l) => l.act?.kind === kind).length, `${lang} ${kind}`).toBeGreaterThan(
           0,
         );

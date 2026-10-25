@@ -305,4 +305,31 @@ export const levantineVoice: Catalog = {
   'What should I keep? Say it after “Remind me to” or “Add an action:”.':
     'شو بدك احفظ؟ قوله بعد «ذكّرني» أو «ضيف إجراء:».',
   'You asked in a call: “{words}”': 'طلبك في مكالمة: «{words}»',
+  'Busy in your calendar': 'وقت محجوز بتقويمك',
+  '{when} is free, until {until}.': '{when} فاضي، لحتى {until}.',
+  '{when} is taken: {what}.': '{when} محجوز: {what}.',
+  'Nothing else is free that day.': 'ما في وقت فاضي غيره هداك النهار.',
+  'The next free time that day: {next}.': 'أقرب وقت فاضي هداك النهار: {next}.',
+  '{day} isn’t one of your working days.': '{day} مش من أيام شغلك.',
+  'Busy: {items}.': 'يلي آخد وقتك: {items}.',
+  'Nothing is planned.': 'ما في شي مخطط.',
+  '{day}: you’re free all day, {hours}.': '{day}: كل نهارك فاضي، {hours}.',
+  '{day}: nothing is free in your day, {hours}.': '{day}: ما في وقت فاضي بنهارك، {hours}.',
+  '{day}: you’re free {times}.': '{day}: الأوقات الفاضية {times}.',
+  'Asked, not yet agreed: {items}.': 'مطلوبة وما صار عليها اتفاق: {items}.',
+  'You have {what} then; {time} is free that day.':
+    'عندك {what} بهالوقت؛ و{time} فاضي هداك النهار.',
+  'You have {what} then, and nothing else is free that day.':
+    'عندك {what} بهالوقت، وما في وقت فاضي غيره هداك النهار.',
+  'I can’t find that among your meetings and appointments in the next two weeks.':
+    'ما لقيت هاد بين اجتماعاتك ومواعيدك بالأسبوعين الجايين.',
+  'Which one do you mean?': 'أيّا واحد قصدك؟',
+  'When should “{title}” move to? A day or a time, like “tomorrow at 3”.':
+    'لإيمتى ننقل «{title}»؟ يوم أو ساعة، متل «بكرا الساعة 3».',
+  '“{title}” is at that time already.': '«{title}» بهالوقت أصلًا.',
+  'Shall I suggest {when} for “{title}”, in place of {from}? {name} will be asked to agree.':
+    'بقترح {when} لـ«{title}» بدل {from}؟ رح نطلب موافقة {name}.',
+  'Shall I suggest {when} for “{title}”, in place of {from}? Everyone in it will be asked to agree.':
+    'بقترح {when} لـ«{title}» بدل {from}؟ رح نطلب موافقة الكل فيه.',
+  'That time has passed. Choose a later one.': 'هالوقت مرق. اختار وقت بعده.',
 };

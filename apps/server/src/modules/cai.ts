@@ -39,10 +39,13 @@ export async function caiRoutes(app: FastifyInstance, ctx: AppContext) {
     const auth = requireAuth(req);
     const { id } = parse(z.object({ id: z.string().uuid() }), req.params);
     const body = parse(
-      z.object({ conversationId: z.string().uuid().nullable().optional() }),
+      z.object({
+        conversationId: z.string().uuid().nullable().optional(),
+        instead: z.boolean().optional(),
+      }),
       req.body ?? {},
     );
     ctx.limiter.hit(`send:${auth.userId}`, ctx.config.isTest ? 10_000 : 120, 60_000);
-    return carryOutOffer(ctx, auth.userId, id, body.conversationId ?? null);
+    return carryOutOffer(ctx, auth.userId, id, body.conversationId ?? null, body.instead ?? false);
   });
 }

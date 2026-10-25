@@ -2748,4 +2748,7 @@ export const frB: Catalog = {
     '{domain} est le domaine de Caime lui-même : cette organisation peut donc prendre @{handle}.',
   'Take @{handle}': 'Prendre @{handle}',
   'This organization is @{handle} now': 'Cette organisation est maintenant @{handle}',
+  'Use {time} instead': 'Prendre {time} à la place',
+  'Another time suggested': 'Autre horaire proposé',
+  'Suggest it': 'Le proposer',
 };

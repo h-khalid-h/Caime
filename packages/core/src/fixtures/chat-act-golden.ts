@@ -19,6 +19,8 @@ export interface ActLine {
     words: string | null;
     title?: string;
     video?: boolean;
+    /** A move's meeting as named (its time or its name), whom it's with apart (M17 I7). */
+    from?: string | null;
   } | null;
 }
 export const ACT_GOLDEN: ActLine[] = [
@@ -123,6 +125,41 @@ export const ACT_GOLDEN: ActLine[] = [
   { text: "ask Sami if he's coming", lang: 'en', act: null },
   { text: 'send Sami the file', lang: 'en', act: null },
 
+  {
+    text: 'move my 3pm to tomorrow',
+    lang: 'en',
+    act: { kind: 'move', who: null, words: 'tomorrow', from: '3pm' },
+  },
+  {
+    text: 'Can you reschedule my meeting with Sami to Thursday at 4?',
+    lang: 'en',
+    act: { kind: 'move', who: 'Sami', words: 'Thursday at 4', from: null },
+  },
+  {
+    text: "push my 3 o'clock back to 5",
+    lang: 'en',
+    act: { kind: 'move', who: null, words: '5', from: "3 o'clock" },
+  },
+  {
+    text: 'postpone the budget review to next week',
+    lang: 'en',
+    act: { kind: 'move', who: null, words: 'next week', from: 'budget review' },
+  },
+  {
+    text: "move tomorrow's 10am to Friday",
+    lang: 'en',
+    act: { kind: 'move', who: null, words: 'Friday', from: 'tomorrow 10am' },
+  },
+  {
+    text: 'reschedule my call with Leila',
+    lang: 'en',
+    act: { kind: 'move', who: 'Leila', words: null, from: null },
+  },
+  { text: 'move the car to the garage', lang: 'en', act: null },
+  { text: 'change my password', lang: 'en', act: null },
+  { text: 'change the meeting notes', lang: 'en', act: null },
+  { text: 'I moved my 3pm to tomorrow', lang: 'en', act: null },
+  { text: 'push the update to production', lang: 'en', act: null },
   // ---- Arabic
   { text: 'اتصل بسامي', lang: 'ar', act: { kind: 'call', who: 'سامي', words: null } },
   { text: 'كلم ريم', lang: 'ar', act: { kind: 'call', who: 'ريم', words: null } },
@@ -180,6 +217,29 @@ export const ACT_GOLDEN: ActLine[] = [
   },
   { text: 'ابعتلي الملف', lang: 'ar', act: null },
 
+  {
+    text: 'أجّل اجتماعي مع سامي لبكرة',
+    lang: 'ar',
+    act: { kind: 'move', who: 'سامي', words: 'بكرة', from: null },
+  },
+  {
+    text: 'انقل موعد الساعة 3 ليوم الخميس',
+    lang: 'ar',
+    act: { kind: 'move', who: null, words: 'يوم الخميس', from: 'الساعة 3' },
+  },
+  {
+    text: 'ممكن تأجل الاجتماع مع ليلى للأسبوع الجاي',
+    lang: 'ar',
+    act: { kind: 'move', who: 'ليلى', words: 'الأسبوع الجاي', from: null },
+  },
+  {
+    text: 'غير معاد الاجتماع مع سامي للساعة 5',
+    lang: 'ar',
+    act: { kind: 'move', who: 'سامي', words: 'الساعة 5', from: null },
+  },
+  { text: 'أجلت الاجتماع لبكرة', lang: 'ar', act: null },
+  { text: 'انقل الملف لسامي', lang: 'ar', act: null },
+  { text: 'غير رأيك', lang: 'ar', act: null },
   // ---- French
   { text: 'appelle Sami', lang: 'fr', act: { kind: 'call', who: 'Sami', words: null } },
   {
@@ -221,6 +281,24 @@ export const ACT_GOLDEN: ActLine[] = [
     act: { kind: 'message', who: 'Léa', words: 'Tu peux apporter le gâteau ?' },
   },
 
+  {
+    text: 'déplace mon rdv de 15h à demain',
+    lang: 'fr',
+    act: { kind: 'move', who: null, words: 'demain', from: '15h' },
+  },
+  {
+    text: 'reporte ma réunion avec Sami à jeudi 16h',
+    lang: 'fr',
+    act: { kind: 'move', who: 'Sami', words: 'jeudi 16h', from: null },
+  },
+  {
+    text: 'tu peux décaler mon appel de 10h à 11h ?',
+    lang: 'fr',
+    act: { kind: 'move', who: null, words: '11h', from: '10h' },
+  },
+  { text: "j'ai décalé la réunion à demain", lang: 'fr', act: null },
+  { text: 'déplace le fichier dans le dossier', lang: 'fr', act: null },
+  { text: 'change le mot de passe', lang: 'fr', act: null },
   // ---- Turkish
   { text: "Sami'yi ara", lang: 'tr', act: { kind: 'call', who: 'Sami', words: null } },
   {
@@ -252,4 +330,22 @@ export const ACT_GOLDEN: ActLine[] = [
   { text: 'Sami aradı mı?', lang: 'tr', act: null },
   { text: "yarın Sami'yi aramayı hatırlat", lang: 'tr', act: null },
   { text: "Mehmet'i ara lütfen", lang: 'tr', act: { kind: 'call', who: 'Mehmet', words: null } },
+  {
+    text: '15:00 toplantımı yarına al',
+    lang: 'tr',
+    act: { kind: 'move', who: null, words: 'yarın', from: '15:00' },
+  },
+  {
+    text: 'Sami ile toplantımı perşembeye ertele',
+    lang: 'tr',
+    act: { kind: 'move', who: 'Sami', words: 'perşembe', from: null },
+  },
+  {
+    text: "saat 3'teki randevumu cumaya taşı",
+    lang: 'tr',
+    act: { kind: 'move', who: null, words: 'cuma', from: 'saat 3' },
+  },
+  { text: 'toplantıyı yarına erteledim', lang: 'tr', act: null },
+  { text: 'dosyayı klasöre taşı', lang: 'tr', act: null },
+  { text: 'doktordan randevu al', lang: 'tr', act: null },
 ];

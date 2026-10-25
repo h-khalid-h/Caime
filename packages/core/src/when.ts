@@ -40,6 +40,8 @@ export interface WhenMatch {
   at: string;
   /** Before `now`. Suggestions only use future dates. */
   past: boolean;
+  /** Only an hour was said ("at 3"): the day is the next one it falls on, not one the words named. */
+  timeOnly?: true;
 }
 
 interface LocalDate {
@@ -618,6 +620,13 @@ export function parseWhen(input: string, options: WhenOptions): WhenMatch[] {
     if (hour <= 7 || (hour < 12 && EVENING_BEFORE.test(lower.slice(0, m.index)))) hour += 12;
     add({ index: m.index, end: m.index + m[0].length, time: { hour, minute: 0 } });
   }
+  // "3 o'clock", "at four o'clock": the hour as "at 3" reads it, said whole.
+  for (const m of scan(/\b(?:at\s+)?(\d{1,2})\s*o['’]?\s?clock\b/i, lower)) {
+    let hour = Number(m[1]);
+    if (hour < 1 || hour > 12) continue;
+    if (hour <= 7 || (hour < 12 && EVENING_BEFORE.test(lower.slice(0, m.index)))) hour += 12;
+    add({ index: m.index, end: m.index + m[0].length, time: { hour, minute: 0 } });
+  }
   for (const m of scan(/\b(?:at\s+)?(noon|midday|midnight)\b/i, lower)) {
     add({
       index: m.index,
@@ -742,7 +751,10 @@ export function parseWhen(input: string, options: WhenOptions): WhenMatch[] {
     part ? (/^apr/.test(part) ? 15 : FR_PARTS[part]) : undefined;
   // A bare "15h" or "midi" could be English's ("2h", a MIDI file): only in French words.
   const scores = latinScores(text);
-  const french = scores.fr > scores.en;
+  // French when its words say so, or, with nothing to tell, when the reader is told it's French
+  // (an ask read as French, its time passed alone: "15h").
+  const french =
+    scores.fr > scores.en || (scores.fr === scores.en && /^fr/i.test(options.locale ?? ''));
   for (const m of scan(
     edged(
       `(apr[eè]s[- ]demain|aujourd['’]hui|demain|ce\\s+soir|ce\\s+matin|cet\\s+apr[eè]s[- ]midi|cet\\s+apr[eè]m)(?:\\s+(${FR_PART_WORDS}))?`,
@@ -884,9 +896,14 @@ export function parseWhen(input: string, options: WhenOptions): WhenMatch[] {
   )) {
     const cue = m[3];
     const start = m.index + m[1]!.length;
+    // Right after a French day ("jeudi 16h", "demain 9h"), the hour is that day's.
+    const afterDay =
+      /(?:^|[^\p{L}])(?:lundi|mardi|mercredi|jeudi|vendredi|samedi|dimanche|demain|aujourd['’]hui)\s*$/u.test(
+        lower.slice(0, start),
+      );
     // "pendant 2h", "il y a 3h", "ça prend 1h": a length of time, not an hour of the day.
     if (
-      (!cue && !m[5] && !french) ||
+      (!cue && !m[5] && !french && !afterDay) ||
       (!cue &&
         /(?:^|[^\p{L}])(?:pendant|en|in|sous|depuis|prend|prends|prendre|dure|durée|faut|reste|environ|y\s+a|de|d['’]|plus|moins|toutes\s+les|tous\s+les)\s*$/u.test(
           lower.slice(0, start),
@@ -1111,6 +1128,7 @@ export function parseWhen(input: string, options: WhenOptions): WhenMatch[] {
       time: p.time ? `${pad(p.time.hour)}:${pad(p.time.minute)}` : null,
       at: at.toISOString(),
       past,
+      ...(p.date ? {} : { timeOnly: true as const }),
     });
   }
   return results;

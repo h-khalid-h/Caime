@@ -1497,7 +1497,18 @@ A sphere is said as how you know someone, never "sphere".
   their tap through `postAs`; a question Cai asks for what's missing carries `payload.awaiting`,
   which `answerAwaited` finishes with their next words; a drafted message is drawn by
   `DraftOffer` (`features/cai/CaiOffer.tsx`, the one lazy module R68's follow-up is drawn from
-  too), never a look of its own. Anything new Cai is asked to do
+  too), never a look of its own. When someone is free (M17 I7) is `lib/free-time.ts`, the one
+  reader of what holds a person's day (`heldIn`: their cards through `cardsAhead`, an asked one
+  shown and never in the way, their calendars through `busyElsewhere` after `freshenBusy`) inside
+  the hours that count as it (their booking hours, else their country's week, nine to six), over
+  core `free-time.ts`; core `chatFree` (golden set) sends "when am I free" to `freeAnswer`, and a
+  meeting Cai prepares asks `clashFor` and offers `offer.meeting.instead`, taken only by its own
+  tap (`instead: true`). A move ("move my 3pm to tomorrow", core `chatAct` kind `move`, `from` the
+  meeting as named) is `offerMove`: the card among theirs of the next two weeks (`movable`), the
+  new time read against the card's own (`movedTo`, `timeOnly` an hour alone on its day), offered
+  as `offer.move` and done on the tap by `retimeCard`, as the card's own "Suggest another time".
+  Anything new that answers or plans by someone's free time reads it there, never a calendar of
+  its own. Anything new Cai is asked to do
   follows R110: what touches only the person's own things is done and said with its Undo, what
   reaches anyone else is prepared and done on their tap, never by Cai; the rest goes
   through `runAi('cai')`, or for a friend `runAi('friend')` in its own character (R71: `FRIENDS`

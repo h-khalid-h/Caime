@@ -305,4 +305,31 @@ export const egyptianVoice: Catalog = {
   'What should I keep? Say it after “Remind me to” or “Add an action:”.':
     'أحفظ إيه؟ قوله بعد «فكّرني» أو «ضيف إجراء:».',
   'You asked in a call: “{words}”': 'طلبك في مكالمة: «{words}»',
+  'Busy in your calendar': 'وقت محجوز في الكالندر بتاعك',
+  '{when} is free, until {until}.': '{when} فاضي، لحد {until}.',
+  '{when} is taken: {what}.': '{when} محجوز: {what}.',
+  'Nothing else is free that day.': 'مفيش وقت فاضي تاني اليوم ده.',
+  'The next free time that day: {next}.': 'أقرب وقت فاضي اليوم ده: {next}.',
+  '{day} isn’t one of your working days.': '{day} مش من أيام شغلك.',
+  'Busy: {items}.': 'اللي واخد وقتك: {items}.',
+  'Nothing is planned.': 'مفيش حاجة متخططة.',
+  '{day}: you’re free all day, {hours}.': '{day}: يومك كله فاضي، {hours}.',
+  '{day}: nothing is free in your day, {hours}.': '{day}: مفيش وقت فاضي في يومك، {hours}.',
+  '{day}: you’re free {times}.': '{day}: الأوقات الفاضية {times}.',
+  'Asked, not yet agreed: {items}.': 'مطلوبة ومفيش اتفاق عليها لسه: {items}.',
+  'You have {what} then; {time} is free that day.':
+    'عندك {what} في الوقت ده؛ و{time} فاضي اليوم ده.',
+  'You have {what} then, and nothing else is free that day.':
+    'عندك {what} في الوقت ده، ومفيش وقت فاضي تاني اليوم ده.',
+  'I can’t find that among your meetings and appointments in the next two weeks.':
+    'ملقتش ده في اجتماعاتك ومواعيدك في الأسبوعين الجايين.',
+  'Which one do you mean?': 'قصدك أنهي واحد؟',
+  'When should “{title}” move to? A day or a time, like “tomorrow at 3”.':
+    'نخلّي «{title}» إمتى؟ يوم أو ساعة، زي «بكرة الساعة 3».',
+  '“{title}” is at that time already.': '«{title}» في الوقت ده أصلًا.',
+  'Shall I suggest {when} for “{title}”, in place of {from}? {name} will be asked to agree.':
+    'أقترح {when} لـ«{title}» بدل {from}؟ هنطلب موافقة {name}.',
+  'Shall I suggest {when} for “{title}”, in place of {from}? Everyone in it will be asked to agree.':
+    'أقترح {when} لـ«{title}» بدل {from}؟ هنطلب موافقة كل اللي فيه.',
+  'That time has passed. Choose a later one.': 'الوقت ده عدّى. اختار وقت بعده.',
 };

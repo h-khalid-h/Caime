@@ -16,6 +16,7 @@ export * from './cai-call';
 export * from './calls';
 export * from './catalog';
 export * from './chat-act';
+export * from './chat-free';
 export * from './chat-intent';
 export * from './chat-save';
 export * from './checkout';

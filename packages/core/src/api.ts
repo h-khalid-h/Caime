@@ -1148,7 +1148,7 @@ export interface CaiAnsweredPayload {
 }
 
 export interface CaiOfferPayload {
-  kind: 'message' | 'call' | 'meeting' | 'find';
+  kind: 'message' | 'call' | 'meeting' | 'find' | 'move';
   /** Whom it's for: one of their people. */
   to?: { id: string; name: string };
   /** Their chat with `to`; null when there's none yet (the app opens it as it sends). */
@@ -1156,10 +1156,26 @@ export interface CaiOfferPayload {
   /** A message's words, as they'll go. */
   text?: string;
   video?: boolean;
-  /** A meeting card's title, start and minutes, as it'll go. */
-  meeting?: { title: string; at: string; minutes: number };
+  /**
+   * A meeting card's title, start and minutes, as it'll go; `instead`, the next free start that
+   * day when the time asked meets something already holding theirs (M17 I7), offered beside it.
+   */
+  meeting?: { title: string; at: string; minutes: number; instead?: string };
   /** What to look for, in Search. */
   query?: string;
+  /**
+   * A meeting or an appointment of theirs given another time (M17 I7): its card, its name, its
+   * time now and the one suggested, whom the other side is when it's one (the organization, the
+   * person), and the next free time beside it when the one asked meets something.
+   */
+  move?: {
+    messageId: string;
+    title: string;
+    from: string;
+    at: string;
+    name?: string;
+    instead?: string;
+  };
   /** Done: what it sent, so a second tap sends nothing. */
   doneId?: string;
   doneAt?: string;

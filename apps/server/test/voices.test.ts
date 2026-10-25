@@ -1,7 +1,7 @@
 /**
  * Cai and the Caime Friends in the Arabic people speak (R72): each voice (`VOICES`, an overlay on
  * the standard catalog) has every line they say, by the rules, from `lib/system-accounts.ts`,
- * `lib/cai.ts` and `lib/cai-acts.ts`, in plural forms where it counts, with every placeholder, and nothing else: the
+ * `lib/cai.ts`, `lib/cai-acts.ts` and `lib/free-time.ts`, in plural forms where it counts, with every placeholder, and nothing else: the
  * interface, a refusal and a name stay in Standard Arabic whoever reads them.
  */
 import { ar } from '@caime/core/locales/ar';
@@ -14,6 +14,7 @@ const SPEAKERS = [
   'apps/server/src/lib/system-accounts.ts',
   'apps/server/src/lib/cai.ts',
   'apps/server/src/lib/cai-acts.ts',
+  'apps/server/src/lib/free-time.ts',
 ];
 /** What those files say that isn't Cai or a friend talking: refusals, a name, a stand-in. */
 const NOT_SPOKEN = [
@@ -27,6 +28,7 @@ const NOT_SPOKEN = [
   'That one starts on your device.',
   'Open your chat with {name} first.',
   'That isn’t your chat with {name}.',
+  'Someone just changed this card.',
 ];
 /** Said through a key core hands back (`greetingKey`): the brief's first line. */
 const GREETINGS = ['Good morning, {name}', 'Good afternoon, {name}', 'Good evening, {name}'];

@@ -4243,9 +4243,39 @@ clinic can sign for. I1 lands before launch.
       first (follow-ups by line, faithful summaries and write-ups, Cai's keep and act, search
       readings, translations, the agent with a catalog, a menu, moves and every variety), nightly
       in batches and in CI when a prompt's hash moves, floors that only rise.
-- [ ] I7. A calendar-aware Cai (M): "when am I free" from the calendar and connected busy times; a
+- [x] I7. A calendar-aware Cai (M): "when am I free" from the calendar and connected busy times; a
       prepared meeting warns of a clash and offers the next free time; "move my 3pm" as another
       time suggested (F5); the coming-up list says its true count.
+  - [x] I7a. Free time, clashes and the count: core `chatFree` (every interface language and
+        Arabic variety, a golden set with its near misses: "are you free", "when is Sara free", a
+        statement) and `free-time.ts` (`freeGaps`, `nextFree` on the half hour, `dayWindow` on
+        their clock); `lib/free-time.ts` reads what holds a day once (their cards through
+        `cardsAhead`, the asked ones shown and never in the way, their connected calendars through
+        `busyElsewhere` after `freshenBusy`) inside the hours that count as their day (their own
+        booking hours, else nine to six on a day their country works); Cai and every friend answer
+        "when am I free Thursday" and "am I free tomorrow at 3" by the rules, a day off said as
+        one; a meeting Cai prepares says what it meets and offers the next free time that fits as
+        "Use 4:00 PM instead" (`offer.meeting.instead`), sent at that time on that tap alone; the
+        coming-up answer counts past the five it lists ("And 2 more in Actions."). Verified:
+        `free-time.test.ts`, `chat-free-golden.test.ts`, `cai-free.test.ts` (the day, the hour, a
+        day off in two languages, the clash and the time taken instead, the count),
+        `voices.test.ts`, the catalogs.
+  - [x] I7b. "Move my 3pm to tomorrow": core `chatAct` reads a move in the four languages (its own
+        golden lines and near misses: "move the car to the garage", "change the meeting notes",
+        "أجلت الاجتماع لبكرة", "doktordan randevu al"), whom it's with apart from which one ("with
+        Sami", "مع سامي", "Sami ile") and its time or name ("my 3pm", "الساعة 3", "mon rdv de 15h",
+        "saat 3'teki randevumu"); Cai finds it among their meetings and appointments of the next two
+        weeks (by whom, then the hour any day, the day and hour, the day, or the name; "my dentist
+        appointment" by whom it's with), asks which when several are and when it should move to when
+        nothing was said, reads the new time against the card's own (an hour alone on its day, a day
+        alone at its hour), says what already holds that time with the next free one beside it, and
+        on their tap suggests it as the card's own "Suggest another time" does (`retimeCard`: the
+        other side asked again, calendars and guests told), once. The date reader learnt "3
+        o'clock", an hour after a French day ("jeudi 16h") and an hour alone in an ask read as
+        French, and says when a match named only an hour (`timeOnly`). Verified:
+        `chat-act-golden.test.ts`, `when.test.ts`, `cai-free.test.ts` (the offer, nothing moved
+        before the tap, the card moved and asked again, twice is once, choosing between three, a
+        missing time asked, nothing at an hour said), the voices and the catalogs.
 - [ ] I8. An agent that learns and proves (M): catalog descriptions, places and hours as passages;
       slots for the item and day asked; the time now; the customer's own cards as they stand; "add
       to what it knows" from a team member's answer, as a suggestion the owner accepts; the owner's
@@ -5918,6 +5948,16 @@ CONNIQT; they mean Caime. Caishy is one of Caime's AI members, and Cai leads the
 - 2026-10-20 — The French and Turkish catalogs come in two halves fetched side by side, as Arabic
   does: their largest download 48.9 KB where one was 95.2 KB of a chunk's 100; the first download
   448.8 KB of 450 (0.2 KB more: the two loaders).
+- 2026-10-25 — M17 I7a, a calendar-aware Cai: "when am I free Thursday" and "am I free tomorrow
+  at 3" answered by the rules from what holds the person's day (their agreed cards, their connected
+  calendars' busy times) inside the hours that count as their day, in every interface language; a
+  card still asked is said apart and never in the way; a meeting Cai prepares says what it meets
+  and offers the next free time that fits, sent at that time on that tap; "what's coming up" says
+  how many more there are past the five it lists. I7b the same day: "move my 3pm to tomorrow" in
+  the four languages finds the meeting among theirs (asking which, and when to, when it must),
+  says what holds the new time and the free one beside it, and suggests it on their tap as the
+  card's own "Suggest another time" does; the date reader learnt "3 o'clock" and "jeudi 16h".
+  Verified: the core and golden tests, `cai-free.test.ts`, the voices and catalogs.
 - 2026-10-25 — M17 I5, Arabic-first retrieval: search reads words as people type them in every
   interface language, by rules. One fold on the device and in the database; an Arabic word found
   without its article or a joined "و" (the draft had "عرض" miss "العرض", which WhatsApp's

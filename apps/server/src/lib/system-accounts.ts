@@ -24,6 +24,7 @@ import {
   type ChatIntent,
   chatAbout,
   chatAct,
+  chatFree,
   chatIntent,
   chatSave,
   firstFutureWhen,
@@ -73,6 +74,7 @@ import {
 import { type Act, answerAwaited, offerAct } from './cai-acts';
 import { ensureDirectConversation } from './conversations';
 import { AppError } from './errors';
+import { freeAnswer } from './free-time';
 import { asReader, inLanguage, readerOf } from './i18n';
 import { registerJob } from './jobs';
 import { SYSTEM_REPLY_JOB } from './message-effects';
@@ -87,6 +89,8 @@ import { cardsAhead, dueCards } from './upcoming';
 import { minorOf } from './users';
 
 const SHOWN = 5;
+/** How far what's coming is counted for "And {n} more": a week rarely holds more. */
+const COMING_COUNTED = 50;
 const TRANSCRIPT_MESSAGES = 12;
 const WEEK_MS = 7 * 86_400_000;
 /** The sticker pack the friends send from: the app's `STICKER_PACK`. */
@@ -394,6 +398,7 @@ async function systemReply(ctx: AppContext, payload: Record<string, unknown>): P
           isQuestion: Boolean(latest.is_question),
           intent: text ? chatIntent(text) : null,
           about: text ? chatAbout(text) : null,
+          free: text ? chatFree(text) : false,
           save: text ? chatSave(text) : null,
           act: null,
         };
@@ -434,6 +439,8 @@ interface Said {
   /** A question, as the message intelligence read it when it was sent (M17 I4). */
   isQuestion: boolean;
   intent: ChatIntent | null;
+  /** When they're free, or whether they are then (M17 I7). */
+  free: boolean;
   /** A question about one person (G11), with the name or the relationship as typed. */
   about: About | null;
   /** Something to keep (G13): a reminder or an action, and its words. */
@@ -466,6 +473,7 @@ async function friendSays(
   // A sticker is answered with its own.
   if (said.kind === 'sticker') return sticker(ctx, account, conversationId, friend);
   if (said.about) return say(await aboutAnswer(ctx, me, said.about));
+  if (said.free) return say(await freeAnswer(ctx, me, said.text));
   if (isOwnQuestion(said.intent)) return say(await ruleAnswer(ctx, me, said.intent));
   if (said.intent === 'missed') return say(await missedAnswer(ctx, me, false));
   if (said.save) return keepAsked(ctx, account, conversationId, me, said, null);
@@ -525,6 +533,7 @@ async function caiSays(
 ) {
   const say = (line: string) => postAs(ctx, account.id, conversationId, line);
   if (said.about) return say(await aboutAnswer(ctx, me, said.about));
+  if (said.free) return say(await freeAnswer(ctx, me, said.text));
   if (isOwnQuestion(said.intent)) return say(await ruleAnswer(ctx, me, said.intent));
   if (said.intent === 'missed') return say(await missedAnswer(ctx, me, true));
   if (said.save) return keepAsked(ctx, account, conversationId, me, said, voice);
@@ -594,6 +603,7 @@ function actOf(a: CaiAct, text: string): Act {
     video: a.video,
     minutes: a.minutes,
     lang: writtenIn(text) ?? 'en',
+    from: null,
   };
 }
 
@@ -914,7 +924,8 @@ export interface Open {
   asked: string[];
   mine: string[];
   coming: string[];
-  counts: { waiting: number; asked: number; mine: number };
+  /** How many of each there are (what's coming, up to `COMING_COUNTED`), however few are shown. */
+  counts: { waiting: number; asked: number; mine: number; coming: number };
 }
 
 /**
@@ -970,14 +981,15 @@ export async function openFor(
         ),
       ])
       .executeTakeFirstOrThrow(),
+    // Counted past the few shown, so the answer says how many more there are (M17 I7).
     cardsAhead(ctx, me.id, {
       from: now,
       until,
-      limit: SHOWN,
+      limit: COMING_COUNTED,
       agreedOnly: true,
     }),
     // What's owed by a day in the window (M14), today's included: the cards the calendar shows.
-    dueCards(ctx, me.id, { from: dueDayOf(now, zone), until, limit: SHOWN }),
+    dueCards(ctx, me.id, { from: dueDayOf(now, zone), until, limit: COMING_COUNTED }),
   ]);
   const due = (at: Date | null, hasTime: boolean) =>
     at ? ` · ${formatDue(at.toISOString(), now, zone, locale, hasTime)}` : '';
@@ -994,7 +1006,7 @@ export async function openFor(
         r.due_at.getTime() < until.getTime(),
     )
     .map((r) => ({ at: r.due_at!, hasTime: r.due_has_time, title: r.title }));
-  const coming = [
+  const ahead = [
     ...soon,
     ...cards.map((c) => ({ at: c.at, hasTime: c.hasTime, title: c.title })),
     ...owed.map((c) => ({
@@ -1004,8 +1016,8 @@ export async function openFor(
         ? `${c.title}: ${formatAmount(c.amount.value, c.amount.currency, locale)}`
         : c.title,
     })),
-  ]
-    .sort((a, b) => a.at.getTime() - b.at.getTime())
+  ].sort((a, b) => a.at.getTime() - b.at.getTime());
+  const coming = ahead
     .slice(0, SHOWN)
     .map((c) => line(formatWhenAt(c.at.toISOString(), c.hasTime, now, zone, locale), c.title));
   return {
@@ -1017,7 +1029,7 @@ export async function openFor(
       .map((r) => line(r.owner ?? tr('Someone'), r.title) + due(r.due_at, r.due_has_time)),
     mine: mine.slice(0, SHOWN).map((r) => line(r.title) + due(r.due_at, r.due_has_time)),
     coming,
-    counts,
+    counts: { ...counts, coming: Math.min(ahead.length, COMING_COUNTED) },
   };
 }
 
@@ -1093,7 +1105,7 @@ export async function ruleAnswer(ctx: AppContext, me: Person, intent: OpenPart):
         : tr('Nothing you said you’d do is open.');
     case 'coming':
       return open.coming.length
-        ? [tr('Coming up this week:'), ...open.coming].join('\n')
+        ? list(tr('Coming up this week:'), open.coming, open.counts.coming)
         : tr('Nothing is coming up this week.');
   }
 }

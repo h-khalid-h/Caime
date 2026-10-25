@@ -135,6 +135,43 @@ test('Cai and the Caime Friends answer like anyone you write to', async ({ brows
   const theirs = ((await read.json()) as { messages: Array<{ body: string | null }> }).messages;
   expect(theirs.filter((m) => m.body === 'I’m on my way')).toHaveLength(1);
 
+  // Asked to move a meeting, Cai finds it and suggests the new time only on his tap (M17 I7b).
+  const start = new Date(Math.ceil((Date.now() + 26 * 3_600_000) / 3_600_000) * 3_600_000);
+  const sent = await other.request.post(`/v1/conversations/${conversationId}/messages`, {
+    headers: CLIENT,
+    data: {
+      clientId: randomUUID(),
+      kind: 'kit',
+      payload: {
+        kit: 'meeting',
+        fields: { title: 'Planning', start: { at: start.toISOString(), hasTime: true } },
+      },
+    },
+  });
+  expect(sent.ok(), await sent.text()).toBe(true);
+  const card = ((await sent.json()) as { message: { id: string } }).message.id;
+  // Four days on: never the day the meeting is on, whichever clock reads it.
+  const day = new Date(Date.now() + 4 * 86_400_000).toLocaleDateString('en-GB', {
+    weekday: 'long',
+    timeZone: 'UTC',
+  });
+  await input.fill(`Move my meeting with Sarah to ${day}`);
+  await page.getByTestId('composer-send').filter({ visible: true }).click();
+  await expect(visible(page, /^Shall I suggest .* for “Planning”, in place of /)).toBeVisible();
+  await page.getByTestId('offer-move-send').filter({ visible: true }).click();
+  await expect(page.getByTestId('offer-move-done').filter({ visible: true })).toContainText(
+    'Another time suggested',
+  );
+  const after = await other.request.get(`/v1/conversations/${conversationId}/messages`, {
+    headers: CLIENT,
+  });
+  const planning = (
+    (await after.json()) as {
+      messages: Array<{ id: string; payload: { fields?: { start?: { at: string } } } | null }>;
+    }
+  ).messages.find((m) => m.id === card);
+  expect(planning?.payload?.fields?.start?.at).not.toBe(start.toISOString());
+
   // Its page, by its handle like anyone's.
   await page.goto('/@cai');
   await expect(page.getByTestId('system-profile').filter({ visible: true })).toContainText(

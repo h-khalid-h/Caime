@@ -266,6 +266,7 @@ const WORD_DATA_FILES = new Set([
   'packages/core/src/intelligence-fr.ts',
   'packages/core/src/intelligence-tr.ts',
   'packages/core/src/chat-act.ts',
+  'packages/core/src/chat-free.ts',
   'packages/core/src/chat-intent.ts',
   'packages/core/src/chat-save.ts',
   'packages/core/src/chat-words.ts',

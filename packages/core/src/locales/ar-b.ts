@@ -3542,4 +3542,7 @@ export const arB: Catalog = {
     '{domain} هو نطاق Caime نفسه، لذا يمكن لهذه المؤسسة أن تتخذ @{handle} اسمًا لها.',
   'Take @{handle}': 'اعتماد @{handle}',
   'This organization is @{handle} now': 'أصبحت هذه المؤسسة @{handle}',
+  'Use {time} instead': 'استخدام {time} بدلًا منه',
+  'Another time suggested': 'تم اقتراح وقت آخر',
+  'Suggest it': 'اقتراح هذا الوقت',
 };

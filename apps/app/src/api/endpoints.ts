@@ -1132,9 +1132,12 @@ export const endpoints = {
   /** Send the follow-up Cai offered, as yours (R68). */
   sendFollowUp: (offerId: string) =>
     api.post<FollowUpSentResponse>(`/messages/${offerId}/follow-up`, {}),
-  /** Do what Cai offered to do, as yours (M16 G14): into the chat it named, or the one opened. */
-  carryOutOffer: (offerId: string, conversationId: string | null) =>
-    api.post<OfferDoneResponse>(`/messages/${offerId}/offer`, { conversationId }),
+  /**
+   * Do what Cai offered to do, as yours (M16 G14): into the chat it named, or the one opened;
+   * `instead`, at the free time Cai offered beside a time that clashed (M17 I7).
+   */
+  carryOutOffer: (offerId: string, conversationId: string | null, instead = false) =>
+    api.post<OfferDoneResponse>(`/messages/${offerId}/offer`, { conversationId, instead }),
   calendarFeed: () => api.get<CalendarFeedResponse>('/calendar/feed'),
   /** A new address, shown this once; any old one stops working. */
   newCalendarFeed: () => api.post<CalendarFeedCreatedResponse>('/calendar/feed', {}),

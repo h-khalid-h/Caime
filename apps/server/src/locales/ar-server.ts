@@ -1807,4 +1807,30 @@ export const arServer: Catalog = {
   'Nothing new since you last looked.': 'لا جديد منذ آخر مرة اطلعت فيها.',
   'You missed {messages} in {conversations}.': 'فاتك {messages} في {conversations}.',
   'In short: {summary}': 'باختصار: {summary}',
+  'Busy in your calendar': 'وقت محجوز في تقويمك',
+  '{when} is free, until {until}.': '{when} متاح، حتى {until}.',
+  '{when} is taken: {what}.': '{when} محجوز: {what}.',
+  'Nothing else is free that day.': 'لا وقت متاحًا غيره في ذلك اليوم.',
+  'The next free time that day: {next}.': 'أقرب وقت متاح في ذلك اليوم: {next}.',
+  '{day} isn’t one of your working days.': '{day} ليس من أيام عملك.',
+  'Busy: {items}.': 'ما يشغل وقتك: {items}.',
+  'Nothing is planned.': 'لا شيء مخطط له.',
+  '{day}: you’re free all day, {hours}.': '{day}: يومك كله متاح، {hours}.',
+  '{day}: nothing is free in your day, {hours}.': '{day}: لا وقت متاحًا في يومك، {hours}.',
+  '{day}: you’re free {times}.': '{day}: الأوقات المتاحة {times}.',
+  'Asked, not yet agreed: {items}.': 'مطلوبة ولم يُتفق عليها بعد: {items}.',
+  'You have {what} then; {time} is free that day.':
+    'عندك {what} في هذا الوقت؛ و{time} متاح في ذلك اليوم.',
+  'You have {what} then, and nothing else is free that day.':
+    'عندك {what} في هذا الوقت، ولا وقت متاحًا غيره في ذلك اليوم.',
+  'I can’t find that among your meetings and appointments in the next two weeks.':
+    'لا أجد ذلك بين اجتماعاتك ومواعيدك في الأسبوعين القادمين.',
+  'Which one do you mean?': 'أيّها المقصود؟',
+  'When should “{title}” move to? A day or a time, like “tomorrow at 3”.':
+    'إلى متى يُنقل «{title}»؟ يوم أو ساعة، مثل «غدًا الساعة 3».',
+  '“{title}” is at that time already.': '«{title}» في هذا الوقت أصلًا.',
+  'Shall I suggest {when} for “{title}”, in place of {from}? {name} will be asked to agree.':
+    'أقترح {when} لـ«{title}» بدلًا من {from}؟ ستُطلب موافقة {name}.',
+  'Shall I suggest {when} for “{title}”, in place of {from}? Everyone in it will be asked to agree.':
+    'أقترح {when} لـ«{title}» بدلًا من {from}؟ ستُطلب موافقة الجميع فيه.',
 };
