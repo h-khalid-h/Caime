@@ -8,6 +8,7 @@ import type {
 } from '@caime/core/api';
 import { listTitle, messagePreview } from '@caime/core/format';
 import { msg, tr, trn } from '@caime/core/i18n';
+import { uuidv4 } from '@caime/core/ids';
 import { isLargeGroup } from '@caime/core/large-group';
 import { firstLinkIn } from '@caime/core/link-text';
 import { SUBJECT_MAX, subjectFromText } from '@caime/core/mail';
@@ -18,6 +19,7 @@ import { useQuery, useQueryClient } from '@tanstack/react-query';
 import * as DocumentPicker from 'expo-document-picker';
 import { router } from 'expo-router';
 import Camera from 'lucide-react-native/icons/camera';
+import Clock from 'lucide-react-native/icons/clock';
 import Cloud from 'lucide-react-native/icons/cloud';
 import FileText from 'lucide-react-native/icons/file-text';
 import ImageIcon from 'lucide-react-native/icons/image';
@@ -54,8 +56,10 @@ import { type KitChoice, KitForm, type KitStart, kitsOffered } from '@/features/
 import { STICKER_PACK } from '@/features/stickers/pack';
 import { StickerPicker } from '@/features/stickers/StickerPicker';
 import type { Recorded } from '@/features/voice/Recorder';
+import { type Chosen, instantOf } from '@/features/when/when';
 import { useEmptied } from '@/lib/emptied';
 import { canTakePhoto, photoToUpload, pickFromLibrary, takePhoto } from '@/lib/photos';
+import { useUserClock } from '@/lib/time';
 import { realtime } from '@/realtime/client';
 import { applyEditToInbox, upsertMessage } from '@/state/cache';
 import { useDrafts } from '@/state/drafts';
@@ -69,6 +73,7 @@ import { Avatar } from '@/ui/Avatar';
 import { Button } from '@/ui/Button';
 import { Reply, Send } from '@/ui/directional';
 import { IconButton } from '@/ui/IconButton';
+import { lazyPart } from '@/ui/Lazy';
 import { ListRow } from '@/ui/ListRow';
 import { useLayout } from '@/ui/layout';
 import { Pressable } from '@/ui/Pressable';
@@ -87,6 +92,9 @@ const Recorder = lazy(() =>
 
 /** A connected OneDrive's browser (R90), loaded when it's opened. */
 const DriveSheet = lazy(() => import('@/features/cloud/DriveSheet'));
+
+/** When to send what's written later (M16 E8b): the one way to choose a time, loaded apart. */
+const WhenSheet = lazyPart(() => import('@/features/when/WhenSheet').then((m) => m.WhenSheet));
 
 export interface ComposerHandle {
   focus: () => void;
@@ -217,6 +225,9 @@ export const Composer = forwardRef<ComposerHandle, ComposerProps>(function Compo
     setKit(asked.kit);
   }, [asked, id]);
   const [custom, setCustom] = useState<CustomKitOfferView | null>(null);
+  // Choosing when what's written goes (M16 E8b).
+  const [later, setLater] = useState(false);
+  const { timeZone } = useUserClock();
   const [rewrite, setRewrite] = useState(false);
   const [recording, setRecording] = useState(false);
   const aiReady = useAiReady(conversation);
@@ -722,6 +733,31 @@ export const Composer = forwardRef<ComposerHandle, ComposerProps>(function Compo
     setAttach(false);
     afterSheet(next);
   };
+  /** What's written kept on the server and sent at the time chosen, as if typed then (M16 E8b). */
+  const sendLater = async (chosen: Chosen) => {
+    setLater(false);
+    const body = text.trim();
+    if (!body) return;
+    try {
+      await endpoints.schedule(id, {
+        clientId: uuidv4(),
+        body,
+        replyToId: replyTo?.id ?? null,
+        sendAt: instantOf(chosen, timeZone).toISOString(),
+      });
+    } catch (e) {
+      toast((e as Error).message, { tone: 'danger' });
+      return;
+    }
+    toast(tr('Kept to send later'));
+    clearBox();
+    setHeight(MIN_H);
+    setCaret(0);
+    setSettled(null);
+    useDrafts.getState().clear(id);
+    onClearReply();
+    void qc.invalidateQueries({ queryKey: qk.conversation(id) });
+  };
   const canSend = value.trim().length > 0;
   // Stickers sit inside the box, as in every messenger (R88): not while editing, not in a
   // private conversation, which takes only sealed text, and not to someone reached by email,
@@ -1143,6 +1179,15 @@ export const Composer = forwardRef<ComposerHandle, ComposerProps>(function Compo
           />
           {toCai ? null : (
             <>
+              {canSend && !editing ? (
+                <ListRow
+                  icon={Clock}
+                  title={tr('Send later')}
+                  subtitle={tr('What you wrote, at a time you choose')}
+                  onPress={fromSheet(() => setLater(true))}
+                  testID="attach-later"
+                />
+              ) : null}
               <ListRow
                 icon={FileText}
                 title={tr('A file')}
@@ -1210,6 +1255,18 @@ export const Composer = forwardRef<ComposerHandle, ComposerProps>(function Compo
           )}
         </View>
       </Sheet>
+      {later ? (
+        <WhenSheet
+          open
+          onClose={() => setLater(false)}
+          title={tr('Send later')}
+          value={null}
+          time="required"
+          future
+          onChange={(chosen: Chosen) => void sendLater(chosen)}
+          testID="later-sheet"
+        />
+      ) : null}
       {drive ? (
         <Suspense fallback={null}>
           <DriveSheet

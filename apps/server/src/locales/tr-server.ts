@@ -1930,4 +1930,14 @@ export const turkishServer: Catalog = {
   'This link has run out.': 'Bu bağlantının süresi doldu.',
   'A private conversation’s words stay on your devices.':
     'Özel bir konuşmanın sözleri cihazlarınızda kalır.',
+  'A private conversation’s words stay on your devices, so they can’t wait on the server.':
+    'Özel bir konuşmanın sözleri cihazlarınızda kalır, bu yüzden sunucuda bekleyemez.',
+  'Choose a time at least a minute from now.':
+    'Şu andan en az bir dakika sonrası için bir saat seçin.',
+  'Choose a time within a year.': 'Bir yıl içinde bir saat seçin.',
+  'You have {max} messages waiting to be sent. Send or delete one first.':
+    'Gönderilmeyi bekleyen {max} mesajınız var. Önce birini gönderin ya da silin.',
+  'A message you wrote for later couldn’t be sent':
+    'Sonrası için yazdığınız bir mesaj gönderilemedi',
+  'That message couldn’t be sent.': 'Bu mesaj gönderilemedi.',
 };

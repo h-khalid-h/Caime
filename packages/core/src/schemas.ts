@@ -1483,6 +1483,18 @@ export const ApproveDeviceBody = z.object({ introduction: Signature }).strict();
 /** A link being written, for the composer's card (M16 E4c): an address, never a page's worth. */
 export const LinkPreviewQuery = z.object({ url: z.string().trim().min(1).max(2048) });
 
+/**
+ * `POST /conversations/:id/scheduled` (M16 E8b): words to send later, at `sendAt`, as text
+ * typed then. Never for a private conversation, whose words never reach the server.
+ */
+export const ScheduleMessageBody = z.object({
+  clientId: z.string().min(8).max(64),
+  body: z.string().trim().min(1).max(10_000),
+  replyToId: z.string().uuid().nullable().optional(),
+  mentions: z.array(z.string().uuid()).max(50).optional(),
+  sendAt: z.string().datetime({ offset: true }),
+});
+
 export const SendMessageBody = z
   .object({
     clientId: z.string().min(8).max(64),

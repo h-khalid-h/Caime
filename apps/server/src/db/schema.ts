@@ -694,6 +694,22 @@ export interface DateMovesTable {
   known_at: Generated<Date>;
 }
 
+/** A message written now and sent at `send_at` (M16 E8b); deleted once sent. */
+export interface ScheduledMessagesTable {
+  id: string;
+  conversation_id: string;
+  sender_id: string;
+  client_id: string;
+  body: string;
+  reply_to_id: string | null;
+  mentions: Generated<string[]>;
+  send_at: Timestamp;
+  /** Why it couldn't go, in the sender's language, once it couldn't. */
+  failure: string | null;
+  failed_at: NullableTimestamp;
+  created_at: Generated<Date>;
+}
+
 export type TaskStatus = 'open' | 'accepted' | 'declined' | 'done' | 'cancelled';
 
 export interface TasksTable {
@@ -1851,6 +1867,7 @@ export interface Database {
   released_handles: ReleasedHandlesTable;
   tasks: TasksTable;
   date_moves: DateMovesTable;
+  scheduled_messages: ScheduledMessagesTable;
   calendar_feeds: CalendarFeedsTable;
   connected_accounts: ConnectedAccountsTable;
   own_addresses: OwnAddressesTable;

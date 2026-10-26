@@ -2837,6 +2837,26 @@ graph) and the number that will show it; one that sharpens none is hygiene and s
       Verified: the E2E `reading-flow.spec.ts` (chosen from the actions, counted as taps take and
       let go, copied in order under the sender's name, deleted together and put back by one Undo,
       forwarded together into a group in order), the catalogs in four languages, and the full gate.
+- [x] E8b. A message written now and sent later (2026-10-26, review §7's parity "scheduled
+      messages"): the Share sheet offers Send later while something is written; the one When sheet
+      chooses a day and a time, and `POST /conversations/:id/scheduled` keeps the words, what they
+      answer and the time in `scheduled_messages` (migration 0163), checked as a send would be
+      (`assertCanSend`) and refused for a private conversation (its words never reach the server),
+      a time under a minute away or past a year, or a hundred already waiting. At its time the
+      `message.scheduled` job sends it through `sendMessage` as if typed then, in the sender's
+      language (every rule read again: still in it, not blocked, a request's one message), and
+      deletes the row; one that can't go keeps its row with why and its sender is told once. A
+      line above the composer counts what waits (`ConversationView.scheduled`, in the same query
+      as what's open), its sheet lists each with when it goes or why it couldn't, Send now and
+      Delete; `scheduled.changed` refreshes the sender's devices. Theirs alone: nobody else sees
+      one before it's sent; in their export (`scheduledMessages`), gone with the conversation or
+      their account. Costs: a row a message until it goes, one job at its time, one scalar count in
+      the conversation's view; nothing on the first download beyond four endpoint lines and a key.
+      Verified: `scheduled-messages.test.ts` (waits, theirs alone, sent at its time and not before;
+      taken back or sent at once by its sender alone, sent once; a time past or too far and anyone
+      outside refused; one that can't go kept with why and its sender told), the E2E
+      `reading-flow.spec.ts` (written, kept, counted, absent for the other side, sent now from its
+      line), the catalogs in four languages, and the full gate.
 - [x] F1. Mail its sender couldn't be confirmed for, kept as such (2026-10-19, review §6: "mail
       failing the sender check is dropped silently (`mail-in.ts:111`, against R75's promised
       notice; the owner lost mail this way)"; R75 (1); advantage 5, privacy that never costs you
@@ -6792,3 +6812,6 @@ CONNIQT; they mean Caime. Caishy is one of Caime's AI members, and Cai leads the
   organization.
 - 2026-10-26 — M16 E8: several messages chosen together from a message's actions, then copied in
   order, forwarded in order or deleted for you with one Undo.
+- 2026-10-26 — M16 E8b: a message written now and sent later, from the Share sheet; it goes at
+  its time as if typed then, or at once from the line above the composer, and one that can't go
+  says why.

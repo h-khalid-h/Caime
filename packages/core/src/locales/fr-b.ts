@@ -2787,4 +2787,17 @@ export const frB: Catalog = {
   'They arrive marked as forwarded.': 'Ils arrivent marqués comme transférés.',
   'There’s nowhere else to forward them yet.':
     'Il n’y a nulle part ailleurs où les transférer pour l’instant.',
+  '{n} messages to send later': {
+    one: '{n} message à envoyer plus tard',
+    other: '{n} messages à envoyer plus tard',
+  },
+  'To send later': 'À envoyer plus tard',
+  'Nothing waits to be sent here.': 'Rien n’attend d’être envoyé ici.',
+  'Couldn’t be sent: {reason}': 'Envoi impossible : {reason}',
+  'Send now': 'Envoyer maintenant',
+  Delete: 'Supprimer',
+  Deleted: 'Supprimé',
+  'Kept to send later': 'Gardé pour plus tard',
+  'Send later': 'Envoyer plus tard',
+  'What you wrote, at a time you choose': 'Ce que vous avez écrit, à l’heure de votre choix',
 };

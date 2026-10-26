@@ -357,7 +357,13 @@ export async function conversationView(
   // What's open here for the viewer (R66): one count on the conversation's own index.
   const open = await ctx.db
     .selectFrom('tasks')
-    .select([sql<number>`count(*)::int`.as('n'), sql<Date | null>`min(due_at)`.as('next')])
+    .select([
+      sql<number>`count(*)::int`.as('n'),
+      sql<Date | null>`min(due_at)`.as('next'),
+      // And what they wrote here to be sent later (M16 E8b), in the same round.
+      sql<number>`(select count(*)::int from scheduled_messages s
+        where s.conversation_id = ${conversation.id} and s.sender_id = ${userId})`.as('scheduled'),
+    ])
     .where('conversation_id', '=', conversation.id)
     .where('status', 'in', ['open', 'accepted'])
     .where((eb) =>
@@ -371,6 +377,7 @@ export async function conversationView(
     open: open.n
       ? { count: open.n, nextDueAt: open.next ? new Date(open.next).toISOString() : null }
       : null,
+    scheduled: open.scheduled,
     id: conversation.id,
     kind: conversation.kind,
     title,

@@ -326,7 +326,14 @@ A sphere is said as how you know someone, never "sphere".
   conversation they were chosen in; `SelectionBar` takes the composer's place (the composer kept
   out of sight) and acts on the set through the same paths (`deleteWithUndo` takes an array: one
   toast, one Undo; `ForwardSheet` takes `ms`, each its own client id): a new action on several
-  messages joins that bar, never a path of its own. Read and delivered
+  messages joins that bar, never a path of its own. A message written to be sent later (M16 E8b,
+  `lib/scheduled-messages.ts`, `scheduled_messages`) is kept by `scheduleMessage` (checked as a send
+  by `assertCanSend`, never for a private conversation) and sent by the `message.scheduled` job's
+  `sendScheduled` through `sendMessage` in the sender's language (client id `scheduled:<id>`, so
+  twice is once), the row deleted once sent or kept with `failure` and the sender told; the
+  composer's Share sheet offers it (`attach-later`, the one `WhenSheet`) and `ScheduledLine` lists
+  them above the composer from `ConversationView.scheduled`; a new way to send later goes through
+  that table and job, never a timer on a device. Read and delivered
   differ by shape and colour: sent and delivered in the bubble's `tick` token (3:1 on the bubble,
   1.8:1 from its `fg`), read in `fg` with a heavier stroke, and on a card of one's own the
   tertiary text and the text (`tokens.test.ts` holds both). A quote says whose words it quotes (`replyName`

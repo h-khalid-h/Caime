@@ -153,6 +153,7 @@ export async function buildExport(ctx: AppContext, me: string, now: Date) {
     automations,
     saved,
     visible,
+    scheduled,
     customers,
     meetingInvitations,
     joinLinks,
@@ -976,6 +977,13 @@ export async function buildExport(ctx: AppContext, me: string, now: Date) {
     visibleSaved(db, me)
       .leftJoin('assets as a', 'a.id', 's.asset_id')
       .select(['s.id', 'a.kind as asset_kind', 'a.file_id', 'a.url'])
+      .execute(),
+    // Their messages written to be sent later (M16 E8b), still waiting or not sent.
+    db
+      .selectFrom('scheduled_messages')
+      .select(['id', 'conversation_id', 'body', 'reply_to_id', 'send_at', 'failure', 'created_at'])
+      .where('sender_id', '=', me)
+      .orderBy('send_at')
       .execute(),
     db
       .selectFrom('billing_customers as c')
@@ -1907,6 +1915,16 @@ export async function buildExport(ctx: AppContext, me: string, now: Date) {
         createdAt: view.createdAt,
       };
     }),
+    // Messages written to be sent later, not sent yet (M16 E8b).
+    scheduledMessages: scheduled.map((m) => ({
+      id: m.id,
+      conversationId: m.conversation_id,
+      body: m.body,
+      replyToId: m.reply_to_id,
+      sendAt: m.send_at,
+      failure: m.failure,
+      createdAt: m.created_at,
+    })),
     saved: saved.map((s) => {
       const v = kept.get(s.id);
       return {

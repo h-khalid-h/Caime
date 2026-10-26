@@ -2691,4 +2691,17 @@ export const turkishB: Catalog = {
   },
   'They arrive marked as forwarded.': 'İletildi olarak işaretli ulaşırlar.',
   'There’s nowhere else to forward them yet.': 'Bunları iletecek başka bir yer henüz yok.',
+  '{n} messages to send later': {
+    one: 'Sonra gönderilecek {n} mesaj',
+    other: 'Sonra gönderilecek {n} mesaj',
+  },
+  'To send later': 'Sonra gönderilecekler',
+  'Nothing waits to be sent here.': 'Burada gönderilmeyi bekleyen bir şey yok.',
+  'Couldn’t be sent: {reason}': 'Gönderilemedi: {reason}',
+  'Send now': 'Şimdi gönder',
+  Delete: 'Sil',
+  Deleted: 'Silindi',
+  'Kept to send later': 'Sonra gönderilmek üzere saklandı',
+  'Send later': 'Sonra gönder',
+  'What you wrote, at a time you choose': 'Yazdığınız, seçtiğiniz bir saatte',
 };

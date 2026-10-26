@@ -2027,4 +2027,12 @@ export const arServer: Catalog = {
     'تمّ الرد على هذا من قبل، أو تغيّر الموعد بعده. التفاصيل في أحدث رسالة بريد إلكتروني.',
   'This link has run out.': 'انتهت صلاحية هذا الرابط.',
   'A private conversation’s words stay on your devices.': 'تبقى كلمات المحادثة الخاصة على أجهزتك.',
+  'A private conversation’s words stay on your devices, so they can’t wait on the server.':
+    'تبقى كلمات المحادثة الخاصة على أجهزتك، فلا يمكن أن تنتظر على الخادم.',
+  'Choose a time at least a minute from now.': 'اختر وقتًا بعد دقيقة على الأقل من الآن.',
+  'Choose a time within a year.': 'اختر وقتًا خلال سنة.',
+  'You have {max} messages waiting to be sent. Send or delete one first.':
+    'لديك {max} رسالة تنتظر الإرسال. أرسل واحدة أو احذفها أولًا.',
+  'A message you wrote for later couldn’t be sent': 'تعذّر إرسال رسالة كتبتها لوقت لاحق',
+  'That message couldn’t be sent.': 'تعذّر إرسال هذه الرسالة.',
 };

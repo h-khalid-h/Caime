@@ -93,6 +93,7 @@ import { mayKeepFrom } from './mayKeep';
 import { PinnedBar } from './PinnedBar';
 import { RequestBanner } from './RequestBanner';
 import { buildRows, namesIn, type Row } from './rows';
+import { ScheduledLine } from './ScheduledLine';
 import { SelectionBar } from './SelectionBar';
 import { SuggestionBar } from './SuggestionBar';
 import { SwipeToReply } from './SwipeToReply';
@@ -1215,6 +1216,10 @@ export function ConversationScreen({
           draft={business.agentDraft}
           onEdit={(words) => composer.current?.insert(words)}
         />
+      ) : null}
+      {/* What they wrote here to be sent later (M16 E8b): theirs alone, a line while any waits. */}
+      {conversation && !where.private ? (
+        <ScheduledLine conversationId={conversation.id} count={conversation.scheduled} />
       ) : null}
       {/* What's open between you here (R66): a line above the composer, opening the details. */}
       {conversation?.open ? (

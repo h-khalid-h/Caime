@@ -229,6 +229,10 @@ export function applyEvent(qc: QueryClient, event: RealtimeEvent, me: string): v
     case 'message.sent':
       useOutbox.getState().resolve(event.data.clientId);
       return;
+    case 'scheduled.changed':
+      invalidate(qk.scheduled(event.data.conversationId));
+      invalidate(qk.conversation(event.data.conversationId));
+      return;
     case 'reaction': {
       const { conversationId, messageId, userId, emoji, added } = event.data;
       patchMessage(qc, conversationId, messageId, (m) => {

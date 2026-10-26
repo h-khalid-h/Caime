@@ -849,9 +849,33 @@ export interface ConversationView {
    * and the soonest due, for the line above the composer. Null when nothing is.
    */
   open: { count: number; nextDueAt: string | null } | null;
+  /** How many messages the viewer wrote here to be sent later (M16 E8b), waiting or not sent. */
+  scheduled: number;
   lastSeq: number;
   lastMessageAt: string | null;
   createdAt: string;
+}
+
+/** A message written now and sent later (M16 E8b), as its sender sees it: theirs alone. */
+export interface ScheduledMessageView {
+  id: string;
+  conversationId: string;
+  body: string;
+  replyToId: string | null;
+  sendAt: string;
+  /** Why it couldn't be sent when its time came, in the sender's language; null while waiting. */
+  failure: string | null;
+  createdAt: string;
+}
+
+/** `GET /conversations/:id/scheduled`: the asker's own, the soonest first. */
+export interface ScheduledMessagesResponse {
+  scheduled: ScheduledMessageView[];
+}
+
+/** `POST /conversations/:id/scheduled`. */
+export interface ScheduledMessageResponse {
+  scheduled: ScheduledMessageView;
 }
 
 export interface MessagesPage {
@@ -3035,6 +3059,11 @@ export type RealtimeDataEvent =
   | {
       type: 'message.sent';
       data: { conversationId: string; clientId: string; id: string; seq: number };
+    }
+  | {
+      /** The sender's messages to be sent later here changed (M16 E8b): one went, or couldn't. */
+      type: 'scheduled.changed';
+      data: { conversationId: string };
     }
   | {
       type: 'reaction';

@@ -2015,4 +2015,13 @@ export const frServer: Catalog = {
   'This link has run out.': 'Ce lien a expiré.',
   'A private conversation’s words stay on your devices.':
     'Les mots d’une conversation privée restent sur vos appareils.',
+  'A private conversation’s words stay on your devices, so they can’t wait on the server.':
+    'Les mots d’une conversation privée restent sur vos appareils : ils ne peuvent pas attendre sur le serveur.',
+  'Choose a time at least a minute from now.': 'Choisissez une heure dans une minute au moins.',
+  'Choose a time within a year.': 'Choisissez une heure dans l’année.',
+  'You have {max} messages waiting to be sent. Send or delete one first.':
+    'Vous avez {max} messages en attente d’envoi. Envoyez-en ou supprimez-en un d’abord.',
+  'A message you wrote for later couldn’t be sent':
+    'Un message que vous aviez écrit pour plus tard n’a pas pu être envoyé',
+  'That message couldn’t be sent.': 'Ce message n’a pas pu être envoyé.',
 };

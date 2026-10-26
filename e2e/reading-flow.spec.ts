@@ -297,4 +297,40 @@ test.describe
       expect(bodies).toEqual(['Later line 18', 'Later line 19']);
       expect(noor.errors).toEqual([]);
     });
+
+    test('a message written now is sent later, or at once from its line (M16 E8b)', async () => {
+      const { page } = noor;
+      await page.goto(`/c/${convo}`);
+      const words = `See you at the reunion ${suffix}`;
+      await page.getByTestId('composer-input').filter({ visible: true }).fill(words);
+      await page.getByTestId('composer-attach').filter({ visible: true }).click();
+      await page.getByTestId('attach-later').click();
+      // Three days on, at the hour the sheet offers: always ahead, wherever the run is.
+      const day = new Date(Date.now() + 3 * 86_400_000).toISOString().slice(0, 10);
+      await page.getByTestId('later-sheet-day').fill(day);
+      await page.getByTestId('later-sheet-done').click();
+      await expect(visible(page, 'Kept to send later')).toBeVisible();
+      await expect(page.getByTestId('composer-input').filter({ visible: true })).toHaveValue('');
+      const line = page.getByTestId('scheduled-line').filter({ visible: true });
+      await expect(line).toHaveText('1 message to send later');
+      // Alex has nothing yet: it's Noor's alone until it goes.
+      const before = await alexCtx.request.get(`/v1/conversations/${convo}/messages`, {
+        headers: CLIENT,
+      });
+      expect(JSON.stringify(await before.json())).not.toContain(words);
+      await line.click();
+      const list = page.getByTestId('scheduled-list').filter({ visible: true });
+      await expect(list).toContainText(words);
+      await page.screenshot({ path: 'e2e/screenshots/desktop-send-later.png' });
+      await list.getByTestId('scheduled-send-now').click();
+      await expect(visible(page, 'Sent')).toBeVisible();
+      await page.keyboard.press('Escape');
+      await expect(visible(page, words)).toBeVisible();
+      await expect(page.getByTestId('scheduled-line').filter({ visible: true })).toHaveCount(0);
+      const after = await alexCtx.request.get(`/v1/conversations/${convo}/messages`, {
+        headers: CLIENT,
+      });
+      expect(JSON.stringify(await after.json())).toContain(words);
+      expect(noor.errors).toEqual([]);
+    });
   });

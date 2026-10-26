@@ -177,6 +177,8 @@ import type {
   SavedCollectionsResponse,
   SavedItemsResponse,
   SavedResponse,
+  ScheduledMessageResponse,
+  ScheduledMessagesResponse,
   SearchAnswerResponse,
   SearchResponse,
   SessionResponse,
@@ -1186,6 +1188,15 @@ export const endpoints = {
   /** Inside one conversation (M16 E6): its messages alone, by the rules. */
   searchIn: (conversationId: string, term: string) =>
     api.get<SearchResponse>(`/search${q({ q: term, conversation: conversationId })}`),
+  /** Messages written to be sent later (M16 E8b): the asker's own in a conversation. */
+  scheduled: (conversationId: string) =>
+    api.get<ScheduledMessagesResponse>(`/conversations/${conversationId}/scheduled`),
+  schedule: (
+    conversationId: string,
+    body: { clientId: string; body: string; replyToId: string | null; sendAt: string },
+  ) => api.post<ScheduledMessageResponse>(`/conversations/${conversationId}/scheduled`, body),
+  unschedule: (id: string) => api.del<OkResponse>(`/scheduled/${id}`),
+  sendScheduledNow: (id: string) => api.post<OkResponse>(`/scheduled/${id}/send`),
   /** "Ask Cai" in Search (R66): a question answered from what search finds. */
   searchAnswer: (q: string) => api.post<SearchAnswerResponse>('/search/answer', { q }),
   /** How a search ended: found or not, and how long it took. Never what was searched for. */

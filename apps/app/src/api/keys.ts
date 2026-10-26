@@ -143,6 +143,7 @@ export const qk = {
   search: (term: string, understand = false) => ['search', term, understand] as const,
   /** Search inside one conversation (M16 E6). */
   searchIn: (conversationId: string, term: string) => ['search-in', conversationId, term] as const,
+  scheduled: (conversationId: string) => ['scheduled', conversationId] as const,
   peopleSearch: (term: string) => ['people-search', term] as const,
   orgSearch: (term: string) => ['org-search', term] as const,
   /** Someone's page by their handle (`/@handle`), before it's known whose it is. */
