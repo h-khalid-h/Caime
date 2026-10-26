@@ -433,9 +433,11 @@ A sphere is said as how you know someone, never "sphere".
   there has `site` in its sealed claim and a `public-write:site:` or `public-book:site:` client id,
   counted on `growth.door.fromSites`, and `OrgDoorView.widget` is the one line to paste (an
   `<iframe>`), null while unverified. A new thing a visitor does in the frame carries `embed`
-  through every redirect; `widget` is a reserved slug. The page for organizations' "Start free" is
-  `BUSINESS_START` (`/sign-up?link=/orgs/new`), which onboarding treats as a linked arrival ("Start
-  your organization").
+  through every redirect; `widget` is a reserved slug. Its E2E frames it from an https stand-in site
+  with `local-network-access` granted: Chromium's Local Network Access refuses a public page framing
+  localhost, and an http one outright. The page for organizations' "Start free" is `BUSINESS_START`
+  (`/sign-up?link=/orgs/new`), which onboarding treats as a linked arrival ("Start your
+  organization").
 - An organization's setup (R57) is `/o/[handle]/setup` (`features/orgs/OrgSetup.tsx`, owner and
   admins only; others get a line saying so): the door, `OrgVerification`, `OrgData`, `OrgBooking`,
   `OrgCheckout`, `OrgAgent`, `OrgApps` and `OrgPlan`, in a clinic's order. The page (`OrgScreen`)
