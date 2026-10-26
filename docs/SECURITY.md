@@ -27,7 +27,13 @@ a control without a test is listed as a gap, not a control. Reviewed 2026-09-26.
    minor's link never connects an adult stranger (it stands as their request). Nobody under 18 is
    put in a group or a space beside people they don't know: they're asked, and in only on their
    yes (M16 B4). Anyone may say to be asked before every add; a message request's photos come
-   blurred, and nobody starts more than twenty new requests a day.
+   blurred, and nobody starts more than twenty new requests a day. Where the law asks a guardian's
+   consent (Egypt, Saudi Arabia), someone from 13 joins only through their parent's own family
+   link (R122): the account reaches nothing but its wait until the parent agrees on it (`403
+   consent_waiting` on every other route, a route added later closed too), and until the child is
+   of age there each new connection, either way, waits for the parent's yes before the other side
+   sees it. The parent sees whom the child is connected with, never a message; a stranger posing
+   as a parent has only their own adult account's link, spent once, seven days, five at most.
 
 ## Controls
 

@@ -18,7 +18,7 @@ import {
 } from '@caime/core/accounts';
 import type { AgeTrigger } from '@caime/core/age-assurance';
 import type { SitePage } from '@caime/core/api';
-import { LAW_MINIMUM_AGES } from '@caime/core/countries';
+import { GUARDIAN_AGES, LAW_MINIMUM_AGES } from '@caime/core/countries';
 import { REQUESTS_PER_DAY } from '@caime/core/privacy';
 import type { SubProcessor } from '@caime/core/processors';
 import { EMAIL_OFF, EMAIL_ON, FACE, THEME_VARS, type } from './page-style';
@@ -93,6 +93,20 @@ function lawAges(minimumAge: number): string {
     .join('; ');
 }
 
+/**
+ * Where a parent's or guardian's consent in Caime admits someone younger than the law's minimum
+ * (R122, `GUARDIAN_AGES`): the countries by name, and from what age.
+ */
+function guardianAges(): string {
+  const names = new Intl.DisplayNames(['en'], { type: 'region' });
+  const byAge = new Map<number, string[]>();
+  for (const g of GUARDIAN_AGES)
+    byAge.set(g.age, [...(byAge.get(g.age) ?? []), names.of(g.country) ?? g.country]);
+  const list = (xs: string[]) =>
+    xs.length < 2 ? (xs[0] ?? '') : `${xs.slice(0, -1).join(', ')} and ${xs[xs.length - 1]}`;
+  return [...byAge].map(([age, countries]) => `from ${age} in ${list(countries)}`).join('; ');
+}
+
 /** A number of days as the pages say it. */
 const span = (days: number) => (days === 365 ? 'a year' : `${days} days`);
 
@@ -104,6 +118,7 @@ function ageChecksSaid(a: NonNullable<PageFacts['ageChecks']>): string {
     a.triggers.includes('stranger')
       ? 'write first to someone you&rsquo;re not connected with'
       : null,
+    a.triggers.includes('guardian') ? 'add a child as their parent or guardian' : null,
   ].filter(Boolean);
   const asked = when.length
     ? `Before you ${when.length > 1 ? `${when.slice(0, -1).join(', ')} or ${when.at(-1)}` : when[0]}, Caime may ask you to check your age once`
@@ -614,7 +629,20 @@ and we&rsquo;ll answer within a month.</p>
 
 <h2>Children</h2>
 <p>Caime is for people ${f.minimumAge} and older, from the day they turn ${f.minimumAge} where they
-live${lawAges(f.minimumAge) ? `, and ${lawAges(f.minimumAge)}, whose law asks a guardian&rsquo;s consent for younger people that Caime doesn&rsquo;t yet ask for` : ''}. The rules for people under 18 apply until the day they turn 18. Under 18:</p>
+live${lawAges(f.minimumAge) ? `, and ${lawAges(f.minimumAge)}, whose law asks a guardian&rsquo;s consent for younger people` : ''}.${
+    guardianAges()
+      ? ` There, someone younger joins ${guardianAges()} only with their parent&rsquo;s or guardian&rsquo;s
+consent, given in Caime: the parent, on Caime themselves, makes a link for that one child, the
+child signs up through it on their own device, and the parent agrees on the child&rsquo;s own
+account. Caime keeps who agreed, for whom, when and to which words, for as long as the account.
+Until the child reaches the age where they live, their parent sees whom they&rsquo;re connected
+with, never a message, and says yes to each new connection first, whichever of the two asked:
+a request reaches the other person, or the child, only once the parent has. The child sees who
+their parent is, what the parent sees, and the requests of theirs that wait. The parent can
+withdraw the consent, which deletes the child&rsquo;s account. A parent who never agrees within
+seven days, or says the account isn&rsquo;t their child&rsquo;s, has it deleted the same way.`
+      : ''
+  } The rules for people under 18 apply until the day they turn 18. Under 18:</p>
 <ul>
 <li>Adults you&rsquo;re not connected with can&rsquo;t find you, by name, @handle or email, and
 can&rsquo;t send you a connection or message request unless you share a connection. Nor can they
@@ -676,7 +704,7 @@ Caime. By creating an account, you agree to them. How Caime handles your data is
 
 <h2>1. Your account</h2>
 <ul>
-<li>You need to be ${f.minimumAge} or older${lawAges(f.minimumAge) ? ` (${lawAges(f.minimumAge)})` : ''}, and to tell Caime the truth about your date of birth
+<li>You need to be ${f.minimumAge} or older${lawAges(f.minimumAge) ? ` (${lawAges(f.minimumAge)}${guardianAges() ? `, or ${guardianAges()} with your parent&rsquo;s or guardian&rsquo;s consent in Caime` : ''})` : ''}, and to tell Caime the truth about your date of birth
 and where you live. What&rsquo;s for people 18 or over is yours from the day you turn 18. Use any
 name you like, as long as it doesn&rsquo;t pretend you&rsquo;re someone you&rsquo;re not.</li>
 <li>Keep your password and recovery codes safe: you&rsquo;re responsible for what&rsquo;s done with

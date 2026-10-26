@@ -461,6 +461,8 @@ describe('the service worker', () => {
       [{ invitation: 'i1' }, '/'],
       // A connected account that needs connecting again (M16 G2): where it's connected.
       [{ account: 'a1' }, '/settings/apps'],
+      // A child's account or a request waiting on their parent (R122).
+      [{ family: 'u1', requestId: 'r1' }, '/settings/family'],
       [{ userId: 'u1' }, '/p/u1'],
       [{}, '/notifications'],
       // A meeting starting (R83): its join address; anything else in `path` is never followed.

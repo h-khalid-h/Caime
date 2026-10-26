@@ -542,6 +542,24 @@ A sphere is said as how you know someone, never "sphere".
   touch keeps it (a connection, a request either way, a block of theirs to undo, a conversation
   they're both in: `inAConversationTogether`, `lib/relations.ts`). A new audience that could
   reach everyone joins the clamp, and a new path that shows someone's profile keeps both rules.
+- A child with a parent's consent (R122, `lib/family.ts`, `modules/family.ts`): where a country's
+  law asks a guardian's consent, core `countryFacts(c).guardianAge` (`GUARDIAN_MINIMUM_AGE`, a line
+  per country) is the age Caime's own consent opens, and `needsGuardian` says when sign-up takes
+  someone only through a parent's family link (`fam_…`, kept as its hash, `/family/<token>` a page
+  for everyone, masked in the log; `SignupBody.family`, `attachChild` in sign-up's transaction).
+  The account waits for the parent's yes: its session reaches only `WAITING_ROUTES` (`403
+  consent_waiting` elsewhere, a route added later is closed to it) and the person's view says
+  `waitsForParent` (`meViewFor`, every sign-in and the session), which the app's root reads to
+  show the `waiting` screen alone. `consentFor` keeps the consent and connects them; `endByGuardian`
+  and the daily `family-lapsed` end it through `deleteAccount` (`lib/account-deletion.ts`, the one
+  way an account goes). While `supervisorOf` holds (the child under the age where they live, the
+  parent here and not suspended), a request to or from the child carries `waits_on_guardian`
+  (`guardianToAsk`, every path that makes one: the request route, invite links) and reaches the
+  one asked, through every reader of requests (`between`, `betweenMany`, the lists, accept and
+  decline), only once `answerGuardianRequest` passes it on; `releaseUnsupervised` lets go of what
+  waits on a parent who no longer looks after anyone. A new way two people connect asks
+  `guardianToAsk` too. The family calls are `features/family/api.ts`, imported by Family alone
+  (the waiting screen asks with `api` itself, or the module sits in `__common`).
 - Team invites (M16 C3a, `lib/team-invites.ts`, `modules/team-invites.ts`): an owner or admin
   makes a link (or sends one to an address, mailed after the response) from the team's Add sheet
   (`features/orgs/TeamInvites.tsx`); its token (`t_…`) is shown once and kept as its hash, masked

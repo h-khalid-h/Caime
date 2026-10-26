@@ -77,7 +77,8 @@ export default function SignUp() {
   const [country, setCountry] = useState<string | null>(null);
   // Keeping a meeting (M16 C3f): what the guest's page handed over, read only when it says so,
   // so the store stays out of every other sign-up's download.
-  const { keep } = useLocalSearchParams<{ keep?: string }>();
+  // A child joining through their parent's family link (R122): its token, sent with the form.
+  const { keep, family } = useLocalSearchParams<{ keep?: string; family?: string }>();
   const [kept, setKept] = useState<KeptMeeting | null>(null);
   useEffect(() => {
     if (keep !== '1') return;
@@ -207,6 +208,7 @@ export default function SignUp() {
         ...(handleIn(peekLink()) ? { invite: handleIn(peekLink()) ?? undefined } : {}),
         ...(codeAsked && !resend ? { emailCode: emailCode.trim() } : {}),
         ...(kept?.claim ? { keep: kept.claim } : {}),
+        ...(family ? { family } : {}),
       });
       if (kept) void import('@/state/guestLink').then((g) => g.forgetKeptMeeting());
       await useSession.getState().signedIn(res);
@@ -272,7 +274,9 @@ export default function SignUp() {
       subtitle={
         kept
           ? tr('Your own account, free: the meeting, its people and what was said come with it.')
-          : tr('It takes a minute. You can change all of it later.')
+          : family
+            ? tr('Your own account. Your parent or guardian agrees to it next, from theirs.')
+            : tr('It takes a minute. You can change all of it later.')
       }
     >
       <View style={{ gap: 14 }}>

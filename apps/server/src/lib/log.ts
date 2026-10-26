@@ -19,6 +19,9 @@ const MAIL_SEEN = /\/mail\/seen\/[^/]+$/;
  * `/v1/public/files/<token>[/preview]`.
  */
 const FILE_TOKEN = /\/(f|public\/files)\/[^/]{16,}(?=\/|$)/;
+/** A parent's family link is the only way a child signs up through it (R122): `/family/<token>`,
+ * the page's and the API's (`/v1/family/<token>`) alike. */
+const FAMILY_TOKEN = /\/family\/fam_[^/]+(?=\/|$)/;
 
 export function requestForLog(req: { method: string; url: string; ip?: string }) {
   return {
@@ -29,7 +32,8 @@ export function requestForLog(req: { method: string; url: string; ip?: string })
       .replace(INVITE_TOKEN, '/$1/…')
       .replace(GUEST_TOKEN, '/$1/…')
       .replace(MAIL_SEEN, '/mail/seen/…')
-      .replace(FILE_TOKEN, '/$1/…'),
+      .replace(FILE_TOKEN, '/$1/…')
+      .replace(FAMILY_TOKEN, '/family/…'),
     remoteAddress: req.ip,
   };
 }

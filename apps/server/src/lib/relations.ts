@@ -52,7 +52,12 @@ export async function between(db: Q, me: string, other: string): Promise<Between
       .where((eb) =>
         eb.or([
           eb.and([eb('from_user', '=', me), eb('to_user', '=', other)]),
-          eb.and([eb('from_user', '=', other), eb('to_user', '=', me)]),
+          // Theirs to me, once no parent's yes is owed on it (R122).
+          eb.and([
+            eb('from_user', '=', other),
+            eb('to_user', '=', me),
+            eb('waits_on_guardian', 'is', null),
+          ]),
         ]),
       )
       .execute(),
@@ -108,7 +113,11 @@ export async function betweenMany(
       .where((eb) =>
         eb.or([
           eb.and([eb('from_user', '=', me), eb('to_user', 'in', ids)]),
-          eb.and([eb('to_user', '=', me), eb('from_user', 'in', ids)]),
+          eb.and([
+            eb('to_user', '=', me),
+            eb('from_user', 'in', ids),
+            eb('waits_on_guardian', 'is', null),
+          ]),
         ]),
       )
       .execute(),

@@ -58,6 +58,14 @@ import {
   unauthorized,
 } from '../lib/errors';
 import { recordEvent } from '../lib/events';
+import {
+  attachChild,
+  familyLinkGone,
+  liveFamilyLink,
+  meViewFor,
+  needsGuardian,
+  tellGuardianAsked,
+} from '../lib/family';
 import { currentZone, isCountry } from '../lib/geo';
 import { keepFor, keepRanOut, keptGuest } from '../lib/guest-keep';
 import { assertHandleAvailable, claimLost } from '../lib/handles';
@@ -107,9 +115,23 @@ export async function authRoutes(app: FastifyInstance, ctx: AppContext) {
       throw badRequest(tr('Choose where you live.'), {
         fields: [{ path: 'country', message: 'Choose where you live.' }],
       });
-    // Their birthday, where they are, against the age where they live.
-    if (!oldEnoughIn(ctx.config.MINIMUM_AGE, body.country, body.birthDate, now, timeZone))
-      throw tooYoung(ctx.config.MINIMUM_AGE, body.country);
+    // A parent's family link (R122): read before the age, since it's what lets a child in where
+    // the law asks a guardian's consent. A link that isn't one is said so, never ignored.
+    const family = body.family ? await liveFamilyLink(ctx.db, body.family, now) : null;
+    if (body.family && !family) throw familyLinkGone();
+    // Their birthday, where they are, against the age where they live; between the law's age
+    // there and the age a guardian's consent opens, only through their parent's link.
+    const throughParent =
+      family !== null && needsGuardian(body.country, body.birthDate, now, timeZone);
+    if (
+      !throughParent &&
+      !oldEnoughIn(ctx.config.MINIMUM_AGE, body.country, body.birthDate, now, timeZone)
+    ) {
+      // Turned away alone where a parent's consent would have let them in: R122's denominator.
+      if (!family && needsGuardian(body.country, body.birthDate, now, timeZone))
+        ctx.metrics.family.inc({ step: 'alone' });
+      throw tooYoung(ctx.config.MINIMUM_AGE, body.country, body.birthDate, now, timeZone);
+    }
     // A meeting's guest by link keeping it (M16 C3f): the claim their own page was handed names
     // the guest this account becomes, so the meeting comes with it.
     const keeping = body.keep ? await keptGuest(ctx, body.keep) : null;
@@ -239,6 +261,8 @@ export async function authRoutes(app: FastifyInstance, ctx: AppContext) {
             .values({ id, ...account })
             .execute();
         await seedDefaults(trx, id, workweek);
+        // Signed up through their parent's link: the link spent, the parent's consent asked.
+        if (throughParent && family) await attachChild(trx, family, id, now);
         await recordEvent(trx, 'user.created', id, { userId: id });
       })
       .catch((err) => {
@@ -246,6 +270,10 @@ export async function authRoutes(app: FastifyInstance, ctx: AppContext) {
       });
     // ...and again once it has, for one a guest's link took meanwhile.
     if (claiming || keeping) await endSessions(ctx, { userId: id });
+    if (throughParent && family) {
+      await tellGuardianAsked(ctx, family.guardian_id, id, body.displayName);
+      ctx.metrics.family.inc({ step: 'signed_up' });
+    }
     const codes = await storeRecoveryCodes(ctx, id);
     const token = await createSession(ctx, req, reply, id, body.client, body.deviceName);
     await audit(ctx.db, {
@@ -263,7 +291,7 @@ export async function authRoutes(app: FastifyInstance, ctx: AppContext) {
       .where('id', '=', id)
       .executeTakeFirstOrThrow();
     reply.status(201);
-    return { user: meView(user, now, ctx.config), token, recoveryCodes: codes };
+    return { user: await meViewFor(ctx, user, throughParent), token, recoveryCodes: codes };
   });
 
   app.post('/auth/login', async (req, reply): Promise<AuthResponse> => {
@@ -301,7 +329,7 @@ export async function authRoutes(app: FastifyInstance, ctx: AppContext) {
     }
     const token = await createSession(ctx, req, reply, user.id, body.client, body.deviceName);
     await audit(ctx.db, { actorId: user.id, action: 'auth.login', ip, userAgent });
-    return { user: meView(user, ctx.now(), ctx.config), token };
+    return { user: await meViewFor(ctx, user), token };
   });
 
   app.post('/auth/logout', async (req, reply): Promise<OkResponse> => {
@@ -331,7 +359,7 @@ export async function authRoutes(app: FastifyInstance, ctx: AppContext) {
       .executeTakeFirst();
     if (!user) throw unauthorized();
     return {
-      user: meView(user, ctx.now(), ctx.config),
+      user: await meViewFor(ctx, user, Boolean(auth.waiting)),
       session: { id: auth.sessionId, kind: auth.kind },
     };
   });
@@ -544,7 +572,7 @@ export async function authRoutes(app: FastifyInstance, ctx: AppContext) {
     await ctx.db.deleteFrom('password_resets').where('user_id', '=', user.id).execute();
     const token = await createSession(ctx, req, reply, user.id, body.client);
     await audit(ctx.db, { actorId: user.id, action: 'auth.reset', ...clientInfo(req) });
-    return { user: meView(user, ctx.now(), ctx.config), token };
+    return { user: await meViewFor(ctx, user), token };
   });
 
   app.post('/auth/recover', async (req, reply): Promise<RecoverResponse> => {
@@ -596,7 +624,7 @@ export async function authRoutes(app: FastifyInstance, ctx: AppContext) {
       .executeTakeFirstOrThrow();
     const token = await createSession(ctx, req, reply, user.id, body.client);
     await audit(ctx.db, { actorId: user.id, action: 'auth.recovered', ...clientInfo(req) });
-    return { user: meView(user, ctx.now(), ctx.config), token, recoveryCodesLeft: remaining.n };
+    return { user: await meViewFor(ctx, user), token, recoveryCodesLeft: remaining.n };
   });
 
   // A meeting's guest (R84): their own link is their way in, for that meeting only.

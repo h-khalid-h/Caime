@@ -8,6 +8,7 @@ import CalendarCheck from 'lucide-react-native/icons/calendar-check';
 import ChartBar from 'lucide-react-native/icons/chart-no-axes-column';
 import Gauge from 'lucide-react-native/icons/gauge';
 import Globe from 'lucide-react-native/icons/globe';
+import Heart from 'lucide-react-native/icons/heart';
 import Info from 'lucide-react-native/icons/info';
 import KeyRound from 'lucide-react-native/icons/key-round';
 import Keyboard from 'lucide-react-native/icons/keyboard';
@@ -84,6 +85,14 @@ const ITEMS: Array<{
     // Where you are (R92): each place shown to whom you choose, used by cards.
     title: msg('Your places'),
     subtitle: msg('Home, work, and who sees each'),
+  },
+  {
+    href: '/settings/family',
+    path: '/settings/family',
+    icon: Heart,
+    // A child on Caime with a parent's consent (R122): a parent's children, or a child's parent.
+    title: msg('Family'),
+    subtitle: msg('Add a child, and what a parent sees'),
   },
   {
     href: '/settings/saved',

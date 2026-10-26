@@ -57,6 +57,8 @@ export interface Auth {
   grant?: PersonGrant;
   /** A meeting's guest (R84): a provisional person signed in for that meeting alone. */
   guest?: boolean;
+  /** A child whose parent hasn't agreed to their account yet (R122): it only waits. */
+  waiting?: boolean;
 }
 
 declare module 'fastify' {

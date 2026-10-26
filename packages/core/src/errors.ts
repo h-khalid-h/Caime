@@ -37,6 +37,7 @@ export const ERROR_CODES = [
   'code_expired',
   'collection_in_use',
   'conflict',
+  'consent_waiting',
   'conversation_closed',
   'csrf',
   'device_exists',

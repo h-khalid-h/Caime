@@ -11,7 +11,7 @@ import { PERSON_ROUTES, type PersonGrant, resolvePersonalToken } from '../lib/ac
 import { API_ROUTES, resolveApiToken } from '../lib/apps';
 import { hashToken } from '../lib/crypto';
 import { AppError, unauthorized } from '../lib/errors';
-import { GUEST_ROUTES, routeKey } from '../lib/guest-routes';
+import { GUEST_ROUTES, routeKey, WAITING_ROUTES } from '../lib/guest-routes';
 import { adoptReader } from '../lib/i18n';
 import { resolveOAuthAccess } from '../lib/oauth';
 import { SESSION_COOKIE } from '../lib/session-cookie';
@@ -37,7 +37,7 @@ export const suspended = () =>
 export async function resolveSession(
   ctx: AppContext,
   token: string,
-): Promise<(Omit<Auth, 'via'> & { guest: boolean }) | null> {
+): Promise<(Omit<Auth, 'via'> & { guest: boolean; waiting: boolean }) | null> {
   const row = await ctx.db
     .selectFrom('sessions')
     .innerJoin('users', 'users.id', 'sessions.user_id')
@@ -49,6 +49,19 @@ export async function resolveSession(
       'users.suspended_at',
       'users.kind as person',
     ])
+    // A child's account its parent hasn't agreed to yet (R122), by the one live guardianship.
+    .select((eb) =>
+      eb
+        .exists(
+          eb
+            .selectFrom('guardianships as g')
+            .select('g.id')
+            .whereRef('g.child_id', '=', 'users.id')
+            .where('g.ended_at', 'is', null)
+            .where('g.consented_at', 'is', null),
+        )
+        .as('waiting'),
+    )
     .where('sessions.token_hash', '=', hashToken(token))
     .where('sessions.revoked_at', 'is', null)
     .where('sessions.expires_at', '>', ctx.now())
@@ -70,6 +83,7 @@ export async function resolveSession(
     sessionId: row.id,
     kind: row.kind,
     guest: row.person === 'provisional',
+    waiting: Boolean(row.waiting),
   };
 }
 
@@ -104,12 +118,20 @@ export function registerAuth(app: FastifyInstance, ctx: AppContext): void {
     }
     const resolved = await resolveSession(ctx, found.token);
     if (!resolved) return;
-    const { guest, ...session } = resolved;
+    const { guest, waiting, ...session } = resolved;
     // A guest (R84) does only what a guest does: every other route of the API is refused before
     // it runs. The app's own pages aren't the API, and load for anyone.
     const route = req.routeOptions.url;
     if (guest && route?.startsWith('/v1/') && !GUEST_ROUTES.has(routeKey(req.method, route)))
       throw new AppError(403, 'guest_route', tr('A guest can’t do this.'));
+    // A child whose parent hasn't agreed yet (R122) only waits: their session, their account and
+    // whether it's been agreed to, until it is.
+    if (waiting && route?.startsWith('/v1/') && !WAITING_ROUTES.has(routeKey(req.method, route)))
+      throw new AppError(
+        403,
+        'consent_waiting',
+        tr('Your parent or guardian hasn’t agreed to your account yet.'),
+      );
     if (found.via === 'cookie' && UNSAFE.has(req.method) && !req.headers['x-caime-client']) {
       throw new AppError(403, 'csrf', tr('Missing X-Caime-Client header.'));
     }
@@ -118,7 +140,12 @@ export function registerAuth(app: FastifyInstance, ctx: AppContext): void {
     const expected = req.headers['x-caime-user'];
     if (typeof expected === 'string' && expected !== session.userId)
       throw new AppError(409, 'wrong_account', tr('Someone else is signed in here now.'));
-    req.auth = { ...session, via: found.via, ...(guest ? { guest: true } : {}) };
+    req.auth = {
+      ...session,
+      via: found.via,
+      ...(guest ? { guest: true } : {}),
+      ...(waiting ? { waiting: true } : {}),
+    };
     // The words of this request take their own form (R81).
     await adoptReader(ctx, session.userId);
   });

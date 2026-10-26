@@ -35,6 +35,7 @@ let token: string | null = null;
 let onUnauthorized: (() => void) | null = null;
 let expectedUser: string | null = null;
 let onWrongAccount: (() => void) | null = null;
+let onWaiting: (() => void) | null = null;
 
 /**
  * Whose account this app is showing. Every call says so, and the server refuses one that finds
@@ -48,6 +49,11 @@ export function setExpectedUser(id: string | null): void {
 /** What happens when the server, or the realtime socket, finds someone else signed in. */
 export function setWrongAccountHandler(handler: () => void): void {
   onWrongAccount = handler;
+}
+
+/** What happens when the server says this account waits for a parent's yes (R122). */
+export function setWaitingHandler(handler: () => void): void {
+  onWaiting = handler;
 }
 
 export function wrongAccount(): void {
@@ -135,6 +141,7 @@ export async function request<T>(
     if (res.status === 409 && e.code === 'wrong_account') onWrongAccount?.();
     // Suspended by the operator (R49): out, and told why by the message that came with it.
     if (res.status === 403 && e.code === 'suspended' && path !== '/auth/login') onUnauthorized?.();
+    if (res.status === 403 && e.code === 'consent_waiting') onWaiting?.();
     if (res.status === 403 && e.code === 'age_check_needed') {
       const trigger = e.details?.trigger;
       onAgeCheck?.(typeof trigger === 'string' ? trigger : null);

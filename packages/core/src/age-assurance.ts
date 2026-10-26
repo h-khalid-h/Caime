@@ -19,9 +19,10 @@ export type AgeMethod = (typeof AGE_METHODS)[number];
 /**
  * Where Caime asks for a check before going on, when a provider is set (`AGE_CHECK_TRIGGERS`
  * picks which): starting an organization, selling (a priced item offered, an organization's
- * card payments), and writing first to someone you're not connected with.
+ * card payments), writing first to someone you're not connected with, and adding a child as their
+ * parent or guardian (R122).
  */
-export const AGE_TRIGGERS = ['org', 'paid', 'stranger'] as const;
+export const AGE_TRIGGERS = ['org', 'paid', 'stranger', 'guardian'] as const;
 export type AgeTrigger = (typeof AGE_TRIGGERS)[number];
 
 /**

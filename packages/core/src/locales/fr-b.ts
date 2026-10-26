@@ -2835,4 +2835,49 @@ export const frB: Catalog = {
   Install: 'Installer',
   'Opens the chat': 'Ouvre la discussion',
   'Back to the call': 'Revenir à l’appel',
+  'Waiting for {name}': 'En attente de {name}',
+  'Waiting for your parent': 'En attente de votre parent',
+  'Your parent or guardian agrees to your account from their own Caime. We told them. Once they do, Caime opens here.':
+    'Votre parent ou tuteur accepte votre compte depuis son propre Caime. Nous l’avons prévenu. Dès qu’il accepte, Caime s’ouvre ici.',
+  'They’ll see whom you’re connected with and who asks to connect. Never your messages.':
+    'Il verra avec qui vous êtes en contact et qui demande à l’être. Jamais vos messages.',
+  'If they don’t answer within a week, this account is deleted.':
+    'Sans réponse d’ici une semaine, ce compte est supprimé.',
+  'Agreed. You’re connected now.': 'Accepté. Vous êtes en contact désormais.',
+  'That account is deleted.': 'Ce compte est supprimé.',
+  'Your parent': 'Votre parent',
+  'They see whom you’re connected with, and a request to connect waits for their yes. Never your messages.':
+    'Il voit avec qui vous êtes en contact, et une demande de contact attend son accord. Jamais vos messages.',
+  'Agreed to your account': 'A accepté votre compte',
+  'Hasn’t agreed yet': 'N’a pas encore accepté',
+  'Your request waits for your parent': 'Votre demande attend votre parent',
+  'Waiting for your yes': 'En attente de votre accord',
+  '{child} wants to connect with {name}': '{child} veut être en contact avec {name}',
+  '{name} wants to connect with {child}': '{name} veut être en contact avec {child}',
+  'See {name}': 'Voir {name}',
+  'Your children': 'Vos enfants',
+  'You agreed': 'Vous avez accepté',
+  'Old enough where they live: your say has ended':
+    'Assez âgé là où il vit : votre accord n’est plus requis',
+  'Agreeing lets their account in and connects you. You’ll see whom they’re connected with and who asks to connect with them, never their messages. If it isn’t your child’s, say so and the account is deleted.':
+    'Accepter ouvre son compte et vous met en contact. Vous verrez avec qui il est en contact et qui demande à l’être, jamais ses messages. Si ce n’est pas celui de votre enfant, dites-le et le compte est supprimé.',
+  Agree: 'Accepter',
+  'Not my child': 'Ce n’est pas mon enfant',
+  'Connected with {names}': 'En contact avec {names}',
+  'Connected with nobody else yet': 'En contact avec personne d’autre pour l’instant',
+  'End my consent': 'Retirer mon accord',
+  'Add a child': 'Ajouter un enfant',
+  'Your child makes their own account through this link, on their own phone, and you agree to it here. Under 13, nobody joins Caime.':
+    'Votre enfant crée son propre compte avec ce lien, sur son téléphone, et vous l’acceptez ici. Avant 13 ans, personne ne rejoint Caime.',
+  'Their first name': 'Son prénom',
+  'Your account on Caime, {name}': 'Ton compte sur Caime, {name}',
+  'A link for {name}': 'Un lien pour {name}',
+  'Only an adult adds a child to Caime.': 'Seul un adulte ajoute un enfant à Caime.',
+  'End your consent': 'Retirer votre accord',
+  '{name}’s account is deleted, with everything in it. This can’t be undone.':
+    'Le compte de {name} est supprimé, avec tout ce qu’il contient. C’est définitif.',
+  'Delete their account': 'Supprimer son compte',
+  'Your own account. Your parent or guardian agrees to it next, from theirs.':
+    'Votre propre compte. Votre parent ou tuteur l’accepte ensuite, depuis le sien.',
+  'Add a child, and what a parent sees': 'Ajouter un enfant, et ce que voit un parent',
 };

@@ -35,6 +35,7 @@ import { USER_COLUMNS } from '../db/schema';
 import { audit } from '../lib/audit';
 import { scheduleBrief, scheduleDigest } from '../lib/cai';
 import { badRequest } from '../lib/errors';
+import { meViewFor } from '../lib/family';
 import { currentZone, isCountry } from '../lib/geo';
 import {
   assertHandleAvailable,
@@ -92,7 +93,7 @@ export async function meRoutes(app: FastifyInstance, ctx: AppContext) {
           locale: user.locale,
         },
       };
-    return { user: meView(user, ctx.now(), ctx.config) };
+    return { user: await meViewFor(ctx, user, Boolean(auth.waiting)) };
   });
 
   /** Your plan, and what you've used of it today. */

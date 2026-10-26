@@ -3687,4 +3687,48 @@ export const arB: Catalog = {
   Install: 'تثبيت',
   'Opens the chat': 'يفتح المحادثة',
   'Back to the call': 'العودة إلى المكالمة',
+  'Waiting for {name}': 'بانتظار {name}',
+  'Waiting for your parent': 'بانتظار وليّ أمرك',
+  'Your parent or guardian agrees to your account from their own Caime. We told them. Once they do, Caime opens here.':
+    'يوافق وليّ أمرك على حسابك من حسابه في Caime. أخبرناه بذلك. وحين يوافق، يُفتح Caime هنا.',
+  'They’ll see whom you’re connected with and who asks to connect. Never your messages.':
+    'سيرى مع من أنت على تواصل ومن يطلب التواصل معك. ولن يرى رسائلك أبدًا.',
+  'If they don’t answer within a week, this account is deleted.':
+    'إن لم يُجب خلال أسبوع، يُحذف هذا الحساب.',
+  'Agreed. You’re connected now.': 'تمت الموافقة. بينكما تواصل الآن.',
+  'That account is deleted.': 'حُذف ذلك الحساب.',
+  'Your parent': 'وليّ أمرك',
+  'They see whom you’re connected with, and a request to connect waits for their yes. Never your messages.':
+    'يرى مع من أنت على تواصل، وأي طلب تواصل ينتظر موافقته. ولا يرى رسائلك أبدًا.',
+  'Agreed to your account': 'وافق على حسابك',
+  'Hasn’t agreed yet': 'لم يوافق بعد',
+  'Your request waits for your parent': 'طلبك بانتظار موافقة وليّ أمرك',
+  'Waiting for your yes': 'بانتظار موافقتك',
+  '{child} wants to connect with {name}': '{child} يطلب التواصل مع {name}',
+  '{name} wants to connect with {child}': '{name} يطلب التواصل مع {child}',
+  'See {name}': 'عرض {name}',
+  'Your children': 'أبناؤك',
+  'You agreed': 'وافقتَ',
+  'Old enough where they live: your say has ended': 'بلغ السن المطلوبة حيث يقيم: انتهت ولايتك هنا',
+  'Agreeing lets their account in and connects you. You’ll see whom they’re connected with and who asks to connect with them, never their messages. If it isn’t your child’s, say so and the account is deleted.':
+    'بموافقتك يُفتح حسابه ويصير بينكما تواصل. سترى مع من هو على تواصل ومن يطلب التواصل معه، ولن ترى رسائله أبدًا. وإن لم يكن الحساب لابنك أو ابنتك، فقل ذلك ويُحذف الحساب.',
+  Agree: 'موافقة',
+  'Not my child': 'ليس ابني ولا ابنتي',
+  'Connected with {names}': 'على تواصل مع {names}',
+  'Connected with nobody else yet': 'لا تواصل مع أحد غيرك بعد',
+  'End my consent': 'سحب موافقتي',
+  'Add a child': 'إضافة ابن أو ابنة',
+  'Your child makes their own account through this link, on their own phone, and you agree to it here. Under 13, nobody joins Caime.':
+    'ينشئ ابنك أو ابنتك حسابًا خاصًا عبر هذا الرابط، من هاتفه، ثم توافق عليه هنا. ولا ينضم إلى Caime أحد دون الثالثة عشرة.',
+  'Their first name': 'الاسم الأول',
+  'Your account on Caime, {name}': 'حسابك على Caime يا {name}',
+  'A link for {name}': 'رابط لـ{name}',
+  'Only an adult adds a child to Caime.': 'وحده البالغ يضيف طفلًا إلى Caime.',
+  'End your consent': 'سحب الموافقة',
+  '{name}’s account is deleted, with everything in it. This can’t be undone.':
+    'يُحذف حساب {name} بكل ما فيه. ولا رجوع عن ذلك.',
+  'Delete their account': 'حذف حسابه',
+  'Your own account. Your parent or guardian agrees to it next, from theirs.':
+    'حسابك الخاص. ثم يوافق عليه وليّ أمرك من حسابه.',
+  'Add a child, and what a parent sees': 'إضافة ابن أو ابنة، وما يراه وليّ الأمر',
 };

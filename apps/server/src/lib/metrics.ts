@@ -196,6 +196,13 @@ export function createMetrics(pool: pg.Pool) {
       'caime_public_bookings_total',
       'Bookings before an account, by outcome (a code sent, booked, or why not).',
     ),
+    // A child on Caime with a parent's consent (R122): turned away alone where a parent's consent
+    // would let them in, a link made, signed up through it, and how each ended. Of the month's
+    // `alone`, the share `agreed`, is R122's number.
+    family: new Counter(
+      'caime_family_total',
+      'A parent’s consent to a child’s account, by step (alone, link, signed_up, agreed, not_mine, lapsed, withdrawn).',
+    ),
     // Cai's notes in calls (M16 F7): asked, started, handed to another recorder, stopped and why,
     // and each utterance heard or not.
     callNotes: new Counter(

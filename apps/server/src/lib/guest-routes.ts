@@ -53,3 +53,20 @@ export const GUEST_ROUTES: ReadonlySet<string> = new Set([
 
 /** The key a route is listed under: its method and its pattern (`/v1/messages/:id`). */
 export const routeKey = (method: string, url: string | undefined) => `${method} ${url ?? ''}`;
+
+/**
+ * What a child's account reaches while it waits for their parent to agree (R122,
+ * lib/family.ts): their session, signing out, their own account and family (which says whose
+ * consent it waits for), and the live socket that tells them when it's given. Nothing else, so a
+ * route added later is closed to them as to a guest.
+ */
+export const WAITING_ROUTES: ReadonlySet<string> = new Set([
+  'GET /v1/auth/session',
+  'POST /v1/auth/logout',
+  'GET /v1/me',
+  'GET /v1/me/family',
+  'GET /v1/realtime',
+  // What rings for them (nothing can: nobody is connected with them yet), which the socket asks
+  // each time it connects.
+  'GET /v1/calls/live',
+]);

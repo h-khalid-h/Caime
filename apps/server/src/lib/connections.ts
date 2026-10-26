@@ -1,4 +1,4 @@
-import { type RelationshipInputT, tr, uuidv7 } from '@caime/core';
+import { type RelationshipInputT, SPHERE_DEFS, type Sphere, tr, uuidv7 } from '@caime/core';
 import type { Transaction } from 'kysely';
 import type { AppContext } from '../context';
 import type { Database } from '../db/schema';
@@ -70,6 +70,41 @@ export async function formConnection(
   return { connectionId, conversationId: conversation.id };
 }
 
+/**
+ * The one asked is told of a request as it reaches them: at once, or once a parent who looks
+ * after either side said yes (R122, lib/family.ts). The context is the one the asker chose to
+ * share, said in the reader's language.
+ */
+export async function tellRequested(
+  ctx: AppContext,
+  r: {
+    id: string;
+    from_user: string;
+    to_user: string;
+    note: string | null;
+    context_sphere: string | null;
+    context_org_name: string | null;
+  },
+  fromName: string,
+): Promise<void> {
+  const label = r.context_sphere ? SPHERE_DEFS[r.context_sphere as Sphere]?.label : null;
+  await notify(ctx, {
+    userId: r.to_user,
+    kind: 'connection_request',
+    level: 'attention',
+    title: () => tr('{name} wants to connect with you', { name: fromName }),
+    body: () =>
+      r.context_sphere
+        ? [label ? tr(label) : null, r.context_org_name].filter(Boolean).join(' · ')
+        : r.note,
+    data: { requestId: r.id, userId: r.from_user },
+  });
+  await ctx.bus.publish([r.to_user, r.from_user], {
+    type: 'connection.request',
+    data: { requestId: r.id, from: r.from_user, to: r.to_user },
+  });
+}
+
 export async function afterConnected(
   ctx: AppContext,
   requesterId: string,
@@ -130,6 +165,7 @@ export async function acceptRequest(
     .where('id', '=', requestId)
     .where('to_user', '=', userId)
     .where('status', '=', 'pending')
+    .where('waits_on_guardian', 'is', null)
     .executeTakeFirst();
   if (!request) throw notFound(tr('That request'));
   let result!: { connectionId: string; conversationId: string };

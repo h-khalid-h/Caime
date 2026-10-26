@@ -1978,4 +1978,25 @@ export const turkishServer: Catalog = {
     'Edge ya da Chrome’da adres çubuğunda Caime’ı yükle’yi seçin: kendi penceresinde açılır, simgesinde sizi bekleyenlerin sayısıyla.',
   'An AppImage and a .deb, from the releases page.':
     'Sürümler sayfasından bir AppImage ve bir .deb.',
+  'A parent adds up to {max} children on Caime.': 'Bir ebeveyn Caime’e en fazla {max} çocuk ekler.',
+  'That family link': 'Bu aile bağlantısı',
+  '{name} joined Caime through your family link': '{name}, aile bağlantınızla Caime’e katıldı',
+  'Agree to their account, or say it isn’t your child’s.':
+    'Hesabını onaylayın ya da çocuğunuzun olmadığını söyleyin.',
+  'That child': 'Bu çocuk',
+  'You’re on Caime': 'Artık Caime’desiniz',
+  'Your parent agreed. Say hello.': 'Ebeveyniniz onayladı. Merhaba deyin.',
+  'It waits for your yes.': 'Onayınızı bekliyor.',
+  'Your parent said no to connecting with {name}': 'Ebeveyniniz {name} ile bağlantıyı onaylamadı',
+  '{parent} adds {child} to Caime': '{parent}, {child} kişisini Caime’e ekliyor',
+  'Make your own account here, on your own phone. {parent} then agrees to it from theirs, and you can write to each other.':
+    'Kendi hesabınızı burada, kendi telefonunuzda açın. Ardından {parent} kendi hesabından onaylar ve birbirinize yazabilirsiniz.',
+  'a family link': 'bir aile bağlantısı',
+  'what they see': 'neyi görür',
+  'Whom you’re connected with and who asks to connect. Never your messages.':
+    'Kimlerle bağlantınız olduğu ve kimlerin bağlantı istediği. Mesajlarınız asla.',
+  'Your parent or guardian hasn’t agreed to your account yet.':
+    'Ebeveyniniz ya da veliniz hesabınızı henüz onaylamadı.',
+  'Where you live, someone under {age} joins Caime with a parent or guardian. Ask them to add you from their own Caime: You, then Family.':
+    'Yaşadığınız yerde {age} yaşın altındakiler Caime’e bir ebeveyn ya da veliyle katılır. Sizi kendi Caime’inden eklemesini isteyin: Siz, ardından Aile.',
 };

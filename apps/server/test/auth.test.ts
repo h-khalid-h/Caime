@@ -130,7 +130,7 @@ describe('sign-up', () => {
     }
   });
 
-  it('asks 18 of someone living where the law asks a guardian’s consent Caime can’t ask for (counsel, 2026-10-14)', async () => {
+  it('asks 18 alone where the law asks a guardian’s consent, and says the way through (counsel, 2026-10-14; R122)', async () => {
     // The clock reads 23 September 2026: born 2010, 16; born 2008, 18.
     const as = (country: string, handle: string, birthDate: string) =>
       t.app.inject({
@@ -140,9 +140,11 @@ describe('sign-up', () => {
       });
     const cairo = await as('EG', 'cairoteen', '2010-01-01');
     expect(cairo.statusCode).toBe(400);
+    // From 13, a parent's consent in Caime opens it (R122): the refusal says how.
     expect(cairo.json().error).toMatchObject({
       code: 'too_young',
-      message: 'Where you live, Caime is for people 18 and older.',
+      message:
+        'Where you live, someone under 18 joins Caime with a parent or guardian. Ask them to add you from their own Caime: You, then Family.',
     });
     expect((await as('SA', 'riyadhteen', '2010-01-01')).json().error.code).toBe('too_young');
     expect((await as('EG', 'cairoadult', '2008-01-01')).statusCode).toBe(201);

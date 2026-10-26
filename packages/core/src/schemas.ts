@@ -243,6 +243,8 @@ export const RESERVED_HANDLES: readonly string[] = [
   'updates',
   'orgs',
   'onboarding',
+  // A child's account waiting for their parent (R122); `family` is a generic word already.
+  'waiting',
   'welcome',
   'recover',
   'forgot',
@@ -342,6 +344,14 @@ export const SphereSchema = z.enum(SPHERES);
 
 // --- Auth ------------------------------------------------------------------------------------
 
+/** A parent's link for one child (R122): the name the child goes by, said on the link's page. */
+export const FamilyLinkBody = z.object({ childName: DisplayName });
+
+/** A parent withdrawing their consent deletes the child's account, so their password says it's them. */
+export const WithdrawConsentBody = z.object({
+  password: z.string().min(1, msg('Enter your password.')).max(200),
+});
+
 export const SignupBody = z.object({
   email: Email,
   password: Password,
@@ -368,6 +378,11 @@ export const SignupBody = z.object({
    * account), which is claimed by whoever proves the address and nobody else.
    */
   emailCode: z.string().max(12).optional(),
+  /**
+   * A parent's family link (R122) the child signs up through: where the law asks a guardian's
+   * consent, it's what lets someone younger in, their account waiting until that parent agrees.
+   */
+  family: z.string().max(80).optional(),
   /**
    * A meeting's guest by link keeping the meeting (M16 C3f): the claim their own page was handed,
    * naming the guest whose row becomes this account, so the meeting comes with it.

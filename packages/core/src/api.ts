@@ -139,6 +139,11 @@ export interface MeView {
   onboarded: boolean;
   /** They said their recovery codes are saved (R56); until then the app keeps asking, once per screen. */
   recoveryCodesSeen: boolean;
+  /**
+   * R122: true while a child's account waits for their parent or guardian to agree to it (the
+   * app shows only that wait); left out otherwise.
+   */
+  waitsForParent?: boolean;
   /** What a check of their age found (M16 B7), or null: never checked. Theirs alone to see. */
   ageCheck: AgeCheckView | null;
   /** Whether this Caime checks ages at all (a provider is set): Settings' row and the sheet. */
@@ -1839,6 +1844,77 @@ export interface OrgDoorView {
   widget: { url: string; snippet: string; domain: string } | null;
 }
 
+/** A parent's open link for one child (R122), as its parent sees it: never its token. */
+export interface FamilyLinkView {
+  id: string;
+  /** The name the parent gave the child, said on the link's page. */
+  childName: string;
+  expiresAt: string;
+  createdAt: string;
+}
+
+/** A child on Caime through their parent's link (R122), as that parent sees them. */
+export interface FamilyChildView {
+  person: PersonView;
+  /** `asked`: signed up through the link, waiting for the parent to agree; `agreed`: consented. */
+  state: 'asked' | 'agreed';
+  askedAt: string;
+  agreedAt: string | null;
+  /** Whether the parent's say still holds: until the child reaches the age where they live. */
+  supervised: boolean;
+  /** Whom the child is connected with while the parent's say holds; never a message. */
+  connections: PersonView[];
+}
+
+/**
+ * A request to connect that waits on a parent's yes (R122): their child asked someone, or someone
+ * asked their child. Only the parent it waits on sees it, and the child when they asked.
+ */
+export interface FamilyRequestView {
+  requestId: string;
+  child: PersonView;
+  /** The other side: whom the child asked, or who asked the child. */
+  person: PersonView;
+  /** True when the child asked; false when someone asked the child. */
+  byChild: boolean;
+  /** The words sent with it, to the parent before anyone else. */
+  note: string | null;
+  createdAt: string;
+}
+
+/** `GET /me/family` (R122): a parent's children and links, and a child's own parent. */
+export interface FamilyResponse {
+  children: FamilyChildView[];
+  links: FamilyLinkView[];
+  /** Requests to connect that wait on this parent's yes, oldest first. */
+  requests: FamilyRequestView[];
+  /**
+   * For a child on Caime through their parent: that parent, whether they've agreed yet, whether
+   * their say still holds (whom the child is connected with shows to them, and a request to
+   * connect waits on them), and the requests the child made that wait on them now.
+   */
+  guardian: {
+    person: PersonView;
+    agreed: boolean;
+    supervised: boolean;
+    waiting: PersonView[];
+  } | null;
+  /** Whether this person may add a child: an adult with an account of their own. */
+  mayAdd: boolean;
+}
+
+/** `POST /me/family/links`: the new link, and its address this once. */
+export interface FamilyLinkResponse {
+  link: FamilyLinkView;
+  url: string;
+}
+
+/** `GET /family/:token`: whose link it is and for whom, for the sign-up screen. */
+export interface FamilyLinkPublicResponse {
+  guardianName: string;
+  childName: string;
+}
+
 /**
  * A team invite as its organization's owner and admins see it (M16 C3a): never its token, which
  * is shown once, when it's made.
@@ -3244,7 +3320,9 @@ export type RealtimeSignalType =
   | 'join.asked'
   /** A call's notes changed for those who read them: words heard, a line deleted (`{ callId }`). */
   | 'callnotes.changed'
-  | 'invites.changed';
+  | 'invites.changed'
+  /** A parent's family changed (R122): a child signed up, was agreed to or let go of. */
+  | 'family.changed';
 
 export type RealtimeEvent =
   | RealtimeDataEvent

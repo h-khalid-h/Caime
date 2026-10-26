@@ -49,9 +49,34 @@ export function oldEnoughIn(
   return meetsMinimumAge(birthDate, now, minimumAgeIn(minimumAge, country), timeZone);
 }
 
-/** The refusal for someone too young for Caime where they live, in the request's language. */
-export function tooYoung(minimumAge: number, country: string | null | undefined): AppError {
+/**
+ * The refusal for someone too young for Caime where they live, in the request's language. Where a
+ * parent's consent would let them in (R122: under the law's age there, at or over the age that
+ * consent opens), it says how, never a dead end.
+ */
+export function tooYoung(
+  minimumAge: number,
+  country: string | null | undefined,
+  birthDate?: string,
+  now?: Date,
+  timeZone?: string | null,
+): AppError {
   const age = minimumAgeIn(minimumAge, country);
+  const guardianAge = countryFacts(country).guardianAge;
+  if (
+    birthDate &&
+    now &&
+    guardianAge !== null &&
+    meetsMinimumAge(birthDate, now, Math.max(guardianAge, minimumAge), timeZone)
+  )
+    return new AppError(
+      400,
+      'too_young',
+      tr(
+        'Where you live, someone under {age} joins Caime with a parent or guardian. Ask them to add you from their own Caime: You, then Family.',
+        { age },
+      ),
+    );
   return new AppError(
     400,
     'too_young',

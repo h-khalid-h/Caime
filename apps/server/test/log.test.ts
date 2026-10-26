@@ -65,6 +65,14 @@ describe('what a request says of itself in the log', () => {
     expect(requestForLog({ method: 'GET', url: list }).url).toBe(list);
   });
 
+  it('never a family link’s token, the one way a child signs up through it (R122)', () => {
+    const token = `fam_${'Qm9vay1hLXRhYmxl'.repeat(2)}LWZvci10d28Ab`;
+    expect(requestForLog({ method: 'GET', url: `/family/${token}?lang=ar` }).url).toBe('/family/…');
+    expect(requestForLog({ method: 'GET', url: `/v1/family/${token}` }).url).toBe('/v1/family/…');
+    // A parent's own list of them names no token.
+    expect(requestForLog({ method: 'GET', url: '/v1/me/family' }).url).toBe('/v1/me/family');
+  });
+
   it('never a link to someone’s file, which opens it for whoever has it (M16 H6)', () => {
     const token = `f_${'Qm9vay1hLXRhYmxl'.repeat(2)}LWZvci10d28Ab`;
     expect(requestForLog({ method: 'GET', url: `/f/${token}?lang=ar` }).url).toBe('/f/…');

@@ -397,6 +397,10 @@ export function applyEvent(qc: QueryClient, event: RealtimeEvent, me: string): v
       }
       invalidate(qk.allSlots);
       return;
+    case 'family.changed':
+      // A child signed up, was agreed to or let go of, or a request waits on a parent (R122).
+      invalidate(qk.family);
+      return;
     case 'invites.changed':
       // Asked into a group or a space, or an invitation answered on another device (M16 B4):
       // Attention carries them.

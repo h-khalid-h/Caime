@@ -2738,4 +2738,49 @@ export const turkishB: Catalog = {
   Install: 'Yükle',
   'Opens the chat': 'Sohbeti açar',
   'Back to the call': 'Aramaya dön',
+  'Waiting for {name}': '{name} bekleniyor',
+  'Waiting for your parent': 'Ebeveyniniz bekleniyor',
+  'Your parent or guardian agrees to your account from their own Caime. We told them. Once they do, Caime opens here.':
+    'Ebeveyniniz ya da veliniz hesabınızı kendi Caime’inden onaylar. Kendisine haber verdik. Onayladığında Caime burada açılır.',
+  'They’ll see whom you’re connected with and who asks to connect. Never your messages.':
+    'Kimlerle bağlantınız olduğunu ve kimlerin bağlantı istediğini görür. Mesajlarınızı asla görmez.',
+  'If they don’t answer within a week, this account is deleted.':
+    'Bir hafta içinde yanıt vermezse bu hesap silinir.',
+  'Agreed. You’re connected now.': 'Onaylandı. Artık bağlantınız var.',
+  'That account is deleted.': 'O hesap silindi.',
+  'Your parent': 'Ebeveyniniz',
+  'They see whom you’re connected with, and a request to connect waits for their yes. Never your messages.':
+    'Kimlerle bağlantınız olduğunu görür; bir bağlantı isteği onun onayını bekler. Mesajlarınızı asla görmez.',
+  'Agreed to your account': 'Hesabınızı onayladı',
+  'Hasn’t agreed yet': 'Henüz onaylamadı',
+  'Your request waits for your parent': 'İsteğiniz ebeveyninizi bekliyor',
+  'Waiting for your yes': 'Onayınızı bekliyor',
+  '{child} wants to connect with {name}': '{child}, {name} ile bağlantı kurmak istiyor',
+  '{name} wants to connect with {child}': '{name}, {child} ile bağlantı kurmak istiyor',
+  'See {name}': '{name} kişisini gör',
+  'Your children': 'Çocuklarınız',
+  'You agreed': 'Onayladınız',
+  'Old enough where they live: your say has ended':
+    'Yaşadığı yerde yeterli yaşa ulaştı: onayınız artık gerekmiyor',
+  'Agreeing lets their account in and connects you. You’ll see whom they’re connected with and who asks to connect with them, never their messages. If it isn’t your child’s, say so and the account is deleted.':
+    'Onaylamak hesabını açar ve sizi bağlar. Kimlerle bağlantısı olduğunu ve kimlerin bağlantı istediğini görürsünüz, mesajlarını asla. Çocuğunuzun değilse söyleyin, hesap silinir.',
+  Agree: 'Onayla',
+  'Not my child': 'Benim çocuğum değil',
+  'Connected with {names}': 'Bağlantıları: {names}',
+  'Connected with nobody else yet': 'Henüz başka kimseyle bağlantısı yok',
+  'End my consent': 'Onayımı geri çek',
+  'Add a child': 'Çocuk ekle',
+  'Your child makes their own account through this link, on their own phone, and you agree to it here. Under 13, nobody joins Caime.':
+    'Çocuğunuz bu bağlantıyla kendi telefonunda kendi hesabını açar, siz de burada onaylarsınız. 13 yaşın altında kimse Caime’e katılamaz.',
+  'Their first name': 'Adı',
+  'Your account on Caime, {name}': 'Caime’deki hesabın, {name}',
+  'A link for {name}': '{name} için bir bağlantı',
+  'Only an adult adds a child to Caime.': 'Caime’e çocuğu yalnızca bir yetişkin ekler.',
+  'End your consent': 'Onayınızı geri çekin',
+  '{name}’s account is deleted, with everything in it. This can’t be undone.':
+    '{name} hesabı içindeki her şeyle birlikte silinir. Bu geri alınamaz.',
+  'Delete their account': 'Hesabını sil',
+  'Your own account. Your parent or guardian agrees to it next, from theirs.':
+    'Kendi hesabınız. Sonra ebeveyniniz ya da veliniz kendi hesabından onaylar.',
+  'Add a child, and what a parent sees': 'Çocuk ekleyin ve bir ebeveynin ne gördüğü',
 };

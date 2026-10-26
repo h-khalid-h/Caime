@@ -167,6 +167,8 @@ export async function buildExport(ctx: AppContext, me: string, now: Date) {
     calendarRefusals,
     reclaims,
     fileLinks,
+    guardianships,
+    familyLinks,
   ] = await Promise.all([
     // An organization's page is public; whose link a person followed is only counted (R29: it
     // could name someone under 18, or someone who can't be found).
@@ -1160,6 +1162,33 @@ export async function buildExport(ctx: AppContext, me: string, now: Date) {
       .execute(),
     // The links to your files you gave out (M16 H6): never a token.
     fileLinksForExport(db, me),
+    // A parent's consent (R122), as the child and as the parent: who, when, its words' version.
+    db
+      .selectFrom('guardianships as g')
+      .leftJoin('users as c', 'c.id', 'g.child_id')
+      .leftJoin('users as p', 'p.id', 'g.guardian_id')
+      .select([
+        'g.child_id',
+        'c.display_name as child_name',
+        'c.handle as child_handle',
+        'p.display_name as guardian_name',
+        'p.handle as guardian_handle',
+        'g.asked_at',
+        'g.consented_at',
+        'g.consent_version',
+        'g.method',
+        'g.ended_at',
+        'g.ended_why',
+      ])
+      .where((eb) => eb.or([eb('g.child_id', '=', me), eb('g.guardian_id', '=', me)]))
+      .orderBy('g.asked_at')
+      .execute(),
+    db
+      .selectFrom('family_links')
+      .select(['child_name', 'created_at', 'expires_at', 'revoked_at', 'spent_at'])
+      .where('guardian_id', '=', me)
+      .orderBy('created_at')
+      .execute(),
   ]);
   const mailOf = new Map(mailCopies.map((c) => [c.message_id, c]));
   const person = (name: string | null, handle: string | null) =>
@@ -1886,6 +1915,28 @@ export async function buildExport(ctx: AppContext, me: string, now: Date) {
     // The links to your files you gave out (M16 H6): the file, who it was for, how many times its
     // page was opened (never by whom), and when it ran out or was taken back.
     fileLinks,
+    // A parent's consent to a child's account (R122): yours as the child (your parent, and when
+    // and how they agreed) or as the parent (each child, the same), and how it ended if it did.
+    family: guardianships.map((g) => ({
+      youAre: g.child_id === me ? 'child' : 'parent',
+      child: person(g.child_name, g.child_handle),
+      parent: person(g.guardian_name, g.guardian_handle),
+      askedAt: g.asked_at.toISOString(),
+      agreedAt: iso(g.consented_at),
+      wordsVersion: g.consent_version,
+      method: g.method,
+      endedAt: iso(g.ended_at),
+      ended: g.ended_why,
+    })),
+    // The family links you made (R122): the name you gave, and when each was used, ran out or was
+    // taken back; never its token.
+    familyLinks: familyLinks.map((l) => ({
+      for: l.child_name,
+      at: l.created_at.toISOString(),
+      expiresAt: l.expires_at.toISOString(),
+      usedAt: iso(l.spent_at),
+      takenBackAt: iso(l.revoked_at),
+    })),
     // A closed organization you set out to take back by proving its domain (R42).
     reclaims: reclaims.map((r) => ({
       organization: { name: r.name, handle: r.handle },

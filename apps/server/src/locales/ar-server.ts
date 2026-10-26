@@ -2071,4 +2071,24 @@ export const arServer: Catalog = {
   'In Edge or Chrome, choose Install Caime in the address bar: it opens in a window of its own, with what needs you counted on its icon.':
     'في Edge أو Chrome، اختر «تثبيت Caime» في شريط العنوان: يفتح في نافذة خاصة به، وعلى أيقونته عدد ما يحتاج إليك.',
   'An AppImage and a .deb, from the releases page.': 'ملف AppImage وملف ‎.deb، من صفحة الإصدارات.',
+  'A parent adds up to {max} children on Caime.': 'يضيف وليّ الأمر حتى {max} من الأبناء على Caime.',
+  'That family link': 'رابط العائلة هذا',
+  '{name} joined Caime through your family link': 'انضم {name} إلى Caime عبر رابط عائلتك',
+  'Agree to their account, or say it isn’t your child’s.':
+    'وافق على حسابه، أو قل إنه ليس لابنك أو ابنتك.',
+  'That child': 'هذا الابن أو الابنة',
+  'You’re on Caime': 'صار لك حساب على Caime',
+  'Your parent agreed. Say hello.': 'وافق وليّ أمرك. قل مرحبًا.',
+  'It waits for your yes.': 'بانتظار موافقتك.',
+  'Your parent said no to connecting with {name}': 'لم يوافق وليّ أمرك على التواصل مع {name}',
+  '{parent} adds {child} to Caime': '{parent} يضيف {child} إلى Caime',
+  'Make your own account here, on your own phone. {parent} then agrees to it from theirs, and you can write to each other.':
+    'أنشئ حسابك هنا، من هاتفك. ثم يوافق عليه {parent} من حسابه، فتتراسلان.',
+  'a family link': 'رابط عائلة',
+  'what they see': 'ما يراه',
+  'Whom you’re connected with and who asks to connect. Never your messages.':
+    'مع من أنت على تواصل ومن يطلب التواصل معك. لا رسائلك أبدًا.',
+  'Your parent or guardian hasn’t agreed to your account yet.': 'لم يوافق وليّ أمرك على حسابك بعد.',
+  'Where you live, someone under {age} joins Caime with a parent or guardian. Ask them to add you from their own Caime: You, then Family.':
+    'حيث تقيم، ينضم إلى Caime من هم دون {age} عبر وليّ الأمر. اطلب منه أن يضيفك من حسابه على Caime: أنت، ثم العائلة.',
 };

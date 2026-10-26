@@ -2842,3 +2842,140 @@ with its reason, so it isn't proposed again without new facts.
   *The number:* messages written in a call's conversation while the call was on, per call of three
   or more people (`messages.created_at` inside `calls` windows). Above zero means the chat is
   found.
+
+- **R122 (2026-10-26) A child on Caime with a parent's consent.** The owner: "today I wanted to use
+  Caime to communicate with my kids who are not 18 or older, but when they try to sign up they
+  couldn't proceed … how shall we properly handle this". Sign-up refuses anyone under the minimum
+  where they live: 13 by default, and 18 in Egypt and Saudi Arabia (P6, `MINIMUM_AGE_BY_LAW`),
+  because both laws ask a guardian's consent for a minor's data and Caime takes none. The refusal
+  is a dead end that names no way through. Counsel's own note on P6 names the fix: "a guardian's
+  consent in the product would lower the age, country by country". Through the council.
+
+  *The council's turning points:*
+  1. The Architect let a child sign up alone and give a parent's email to approve (COPPA's
+     "email plus"). The Adversary staked it on the law's own words. Saudi Arabia's PDPL asks a
+     guardian's *verified* consent. Egypt's Executive Regulations (Decree 816 of 2025) ask a
+     guardian's written consent by methods the Data Protection Center approves. A click in a mail
+     a child typed the address of verifies nothing. So the parent starts it, from their own
+     account:
+     - an adult on Caime, checked by the age provider where one is set (trigger `guardian`),
+       makes a one-time family link for one child;
+     - the child signs up through it on their own device, with their own sign-in;
+     - the parent consents on their own screen. The screen names the child, what Caime keeps of
+       them, and what they can and can't do there.
+
+     The consent is a record: who gave it, for whom, when, the version of its words and the
+     method. It is kept as long as the account, and it's in both people's exports.
+  2. The Newcomer is a fourteen-year-old in Cairo on a phone. They met "Where you live, Caime is
+     for people 18 and older" and stopped. So the refusal shows the way: "Ask a parent or guardian
+     on Caime to add you", with how. The parent may not be on Caime yet. They sign up first, and
+     then Family is one row in Settings and one card on Attention.
+  3. The Specialist, a child online-safety and privacy engineer who has shipped supervised
+     accounts under COPPA, GDPR Art. 8 and the UK Children's Code, reasoned from first principles:
+     a guardian's powers must protect a child without becoming surveillance or a way in for
+     someone who means harm.
+     - While the child is under their country's own minimum, the guardian approves each new
+       connection, both ways. A request to or from the child waits on the guardian, as one card
+       on the guardian's Attention.
+     - The guardian sees whom the child is connected with. They never read a message, as
+       relationships are private (convention 2).
+     - The child sees exactly what their guardian sees, and who their guardian is: the Children's
+       Code's obvious sign.
+     - The guardian may withdraw consent. The child's account then closes after its export
+       window.
+
+     The second-order effects:
+     - At a hundred times the scale, approvals are cards, not a dashboard.
+     - Over twelve months, a child passes their country's minimum. Supervision ends on that day,
+       read from the date of birth as `minorOf` is, with no job, and both are told.
+     - Under abuse, the risk is a stranger posing as a parent. Against it:
+       - the link is the adult's own account;
+       - the guardian becomes the child's connection, labelled Parent or Guardian by the child;
+       - one adult supervises at most five children;
+       - a report about a child's safety can name a guardianship, and the operator can end one.
+     - A guardian's account deleted or suspended leaves the child with every R29 rule. New
+       connections then wait until another adult the child connects to becomes their guardian by
+       a new link.
+     - Culture: "Parent" or "Guardian", never "mother" or "father" (R27).
+  4. The Adversary on the law: consent counts only where the method meets the country's
+     regulator. Caime can't declare its method approved by Egypt's Data Protection Center. So the
+     age a guardian's consent opens is a rule per country in code (`GUARDIAN_MINIMUM_AGE`, beside
+     `MINIMUM_AGE_BY_LAW`), set country by country. *The owner decided* (2026-10-26, on DATA C's own
+     responsibility, their children in Egypt aged 13 to 17): Egypt and Saudi Arabia open from 13
+     with this consent as soon as it ships, counsel to review the method after (⛔ below), not
+     before. Elsewhere a child of 13 needs no consent. Below 13,
+     Caime admits nobody, consent or not: COPPA's verifiable parental consent, and the UAE's bar on
+     processing a child's data under 13 (Federal Decree-Law No. 26 of 2025). A product for children
+     under 13 is a different product.
+
+  5. While it was built (2026-10-26), four of the plan's lines met the code and moved:
+     - **A request to the child reaches the parent first, the child once the parent says yes.**
+       The plan had the child see whatever the parent sees. A request's note is where a stranger's
+       first words would be, so the parent reads it before the child does. The child sees who
+       their parent is, what they see, and their own requests that wait.
+     - **The consent stays the child's record when the parent's account goes.** The guardianship's
+       parent turns to null instead of the row going with them, since it is the lawful ground for
+       the child's account. A parent gone or suspended looks after nobody: the child keeps every
+       R29 rule, and a request that waited on them goes on, to the other child's parent where
+       there is one (the daily sweep). Making another adult the child's parent by a new link is
+       B8b.
+     - **Withdrawing deletes the account at once.** The plan said "after its export window". A
+       consent withdrawn ends the ground for keeping anything of the child, and the child's own
+       export stays theirs to take before then, as any person's is.
+     - **Requests that wait on a parent show in Family, and the parent is told at once** (a
+       notification at the attention level, pushed). A card on Attention waits for room in the
+       first download: R122 left it at 449.6 KB of 450.
+
+  *Decided against:*
+  - accounts under 13;
+  - a child's own request approved by a parent's email (it verifies nothing);
+  - a guardian reading messages, or signing in as the child: the child has their own sign-in,
+    and a parent's session never acts as them;
+  - a separate app for children.
+
+  *What was built* (ROADMAP M16 B8a, 2026-10-26): `family_links` and `guardianships` (migration
+  0168), `lib/family.ts`, `modules/family.ts`; sign-up through a link (`SignupBody.family`); the
+  waiting account limited to `WAITING_ROUTES` and answered `403 consent_waiting` elsewhere; a
+  request to or from a looked-after child waiting on the parent (`connection_requests
+  .waits_on_guardian`, `guardianToAsk`, both ways, through the request route and invite links);
+  Settings · Family and the child's waiting screen; the link's own visitor page (`/family/<token>`);
+  both exports; the privacy page and the terms. `family.test.ts`, `e2e/family.spec.ts`.
+
+  *The plan* (ROADMAP M16 B8):
+  - B8a, the server:
+    - `guardianships`: the child, the guardian, the consent's time, version and method, and when
+      and why it ended;
+    - `family_links`: kept as a hash, one child each, open seven days;
+    - sign-up through a link, the minimum lowered only by a consent the guardian then gives;
+    - requests to and from a supervised child waiting on the guardian;
+    - the guardian's view of the child's connections, and withdrawal;
+    - the exports, the age trigger, and the privacy page's lines.
+  - B8b, the app:
+    - Settings · Family: add a child by link or QR, your children, their connections, end;
+    - the consent screen;
+    - the approvals card on Attention;
+    - sign-up through the link;
+    - the refusal's way through;
+    - the child's own Settings saying who their guardian is and what they see.
+  - B8c, the tests:
+    - server: consent required; the minimum lowered only where `GUARDIAN_MINIMUM_AGE` says;
+      approvals both ways; never a message to the guardian; the end at the country's minimum;
+      withdrawal;
+    - an E2E: a parent adds a child who signs up under the country's minimum, consents, and
+      approves the child's first connection.
+  - ⛔ Counsel, after the fact by the owner's decision: whether this method is a guardian's verified
+    consent under Saudi Arabia's PDPL, and written consent by approved methods under Egypt's Decree
+    816 (under 15, and the Center's mechanisms from 15 to 18). A "no" moves a country's age back
+    in one line, and the children already in keep their accounts while counsel says how.
+
+  *Open risks:*
+  - Approvals feel slow to a teenager. The sign is a median wait over a day. Then a guardian may
+    let in "people we both know".
+  - Egypt's Data Protection Center publishes approved methods that this one isn't among. The sign
+    is the Center's list; then the consent screen takes the method it names, or Egypt's age goes
+    back to 18 for new accounts.
+
+  *The number:* of the month's children turned away alone where a parent's consent opens the age,
+  the share whose parent agreed: `caime_family_total{step="agreed"}` over `{step="alone"}`, the
+  steps between (`link`, `signed_up`) saying where the rest stopped, and `not_mine`, `lapsed` and
+  `withdrawn` how the others ended.

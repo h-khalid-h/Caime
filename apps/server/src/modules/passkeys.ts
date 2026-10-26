@@ -32,6 +32,7 @@ import { audit } from '../lib/audit';
 import { verifyPassword } from '../lib/crypto';
 import { deviceNameOf } from '../lib/device-names';
 import { AppError, notFound } from '../lib/errors';
+import { meViewFor } from '../lib/family';
 import {
   answeredChallenge,
   keepChallenge,
@@ -287,6 +288,6 @@ export async function passkeyRoutes(app: FastifyInstance, ctx: AppContext) {
       userAgent,
       metadata: { method: 'passkey' },
     });
-    return { user: meView(user, ctx.now(), ctx.config), token };
+    return { user: await meViewFor(ctx, user), token };
   });
 }

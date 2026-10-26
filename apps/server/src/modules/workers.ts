@@ -7,6 +7,7 @@ import { sql } from 'kysely';
 import { tellSaved } from '../lib/automations';
 import { eachLimit } from '../lib/batch';
 import { offerFollowUp } from '../lib/cai';
+import { lapseUnanswered, releaseUnsupervised } from '../lib/family';
 import { removeStored } from '../lib/files';
 import { enqueue, registerJob, registerPeriodic } from '../lib/jobs';
 import { participantsOf } from '../lib/messages';
@@ -258,6 +259,17 @@ export function registerWorkers(): void {
     background: true,
     run: async (ctx) => {
       await letGoStale(ctx);
+    },
+  });
+  // A child's account its parent never agreed to within the week goes, and a request waiting on a
+  // parent who no longer looks after either side goes on (R122, lib/family.ts).
+  registerPeriodic({
+    name: 'family-lapsed',
+    everyMs: 86_400_000,
+    background: true,
+    run: async (ctx) => {
+      await lapseUnanswered(ctx);
+      await releaseUnsupervised(ctx);
     },
   });
   // A closed organization's export window over, what was its alone goes (DPA §12).

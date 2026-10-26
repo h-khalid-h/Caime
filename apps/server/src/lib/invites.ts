@@ -15,6 +15,7 @@ import { USER_COLUMNS } from '../db/schema';
 import { acceptRequest } from './connections';
 import { badRequest, forbidden, notFound } from './errors';
 import { recordEvent } from './events';
+import { guardianToAsk, tellGuardianRequest } from './family';
 import { notify } from './notify';
 import { NOBODY } from './public-pages';
 import { activeConnectionId, between, pairKey, shareAConnection } from './relations';
@@ -231,6 +232,8 @@ export async function acceptInvite(
     if (!minorOf(me, now) && !(await shareAConnection(ctx.db, userId, inviter.id))) {
       if (b.outgoingRequestId) return { status: 'requested', requestId: b.outgoingRequestId };
       const requestId = uuidv7();
+      // A child a parent looks after (R122): the inviter decides only once that parent says yes.
+      const waits = await guardianToAsk(ctx.db, userId, inviter.id, now);
       await ctx.db.transaction().execute(async (trx) => {
         await trx
           .insertInto('connection_requests')
@@ -243,6 +246,7 @@ export async function acceptInvite(
             context_org_name: null,
             pending_relationship: null,
             created_at: now,
+            waits_on_guardian: waits,
           })
           .execute();
         await recordEvent(trx, 'connection.requested', userId, {
@@ -251,6 +255,17 @@ export async function acceptInvite(
           viaInvite: invite.id,
         });
       });
+      if (waits) {
+        await tellGuardianRequest(ctx, waits, {
+          id: requestId,
+          from_user: userId,
+          to_user: inviter.id,
+          note: null,
+          context_sphere: null,
+          context_org_name: null,
+        });
+        return { status: 'requested', requestId };
+      }
       await notify(ctx, {
         userId: inviter.id,
         kind: 'connection_request',
@@ -267,7 +282,13 @@ export async function acceptInvite(
     }
   }
   // Their request to me, if one waits, is what this answers; else the invite is the inviter's.
-  const requestId = b.incomingRequestId ?? (await standingRequest(ctx, invite, inviter.id, userId));
+  const standing = b.incomingRequestId
+    ? { id: b.incomingRequestId, waiting: false }
+    : await standingRequest(ctx, invite, inviter.id, userId);
+  // A child a parent looks after (R122): a link connects nobody until that parent says yes; it
+  // stands as the inviter's request meanwhile, which the parent passes on as any other.
+  if (standing.waiting) return { status: 'requested', requestId: standing.id };
+  const requestId = standing.id;
   const result = await acceptRequest(ctx, userId, requestId, undefined, { viaInvite: true });
   await ctx.db
     .updateTable('invites')
@@ -302,34 +323,44 @@ async function directConversationId(ctx: AppContext, a: string, b: string): Prom
   return c?.id ?? null;
 }
 
-/** The inviter's offer as a request to me, pending, so accepting it is the one path to connect. */
+/**
+ * The inviter's offer as a request to me, pending, so accepting it is the one path to connect.
+ * `waiting` when it waits on a parent's yes (R122): made so now, or made so before and not yet
+ * given; the parent is told when it's made.
+ */
 async function standingRequest(
   ctx: AppContext,
   invite: Invite,
   inviterId: string,
   userId: string,
-): Promise<string> {
+): Promise<{ id: string; waiting: boolean }> {
   const outgoing = await ctx.db
     .selectFrom('connection_requests')
-    .select('id')
+    .select(['id', 'waits_on_guardian'])
     .where('from_user', '=', inviterId)
     .where('to_user', '=', userId)
     .where('status', '=', 'pending')
     .executeTakeFirst();
-  if (outgoing) return outgoing.id;
+  if (outgoing) return { id: outgoing.id, waiting: outgoing.waits_on_guardian !== null };
   const id = uuidv7();
+  const waits = await guardianToAsk(ctx.db, inviterId, userId, ctx.now());
+  const request = {
+    id,
+    from_user: inviterId,
+    to_user: userId,
+    note: invite.note,
+    context_sphere: invite.context_sphere,
+    context_org_name: invite.context_org_name,
+  };
   await ctx.db
     .insertInto('connection_requests')
     .values({
-      id,
-      from_user: inviterId,
-      to_user: userId,
-      note: invite.note,
-      context_sphere: invite.context_sphere,
-      context_org_name: invite.context_org_name,
+      ...request,
       pending_relationship: invite.relationship ? JSON.stringify(invite.relationship) : null,
       created_at: ctx.now(),
+      waits_on_guardian: waits,
     })
     .execute();
-  return id;
+  if (waits) await tellGuardianRequest(ctx, waits, request);
+  return { id, waiting: waits !== null };
 }

@@ -12,6 +12,7 @@ import {
   setAuthToken,
   setExpectedUser,
   setUnauthorizedHandler,
+  setWaitingHandler,
   setWrongAccountHandler,
 } from '@/api/client';
 import { endpoints } from '@/api/endpoints';
@@ -221,6 +222,13 @@ function startAgain(): void {
     void useSession.getState().signOut({ remote: false });
 }
 setWrongAccountHandler(startAgain);
+
+// A child's account its parent hasn't agreed to yet (R122): the session says so, and the app
+// shows only that wait until it's over.
+setWaitingHandler(() => {
+  if (useSession.getState().user && !useSession.getState().user?.waitsForParent)
+    void useSession.getState().refresh();
+});
 
 if (Platform.OS === 'web' && typeof window !== 'undefined')
   window.addEventListener?.('storage', (e: StorageEvent) => {

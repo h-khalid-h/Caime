@@ -228,6 +228,36 @@ export interface ConnectionRequestsTable {
   status: Defaulted<'pending' | 'accepted' | 'declined' | 'cancelled'>;
   created_at: Generated<Date>;
   responded_at: NullableTimestamp;
+  /** R122: the guardian whose yes it waits for, while it involves a supervised child. */
+  waits_on_guardian: Generated<string | null>;
+}
+
+/** R122: a parent's link for one child to sign up through (kept as its hash). */
+export interface FamilyLinksTable {
+  id: string;
+  guardian_id: string;
+  token_hash: Buffer;
+  child_name: string;
+  created_at: Generated<Date>;
+  expires_at: Date;
+  revoked_at: NullableTimestamp;
+  spent_by: string | null;
+  spent_at: NullableTimestamp;
+}
+
+/** R122: a child's guardian on Caime, and the consent they gave for the child's account. */
+export interface GuardianshipsTable {
+  id: string;
+  child_id: string;
+  /** Null once the parent's own account is gone; the consent stays the child's record. */
+  guardian_id: string | null;
+  link_id: string | null;
+  asked_at: Date;
+  consented_at: NullableTimestamp;
+  consent_version: string | null;
+  method: 'account' | 'account_age_checked' | null;
+  ended_at: NullableTimestamp;
+  ended_why: 'withdrawn' | 'not_mine' | 'lapsed' | 'guardian_gone' | 'operator' | null;
 }
 
 /** An invite link (R1, 0044): the inviter's standing offer to connect with whoever opens it. */
@@ -1867,6 +1897,8 @@ export interface Database {
   connections: ConnectionsTable;
   connection_sides: ConnectionSidesTable;
   connection_requests: ConnectionRequestsTable;
+  family_links: FamilyLinksTable;
+  guardianships: GuardianshipsTable;
   invites: InvitesTable;
   org_invites: OrgInvitesTable;
   join_links: JoinLinksTable;

@@ -44,6 +44,11 @@ export interface CountryFacts {
    * minimum (`MINIMUM_AGE_BY_LAW`); null where Caime's own minimum is the rule.
    */
   minimumAge: number | null;
+  /**
+   * Where `minimumAge` is the law's, the age from which a parent's or guardian's consent in Caime
+   * admits someone younger (R122, `GUARDIAN_MINIMUM_AGE`); null where none does.
+   */
+  guardianAge: number | null;
 }
 
 /**
@@ -56,6 +61,21 @@ export interface CountryFacts {
  * country joins when its law asks the same; a guardian's consent in the product would lower it.
  */
 const MINIMUM_AGE_BY_LAW: Readonly<Record<string, number>> = { EG: 18, SA: 18 };
+
+/**
+ * Where the law asks a guardian's consent, the age from which Caime's own consent (R122: a parent
+ * or guardian on Caime adds the child by a link and consents on the child's own account) admits
+ * someone under `MINIMUM_AGE_BY_LAW`. The owner's decision, 2026-10-26, on DATA C's own
+ * responsibility and before counsel's review of the method (docs/LEGAL-REVIEW-2026-10.md P6): 13 in
+ * Egypt and Saudi Arabia. Never below Caime's own minimum; a country leaves this list, and its
+ * minimum is the law's again for new accounts, on counsel's word.
+ */
+const GUARDIAN_MINIMUM_AGE: Readonly<Record<string, number>> = { EG: 13, SA: 13 };
+
+/** Where a guardian's consent in Caime admits someone under the law's minimum, from what age. */
+export const GUARDIAN_AGES: ReadonlyArray<{ country: string; age: number }> = Object.entries(
+  GUARDIAN_MINIMUM_AGE,
+).map(([country, age]) => ({ country, age }));
 
 /** The countries whose law sets a higher minimum age, with it, for the pages that say so. */
 export const LAW_MINIMUM_AGES: ReadonlyArray<{ country: string; age: number }> = Object.entries(
@@ -142,6 +162,7 @@ export function countryFacts(country: string | null | undefined): CountryFacts {
         (code && IBAN.has(code) ? [IBAN_HINT, CASH] : [BANK, CASH])),
     ],
     minimumAge: (code ? MINIMUM_AGE_BY_LAW[code] : undefined) ?? null,
+    guardianAge: (code ? GUARDIAN_MINIMUM_AGE[code] : undefined) ?? null,
   };
 }
 

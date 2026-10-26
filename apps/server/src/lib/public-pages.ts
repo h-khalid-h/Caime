@@ -58,6 +58,7 @@ import type { Database, Organization, User } from '../db/schema';
 import { USER_COLUMNS } from '../db/schema';
 import { catalogOf, paymentsOf } from './booking';
 import { ORG_REF_COLUMNS, orgRef } from './business';
+import { liveFamilyLink } from './family';
 import { countOpened, liveFileLink } from './file-links';
 import { cutLine, VIEW_KIND_LABELS, VIEW_STYLE, type ViewBody, viewBodyOf } from './file-views';
 import { countryNameIn } from './geo';
@@ -311,6 +312,17 @@ export interface PublicTeamInvite {
   expiresAt: string;
 }
 /**
+ * A family link's page (R122): whose link it is and the name they gave the child it's for, and
+ * the one way on, a new account of the child's own. Nothing else of the parent is shown.
+ */
+export interface PublicFamilyLink {
+  kind: 'family-link';
+  token: string;
+  parent: string;
+  child: string;
+  expiresAt: string;
+}
+/**
  * A join link's page (M16 C3e): where it leads (a group, or a space and its kind), how many are
  * in it, who asks, and the ways in. Never who is in it: no names, faces or handles, no words.
  */
@@ -365,6 +377,7 @@ export type PublicPage =
   | PublicInvite
   | PublicTeamInvite
   | PublicJoinLink
+  | PublicFamilyLink
   | PublicFileLink
   /** A link to a file only someone signed in to Caime opens, asked by a visitor (M16 H6). */
   | { kind: 'file-sign-in' }
@@ -688,6 +701,19 @@ async function pageAt(
   const join = /^\/g\/([^/?#]+)$/.exec(path);
   if (join)
     return (await publicJoinLink(ctx, join[1] ?? '')) ?? { kind: 'missing', what: 'invite' };
+  const family = /^\/family\/([^/?#]+)$/.exec(path);
+  if (family) {
+    const link = await liveFamilyLink(db, safeDecode(family[1] ?? ''), now);
+    return link
+      ? {
+          kind: 'family-link',
+          token: safeDecode(family[1] ?? ''),
+          parent: link.guardian_name,
+          child: link.child_name,
+          expiresAt: link.expires_at.toISOString(),
+        }
+      : { kind: 'missing', what: 'invite' };
+  }
   const at = /^\/@([^/?#]+)(?:\/([^/?#]+))?$/.exec(path);
   const org = /^\/o\/([^/?#]+)(?:\/([^/?#]+))?$/.exec(path);
   const raw = safeDecode((at ?? org)?.[1] ?? '');
@@ -1526,6 +1552,48 @@ export function renderPublic(
     <div>${label(tr('for'))}<dd>${esc(page.addressed ? tr('The address it was sent to, alone') : tr('Whoever has this link'))}</dd></div>
     <div>${label(tr('open until'))}<dd>${esc(dayLabel(page.expiresAt.slice(0, 10), 'UTC'))}</dd></div>
     <div>${label(tr('to join'))}<dd>${esc(tr('Sign up or sign in, then join: its conversations with customers are in your Business inbox, no app to install.'))}</dd></div>
+  </dl>`,
+  )}
+  ${pageFoot(tr(PROMISE), wordmark(18))}
+</main>`,
+      };
+    }
+    case 'family-link': {
+      const title = tr('{parent} adds {child} to Caime', {
+        parent: page.parent,
+        child: page.child,
+      });
+      const lead = tr(
+        'Make your own account here, on your own phone. {parent} then agrees to it from theirs, and you can write to each other.',
+        { parent: page.parent },
+      );
+      return {
+        status: 200,
+        lang: currentTranslator().language,
+        head: meta({
+          title: `${title} · ${SITE_NAME}`,
+          description: lead,
+          image: null,
+          index: false,
+          canonical: false,
+        }),
+        body: `
+<main class="pub pub-sheet" ${langAttrs()}>
+  ${topBar('/sign-in', wordmark(22))}
+  <section class="hero hero-center">
+    ${avatar({ name: page.child, src: null, size: 96, shape: 'face' })}
+    <p class="kicker"><span class="mono">${esc(tr('a family link'))}</span></p>
+    <h1 dir="auto">${esc(title)}</h1>
+    <p class="lead" dir="auto">${esc(lead)}</p>
+    <div class="actions"><a class="btn" href="/sign-up?family=${encodeURIComponent(page.token)}">${esc(tr('Create your account'))}</a></div>
+  </section>
+  ${section(
+    sentence(tr('about')),
+    `<dl class="spec">
+    <div>${label(tr('from'))}<dd dir="auto">${esc(page.parent)}</dd></div>
+    <div>${label(tr('for'))}<dd dir="auto">${esc(page.child)}</dd></div>
+    <div>${label(tr('what they see'))}<dd>${esc(tr('Whom you’re connected with and who asks to connect. Never your messages.'))}</dd></div>
+    <div>${label(tr('open until'))}<dd>${esc(dayLabel(page.expiresAt.slice(0, 10), 'UTC'))}</dd></div>
   </dl>`,
   )}
   ${pageFoot(tr(PROMISE), wordmark(18))}

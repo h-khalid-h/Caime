@@ -23,10 +23,11 @@ import type { FastifyInstance } from 'fastify';
 import { z } from 'zod';
 import type { AppContext } from '../context';
 import { USER_COLUMNS } from '../db/schema';
-import { acceptRequest } from '../lib/connections';
+import { acceptRequest, tellRequested } from '../lib/connections';
 import { rerootMerged, suggestDuplicatesOf } from '../lib/duplicates';
 import { AppError, badRequest, conflict, forbidden, notFound } from '../lib/errors';
 import { recordEvent } from '../lib/events';
+import { guardianToAsk, tellGuardianRequest } from '../lib/family';
 import { leaveGroupCallsAfterDisconnect } from '../lib/group-calls';
 import { notify } from '../lib/notify';
 import { personViewsFor } from '../lib/people-batch';
@@ -110,38 +111,29 @@ export async function connectionRoutes(app: FastifyInstance, ctx: AppContext) {
       throw new AppError(429, 'recently_declined', tr('You can send another request later.'));
 
     const id = uuidv7();
+    // A child a parent looks after (R122): the request waits for that parent's yes first.
+    const waits = await guardianToAsk(ctx.db, auth.userId, target.id, now);
+    const request = {
+      id,
+      from_user: auth.userId,
+      to_user: target.id,
+      note: body.note ?? null,
+      context_sphere: body.context?.sphere ?? null,
+      context_org_name: body.context?.orgName ?? null,
+    };
     await ctx.db.transaction().execute(async (trx) => {
       await trx
         .insertInto('connection_requests')
         .values({
-          id,
-          from_user: auth.userId,
-          to_user: target.id,
-          note: body.note ?? null,
-          context_sphere: body.context?.sphere ?? null,
-          context_org_name: body.context?.orgName ?? null,
+          ...request,
           pending_relationship: body.relationship ? JSON.stringify(body.relationship) : null,
+          waits_on_guardian: waits,
         })
         .execute();
       await recordEvent(trx, 'connection.requested', auth.userId, { requestId: id, to: target.id });
     });
-    const contextLine = body.context?.sphere
-      ? [SPHERE_DEFS[body.context.sphere as Sphere]?.label, body.context.orgName]
-          .filter(Boolean)
-          .join(' · ')
-      : null;
-    await notify(ctx, {
-      userId: target.id,
-      kind: 'connection_request',
-      level: 'attention',
-      title: () => tr('{name} wants to connect with you', { name: me.display_name }),
-      body: contextLine ?? body.note ?? null,
-      data: { requestId: id, userId: auth.userId },
-    });
-    await ctx.bus.publish([target.id, auth.userId], {
-      type: 'connection.request',
-      data: { requestId: id, from: auth.userId, to: target.id },
-    });
+    if (waits) await tellGuardianRequest(ctx, waits, request);
+    else await tellRequested(ctx, request, me.display_name);
     reply.status(201);
     return { status: 'requested', requestId: id };
   });
@@ -165,6 +157,8 @@ export async function connectionRoutes(app: FastifyInstance, ctx: AppContext) {
       ])
       .where(direction === 'incoming' ? 'r.to_user' : 'r.from_user', '=', auth.userId)
       .where('r.status', '=', 'pending')
+      // One still waiting on a parent's yes (R122) reaches the one asked only once it's given.
+      .$if(direction === 'incoming', (q) => q.where('r.waits_on_guardian', 'is', null))
       .where('u.deleted_at', 'is', null)
       .orderBy('r.created_at', 'desc')
       .execute();
@@ -219,6 +213,7 @@ export async function connectionRoutes(app: FastifyInstance, ctx: AppContext) {
       .where('id', '=', id)
       .where('to_user', '=', auth.userId)
       .where('status', '=', 'pending')
+      .where('waits_on_guardian', 'is', null)
       .returning(['from_user'])
       .executeTakeFirst();
     if (!res) throw notFound(tr('That request'));
@@ -239,13 +234,15 @@ export async function connectionRoutes(app: FastifyInstance, ctx: AppContext) {
       .where('id', '=', id)
       .where('from_user', '=', auth.userId)
       .where('status', '=', 'pending')
-      .returning(['to_user'])
+      .returning(['to_user', 'waits_on_guardian'])
       .executeTakeFirst();
     if (!res) throw notFound(tr('That request'));
     await ctx.bus.publish([auth.userId, res.to_user], {
       type: 'connection.request.resolved',
       data: { requestId: id },
     });
+    if (res.waits_on_guardian)
+      await ctx.bus.publish([res.waits_on_guardian], { type: 'family.changed', data: {} });
     return { ok: true };
   });
 

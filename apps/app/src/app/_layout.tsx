@@ -70,6 +70,8 @@ export default function RootLayout() {
   const status = useSession((s) => s.status);
   // A meeting's guest (R84) is signed in for that meeting alone: none of the app is theirs.
   const guest = useSession((s) => s.status === 'signedIn' && s.user?.kind === 'provisional');
+  // A child whose parent hasn't agreed yet (R122): only that wait is theirs.
+  const waiting = useSession((s) => s.status === 'signedIn' && Boolean(s.user?.waitsForParent));
   useRememberLinks(status);
   // A slow font never holds the app hostage: after 2.5 s we render with the system font.
   const [fontTimeout, setFontTimeout] = useState(false);
@@ -119,7 +121,12 @@ export default function RootLayout() {
           <ThemeProvider>
             <Direction>
               {ready ? (
-                <RootStack key={generation} signedIn={status === 'signedIn'} guest={guest} />
+                <RootStack
+                  key={generation}
+                  signedIn={status === 'signedIn'}
+                  guest={guest}
+                  waiting={waiting}
+                />
               ) : (
                 <Boot />
               )}
@@ -135,12 +142,23 @@ export default function RootLayout() {
   );
 }
 
-function RootStack({ signedIn, guest }: { signedIn: boolean; guest: boolean }) {
+function RootStack({
+  signedIn,
+  guest,
+  waiting,
+}: {
+  signedIn: boolean;
+  guest: boolean;
+  waiting: boolean;
+}) {
   const t = useTheme();
   return (
     <Stack screenOptions={{ headerShown: false, contentStyle: { backgroundColor: t.c.canvas } }}>
-      <Stack.Protected guard={signedIn && !guest}>
+      <Stack.Protected guard={signedIn && !guest && !waiting}>
         <Stack.Screen name="(app)" />
+      </Stack.Protected>
+      <Stack.Protected guard={waiting}>
+        <Stack.Screen name="waiting" />
       </Stack.Protected>
       <Stack.Protected guard={!signedIn}>
         <Stack.Screen name="(auth)" />

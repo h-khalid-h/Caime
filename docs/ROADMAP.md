@@ -2080,6 +2080,37 @@ graph) and the number that will show it; one that sharpens none is hygiene and s
       searching for minors, "Age checked" as a privacy field.
 - [ ] ⛔ B, the owner's: an age-assurance provider (Agemin or another) with retention terms, a DPA
       and the NIST result; the penetration test.
+- [x] B8a. A child on Caime with a parent's consent (R122, 2026-10-26, the owner's ask: their
+      children, 13 to 17 in Egypt, were turned away at sign-up). Where the law asks a guardian's
+      consent and Caime's own opens an age (`GUARDIAN_MINIMUM_AGE`: Egypt and Saudi Arabia from 13,
+      the owner's decision, counsel after), a child signs up only through their parent's family
+      link: the parent, an adult (checked with the trigger `guardian` where a provider is set),
+      makes it in Settings · Family (`fam_…`, kept as its hash, seven days, five children and
+      open links at most, `/family/<token>` a visitor's page of its own, kept by nobody); sign-up
+      through it (`SignupBody.family`) lowers the minimum for that child alone and asks the
+      guardianship (`guardianships`, migration 0168); the account waits (`WAITING_ROUTES`, `403
+      consent_waiting` elsewhere, `MeView.waitsForParent`, the app's waiting screen) until the
+      parent agrees, which keeps the consent (when, the words' version, how the parent was known)
+      and connects them; "not my child", seven days unanswered (the daily `family-lapsed`) or the
+      consent withdrawn with the parent's password deletes the account (`deleteAccount`, now
+      `lib/account-deletion.ts`, the route's own). Until the child reaches the age where they
+      live (`supervisorOf`), the parent sees whom they're connected with, never a message, and a
+      request to or from them waits for the parent's yes (`waits_on_guardian`, `guardianToAsk`,
+      through the request route and invite links; two children of different parents need both),
+      hidden from the one asked until then; a parent gone or suspended looks after nobody and
+      what waited on them goes on. Both exports, the privacy page and the terms say it; counted
+      on `caime_family_total{step}`. Verified with `family.test.ts` (5), `auth.test.ts`,
+      `log.test.ts`, the catalogs in every language, the E2E `family.spec.ts` (a parent makes the
+      link, the child opens it on a phone, signs up in Egypt at 14 and waits, the parent agrees
+      and the child's app opens by itself, connected with them) and the full gate.
+- [ ] B8b. What R122 left: a card on Attention for what waits on a parent (the first download is
+      at 449.6 KB of 450; the parent is told by a notification at the attention level meanwhile);
+      another adult the child knows becoming their parent here by a new link once the first is gone;
+      both told on the day the parent's say ends.
+- [ ] ⛔ B8, counsel's, after the owner's decision: whether this method is a guardian's verified
+      consent under Saudi Arabia's PDPL, and written consent by approved methods under Egypt's
+      Decree 816 (under 15, and the Data Protection Center's mechanisms from 15 to 18). A "no"
+      moves a country's age back in one line (`GUARDIAN_MINIMUM_AGE`).
 - [x] C1a. Booking before an account (2026-10-17): an organization's bookable public item's page
       lists the week's open times by the host's day (`publicSlotsFor`: `openSlotsFor` with the
       public booker, seven days, sixteen a day, paged by `?from=`, nothing reads a calendar under
@@ -7164,3 +7195,12 @@ CONNIQT; they mean Caime. Caishy is one of Caime's AI members, and Cai leads the
   screen shows over it for a moment; and Cai's notes read what was typed while they were on, as
   the typer's own line, written again without anything taken down for everyone. Guests writing
   while the call is on is I13j.
+- 2026-10-26 — R122 through the council and M16 B8a (the owner: "I wanted to use Caime to
+  communicate with my kids who are not 18 … they couldn't proceed"; decided with the owner: Egypt
+  and Saudi Arabia open from 13 with a parent's consent given in Caime, now, counsel after). A
+  child turned away now reads the way through; their parent makes a family link in You, then
+  Family; the child signs up through it on their own phone and waits, reaching nothing else;
+  the parent agrees and the two are connected, the consent kept as a record. Until the child is
+  of age where they live, the parent sees whom they're connected with, never a message, and says
+  yes to each new connection first, either way. "Not my child", a week unanswered or the consent
+  withdrawn deletes the account. Server tests, the E2E, every catalog; web JS 449.6 KB of 450.

@@ -2062,4 +2062,26 @@ export const frServer: Catalog = {
     'Dans Edge ou Chrome, choisissez Installer Caime dans la barre d’adresse : il s’ouvre dans sa propre fenêtre, avec sur son icône le nombre de ce qui vous attend.',
   'An AppImage and a .deb, from the releases page.':
     'Un AppImage et un .deb, sur la page des versions.',
+  'A parent adds up to {max} children on Caime.':
+    'Un parent ajoute jusqu’à {max} enfants sur Caime.',
+  'That family link': 'Ce lien familial',
+  '{name} joined Caime through your family link': '{name} a rejoint Caime par votre lien familial',
+  'Agree to their account, or say it isn’t your child’s.':
+    'Acceptez son compte, ou dites que ce n’est pas celui de votre enfant.',
+  'That child': 'Cet enfant',
+  'You’re on Caime': 'Vous êtes sur Caime',
+  'Your parent agreed. Say hello.': 'Votre parent a accepté. Dites bonjour.',
+  'It waits for your yes.': 'Cela attend votre accord.',
+  'Your parent said no to connecting with {name}': 'Votre parent a refusé le contact avec {name}',
+  '{parent} adds {child} to Caime': '{parent} ajoute {child} à Caime',
+  'Make your own account here, on your own phone. {parent} then agrees to it from theirs, and you can write to each other.':
+    'Créez votre propre compte ici, sur votre téléphone. {parent} l’accepte ensuite depuis le sien, et vous pouvez vous écrire.',
+  'a family link': 'un lien familial',
+  'what they see': 'ce qu’il voit',
+  'Whom you’re connected with and who asks to connect. Never your messages.':
+    'Avec qui vous êtes en contact et qui demande à l’être. Jamais vos messages.',
+  'Your parent or guardian hasn’t agreed to your account yet.':
+    'Votre parent ou tuteur n’a pas encore accepté votre compte.',
+  'Where you live, someone under {age} joins Caime with a parent or guardian. Ask them to add you from their own Caime: You, then Family.':
+    'Là où vous vivez, avant {age} ans on rejoint Caime avec un parent ou un tuteur. Demandez-lui de vous ajouter depuis son Caime : Vous, puis Famille.',
 };
