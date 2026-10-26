@@ -11,6 +11,7 @@
  */
 
 import { tr } from '@caime/core/i18n';
+import { answerOf } from '@caime/core/meeting-changes';
 import { cardVenue, JOIN_LATE_MS, joinPath } from '@caime/core/meetings';
 import type { AppContext } from '../context';
 import { eachLimit } from './batch';
@@ -24,6 +25,8 @@ interface Card {
   seq: number;
   title: string;
   at: Date;
+  /** Its payload, for whoever said they won't go (R123). */
+  card: { answers?: unknown; round?: unknown };
 }
 
 /** An accepted meeting or a confirmed appointment held on Caime, with a time; else null. */
@@ -60,7 +63,13 @@ async function meetingOf(ctx: AppContext, messageId: string): Promise<Card | nul
     p.title ||
     (typeof p.fields?.title === 'string' && p.fields.title) ||
     tr(p.kit === 'appointment' ? 'Appointment' : 'Meeting');
-  return { conversationId: row.conversation_id, seq: Number(row.seq), title, at };
+  return {
+    conversationId: row.conversation_id,
+    seq: Number(row.seq),
+    title,
+    at,
+    card: p as { answers?: unknown; round?: unknown },
+  };
 }
 
 /** Queued when a meeting is accepted or an appointment confirmed (card-moves.ts), for its start. */
@@ -106,8 +115,10 @@ async function startJob(ctx: AppContext, payload: Record<string, unknown>): Prom
     )
     .execute();
   const path = joinPath(card.conversationId, card.seq, messageId);
-  // A few at a time (convention 14), each in their own language (`notify` writes inside it).
-  await eachLimit(people, 4, async ({ user_id: userId }) => {
+  // A few at a time (convention 14), each in their own language (`notify` writes inside it);
+  // never to whoever said they won't go (R123).
+  const coming = people.filter((x) => answerOf(card.card, x.user_id) !== 'not_going');
+  await eachLimit(coming, 4, async ({ user_id: userId }) => {
     await notify(ctx, {
       userId,
       kind: 'meeting',

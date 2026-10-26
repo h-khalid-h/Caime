@@ -2979,3 +2979,127 @@ with its reason, so it isn't proposed again without new facts.
   the share whose parent agreed: `caime_family_total{step="agreed"}` over `{step="alone"}`, the
   steps between (`link`, `signed_up`) saying where the rest stopped, and `not_mine`, `lapsed` and
   `withdrawn` how the others ended.
+
+- **R123 (2026-10-26) A meeting that changes, and everyone's own answer to it.** The owner: "I
+  created a space, then a group within that space that has two people. Then I proposed a meeting
+  within the group conversation, which has been accepted by one of the two. Now I need to edit the
+  proposal to change the meeting title, date and time. How can this be handled? Would my change
+  reset the invitee status to re-accept, reject, or propose? The meeting is also recurring weekly;
+  would it show up in the conversation on that day and time, or do we always have to scroll
+  through the conversation to find it and join?"
+
+  What the code did (2026-10-26):
+  - A meeting's title couldn't be changed by anyone. Only an app's own card takes new fields
+    (`PATCH /messages/:id/kit`).
+  - "Suggest another time" (M16 F5, `retimeCard`) moves a meeting held once back to asking, from
+    whoever suggested it. It sets `sequence` one on, and the update goes by mail and to guests. But
+    `retimeBlock` refuses a meeting that repeats (`'series'`): a weekly meeting's time couldn't
+    change at all, only a time cancelled or the series stopped. The block was there because a time
+    sent back to asking stopped the series (`seriesAgreed` read only the agreed state).
+  - In a group a meeting has one state. The first Accept makes it accepted for everyone
+    (`KIT_FLOWS.meeting`): the second person can't accept or decline, only Cancel it for all, and
+    nobody knows who is coming.
+  - Each time of a series is posted as its own card a minute after the one before ends
+    (`meeting.next`). It lands at the bottom then, and scrolls away. It is in Actions' calendar,
+    on Attention for three days, in the person's own calendar and feed, and "Starting now"
+    notifies at its time with a tap that joins. The conversation itself shows nothing at its top,
+    so finding the card means scrolling, or the details panel.
+
+  *The council's turning points:*
+  1. The Architect proposed three changes:
+     - Edit on the card, for whoever proposed it: the title, the notes, when, how long, where and
+       how it repeats. On a meeting that repeats, the edit is for this time or for this time and
+       every one after.
+     - Each person's own answer in a group: Going or Not going.
+     - The next meeting as a line at the top of its conversation.
+  2. The Adversary asked which changes may ask everyone again, and staked it on the standard
+     calendars keep. RFC 5545 §3.8.7.4 has the organizer increment `SEQUENCE` when the start, the
+     end, the duration, the recurrence or the status changes. RFC 5546 §2.1.5 orders two messages
+     of the same sequence by `DTSTAMP`, so a change that needs no new answer, such as the title,
+     travels with the same sequence and a later stamp. The plan moved:
+     - A change to *when* (start, length, how it repeats) or *where* asks again. Where isn't in
+       the RFC's list, but it decides whether someone can come (here, a café, another service):
+       Caime's own rule, said here. The card goes back to asking, its sequence goes one on, and
+       answers given to the old time are kept, marked as for that time.
+     - A change to *what* (the title, the notes) tells everyone and keeps every answer. Mail
+       recipients get it at the same sequence, with a later stamp.
+     - This keeps `sequence` meaning "the time asked at", which a page booker's answer by mail is
+       bound to (M16 F5c): renaming a meeting never voids an answer on its way.
+  3. The Adversary on groups: in a group of ten, one member's "Suggest another time" sent everyone
+     back to asking, from them. The plan moved:
+     - In a group, the meeting is its organizer's to change.
+     - Everyone else answers for themselves. Not going may carry a time they suggest, shown to the
+       organizer with one tap to take it. Taking it is the organizer's edit, and asks everyone
+       again.
+     - Between two people, "Suggest another time" stays as it is: there the conversation is the
+       two of them.
+     - The organizer is the card's sender. Where they have left the group, its owner and admins
+       may change it (core `canEditConversation`).
+  4. The Adversary on where answers live: a payload that grows with every member is read with
+     every page of messages. The plan bounds it:
+     - Answers are kept in the card's payload, one short entry a person.
+     - A group of many (core `isLargeGroup`, past a hundred) keeps none: the meeting is on at the
+       first yes, as today, and its card says everyone joins as they can. That is where its ticks
+       stop too (M16 D2b).
+     - Readers that hold time read one answer, the reader's own: calendars, the brief, "Starting
+       now" and the slots leave out a meeting the reader said they won't go to.
+  5. The Newcomer, the owner on a phone in that group, looked for one thing to tap. The plan:
+     - "Edit" on their own card, as on a message.
+     - On a meeting that repeats, the sheet asks once, in dates: "Only Thu 30 Oct" or "Thu 30 Oct
+       and every time after".
+     - For the other person, two buttons, Going and Not going, the chosen one marked, and a line
+       under the card: "2 going · 1 hasn't answered". A tap on the line shows who.
+     - The meeting is at the top of the conversation until it ends: its title, when, who's going,
+       and Join from the moment Join opens. A tap goes to the card. Nobody scrolls for it.
+  6. The Specialist, a calendaring engineer who built recurring events and iTIP exchange at scale,
+     reasoned from first principles. An event has an identity (UID), a revision (`SEQUENCE` and
+     `DTSTAMP`), each attendee's own answer (`PARTSTAT`), and recurrence with overrides
+     (`RECURRENCE-ID`) and splits ("this and following" ends one rule and starts another).
+     Caime's series posts one card a time, so:
+     - an override is that time's own card;
+     - a split costs nothing: the time ahead is the only card there is. Changing it "and every
+       time after" re-anchors the series on it (`series.base`, the time it counts from), so every
+       time ahead follows with no row rewritten. Past times keep what they were;
+     - the times ahead keep their identity (`meetingUid`, the series and its count), so a calendar
+       moves each event and never shows it twice.
+     The second-order effects, and what the plan does about each:
+     - Scale: answers are bounded by the group's size, and none are kept past a hundred. The top
+       line is one indexed read on `card_start_at` a conversation opened, never a read a message.
+     - Time: a year of a weekly meeting is 52 cards. The top line reads only the next.
+     - Abuse: an organizer who retimes over and over asks everyone again each time. Each card's
+       notifications are one, its latest (`groupKey`), as today.
+     - Clocks: a re-anchored series keeps its organizer's zone and week, so a Sunday-to-Thursday
+       week stays one.
+     - Minors: an edit adds nobody. A space's guests are asked again as for any new time.
+     - Provider failure: mail updates go through the `mail.card` job, retried.
+     - The next time's job is keyed by the card and its end. A time moved later posts the time
+       after it once the new end has passed, never twice.
+
+  *Decided against:*
+  - "Maybe". A meeting's question is whether to hold the time, and "maybe" holds nothing the
+    organizer can act on. Calendars' "tentative" is read as going by most people who send it.
+  - Anyone in a group moving the time for everyone.
+  - A table of answers, until a group past a hundred needs one: none keep answers.
+  - Editing a meeting that came as someone's calendar invitation. It's its organizer's, by mail
+    (M16 F4).
+  - Editing an appointment booked from a catalog. Its time moves through the catalog's open times
+    (M16 F5b), its name and price are the catalog's.
+
+  *What was built* (ROADMAP M16 F8, 2026-10-26): core `meeting-changes.ts` (what kind of change,
+  who may change, each person's answer read for its round, the card's state from the answers) and
+  `series.base`; `PATCH /messages/:id/meeting` (`changeMeeting`, `lib/meeting-changes.ts`), `POST
+  /messages/:id/answer` (`answerMeeting`) and `GET /conversations/:id/next` (`nextCardIn`); the
+  kit route takes Accept and Decline in a group as the person's own answer and Cancel from its
+  organizer alone, and another time in a group from its organizer alone; a time of a series moves
+  alone (`seriesAgreed` reads a time asked again, `seriesFields` keeps what the series says, the
+  next time is posted only by the series' latest time and only once it's over); a readers' skip
+  for whoever isn't going in `cardsAhead`, the brief and "Starting now"; the yeses carried to the
+  next time; the mail update keyed by its revision. In the app: Edit on the card, the meeting's
+  form opened on it with "Only this time" and "This and every time after", Going and Not going
+  with a time to suggest and the organizer's "Use this time" (`MeetingAnswers`, lazy), and
+  `NextCardLine` at the conversation's top with Join. `meeting-changes.test.ts` (core and server)
+  and the E2E `meeting-changes.spec.ts`.
+
+  *The number:* of meetings changed after they were agreed, the share whose people answered again
+  within a day (the round's answers over the people asked), and of group meetings, the share with
+  everyone's answer before it starts, where none could be given before.

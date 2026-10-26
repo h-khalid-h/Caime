@@ -241,8 +241,12 @@ describe('another time for a meeting or an appointment (M16 F5)', () => {
     expect(retimeBlock({ kit: 'invoice', state: 'sent' })).toBe('kind');
     expect(retimeBlock({ kit: 'meeting', state: 'cancelled' })).toBe('state');
     expect(retimeBlock({ kit: 'appointment', state: 'done' })).toBe('state');
+    // A meeting's time of a series moves alone (R123); a repeating appointment's doesn't.
     expect(
       retimeBlock({ kit: 'meeting', state: 'accepted', fields: { ...at, repeat: 'week' } }),
+    ).toBeNull();
+    expect(
+      retimeBlock({ kit: 'appointment', state: 'confirmed', fields: { ...at, repeat: 'week' } }),
     ).toBe('series');
     expect(retimeBlock({ kit: 'meeting', state: 'proposed', invitation: { uid: 'x' } })).toBe(
       'invitation',

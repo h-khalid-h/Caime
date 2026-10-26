@@ -314,15 +314,20 @@ export async function queueCardUpdate(
   m: Pick<Message, 'id' | 'payload'>,
   actorId: string,
 ): Promise<void> {
-  const p = m.payload as { kit?: unknown; sequence?: number } | null;
+  const p = m.payload as { kit?: unknown; sequence?: number; revision?: number } | null;
   if (!ctx.mailProvider || (p?.kit !== 'meeting' && p?.kit !== 'appointment')) return;
   const reached = await mailedTo(ctx, m.id);
   if (!reached || reached === actorId) return;
+  // A change that asks no new answer (R123: a new name) goes at the same sequence, a later stamp
+  // (RFC 5546 §2.1.5): its revision keeps it from passing for the update before.
   await enqueue(
     ctx,
     MAIL_CARD_JOB,
     { messageId: m.id, what: 'update', sequence: p.sequence ?? 0 },
-    { dedupeKey: `${MAIL_CARD_JOB}:${m.id}:update:${p.sequence ?? 0}`, maxAttempts: 6 },
+    {
+      dedupeKey: `${MAIL_CARD_JOB}:${m.id}:update:${p.sequence ?? 0}:${p.revision ?? 0}`,
+      maxAttempts: 6,
+    },
   );
 }
 

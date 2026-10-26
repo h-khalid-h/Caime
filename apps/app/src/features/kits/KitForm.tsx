@@ -35,12 +35,13 @@ import { branchName } from '@/features/booking/branchName';
 import { ItemPhoto } from '@/features/booking/ItemPhoto';
 import { reachedByMail } from '@/features/conversation/topics';
 import { CurrencyField } from '@/features/geo/CurrencyField';
+import { meetingApi } from '@/features/kits/meetingApi';
 import type { WhereChoice } from '@/features/places/WherePicker';
 import { type Chosen, chosenOf as chosenAt, instantOf } from '@/features/when/when';
 import { wordsMatch } from '@/lib/find';
 import { useUserClock } from '@/lib/time';
 import { loadReaders, type Readers, useReaders } from '@/lib/useReaders';
-import { addSentMessage, applyMessageToInbox } from '@/state/cache';
+import { addSentMessage, applyMessageToInbox, upsertMessage } from '@/state/cache';
 import { useLiveShares } from '@/state/liveShares';
 import { useMe } from '@/state/session';
 import { useTheme } from '@/theme/theme';
@@ -103,6 +104,11 @@ export interface KitStart {
   at?: { at: string; hasTime: boolean };
   /** How often the words said it repeats (M17 I9c), chosen on the card where it may repeat. */
   repeat?: Repeat;
+  /**
+   * A meeting changed by its organizer (R123): its card, its fields as they are, whether it's a
+   * time of a series, and a time someone suggested, taken in place of its own.
+   */
+  edit?: { messageId: string; fields: Record<string, unknown>; series: boolean; at?: string };
 }
 
 /**
@@ -255,6 +261,9 @@ export function KitForm({
   const [multiple, setMultiple] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
+  // A meeting being changed (R123): for this time of its series alone, or every time after.
+  const editing = kit === 'meeting' ? (start?.edit ?? null) : null;
+  const [scope, setScope] = useState<'this' | 'after'>('this');
   // A form (M16 H5): which of the organization's forms goes, chosen from its team's view.
   const forms = conversation.business?.forms ?? [];
   const [formId, setFormId] = useState<string | null>(
@@ -458,6 +467,41 @@ export function KitForm({
     }
     const repeat = start?.repeat;
     if (kit === 'meeting' && repeat) setPicked((p) => ({ ...p, repeat }));
+    // A meeting changed (R123): the form opens on it as it is, or at a time someone suggested.
+    const edit = kit === 'meeting' ? start?.edit : undefined;
+    if (edit) {
+      const f = edit.fields;
+      const was = (f.start ?? {}) as { at?: unknown; hasTime?: unknown };
+      const at = edit.at ?? (typeof was.at === 'string' ? was.at : null);
+      const clock = { now: new Date(), timeZone, locale };
+      if (at) {
+        const chosen = chosenAt(at, timeZone, edit.at ? true : was.hasTime !== false);
+        const shown = dayText(chosen, clock);
+        setPickedDays((d) => ({ ...d, start: { chosen, shown } }));
+        setTexts((x) => ({ ...x, start: shown }));
+      }
+      if (typeof f.repeatUntil === 'string') {
+        const chosen = { date: f.repeatUntil, time: null };
+        const shown = dayText(chosen, clock);
+        setPickedDays((d) => ({ ...d, repeatUntil: { chosen, shown } }));
+        setTexts((x) => ({ ...x, repeatUntil: shown }));
+      }
+      const place = typeof f.place === 'string' ? f.place.trim() : '';
+      const onCaime = !place || /^(on\s+)?ca[iı]me$/i.test(place);
+      setWhere(onCaime ? 'caime' : 'other');
+      setTexts((x) => ({
+        ...x,
+        title: typeof f.title === 'string' ? f.title : '',
+        place: onCaime ? 'Caime' : place,
+      }));
+      setPicked((p) => ({
+        ...p,
+        ...(typeof f.durationMinutes === 'number' ? { durationMinutes: f.durationMinutes } : {}),
+        ...(typeof f.notes === 'string' ? { notes: f.notes } : {}),
+        ...(typeof f.repeat === 'string' ? { repeat: f.repeat } : {}),
+      }));
+      setScope('this');
+    }
   }, [kit, start, timeZone, locale]);
   const item: BookingItem | null =
     host?.items.find((i) => i.id === itemId) ??
@@ -706,8 +750,31 @@ export function KitForm({
           ? notByMail('kit', { kit, fields }, conversation.kind === 'direct')
           : null;
       if (unmailable) return setError(notByMailText(unmailable));
+      // A time of a series changed alone (R123) keeps how the series repeats.
+      if (editing?.series && scope === 'this') {
+        for (const key of ['repeat', 'repeatUntil'])
+          if (editing.fields[key] !== undefined) fields[key] = editing.fields[key];
+          else delete fields[key];
+      }
       const checked = custom ? prepareCustomFields(custom, fields) : prepareKitFields(kit, fields);
       if (!checked.ok) return setError(checked.error);
+      if (editing) {
+        setBusy(true);
+        setError(null);
+        try {
+          const { message } = await meetingApi.change(editing.messageId, {
+            fields: checked.fields,
+            ...(editing.series ? { scope } : {}),
+          });
+          upsertMessage(qc, message);
+          close();
+        } catch (e) {
+          setError((e as Error).message);
+        } finally {
+          setBusy(false);
+        }
+        return;
+      }
       body = {
         kind: 'kit',
         payload: custom
@@ -763,11 +830,21 @@ export function KitForm({
     <Sheet
       open={def !== null}
       onClose={close}
-      title={custom ? def?.name : def ? tr(def.name) : undefined}
-      subtitle={custom ? def?.description : def ? tr(def.description) : undefined}
+      title={
+        editing ? tr('Change the meeting') : custom ? def?.name : def ? tr(def.name) : undefined
+      }
+      subtitle={
+        editing
+          ? tr('A new time or place asks everyone again. A new name tells them.')
+          : custom
+            ? def?.description
+            : def
+              ? tr(def.description)
+              : undefined
+      }
       footer={
         <Button
-          label={tr('Send')}
+          label={editing ? tr('Save') : tr('Send')}
           block
           size="lg"
           onPress={() => void send()}
@@ -776,6 +853,19 @@ export function KitForm({
         />
       }
     >
+      {editing?.series ? (
+        <ChoiceChips<'this' | 'after'>
+          label={tr('Change')}
+          wrap
+          value={scope}
+          onChange={setScope}
+          options={[
+            { value: 'this', label: tr('Only this time') },
+            { value: 'after', label: tr('This and every time after') },
+          ]}
+          testID="kit-scope"
+        />
+      ) : null}
       {kit === 'location' ? (
         <View style={{ gap: 12 }}>
           <Text variant="caption" color="textSecondary">
@@ -1130,6 +1220,10 @@ export function KitForm({
             (payingShare && SHARE_FIXED.includes(field.key)) ||
             (field.key === 'repeat' && !repeats) ||
             (field.key === 'repeatUntil' && !repeating) ||
+            // How a series repeats changes for every time ahead, never for one (R123).
+            (editing?.series &&
+              scope === 'this' &&
+              (field.key === 'repeat' || field.key === 'repeatUntil')) ||
             (field.key === 'notes' && !notesOffered) ||
             (field.key === 'place' && appointment && item) ? null : field.key === 'notes' ? (
               <SwitchRow

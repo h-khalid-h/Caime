@@ -25,6 +25,7 @@ import {
 import { onClock } from '@caime/core/card-clock';
 import { msg, tr } from '@caime/core/i18n';
 import { AGREED_STATES } from '@caime/core/kit-states';
+import { isRepeat } from '@caime/core/repeat';
 import { sql } from 'kysely';
 import type { AppContext } from '../context';
 import { MESSAGE_COLUMNS, type Message } from '../db/schema';
@@ -38,6 +39,7 @@ import { badRequest } from './errors';
 import { cardStartAt } from './kits';
 import { queueCardUpdate } from './mail-out';
 import { askGuestsForTime } from './meeting-guests';
+import { queueNextTime } from './meeting-series';
 import { insertSystemMessage, messageViews, participantsOf } from './messages';
 import { shareMoved } from './splits';
 import { orderMoved, tellStockChanged } from './stock';
@@ -58,6 +60,10 @@ type CardPayload = {
   invitation?: unknown;
   movedTo?: unknown;
   booking?: unknown;
+  /** What its series says for the times after one moved alone (R123). */
+  seriesFields?: Record<string, unknown>;
+  /** The round its people answer in (R123): one on with each new time. */
+  round?: number;
 };
 
 /**
@@ -294,9 +300,14 @@ export async function retimeCard(
     const next = {
       fields,
       ...(rebooked ? { booking: rebooked.booking } : {}),
+      // A time of a series moved alone (R123): the series keeps saying what it said, after it.
+      ...(isRepeat(card.fields?.repeat)
+        ? { seriesFields: card.seriesFields ?? card.fields ?? {} }
+        : {}),
       state: to,
       proposedBy: input.actorId,
       sequence: (card.sequence ?? 0) + 1,
+      round: (card.round ?? 0) + 1,
       history: [
         ...(card.history ?? []),
         { state: to, by: input.actorId, at: ctx.now().toISOString() },
@@ -342,6 +353,8 @@ export async function retimeCard(
   // new, as for any time they're asked to).
   await queueCardUpdate(ctx, row, input.actorId);
   await askGuestsForTime(ctx, row);
+  // A time of a series moved later posts the next once it's over (R123), never before.
+  await queueNextTime(ctx, row.id);
   // A booker without an account is asked by mail, and answers from it (M16 F5c).
   if (kit === 'appointment')
     await mailTimeSuggested(
@@ -358,13 +371,19 @@ export async function retimeCard(
  * others where they'll see it (Needs you, as a card that asks does), until the card's next move
  * (`afterCardMove` lets it go, by the card's `askLine`).
  */
-export async function askAgain(ctx: AppContext, card: Message, actorId: string): Promise<void> {
+export async function askAgain(
+  ctx: AppContext,
+  card: Message,
+  actorId: string,
+  /** What the line says: another time suggested, or its organizer's change (R123). */
+  event: 'time_suggested' | 'meeting_moved' | 'meeting_place_changed' = 'time_suggested',
+): Promise<void> {
   const p = (card.payload ?? {}) as CardPayload;
   const line = await insertSystemMessage(
     ctx,
     card.conversation_id,
     actorId,
-    'time_suggested',
+    event,
     { messageId: card.id, title: p.title ?? null },
     { asks: true },
   );

@@ -2956,6 +2956,28 @@ export interface UpcomingView {
   agreed: boolean;
 }
 
+/**
+ * The meeting or appointment next in a conversation (R123), shown at its top until it ends: its
+ * card to go to, Join while it's open, and in a group how many are going and the reader's own
+ * answer. A time of a series not yet posted is the series' latest card, at the time ahead.
+ */
+export interface NextCardView extends UpcomingView {
+  /** When it ends: as booked, as its card says, else an hour (core `cardEndMs`). */
+  endAt: string;
+  /** Held here (core `heldOnCaime`): joined on Caime. */
+  heldHere: boolean;
+  /** A time of a series still to be posted. */
+  projected: boolean;
+  /** In a group that keeps answers: how many are going, its organizer among them; else null. */
+  going: number | null;
+  /** The reader's own answer in such a group, or null. */
+  answer: 'going' | 'not_going' | null;
+}
+
+export interface NextCardResponse {
+  next: NextCardView | null;
+}
+
 export interface MemoryView {
   summary: string;
   people: Array<{ id: string; displayName: string; role: string }>;

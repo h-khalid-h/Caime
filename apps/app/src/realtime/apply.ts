@@ -180,8 +180,12 @@ export function applyEvent(qc: QueryClient, event: RealtimeEvent, me: string): v
       // A space shows its conversations' unread counts: refresh whichever space is on screen.
       invalidate(qk.spaces, 1500);
       invalidate(qk.allSpaces, 1500);
-      // A dated card (a meeting, an appointment) is on the calendar (R51).
-      if (m.kind === 'kit') calendarChanged();
+      // A dated card (a meeting, an appointment) is on the calendar (R51), and may be the next
+      // at the conversation's top (R123).
+      if (m.kind === 'kit') {
+        calendarChanged();
+        invalidate(qk.nextCard(m.conversationId), 800);
+      }
       return;
     }
     case 'message.updated':
@@ -193,6 +197,7 @@ export function applyEvent(qc: QueryClient, event: RealtimeEvent, me: string): v
       if (event.data.kind === 'kit') {
         const id = event.data.conversationId;
         invalidate(qk.memory(id), 800);
+        invalidate(qk.nextCard(id), 800);
         invalidate(qk.allSpaces, 800);
         calendarChanged();
       }
@@ -214,6 +219,7 @@ export function applyEvent(qc: QueryClient, event: RealtimeEvent, me: string): v
       // What it shared, and what was read from it, go with it; a dated card leaves the calendar.
       invalidate(qk.memory(event.data.conversationId));
       invalidate(qk.assets(event.data.conversationId));
+      invalidate(qk.nextCard(event.data.conversationId));
       calendarChanged();
       return;
     case 'pins.changed':

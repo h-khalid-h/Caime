@@ -2091,4 +2091,26 @@ export const arServer: Catalog = {
   'Your parent or guardian hasn’t agreed to your account yet.': 'لم يوافق وليّ أمرك على حسابك بعد.',
   'Where you live, someone under {age} joins Caime with a parent or guardian. Ask them to add you from their own Caime: You, then Family.':
     'حيث تقيم، ينضم إلى Caime من هم دون {age} عبر وليّ الأمر. اطلب منه أن يضيفك من حسابه على Caime: أنت، ثم العائلة.',
+  // R123: a meeting that changes, and everyone's own answer.
+  'Only a meeting changes this way.': 'هكذا يُعدَّل الاجتماع وحده.',
+  'It has its own space now: change it there.': 'له مساحته الخاصة الآن: عدّله هناك.',
+  'That one is over.': 'انتهى ذلك الموعد.',
+  'A meeting called off or declined doesn’t change. Propose another.':
+    'الاجتماع الملغى أو المرفوض لا يُعدَّل. اقترح غيره.',
+  'Say whether it’s for this time or every time after.':
+    'حدّد هل التعديل لهذه المرة أم لكل ما بعدها.',
+  'How it repeats changes for every time ahead: choose this time and every time after.':
+    'طريقة التكرار تتغير لكل المرات القادمة: اختر هذه المرة وكل ما بعدها.',
+  'New place': 'مكان جديد',
+  Changed: 'تم التعديل',
+  'Only a meeting is answered this way.': 'هكذا يُجاب على الاجتماع وحده.',
+  'Here, accept or decline it on the card.': 'هنا، اقبله أو ارفضه من البطاقة.',
+  'It’s yours: change it or call it off.': 'هو اجتماعك: عدّله أو ألغه.',
+  'Suggest a time ahead, with Not going.': 'اقترح موعدًا قادمًا، مع «لن أحضر».',
+  'Only whoever proposed it calls it off. Say you’re not going.':
+    'لا يلغيه إلا صاحب الاقتراح. اختر «لن أحضر».',
+  'In a group, whoever proposed it changes its time. Say you’re not going and suggest one.':
+    'في المجموعة، يغيّر الموعدَ صاحبُ الاقتراح. اختر «لن أحضر» واقترح موعدًا.',
+  'Only whoever proposed it changes it.': 'لا يعدّله إلا صاحب الاقتراح.',
+  'In a group, whoever proposed it stops it repeating.': 'في المجموعة، يوقف التكرارَ صاحبُ الاقتراح.',
 };

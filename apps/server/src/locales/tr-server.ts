@@ -1999,4 +1999,26 @@ export const turkishServer: Catalog = {
     'Ebeveyniniz ya da veliniz hesabınızı henüz onaylamadı.',
   'Where you live, someone under {age} joins Caime with a parent or guardian. Ask them to add you from their own Caime: You, then Family.':
     'Yaşadığınız yerde {age} yaşın altındakiler Caime’e bir ebeveyn ya da veliyle katılır. Sizi kendi Caime’inden eklemesini isteyin: Siz, ardından Aile.',
+  // R123: a meeting that changes, and everyone's own answer.
+  'Only a meeting changes this way.': 'Bu şekilde yalnızca toplantı değiştirilir.',
+  'It has its own space now: change it there.': 'Artık kendi alanı var: orada değiştirin.',
+  'That one is over.': 'O geçti.',
+  'A meeting called off or declined doesn’t change. Propose another.':
+    'İptal edilen ya da reddedilen toplantı değiştirilmez. Başka birini önerin.',
+  'Say whether it’s for this time or every time after.':
+    'Bu sefer için mi, sonraki tüm seferler için mi olduğunu belirtin.',
+  'How it repeats changes for every time ahead: choose this time and every time after.':
+    'Tekrar şekli sonraki tüm seferler için değişir: bu ve sonraki tüm seferleri seçin.',
+  'New place': 'Yeni yer',
+  Changed: 'Değiştirildi',
+  'Only a meeting is answered this way.': 'Bu şekilde yalnızca toplantı yanıtlanır.',
+  'Here, accept or decline it on the card.': 'Burada kartta kabul edin ya da reddedin.',
+  'It’s yours: change it or call it off.': 'Sizin toplantınız: değiştirin ya da iptal edin.',
+  'Suggest a time ahead, with Not going.': '«Katılmıyorum» ile ileri bir saat önerin.',
+  'Only whoever proposed it calls it off. Say you’re not going.':
+    'Yalnızca öneren kişi iptal eder. Katılmadığınızı söyleyin.',
+  'In a group, whoever proposed it changes its time. Say you’re not going and suggest one.':
+    'Grupta saati öneren kişi değiştirir. Katılmadığınızı söyleyip bir saat önerin.',
+  'Only whoever proposed it changes it.': 'Yalnızca öneren kişi değiştirir.',
+  'In a group, whoever proposed it stops it repeating.': 'Grupta tekrarı öneren kişi durdurur.',
 };

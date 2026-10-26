@@ -2084,4 +2084,28 @@ export const frServer: Catalog = {
     'Votre parent ou tuteur n’a pas encore accepté votre compte.',
   'Where you live, someone under {age} joins Caime with a parent or guardian. Ask them to add you from their own Caime: You, then Family.':
     'Là où vous vivez, avant {age} ans on rejoint Caime avec un parent ou un tuteur. Demandez-lui de vous ajouter depuis son Caime : Vous, puis Famille.',
+  // R123: a meeting that changes, and everyone's own answer.
+  'Only a meeting changes this way.': 'Seule une réunion se modifie ainsi.',
+  'It has its own space now: change it there.':
+    'Elle a son propre espace maintenant : modifiez-la là-bas.',
+  'That one is over.': 'Celle-ci est passée.',
+  'A meeting called off or declined doesn’t change. Propose another.':
+    'Une réunion annulée ou refusée ne se modifie pas. Proposez-en une autre.',
+  'Say whether it’s for this time or every time after.':
+    'Dites si c’est pour cette fois ou pour toutes les suivantes.',
+  'How it repeats changes for every time ahead: choose this time and every time after.':
+    'La répétition change pour toutes les fois à venir : choisissez cette fois et toutes les suivantes.',
+  'New place': 'Nouveau lieu',
+  Changed: 'Modifiée',
+  'Only a meeting is answered this way.': 'Seule une réunion se répond ainsi.',
+  'Here, accept or decline it on the card.': 'Ici, acceptez-la ou refusez-la sur la carte.',
+  'It’s yours: change it or call it off.': 'C’est la vôtre : modifiez-la ou annulez-la.',
+  'Suggest a time ahead, with Not going.': 'Proposez un horaire à venir, avec « Je ne viens pas ».',
+  'Only whoever proposed it calls it off. Say you’re not going.':
+    'Seule la personne qui l’a proposée l’annule. Dites que vous ne venez pas.',
+  'In a group, whoever proposed it changes its time. Say you’re not going and suggest one.':
+    'Dans un groupe, la personne qui l’a proposée en change l’heure. Dites que vous ne venez pas et proposez-en une.',
+  'Only whoever proposed it changes it.': 'Seule la personne qui l’a proposée la modifie.',
+  'In a group, whoever proposed it stops it repeating.':
+    'Dans un groupe, la personne qui l’a proposée en arrête la répétition.',
 };

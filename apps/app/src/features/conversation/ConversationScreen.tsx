@@ -94,6 +94,7 @@ import { ForwardSheet } from './ForwardSheet';
 import { forwardable, MessageActions, toggleReaction } from './MessageActions';
 import { MessageBubble } from './MessageBubble';
 import { mayKeepFrom } from './mayKeep';
+import { NextCardLine } from './NextCardLine';
 import { PinnedBar } from './PinnedBar';
 import { RequestBanner } from './RequestBanner';
 import { buildRows, namesIn, type Row } from './rows';
@@ -982,6 +983,19 @@ export function ConversationScreen({
       {conversation ? <RequestBanner conversation={conversation} /> : null}
       {conversation && conversation.kind !== 'business' ? (
         <PinnedBar where={where} canUnpin={pinner} onJump={(m) => setFocus(m.seq)} />
+      ) : null}
+      {conversation && conversation.privacyClass === 'standard' ? (
+        <NextCardLine
+          conversationId={conversation.id}
+          onGo={(next) => setFocus(next.seq)}
+          onJoin={(next) => {
+            // As a calendar's join address does: the card is found, and its rules decide. A
+            // second Join from here (after leaving) joins again.
+            joinedFor.current = null;
+            setFocus(next.seq);
+            router.setParams({ join: next.messageId });
+          }}
+        />
       ) : null}
       {offerCatchUp ? (
         <CatchUpBanner

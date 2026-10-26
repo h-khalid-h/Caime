@@ -488,6 +488,15 @@ export function systemText(payload: unknown, viewerId?: string | null): string {
       return p.title
         ? tr('{by} suggested another time for “{title}”', { by, title: p.title })
         : tr('{by} suggested another time', { by });
+    // Its organizer changed when or where a meeting is (R123): the card asks everyone again.
+    case 'meeting_moved':
+      return p.title
+        ? tr('{by} moved “{title}”', { by, title: p.title })
+        : tr('{by} moved the meeting', { by });
+    case 'meeting_place_changed':
+      return p.title
+        ? tr('{by} changed where “{title}” is', { by, title: p.title })
+        : tr('{by} changed where the meeting is', { by });
     case 'decision_recorded':
       return p.title
         ? tr('{by} recorded a decision: {title}', { by, title: p.title })

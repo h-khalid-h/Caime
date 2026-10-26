@@ -12,6 +12,7 @@
  */
 import type { AppointmentBooking, UpcomingView } from '@caime/core';
 import { AGREED_STATES as AGREED, DUE_STATES } from '@caime/core/kit-states';
+import { answerOf, goingCount } from '@caime/core/meeting-changes';
 import { heldOnCaime } from '@caime/core/meetings';
 import { isRepeat, type Repeat } from '@caime/core/repeat';
 import { isDay, occurrencesBetween, seriesAgreed, seriesOf, timesAYear } from '@caime/core/series';
@@ -130,6 +131,10 @@ export interface CardAhead {
    * own yet, so its message, conversation and place are the series' latest card's.
    */
   projected: boolean;
+  /** How many besides its organizer said they're going to this time (R123; a group's alone). */
+  going: number;
+  /** The reader's own answer there, or null. */
+  answer: 'going' | 'not_going' | null;
 }
 
 type CardPayload = {
@@ -148,7 +153,11 @@ type CardPayload = {
   history?: Array<{ at?: string; state?: string }>;
   booking?: AppointmentBooking | null;
   series?: unknown;
+  /** A time of a series changed alone (R123): what the series says for the times after it. */
+  seriesFields?: CardPayload['fields'];
   invitation?: unknown;
+  answers?: unknown;
+  round?: unknown;
 };
 
 type CardRow = {
@@ -162,7 +171,13 @@ type CardRow = {
 };
 
 /** A card read as what's ahead, at the time it's for (another, for a time looked ahead). */
-function cardAhead(row: CardRow, payload: CardPayload, kit: CardKit, at: Date): CardAhead {
+function cardAhead(
+  row: CardRow,
+  payload: CardPayload,
+  kit: CardKit,
+  at: Date,
+  userId: string,
+): CardAhead {
   const booking = payload.booking && typeof payload.booking === 'object' ? payload.booking : null;
   const minutes = Number(payload.fields?.durationMinutes);
   const moved = payload.history?.at(-1)?.at;
@@ -190,6 +205,8 @@ function cardAhead(row: CardRow, payload: CardPayload, kit: CardKit, at: Date): 
     series: series ? { id: series.id, n: series.n } : null,
     repeat: isRepeat(payload.fields?.repeat) ? payload.fields.repeat : null,
     projected: false,
+    going: goingCount(payload),
+    answer: answerOf(payload, userId),
   };
 }
 
@@ -209,6 +226,11 @@ export async function cardsAhead(
      * feed and the slots, which look past the next one; never for a list of what's next.
      */
     series?: { now: Date };
+    /**
+     * Keep a group's meeting the reader said they won't go to (R123): the conversation's own
+     * line shows it, with their answer; whatever holds their time leaves it out.
+     */
+    keepDeclined?: boolean;
   },
 ): Promise<CardAhead[]> {
   if (opts.conversationIds && opts.conversationIds.length === 0) return [];
@@ -234,8 +256,9 @@ export async function cardsAhead(
     const kit = payload.kit;
     const at = payload.fields?.start?.at ? new Date(payload.fields.start.at) : null;
     if (!kit || !at || Number.isNaN(at.getTime()) || at < opts.from || at > opts.until) continue;
-    const card = cardAhead(row, payload, kit, at);
+    const card = cardAhead(row, payload, kit, at, userId);
     if (!theirsToDo(row, userId, card.booking)) continue;
+    if (card.answer === 'not_going' && !opts.keepDeclined) continue;
     ahead.push(card);
   }
   if (opts.series)
@@ -278,7 +301,16 @@ async function seriesAhead(
   }
   const out: CardAhead[] = [];
   for (const { row } of latest.values()) {
-    const payload = (row.payload ?? {}) as CardPayload;
+    const latestCard = (row.payload ?? {}) as CardPayload;
+    // The times after one changed alone are what the series says (R123), not that time.
+    const own = latestCard.seriesFields;
+    const payload: CardPayload = own
+      ? {
+          ...latestCard,
+          title: typeof own.title === 'string' && own.title ? own.title : latestCard.title,
+          fields: { ...own, start: latestCard.fields?.start },
+        }
+      : latestCard;
     const series = seriesOf(payload);
     const repeat = payload.fields?.repeat;
     if (!series || !isRepeat(repeat)) continue;
@@ -296,7 +328,7 @@ async function seriesAhead(
     )) {
       const kit: CardKit =
         (payload as { kit?: unknown }).kit === 'appointment' ? 'appointment' : 'meeting';
-      const card = cardAhead(row, payload, kit, time.at);
+      const card = cardAhead(row, payload, kit, time.at, userId);
       const start = Date.parse(payload.fields?.start?.at ?? '');
       out.push({
         ...card,
@@ -313,6 +345,9 @@ async function seriesAhead(
         agreed: true,
         series: { id: series.id, n: time.n },
         projected: true,
+        // A time not yet posted has no answers of its own.
+        going: 0,
+        answer: null,
       });
     }
   }

@@ -18,6 +18,8 @@ export interface ButtonProps {
   disabled?: boolean;
   /** Stretch to the container's width. */
   block?: boolean;
+  /** One of a pair that's chosen (Going, Not going): said as pressed, never only by colour. */
+  selected?: boolean;
   accessibilityHint?: string;
   style?: ViewStyle;
   testID?: string;
@@ -32,6 +34,7 @@ export function Button({
   loading,
   disabled,
   block,
+  selected,
   accessibilityHint,
   style,
   testID,
@@ -53,7 +56,11 @@ export function Button({
       accessibilityRole="button"
       accessibilityLabel={label}
       accessibilityHint={accessibilityHint}
-      accessibilityState={{ disabled: Boolean(inactive), busy: Boolean(loading) }}
+      accessibilityState={{
+        disabled: Boolean(inactive),
+        busy: Boolean(loading),
+        ...(selected === undefined ? {} : { selected }),
+      }}
       disabled={inactive}
       onPress={onPress}
       haptic

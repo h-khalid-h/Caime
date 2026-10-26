@@ -230,7 +230,7 @@ import type { CallKind } from '@caime/core/calls';
 import type { PublicJwk, SealedMessage } from '@caime/core/e2ee';
 import type { ChecklistOp, SplitOp } from '@caime/core/kit-cards';
 import type { OrgKind } from '@caime/core/orgs';
-import type { RetimeBodyT } from '@caime/core/schemas';
+import type { MeetingAnswerBodyT, RetimeBodyT } from '@caime/core/schemas';
 import type { SpaceKind } from '@caime/core/spaces';
 import type { Sphere } from '@caime/core/taxonomy';
 import { api, request } from './client';
@@ -550,6 +550,9 @@ export const endpoints = {
     api.post<MessageResponse>(`/messages/${id}/time`, body),
   /** A meeting that repeats (R58): it ends with this time. */
   stopRepeating: (id: string) => api.post<MessageResponse>(`/messages/${id}/repeat/stop`, {}),
+  /** One person's own answer to a group's meeting (R123). */
+  answerMeeting: (id: string, body: MeetingAnswerBodyT) =>
+    api.post<MessageResponse>(`/messages/${id}/answer`, body),
   /** The organization's own kinds of card its team may send here (PRD §74). */
   customKits: (conversationId: string) =>
     api.get<CustomKitsResponse>(`/conversations/${conversationId}/kits`),

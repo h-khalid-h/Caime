@@ -3439,6 +3439,41 @@ graph) and the number that will show it; one that sharpens none is hygiene and s
       assist off, both told; two lines deleted a second apart written up again once),
       the E2E `call-notes.spec.ts` (the write-up in the sheet from the call's line, without the
       buttons it replaces), and the full gate.
+- [x] F8. A meeting that changes, and everyone's own answer to it (2026-10-26, PRODUCT-REVIEW
+      R123, the owner's day: a space, a group of two in it, a weekly meeting proposed there and
+      accepted by one; they needed to change its title, day and time, asked whether the change
+      asks everyone again, and whether they must scroll for it to join; advantage 1, the meeting
+      is the relationship's own thing, never a calendar's copy. The number: of meetings changed,
+      the share whose people answered the new time, and of joins, the share from the
+      conversation's top line rather than a scroll). Its organizer (`askedBy`; the team for one
+      the team sent; a group's owner or admins once the organizer has left) opens Edit on the
+      card: the meeting's own form, filled, and for a weekly meeting "This time" or "This and
+      every time after" (`PATCH /messages/:id/meeting`, `changeMeeting`). A new day, time,
+      length, repeat or place asks again (`round` and `sequence` one on, the card back to
+      Proposed, the line that asks, the calendars' update, the guests by address); a new title or
+      Cai's notes tells and keeps every answer. "This time" leaves the series saying what it said
+      (`seriesFields`); "every time after" counts the series again from this time
+      (`series.base`) or ends it, and the next time is posted only by the series' latest, once
+      it's over. In a group short of a crowd each person answers for themselves (Going, Not
+      going, and a time to suggest; `POST /messages/:id/answer`, `payload.answers` for the card's
+      round): the meeting is on at the first yes, only its organizer is told and only they call
+      it off, a Not going leaves it out of that person's calendar, brief and "Starting now", and
+      the next week carries the yeses. The conversation's top line (`GET
+      /conversations/:id/next`, `NextCardLine`) shows the next meeting or appointment, who's
+      going, and Join while it's open, so nobody scrolls for it. Costs: on devices, the first download 449.8 KB of 450 (0.2 more: two lines for the chat, a
+      button's pressed state; the meeting's own readers and requests kept in the conversation's
+      chunk, which is 98.9 KB of its 100), and a group's answers 1.8 KB, loaded with its card; on the
+      server, one read a conversation opened (one `cardsAhead` for it and, for a meeting, one count
+      of its people), one request a change or an answer, and the next time's job one a series time,
+      keyed by its end; no timer and no poll. Verified:
+      `meeting-changes.test.ts` (a new time asks everyone again and a new title keeps the
+      answers; "this time" leaves the next week as it was; "every time after" moves every week
+      from it, the next posted after the moved time ends and never twice; each person's answer,
+      on at the first yes, its organizer alone told; a Not going out of that person's calendar;
+      nobody else changes it; the top line), core `meeting-changes.test.ts` and `series.test.ts`,
+      the E2E `meeting-changes.spec.ts` (the owner's day on a desktop and a phone: the top line,
+      Edit for every time after, asked again, Going and Not going, who's coming), and the full
+      gate.
 - [ ] G. Integration framework and governed AI (REVIEW §11): credentials (key outside the
       database with a key id and re-seal, a downscoped picker token, sealed webhook secrets,
       rotation); per-use health, Google and Microsoft probes, a freshness gauge, a reconnect
@@ -7204,3 +7239,10 @@ CONNIQT; they mean Caime. Caishy is one of Caime's AI members, and Cai leads the
   of age where they live, the parent sees whom they're connected with, never a message, and says
   yes to each new connection first, either way. "Not my child", a week unanswered or the consent
   withdrawn deletes the account. Server tests, the E2E, every catalog; web JS 449.6 KB of 450.
+- 2026-10-26 — R123 through the council and M16 F8 (the owner: a weekly meeting in a space's group,
+  accepted by one of two, to be renamed and moved: "would my change reset the invitee status …
+  do we always have to scroll through the conversation to find it and join?"). Its organizer
+  changes it from the card's Edit, this time or every time after; a new when or where asks
+  everyone again, a new title doesn't; in a group each person answers Going or Not going for
+  themselves; the next meeting sits at the top of the conversation with Join. Server tests, core tests, the E2E
+  on a desktop and a phone, every catalog; web JS 449.8 KB of 450.

@@ -148,8 +148,21 @@ describe('another time for a meeting or an appointment (M16 F5)', () => {
   });
 
   it('refuses what keeps its own time, and anyone not in the conversation', async () => {
-    const series = await card('meeting', {
+    // A meeting's time of a series moves alone (R123): the series keeps saying when the others
+    // are. An appointment's keeps the slot it booked: cancel it and book another.
+    const weekly = await card('meeting', {
       title: 'Weekly',
+      start: at('2026-10-22T09:00:00.000Z'),
+      repeat: 'week',
+    });
+    const moved = await retime(ana, weekly.id, '2026-10-22T11:00:00.000Z');
+    expect(moved.statusCode).toBe(200);
+    expect(moved.json().message.payload.seriesFields).toMatchObject({
+      start: { at: '2026-10-22T09:00:00.000Z' },
+      repeat: 'week',
+    });
+    const series = await card('appointment', {
+      title: 'Weekly check',
       start: at('2026-10-22T09:00:00.000Z'),
       repeat: 'week',
     });

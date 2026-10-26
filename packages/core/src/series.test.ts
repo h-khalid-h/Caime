@@ -5,6 +5,7 @@ import {
   nextOccurrence,
   occurrenceAt,
   occurrencesBetween,
+  seriesAgreed,
   seriesOf,
   timesAYear,
 } from './series';
@@ -136,5 +137,43 @@ describe('a meeting that repeats (R58)', () => {
     expect(timesAYear('month')).toBe(13);
     expect(timesAYear('workday')).toBe(265);
     expect(timesAYear('workday', [0, 1, 2, 3, 4, 6])).toBe(318);
+  });
+});
+
+describe('a series changed from one of its times (R123)', () => {
+  // Weekly on Thursdays at 10:00 in Cairo from 1 October 2026; changed from its fourth time (n 3,
+  // 22 October) to Wednesdays at 15:00, "and every time after".
+  const was = { id: 's2', n: 3, firstAt: '2026-10-01T07:00:00.000Z', zone: 'Africa/Cairo' };
+  const now = {
+    ...was,
+    base: 3,
+    firstAt: '2026-10-21T12:00:00.000Z',
+  };
+
+  it('counts the times ahead from the time it was changed at, each keeping its count', () => {
+    expect(occurrenceAt(now, 'week', 3).toISOString()).toBe('2026-10-21T12:00:00.000Z');
+    expect(occurrenceAt(now, 'week', 4).toISOString()).toBe('2026-10-28T12:00:00.000Z');
+    expect(nextOccurrence(now, 'week', new Date('2026-10-21T13:01:00.000Z'))).toEqual({
+      n: 4,
+      at: new Date('2026-10-28T12:00:00.000Z'),
+    });
+    // Before the change it read Thursdays.
+    expect(occurrenceAt(was, 'week', 4).toISOString()).toBe('2026-10-29T07:00:00.000Z');
+  });
+
+  it('reads its base back, and never one past the time it is', () => {
+    expect(seriesOf({ series: now })?.base).toBe(3);
+    expect(seriesOf({ series: { ...now, base: 9 } })?.base).toBeUndefined();
+    expect(seriesOf({ series: was })?.base).toBeUndefined();
+  });
+
+  it('goes on past a time asked again, declined or cancelled once it was agreed', () => {
+    const agreedOnce = { kit: 'meeting', history: [{ state: 'accepted' }], series: was };
+    expect(seriesAgreed({ ...agreedOnce, state: 'proposed' })).toBe(true);
+    expect(seriesAgreed({ ...agreedOnce, state: 'declined' })).toBe(true);
+    // A first time never agreed holds nothing ahead.
+    expect(
+      seriesAgreed({ kit: 'meeting', state: 'proposed', history: [], series: { ...was, n: 0 } }),
+    ).toBe(false);
   });
 });

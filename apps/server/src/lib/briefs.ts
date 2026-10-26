@@ -19,6 +19,7 @@ import {
 } from '@caime/core';
 import { initiativeOf, tellsBeforeMeetings } from '@caime/core/initiative';
 import { AGREED_STATES as AGREED } from '@caime/core/kit-states';
+import { answerOf } from '@caime/core/meeting-changes';
 import { SPACE_KIND_DEFS, type SpaceKind } from '@caime/core/spaces';
 import { sql } from 'kysely';
 import type { AppContext } from '../context';
@@ -216,6 +217,8 @@ async function briefJob(ctx: AppContext, payload: Record<string, unknown>): Prom
   );
   for (const userId of readers) {
     if (quiet.has(userId)) continue;
+    // Not for whoever said they won't go (R123).
+    if (answerOf(card.payload as { answers?: unknown }, userId) === 'not_going') continue;
     const brief = await briefFor(ctx, userId, messageId, { withModel: false }).catch(() => null);
     if (!brief) continue;
     await notify(ctx, {

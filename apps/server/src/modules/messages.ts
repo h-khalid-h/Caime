@@ -27,6 +27,8 @@ import {
   LiveLocationUpdate,
   type LocationPayloadT,
   liveNow,
+  MeetingAnswerBody,
+  MeetingChangeBody,
   MessagesPageQuery,
   PINNED_MAX,
   PollPayload,
@@ -47,6 +49,7 @@ import type {
   MessageIdsResponse,
   MessageResponse,
   MessagesResponse,
+  NextCardResponse,
   OkResponse,
   ReceiptResponse,
 } from '@caime/core/api';
@@ -69,6 +72,14 @@ import { AppError, badRequest, forbidden, notFound } from '../lib/errors';
 import { recordEvent } from '../lib/events';
 import { mayMove, moveCard, retimeCard, retimeRefusal } from '../lib/kit-moves';
 import { tellCardApp } from '../lib/kits';
+import {
+  answerMeeting,
+  changeMeeting,
+  mayChangeMeeting,
+  meetingPeople,
+  nextCardIn,
+  organizerOf,
+} from '../lib/meeting-changes';
 import { stopRepeating } from '../lib/meeting-series';
 import { assertOpenToApps } from '../lib/member-apps';
 import { afterEdit, afterMentioning, afterMessage } from '../lib/message-effects';
@@ -272,6 +283,23 @@ export async function messageRoutes(app: FastifyInstance, ctx: AppContext) {
       throw forbidden(tr('An app moves only its own cards.'));
     // In a business conversation the team is one side: anyone on it acts for a card it sent.
     const business = await customerMask(ctx.db, m.conversation_id);
+    // A group's meeting (R123): each person answers for themselves, and only its organizer calls
+    // it off. Accept and Decline from anyone else are their own answers.
+    if (card.kit === 'meeting' && !business) {
+      const here = await meetingPeople(ctx, m.conversation_id);
+      if (here.kept && organizerOf(m) !== auth.userId) {
+        if (to !== 'accepted' && to !== 'declined')
+          throw forbidden(tr('Only whoever proposed it calls it off. Say you’re not going.'));
+        const answered = await answerMeeting(ctx, m, {
+          actorId: auth.userId,
+          going: to === 'accepted',
+          suggest: null,
+        });
+        if (answered === 'conflict')
+          throw new AppError(409, 'conflict', tr('Someone just changed this card.'));
+        return { message: answered };
+      }
+    }
     if (!mayMove(m, to, auth.userId, business))
       throw forbidden(tr('You can’t make that change to this card.'));
     // Each move tells the other side: one person, or one app, moves a conversation's cards only
@@ -305,6 +333,17 @@ export async function messageRoutes(app: FastifyInstance, ctx: AppContext) {
     await assertCanWrite(ctx, m.conversation_id, auth.userId);
     const refused = retimeRefusal(m, auth.userId);
     if (refused) throw badRequest(refused);
+    // In a group (R123) the meeting is its organizer's to move; everyone else answers, and may
+    // suggest a time with Not going.
+    if ((m.payload as { kit?: unknown } | null)?.kit === 'meeting') {
+      const here = await meetingPeople(ctx, m.conversation_id);
+      if (here.kept && !mayChangeMeeting(m, auth.userId, here, null))
+        throw forbidden(
+          tr(
+            'In a group, whoever proposed it changes its time. Say you’re not going and suggest one.',
+          ),
+        );
+    }
     // An app gives another time only to a card its bot sent, as it moves only its own (PRD §74).
     if (auth.app && m.sender_id !== auth.userId)
       throw forbidden(tr('An app moves only its own cards.'));
@@ -682,11 +721,99 @@ export async function messageRoutes(app: FastifyInstance, ctx: AppContext) {
       .send(row.html);
   });
 
-  // A meeting that repeats (R58): "Stop repeating" on the time ahead ends the series there.
+  // A meeting that repeats (R58): "Stop repeating" on the time ahead ends the series there. In a
+  // group (R123) that changes when it is, so it's its organizer's, as Edit is.
   app.post('/messages/:id/repeat/stop', async (req): Promise<MessageResponse> => {
     const auth = requireAuth(req);
     const { id } = parse(z.object({ id: z.string().uuid() }), req.params);
+    const m = await ctx.db
+      .selectFrom('messages')
+      .select(MESSAGE_COLUMNS)
+      .where('id', '=', id)
+      .executeTakeFirst();
+    if (m && (m.payload as { kit?: unknown } | null)?.kit === 'meeting') {
+      await membership(ctx, auth.userId, m.conversation_id);
+      const here = await meetingPeople(ctx, m.conversation_id);
+      if (here.kept && !mayChangeMeeting(m, auth.userId, here, null))
+        throw forbidden(tr('In a group, whoever proposed it stops it repeating.'));
+    }
     return { message: await stopRepeating(ctx, id, auth.userId) };
+  });
+
+  // A meeting changed by its organizer (R123): when or where asks everyone again, what it's
+  // called tells them; a time of a series alone, or with every time after.
+  app.patch('/messages/:id/meeting', async (req): Promise<MessageResponse> => {
+    const auth = requireAuth(req);
+    const { id } = parse(z.object({ id: z.string().uuid() }), req.params);
+    const body = parse(MeetingChangeBody, req.body);
+    const m = await ctx.db
+      .selectFrom('messages')
+      .select(MESSAGE_COLUMNS)
+      .where('id', '=', id)
+      .executeTakeFirst();
+    if (!m) throw notFound(tr('That message'));
+    await membership(ctx, auth.userId, m.conversation_id);
+    await assertCanWrite(ctx, m.conversation_id, auth.userId);
+    // An app changes only a card its bot sent, as it moves only its own (PRD §74).
+    if (auth.app && m.sender_id !== auth.userId)
+      throw forbidden(tr('An app moves only its own cards.'));
+    const business = await customerMask(ctx.db, m.conversation_id);
+    const here = await meetingPeople(ctx, m.conversation_id);
+    if (!mayChangeMeeting(m, auth.userId, here, business))
+      throw forbidden(tr('Only whoever proposed it changes it.'));
+    ctx.limiter.hit(
+      `kit-move:${auth.userId}:${m.conversation_id}`,
+      ctx.config.isTest ? 10_000 : 10,
+      60_000,
+    );
+    const view = await changeMeeting(ctx, m, {
+      actorId: auth.userId,
+      raw: body.fields,
+      scope: body.scope,
+      business,
+      here,
+    });
+    if (view === 'conflict')
+      throw new AppError(409, 'conflict', tr('Someone just changed this card.'));
+    return { message: view };
+  });
+
+  // One person's own answer to a group's meeting (R123): going or not, and, not going, a time
+  // they suggest to its organizer.
+  app.post('/messages/:id/answer', async (req): Promise<MessageResponse> => {
+    const auth = requireAuth(req);
+    const { id } = parse(z.object({ id: z.string().uuid() }), req.params);
+    const body = parse(MeetingAnswerBody, req.body);
+    const m = await ctx.db
+      .selectFrom('messages')
+      .select(MESSAGE_COLUMNS)
+      .where('id', '=', id)
+      .executeTakeFirst();
+    if (!m) throw notFound(tr('That message'));
+    await membership(ctx, auth.userId, m.conversation_id);
+    await assertCanWrite(ctx, m.conversation_id, auth.userId);
+    ctx.limiter.hit(
+      `kit-move:${auth.userId}:${m.conversation_id}`,
+      ctx.config.isTest ? 10_000 : 10,
+      60_000,
+    );
+    const view = await answerMeeting(ctx, m, {
+      actorId: auth.userId,
+      going: body.going,
+      suggest: body.suggest ? new Date(body.suggest.at) : null,
+    });
+    if (view === 'conflict')
+      throw new AppError(409, 'conflict', tr('Someone just changed this card.'));
+    return { message: view };
+  });
+
+  // The meeting or appointment next in a conversation (R123), for the line at its top.
+  app.get('/conversations/:id/next', async (req): Promise<NextCardResponse> => {
+    const auth = requireAuth(req);
+    const { id } = parse(z.object({ id: z.string().uuid() }), req.params);
+    const { conversation } = await membership(ctx, auth.userId, id);
+    if (conversation.privacy_class !== 'standard') return { next: null };
+    return { next: await nextCardIn(ctx, auth.userId, id) };
   });
 
   // --- Shared albums (PRD §41): photos people in the conversation add to one card -------------

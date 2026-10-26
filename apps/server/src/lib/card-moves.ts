@@ -47,6 +47,11 @@ export async function afterCardMove(
     label?: string;
     /** The move asks the others where they stand (another time, M16 F5): it matters to them. */
     asks?: boolean;
+    /**
+     * Only these are told (R123: one person's answer in a group reaches its organizer alone);
+     * everyone still sees the card change.
+     */
+    tell?: string[];
   },
 ): Promise<MessageView> {
   const { from, to, actorId, business } = input;
@@ -118,6 +123,7 @@ export async function afterCardMove(
   // In a business conversation, the other side does: the customer hears the organization.
   for (const userId of members) {
     if (userId === actorId) continue;
+    if (input.tell && !input.tell.includes(userId)) continue;
     // A share's Pay card (R62) is its two sides' alone: the rest of a group isn't told of it.
     if (standsAside(card, userId, m.sender_id)) continue;
     if (business && onTeam(userId) === onTeam(actorId)) continue;

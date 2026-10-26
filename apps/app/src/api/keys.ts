@@ -89,6 +89,8 @@ export const qk = {
   messages: (id: string) => ['messages', id] as const,
   album: (messageId: string) => ['album', messageId] as const,
   memory: (id: string) => ['memory', id] as const,
+  /** The meeting or appointment next in a conversation, at its top (R123). */
+  nextCard: (id: string) => ['next-card', id] as const,
   /** What a conversation keeps pinned at its top (PRD §22). */
   pins: (id: string) => ['pins', id] as const,
   /** What's been shared in a conversation (PRD §26), all of it or one tab of it. */

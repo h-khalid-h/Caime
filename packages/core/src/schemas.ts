@@ -634,6 +634,29 @@ export const RetimeBody = z
   })
   .strict();
 export type RetimeBodyT = z.infer<typeof RetimeBody>;
+/**
+ * A meeting changed by its organizer (R123, `PATCH /messages/:id/meeting`): its fields as they
+ * should be now (checked as a new card's are), and, for a time of a series, whether the change is
+ * for this time alone or for it and every time after.
+ */
+export const MeetingChangeBody = z
+  .object({
+    fields: z.record(z.string(), z.unknown()),
+    scope: z.enum(['this', 'after']).optional(),
+  })
+  .strict();
+export type MeetingChangeBodyT = z.infer<typeof MeetingChangeBody>;
+/**
+ * One person's own answer to a group's meeting (R123, `POST /messages/:id/answer`): going or not,
+ * and, not going, another time they suggest to its organizer.
+ */
+export const MeetingAnswerBody = z
+  .object({
+    going: z.boolean(),
+    suggest: z.object({ at: z.string().datetime(), hasTime: z.literal(true) }).optional(),
+  })
+  .strict();
+export type MeetingAnswerBodyT = z.infer<typeof MeetingAnswerBody>;
 export const KitFieldsBody = z.object({ fields: z.record(z.string(), z.unknown()) });
 
 export const AppListingReviewBody = z

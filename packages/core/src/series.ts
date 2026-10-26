@@ -23,6 +23,12 @@ export interface MeetingSeries {
   zone: string;
   /** A workday series' days (0 Sunday … 6 Saturday): its proposer's week when it began. */
   days?: number[];
+  /**
+   * Which time `firstAt` is (R123): 0, unless the series was changed from one of its times "and
+   * every time after", which counts it again from that time, so the times ahead follow and each
+   * keeps its count (and so its calendar event).
+   */
+  base?: number;
 }
 
 /** A week someone works when theirs isn't known: Monday to Friday. */
@@ -60,20 +66,22 @@ export function seriesOf(payload: unknown): MeetingSeries | null {
     return null;
   if (!Number.isInteger(s.n) || (s.n as number) < 0) return null;
   if (!Number.isFinite(Date.parse(s.firstAt))) return null;
+  const base = Number.isInteger(s.base) && (s.base as number) > 0 ? (s.base as number) : 0;
   return {
     id: s.id,
     n: s.n as number,
     firstAt: s.firstAt,
     zone: s.zone,
     ...(isWeek(s.days) ? { days: s.days } : {}),
+    ...(base && base <= (s.n as number) ? { base } : {}),
   };
 }
 
 /**
  * Whether a series was agreed, read from one of its cards: this time is agreed (a meeting
- * accepted, an appointment confirmed), or was before it was cancelled (that time alone). A later
- * time and a meeting space's copy are only ever made once it was, so their cancel is never the
- * proposal's.
+ * accepted, an appointment confirmed), or was before it was cancelled, declined or asked again
+ * (that time alone: R123, a time changed on its own). A later time and a meeting space's copy are
+ * only ever made once it was, so their cancel is never the proposal's.
  */
 export function seriesAgreed(payload: unknown): boolean {
   const p = (payload ?? {}) as {
@@ -82,9 +90,11 @@ export function seriesAgreed(payload: unknown): boolean {
     spaceOf?: unknown;
     history?: Array<{ state?: unknown }>;
   };
-  const agreed = p.kit === 'appointment' ? AGREED_STATES.appointment : AGREED_STATES.meeting;
+  const appointment = p.kit === 'appointment';
+  const agreed = appointment ? AGREED_STATES.appointment : AGREED_STATES.meeting;
   if (p.state === agreed) return true;
-  if (p.state !== 'cancelled') return false;
+  const asked = appointment ? 'requested' : 'proposed';
+  if (p.state !== 'cancelled' && p.state !== 'declined' && p.state !== asked) return false;
   return (
     (seriesOf(payload)?.n ?? 0) > 0 ||
     Boolean(p.spaceOf) ||
@@ -112,12 +122,13 @@ function nthWorkday(
   return day;
 }
 
-/** When the `n`th time of a series is (the first is 0). */
+/** When the `n`th time of a series is (the first is 0; counted from its `base`, R123). */
 export function occurrenceAt(
-  series: Pick<MeetingSeries, 'firstAt' | 'zone' | 'days'>,
+  series: Pick<MeetingSeries, 'firstAt' | 'zone' | 'days' | 'base'>,
   repeat: Repeat,
-  n: number,
+  at: number,
 ): Date {
+  const n = at - (series.base ?? 0);
   const first = zonedParts(new Date(series.firstAt), series.zone);
   let day: { year: number; month: number; day: number };
   if (repeat === 'workday') day = nthWorkday(first, n, workdaysOf(series.days));

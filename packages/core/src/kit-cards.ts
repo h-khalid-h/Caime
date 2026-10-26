@@ -196,7 +196,7 @@ export type RetimeBlock = 'kind' | 'state' | 'series' | 'invitation' | 'moved';
 
 /**
  * Why a card can't take another time, or null when it can (M16 F5): a meeting or an appointment,
- * asked or agreed, at one time (each time of a series keeps its own), not someone's calendar
+ * asked or agreed (a meeting's time of a series alone, R123; an appointment at one time), not someone's calendar
  * invitation (theirs to move), not moved to its own space (its copy there is the one). A booking
  * from a catalog moves too, to an open time of its catalog (M16 F5b: the server checks it).
  */
@@ -209,7 +209,9 @@ export function retimeBlock(card: {
 }): RetimeBlock | null {
   if (card.kit !== 'meeting' && card.kit !== 'appointment') return 'kind';
   if (!(RETIMES[card.kit].from as readonly unknown[]).includes(card.state)) return 'state';
-  if (isRepeat(card.fields?.repeat)) return 'series';
+  // A meeting's time of a series moves alone (R123: the series goes on after it); a repeating
+  // appointment's times are each booked from its catalog, and keep their own.
+  if (card.kit === 'appointment' && isRepeat(card.fields?.repeat)) return 'series';
   if (card.invitation) return 'invitation';
   if (card.movedTo) return 'moved';
   return null;

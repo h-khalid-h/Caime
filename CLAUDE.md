@@ -805,6 +805,27 @@ A sphere is said as how you know someone, never "sphere".
   `orgBookings(…, { ahead })` and `heldBy` hold the times ahead (`OrgBookingView.id` is
   `<series>:<n>` for one); an occurrence never runs `recordBusinessMessage`. Nothing keeps a row per time: a new reader
   of what's ahead decides whether it looks ahead.
+- A meeting that changes (R123, `lib/meeting-changes.ts`, core `meeting-changes.ts`): its
+  organizer (core `askedBy`; the team for one the team sent; a group's owner or admins once the
+  organizer has left: `mayChangeMeeting`) changes it with `PATCH /messages/:id/meeting`
+  (`changeMeeting`): a change to when or where (`meetingChange(…).asks`) puts it back to asking
+  with `round` and `sequence` one on and asks again (`askAgain`, the mail update, the guests), a
+  change to what (title, Cai's notes) tells and keeps every answer; the mail update is keyed by
+  `revision` too. A time of a series changes "this" (the series keeps saying what it said in
+  `seriesFields`, which the next time and the calendar's look-ahead read) or "after" (the series
+  counted again from it: `series.base`), and the next time is posted only by the series' latest
+  time, once it's over (its job keyed by the card and its end). In a group short of a crowd
+  (`answersKept`) each person answers for themselves (`POST /messages/:id/answer`, `answerMeeting`:
+  `payload.answers`, read for the card's `round` by `answerOf`; Accept and Decline from the kit
+  route are taken as that), the card on at the first yes (`stateByAnswers`), its organizer alone
+  told and alone calling it off; whatever holds time leaves a meeting out for whoever isn't going
+  (`cardsAhead` without `keepDeclined`, the brief, "Starting now"), and a series' next time
+  carries the yeses. The conversation's top line is `GET /conversations/:id/next` (`nextCardIn`,
+  the app's `NextCardLine`, `qk.nextCard`). A new way to change a meeting goes through
+  `changeMeeting`, and a new reader of who's coming reads `answerOf`. The app keeps the meeting's
+  requests and readers in the conversation's own chunk (`features/kits/meetingApi.ts`; the lazy
+  `MeetingAnswers` is handed `mine` and `amongOf` by the card): imported by both, core's
+  `meeting-changes` moved into `__common` and took the first download over its budget.
 - Bookings (R51, R58): a host is an organization or a person (`BookingHost`, `lib/booking.ts`:
   `orgHost`, `personHost`), each with hours (`booking`, core `BookingHours`) and a catalog
   (`booking_items`, core `BookingItem`: a price or none, minutes or days, capacity, how many in

@@ -17,7 +17,8 @@ import {
   paySides,
 } from '@caime/core/kit-cards';
 import { KITS } from '@caime/core/kits';
-import { meetingAction, meetingLink } from '@caime/core/meetings';
+import { answerOf, answersAmong, answersKept, changeBlock } from '@caime/core/meeting-changes';
+import { cardEndMs, meetingAction, meetingLink } from '@caime/core/meetings';
 import {
   PAYMENT_KIND_LABELS,
   type PaysShare,
@@ -25,6 +26,7 @@ import {
   senderPays,
   standsAside,
 } from '@caime/core/payments';
+import { isRepeat } from '@caime/core/repeat';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import Copy from 'lucide-react-native/icons/copy';
 import ListChecks from 'lucide-react-native/icons/list-checks';
@@ -89,6 +91,11 @@ interface CardPayload {
   proposedBy?: string;
   movedTo?: unknown;
   history?: unknown[];
+  /** A meeting that repeats (R58): its series. */
+  series?: unknown;
+  /** Each person's own answer in a group, and the round they answer (R123). */
+  answers?: unknown;
+  round?: unknown;
 }
 
 /** A long address said by its site: an invitation's Teams link runs to 300 characters (M16 F4). */
@@ -192,6 +199,8 @@ function PayToBlock({
 
 /** The brief before a meeting (R58), loaded when asked for. */
 /** A paid Pay card's receipt (R62), loaded when asked for. */
+// Each person's answer in a group (R123): with a group's meeting card alone.
+const MeetingAnswers = lazyPart(() => import('./MeetingAnswers').then((x) => x.MeetingAnswers));
 const ReceiptSheet = lazyPart(() => import('./ReceiptSheet').then((m) => m.ReceiptSheet));
 const BriefSheet = lazyPart(() =>
   import('@/features/calendar/BriefSheet').then((m) => m.BriefSheet),
@@ -237,13 +246,23 @@ export function KitCard({ m, mine }: { m: MessageView; mine: boolean }) {
   }).data;
   const { timeZone, locale } = useUserClock();
   const meId = useSession((s) => s.user?.id ?? '');
-  // In a group a Pay card is between whoever paid and was paid (R62): its receipt is theirs.
-  const inGroup = useQuery({
+  // In a group a Pay card is between whoever paid and was paid (R62): its receipt is theirs. A
+  // group short of a crowd keeps each person's own answer to a meeting (R123).
+  const group = useQuery({
     queryKey: qk.conversation(m.conversationId),
     queryFn: () => endpoints.conversation(m.conversationId),
     enabled: false,
-    select: (d: { conversation: ConversationView }) => d.conversation.kind === 'group',
+    select: (d: { conversation: ConversationView }) =>
+      d.conversation.kind === 'group'
+        ? answersKept(
+            d.conversation.kind,
+            d.conversation.participants.filter((x) => x.person.kind === 'human').length,
+          )
+          ? 'answers'
+          : 'crowd'
+        : null,
   }).data;
+  const inGroup = group !== null && group !== undefined;
   // Cai's notes (M16 F7c): whether this person may ask for them (an adult with AI assist on),
   // and whether they're asked for or on in this conversation's call right now.
   const mayAskNotes = useSession((s) => Boolean(s.user?.aiEnabled && !s.user.minor));
@@ -396,6 +415,35 @@ export function KitCard({ m, mine }: { m: MessageView; mine: boolean }) {
   const senderSide = asker === meId || Boolean(thread?.customer && asker !== thread.customer.id);
   if (kit === 'shared_album') return <AlbumCard m={m} mine={mine} />;
   if (kit === 'split') return <SplitCard m={m} mine={mine} />;
+  // A meeting's organizer changes it (R123): from its card, while it's asked or on, not over.
+  const organizer = kit === 'meeting' ? askedBy(p, m.senderId) : null;
+  const startAt = Date.parse((p.fields?.start as { at?: string } | undefined)?.at ?? '');
+  const endsAt = Number.isFinite(startAt)
+    ? cardEndMs(startAt, { durationMinutes: p.fields?.durationMinutes })
+    : null;
+  const changeable = kit === 'meeting' && !m.deletedAt && changeBlock(p, endsAt, now) === null;
+  const organizes = kit === 'meeting' && senderSide;
+  const change = (at?: string) =>
+    useCardAction.setState({
+      request: {
+        conversationId: m.conversationId,
+        kit: 'meeting',
+        start: {
+          edit: {
+            messageId: m.id,
+            fields: p.fields ?? {},
+            series: Boolean(p.series) && isRepeat(p.fields?.repeat),
+            ...(at ? { at } : {}),
+          },
+        },
+      },
+    });
+  const edit =
+    changeable && organizes
+      ? { label: tr('Edit'), testID: 'kit-edit', onPress: () => change() }
+      : null;
+  // In a group that keeps answers, everyone else answers for themselves (R123).
+  const answers = kit === 'meeting' && group === 'answers';
   // Agreed and ahead (R58): what to know before it, from the card.
   const start = (p.fields?.start as { at?: string } | undefined)?.at;
   const ahead =
@@ -419,7 +467,9 @@ export function KitCard({ m, mine }: { m: MessageView; mine: boolean }) {
           ...(kit === 'order_status' ? orderDetails(p.order) : []),
         ]}
         before={ahead ? { messageId: m.id, title: p.title ?? tr(KITS[kit].name) } : null}
-        actions={pay ? [pay] : (meeting ?? (receipt ? [receipt] : []))}
+        actions={
+          pay ? [pay] : [...(meeting ?? (receipt ? [receipt] : [])), ...(edit ? [edit] : [])]
+        }
         // A meeting that can be joined now leads with Join (R83), never with Cancel.
         lead={!pay && held === 'join' && Boolean(meeting)}
         extra={
@@ -450,8 +500,22 @@ export function KitCard({ m, mine }: { m: MessageView; mine: boolean }) {
                   {tr('Your answer goes back to the calendar that sent it.')}
                 </Text>
               ) : null}
-              <CardTime m={m} card={p} />
-              <MeetingRepeat m={m} card={p as MeetingCardPayload} />
+              {answers ? (
+                <MeetingAnswers
+                  m={m}
+                  organizer={organizer}
+                  open={changeable}
+                  mine={answerOf(p, meId)}
+                  amongOf={(others) => answersAmong(p, others)}
+                  onUseTime={(at) => change(at)}
+                />
+              ) : null}
+              {/* Its organizer changes it with Edit (R123); in a group everyone else answers. */}
+              {organizes || answers ? null : <CardTime m={m} card={p} />}
+              {/* Stopping a group's series changes when it is: its organizer's, as Edit is. */}
+              {answers && !organizes ? null : (
+                <MeetingRepeat m={m} card={p as MeetingCardPayload} />
+              )}
               <MeetingGuests
                 messageId={m.id}
                 card={p as MeetingCardPayload}
@@ -467,7 +531,12 @@ export function KitCard({ m, mine }: { m: MessageView; mine: boolean }) {
         moves={
           m.deletedAt || standsAside(p, meId, m.senderId)
             ? []
-            : kitMoves(kit, state, senderSide, p.fields)
+            : answers
+              ? // Its organizer alone calls a group's meeting off (R123).
+                organizes
+                ? kitMoves(kit, state, senderSide, p.fields).filter((x) => x.to === 'cancelled')
+                : []
+              : kitMoves(kit, state, senderSide, p.fields)
         }
         testID={`kit-${kit}`}
       />

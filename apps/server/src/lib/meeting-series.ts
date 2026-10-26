@@ -24,6 +24,7 @@ import {
   seriesAgreed,
   seriesOf,
 } from '@caime/core/series';
+import { sql } from 'kysely';
 import type { AppContext } from '../context';
 import { MESSAGE_COLUMNS, type Message } from '../db/schema';
 import { eachLimit } from './batch';
@@ -52,6 +53,10 @@ interface MeetingPayload {
   title?: string;
   movedTo?: unknown;
   series?: unknown;
+  /** A time changed alone (R123): what the series itself says, for the times after it. */
+  seriesFields?: MeetingPayload['fields'];
+  /** Each person's own answer in a group (R123). */
+  answers?: Record<string, { a?: unknown; at?: unknown }>;
   fields?: {
     title?: unknown;
     start?: { at?: string; hasTime?: boolean };
@@ -117,13 +122,15 @@ export async function queueNextTime(ctx: AppContext, messageId: string): Promise
   const p = (m.payload ?? {}) as MeetingPayload;
   const end = endOf(p);
   if (!seriesCard(p) || end === null || !seriesAgreed(p)) return;
+  // Keyed by its end too: a time moved later (R123) queues its own, and the one queued for the
+  // old end finds it isn't over and leaves it to that.
   await enqueue(
     ctx,
     NEXT_JOB,
     { messageId },
     {
       runAt: new Date(Math.max(ctx.now().getTime(), end + NEXT_AFTER_MS)),
-      dedupeKey: `meeting-next:${messageId}`,
+      dedupeKey: `meeting-next:${messageId}:${end}`,
       maxAttempts: 3,
     },
   );
@@ -151,6 +158,23 @@ async function nextJob(ctx: AppContext, payload: Record<string, unknown>): Promi
   const card = seriesCard(p);
   // Stopped, moved to its own space (its copy there goes on), or never agreed: nothing follows.
   if (!card || p.movedTo || !seriesAgreed(p)) return;
+  // Moved later since this was queued (R123): the job for its new end posts the next.
+  const end = endOf(p);
+  if (end !== null && end + NEXT_AFTER_MS > ctx.now().getTime()) return;
+  // Only the series' latest time posts the next: a job left from an end this time had before
+  // (R123) finds a later time posted already and leaves it to that one.
+  const later = await ctx.db
+    .selectFrom('messages')
+    .select('id')
+    .where('conversation_id', '=', from.conversation_id)
+    .where('kind', '=', 'kit')
+    .where(sql`payload->'series'->>'id'`, '=', card.series.id)
+    .where(sql`(payload->'series'->>'n')::int`, '>', card.series.n)
+    .limit(1)
+    .executeTakeFirst();
+  if (later) return;
+  // A time changed alone (R123) leaves the series saying what it said, for the times after.
+  const fields = p.seriesFields ?? p.fields;
   let after = card.series;
   let posted: { message: Message; created: boolean } | null = null;
   for (let tries = 0; tries <= SKIPS_MAX && !posted; tries++) {
@@ -167,8 +191,8 @@ async function nextJob(ctx: AppContext, payload: Record<string, unknown>): Promi
           payload: {
             kit: card.kit,
             fields: {
-              ...p.fields,
-              start: { at: next.at.toISOString(), hasTime: p.fields?.start?.hasTime !== false },
+              ...fields,
+              start: { at: next.at.toISOString(), hasTime: fields?.start?.hasTime !== false },
             },
             // An appointment from a catalog books each time as it's posted (R58): the same item
             // and quantity, the slot checked as any booking is.
@@ -200,6 +224,9 @@ async function nextJob(ctx: AppContext, payload: Record<string, unknown>): Promi
   let { message } = posted;
   // Whoever on the team did the time before does this one while they're free (R58).
   if (posted.created && card.kit === 'appointment') message = await keepProvider(ctx, message, p);
+  // In a group (R123), going to the series is going to each time until someone says otherwise:
+  // the yeses go on; a no was for its own time.
+  if (posted.created && p.answers) message = await carryGoing(ctx, message, p.answers);
   if (posted.created) {
     const members = (await participantsOf(ctx.db, message.conversation_id)).map((x) => x.user_id);
     const [view] = await messageViews(ctx.db, [message], from.sender_id);
@@ -215,6 +242,26 @@ async function nextJob(ctx: AppContext, payload: Record<string, unknown>): Promi
   await queueNextTime(ctx, message.id);
   if (posted.created && card.kit === 'meeting')
     for (const handler of whenPosted) await handler(ctx, message, from);
+}
+
+/** The yeses of the time before, as answers to this one (round 0, its first). */
+async function carryGoing(
+  ctx: AppContext,
+  message: Message,
+  answers: Record<string, { a?: unknown; at?: unknown }>,
+): Promise<Message> {
+  const going = Object.fromEntries(
+    Object.entries(answers)
+      .filter(([, e]) => e?.a === 'y')
+      .map(([id, e]) => [id, { a: 'y', r: 0, at: String(e.at ?? ctx.now().toISOString()) }]),
+  );
+  if (!Object.keys(going).length) return message;
+  return ctx.db
+    .updateTable('messages')
+    .set({ payload: sql`payload || ${JSON.stringify({ answers: going })}::jsonb` })
+    .where('id', '=', message.id)
+    .returning(MESSAGE_COLUMNS)
+    .executeTakeFirstOrThrow();
 }
 
 /** A time of an organization's repeating appointment, given to whoever did the one before. */
