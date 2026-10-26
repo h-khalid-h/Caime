@@ -8,7 +8,9 @@
 import { create } from 'zustand';
 import { createJSONStorage, persist } from 'zustand/middleware';
 import { endpoints } from '@/api/endpoints';
+import { queryClient } from '@/api/queryClient';
 import AsyncStorage from '@/lib/kv';
+import { draftGone } from './cache';
 
 interface DraftState {
   drafts: Record<string, string>;
@@ -57,6 +59,7 @@ function takeBack(conversationId: string): Promise<void> {
     .updateConversation(conversationId, { draft: null })
     .then(() => {
       synced.set(conversationId, '');
+      draftGone(queryClient, conversationId);
     })
     .catch(() => {});
 }
@@ -78,6 +81,7 @@ export const useDrafts = create<DraftState>()(
         timers.delete(conversationId);
         cleared.set(conversationId, (cleared.get(conversationId) ?? 0) + 1);
         synced.set(conversationId, '');
+        draftGone(queryClient, conversationId);
         set((s) => {
           const next = { ...s.drafts };
           delete next[conversationId];

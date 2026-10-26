@@ -2873,7 +2873,12 @@ A sphere is said as how you know someone, never "sphere".
   autocorrection as the text is replaced and reports the text it corrected); `state/drafts.ts`
   takes back a draft save that was in flight when the conversation was cleared (`cleared` epochs),
   since the send had cleared the account's draft and the stale save would put the sent words back
-  on every device.
+  on every device. A draft gone is gone from the cached conversation view too (`draftGone`,
+  `state/cache.ts`: a send from any of the person's devices, a clear, a save taken back), since
+  every save's `conversation.updated` reads the view again with the draft in it (2026-10-26: the
+  words written by a pause came back after a reload), and the box follows the account's draft
+  (`me.draft`) until it's typed in; anything new that empties a draft goes through
+  `useDrafts.clear`.
 
 ## Reviewing a contribution
 

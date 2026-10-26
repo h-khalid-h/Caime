@@ -11,6 +11,7 @@ import { onCaiEvent, onCallEvent, onGroupCallEvent, onNotesEvent } from '@/featu
 import {
   applyEditToInbox,
   applyMessageToInbox,
+  draftGone,
   patchCache,
   patchMessage,
   patchPinned,
@@ -145,6 +146,8 @@ export function applyEvent(qc: QueryClient, event: RealtimeEvent, me: string): v
       const m = event.data;
       const mine = m.senderId === me;
       if (mine && m.clientId) useOutbox.getState().resolve(m.clientId);
+      // Sending cleared their draft there on the account, whichever device sent it.
+      if (mine) draftGone(qc, m.conversationId);
       upsertMessage(qc, m);
       const reading = useLive.getState().openConversationId === m.conversationId;
       if (m.senderId) useLive.getState().clearTyping(m.conversationId, m.senderId);

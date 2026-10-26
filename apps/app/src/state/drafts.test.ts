@@ -19,6 +19,11 @@ const h = vi.hoisted(() => {
 });
 vi.mock('@react-native-async-storage/async-storage', () => ({ default: h.storage }));
 vi.mock('@/api/endpoints', () => ({ endpoints: h.endpoints }));
+// The app's own client reads the device (React Native); a plain one holds the views the same way.
+vi.mock('@/api/queryClient', async () => {
+  const { QueryClient } = await import('@tanstack/react-query');
+  return { queryClient: new QueryClient() };
+});
 
 beforeEach(() => {
   vi.useFakeTimers();
@@ -74,6 +79,36 @@ describe('drafts', () => {
     useDrafts.getState().clear('standard-2');
     await vi.advanceTimersByTimeAsync(1600);
     expect(h.endpoints.updateConversation).toHaveBeenCalledTimes(3);
+  });
+
+  it('leave the cached view too, so nothing mounted again takes the sent words back (2026-10-26)', async () => {
+    const { useDrafts } = await import('./drafts');
+    const { queryClient } = await import('@/api/queryClient');
+    const { qk } = await import('@/api/keys');
+    // The view read again after the pause's save carries the part written by then.
+    const view = (draft: string | null) => ({
+      conversation: { id: 'standard-1', me: { draft, role: 'member' } },
+    });
+    queryClient.setQueryData(qk.conversation('standard-1'), view('Running late'));
+    useDrafts.getState().set('standard-1', 'Running late, there in ten minutes');
+    useDrafts.getState().clear('standard-1');
+    expect(queryClient.getQueryData(qk.conversation('standard-1'))).toEqual(view(null));
+    // A save on its way when the message went is taken back, and the view read again in the
+    // meantime with its words is cleared with it.
+    let land: (() => void) | undefined;
+    h.endpoints.updateConversation.mockImplementationOnce(
+      () =>
+        new Promise<object>((resolve) => {
+          land = () => resolve({});
+        }),
+    );
+    useDrafts.getState().set('standard-1', 'See you there');
+    await vi.advanceTimersByTimeAsync(1500);
+    useDrafts.getState().clear('standard-1');
+    queryClient.setQueryData(qk.conversation('standard-1'), view('See you there'));
+    land?.();
+    await vi.advanceTimersByTimeAsync(10);
+    expect(queryClient.getQueryData(qk.conversation('standard-1'))).toEqual(view(null));
   });
 
   it('are all forgotten on signing out', async () => {

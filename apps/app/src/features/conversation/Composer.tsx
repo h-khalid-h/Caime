@@ -197,6 +197,11 @@ export const Composer = forwardRef<ComposerHandle, ComposerProps>(function Compo
   const [text, setText] = useState(
     () => stored ?? (privately ? '' : (conversation.me.draft ?? '')),
   );
+  // With nothing of its own written here, the box follows what the account says is being written
+  // until it's typed in: a view restored after a reload may be older than the send that cleared
+  // it (the owner's report of 2026-10-26, a sent message's first words back in the box).
+  const accountDraft = privately ? '' : (conversation.me.draft ?? '');
+  const followsAccount = useRef(stored === undefined);
   const [height, setHeight] = useState(MIN_H);
   const { desktop } = useLayout();
   const window = useWindowDimensions();
@@ -374,6 +379,10 @@ export const Composer = forwardRef<ComposerHandle, ComposerProps>(function Compo
     },
   }));
 
+  useEffect(() => {
+    if (followsAccount.current && !editing) setText(accountDraft);
+  }, [accountDraft, editing]);
+
   // Entering edit mode loads the message's text; leaving restores the draft.
   const value = editing ? (editText ?? editingText ?? '') : text;
 
@@ -483,6 +492,7 @@ export const Composer = forwardRef<ComposerHandle, ComposerProps>(function Compo
     }
     // The keyboard's echo of the words just sent, into the emptied box (lib/emptied.ts).
     if (echoes(text, v)) return;
+    followsAccount.current = false;
     // Typing on at the end keeps the caret there, whenever the input says so.
     if (caret >= text.length) setCaret(v.length);
     if (settled !== null && v.charAt(settled) !== '@') setSettled(null);

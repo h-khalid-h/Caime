@@ -6938,3 +6938,13 @@ CONNIQT; they mean Caime. Caishy is one of Caime's AI members, and Cai leads the
 - 2026-10-26 — M17 I10: in a group, an ask or a promise said to someone by name ("Ben, can you…",
   "يا سارة") is filed for them and its writer waits on them; "everyone" is asked of everyone in a
   group that isn't a crowd, in the four languages.
+- 2026-10-26 — The owner's report: a sent message's words, or the part written by a pause, came
+  back into the composer after a reload or on coming back to the conversation. A pause's draft
+  save tells the person's devices (`conversation.updated`) and the conversation's view read again
+  carried the draft; the send cleared it on the device and the account but not in that view,
+  which the device keeps across a reload, and a composer with nothing of its own took its words
+  from it. Now a draft gone is gone from the cached view too (`draftGone`, `state/cache.ts`: a
+  send from any of the person's devices, a clear, a save taken back), and the box follows the
+  account's draft until it's typed in, so an older view restored after a reload gives way to the
+  fresh one. Verified: `e2e/composer-draft.spec.ts` (failed on the build before, at the words saved
+  at the pause, and passes now), `drafts.test.ts`.

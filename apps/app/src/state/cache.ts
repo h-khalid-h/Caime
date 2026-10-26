@@ -2,7 +2,13 @@
  * Direct edits to cached server state, so a message shows the moment it arrives rather than
  * after a refetch. Every edit is by id and idempotent: the same event applied twice is harmless.
  */
-import type { InboxAllResponse, InboxItemView, MessagesPage, MessageView } from '@caime/core/api';
+import type {
+  ConversationResponse,
+  InboxAllResponse,
+  InboxItemView,
+  MessagesPage,
+  MessageView,
+} from '@caime/core/api';
 import { messagePreview } from '@caime/core/format';
 import type { InfiniteData, QueryClient, QueryKey } from '@tanstack/react-query';
 import { qk } from '@/api/keys';
@@ -282,6 +288,23 @@ export function applyMessageToInbox(
     unreadCount: opts.mine || opts.reading ? item.unreadCount : item.unreadCount + 1,
     draft: opts.mine ? null : item.draft,
   }));
+}
+
+/**
+ * The person's draft in a conversation is gone (sent from here or another of their devices, or
+ * cleared): the cached view stops carrying it too, or the composer, mounted again or after a
+ * reload, takes the sent words back from it (the owner's report of 2026-10-26). The view had it
+ * from the refetch every draft save's `conversation.updated` asks for.
+ */
+export function draftGone(qc: QueryClient, conversationId: string): void {
+  patchCache<ConversationResponse>(qc, qk.conversation(conversationId), (data) =>
+    data?.conversation.me.draft
+      ? {
+          ...data,
+          conversation: { ...data.conversation, me: { ...data.conversation.me, draft: null } },
+        }
+      : data,
+  );
 }
 
 /** An edit changes a conversation's preview only when it's the last message there. */
