@@ -2009,4 +2009,21 @@ export const arServer: Catalog = {
   '{name} is calling {orgName}': 'مكالمة من {name} إلى {orgName}',
   'Nobody at {org} could take your call just now. Tell me here what you need, and I’ll help or pass it on.':
     'لم يتمكن أحد في {org} من الرد على مكالمتك الآن. اكتب لي هنا طلبك، وسأساعدك أو أنقله إلى الفريق.',
+  'Your booking': 'حجزك',
+  'Another time': 'موعد آخر',
+  '{name} suggests another time for {item}: {when}.':
+    'اقتراح من {name} بموعد آخر لـ{item}: {when}.',
+  'It was {when}.': 'كان الموعد {when}.',
+  'Yes, book it': 'نعم، أكّد الحجز',
+  'No, cancel my booking': 'لا، ألغِ حجزي',
+  'No account needed. {name} hears your answer, and the time comes to your calendar by email.':
+    'لا حاجة إلى حساب. يصل ردّك إلى {name}، ويصل الموعد إلى تقويمك بالبريد الإلكتروني.',
+  '{item}, {when}. It’s booked with {name}.': '{item}، {when}. تمّ الحجز لدى {name}.',
+  'Booking off': 'الحجز ملغى',
+  'You said no, so {item} with {name} is off.': 'بعد ردّك بالرفض، أُلغي {item} لدى {name}.',
+  '{name} cancelled {item}.': 'أُلغي {item} من قِبل {name}.',
+  'Book another time': 'احجز موعدًا آخر',
+  'This was answered already, or the time has changed since. The latest email has it.':
+    'تمّ الرد على هذا من قبل، أو تغيّر الموعد بعده. التفاصيل في أحدث رسالة بريد إلكتروني.',
+  'This link has run out.': 'انتهت صلاحية هذا الرابط.',
 };

@@ -3008,6 +3008,33 @@ graph) and the number that will show it; one that sharpens none is hygiene and s
       refused, the team's card refused), `openapi.test.ts`, core `kit-cards.test.ts`,
       `e2e/bookings.spec.ts` (the team picks one of the haircut's open times, the customer reads
       the line and confirms), the catalogs in four languages, and the full gate.
+- [x] F5c. A page's booker answers another time from the mail itself (2026-10-26, F5b's "left"):
+      the host's side gives a booking made before an account another open time as F5b does, and
+      where a mailer is set the booker is asked by mail ("New time suggested", the time it was, no
+      event yet) with a link to the host's own page (`/o/<handle>` or `/@<handle>`, `?time=`): a
+      sealed claim of the card, the booker and the time asked (its `sequence`; `serverKey
+      ('public.time')`, running out when that time starts, `booking-time-claim.ts`), never a row.
+      The page (`visitorTimeState`, `lib/public-time.ts`) reads the card each time and offers
+      "Yes, book it" and "No, cancel my booking" as one form to `POST /v1/public/time`
+      (`modules/public-time.ts`: anonymous, its own plugin, thirty an hour from one ip, a
+      redirect back to the page); the answer is the booker's own move of their card through
+      `mayMove` and `moveCard`, which now takes the `sequence` it was asked at and refuses it
+      under the card's lock once another time was asked, so the team is told, the calendar
+      follows and the booker's mail says it was their answer ("You said yes to the new time",
+      the event at the card's sequence so their calendar moves it; a no takes it off and links
+      the host's page to book again). Afterwards the link says where it stands (booked, off and
+      by whom, answered or changed since, run out); on another host's page it says nothing.
+      Without a mailer it's refused as before. Counted on `caime_public_bookings_total` as
+      `time_asked`, `time_accepted`, `time_declined`, `time_changed`. Costs: one sealed claim a
+      suggestion and the card read once a page view, nothing kept; no device code. Verified:
+      `booking-time-answer.test.ts` (asked by mail with the time it was and no event; the page
+      from the link, nothing of the team; another host's page silent; yes books it as theirs at
+      sequence 1 with the event moved; answering again changes nothing; a link outrun by another
+      time answers nothing; no on the latest takes it off with the cancellation at the next
+      sequence; a tampered or run-out link), `card-times.test.ts` (refused without a mailer,
+      asked with one), the E2E `public-booking.spec.ts` (the clinic suggests another open time,
+      the visitor opens the mail's link and presses Yes, the card is confirmed at the new time),
+      the server's strings in four languages, and the full gate.
 - [x] F6. Where a meeting or a booking is, said every time; a booking held on Caime joined as a
       meeting; calendar events that name whom (2026-10-19, the owner's report: a booking from
       their page was a card and not a meeting, a meeting reached Google as "Great Meeting test ·
@@ -6715,3 +6742,6 @@ CONNIQT; they mean Caime. Caishy is one of Caime's AI members, and Cai leads the
   organization's AI agent offering, in writing, to help or pass it on, where the agent would answer
   them now (never while its answers wait for review, for someone under 18, or with a person on the
   thread), once, by the rules in the customer's language.
+- 2026-10-26 — M16 F5c: a booking made from a page without an account takes another time too;
+  the booker is asked by mail and answers from its link on the host's own page, no account
+  needed, the answer moving their card as theirs (the team told, their calendar moved by mail).

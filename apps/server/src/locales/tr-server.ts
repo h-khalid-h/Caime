@@ -1910,4 +1910,22 @@ export const turkishServer: Catalog = {
   '{name} is calling {orgName}': '{name}, {orgName} kuruluşunu arıyor',
   'Nobody at {org} could take your call just now. Tell me here what you need, and I’ll help or pass it on.':
     'Şu anda {org} ekibinden kimse aramanızı yanıtlayamadı. Neye ihtiyacınız olduğunu buraya yazın; yardımcı olayım ya da ekibe ileteyim.',
+  'Your booking': 'Rezervasyonunuz',
+  'Another time': 'Başka bir saat',
+  '{name} suggests another time for {item}: {when}.':
+    '{name}, {item} için başka bir saat öneriyor: {when}.',
+  'It was {when}.': 'Önceki saat: {when}.',
+  'Yes, book it': 'Evet, rezervasyonu onayla',
+  'No, cancel my booking': 'Hayır, rezervasyonumu iptal et',
+  'No account needed. {name} hears your answer, and the time comes to your calendar by email.':
+    'Hesap gerekmez. Yanıtınız {name} tarafına iletilir ve saat takviminize e-postayla gelir.',
+  '{item}, {when}. It’s booked with {name}.': '{item}, {when}. {name} ile rezervasyonunuz yapıldı.',
+  'Booking off': 'Rezervasyon iptal',
+  'You said no, so {item} with {name} is off.':
+    'Hayır dediniz; {name} ile {item} rezervasyonu iptal edildi.',
+  '{name} cancelled {item}.': '{name}, {item} rezervasyonunu iptal etti.',
+  'Book another time': 'Başka bir saat ayırın',
+  'This was answered already, or the time has changed since. The latest email has it.':
+    'Bu zaten yanıtlandı ya da saat o zamandan beri değişti. En son e-postada güncel hali var.',
+  'This link has run out.': 'Bu bağlantının süresi doldu.',
 };

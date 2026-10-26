@@ -396,21 +396,35 @@ describe('a booking moved to another open time of its catalog (M16 F5b)', () => 
     expect((await slots(eli, danaCard)).slots).not.toContain(own);
   });
 
-  it('refuses one booked from a page by someone without an account', async () => {
+  it('one booked from a page without an account is asked by mail, and refused where none goes', async () => {
     const fay = await signup(t, { displayName: 'Fay Visitor' });
     const fayConvo = (await fay.post(`/v1/orgs/${orgId}/conversations`, {})).conversationId;
     const fayCard = await book(fay, fayConvo, '2026-10-22T07:00:00.000Z');
     // As a visitor's booking is: their own card, as a provisional person (R97 (1)).
-    await t.ctx.db
+    const { email } = await t.ctx.db
       .updateTable('users')
       .set({ kind: 'provisional' })
       .where('id', '=', fay.user.id)
-      .execute();
+      .returning('email')
+      .executeTakeFirstOrThrow();
+    // Without a mailer nothing would reach them: refused, as before (M16 F5b).
+    const mailer = t.ctx.mail;
+    t.ctx.mail = null;
+    try {
+      const res = await retime(nadia, fayCard, '2026-10-22T08:00:00.000Z');
+      expect(res.statusCode).toBe(400);
+      expect(res.json().error.message).toBe(
+        'They booked without an account: cancel it, and they can book another time from your page.',
+      );
+    } finally {
+      t.ctx.mail = mailer;
+    }
+    // With one, they're asked by mail and answer from it (M16 F5c: booking-time-answer.test.ts).
     const res = await retime(nadia, fayCard, '2026-10-22T08:00:00.000Z');
-    expect(res.statusCode).toBe(400);
-    expect(res.json().error.message).toBe(
-      'They booked without an account: cancel it, and they can book another time from your page.',
-    );
+    expect(res.statusCode, res.body).toBe(200);
+    await t.ctx.flush();
+    const asked = mail.outbox.filter((m) => m.to === email && m.subject.startsWith('New time'));
+    expect(asked).toHaveLength(1);
   });
 
   it('a person’s own catalog moves the same way, from either side', async () => {

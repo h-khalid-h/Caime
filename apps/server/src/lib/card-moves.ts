@@ -100,7 +100,7 @@ export async function afterCardMove(
   // cancelled reaches them by mail, with the event for their calendar, and a confirmed one is
   // recalled the day before (R97 (1), C1b, C1c), whether an organization or a person is the host.
   if (card.kit === 'appointment' && (to === 'confirmed' || to === 'cancelled'))
-    await mailProvisionalBooker(ctx, moved, to);
+    await mailProvisionalBooker(ctx, moved, to, actorId);
   // A meeting or an appointment that went to someone by mail (M16 F3), cancelled here: the
   // cancellation goes by mail too, with the update that takes it off their calendar.
   if (card.kit === 'meeting' || card.kit === 'appointment')

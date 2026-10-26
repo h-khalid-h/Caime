@@ -9,7 +9,9 @@
  * booker's own link to it (M16 F6c), the same in the confirmation, its calendar event and the
  * reminder, from which they join without an account. Mail stays English and plain (R48): the
  * confirmation goes after the response (`ctx.defer`), the reminder from its job, whose payload
- * holds ids alone. A customer with an account is told in Caime as anyone is.
+ * holds ids alone. A customer with an account is told in Caime as anyone is. Another time the host
+ * suggests (M16 F5c) reaches them the same way, with a link to the host's page that answers it,
+ * no account needed (`booking-time-claim.ts`); their answer is mailed as any move is.
  */
 
 import { firstName } from '@caime/core/format';
@@ -19,6 +21,7 @@ import { seriesOf } from '@caime/core/series';
 import type { AppContext } from '../context';
 import { MESSAGE_COLUMNS, type Message } from '../db/schema';
 import { bookingOf } from './booking';
+import { sealTimeClaim } from './booking-time-claim';
 import { customerMask } from './business';
 import { fromAddress, type Mail } from './email';
 import { enqueue, registerJob } from './jobs';
@@ -38,6 +41,8 @@ const REMIND_JOB = 'booking.remind';
 
 /** The booking as its booker's mail tells it. */
 interface Booked {
+  /** The booker: the provisional person whose own card it is. */
+  personId: string;
   to: string;
   name: string;
   /** Who it's with: the organization's name, or the person's. */
@@ -52,6 +57,8 @@ interface Booked {
   /** The booker's own link to that call (M16 F6c), on what's sent while it's on. */
   join: string | null;
   link: string;
+  /** The host's own page (`/o/<handle>` or `/@<handle>`), where another time is answered. */
+  page: string;
   uid: string;
 }
 
@@ -59,6 +66,8 @@ interface AppointmentPayload {
   kit?: string;
   state?: string;
   title?: string;
+  /** Its calendar invitations' count (M16 F5): one higher with each new time. */
+  sequence?: number;
   fields?: { title?: string; start?: { at?: string }; durationMinutes?: unknown };
   booking?: { name?: string; endAt?: string | null; where?: string | null; hostId?: string };
 }
@@ -118,23 +127,27 @@ async function bookedFor(ctx: AppContext, m: Message, withLink = false): Promise
   if (customer?.kind !== 'provisional' || !customer.email) return null;
   let host: string;
   let zone: string;
+  let page: string;
   if (business) {
     const org = await ctx.db
       .selectFrom('organizations')
-      .select(['booking', 'time_zone'])
+      .select(['booking', 'time_zone', 'handle'])
       .where('id', '=', business.orgId)
       .executeTakeFirst();
+    if (!org) return null;
     host = business.orgName;
-    zone = (org && bookingOf(org)?.timeZone) || org?.time_zone || 'UTC';
+    zone = bookingOf(org)?.timeZone || org.time_zone || 'UTC';
+    page = `/o/${encodeURIComponent(org.handle)}`;
   } else {
     const person = await ctx.db
       .selectFrom('users')
-      .select(['display_name', 'booking', 'time_zone'])
+      .select(['display_name', 'booking', 'time_zone', 'handle'])
       .where('id', '=', hostId as string)
       .executeTakeFirst();
     if (!person) return null;
     host = person.display_name;
     zone = bookingOf(person)?.timeZone || person.time_zone || 'UTC';
+    page = `/@${encodeURIComponent(person.handle)}`;
   }
   const base = ctx.config.PUBLIC_URL;
   const name = firstName(customer.display_name);
@@ -152,6 +165,7 @@ async function bookedFor(ctx: AppContext, m: Message, withLink = false): Promise
         )
       : null;
   return {
+    personId: customerId,
     to: customer.email,
     name: name && !name.includes('@') ? name : '',
     host,
@@ -168,6 +182,7 @@ async function bookedFor(ctx: AppContext, m: Message, withLink = false): Promise
     call,
     join,
     link: `${base}/sign-up?link=${encodeURIComponent(`/c/${m.conversation_id}`)}`,
+    page,
     // The same event the calendar feed names (R58): one appointment, in every calendar alike.
     uid: meetingUid(m.id, seriesOf(m.payload as Parameters<typeof seriesOf>[0]), 'appointment'),
   };
@@ -202,18 +217,26 @@ function body(b: Booked, opening: string, middle: string[]): string {
 /**
  * The mail for a confirmed or cancelled appointment whose customer is a provisional person (one
  * who booked from a page, or wrote in by mail), sent after the response; a confirmed one queues
- * its reminder. Nothing for anyone else.
+ * its reminder. Nothing for anyone else. Their own answer to another time (M16 F5c) is said as
+ * theirs; the event goes at the card's sequence, so a time moved since moves it in their calendar.
  */
-export async function mailProvisionalBooker(ctx: AppContext, m: Message, to: Moved): Promise<void> {
+export async function mailProvisionalBooker(
+  ctx: AppContext,
+  m: Message,
+  to: Moved,
+  actorId: string | null = null,
+): Promise<void> {
   const mail = ctx.mail;
   if (!mail) return;
   const confirmed = to === 'confirmed';
   const b = await bookedFor(ctx, m, confirmed);
   if (!b) return;
+  const theirs = actorId === b.personId;
+  const sequence = ((m.payload as AppointmentPayload | null)?.sequence ?? 0) + (confirmed ? 0 : 1);
   const ics = buildInvitation({
     method: confirmed ? 'REQUEST' : 'CANCEL',
     uid: b.uid,
-    sequence: confirmed ? 0 : 1,
+    sequence,
     now: ctx.now(),
     start: b.start,
     end: b.end,
@@ -232,16 +255,68 @@ export async function mailProvisionalBooker(ctx: AppContext, m: Message, to: Mov
       to: b.to,
       kind: 'booking',
       subject: `${confirmed ? 'Confirmed' : 'Cancelled'}: ${b.what} with ${b.host}`,
-      text: body(b, `${b.host} ${confirmed ? 'confirmed' : 'cancelled'} your booking:`, [
-        confirmed
-          ? 'The invitation attached adds it to your calendar.'
-          : 'The update attached takes it off your calendar.',
-        '',
-      ]),
+      text: body(
+        b,
+        theirs
+          ? confirmed
+            ? `You said yes to the new time. Your booking with ${b.host}:`
+            : `You said no to the new time, so your booking with ${b.host} is off:`
+          : `${b.host} ${confirmed ? 'confirmed' : 'cancelled'} your booking:`,
+        [
+          confirmed
+            ? 'The invitation attached adds it to your calendar.'
+            : 'The update attached takes it off your calendar.',
+          ...(theirs && !confirmed
+            ? ['', `To book another time: ${ctx.config.PUBLIC_URL}${b.page}`]
+            : []),
+          '',
+        ],
+      ),
       icalEvent: { method: confirmed ? 'REQUEST' : 'CANCEL', content: ics },
     }),
   );
   if (confirmed) await queueReminder(ctx, m.id, b.start);
+}
+
+/**
+ * Another time the host suggests for a booking made before an account (M16 F5c): the booker has
+ * no device to be asked on, so the mail asks, with a link to the host's page that takes their
+ * yes or no without an account (a sealed claim of the card, the booker and this time, running out
+ * when it starts). No event goes with it: their calendar moves once they say yes, and the time
+ * they had comes off once they say no. Nothing for anyone else, or for an ask of their own.
+ */
+export async function mailTimeSuggested(
+  ctx: AppContext,
+  m: Message,
+  actorId: string,
+  was: Date | null,
+): Promise<void> {
+  const mail = ctx.mail;
+  if (!mail) return;
+  const b = await bookedFor(ctx, m);
+  if (!b || actorId === b.personId) return;
+  const claim = await sealTimeClaim(ctx, {
+    v: 1,
+    messageId: m.id,
+    personId: b.personId,
+    sequence: (m.payload as AppointmentPayload | null)?.sequence ?? 0,
+    was: was?.toISOString() ?? null,
+    e: b.start.getTime(),
+  });
+  const answer = `${ctx.config.PUBLIC_URL}${b.page}?time=${claim}#time`;
+  ctx.defer('email.booking', () =>
+    mail.send({
+      to: b.to,
+      kind: 'booking',
+      subject: `New time suggested: ${b.what} with ${b.host}`,
+      text: body(b, `${b.host} suggests another time for your booking:`, [
+        ...(was ? [`It was ${inZone(was, b.zone)}.`, ''] : []),
+        `Say yes or no here, no account needed: ${answer}`,
+        '',
+      ]),
+    }),
+  );
+  ctx.metrics.publicBookings.inc({ outcome: 'time_asked' });
 }
 
 /**

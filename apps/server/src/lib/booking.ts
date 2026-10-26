@@ -603,9 +603,9 @@ export async function pickProvider(
  * did), at an open time of the same item and quantity, the time it has now holding nothing
  * against it; what it was booked at (its name and price) stays, its end follows the item, and
  * whoever did it keeps it while they're free then, else whoever confirms it picks again. Refused
- * as `bookingFor` refuses, and where its customer booked it from a page without an account:
- * nothing reaches them but mail. `recheck` runs the slot's check again, without reading other
- * calendars, under the host's lock.
+ * as `bookingFor` refuses, and where its customer booked it from a page without an account while
+ * no mail can reach them (with a mailer, they're asked by mail and answer from it: M16 F5c).
+ * `recheck` runs the slot's check again, without reading other calendars, under the host's lock.
  */
 export async function rebookingFor(
   ctx: AppContext,
@@ -650,8 +650,9 @@ export async function rebookingFor(
     customerId = other.length === 1 ? (other[0]?.user_id ?? null) : null;
   }
   const hostSide = business ? actorId !== business.customerId : actorId === host.id;
-  // Booked from a page by someone with no account (R97 (1)): they'd hear nothing until they join.
-  if (customerId && m.sender_id === customerId) {
+  // Booked from a page by someone with no account (R97 (1)): asked by mail (M16 F5c), or where
+  // no mail goes, they'd hear nothing until they join.
+  if (customerId && m.sender_id === customerId && !ctx.mail) {
     const customer = await ctx.db
       .selectFrom('users')
       .select('kind')

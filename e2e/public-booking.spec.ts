@@ -122,6 +122,46 @@ test('a visitor books from the item page with a code, and the team sees the requ
   expect(confirmation?.text).toContain('Nile Dental confirmed your booking');
   expect(confirmation?.text).toContain('/sign-up?link=');
 
+  // The clinic can't keep that time and suggests another open one (M16 F5c): the booker is asked
+  // by mail, and answers on the clinic's page from its link, still without an account.
+  await page.goto(`/o/nile.pb.${suffix}/cleaning`);
+  const other = (await page
+    .locator('#book input[name="slot"]')
+    .first()
+    .getAttribute('value')) as string;
+  const retimed = await team.request.post(`/v1/messages/${card?.id}/time`, {
+    headers: CLIENT,
+    data: { start: { at: other, hasTime: true } },
+  });
+  expect(retimed.ok(), await retimed.text()).toBe(true);
+  let answer = '';
+  await expect
+    .poll(async () => {
+      const asked = (await mailsTo(email)).find((m) => m.subject.startsWith('New time suggested'));
+      answer = /https?:\/\/[^/\s]+(\/o\/\S+)#time/.exec(asked?.text ?? '')?.[1] ?? '';
+      return answer;
+    })
+    .toMatch(/^\/o\/nile\.pb\.[a-z0-9]+\?time=/);
+  await page.goto(answer);
+  await expect(visible(page, 'Another time')).toBeVisible();
+  await expect(visible(page, /Nile Dental suggests another time for Cleaning/)).toBeVisible();
+  await page.screenshot({ path: 'e2e/screenshots/visitor-another-time.png' });
+  await page.locator('#time button[value="yes"]').click();
+  await expect(visible(page, /It’s booked with Nile Dental/)).toBeVisible();
+  await expect
+    .poll(async () =>
+      (await mailsTo(email)).some((m) => m.text.includes('You said yes to the new time')),
+    )
+    .toBe(true);
+  const after = await team.request.get(`/v1/conversations/${thread?.conversationId}/messages`, {
+    headers: CLIENT,
+  });
+  const moved2 = ((await after.json()) as { messages: Card[] }).messages.find(
+    (m) => m.id === card?.id,
+  );
+  expect(moved2?.payload.state).toBe('confirmed');
+  expect(moved2?.payload.fields.start.at).toBe(other);
+
   // The booker joins with the same address: the form asks for the code sent to it before the
   // booking comes with the account (review 2026-10-17 §2 H1), and then it's theirs.
   const codesSoFar = (await mailsTo(email)).filter((m) => /^\d{6} /.test(m.subject)).length;

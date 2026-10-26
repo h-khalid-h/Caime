@@ -125,6 +125,7 @@ import { placeRoutes } from './modules/places';
 import { policyRoutes } from './modules/policies';
 import { publicBookingRoutes } from './modules/public-booking';
 import { publicReportRoutes } from './modules/public-report';
+import { publicTimeRoutes } from './modules/public-time';
 import { publicWriteRoutes } from './modules/public-write';
 import { quickReplyRoutes } from './modules/quick-replies';
 import { realtimeRoutes } from './modules/realtime';
@@ -357,6 +358,7 @@ export async function buildApp(config: Config, options: BuildOptions = {}): Prom
       await publicBookingRoutes(v1, ctx);
       await publicWriteRoutes(v1, ctx);
       await publicReportRoutes(v1, ctx);
+      await publicTimeRoutes(v1, ctx);
       await callRoutes(v1, ctx);
       await groupCallRoutes(v1, ctx);
       await callNotesRoutes(v1, ctx);

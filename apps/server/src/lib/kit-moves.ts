@@ -29,6 +29,7 @@ import { sql } from 'kysely';
 import type { AppContext } from '../context';
 import { MESSAGE_COLUMNS, type Message } from '../db/schema';
 import { pickProvider, rebookingFor } from './booking';
+import { mailTimeSuggested } from './booking-mail';
 import type { CustomerMask } from './business';
 import { afterCardMove } from './card-moves';
 import { expireCheckout, stillPayableAfter } from './checkout';
@@ -93,7 +94,13 @@ export function mayMove(
 export async function moveCard(
   ctx: AppContext,
   m: Message,
-  input: { to: string; actorId: string; business: CustomerMask | null },
+  input: {
+    to: string;
+    actorId: string;
+    business: CustomerMask | null;
+    /** The time it was asked at (M16 F5c): another time since is a conflict, never this answer. */
+    sequence?: number;
+  },
 ): Promise<MessageView | 'conflict'> {
   const { to, actorId, business } = input;
   const card = (m.payload ?? {}) as CardPayload;
@@ -110,6 +117,7 @@ export async function moveCard(
       .executeTakeFirst();
     const now = (row?.payload ?? {}) as CardPayload;
     if (!row || row.deleted_at || now.state !== from) return null;
+    if (input.sequence !== undefined && (now.sequence ?? 0) !== input.sequence) return null;
     const history = [...(now.history ?? []), { state: to, by: actorId, at: ctx.now() }];
     // An order's stock (R60): given back if it's cancelled, spent once it's on its way.
     const restocked = card.kit === 'order_status' ? await orderMoved(trx, m.id, to, ctx.now()) : [];
@@ -250,6 +258,7 @@ export async function retimeCard(
   const kit = p.kit === 'appointment' ? 'appointment' : 'meeting';
   const { to } = RETIMES[kit];
   const from = p.state ?? '';
+  const had = (p.fields?.start as { at?: unknown } | undefined)?.at;
   // A booking from the catalog (M16 F5b) takes an open time of what it booked, checked as a
   // booking is: before the transaction (a quick refusal, the other calendars read again), and
   // once more under the host's lock inside it, as `sendMessage` checks one.
@@ -333,6 +342,14 @@ export async function retimeCard(
   // new, as for any time they're asked to).
   await queueCardUpdate(ctx, row, input.actorId);
   await askGuestsForTime(ctx, row);
+  // A booker without an account is asked by mail, and answers from it (M16 F5c).
+  if (kit === 'appointment')
+    await mailTimeSuggested(
+      ctx,
+      row,
+      input.actorId,
+      typeof had === 'string' ? new Date(had) : null,
+    );
   return view;
 }
 

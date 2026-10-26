@@ -1995,4 +1995,22 @@ export const frServer: Catalog = {
   '{name} is calling {orgName}': '{name} appelle {orgName}',
   'Nobody at {org} could take your call just now. Tell me here what you need, and I’ll help or pass it on.':
     'Personne chez {org} n’a pu prendre votre appel à l’instant. Dites-moi ici ce qu’il vous faut, et je vous aiderai ou je transmettrai.',
+  'Your booking': 'Votre réservation',
+  'Another time': 'Un autre horaire',
+  '{name} suggests another time for {item}: {when}.':
+    '{name} propose un autre horaire pour {item} : {when}.',
+  'It was {when}.': 'C’était {when}.',
+  'Yes, book it': 'Oui, réserver',
+  'No, cancel my booking': 'Non, annuler ma réservation',
+  'No account needed. {name} hears your answer, and the time comes to your calendar by email.':
+    'Pas besoin de compte. Votre réponse va à {name}, et l’horaire arrive dans votre agenda par e-mail.',
+  '{item}, {when}. It’s booked with {name}.': '{item}, {when}. C’est réservé auprès de {name}.',
+  'Booking off': 'Réservation annulée',
+  'You said no, so {item} with {name} is off.':
+    'Vous avez dit non : la réservation de {item} auprès de {name} est annulée.',
+  '{name} cancelled {item}.': '{name} a annulé {item}.',
+  'Book another time': 'Réserver un autre horaire',
+  'This was answered already, or the time has changed since. The latest email has it.':
+    'Une réponse a déjà été donnée, ou l’horaire a changé depuis. Le dernier e-mail le précise.',
+  'This link has run out.': 'Ce lien a expiré.',
 };

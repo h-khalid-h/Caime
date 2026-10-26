@@ -215,7 +215,12 @@ A sphere is said as how you know someone, never "sphere".
   link that claims the address), and a confirmed one is recalled the day before (`booking.remind`,
   queued only when that is at least `REMIND_FRESH_MS` after the confirmation, its payload ids alone,
   the card read again when it runs: moved, cancelled or claimed since, it says nothing); a customer
-  with an account hears in Caime only. Each step is counted on
+  with an account hears in Caime only. Another time the host suggests for such a booking (M16 F5c)
+  asks them by mail (`mailTimeSuggested`) with a link to the host's own page carrying a sealed
+  claim (`booking-time-claim.ts`: the card, the booker, the card's `sequence`), whose
+  `visitorTimeState` reads the card each time and whose form (`POST /v1/public/time`,
+  `answerVisitorTime`) moves the card as the booker through `moveCard` with that `sequence`, so an
+  answer to a time since replaced moves nothing. Each step is counted on
   `caime_public_bookings_total{outcome}` (`code_sent`, `booked`, `reminded`, or a `VisitorRefusal`),
   and product metrics' `growth.door` reads bookings made this way (their client id is
   `public-book:…`) and, of the people who first booked 30 to 60 days ago, those who joined within

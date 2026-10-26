@@ -91,6 +91,7 @@ import {
   type VisitorRefusal,
   visitorBookingState,
 } from './public-booking';
+import { type VisitorTimeState, visitorTimeState } from './public-time';
 import {
   type VisitorWriteState,
   visitorWriteState,
@@ -140,6 +141,8 @@ export interface PublicPerson {
   kind: 'person';
   /** A visitor's report of the page (M16 B6): its form's state. */
   report?: VisitorReportState;
+  /** Another time for a booking made from their page, answered from its mail (M16 F5c). */
+  time?: VisitorTimeState | null;
   id: string;
   handle: string;
   displayName: string;
@@ -163,6 +166,8 @@ export interface PublicPerson {
 export interface PublicOrg {
   kind: 'org';
   report?: VisitorReportState;
+  /** Another time for a booking made from its page, answered from its mail (M16 F5c). */
+  time?: VisitorTimeState | null;
   org: OrgRef;
   about: string | null;
   website: string | null;
@@ -709,8 +714,14 @@ async function pageAt(
       return frame
         ? { ...o, write: await visitorWriteState(ctx, o.org, search), frame }
         : { kind: 'missing' };
-    // A visitor writes to it from its page, the door's three fields first (R97 (1)).
-    if (!slug) return { ...o, write: await visitorWriteState(ctx, o.org, search) };
+    // A visitor writes to it from its page, the door's three fields first (R97 (1)), and answers
+    // another time for a booking there from the mail's link (M16 F5c).
+    if (!slug)
+      return {
+        ...o,
+        write: await visitorWriteState(ctx, o.org, search),
+        time: await visitorTimeState(ctx, { kind: 'org', id: o.org.id }, search),
+      };
     const shelf = shelfPage(o, slug);
     if (!shelf) return { kind: 'app' };
     // A visitor books an organization's item from its page (R97 (1)).
@@ -727,8 +738,12 @@ async function pageAt(
   if (!host) return { kind: 'missing' };
   if (!slug)
     return host.kind === 'org'
-      ? { ...host, write: await visitorWriteState(ctx, host.org, search) }
-      : host;
+      ? {
+          ...host,
+          write: await visitorWriteState(ctx, host.org, search),
+          time: await visitorTimeState(ctx, { kind: 'org', id: host.org.id }, search),
+        }
+      : { ...host, time: await visitorTimeState(ctx, { kind: 'person', id: host.id }, search) };
   const shelf = shelfPage(host, slug);
   if (!shelf) return { kind: 'missing' };
   if (shelf.kind !== 'item') return shelf;
@@ -1223,6 +1238,7 @@ export function renderPublic(
     ${p.facts ? `<p class="lead">${esc(p.facts.helps)}</p>` : ''}
     <div class="actions">${bookLink(p.items, `/@${p.handle}`, p.displayName)}${payLink(page, `/@${p.handle}`, p.items.length > 0)}<a class="btn${p.items.length || p.pays.length ? ' quiet' : ''}" href="${wayIn('sign-up', path)}">${icon('message', 18)}${esc(tr('Message {name} on {site}', { name: p.displayName, site: SITE_NAME }))}</a></div>
   </section>
+  ${p.time ? timeSection(p.time, p.displayName, `/@${p.handle}`) : ''}
   ${p.facts ? section(tr('What {name} knows', { name: p.displayName }), `<ul class="knows">${p.facts.knows.map((k) => `<li>${esc(k)}</li>`).join('')}</ul>`) : ''}
   ${offerSections(page)}
   ${section(
@@ -1293,6 +1309,7 @@ export function renderPublic(
         : `<a class="btn${page.items.length || page.pays.length ? ' quiet' : ''}" href="${wayIn('sign-up', doorPath(o.handle))}">${icon('message', 18)}${esc(tr('Message {name} on {site}', { name: o.name, site: SITE_NAME }))}</a>`
     }</div>
   </section>
+  ${page.time ? timeSection(page.time, o.name, `/o/${o.handle}`) : ''}
   ${write && writeLeads ? writeSection(o, write) : ''}
   ${offerSections(page)}
   ${write && !writeLeads ? writeSection(o, write) : ''}
@@ -2069,6 +2086,50 @@ ${days}${pager}
 </div>
 <button class="btn" type="submit">${esc(tr('Book'))}</button>
 <p class="how">${esc(tr('A code goes to your email; the time is yours once you type it here. Nothing is kept before that.'))}</p></form></section>`;
+}
+
+/**
+ * Another time for a booking made before an account (M16 F5c): what the host asked, from the
+ * mail's link, with a yes and a no posted to `/v1/public/time`; then where it stands, read from
+ * the card (booked, off, answered or changed since, run out). No script: every step is a page.
+ */
+function timeSection(time: VisitorTimeState, name: string, path: string): string {
+  const card = (title: string, inner: string) =>
+    `<section class="formcard" id="time" aria-labelledby="time-title"><h2 id="time-title">${esc(title)}</h2>
+${inner}</section>`;
+  switch (time.step) {
+    case 'ask': {
+      const language = currentTranslator().language;
+      const when = whenLabel(time.at, time.timeZone);
+      return card(
+        tr('Another time'),
+        `<p class="lead">${esc(tr('{name} suggests another time for {item}: {when}.', { name, item: time.what, when }))}</p>
+${time.was ? `<p class="how">${esc(tr('It was {when}.', { when: whenLabel(time.was, time.timeZone) }))}</p>` : ''}
+${time.error ? `<p class="notice" role="alert">${esc(tr('Too many tries for now. Try again in an hour.'))}</p>` : ''}
+<form class="form" method="post" action="/v1/public/time"><input type="hidden" name="claim" value="${esc(time.claim)}"><input type="hidden" name="lang" value="${esc(language)}">
+<div class="actions"><button class="btn" type="submit" name="answer" value="yes">${esc(tr('Yes, book it'))}</button><button class="btn quiet" type="submit" name="answer" value="no">${esc(tr('No, cancel my booking'))}</button></div>
+<p class="how">${esc(tr('No account needed. {name} hears your answer, and the time comes to your calendar by email.', { name }))}</p></form>`,
+      );
+    }
+    case 'accepted':
+      return card(
+        tr('Booked'),
+        `<p class="notice ok" role="status">${esc(tr('{item}, {when}. It’s booked with {name}.', { item: time.what, when: whenLabel(time.at, time.timeZone), name }))}</p>`,
+      );
+    case 'off':
+      return card(
+        tr('Booking off'),
+        `<p class="notice" role="status">${esc(time.byYou ? tr('You said no, so {item} with {name} is off.', { item: time.what, name }) : tr('{name} cancelled {item}.', { name, item: time.what }))}</p>
+<p><a class="btn quiet" href="${esc(path)}">${esc(tr('Book another time'))}</a></p>`,
+      );
+    case 'changed':
+      return card(
+        tr('Another time'),
+        `<p class="lead">${esc(tr('This was answered already, or the time has changed since. The latest email has it.'))}</p>`,
+      );
+    case 'expired':
+      return card(tr('Another time'), `<p class="lead">${esc(tr('This link has run out.'))}</p>`);
+  }
 }
 
 /** Why a visitor's message stopped, in the page's words; a known account is sent to sign in. */

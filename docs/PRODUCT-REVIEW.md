@@ -1188,8 +1188,9 @@ with its reason, so it isn't proposed again without new facts.
   organizer). *Built in M16 F5b (2026-10-19):* a booking from the catalog takes another open time
   of what it booked, offered from its card as the item's open times and checked as a booking is
   (its own time no hindrance), from either side and from an organization's app for a card its
-  bot sent; one booked from a page by someone without an account waits for their answer by mail
-  (F5c). Phase 2: notices, HTML as sent in a sandbox,
+  bot sent. *Built in M16 F5c (2026-10-26):* one booked from a page by someone without an
+  account is asked by mail and answered from its link on the host's own page, no account
+  needed. Phase 2: notices, HTML as sent in a sandbox,
   reply-all with CC, sending as the address from other clients, the agent by mail. Phase 3:
   sign-in with Google, Apple and Microsoft; calendar sync as apps; a verified organization
   receiving at its own domain. ⛔ Before production: the mail domain's MX at the inbound
