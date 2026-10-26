@@ -47,7 +47,6 @@ import {
   policyTargetFor,
   relationshipView,
 } from './relations';
-import { settleDraft } from './reply-drafts';
 import { spaceConversationTitle, spaceRefs } from './spaces';
 import { createSuggestion, tellLetGo } from './suggest';
 import { queueTranscription, type UnheardWhy } from './transcribe';
@@ -242,8 +241,6 @@ async function effectsOf(ctx: AppContext, message: Message, read: Analysis | nul
   // A notice (R75) is read, not acted on: nobody is told, nothing in it is anyone's promise or
   // request, and nothing goes back.
   if (conversation.notice) return;
-  // What became of a reply Cai drafted for them here, if one was (M17 I11b).
-  if (message.kind === 'text') settleDraft(ctx, sender.id, conversation.id, message.body);
   // The first link's page, read once on the server for everyone in it (M16 E4c).
   await queueLinkPreview(ctx, message);
   // Cai or a Caime Friend (R67): what's written to one is answered by it, and nothing else

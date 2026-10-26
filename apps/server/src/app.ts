@@ -60,6 +60,7 @@ import { registerOrgSlipping } from './lib/org-slipping';
 import { registerProviderHealth } from './lib/provider-health';
 import { RateLimiter } from './lib/rate-limit';
 import { registerPreviewJob, startPreviewBackfill } from './lib/renditions';
+import { registerReplyDraftSweep } from './lib/reply-drafts';
 import { registerScheduledJob } from './lib/scheduled-messages';
 import { speechFor } from './lib/speech';
 import { registerSpeechForgetJob } from './lib/speech-forget';
@@ -447,6 +448,7 @@ export async function buildApp(config: Config, options: BuildOptions = {}): Prom
   registerPreviewJob();
   registerMailBackfill();
   registerVaultReseal();
+  registerReplyDraftSweep();
   const stopWorkers = config.WORKERS ? startWorkers(ctx) : () => {};
   // Older images get the preview new ones are given (R70): queued once, whichever instance.
   if (config.WORKERS)

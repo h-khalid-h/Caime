@@ -717,6 +717,19 @@ export interface MeetingCodesTable {
   created_at: Generated<Date>;
 }
 
+/**
+ * A reply Cai drafted (M17 I11b), held until the sweep sees what its person sent next there: keyed
+ * hashes of its whole and its words, never the words (`lib/reply-drafts.ts`).
+ */
+export interface ReplyDraftsTable {
+  user_id: string;
+  conversation_id: string;
+  after_seq: number;
+  exact_hash: string;
+  word_hashes: string[];
+  drafted_at: Date;
+}
+
 export type TaskStatus = 'open' | 'accepted' | 'declined' | 'done' | 'cancelled';
 
 export interface TasksTable {
@@ -1881,6 +1894,7 @@ export interface Database {
   date_moves: DateMovesTable;
   scheduled_messages: ScheduledMessagesTable;
   meeting_codes: MeetingCodesTable;
+  reply_drafts: ReplyDraftsTable;
   calendar_feeds: CalendarFeedsTable;
   connected_accounts: ConnectedAccountsTable;
   own_addresses: OwnAddressesTable;

@@ -4596,10 +4596,15 @@ clinic can sign for. I1 lands before launch.
         promising or paying for them). It fills the box only on "Use this", and only they send
         it (R110); nothing is asked, or spent, when the last word is theirs. Its number:
         `caime_reply_drafts_total` (drafted, then sent as drafted or edited by the next text
-        they send there, `lib/reply-drafts.ts`, in memory a quarter of an hour; the rest were
-        put aside; per instance, so a send on another instance counts as neither). Costs: one
-        light call a tap, at most a catch-up's 60,000 characters (€0.0073 at the bound,
-        RESOURCES); nothing kept. Verified: `ai.test.ts` (the request's tone, transcript and
+        they send there; the rest were put aside): each draft is kept in `reply_drafts` as keyed
+        hashes of its whole and its words with the seq it answered, never its words, and the
+        `reply-drafts` sweep (ten minutes) settles it by seq against their next text there, or
+        lets it go after a day, so it counts the same whichever instance drafted or took the
+        send, and the way a message is sent does nothing more (the first build held drafts in
+        one instance's memory and settled them on every text sent; replaced the same day).
+        Costs: one light call and one upsert a tap, at most a catch-up's 60,000 characters
+        (€0.0073 at the bound, RESOURCES); the sweep one query a run over a day's drafts;
+        nothing readable kept. Verified: `ai.test.ts` (the request's tone, transcript and
         `<now>`, nothing posted, nothing asked after the reader's own word, an outsider refused,
         the run recorded, the edited send counted), `ai-costs.test.ts` (its bound), the E2E
         (drafted, used, in the box unsent).
@@ -7047,3 +7052,7 @@ CONNIQT; they mean Caime. Caishy is one of Caime's AI members, and Cai leads the
   as it's placed (`calls.card_id`), never worked out later from when it happened. A code opens nothing for anyone outside
   the conversation. Google's own Join button and Outlook's need a conferencing add-on (⛔, the
   owner's Workspace Marketplace listing); guests stay out of the event, as decided (R108 (5)).
+- 2026-10-26 — I11b's number held to the owner's rule (no compromise left standing): a drafted reply
+  is kept as keyed hashes in `reply_drafts` and settled by the `reply-drafts` sweep against the
+  person's next text there, by seq, so it counts whichever instance drafted it or took the send,
+  and nothing runs per message sent; it held drafts in one instance's memory before.

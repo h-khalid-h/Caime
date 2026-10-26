@@ -4,6 +4,7 @@ import { uuidv4 } from '@caime/core';
 import { afterAll, beforeAll, beforeEach, describe, expect, it } from 'vitest';
 import { PROMPT_VERSIONS } from '../src/lib/ai';
 import { chargedUsd } from '../src/lib/ai-costs';
+import { settleDrafts } from '../src/lib/reply-drafts';
 import { type Client, createTestApp, signup, type TestApp } from './helpers';
 
 /** A stand-in for the Messages API: records each request and answers from a queue. */
@@ -599,9 +600,24 @@ describe('AI assist (PRD §45, R17, R18)', () => {
       .execute();
     expect(posted).toEqual([]);
 
-    // Sent with what only Noor knows filled in, it counts as edited (I11's number).
+    // Kept as hashes, never its words.
+    const kept = await t.ctx.db
+      .selectFrom('reply_drafts')
+      .select(['exact_hash', 'word_hashes'])
+      .where('user_id', '=', noor.user.id)
+      .execute();
+    expect(kept).toHaveLength(1);
+    const hashed = /^[\w-]{22}$/;
+    expect(kept[0]!.exact_hash).toMatch(hashed);
+    expect(kept[0]!.word_hashes.length).toBeGreaterThan(3);
+    expect(kept[0]!.word_hashes.every((w) => hashed.test(w))).toBe(true);
+    // Sent with what only Noor knows filled in, it counts as edited (I11's number), once the
+    // sweep has seen it, and the draft is gone.
     await say(noor, convo, 'Yes, I read it. Thursday works for me, at 3pm?');
     await t.ctx.flush();
+    await settleDrafts(t.ctx);
+    await settleDrafts(t.ctx);
+    expect(await t.ctx.db.selectFrom('reply_drafts').select('user_id').execute()).toEqual([]);
     const scraped = await t.app.inject({
       url: '/metrics',
       headers: { authorization: 'Bearer metrics-token-for-the-ai-test-0123456789' },

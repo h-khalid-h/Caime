@@ -2854,8 +2854,10 @@ A sphere is said as how you know someone, never "sphere".
   while the newest message is someone else's, the rewrite sheet's draft mode, the box filled only
   on "Use this" and sent only by the person (R110); nothing asked when the last word is theirs.
   What became of each is `caime_reply_drafts_total` through `lib/reply-drafts.ts` (`noteDraft`
-  on the route, `settleDraft` from `effectsOf` on their next text there): anything new Cai writes
-  for someone to send is offered the same way and counted the same way.
+  on the route keeps it in `reply_drafts` as keyed hashes and the seq it answered, never its
+  words; the `reply-drafts` sweep settles it against their next text there by seq, or lets it go
+  after a day): anything new Cai writes for someone to send is offered and counted the same way,
+  never in one instance's memory and never by a step on the way a message is sent.
 - What Cai does unasked (R66) is `preferences.caiInitiative` (core `initiative.ts`: `less`,
   `usual` by default, `more`), read through `initiativeOf`: `createSuggestion` (and the bulk
   place offers) offers a suggestion only when `offersSuggestion` allows (pass `asked: true` for

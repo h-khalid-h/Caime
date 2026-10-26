@@ -176,7 +176,7 @@ export async function aiRoutes(app: FastifyInstance, ctx: AppContext) {
       }),
     );
     const drafted = suggestion.trim();
-    if (drafted) noteDraft(ctx, auth.userId, id, drafted);
+    if (drafted) await noteDraft(ctx, auth.userId, id, drafted, last.seq);
     return { suggestion: drafted || null, label: AI_LABEL };
   });
 
