@@ -4438,6 +4438,20 @@ clinic can sign for. I1 lands before launch.
         language: a plan past, one called off, a meeting talked about, money without an amount, an
         amount nobody asks for), the E2E `reading-flow.spec.ts` (the offer, the card filled and
         sent, nothing else sent, the Pay card asked both ways, put aside), the catalogs.
+  - [x] I9b. On the reader's side (2026-10-26): the server reads the same card as a message is
+        sent, on its writer's clock (`analyseText` keeps `entities.offer`, core `keptCardOffer`: a
+        meeting by its instant, a Pay card by its way and amount; read again on an edit, none for a
+        sealed message), and the reader is offered it: the composer, while nothing is being
+        written, offers to answer the newest message from someone else with it ("Answer with a
+        Meeting card · Sat 11:00 AM", the same instant wherever the reader is; asked to pay, a Pay
+        card that pays; told they'll be paid, one that asks), and that message's actions offer it
+        too; the card opens filled and replying to it, and nothing is sent but what the reader
+        sends. Costs: one more reading of a message's words at send (the rules, already run once),
+        a few bytes on its entities; nothing on the first download. Verified: `card-offer.test.ts`
+        (the instant on the writer's clock, an amount either way, nothing for other words or a
+        plan called off, an edit read again), the E2E `reading-flow.spec.ts` (the answer offered at
+        the time said, the card filled, sent as a reply to the words, not offered again), the
+        catalogs.
 - [ ] I10. Groups (M): whom a promise or an ask is for by the names in it (`peopleMeant`), and
       "everyone".
 - [ ] I11. Cai by voice, and a reply drafted in a conversation (M each). Cai by voice is I14.
@@ -6850,3 +6864,5 @@ CONNIQT; they mean Caime. Caishy is one of Caime's AI members, and Cai leads the
   each reader sees them as their profile shows them, and a tap opens it.
 - 2026-10-26 — M17 I9a: words become cards in the composer: a plan to meet offers a Meeting card
   at its time, an amount asked for or offered a Pay card, in four languages, by the rules.
+- 2026-10-26 — M17 I9b: the other side's plan or amount offers its card as an answer, at the
+  instant its writer meant, from the composer and from the message's actions.

@@ -91,3 +91,24 @@ export function cardOfferIn(
   }
   return null;
 }
+
+/**
+ * The card a sent message could be, as kept with its entities (M17 I9b): a meeting by its instant
+ * (read on the sender's clock, so a reader elsewhere sees the same time), a Pay card by the way
+ * the sender meant it and the amount.
+ */
+export type KeptCardOffer =
+  | { kind: 'meeting'; at: string; hasTime: boolean }
+  | { kind: 'pay'; direction: 'ask' | 'send'; value: number; currency: string | null };
+
+export function keptCardOffer(offer: CardOffer | null): KeptCardOffer | null {
+  if (!offer) return null;
+  return offer.kind === 'meeting'
+    ? { kind: 'meeting', at: offer.when.at, hasTime: Boolean(offer.when.time) }
+    : {
+        kind: 'pay',
+        direction: offer.direction,
+        value: offer.amount.value,
+        currency: offer.amount.currency,
+      };
+}

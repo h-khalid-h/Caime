@@ -345,7 +345,11 @@ A sphere is said as how you know someone, never "sphere".
   (`useReaders(wanted)`), and the composer's `CardOfferLine` opens the card filled through
   `KitStart` (`title` and `when` for a meeting, `direction` and `amount` for Pay), only where
   `kitsOffered` offers it; a new card read from words joins that reader with its lines in every
-  language, and is never sent but by the person. Read and delivered
+  language, and is never sent but by the person. The server keeps the same reading of a sent
+  message as `entities.offer` (I9b, `analyseText`, core `keptCardOffer`: a meeting by its instant on
+  the writer's clock), and the reader answers with it through `cardOffer.ts` (`offerOf`,
+  `answerFor`: the composer's line for the newest message from someone else, and the message's
+  actions through `useCardAction`); `KitStart.at` opens a Meeting card on that instant. Read and delivered
   differ by shape and colour: sent and delivered in the bubble's `tick` token (3:1 on the bubble,
   1.8:1 from its `fg`), read in `fg` with a heavier stroke, and on a card of one's own the
   tertiary text and the text (`tokens.test.ts` holds both). A quote says whose words it quotes (`replyName`

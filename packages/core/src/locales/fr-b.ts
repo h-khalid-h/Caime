@@ -2808,4 +2808,6 @@ export const frB: Catalog = {
     'Chacun ici voit cette personne telle que son profil la montre, et peut l’ouvrir.',
   'Make it a Meeting card': 'En faire une carte Réunion',
   'Make it a Pay card': 'En faire une carte Payer',
+  'Answer with a Meeting card': 'Répondre avec une carte Réunion',
+  'Answer with a Pay card': 'Répondre avec une carte Payer',
 };

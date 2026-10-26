@@ -285,6 +285,11 @@ export function ConversationScreen({
   const offerCatchUp = aiReady && unreadAtOpen.current >= CATCH_UP_AFTER && catchUpDone !== id;
 
   const messages = useMemo(() => flatMessages(msgs.data), [msgs.data]);
+  // The newest message, when it's someone else's: what the composer may offer to answer it with.
+  const lastFromOthers = useMemo(() => {
+    const last = messages.at(-1);
+    return last && last.senderId !== me.id && !last.deletedAt && !last.sealed ? last : null;
+  }, [messages, me.id]);
   // Joined from the calendar or a calendar app (R83): once the card is here, its call opens if
   // the card says it can be joined now; otherwise the conversation just opens at the card.
   const joinedFor = useRef<string | null>(null);
@@ -1303,6 +1308,7 @@ export function ConversationScreen({
             disabledAction={disabledAction}
             replyTitle={replyTitle}
             placeholder={thread && org ? tr('Reply as {name}', { name: org.name }) : undefined}
+            lastFromOthers={lastFromOthers}
             onEditLast={() => {
               const last = messages.findLast(
                 (m) => m.senderId === me.id && m.kind === 'text' && m.deletedAt === null,

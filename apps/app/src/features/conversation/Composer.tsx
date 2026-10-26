@@ -84,6 +84,7 @@ import { Text } from '@/ui/Text';
 import { TextField } from '@/ui/TextField';
 import { toast } from '@/ui/Toast';
 import { useCardAction } from './cardActions';
+import { answerFor, offerOf } from './cardOffer';
 import { LinkCard } from './LinkCard';
 import { mailBound, reachedByMail, topicsFor } from './topics';
 
@@ -121,6 +122,8 @@ export interface ComposerProps {
   replyTitle?: string | null;
   /** ↑ in an empty box: edit the last message you sent (web). */
   onEditLast?: () => void;
+  /** The newest message, when it's someone else's: the card it could be answered with (M17 I9b). */
+  lastFromOthers?: MessageView | null;
   /** What the empty box says: "Reply as DATA C" for an organization's team (R15). */
   placeholder?: string;
   /** The conversation shown, and whether it's private here (R18, seen so on this device too). */
@@ -170,6 +173,7 @@ export const Composer = forwardRef<ComposerHandle, ComposerProps>(function Compo
     disabledAction,
     replyTitle,
     onEditLast,
+    lastFromOthers,
     placeholder,
     where,
     openKit,
@@ -325,6 +329,22 @@ export const Composer = forwardRef<ComposerHandle, ComposerProps>(function Compo
       setKit('payment_request');
     }
     setOfferOff(offerKey);
+  };
+  // What the newest message from someone else could be answered with (M17 I9b), while nothing
+  // is being written: the card it reads as, filled and replying to it.
+  const said = offersCards && !text.trim() ? offerOf(lastFromOthers) : null;
+  const answerKit = said ? (said.kind === 'meeting' ? 'meeting' : 'payment_request') : null;
+  const answer =
+    said && lastFromOthers && kits.some((k) => k.id === answerKit) && offerOff !== lastFromOthers.id
+      ? said
+      : null;
+  const takeAnswer = () => {
+    if (!answer || !lastFromOthers) return;
+    const { kit: k, start: s } = answerFor(answer, lastFromOthers.id, tr('Meeting'));
+    setCustom(null);
+    setStart(s);
+    setKit(k);
+    setOfferOff(lastFromOthers.id);
   };
   // Seen as private here, and now said not to be: nothing is written from here in the clear.
   const downgraded = privately && conversation.privacyClass !== 'private';
@@ -900,6 +920,24 @@ export const Composer = forwardRef<ComposerHandle, ComposerProps>(function Compo
           }
           onTake={takeOffer}
           onClose={() => setOfferOff(offerKey)}
+        />
+      ) : answer && lastFromOthers ? (
+        <CardOfferLine
+          icon={KIT_ICONS[answer.kind === 'meeting' ? 'meeting' : 'payment_request']}
+          line={
+            answer.kind === 'meeting'
+              ? [
+                  tr('Answer with a Meeting card'),
+                  formatWhenAt(answer.at, answer.hasTime, new Date(), timeZone, locale),
+                ].join(' · ')
+              : [
+                  tr('Answer with a Pay card'),
+                  answer.direction === 'ask' ? tr('I’m paying') : tr('Ask to be paid'),
+                  formatAmount(answer.value, answer.currency ?? me.currency, locale),
+                ].join(' · ')
+          }
+          onTake={takeAnswer}
+          onClose={() => setOfferOff(lastFromOthers.id)}
         />
       ) : null}
       {offered && Platform.OS !== 'ios' ? (

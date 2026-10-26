@@ -3638,4 +3638,14 @@ export const arB: Catalog = {
     toMan: 'اجعلها بطاقة الدفع',
     other: 'اجعلها بطاقة الدفع',
   },
+  'Answer with a Meeting card': {
+    toWoman: 'أجيبي ببطاقة الاجتماع',
+    toMan: 'أجب ببطاقة الاجتماع',
+    other: 'أجب ببطاقة الاجتماع',
+  },
+  'Answer with a Pay card': {
+    toWoman: 'أجيبي ببطاقة الدفع',
+    toMan: 'أجب ببطاقة الدفع',
+    other: 'أجب ببطاقة الدفع',
+  },
 };

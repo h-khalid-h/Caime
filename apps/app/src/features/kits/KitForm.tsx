@@ -36,7 +36,7 @@ import { ItemPhoto } from '@/features/booking/ItemPhoto';
 import { reachedByMail } from '@/features/conversation/topics';
 import { CurrencyField } from '@/features/geo/CurrencyField';
 import type { WhereChoice } from '@/features/places/WherePicker';
-import { type Chosen, instantOf } from '@/features/when/when';
+import { type Chosen, chosenOf as chosenAt, instantOf } from '@/features/when/when';
 import { wordsMatch } from '@/lib/find';
 import { useUserClock } from '@/lib/time';
 import { loadReaders, type Readers, useReaders } from '@/lib/useReaders';
@@ -99,6 +99,8 @@ export interface KitStart {
   /** A Meeting card from what was being written (M17 I9a): its title, and its time in the words. */
   title?: string;
   when?: string;
+  /** A Meeting card answering someone's words (M17 I9b): the instant they said, kept as it was. */
+  at?: { at: string; hasTime: boolean };
 }
 
 /**
@@ -445,7 +447,14 @@ export function KitForm({
         start: start.when ?? '',
         ...(start.title ? { title: start.title } : {}),
       }));
-  }, [kit, start]);
+    if (kit === 'meeting' && start?.at) {
+      const { at, hasTime } = start.at;
+      const chosen = chosenAt(at, timeZone, hasTime);
+      const shown = dayText(chosen, { now: new Date(), timeZone, locale });
+      setPickedDays((d) => ({ ...d, start: { chosen, shown } }));
+      setTexts((x) => ({ ...x, start: shown, ...(start.title ? { title: start.title } : {}) }));
+    }
+  }, [kit, start, timeZone, locale]);
   const item: BookingItem | null =
     host?.items.find((i) => i.id === itemId) ??
     (host && host.items.length === 1 ? (host.items[0] ?? null) : null);
@@ -1459,7 +1468,7 @@ export function KitForm({
 }
 
 /** How a picked day (and time) reads in the field: "Thu 15 Oct, 15:00". */
-function dayText(c: Chosen, clock: Clock): string {
+function dayText(c: Chosen, clock: Pick<Clock, 'now' | 'timeZone' | 'locale'>): string {
   return new Intl.DateTimeFormat(clock.locale, {
     weekday: 'short',
     day: 'numeric',

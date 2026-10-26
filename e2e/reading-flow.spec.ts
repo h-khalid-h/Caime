@@ -421,6 +421,37 @@ test.describe
       expect(text).not.toContain('Send me 200 EGP');
       expect(text).not.toContain("I'll send you 50 EGP");
       await box.fill('');
+
+      // Alex's plan offers Noor a card to answer it with, at the time Alex said (M17 I9b).
+      await say("Let's meet Saturday at 11am");
+      await expect(visible(page, "Let's meet Saturday at 11am")).toBeVisible();
+      const answer = page.getByTestId('card-offer').filter({ visible: true });
+      await expect(answer).toContainText('Answer with a Meeting card');
+      await expect(answer).toContainText('11:00');
+      await answer.getByTestId('card-offer-take').click();
+      await expect(page.getByLabel('Title')).toHaveValue('Meeting');
+      await expect(visible(page, /^Sat, .*11:00/)).toBeVisible();
+      await page.getByLabel('Title').fill(`Brunch ${suffix}`);
+      await page.getByTestId('kit-send').click();
+      const card = page
+        .getByTestId('kit-meeting')
+        .filter({ hasText: `Brunch ${suffix}`, visible: true });
+      await expect(card).toContainText('Proposed');
+      // It answers Alex's words, and isn't offered again.
+      const after = (await (
+        await alexCtx.request.get(`/v1/conversations/${convo}/messages`, { headers: CLIENT })
+      ).json()) as {
+        messages: Array<{
+          id: string;
+          body: string | null;
+          kind: string;
+          replyTo: { id: string } | null;
+        }>;
+      };
+      const plan = after.messages.find((m) => m.body === "Let's meet Saturday at 11am");
+      const sent = after.messages.filter((m) => m.kind === 'kit').at(-1);
+      expect(sent?.replyTo?.id).toBe(plan?.id);
+      await expect(page.getByTestId('card-offer').filter({ visible: true })).toHaveCount(0);
       expect(noor.errors).toEqual([]);
     });
   });

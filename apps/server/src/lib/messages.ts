@@ -49,6 +49,7 @@ import {
   viewable,
 } from '@caime/core';
 import { onClock } from '@caime/core/card-clock';
+import { cardOfferIn, keptCardOffer } from '@caime/core/card-offer';
 import { currencyOfCountry } from '@caime/core/countries';
 import { tr, trn } from '@caime/core/i18n';
 import { AGREED_STATES, cardAsks } from '@caime/core/kit-states';
@@ -811,16 +812,17 @@ export function analyseText(
   sender: { time_zone: string; locale: string; workweek: number[]; country: string | null },
   now: Date,
 ): { analysis: Analysis | null; entities: Record<string, unknown> } {
-  const analysis = text
-    ? analyzeMessage(text, {
-        now,
-        timeZone: sender.time_zone,
-        locale: sender.locale,
-        workweek: sender.workweek,
-        // What "$" or "ريال" means to the writer (R76): their own currency when it's one of those.
-        currency: currencyOfCountry(sender.country),
-      })
-    : null;
+  const clock = {
+    now,
+    timeZone: sender.time_zone,
+    locale: sender.locale,
+    workweek: sender.workweek,
+    // What "$" or "ريال" means to the writer (R76): their own currency when it's one of those.
+    currency: currencyOfCountry(sender.country),
+  };
+  const analysis = text ? analyzeMessage(text, clock) : null;
+  // The card these words could be (M17 I9b), on the writer's clock: a reader is offered it.
+  const offer = text ? keptCardOffer(cardOfferIn(text, clock)) : null;
   const entities = analysis
     ? {
         dates: analysis.dates.map((d) => ({
@@ -836,6 +838,7 @@ export function analyseText(
         topics: analysis.topics,
         emails: analysis.emails,
         phones: analysis.phones,
+        ...(offer ? { offer } : {}),
       }
     : {};
   return { analysis, entities };

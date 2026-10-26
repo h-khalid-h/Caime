@@ -21,9 +21,12 @@ import { endpoints } from '@/api/endpoints';
 import { qk } from '@/api/keys';
 import { translate } from '@/features/assist/translations';
 import { useOpened } from '@/features/e2ee/hooks';
+import { KIT_ICONS } from '@/features/kits/icons';
+import { kitsOffered } from '@/features/kits/KitForm';
 import { report } from '@/features/safety/report';
 import { copyText } from '@/lib/clipboard';
 import { patchMessage } from '@/state/cache';
+import { useMe } from '@/state/session';
 import { useTaskOutbox } from '@/state/taskOutbox';
 import { useTheme } from '@/theme/theme';
 import { Button } from '@/ui/Button';
@@ -37,6 +40,8 @@ import { Spec, type SpecRow } from '@/ui/Spec';
 import { Text } from '@/ui/Text';
 import { TextField } from '@/ui/TextField';
 import { toast } from '@/ui/Toast';
+import { useCardAction } from './cardActions';
+import { answerFor, offerOf } from './cardOffer';
 import { deleteWithUndo } from './deleteWithUndo';
 import { messageInfo, namesIn } from './rows';
 
@@ -151,6 +156,7 @@ export function MessageActions({
 }) {
   const t = useTheme();
   const qc = useQueryClient();
+  const account = useMe();
   // The message stays while the sheet closes: its words don't vanish as it fades, and on iOS a
   // sheet that closes (rather than unmounts) says when it's gone, for what it hands on to.
   const [last, setLast] = useState<MessageView | null>(current);
@@ -173,6 +179,17 @@ export function MessageActions({
     onClose();
   };
   const mine = m.senderId === me;
+  // The card someone else's words read as (M17 I9b), where this conversation offers that card.
+  const answer = !mine && !where.private && !m.deletedAt ? offerOf(m) : null;
+  const answerWith = answer
+    ? answer.kind === 'meeting'
+      ? ('meeting' as const)
+      : ('payment_request' as const)
+    : null;
+  const offered =
+    answerWith && conversation
+      ? kitsOffered(conversation, account.minor).some((k) => k.id === answerWith)
+      : false;
   const deleted = m.deletedAt !== null;
   // What Caime may read (translate, find a task in): never a private message's words.
   const text = m.sealed ? '' : (m.body ?? '');
@@ -406,6 +423,26 @@ export function MessageActions({
                   : tr('Added to your actions. It’s saved when you’re back online.'),
               );
             })}
+          />
+        ) : null}
+        {answer && answerWith && offered ? (
+          // Words that read as a card (M17 I9b): answer with it, filled and replying to it.
+          <ListRow
+            icon={KIT_ICONS[answerWith]}
+            title={
+              answer.kind === 'meeting'
+                ? tr('Answer with a Meeting card')
+                : tr('Answer with a Pay card')
+            }
+            onPress={handOff(() =>
+              useCardAction.setState({
+                request: {
+                  conversationId: m.conversationId,
+                  ...answerFor(answer, m.id, tr('Meeting')),
+                },
+              }),
+            )}
+            testID="message-answer-card"
           />
         ) : null}
         {keepable && !deleted && text ? (

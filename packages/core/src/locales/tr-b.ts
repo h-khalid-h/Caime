@@ -2712,4 +2712,6 @@ export const turkishB: Catalog = {
     'Buradaki herkes bu kişiyi profilinin gösterdiği gibi görür ve profili açabilir.',
   'Make it a Meeting card': 'Toplantı kartı yap',
   'Make it a Pay card': 'Öde kartı yap',
+  'Answer with a Meeting card': 'Toplantı kartıyla yanıtla',
+  'Answer with a Pay card': 'Öde kartıyla yanıtla',
 };
