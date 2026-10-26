@@ -2740,7 +2740,11 @@ A sphere is said as how you know someone, never "sphere".
   (`understoodBy`, `label`). Ask Cai in Search is `POST /search/answer` (`answerFromSearch`):
   the same reading, `runSearch`'s own rows (so whatever search leaves out, the model never
   sees), numbered passages to `ai.answerFromFound`, the cited rows back as `sources`; no rows,
-  no model. Who may use AI assist is `aiGate` (`lib/ai-gate.ts`), for every route that asks a
+  no model. Inside one conversation (M16 E6) the same route takes `conversation`: its messages
+  alone, for someone in it (`membership`, `assertOpenToApps`), never a model, drawn by
+  `features/conversation/ChatSearch.tsx` (lazy, from the conversation's head, standard
+  conversations only); a new place that searches one conversation passes it the same way. Who
+  may use AI assist is `aiGate` (`lib/ai-gate.ts`), for every route that asks a
   model for a person. Every model call anywhere goes through `runAi` (`lib/ai-run.ts`),
   which records the `ai_runs` row and the metrics: a new AI feature uses it, never its own
   bookkeeping, and adds its template to `PROMPT_VERSIONS` (`lib/ai.ts`, written out with fixed

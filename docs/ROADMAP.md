@@ -2797,6 +2797,19 @@ graph) and the number that will show it; one that sharpens none is hygiene and s
       and Outlook events shown to the person alone with consent, the other side's local time; an
       in-call side panel and the call linked to its card; VoIP ringing (⛔ a development build on
       a phone); more than eight people by ADR-17's media server (decided after F).
+- [x] E6. Search inside one conversation (2026-10-26, review §7's parity "missing: search inside
+      one chat"): `GET /search?conversation=<id>` keeps Search's message reading (the folded index,
+      `readableBy`, R15's mask, the marked snippet, relevance) to one conversation the asker is in
+      (`membership`, `assertOpenToApps` for a token), its messages alone, by the rules and never a
+      model; the words are kept as typed where the rules read them all as something else. The
+      conversation's head offers Search in a standard conversation (a private one's words never
+      reach the server), and `features/conversation/ChatSearch.tsx`, loaded when first opened, asks
+      once the typing rests (300 ms) and lists each match's sender, its words marked and when; a tap
+      jumps to the message as search's jump does. Costs: one indexed query a settled word, nothing
+      on the first download (the sheet loads apart). Verified: `chat-search.test.ts` (that
+      conversation's messages alone, marked, by reference number; plain words; someone outside it
+      learns nothing), the E2E `reading-flow.spec.ts` (search, the match, the jump to a message
+      twenty-five lines up, "Nothing found"), the catalogs in four languages, and the full gate.
 - [x] F1. Mail its sender couldn't be confirmed for, kept as such (2026-10-19, review §6: "mail
       failing the sender check is dropped silently (`mail-in.ts:111`, against R75's promised
       notice; the owner lost mail this way)"; R75 (1); advantage 5, privacy that never costs you
@@ -6745,3 +6758,5 @@ CONNIQT; they mean Caime. Caishy is one of Caime's AI members, and Cai leads the
 - 2026-10-26 — M16 F5c: a booking made from a page without an account takes another time too;
   the booker is asked by mail and answers from its link on the host's own page, no account
   needed, the answer moving their card as theirs (the team told, their calendar moved by mail).
+- 2026-10-26 — M16 E6: search inside one conversation, from its head: the conversation's own
+  messages by Search's rules, marked, and a tap that jumps to the message.

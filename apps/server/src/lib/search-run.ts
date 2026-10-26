@@ -86,8 +86,10 @@ export async function runSearch(
   parsed: ParsedQuery,
   limit = 20,
   closed: readonly string[] = [],
+  /** One conversation of the searcher's (M16 E6): its messages alone. */
+  within: string | null = null,
 ): Promise<SearchResponse> {
-  const scope = parsed.scope;
+  const scope = within ? 'messages' : parsed.scope;
   // What an organization keeps from its members' own apps stays out of a token's search (M16 G3).
   const keeps = closed.length > 0;
   const open = (column: string) => openIn(me, closed, sql.ref(column));
@@ -226,6 +228,7 @@ export async function runSearch(
           j.onRef('p.conversation_id', '=', 'm.conversation_id').on('p.user_id', '=', me),
         )
         .$if(keeps, (qb) => qb.where(open('m.conversation_id')))
+        .$if(Boolean(within), (qb) => qb.where('m.conversation_id', '=', within as string))
         .innerJoin('conversations as c', 'c.id', 'm.conversation_id')
         .leftJoin('users as u', 'u.id', 'm.sender_id')
         .select([

@@ -24,10 +24,11 @@ import { languageName } from '../lib/ai';
 import { aiGate } from '../lib/ai-gate';
 import { runAi } from '../lib/ai-run';
 import { answerFrom, searchPassages, when } from '../lib/answers';
+import { membership } from '../lib/conversation-views';
 import { AppError } from '../lib/errors';
 import { recordEvent } from '../lib/events';
 import { languageOf } from '../lib/i18n';
-import { orgsClosedToApps } from '../lib/member-apps';
+import { assertOpenToApps, orgsClosedToApps } from '../lib/member-apps';
 import { assertAiAllowance } from '../lib/plans';
 import { runSearch } from '../lib/search-run';
 import { TtlCache } from '../lib/ttl-cache';
@@ -132,11 +133,19 @@ export async function searchRoutes(app: FastifyInstance, ctx: AppContext) {
 
   app.get('/search', async (req): Promise<SearchResponse> => {
     const auth = requireAuth(req);
-    const { q, limit, understand } = parse(SearchQuery, req.query);
+    const { q, limit, understand, conversation } = parse(SearchQuery, req.query);
     ctx.limiter.hit(`search:${auth.userId}`, ctx.config.isTest ? 10_000 : 120, 60_000);
     const rules = parseSearchQuery(q, { now: ctx.now() });
-    const read = understand === '1' ? await understandWithAi(ctx, auth.userId, rules) : null;
     const closed = await orgsClosedToApps(ctx, auth);
+    // Inside one conversation (M16 E6): one the asker is in, its messages by the rules, the
+    // words as typed where the rules took them all for something else, and never a model.
+    if (conversation) {
+      await membership(ctx, auth.userId, conversation);
+      await assertOpenToApps(ctx, auth, conversation);
+      const words = rules.text || rules.person ? rules : { ...rules, text: q, period: null };
+      return runSearch(ctx, auth.userId, words, limit, closed, conversation);
+    }
+    const read = understand === '1' ? await understandWithAi(ctx, auth.userId, rules) : null;
     const response = await runSearch(ctx, auth.userId, read ?? rules, limit, closed);
     return read ? { ...response, understoodBy: 'ai', label: tr(AI_LABEL) } : response;
   });

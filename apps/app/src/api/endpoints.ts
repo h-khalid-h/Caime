@@ -1183,6 +1183,9 @@ export const endpoints = {
   /** `understand`: the person has finished typing (a pause, Enter), so a sentence may go to the model. */
   search: (term: string, understand = false) =>
     api.get<SearchResponse>(`/search${q({ q: term, understand: understand ? '1' : undefined })}`),
+  /** Inside one conversation (M16 E6): its messages alone, by the rules. */
+  searchIn: (conversationId: string, term: string) =>
+    api.get<SearchResponse>(`/search${q({ q: term, conversation: conversationId })}`),
   /** "Ask Cai" in Search (R66): a question answered from what search finds. */
   searchAnswer: (q: string) => api.post<SearchAnswerResponse>('/search/answer', { q }),
   /** How a search ended: found or not, and how long it took. Never what was searched for. */

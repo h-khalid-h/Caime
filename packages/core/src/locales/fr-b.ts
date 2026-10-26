@@ -2772,4 +2772,8 @@ export const frB: Catalog = {
   'From their conversation with {name}, by voice or video. It rings whoever of the team is in that conversation, the first to answer takes it, and the customer sees {name}, never who answered.':
     'Depuis leur conversation avec {name}, en audio ou en vidéo. L’appel sonne chez les membres de l’équipe présents dans cette conversation, le premier qui répond le prend, et le client voit {name}, jamais qui a répondu.',
   '{status} · calling {orgName}': '{status} · appelle {orgName}',
+  'Search this conversation': 'Rechercher dans cette conversation',
+  'Words, a name, a number': 'Des mots, un nom, un numéro',
+  'Search didn’t answer. Try again in a moment.':
+    'La recherche n’a pas répondu. Réessayez dans un instant.',
 };

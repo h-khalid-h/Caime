@@ -2678,4 +2678,7 @@ export const turkishB: Catalog = {
   'From their conversation with {name}, by voice or video. It rings whoever of the team is in that conversation, the first to answer takes it, and the customer sees {name}, never who answered.':
     '{name} ile konuşmalarından, sesli ya da görüntülü. Arama, ekipten o konuşmada olanlara çalar; ilk yanıtlayan aramayı alır ve müşteri, yanıtlayanı değil {name} adını görür.',
   '{status} · calling {orgName}': '{status} · {orgName} aranıyor',
+  'Search this conversation': 'Bu konuşmada ara',
+  'Words, a name, a number': 'Kelimeler, bir ad, bir numara',
+  'Search didn’t answer. Try again in a moment.': 'Arama yanıt vermedi. Birazdan yeniden deneyin.',
 };

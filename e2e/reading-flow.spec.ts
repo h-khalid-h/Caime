@@ -171,4 +171,28 @@ test.describe
       await expect(head).toContainText('Last seen just now', { timeout: 15_000 });
       expect(noor.errors).toEqual([]);
     });
+
+    test('search inside the conversation finds a message and jumps to it (M16 E6)', async () => {
+      await say(`The plumber comes Thursday at nine ${suffix}`);
+      for (let i = 0; i < 25; i++) await say(`Later line ${i}`);
+      const { page } = noor;
+      await page.goto(`/c/${convo}`);
+      await page.getByTestId('chat-search').filter({ visible: true }).click();
+      await page.getByTestId('chat-search-input').filter({ visible: true }).fill('plumber');
+      const hit = page.getByTestId('chat-search-results').filter({ visible: true });
+      await expect(hit).toContainText('Alex Reads');
+      await expect(hit).toContainText('plumber');
+      await page.screenshot({ path: 'e2e/screenshots/desktop-chat-search.png' });
+      await hit.getByRole('button').first().click();
+      await expect(page.getByTestId('message-highlighted').filter({ visible: true })).toContainText(
+        'The plumber comes Thursday',
+      );
+      // Nothing there: said so, never an empty sheet.
+      await page.getByTestId('chat-search').filter({ visible: true }).click();
+      await page.getByTestId('chat-search-input').filter({ visible: true }).fill('zebra');
+      await expect(page.getByTestId('chat-search-none').filter({ visible: true })).toHaveText(
+        'Nothing found for “zebra”.',
+      );
+      expect(noor.errors).toEqual([]);
+    });
   });

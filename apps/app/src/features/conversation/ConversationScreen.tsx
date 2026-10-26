@@ -13,6 +13,7 @@ import ListChecks from 'lucide-react-native/icons/list-checks';
 import Lock from 'lucide-react-native/icons/lock';
 import MessageCircle from 'lucide-react-native/icons/message-circle';
 import Phone from 'lucide-react-native/icons/phone';
+import SearchIcon from 'lucide-react-native/icons/search';
 import Tag from 'lucide-react-native/icons/tag';
 import Users from 'lucide-react-native/icons/users';
 import Video from 'lucide-react-native/icons/video';
@@ -114,6 +115,7 @@ const LoadFailed = lazyPart(() => import('@/ui/LoadFailed').then((m) => m.LoadFa
 const JoinLinks = lazyPart(() => import('@/features/join/JoinLinks').then((m) => m.JoinLinks));
 
 /** "How do you know …?" for a connection never labelled (R3), loaded the first time it opens. */
+const ChatSearch = lazyPart(() => import('./ChatSearch').then((m) => m.ChatSearch));
 const RelationshipPicker = lazyPart(() =>
   import('@/features/relationships/RelationshipPicker').then((m) => m.RelationshipPicker),
 );
@@ -169,6 +171,9 @@ export function ConversationScreen({
   const [labelling, setLabelling] = useState(false);
   const labelled = useOpened(labelling);
   const [privateInfo, setPrivateInfo] = useState(false);
+  // Search inside this conversation (M16 E6): the sheet, once opened.
+  const [searching, setSearching] = useState(false);
+  const searched = useOpened(searching);
   const [inviting, setInviting] = useState(inviteLink);
   const invited = useOpened(inviting);
   const [editing, setEditing] = useState<MessageView | null>(null);
@@ -680,6 +685,14 @@ export function ConversationScreen({
                 testID="group-call-video"
               />
             </>
+          ) : null}
+          {conversation && !privately ? (
+            <IconButton
+              icon={SearchIcon}
+              label={tr('Search this conversation')}
+              onPress={() => setSearching(true)}
+              testID="chat-search"
+            />
           ) : null}
           {privately ? (
             <IconButton
@@ -1311,6 +1324,14 @@ export function ConversationScreen({
       />
       {forwarding ? <ForwardSheet m={forwarding} onClose={() => setForwarding(null)} /> : null}
       <PhotoViewerHost />
+      {searched && conversation ? (
+        <ChatSearch
+          conversationId={conversation.id}
+          open={searching}
+          onClose={() => setSearching(false)}
+          onJump={setFocus}
+        />
+      ) : null}
       {labelled && other ? (
         <RelationshipPicker
           open={labelling}

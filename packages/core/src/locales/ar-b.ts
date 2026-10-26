@@ -3581,4 +3581,7 @@ export const arB: Catalog = {
   'From their conversation with {name}, by voice or video. It rings whoever of the team is in that conversation, the first to answer takes it, and the customer sees {name}, never who answered.':
     'من محادثتهم مع {name}، صوتًا أو فيديو. تصل المكالمة إلى من في تلك المحادثة من الفريق، ويتولاها أول من يرد، ويرى العميل {name} وحدها، لا من ردّ.',
   '{status} · calling {orgName}': '{status} · مكالمة إلى {orgName}',
+  'Search this conversation': 'البحث في هذه المحادثة',
+  'Words, a name, a number': 'كلمات، اسم، رقم',
+  'Search didn’t answer. Try again in a moment.': 'لم يصل رد من البحث. حاول مجددًا بعد قليل.',
 };

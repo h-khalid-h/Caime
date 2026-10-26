@@ -561,6 +561,8 @@ export const SearchQuery = z.object({
   limit: z.coerce.number().int().min(1).max(50).default(20),
   /** The app says when the person has finished typing (a pause, Enter): only then a model. */
   understand: z.enum(['0', '1']).optional(),
+  /** Inside one conversation of the asker's (M16 E6): its messages alone, by the rules. */
+  conversation: z.string().uuid().optional(),
 });
 export const DeliveriesQuery = z.object({
   status: z.enum(['pending', 'delivered', 'failed']).optional(),
