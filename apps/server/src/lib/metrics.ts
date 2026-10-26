@@ -246,6 +246,11 @@ export function createMetrics(pool: pg.Pool) {
       'caime_recaps_total',
       'Recaps of what someone missed, by where (chat, attention) and kind (rules, summary).',
     ),
+    // Replies Cai drafted (M17 I11b): drafted, and of those sent as drafted or edited.
+    replyDrafts: new Counter(
+      'caime_reply_drafts_total',
+      'Replies Cai drafted in a conversation, by outcome (drafted, sent, edited); the rest were put aside.',
+    ),
     // Answers from passages (M17 I4): the share with a source is the number the engine is held to.
     answers: new Counter(
       'caime_answers_total',

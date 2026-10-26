@@ -2733,6 +2733,15 @@ export interface AiRewriteView {
   label: string;
 }
 
+/**
+ * A reply Cai drafts for the reader to send (M17 I11b), from the conversation's own lines: put in
+ * the composer only on their tap, never sent by Cai (R110). Null when there's nothing to answer.
+ */
+export interface AiDraftReplyView {
+  suggestion: string | null;
+  label: string | null;
+}
+
 export interface AiTranslationView {
   translation: string;
   /** The language it was translated into, e.g. "en" and "English". */

@@ -4516,7 +4516,25 @@ clinic can sign for. I1 lands before launch.
       lines and near misses, every line right, a shared first name), `group-addressees.test.ts`
       (through the real routes: the named person's ask and the writer's wait, everyone asked,
       nobody for a name only spoken of).
-- [ ] I11. Cai by voice, and a reply drafted in a conversation (M each). Cai by voice is I14.
+- [x] I11. Cai by voice, and a reply drafted in a conversation (M each). Cai by voice is I14.
+  - [x] I11b. A reply drafted in a conversation (M, 2026-10-26): with nothing written and the
+        newest message someone else's, the composer offers "Draft a reply with Cai" where
+        "Rewrite with Cai" stands for a draft, and the one sheet (`RewriteSheet`, its draft mode)
+        asks `POST /conversations/:id/ai/reply` as it opens: the conversation as the reader reads
+        it (`transcriptOf`, the gate, never a private one), each line's time and `<now>` with
+        `TIME_RULE`, the relationship's tone, on the light model (`REPLY_SYSTEM`: what "You"
+        would answer to what the others said since, in their manner and the newest messages'
+        language, what only they know as a [placeholder], never accepting, declining,
+        promising or paying for them). It fills the box only on "Use this", and only they send
+        it (R110); nothing is asked, or spent, when the last word is theirs. Its number:
+        `caime_reply_drafts_total` (drafted, then sent as drafted or edited by the next text
+        they send there, `lib/reply-drafts.ts`, in memory a quarter of an hour; the rest were
+        put aside; per instance, so a send on another instance counts as neither). Costs: one
+        light call a tap, at most a catch-up's 60,000 characters (€0.0073 at the bound,
+        RESOURCES); nothing kept. Verified: `ai.test.ts` (the request's tone, transcript and
+        `<now>`, nothing posted, nothing asked after the reader's own word, an outsider refused,
+        the run recorded, the edited send counted), `ai-costs.test.ts` (its bound), the E2E
+        (drafted, used, in the box unsent).
 - [ ] I12. Calls and files in answers, then meaning (L): a call's lines and write-up as passages;
       Office and PDF text indexed; search by meaning after I5, with its processor in the DPA and
       erasure removing what it kept.
@@ -6938,6 +6956,10 @@ CONNIQT; they mean Caime. Caishy is one of Caime's AI members, and Cai leads the
 - 2026-10-26 — M17 I10: in a group, an ask or a promise said to someone by name ("Ben, can you…",
   "يا سارة") is filed for them and its writer waits on them; "everyone" is asked of everyone in a
   group that isn't a crowd, in the four languages.
+- 2026-10-26 — M17 I11b: with nothing written and the newest message someone else's, Cai drafts a
+  reply from the conversation (its tone, its language, a [placeholder] for what only the writer
+  knows) into the composer on "Use this", sent only by them; drafts sent, edited and put aside
+  are counted.
 - 2026-10-26 — The owner's report: a sent message's words, or the part written by a pause, came
   back into the composer after a reload or on coming back to the conversation. A pause's draft
   save tells the person's devices (`conversation.updated`) and the conversation's view read again

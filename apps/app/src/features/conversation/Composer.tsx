@@ -1267,7 +1267,18 @@ export const Composer = forwardRef<ComposerHandle, ComposerProps>(function Compo
               hitSlop={2}
               testID="composer-send"
             />
-          ) : privately ? null : (
+          ) : null}
+          {!canSend && aiReady && lastFromOthers && !caimes && !editing ? (
+            <IconButton
+              icon={WandSparkles}
+              label={tr('Draft a reply with Cai')}
+              onPress={() => setRewrite(true)}
+              style={side}
+              hitSlop={2}
+              testID="composer-draft-reply"
+            />
+          ) : null}
+          {canSend ? null : privately ? null : (
             <IconButton
               icon={Mic}
               label={tr('Record a voice note')}

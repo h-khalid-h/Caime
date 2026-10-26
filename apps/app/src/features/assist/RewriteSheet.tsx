@@ -1,7 +1,7 @@
 import { AI_LABEL, REWRITE_LABELS, REWRITE_STYLES, type RewriteStyle } from '@caime/core/assist';
 import { tr } from '@caime/core/i18n';
 import Sparkles from 'lucide-react-native/icons/sparkles';
-import { useRef, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { View } from 'react-native';
 import { endpoints } from '@/api/endpoints';
 import { useTheme } from '@/theme/theme';
@@ -12,7 +12,8 @@ import { Text } from '@/ui/Text';
 
 /**
  * Rewrite a draft (PRD §45): pick a style, read what Caime suggests, and use it or keep yours.
- * The draft changes only on "Use this" (R17).
+ * The draft changes only on "Use this" (R17). With nothing written yet, it drafts a reply to what
+ * the others said (M17 I11b), asked for as it opens: the person's to change and send (R110).
  */
 export function RewriteSheet({
   open,
@@ -33,6 +34,7 @@ export function RewriteSheet({
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
   const latest = useRef(0);
+  const drafting = !text.trim();
 
   const close = () => {
     latest.current++;
@@ -43,15 +45,19 @@ export function RewriteSheet({
     onClose();
   };
 
-  const run = async (s: RewriteStyle) => {
+  const run = async (s: RewriteStyle | null) => {
     const ask = ++latest.current;
     setStyle(s);
     setBusy(true);
     setError(null);
     setSuggestion(null);
     try {
-      const r = await endpoints.aiRewrite({ text, style: s, conversationId });
-      if (ask === latest.current) setSuggestion(r.suggestion);
+      const r = s
+        ? await endpoints.aiRewrite({ text, style: s, conversationId })
+        : await endpoints.draftReply(conversationId);
+      if (ask === latest.current)
+        if (r.suggestion) setSuggestion(r.suggestion);
+        else setError(tr('Nothing to answer yet.'));
     } catch (e) {
       if (ask === latest.current) setError((e as Error).message);
     } finally {
@@ -59,11 +65,17 @@ export function RewriteSheet({
     }
   };
 
+  // A reply is drafted once as the sheet opens: the tap that opened it asked for one.
+  // biome-ignore lint/correctness/useExhaustiveDependencies: only on opening
+  useEffect(() => {
+    if (open && drafting) void run(null);
+  }, [open]);
+
   return (
     <Sheet
       open={open}
       onClose={close}
-      title={tr('Rewrite')}
+      title={drafting ? tr('Draft a reply') : tr('Rewrite')}
       subtitle={tr('Nothing changes until you choose.')}
       footer={
         <View style={{ flexDirection: 'row', gap: 8 }}>
@@ -79,20 +91,33 @@ export function RewriteSheet({
             }}
             testID="rewrite-use"
           />
-          <Button label={tr('Keep mine')} size="lg" variant="ghost" onPress={close} />
+          {drafting ? (
+            <Button
+              label={tr('Write another')}
+              size="lg"
+              variant="ghost"
+              disabled={busy}
+              onPress={() => void run(null)}
+              testID="draft-again"
+            />
+          ) : (
+            <Button label={tr('Keep mine')} size="lg" variant="ghost" onPress={close} />
+          )}
         </View>
       }
     >
-      <ChoiceChips
-        wrap
-        flush
-        label={tr('How to rewrite it')}
-        value={style}
-        onChange={(s) => void run(s)}
-        options={REWRITE_STYLES.map((s) => ({ value: s, label: tr(REWRITE_LABELS[s]) }))}
-        testID="rewrite"
-      />
-      {style ? (
+      {drafting ? null : (
+        <ChoiceChips
+          wrap
+          flush
+          label={tr('How to rewrite it')}
+          value={style}
+          onChange={(s) => void run(s)}
+          options={REWRITE_STYLES.map((s) => ({ value: s, label: tr(REWRITE_LABELS[s]) }))}
+          testID="rewrite"
+        />
+      )}
+      {style || drafting ? (
         <View
           accessibilityLiveRegion="polite"
           style={{
@@ -124,7 +149,14 @@ export function RewriteSheet({
             </Text>
           ) : null}
         </View>
-      ) : (
+      ) : null}
+      {drafting ? (
+        <Text variant="caption" color="textSecondary" style={{ marginTop: 12 }}>
+          {tr(
+            'Caime sends this conversation’s recent messages to its AI provider to write this. Nothing is sent until you send it.',
+          )}
+        </Text>
+      ) : style ? null : (
         <Text variant="caption" color="textSecondary" style={{ marginTop: 12 }}>
           {tr(
             'Caime sends your draft to its AI provider to write this. It isn’t sent to anyone else.',

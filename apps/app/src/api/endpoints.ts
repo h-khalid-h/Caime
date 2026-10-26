@@ -20,6 +20,7 @@ import type {
   AiActionsView,
   AiAnswerView,
   AiCatchUpView,
+  AiDraftReplyView,
   AiRewriteView,
   AiStatusView,
   AiTranslationView,
@@ -1074,6 +1075,8 @@ export const endpoints = {
   ai: () => api.get<AiStatusView>('/ai'),
   aiRewrite: (body: { text: string; style: RewriteStyle; conversationId: string }) =>
     api.post<AiRewriteView>('/ai/rewrite', body),
+  /** A reply drafted from the conversation, for the composer; never sent (M17 I11b). */
+  draftReply: (id: string) => api.post<AiDraftReplyView>(`/conversations/${id}/ai/reply`, {}),
   aiTranslate: (messageId: string) => api.post<AiTranslationView>('/ai/translate', { messageId }),
   catchUp: (id: string) => api.post<AiCatchUpView>(`/conversations/${id}/catch-up`, {}),
   /** A question about the conversation, answered from it and kept nowhere (R67). */

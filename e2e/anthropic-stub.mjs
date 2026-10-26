@@ -74,6 +74,18 @@ function answer(body) {
       return reply('Could you send me the contract by Friday?');
     return reply(draft.charAt(0).toUpperCase() + draft.slice(1));
   }
+  if (system.includes('You draft a reply')) {
+    // A reply drafted for the reader (M17 I11b): it answers the newest line from someone else,
+    // leaving what only they know as a placeholder.
+    calls.push('reply');
+    const others = [...content.matchAll(/^\[\d+\] [^·\n]* · ([^:\n]+): (.*)$/gm)].filter(
+      (m) => m[1] !== 'You',
+    );
+    const asked = others.at(-1)?.[2]?.trim() ?? '';
+    return reply(
+      /thursday/i.test(asked) ? 'Thursday works for me, at [time]?' : `About “${asked}”: [answer]`,
+    );
+  }
   if (system.includes('Translate the text')) {
     calls.push('translate');
     const text = between(content, '<text>', '</text>');

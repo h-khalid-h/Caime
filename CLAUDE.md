@@ -2838,6 +2838,13 @@ A sphere is said as how you know someone, never "sphere".
   a relationship word matches its label in the reader's language too (`relationshipFromWord`:
   "عملائي", "mes clients", "müşterilerim"), and every interpretation is a key through `tr`. A new
   shape gets its line in each language, with cases in `search-languages.test.ts`.
+- A reply drafted in a conversation (M17 I11b) is `POST /conversations/:id/ai/reply`
+  (`modules/ai.ts`, `ai.draftReply`, `REPLY_SYSTEM`): the composer's Cai button in an empty box
+  while the newest message is someone else's, the rewrite sheet's draft mode, the box filled only
+  on "Use this" and sent only by the person (R110); nothing asked when the last word is theirs.
+  What became of each is `caime_reply_drafts_total` through `lib/reply-drafts.ts` (`noteDraft`
+  on the route, `settleDraft` from `effectsOf` on their next text there): anything new Cai writes
+  for someone to send is offered the same way and counted the same way.
 - What Cai does unasked (R66) is `preferences.caiInitiative` (core `initiative.ts`: `less`,
   `usual` by default, `more`), read through `initiativeOf`: `createSuggestion` (and the bulk
   place offers) offers a suggestion only when `offersSuggestion` allows (pass `asked: true` for

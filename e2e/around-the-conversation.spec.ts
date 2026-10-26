@@ -2000,6 +2000,18 @@ test.describe
       await translation.scrollIntoViewIfNeeded();
       await page.screenshot({ path: 'e2e/screenshots/desktop-ai-assist.png' });
 
+      // A reply drafted from what the others said (M17 I11b): Alex's last word is the newest, so
+      // the empty box offers it; the words reach the box only on "Use this", and nothing is sent.
+      await page.getByTestId('composer-draft-reply').click();
+      await expect(page.getByTestId('rewrite-suggestion')).toHaveText(
+        'About “That’s all for now.”: [answer]',
+      );
+      await page.getByTestId('rewrite-use').click();
+      await expect(page.getByTestId('composer-input')).toHaveValue(
+        'About “That’s all for now.”: [answer]',
+      );
+      await expect(page.getByTestId('composer-draft-reply')).toHaveCount(0);
+
       await page.getByTestId('composer-input').fill('can u send the contract fri');
       await page.getByTestId('composer-rewrite').click();
       await page.getByTestId('rewrite-formal').click();
@@ -2045,7 +2057,7 @@ test.describe
       await expect(card).toContainText('3 things here');
       await card.getByTestId('suggestions-dismiss-all').click();
       await expect(page.getByTestId('suggestions-card')).toHaveCount(0);
-      expect(await stub()).toEqual(['catch-up', 'actions', 'ask', 'translate', 'rewrite']);
+      expect(await stub()).toEqual(['catch-up', 'actions', 'ask', 'translate', 'reply', 'rewrite']);
       expect(errors).toEqual([]);
     });
 

@@ -3,6 +3,7 @@
  * person is an adult and turned AI assist on, and the conversation isn't private (R17, R18):
  *
  * - rewrite a draft (clearer, shorter, more formal, friendlier), in the relationship's tone;
+ * - draft a reply to what the others said, for the person to change and send (M17 I11b);
  * - translate a message into the reader's language;
  * - catch the reader up on a conversation;
  * - find its follow-ups, filed as ordinary suggestions that wait for a tap (R12).
@@ -14,6 +15,7 @@ import type {
   AiActionsView,
   AiAnswerView,
   AiCatchUpView,
+  AiDraftReplyView,
   AiRewriteView,
   AiStatusView,
   AiTone,
@@ -49,6 +51,7 @@ import { AppError, notFound } from '../lib/errors';
 import { languageOf } from '../lib/i18n';
 import { readableBy } from '../lib/messages';
 import { activeRelationships, loadPolicies, policyTargetFor } from '../lib/relations';
+import { noteDraft } from '../lib/reply-drafts';
 import { createSuggestion, suggestionView } from '../lib/suggest';
 import { transcriptClock } from '../lib/transcript';
 import { transcriptOf } from '../lib/transcript-of';
@@ -141,6 +144,40 @@ export async function aiRoutes(app: FastifyInstance, ctx: AppContext) {
       ai.rewrite({ text: body.text, style: body.style, tone }),
     );
     return { suggestion, label: AI_LABEL };
+  });
+
+  /**
+   * A reply drafted from the conversation as the reader reads it (M17 I11b): what they'd answer
+   * to what the others said since they last wrote, in the relationship's tone and the
+   * conversation's language, what only they know left as a [placeholder]. Returned for their
+   * composer, never sent (R110); nothing when the last word is theirs, so nothing is spent.
+   */
+  app.post('/conversations/:id/ai/reply', async (req): Promise<AiDraftReplyView> => {
+    const auth = requireAuth(req);
+    const { id } = parse(z.object({ id: z.string().uuid() }), req.params);
+    const { ai, me } = await gate(auth.userId);
+    const { conversation, me: seat } = await readable(auth.userId, id);
+    const { transcript, lines } = await transcriptOf(
+      ctx,
+      auth.userId,
+      id,
+      Number(seat.last_read_seq),
+      me.time_zone,
+    );
+    const last = lines.at(-1);
+    if (!last || last.senderId === auth.userId) return { suggestion: null, label: null };
+    const tone = await toneFor(auth.userId, conversation);
+    const suggestion = await run('reply', auth.userId, () =>
+      ai.draftReply({
+        transcript: transcript.text,
+        tone,
+        today: today(me.time_zone),
+        now: transcriptClock(me.time_zone).time(ctx.now()),
+      }),
+    );
+    const drafted = suggestion.trim();
+    if (drafted) noteDraft(ctx, auth.userId, id, drafted);
+    return { suggestion: drafted || null, label: AI_LABEL };
   });
 
   app.post('/ai/translate', async (req): Promise<AiTranslationView> => {

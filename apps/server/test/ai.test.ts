@@ -450,6 +450,7 @@ describe('AI assist (PRD §45, R17, R18)', () => {
       [`/v1/conversations/${c}/catch-up`, {}],
       [`/v1/conversations/${c}/ai/actions`, {}],
       [`/v1/conversations/${c}/ask`, { question: 'What did we say?' }],
+      [`/v1/conversations/${c}/ai/reply`, {}],
     ] as const) {
       const res = await noor.req('POST', url, body);
       expect(res.statusCode).toBe(403);
@@ -569,6 +570,71 @@ describe('AI assist (PRD §45, R17, R18)', () => {
       'provider',
       'user_id',
     ]);
+  });
+
+  it('drafts a reply to what the others said, for the reader to send, in the relationship’s tone (M17 I11b)', async () => {
+    await say(sam, convo, 'Did you get a chance to read the draft? Could we go over it Thursday?');
+    replies.push(message('“Yes, I read it. Thursday works for me, at [time]?”'));
+    const r = await noor.post(`/v1/conversations/${convo}/ai/reply`, {});
+    // The words are the reader's to change and send: returned, never posted.
+    expect(r).toEqual({
+      suggestion: 'Yes, I read it. Thursday works for me, at [time]?',
+      label: 'Suggested by Cai',
+    });
+    const sent = last();
+    expect(sent.body.model).toBe('claude-test-light');
+    expect(sent.body.system).toContain('You draft a reply');
+    // Noor filed Sam under work: the professional tone applies.
+    expect(sent.body.system).toContain('keep it professional');
+    const content = sent.body.messages[0].content as string;
+    expect(content).toContain('Sam Rivera: Did you get a chance to read the draft?');
+    expect(content).toMatch(/<now>\w{3} \d+ \w{3} \d\d:\d\d<\/now>$/);
+    for (const secret of [noor.user.id, sam.user.id, 'noor.haddad@example.com', convo])
+      expect(JSON.stringify(sent.body)).not.toContain(secret);
+    const posted = await t.ctx.db
+      .selectFrom('messages')
+      .select('id')
+      .where('conversation_id', '=', convo)
+      .where('body', 'like', '%[time]%')
+      .execute();
+    expect(posted).toEqual([]);
+
+    // Sent with what only Noor knows filled in, it counts as edited (I11's number).
+    await say(noor, convo, 'Yes, I read it. Thursday works for me, at 3pm?');
+    await t.ctx.flush();
+    const scraped = await t.app.inject({
+      url: '/metrics',
+      headers: { authorization: 'Bearer metrics-token-for-the-ai-test-0123456789' },
+    });
+    for (const [outcome, n] of [
+      ['drafted', 1],
+      ['edited', 1],
+    ] as const)
+      expect(scraped.body).toContain(`caime_reply_drafts_total{outcome="${outcome}"} ${n}`);
+    expect(scraped.body).not.toContain('caime_reply_drafts_total{outcome="sent"}');
+
+    // Once the last word is the reader's own there's nothing to answer, and nothing is spent.
+    const before = requests.length;
+    expect(await noor.post(`/v1/conversations/${convo}/ai/reply`, {})).toEqual({
+      suggestion: null,
+      label: null,
+    });
+    expect(requests.length).toBe(before);
+    // Only someone in the conversation may have a reply drafted there.
+    const outsider = await signup(t, { displayName: 'Outsider Two' });
+    await outsider.patch('/v1/me', { aiEnabled: true });
+    expect((await outsider.req('POST', `/v1/conversations/${convo}/ai/reply`, {})).statusCode).toBe(
+      404,
+    );
+    expect(requests.length).toBe(before);
+    await t.ctx.flush();
+    const runs = await t.ctx.db
+      .selectFrom('ai_runs')
+      .select(['feature', 'outcome'])
+      .where('user_id', '=', noor.user.id)
+      .where('feature', '=', 'reply')
+      .execute();
+    expect(runs).toEqual([{ feature: 'reply', outcome: 'ok' }]);
   });
 });
 

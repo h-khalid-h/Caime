@@ -2716,4 +2716,10 @@ export const turkishB: Catalog = {
   'Answer with a Pay card': 'Öde kartıyla yanıtla',
   'Call this number': 'Bu numarayı ara',
   'Write to this address': 'Bu adrese yaz',
+  'Draft a reply with Cai': 'Cai ile yanıt taslağı',
+  'Draft a reply': 'Yanıt taslağı',
+  'Write another': 'Başka bir tane',
+  'Nothing to answer yet.': 'Henüz yanıtlanacak bir şey yok.',
+  'Caime sends this conversation’s recent messages to its AI provider to write this. Nothing is sent until you send it.':
+    'Caime bunu yazmak için bu konuşmanın son mesajlarını AI sağlayıcısına gönderir. Siz göndermeden hiçbir şey gönderilmez.',
 };

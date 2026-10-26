@@ -2812,4 +2812,10 @@ export const frB: Catalog = {
   'Answer with a Pay card': 'Répondre avec une carte Payer',
   'Call this number': 'Appeler ce numéro',
   'Write to this address': 'Écrire à cette adresse',
+  'Draft a reply with Cai': 'Préparer une réponse avec Cai',
+  'Draft a reply': 'Préparer une réponse',
+  'Write another': 'Une autre',
+  'Nothing to answer yet.': 'Rien à quoi répondre pour l’instant.',
+  'Caime sends this conversation’s recent messages to its AI provider to write this. Nothing is sent until you send it.':
+    'Caime envoie les derniers messages de cette conversation à son fournisseur d’IA pour rédiger ceci. Rien n’est envoyé tant que vous ne l’envoyez pas.',
 };

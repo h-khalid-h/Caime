@@ -213,6 +213,12 @@ const AT_BOUNDS: ReadonlyArray<{
     feature: 'catch-up',
     call: (ai) => ai.catchUp({ transcript: transcript(60_000), language: 'English', today }),
   },
+  // modules/ai.ts: the same transcript as a catch-up, a reply drafted from it (M17 I11b).
+  {
+    feature: 'reply',
+    call: (ai) =>
+      ai.draftReply({ transcript: x(60_000), tone: 'neutral', today, now: 'Mon 19 Oct 09:00' }),
+  },
   // lib/answers.ts: the transcript's lines as passages (the same 60,000 characters), a question.
   {
     feature: 'ask',

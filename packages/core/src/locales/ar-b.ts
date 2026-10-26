@@ -3658,4 +3658,10 @@ export const arB: Catalog = {
     toMan: 'اكتب إلى هذا العنوان',
     other: 'اكتب إلى هذا العنوان',
   },
+  'Draft a reply with Cai': 'مسودة رد مع Cai',
+  'Draft a reply': 'مسودة رد',
+  'Write another': 'صياغة أخرى',
+  'Nothing to answer yet.': 'لا شيء يُرَدّ عليه بعد.',
+  'Caime sends this conversation’s recent messages to its AI provider to write this. Nothing is sent until you send it.':
+    'يرسل Caime آخر رسائل هذه المحادثة إلى مزوّد الذكاء الاصطناعي ليكتب هذا. لا يُرسَل شيء إلا بإرسالك.',
 };
