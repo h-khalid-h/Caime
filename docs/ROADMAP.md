@@ -4423,6 +4423,21 @@ clinic can sign for. I1 lands before launch.
 - [ ] I9. Words become cards (L): a plan offers a filled Meeting card, money a Pay card, "every
       Monday" a repeat, "before the meeting" that meeting's time; dates, numbers and addresses
       tappable.
+  - [x] I9a. In the composer (2026-10-26): what's being written, read on the device by core
+        `cardOfferIn` (`card-offer.ts`, rules in the four languages: a proposal to meet with its day
+        or time, "let's meet Thursday at 3", "نتقابل بكرة الساعة 3", "on se voit jeudi à 15h",
+        "yarın saat 3'te buluşalım"; an amount asked for or offered, "send me 200 EGP", "ابعتلي 200
+        جنيه", "tu me dois 50 €", "sana 250 TL gönderirim"; none where the words take it back or
+        call it off), offers its card once the typing settles: "Make it a Meeting card · Thu 3:00
+        PM" opens the Meeting card with its title and the time in the words, "Make it a Pay card ·
+        Ask to be paid · EGP 200" the Pay card that way and amount; only where that card is offered
+        (never private, never Cai's chat, not while editing), its × puts it aside, and nothing is
+        sent but what the person sends. Costs: nothing on the server; the readers' chunk once the
+        words reach eight characters (the card form loads it anyway); a few regular expressions a
+        settled pause. Verified: `card-offer-golden.test.ts` (positives and near misses in each
+        language: a plan past, one called off, a meeting talked about, money without an amount, an
+        amount nobody asks for), the E2E `reading-flow.spec.ts` (the offer, the card filled and
+        sent, nothing else sent, the Pay card asked both ways, put aside), the catalogs.
 - [ ] I10. Groups (M): whom a promise or an ask is for by the names in it (`peopleMeant`), and
       "everyone".
 - [ ] I11. Cai by voice, and a reply drafted in a conversation (M each). Cai by voice is I14.
@@ -6833,3 +6848,5 @@ CONNIQT; they mean Caime. Caishy is one of Caime's AI members, and Cai leads the
   says why.
 - 2026-10-26 — M16 E8c: someone you're connected with sent as a contact from the Share sheet;
   each reader sees them as their profile shows them, and a tap opens it.
+- 2026-10-26 — M17 I9a: words become cards in the composer: a plan to meet offers a Meeting card
+  at its time, an amount asked for or offered a Pay card, in four languages, by the rules.

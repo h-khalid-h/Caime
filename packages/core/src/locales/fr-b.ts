@@ -2806,4 +2806,6 @@ export const frB: Catalog = {
   'Send a contact': 'Envoyer un contact',
   'Everyone here sees them as their profile shows them, and can open it.':
     'Chacun ici voit cette personne telle que son profil la montre, et peut l’ouvrir.',
+  'Make it a Meeting card': 'En faire une carte Réunion',
+  'Make it a Pay card': 'En faire une carte Payer',
 };

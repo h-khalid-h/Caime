@@ -21,7 +21,7 @@ describe('the readers', () => {
     const wrong = sources(root).filter((path) => {
       if (relative(root, path) === join('lib', 'readers.ts')) return false;
       const text = readFileSync(path, 'utf8');
-      return /^(?:import|export) (?!type )[^;]*from '@caime\/core\/(?:when|amounts|intelligence|latin-language)'/m.test(
+      return /^(?:import|export) (?!type )[^;]*from '@caime\/core\/(?:when|amounts|intelligence|latin-language|card-offer)'/m.test(
         text,
       );
     });

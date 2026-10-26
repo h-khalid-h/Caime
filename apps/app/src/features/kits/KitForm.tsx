@@ -96,6 +96,9 @@ export interface KitStart {
    * way and the amount from the share, so the form shows them rather than asking.
    */
   share?: { splitId: string; to: string };
+  /** A Meeting card from what was being written (M17 I9a): its title, and its time in the words. */
+  title?: string;
+  when?: string;
 }
 
 /**
@@ -436,6 +439,12 @@ export function KitForm({
         setCurrencies((c) => ({ ...c, amount: start.amount?.currency ?? null }));
       } else if (start?.note) setTexts((x) => ({ ...x, note: start.note ?? '' }));
     }
+    if (kit === 'meeting' && start?.when)
+      setTexts((x) => ({
+        ...x,
+        start: start.when ?? '',
+        ...(start.title ? { title: start.title } : {}),
+      }));
   }, [kit, start]);
   const item: BookingItem | null =
     host?.items.find((i) => i.id === itemId) ??

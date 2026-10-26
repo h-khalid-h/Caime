@@ -378,4 +378,49 @@ test.describe
       await expect(page).toHaveURL(new RegExp(`/p/${samId}`));
       expect(noor.errors).toEqual([]);
     });
+
+    test('a plan or an amount being written offers its card, filled, on a tap (M17 I9a)', async () => {
+      const { page } = noor;
+      await page.goto(`/c/${convo}`);
+      const box = page.getByTestId('composer-input').filter({ visible: true });
+      await box.fill("Let's meet Friday at 3pm");
+      const offer = page.getByTestId('card-offer').filter({ visible: true });
+      await expect(offer).toContainText('Make it a Meeting card');
+      await expect(offer).toContainText('3:00');
+      await page.screenshot({ path: 'e2e/screenshots/desktop-card-offer.png' });
+      await offer.getByTestId('card-offer-take').click();
+      // The card opens filled from the words, and nothing is sent until it's sent.
+      await expect(page.getByLabel('Title')).toHaveValue('Meeting');
+      await expect(page.getByLabel('When', { exact: true })).toHaveValue('Friday at 3pm');
+      await expect(visible(page, /^Fri, .*3:00/)).toBeVisible();
+      await page.getByLabel('Title').fill(`Catch-up ${suffix}`);
+      await page.getByTestId('kit-send').click();
+      await expect(
+        page.getByTestId('kit-meeting').filter({ hasText: `Catch-up ${suffix}`, visible: true }),
+      ).toContainText('Proposed');
+      // Taken once, it isn't offered again for the same words.
+      await expect(page.getByTestId('card-offer').filter({ visible: true })).toHaveCount(0);
+
+      // An amount asked for offers a Pay card that asks; its × puts it aside.
+      await box.fill('Send me 200 EGP for the tickets');
+      await expect(offer).toContainText('Make it a Pay card');
+      await expect(offer).toContainText('Ask to be paid');
+      await offer.getByTestId('card-offer-take').click();
+      await expect(page.getByRole('radio', { name: 'Ask to be paid' })).toBeChecked();
+      await expect(page.getByLabel('Amount', { exact: true })).toHaveValue('200');
+      await page.keyboard.press('Escape');
+      await box.fill("I'll send you 50 EGP tonight");
+      await expect(offer).toContainText('I’m paying');
+      await offer.getByTestId('card-offer-close').click();
+      await expect(page.getByTestId('card-offer').filter({ visible: true })).toHaveCount(0);
+      // Nothing was sent but the card.
+      const said = await alexCtx.request.get(`/v1/conversations/${convo}/messages`, {
+        headers: CLIENT,
+      });
+      const text = JSON.stringify(await said.json());
+      expect(text).not.toContain('Send me 200 EGP');
+      expect(text).not.toContain("I'll send you 50 EGP");
+      await box.fill('');
+      expect(noor.errors).toEqual([]);
+    });
   });

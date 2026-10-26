@@ -339,7 +339,13 @@ A sphere is said as how you know someone, never "sphere".
   organization's conversation (`assertContactSendable` in `sendMessage`); `ContactBody` reads them
   through `usePerson`, the profile route's rules, so each reader sees what the profile shows them
   and one who reads as nobody gets "isn't available": anything new that shows a person inside a
-  message reads them the same way, never a copy of their name. Read and delivered
+  message reads them the same way, never a copy of their name. What's being written may be a card
+  (M17 I9a): core `cardOfferIn` (`card-offer.ts`, a file of rules in `WORD_DATA_FILES`, its golden
+  lines in `card-offer-golden.test.ts`) reads it on the device through the lazy readers
+  (`useReaders(wanted)`), and the composer's `CardOfferLine` opens the card filled through
+  `KitStart` (`title` and `when` for a meeting, `direction` and `amount` for Pay), only where
+  `kitsOffered` offers it; a new card read from words joins that reader with its lines in every
+  language, and is never sent but by the person. Read and delivered
   differ by shape and colour: sent and delivered in the bubble's `tick` token (3:1 on the bubble,
   1.8:1 from its `fg`), read in `fg` with a heavier stroke, and on a card of one's own the
   tertiary text and the text (`tokens.test.ts` holds both). A quote says whose words it quotes (`replyName`

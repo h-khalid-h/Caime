@@ -6,7 +6,7 @@ import type {
   MessageView,
   QuickReplyView,
 } from '@caime/core/api';
-import { listTitle, messagePreview } from '@caime/core/format';
+import { formatAmount, formatWhenAt, listTitle, messagePreview } from '@caime/core/format';
 import { msg, tr, trn } from '@caime/core/i18n';
 import { uuidv4 } from '@caime/core/ids';
 import { isLargeGroup } from '@caime/core/large-group';
@@ -61,6 +61,7 @@ import { type Chosen, instantOf } from '@/features/when/when';
 import { useEmptied } from '@/lib/emptied';
 import { canTakePhoto, photoToUpload, pickFromLibrary, takePhoto } from '@/lib/photos';
 import { useUserClock } from '@/lib/time';
+import { useReaders } from '@/lib/useReaders';
 import { realtime } from '@/realtime/client';
 import { applyEditToInbox, upsertMessage } from '@/state/cache';
 import { useDrafts } from '@/state/drafts';
@@ -143,6 +144,8 @@ const MAX_LINES = { phone: 5, desktop: 8 };
 const SIDE = 40;
 /** A link's card is asked for once the typing has stayed on it this long (M16 E4c). */
 const LINK_SETTLE_MS = 600;
+/** Words longer than a message's few lines are no plan to read as one card. */
+const OFFER_MAX = 500;
 /** The quick replies offered at once, and how long a team's list is kept before it's asked again. */
 const QUICK_SHOWN = 6;
 const QUICK_STALE_MS = 5 * 60_000;
@@ -233,7 +236,7 @@ export const Composer = forwardRef<ComposerHandle, ComposerProps>(function Compo
   // Choosing when what's written goes (M16 E8b).
   const [later, setLater] = useState(false);
   const [contact, setContact] = useState(false);
-  const { timeZone } = useUserClock();
+  const { timeZone, locale } = useUserClock();
   const [rewrite, setRewrite] = useState(false);
   const [recording, setRecording] = useState(false);
   const aiReady = useAiReady(conversation);
@@ -277,6 +280,52 @@ export const Composer = forwardRef<ComposerHandle, ComposerProps>(function Compo
     staleTime: Number.POSITIVE_INFINITY,
     retry: false,
   });
+  // Words become cards (M17 I9a): a plan to meet with its day or time offers a Meeting card
+  // filled in, an amount asked for or offered a Pay card, read on this device by the rules once
+  // the typing has settled; taken by a tap, put aside by its ×, never sent by itself (R12, R110).
+  const offersCards =
+    !privately &&
+    !editing &&
+    !caimes &&
+    kits.some((k) => k.id === 'meeting' || k.id === 'payment_request');
+  const [settledText, setSettledText] = useState('');
+  useEffect(() => {
+    const timer = setTimeout(() => setSettledText(text), LINK_SETTLE_MS);
+    return () => clearTimeout(timer);
+  }, [text]);
+  const readers = useReaders(offersCards && settledText.trim().length >= 8);
+  const offer = useMemo(() => {
+    if (!readers || !offersCards || settledText !== text || text.length > OFFER_MAX) return null;
+    const found = readers.cardOfferIn(text, {
+      now: new Date(),
+      timeZone,
+      locale,
+      workweek: me.workweek,
+      currency: me.currency,
+    });
+    if (!found) return null;
+    const kitId = found.kind === 'meeting' ? 'meeting' : 'payment_request';
+    return kits.some((k) => k.id === kitId) ? found : null;
+  }, [readers, offersCards, settledText, text, timeZone, locale, me, kits]);
+  const offerKey = !offer
+    ? null
+    : offer.kind === 'meeting'
+      ? `meeting:${offer.when.at}`
+      : `pay:${offer.direction}:${offer.amount.value}:${offer.amount.currency ?? ''}`;
+  const [offerOff, setOfferOff] = useState<string | null>(null);
+  const shownOffer = offer && offerKey !== offerOff ? offer : null;
+  const takeOffer = () => {
+    if (!shownOffer) return;
+    setCustom(null);
+    if (shownOffer.kind === 'meeting') {
+      setStart({ title: tr('Meeting'), when: shownOffer.when.text });
+      setKit('meeting');
+    } else {
+      setStart({ direction: shownOffer.direction, amount: shownOffer.amount });
+      setKit('payment_request');
+    }
+    setOfferOff(offerKey);
+  };
   // Seen as private here, and now said not to be: nothing is written from here in the clear.
   const downgraded = privately && conversation.privacyClass !== 'private';
   // This browser, until one of theirs approves it, can't write here.
@@ -824,6 +873,35 @@ export const Composer = forwardRef<ComposerHandle, ComposerProps>(function Compo
           <LinkCard link={linkCard.data.preview} onRemove={() => setLinkOff(cardFor)} />
         </View>
       ) : null}
+      {shownOffer ? (
+        <CardOfferLine
+          icon={KIT_ICONS[shownOffer.kind === 'meeting' ? 'meeting' : 'payment_request']}
+          line={
+            shownOffer.kind === 'meeting'
+              ? [
+                  tr('Make it a Meeting card'),
+                  formatWhenAt(
+                    shownOffer.when.at,
+                    Boolean(shownOffer.when.time),
+                    new Date(),
+                    timeZone,
+                    locale,
+                  ),
+                ].join(' · ')
+              : [
+                  tr('Make it a Pay card'),
+                  shownOffer.direction === 'ask' ? tr('Ask to be paid') : tr('I’m paying'),
+                  formatAmount(
+                    shownOffer.amount.value,
+                    shownOffer.amount.currency ?? me.currency,
+                    locale,
+                  ),
+                ].join(' · ')
+          }
+          onTake={takeOffer}
+          onClose={() => setOfferOff(offerKey)}
+        />
+      ) : null}
       {offered && Platform.OS !== 'ios' ? (
         <Text
           accessibilityLiveRegion="polite"
@@ -1341,6 +1419,62 @@ export const Composer = forwardRef<ComposerHandle, ComposerProps>(function Compo
     </View>
   );
 });
+
+/** The card what's being written could be (M17 I9a): its line opens the card filled in. */
+function CardOfferLine({
+  icon: Icon,
+  line,
+  onTake,
+  onClose,
+}: {
+  icon: typeof Reply;
+  line: string;
+  onTake: () => void;
+  onClose: () => void;
+}) {
+  const t = useTheme();
+  return (
+    <View
+      style={{
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: 4,
+        paddingStart: 12,
+        paddingEnd: 6,
+        paddingTop: 6,
+      }}
+      testID="card-offer"
+    >
+      <Pressable
+        accessibilityRole="button"
+        onPress={onTake}
+        style={{
+          flex: 1,
+          flexDirection: 'row',
+          alignItems: 'center',
+          gap: 8,
+          paddingHorizontal: 10,
+          paddingVertical: 8,
+          borderRadius: t.radii.sm,
+          backgroundColor: t.c.surfaceMuted,
+        }}
+        testID="card-offer-take"
+      >
+        <Icon size={16} color={t.c.primary} />
+        <Text variant="captionStrong" color="text" style={{ flexShrink: 1 }} numberOfLines={1}>
+          {line}
+        </Text>
+      </Pressable>
+      <IconButton
+        icon={X}
+        label={tr('Not now')}
+        size={18}
+        onPress={onClose}
+        testID="card-offer-close"
+      />
+    </View>
+  );
+}
 
 function Banner({
   icon: Icon,

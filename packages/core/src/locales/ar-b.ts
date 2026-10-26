@@ -3628,4 +3628,14 @@ export const arB: Catalog = {
   'Send a contact': 'إرسال جهة اتصال',
   'Everyone here sees them as their profile shows them, and can open it.':
     'يرى كل من هنا جهة الاتصال كما يعرضها ملفها الشخصي، ويمكنه فتحه.',
+  'Make it a Meeting card': {
+    toWoman: 'اجعليها بطاقة الاجتماع',
+    toMan: 'اجعلها بطاقة الاجتماع',
+    other: 'اجعلها بطاقة الاجتماع',
+  },
+  'Make it a Pay card': {
+    toWoman: 'اجعليها بطاقة الدفع',
+    toMan: 'اجعلها بطاقة الدفع',
+    other: 'اجعلها بطاقة الدفع',
+  },
 };

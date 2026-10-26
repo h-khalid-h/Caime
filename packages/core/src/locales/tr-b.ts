@@ -2710,4 +2710,6 @@ export const turkishB: Catalog = {
   'Send a contact': 'Kişi kartı gönder',
   'Everyone here sees them as their profile shows them, and can open it.':
     'Buradaki herkes bu kişiyi profilinin gösterdiği gibi görür ve profili açabilir.',
+  'Make it a Meeting card': 'Toplantı kartı yap',
+  'Make it a Pay card': 'Öde kartı yap',
 };

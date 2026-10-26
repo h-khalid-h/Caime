@@ -21,13 +21,14 @@ export function loadReaders(): Promise<Readers> {
 }
 
 /**
- * The readers once they're here, asked for when a form that reads dates or amounts opens; null
- * for the moment before, when nothing typed is read yet.
+ * The readers once they're here, asked for when a form that reads dates or amounts opens (or,
+ * with `wanted`, once there's something to read: the composer's words, M17 I9a); null for the
+ * moment before, when nothing typed is read yet.
  */
-export function useReaders(): Readers | null {
+export function useReaders(wanted = true): Readers | null {
   const [readers, setReaders] = useState(loaded);
   useEffect(() => {
-    if (readers) return;
+    if (readers || !wanted) return;
     let live = true;
     loadReaders().then(
       (m) => live && setReaders(m),
@@ -36,6 +37,6 @@ export function useReaders(): Readers | null {
     return () => {
       live = false;
     };
-  }, [readers]);
+  }, [readers, wanted]);
   return readers;
 }
