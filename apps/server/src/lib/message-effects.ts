@@ -35,7 +35,7 @@ import { asReader, inReader, readersOf } from './i18n';
 import { enqueue, registerPeriodic } from './jobs';
 import { queueLinkPreview } from './link-previews';
 import { queueMailOut } from './mail-out';
-import { analyseText, messagePreview } from './messages';
+import { analyseText, meetingMeant, messagePreview } from './messages';
 import { runNotificationHooks, withLivePush } from './notify';
 import { queueBookedForms } from './org-forms';
 import {
@@ -144,9 +144,21 @@ export async function replayEffects(ctx: AppContext): Promise<number> {
           .executeTakeFirst()
       : undefined;
     // Its words as the rules read them when it was sent: the same dates, the same asks.
-    const { analysis } = sender
-      ? analyseText(message.body ?? '', sender, message.created_at)
-      : { analysis: null };
+    const { analysis } =
+      sender && message.sender_id
+        ? analyseText(
+            message.body ?? '',
+            sender,
+            message.created_at,
+            await meetingMeant(
+              ctx,
+              message.sender_id,
+              message.conversation_id,
+              message.body ?? '',
+              message.created_at,
+            ),
+          )
+        : { analysis: null };
     try {
       await afterMessage(ctx, message, analysis);
       ctx.metrics.effects.inc({ outcome: 'replayed' });

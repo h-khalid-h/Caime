@@ -84,3 +84,68 @@ describe('the card a message could be (M17 I9b)', () => {
     expect(await offerOf(m.id)).toBeNull();
   });
 });
+
+describe('"before the meeting" is due when the meeting starts (M17 I9e)', () => {
+  const datesOf = async (id: string) => {
+    const page = await ben.get(`/v1/conversations/${chat}/messages`);
+    const m = (
+      page.messages as Array<{ id: string; entities: { dates?: Array<Record<string, unknown>> } }>
+    ).find((x) => x.id === id);
+    return m?.entities.dates ?? [];
+  };
+  const waits = async () => {
+    await t.ctx.flush();
+    return (await ben.get(`/v1/suggestions?conversationId=${chat}`)).suggestions as Array<{
+      kind: string;
+      title: string;
+      dueAt: string | null;
+    }>;
+  };
+
+  it('dates a promise by the conversation’s next meeting, and nothing for anyone else’s', async () => {
+    // Nothing ahead yet: the words date nothing.
+    const early = await say(ana, "I'll send you the floor plan before the meeting");
+    expect(await datesOf(early.id)).toEqual([]);
+    const card = (
+      await ben.post(`/v1/conversations/${chat}/messages`, {
+        clientId: uuidv4(),
+        kind: 'kit',
+        payload: {
+          kit: 'meeting',
+          fields: {
+            title: 'Site visit',
+            start: { at: '2026-10-29T12:00:00.000Z', hasTime: true },
+            durationMinutes: 60,
+          },
+        },
+      })
+    ).message as { id: string };
+    await ana.post(`/v1/messages/${card.id}/kit`, { to: 'accepted' });
+
+    const m = await say(ana, "I'll send you the deck before the meeting");
+    expect(await datesOf(m.id)).toEqual([
+      expect.objectContaining({
+        text: 'before the meeting',
+        at: '2026-10-29T12:00:00.000Z',
+        card: true,
+      }),
+    ]);
+    expect((await waits()).find((s) => /deck/i.test(s.title))).toMatchObject({
+      kind: 'waiting',
+      dueAt: '2026-10-29T12:00:00.000Z',
+    });
+
+    const other = await say(ana, "I'll call the bank before the meeting with the auditors");
+    expect(await datesOf(other.id)).toEqual([]);
+    expect((await waits()).find((s) => /bank/i.test(s.title))?.dueAt ?? null).toBeNull();
+
+    // Read again when the words are edited to say it.
+    const edited = await ana.req('PATCH', `/v1/messages/${early.id}`, {
+      body: "I'll send you the floor plan before our call",
+    });
+    expect(edited.statusCode, edited.body).toBe(200);
+    expect(await datesOf(early.id)).toEqual([
+      expect.objectContaining({ at: '2026-10-29T12:00:00.000Z', card: true }),
+    ]);
+  });
+});

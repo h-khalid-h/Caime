@@ -46,8 +46,8 @@ const CLOCKS: Record<GoldenLine['lang'], { timeZone: string; locale: string }> =
 const dayIn = (iso: string, timeZone: string) =>
   new Intl.DateTimeFormat('en-CA', { timeZone }).format(new Date(iso));
 
-function read(text: string, clock: { timeZone: string; locale: string }) {
-  const a = analyzeMessage(text, { now: NOW, ...clock });
+function read(text: string, clock: { timeZone: string; locale: string }, card?: string) {
+  const a = analyzeMessage(text, { now: NOW, ...clock, card });
   const got = {
     question: a.isQuestion,
     request: a.isRequest,
@@ -59,7 +59,7 @@ function read(text: string, clock: { timeZone: string; locale: string }) {
   const due = first?.dueAt ? dayIn(first.dueAt, clock.timeZone) : null;
   return { got, due, suggestions };
 }
-const readLine = (line: GoldenLine) => read(line.text, CLOCKS[line.lang]);
+const readLine = (line: GoldenLine) => read(line.text, CLOCKS[line.lang], line.card);
 
 function score(lines: GoldenLine[], label: Label) {
   let tp = 0;
@@ -140,7 +140,11 @@ describe('the words for sureness', () => {
     ];
     const tally: Record<string, { right: number; all: number }> = {};
     for (const line of lines) {
-      const { suggestions, due } = read(line.text, line.clock);
+      const { suggestions, due } = read(
+        line.text,
+        line.clock,
+        'card' in line ? line.card : undefined,
+      );
       suggestions.forEach((s, i) => {
         const kindRight =
           (s.kind === 'waiting' && line.expect.commitment) ||

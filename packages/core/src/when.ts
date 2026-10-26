@@ -19,6 +19,11 @@ export interface WhenOptions {
   locale?: string;
   /** The days worked where the writer lives (`countryFacts`); their locale's country's when left out. */
   workweek?: number[];
+  /**
+   * When the conversation's next meeting or appointment starts, an ISO moment: "before the
+   * meeting" is due then (M17 I9e). Left out, those words date nothing.
+   */
+  card?: string;
 }
 
 /** The country in a locale tag ("ar-EG" → "EG"), or null. */
@@ -42,6 +47,8 @@ export interface WhenMatch {
   past: boolean;
   /** Only an hour was said ("at 3"): the day is the next one it falls on, not one the words named. */
   timeOnly?: true;
+  /** Said as "before the meeting": the conversation's next meeting set it (M17 I9e). */
+  card?: true;
 }
 
 interface LocalDate {
@@ -62,6 +69,8 @@ interface Piece {
    * time written beside it wins, read as that part of the day ("tonight at 8" is 20:00).
    */
   softTime?: boolean;
+  /** "Before the meeting", dated by the meeting it names. */
+  card?: true;
 }
 
 /** Words before a bare "at 8" that make it an evening (dinner, drinks, tonight…). */
@@ -297,6 +306,54 @@ function* scan(re: RegExp, text: string): Generator<RegExpExecArray> {
 export const ARABIC_LETTERS = '\\u0621-\\u065F\\u066E-\\u06D3\\u06D5-\\u06DC\\u06FA-\\u06FF';
 const AR_EDGE_BEFORE = `(^|[^${ARABIC_LETTERS}A-Za-z0-9_])`;
 const AR_EDGE_AFTER = `(?=$|[^${ARABIC_LETTERS}A-Za-z0-9_])`;
+
+/**
+ * "Before the meeting" (M17 I9e): a deadline the conversation's next meeting or appointment sets,
+ * in each interface language, "before we meet" too. It's this conversation's own: one named as
+ * someone else's ("with the bank", "مع البنك", "avec la banque", "bankayla olan") or one gone by
+ * ("last", "اللي فات", "dernière") is left alone, and a day said after it ("on Thursday") is read
+ * as that day instead.
+ */
+const NOT_THIS_ONE_EN =
+  '(?!\\s+(?:with|of|on|at|about|for|last|yesterday|room|rooms|notes|minutes|agenda|link|invite|invitation|request|recording|summary)(?![\\p{L}]))';
+const NOT_THIS_ONE_AR =
+  '(?!\\s+(?:مع|بتاع|بتاعة|بتاعت|تبع|حق|حقت|اللي\\s+فات|الماضي|الماضية|السابق|السابقة|الفائت)(?![\\p{L}]))';
+const NOT_THIS_ONE_FR =
+  "(?!\\s+(?:avec|de|du|des|d['’]|chez|sur|dernier|dernière|derniere|passé|passée)(?![\\p{L}]))";
+const BEFORE_CARD = new RegExp(
+  `${L_BEFORE}(${[
+    `(?:before|ahead\\s+of|by)\\s+(?:the|our|this|my|your)\\s+(?:meeting|call|appointment|session)(?![\\p{L}])${NOT_THIS_ONE_EN}`,
+    'before\\s+we\\s+(?:meet|talk|speak)(?![\\p{L}])(?!\\s+(?:with|again)(?![\\p{L}]))',
+    `قبل\\s+(?:ال(?:اجتماع|ميتنج|ميتينج|ميتنغ|مقابلة|مقابله|موعد|ميعاد|مكالمة|مكالمه|كول)|(?:اجتماع|موعد|ميعاد)(?:نا|كم)|(?:مكالمت|مقابلت)(?:نا|كم))(?![\\p{L}])${NOT_THIS_ONE_AR}`,
+    'قبل\\s+(?:ما\\s+)?(?:نتقابل|نتلاقى|نتلاقي|نجتمع|نلتقي|نشوف\\s+بعض)(?![\\p{L}])',
+    `avant\\s+(?:la|le|notre|cette|ce|l['’])\\s*(?:réunion|reunion|rendez-vous|rendez\\s+vous|rdv|appel|visio|call|séance|seance)(?![\\p{L}-])${NOT_THIS_ONE_FR}`,
+    "avant\\s+(?:qu['’]on\\s+se\\s+(?:voie|voit|parle)|de\\s+(?:nous|se)\\s+voir)(?![\\p{L}])",
+    '(?:(?:bizim|bu)\\s+)?(?:toplantı(?:mız)?|görüşme(?:miz)?|randevu(?:muz)?|buluşma(?:mız)?)(?:dan|den)\\s+önce',
+    '(?:(?:bizim|bu)\\s+)?(?:toplantı(?:mız)?|görüşme(?:miz)?|randevu(?:muz)?)(?:ya|ye|a|e)\\s+kadar',
+  ].join('|')})${L_AFTER}`,
+  'gu',
+);
+/** In Turkish whose meeting it is comes first: "bankayla olan toplantıdan önce" is the bank's. */
+const TR_SOMEONE_ELSES = /(?:y?l[ae]|ile|olan)\s+$/u;
+
+/** Where the words say "before the meeting", in a lower-cased text. */
+function beforeCardIn(lower: string): Array<{ index: number; end: number }> {
+  const out: Array<{ index: number; end: number }> = [];
+  for (const m of lower.matchAll(BEFORE_CARD)) {
+    const index = m.index + m[1]!.length;
+    if (TR_SOMEONE_ELSES.test(lower.slice(0, index))) continue;
+    out.push({ index, end: index + m[2]!.length });
+  }
+  return out;
+}
+
+/**
+ * Whether the words set a deadline by a meeting ("before the meeting", M17 I9e): the server asks
+ * when the conversation's next one is only for such words.
+ */
+export function saysBeforeCard(text: string): boolean {
+  return beforeCardIn(normaliseDigits(text).replace(/İ/g, 'i').toLowerCase()).length > 0;
+}
 
 export function parseWhen(input: string, options: WhenOptions): WhenMatch[] {
   const text = normaliseDigits(input);
@@ -1065,6 +1122,20 @@ export function parseWhen(input: string, options: WhenOptions): WhenMatch[] {
     add({ ...at(m), time: { hour: /^öğle/.test(m[3]!) ? 12 : 0, minute: 0 } });
   }
 
+  // --- Before the meeting (M17 I9e): the conversation's next one, when the server says when ---
+  const card = options.card ? new Date(options.card) : null;
+  if (card && !Number.isNaN(card.getTime()) && card.getTime() > options.now.getTime()) {
+    const t = zonedParts(card, tz);
+    for (const { index, end } of beforeCardIn(lower))
+      add({
+        index,
+        end,
+        date: { year: t.year, month: t.month, day: t.day },
+        time: { hour: t.hour, minute: t.minute },
+        card: true,
+      });
+  }
+
   // --- Combine date and time pieces that sit next to each other ------------------------------
   pieces.sort((a, b) => a.index - b.index || b.end - b.index - (a.end - a.index));
   // Drop pieces contained in a longer earlier piece ("the day after tomorrow" vs "tomorrow").
@@ -1129,6 +1200,7 @@ export function parseWhen(input: string, options: WhenOptions): WhenMatch[] {
       at: at.toISOString(),
       past,
       ...(p.date ? {} : { timeOnly: true as const }),
+      ...(p.card ? { card: true as const } : {}),
     });
   }
   return results;

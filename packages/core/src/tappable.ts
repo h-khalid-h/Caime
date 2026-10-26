@@ -3,7 +3,8 @@
  * email address, each where the words say it. Nothing is read here: the server kept what it found
  * as the message was sent (`entities`, on its writer's clock), and this only finds those words
  * again in the text a reader sees, so a bubble marks them without loading a reader. A day gone by
- * isn't offered; a link keeps its own tap, and a mention wins over anything inside it.
+ * isn't offered, nor "before the meeting" (M17 I9e), whose time is a meeting's already; a link
+ * keeps its own tap, and a mention wins over anything inside it.
  */
 
 export type Tappable =
@@ -22,6 +23,7 @@ interface KeptDate {
   at?: unknown;
   time?: unknown;
   past?: unknown;
+  card?: unknown;
 }
 
 /** What was kept, and whether it's a number kept as its digits alone. */
@@ -39,6 +41,7 @@ function kept(entities: unknown): Kept[] {
   if (Array.isArray(e.dates))
     for (const d of e.dates as KeptDate[]) {
       if (!d || typeof d.text !== 'string' || typeof d.at !== 'string' || d.past === true) continue;
+      if (d.card === true) continue;
       out.push({ text: d.text, tap: { kind: 'date', at: d.at, hasTime: Boolean(d.time) } });
     }
   // A number is kept as its digits and its plus ("+201001234567"), however it was written.

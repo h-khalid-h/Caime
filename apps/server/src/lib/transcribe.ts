@@ -19,7 +19,7 @@ import { runAi } from './ai-run';
 import { audioLengthMs } from './audio-length';
 import { AppError } from './errors';
 import { enqueue, registerJob } from './jobs';
-import { analyseText, messageViews, participantsOf } from './messages';
+import { analyseText, meetingMeant, messageViews, participantsOf } from './messages';
 import { assertAiAllowance } from './plans';
 import { SPEECH_MAX_BYTES, SPEECH_MAX_MS } from './speech';
 import { forgetLater } from './speech-forget';
@@ -197,7 +197,13 @@ async function transcribe(
   };
   // Read as its sender's typed words would have been when it was sent (M16 G8): a voice note's
   // "tomorrow" is the day after it was said, and what it asks reads in the inbox as asked.
-  const read = analyseText(transcript.text.trim(), sender, m.created_at);
+  const words = transcript.text.trim();
+  const read = analyseText(
+    words,
+    sender,
+    m.created_at,
+    await meetingMeant(ctx, m.sender_id, m.conversation_id, words, m.created_at),
+  );
   const updated = await ctx.db
     .updateTable('messages')
     .set({

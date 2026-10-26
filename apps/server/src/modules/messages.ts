@@ -76,6 +76,7 @@ import {
   analyseText,
   assertCanSend,
   fileView,
+  meetingMeant,
   messageViews,
   notHiddenFor,
   participantsOf,
@@ -214,6 +215,7 @@ export async function messageRoutes(app: FastifyInstance, ctx: AppContext) {
               .where('id', '=', auth.userId)
               .executeTakeFirstOrThrow(),
             ctx.now(),
+            await meetingMeant(ctx, auth.userId, m.conversation_id, body.body.trim(), ctx.now()),
           )
         : null;
     const updated = await ctx.db

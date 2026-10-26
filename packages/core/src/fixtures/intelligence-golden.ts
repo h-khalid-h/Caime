@@ -15,7 +15,12 @@ export interface GoldenLine {
   expect: Partial<Record<'question' | 'request' | 'commitment' | 'decision', boolean>>;
   /** The due date the first suggestion should carry, as YYYY-MM-DD, or null for none. */
   due?: string | null;
+  /** When the conversation's next meeting starts, for a line that dates by it (M17 I9e). */
+  card?: string;
 }
+
+/** The conversation's next meeting for the lines that say "before the meeting": Thu 8 October. */
+export const NEXT_MEETING = '2026-10-08T15:00:00.000Z';
 
 export const INTELLIGENCE_GOLDEN: GoldenLine[] = [
   // ---- English: commitments
@@ -960,4 +965,68 @@ export const INTELLIGENCE_GOLDEN: GoldenLine[] = [
   { text: 'Henüz karar vermedik', lang: 'tr', expect: {} },
   { text: 'Fiyatta anlaştınız mı?', lang: 'tr', expect: { question: true } },
   { text: 'Bu karara katılmıyorum', lang: 'tr', expect: {} },
+
+  // ---- Before the meeting (M17 I9e): due when the conversation's next meeting starts, never
+  // for a meeting someone else holds.
+  {
+    text: "I'll send you the deck before the meeting",
+    lang: 'en',
+    expect: { commitment: true },
+    due: '2026-10-08',
+    card: NEXT_MEETING,
+  },
+  {
+    text: "I'll call the bank before the meeting with the auditors",
+    lang: 'en',
+    expect: { commitment: true },
+    due: null,
+    card: NEXT_MEETING,
+  },
+  {
+    text: 'هبعتلك العرض قبل الاجتماع',
+    lang: 'ar',
+    expect: { commitment: true },
+    due: '2026-10-08',
+    card: NEXT_MEETING,
+  },
+  {
+    text: 'هكلم البنك قبل الاجتماع مع المحاسب',
+    lang: 'ar',
+    expect: { commitment: true },
+    due: null,
+    card: NEXT_MEETING,
+  },
+  {
+    text: 'Je t’enverrai le devis avant la réunion',
+    lang: 'fr',
+    expect: { commitment: true },
+    due: '2026-10-08',
+    card: NEXT_MEETING,
+  },
+  {
+    text: 'J’appellerai la banque avant la réunion avec le comptable',
+    lang: 'fr',
+    expect: { commitment: true },
+    due: null,
+    card: NEXT_MEETING,
+  },
+  {
+    text: 'Sunumu toplantıdan önce gönderirim',
+    lang: 'tr',
+    expect: { commitment: true },
+    due: '2026-10-08',
+    card: NEXT_MEETING,
+  },
+  {
+    text: 'Bankayla olan toplantıdan önce raporu gönderirim',
+    lang: 'tr',
+    expect: { commitment: true },
+    due: null,
+    card: NEXT_MEETING,
+  },
+  // What happened before a meeting promises nothing.
+  { text: 'We had coffee before the meeting', lang: 'en', expect: {}, card: NEXT_MEETING },
+  { text: 'شربنا قهوة قبل الاجتماع', lang: 'ar', expect: {}, card: NEXT_MEETING },
+  { text: 'On a pris un café avant la réunion', lang: 'fr', expect: {}, card: NEXT_MEETING },
+  { text: 'Toplantıdan önce kahve içtik', lang: 'tr', expect: {}, card: NEXT_MEETING },
 ];

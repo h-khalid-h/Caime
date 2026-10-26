@@ -30,6 +30,11 @@ describe('what may be tapped in a message (M17 I9d)', () => {
         dates: [{ text: 'yesterday', at: '2026-10-25T00:00:00.000Z', past: true }],
       }),
     ).toEqual([]);
+    expect(
+      tappableSpans('Before the meeting', {
+        dates: [{ text: 'Before the meeting', at: '2026-10-29T13:00:00.000Z', card: true }],
+      }),
+    ).toEqual([]);
     expect(tappableSpans('Call me', null)).toEqual([]);
     expect(tappableSpans('Call me', { phones: [42], emails: ['nope'] })).toEqual([]);
     const text = 'Friday, Friday';

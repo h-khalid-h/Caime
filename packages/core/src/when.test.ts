@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { firstFutureWhen, parseWhen } from './when';
+import { firstFutureWhen, parseWhen, saysBeforeCard } from './when';
 
 // Friday 2026-09-25 14:30 in Cairo (UTC+3 in summer), a Sun–Thu workweek region.
 const cairo = { now: new Date('2026-09-25T11:30:00Z'), timeZone: 'Africa/Cairo', locale: 'ar-EG' };
@@ -326,5 +326,62 @@ describe('parseWhen — Turkish', () => {
 describe('firstFutureWhen', () => {
   it('skips past references', () => {
     expect(firstFutureWhen('we met Sep 20, next meeting Oct 2', ny)?.date).toBe('2026-10-02');
+  });
+});
+
+describe('before the meeting (M17 I9e)', () => {
+  // The conversation's next meeting: Thursday 2026-09-24 at 3 pm in New York.
+  const meeting = '2026-09-24T19:00:00.000Z';
+  const withCard = { ...ny, card: meeting };
+
+  it("is due when the conversation's next meeting starts, in every interface language", () => {
+    for (const text of [
+      "I'll send the deck before the meeting",
+      'Can you sign it ahead of our call?',
+      'Get it to me before we meet',
+      'هبعتلك العرض قبل الاجتماع',
+      'خلص الملف قبل ميعادنا',
+      'قبل ما نتقابل ابعتلي الأرقام',
+      'Je t’envoie le devis avant la réunion',
+      "Envoie-moi ça avant qu'on se voie",
+      'Sunumu toplantıdan önce gönderirim',
+      'Raporu toplantıya kadar bitiririm',
+    ]) {
+      expect(one(text, withCard), text).toMatchObject({
+        date: '2026-09-24',
+        time: '15:00',
+        at: meeting,
+        card: true,
+        past: false,
+      });
+      expect(saysBeforeCard(text), text).toBe(true);
+    }
+  });
+
+  it('dates nothing without a meeting ahead, or for a meeting someone else holds', () => {
+    expect(parseWhen("I'll send the deck before the meeting", ny)).toEqual([]);
+    expect(
+      parseWhen("I'll send the deck before the meeting", {
+        ...ny,
+        card: '2026-09-22T19:00:00.000Z',
+      }),
+    ).toEqual([]);
+    for (const text of [
+      "I'll call the bank before the meeting with the auditors",
+      'We cleaned up before the meeting room was booked',
+      'هكلم البنك قبل الاجتماع مع المحاسب',
+      'كان المفروض نخلص قبل الاجتماع اللي فات',
+      "J'appelle la banque avant la réunion avec le comptable",
+      'Bankayla olan toplantıdan önce raporu gönderirim',
+    ]) {
+      expect(parseWhen(text, withCard), text).toEqual([]);
+      expect(saysBeforeCard(text), text).toBe(false);
+    }
+  });
+
+  it('gives way to a day said after it', () => {
+    const [first, second] = parseWhen("I'll send it before the meeting on Friday", withCard);
+    expect(first).toMatchObject({ date: '2026-09-25' });
+    expect(second).toBeUndefined();
   });
 });

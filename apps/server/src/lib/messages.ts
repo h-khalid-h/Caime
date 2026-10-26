@@ -63,6 +63,7 @@ import { heldOnCaime } from '@caime/core/meetings';
 import { isRepeat, repeatsIn } from '@caime/core/repeat';
 import { dayIn, type MeetingSeries } from '@caime/core/series';
 import { CAI_ID, CAI_PHOTOS_MAX } from '@caime/core/system-ids';
+import { saysBeforeCard } from '@caime/core/when';
 import type { Kysely, SqlBool, Transaction } from 'kysely';
 import { sql } from 'kysely';
 import type { AppContext } from '../context';
@@ -92,6 +93,7 @@ import { formForCard } from './org-forms';
 import { between, isBlockedEitherWay, shareAConnection, viewerRelation } from './relations';
 import { type ShareToPay, shareToPay } from './splits';
 import { hostWithStock, takeStock, tellStockChanged } from './stock';
+import { cardsAhead } from './upcoming';
 import { minorOf, privacyOf } from './users';
 import { parse } from './validate';
 
@@ -802,15 +804,45 @@ export async function retentionFor(
   return conversationDays === null ? orgDays : Math.min(conversationDays, orgDays);
 }
 
+/** How far ahead "the meeting" is looked for (M17 I9e): a deadline set by one further off names
+ * some other meeting. */
+const MEETING_AHEAD_MS = 60 * 86_400_000;
+
+/**
+ * When "the meeting" is, for words that set a deadline by it ("before the meeting", M17 I9e): the
+ * next meeting or appointment ahead in this conversation that its writer sees, through the one
+ * reader of a person's cards. Asked only when the words say so, so any other message costs
+ * nothing more.
+ */
+export async function meetingMeant(
+  ctx: Pick<AppContext, 'db' | 'now'>,
+  writerId: string,
+  conversationId: string,
+  text: string,
+  now: Date,
+): Promise<string | undefined> {
+  if (!text || !saysBeforeCard(text)) return undefined;
+  const [next] = await cardsAhead(ctx, writerId, {
+    from: now,
+    until: new Date(now.getTime() + MEETING_AHEAD_MS),
+    limit: 1,
+    conversationIds: [conversationId],
+    series: { now },
+  });
+  return next?.at.toISOString();
+}
+
 /**
  * What the rules read in a message's words (PRD §23), as the sender's zone and week place
  * them: run when a message is sent and again when it's edited, so an edit's new dates and
- * asks count as its words now say (docs/REVIEW-2026-10-05.md, intelligence M).
+ * asks count as its words now say (docs/REVIEW-2026-10-05.md, intelligence M). `meeting` is the
+ * conversation's next one (`meetingMeant`), which "before the meeting" is due by.
  */
 export function analyseText(
   text: string,
   sender: { time_zone: string; locale: string; workweek: number[]; country: string | null },
   now: Date,
+  meeting?: string,
 ): { analysis: Analysis | null; entities: Record<string, unknown> } {
   const clock = {
     now,
@@ -820,7 +852,9 @@ export function analyseText(
     // What "$" or "ريال" means to the writer (R76): their own currency when it's one of those.
     currency: currencyOfCountry(sender.country),
   };
-  const analysis = text ? analyzeMessage(text, clock) : null;
+  const analysis = text
+    ? analyzeMessage(text, meeting ? { ...clock, card: meeting } : clock)
+    : null;
   // The card these words could be (M17 I9b), on the writer's clock: a reader is offered it.
   const offer = text ? keptCardOffer(cardOfferIn(text, clock)) : null;
   const entities = analysis
@@ -831,6 +865,7 @@ export function analyseText(
           time: d.time,
           at: d.at,
           past: d.past,
+          ...(d.card ? { card: true } : {}),
         })),
         amounts: analysis.amounts,
         links: analysis.links.map((l) => ({ url: l.url, host: l.host, ...assessLink(l.url) })),
@@ -1166,7 +1201,12 @@ export async function sendMessage(
   if (body.kind === 'location' && minorOf(sender, ctx.now()))
     throw forbidden(tr('Sharing a location is for people over 18.'));
   const text = body.body?.trim() ?? '';
-  const { analysis, entities } = analyseText(text, sender, ctx.now());
+  const { analysis, entities } = analyseText(
+    text,
+    sender,
+    ctx.now(),
+    await meetingMeant(ctx, senderId, conversationId, text, ctx.now()),
+  );
   // Kit cards (PRD §41): the sender picks the kit and fills its fields; the server decides what
   // the card says and where it starts, and only POST /messages/:id/kit moves it on.
   let payload = body.payload ?? {};
