@@ -2777,4 +2777,14 @@ export const frB: Catalog = {
   'Search didn’t answer. Try again in a moment.':
     'La recherche n’a pas répondu. Réessayez dans un instant.',
   'Export this chat as text': 'Exporter cette conversation en texte',
+  Select: 'Sélectionner',
+  Selected: 'Sélectionné',
+  '{n} selected': { one: '{n} sélectionné', other: '{n} sélectionnés' },
+  '{n} messages deleted for you': {
+    one: 'Supprimé pour vous',
+    other: '{n} messages supprimés pour vous',
+  },
+  'They arrive marked as forwarded.': 'Ils arrivent marqués comme transférés.',
+  'There’s nowhere else to forward them yet.':
+    'Il n’y a nulle part ailleurs où les transférer pour l’instant.',
 };

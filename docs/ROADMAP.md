@@ -2824,6 +2824,19 @@ graph) and the number that will show it; one that sharpens none is hygiene and s
       member's file read back; someone outside gets nothing; a customer's file names the
       organization, never who wrote), the E2E `reading-flow.spec.ts` (the download, its lines),
       the catalogs in four languages, and the full gate.
+- [x] E8. Several messages chosen together (2026-10-26, review §7's parity "select many"): a
+      message's actions offer Select; while choosing, a tap on a row takes it or lets it go (the
+      row marked as a search's match is), and a bar takes the composer's place (the composer kept,
+      out of sight, so what was being written stays) with how many, Copy (their words in the order
+      they were said, each under who said it; never a private message's, opened one at a time),
+      Forward (only where every one of them may be, each through the forward route in the order
+      said with its own client id for the sheet's life, so a send tried again arrives once) and
+      Delete for me (`deleteWithUndo` over the set: one toast, one Undo that puts back what hasn't
+      gone yet). Cancel, or letting go of the last one, ends it. Costs: nothing new on the server
+      (a forward a message, as before); a few hundred bytes in the conversation's own chunk.
+      Verified: the E2E `reading-flow.spec.ts` (chosen from the actions, counted as taps take and
+      let go, copied in order under the sender's name, deleted together and put back by one Undo,
+      forwarded together into a group in order), the catalogs in four languages, and the full gate.
 - [x] F1. Mail its sender couldn't be confirmed for, kept as such (2026-10-19, review §6: "mail
       failing the sender check is dropped silently (`mail-in.ts:111`, against R75's promised
       notice; the owner lost mail this way)"; R75 (1); advantage 5, privacy that never costs you
@@ -6777,3 +6790,5 @@ CONNIQT; they mean Caime. Caishy is one of Caime's AI members, and Cai leads the
 - 2026-10-26 — M16 E7: a conversation exported as text from its details, in WhatsApp's own lines
   so any WhatsApp importer (Caime's too) reads it back; to a customer, the team is the
   organization.
+- 2026-10-26 — M16 E8: several messages chosen together from a message's actions, then copied in
+  order, forwarded in order or deleted for you with one Undo.

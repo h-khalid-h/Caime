@@ -2682,4 +2682,13 @@ export const turkishB: Catalog = {
   'Words, a name, a number': 'Kelimeler, bir ad, bir numara',
   'Search didn’t answer. Try again in a moment.': 'Arama yanıt vermedi. Birazdan yeniden deneyin.',
   'Export this chat as text': 'Bu sohbeti metin olarak dışa aktar',
+  Select: 'Seç',
+  Selected: 'Seçildi',
+  '{n} selected': { one: '{n} seçildi', other: '{n} seçildi' },
+  '{n} messages deleted for you': {
+    one: 'Sizin için silindi',
+    other: '{n} mesaj sizin için silindi',
+  },
+  'They arrive marked as forwarded.': 'İletildi olarak işaretli ulaşırlar.',
+  'There’s nowhere else to forward them yet.': 'Bunları iletecek başka bir yer henüz yok.',
 };

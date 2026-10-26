@@ -214,4 +214,87 @@ test.describe
       expect(text).toMatch(/ - Alex Reads: Later line 24\n$/);
       expect(noor.errors).toEqual([]);
     });
+
+    test('messages chosen together are copied in order, deleted with one Undo and forwarded (M16 E8)', async () => {
+      await noorCtx.grantPermissions(['clipboard-read', 'clipboard-write']);
+      const listed = await noorCtx.request.get(`/v1/conversations/${convo}/messages`, {
+        headers: CLIENT,
+      });
+      const { messages } = (await listed.json()) as {
+        messages: Array<{ body: string | null; seq: number }>;
+      };
+      const seqOf = (body: string) => messages.find((m) => m.body === body)?.seq as number;
+      const { page } = noor;
+      await page.goto(`/c/${convo}`);
+      const count = page.getByTestId('select-count').filter({ visible: true });
+      const choose = async (body: string) => {
+        await visible(page, body).hover();
+        await page.getByRole('button', { name: 'React', exact: true }).click();
+        await page.getByTestId('message-select').click();
+      };
+      const toggle = (body: string) =>
+        page
+          .getByTestId(`select-${seqOf(body)}`)
+          .filter({ visible: true })
+          .click();
+
+      // Chosen from a message's actions, then a tap on others takes them or lets them go.
+      await choose('Later line 23');
+      await expect(count).toHaveText('1 selected');
+      await toggle('Later line 22');
+      await toggle('Later line 24');
+      await expect(count).toHaveText('3 selected');
+      await toggle('Later line 24');
+      await expect(count).toHaveText('2 selected');
+      await expect(page.getByTestId('composer-input').filter({ visible: true })).toHaveCount(0);
+      await page.screenshot({ path: 'e2e/screenshots/desktop-select-many.png' });
+
+      // Copied in the order they were said, each under who said it; the choosing ends.
+      await page.getByTestId('select-copy').filter({ visible: true }).click();
+      await expect(visible(page, 'Copied')).toBeVisible();
+      expect(await page.evaluate(() => navigator.clipboard.readText())).toBe(
+        'Alex Reads: Later line 22\nAlex Reads: Later line 23',
+      );
+      await expect(page.getByTestId('selection-bar').filter({ visible: true })).toHaveCount(0);
+      await expect(page.getByTestId('composer-input').filter({ visible: true })).toBeVisible();
+
+      // Deleted for me together, and one Undo puts both back.
+      await choose('Later line 21');
+      await toggle('Later line 20');
+      await page.getByTestId('select-delete').filter({ visible: true }).click();
+      await expect(visible(page, '2 messages deleted for you')).toBeVisible();
+      await expect(
+        page.getByText('Later line 21', { exact: true }).filter({ visible: true }),
+      ).toHaveCount(0);
+      await page.getByRole('button', { name: 'Undo' }).filter({ visible: true }).click();
+      await expect(visible(page, 'Later line 21')).toBeVisible();
+      await expect(visible(page, 'Later line 20')).toBeVisible();
+
+      // Forwarded together into a group, in the order they were said.
+      const made = await noorCtx.request.post('/v1/conversations', {
+        headers: CLIENT,
+        data: { kind: 'group', title: `Forward circle ${suffix}`, memberIds: [alexId] },
+      });
+      const group = ((await made.json()) as { conversation: { id: string } }).conversation.id;
+      await choose('Later line 19');
+      await toggle('Later line 18');
+      await page.getByTestId('select-forward').filter({ visible: true }).click();
+      await page.getByTestId('forward-find').fill('Forward circle');
+      await page.getByTestId('forward-to').filter({ hasText: 'Forward circle' }).first().click();
+      await page.getByTestId('forward-send').click();
+      await expect(
+        page.getByText('Forwarded', { exact: true }).filter({ visible: true }),
+      ).toBeVisible();
+      const there = await noorCtx.request.get(`/v1/conversations/${group}/messages`, {
+        headers: CLIENT,
+      });
+      const bodies = (
+        (await there.json()) as { messages: Array<{ body: string | null; seq: number }> }
+      ).messages
+        .sort((a, b) => a.seq - b.seq)
+        .map((m) => m.body)
+        .filter((b) => b?.startsWith('Later line'));
+      expect(bodies).toEqual(['Later line 18', 'Later line 19']);
+      expect(noor.errors).toEqual([]);
+    });
   });

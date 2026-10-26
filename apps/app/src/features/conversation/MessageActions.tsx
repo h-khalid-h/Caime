@@ -12,6 +12,7 @@ import Lock from 'lucide-react-native/icons/lock';
 import Pencil from 'lucide-react-native/icons/pencil';
 import Pin from 'lucide-react-native/icons/pin';
 import PinOff from 'lucide-react-native/icons/pin-off';
+import SquareCheck from 'lucide-react-native/icons/square-check';
 import Star from 'lucide-react-native/icons/star';
 import Trash from 'lucide-react-native/icons/trash';
 import { useState } from 'react';
@@ -49,7 +50,7 @@ const DECISION_MAX = 300;
  * What can be forwarded (the server's rule): not a private message, a line about the
  * conversation, a card, a poll or a live location, which stay where they were shared.
  */
-function forwardable(m: MessageView): boolean {
+export function forwardable(m: MessageView): boolean {
   if (m.sealed) return false;
   if (m.kind === 'location') return !(m.payload as { live?: unknown }).live;
   // A call's recording is shared on only from its notes, by someone who was in it (R114 (7)).
@@ -122,6 +123,7 @@ export function MessageActions({
   canSave = true,
   conversation,
   onReplyPrivately,
+  onSelect,
 }: {
   m: MessageView | null;
   me: string;
@@ -144,6 +146,8 @@ export function MessageActions({
   conversation?: ConversationView;
   /** Answer it in the chat of the one who wrote it (M16 E3b): offered in a group only. */
   onReplyPrivately?: (m: MessageView) => void;
+  /** Start choosing several messages, this one first (M16 E8). */
+  onSelect?: (m: MessageView) => void;
 }) {
   const t = useTheme();
   const qc = useQueryClient();
@@ -337,6 +341,14 @@ export function MessageActions({
             subtitle={tr('In your chat, quoting it')}
             onPress={handOff(() => onReplyPrivately(m))}
             testID="message-reply-privately"
+          />
+        ) : null}
+        {onSelect && !deleted && m.kind !== 'system' ? (
+          <ListRow
+            icon={SquareCheck}
+            title={tr('Select')}
+            onPress={close(() => onSelect(m))}
+            testID="message-select"
           />
         ) : null}
         {shown && !deleted ? (

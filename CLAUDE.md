@@ -321,7 +321,12 @@ A sphere is said as how you know someone, never "sphere".
   A delete goes through `deleteWithUndo` (`features/conversation/deleteWithUndo.ts`): shown at
   once, sent once the toast's Undo has passed (or as the app is left: `pagehide`, the background),
   put back exactly by `restoreMessage` (`state/cache.ts`, into its own page by seq); a new
-  destructive action on a message takes that shape rather than a confirmation. Read and delivered
+  destructive action on a message takes that shape rather than a confirmation. Several messages
+  chosen together (M16 E8, Select in a message's actions) are the screen's `chosen`, kept for the
+  conversation they were chosen in; `SelectionBar` takes the composer's place (the composer kept
+  out of sight) and acts on the set through the same paths (`deleteWithUndo` takes an array: one
+  toast, one Undo; `ForwardSheet` takes `ms`, each its own client id): a new action on several
+  messages joins that bar, never a path of its own. Read and delivered
   differ by shape and colour: sent and delivered in the bubble's `tick` token (3:1 on the bubble,
   1.8:1 from its `fg`), read in `fg` with a heavier stroke, and on a card of one's own the
   tertiary text and the text (`tokens.test.ts` holds both). A quote says whose words it quotes (`replyName`

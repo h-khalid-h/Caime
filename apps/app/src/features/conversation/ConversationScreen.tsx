@@ -24,6 +24,7 @@ import {
   FlatList,
   KeyboardAvoidingView,
   Platform,
+  StyleSheet,
   View,
   type ViewToken,
 } from 'react-native';
@@ -83,14 +84,16 @@ import { Text } from '@/ui/Text';
 import { toast } from '@/ui/Toast';
 import { Composer, type ComposerHandle } from './Composer';
 import { ContextPanel } from './ContextPanel';
+import { deleteWithUndo } from './deleteWithUndo';
 import { FirstWords } from './FirstWords';
 import { ForwardSheet } from './ForwardSheet';
-import { MessageActions, toggleReaction } from './MessageActions';
+import { forwardable, MessageActions, toggleReaction } from './MessageActions';
 import { MessageBubble } from './MessageBubble';
 import { mayKeepFrom } from './mayKeep';
 import { PinnedBar } from './PinnedBar';
 import { RequestBanner } from './RequestBanner';
 import { buildRows, namesIn, type Row } from './rows';
+import { SelectionBar } from './SelectionBar';
 import { SuggestionBar } from './SuggestionBar';
 import { SwipeToReply } from './SwipeToReply';
 import { TypingIndicator, useTypingNames } from './TypingIndicator';
@@ -178,7 +181,18 @@ export function ConversationScreen({
   const invited = useOpened(inviting);
   const [editing, setEditing] = useState<MessageView | null>(null);
   const [actionsFor, setActionsFor] = useState<MessageView | null>(null);
-  const [forwarding, setForwarding] = useState<MessageView | null>(null);
+  const [forwarding, setForwarding] = useState<MessageView[] | null>(null);
+  // Several messages chosen together (M16 E8), kept for the conversation they were chosen in.
+  const [chosen, setChosen] = useState<{ in: string; ms: Map<string, MessageView> } | null>(null);
+  const selected = chosen?.in === id ? chosen.ms : null;
+  const toggleChosen = (m: MessageView) =>
+    setChosen((c) => {
+      const ms = new Map(c?.in === id ? c.ms : []);
+      if (ms.has(m.id)) ms.delete(m.id);
+      else ms.set(m.id, m);
+      // Letting go of the last one ends the choosing.
+      return ms.size ? { in: id, ms } : null;
+    });
   const [atBottom, setAtBottom] = useState(true);
   // The day of what's at the top, said over the list while it scrolls (M16 E3).
   const [pillDay, setPillDay] = useState<string | null>(null);
@@ -875,36 +889,50 @@ export function ConversationScreen({
           <View style={{ flex: 1, height: 1, backgroundColor: t.c.accent }} />
         </View>
       );
+    const picked = selected?.has(item.m.id) ?? false;
     return (
-      <SwipeToReply
-        onReply={() => onReply(item.m)}
-        enabled={!item.m.deletedAt && item.m.kind !== 'system'}
-      >
-        <MessageBubble
-          m={item.m}
-          mine={item.mine}
-          first={item.first}
-          last={item.last}
-          senderName={item.senderName}
-          replyName={item.replyName}
-          onOpenReply={openReply}
-          privateReplyName={item.privateReplyName}
-          onOpenReactions={setActionsFor}
-          delivery={item.delivery}
-          timeZone={timeZone}
-          locale={locale}
-          onLongPress={setActionsFor}
-          onReply={onReply}
-          onReact={onReact}
-          onRetry={onRetry}
-          highlighted={marked !== null && item.m.seq === marked}
-          inertLinks={conversation?.request === 'incoming'}
-          // A request's photos come veiled (M16 B4): a tap shows them, under 18 accepting does.
-          veil={conversation?.request === 'incoming' ? (me.minor ? 'accept' : 'tap') : undefined}
-          where={where}
-          mentionables={mentionables}
-        />
-      </SwipeToReply>
+      <View>
+        <SwipeToReply
+          onReply={() => onReply(item.m)}
+          enabled={!selected && !item.m.deletedAt && item.m.kind !== 'system'}
+        >
+          <MessageBubble
+            m={item.m}
+            mine={item.mine}
+            first={item.first}
+            last={item.last}
+            senderName={item.senderName}
+            replyName={item.replyName}
+            onOpenReply={openReply}
+            privateReplyName={item.privateReplyName}
+            onOpenReactions={setActionsFor}
+            delivery={item.delivery}
+            timeZone={timeZone}
+            locale={locale}
+            onLongPress={setActionsFor}
+            onReply={onReply}
+            onReact={onReact}
+            onRetry={onRetry}
+            highlighted={picked || (marked !== null && item.m.seq === marked)}
+            inertLinks={conversation?.request === 'incoming'}
+            // A request's photos come veiled (M16 B4): a tap shows them, under 18 accepting does.
+            veil={conversation?.request === 'incoming' ? (me.minor ? 'accept' : 'tap') : undefined}
+            where={where}
+            mentionables={mentionables}
+          />
+        </SwipeToReply>
+        {selected && !item.m.deletedAt && item.m.kind !== 'system' ? (
+          // While choosing, a tap anywhere on the row takes it or lets it go.
+          <Pressable
+            style={StyleSheet.absoluteFill}
+            onPress={() => toggleChosen(item.m)}
+            accessibilityRole="button"
+            accessibilityState={{ selected: picked }}
+            accessibilityLabel={picked ? tr('Selected') : tr('Select')}
+            testID={`select-${item.m.seq}`}
+          />
+        ) : null}
+      </View>
     );
   };
 
@@ -953,6 +981,7 @@ export function ConversationScreen({
           data={rows}
           keyExtractor={(r) => r.key}
           renderItem={renderItem}
+          extraData={selected}
           ListHeaderComponent={<TypingIndicator names={typingNames} />}
           ListFooterComponent={
             // The list turns its header and footer the right way up itself.
@@ -1235,31 +1264,50 @@ export function ConversationScreen({
           })}
         </Text>
       ) : null}
-      {conversation ? (
-        <Composer
-          ref={composer}
-          key={id}
-          conversation={conversation}
-          where={where}
-          openKit={openKit}
-          kitStart={kitStart}
-          replyTo={replyTo}
-          onClearReply={() => setReplyTo(null)}
-          editing={editing}
-          onDoneEditing={() => setEditing(null)}
-          disabled={disabled}
-          disabledAction={disabledAction}
-          replyTitle={replyTitle}
-          placeholder={thread && org ? tr('Reply as {name}', { name: org.name }) : undefined}
-          onEditLast={() => {
-            const last = messages.findLast(
-              (m) => m.senderId === me.id && m.kind === 'text' && m.deletedAt === null,
-            );
-            if (!last) return;
-            setReplyTo(null);
-            setEditing(last);
+      {conversation && selected ? (
+        <SelectionBar
+          chosen={[...selected.values()]}
+          names={namesIn(conversation)}
+          forwardable={!where.private && [...selected.values()].every(forwardable)}
+          onCancel={() => setChosen(null)}
+          onForward={() => {
+            setForwarding([...selected.values()]);
+            setChosen(null);
+          }}
+          onDelete={() => {
+            deleteWithUndo(qc, [...selected.values()], false);
+            setChosen(null);
           }}
         />
+      ) : null}
+      {conversation ? (
+        // Kept while choosing, only out of sight, so what was being written stays as it was.
+        <View style={selected ? { display: 'none' } : undefined}>
+          <Composer
+            ref={composer}
+            key={id}
+            conversation={conversation}
+            where={where}
+            openKit={openKit}
+            kitStart={kitStart}
+            replyTo={replyTo}
+            onClearReply={() => setReplyTo(null)}
+            editing={editing}
+            onDoneEditing={() => setEditing(null)}
+            disabled={disabled}
+            disabledAction={disabledAction}
+            replyTitle={replyTitle}
+            placeholder={thread && org ? tr('Reply as {name}', { name: org.name }) : undefined}
+            onEditLast={() => {
+              const last = messages.findLast(
+                (m) => m.senderId === me.id && m.kind === 'text' && m.deletedAt === null,
+              );
+              if (!last) return;
+              setReplyTo(null);
+              setEditing(last);
+            }}
+          />
+        </View>
       ) : null}
     </KeyboardAvoidingView>
   );
@@ -1302,7 +1350,8 @@ export function ConversationScreen({
           conversation ? canRemoveOthersMessages(conversation.kind, conversation.me.role) : false
         }
         canPin={pinner}
-        onForward={setForwarding}
+        onForward={(m) => setForwarding([m])}
+        onSelect={(m) => setChosen({ in: id, ms: new Map([[m.id, m]]) })}
         // Nothing of a request is kept until it's accepted, nor once declined (the server's rule).
         canSave={conversation ? mayKeepFrom(conversation) : false}
         conversation={conversation}
@@ -1322,7 +1371,7 @@ export function ConversationScreen({
           composer.current?.focus();
         }}
       />
-      {forwarding ? <ForwardSheet m={forwarding} onClose={() => setForwarding(null)} /> : null}
+      {forwarding ? <ForwardSheet ms={forwarding} onClose={() => setForwarding(null)} /> : null}
       <PhotoViewerHost />
       {searched && conversation ? (
         <ChatSearch
