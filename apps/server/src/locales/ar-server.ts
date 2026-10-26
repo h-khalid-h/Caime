@@ -2007,4 +2007,6 @@ export const arServer: Catalog = {
   'Cai doesn’t take notes in a conversation with an organization yet.':
     'لا يدوّن Cai الملاحظات في محادثة مع مؤسسة بعد.',
   '{name} is calling {orgName}': 'مكالمة من {name} إلى {orgName}',
+  'Nobody at {org} could take your call just now. Tell me here what you need, and I’ll help or pass it on.':
+    'لم يتمكن أحد في {org} من الرد على مكالمتك الآن. اكتب لي هنا طلبك، وسأساعدك أو أنقله إلى الفريق.',
 };

@@ -1908,4 +1908,6 @@ export const turkishServer: Catalog = {
   'Cai doesn’t take notes in a conversation with an organization yet.':
     'Cai bir kuruluşla konuşmada henüz not almıyor.',
   '{name} is calling {orgName}': '{name}, {orgName} kuruluşunu arıyor',
+  'Nobody at {org} could take your call just now. Tell me here what you need, and I’ll help or pass it on.':
+    'Şu anda {org} ekibinden kimse aramanızı yanıtlayamadı. Neye ihtiyacınız olduğunu buraya yazın; yardımcı olayım ya da ekibe ileteyim.',
 };

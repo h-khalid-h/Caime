@@ -1774,7 +1774,10 @@ A sphere is said as how you know someone, never "sphere".
   per viewer: to the customer the other side is the organization (`orgSide`, in their history
   too), to a rung team member it's themselves while it rings, never anyone else's name to the
   customer (R15). A route a device uses in a call it holds (signal, beat) asks `inIt` first, and
-  anything new about such a call reads `org_id` before it names who is on the other side.
+  anything new about such a call reads `org_id` before it names who is on the other side. One
+  nobody took (missed, or put down after `UNTAKEN_AFTER_MS` of ringing) queues
+  `agent.call-untaken` from `endCall`, and `offerAfterUntakenCall` (`lib/agent.ts`) has the
+  organization's AI agent offer help in writing where it would answer now (M16 H8b).
 - Group calls: `lib/group-calls.ts` and `modules/group-calls.ts` keep `call_members` (one row per
   person rung or in it) and bump `calls.rev` with every change to who's in it, so a device
   ignores a view older than the one it holds. `features/calls/group.ts` holds a connection

@@ -2401,6 +2401,9 @@ with its reason, so it isn't proposed again without new facts.
   organization, ringing whoever of its team is in that conversation as the organization's; the
   first to answer takes it, and the customer sees the organization alone in the call and its
   history. Counted by outcome (`caime_org_calls_total`), the share answered being (b)'s case.
+  (b) on 2026-10-26 (M16 H8b): a call nobody took (rung out, or put down after ringing) lands as
+  the agent's offer in the thread, a fixed line in the customer's language, where the agent would
+  answer them now; counted as `offered`.
 - **R112 (2026-10-21) A call's notes, written up once, as a note-taker would; one intelligence.**
   The owner: "We previously discussed that Cai will participate in meetings, calls, etc: ensure no
   fragmentation, duplication or confusion across the entire Caime intelligence", with what Gemini

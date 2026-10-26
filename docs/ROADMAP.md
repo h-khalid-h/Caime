@@ -3968,6 +3968,20 @@ graph) and the number that will show it; one that sharpens none is hygiene and s
         block), the E2E (the owner's switch, the customer's call ringing two of the team as the
         organization's, the first to answer taking it, the other's ring gone, the customer's
         screen naming the organization alone), the gate.
+  - [x] H8b. A call nobody on the team took lands as the agent's offer, in writing (S): `endCall`
+        queues `agent.call-untaken` for a customer's call never answered (missed, or put down
+        after ringing 10 s: one put down at once was likely a slip), and
+        `offerAfterUntakenCall` (`lib/agent.ts`) posts a fixed line from the organization's AI
+        agent in the customer's language ("Nobody at {org} could take your call just now. Tell me
+        here what you need, and I'll help or pass it on."), opening with who it is where it hasn't
+        spoken there yet (R87), only where it would answer the customer's next words now: not
+        while its answers wait for the team (review), outside its hours where it answers only
+        while closed, with someone on the team on the thread, for someone under 18, or for an
+        organization closed or suspended; once while it stands, and never over the
+        customer's own words waiting (the agent answers those). No model, so nothing it costs; counted as
+        `offered` on `caime_org_calls_total`. Server test (`org-call-offer.test.ts`: the offer
+        once with its introduction and the counter, a call put down at once, one put down after
+        ringing, review on), the gate.
 - [ ] ⛔ H, the owner's: a smaller paid tier; WhatsApp Business in the inbox and reminders by
       WhatsApp or SMS (Meta's approval); Stripe Connect live with local currencies.
 - [ ] R98, after C: places as a context for spaces (PRODUCT-REVIEW R98): `spaces.place` from
@@ -6697,3 +6711,7 @@ CONNIQT; they mean Caime. Caishy is one of Caime's AI members, and Cai leads the
   the first to answer takes it, the rest stop ringing, and the customer sees the organization in
   the call and its history, never who answered. Missed calls are told to whoever it rang; a
   device not in the call can't speak in it; counted by outcome on `caime_org_calls_total`.
+- 2026-10-26 — M16 H8b (R111 (b)): a customer's call nobody on the team took lands as the
+  organization's AI agent offering, in writing, to help or pass it on, where the agent would answer
+  them now (never while its answers wait for review, for someone under 18, or with a person on the
+  thread), once, by the rules in the customer's language.

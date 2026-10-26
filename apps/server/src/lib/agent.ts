@@ -1201,7 +1201,116 @@ export async function dropDraftsOf(ctx: AppContext, orgId: string): Promise<void
   });
 }
 
+/**
+ * A customer's call nobody on the team took (M16 H8b, R111 (b)): where the organization's AI
+ * agent would answer the customer's next words now, it offers in writing to help, opening with
+ * who it is where it hasn't spoken there yet (R87). A fixed line in the customer's language, no
+ * model: never where its answers wait for the team (review), someone on the team has the thread,
+ * the customer is under 18, the organization is closed or suspended, or the customer's own words
+ * are the thread's latest (the agent answers those) or it offered already and they haven't answered.
+ */
+export async function offerAfterUntakenCall(
+  ctx: AppContext,
+  payload: Record<string, unknown>,
+): Promise<void> {
+  const call = await ctx.db
+    .selectFrom('calls')
+    .select(['org_id', 'conversation_id', 'caller_id', 'answered_at'])
+    .where('id', '=', String(payload.callId))
+    .where('state', '=', 'ended')
+    .executeTakeFirst();
+  if (!call?.org_id || !call.caller_id || call.answered_at || !ctx.ai) return;
+  const thread = await ctx.db
+    .selectFrom('business_threads as t')
+    .innerJoin('conversations as c', 'c.id', 't.conversation_id')
+    .innerJoin('organizations as o', 'o.id', 't.org_id')
+    .select([
+      't.customer_id',
+      'c.privacy_class',
+      'o.name as org_name',
+      'o.archived_at',
+      'o.suspended_at',
+      'o.booking',
+      sql<boolean>`${noPersonOnIt('t')} and t.escalated_at is null and t.resolved_at is null and t.agent_handed_over_at is null`.as(
+        'its_to_answer',
+      ),
+    ])
+    .where('t.conversation_id', '=', call.conversation_id)
+    .where('t.org_id', '=', call.org_id)
+    .executeTakeFirst();
+  if (
+    !thread ||
+    thread.customer_id !== call.caller_id ||
+    thread.archived_at ||
+    thread.suspended_at ||
+    thread.privacy_class === 'private' ||
+    !thread.its_to_answer
+  )
+    return;
+  const agent = await activeAgent(ctx, call.org_id);
+  if (!agent || agent.review || !agentAnswersNow(agent.answers_when, thread.booking, ctx.now()))
+    return;
+  const customer = await ctx.db
+    .selectFrom('users')
+    .select(['birth_date', 'time_zone', 'age_minor_until', 'display_name'])
+    .where('id', '=', call.caller_id)
+    .executeTakeFirst();
+  if (!customer || minorOf(customer, ctx.now())) return;
+  // The last words in the thread: the customer's are still the agent's (or the team's) to answer,
+  // and an offer of its own still standing isn't made twice.
+  const last = await ctx.db
+    .selectFrom('messages')
+    .select(['sender_id', 'payload'])
+    .where('conversation_id', '=', call.conversation_id)
+    .where('kind', '<>', 'system')
+    .where(readableBy(call.caller_id, ctx.now()))
+    .orderBy('seq', 'desc')
+    .limit(1)
+    .executeTakeFirst();
+  if (last?.sender_id === call.caller_id) return;
+  if (
+    last?.sender_id === agent.bot_user_id &&
+    (last.payload as { untakenCall?: true })?.untakenCall
+  )
+    return;
+  const said = await ctx.db
+    .selectFrom('messages')
+    .select('body')
+    .where('conversation_id', '=', call.conversation_id)
+    .where('sender_id', '=', call.caller_id)
+    .where('kind', '=', 'text')
+    .orderBy('seq', 'desc')
+    .limit(1)
+    .executeTakeFirst();
+  const language = await customerLanguage(ctx, call.caller_id, said?.body);
+  const introduced = await saidHere(ctx, call.conversation_id, agent.bot_user_id);
+  const line = inLanguage(language, () =>
+    tr(
+      'Nobody at {org} could take your call just now. Tell me here what you need, and I’ll help or pass it on.',
+      {
+        org: thread.org_name,
+      },
+    ),
+  );
+  const intro = introduced
+    ? null
+    : inLanguage(language, () => introduction(agent.name, thread.org_name, customer.display_name));
+  await postAs(
+    ctx,
+    agent.bot_user_id,
+    call.conversation_id,
+    {
+      kind: 'text',
+      body: intro ? `${intro}\n${line}` : line,
+      payload: { untakenCall: true, ...(intro ? { introduction: true } : {}) },
+    },
+    { serverPayload: true },
+  );
+  ctx.metrics.orgCalls.inc({ outcome: 'offered' });
+}
+
 export function registerAgentJob(): void {
   registerJob('agent.reply', agentReply);
+  registerJob('agent.call-untaken', offerAfterUntakenCall);
   onCustomerMessage(queueAgent);
 }

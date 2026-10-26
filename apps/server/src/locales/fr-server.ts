@@ -1993,4 +1993,6 @@ export const frServer: Catalog = {
   'Cai doesn’t take notes in a conversation with an organization yet.':
     'Cai ne prend pas encore de notes dans une conversation avec une organisation.',
   '{name} is calling {orgName}': '{name} appelle {orgName}',
+  'Nobody at {org} could take your call just now. Tell me here what you need, and I’ll help or pass it on.':
+    'Personne chez {org} n’a pu prendre votre appel à l’instant. Dites-moi ici ce qu’il vous faut, et je vous aiderai ou je transmettrai.',
 };

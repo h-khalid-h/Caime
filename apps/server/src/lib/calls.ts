@@ -26,7 +26,7 @@ import { orgAvatarUrl } from './business';
 import { notesAtEnd, notesViewOf, notesWithLine } from './call-notes';
 import { queueNotesSummary } from './call-notes-summary';
 import { titleWithGroup } from './conversations';
-import { registerPeriodic } from './jobs';
+import { enqueue, registerPeriodic } from './jobs';
 import { insertSystemMessage, messageViews, participantsOf } from './messages';
 import { notify, replaceShown } from './notify';
 import { personViewsFor } from './people-batch';
@@ -35,6 +35,8 @@ import { avatarUrl } from './users';
 
 /** A live call stops counting when either side hasn't said it's there for this long. */
 export const CALL_SEEN_MS = 90_000;
+/** A customer's call to an organization they put down after ringing this long went untaken. */
+const UNTAKEN_AFTER_MS = 10_000;
 
 type Db = Kysely<Database> | Transaction<Database>;
 
@@ -359,6 +361,22 @@ export async function endCall(
   if (!ended) return null;
   // How a customer's call to an organization ended, every way it can (M16 H8a).
   if (ended.org_id) ctx.metrics.orgCalls.inc({ outcome });
+  // Nobody on the team took it: its AI agent may offer to help in writing (M16 H8b, R111 (b)).
+  // A call the customer put down at once was likely a slip, so it rang a while first.
+  if (
+    ended.org_id &&
+    !ended.answered_at &&
+    !quiet &&
+    (outcome === 'missed' ||
+      (outcome === 'cancelled' &&
+        endedAt.getTime() - ended.created_at.getTime() >= UNTAKEN_AFTER_MS))
+  )
+    await enqueue(
+      ctx,
+      'agent.call-untaken',
+      { callId: ended.id },
+      { dedupeKey: `agent-call:${ended.id}`, maxAttempts: 3 },
+    );
   const missedNotice =
     !quiet &&
     (outcome === 'missed' || outcome === 'cancelled') &&

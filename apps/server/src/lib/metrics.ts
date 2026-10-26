@@ -206,7 +206,7 @@ export function createMetrics(pool: pg.Pool) {
     // rest ended; what shows whether organizations take the calls they turned on.
     orgCalls: new Counter(
       'caime_org_calls_total',
-      'Customers’ calls to organizations by outcome (placed, answered, then how each ended: completed, failed, missed, cancelled).',
+      'Customers’ calls to organizations by outcome (placed, answered, then how each ended: completed, failed, missed, cancelled; offered when its AI agent offered help in writing after one nobody took).',
     ),
     // Cai's recordings of calls (R114, M17 I13b): parts begun, made ready (or kept as they were
     // recorded), and recordings deleted by someone in them or at their day.
