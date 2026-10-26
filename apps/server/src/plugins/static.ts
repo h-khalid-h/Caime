@@ -11,6 +11,7 @@ import type { FastifyInstance, FastifyReply, FastifyRequest } from 'fastify';
 import type { AppContext } from '../context';
 import { publicPrices } from '../lib/billing';
 import { contactApiOrigins } from '../lib/contact-accounts';
+import { deviceOf } from '../lib/devices';
 import { inLanguage } from '../lib/i18n';
 import {
   bootstrapScripts,
@@ -23,6 +24,7 @@ import {
 } from '../lib/public-pages';
 import { SESSION_COOKIE } from '../lib/session-cookie';
 import { siteLanguage } from '../lib/site-pages';
+import { storeLinks } from '../lib/stores';
 
 export function webCsp(
   publicUrl: string,
@@ -102,6 +104,9 @@ export async function registerWeb(app: FastifyInstance, ctx: AppContext): Promis
     },
   });
   const template = readFileSync(join(dir, 'index.html'), 'utf8');
+  const appleBanner = ctx.config.APPLE_APP_ID
+    ? `<meta name="apple-itunes-app" content="app-id=${ctx.config.APPLE_APP_ID}">`
+    : null;
   /**
    * The shell, with the page's own head and plain body in it (R44): the landing page for a
    * visitor who isn't signed in, a person's or an organization's public face, a 404 for a
@@ -136,6 +141,7 @@ export async function registerWeb(app: FastifyInstance, ctx: AppContext): Promis
     // never the app, cached ten minutes.
     const sitePage =
       page.kind === 'site' || page.kind === 'marketplace' || page.kind === 'market-app';
+    const download = page.kind === 'site' && page.page === 'download';
     const facts =
       page.kind === 'landing' || sitePage
         ? {
@@ -144,12 +150,20 @@ export async function registerWeb(app: FastifyInstance, ctx: AppContext): Promis
             prices:
               page.kind === 'site' && page.page === 'pricing' ? await publicPrices(ctx) : null,
             linkLang: chosen?.linkLang ?? null,
+            // `/download` (R120): where Caime is listed, and the device it's read on.
+            ...(download
+              ? { stores: storeLinks(ctx.config), device: deviceOf(req.headers['user-agent']) }
+              : {}),
           }
         : null;
     const rendered = language
       ? inLanguage(language, () => renderPublic(page, ctx.config.PUBLIC_URL, path, facts))
       : renderPublic(page, ctx.config.PUBLIC_URL, path, facts);
-    let html = injectPublic(template, rendered);
+    // Safari's banner for the App Store's Caime (R120), on every page once it's listed.
+    let html = injectPublic(
+      template,
+      appleBanner ? { ...rendered, head: `${rendered.head}\n${appleBanner}` } : rendered,
+    );
     // An entry screen asks for the app's scripts once it has painted; the policy allows the
     // bootstrap that does so by its hash, computed once per build.
     let pageCsp = csp;
@@ -198,7 +212,8 @@ export async function registerWeb(app: FastifyInstance, ctx: AppContext): Promis
       reply.removeHeader('x-frame-options');
     }
     // A page that follows the browser's language says so to whatever caches it.
-    if (page.kind !== 'app') reply.header('vary', 'accept-language');
+    if (page.kind !== 'app')
+      reply.header('vary', download ? 'accept-language, user-agent' : 'accept-language');
     // A link's page may be taken back at any moment, and its address is its key: nobody keeps
     // it, nothing indexes it, and nowhere it leads learns it.
     if (fileLink)

@@ -79,6 +79,22 @@ const Env = z.object({
       /^\s*[0-9A-Fa-f]{2}(:[0-9A-Fa-f]{2}){31}\s*(,\s*[0-9A-Fa-f]{2}(:[0-9A-Fa-f]{2}){31}\s*)*$/,
     )
     .optional(),
+  /**
+   * Where Caime is listed (R120, `lib/stores.ts`), each set once its listing is live and never
+   * before, so a store's link on `/download`, the smart banners and the manifest's related apps
+   * show only then: Apple's numeric App Store id; Google Play, true once the Android app (`APP_IDS`)
+   * is listed; the Microsoft Store's product id; and where the desktop app's releases are.
+   */
+  APPLE_APP_ID: z
+    .string()
+    .regex(/^\d{6,12}$/)
+    .optional(),
+  PLAY_LISTED: bool.default(false),
+  MICROSOFT_STORE_ID: z
+    .string()
+    .regex(/^[0-9A-Z]{12}$/)
+    .optional(),
+  DESKTOP_RELEASES_URL: z.string().url().optional(),
   /** Expo's push service (`lib/expo-push.ts`): another only for the local stand-in the tests run. */
   EXPO_PUSH_URL: z.string().url().default('https://exp.host/--/api/v2/push'),
   /** Where mail goes out (smtps://user:pass@host:465, or smtp:// with STARTTLS). Off if unset. */

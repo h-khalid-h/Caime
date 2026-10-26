@@ -3667,4 +3667,22 @@ export const arB: Catalog = {
   'This meeting isn’t in a conversation of yours, or it was called off. Ask whoever sent it.':
     'هذا الاجتماع ليس في محادثة من محادثاتك، أو أُلغي. اسأل من أرسله.',
   'Said in calls': 'قيل في المكالمات',
+  'VAT included where it applies.': 'شاملًا ضريبة القيمة المضافة حيث تنطبق.',
+  'Plus VAT where it applies.': 'تُضاف ضريبة القيمة المضافة حيث تنطبق.',
+  'Share to Caime': 'المشاركة في Caime',
+  'There’s no conversation to share it to yet.': 'لا محادثة بعدُ للمشاركة فيها.',
+  'Shared to {n} conversations': {
+    zero: 'لم تُشارَك',
+    one: 'تمت المشاركة',
+    two: 'تمت المشاركة في محادثتين',
+    few: 'تمت المشاركة في {n} محادثات',
+    many: 'تمت المشاركة في {n} محادثة',
+    other: 'تمت المشاركة في {n} محادثة',
+  },
+  'Caime as an app': 'Caime كتطبيق',
+  'In Safari, choose File, then Add to Dock: Caime opens in a window of its own, with what needs you counted on its icon.':
+    'في Safari، اختر «ملف» ثم «إضافة إلى Dock»: يفتح Caime في نافذة خاصة به، وعلى أيقونته عدد ما يحتاج إليك.',
+  'Install Caime to open it from your dock, taskbar or home screen, in a window of its own, with what needs you counted on its icon.':
+    'ثبّت Caime لتفتحه من Dock أو شريط المهام أو الشاشة الرئيسية، في نافذة خاصة به، وعلى أيقونته عدد ما يحتاج إليك.',
+  Install: 'تثبيت',
 };

@@ -1,0 +1,80 @@
+name: Stores
+
+# The phone apps for the App Store and Google Play (R120, docs/STORES.md): built by EAS on Expo's
+# machines from what `main` holds, by hand or by a tag `app-v*`, and submitted with the credentials
+# kept in the Expo project (App Store Connect's API key, Play's service account). Without
+# `EXPO_TOKEN` (a secret) and `EXPO_PROJECT_ID` (a variable) it says what's missing and builds
+# nothing; it never runs on a push to `main`, which deploys the web.
+
+on:
+  workflow_dispatch:
+    inputs:
+      platform:
+        description: Which phone apps to build
+        type: choice
+        options: [all, ios, android]
+        default: all
+      submit:
+        description: Submit to the stores once built
+        type: boolean
+        default: true
+  push:
+    tags: ['app-v*']
+
+permissions:
+  contents: read
+
+concurrency:
+  group: stores
+  cancel-in-progress: false
+
+jobs:
+  build:
+    name: Build and submit
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    steps:
+      - name: What's needed
+        id: ready
+        env:
+          EXPO_TOKEN: ${{ secrets.EXPO_TOKEN }}
+          EXPO_PROJECT_ID: ${{ vars.EXPO_PROJECT_ID }}
+        run: |
+          if [ -z "$EXPO_TOKEN" ] || [ -z "$EXPO_PROJECT_ID" ]; then
+            echo "::warning::The stores' builds need EXPO_TOKEN (a repository secret) and EXPO_PROJECT_ID (a repository variable): docs/STORES.md"
+            echo "go=false" >> "$GITHUB_OUTPUT"
+          else
+            echo "go=true" >> "$GITHUB_OUTPUT"
+          fi
+      - uses: actions/checkout@v4
+        if: steps.ready.outputs.go == 'true'
+      - uses: pnpm/action-setup@v4
+        if: steps.ready.outputs.go == 'true'
+      - uses: actions/setup-node@v4
+        if: steps.ready.outputs.go == 'true'
+        with:
+          node-version-file: .nvmrc
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+        if: steps.ready.outputs.go == 'true'
+      - uses: expo/expo-github-action@v8
+        if: steps.ready.outputs.go == 'true'
+        with:
+          eas-version: latest
+          token: ${{ secrets.EXPO_TOKEN }}
+      - name: Build (and submit)
+        if: steps.ready.outputs.go == 'true'
+        working-directory: apps/app
+        env:
+          EXPO_PROJECT_ID: ${{ vars.EXPO_PROJECT_ID }}
+          PLATFORM: ${{ inputs.platform || 'all' }}
+          SUBMIT: ${{ github.event_name == 'push' || inputs.submit }}
+        run: |
+          eas build --platform "$PLATFORM" --profile production --non-interactive --no-wait \
+            $([ "$SUBMIT" = "true" ] && echo --auto-submit)
+      - name: The App Store's listing
+        if: steps.ready.outputs.go == 'true' && (inputs.platform || 'all') != 'android'
+        working-directory: apps/app
+        env:
+          EXPO_PROJECT_ID: ${{ vars.EXPO_PROJECT_ID }}
+        run: eas metadata:push --non-interactive

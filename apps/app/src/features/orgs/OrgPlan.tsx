@@ -8,6 +8,7 @@ import { useOrgBilling } from '@/api/hooks';
 import { qk } from '@/api/keys';
 import { BillingCard, useBackFromCheckout } from '@/features/billing';
 import { openLink } from '@/lib/links';
+import { sellsHere } from '@/lib/stores';
 import { useSession } from '@/state/session';
 import { useTheme } from '@/theme/theme';
 import { Button } from '@/ui/Button';
@@ -101,10 +102,12 @@ export function OrgPlan({
           </>
         ) : line ? (
           <Text variant="caption" color="textSecondary">
-            {plan.upgradeUrl ? line : tr('{line} It can’t be bought here yet.', { line })}
+            {plan.upgradeUrl || !sellsHere
+              ? line
+              : tr('{line} It can’t be bought here yet.', { line })}
           </Text>
         ) : null}
-        {!billed && next && plan.upgradeUrl ? (
+        {!billed && next && plan.upgradeUrl && sellsHere ? (
           <Button
             label={tr('See {plan}', { plan: PLAN_NAMES[next] })}
             variant="secondary"

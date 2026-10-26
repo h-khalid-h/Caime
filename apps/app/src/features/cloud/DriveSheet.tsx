@@ -4,8 +4,9 @@
  * nowhere. Picking hands the file's id to the composer, which has the server copy it in as the
  * person's upload. Loaded when opened.
  */
-import { ACCOUNT_DRIVE_NAMES } from '@caime/core/accounts';
+
 import type { AccountFileView, ConnectedAccountView } from '@caime/core/api';
+import { ACCOUNT_DRIVE_NAMES } from '@caime/core/drives';
 import { formatBytes, formatWhen } from '@caime/core/format';
 import { tr } from '@caime/core/i18n';
 import { useInfiniteQuery } from '@tanstack/react-query';

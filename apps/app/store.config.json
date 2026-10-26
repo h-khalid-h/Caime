@@ -1,0 +1,90 @@
+{
+  "configVersion": 0,
+  "apple": {
+    "copyright": "2026 DATA C OÜ",
+    "categories": ["SOCIAL_NETWORKING", "PRODUCTIVITY"],
+    "info": {
+      "en-US": {
+        "title": "Caime",
+        "subtitle": "Messaging for your people",
+        "description": "Caime is messaging that understands your relationships.\n\nSay how you know someone (family, a friend, a colleague, your dentist) and Caime keeps your conversations with them in that light: what needs you comes first, the rest waits quietly, and nobody else ever sees how you labelled them.\n\nWhat people ask and promise in a chat becomes something you can keep: a request becomes an action with its day, a plan to meet becomes a meeting card both sides agree to, and an amount becomes a Pay card, a record between you (Caime never holds or moves money).\n\nCai, your assistant, helps when you ask: it catches you up on what you missed, drafts a reply, answers from your own conversations with the lines it read, and takes notes in a call when everyone in it says yes. What it suggests stays a suggestion until you accept it.\n\nCalls, one to one or with up to eight people. Private conversations are end-to-end encrypted: Caime's servers never see their words.\n\nOrganizations prove who they are with their own web domain, and answer customers in one inbox, with bookings, orders and forms as cards in the conversation.\n\nBring your chats with you: export a chat from the messaging app you use now and open it in Caime.\n\nIn English, Arabic, French and Turkish.",
+        "keywords": [
+          "chat",
+          "messenger",
+          "relationships",
+          "calls",
+          "encrypted",
+          "family",
+          "work",
+          "booking",
+          "assistant",
+          "inbox",
+          "private"
+        ],
+        "marketingUrl": "https://cai.me",
+        "supportUrl": "https://cai.me/help",
+        "privacyPolicyUrl": "https://cai.me/privacy"
+      },
+      "ar-SA": {
+        "title": "Caime",
+        "subtitle": "مراسلة للناس في حياتك",
+        "description": "Caime مراسلةٌ تفهم علاقاتك.\n\nقل كيف تعرف شخصًا (عائلة، صديق، زميل، طبيب أسنانك) فيُبقي Caime محادثاتك معه على هذا النحو: ما يحتاج إليك أولًا، والباقي ينتظر بهدوء، ولا يرى أحدٌ غيرك كيف وصفته.\n\nما يُطلب ويُوعد به في المحادثة يصير شيئًا تحتفظ به: الطلب يصير إجراءً بموعده، وخطة اللقاء بطاقةَ اجتماع يتفق عليها الطرفان، والمبلغ بطاقةَ دفع، سجلًّا بينكما (لا يحتفظ Caime بالمال ولا ينقله أبدًا).\n\nCai، مساعدك، يعين حين تطلب: يُطلعك على ما فاتك، ويكتب مسودة ردّ، ويجيب من محادثاتك أنت مع الأسطر التي قرأها، ويدوّن ملاحظات المكالمة حين يوافق كل من فيها. وما يقترحه يبقى اقتراحًا حتى تقبله.\n\nمكالمات فردية أو مع ما يصل إلى ثمانية أشخاص. والمحادثات الخاصة مشفّرة من طرف إلى طرف: لا ترى خوادم Caime كلماتها.\n\nتُثبت المؤسسات هويتها بنطاقها على الويب، وتجيب عملاءها في صندوق واحد، مع الحجوزات والطلبات والنماذج بطاقاتٍ داخل المحادثة.\n\nأحضِر محادثاتك معك: صدّر محادثة من تطبيق المراسلة الذي تستخدمه الآن وافتحها في Caime.\n\nبالعربية والإنجليزية والفرنسية والتركية.",
+        "keywords": [
+          "دردشة",
+          "مراسلة",
+          "علاقات",
+          "مكالمات",
+          "مشفر",
+          "عائلة",
+          "عمل",
+          "حجز",
+          "مساعد",
+          "خاص"
+        ],
+        "marketingUrl": "https://cai.me",
+        "supportUrl": "https://cai.me/help",
+        "privacyPolicyUrl": "https://cai.me/privacy"
+      },
+      "fr-FR": {
+        "title": "Caime",
+        "subtitle": "La messagerie de vos proches",
+        "description": "Caime est la messagerie qui comprend vos relations.\n\nDites comment vous connaissez quelqu’un (famille, ami, collègue, votre dentiste) et Caime garde vos conversations avec cette personne sous ce jour : ce qui vous attend passe d’abord, le reste attend tranquillement, et personne d’autre ne voit jamais comment vous l’avez nommée.\n\nCe qu’on demande et promet dans une conversation devient quelque chose que vous gardez : une demande devient une action avec sa date, un projet de rencontre une carte de réunion que les deux acceptent, un montant une carte Payer, une trace entre vous (Caime ne détient ni ne déplace jamais d’argent).\n\nCai, votre assistant, aide quand vous le demandez : il vous résume ce que vous avez manqué, rédige une réponse, répond à partir de vos propres conversations avec les lignes qu’il a lues, et prend des notes pendant un appel quand tous les participants disent oui. Ce qu’il suggère reste une suggestion jusqu’à ce que vous l’acceptiez.\n\nDes appels à deux ou jusqu’à huit personnes. Les conversations privées sont chiffrées de bout en bout : les serveurs de Caime n’en voient jamais les mots.\n\nLes organisations prouvent qui elles sont avec leur propre domaine web et répondent à leurs clients dans une seule boîte, avec rendez-vous, commandes et formulaires en cartes dans la conversation.\n\nEmportez vos conversations : exportez une conversation de la messagerie que vous utilisez aujourd’hui et ouvrez-la dans Caime.\n\nEn français, anglais, arabe et turc.",
+        "keywords": [
+          "messagerie",
+          "chat",
+          "relations",
+          "appels",
+          "chiffré",
+          "famille",
+          "travail",
+          "rendez-vous",
+          "assistant",
+          "privé"
+        ],
+        "marketingUrl": "https://cai.me",
+        "supportUrl": "https://cai.me/help",
+        "privacyPolicyUrl": "https://cai.me/privacy"
+      },
+      "tr": {
+        "title": "Caime",
+        "subtitle": "İnsanlarınız için mesajlaşma",
+        "description": "Caime, ilişkilerinizi anlayan mesajlaşmadır.\n\nBirini nereden tanıdığınızı söyleyin (aile, arkadaş, iş arkadaşı, diş hekiminiz); Caime o kişiyle konuşmalarınızı bu ışıkta tutar: sizi bekleyenler önce gelir, gerisi sessizce bekler ve onu nasıl adlandırdığınızı sizden başka kimse görmez.\n\nBir sohbette istenen ve söz verilen şey saklayabileceğiniz bir şeye dönüşür: bir istek günüyle birlikte bir eyleme, buluşma planı iki tarafın da kabul ettiği bir toplantı kartına, bir tutar da aranızda bir kayıt olan Öde kartına (Caime asla para tutmaz ya da aktarmaz).\n\nAsistanınız Cai, istediğinizde yardım eder: kaçırdıklarınızı özetler, bir yanıt taslağı yazar, okuduğu satırlarla kendi konuşmalarınızdan yanıt verir ve bir aramada herkes evet derse not alır. Önerdiği şey siz kabul edene kadar öneri olarak kalır.\n\nBire bir ya da sekiz kişiye kadar aramalar. Özel konuşmalar uçtan uca şifrelenir: Caime’ın sunucuları sözcüklerini asla görmez.\n\nKuruluşlar kendi web alan adlarıyla kim olduklarını kanıtlar ve müşterilerine tek bir gelen kutusunda, randevular, siparişler ve formlar konuşmanın içinde kartlar olarak yanıt verir.\n\nSohbetlerinizi yanınızda getirin: şu an kullandığınız mesajlaşma uygulamasından bir sohbeti dışa aktarıp Caime’da açın.\n\nTürkçe, İngilizce, Arapça ve Fransızca.",
+        "keywords": [
+          "sohbet",
+          "mesajlaşma",
+          "ilişkiler",
+          "arama",
+          "şifreli",
+          "aile",
+          "iş",
+          "randevu",
+          "asistan",
+          "özel"
+        ],
+        "marketingUrl": "https://cai.me",
+        "supportUrl": "https://cai.me/help",
+        "privacyPolicyUrl": "https://cai.me/privacy"
+      }
+    }
+  }
+}

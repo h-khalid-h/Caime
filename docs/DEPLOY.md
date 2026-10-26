@@ -343,8 +343,25 @@ Plans are bought in the app once Stripe is set up; until then, an operator sets 
 3. **Customer portal.** Turn on cancelling, updating the payment method and invoice history
    (or make a configuration through the API and set `STRIPE_PORTAL_CONFIGURATION`).
 4. Set `STRIPE_SECRET_KEY` (a restricted key needs write access to Customers, Checkout
-   Sessions, Customer portal and Subscriptions, and read access to Prices) and
+   Sessions, Customer portal and Subscriptions, and read access to Prices and Tax settings) and
    `STRIPE_WEBHOOK_SECRET` on the service, and redeploy.
+5. **VAT (Stripe Tax).** Where the account's tax settings are active, Checkout collects the
+   payer's address and, for an organization, its VAT number, and charges VAT where they are
+   (`automatic_tax`); the pricing page and the plan screens say whether a price holds it ("VAT
+   included where it applies", or "Plus VAT where it applies", from the price's own tax
+   behaviour, else the account's default). Stripe computes tax only where a registration is
+   recorded: the operator (DATA C OÜ, Estonia) adds its Estonian registration and, once its
+   sales to consumers elsewhere in the EU pass the threshold or it opts in, the EU's One Stop
+   Shop (Stripe · Tax · Registrations). Each product carries its tax code (Pro
+   `txcd_10103000`, SaaS for personal use; Business `txcd_10103001`, SaaS for business use). A
+   key that can't read the tax settings still sells, collects nothing and logs it.
+
+The live account (checked 2026-10-26): the four prices on their `caime_…` keys (Pro €6 a month
+or €60 a year, Business €29 or €290), both webhooks on `https://cai.me`, the portal's privacy,
+terms and return addresses on `cai.me`, Stripe Tax active with its head office in Tallinn and no
+registration recorded yet (⛔ the owner: Stripe · Tax · Registrations), every price's tax
+behaviour unspecified, so the account's default (exclusive) applies until the owner chooses
+(⛔: inclusive is what a consumer in the EU must be shown).
 
 Whatever a webhook says, the server asks Stripe how that subscription stands now, one delivery
 at a time for each subscription, so events that come late, out of order or two at once change
@@ -635,7 +652,12 @@ pnpm build:store      # the stores; then: eas submit --profile production --plat
 ```
 
 The first development build is where calls, private conversations and push are tried on a
-phone (ROADMAP M9); Expo Go stays for everything else until then.
+phone (ROADMAP M9); Expo Go stays for everything else until then. The stores' builds, their
+listings, the answers the stores ask for and the owner's steps are `docs/STORES.md` (R120); the
+`Stores` workflow builds and submits once `EXPO_TOKEN` and `EXPO_PROJECT_ID` are set in GitHub.
+Where Caime is listed reaches `/download` and the manifest from `APPLE_APP_ID`, `PLAY_LISTED`,
+`MICROSOFT_STORE_ID` and `DESKTOP_RELEASES_URL` on the service, each set once its listing is
+live.
 
 ## Plans
 

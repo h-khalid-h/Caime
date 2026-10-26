@@ -21,3 +21,11 @@ export function onOpenFromNotification(_go: (path: string) => void): () => void 
 export function watchShown(): () => void {
   return () => {};
 }
+export {
+  install,
+  installedHere,
+  installOffer,
+  onInstallOffer,
+  tellSurface,
+  watchBadge,
+} from './installed';

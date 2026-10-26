@@ -13,7 +13,7 @@
 
 import { AGENT_KNOWLEDGE_MAX } from '@caime/core/agents';
 import type { MarketingPage } from '@caime/core/api';
-import type { PriceView } from '@caime/core/billing';
+import { type PriceView, taxLine } from '@caime/core/billing';
 import { BUSINESS_VIEW_LABELS, BUSINESS_VIEWS } from '@caime/core/business';
 import { GROUP_CALL_MAX } from '@caime/core/calls';
 import { MAX_DEVICES, PRIVATE_GROUP_MAX } from '@caime/core/e2ee';
@@ -41,7 +41,9 @@ import {
   PERSON_ALLOWANCES,
   PLAN_NAMES,
 } from '@caime/core/plans';
+import { DEVICES, type Device } from './devices';
 import { KEPT_DAYS } from './retention';
+import type { StoreLinks } from './stores';
 
 export const SITE_NAME = 'Caime';
 export const PROMISE = msg('Messaging that understands your relationships.');
@@ -93,6 +95,10 @@ export interface SiteFacts {
    * in one the browser didn't ask for: a reader who switched stays switched. Null otherwise.
    */
   linkLang?: InterfaceLanguage | null;
+  /** Where Caime is listed (R120, `storeLinks`), for `/download`; none where it isn't. */
+  stores?: StoreLinks;
+  /** The device the page is read on (`deviceOf`), which `/download` leads with. */
+  device?: Device;
 }
 
 /**
@@ -107,6 +113,7 @@ const SITE_PATHS: ReadonlySet<string> = new Set([
   '/developers',
   '/marketplace',
   '/about',
+  '/download',
   '/sign-up',
   '/sign-in',
 ]);
@@ -135,6 +142,7 @@ export const SITE_NAV: ReadonlyArray<{ path: string; label: string; kicker: stri
   { path: '/developers', label: msg('Developers'), kicker: msg('developers') },
   { path: '/marketplace', label: msg('Marketplace'), kicker: msg('marketplace') },
   { path: '/about', label: msg('About'), kicker: msg('about') },
+  { path: '/download', label: msg('Get Caime'), kicker: msg('on every device') },
 ];
 
 /** The attributes that say what language a page is in, for `<main>` and the shell's `<html>`. */
@@ -359,9 +367,13 @@ function priceLine(prices: PriceView[] | null, plan: PriceView['plan']): string 
   const yearly = year
     ? tr('{price} a year', { price: esc(money(year.amount, year.currency)) })
     : null;
-  return monthly && yearly
-    ? tr('{monthly}, or {yearly}', { monthly, yearly })
-    : (monthly ?? yearly ?? '');
+  const line =
+    monthly && yearly
+      ? tr('{monthly}, or {yearly}', { monthly, yearly })
+      : (monthly ?? yearly ?? '');
+  // Whether VAT is in it, where Stripe Tax collects (a consumer is shown what they pay).
+  const tax = taxLine(month ?? year ?? {});
+  return tax ? `${line} <span class="small">${esc(tax)}</span>` : line;
 }
 
 /** One plan as a sheet of its own: its name, its price, what it includes. */
@@ -1274,5 +1286,110 @@ ${main}
 </main>`,
       };
     }
+    case 'download': {
+      const device = facts.device ?? 'other';
+      const others = DEVICES.filter((d) => d !== device);
+      return {
+        title: tr('Get {site} on every device', { site: SITE_NAME }),
+        description: tr(
+          'Caime on your phone, your computer and in your browser: the same conversations everywhere, with what needs you counted on its icon.',
+        ),
+        body: `
+${main}
+  ${masthead('/download', facts)}
+  <section class="hero">
+    <h1>${esc(tr('Caime, wherever you are.'))}</h1>
+    <p class="lead">${esc(
+      tr(
+        'Your conversations, your people and Cai follow you to every device. Sign in on each; a private conversation asks a device you already use to let the new one in.',
+      ),
+    )}</p>
+  </section>
+  <section class="sheet" aria-labelledby="download-here">
+    <h2 id="download-here" class="mono">${esc(tr('On this device'))}</h2>
+    ${device === 'other' ? `<p>${esc(tr('Open Caime in your browser: it works there as it does everywhere else.'))}</p>${cta(facts, [['/', tr('Open Caime')]])}` : wayOn(device, facts, true)}
+  </section>
+  <section class="sheet" aria-labelledby="download-others">
+    <h2 id="download-others" class="mono">${esc(tr('Other devices'))}</h2>
+    <dl class="spec">
+      ${others
+        .map(
+          // A product's own name, as it's written (never sentence-cased: "iPhone").
+          (d) =>
+            `<div><dt class="mono">${esc(DEVICE_NAMES[d])}</dt><dd>${wayOn(d, facts, false)}</dd></div>`,
+        )
+        .join('\n      ')}
+    </dl>
+  </section>
+  ${footer(facts)}
+</main>`,
+      };
+    }
   }
+}
+
+/** A device as people call it: a product's own name, the same in every language. */
+const DEVICE_NAMES: Record<(typeof DEVICES)[number], string> = {
+  iphone: 'iPhone',
+  ipad: 'iPad',
+  android: 'Android',
+  windows: 'Windows',
+  mac: 'Mac',
+  linux: 'Linux',
+  chromeos: 'ChromeOS',
+};
+
+/**
+ * How to have Caime on a device (R120): its store once it lists Caime (`storeLinks`), else the
+ * browser's own install, said in the browser's words; on Linux, the desktop app's files. Led with
+ * as buttons for the device the page is read on, said in a line for the others. Never an
+ * unsigned download for a Mac or for Windows.
+ */
+function wayOn(device: (typeof DEVICES)[number], facts: SiteFacts, here: boolean): string {
+  const s = facts.stores;
+  const store: [string, string] | null =
+    device === 'iphone' || device === 'ipad'
+      ? s?.appStore
+        ? [s.appStore, tr('Download on the App Store')]
+        : null
+      : device === 'mac'
+        ? s?.appStore
+          ? [s.appStore, tr('Download on the Mac App Store')]
+          : null
+        : device === 'android'
+          ? s?.googlePlay
+            ? [s.googlePlay, tr('Get it on Google Play')]
+            : null
+          : device === 'windows'
+            ? s?.microsoftStore
+              ? [s.microsoftStore, tr('Get it from Microsoft')]
+              : null
+            : device === 'linux'
+              ? s?.desktop
+                ? [s.desktop, tr('Download for Linux')]
+                : null
+              : null;
+  const browser =
+    device === 'iphone' || device === 'ipad'
+      ? tr(
+          'In Safari, tap Share, then Add to Home Screen: Caime opens from there like any app, and notifies you.',
+        )
+      : device === 'android'
+        ? tr(
+            'In Chrome, open the menu and choose Install app: Caime opens from your home screen, and notifies you.',
+          )
+        : device === 'mac'
+          ? tr(
+              'In Safari, choose File, then Add to Dock. In Chrome or Edge, choose Install Caime in the address bar.',
+            )
+          : tr(
+              'In Edge or Chrome, choose Install Caime in the address bar: it opens in a window of its own, with what needs you counted on its icon.',
+            );
+  const said =
+    store && device === 'linux' ? tr('An AppImage and a .deb, from the releases page.') : browser;
+  if (!here)
+    return store
+      ? `<a href="${esc(store[0])}" rel="noopener">${esc(store[1])}</a>${device === 'linux' ? ` · ${esc(said)}` : ''}`
+      : esc(said);
+  return `${store ? cta(facts, [store]) : ''}<p>${esc(said)}</p>${store ? '' : cta(facts, [['/', tr('Open Caime')]])}`;
 }

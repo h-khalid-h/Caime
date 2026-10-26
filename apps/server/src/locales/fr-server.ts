@@ -2034,4 +2034,32 @@ export const frServer: Catalog = {
   'Repeats every week': 'Se répète chaque semaine',
   'Repeats every two weeks': 'Se répète toutes les deux semaines',
   'Repeats every month': 'Se répète chaque mois',
+  'Get Caime': 'Obtenir Caime',
+  'on every device': 'sur tous vos appareils',
+  'Get {site} on every device': 'Obtenir {site} sur tous vos appareils',
+  'Caime on your phone, your computer and in your browser: the same conversations everywhere, with what needs you counted on its icon.':
+    'Caime sur votre téléphone, votre ordinateur et dans votre navigateur : les mêmes conversations partout, avec sur son icône le nombre de ce qui vous attend.',
+  'Caime, wherever you are.': 'Caime, où que vous soyez.',
+  'Your conversations, your people and Cai follow you to every device. Sign in on each; a private conversation asks a device you already use to let the new one in.':
+    'Vos conversations, vos proches et Cai vous suivent sur chaque appareil. Connectez-vous sur chacun ; une conversation privée demande à un appareil que vous utilisez déjà de laisser entrer le nouveau.',
+  'On this device': 'Sur cet appareil',
+  'Open Caime in your browser: it works there as it does everywhere else.':
+    'Ouvrez Caime dans votre navigateur : il y fonctionne comme partout ailleurs.',
+  'Open Caime': 'Ouvrir Caime',
+  'Other devices': 'Autres appareils',
+  'Download on the App Store': 'Télécharger dans l’App Store',
+  'Download on the Mac App Store': 'Télécharger dans le Mac App Store',
+  'Get it on Google Play': 'Disponible sur Google Play',
+  'Get it from Microsoft': 'Obtenir auprès de Microsoft',
+  'Download for Linux': 'Télécharger pour Linux',
+  'In Safari, tap Share, then Add to Home Screen: Caime opens from there like any app, and notifies you.':
+    'Dans Safari, touchez Partager, puis Sur l’écran d’accueil : Caime s’ouvre de là comme n’importe quelle app, et vous notifie.',
+  'In Chrome, open the menu and choose Install app: Caime opens from your home screen, and notifies you.':
+    'Dans Chrome, ouvrez le menu et choisissez Installer l’application : Caime s’ouvre depuis votre écran d’accueil, et vous notifie.',
+  'In Safari, choose File, then Add to Dock. In Chrome or Edge, choose Install Caime in the address bar.':
+    'Dans Safari, choisissez Fichier, puis Ajouter au Dock. Dans Chrome ou Edge, choisissez Installer Caime dans la barre d’adresse.',
+  'In Edge or Chrome, choose Install Caime in the address bar: it opens in a window of its own, with what needs you counted on its icon.':
+    'Dans Edge ou Chrome, choisissez Installer Caime dans la barre d’adresse : il s’ouvre dans sa propre fenêtre, avec sur son icône le nombre de ce qui vous attend.',
+  'An AppImage and a .deb, from the releases page.':
+    'Un AppImage et un .deb, sur la page des versions.',
 };

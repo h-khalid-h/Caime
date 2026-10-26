@@ -241,6 +241,7 @@ describe('the readable web (R44)', () => {
       security: 'Each side of your life sees what you chose.',
       developers: 'An API that reaches only what it was given.',
       about: 'Made for the people in your life, not for a feed.',
+      download: 'Caime, wherever you are.',
     };
     for (const [name, h1] of Object.entries(pages)) {
       for (const headers of [{}, { cookie: `caime_session=${noor.token}` }] as Array<
@@ -286,6 +287,30 @@ describe('the readable web (R44)', () => {
     expect(security.match(/<input type="radio" name="sees"/g)).toHaveLength(4);
     expect((await visit('/developers')).body).toContain('600 requests a minute per token.');
     expect((await visit('/about')).body).toContain('made by DATA C OÜ');
+    // Getting Caime (R120): the device the page is read on leads, in the browser's own words,
+    // and no store is offered before it lists Caime.
+    const iphone = await visit('/download', {
+      'user-agent':
+        'Mozilla/5.0 (iPhone; CPU iPhone OS 18_0 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/18.0 Mobile/15E148 Safari/604.1',
+    });
+    expect(iphone.headers.vary).toMatch(/user-agent/);
+    const here = iphone.body.slice(iphone.body.indexOf('id="download-here"'));
+    expect(here.slice(0, here.indexOf('</section>'))).toContain(
+      'tap Share, then Add to Home Screen',
+    );
+    expect(iphone.body).not.toMatch(/apps\.apple\.com|play\.google\.com|apps\.microsoft\.com/);
+    const windows = (
+      await visit('/download', {
+        'user-agent':
+          'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/140.0.0.0 Safari/537.36 Edg/140.0.0.0',
+      })
+    ).body;
+    const first = windows.slice(windows.indexOf('id="download-here"'));
+    expect(first.slice(0, first.indexOf('</section>'))).toContain(
+      'In Edge or Chrome, choose Install Caime in the address bar',
+    );
+    // The others are said too, by their own names.
+    expect(windows).toContain('<dt class="mono">iPhone</dt>');
     // The landing page carries the same nav, and links on to the site.
     const home = (await visit('/')).body;
     expect(home).toContain('<a href="/" aria-current="page">Home</a>');

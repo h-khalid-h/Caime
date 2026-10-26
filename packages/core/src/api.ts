@@ -1413,8 +1413,19 @@ export const MARKETING_PAGES = [
   'developers',
   'marketplace',
   'about',
+  'download',
 ] as const;
 export type MarketingPage = (typeof MARKETING_PAGES)[number];
+
+/**
+ * Where someone uses Caime (R120): a browser's tab, the web app installed from it, the desktop
+ * app, or a phone's app. The app says it once a launch (`PUT /auth/sessions/current/surface`), the
+ * session keeps it, and product metrics count the week's people by it (`growth.surfaces`).
+ */
+export const SURFACES = ['browser', 'installed', 'desktop', 'ios', 'android'] as const;
+export type Surface = (typeof SURFACES)[number];
+/** The surfaces that are an app on the device rather than a tab: R120's number counts these. */
+export const INSTALLED_SURFACES: readonly Surface[] = ['installed', 'desktop', 'ios', 'android'];
 
 /**
  * Where this Caime keeps its policies and help, for About: its own pages, or where its operator
@@ -2586,6 +2597,12 @@ export interface ProductMetricsView {
      * many messages came with them, the number that shows a group moving over with its past.
      */
     imports: { chats: number; groups: number; messages: number };
+    /**
+     * Where the window's people used Caime (R120): people seen on each surface (one person may be
+     * on several; `unknown` is a session from before a surface was said), and of everyone seen,
+     * the share on an installed one, the number R120 holds above half.
+     */
+    surfaces: { people: Record<Surface | 'unknown', number>; installed: Rate };
   };
   ai: {
     calls: number;

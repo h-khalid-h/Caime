@@ -1950,4 +1950,32 @@ export const turkishServer: Catalog = {
   'Repeats every week': 'Her hafta tekrarlanır',
   'Repeats every two weeks': 'İki haftada bir tekrarlanır',
   'Repeats every month': 'Her ay tekrarlanır',
+  'Get Caime': 'Caime’ı edinin',
+  'on every device': 'her cihazda',
+  'Get {site} on every device': '{site} her cihazınızda',
+  'Caime on your phone, your computer and in your browser: the same conversations everywhere, with what needs you counted on its icon.':
+    'Caime telefonunuzda, bilgisayarınızda ve tarayıcınızda: her yerde aynı konuşmalar, simgesinde sizi bekleyenlerin sayısıyla.',
+  'Caime, wherever you are.': 'Caime, nerede olursanız olun.',
+  'Your conversations, your people and Cai follow you to every device. Sign in on each; a private conversation asks a device you already use to let the new one in.':
+    'Konuşmalarınız, insanlarınız ve Cai sizinle her cihaza gelir. Her birinde oturum açın; özel bir konuşma, yeni cihazı içeri alması için zaten kullandığınız bir cihaza sorar.',
+  'On this device': 'Bu cihazda',
+  'Open Caime in your browser: it works there as it does everywhere else.':
+    'Caime’ı tarayıcınızda açın: orada da her yerde olduğu gibi çalışır.',
+  'Open Caime': 'Caime’ı aç',
+  'Other devices': 'Diğer cihazlar',
+  'Download on the App Store': 'App Store’dan indirin',
+  'Download on the Mac App Store': 'Mac App Store’dan indirin',
+  'Get it on Google Play': 'Google Play’den edinin',
+  'Get it from Microsoft': 'Microsoft’tan edinin',
+  'Download for Linux': 'Linux için indirin',
+  'In Safari, tap Share, then Add to Home Screen: Caime opens from there like any app, and notifies you.':
+    'Safari’de Paylaş’a, ardından Ana Ekrana Ekle’ye dokunun: Caime oradan her uygulama gibi açılır ve size bildirim gönderir.',
+  'In Chrome, open the menu and choose Install app: Caime opens from your home screen, and notifies you.':
+    'Chrome’da menüyü açıp Uygulamayı yükle’yi seçin: Caime ana ekranınızdan açılır ve size bildirim gönderir.',
+  'In Safari, choose File, then Add to Dock. In Chrome or Edge, choose Install Caime in the address bar.':
+    'Safari’de Dosya’yı, ardından Dock’a Ekle’yi seçin. Chrome ya da Edge’de adres çubuğunda Caime’ı yükle’yi seçin.',
+  'In Edge or Chrome, choose Install Caime in the address bar: it opens in a window of its own, with what needs you counted on its icon.':
+    'Edge ya da Chrome’da adres çubuğunda Caime’ı yükle’yi seçin: kendi penceresinde açılır, simgesinde sizi bekleyenlerin sayısıyla.',
+  'An AppImage and a .deb, from the releases page.':
+    'Sürümler sayfasından bir AppImage ve bir .deb.',
 };

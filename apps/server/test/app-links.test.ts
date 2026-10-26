@@ -23,6 +23,7 @@ beforeAll(async () => {
     WEB_DIR: dir,
     PUBLIC_URL: 'https://caime.example',
     APPLE_TEAM_ID: 'AB12CD34EF',
+    APPLE_APP_ID: '6740012345',
     ANDROID_CERT_SHA256: ` ${PRINT.toLowerCase()} , ${PRINT.replace(/^00/, 'ff')}`,
   });
   plain = await createTestApp({ WEB_DIR: dir, PUBLIC_URL: 'https://caime.example' });
@@ -92,5 +93,14 @@ describe('the phone apps’ links (R35)', () => {
   it('refuse a malformed team id or fingerprint at start rather than claim wrongly', async () => {
     await expect(createTestApp({ APPLE_TEAM_ID: 'too-short' })).rejects.toThrow();
     await expect(createTestApp({ ANDROID_CERT_SHA256: 'AB:CD' })).rejects.toThrow();
+  });
+});
+
+describe('the App Store’s banner (R120)', () => {
+  it('is on every page once the App Store lists Caime, and nowhere before', async () => {
+    const listed = await claimed.app.inject({ url: '/', headers: { accept: PAGE } });
+    expect(listed.body).toContain('<meta name="apple-itunes-app" content="app-id=6740012345">');
+    const before = await plain.app.inject({ url: '/', headers: { accept: PAGE } });
+    expect(before.body).not.toContain('apple-itunes-app');
   });
 });

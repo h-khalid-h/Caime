@@ -12,6 +12,7 @@ import type {
   ProductMetricsView,
   Rate,
 } from '@caime/core';
+import { INSTALLED_SURFACES, SURFACES, type Surface } from '@caime/core/api';
 import { sql } from 'kysely';
 import type { AppContext } from '../context';
 import { costUsd, inEuros, LONG_PROMPT, PRICES } from './ai-costs';
@@ -266,6 +267,33 @@ export async function productMetrics(ctx: AppContext, days: number): Promise<Pro
     where type = 'chat.imported' and created_at > ${from} and created_at <= ${to}
   `);
 
+  // Where the window's people used Caime (R120): each surface's people, from the sessions seen in
+  // it, and of everyone seen, those on an app installed on the device.
+  const surfaceRows = (
+    await sql<{ surface: Surface | null; people: number }>`
+      select s.surface, count(distinct s.user_id)::int as people
+      from sessions s join users u on u.id = s.user_id and u.kind = 'human'
+      where s.kind <> 'api' and s.last_seen_at > ${from} and s.last_seen_at <= ${to}
+      group by s.surface
+    `.execute(ctx.db)
+  ).rows;
+  const seen = await q<{ people: number; installed: number }>(sql`
+    select count(distinct s.user_id)::int as people,
+      count(distinct s.user_id) filter (where s.surface in (${sql.join([...INSTALLED_SURFACES])}))::int
+        as installed
+    from sessions s join users u on u.id = s.user_id and u.kind = 'human'
+    where s.kind <> 'api' and s.last_seen_at > ${from} and s.last_seen_at <= ${to}
+  `);
+  const surfaces = {
+    people: Object.fromEntries(
+      [...SURFACES, 'unknown' as const].map((k) => [
+        k,
+        surfaceRows.find((r) => (r.surface ?? 'unknown') === k)?.people ?? 0,
+      ]),
+    ) as Record<Surface | 'unknown', number>,
+    installed: rate(seen.installed, seen.people),
+  };
+
   const suggestions = await q<{ accepted: number; decided: number }>(sql`
     select count(*) filter (where status = 'accepted')::int as accepted,
       count(*) filter (where status in ('accepted', 'dismissed'))::int as decided
@@ -371,6 +399,7 @@ export async function productMetrics(ctx: AppContext, days: number): Promise<Pro
       },
       guests: { joined: guests.joined, kept: guests.kept, fromMail: guests.from_mail },
       imports: { chats: imports.chats, groups: imports.groups, messages: imports.messages },
+      surfaces,
     },
     ai: {
       calls: ai.reduce((n, r) => n + r.n, 0),

@@ -22,6 +22,8 @@ const HIDDEN = [
   /^\/new-group(?:\/|$)/,
   /^\/new-space(?:\/|$)/,
   /^\/orgs\/new(?:\/|$)/,
+  // What another app shared (R120): a choice to make, then back.
+  /^\/share(?:\/|$)/,
 ];
 
 export function phoneBarShown(pathname: string): boolean {

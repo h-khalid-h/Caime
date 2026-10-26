@@ -14,6 +14,7 @@ import {
   RecoverBody,
   ResetConfirmBody,
   ResetRequestBody,
+  SessionSurfaceBody,
   SignupBody,
   safeLocale,
   uuidv7,
@@ -357,6 +358,21 @@ export async function authRoutes(app: FastifyInstance, ctx: AppContext) {
         current: s.id === auth.sessionId,
       })),
     };
+  });
+
+  // Where this session's app runs (R120), said by the app once a launch: written only when it
+  // changes, never by a token.
+  app.put('/auth/sessions/current/surface', async (req): Promise<OkResponse> => {
+    const auth = requireAuth(req);
+    const { surface } = parse(SessionSurfaceBody, req.body);
+    if (auth.kind === 'web' || auth.kind === 'native')
+      await ctx.db
+        .updateTable('sessions')
+        .set({ surface })
+        .where('id', '=', auth.sessionId)
+        .where((eb) => eb.or([eb('surface', 'is', null), eb('surface', '<>', surface)]))
+        .execute();
+    return { ok: true };
   });
 
   app.delete('/auth/sessions/:id', async (req): Promise<OkResponse> => {

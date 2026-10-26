@@ -36,3 +36,24 @@ export function dismissHomeScreenHint(): void {
     localStorage.setItem(KEY, '1');
   } catch {}
 }
+
+const INSTALL_KEY = 'caime.install-hint';
+
+/** Whether "Not now" was said to installing Caime on this browser (R120). */
+export function installHintDismissed(): boolean {
+  try {
+    return localStorage.getItem(INSTALL_KEY) === '1';
+  } catch {
+    return true;
+  }
+}
+
+/** Installing is offered once on a browser: "Not now" is remembered here. */
+export function dismissInstallHint(): void {
+  try {
+    localStorage.setItem(INSTALL_KEY, '1');
+  } catch {}
+}
+
+/** Offered once someone has come back: never in the first two days of their account. */
+export const INSTALL_AFTER_MS = 2 * 86_400_000;

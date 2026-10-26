@@ -221,3 +221,11 @@ export function onOpenFromNotification(go: (path: string) => void): () => void {
     stop();
   };
 }
+export {
+  install,
+  installedHere,
+  installOffer,
+  onInstallOffer,
+  tellSurface,
+  watchBadge,
+} from './installed';

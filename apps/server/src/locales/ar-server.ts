@@ -2044,4 +2044,31 @@ export const arServer: Catalog = {
   'Repeats every week': 'يتكرر كل أسبوع',
   'Repeats every two weeks': 'يتكرر كل أسبوعين',
   'Repeats every month': 'يتكرر كل شهر',
+  'Get Caime': 'احصل على Caime',
+  'on every device': 'على كل جهاز',
+  'Get {site} on every device': 'احصل على {site} على كل جهاز',
+  'Caime on your phone, your computer and in your browser: the same conversations everywhere, with what needs you counted on its icon.':
+    'Caime على هاتفك وحاسوبك وفي متصفحك: المحادثات نفسها في كل مكان، وعلى أيقونته عدد ما يحتاج إليك.',
+  'Caime, wherever you are.': 'Caime، أينما كنت.',
+  'Your conversations, your people and Cai follow you to every device. Sign in on each; a private conversation asks a device you already use to let the new one in.':
+    'محادثاتك وناسك وCai يرافقونك إلى كل جهاز. سجّل الدخول على كلٍّ منها؛ والمحادثة الخاصة تطلب من جهاز تستخدمه أصلًا أن يُدخل الجديد.',
+  'On this device': 'على هذا الجهاز',
+  'Open Caime in your browser: it works there as it does everywhere else.':
+    'افتح Caime في متصفحك: يعمل هناك كما يعمل في كل مكان آخر.',
+  'Open Caime': 'افتح Caime',
+  'Other devices': 'أجهزة أخرى',
+  'Download on the App Store': 'التنزيل من App Store',
+  'Download on the Mac App Store': 'التنزيل من Mac App Store',
+  'Get it on Google Play': 'احصل عليه من Google Play',
+  'Get it from Microsoft': 'احصل عليه من Microsoft',
+  'Download for Linux': 'التنزيل لنظام Linux',
+  'In Safari, tap Share, then Add to Home Screen: Caime opens from there like any app, and notifies you.':
+    'في Safari، اضغط «مشاركة» ثم «إضافة إلى الشاشة الرئيسية»: يفتح Caime من هناك كأي تطبيق، ويُشعرك.',
+  'In Chrome, open the menu and choose Install app: Caime opens from your home screen, and notifies you.':
+    'في Chrome، افتح القائمة واختر «تثبيت التطبيق»: يفتح Caime من شاشتك الرئيسية، ويُشعرك.',
+  'In Safari, choose File, then Add to Dock. In Chrome or Edge, choose Install Caime in the address bar.':
+    'في Safari، اختر «ملف» ثم «إضافة إلى Dock». وفي Chrome أو Edge، اختر «تثبيت Caime» في شريط العنوان.',
+  'In Edge or Chrome, choose Install Caime in the address bar: it opens in a window of its own, with what needs you counted on its icon.':
+    'في Edge أو Chrome، اختر «تثبيت Caime» في شريط العنوان: يفتح في نافذة خاصة به، وعلى أيقونته عدد ما يحتاج إليك.',
+  'An AppImage and a .deb, from the releases page.': 'ملف AppImage وملف ‎.deb، من صفحة الإصدارات.',
 };

@@ -1,4 +1,3 @@
-import { ACCOUNT_DRIVE_NAMES } from '@caime/core/accounts';
 import type {
   ConnectedAccountView,
   ConversationView,
@@ -6,6 +5,7 @@ import type {
   MessageView,
   QuickReplyView,
 } from '@caime/core/api';
+import { ACCOUNT_DRIVE_NAMES } from '@caime/core/drives';
 import { formatAmount, formatWhenAt, listTitle, messagePreview } from '@caime/core/format';
 import { msg, tr, trn } from '@caime/core/i18n';
 import { uuidv4 } from '@caime/core/ids';

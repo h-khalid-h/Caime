@@ -62,6 +62,11 @@ export interface StripeStub {
   outage(on: boolean): void;
   /** The next `method path` request is refused with this message, as Stripe refuses a bad ask. */
   refuse(request: `${'GET' | 'POST' | 'DELETE'} ${string}`, message: string): void;
+  /** Stripe Tax as the account has it: pending (nothing collected) until a test turns it on. */
+  taxSettings(next: {
+    status: 'active' | 'pending';
+    defaults: { tax_behavior: 'inclusive' | 'exclusive' | 'inferred_by_currency' | null };
+  }): void;
   close(): Promise<void>;
 }
 
@@ -92,6 +97,10 @@ export async function stripeStub(): Promise<StripeStub> {
   const held = new Map<string, Promise<void>>();
   let down = false;
   const refusals = new Map<string, string>();
+  let tax: Parameters<StripeStub['taxSettings']>[0] = {
+    status: 'pending',
+    defaults: { tax_behavior: null },
+  };
   const event = (type: string, object: object) => ({
     id: `evt_${(++events).toString().padStart(6, '0')}`,
     object: 'event',
@@ -125,6 +134,8 @@ export async function stripeStub(): Promise<StripeStub> {
         .map(([, v]) => v);
       return send(200, { object: 'list', data: PRICES.filter((p) => keys.includes(p.lookup_key)) });
     }
+    if (req.method === 'GET' && path === '/v1/tax/settings')
+      return send(200, { object: 'tax.settings', livemode: false, ...tax });
     const missing = (what: string) =>
       send(404, {
         error: {
@@ -314,6 +325,9 @@ export async function stripeStub(): Promise<StripeStub> {
     },
     refuse(request, message) {
       refusals.set(request, message);
+    },
+    taxSettings(next) {
+      tax = next;
     },
     close: () => new Promise((r) => server.close(() => r())),
   };

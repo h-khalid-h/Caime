@@ -358,7 +358,8 @@ A sphere is said as how you know someone, never "sphere".
   tapped sheet); module ids shift with every new module, so `__common` moves by about ±0.2 KB
   gzip with no module changed, and headroom under that is none. What only one feature needs of
   a core module two routes share goes in a module of its own (`saved.ts` from `automations.ts`,
-  0.8 KB of the first download). What may be tapped in a message (I9d) is core `tappableSpans`
+  0.8 KB of the first download; `drives.ts` from `accounts.ts` for the composer's Share sheet,
+  0.8 KB). What may be tapped in a message (I9d) is core `tappableSpans`
   over the message's own `entities` (never read again on the device), drawn by `MessageBubble`
   only with `onTap` and offered by the screen's one `TappedSheet`: a new thing to tap is an entity
   the server keeps, a kind in `Tappable` and a row there. Read and delivered
@@ -2060,6 +2061,24 @@ A sphere is said as how you know someone, never "sphere".
   `packages/core/src/location.ts`, no zod, so the app can import it). The app's
   `LiveLocationSharer` (mounted in the signed-in layout) moves this device's shares from
   `state/liveShares.ts` and shows the "Sharing your location live" pill.
+- Where people already look (R120, ROADMAP M19, `docs/STORES.md`): a phone app sells nothing
+  (`sellsHere`, `lib/stores.ts`: the plan screens say the plan, never a price, a Get button, a
+  link to buy or the portal; App Store 3.1.3(f)), and a new place that sells a plan reads it. The
+  stores' listings are `apps/app/store.config.json` and `apps/app/store/play/`, the same words in
+  every language (`storeListing.test.ts`); the `Stores` workflow builds and submits once
+  `EXPO_TOKEN` and `EXPO_PROJECT_ID` exist. Where Caime is listed is `storeLinks`
+  (`lib/stores.ts` on the server: `APPLE_APP_ID`, `PLAY_LISTED`, `MICROSOFT_STORE_ID`,
+  `DESKTOP_RELEASES_URL`, each set only once live), read by `/download` (a site page that leads
+  with the device's own way, `deviceOf`, by the user agent alone) and the manifest's related apps;
+  nothing else names a store. The manifest is the server's (`/manifest.webmanifest`,
+  `lib/web-manifest.ts`, in the installer's language: one window, shortcuts, the share target to
+  `/share`), never a file in `public/`. The installed web app's install offer, the count of what
+  needs you on its icon and where the app runs (`tellSurface`, once a launch, `sessions.surface`,
+  counted as `growth.surfaces`) live in `features/push/installed*.ts`, loaded with the push module
+  after the first screen; the offer shows in the iPhone card's place on Attention once an account
+  is two days old (`INSTALL_AFTER_MS`). VAT on Caime's own plans is Stripe Tax's
+  (`stripeCatalog` reads the tax settings with the prices; `automatic_tax` at Checkout where
+  it's active; `PriceView.tax` and core `taxLine` say whether a price holds it).
 - What's connected or listed for someone changes on every device at once (M15): a grant made or
   ended, the calendar feed made or stopped, a listing changed by its developer or reviewed by
   the operator publishes `apps.changed` (to the developer and, for a listing under an

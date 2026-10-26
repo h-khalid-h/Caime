@@ -162,3 +162,11 @@ export function onOpenFromNotification(go: (path: string) => void): () => void {
   navigator.serviceWorker.addEventListener('message', heard);
   return () => navigator.serviceWorker.removeEventListener('message', heard);
 }
+export {
+  install,
+  installedHere,
+  installOffer,
+  onInstallOffer,
+  tellSurface,
+  watchBadge,
+} from './installed';

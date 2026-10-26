@@ -236,6 +236,12 @@ describe('product metrics (PRD §82–83)', () => {
       guests: { joined: 0, kept: 0, fromMail: 0 },
       // Nor brought a chat over (import.test.ts measures them).
       imports: { chats: 0, groups: 0, messages: 0 },
+      // The four were seen in the window; none of their devices said where it runs (R120:
+      // installed.test.ts measures that).
+      surfaces: {
+        people: { browser: 0, installed: 0, desktop: 0, ios: 0, android: 0, unknown: 4 },
+        installed: { count: 0, of: 4, rate: 0 },
+      },
     });
     expect(m.value).toEqual({
       tasksFromMessages: 2,

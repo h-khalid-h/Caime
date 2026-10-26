@@ -292,7 +292,8 @@ with its reason, so it isn't proposed again without new facts.
   manages without feeling overwhelmed (§82). Stories and ranked feeds are the social network §85
   rules out. Broadcasts (§59) stay chronological and apart from personal connections; paid
   subscriptions and tips on them are payments (R38). Watches show Caime's notifications from the
-  phone, and the web app is the desktop app, so neither needs an app of its own.
+  phone, and the web app is the desktop app, so neither needs an app of its own (R120 reopened
+  the desktop: the desktop app is the web app in a thin shell, and the stores carry Caime).
 
 - **R41 — Private history survives a lost phone, never through Caime.** A private conversation
   (R18) must not be lost with the device it was read on: Caime is for relationships that run for
@@ -2693,3 +2694,99 @@ with its reason, so it isn't proposed again without new facts.
   a country's rules moves no meeting (I19c); (d) each move of a meeting's time, an action's due or
   a promise's day kept with its reason, so Cai can say what slipped (I19d). *The number:* days
   shown on another day than their own, zero, in a test across UTC−5, UTC, UTC+3 and UTC+14.
+- **R120 (2026-10-26) Caime where people already look: both phone stores, every desktop, an
+  installed app from the browser.** The owner: "get Caime closer to its target audiences …
+  Google Play, the Apple App Store, and desktop for Mac, Windows, and Linux … whatever drives
+  adoption and the switch from the alternatives". This reopens R40's "the web app is the desktop
+  app" and REVIEW-2026-10-17's "native desktop apps, declined". Through the council.
+  *The council's turning points:* (1) the Adversary staked the phone apps on Guideline 3.1.1:
+  Pro and Business are bought through Stripe Checkout, and an iPhone app that sells a digital
+  plan outside Apple's purchase, or points to where it's sold, is rejected (Google Play's
+  payments policy is the same for digital goods). So a phone app sells nothing. It is the free
+  companion of a paid web service (App Store 3.1.3(f); Play's consumption-only apps): no price,
+  no Get button, no link to buy, and no portal. It still says which plan someone is on and what
+  that includes, from one rule (`sellsHere`). An organization's own checkout for its goods and
+  services (R65) stays: those are real-world services (3.1.3(e)). Pay cards stay too: they are
+  records between people (R62). (2) The Adversary staked the desktop download on signing. On a
+  Mac, an app that isn't notarised opens only from System Settings. On Windows, an unsigned file
+  meets SmartScreen's "Windows protected your PC". Either is a worse first meeting than no
+  download. So Caime never offers an unsigned Mac or Windows file:
+  - Linux gets the desktop app at once (AppImage and deb).
+  - Windows gets it through the Microsoft Store, whose package the Store signs, and as a signed
+    download once a certificate exists.
+  - The Mac gets the iPhone app's iPad build on Apple silicon (the Mac App Store, no second
+    app) and a notarised download once Apple's account exists.
+  (3) The Specialist kept R40's reason (one interface, no second app to keep), a desktop and
+  app-store release engineer who has shipped Electron and installed web apps to all three
+  desktops' stores. The desktop app is the web app in a thin, sandboxed Electron shell that
+  loads `PUBLIC_URL`, so:
+  - it runs the same Chromium the E2E runs (calls, screen sharing, Web Crypto and IndexedDB
+    keys for private conversations), and every deploy reaches it with no store review;
+  - the shell adds only what a tab can't: a badge on the dock or taskbar, the tray, starting
+    with the computer, one window, `caime://` and cai.me links, and the screen picker;
+  - the page gets no Node, navigation stays on `PUBLIC_URL`'s origin, everything else opens in
+    the browser, and permissions go to that origin alone.
+
+  Tauri is declined: Linux's WebKitGTK and macOS's WKWebView don't give calls and screen capture
+  what Chromium does. Second-order effects:
+  - Electron ships a major every eight weeks, with security support for the last three, so
+    Dependabot keeps it current.
+  - A compromised `PUBLIC_URL` is the web app's risk already; contextIsolation and the sandbox
+    keep it there.
+  - Under-18s change nothing: same app, same rules.
+
+  (4) The Newcomer is someone leaving WhatsApp Desktop on a work PC, with Edge as the browser,
+  who searches "Caime download". They froze at a page of seven ways. So `/download` reads the
+  device and leads with one way that works on it today, with the rest folded below:
+  - a store when it's listed;
+  - else the browser's own Install, in the browser's words: Edge's and Chrome's Install,
+    Safari's Add to Dock, and on an iPhone, Share then Add to Home Screen;
+  - on Linux, the files.
+
+  (5) The Newcomer then asked why the installed web app felt like a tab. It opens a second window
+  and never shows a count. So the installed app gets:
+  - one window (`launch_handler`);
+  - the count of what needs you on its icon (the Badging API, from the page while it runs);
+  - shortcuts (New chat, Search, Actions);
+  - a share target: text and links shared from another app open a conversation picker with the
+    words in the composer.
+
+  The install offer joins the iPhone card's place on Attention (one card, never a prompt of its
+  own). (6) The Adversary added that a store button with no listing behind it is worse than
+  none. Every store link comes from configuration (`APPLE_APP_ID`, `PLAY_LISTED`,
+  `MICROSOFT_STORE_ID`, `DESKTOP_RELEASES_URL`) and shows only once set. The phone pages' smart
+  banners and the manifest's `related_applications` follow the same settings.
+
+  *Decided against:*
+  - native desktop rewrites (three interfaces, R40's cost);
+  - Tauri (above);
+  - unsigned Mac or Windows downloads;
+  - selling plans inside the phone apps now: 15 to 30% of €6, two more billing systems to keep
+    in step with Stripe, and refunds through the stores. Revisit when more than two in five paid
+    plans start on a phone;
+  - a web wrapper for Play (the Android app exists);
+  - Flathub and Snap before someone asks: they build from source, each with a manifest of its
+    own.
+
+  *The plan* (ROADMAP M19):
+  - K1: phone builds that pass review. Sell nothing, a privacy manifest, the store listings in
+    four languages with the privacy label and Data safety answers drawn from the processors list,
+    review notes, and a workflow that builds and submits once `EXPO_TOKEN` is set.
+  - K2: the installed web app.
+  - K3: `/download` and the store links from configuration.
+  - K4: the desktop app (`apps/desktop`), with a Playwright smoke test of the shell and releases
+    built by CI.
+  - K5: pages for someone coming from WhatsApp, Telegram or Calendly.
+  - ⛔ The owner: the Apple and Google developer accounts, `EXPO_TOKEN`, a Microsoft Partner
+    Center account, the signing certificates, the review account, the trademark.
+
+  *Open risks:*
+  - App Review reads "manage it on cai.me" as steering. The sign is a rejection citing 3.1.1;
+    then the line goes.
+  - The shell's Chromium lags the browser's. The sign is a call failing in the desktop app only;
+    the smoke test runs the shell against the E2E server on each release.
+
+  *The number:* of the week's active people, the share who used Caime from an installed app (a
+  phone, the desktop app or the installed web app) rather than a browser tab. Read from
+  `sessions.surface`, which the app sends and the server writes only when it changes, in product
+  metrics as `growth.surfaces`. Above half, ninety days after the stores list Caime.

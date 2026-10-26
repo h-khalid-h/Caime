@@ -63,9 +63,13 @@ export default function AppLayout() {
         void m.resumePush();
         const stopOpening = m.onOpenFromNotification((path) => router.push(path as never));
         const stopWatching = m.watchShown();
+        // What needs you, on an installed app's icon, and where this app runs (R120).
+        const stopBadge = m.watchBadge();
+        m.tellSurface();
         stop = () => {
           stopOpening();
           stopWatching();
+          stopBadge();
         };
       })
       .catch(() => {});

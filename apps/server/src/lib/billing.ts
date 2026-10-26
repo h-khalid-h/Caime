@@ -57,6 +57,14 @@ interface StripePrice {
   currency: string;
   active: boolean;
   recurring: { interval: string } | null;
+  /** Whether its amount holds the tax; `unspecified` follows the account's default. */
+  tax_behavior?: 'inclusive' | 'exclusive' | 'unspecified' | null;
+}
+
+/** Stripe Tax as the account has it (`/v1/tax/settings`). */
+interface StripeTaxSettings {
+  status: 'active' | 'pending';
+  defaults: { tax_behavior: 'inclusive' | 'exclusive' | 'inferred_by_currency' | null };
 }
 export interface StripeSubscription {
   id: string;
@@ -79,23 +87,37 @@ export interface StripeSubscription {
 }
 
 const PRICES_FOR_MS = 10 * 60_000;
-const prices = new WeakMap<AppContext, { at: number; byKey: Map<string, StripePrice> }>();
 
-/** Caime's prices in Stripe, by lookup key, asked again every ten minutes. */
-async function stripePrices(ctx: AppContext): Promise<Map<string, StripePrice>> {
+/** Caime's prices by lookup key, and whether Stripe Tax collects on them. */
+interface StripeCatalog {
+  byKey: Map<string, StripePrice>;
+  tax: StripeTaxSettings | null;
+}
+const prices = new WeakMap<AppContext, { at: number } & StripeCatalog>();
+
+/**
+ * Caime's prices and the account's tax settings, asked together every ten minutes: VAT is
+ * collected at Checkout only where Stripe Tax is active, and a page says whether a price holds
+ * it (R120's companion: the operator is DATA C OÜ, Estonia, selling to consumers across the EU).
+ */
+async function stripeCatalog(ctx: AppContext): Promise<StripeCatalog> {
   const s = stripe(ctx);
-  if (!s) return new Map();
+  if (!s) return { byKey: new Map(), tax: null };
   const held = prices.get(ctx);
-  if (held && ctx.now().getTime() - held.at < PRICES_FOR_MS) return held.byKey;
+  if (held && ctx.now().getTime() - held.at < PRICES_FOR_MS) return held;
   // The live account's prices may still carry the earlier keys: both are asked for.
   const lookup_keys = BILLED_PLANS.flatMap((p) =>
     BILLING_INTERVALS.flatMap((i) => [priceLookupKey(p, i), earlierLookupKey(p, i)]),
   );
-  const list = await s.get<{ data: StripePrice[] }>('/v1/prices', {
-    lookup_keys,
-    active: true,
-    limit: 10,
-  });
+  // A key that may not read the tax settings (a restricted key without "Tax settings: read")
+  // still sells: what isn't collected is logged, never a plan that can't be bought.
+  const [list, tax] = await Promise.all([
+    s.get<{ data: StripePrice[] }>('/v1/prices', { lookup_keys, active: true, limit: 10 }),
+    s.get<StripeTaxSettings>('/v1/tax/settings').catch((e: unknown) => {
+      ctx.log.warn({ err: e }, 'stripe tax settings unread: VAT is not collected at Checkout');
+      return null;
+    }),
+  ]);
   // Kept by the key Caime names it with now, a price under that key before one under the earlier.
   const byKey = new Map<string, StripePrice>();
   for (const p of list.data) {
@@ -104,15 +126,46 @@ async function stripePrices(ctx: AppContext): Promise<Map<string, StripePrice>> 
     const key = priceLookupKey(which.plan, which.interval);
     if (!byKey.has(key) || p.lookup_key === key) byKey.set(key, p);
   }
-  prices.set(ctx, { at: ctx.now().getTime(), byKey });
-  return byKey;
+  const catalog = { byKey, tax: tax?.status === 'active' ? tax : null };
+  prices.set(ctx, { at: ctx.now().getTime(), ...catalog });
+  return catalog;
+}
+
+/**
+ * Whether a price's amount holds the tax, where Stripe Tax collects any: its own behaviour, else
+ * the account's default, which for `inferred_by_currency` is exclusive in US and Canadian dollars
+ * and inclusive in every other currency, as Stripe infers it.
+ */
+function taxOf(p: StripePrice, tax: StripeTaxSettings | null): PriceView['tax'] {
+  if (!tax) return undefined;
+  const own =
+    p.tax_behavior === 'inclusive' || p.tax_behavior === 'exclusive' ? p.tax_behavior : null;
+  const fallback = tax.defaults.tax_behavior ?? 'inferred_by_currency';
+  const behaviour =
+    own ??
+    (fallback === 'inferred_by_currency'
+      ? ['usd', 'cad'].includes(p.currency.toLowerCase())
+        ? 'exclusive'
+        : 'inclusive'
+      : fallback);
+  return behaviour === 'inclusive' ? 'included' : 'added';
 }
 
 async function priceViews(ctx: AppContext, plan: BilledPlan): Promise<PriceView[]> {
-  const byKey = await stripePrices(ctx);
+  const { byKey, tax } = await stripeCatalog(ctx);
   return BILLING_INTERVALS.flatMap((interval) => {
     const p = byKey.get(priceLookupKey(plan, interval));
-    return p ? [{ plan, interval, amount: p.unit_amount ?? 0, currency: p.currency }] : [];
+    if (!p) return [];
+    const said = taxOf(p, tax);
+    return [
+      {
+        plan,
+        interval,
+        amount: p.unit_amount ?? 0,
+        currency: p.currency,
+        ...(said ? { tax: said } : {}),
+      },
+    ];
   });
 }
 
@@ -322,10 +375,9 @@ export async function startCheckout(
   const plan = planFor(payer);
   const s = stripe(ctx);
   if (!s || !billingEnabled(ctx)) throw unavailable(plan);
-  const price = (await stripePrices(ctx).catch(() => new Map<string, StripePrice>())).get(
-    priceLookupKey(plan, interval),
-  );
-  if (!price) throw unavailable(plan);
+  const catalog = await stripeCatalog(ctx).catch(() => null);
+  const price = catalog?.byKey.get(priceLookupKey(plan, interval));
+  if (!catalog || !price) throw unavailable(plan);
   if (operatorsPlan(payer, await planNow(payer, ctx.db)))
     throw new AppError(
       409,
@@ -382,6 +434,15 @@ export async function startCheckout(
       client_reference_id: 'userId' in payer ? payer.userId : payer.orgId,
       subscription_data: { metadata: { caime_payer: payerKey(payer) } },
       allow_promotion_codes: true,
+      // VAT where the payer is, once Stripe Tax collects: the address it needs and a VAT number
+      // for an organization's reverse charge are asked on Stripe's page and kept on the customer.
+      ...(catalog.tax
+        ? {
+            automatic_tax: { enabled: true },
+            customer_update: { address: 'auto', name: 'auto' },
+            tax_id_collection: { enabled: true },
+          }
+        : {}),
       // Paying under this is the consumer's express request that the plan start now (the EU's
       // Consumer Rights Directive, Arts. 7(3) and 8(8)), which the terms' section 6 relies on.
       custom_text: {

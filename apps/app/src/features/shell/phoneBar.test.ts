@@ -39,6 +39,7 @@ describe('the phone’s bar', () => {
       '/new-group',
       '/new-space',
       '/orgs/new',
+      '/share',
     ])
       expect([path, phoneBarShown(path)]).toEqual([path, false]);
   });

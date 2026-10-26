@@ -4887,6 +4887,37 @@ have yet, each sized:
       secrets and deploys only `main`. ⛔ Branch protection on `main` (a pull request and the CI
       check required, pushes to the lead and the owner) is the owner's GitHub setting.
 
+## M19 — Where people already look (R120, the owner's ask of 2026-10-26)
+
+Both phone stores, every desktop, and an app installed from the browser, each through what
+exists: the phone apps are the Expo app, the desktop app is the web app in a thin shell, and the
+installed web app is the same build. The number: of the week's active people, the share on an
+installed surface rather than a browser tab (`growth.surfaces`), above half ninety days after
+the stores list Caime.
+
+- [~] K1. Phone builds that pass review: the phone apps sell nothing (App Store 3.1.3(f), Play's
+      consumption-only apps; `sellsHere`), a privacy manifest, the store listings in the four
+      languages with the privacy label and Data safety answers drawn from the processors list
+      (`docs/STORES.md`), review notes, and the `stores` workflow that builds and submits once
+      `EXPO_TOKEN` is set. ⛔ The Apple and Google developer accounts, `EXPO_TOKEN`, App Store
+      Connect's API key, Play's service account, a review account made by the owner, the
+      export-compliance answer for encryption (counsel), the trademark
+- [x] K2. The installed web app (2026-10-26): the manifest by language from the server (one
+      window, shortcuts, the share target), what needs you counted on its icon while the page
+      runs, `/share` sending what another app shared to the conversations chosen on the tap, the
+      install offer in the iPhone card's place on Attention once an account is two days old;
+      `installed.spec.ts`
+- [x] K3. `/download` (2026-10-26), leading with the one way that works on the device, every
+      other device below by its own name; store links from configuration (`storeLinks`), shown
+      only once listed, and Safari's App Store banner on every page once `APPLE_APP_ID` is set;
+      `sessions.surface` (0167) and `growth.surfaces`
+- [ ] K4. The desktop app (`apps/desktop`, Electron over `PUBLIC_URL`, sandboxed): badge, tray,
+      start with the computer, one window, links, the screen picker; a Playwright smoke test of
+      the shell; Linux files from CI on a tag, the Microsoft Store's package. ⛔ A Partner Center
+      account, Apple's Developer ID and notarisation, a Windows signing certificate
+- [ ] K5. Pages for someone coming from WhatsApp, Telegram or Calendly: what comes with them
+      (the importers, their people, an organization's door), in every language
+
 ## Log
 
 Entries written before the name was settled call the product by its working names, Caishy or
@@ -7089,3 +7120,12 @@ CONNIQT; they mean Caime. Caishy is one of Caime's AI members, and Cai leads the
   the call's write-up as passages, citing them back as the call's; a tap opens the notes at the
   line, marked. The answer from a call's write-up is the asker's only where they were there from
   its first word.
+- 2026-10-26 — R120 through the council (the owner: Caime on Google Play, the App Store and every
+  desktop, whatever brings people over): the phone apps sell nothing (3.1.3(f)), their listings in
+  four languages and the stores' answers in `docs/STORES.md`, the `Stores` workflow waiting on
+  `EXPO_TOKEN`; the installed web app (a manifest by language, one window, shortcuts, `/share`, the
+  icon's count, the install offer); `/download` for every device; `growth.surfaces`, the number.
+  Stripe, read and set right: the live account is DATA C OÜ with Stripe Tax active, so Checkout
+  now collects VAT where it applies and the pages say whether a price holds it; the portal's
+  addresses moved to cai.me, the products carry their tax codes and Caime's name. ⛔ The owner:
+  Stripe's tax registrations and inclusive prices, the store accounts, `EXPO_TOKEN`.

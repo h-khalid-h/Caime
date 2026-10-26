@@ -2821,4 +2821,16 @@ export const frB: Catalog = {
   'This meeting isn’t in a conversation of yours, or it was called off. Ask whoever sent it.':
     'Cette réunion n’est pas dans l’une de vos conversations, ou elle a été annulée. Demandez à qui vous l’a envoyée.',
   'Said in calls': 'Dit pendant les appels',
+  'VAT included where it applies.': 'TVA incluse là où elle s’applique.',
+  'Plus VAT where it applies.': 'TVA en sus là où elle s’applique.',
+  'Share to Caime': 'Partager dans Caime',
+  'There’s no conversation to share it to yet.':
+    'Il n’y a pas encore de conversation où le partager.',
+  'Shared to {n} conversations': { one: 'Partagé', other: 'Partagé dans {n} conversations' },
+  'Caime as an app': 'Caime en application',
+  'In Safari, choose File, then Add to Dock: Caime opens in a window of its own, with what needs you counted on its icon.':
+    'Dans Safari, choisissez Fichier, puis Ajouter au Dock : Caime s’ouvre dans sa propre fenêtre, avec sur son icône le nombre de ce qui vous attend.',
+  'Install Caime to open it from your dock, taskbar or home screen, in a window of its own, with what needs you counted on its icon.':
+    'Installez Caime pour l’ouvrir depuis votre Dock, votre barre des tâches ou votre écran d’accueil, dans sa propre fenêtre, avec sur son icône le nombre de ce qui vous attend.',
+  Install: 'Installer',
 };

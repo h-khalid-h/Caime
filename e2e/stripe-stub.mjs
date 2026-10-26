@@ -338,6 +338,14 @@ const server = createServer(async (req, res) => {
     if (req.method === 'DELETE') s.status = 'canceled';
     return json(200, s);
   }
+  // Stripe Tax as a new account has it: nothing collected (R120's companion, VAT at Checkout).
+  if (req.method === 'GET' && path === '/v1/tax/settings')
+    return json(200, {
+      object: 'tax.settings',
+      livemode: false,
+      status: 'pending',
+      defaults: { tax_behavior: null },
+    });
   // The provider probe's cheapest read (R78).
   if (req.method === 'GET' && path === '/v1/balance')
     return json(200, { object: 'balance', available: [], pending: [], livemode: false });

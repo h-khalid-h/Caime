@@ -144,6 +144,8 @@ describe('billing (PRD §84, R25)', () => {
       cancel_url: 'http://localhost:8787/settings/plan?billing=cancelled',
       'subscription_data[metadata][caime_payer]': `user:${noor.user.id}`,
     });
+    // Stripe Tax isn't collecting on this account: Checkout asks no address for it.
+    expect(a?.params.has('automatic_tax[enabled]')).toBe(false);
     // Only the newest can be paid: the one before it closed as the new one opened.
     expect([a?.status, b?.status]).toEqual(['expired', 'open']);
     expect(() => stub.pay(a?.id ?? '')).toThrow(/expired/);
@@ -152,6 +154,35 @@ describe('billing (PRD §84, R25)', () => {
       (r) => r.params.get('customer') === a?.customer,
     );
     expect(listed).toHaveLength(2);
+  });
+
+  it('where Stripe Tax collects, VAT is asked where the payer is, and the price says if it holds it', async () => {
+    stub.taxSettings({ status: 'active', defaults: { tax_behavior: 'inclusive' } });
+    // Prices and tax settings are read together and kept ten minutes: a fresh instance reads them.
+    const taxed = await createTestApp({
+      STRIPE_SECRET_KEY: 'sk_test_stub_0123456789abcdef',
+      STRIPE_WEBHOOK_SECRET: SECRET,
+      STRIPE_API_BASE: stub.url,
+    });
+    try {
+      const lina = await signup(taxed, { displayName: 'Lina Taxed', email: 'lina@example.com' });
+      expect((await lina.get('/v1/billing')).prices).toEqual([
+        { plan: 'pro', interval: 'month', amount: 600, currency: 'eur', tax: 'included' },
+        { plan: 'pro', interval: 'year', amount: 6000, currency: 'eur', tax: 'included' },
+      ]);
+      const res = await checkout(lina, PRO);
+      expect(res.statusCode).toBe(200);
+      const session = stub.sessions.get(sessionOf(res.json().url));
+      expect(Object.fromEntries(session?.params ?? [])).toMatchObject({
+        'automatic_tax[enabled]': 'true',
+        'customer_update[address]': 'auto',
+        'customer_update[name]': 'auto',
+        'tax_id_collection[enabled]': 'true',
+      });
+    } finally {
+      stub.taxSettings({ status: 'pending', defaults: { tax_behavior: null } });
+      await taxed.close();
+    }
   });
 
   it('what Stripe refuses is said in its words, never as a fault of Caime’s', async () => {

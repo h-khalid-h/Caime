@@ -13,6 +13,7 @@ import { qk } from '@/api/keys';
 import { BillingCard, useBackFromCheckout } from '@/features/billing';
 import { Group, SettingsPage } from '@/features/settings/SettingsPage';
 import { openLink } from '@/lib/links';
+import { sellsHere } from '@/lib/stores';
 import { useSession } from '@/state/session';
 import { useTheme } from '@/theme/theme';
 import { Button } from '@/ui/Button';
@@ -196,7 +197,7 @@ export default function PlanSettings() {
         <Group
           title={PLAN_NAMES[next]}
           footer={
-            p.upgradeUrl
+            p.upgradeUrl || !sellsHere
               ? undefined
               : tr(
                   '{plan} can’t be bought here yet. Nothing you use today will change when it can.',
@@ -206,7 +207,7 @@ export default function PlanSettings() {
         >
           <View style={{ padding: 16, gap: 12 }}>
             <Text variant="body">{proIncludes(next)}</Text>
-            {p.upgradeUrl ? (
+            {p.upgradeUrl && sellsHere ? (
               <Button
                 label={tr('See {plan}', { plan: PLAN_NAMES[next] })}
                 onPress={() => openLink(p.upgradeUrl ?? '')}

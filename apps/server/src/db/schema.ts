@@ -17,6 +17,7 @@ import type {
   PaymentSettings,
 } from '@caime/core';
 import type { AccountFailure } from '@caime/core/accounts';
+import type { Surface } from '@caime/core/api';
 import type {
   ColumnType,
   Generated,
@@ -128,6 +129,8 @@ export interface SessionsTable {
   platform: string | null;
   ip: string | null;
   user_agent: string | null;
+  /** Where the app runs (R120, core `SURFACES`), said by it once a launch; null before. */
+  surface: Surface | null;
   created_at: Generated<Date>;
   last_seen_at: Generated<Date>;
   expires_at: Timestamp;

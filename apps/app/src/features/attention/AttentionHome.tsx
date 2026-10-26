@@ -50,8 +50,8 @@ import { toast } from '@/ui/Toast';
 /** Shown only when a first load fails, so loaded then (M16 E1): kept out of the first download. */
 const LoadFailed = lazyPart(() => import('@/ui/LoadFailed').then((m) => m.LoadFailed));
 
-// An iPhone's or an iPad's browser tab, which nothing can notify (H7): the card says how, and
-// decides the rest itself (`homeScreenHint`), loaded only there.
+// A browser's tab: the card says how to have Caime as an app, and decides the rest itself
+// (`homeScreenHint`, the browser's install offer), loaded only there.
 /** Invitations to a group or a space (M16 B4): loaded only while there's one to answer. */
 const InvitationsCard = lazyPart(() =>
   import('@/features/invitations/InvitationsCard').then((m) => m.InvitationsCard),
@@ -63,12 +63,15 @@ const HomeScreenCard = lazyPart(() =>
 const MissedCard = lazyPart(() =>
   import('@/features/attention/MissedCard').then((m) => m.MissedCard),
 );
-const appleTab =
+// A browser's tab (R120), not an installed app: an iPhone's or an iPad's, which nothing can notify,
+// learns how to put Caime on its Home Screen; one that installs sites is offered to.
+const browserTab =
   isWeb &&
   typeof window !== 'undefined' &&
   typeof navigator !== 'undefined' &&
-  /iP(?:hone|ad|od)|Mac/.test(navigator.userAgent) &&
-  !('PushManager' in window);
+  (navigator as { standalone?: boolean }).standalone !== true &&
+  window.matchMedia?.('(display-mode: standalone)').matches !== true &&
+  !/CaimeDesktop\//.test(navigator.userAgent);
 
 const DAY_MS = 86_400_000;
 
@@ -451,7 +454,7 @@ export function AttentionHome() {
           <InvitationsCard invitations={home.data.invitations} />
         ) : null}
         <RecoveryCodesCard />
-        {appleTab ? <HomeScreenCard /> : null}
+        {browserTab ? <HomeScreenCard accountSince={me?.createdAt ?? null} /> : null}
         <TeamInboxes />
         {loading ? (
           <SkeletonRows />

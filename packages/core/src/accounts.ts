@@ -9,6 +9,8 @@
  */
 import { msg } from './i18n';
 
+export { ACCOUNT_DRIVE_NAMES } from './drives';
+
 export const ACCOUNT_PROVIDERS = ['google', 'microsoft'] as const;
 export type AccountProvider = (typeof ACCOUNT_PROVIDERS)[number];
 
@@ -24,12 +26,6 @@ export type AccountUse = (typeof ACCOUNT_USES)[number];
 export const ACCOUNT_PROVIDER_NAMES: Record<AccountProvider, string> = {
   google: 'Google',
   microsoft: 'Microsoft',
-};
-
-/** Each provider's drive, by its own name: never translated. */
-export const ACCOUNT_DRIVE_NAMES: Record<AccountProvider, string> = {
-  google: 'Google Drive',
-  microsoft: 'OneDrive',
 };
 
 /** Where Google's picker hands a phone back the file picked: `caime://picked#file=…`. */

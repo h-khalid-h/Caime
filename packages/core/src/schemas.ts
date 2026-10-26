@@ -7,7 +7,7 @@ import { PERSONAL_SCOPES, redirectUriError } from './access';
 import { ACCOUNT_USES } from './accounts';
 import { ADDRESS_KINDS, E164 } from './addresses';
 import { AGENT_KNOWLEDGE_MAX, AGENT_NAME_MAX, AGENT_WHEN } from './agents';
-import { MARKETING_PAGES, SITE_PAGES } from './api';
+import { MARKETING_PAGES, SITE_PAGES, SURFACES } from './api';
 import {
   APP_CATEGORIES,
   APP_DESCRIPTION_MAX,
@@ -232,6 +232,9 @@ export const RESERVED_HANDLES: readonly string[] = [
   'meeting',
   'connect',
   'search',
+  // An installed app's share target (R120) and the page for getting Caime on every device.
+  'share',
+  'download',
   // The invite route is /i/<token>: too short to be a handle, so it needs no reserving.
   'invite',
   'invites',
@@ -376,6 +379,9 @@ export const SignupBody = z.object({
  * How a search ended (PRD §83, information retrieval): whether something was opened, and how
  * long after the first letter. Nothing about what was searched for, or found.
  */
+/** What the app says of where it runs, once a launch (R120). */
+export const SessionSurfaceBody = z.object({ surface: z.enum(SURFACES) });
+
 export const SearchOutcomeBody = z
   .object({ found: z.boolean(), ms: z.number().int().min(0).max(3_600_000) })
   .strict();

@@ -46,6 +46,18 @@ export interface PriceView {
   interval: BillingInterval;
   amount: number;
   currency: string;
+  /**
+   * Where VAT is collected (Stripe Tax on): in the amount (`included`), or added at Checkout
+   * where it applies (`added`). Absent where none is collected.
+   */
+  tax?: 'included' | 'added';
+}
+
+/** What a price says of VAT, under it on a page or a card; null where none is collected. */
+export function taxLine(p: Pick<PriceView, 'tax'>): string | null {
+  if (p.tax === 'included') return tr('VAT included where it applies.');
+  if (p.tax === 'added') return tr('Plus VAT where it applies.');
+  return null;
 }
 
 /** Where a person's or an organization's subscription stands. */

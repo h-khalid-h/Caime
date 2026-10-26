@@ -2725,4 +2725,15 @@ export const turkishB: Catalog = {
   'This meeting isn’t in a conversation of yours, or it was called off. Ask whoever sent it.':
     'Bu toplantı sohbetlerinizden birinde değil ya da iptal edildi. Gönderen kişiye sorun.',
   'Said in calls': 'Aramalarda söylenenler',
+  'VAT included where it applies.': 'Geçerli olduğu yerlerde KDV dahil.',
+  'Plus VAT where it applies.': 'Geçerli olduğu yerlerde KDV eklenir.',
+  'Share to Caime': 'Caime’da paylaş',
+  'There’s no conversation to share it to yet.': 'Paylaşılacak bir konuşma henüz yok.',
+  'Shared to {n} conversations': { one: 'Paylaşıldı', other: '{n} konuşmada paylaşıldı' },
+  'Caime as an app': 'Uygulama olarak Caime',
+  'In Safari, choose File, then Add to Dock: Caime opens in a window of its own, with what needs you counted on its icon.':
+    'Safari’de Dosya’yı, ardından Dock’a Ekle’yi seçin: Caime kendi penceresinde açılır, simgesinde sizi bekleyenlerin sayısıyla.',
+  'Install Caime to open it from your dock, taskbar or home screen, in a window of its own, with what needs you counted on its icon.':
+    'Caime’ı Dock’tan, görev çubuğundan ya da ana ekranınızdan açmak için yükleyin: kendi penceresinde açılır, simgesinde sizi bekleyenlerin sayısıyla.',
+  Install: 'Yükle',
 };

@@ -4,6 +4,7 @@ import {
   type BillingView,
   priceText,
   subscriptionLine,
+  taxLine,
 } from '@caime/core/billing';
 import { tr } from '@caime/core/i18n';
 import { PLAN_NAMES } from '@caime/core/plans';
@@ -11,6 +12,7 @@ import { useState } from 'react';
 import { View } from 'react-native';
 import { endpoints } from '@/api/endpoints';
 import { leaveFor } from '@/lib/links';
+import { sellsHere } from '@/lib/stores';
 import { useUserClock } from '@/lib/time';
 import { Button } from '@/ui/Button';
 import { ChoiceChips } from '@/ui/Chip';
@@ -19,7 +21,8 @@ import { toast } from '@/ui/Toast';
 
 /**
  * What can be bought for a person (Pro) or an organization (Business), and what's paid for:
- * Checkout on Stripe to buy it, Stripe's portal to manage it.
+ * Checkout on Stripe to buy it, Stripe's portal to manage it. In a phone app (R120, `sellsHere`)
+ * it says only what's paid for: no price, nothing to buy, no portal.
  */
 export function BillingCard({
   billing,
@@ -48,16 +51,17 @@ export function BillingCard({
         toast((e as Error).message, { tone: 'danger' });
       });
   };
-  const manage = billing.canManage ? (
-    <Button
-      label={tr('Manage billing')}
-      variant="secondary"
-      size="sm"
-      disabled={busy}
-      onPress={() => run(() => endpoints.billingPortal(orgId))}
-      testID="billing-manage"
-    />
-  ) : null;
+  const manage =
+    billing.canManage && sellsHere ? (
+      <Button
+        label={tr('Manage billing')}
+        variant="secondary"
+        size="sm"
+        disabled={busy}
+        onPress={() => run(() => endpoints.billingPortal(orgId))}
+        testID="billing-manage"
+      />
+    ) : null;
 
   if (sub) {
     // What it's charged: its own price, even after the list price changed.
@@ -67,7 +71,9 @@ export function BillingCard({
         : billing.prices.find((p) => p.interval === sub.interval);
     return (
       <View style={{ gap: 10 }} testID="billing-subscription">
-        <Text variant="bodyStrong">{paid ? `${name} · ${priceText(paid, locale)}` : name}</Text>
+        <Text variant="bodyStrong">
+          {paid && sellsHere ? `${name} · ${priceText(paid, locale)}` : name}
+        </Text>
         <Text variant="caption" color={sub.status === 'past_due' ? 'warning' : 'textSecondary'}>
           {subscriptionLine(sub, timeZone, locale)}
         </Text>
@@ -98,7 +104,7 @@ export function BillingCard({
         {manage}
       </View>
     );
-  if (!billing.enabled || !price) return manage;
+  if (!billing.enabled || !price || !sellsHere) return manage;
   return (
     <View style={{ gap: 12 }} testID="billing-buy">
       {billing.prices.length > 1 ? (
@@ -118,6 +124,11 @@ export function BillingCard({
       <Text variant="bodyStrong" testID="billing-price">
         {priceText(price, locale)}
       </Text>
+      {taxLine(price) ? (
+        <Text variant="caption" color="textSecondary" testID="billing-tax">
+          {taxLine(price)}
+        </Text>
+      ) : null}
       <Text variant="caption" color="textSecondary">
         {tr(
           'Paid through Stripe. Cancel whenever you like: it stays on until the end of what you’ve paid for, and nothing you use today goes away after.',

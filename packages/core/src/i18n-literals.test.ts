@@ -39,7 +39,7 @@ const DATA: ReadonlyArray<[file: string, text: string]> = [
     'apps/app/src/theme/fonts.web.ts',
     'ui-monospace, "SF Mono", Menlo, Consolas, "Liberation Mono", monospace',
   ],
-  ['packages/core/src/accounts.ts', 'Google Drive'],
+  ['packages/core/src/drives.ts', 'Google Drive'],
   ['packages/core/src/ics.ts', 'PRODID:-//Caime//Calendar feed//EN'],
 ];
 
