@@ -10,7 +10,9 @@
  */
 import type {
   AnswerSourceView,
+  CallNotesSummaryView,
   ParsedQuery,
+  SearchCallHit,
   SearchMessageHit,
   SearchResults,
   TaskView,
@@ -21,6 +23,7 @@ import { sql } from 'kysely';
 import type { AppContext } from '../context';
 import type { AiAssist } from './ai';
 import { runAi } from './ai-run';
+import { writeUpsFor } from './call-notes-summary';
 import { runSearch } from './search-run';
 import { transcriptClock } from './transcript';
 import type { ConversationLine } from './transcript-of';
@@ -31,6 +34,8 @@ export const ANSWER_FROM = 12;
 export const PASSAGE_CHARS = 400;
 /** The most passages an answer cites. */
 const CITED_MAX = 6;
+/** How much of a call's write-up the model reads, beside the lines found in it. */
+const WRITE_UP_CHARS = 800;
 
 /** One numbered passage as the model reads it, and what it stands for. */
 export interface AnswerPassage<S> {
@@ -39,11 +44,16 @@ export interface AnswerPassage<S> {
   source: S;
 }
 
-/** A row search found, as "Ask Cai" in Search answers from it. */
+/**
+ * A row search found, as "Ask Cai" in Search answers from it: a message, a decision, an action,
+ * a line said in a call (M17 I12a), or Cai's write-up of a call whose lines were found (a call
+ * hit with no line).
+ */
 export type SearchSource =
   | { kind: 'message'; item: SearchMessageHit }
   | { kind: 'decision'; item: NonNullable<SearchResults['decisions']>[number] }
-  | { kind: 'task'; item: TaskView };
+  | { kind: 'task'; item: TaskView }
+  | { kind: 'call'; item: SearchCallHit };
 
 /** Where an answer was asked for: the label on `caime_answers_total`, and `runAi`'s feature. */
 export type AnswerWhere = 'search-answer' | 'ask';
@@ -56,6 +66,23 @@ export function when(iso: string, timeZone: string, withTime = true): string {
   const p = zonedParts(new Date(iso), timeZone);
   const day = `${DAYS[p.weekday]} ${p.year}-${two(p.month)}-${two(p.day)}`;
   return withTime ? `${day} ${two(p.hour)}:${two(p.minute)}` : day;
+}
+
+/** A call's write-up as one passage reads it: the summary, then what was decided and what's next. */
+function writeUpText(w: CallNotesSummaryView): string {
+  const clause = (s: string) => s.trim().replace(/[.!?؟。]+$/u, '');
+  const parts = [w.summary.trim()];
+  if (w.decisions.length)
+    parts.push(`Decided: ${w.decisions.map((d) => clause(d.text)).join('; ')}.`);
+  if (w.nextSteps.length)
+    parts.push(
+      `Next: ${w.nextSteps
+        .map((n) =>
+          [n.who, clause(n.what), n.due ? `by ${n.due}` : null].filter(Boolean).join(': '),
+        )
+        .join('; ')}.`,
+    );
+  return parts.join(' ');
 }
 
 /** Counts an answer from passages, wherever it was given: the share with a source is the number. */
@@ -80,9 +107,10 @@ export async function searchPassages(
 ): Promise<AnswerPassage<SearchSource>[]> {
   const { results } = await runSearch(ctx, me, parsed, limit);
   const messages = results.messages ?? [];
+  const calls = results.calls ?? [];
   const tasks = results.tasks ?? [];
   const decisions = results.decisions ?? [];
-  if (!messages.length && !tasks.length && !decisions.length) return [];
+  if (!messages.length && !calls.length && !tasks.length && !decisions.length) return [];
   const words = new Map(
     messages.length
       ? (
@@ -103,8 +131,38 @@ export async function searchPassages(
         ).map((r) => [r.id, r.text])
       : [],
   );
+  // A call whose lines were found brings Cai's write-up of it, where the asker may read it whole;
+  // a line is read whole, as a message is.
+  const [writeUps, said] = await Promise.all([
+    writeUpsFor(
+      ctx,
+      me,
+      calls.map((c) => c.callId),
+    ),
+    calls.length
+      ? ctx.db
+          .selectFrom('call_note_lines')
+          .select(['id', 'body'])
+          .where(
+            'id',
+            'in',
+            calls.flatMap((c) => (c.lineId ? [c.lineId] : [])),
+          )
+          .execute()
+          .then((rows) => new Map(rows.map((r) => [r.id, r.body ?? ''])))
+      : new Map<string, string>(),
+  ]);
+  const firstLine = new Map<string, SearchCallHit>();
+  for (const c of calls) if (!firstLine.has(c.callId)) firstLine.set(c.callId, c);
   const sources: SearchSource[] = [
     ...messages.map((item) => ({ kind: 'message' as const, item })),
+    ...calls.map((item) => ({ kind: 'call' as const, item })),
+    ...[...firstLine.values()]
+      .filter((c) => writeUps.has(c.callId))
+      .map((c) => ({
+        kind: 'call' as const,
+        item: { ...c, lineId: null, speakerId: null, speakerName: 'Cai', snippet: '' },
+      })),
     ...decisions.map((item) => ({ kind: 'decision' as const, item })),
     ...tasks.map((item) => ({ kind: 'task' as const, item })),
   ];
@@ -117,6 +175,13 @@ export async function searchPassages(
       const where = m.conversationTitle ? ` · ${previewText(m.conversationTitle, 60)}` : '';
       const who = name(m.senderId, m.senderName ?? 'Someone');
       line = `${when(m.createdAt, timeZone)} · ${who}${where}: ${previewText(words.get(m.id) ?? '', PASSAGE_CHARS)}`;
+    } else if (source.kind === 'call') {
+      const c = source.item;
+      const where = c.conversationTitle ? ` in ${previewText(c.conversationTitle, 60)}` : '';
+      const writeUp = c.lineId === null ? writeUps.get(c.callId) : undefined;
+      line = writeUp
+        ? `${when(c.at, timeZone)} · Cai's notes · a call${where}: ${previewText(writeUpText(writeUp), WRITE_UP_CHARS)}`
+        : `${when(c.at, timeZone)} · ${name(c.speakerId, c.speakerName)} · in a call${where}: ${previewText(said.get(c.lineId ?? '') ?? '', PASSAGE_CHARS)}`;
     } else if (source.kind === 'decision') {
       line = `${when(source.item.decidedAt, timeZone)} · Decision: ${previewText(source.item.title, 200)}`;
     } else {
@@ -140,6 +205,17 @@ export function sourceOfSearch(s: SearchSource): AnswerSourceView {
       title: s.item.conversationTitle,
       who: s.item.senderName ?? '',
       at: s.item.createdAt,
+    };
+  if (s.kind === 'call')
+    return {
+      kind: 'call',
+      callId: s.item.callId,
+      conversationId: s.item.conversationId,
+      seq: s.item.seq,
+      lineId: s.item.lineId,
+      title: s.item.conversationTitle,
+      who: s.item.speakerName,
+      at: s.item.at,
     };
   if (s.kind === 'decision')
     return {

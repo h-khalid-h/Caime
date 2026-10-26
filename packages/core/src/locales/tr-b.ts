@@ -2724,4 +2724,5 @@ export const turkishB: Catalog = {
     'Caime bunu yazmak için bu konuşmanın son mesajlarını AI sağlayıcısına gönderir. Siz göndermeden hiçbir şey gönderilmez.',
   'This meeting isn’t in a conversation of yours, or it was called off. Ask whoever sent it.':
     'Bu toplantı sohbetlerinizden birinde değil ya da iptal edildi. Gönderen kişiye sorun.',
+  'Said in calls': 'Aramalarda söylenenler',
 };

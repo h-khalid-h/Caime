@@ -2,11 +2,11 @@
  * Text as the database compares it (M17 I5): `caime_fold` (migration 0153), the twin of core's
  * `foldForFind`, and `caime_find_text`, the fold with each Arabic word that carries the article or
  * a joined "و" once more without it (`bareArabic` here is its twin, for the snippet's marks). The
- * folded vectors the expression indexes hold (0153 to 0155) are written here once, so a query
- * names the very expression its index was built over: the planner matches them as trees, so an
- * alias changes nothing and a different spelling loses the index. `retrieval-golden.test.ts`
- * holds the folds equal, the words found to the hand-labelled lines of every language, and the
- * plan to the index.
+ * folded vectors the expression indexes hold (0153 to 0155, a call's lines 0166) are written here
+ * once, so a query names the very expression its index was built over: the planner matches them as
+ * trees, so an alias changes nothing and a different spelling loses the index.
+ * `retrieval-golden.test.ts` holds the folds equal, the words found to the hand-labelled lines of
+ * every language, and the plan to the index.
  */
 import { foldForFind } from '@caime/core/fold';
 import { type RawBuilder, sql } from 'kysely';
@@ -26,6 +26,10 @@ export const messageTextSql = (alias: string): RawBuilder<string> =>
 /** An action's or a decision's title and notes, as its `…_search_fold` index holds them. */
 export const titleNotesVectorSql = (alias: string): RawBuilder<string> =>
   sql<string>`to_tsvector('simple', caime_find_text(coalesce(${sql.ref(`${alias}.title`)}, '') || ' ' || coalesce(${sql.ref(`${alias}.notes`)}, '')))`;
+
+/** What was said in a call's line, as `call_note_lines_search_fold` holds it (M17 I12a). */
+export const noteLineVectorSql = (alias: string): RawBuilder<string> =>
+  sql<string>`to_tsvector('simple', caime_find_text(coalesce(${sql.ref(`${alias}.body`)}, '')))`;
 
 /** At most this many words of what's typed are matched. */
 const WORDS_MAX = 12;

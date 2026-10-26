@@ -6,7 +6,7 @@
  */
 import { generateKeyPairSync } from 'node:crypto';
 import { dkimSign } from 'mailauth/lib/dkim/sign.js';
-import type { TxtResolver } from '../src/lib/orgs';
+import type { TxtResolver } from '../src/lib/dns-resolver';
 
 const { privateKey, publicKey } = generateKeyPairSync('rsa', { modulusLength: 2048 });
 const PRIVATE = privateKey.export({ type: 'pkcs8', format: 'pem' }).toString();

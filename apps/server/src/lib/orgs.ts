@@ -198,13 +198,6 @@ export async function orgsOf(db: Q, userId: string): Promise<OrgRef[]> {
 /** The value a domain's TXT record must carry. */
 export const newVerifyToken = () => randomBytes(18).toString('base64url');
 
-/** DNS lookups, injectable so tests can stand in for the internet. */
-export interface TxtResolver {
-  resolveTxt(hostname: string): Promise<string[][]>;
-  /** Any other record type (SPF's A, AAAA and MX for mail in, R75); a stand-in may leave it out. */
-  resolve?(hostname: string, rrtype: string): Promise<string[] | string[][]>;
-}
-
 /**
  * An account is going: each organization it owns passes to the next in line (admins first),
  * and one with nobody else on its team closes. Runs before the account row goes. Returns the

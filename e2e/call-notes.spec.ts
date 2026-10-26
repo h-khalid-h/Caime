@@ -157,6 +157,23 @@ test.describe
       await expect(sheet.getByText('Sam Rivera').first()).toBeVisible();
       await page.screenshot({ path: 'e2e/screenshots/desktop-call-notes-sheet.png' });
 
+      // What was said is found by Search (M17 I12a): Sam's words, under "Said in calls", open the
+      // notes at them, marked.
+      await page.keyboard.press('Escape');
+      await page.goto('/search');
+      await page.getByTestId('search-input').fill('contract signed');
+      const said = visible(page, 'Said in calls');
+      await expect(said).toBeVisible({ timeout: 15_000 });
+      const samSaid = page.getByTestId('search-call').filter({ hasText: 'Sam Rivera' }).first();
+      await expect(samSaid).toContainText('contract');
+      await samSaid.click();
+      await expect(page).toHaveURL(new RegExp(`/c/${convo}\\?.*notes=${callId}.*line=`));
+      const found = page.getByTestId('call-notes-found');
+      await expect(found).toBeVisible({ timeout: 15_000 });
+      await expect(found).toContainText('Sam Rivera');
+      await expect(found).toContainText('Hi Noor, the contract is signed.');
+      await page.screenshot({ path: 'e2e/screenshots/desktop-call-notes-found.png' });
+
       // Noor deletes her own words, a turn at a time (M17 F8a); Sam's stay.
       const mine = await page.getByTestId('call-notes-delete').count();
       expect(mine).toBeGreaterThan(0);

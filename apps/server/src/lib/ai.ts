@@ -480,7 +480,7 @@ const FOUND_SYSTEM = (
 ) =>
   `You answer one person's question from ${
     scope === 'search'
-      ? 'what search found in their own messages in Caime, a messaging app. What was found is in <found>, one passage per line as "[n] when · who · where: text"; their own messages are from "You", a decision is from "Decision" and something someone is to do from "To do".'
+      ? 'what search found in their own messages in Caime, a messaging app. What was found is in <found>, one passage per line as "[n] when · who · where: text"; their own messages are from "You", a decision is from "Decision", something someone is to do from "To do", what someone said aloud in a call they were in is "in a call", and Cai\'s notes of a call ("Cai\'s notes") sum up what was said in it.'
       : 'a conversation they are in, in Caime, a messaging app: a question about a conversation, answered from its messages alone. The messages are in <found>, one passage per line as "[n] when · who: text"; their own are from "You".'
   } Their question is in <question>. Today is ${today}.${
     period

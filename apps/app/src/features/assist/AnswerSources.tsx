@@ -1,7 +1,7 @@
 /**
  * Where an answer's words came from (M17 I4): chips under a summary, an answer or a line of Cai's,
- * each a tap to the message it rests on (opened at its place), the action or the decision, or a
- * moment of a call's notes. Loaded apart wherever it's shown (`LAZY_EVERYWHERE`): the Ask and
+ * each a tap to the message it rests on (opened at its place), the action or the decision, a
+ * moment of a call's notes, or a call's notes away from them (M17 I12a). Loaded apart wherever it's shown (`LAZY_EVERYWHERE`): the Ask and
  * catch-up panel, a brief, Cai's bubble and the notes sheet all draw it, none at first.
  */
 import type { AnswerSourceView } from '@caime/core/api';
@@ -19,6 +19,8 @@ function keyOf(s: AnswerSourceView): string {
       return `message:${s.messageId}`;
     case 'note':
       return `note:${s.lineId}`;
+    case 'call':
+      return `call:${s.callId}:${s.lineId ?? 'notes'}`;
     default:
       return `${s.kind}:${s.id}`;
   }
@@ -34,6 +36,19 @@ export function openSource(source: AnswerSourceView): void {
     return;
   }
   if (source.kind === 'note') return;
+  // A call's notes (M17 I12a): opened from the call's line, at the line said where there is one.
+  if (source.kind === 'call') {
+    router.navigate({
+      pathname: '/c/[id]',
+      params: {
+        id: source.conversationId,
+        seq: String(source.seq),
+        notes: source.callId,
+        ...(source.lineId ? { line: source.lineId } : {}),
+      },
+    });
+    return;
+  }
   if (source.conversationId)
     router.navigate({ pathname: '/c/[id]', params: { id: source.conversationId } });
   else router.navigate('/actions');
@@ -48,6 +63,14 @@ function labelOf(source: AnswerSourceView): string {
       return source.title;
     case 'note':
       return source.speaker;
+    case 'call':
+      return source.lineId
+        ? source.title
+          ? `${source.who} · ${source.title}`
+          : source.who
+        : source.title
+          ? `${tr('Notes from the call')} · ${source.title}`
+          : tr('Notes from the call');
   }
 }
 

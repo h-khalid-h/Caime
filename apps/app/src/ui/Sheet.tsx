@@ -1,6 +1,6 @@
 import { tr } from '@caime/core/i18n';
 import X from 'lucide-react-native/icons/x';
-import { type ReactNode, useEffect, useId } from 'react';
+import { type ReactNode, type RefObject, useEffect, useId } from 'react';
 import {
   KeyboardAvoidingView,
   Modal,
@@ -28,6 +28,8 @@ export interface SheetProps {
   /** Widest the dialog gets on large screens. */
   maxWidth?: number;
   scroll?: boolean;
+  /** Its scrolling body, for a sheet that opens at something inside it (a call's notes at a line). */
+  scrollRef?: RefObject<ScrollView | null>;
 }
 
 /**
@@ -56,6 +58,7 @@ export function Sheet({
   footer,
   maxWidth = 520,
   scroll = true,
+  scrollRef,
 }: SheetProps) {
   const t = useTheme();
   const { phone, height } = useLayout();
@@ -173,6 +176,7 @@ export function Sheet({
               </View>
             ) : null}
             <Body
+              ref={scroll ? scrollRef : undefined}
               style={{ flexGrow: 0, flexShrink: 1 }}
               contentContainerStyle={
                 scroll ? { paddingHorizontal: 20, paddingVertical: 12, gap: 12 } : undefined

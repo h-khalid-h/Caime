@@ -112,6 +112,7 @@ async function answerFromSearch(
     label: tr(AI_LABEL),
     sources: {
       messages: cited.flatMap((s) => (s.kind === 'message' ? [s.item] : [])),
+      calls: cited.flatMap((s) => (s.kind === 'call' ? [s.item] : [])),
       decisions: cited.flatMap((s) => (s.kind === 'decision' ? [s.item] : [])),
       tasks: cited.flatMap((s) => (s.kind === 'task' ? [s.item] : [])),
     },

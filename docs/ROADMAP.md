@@ -4611,6 +4611,33 @@ clinic can sign for. I1 lands before launch.
 - [ ] I12. Calls and files in answers, then meaning (L): a call's lines and write-up as passages;
       Office and PDF text indexed; search by meaning after I5, with its processor in the DPA and
       erasure removing what it kept.
+  - [x] I12a. What was said in a call, found by Search and its answers (M, 2026-10-26): a heard line
+        of Cai's notes is found with the messages (`results.calls`, `SearchCallHit`), folded as a
+        message is (`call_note_lines_search_fold`, migration 0166, built concurrently;
+        `noteLineVectorSql`), ranked by `relevance` and marked, by the notes' own rule in SQL: a
+        line said once the searcher was in the call (its caller from the ring, whoever answered
+        from then, a group's member from their latest join) or said by them, the call's line
+        still theirs to read (`readableBy`) in a standard conversation they're still in, a
+        token's `openIn` kept, never a customer's conversation (no notes are taken there), never
+        inside one conversation's search. Ask Cai in Search and Cai's chat read each found line
+        as a passage ("who · in a call in …"), and the call's write-up beside it where the asker
+        was in from its first word (`writeUpsFor`, `summaryFor`'s rule for a set, one query);
+        `FOUND_SYSTEM` says what both are, and a cited one comes back as the call's
+        (`AnswerSourceView` kind `call`, `SearchAnswerResponse.sources.calls`). In the app,
+        "Said in calls" in Search and the answer's rows (`CallHitRow`) and chips
+        (`AnswerSources`) open the conversation at the call's line with its notes open at the
+        line found (`?notes=<call>&line=<line>`), that turn tinted and scrolled to (`Sheet`'s
+        `scrollRef`). Costs: one indexed query a search, two more for an answer's write-ups and
+        words; the model reads at most a line's 400 and a write-up's 800 characters a passage.
+        Verified: `call-notes.test.ts` (found by whoever was in from the start, folded, not by
+        someone who joined after it was said, gone once the call's line is deleted for them; the
+        answer's passages and cited sources; the write-up withheld from a later joiner),
+        `retrieval-golden.test.ts` (the plan reads the new index), the E2E (Sam's words found in
+        Search open the notes at them, marked).
+  - [ ] I12b. A conversation's Ask and catch-up read its calls' notes too; Office and PDF text
+        indexed at upload, found and cited as files.
+  - [ ] I12c. Search by meaning, once I5's golden set shows what words alone miss, with its
+        processor in the DPA and erasure removing what it kept.
 - [ ] I14. Cai hears, sees and answers aloud in its chat (R115, `docs/REVIEW-2026-10-25-CAI.md`).
   - [x] I14a. A voice note to Cai heard and answered, aloud when spoken to (S–M, 2026-10-25):
         Cai's and the friends' chats take voice notes (the composer's microphone is there; the
@@ -7056,3 +7083,9 @@ CONNIQT; they mean Caime. Caishy is one of Caime's AI members, and Cai leads the
   is kept as keyed hashes in `reply_drafts` and settled by the `reply-drafts` sweep against the
   person's next text there, by seq, so it counts whichever instance drafted it or took the send,
   and nothing runs per message sent; it held drafts in one instance's memory before.
+- 2026-10-26 — M17 I12a: what was said in a call is found by Search and answered from, for whoever
+  was in the call when it was said: a heard line of Cai's notes beside the messages ("Said in
+  calls"), folded and ranked as they are, and Ask Cai in Search and Cai's chat reading the line and
+  the call's write-up as passages, citing them back as the call's; a tap opens the notes at the
+  line, marked. The answer from a call's write-up is the asker's only where they were there from
+  its first word.

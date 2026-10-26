@@ -16,10 +16,11 @@ import ListChecks from 'lucide-react-native/icons/list-checks';
 import MessageCircleQuestion from 'lucide-react-native/icons/message-circle-question-mark';
 import Sparkles from 'lucide-react-native/icons/sparkles';
 import Trash from 'lucide-react-native/icons/trash';
-import { lazy, Suspense, useState } from 'react';
-import { View } from 'react-native';
+import { lazy, Suspense, useEffect, useRef, useState } from 'react';
+import { type ScrollView, View } from 'react-native';
 import { endpoints } from '@/api/endpoints';
 import { qk } from '@/api/keys';
+import { useReduceMotion } from '@/lib/motion';
 import { useUserClock } from '@/lib/time';
 import { useSession } from '@/state/session';
 import { useTheme } from '@/theme/theme';
@@ -170,16 +171,35 @@ function WrittenNotes({
 export function NotesSheet({
   callId,
   conversationId,
+  found,
   open,
   onClose,
 }: {
   callId: string;
   /** The call's own conversation, which a share of its recording never offers (M17 I13e). */
   conversationId: string;
+  /** A line Search found (M17 I12a): its turn marked, and the sheet opened at it. */
+  found?: string;
   open: boolean;
   onClose: () => void;
 }) {
   const t = useTheme();
+  const reduceMotion = useReduceMotion();
+  // Where the found line's turn sits in the sheet: the lines' place, then the turn's in them.
+  const scroll = useRef<ScrollView | null>(null);
+  const [linesAt, setLinesAt] = useState<number | null>(null);
+  const [foundAt, setFoundAt] = useState<number | null>(null);
+  const target = linesAt !== null && foundAt !== null ? linesAt + foundAt : null;
+  // Followed while the sheet settles (the recording above it arrives with the notes), then left
+  // to whoever reads it.
+  const firstMove = useRef<number | null>(null);
+  useEffect(() => {
+    if (target === null) return;
+    const now = Date.now();
+    firstMove.current ??= now;
+    if (now - firstMove.current > 1500) return;
+    scroll.current?.scrollTo({ y: Math.max(0, target - 12), animated: !reduceMotion });
+  }, [target, reduceMotion]);
   const qc = useQueryClient();
   const notes = useQuery({
     queryKey: qk.callNotes(callId),
@@ -246,6 +266,7 @@ export function NotesSheet({
     <Sheet
       open={open}
       onClose={onClose}
+      scrollRef={scroll}
       title={tr('Notes from the call')}
       subtitle={
         recorded
@@ -282,7 +303,11 @@ export function NotesSheet({
           body={tr('Words that are still being written show here once they are.')}
         />
       ) : (
-        <View style={{ gap: 14 }} testID="call-notes-lines">
+        <View
+          style={{ gap: 14 }}
+          testID="call-notes-lines"
+          onLayout={found ? (e) => setLinesAt(e.nativeEvent.layout.y) : undefined}
+        >
           {written ? <WrittenNotes notes={written} play={play} /> : null}
           {writingUp ? (
             <Text variant="caption" color="textTertiary" testID="call-notes-writing">
@@ -371,40 +396,52 @@ export function NotesSheet({
               ) : null}
             </View>
           ) : null}
-          {turnsOf(lines).map((turn) => (
-            <View
-              key={turn.id}
-              style={{ flexDirection: 'row', gap: 10, alignItems: 'flex-start' }}
-              testID="call-notes-line"
-            >
-              <Avatar
-                id={turn.speaker.id}
-                name={turn.speaker.displayName}
-                url={turn.speaker.avatarUrl}
-                size={32}
-              />
-              <View style={{ flex: 1, gap: 2 }}>
-                <View style={{ flexDirection: 'row', gap: 8, alignItems: 'baseline' }}>
-                  <Text variant="label" numberOfLines={1} style={{ flexShrink: 1 }}>
-                    {turn.mine ? tr('You') : turn.speaker.displayName}
-                  </Text>
-                  <Moment at={turn.at} play={play} testID="call-notes-play-from" />
+          {turnsOf(lines).map((turn) => {
+            const isFound = Boolean(found && turn.lines.some((l) => l.id === found));
+            return (
+              <View
+                key={turn.id}
+                style={[
+                  { flexDirection: 'row', gap: 10, alignItems: 'flex-start' },
+                  isFound && {
+                    backgroundColor: t.c.accentSoft,
+                    borderRadius: t.radii.md,
+                    margin: -6,
+                    padding: 6,
+                  },
+                ]}
+                testID={isFound ? 'call-notes-found' : 'call-notes-line'}
+                onLayout={isFound ? (e) => setFoundAt(e.nativeEvent.layout.y) : undefined}
+              >
+                <Avatar
+                  id={turn.speaker.id}
+                  name={turn.speaker.displayName}
+                  url={turn.speaker.avatarUrl}
+                  size={32}
+                />
+                <View style={{ flex: 1, gap: 2 }}>
+                  <View style={{ flexDirection: 'row', gap: 8, alignItems: 'baseline' }}>
+                    <Text variant="label" numberOfLines={1} style={{ flexShrink: 1 }}>
+                      {turn.mine ? tr('You') : turn.speaker.displayName}
+                    </Text>
+                    <Moment at={turn.at} play={play} testID="call-notes-play-from" />
+                  </View>
+                  <TurnWords turn={turn} />
                 </View>
-                <TurnWords turn={turn} />
+                {turn.mine ? (
+                  <Pressable
+                    accessibilityRole="button"
+                    accessibilityLabel={tr('Delete my words')}
+                    onPress={() => void remove(turn)}
+                    hitSlop={8}
+                    testID="call-notes-delete"
+                  >
+                    <Trash size={18} color={t.c.textTertiary} />
+                  </Pressable>
+                ) : null}
               </View>
-              {turn.mine ? (
-                <Pressable
-                  accessibilityRole="button"
-                  accessibilityLabel={tr('Delete my words')}
-                  onPress={() => void remove(turn)}
-                  hitSlop={8}
-                  testID="call-notes-delete"
-                >
-                  <Trash size={18} color={t.c.textTertiary} />
-                </Pressable>
-              ) : null}
-            </View>
-          ))}
+            );
+          })}
           {writing ? (
             <Text variant="caption" color="textTertiary">
               {trn(

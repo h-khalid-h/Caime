@@ -1149,7 +1149,16 @@ A sphere is said as how you know someone, never "sphere".
   `features/assist/AnswerSources` (lazy everywhere: the panel's `onJump` inside the conversation,
   `openSource` elsewhere, a sheet through `afterSheet`). Every answer from passages anywhere is
   counted by `countAnswer` on `caime_answers_total{where, cited}`: a new place that answers from
-  passages builds them here and counts there, never a prompt or a source shape of its own.
+  passages builds them here and counts there, never a prompt or a source shape of its own. What
+  was said in a call is found and answered from too (M17 I12a): `runSearch` lists a heard line of
+  Cai's notes as `results.calls` (`SearchCallHit`) by the notes' own reader rule written in SQL
+  (in the call when it was said, or said by them; the call's line `readableBy` them; never a
+  customer's conversation; `noteLineVectorSql` over `call_note_lines_search_fold`), and
+  `searchPassages` adds each line and, where the asker heard the call from its first word, its
+  write-up (`writeUpsFor`, `summaryFor`'s rule for a set), cited back as `AnswerSourceView` kind
+  `call` and opened at `/c/<id>?seq=<call's line>&notes=<call>&line=<line>`, which
+  `CallNotesLink` opens and `NotesSheet` marks and scrolls to. A new thing kept of a call that
+  someone may find goes through the same reader rule.
 - An organization's own checkout (R65, `lib/checkout.ts`, `modules/checkout.ts`): Stripe Connect
   with the platform's key and `Stripe-Account` (`stripe(ctx, account)`), never a second Stripe
   client. Its owner connects through `connectUrl` (a one-time `checkout_states` token) and the

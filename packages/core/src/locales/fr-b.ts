@@ -2820,4 +2820,5 @@ export const frB: Catalog = {
     'Caime envoie les derniers messages de cette conversation à son fournisseur d’IA pour rédiger ceci. Rien n’est envoyé tant que vous ne l’envoyez pas.',
   'This meeting isn’t in a conversation of yours, or it was called off. Ask whoever sent it.':
     'Cette réunion n’est pas dans l’une de vos conversations, ou elle a été annulée. Demandez à qui vous l’a envoyée.',
+  'Said in calls': 'Dit pendant les appels',
 };

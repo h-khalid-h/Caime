@@ -3666,4 +3666,5 @@ export const arB: Catalog = {
     'يرسل Caime آخر رسائل هذه المحادثة إلى مزوّد الذكاء الاصطناعي ليكتب هذا. لا يُرسَل شيء إلا بإرسالك.',
   'This meeting isn’t in a conversation of yours, or it was called off. Ask whoever sent it.':
     'هذا الاجتماع ليس في محادثة من محادثاتك، أو أُلغي. اسأل من أرسله.',
+  'Said in calls': 'قيل في المكالمات',
 };

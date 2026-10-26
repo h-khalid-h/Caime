@@ -8,7 +8,7 @@
  */
 import { createServer, type Server } from 'node:http';
 import type { AddressInfo } from 'node:net';
-import { uuidv4 } from '@caime/core';
+import { MATCH_START, uuidv4 } from '@caime/core';
 import { shownMeetingCode } from '@caime/core/meeting-codes';
 import { sql } from 'kysely';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
@@ -1117,3 +1117,178 @@ describe('another mode mid-call (R114, M17 I13b2)', () => {
     ).toEqual({ state: 'declined', why: 'ended' });
   });
 });
+
+describe('what was said, found by Search and its answers (M17 I12a)', () => {
+  it('finds a line for whoever was in the call from when they joined, and answers from it', async () => {
+    const crew = (
+      await noor.post('/v1/conversations', {
+        kind: 'group',
+        title: 'Lantern crew',
+        memberIds: [sam.user.id, omar.user.id],
+      })
+    ).conversation.id as string;
+    const started = await noor.req('POST', `/v1/conversations/${crew}/group-calls`, {
+      kind: 'voice',
+      deviceId: 'noor-tab-1',
+    });
+    const callId = started.json().call.id as string;
+    await sam.req('POST', `/v1/group-calls/${callId}/join`, { deviceId: 'sam-tab-1' });
+    await ask(noor, callId, 'noor-tab-1');
+    const on = await sam.req('POST', `/v1/calls/${callId}/notes/answer`, {
+      deviceId: 'sam-tab-1',
+      answer: 'yes',
+      canRecord: true,
+    });
+    expect(on.json().notes.state).toBe('on');
+    // Sam says when it goes up, before Omar is in the call.
+    replies.push({
+      status: 200,
+      json: { text: 'The harbour lantern goes up on Friday.', language: 'en' },
+    });
+    expect((await line(noor, callId, 'noor-tab-1', sam.user.id)).statusCode).toBe(200);
+    await work();
+    t.clock.advance(60_000);
+    await omar.req('POST', `/v1/group-calls/${callId}/join`, {
+      deviceId: 'omar-tab-1',
+      notes: 'yes',
+    });
+    t.clock.advance(60_000);
+    replies.push({
+      status: 200,
+      json: { text: 'Omar, bring the lantern ladder.', language: 'en' },
+    });
+    expect((await line(noor, callId, 'noor-tab-1', noor.user.id)).statusCode).toBe(200);
+    await work();
+    for (const [c, d] of [
+      [omar, 'omar-tab-1'],
+      [sam, 'sam-tab-1'],
+      [noor, 'noor-tab-1'],
+    ] as const)
+      await c.req('POST', `/v1/group-calls/${callId}/leave`, { deviceId: d });
+    await t.ctx.flush();
+    modelSays(
+      JSON.stringify({
+        summary: 'Noor and Sam planned the harbour lantern.',
+        topics: [{ title: 'The lantern', line: 1, points: ['It goes up on Friday.'] }],
+        decisions: [{ text: 'The lantern goes up on Friday.', line: 1 }],
+        nextSteps: [{ who: 'Omar', what: 'Bring the ladder', due: null, line: 2 }],
+      }),
+      'harbour lantern goes up',
+    );
+    t.clock.advance(6_000);
+    await work();
+    expect((await noor.get(`/v1/calls/${callId}/notes`)).summaryState).toBe('written');
+    const { seq } = await t.ctx.db
+      .selectFrom('call_notes as n')
+      .innerJoin('messages as m', 'm.id', 'n.message_id')
+      .select('m.seq')
+      .where('n.call_id', '=', callId)
+      .executeTakeFirstOrThrow();
+
+    const calls = async (c: Client, q: string) =>
+      ((await c.get(`/v1/search?q=${encodeURIComponent(q)}`)).results.calls ?? []) as Array<{
+        lineId: string;
+        callId: string;
+        conversationId: string;
+        seq: number;
+        speakerName: string;
+        conversationTitle: string | null;
+        snippet: string;
+      }>;
+    // Whoever was in it from the start finds both lines, each at the call's line in the group.
+    const noorFinds = await calls(noor, 'lantern');
+    expect(noorFinds.map((h) => h.speakerName).sort()).toEqual(['Noor Notes', 'Sam Notes']);
+    expect(noorFinds[0]).toMatchObject({
+      callId,
+      conversationId: crew,
+      seq: Number(seq),
+      conversationTitle: 'Lantern crew',
+    });
+    expect(noorFinds.every((h) => h.snippet.includes(MATCH_START))).toBe(true);
+    // Folded as messages are: case and spelling of what's typed don't matter.
+    expect((await calls(sam, 'HARBOUR')).map((h) => h.speakerName)).toEqual(['Sam Notes']);
+    // Omar came in after Sam spoke: he finds only what was said once he was there.
+    expect((await calls(omar, 'lantern')).map((h) => h.speakerName)).toEqual(['Noor Notes']);
+    // The call's line deleted for himself, Sam finds nothing of it any more.
+    expect(
+      (await sam.req('DELETE', `/v1/messages/${await lineId(callId)}?forEveryone=false`))
+        .statusCode,
+    ).toBeLessThan(300);
+    expect(await calls(sam, 'lantern')).toEqual([]);
+
+    // Ask Cai in Search answers from the line and the write-up, which she may read whole; the
+    // model reads both as passages, and the answer cites them back as the call's.
+    modelSays(
+      JSON.stringify({
+        scope: 'messages',
+        text: 'harbour lantern',
+        person: null,
+        sphere: null,
+        role: null,
+        fileKind: null,
+        direction: null,
+        interpretation: 'Messages about “harbour lantern”',
+      }),
+      'When does the harbour lantern go up?',
+    );
+    modelSays(
+      JSON.stringify({ answer: 'Sam said it goes up on Friday.', sources: [1, 2] }),
+      'When does the harbour lantern go up?',
+    );
+    const answered = await noor.post('/v1/search/answer', {
+      q: 'When does the harbour lantern go up?',
+    });
+    expect(answered.answer).toBe('Sam said it goes up on Friday.');
+    expect(
+      answered.sources.calls.map((c: { lineId: string | null; speakerName: string }) => [
+        Boolean(c.lineId),
+        c.speakerName,
+      ]),
+    ).toEqual([
+      [true, 'Sam Notes'],
+      [false, 'Cai'],
+    ]);
+    const found = asked.at(-1)!;
+    expect(found).toContain(
+      'Sam Notes · in a call in Lantern crew: The harbour lantern goes up on Friday.',
+    );
+    expect(found).toContain(
+      "Cai's notes · a call in Lantern crew: Noor and Sam planned the harbour lantern. Decided: The lantern goes up on Friday. Next: Omar: Bring the ladder.",
+    );
+    // Omar wasn't there from its first word: the write-up isn't his to be answered from.
+    modelSays(
+      JSON.stringify({
+        scope: 'messages',
+        text: 'lantern ladder',
+        person: null,
+        sphere: null,
+        role: null,
+        fileKind: null,
+        direction: null,
+        interpretation: 'Messages about “lantern ladder”',
+      }),
+      'Who brings the lantern ladder?',
+    );
+    modelSays(
+      JSON.stringify({ answer: 'You do.', sources: [1] }),
+      'Who brings the lantern ladder?',
+    );
+    await omar.patch('/v1/me', { aiEnabled: true });
+    const his = await omar.post('/v1/search/answer', { q: 'Who brings the lantern ladder?' });
+    expect(his.sources.calls.map((c: { speakerName: string }) => c.speakerName)).toEqual([
+      'Noor Notes',
+    ]);
+    expect(asked.at(-1)).not.toContain("Cai's notes · a call");
+  });
+});
+
+/** The call's line in its conversation, where its notes are kept. */
+async function lineId(callId: string): Promise<string> {
+  const row = await t.ctx.db
+    .selectFrom('call_notes')
+    .select('message_id')
+    .where('call_id', '=', callId)
+    .where('message_id', 'is not', null)
+    .executeTakeFirstOrThrow();
+  return row.message_id as string;
+}

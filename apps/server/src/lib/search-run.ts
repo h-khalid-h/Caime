@@ -6,6 +6,7 @@
  */
 import type { ParsedQuery, SearchResponse, SearchResults } from '@caime/core';
 import { foldForFind } from '@caime/core/fold';
+import { tr } from '@caime/core/i18n';
 import { sql } from 'kysely';
 import type { AppContext } from '../context';
 import { maskId, masksFor } from './business';
@@ -15,6 +16,7 @@ import {
   foldSql,
   messageTextSql,
   messageVectorSql,
+  noteLineVectorSql,
   titleNotesVectorSql,
 } from './fold-sql';
 import { markSnippet, relevance } from './found-text';
@@ -312,6 +314,110 @@ export async function runSearch(
           createdAt: r.created_at.toISOString(),
         };
       });
+    }
+  }
+
+  // What was said in calls they were in (M17 I12a), by the notes' own rule (`readersOf`,
+  // `notesFor`): a heard line said once they were in the call (its caller from the ring, whoever
+  // answered from then, a group's member from their latest join) or said by them, the call's line
+  // still theirs to read in a conversation they're still in. Words said are found with the
+  // messages, never inside one conversation's search, which reads its messages alone.
+  if (want('messages') && !within && (text || personIds)) {
+    if (personIds && personIds.length === 0) results.calls = [];
+    else {
+      const rows = await ctx.db
+        .selectFrom('call_note_lines as l')
+        .innerJoin('call_notes as n', 'n.id', 'l.notes_id')
+        .innerJoin('calls as k', 'k.id', 'n.call_id')
+        .innerJoin('messages as line', 'line.id', 'n.message_id')
+        .innerJoin('participants as p', (j) =>
+          j.onRef('p.conversation_id', '=', 'line.conversation_id').on('p.user_id', '=', me),
+        )
+        .innerJoin('conversations as c', 'c.id', 'line.conversation_id')
+        .leftJoin('call_members as cm', (j) =>
+          j.onRef('cm.call_id', '=', 'k.id').on('cm.user_id', '=', me),
+        )
+        .leftJoin('users as u', 'u.id', 'l.speaker_id')
+        .select([
+          'l.id',
+          'l.speaker_id',
+          'l.spoken_at',
+          'k.id as call_id',
+          'line.conversation_id',
+          'line.seq',
+          'u.display_name as speaker_name',
+          'c.title as conversation_title',
+          'c.kind as conversation_kind',
+          sql<string>`left(coalesce(l.body, ''), ${RANK_CHARS})`.as('snippet'),
+        ])
+        .where('l.state', '=', 'heard')
+        .where('p.left_at', 'is', null)
+        .where(readableBy(me, ctx.now(), 'line'))
+        .where('c.privacy_class', '=', 'standard')
+        // Cai takes no notes in a customer's conversation (`assertNotesAllowed`); were it to, the
+        // mask (R15) would have to come here with it.
+        .where('c.kind', '<>', 'business')
+        .$if(keeps, (qb) => qb.where(open('line.conversation_id')))
+        .where((eb) => {
+          const fromOrMine = (from: 'k.created_at' | 'k.answered_at' | 'cm.joined_at') =>
+            eb.or([eb('l.spoken_at', '>=', eb.ref(from)), eb('l.speaker_id', '=', me)]);
+          return eb.or([
+            eb.and([
+              eb('k.is_group', '=', false),
+              eb('k.answered_at', 'is not', null),
+              eb.or([
+                eb.and([eb('k.caller_id', '=', me), fromOrMine('k.created_at')]),
+                eb.and([eb('k.callee_id', '=', me), fromOrMine('k.answered_at')]),
+              ]),
+            ]),
+            eb.and([
+              eb('k.is_group', '=', true),
+              eb('cm.joined_at', 'is not', null),
+              fromOrMine('cm.joined_at'),
+            ]),
+          ]);
+        })
+        .$if(Boolean(parsed.period), (qb) =>
+          qb
+            .where('l.spoken_at', '>=', new Date(parsed.period!.since))
+            .where('l.spoken_at', '<', new Date(parsed.period!.until)),
+        )
+        .$if(Boolean(text), (qb) =>
+          qb.where((eb) =>
+            text.length >= 3 && foldedPrefixQuery(text)
+              ? sql<boolean>`${noteLineVectorSql('l')} @@ to_tsquery('simple', ${foldedPrefixQuery(text)})`
+              : eb(foldSql(sql`coalesce(l.body, '')`), 'like', folded(text)),
+          ),
+        )
+        .$if(Boolean(personIds?.length), (qb) => qb.where('l.speaker_id', 'in', personIds!))
+        .orderBy('l.spoken_at', 'desc')
+        .orderBy('l.id', 'desc')
+        .limit(text ? RANK_WINDOW : limit)
+        .execute();
+      const now = ctx.now().getTime();
+      const ranked = text
+        ? rows
+            .map((r) => ({ r, score: relevance(r.snippet, text, now - r.spoken_at.getTime()) }))
+            .sort(
+              (a, b) =>
+                b.score - a.score ||
+                b.r.spoken_at.getTime() - a.r.spoken_at.getTime() ||
+                b.r.id.localeCompare(a.r.id),
+            )
+            .slice(0, limit)
+            .map(({ r }) => ({ ...r, snippet: markSnippet(r.snippet, text) }))
+        : rows;
+      results.calls = ranked.map((r) => ({
+        lineId: r.id,
+        callId: r.call_id,
+        conversationId: r.conversation_id,
+        seq: Number(r.seq),
+        speakerId: r.speaker_id,
+        speakerName: r.speaker_name ?? tr('Deleted account'),
+        conversationTitle: r.conversation_kind === 'direct' ? null : r.conversation_title,
+        snippet: r.snippet,
+        at: r.spoken_at.toISOString(),
+      }));
     }
   }
 

@@ -9,7 +9,7 @@ import { MATCH_END, MATCH_START, uuidv4 } from '@caime/core';
 import { foldForFind } from '@caime/core/fold';
 import { sql } from 'kysely';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
-import { bareArabic, foldSql, messageVectorSql } from '../src/lib/fold-sql';
+import { bareArabic, foldSql, messageVectorSql, noteLineVectorSql } from '../src/lib/fold-sql';
 import { RETRIEVAL_GOLDEN, type RetrievalLine } from './fixtures/retrieval-golden';
 import { type Client, createTestApp, signup, type TestApp } from './helpers';
 
@@ -97,6 +97,15 @@ describe('retrieval in every interface language (M17 I5)', () => {
         trx,
       );
       expect(plan.rows.map((r) => r['QUERY PLAN']).join('\n')).toContain('messages_search_fold');
+      // What was said in a call (M17 I12a), the same way.
+      const lines = await sql<{
+        'QUERY PLAN': string;
+      }>`explain select l.id from call_note_lines l where ${noteLineVectorSql('l')} @@ to_tsquery('simple', ${"'احمد':*"})`.execute(
+        trx,
+      );
+      expect(lines.rows.map((r) => r['QUERY PLAN']).join('\n')).toContain(
+        'call_note_lines_search_fold',
+      );
     });
   });
 

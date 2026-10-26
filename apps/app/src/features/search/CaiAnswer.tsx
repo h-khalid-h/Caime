@@ -12,6 +12,7 @@ import Star from 'lucide-react-native/icons/star';
 import { useEffect, useRef } from 'react';
 import { ActivityIndicator, View } from 'react-native';
 import { endpoints } from '@/api/endpoints';
+import { CallHitRow } from '@/features/search/CallHitRow';
 import { useNow, useUserClock } from '@/lib/time';
 import { useTheme } from '@/theme/theme';
 import { Avatar } from '@/ui/Avatar';
@@ -20,7 +21,8 @@ import { Text } from '@/ui/Text';
 
 /**
  * "Ask Cai" in Search (R66): a question typed as a sentence, answered from what search finds in
- * the person's own messages, decisions and to-dos, with what the answer rests on. Asked only on
+ * the person's own messages, calls they were in (M17 I12a), decisions and to-dos, with what the
+ * answer rests on. Asked only on
  * a tap, here or on a place's "Ask Cai" (each answer is a model call on their allowance), shown
  * for the question it answered, and kept nowhere.
  */
@@ -63,7 +65,7 @@ export function CaiAnswer({
         testID="search-ask-cai"
       />
     );
-  const { messages = [], decisions = [], tasks = [] } = shown.sources;
+  const { messages = [], calls = [], decisions = [], tasks = [] } = shown.sources;
   return (
     <View
       accessibilityLiveRegion="polite"
@@ -117,6 +119,14 @@ export function CaiAnswer({
           />
         );
       })}
+      {calls.map((c) => (
+        <CallHitRow
+          key={c.lineId ?? `notes:${c.callId}`}
+          hit={c}
+          open={open}
+          testID="search-cai-source"
+        />
+      ))}
       {decisions.map((d) => (
         <ListRow
           key={d.id}

@@ -2779,7 +2779,23 @@ export type AnswerSourceView =
     }
   | { kind: 'decision'; id: string; title: string; conversationId: string | null }
   | { kind: 'task'; id: string; title: string; conversationId: string | null }
-  | { kind: 'note'; lineId: string; at: string; speaker: string; text: string };
+  | { kind: 'note'; lineId: string; at: string; speaker: string; text: string }
+  /**
+   * A call's notes away from them (M17 I12a): a line said (`lineId`) or Cai's write-up of the call
+   * (`lineId` null), opened at the call's line in its conversation (`seq`).
+   */
+  | {
+      kind: 'call';
+      callId: string;
+      conversationId: string;
+      seq: number;
+      lineId: string | null;
+      /** The conversation's title for the reader; null for a chat of two. */
+      title: string | null;
+      /** Who said it; Cai for the write-up. */
+      who: string;
+      at: string;
+    };
 
 export interface AiCatchUpView {
   /** Null when there is nothing to read yet. */
@@ -2982,6 +2998,28 @@ export interface SearchMessageHit {
   createdAt: string;
 }
 
+/**
+ * What was said in a call, found (M17 I12a): a heard line of Cai's notes, for someone who was in
+ * the call when it was said (or said it), or, among an answer's sources, Cai's write-up of the
+ * call (`lineId` null), for someone in it from its first word. It opens the call's notes there,
+ * from the call's line in its conversation (`seq`).
+ */
+export interface SearchCallHit {
+  lineId: string | null;
+  callId: string;
+  conversationId: string;
+  /** The call's line in its conversation, where its notes open. */
+  seq: number;
+  /** Who said it; null for the write-up. */
+  speakerId: string | null;
+  speakerName: string;
+  conversationTitle: string | null;
+  /** The words around the match, marked as a message's are. */
+  snippet: string;
+  /** When it was said. */
+  at: string;
+}
+
 export interface SearchAssetHit {
   id: string;
   kind: string;
@@ -3006,6 +3044,8 @@ export interface SearchResults {
     conversationId?: string;
   }>;
   messages?: SearchMessageHit[];
+  /** What was said in calls they were in (M17 I12a), with the messages. */
+  calls?: SearchCallHit[];
   files?: SearchAssetHit[];
   tasks?: TaskView[];
   decisions?: Array<{
@@ -3031,7 +3071,7 @@ export interface SearchResults {
 export interface SearchAnswerResponse {
   answer: string | null;
   label: string | null;
-  sources: Pick<SearchResults, 'messages' | 'tasks' | 'decisions'>;
+  sources: Pick<SearchResults, 'messages' | 'calls' | 'tasks' | 'decisions'>;
 }
 
 export interface SearchResponse {

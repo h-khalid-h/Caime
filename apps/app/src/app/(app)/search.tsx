@@ -19,6 +19,7 @@ import { endpoints } from '@/api/endpoints';
 import { useAiStatus } from '@/api/hooks';
 import { qk } from '@/api/keys';
 import { CaiAnswer } from '@/features/search/CaiAnswer';
+import { CallHitRow } from '@/features/search/CallHitRow';
 import { searchOnDevice } from '@/features/search/onDevice';
 import { useNow, useUserClock } from '@/lib/time';
 import { useMe } from '@/state/session';
@@ -126,6 +127,7 @@ export default function Search() {
     r &&
     !r.people?.length &&
     !r.messages?.length &&
+    !r.calls?.length &&
     !r.files?.length &&
     !r.tasks?.length &&
     !r.decisions?.length &&
@@ -292,6 +294,14 @@ export default function Search() {
                 />
               );
             })}
+          </>
+        ) : null}
+        {r?.calls?.length ? (
+          <>
+            <SectionTitle>{tr('Said in calls')}</SectionTitle>
+            {r.calls.map((c) => (
+              <CallHitRow key={c.lineId ?? c.callId} hit={c} open={open} testID="search-call" />
+            ))}
           </>
         ) : null}
         {r?.files?.length ? (

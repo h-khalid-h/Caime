@@ -502,22 +502,61 @@ export async function summaryFor(
   const s = row.summary as KeptNotes | null;
   return {
     summaryState: row.state as 'writing' | 'written' | 'none',
-    summary:
-      row.state === 'written' && s
-        ? {
-            summary: s.summary,
-            topics: s.topics.map((x) => ({ title: x.title, points: x.points, at: x.at ?? null })),
-            decisions: s.decisions.map((d) => ({ text: d.text, at: d.at ?? null })),
-            nextSteps: s.nextSteps.map((n) => ({
-              who: n.who,
-              what: n.what,
-              due: n.due,
-              at: n.at ?? null,
-            })),
-            label: AI_LABEL,
-          }
-        : null,
+    summary: row.state === 'written' && s ? summaryView(s) : null,
   };
+}
+
+/** The write-up as it's kept, as its reader is shown it. */
+function summaryView(s: KeptNotes): CallNotesSummaryView {
+  return {
+    summary: s.summary,
+    topics: s.topics.map((x) => ({ title: x.title, points: x.points, at: x.at ?? null })),
+    decisions: s.decisions.map((d) => ({ text: d.text, at: d.at ?? null })),
+    nextSteps: s.nextSteps.map((n) => ({ who: n.who, what: n.what, due: n.due, at: n.at ?? null })),
+    label: AI_LABEL,
+  };
+}
+
+/**
+ * The write-ups of several calls one reader may read (M17 I12a), by `summaryFor`'s rule in one
+ * query: written, and they were in the call from before its first word (the caller from the ring,
+ * whoever answered from then, a group's member from their latest join).
+ */
+export async function writeUpsFor(
+  ctx: AppContext,
+  viewerId: string,
+  callIds: readonly string[],
+): Promise<Map<string, CallNotesSummaryView>> {
+  const out = new Map<string, CallNotesSummaryView>();
+  const ids = [...new Set(callIds)];
+  if (ids.length === 0) return out;
+  const rows = await ctx.db
+    .selectFrom('call_note_summaries as s')
+    .innerJoin('calls as k', 'k.id', 's.call_id')
+    .leftJoin('call_members as cm', (j) =>
+      j.onRef('cm.call_id', '=', 'k.id').on('cm.user_id', '=', viewerId),
+    )
+    .select([
+      's.call_id',
+      's.summary',
+      sql<Date | null>`case
+        when k.is_group then cm.joined_at
+        when k.answered_at is null then null
+        when k.caller_id = ${viewerId} then k.created_at
+        when k.callee_id = ${viewerId} then k.answered_at
+      end`.as('from'),
+      sql<Date | null>`(select min(l.spoken_at) from call_note_lines l
+        join call_notes n on n.id = l.notes_id where n.call_id = k.id)`.as('first'),
+    ])
+    .where('s.call_id', 'in', ids)
+    .where('s.state', '=', 'written')
+    .execute();
+  for (const r of rows) {
+    if (!r.from || !r.summary) continue;
+    if (r.first && new Date(r.from).getTime() > new Date(r.first).getTime()) continue;
+    out.set(r.call_id, summaryView(r.summary as KeptNotes));
+  }
+  return out;
 }
 
 export function registerNotesSummaryJob(): void {
