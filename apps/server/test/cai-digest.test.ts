@@ -32,12 +32,19 @@ const say = (c: Client, conversationId: string, body: string) =>
   });
 const caiChat = async (c: Client) =>
   (await c.post('/v1/conversations', { kind: 'direct', userId: CAI_ID })).conversation.id as string;
+/**
+ * The digest Cai last wrote: the message about her people (Cara is in every one here). Cai may
+ * also have told her, in the same run of jobs, that a customer of her clinic is slipping (M17
+ * I15a2), which isn't the digest.
+ */
 const lastFromCai = async (c: Client) => {
   const all = (await c.get(`/v1/conversations/${await caiChat(c)}/messages`)).messages as Array<{
     senderId: string;
     body: string;
   }>;
-  return all.filter((m) => m.senderId === CAI_ID).at(-1)?.body ?? '';
+  return (
+    all.filter((m) => m.senderId === CAI_ID && m.body.includes('Cara Digest')).at(-1)?.body ?? ''
+  );
 };
 const digestJobs = () =>
   t.ctx.db
