@@ -2604,6 +2604,17 @@ A sphere is said as how you know someone, never "sphere".
   each query in its own reader's language) have golden sets of their own, by the same rules.
   Quoted words (`maskQuoted`) and forwarded messages are nobody's promise; a sentence ends at
   punctuation followed by a space.
+  Whom a group's message speaks to (M17 I10) is core `addressedIn` (`addressees.ts`, a file of
+  rules; its lines in `addressees-golden.test.ts`, each language with its near misses): a name
+  said to someone ("Sara, can you…", "…, Omar?", "يا سارة") or everyone called ("Everyone,
+  please…", "يا جماعة", "vous tous", "Arkadaşlar"), never a name the words only speak of, and a
+  first name two people share names neither. The server reads it in `addresseesOf`
+  (`message-effects.ts`, the one place a message's addressees are decided for its notifications
+  and its suggestions, after a send, an edit and a voice note's words): the people in it as the
+  writer knows them (names, the writer's nicknames, handles) in one query, only for a group's
+  message that asks, promises or questions; a named person is addressed as a mention is, the
+  writer's ask waits on the first, and everyone counts only outside a crowd (`isLargeGroup`).
+  A new way of calling someone joins its list with a golden line.
 - Dates are `parseWhen` (`packages/core/src/when.ts`): a piece carries a `date`, a `time`, or a
   `softTime` (what "tonight" or "tomorrow evening" suggests, which a written hour beside it
   replaces, read as that part of the day), and the recent past ("last Friday", "yesterday")

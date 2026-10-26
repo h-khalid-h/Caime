@@ -23,6 +23,7 @@ import {
   trn,
   uuidv7,
 } from '@caime/core';
+import { addressedIn } from '@caime/core/addressees';
 import { sql } from 'kysely';
 import type { AppContext } from '../context';
 import type { Conversation, Message, Relationship } from '../db/schema';
@@ -270,16 +271,15 @@ async function effectsOf(ctx: AppContext, message: Message, read: Analysis | nul
     conversation,
     members.map((m) => m.user_id),
   );
-  const replyToSender = message.reply_to_id
-    ? (
-        await ctx.db
-          .selectFrom('messages')
-          .select('sender_id')
-          .where('id', '=', message.reply_to_id)
-          .executeTakeFirst()
-      )?.sender_id
-    : null;
   const recipients = members.filter((m) => m.user_id !== sender.id);
+  const { replyToSender, addressed, named } = await addresseesOf(
+    ctx,
+    conversation,
+    message,
+    analysis,
+    sender.id,
+    recipients,
+  );
   if (conversation.kind === 'business') {
     // The Business inbox tracks whose turn it is, so no topics or follow-up nudges; what each
     // side asked and promised is still worth a suggestion (R15 decides how it's said).
@@ -290,8 +290,6 @@ async function effectsOf(ctx: AppContext, message: Message, read: Analysis | nul
     await queueBookedForms(ctx, message);
     return;
   }
-  const addressed = (userId: string) =>
-    conversation.kind === 'direct' || message.mentions.includes(userId) || replyToSender === userId;
   // A group of many (M16 D2b): a stranger's word to everyone waits in each inbox. Never a
   // broadcast, whose every post is for everyone in it.
   const crowd = conversation.kind === 'group' && isLargeGroup(conversation.kind, members.length);
@@ -309,7 +307,7 @@ async function effectsOf(ctx: AppContext, message: Message, read: Analysis | nul
       })),
       { crowd },
     ),
-    suggest(ctx, conversation, message, analysis, sender, recipients, addressed),
+    suggest(ctx, conversation, message, analysis, sender, recipients, addressed, { named }),
     offerDone(ctx, conversation, message, analysis, sender),
     detectTopic(ctx, conversation, message),
     scheduleFollowUp(ctx, conversation, message, recipients),
@@ -423,22 +421,20 @@ export async function afterEdit(
       .where('left_at', 'is', null)
       .execute()
   ).filter((r) => r.user_id !== sender.id);
-  const replyToSender = message.reply_to_id
-    ? (
-        await ctx.db
-          .selectFrom('messages')
-          .select('sender_id')
-          .where('id', '=', message.reply_to_id)
-          .executeTakeFirst()
-      )?.sender_id
-    : null;
-  const addressed = (userId: string) =>
-    conversation.kind === 'direct' || message.mentions.includes(userId) || replyToSender === userId;
+  const { addressed, named } = await addresseesOf(
+    ctx,
+    conversation,
+    message,
+    analysis,
+    sender.id,
+    recipients,
+  );
   // What the words still say, by person and card.
   const said = new Set<string>();
   await suggest(ctx, conversation, message, analysis, sender, recipients, addressed, {
     edited: true,
     said,
+    named,
   });
   const gone = await ctx.db
     .updateTable('suggestions')
@@ -530,19 +526,16 @@ export async function afterTranscript(
       .where('left_at', 'is', null)
       .execute()
   ).filter((r) => r.user_id !== sender.id);
-  const replyToSender = message.reply_to_id
-    ? (
-        await ctx.db
-          .selectFrom('messages')
-          .select('sender_id')
-          .where('id', '=', message.reply_to_id)
-          .executeTakeFirst()
-      )?.sender_id
-    : null;
-  const addressed = (userId: string) =>
-    conversation.kind === 'direct' || message.mentions.includes(userId) || replyToSender === userId;
+  const { addressed, named } = await addresseesOf(
+    ctx,
+    conversation,
+    message,
+    analysis,
+    sender.id,
+    recipients,
+  );
   await Promise.all([
-    suggest(ctx, conversation, message, analysis, sender, recipients, addressed),
+    suggest(ctx, conversation, message, analysis, sender, recipients, addressed, { named }),
     detectTopic(ctx, conversation, message),
     scheduleFollowUp(ctx, conversation, message, recipients),
   ]);
@@ -1196,6 +1189,74 @@ async function absorbVague(
   return Boolean(tracked);
 }
 
+/**
+ * Whom a message speaks to (M17 I10): the other person in a chat; in a group, whoever it
+ * mentions or answers, whoever its words are said to by name ("Sara, can you…", "يا عمر"), and
+ * everyone in it when they're called ("Everyone, please…", "يا جماعة"), only where the group
+ * isn't a crowd (`isLargeGroup`), whose stranger's word to everyone waits. Names are read with
+ * core `addressedIn` over the people in it as the writer knows them (their names, the writer's
+ * nickname for them, their handles): one query, only for a group's message that asks, promises
+ * or questions. A name the words only speak of is nobody's, and a first name two people share
+ * is neither's.
+ */
+async function addresseesOf(
+  ctx: AppContext,
+  conversation: Conversation,
+  message: Message,
+  analysis: Analysis | null,
+  senderId: string,
+  recipients: Array<{ user_id: string }>,
+): Promise<{
+  replyToSender: string | null;
+  addressed: (userId: string) => boolean;
+  named: string[];
+}> {
+  const replyToSender = message.reply_to_id
+    ? ((
+        await ctx.db
+          .selectFrom('messages')
+          .select('sender_id')
+          .where('id', '=', message.reply_to_id)
+          .executeTakeFirst()
+      )?.sender_id ?? null)
+    : null;
+  const inAGroup = conversation.kind !== 'direct' && conversation.kind !== 'business';
+  const asks = analysis && (analysis.request || analysis.commitment || analysis.isQuestion);
+  let named: string[] = [];
+  let everyone = false;
+  if (inAGroup && asks && message.body && recipients.length) {
+    const people = await ctx.db
+      .selectFrom('users as u')
+      .leftJoin('connection_sides as s', (j) =>
+        j.onRef('s.other_id', '=', 'u.id').on('s.owner_id', '=', senderId),
+      )
+      .select(['u.id', 'u.display_name', 'u.handle', 's.nickname'])
+      .where(
+        'u.id',
+        'in',
+        recipients.map((r) => r.user_id),
+      )
+      .where('u.kind', '=', 'human')
+      .execute();
+    const read = addressedIn(
+      message.body,
+      people.map((p) => ({ id: p.id, names: [p.display_name, p.nickname, String(p.handle)] })),
+    );
+    named = read.ids;
+    everyone = read.everyone && !isLargeGroup(conversation.kind, recipients.length + 1);
+  }
+  return {
+    replyToSender,
+    named,
+    addressed: (userId) =>
+      conversation.kind === 'direct' ||
+      message.mentions.includes(userId) ||
+      replyToSender === userId ||
+      named.includes(userId) ||
+      everyone,
+  };
+}
+
 async function suggest(
   ctx: AppContext,
   conversation: Conversation,
@@ -1208,11 +1269,18 @@ async function suggest(
    * After an edit (M17 I2): a card still pending says what the words say now, and `said` gathers
    * what they still say (person and fingerprint), so the rest can be let go.
    */
-  opts: { edited?: boolean; said?: Set<string> } = {},
+  opts: {
+    edited?: boolean;
+    said?: Set<string>;
+    /** Whom the words are said to by name (M17 I10): a group's ask waits on the first. */
+    named?: string[];
+  } = {},
 ): Promise<void> {
   if (!analysis || conversation.privacy_class === 'private') return;
   const counterpartForSender =
-    conversation.kind === 'direct' ? recipients[0]?.user_id : (message.mentions[0] ?? null);
+    conversation.kind === 'direct'
+      ? recipients[0]?.user_id
+      : (message.mentions[0] ?? opts.named?.[0] ?? null);
   // Each person's suggestions are written in their language (R54): the drafts are made, and
   // filed, inside their reader scope.
   await asReader(ctx, sender.id, async () => {

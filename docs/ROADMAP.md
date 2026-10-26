@@ -4498,8 +4498,24 @@ clinic can sign for. I1 lands before launch.
         the golden set (a dated line and its near miss in each language, a negative each, every
         floor held), `card-offer.test.ts` (the promise's suggestion due at the meeting's start
         through the real routes, the bank's meeting dating nothing, an edit read again).
-- [ ] I10. Groups (M): whom a promise or an ask is for by the names in it (`peopleMeant`), and
-      "everyone".
+- [x] I10. Groups (M, 2026-10-26): whom a promise or an ask in a group is for, by the name it's
+      said to and by "everyone". Core `addressedIn` (`addressees.ts`) reads a name said to
+      someone ("Sara, can you send the deck?", "…by Friday, Sara?", "Hey Omar,", "Lulu," as the
+      writer calls her, "يا سارة", "…يا عمر", "Léa, tu peux…", "Merci Sara,", "Ayşe, …",
+      "…, Mehmet?") and everyone called ("Everyone, please…", "Can everyone…", "@all", "يا
+      جماعة", "كلكم", "Tout le monde,", "Vous tous,", "Arkadaşlar,", "Hepiniz"), never a name the
+      words only speak of ("send it to Sara", "Sara said", "ابعت العرض لسارة", "Raporu Ayşe'ye
+      gönderir misin?"), and a first name two people share names neither. The server's one
+      reader of a message's addressees (`addresseesOf`, `message-effects.ts`, for a send, an edit
+      and a voice note's words alike) reads the people in the group as the writer knows them
+      (names, the writer's nicknames, handles) in one query, only for a group's message that
+      asks, promises or questions: a named person is addressed as a mention is (the ask filed
+      for them, its notification an ask), the writer's ask now waits on them, and everyone is
+      asked only in a group that isn't a crowd. Costs: one query for such a group message, none
+      for any other; nothing on the device. Verified: `addressees-golden.test.ts` (each language's
+      lines and near misses, every line right, a shared first name), `group-addressees.test.ts`
+      (through the real routes: the named person's ask and the writer's wait, everyone asked,
+      nobody for a name only spoken of).
 - [ ] I11. Cai by voice, and a reply drafted in a conversation (M each). Cai by voice is I14.
 - [ ] I12. Calls and files in answers, then meaning (L): a call's lines and write-up as passages;
       Office and PDF text indexed; search by meaning after I5, with its processor in the DPA and
@@ -6919,3 +6935,6 @@ CONNIQT; they mean Caime. Caishy is one of Caime's AI members, and Cai leads the
 - 2026-10-26 — M17 I9e: "before the meeting" (or "before we meet") in a promise or an ask is due
   when the conversation's next meeting starts, in the four languages; a meeting someone else
   holds dates nothing. I9, words become cards, is done.
+- 2026-10-26 — M17 I10: in a group, an ask or a promise said to someone by name ("Ben, can you…",
+  "يا سارة") is filed for them and its writer waits on them; "everyone" is asked of everyone in a
+  group that isn't a crowd, in the four languages.
