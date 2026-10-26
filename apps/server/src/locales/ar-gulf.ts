@@ -499,4 +499,7 @@ export const gulfVoice: Catalog = {
     many: 'موعده تغيّر {n} مرة',
     other: 'موعده تغيّر {n} مرة',
   },
+  '{name} has waited {time} for a reply from {org}, and nobody has taken it yet.':
+    'مرّ {time} على رسالة {name} إلى {org} بدون رد، وما أحد استلمها للحين.',
+  'Their conversation: {link}': 'المحادثة: {link}',
 };

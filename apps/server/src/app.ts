@@ -56,6 +56,7 @@ import { registerMeetingStartJob } from './lib/meeting-start';
 import { afterTranscript, noteUnheard, registerEffectsSweep } from './lib/message-effects';
 import { createMetrics } from './lib/metrics';
 import { registerAutoReplies } from './lib/org-replies';
+import { registerOrgSlipping } from './lib/org-slipping';
 import { registerProviderHealth } from './lib/provider-health';
 import { RateLimiter } from './lib/rate-limit';
 import { registerPreviewJob, startPreviewBackfill } from './lib/renditions';
@@ -428,6 +429,7 @@ export async function buildApp(config: Config, options: BuildOptions = {}): Prom
   registerNotesJob();
   registerRecordingJobs();
   registerCardZones();
+  registerOrgSlipping();
   registerSpeechForgetJob();
   registerCaiInteract();
   registerNotesSummaryJob();

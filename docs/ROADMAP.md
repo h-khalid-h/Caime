@@ -4340,8 +4340,18 @@ clinic can sign for. I1 lands before launch.
         the brief, Cai's answer and its one offer, Cairo's Arabic for someone in Egypt, nobody
         else's, help), `chat-org-golden.test.ts`, the dialects' overlays (`voices.test.ts` reads
         `org-day.ts`).
-  - [ ] I15a2. The slipping tell (S): a customer in "Needs a reply" past the reply target during
-        open hours with nobody on it, told once to the managers, under Cai's initiative setting.
+  - [x] I15a2. The slipping tell (S): a customer in "Needs a reply" past the reply target (core
+        `REPLY_TARGET_MINUTES`, 30) during open hours with nobody on it (nobody assigned, its AI
+        agent not standing on an answer to their latest), told once to whoever runs it in their Cai
+        chat and with an attention notification, in each one's language, unless they asked Cai for
+        less (core `tellsSlipping`). `lib/org-slipping.ts`: one `org.slipping` job a wait, queued from
+        `onCustomerMessage` and keyed by the team's last place in the thread and its last reopening
+        (the customer's next words in the same wait queue nothing), read again when it runs, moved
+        to the next opening while it's closed; counted on `caime_cai_tells_total{scope="org"}`. No
+        model, no poll. Verified: `org-slipping.test.ts` (3: told once at 31 minutes and not at 29,
+        in Cairo's Arabic to an admin there, to nobody who asked for less or doesn't run it; nothing
+        for a wait answered, taken or answered by its agent; a wait met after hours told as it opens,
+        as "15 h 30 min").
   - [x] I15b. Caime's own day for its operators (M, the council's §6 point 5): the product
         organization (verified at `PUBLIC_URL`'s domain, `productOrgId`) has its owner and admins
         told in their Cai chat by the hourly `caime.watch` (`watchPlatform`, one instance) when a
@@ -6641,3 +6651,6 @@ CONNIQT; they mean Caime. Caishy is one of Caime's AI members, and Cai leads the
   the landing page's structured data names who runs Caime, with its logo. DEPLOY.md states the
   DMARC published (reject, strict, passing by DKIM) and the two Cloudflare settings to turn off
   (Web Analytics' automatic beacon, Email Address Obfuscation), the owner's to switch.
+- 2026-10-26 — M17 I15a2 (R115): the slipping tell. A customer waiting past the reply target while
+  the organization is open, with nobody on it, is told once to whoever runs it, in their Cai chat
+  and language, unless they asked Cai for less; a wait met while it's closed is told as it opens.

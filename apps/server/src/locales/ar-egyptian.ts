@@ -499,4 +499,7 @@ export const egyptianVoice: Catalog = {
     many: 'ميعاده اتغيّر {n} مرة',
     other: 'ميعاده اتغيّر {n} مرة',
   },
+  '{name} has waited {time} for a reply from {org}, and nobody has taken it yet.':
+    'عدّى {time} على رسالة {name} لـ{org} من غير رد، ومحدش مسكها لسه.',
+  'Their conversation: {link}': 'المحادثة: {link}',
 };

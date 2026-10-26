@@ -1559,7 +1559,10 @@ A sphere is said as how you know someone, never "sphere".
   `orgDayText`, and the digest's `teamWeeks` takes the same `orgsRunBy`; every number is the
   Business inbox's own (core `customerWaiting`, the drafts' `STANDING_DRAFT`, the open
   questions), so a new line about an organization reads what its inbox reads, never a count of
-  its own. Caime's own day (M17 I15b, `lib/caime-day.ts`): the product organization
+  its own. A customer slipping (M17 I15a2, `lib/org-slipping.ts`) is one `org.slipping` job a
+  wait, queued from `onCustomerMessage`, read again when it runs: past core
+  `REPLY_TARGET_MINUTES` while open, nobody on it, told once to whoever runs it unless they asked
+  for less (`tellsSlipping`); anything new Cai tells a team unasked takes the same shape. Caime's own day (M17 I15b, `lib/caime-day.ts`): the product organization
   (`productOrgId`, verified at `productDomain`) is the one scope with the platform's lines;
   `platformConditions` reads what the periodic tasks keep (`providers.last` with its `downs`,
   `backup.last`, `audit.last`) and two counts, `caimeDayText` says them under its day, and the

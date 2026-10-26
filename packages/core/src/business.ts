@@ -88,6 +88,12 @@ export function inBusinessView(view: BusinessView, t: ThreadFacts, me: string): 
   }
 }
 
+/**
+ * How long a customer may wait for a reply while the organization is open before Cai tells
+ * whoever runs it, once, that nobody has it (M17 I15a2).
+ */
+export const REPLY_TARGET_MINUTES = 30;
+
 /** Since when the customer has been waiting for an answer, or null when it isn't their wait. */
 export function waitingSince(t: ThreadFacts): string | null {
   return !t.resolvedAt && customerWaiting(t) ? t.lastCustomerAt : null;

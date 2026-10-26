@@ -499,4 +499,7 @@ export const levantineVoice: Catalog = {
     many: 'موعدو تغيّر {n} مرة',
     other: 'موعدو تغيّر {n} مرة',
   },
+  '{name} has waited {time} for a reply from {org}, and nobody has taken it yet.':
+    'مرق {time} على رسالة {name} لـ{org} بلا رد، وما حدا مسكها لهلّق.',
+  'Their conversation: {link}': 'المحادثة: {link}',
 };

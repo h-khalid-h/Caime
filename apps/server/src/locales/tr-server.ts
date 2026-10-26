@@ -1896,4 +1896,7 @@ export const turkishServer: Catalog = {
   'I can look at photos with AI assist on: Settings, then AI assist.':
     'AI yardımı açıkken fotoğraflara bakabilirim: Ayarlar, sonra AI yardımı.',
   'I can’t look at photos on this Caime yet.': 'Bu Caime’de henüz fotoğraflara bakamıyorum.',
+  '{name} has waited {time} for a reply from {org}, and nobody has taken it yet.':
+    '{name}, {org} tarafından {time} süredir yanıt bekliyor ve henüz kimse üstlenmedi.',
+  'Their conversation: {link}': 'Görüşme: {link}',
 };

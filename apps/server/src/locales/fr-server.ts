@@ -1981,4 +1981,7 @@ export const frServer: Catalog = {
     'Je peux regarder des photos avec l’assistance IA activée : Réglages, puis Assistance IA.',
   'I can’t look at photos on this Caime yet.':
     'Je ne peux pas encore regarder de photos sur ce Caime.',
+  '{name} has waited {time} for a reply from {org}, and nobody has taken it yet.':
+    '{name} attend une réponse de {org} depuis {time}, et personne ne s’en est encore chargé.',
+  'Their conversation: {link}': 'La conversation : {link}',
 };

@@ -17,10 +17,12 @@ const SPEAKERS = [
   'apps/server/src/lib/free-time.ts',
   'apps/server/src/lib/org-day.ts',
   'apps/server/src/lib/caime-day.ts',
+  'apps/server/src/lib/org-slipping.ts',
 ];
 /** What those files say that isn't Cai or a friend talking: refusals, a name, a stand-in. */
 const NOT_SPOKEN = [
   'Someone',
+  'A customer',
   'Cai',
   'That follow-up',
   'That wait',

@@ -1996,4 +1996,7 @@ export const arServer: Catalog = {
   'I can look at photos with AI assist on: Settings, then AI assist.':
     'أستطيع النظر في الصور مع تشغيل مساعدة الذكاء الاصطناعي: الإعدادات، ثم مساعدة الذكاء الاصطناعي.',
   'I can’t look at photos on this Caime yet.': 'لا أستطيع النظر في الصور على Caime هذا بعد.',
+  '{name} has waited {time} for a reply from {org}, and nobody has taken it yet.':
+    'مضى {time} على رسالة {name} إلى {org} دون رد، ولم يتولَّها أحد بعد.',
+  'Their conversation: {link}': 'المحادثة: {link}',
 };

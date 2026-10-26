@@ -58,3 +58,8 @@ export function quietWaitAfterMs(initiative: Initiative): number | null {
 export function tellsBeforeMeetings(initiative: Initiative): boolean {
   return initiative !== 'less';
 }
+
+/** Whether Cai tells someone who runs an organization that a customer's wait is slipping. */
+export function tellsSlipping(initiative: Initiative): boolean {
+  return initiative !== 'less';
+}

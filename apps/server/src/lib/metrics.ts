@@ -233,7 +233,7 @@ export function createMetrics(pool: pg.Pool) {
     // or cleared (provider, backup, audit, jobs, child_safety).
     caiTells: new Counter(
       'caime_cai_tells_total',
-      'What Cai told unasked of a scope it watches, by scope (caime), kind and outcome (crossed, cleared).',
+      'What Cai told unasked of a scope it watches, by scope (caime, org), kind and outcome (crossed, cleared, quiet).',
     ),
     // What someone missed (M17 I3): a recap asked for, by where and whether the model summed it up.
     recaps: new Counter(
