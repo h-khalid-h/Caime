@@ -23,7 +23,7 @@ import { taskWho } from '@/features/actions/taskWho';
 import { AssistTools } from '@/features/assist/AssistTools';
 import { useAiReady } from '@/features/assist/ready';
 import { ComingUpList } from '@/features/common/comingUpLazy';
-import { type ImportInto, WhatsAppImport } from '@/features/import/WhatsAppImport';
+import type { ImportInto } from '@/features/import/WhatsAppImport';
 import { OrgMark, VerifiedLine } from '@/features/orgs/kinds';
 import { handleLine } from '@/features/people/handleLine';
 import { openCheckedLink } from '@/lib/links';
@@ -50,6 +50,10 @@ import { topicsFor } from './topics';
 /** Everything shared here (PRD §26): loaded when it's opened, as on a person's and a space's page. */
 const SharedFiles = lazyPart(() => import('./SharedFiles').then((m) => m.SharedFiles));
 const GroupPeople = lazyPart(() => import('./GroupPeople').then((m) => m.GroupPeople));
+// A chat brought over (R45): its readers load with the sheet, never with the conversation.
+const WhatsAppImport = lazyPart(() =>
+  import('@/features/import/WhatsAppImport').then((m) => m.WhatsAppImport),
+);
 /** What the team keeps about a customer (M16 H3): only the team's, loaded when it's theirs. */
 const CustomerRecord = lazyPart(() =>
   import('@/features/business/CustomerRecord').then((m) => m.CustomerRecord),

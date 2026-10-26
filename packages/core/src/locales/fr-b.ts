@@ -2810,4 +2810,6 @@ export const frB: Catalog = {
   'Make it a Pay card': 'En faire une carte Payer',
   'Answer with a Meeting card': 'Répondre avec une carte Réunion',
   'Answer with a Pay card': 'Répondre avec une carte Payer',
+  'Call this number': 'Appeler ce numéro',
+  'Write to this address': 'Écrire à cette adresse',
 };

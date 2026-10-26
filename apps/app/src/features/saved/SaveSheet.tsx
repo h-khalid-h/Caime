@@ -3,8 +3,9 @@
  * last, another one there is (found by name once there are many), or a new one. What's saved
  * stays only as long as the message does.
  */
-import { SAVED_DEFAULT } from '@caime/core/automations';
+
 import { tr } from '@caime/core/i18n';
+import { SAVED_DEFAULT } from '@caime/core/saved';
 import { useQueryClient } from '@tanstack/react-query';
 import { useState } from 'react';
 import { endpoints } from '@/api/endpoints';

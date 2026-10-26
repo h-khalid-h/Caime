@@ -15,9 +15,10 @@ import {
   systemText,
 } from '@caime/core/format';
 import { listed, tr } from '@caime/core/i18n';
-import { type Mentionable, type MentionSpan, mentionSpans } from '@caime/core/mentions';
+import { type Mentionable, mentionSpans } from '@caime/core/mentions';
 import { imageFor } from '@caime/core/renditions';
 import { CAI_ID, systemHandleOf } from '@caime/core/system-ids';
+import { type Tappable, tappableSpans } from '@caime/core/tappable';
 import { Image } from 'expo-image';
 import { router } from 'expo-router';
 import AtSign from 'lucide-react-native/icons/at-sign';
@@ -99,14 +100,19 @@ interface HoverOwner {
 /** The bubble whose hover actions show (web): one at a time. */
 let hovering: HoverOwner | null = null;
 
-/** A plain part of a message's words, cut where it names someone (M16 E3); links stay whole. */
-function cutAtMentions(
+type Marked = { start: number; end: number; mention?: string; tap?: Tappable };
+
+/**
+ * A plain part of a message's words, cut where it names someone (M16 E3) or says a day, a number
+ * or an address that may be tapped (M17 I9d); links stay whole.
+ */
+function cutAtSpans(
   part: TextPart,
-  spans: MentionSpan[],
-): Array<TextPart & { mention?: string }> {
+  spans: Marked[],
+): Array<TextPart & { mention?: string; tap?: Tappable }> {
   if (part.url || spans.length === 0) return [part];
   const end = part.start + part.text.length;
-  const out: Array<TextPart & { mention?: string }> = [];
+  const out: Array<TextPart & { mention?: string; tap?: Tappable }> = [];
   let at = part.start;
   for (const s of spans) {
     if (s.end <= at || s.start >= end) continue;
@@ -117,7 +123,8 @@ function cutAtMentions(
     out.push({
       text: part.text.slice(from - part.start, to - part.start),
       start: from,
-      mention: s.userId,
+      ...(s.mention ? { mention: s.mention } : {}),
+      ...(s.tap ? { tap: s.tap } : {}),
     });
     at = to;
   }
@@ -147,6 +154,8 @@ export interface BubbleProps {
   onReact?: (m: MessageView, emoji: string) => void;
   onRetry?: (m: MessageView) => void;
   onOpenReactions?: (m: MessageView) => void;
+  /** A day, a number or an address in its words was tapped (M17 I9d); marked only with it. */
+  onTap?: (m: MessageView, tap: Tappable) => void;
   /** Briefly marked: the message someone jumped to from search. */
   highlighted?: boolean;
   /** In a message request not yet accepted, links read as text and open nothing (R14). */
@@ -399,6 +408,7 @@ export const MessageBubble = memo(function MessageBubble({
   onReact,
   onRetry,
   onOpenReactions,
+  onTap,
   highlighted,
   inertLinks = false,
   veil,
@@ -418,13 +428,33 @@ export const MessageBubble = memo(function MessageBubble({
   const replyText = useReplyPreview(m.replyTo, where, opened.replyTo);
   // The names it mentions, marked where they're written: only the people the message itself
   // says it mentions, read from the words as shown (a private message's as opened here).
-  const spans = useMemo(
-    () =>
+  // And what may be tapped (M17 I9d): what the server kept of the words as they were sent, so
+  // never in a private message, nor where links are held back; a name wins over anything in it.
+  const spans = useMemo((): Marked[] => {
+    const names: Marked[] =
       text && m.mentions.length && mentionables
-        ? mentionSpans(text, mentionables).filter((s) => m.mentions.includes(s.userId))
-        : [],
-    [text, m.mentions, mentionables],
-  );
+        ? mentionSpans(text, mentionables)
+            .filter((s) => m.mentions.includes(s.userId))
+            .map((s) => ({ start: s.start, end: s.end, mention: s.userId }))
+        : [];
+    const taps: Marked[] =
+      text && onTap && !inertLinks && !m.sealed && !where.private && text === m.body
+        ? tappableSpans(text, m.entities).filter(
+            (t) => !names.some((n) => t.start < n.end && t.end > n.start),
+          )
+        : [];
+    return taps.length ? [...names, ...taps].sort((a, b) => a.start - b.start) : names;
+  }, [
+    text,
+    m.mentions,
+    mentionables,
+    onTap,
+    inertLinks,
+    m.sealed,
+    where.private,
+    m.body,
+    m.entities,
+  ]);
   // Hover actions (web) sit beside the bubble, not inside it: a pressable inside another ends
   // the outer one's hover, which took the buttons away just as the pointer reached them. Moving
   // from the bubble to the buttons gets a moment's grace; moving onto another bubble ends it at
@@ -631,7 +661,7 @@ export const MessageBubble = memo(function MessageBubble({
   const words = text ? (
     <Text variant="message" color={fg} selectable={Platform.OS === 'web'} auto={text}>
       {linkify(text)
-        .flatMap((part) => cutAtMentions(part, spans))
+        .flatMap((part) => cutAtSpans(part, spans))
         .map((part) =>
           part.url && !inertLinks ? (
             <Text
@@ -643,6 +673,20 @@ export const MessageBubble = memo(function MessageBubble({
               onLongPress={hold}
               accessibilityRole="link"
               {...opensWithEnter(() => open(part.url ?? ''))}
+            >
+              {part.text}
+            </Text>
+          ) : part.tap && onTap ? (
+            // A day, a number or an address (M17 I9d): a tap offers what it could be.
+            <Text
+              key={`${part.start}`}
+              variant="message"
+              color={mine ? fg : t.c.link}
+              style={{ textDecorationLine: 'underline', textDecorationStyle: 'dotted' }}
+              onPress={() => part.tap && onTap(m, part.tap)}
+              onLongPress={hold}
+              accessibilityRole="button"
+              testID={`tap-${part.tap.kind}`}
             >
               {part.text}
             </Text>

@@ -13,6 +13,8 @@
 import { listed, msg, tr } from './i18n';
 import { findRole, SPHERE_DEFS, type Sphere } from './taxonomy';
 
+export { COLLECTION_MAX, collectionName, SAVED_DEFAULT, SAVED_MAX } from './saved';
+
 /** What an automation keeps: the kinds of what's shared (the asset index's). */
 export const SAVE_KINDS = ['document', 'photo', 'video', 'audio', 'link'] as const;
 export type SaveKind = (typeof SAVE_KINDS)[number];
@@ -22,12 +24,6 @@ export const AUTOMATIONS_MAX = 50;
 /** The most words one automation looks for, and the longest word. */
 export const WORDS_MAX = 10;
 export const WORD_MAX = 40;
-/** The longest name of a collection. */
-export const COLLECTION_MAX = 60;
-/** Where a message is saved when no collection is chosen. */
-export const SAVED_DEFAULT = 'Saved';
-/** The most one person keeps saved; past it, nothing more is saved until some is removed. */
-export const SAVED_MAX = 5000;
 
 export interface AutomationWhen {
   /** Whose: someone known this way (and in this role), or, with neither, anyone. */
@@ -259,10 +255,4 @@ export function describeAutomation(x: { when: AutomationWhen; collection: string
         words: orList(x.when.words.map((w) => `“${w}”`)),
       })
     : tr('When {who} sends {what}, save it to {collection}', vars);
-}
-
-/** A collection's name as it's kept: its spaces tidied, never empty. */
-export function collectionName(name: string | null | undefined): string {
-  const n = (name ?? '').replace(/\s+/g, ' ').trim().slice(0, COLLECTION_MAX);
-  return n || SAVED_DEFAULT;
 }

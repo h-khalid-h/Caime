@@ -2714,4 +2714,6 @@ export const turkishB: Catalog = {
   'Make it a Pay card': 'Öde kartı yap',
   'Answer with a Meeting card': 'Toplantı kartıyla yanıtla',
   'Answer with a Pay card': 'Öde kartıyla yanıtla',
+  'Call this number': 'Bu numarayı ara',
+  'Write to this address': 'Bu adrese yaz',
 };

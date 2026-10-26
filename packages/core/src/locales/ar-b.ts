@@ -3648,4 +3648,14 @@ export const arB: Catalog = {
     toMan: 'أجب ببطاقة الدفع',
     other: 'أجب ببطاقة الدفع',
   },
+  'Call this number': {
+    toWoman: 'اتصلي بهذا الرقم',
+    toMan: 'اتصل بهذا الرقم',
+    other: 'اتصل بهذا الرقم',
+  },
+  'Write to this address': {
+    toWoman: 'اكتبي إلى هذا العنوان',
+    toMan: 'اكتب إلى هذا العنوان',
+    other: 'اكتب إلى هذا العنوان',
+  },
 };

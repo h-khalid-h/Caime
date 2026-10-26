@@ -4466,6 +4466,20 @@ clinic can sign for. I1 lands before launch.
         the first Monday at its time). It found a sheet deaf to Escape while a field inside it had
         the focus (react-native-web's TextInput stops keydown from bubbling): `Sheet` now hears
         Escape in the capture phase and closes the topmost sheet alone.
+  - [ ] I9d. Tappable in a message (2026-10-26): a day ahead, a phone number and an email
+        address are marked where the words say them, read from what the server kept as the
+        message was sent (core `tappableSpans`, `tappable.ts`: the entities found again in the
+        text, never a day gone by, a mention or a link winning; nothing for a private message or
+        where links are held back), and a tap opens one sheet (`TappedSheet`, held by the
+        conversation screen): a day as a Meeting card at that moment replying to the message, a
+        number to call, an address to write to, each to copy. Costs: nothing on the server, no
+        reader loaded on the device, the conversation's own chunk alone. Verified: `tappable.test.ts`,
+        the E2E `reading-flow.spec.ts` (each tapped, the card opened at the day said). Still to
+        come under I9: "before the meeting" as that meeting's time. The conversation's chunk had
+        reached 100.9 KB (the later-chunk ceiling is 100), so the tapped sheet loads on the first
+        tap and the WhatsApp/Telegram import sheet with its readers when it's opened (95.8 KB), and
+        the first download won back 0.8 KB (449.4 of 450) by `core/saved` leaving `automations`
+        (the saved screens shared it), measured by `pnpm budget` and the source maps.
 - [ ] I10. Groups (M): whom a promise or an ask is for by the names in it (`peopleMeant`), and
       "everyone".
 - [ ] I11. Cai by voice, and a reply drafted in a conversation (M each). Cai by voice is I14.
@@ -6882,3 +6896,5 @@ CONNIQT; they mean Caime. Caishy is one of Caime's AI members, and Cai leads the
   instant its writer meant, from the composer and from the message's actions.
 - 2026-10-26 — M17 I9c: a plan that repeats opens its Meeting card repeating as often, from its
   first time, in the four languages, on either side of the conversation.
+- 2026-10-26 — M17 I9d: a day, a phone number or an email address in a message is tapped for a
+  Meeting card at that moment, a call or a mail, or a copy.

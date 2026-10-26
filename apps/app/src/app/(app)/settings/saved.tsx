@@ -4,9 +4,9 @@
  * first) and shows where it was said. What's deleted or disappears goes from here too.
  */
 import type { SavedItemView } from '@caime/core/api';
-import { COLLECTION_MAX, collectionName } from '@caime/core/automations';
 import { formatBytes, formatListTime, previewText } from '@caime/core/format';
 import { tr } from '@caime/core/i18n';
+import { COLLECTION_MAX, collectionName } from '@caime/core/saved';
 import { useQueryClient } from '@tanstack/react-query';
 import { router } from 'expo-router';
 import Bookmark from 'lucide-react-native/icons/bookmark';

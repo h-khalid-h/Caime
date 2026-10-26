@@ -6,6 +6,7 @@ import { lastSeenLine } from '@caime/core/last-seen';
 import { canRemoveOthersMessages } from '@caime/core/permissions';
 import { canPin } from '@caime/core/pins';
 import { isSystemKind } from '@caime/core/system-ids';
+import type { Tappable } from '@caime/core/tappable';
 import { useQueryClient } from '@tanstack/react-query';
 import { router, useFocusEffect } from 'expo-router';
 import ChevronDown from 'lucide-react-native/icons/chevron-down';
@@ -50,7 +51,7 @@ import { ConnectionBanner } from '@/features/common/ConnectionBanner';
 import { useKnownPrivate } from '@/features/e2ee/hooks';
 import { CodeChangedBanner, Downgraded, PrivateSheet } from '@/features/e2ee/parts';
 import { privateSupported } from '@/features/e2ee/support';
-import type { KitChoice, KitStart } from '@/features/kits/KitForm';
+import { type KitChoice, type KitStart, kitsOffered } from '@/features/kits/KitForm';
 import { joinFromLink } from '@/features/kits/meetingCall';
 import { PhotoViewerHost } from '@/features/media/PhotoViewerHost';
 import { OrgMark, VerifiedLine } from '@/features/orgs/kinds';
@@ -84,6 +85,7 @@ import { Text } from '@/ui/Text';
 import { toast } from '@/ui/Toast';
 import { Composer, type ComposerHandle } from './Composer';
 import { ContextPanel } from './ContextPanel';
+import { useCardAction } from './cardActions';
 import { deleteWithUndo } from './deleteWithUndo';
 import { FirstWords } from './FirstWords';
 import { ForwardSheet } from './ForwardSheet';
@@ -120,6 +122,7 @@ const JoinLinks = lazyPart(() => import('@/features/join/JoinLinks').then((m) =>
 
 /** "How do you know …?" for a connection never labelled (R3), loaded the first time it opens. */
 const ChatSearch = lazyPart(() => import('./ChatSearch').then((m) => m.ChatSearch));
+const TappedSheet = lazyPart(() => import('./TappedSheet').then((m) => m.TappedSheet));
 const RelationshipPicker = lazyPart(() =>
   import('@/features/relationships/RelationshipPicker').then((m) => m.RelationshipPicker),
 );
@@ -183,6 +186,10 @@ export function ConversationScreen({
   const [editing, setEditing] = useState<MessageView | null>(null);
   const [actionsFor, setActionsFor] = useState<MessageView | null>(null);
   const [forwarding, setForwarding] = useState<MessageView[] | null>(null);
+  // A day, a number or an address tapped in a message (M17 I9d): the one sheet that offers it.
+  const [tapped, setTapped] = useState<{ m: MessageView; tap: Tappable } | null>(null);
+  const onTap = useCallback((m: MessageView, tap: Tappable) => setTapped({ m, tap }), []);
+  const tappedOnce = useOpened(Boolean(tapped));
   // Several messages chosen together (M16 E8), kept for the conversation they were chosen in.
   const [chosen, setChosen] = useState<{ in: string; ms: Map<string, MessageView> } | null>(null);
   const selected = chosen?.in === id ? chosen.ms : null;
@@ -912,6 +919,7 @@ export function ConversationScreen({
             onOpenReply={openReply}
             privateReplyName={item.privateReplyName}
             onOpenReactions={setActionsFor}
+            onTap={onTap}
             delivery={item.delivery}
             timeZone={timeZone}
             locale={locale}
@@ -1383,6 +1391,33 @@ export function ConversationScreen({
         }}
       />
       {forwarding ? <ForwardSheet ms={forwarding} onClose={() => setForwarding(null)} /> : null}
+      {tappedOnce ? (
+        <TappedSheet
+          tap={tapped?.tap ?? null}
+          onMeeting={
+            tapped?.tap.kind === 'date' &&
+            conversation &&
+            kitsOffered(conversation, me.minor).some((k) => k.id === 'meeting')
+              ? () => {
+                  const { m, tap } = tapped;
+                  if (tap.kind !== 'date') return;
+                  useCardAction.setState({
+                    request: {
+                      conversationId: m.conversationId,
+                      kit: 'meeting',
+                      start: {
+                        title: tr('Meeting'),
+                        at: { at: tap.at, hasTime: tap.hasTime },
+                        replyToId: m.id,
+                      },
+                    },
+                  });
+                }
+              : undefined
+          }
+          onClose={() => setTapped(null)}
+        />
+      ) : null}
       <PhotoViewerHost />
       {searched && conversation ? (
         <ChatSearch

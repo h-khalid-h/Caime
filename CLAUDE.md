@@ -352,7 +352,16 @@ A sphere is said as how you know someone, never "sphere".
   actions through `useCardAction`); `KitStart.at` opens a Meeting card on that instant. How often a
   plan repeats is core `repeatIn` (I9c), read before its date (a named weekday said as one day),
   carried as `repeat` on the offer, the kept offer and `KitStart`: a new way of saying it joins
-  `REPEAT_RULES` with its golden line. Read and delivered
+  `REPEAT_RULES` with its golden line. Splitting a part out of a route's chunk is measured, not guessed:
+  the source maps of `expo export --source-maps` say which modules sit in `__common`, and a part
+  whose every import is there already leaves for nothing but its entry (the import sheet, the
+  tapped sheet); module ids shift with every new module, so `__common` moves by about ±0.2 KB
+  gzip with no module changed, and headroom under that is none. What only one feature needs of
+  a core module two routes share goes in a module of its own (`saved.ts` from `automations.ts`,
+  0.8 KB of the first download). What may be tapped in a message (I9d) is core `tappableSpans`
+  over the message's own `entities` (never read again on the device), drawn by `MessageBubble`
+  only with `onTap` and offered by the screen's one `TappedSheet`: a new thing to tap is an entity
+  the server keeps, a kind in `Tappable` and a row there. Read and delivered
   differ by shape and colour: sent and delivered in the bubble's `tick` token (3:1 on the bubble,
   1.8:1 from its `fg`), read in `fg` with a heavier stroke, and on a card of one's own the
   tertiary text and the text (`tokens.test.ts` holds both). A quote says whose words it quotes (`replyName`
@@ -2703,8 +2712,9 @@ A sphere is said as how you know someone, never "sphere".
   which inserts rows itself, past `sendMessage`, so nothing is notified, suggested or moved by
   the past: every imported message carries `payload.imported = {source, by}`, and anything that
   reads message bodies for meaning (effects, AI, attention) may leave those alone. The app shows
-  "Imported ·" from that field and offers the sheet (`features/import/`, imported statically by
-  the conversation route: split out, it cost 0.8 KB of `__common`) only where topics are. A
+  "Imported ·" from that field and offers the sheet (`features/import/`, `lazyPart`ed by
+  `ContextPanel` since M17 I9d: everything it shares with the conversation is in `__common`
+  now, so only its own readers leave, 4.3 KB of the conversation's chunk) only where topics are. A
   group's export (M16 C3g) lands through `POST /conversations/:id/import` in a group its owner or
   an admin runs (never private, a topic or a space's): each name is one of its people now, or the
   importer's line with `payload.imported.author`, which `rows.ts` (`importedAuthor`) draws and

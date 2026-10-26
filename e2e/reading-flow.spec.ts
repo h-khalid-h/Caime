@@ -462,4 +462,32 @@ test.describe
       await expect(page.getByTestId('card-offer').filter({ visible: true })).toHaveCount(0);
       expect(noor.errors).toEqual([]);
     });
+
+    test('a day, a number or an address in a message is tapped for what it could be (M17 I9d)', async () => {
+      const { page } = noor;
+      await page.goto(`/c/${convo}`);
+      await say('Ring me on +20 100 123 4567 or write to sara@nile.dental before Thursday at 3pm');
+      const said = visible(page, /^Ring me on/);
+      await expect(said).toBeVisible();
+      // Each tap by its own words: older messages say days too ("Thursday at nine").
+      const tap = (id: string, words: string) =>
+        page.getByTestId(id).filter({ visible: true, hasText: words });
+      // The number: call or copy it.
+      await tap('tap-phone', '+20 100 123 4567').click();
+      await expect(page.getByTestId('tapped-call')).toBeVisible();
+      await expect(page.getByTestId('tapped-copy')).toBeVisible();
+      await page.keyboard.press('Escape');
+      await expect(page.getByTestId('tapped-call')).toHaveCount(0);
+      // The address: write to it.
+      await tap('tap-email', 'sara@nile.dental').click();
+      await expect(page.getByTestId('tapped-email')).toBeVisible();
+      await page.keyboard.press('Escape');
+      // The day: a Meeting card at that moment, replying to the words.
+      await tap('tap-date', 'before Thursday at 3pm').click();
+      await page.getByTestId('tapped-meeting').click();
+      await expect(page.getByLabel('Title')).toHaveValue('Meeting');
+      await expect(visible(page, /^Thu, .*3:00/)).toBeVisible();
+      await page.keyboard.press('Escape');
+      expect(noor.errors).toEqual([]);
+    });
   });

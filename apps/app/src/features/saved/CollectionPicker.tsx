@@ -4,8 +4,9 @@
  * they have, in any case or spacing, is that one ("customer files" is their "Customer Files"), so
  * the same collection is never made twice.
  */
-import { COLLECTION_MAX, collectionName } from '@caime/core/automations';
+
 import { tr } from '@caime/core/i18n';
+import { COLLECTION_MAX, collectionName } from '@caime/core/saved';
 import Folder from 'lucide-react-native/icons/folder';
 import Plus from 'lucide-react-native/icons/plus';
 import { useState } from 'react';
