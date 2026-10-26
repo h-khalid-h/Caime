@@ -2722,4 +2722,6 @@ export const turkishB: Catalog = {
   'Nothing to answer yet.': 'Henüz yanıtlanacak bir şey yok.',
   'Caime sends this conversation’s recent messages to its AI provider to write this. Nothing is sent until you send it.':
     'Caime bunu yazmak için bu konuşmanın son mesajlarını AI sağlayıcısına gönderir. Siz göndermeden hiçbir şey gönderilmez.',
+  'This meeting isn’t in a conversation of yours, or it was called off. Ask whoever sent it.':
+    'Bu toplantı sohbetlerinizden birinde değil ya da iptal edildi. Gönderen kişiye sorun.',
 };

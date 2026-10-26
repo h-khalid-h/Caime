@@ -1944,4 +1944,10 @@ export const turkishServer: Catalog = {
     'Bir kuruluşun konuşmasında kişi kartı gönderilemez.',
   'Send the contact of someone you’re connected with.':
     'Bağlı olduğunuz birinin kişi kartını gönderin.',
+  'That meeting': 'Bu toplantı',
+  'Repeats every workday': 'Her iş günü tekrarlanır',
+  'Cai’s notes from the call: {url}': 'Cai’nin görüşme notları: {url}',
+  'Repeats every week': 'Her hafta tekrarlanır',
+  'Repeats every two weeks': 'İki haftada bir tekrarlanır',
+  'Repeats every month': 'Her ay tekrarlanır',
 };

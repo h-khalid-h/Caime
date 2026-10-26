@@ -2038,4 +2038,10 @@ export const arServer: Catalog = {
   'A contact can’t be sent in an organization’s conversation.':
     'لا تُرسل جهات الاتصال في محادثات المؤسسات.',
   'Send the contact of someone you’re connected with.': 'أرسل جهة اتصال شخص ممن تتواصل معهم.',
+  'That meeting': 'ذلك الاجتماع',
+  'Repeats every workday': 'يتكرر كل يوم عمل',
+  'Cai’s notes from the call: {url}': 'ملاحظات Cai من المكالمة: {url}',
+  'Repeats every week': 'يتكرر كل أسبوع',
+  'Repeats every two weeks': 'يتكرر كل أسبوعين',
+  'Repeats every month': 'يتكرر كل شهر',
 };

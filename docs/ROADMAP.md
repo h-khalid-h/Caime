@@ -3201,6 +3201,74 @@ graph) and the number that will show it; one that sharpens none is hygiene and s
       `product-metrics.test.ts`, the E2E `public-booking.spec.ts` (the visitor opens the link from
       the confirmation, joins with no account, and the host's call rings their page and they're
       on), the catalogs in four languages, and the full gate.
+- [x] F6d. A meeting in someone's calendar reads like one made there (2026-10-26, R96, R108 (5);
+      the owner's two screenshots: a meeting booked through Caime and written into their Google
+      Calendar showed a four-line address as its place and again in its words, where one made in
+      Google showed "Join with Google Meet", a short code, "Repeats weekly". Advantage 2, one place
+      for what was agreed, read where people already look. The number: of the events Caime writes
+      for a meeting or an appointment held on Caime, the share whose place is one short line,
+      every one, where none was; `caime_meeting_links_total{outcome}` counts the opens). A card
+      held here has a short address, `cai.me/m/xxx-xxxx-xxx` (core `meeting-codes.ts`: ten letters
+      of 24, none read as another; `meeting_codes`, migration 0164, one row a card, gone with it),
+      made the first time a calendar is written its event (`meetingCodesFor`: the Plans push and
+      the feed, one query for the set and one for the new) and carried as the event's place, its
+      address and its "Join in Caime" line in place of the conversation's. Opened
+      (`GET /meeting-links/:code`, the app's `m/[code]` route, an app link on phones), it leads
+      someone in the card's conversation to the card and its call, and anyone else to "Nothing to
+      open" in the same words as a code nobody holds: nothing in it names anyone, and a guess
+      finds nothing a guess at a conversation's address wouldn't. A meeting that repeats says so
+      in its words ("Repeats every week", the four of `REPEAT_CHOICES`), as Google's own does.
+      The council's turning points: Google's own Join button and "Join with …" line come only
+      from a conferencing add-on in Google Workspace, and Outlook's from Teams alone, so Caime
+      writes the address where a calendar shows a place and links it (⛔ below); guests stay out
+      of the event (R108 (5): an invitation from someone's own calendar is theirs to send, and
+      Caime mails its own to whoever it reaches by mail); a code is a card's for good, never
+      reissued, so an event already written keeps working; a code found by a stranger opens
+      nothing, as the long address didn't; a series stays an event a time, as each time is its
+      own card (one moved or called off is that time's alone), its repeat said in words rather
+      than a recurrence whose exceptions Caime would have to keep in step with Google's. Left: ⛔
+      a native Join in Google Calendar (a Google Workspace Add-on with `calendar.conferencing`,
+      published in the Workspace Marketplace by the owner's Google Cloud project) and in Outlook
+      (none for anyone but Teams). Costs: the
+      push and the feed one query more a run (two the first time a card is written), none per
+      row; a code is 10 bytes and a row a card held here; on devices, the first download as
+      before (the route is its own chunk). Verified: core `meeting-codes.test.ts`;
+      `calendar.test.ts` (the feed's place and join line are the short address; opened by someone
+      in the conversation it leads to the card, by anyone else and once the card is gone to
+      nothing; only cards held here get a code), `card-where.test.ts` (the Plans event's place,
+      address and words for a booking and a meeting's own space), `calendar-sync.test.ts` (what
+      Google is written), `fk-indexes`, `time-names`, `modules`, the app's `paths` and
+      `appLinks`, the E2E `meetings.spec.ts` (a meeting's short address opens it), the catalogs in
+      four languages, and the full gate.
+- [x] F6e. Cai's notes of a meeting's call, from its calendar event (2026-10-26, R112, R85 (2);
+      the owner's second screenshot: Google's own meeting carries "Notes by Gemini" once it's
+      over. Advantage 2 again: what was agreed reachable from where the meeting was. The number:
+      of meetings held on Caime whose call Cai took notes in, the share whose event links them
+      for whoever was in it, every one within the hours Caime keeps an event in step after it
+      ends, where none did). Which meeting a call is is decided once, as it's placed, and kept on
+      it (`calls.card_id`, migration 0164; `meetingNow`, `lib/call-cards.ts`): the meeting or
+      appointment held here in that conversation whose Join is open then (core `meetingAction`,
+      the card's own rule), the one starting nearest, whether the call was started from the card or
+      from the conversation's call button; none for any other call. A meeting's notes are those of
+      the latest call that was it whose notes Cai wrote, that the reader was in, its line theirs to
+      read (`notesOfCards`, one query by `card_id` for the cards that have begun). Then the event
+      says "Cai's notes from the call:" with the meeting's short address in place of "Cai takes
+      notes in the call", and that address leads to the notes (`MeetingLinkResponse.notes`: the
+      conversation at the call's line, `?notes=<call>`, which opens `CallNotesLink`'s sheet). The
+      notes being written puts the calendars of everyone in the call in step (`queueCalendarPush`
+      from the write-up), while Caime still keeps the event (three hours after it ends); the feed
+      says it whenever it's read. Only a link leaves Caime: the words of the notes stay in it,
+      read by the notes' own rule (someone who came in later reads from when they joined).
+      Costs: one query a call placed (the conversation's cards around now, by
+      `messages_card_start`), one a push or a feed read once a card has begun, one a code opened,
+      a push queued when notes are written; on devices, the address's route a few lines and the
+      notes' link one read of the address. Verified: `call-notes.test.ts` (the call placed while the meeting can be joined is
+      it and the calls before it nobody's; before the call the event says nothing of notes and the
+      address leads to the card; written, the event links them at the short address and the
+      address leads both people to the call's line; someone outside is led nowhere),
+      `group-calls.test.ts` (a group's call is its meeting once the meeting is agreed, and none
+      while it's only asked), `calendar.test.ts` (no notes before a call), the catalogs in four
+      languages, and the full gate.
 - [x] F7. Cai takes notes in a call (2026-10-20, R82 phase 1 under R85, R109; the owner's report
       of 2026-10-19: "the Assistant didn't join and so the meeting wasn't recorded"; advantages 5
       and 4: everyone's yes and no audio kept, on every plan at its published cost, where Meet,
@@ -6970,3 +7038,12 @@ CONNIQT; they mean Caime. Caishy is one of Caime's AI members, and Cai leads the
   account's draft until it's typed in, so an older view restored after a reload gives way to the
   fresh one. Verified: `e2e/composer-draft.spec.ts` (failed on the build before, at the words saved
   at the pause, and passes now), `drafts.test.ts`.
+- 2026-10-26 — M16 F6d and F6e, from the owner's two screenshots (a meeting booked through Caime in
+  Google Calendar beside one made there): a meeting held on Caime is written into a calendar with
+  a short address of its own (`cai.me/m/xxx-xxxx-xxx`) as its place and its join line, in place
+  of the conversation's four-line one; it says how often it repeats; and once its call is over
+  and Cai's notes of it are written, the event links them ("Cai's notes from the call") and the
+  same address leads whoever was in the call to them; which meeting a call is, is kept on the call
+  as it's placed (`calls.card_id`), never worked out later from when it happened. A code opens nothing for anyone outside
+  the conversation. Google's own Join button and Outlook's need a conferencing add-on (⛔, the
+  owner's Workspace Marketplace listing); guests stay out of the event, as decided (R108 (5)).

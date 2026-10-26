@@ -2733,6 +2733,18 @@ export interface AiRewriteView {
   label: string;
 }
 
+/** Where a meeting's short address leads its reader (M16 F6d): the card in its conversation. */
+export interface MeetingLinkResponse {
+  conversationId: string;
+  seq: number;
+  messageId: string;
+  /**
+   * Once its call is over and Cai's notes of it are written, for someone who was in it (M16 F6e):
+   * the call's line, where the notes are opened.
+   */
+  notes: { callId: string; seq: number } | null;
+}
+
 /**
  * A reply Cai drafts for the reader to send (M17 I11b), from the conversation's own lines: put in
  * the composer only on their tap, never sent by Cai (R110). Null when there's nothing to answer.
@@ -4078,7 +4090,17 @@ export interface CollectionRenamedResponse {
  * them in `apple-app-site-association` and the app's Android intent filters carry the same ones
  * (`app.config.ts`, held to this list by `appLinks.test.ts`).
  */
-export const APP_LINK_PREFIXES = ['/@', '/o/', '/c/', '/i/', '/t/', '/g/', '/s/', '/p/'] as const;
+export const APP_LINK_PREFIXES = [
+  '/@',
+  '/o/',
+  '/c/',
+  '/i/',
+  '/t/',
+  '/g/',
+  '/s/',
+  '/p/',
+  '/m/',
+] as const;
 
 /** The phone apps' ids, as `app.json` names them (held to it by `appLinks.test.ts`). */
 export const APP_IDS = { ios: 'me.cai.app', android: 'me.cai.app' } as const;

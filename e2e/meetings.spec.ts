@@ -1,7 +1,7 @@
 /**
  * Meetings (R83): Join on an accepted meeting's card opens its call; the other side's Join, from
- * the address the calendar and calendar apps use, answers the call already ringing rather than
- * placing a second; Meetings lists it with its Join. A guest (R84) invited by address from the
+ * the address the calendar and calendar apps use (its short one, M16 F6d), answers the call
+ * already ringing rather than placing a second; Meetings lists it with its Join. A guest (R84) invited by address from the
  * card joins from their own link, without an account, and is in the meeting's call. A meeting
  * that repeats (R58) is agreed once, until a day if it's given one; the calendar has each time
  * ahead until it's stopped. Either side suggests another time from the card (M16 F5), which asks
@@ -83,9 +83,16 @@ test('a meeting held on Caime is joined from its card, its address and Meetings'
   await ana.page.getByTestId('kit-join').click();
   await expect(ana.page.getByTestId('call-status')).toHaveText('Calling…');
 
-  // Ben joins from the meeting's address (as his calendar app opens it): the ringing call is
-  // answered, not met with a second one.
-  await ben.page.goto(`/c/${conversationId}?seq=${card.seq}&join=${card.id}`);
+  // Ben joins from the meeting's address as his calendar app has it (M16 F6d: its short one, read
+  // from his calendar feed): the ringing call is answered, not met with a second one.
+  const feed = await benCtx.request.post('/v1/calendar/feed', { headers: CLIENT });
+  expect(feed.ok(), await feed.text()).toBe(true);
+  const { url } = (await feed.json()) as { url: string };
+  const ics = (await (await benCtx.request.get(url)).text()).replace(/\r\n /g, '');
+  const short = /\/m\/[a-z]{3}-[a-z]{4}-[a-z]{3}/.exec(ics)?.[0] ?? '';
+  expect(short).not.toBe('');
+  expect(ics).not.toContain(`/c/${conversationId}?seq=`);
+  await ben.page.goto(short);
   await expect(ana.page.getByTestId('call-status')).toHaveText(/^0:\d\d$/, { timeout: 20_000 });
   await expect(ben.page.getByTestId('call-status')).toHaveText(/^0:\d\d$/, { timeout: 20_000 });
 

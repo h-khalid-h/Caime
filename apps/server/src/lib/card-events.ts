@@ -5,17 +5,21 @@
  * `asReader`). Its title is the card's and whom it's with, never the same words twice: a meeting's
  * own space (R84) is named by the meeting, so its people are named instead. The description names
  * whom it's with, says how to join it here or open it in Caime, whether Cai takes notes in its call
- * (M16 F7c), and that Caime keeps it; one held here (core `heldOnCaime`) has its join address for
- * its place, which the calendar opens. Nobody is invited by it: Caime's own invitations reach the
- * people it's with, and each of them on Caime has their own calendar written. An organization
- * that keeps its conversations from its team's own apps (M16 G3b) gets its kind, its name and the
- * time, never who or where.
+ * (M16 F7c) and, once they're written, where its notes are (M16 F6e), and that Caime keeps it; one
+ * held here (core `heldOnCaime`) has its join address for its place, which the calendar opens: its
+ * short address (M16 F6d, `cai.me/m/xxx-xxxx-xxx`, `lib/meeting-codes.ts`), one line where the
+ * conversation's own took four, and a time that repeats says how often. Nobody is invited by it:
+ * Caime's own invitations reach the people it's with, and each of them on Caime has their own
+ * calendar written. An organization that keeps its conversations from its team's own apps (M16
+ * G3b) gets its kind, its name and the time, never who or where.
  */
 import { KITS } from '@caime/core';
 import { foldForFind } from '@caime/core/fold';
 import { joinNames } from '@caime/core/format';
 import { tr } from '@caime/core/i18n';
+import { meetingCodePath } from '@caime/core/meeting-codes';
 import { joinPath } from '@caime/core/meetings';
+import type { Repeat } from '@caime/core/repeat';
 import type { ConversationAbout } from './calendar';
 import type { CardAhead } from './upcoming';
 
@@ -34,6 +38,19 @@ export interface CardEventText {
 const LISTED = 8;
 
 const same = (a: string, b: string) => foldForFind(a.trim()) === foldForFind(b.trim());
+
+/** Joined here from a calendar: a timed card of its own, held on Caime (one ahead has no card yet). */
+export const joinedHere = (card: CardAhead): boolean =>
+  card.hasTime && !card.projected && card.heldHere;
+
+/** How often it repeats, as a calendar line says it. */
+function repeatLine(repeat: Repeat | null): string | null {
+  if (repeat === 'workday') return tr('Repeats every workday');
+  if (repeat === 'week') return tr('Repeats every week');
+  if (repeat === 'fortnight') return tr('Repeats every two weeks');
+  if (repeat === 'month') return tr('Repeats every month');
+  return null;
+}
 
 /**
  * The people a card is with, for its reader, by name: the organization to its customer and the
@@ -63,10 +80,14 @@ export function cardEventText(
   base: string,
   /** The organization's name, when it keeps its conversations from its team's own apps. */
   kept: string | undefined,
+  /** Its short address's code, when it's joined here (`meetingCodesFor`). */
+  code?: string,
+  /** Cai's notes of its call are written, and this reader was in it (`notesOfCards`, M16 F6e). */
+  notesWritten = false,
 ): CardEventText {
-  const here = card.hasTime && !card.projected && card.heldHere;
+  const here = joinedHere(card);
   const url = here
-    ? `${base}${joinPath(card.conversationId, card.seq, card.messageId)}`
+    ? `${base}${code ? meetingCodePath(code) : joinPath(card.conversationId, card.seq, card.messageId)}`
     : `${base}/c/${card.conversationId}`;
   const how = here ? tr('Join in Caime: {url}', { url }) : tr('Open in Caime: {url}', { url });
   const keeps = tr('Caime keeps this up to date. Change it in Caime.');
@@ -89,9 +110,15 @@ export function cardEventText(
     description: [
       asked,
       names.length ? tr('With {names}', { names: joinNames(names, LISTED) }) : null,
+      repeatLine(card.repeat),
       how,
-      // Said wherever the meeting is (M16 F7c): everyone is asked again as they join.
-      card.notes && here ? tr('Cai takes notes in the call, once everyone in it says yes.') : null,
+      // Once the call is over, its notes, which the same address now opens (M16 F6e); before it,
+      // that Cai takes them, said wherever the meeting is (M16 F7c), everyone asked as they join.
+      here && code && notesWritten
+        ? tr('Cai’s notes from the call: {url}', { url })
+        : card.notes && here
+          ? tr('Cai takes notes in the call, once everyone in it says yes.')
+          : null,
       keeps,
     ]
       .filter(Boolean)

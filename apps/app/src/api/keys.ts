@@ -24,6 +24,7 @@ export const qk = {
   joinLinks: (target: 'group' | 'space', id: string) => ['join-links', target, id] as const,
   joinRequests: (target: 'group' | 'space', id: string) => ['join-requests', target, id] as const,
   groupLink: (token: string) => ['group-link', token] as const,
+  meetingLink: (code: string) => ['meeting-link', code] as const,
   orgCheckout: (id: string) => ['org-checkout', id] as const,
   orgInbox: (orgId: string, view: string, tag?: string | null) =>
     ['org-inbox', orgId, view, tag ?? null] as const,

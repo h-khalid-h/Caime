@@ -745,8 +745,19 @@ A sphere is said as how you know someone, never "sphere".
   when its items agree). What a calendar event says is `lib/card-events.ts` (`cardEventText`, in
   the reader's language), for the Plans push and the feed alike: whom by name (`conversationsFor`:
   the customer to the team, the organization to the customer, a space by its space, a meeting's
-  own space by its people), never the same words twice, its join address for its place where
-  it's held here, and nobody invited by it. The feed leaves the meetings and appointments within
+  own space by its people), never the same words twice, whether it repeats, its join address for
+  its place where it's held here, and nobody invited by it. That join address is the card's short
+  one (M16 F6d, `cai.me/m/xxx-xxxx-xxx`: core `meeting-codes.ts`, `meeting_codes`, made by
+  `meetingCodesFor` as the events are written, one query for the set; opened through
+  `meetingByCode` for someone in the card's conversation alone, the app's `m/[code]` route, an
+  app link): a new place that writes a meeting into someone's calendar takes it there, never the
+  conversation's address. Which meeting a call is is decided once as it's placed (M16 F6e,
+  `calls.card_id` by `meetingNow`, `lib/call-cards.ts`: the card held here whose Join is open in
+  that conversation, by core `meetingAction`), for a one-to-one call and a group's alike, and
+  anything new that places a call asks it there; what came of the meeting is read by that link
+  alone, never by when a call happened. Once its notes are written, the event links them and the
+  same address leads there (`notesOfCards`, `MeetingLinkResponse.notes`, `?notes=<call>` opening
+  `CallNotesLink`'s sheet); the write-up puts the calendars of everyone in the call in step. The feed leaves the meetings and appointments within
   `ACCOUNT_BUSY_DAYS` to a connected account that writes plans, so none shows twice; anything new
   that writes someone's calendar keeps to the same split. A call to someone not on Caime yet (a
   page's booker) says why it can't ring (`modules/calls.ts`).

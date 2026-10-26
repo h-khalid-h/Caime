@@ -29,6 +29,7 @@ import type { Call } from '../db/schema';
 import { baseLanguage, languageName, type NotesSummary } from './ai';
 import { aiGate } from './ai-gate';
 import { runAi } from './ai-run';
+import { queueCalendarPush } from './calendar-push';
 import { screenLines } from './call-frames';
 import { readersOf } from './call-notes';
 import { AppError } from './errors';
@@ -311,6 +312,8 @@ async function writeNotes(ctx: AppContext, payload: Record<string, unknown>): Pr
   const everyone = [...(await readersOf(ctx.db, call)).keys()];
   if (everyone.length)
     await ctx.bus.publish(everyone, { type: 'callnotes.changed', data: { callId } });
+  // A meeting's event in their own calendars links them now (M16 F6e): put in step.
+  await queueCalendarPush(ctx, everyone);
 }
 
 /**

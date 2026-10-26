@@ -710,6 +710,13 @@ export interface ScheduledMessagesTable {
   created_at: Generated<Date>;
 }
 
+/** A meeting's short address (M16 F6d): ten letters for a card held on Caime. */
+export interface MeetingCodesTable {
+  code: string;
+  message_id: string;
+  created_at: Generated<Date>;
+}
+
 export type TaskStatus = 'open' | 'accepted' | 'declined' | 'done' | 'cancelled';
 
 export interface TasksTable {
@@ -1318,6 +1325,11 @@ export interface CallsTable {
    * whoever answers becomes its callee; the customer sees the organization, never them (R15).
    */
   org_id: Generated<string | null>;
+  /**
+   * The meeting or appointment it is (M16 F6e): the card held here whose Join was open in its
+   * conversation when it was placed (`meetingNow`), else none.
+   */
+  card_id: Generated<string | null>;
 }
 
 /** Who on an organization's team a customer's call rang (M16 H8a), and who turned it down. */
@@ -1868,6 +1880,7 @@ export interface Database {
   tasks: TasksTable;
   date_moves: DateMovesTable;
   scheduled_messages: ScheduledMessagesTable;
+  meeting_codes: MeetingCodesTable;
   calendar_feeds: CalendarFeedsTable;
   connected_accounts: ConnectedAccountsTable;
   own_addresses: OwnAddressesTable;

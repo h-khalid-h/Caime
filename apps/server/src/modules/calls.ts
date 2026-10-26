@@ -14,6 +14,7 @@ import type { FastifyInstance } from 'fastify';
 import { z } from 'zod';
 import type { AppContext } from '../context';
 import type { Call } from '../db/schema';
+import { meetingNow } from '../lib/call-cards';
 import { answerOnEntry, reconcileNotes } from '../lib/call-notes';
 import {
   callHistory,
@@ -250,6 +251,8 @@ export async function callRoutes(app: FastifyInstance, ctx: AppContext) {
     // "On another call" says they're around right now: only to someone who may see that.
     const shown = (await personViewsFor(ctx, auth.userId, [other.user_id])).get(other.user_id);
     const mayKnowBusy = shown?.presence != null && callee.presence !== 'invisible';
+    // The meeting it is, when one held here can be joined now (M16 F6e).
+    const cardId = await meetingNow(ctx.db, conversation, ctx.now());
     const { call, rung } = await ctx.db.transaction().execute(async (trx) => {
       await lockCallEntry(trx, auth.userId);
       if (
@@ -286,6 +289,7 @@ export async function callRoutes(app: FastifyInstance, ctx: AppContext) {
           seen_at: ctx.now(),
           caller_seen_at: ctx.now(),
           callee_rung: rung,
+          card_id: cardId,
         })
         .returningAll()
         .executeTakeFirstOrThrow();

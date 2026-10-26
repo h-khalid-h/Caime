@@ -33,7 +33,8 @@ import { sql } from 'kysely';
 import type { AppContext } from '../context';
 import { eachLimit } from './batch';
 import { conversationsFor, minutesOf } from './calendar';
-import { cardEventText } from './card-events';
+import { notesOfCards } from './call-cards';
+import { cardEventText, joinedHere } from './card-events';
 import {
   ACCOUNT_ROW,
   type AccountRow,
@@ -45,6 +46,7 @@ import {
 } from './connected-accounts';
 import { asReader } from './i18n';
 import { enqueue, registerJob, registerPeriodic } from './jobs';
+import { meetingCodesFor } from './meeting-codes';
 import { meetingUid } from './meeting-series';
 import { keptFromApps } from './member-apps';
 import { cardsAhead } from './upcoming';
@@ -107,9 +109,16 @@ export async function planEvents(
   const ids = cards.map((c) => c.conversationId);
   // An organization that keeps its conversations from its team's own apps: its name and the time
   // alone, never the customer's name, the card's own words or its place (M16 G3b).
-  const [about, kept] = await Promise.all([
+  const [about, kept, codes, notes] = await Promise.all([
     conversationsFor(ctx, userId, ids),
     keptFromApps(ctx, userId, ids),
+    // A short address for each joined here (M16 F6d), made the first time it's written.
+    meetingCodesFor(
+      ctx,
+      cards.filter(joinedHere).map((c) => c.messageId),
+    ),
+    // And, once its call is over, Cai's notes of it, which that address then opens (M16 F6e).
+    notesOfCards(ctx, userId, cards),
   ]);
   const me = await ctx.db
     .selectFrom('users')
@@ -133,6 +142,8 @@ export async function planEvents(
         userId,
         base,
         kept.get(card.conversationId),
+        codes.get(card.messageId),
+        notes.has(card.messageId),
       );
       out.set(uid, {
         uid,

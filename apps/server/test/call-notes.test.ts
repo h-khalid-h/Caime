@@ -9,6 +9,7 @@
 import { createServer, type Server } from 'node:http';
 import type { AddressInfo } from 'node:net';
 import { uuidv4 } from '@caime/core';
+import { shownMeetingCode } from '@caime/core/meeting-codes';
 import { sql } from 'kysely';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import type { BusMessage } from '../src/lib/bus';
@@ -890,6 +891,112 @@ describe('Cai’s notes of the call, once it’s over (M16 F7e)', () => {
     );
     await noor.req('PATCH', '/v1/me', { preferences: { caiInitiative: 'usual' } });
     await sam.patch('/v1/me', { aiEnabled: true });
+  });
+});
+
+describe('a meeting’s notes from its calendar (M16 F6e)', () => {
+  it('its event links them once written, and its short address leads there', async () => {
+    await sam.patch('/v1/me', { aiEnabled: true });
+    // A meeting held here, starting in a few minutes, agreed.
+    const sent = await noor.req('POST', `/v1/conversations/${noorSam}/messages`, {
+      clientId: uuidv4(),
+      kind: 'kit',
+      payload: {
+        kit: 'meeting',
+        fields: {
+          title: 'Venue walk-through',
+          start: { at: new Date(t.clock.now.getTime() + 5 * 60_000).toISOString(), hasTime: true },
+          durationMinutes: 30,
+          place: 'Caime',
+        },
+      },
+    });
+    expect(sent.statusCode, sent.body).toBe(201);
+    const card = sent.json().message;
+    await sam.post(`/v1/messages/${card.id}/kit`, { to: 'accepted' });
+    const eventOf = async () =>
+      [
+        ...(
+          await planEvents(t.ctx, sam.user.id, {
+            from: new Date(t.clock.now.getTime() - 3_600_000),
+            until: new Date(t.clock.now.getTime() + 86_400_000),
+          })
+        ).values(),
+      ].find((e) => e.summary.startsWith('Venue walk-through'));
+    const before = await eventOf();
+    const { code } = await t.ctx.db
+      .selectFrom('meeting_codes')
+      .select('code')
+      .where('message_id', '=', card.id)
+      .executeTakeFirstOrThrow();
+    const address = `http://localhost:8787/m/${shownMeetingCode(code)}`;
+    expect(before?.description).not.toContain('notes from the call');
+    // Before its call, the address leads to the card.
+    expect(await sam.get(`/v1/meeting-links/${shownMeetingCode(code)}`)).toEqual({
+      conversationId: noorSam,
+      seq: card.seq,
+      messageId: card.id,
+      notes: null,
+    });
+
+    // The call, placed while the meeting can be joined, is the meeting; the calls before it in
+    // this conversation are nobody's.
+    const callId = await ring();
+    const placed = await t.ctx.db
+      .selectFrom('calls')
+      .select(['id', 'card_id'])
+      .where('conversation_id', '=', noorSam)
+      .execute();
+    expect(placed.filter((c) => c.card_id).map((c) => [c.id, c.card_id])).toEqual([
+      [callId, card.id],
+    ]);
+    // With Cai's notes, written once it's over.
+    await ask(noor, callId, 'noor-tab-1');
+    await sam.req('POST', `/v1/calls/${callId}/accept`, {
+      deviceId: 'sam-phone-1',
+      notes: 'yes',
+      canRecord: false,
+    });
+    replies.push({
+      status: 200,
+      json: { text: 'Let us walk the venue on Monday.', language: 'en' },
+    });
+    expect((await line(noor, callId, 'noor-tab-1', noor.user.id)).statusCode).toBe(200);
+    await work();
+    await noor.req('POST', `/v1/calls/${callId}/end`, { deviceId: 'noor-tab-1' });
+    await t.ctx.flush();
+    modelSays(
+      JSON.stringify({
+        summary: 'Noor and Sam planned the walk-through.',
+        topics: [{ title: 'The venue', line: 1, points: ['A walk on Monday.'] }],
+        decisions: [],
+        nextSteps: [],
+      }),
+      'walk the venue',
+    );
+    t.clock.advance(6_000);
+    await work();
+    expect((await sam.get(`/v1/calls/${callId}/notes`)).summaryState).toBe('written');
+
+    // The event says where they are, in place of the line that Cai takes them.
+    const after = await eventOf();
+    expect(after?.description).toContain(`Cai’s notes from the call: ${address}`);
+    expect(after?.location).toBe(address);
+    // And the same address now leads each of them to the notes, at the call's line.
+    const { seq } = await t.ctx.db
+      .selectFrom('call_note_summaries as s')
+      .innerJoin('messages', 'messages.id', 's.message_id')
+      .select('messages.seq')
+      .where('s.call_id', '=', callId)
+      .executeTakeFirstOrThrow();
+    for (const who of [noor, sam])
+      expect((await who.get(`/v1/meeting-links/${shownMeetingCode(code)}`)).notes).toEqual({
+        callId,
+        seq: Number(seq),
+      });
+    // Someone outside the conversation is led nowhere, as for a code nobody holds.
+    const nobody = await omar.req('GET', `/v1/meeting-links/${shownMeetingCode(code)}`);
+    expect(nobody.statusCode).toBe(404);
   });
 });
 

@@ -246,6 +246,11 @@ export function createMetrics(pool: pg.Pool) {
       'caime_recaps_total',
       'Recaps of what someone missed, by where (chat, attention) and kind (rules, summary).',
     ),
+    // A meeting's short address opened from a calendar (M16 F6d): led to its card, or refused.
+    meetingLinks: new Counter(
+      'caime_meeting_links_total',
+      'Meeting short addresses opened, by outcome (opened, refused).',
+    ),
     // Replies Cai drafted (M17 I11b): drafted, and of those sent as drafted or edited.
     replyDrafts: new Counter(
       'caime_reply_drafts_total',

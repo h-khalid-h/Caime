@@ -700,6 +700,45 @@ describe('group calls (PRD §47)', () => {
     expect((await lines(noor)).at(-1).payload).toMatchObject({ outcome: 'completed' });
   });
 
+  it('one placed while a meeting held here can be joined is that meeting (M16 F6e)', async () => {
+    const planning = await group(noor, 'Planning', [sam, omar]);
+    const card = (
+      await noor.post(`/v1/conversations/${planning}/messages`, {
+        clientId: uuidv7(),
+        kind: 'kit',
+        payload: {
+          kit: 'meeting',
+          fields: {
+            title: 'Weekly planning',
+            start: {
+              at: new Date(t.ctx.now().getTime() + 5 * 60_000).toISOString(),
+              hasTime: true,
+            },
+            durationMinutes: 30,
+            place: 'Caime',
+          },
+        },
+      })
+    ).message;
+    // Asked, not agreed: a call now is nobody's meeting.
+    const early = (await start(noor, planning)).json().call.id;
+    await leave(noor, early);
+    await sam.post(`/v1/messages/${card.id}/kit`, { to: 'accepted' });
+    const id = (await start(noor, planning)).json().call.id;
+    const placed = await t.ctx.db
+      .selectFrom('calls')
+      .select(['id', 'card_id'])
+      .where('conversation_id', '=', planning)
+      // The test's clock stands still: by id, which keeps the order they were placed in.
+      .orderBy('id')
+      .execute();
+    expect(placed.map((c) => [c.id, c.card_id])).toEqual([
+      [early, null],
+      [id, card.id],
+    ]);
+    await leave(noor, id);
+  });
+
   it('a group call ringing past 45 seconds is the group sweep’s, never the 1:1 one’s', async () => {
     const id = (await start(noor)).json().call.id;
     const before = (await lines(noor)).length;

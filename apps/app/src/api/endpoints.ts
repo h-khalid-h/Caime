@@ -113,6 +113,7 @@ import type {
   LinkPreviewResponse,
   LiveCallsResponse,
   MeetingGuestResponse,
+  MeetingLinkResponse,
   MembersAddedResponse,
   MemoryView,
   MessageIdsResponse,
@@ -655,6 +656,9 @@ export const endpoints = {
     api.del<OkResponse>(
       `/${target === 'group' ? 'conversations' : 'spaces'}/${id}/join-links/${linkId}`,
     ),
+  /** Where a meeting's short address leads (M16 F6d): its card, for someone in its conversation. */
+  meetingLink: (code: string) =>
+    api.get<MeetingLinkResponse>(`/meeting-links/${encodeURIComponent(code)}`),
   openJoinLink: (token: string) =>
     api.get<JoinLinkOpenResponse>(`/join-links/${encodeURIComponent(token)}`),
   acceptJoinLink: (token: string) =>

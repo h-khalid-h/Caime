@@ -2,6 +2,7 @@ import { createServer, type IncomingMessage, type Server } from 'node:http';
 import type { AddressInfo } from 'node:net';
 import { uuidv4 } from '@caime/core';
 import { accountReturnOf } from '@caime/core/accounts';
+import { shownMeetingCode } from '@caime/core/meeting-codes';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { ACCOUNT_ROW } from '../src/lib/connected-accounts';
 import { runDueJobs } from '../src/lib/jobs';
@@ -334,7 +335,15 @@ describe('bookings and connected calendars in step (R96)', () => {
       extendedProperties: { private: { caime: `appointment-${linaBooking}@caime` } },
     });
     expect(event?.attendees).toBeUndefined();
-    expect(String(event?.description)).toContain(`/c/${fromLina}`);
+    // Its join address is the short one (M16 F6d), in the description and as its place.
+    const { code } = await t.ctx.db
+      .selectFrom('meeting_codes')
+      .select('code')
+      .where('message_id', '=', linaBooking)
+      .executeTakeFirstOrThrow();
+    expect(String(event?.description)).toContain(`/m/${shownMeetingCode(code)}`);
+    expect(event?.location).toBe(`http://localhost:8787/m/${shownMeetingCode(code)}`);
+    expect(String(event?.description)).not.toContain(`/c/${fromLina}`);
     expect(String(event?.description)).toContain('Asked, not agreed yet.');
     // Put in step again with nothing changed, nothing is written.
     seen.length = 0;

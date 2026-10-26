@@ -20,6 +20,7 @@ import { type Kysely, sql, type Transaction } from 'kysely';
 import { z } from 'zod';
 import type { AppContext } from '../context';
 import type { Call, Database } from '../db/schema';
+import { meetingNow } from '../lib/call-cards';
 import { answerOnEntry, reconcileNotes } from '../lib/call-notes';
 import { lockCallEntry, nameShownTo } from '../lib/calls';
 import { membership } from '../lib/conversation-views';
@@ -135,6 +136,8 @@ export async function groupCallRoutes(app: FastifyInstance, ctx: AppContext) {
     ctx.limiter.hit(`call:${auth.userId}`, ctx.config.isTest ? 1000 : 20, 10 * 60_000);
 
     const now = ctx.now();
+    // The meeting it is, when one held here can be joined now (M16 F6e).
+    const cardId = await meetingNow(ctx.db, conversation, now);
     let call: Call;
     let rung: { id: string; display_name: string }[] = [];
     try {
@@ -174,6 +177,7 @@ export async function groupCallRoutes(app: FastifyInstance, ctx: AppContext) {
             seen_at: now,
             caller_seen_at: now,
             is_group: true,
+            card_id: cardId,
           })
           .returningAll()
           .executeTakeFirstOrThrow();

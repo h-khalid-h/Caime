@@ -1,4 +1,5 @@
 import { uuidv4 } from '@caime/core';
+import { shownMeetingCode } from '@caime/core/meeting-codes';
 import { dayIn } from '@caime/core/series';
 import { sql } from 'kysely';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
@@ -321,8 +322,15 @@ describe('a calendar feed (PRD §72)', () => {
       durationMinutes: 30,
     });
     await ben.post(`/v1/messages/${sync.id}/kit`, { to: 'accepted' });
-    const join = `http://localhost:8787/c/${withBen}?seq=${sync.seq}&join=${sync.id}`;
     const ev = event(await lines(url), `meeting-${sync.id}@caime`);
+    // Its join address is its short one (M16 F6d), made as it's first written: one line.
+    const { code } = await t.ctx.db
+      .selectFrom('meeting_codes')
+      .select('code')
+      .where('message_id', '=', sync.id)
+      .executeTakeFirstOrThrow();
+    const join = `http://localhost:8787/m/${shownMeetingCode(code)}`;
+    expect(join.length).toBeLessThan(40);
     // Its place is its join address, which the calendar app opens (M16 F6), and it says whom.
     expect(ev).toEqual(
       expect.arrayContaining([
@@ -346,6 +354,49 @@ describe('a calendar feed (PRD §72)', () => {
     expect(event(await lines(url), `meeting-${zoom.id}@caime`)).toEqual(
       expect.arrayContaining(['LOCATION:zoom.us/j/123', `URL:http://localhost:8787/c/${withBen}`]),
     );
+    // One address a card: Ben's calendar app reads the same, and only a card held here has one.
+    const { url: bens } = await ben.post('/v1/calendar/feed');
+    expect(event(await lines(bens), `meeting-${sync.id}@caime`)).toContain(`LOCATION:${join}`);
+    const codes = await t.ctx.db
+      .selectFrom('meeting_codes')
+      .select('message_id')
+      .where('message_id', 'in', [sync.id, zoom.id])
+      .execute();
+    expect(codes.map((c) => c.message_id)).toEqual([sync.id]);
+  });
+
+  it("opens a meeting's short address for someone in its conversation, and for nobody else (M16 F6d)", async () => {
+    const { url } = await ana.post('/v1/calendar/feed');
+    const sync = await card(ana, withBen, 'meeting', {
+      title: 'Short address',
+      start: { at: '2026-10-05T09:00:00Z', hasTime: true },
+    });
+    await ben.post(`/v1/messages/${sync.id}/kit`, { to: 'accepted' });
+    await lines(url);
+    const { code } = await t.ctx.db
+      .selectFrom('meeting_codes')
+      .select('code')
+      .where('message_id', '=', sync.id)
+      .executeTakeFirstOrThrow();
+    const shown = shownMeetingCode(code);
+    // Read however it was written: as shown, without its dashes, in capitals.
+    for (const written of [shown, code, shown.toUpperCase()])
+      expect(await ben.get(`/v1/meeting-links/${written}`)).toEqual({
+        conversationId: withBen,
+        seq: sync.seq,
+        messageId: sync.id,
+        // No call held for it yet, so no notes to lead to (M16 F6e).
+        notes: null,
+      });
+    // Anyone else hears what a code nobody holds says, so codes can't be probed.
+    const outsider = await signup(t, { displayName: 'Ola Outside' });
+    const theirs = await outsider.req('GET', `/v1/meeting-links/${shown}`);
+    const nobodys = await outsider.req('GET', '/v1/meeting-links/abc-defg-hij');
+    expect(theirs.statusCode).toBe(404);
+    expect(theirs.json()).toEqual(nobodys.json());
+    // Gone with its card for everyone.
+    await ana.del(`/v1/messages/${sync.id}?forEveryone=true`);
+    expect((await ben.req('GET', `/v1/meeting-links/${shown}`)).statusCode).toBe(404);
   });
 
   it('leaves to a connected calendar what it writes there, so none shows twice (M16 F6)', async () => {

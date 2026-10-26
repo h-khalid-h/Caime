@@ -2818,4 +2818,6 @@ export const frB: Catalog = {
   'Nothing to answer yet.': 'Rien à quoi répondre pour l’instant.',
   'Caime sends this conversation’s recent messages to its AI provider to write this. Nothing is sent until you send it.':
     'Caime envoie les derniers messages de cette conversation à son fournisseur d’IA pour rédiger ceci. Rien n’est envoyé tant que vous ne l’envoyez pas.',
+  'This meeting isn’t in a conversation of yours, or it was called off. Ask whoever sent it.':
+    'Cette réunion n’est pas dans l’une de vos conversations, ou elle a été annulée. Demandez à qui vous l’a envoyée.',
 };

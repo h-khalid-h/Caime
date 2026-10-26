@@ -12,10 +12,12 @@
  * names whom it's with, never the same words twice, with its join address for its place, and in
  * a business conversation the team reads the customer and the customer the organization.
  */
+
 import { mkdirSync, mkdtempSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { uuidv4 } from '@caime/core';
+import { shownMeetingCode } from '@caime/core/meeting-codes';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { planEvents } from '../src/lib/calendar-push';
 import { memoryMailer } from '../src/lib/email';
@@ -212,9 +214,15 @@ describe('where a booking is (M16 F6)', () => {
       expect(items.find((i) => i.id === atStudio.json().message.id)?.heldHere).toBe(false);
       expect(items.find((i) => i.id === cafe.json().message.id)?.heldHere).toBe(false);
     }
-    // What Caime writes into a connected calendar: whom by name, its join address for its place.
-    const join = `https://caime.example/c/${fromLina}?seq=${call.json().message.seq}&join=${call.json().message.id}`;
+    // What Caime writes into a connected calendar: whom by name, its join address for its place,
+    // its short one (M16 F6d).
     const events = await planEvents(t.ctx, sami.user.id, window);
+    const { code } = await t.ctx.db
+      .selectFrom('meeting_codes')
+      .select('code')
+      .where('message_id', '=', call.json().message.id)
+      .executeTakeFirstOrThrow();
+    const join = `https://caime.example/m/${shownMeetingCode(code)}`;
     expect(events.get(`appointment-${call.json().message.id}@caime`)).toMatchObject({
       summary: 'Arabic lesson · Lina Farah',
       location: join,
@@ -436,15 +444,21 @@ describe('what a calendar event says (M16 F6)', () => {
       email: 'gus@example.com',
       name: 'Gus Guest',
     });
-    const join = `https://caime.example/c/${space.conversationId}?seq=`;
     const event = (await planEvents(t.ctx, sami.user.id, window)).get(
       `meeting-${space.messageId}@caime`,
     );
+    // Its short address, given as the event was written.
+    const { code } = await t.ctx.db
+      .selectFrom('meeting_codes')
+      .select('code')
+      .where('message_id', '=', space.messageId)
+      .executeTakeFirstOrThrow();
+    const join = `https://caime.example/m/${shownMeetingCode(code)}`;
     // Those who came together, by name.
     expect(event?.summary).toBe('Great Meeting test · Gus Guest and Lina Farah');
     expect(event?.description).toContain('With Gus Guest and Lina Farah');
-    expect(event?.location).toContain(join);
-    expect(event?.location).toBe(event?.url);
+    expect(event?.location).toBe(join);
+    expect(event?.url).toBe(join);
     // In the app's calendar too, its line names them.
     const mine = (await sami.get(`/v1/calendar?${windowQuery}`)).items.find(
       (i: { id: string }) => i.id === space.messageId,

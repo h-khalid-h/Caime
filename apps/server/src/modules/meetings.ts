@@ -1,12 +1,14 @@
 /**
  * Meetings (R83, R84): inviting a guest by address, or by a link to send (H6). The space and the mail are
  * `lib/meeting-guests.ts`'s; this is the route. A guest's way in, which makes a session, is
- * with the other ways in, in `auth.ts`.
+ * with the other ways in, in `auth.ts`. A meeting's short address (M16 F6d) is opened here too,
+ * for someone in its conversation (`lib/meeting-codes.ts`).
  */
-import type { MeetingGuestResponse } from '@caime/core/api';
+import type { MeetingGuestResponse, MeetingLinkResponse } from '@caime/core/api';
 import type { FastifyInstance } from 'fastify';
 import { z } from 'zod';
 import type { AppContext } from '../context';
+import { meetingByCode } from '../lib/meeting-codes';
 import { inviteGuest, inviteGuestByLink } from '../lib/meeting-guests';
 import { parse } from '../lib/validate';
 import { requireAuth } from '../plugins/auth';
@@ -33,5 +35,12 @@ export async function meetingRoutes(app: FastifyInstance, ctx: AppContext) {
       return { space, link };
     }
     return { space: await inviteGuest(ctx, auth.userId, id, body), link: null };
+  });
+
+  /** Where a meeting's short address leads (M16 F6d): its card, for someone in its conversation. */
+  app.get('/meeting-links/:code', async (req): Promise<MeetingLinkResponse> => {
+    const auth = requireAuth(req);
+    const { code } = parse(z.object({ code: z.string().max(20) }), req.params);
+    return meetingByCode(ctx, auth.userId, code);
   });
 }

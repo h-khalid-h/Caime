@@ -63,10 +63,12 @@ import {
   orgBookings,
   overdueTasks,
 } from '../lib/calendar';
-import { cardEventText } from '../lib/card-events';
+import { notesOfCards } from '../lib/call-cards';
+import { cardEventText, joinedHere } from '../lib/card-events';
 import { hashToken, newToken } from '../lib/crypto';
 import { badRequest, forbidden, notFound } from '../lib/errors';
 import { asReader } from '../lib/i18n';
+import { meetingCodesFor } from '../lib/meeting-codes';
 import { meetingUid } from '../lib/meeting-series';
 import { keptFromApps } from '../lib/member-apps';
 import { formNames } from '../lib/org-forms';
@@ -166,7 +168,7 @@ export async function calendarEvents(
   const cards = plans ? all.filter((c) => c.at.getTime() > writtenUntil) : all;
   // A calendar app reads this feed for them: what an organization keeps from its team's own apps
   // is its name and the time, never who, what, how much or where (M16 G3b).
-  const [kept, about] = await Promise.all([
+  const [kept, about, codes, notes] = await Promise.all([
     keptFromApps(ctx, userId, [
       ...rows.map((r) => r.conversation_id),
       ...cards.map((c) => c.conversationId),
@@ -177,6 +179,13 @@ export async function calendarEvents(
       userId,
       cards.map((c) => c.conversationId),
     ),
+    // A short address for each joined here (M16 F6d), the same the push writes.
+    meetingCodesFor(
+      ctx,
+      cards.filter(joinedHere).map((c) => c.messageId),
+    ),
+    // And, once its call is over, Cai's notes of it (M16 F6e).
+    notesOfCards(ctx, userId, cards),
   ]);
   const keptBy = (conversationId: string | null) =>
     conversationId ? kept.get(conversationId) : undefined;
@@ -213,6 +222,8 @@ export async function calendarEvents(
         userId,
         base,
         keptBy(card.conversationId),
+        codes.get(card.messageId),
+        notes.has(card.messageId),
       );
       events.push({
         uid: meetingUid(card.messageId, card.series, card.kit),

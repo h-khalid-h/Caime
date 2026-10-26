@@ -2028,4 +2028,10 @@ export const frServer: Catalog = {
     'Un contact ne peut pas être envoyé dans la conversation d’une organisation.',
   'Send the contact of someone you’re connected with.':
     'Envoyez le contact d’une personne parmi vos contacts.',
+  'That meeting': 'Cette réunion',
+  'Repeats every workday': 'Se répète chaque jour ouvré',
+  'Cai’s notes from the call: {url}': 'Les notes de Cai sur l’appel : {url}',
+  'Repeats every week': 'Se répète chaque semaine',
+  'Repeats every two weeks': 'Se répète toutes les deux semaines',
+  'Repeats every month': 'Se répète chaque mois',
 };

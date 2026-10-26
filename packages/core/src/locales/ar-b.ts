@@ -3664,4 +3664,6 @@ export const arB: Catalog = {
   'Nothing to answer yet.': 'لا شيء يُرَدّ عليه بعد.',
   'Caime sends this conversation’s recent messages to its AI provider to write this. Nothing is sent until you send it.':
     'يرسل Caime آخر رسائل هذه المحادثة إلى مزوّد الذكاء الاصطناعي ليكتب هذا. لا يُرسَل شيء إلا بإرسالك.',
+  'This meeting isn’t in a conversation of yours, or it was called off. Ask whoever sent it.':
+    'هذا الاجتماع ليس في محادثة من محادثاتك، أو أُلغي. اسأل من أرسله.',
 };
