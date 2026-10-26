@@ -83,7 +83,7 @@ import {
   topBar,
   verifiedMark,
 } from './page-parts';
-import { FACE, px, THEME_VARS, type } from './page-style';
+import { EMAIL_OFF, EMAIL_ON, FACE, px, THEME_VARS, type } from './page-style';
 import { orgPlacesFor, placesNamed } from './places';
 import {
   type VisitorBookingState,
@@ -122,7 +122,8 @@ type Q = Kysely<Database>;
 
 /** Open Graph's locale for each interface language. */
 const OG_LOCALE: Record<InterfaceLanguage, string> = {
-  en: 'en_US',
+  // British English, the interface's own (CLAUDE.md, "The English is British").
+  en: 'en_GB',
   ar: 'ar_AR',
   fr: 'fr_FR',
   tr: 'tr_TR',
@@ -921,6 +922,7 @@ export function renderPublic(
   facts: SiteFacts | null = null,
 ): Rendered {
   const url = `${publicUrl}${path === '/' ? '/' : path}`;
+  const lang = currentTranslator().language;
   const meta = (o: {
     title: string;
     description: string;
@@ -928,16 +930,21 @@ export function renderPublic(
     index: boolean;
     ld?: object;
     canonical?: boolean;
-    /** A page of the site: readable in each language, the English its canonical (R54). */
+    /**
+     * A page of the site: readable in each language (R54), each at its own address, which is
+     * that language's canonical and an alternate of the others (hreflang): a canonical pointing
+     * at the English would tell a search engine the Arabic page is a copy of it.
+     */
     alternates?: boolean;
-  }) =>
-    [
+  }) => {
+    const own = o.alternates && lang !== 'en' ? `${url}?lang=${lang}` : url;
+    return [
       `<title>${esc(o.title)}</title>`,
       `<meta name="description" content="${esc(o.description)}">`,
       o.index
         ? '<meta name="robots" content="index,follow">'
         : '<meta name="robots" content="noindex">',
-      o.canonical === false ? '' : `<link rel="canonical" href="${esc(url)}">`,
+      o.canonical === false ? '' : `<link rel="canonical" href="${esc(own)}">`,
       ...(o.alternates
         ? [
             `<link rel="alternate" hreflang="x-default" href="${esc(url)}">`,
@@ -945,7 +952,7 @@ export function renderPublic(
               (l) =>
                 `<link rel="alternate" hreflang="${l}" href="${esc(l === 'en' ? url : `${url}?lang=${l}`)}">`,
             ),
-            `<meta property="og:locale" content="${OG_LOCALE[currentTranslator().language]}">`,
+            `<meta property="og:locale" content="${OG_LOCALE[lang]}">`,
           ]
         : []),
       // Which page this is, for the app: it stays out of a visitor's way on a person's or an
@@ -955,7 +962,7 @@ export function renderPublic(
       `<meta property="og:type" content="${page.kind === 'person' ? 'profile' : 'website'}">`,
       `<meta property="og:title" content="${esc(o.title)}">`,
       `<meta property="og:description" content="${esc(o.description)}">`,
-      `<meta property="og:url" content="${esc(url)}">`,
+      `<meta property="og:url" content="${esc(own)}">`,
       // A page with no picture of its own shows Caime's card (R70: 1200 x 630, made with the
       // icons); a face or a logo is square, an item's photo wide.
       `<meta property="og:image" content="${esc(o.image ?? `${publicUrl}/og-card.png`)}">`,
@@ -971,6 +978,7 @@ export function renderPublic(
     ]
       .filter(Boolean)
       .join('\n');
+  };
   switch (page.kind) {
     case 'landing': {
       const home = renderLanding(facts);
@@ -983,16 +991,35 @@ export function renderPublic(
           image: null,
           index: true,
           alternates: true,
-          ld: {
-            '@context': 'https://schema.org',
-            '@type': 'SoftwareApplication',
-            name: SITE_NAME,
-            applicationCategory: 'CommunicationApplication',
-            operatingSystem: 'Web, iOS, Android',
-            description: home.description,
-            url: publicUrl,
-            offers: { '@type': 'Offer', price: '0', priceCurrency: 'EUR' },
-          },
+          // The product and who runs it, so a search engine names and draws it as itself.
+          ld: (() => {
+            const who = facts ?? siteFallback(publicUrl);
+            const org = `${publicUrl}/#organization`;
+            return {
+              '@context': 'https://schema.org',
+              '@graph': [
+                {
+                  '@type': 'SoftwareApplication',
+                  name: SITE_NAME,
+                  applicationCategory: 'CommunicationApplication',
+                  operatingSystem: 'Web, iOS, Android',
+                  description: home.description,
+                  url: publicUrl,
+                  offers: { '@type': 'Offer', price: '0', priceCurrency: 'EUR' },
+                  publisher: { '@id': org },
+                },
+                {
+                  '@type': 'Organization',
+                  '@id': org,
+                  name: SITE_NAME,
+                  ...(who.legalName !== SITE_NAME ? { legalName: who.legalName } : {}),
+                  url: publicUrl,
+                  logo: `${publicUrl}/icon-512.png`,
+                  email: who.contactEmail,
+                },
+              ],
+            };
+          })(),
         }),
         body: home.body,
       };
@@ -2243,6 +2270,10 @@ ${VIEW_STYLE}
 /** The shell with a page's head and body in it. Tolerant of a template without the markers. */
 export function injectPublic(template: string, page: Rendered): string {
   let html = template.replace(/<title>[^<]*<\/title>\s*/i, '');
+  // The export writes the app's own description into the shell; a page that says what it is
+  // replaces it, so a search engine reads one description, the page's.
+  if (page.head.includes('<meta name="description"'))
+    html = html.replace(/<meta name="description"[^>]*>\s*/i, '');
   // A page written in a language says so on the document itself, since the app never runs here.
   if (page.lang)
     html = html.replace(/<html\b[^>]*>/i, `<html lang="${page.lang}" dir="${dirOf(page.lang)}">`);
@@ -2250,12 +2281,14 @@ export function injectPublic(template: string, page: Rendered): string {
     ? html.replace('</head>', `${page.head}\n${PUBLIC_STYLE}\n</head>`)
     : `${page.head}\n${PUBLIC_STYLE}\n${html}`;
   if (!page.body) return html;
+  // The addresses on a page stay addresses: the edge in front of Caime (Cloudflare) would make each
+  // one a link to its own decoder and add its script to a page that carries none.
+  const body = `<div id="static">${EMAIL_OFF}${page.body}\n${EMAIL_ON}</div>`;
   const marker = /<div id="root"><\/div>/;
-  if (marker.test(html))
-    return html.replace(marker, `<div id="root"></div>\n<div id="static">${page.body}\n</div>`);
+  if (marker.test(html)) return html.replace(marker, `<div id="root"></div>\n${body}`);
   return html.includes('</body>')
-    ? html.replace('</body>', `<div id="static">${page.body}\n</div>\n</body>`)
-    : `${html}\n<div id="static">${page.body}\n</div>`;
+    ? html.replace('</body>', `${body}\n</body>`)
+    : `${html}\n${body}`;
 }
 
 /**

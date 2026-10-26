@@ -108,3 +108,10 @@ export function shellFaces(webDir: string | undefined): string {
   if (!existsSync(shell)) return '';
   return /<style id="caime-fonts">[\s\S]*?<\/style>/.exec(readFileSync(shell, 'utf8'))?.[0] ?? '';
 }
+
+/**
+ * What the edge in front of Caime (Cloudflare's Scrape Shield) leaves as written: the addresses
+ * between these, which it would otherwise turn into links to its own decoder, with its script.
+ */
+export const EMAIL_OFF = '<!--email_off-->';
+export const EMAIL_ON = '<!--/email_off-->';

@@ -6626,9 +6626,18 @@ CONNIQT; they mean Caime. Caishy is one of Caime's AI members, and Cai leads the
 - 2026-10-25 — CI: one job in series reached 29.5 of its 30 minutes and the next run (1d6b4ee) was
   cancelled at the limit. The limit stays; the checks run in one job and the build, budget and E2E
   in two halves beside it (`E2E_HALF` in `playwright.config.ts`: the two longest files, and the
-  rest, so a new spec always runs; 58 and 116 of 174 tests, 6.9 minutes each by the local
-  timings). The image waits on all three.
+  rest, so a new spec always runs; 58 and 116 of 174 tests). Measured on CI (caa6727): the checks
+  6.6 minutes, the halves' tests 7.3 and 9.7 (jobs 9.6 and 16.8, the second's runner taking 4.6
+  minutes over the browser's system packages, the first's 0.5). The image waits on all three.
 - 2026-10-25 — M17 I19d: a date's history. Every move of a card's time (another time suggested, an
   invitation's organizer's new time, the zone's rules) and of an action's due is kept in the
   change's transaction as `replan` or `correction`; the brief, its notice and Cai's lists say
   "Moved twice" from the replans alone. Server tests (date-moves 4, mail, briefs), the gate.
+- 2026-10-25 — cai.me checked as search engines, the edge, researchers and password managers read
+  it. Each language's page names its own address as canonical (an Arabic page canonical to the
+  English asked to be dropped); one meta description where the template added a second; the
+  server's pages keep Cloudflare's address rewriting off (`email_off`); `og:locale` en_GB; the
+  IE-only meta gone; `/.well-known/security.txt` (RFC 9116) and `/.well-known/change-password`;
+  the landing page's structured data names who runs Caime, with its logo. DEPLOY.md states the
+  DMARC published (reject, strict, passing by DKIM) and the two Cloudflare settings to turn off
+  (Web Analytics' automatic beacon, Email Address Obfuscation), the owner's to switch.

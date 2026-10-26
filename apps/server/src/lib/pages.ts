@@ -21,7 +21,7 @@ import type { SitePage } from '@caime/core/api';
 import { LAW_MINIMUM_AGES } from '@caime/core/countries';
 import { REQUESTS_PER_DAY } from '@caime/core/privacy';
 import type { SubProcessor } from '@caime/core/processors';
-import { FACE, THEME_VARS, type } from './page-style';
+import { EMAIL_OFF, EMAIL_ON, FACE, THEME_VARS, type } from './page-style';
 import { KEPT_DAYS } from './retention';
 
 export type PageName = SitePage;
@@ -1014,10 +1014,12 @@ footer{color:var(--text-secondary);font-size:15px;padding-top:32px;padding-botto
 </style>
 </head>
 <body>
+${EMAIL_OFF}
 <header><a class="brand" href="/">Caime</a><span class="mono">about Caime</span><nav class="mono" aria-label="About Caime">${nav}</nav></header>
 <main>${body}
 </main>
 <footer>${f.legalName} &middot; ${mail} &middot; <a href="/">Open Caime</a></footer>
+${EMAIL_ON}
 </body>
 </html>
 `;

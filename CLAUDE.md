@@ -464,7 +464,8 @@ A sphere is said as how you know someone, never "sphere".
   `modules/app-links.ts`, 404 without them), and `app.config.ts` claims the https domain a build
   talks to (`APP_LINK_PATHS`, held equal by `appLinks.test.ts`). Nothing under `/.well-known/`
   is ever the web app's page (`plugins/static.ts`); a new path that should open the app joins
-  both lists, and a new file there is a route of its own.
+  both lists, and a new file there is a route of its own (`security.txt` and `change-password`
+  are `modules/well-known.ts`, written from the configuration by `lib/well-known.ts`).
 - Invite links (R1): `lib/invites.ts` makes, opens and accepts them; accepting goes through
   `acceptRequest(…, { viaInvite: true })` on a request the invite stands for (never a second path
   to a connection), so blocks, suggestions and notifications behave as for a request. The token
@@ -967,7 +968,7 @@ A sphere is said as how you know someone, never "sphere".
   links carry it too, the entry screens honour it, and the app on the web takes `?lang=` as
   the device's choice when none was made, `languageInSearch` in core), `langAttrs()` goes on
   `<main>` and `Rendered.lang` on the shell's `<html>`, `meta({ alternates: true })` writes the
-  hreflang links (the English is canonical) and `og:locale`, and the response says
+  hreflang links (each language's own address its canonical) and `og:locale`, and the response says
   `Vary: Accept-Language`. A string only the server says (a site page's, a notification's, a
   refusal's) is the server's: its Arabic, French and Turkish live in `apps/server/src/locales/ar-server.ts`
   `fr-server.ts` and `tr-server.ts` (merged into the server's translator in `lib/i18n.ts`), never in core's

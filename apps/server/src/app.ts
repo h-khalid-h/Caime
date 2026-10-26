@@ -136,6 +136,7 @@ import { suspensionRoutes } from './modules/suspension';
 import { teamInviteRoutes } from './modules/team-invites';
 import { tokenRoutes } from './modules/tokens';
 import { updateRoutes } from './modules/updates';
+import { wellKnownRoutes } from './modules/well-known';
 import { registerWorkers } from './modules/workers';
 import { registerAuth } from './plugins/auth';
 import { registerWeb, type WebApp } from './plugins/static';
@@ -326,6 +327,7 @@ export async function buildApp(config: Config, options: BuildOptions = {}): Prom
   await metricsRoutes(app, ctx);
   await oauthDiscovery(app, ctx);
   await appLinkRoutes(app, ctx);
+  await wellKnownRoutes(app, ctx);
   await pageRoutes(app, ctx);
   await moderationPageRoutes(app, ctx);
 

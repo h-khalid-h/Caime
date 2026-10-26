@@ -62,6 +62,9 @@ describe('the readable web (R44)', () => {
     expect(r.body).toContain('<meta property="og:image:width" content="1200">');
     expect(r.body).toContain('<meta name="twitter:card" content="summary_large_image">');
     expect(r.body).toContain('"@type":"SoftwareApplication"');
+    // And who runs it, with the logo a search engine draws beside it.
+    expect(r.body).toContain('"publisher":{"@id":"https://caime.example/#organization"}');
+    expect(r.body).toContain('"logo":"https://caime.example/icon-512.png"');
     expect(r.body).toContain('<div id="static">');
     expect(r.body).toContain('Connect in three taps.');
     // A spec sheet and a layer explorer, with no script of their own: radio buttons and CSS.
@@ -304,8 +307,18 @@ describe('the readable web (R44)', () => {
     expect(asked.body).toContain('<main class="pub pub-home pub-site" lang="ar" dir="rtl">');
     expect(asked.body).toContain('<h1>ردّ باسم مؤسستك، وأثبت هويتها.</h1>');
     expect(asked.body).toContain('<meta property="og:locale" content="ar_AR">');
-    // Its canonical is the English page; each language is an alternate.
-    expect(asked.body).toContain('<link rel="canonical" href="https://caime.example/business">');
+    // Each language is its own page: its canonical is its own address, an alternate of the others,
+    // and the shell's own description gives way to the page's.
+    expect(asked.body).toContain(
+      '<link rel="canonical" href="https://caime.example/business?lang=ar">',
+    );
+    expect(asked.body).toContain(
+      '<meta property="og:url" content="https://caime.example/business?lang=ar">',
+    );
+    expect(asked.body.match(/<meta name="description"/g)).toHaveLength(1);
+    // Its addresses stay addresses at the edge.
+    expect(asked.body).toContain('<div id="static"><!--email_off-->');
+    expect(asked.body).toContain('<!--/email_off--></div>');
     expect(asked.body).toContain(
       '<link rel="alternate" hreflang="ar" href="https://caime.example/business?lang=ar">',
     );

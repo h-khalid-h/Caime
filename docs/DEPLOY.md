@@ -64,6 +64,12 @@ The order matters: every step leaves Caime working. What each costs is in `docs/
    redirects). Then delete the wildcard `A *`: nothing else is served under a subdomain, and a
    wildcard makes any name (`login.cai.me`) resolve.
    SSL/TLS mode **Full (strict)** (EasyPanel holds a real certificate), Always Use HTTPS on.
+   Off, since they rewrite Caime's pages and what they add is refused by the pages' own policy:
+   Web Analytics' automatic setup (it injects a beacon script for browsers, a console error on
+   every page) and Scrape Shield's Email Address Obfuscation (it swaps a `mailto:` for its own
+   page and script; the server's pages mark themselves `<!--email_off-->` since 2026-10-25, so
+   it leaves them be either way). Speed's compression stays on: the origin sends pages
+   uncompressed and Cloudflare compresses them.
 3. **The service's environment** (`PUBLIC_URL=https://cai.me` is set; checked 2026-10-13: the
    landing page's canonical is `https://cai.me/`). `SMTP_URL` from step 5, then redeploy. The
    sender, the contact and the push subject are Caime's own defaults (`Caime <hello@cai.me>`,
@@ -88,11 +94,12 @@ The order matters: every step leaves Caime working. What each costs is in `docs/
    Caime Mail off, so these addresses reached nobody): `hello@`, `support@`, `privacy@`, `security@`,
    `abuse@` and `postmaster@` forwarded to the owner's mailbox, catch-all off. Mail providers
    expect `postmaster@` and `abuse@` to take mail.
-7. **DMARC**: one `TXT _dmarc` record, never two (with two, receivers apply neither):
-   `v=DMARC1; p=none; adkim=r; aspf=r; rua=mailto:<the address Postmark's free DMARC digest
-   gives, dmarc.postmarkapp.com>`; move to `p=quarantine` once a few weekly digests show only
-   Postmark and Cloudflare sending for `cai.me`. (2026-10-14: two were published, one with
-   `p=reject` and strict alignment, the other the digest's; merge them into one.)
+7. **DMARC**: one `TXT _dmarc` record, never two (with two, receivers apply neither). Published
+   (read 2026-10-25): `v=DMARC1; p=reject; sp=reject; rua=mailto:<DMARC Digests' address>;
+   adkim=s; aspf=s`, with `v=spf1 -all` on the apex. Nothing sends with `cai.me` as its envelope
+   sender (Postmark's is `pm-bounces.cai.me`, whose own SPF it carries), so under strict
+   alignment DMARC passes by DKIM alone: Postmark's signature, `d=cai.me`. A new sender for
+   `cai.me` signs with a `cai.me` key first, or receivers reject what it sends.
 8. **Check**: `https://cai.me/v1/readyz` is `{"ok":true}`; signing up mails a code from
    `hello@cai.me` that arrives in the inbox with DKIM passing (`d=cai.me`); a reset link opens
    on `cai.me`; `https://www.cai.me/x?y=1` lands on `https://cai.me/x?y=1`; mail to
@@ -1141,7 +1148,12 @@ are prepended to Caime's. Check after a deploy:
 ```sh
 curl -s https://caime.example.com/ | grep -o '<meta property="og:title"[^>]*>'
 curl -s https://caime.example.com/sitemap.xml | head -5
+curl -s https://caime.example.com/.well-known/security.txt   # where a weakness is reported
 ```
+
+Each language's page names its own address as canonical (`/business?lang=ar` is the Arabic's), with
+the English as `x-default`; `/.well-known/change-password` sends a password manager to Settings ·
+Security.
 
 ## Checks after a deploy
 

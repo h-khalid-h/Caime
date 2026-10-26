@@ -78,7 +78,7 @@ describe('the phone apps’ links (R35)', () => {
     for (const url of [
       '/.well-known/apple-app-site-association',
       '/.well-known/assetlinks.json',
-      '/.well-known/change-password',
+      '/.well-known/nothing-here',
     ])
       for (const accept of ['*/*', PAGE]) {
         const res = await get(plain, url, accept);
