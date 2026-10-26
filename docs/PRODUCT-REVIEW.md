@@ -2790,3 +2790,55 @@ with its reason, so it isn't proposed again without new facts.
   phone, the desktop app or the installed web app) rather than a browser tab. Read from
   `sessions.surface`, which the app sends and the server writes only when it changes, in product
   metrics as `growth.surfaces`. Above half, ninety days after the stores list Caime.
+- **R121 (2026-10-26) Chat during a call: the call made small over its own conversation, and what's
+  typed there read into Cai's notes.** The owner: "while I'm in meetings participants wanted to
+  send text or something in the chat: how is this handled, and how shall it be handled properly".
+  Today a call covers the whole app (`CallScreens`, `GroupCallLayer`). Nobody in it can write
+  without leaving it, a guest can't write at all (R84 (2)), and Cai's write-up reads only what was
+  said. Through the council.
+  *The council's turning points:*
+  1. The Architect put a chat panel inside the call. The Adversary staked it on drift: a second
+     chat beside the conversation's composer would lack cards, files, mentions, drafts, sealing in
+     a private conversation and quick replies, or copy them. So the call shrinks to a tile over the
+     app and the conversation itself opens (`/c/<id>`): the one composer, every feature, sealed
+     where it's private.
+  2. The Newcomer, a clinic's receptionist on a group call who wants to paste the address, wouldn't
+     know where the chat is. So Chat is one of the call's own controls, with the count of what's
+     unread there. What someone writes while the call fills the screen shows over it for a few
+     seconds, and a tap on either opens the chat.
+  3. The Specialist, a real-time media engineer who has shipped group calls on the web and on
+     phones: shrinking must touch no connection. The engines hold them and the screens only draw,
+     so the call's screen stays mounted out of sight and every voice keeps playing; the camera and
+     the microphone stay as they were. The tile sits at the top end under the header, where a
+     phone's keyboard never covers it. The count and the peek read the inbox row the app already
+     keeps, so a call asks the server for nothing more.
+  4. The Adversary on the write-up: typed lines could show a late joiner what they didn't see, and
+     a message deleted for everyone would live on in the notes. So the write-up reads what was
+     typed only between the notes' start and the call's end, only a standard conversation's own
+     text (never sealed, imported or a system line), and only what everyone it's written for may
+     read (they were there from its first word already). A message taken down for everyone in that
+     window writes the notes again without it, as a deleted line does.
+  5. Guests writing reverses R84 (2)'s "never". The Adversary: a link handed on lets a stranger post
+     into a space, and a guest who didn't say they're 18 counts as under 18. The Specialist: bind it
+     to the call. Decided as phase 2 under its own guard: a guest writes only while the call in
+     their meeting is on and they're in it, text alone, only a guest who said they're 18 or over,
+     each line marked a guest's and reportable, and read-only again after. The route joins
+     `GUEST_ROUTES` on purpose, with its case.
+
+  *Decided against:*
+  - a chat panel inside the call (above);
+  - a chat kept apart from the conversation, as Meet's and Zoom's are, gone when the call ends:
+    Caime's conversation is where the meeting already lives;
+  - video in the tile for now: the tile names who and how long, and the call is a tap away.
+
+  *The plan* (ROADMAP M17):
+  - I13i: the tile, Chat with its count and the peek, typed lines in the write-up, a removal
+    asking it again, and an E2E;
+  - I13j: guests write while the call is on.
+
+  *Open risk:* the tile over a conversation's top lines on a small phone. The sign is someone
+  saying it covers what they read; then it moves by drag.
+
+  *The number:* messages written in a call's conversation while the call was on, per call of three
+  or more people (`messages.created_at` inside `calls` windows). Above zero means the chat is
+  found.

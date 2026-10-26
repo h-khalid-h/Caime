@@ -3685,4 +3685,6 @@ export const arB: Catalog = {
   'Install Caime to open it from your dock, taskbar or home screen, in a window of its own, with what needs you counted on its icon.':
     'ثبّت Caime لتفتحه من Dock أو شريط المهام أو الشاشة الرئيسية، في نافذة خاصة به، وعلى أيقونته عدد ما يحتاج إليك.',
   Install: 'تثبيت',
+  'Opens the chat': 'يفتح المحادثة',
+  'Back to the call': 'العودة إلى المكالمة',
 };

@@ -4391,6 +4391,34 @@ clinic can sign for. I1 lands before launch.
         let go, none shown, none in time), the golden set, `ai-costs.test.ts` (`interact-screen`),
         and the notes E2E (the screen shared, asked, the stand-in asked with a picture, answered
         aloud).
+  - [x] I13i. Chat during a call (M, R121 phase 1): Chat among the call's own controls, one-to-one
+        and in a group, with the count of what's unread there on its corner; a tap makes the call a
+        tile over the app (who, how long, mute, back to the call, hang up or leave) and opens the
+        call's conversation, its one composer and every feature with it; the call's screen stays
+        mounted out of sight, so no connection, camera or microphone changes (`shrunk` in
+        `state/calls.ts` and `state/groupCall.ts`, `features/calls/CallTile.tsx`). What someone else
+        writes there while the call fills the screen shows over it for six seconds (`ChatPeek`,
+        a live region), and a tap opens the chat. The count and the peek read the inbox row the
+        app already keeps (`useCallChat`, a `select` over `qk.inboxAll`), so a call asks the server
+        for nothing more; and a conversation under a call that fills the screen is no longer read
+        as it arrives (`ConversationScreen`: neither open nor marked read until the call is made
+        small or is over), so the count is true. Cai's write-up reads what was typed between the
+        notes' start and the call's end beside what was said (`typedLines` in
+        `lib/call-notes-summary.ts`: a standard conversation's own text by a person, never sealed,
+        imported or a system line, readable by everyone the notes are for through `readableBy`; as
+        "Name (typed)" to the model), and a message taken down for everyone in that window writes
+        them again without it (`whenRemovedForEveryone` in `lib/moderation.ts`, the notes' hook
+        `afterTypedRemoved` registered in `app.ts`, so moderation imports nothing of the notes).
+        Verified: `call-notes.test.ts` (a typed line read as Sam's, one before the notes and one
+        hidden by a reader left out, a removal for everyone writing them again without it), and
+        the notes E2E (the tile over the conversation, the peek and the count on the other side's
+        call, the count gone once read, back to the call from the tile, the typed line among
+        Cai's decisions). Not yet: the tile moved by drag (R121's open risk), and a phone's tile
+        tried on one.
+  - [ ] I13j. Guests write while the call is on (S, R121 phase 2): a guest who said they're 18 or
+        over writes text in their meeting's conversation only while its call is on and they're in
+        it, each line marked a guest's and reportable, read-only again after; the route joins
+        `GUEST_ROUTES` on purpose with its case, and the guest's page carries the chat.
 - [x] I3. What did I miss (M; L with the summary): the Needs-you conversations since each was last
       read, by the rules, ranked as Attention ranks them, with a cited summary for whoever has
       assist on, cached by read position, in Cai's chat and on Attention. Built 2026-10-25 (I3b,
@@ -7129,3 +7157,10 @@ CONNIQT; they mean Caime. Caishy is one of Caime's AI members, and Cai leads the
   now collects VAT where it applies and the pages say whether a price holds it; the portal's
   addresses moved to cai.me, the products carry their tax codes and Caime's name. ⛔ The owner:
   Stripe's tax registrations and inclusive prices, the store accounts, `EXPO_TOKEN`.
+- 2026-10-26 — R121 through the council and M17 I13i (the owner: "participants wanted to send text
+  or something in the chat … how shall it be handled properly"): Chat is one of the call's own
+  controls with the count of what's unread; a tap makes the call a tile over its conversation (no
+  connection touched) and the one composer is there; what's written while the call fills the
+  screen shows over it for a moment; and Cai's notes read what was typed while they were on, as
+  the typer's own line, written again without anything taken down for everyone. Guests writing
+  while the call is on is I13j.

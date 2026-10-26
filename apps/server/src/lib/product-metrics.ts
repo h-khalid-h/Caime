@@ -95,6 +95,25 @@ export async function productMetrics(ctx: AppContext, days: number): Promise<Pro
     where m.kind <> 'system' and m.created_at > ${from} and m.created_at <= ${to}
   `);
 
+  // R121's number: of the calls of three or more people that ended in the window, those whose
+  // conversation one of them wrote in while the call was on.
+  const callChat = await q<{ calls: number; chatted: number }>(sql`
+    with c as (
+      select k.id, k.conversation_id, k.created_at, k.ended_at from calls k
+      where k.is_group and k.ended_at > ${from} and k.ended_at <= ${to}
+        and (select count(*) from call_members cm
+          where cm.call_id = k.id and cm.joined_at is not null) >= 3
+    )
+    select count(*)::int as calls,
+      count(*) filter (where exists (
+        select 1 from messages m
+        join call_members cm on cm.call_id = c.id and cm.user_id = m.sender_id
+          and cm.joined_at is not null
+        where m.conversation_id = c.conversation_id and m.kind <> 'system'
+          and m.created_at >= c.created_at and m.created_at <= c.ended_at))::int as chatted
+    from c
+  `);
+
   const core = await q<{
     requests: number;
     accepted: number;
@@ -355,6 +374,7 @@ export async function productMetrics(ctx: AppContext, days: number): Promise<Pro
       activePeople: engagement.people,
       activeConversations: engagement.conversations,
       activeConnections: engagement.connections,
+      callChat: rate(callChat.chatted, callChat.calls),
     },
     core: {
       connectionCompletion: rate(core.accepted, core.requests),

@@ -43,6 +43,8 @@ interface GroupCallStore {
   /** The screen this device is showing, while it is: recorded when the call is (R114). */
   screen: MediaStreamTrack | null;
   note: string | null;
+  /** Made small over the app while its conversation is open (R121), as a 1:1 call is. */
+  shrunk: boolean;
   /** The call on in each group, by conversation, for its banner. */
   on: Record<string, GroupCallView>;
   patch: (p: Partial<Omit<GroupCallStore, 'patch' | 'peer' | 'seen' | 'reset' | 'on'>>) => void;
@@ -63,6 +65,7 @@ const idle = {
   sharing: false,
   screen: null,
   note: null,
+  shrunk: false,
 };
 
 export const useGroupCall = create<GroupCallStore>((set) => ({

@@ -3,22 +3,27 @@ import type { CallPersonView } from '@caime/core/api';
 import { notesAsked } from '@caime/core/calls';
 import { joinNames } from '@caime/core/format';
 import { listed, tr } from '@caime/core/i18n';
+import { router } from 'expo-router';
+import MessageSquareText from 'lucide-react-native/icons/message-square-text';
 import Mic from 'lucide-react-native/icons/mic';
 import MicOff from 'lucide-react-native/icons/mic-off';
 import Phone from 'lucide-react-native/icons/phone';
 import PhoneOff from 'lucide-react-native/icons/phone-off';
 import ScreenShare from 'lucide-react-native/icons/screen-share';
 import ScreenShareOff from 'lucide-react-native/icons/screen-share-off';
+import Users from 'lucide-react-native/icons/users';
 import Video from 'lucide-react-native/icons/video';
 import VideoOff from 'lucide-react-native/icons/video-off';
 import Volume2 from 'lucide-react-native/icons/volume-2';
-import { useEffect, useRef } from 'react';
+import { useEffect, useMemo, useRef } from 'react';
 import { View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { type GroupPeer, useGroupCall } from '@/state/groupCall';
 import { useSession } from '@/state/session';
 import { Avatar } from '@/ui/Avatar';
 import { Text } from '@/ui/Text';
+import { ChatPeek, useCallChat } from './CallChat';
+import { CallTile } from './CallTile';
 import { useCallAudio } from './callAudio';
 import {
   INK,
@@ -147,11 +152,22 @@ const linkNote = (p: GroupPeer) =>
 
 /**
  * A group call's screen (PRD §47), over everything while it rings or runs: who's calling where,
- * then everyone in it, each on their own tile, and mute, share, camera and leave.
+ * then everyone in it, each on their own tile, and mute, share, camera and leave. Its chat is the
+ * group's own conversation (R121): Chat makes the call small (`CallTile`) and opens it.
  */
 export function GroupCallLayer() {
   const me = useSession((s) => s.user);
-  const { call, phase, local, peers, muted, cameraOff, sharing, note } = useGroupCall();
+  // A meeting's guest has no conversation to write in (R84).
+  const guest = me?.kind === 'provisional';
+  const { call, phase, local, peers, muted, cameraOff, sharing, note, shrunk, patch } =
+    useGroupCall();
+  const chat = useCallChat(call?.conversationId ?? '', phase === 'in' && !guest);
+  // Who wrote what the peek shows: whoever is in the call, by name.
+  const members = call?.members;
+  const names = useMemo(
+    () => new Map((members ?? []).map((m) => [m.person.id, m.person.displayName])),
+    [members],
+  );
   const elapsed = useElapsed(call?.answeredAt ?? null, phase === 'in');
   useRingtone(phase === 'incoming');
   // Clear of a phone's notch and home indicator (nothing on the web).
@@ -160,12 +176,17 @@ export function GroupCallLayer() {
   const audio = useCallAudio(phase === 'in', call?.kind === 'video');
   const primary = useRef<View>(null);
   useEffect(() => {
-    if (phase === 'incoming' || phase === 'in')
+    if (!shrunk && (phase === 'incoming' || phase === 'in'))
       (primary.current as unknown as HTMLElement | null)?.focus?.();
-  }, [phase]);
+  }, [phase, shrunk]);
   const shown = Boolean(call && phase && phase !== 'starting');
-  const root = useFocusInside(shown);
+  const root = useFocusInside(shown && !shrunk);
   if (!call || !phase || phase === 'starting' || !me) return null;
+
+  const openChat = () => {
+    patch({ shrunk: true });
+    router.navigate({ pathname: '/c/[id]', params: { id: call.conversationId } });
+  };
 
   const video = call.kind === 'video';
   const where = call.conversationTitle ?? tr('the group');
@@ -225,220 +246,282 @@ export function GroupCallLayer() {
   const rows: (typeof tiles)[] = [];
   for (let i = 0; i < tiles.length; i += across) rows.push(tiles.slice(i, i + across));
 
+  const called = tr('{kind} in {where}', { kind: kindName, where });
+
   return (
-    <View
-      ref={root}
-      role={phase === 'incoming' ? 'alertdialog' : 'dialog'}
-      aria-modal
-      aria-label={tr('{kind} in {where}', { kind: kindName, where })}
-      testID="group-call-screen"
-      style={{
-        ...OVER_APP,
-        backgroundColor: INK,
-      }}
-    >
+    <>
       <View
-        style={{ alignItems: 'center', paddingTop: 20 + insets.top, paddingHorizontal: 16, gap: 4 }}
+        ref={root}
+        role={phase === 'incoming' ? 'alertdialog' : 'dialog'}
+        aria-modal
+        aria-label={called}
+        testID="group-call-screen"
+        style={{
+          ...OVER_APP,
+          backgroundColor: INK,
+          // Made small, it stays mounted out of sight: every voice keeps playing (R121).
+          display: shrunk ? 'none' : 'flex',
+        }}
       >
-        <Text variant="title" style={{ color: '#FFFFFF' }} numberOfLines={1}>
-          {where}
-        </Text>
-        <Text
-          variant="body"
-          style={{ color: '#FFFFFFDD' }}
-          aria-live={phase === 'in' && others.length ? 'off' : 'polite'}
-          role={phase === 'in' && others.length ? 'timer' : undefined}
-          testID="group-call-status"
-        >
-          {status}
-        </Text>
-        {phase === 'in' ? (
-          <Text variant="caption" style={{ color: '#FFFFFFAA' }} testID="group-call-count">
-            {joined.length === 1
-              ? tr('Only you so far')
-              : tr('{count} in the call', { count: joined.length })}
-          </Text>
-        ) : null}
-        {phase === 'in' ? <NotesLine notes={call.notes} me={me.id} /> : null}
-        {phase === 'incoming' && notesAsked(call.notes) ? (
-          <Text
-            variant="caption"
-            align="center"
-            style={{ color: '#FFFFFFDD' }}
-            testID="group-call-incoming-notes"
-          >
-            {groupRingLine(call.notes)}
-          </Text>
-        ) : null}
-      </View>
-
-      {phase === 'incoming' || phase === 'joining' ? (
-        <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center', gap: 16 }}>
-          <View style={{ flexDirection: 'row', gap: 8 }}>
-            {joined.slice(0, 4).map((m) => (
-              <Avatar
-                key={m.person.id}
-                id={m.person.id}
-                name={m.person.displayName}
-                url={m.person.avatarUrl}
-                size={72}
-              />
-            ))}
-          </View>
-          <Text variant="body" style={{ color: '#FFFFFFCC' }} testID="group-call-who">
-            {joined.length === 1
-              ? tr('{first} is in the call', { first: first(joined[0]?.person.displayName ?? '') })
-              : tr('{names} are in the call', {
-                  names: joinNames(
-                    joined.map((m) => first(m.person.displayName)),
-                    4,
-                  ),
-                })}
-          </Text>
-        </View>
-      ) : phase === 'ended' ? (
-        <View style={{ flex: 1 }} />
-      ) : (
-        <View style={{ flex: 1, padding: 8 }} testID="group-call-grid">
-          {spotlight ? (
-            <View style={{ flex: 3 }}>
-              <Tile
-                person={spotlight.person}
-                stream={spotlight.stream}
-                picture
-                fit="contain"
-                muted={spotlight.theirs?.muted}
-                note={linkNote(spotlight)}
-                big
-                testID="group-call-spotlight"
-              />
-            </View>
-          ) : null}
-          {spotlight ? (
-            <View style={{ flex: 1, flexDirection: 'row' }}>{tiles}</View>
-          ) : (
-            rows.map((row, i) => (
-              // biome-ignore lint/suspicious/noArrayIndexKey: rows are positions, not items
-              <View key={i} style={{ flex: 1, flexDirection: 'row' }}>
-                {row}
-                {/* A short last row keeps its tiles the size of the others. */}
-                {Array.from({ length: across - row.length }, (_, j) => (
-                  // biome-ignore lint/suspicious/noArrayIndexKey: fillers have no identity
-                  <View key={`gap-${j}`} style={{ flex: 1, margin: 4 }} />
-                ))}
-              </View>
-            ))
-          )}
-        </View>
-      )}
-
-      {phase === 'in' ? (
-        <View style={{ paddingBottom: 8 }}>
-          <NotesAsk notes={call.notes} me={me.id} />
-          <CaiWritten callId={call.id} />
-        </View>
-      ) : null}
-      {phase === 'ended' ? null : (
         <View
           style={{
-            flexDirection: 'row',
-            justifyContent: 'center',
-            gap: 28,
-            paddingBottom: 32 + insets.bottom,
-            paddingTop: 12,
+            alignItems: 'center',
+            paddingTop: 20 + insets.top,
+            paddingHorizontal: 16,
+            gap: 4,
           }}
-          testID={phase === 'incoming' ? 'group-call-incoming' : 'group-call-controls'}
         >
-          {phase === 'incoming' ? (
-            <>
-              <Round
-                icon={PhoneOff}
-                label={tr('Decline')}
-                tone="end"
-                onPress={() => void leaveGroupCall()}
-                testID="group-call-decline"
-              />
-              {notesAsked(call.notes) ? (
-                // Cai's notes are asked for or on: no plain Join, each says what it does (R85 (1)).
-                <>
-                  <Round
-                    icon={video ? Video : Phone}
-                    label={tr('Join without Cai')}
-                    tone="go"
-                    onPress={() => void joinGroupCall(undefined, 'no')}
-                    testID="group-call-join-without-notes"
-                  />
-                  <Round
-                    icon={video ? Video : Phone}
-                    label={joinWithCai(call.notes)}
-                    tone="go"
-                    onPress={() => void joinGroupCall(undefined, 'yes')}
-                    focusRef={primary}
-                    testID="group-call-join-with-notes"
-                  />
-                </>
-              ) : (
-                <Round
-                  icon={video ? Video : Phone}
-                  label={tr('Join')}
-                  tone="go"
-                  onPress={() => void joinGroupCall()}
-                  focusRef={primary}
-                  testID="group-call-join"
-                />
-              )}
-            </>
-          ) : (
-            <>
-              <Round
-                icon={muted ? MicOff : Mic}
-                label={muted ? tr('Unmute') : tr('Mute')}
-                on={muted}
-                onPress={toggleGroupMute}
-                testID="group-call-mute"
-              />
-              {audio.speaker !== null ? (
-                <Round
-                  icon={Volume2}
-                  label={audio.speaker ? tr('Speaker off') : tr('Speaker')}
-                  on={audio.speaker}
-                  onPress={audio.toggleSpeaker}
-                  testID="group-call-speaker"
-                />
-              ) : null}
-              {screenShareSupported && phase === 'in' ? (
-                <Round
-                  icon={sharing ? ScreenShareOff : ScreenShare}
-                  label={sharing ? tr('Stop sharing') : tr('Share screen')}
-                  on={sharing}
-                  onPress={() => void (sharing ? stopGroupSharing() : startGroupSharing())}
-                  testID="group-call-share"
-                />
-              ) : null}
-              {video && hasCamera ? (
-                <Round
-                  icon={cameraOff ? VideoOff : Video}
-                  label={cameraOff ? tr('Camera on') : tr('Camera off')}
-                  on={cameraOff}
-                  onPress={toggleGroupCamera}
-                  testID="group-call-camera"
-                />
-              ) : null}
-              {phase === 'in' ? (
-                <NotesRound callId={call.id} notes={call.notes} testID="group-call-notes" />
-              ) : null}
-              <Round
-                icon={PhoneOff}
-                label={tr('Leave')}
-                tone="end"
-                onPress={() => void leaveGroupCall()}
-                focusRef={primary}
-                testID="group-call-leave"
-              />
-            </>
-          )}
+          <Text variant="title" style={{ color: '#FFFFFF' }} numberOfLines={1}>
+            {where}
+          </Text>
+          <Text
+            variant="body"
+            style={{ color: '#FFFFFFDD' }}
+            aria-live={phase === 'in' && others.length ? 'off' : 'polite'}
+            role={phase === 'in' && others.length ? 'timer' : undefined}
+            testID="group-call-status"
+          >
+            {status}
+          </Text>
+          {phase === 'in' ? (
+            <Text variant="caption" style={{ color: '#FFFFFFAA' }} testID="group-call-count">
+              {joined.length === 1
+                ? tr('Only you so far')
+                : tr('{count} in the call', { count: joined.length })}
+            </Text>
+          ) : null}
+          {phase === 'in' ? <NotesLine notes={call.notes} me={me.id} /> : null}
+          {phase === 'incoming' && notesAsked(call.notes) ? (
+            <Text
+              variant="caption"
+              align="center"
+              style={{ color: '#FFFFFFDD' }}
+              testID="group-call-incoming-notes"
+            >
+              {groupRingLine(call.notes)}
+            </Text>
+          ) : null}
         </View>
-      )}
-    </View>
+
+        {phase === 'incoming' || phase === 'joining' ? (
+          <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center', gap: 16 }}>
+            <View style={{ flexDirection: 'row', gap: 8 }}>
+              {joined.slice(0, 4).map((m) => (
+                <Avatar
+                  key={m.person.id}
+                  id={m.person.id}
+                  name={m.person.displayName}
+                  url={m.person.avatarUrl}
+                  size={72}
+                />
+              ))}
+            </View>
+            <Text variant="body" style={{ color: '#FFFFFFCC' }} testID="group-call-who">
+              {joined.length === 1
+                ? tr('{first} is in the call', {
+                    first: first(joined[0]?.person.displayName ?? ''),
+                  })
+                : tr('{names} are in the call', {
+                    names: joinNames(
+                      joined.map((m) => first(m.person.displayName)),
+                      4,
+                    ),
+                  })}
+            </Text>
+          </View>
+        ) : phase === 'ended' ? (
+          <View style={{ flex: 1 }} />
+        ) : (
+          <View style={{ flex: 1, padding: 8 }} testID="group-call-grid">
+            {spotlight ? (
+              <View style={{ flex: 3 }}>
+                <Tile
+                  person={spotlight.person}
+                  stream={spotlight.stream}
+                  picture
+                  fit="contain"
+                  muted={spotlight.theirs?.muted}
+                  note={linkNote(spotlight)}
+                  big
+                  testID="group-call-spotlight"
+                />
+              </View>
+            ) : null}
+            {spotlight ? (
+              <View style={{ flex: 1, flexDirection: 'row' }}>{tiles}</View>
+            ) : (
+              rows.map((row, i) => (
+                // biome-ignore lint/suspicious/noArrayIndexKey: rows are positions, not items
+                <View key={i} style={{ flex: 1, flexDirection: 'row' }}>
+                  {row}
+                  {/* A short last row keeps its tiles the size of the others. */}
+                  {Array.from({ length: across - row.length }, (_, j) => (
+                    // biome-ignore lint/suspicious/noArrayIndexKey: fillers have no identity
+                    <View key={`gap-${j}`} style={{ flex: 1, margin: 4 }} />
+                  ))}
+                </View>
+              ))
+            )}
+          </View>
+        )}
+
+        {phase === 'in' ? (
+          <View style={{ paddingBottom: 8 }}>
+            <NotesAsk notes={call.notes} me={me.id} />
+            <CaiWritten callId={call.id} />
+            {guest ? null : (
+              <ChatPeek
+                row={chat}
+                since={call.answeredAt ?? call.createdAt}
+                names={names}
+                onOpen={openChat}
+              />
+            )}
+          </View>
+        ) : null}
+        {phase === 'ended' ? null : (
+          <View
+            style={{
+              flexDirection: 'row',
+              // Wrapped onto a second row where a phone is too narrow for every control: none
+              // ever falls off an edge (R121's Chat made six).
+              flexWrap: 'wrap',
+              justifyContent: 'center',
+              columnGap: 24,
+              rowGap: 16,
+              paddingHorizontal: 16,
+              paddingBottom: 32 + insets.bottom,
+              paddingTop: 12,
+            }}
+            testID={phase === 'incoming' ? 'group-call-incoming' : 'group-call-controls'}
+          >
+            {phase === 'incoming' ? (
+              <>
+                <Round
+                  icon={PhoneOff}
+                  label={tr('Decline')}
+                  tone="end"
+                  onPress={() => void leaveGroupCall()}
+                  testID="group-call-decline"
+                />
+                {notesAsked(call.notes) ? (
+                  // Cai's notes are asked for or on: no plain Join, each says what it does (R85 (1)).
+                  <>
+                    <Round
+                      icon={video ? Video : Phone}
+                      label={tr('Join without Cai')}
+                      tone="go"
+                      onPress={() => void joinGroupCall(undefined, 'no')}
+                      testID="group-call-join-without-notes"
+                    />
+                    <Round
+                      icon={video ? Video : Phone}
+                      label={joinWithCai(call.notes)}
+                      tone="go"
+                      onPress={() => void joinGroupCall(undefined, 'yes')}
+                      focusRef={primary}
+                      testID="group-call-join-with-notes"
+                    />
+                  </>
+                ) : (
+                  <Round
+                    icon={video ? Video : Phone}
+                    label={tr('Join')}
+                    tone="go"
+                    onPress={() => void joinGroupCall()}
+                    focusRef={primary}
+                    testID="group-call-join"
+                  />
+                )}
+              </>
+            ) : (
+              <>
+                <Round
+                  icon={muted ? MicOff : Mic}
+                  label={muted ? tr('Unmute') : tr('Mute')}
+                  on={muted}
+                  onPress={toggleGroupMute}
+                  testID="group-call-mute"
+                />
+                {audio.speaker !== null ? (
+                  <Round
+                    icon={Volume2}
+                    label={audio.speaker ? tr('Speaker off') : tr('Speaker')}
+                    on={audio.speaker}
+                    onPress={audio.toggleSpeaker}
+                    testID="group-call-speaker"
+                  />
+                ) : null}
+                {screenShareSupported && phase === 'in' ? (
+                  <Round
+                    icon={sharing ? ScreenShareOff : ScreenShare}
+                    label={sharing ? tr('Stop sharing') : tr('Share screen')}
+                    on={sharing}
+                    onPress={() => void (sharing ? stopGroupSharing() : startGroupSharing())}
+                    testID="group-call-share"
+                  />
+                ) : null}
+                {video && hasCamera ? (
+                  <Round
+                    icon={cameraOff ? VideoOff : Video}
+                    label={cameraOff ? tr('Camera on') : tr('Camera off')}
+                    on={cameraOff}
+                    onPress={toggleGroupCamera}
+                    testID="group-call-camera"
+                  />
+                ) : null}
+                {phase === 'in' ? (
+                  <NotesRound callId={call.id} notes={call.notes} testID="group-call-notes" />
+                ) : null}
+                {phase === 'in' && !guest ? (
+                  <Round
+                    icon={MessageSquareText}
+                    label={tr('Chat')}
+                    count={chat?.unreadCount ?? 0}
+                    onPress={openChat}
+                    testID="group-call-chat"
+                  />
+                ) : null}
+                <Round
+                  icon={PhoneOff}
+                  label={tr('Leave')}
+                  tone="end"
+                  onPress={() => void leaveGroupCall()}
+                  focusRef={primary}
+                  testID="group-call-leave"
+                />
+              </>
+            )}
+          </View>
+        )}
+      </View>
+      {shrunk ? (
+        <CallTile
+          label={called}
+          mark={
+            <View
+              style={{
+                width: 32,
+                height: 32,
+                borderRadius: 16,
+                alignItems: 'center',
+                justifyContent: 'center',
+                backgroundColor: '#FFFFFF29',
+              }}
+            >
+              <Users size={16} color="#FFFFFF" />
+            </View>
+          }
+          title={where}
+          status={status}
+          over={phase === 'ended'}
+          muted={muted}
+          onMute={toggleGroupMute}
+          onBack={() => patch({ shrunk: false })}
+          onEnd={() => void leaveGroupCall()}
+          endLabel={tr('Leave')}
+        />
+      ) : null}
+    </>
   );
 }

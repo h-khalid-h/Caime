@@ -11,7 +11,8 @@
  * are told once, and they go with that line. A line someone deletes writes them again without it,
  * and what was drawn from it and not yet answered goes. What the screens shared in the call showed
  * (M17 I13h) is read in beside what was said, as lines from each screen (`screenLines`), so the
- * topics and decisions cite a slide as they cite a sentence.
+ * topics and decisions cite a slide as they cite a sentence; and so is what was typed in the call's
+ * conversation while Cai took notes (R121, `typedLines`): the address pasted, the link sent.
  */
 import {
   AI_LABEL,
@@ -35,6 +36,7 @@ import { readersOf } from './call-notes';
 import { AppError } from './errors';
 import { asReader, languageOf } from './i18n';
 import { enqueue, registerJob } from './jobs';
+import { readableBy } from './messages';
 import { notify } from './notify';
 import { createSuggestion } from './suggest';
 import { transcriptClock, transcriptText } from './transcript';
@@ -43,6 +45,8 @@ export const SUMMARY_JOB = 'call.notes.summary';
 /** A line is at most half a minute of speech; the notes read at most this much, both ends kept. */
 const LINE_CHARS = 600;
 const SUMMARY_CHARS = 60_000;
+/** At most this many lines typed in the chat during a call are read with what was said (R121). */
+const TYPED_MAX = 200;
 /**
  * Written a moment after the call ends, once its last lines have landed; lines still being heard
  * put it off (`WAIT_MS`).
@@ -120,14 +124,28 @@ interface Line {
   language: string | null;
   /** What this person's shared screen showed (M17 I13h), as Cai read it, rather than their words. */
   screen?: boolean;
+  /** What this person typed in the call's conversation while it was on (R121), not said. */
+  typed?: boolean;
 }
 
 /** The words and the screens together, in the order they came (M17 I13h). */
 const inOrder = (lines: Line[]): Line[] =>
   [...lines].sort((a, b) => a.at.getTime() - b.at.getTime() || a.id.localeCompare(b.id));
 
-/** How a line's speaker reads to the model: a person by name, a screen as theirs. */
-const whoOf = (l: Line): string => (l.screen ? `Screen (${firstName(l.speaker)}'s)` : l.speaker);
+/** How a line's speaker reads to the model: a person by name, a screen as theirs, typed as such. */
+const whoOf = (l: Line): string =>
+  l.screen ? `Screen (${firstName(l.speaker)}'s)` : l.typed ? `${l.speaker} (typed)` : l.speaker;
+
+/** A long call keeps how it opened and where it landed: the middle goes first. */
+function trimmed(lines: Line[]): Line[] {
+  let total = lines.reduce((n, l) => n + l.text.length + 40, 0);
+  const kept = [...lines];
+  while (total > SUMMARY_CHARS && kept.length > 2) {
+    const [cut] = kept.splice(Math.floor(kept.length / 2), 1);
+    total -= cut!.text.length + 40;
+  }
+  return kept;
+}
 
 /** Every heard line of a call's notes, oldest first, its two ends kept when it ran long. */
 async function linesOf(ctx: AppContext, callId: string) {
@@ -163,14 +181,55 @@ async function linesOf(ctx: AppContext, callId: string) {
         ]
       : [],
   );
-  // A long call keeps how it opened and where it landed: the middle goes first.
-  let total = heard.reduce((n, l) => n + l.text.length + 40, 0);
-  const lines = [...heard];
-  while (total > SUMMARY_CHARS && lines.length > 2) {
-    const [cut] = lines.splice(Math.floor(lines.length / 2), 1);
-    total -= cut!.text.length + 40;
-  }
-  return { lines, waiting };
+  return { lines: trimmed(heard), waiting };
+}
+
+/**
+ * What was typed in the call's conversation while Cai took notes (R121), read in beside what was
+ * said: a standard conversation's own text alone (never sealed, imported or a system line),
+ * written by a person between the notes' start and the call's end, and only what everyone the
+ * notes are written for may read (none deleted for everyone, gone, or hidden for one of them).
+ */
+async function typedLines(
+  ctx: AppContext,
+  call: Call,
+  from: Date,
+  readers: readonly string[],
+): Promise<Line[]> {
+  if (!call.ended_at || readers.length === 0) return [];
+  const rows = await ctx.db
+    .selectFrom('messages as m')
+    .innerJoin('conversations as c', 'c.id', 'm.conversation_id')
+    .innerJoin('users as u', 'u.id', 'm.sender_id')
+    .select(['m.id', 'm.sender_id', 'u.display_name', 'm.body', 'm.created_at'])
+    .where('m.conversation_id', '=', call.conversation_id)
+    .where('c.privacy_class', '=', 'standard')
+    .where('m.kind', '=', 'text')
+    .where('m.sealed', 'is', null)
+    .where(sql<boolean>`m.payload->'imported' is null`)
+    .where('u.kind', 'in', ['human', 'provisional'])
+    .where('m.created_at', '>=', from)
+    .where('m.created_at', '<=', call.ended_at)
+    .where((eb) => eb.and(readers.map((r) => readableBy(r, ctx.now(), 'm'))))
+    .orderBy('m.created_at')
+    .orderBy('m.id')
+    .limit(TYPED_MAX)
+    .execute();
+  return rows.flatMap((r) =>
+    r.body?.trim() && r.sender_id
+      ? [
+          {
+            id: r.id,
+            speakerId: r.sender_id,
+            speaker: r.display_name,
+            text: truncate(r.body.replace(/\s+/g, ' ').trim(), LINE_CHARS),
+            at: r.created_at,
+            language: null,
+            typed: true,
+          },
+        ]
+      : [],
+  );
 }
 
 /** The language most of a call was heard in, by how much was said in it; else the fallback. */
@@ -248,7 +307,7 @@ async function writeNotes(ctx: AppContext, payload: Record<string, unknown>): Pr
   // Whoever asked first pays, as for the words themselves (R107): an adult with AI assist on.
   const asker = await ctx.db
     .selectFrom('call_notes')
-    .select(['started_by', 'message_id'])
+    .select(['started_by', 'message_id', 'started_at'])
     .where('call_id', '=', callId)
     .where('started_at', 'is not', null)
     .where('started_by', 'is not', null)
@@ -256,18 +315,24 @@ async function writeNotes(ctx: AppContext, payload: Record<string, unknown>): Pr
     .executeTakeFirst();
   if (!asker?.started_by) return void (await stateOf(ctx, callId, 'none'));
   let made: NotesSummary;
-  /** What was said and what was shown, together, as the write-up reads and cites them. */
+  /** What was said, shown and typed, together, as the write-up reads and cites them. */
   let all: Line[] = lines;
+  // Whoever heard it all reads the notes; what was typed is read in only where they all may read it.
+  const readers = await wholeReaders(ctx, call, lines[0]!.at);
+  const typed = await typedLines(ctx, call, asker.started_at ?? lines[0]!.at, readers);
   try {
     const { ai, me, plan } = await aiGate(ctx, asker.started_by);
     const { time, day } = transcriptClock(me.time_zone);
     const language = languageName(languageOfCall(lines, await languageOf(ctx, asker.started_by)));
     // The screens shared (M17 I13h), each frame read once on the asker's allowance.
     const screens = await screenLines(ctx, call, ai, asker.started_by, language);
-    all = inOrder([
-      ...lines,
-      ...screens.map((s) => ({ ...s, language: null, screen: true as const })),
-    ]);
+    all = trimmed(
+      inOrder([
+        ...lines,
+        ...screens.map((s) => ({ ...s, language: null, screen: true as const })),
+        ...typed,
+      ]),
+    );
     const transcript = {
       text: transcriptText(all.map((l) => ({ who: whoOf(l), words: l.text, at: time(l.at) }))),
       newFrom: null,
@@ -291,7 +356,6 @@ async function writeNotes(ctx: AppContext, payload: Record<string, unknown>): Pr
     return void (await stateOf(ctx, callId, 'none'));
   }
   await stateOf(ctx, callId, 'written', withMoments(made, all));
-  const readers = await wholeReaders(ctx, call, lines[0]!.at);
   // Everyone who heard it all reads them and is told; what Cai draws from them is offered only to
   // whoever has AI assist on, as anything Cai finds for them is (M16 F7d).
   const assisted = new Set(
@@ -473,6 +537,28 @@ export async function afterLineDeleted(ctx: AppContext, call: Call, lineId: stri
     .where('call_id', '=', call.id)
     .executeTakeFirst();
   if (row && call.state === 'ended') await queueNotesSummary(ctx, call, { again: true });
+}
+
+/**
+ * A message typed during a call taken down for everyone (R121): whatever was drawn from it and not
+ * yet answered goes, and the notes of each call it was typed in are written again without it, as
+ * for a deleted line. Registered as a hook on the removal (app.ts), so the moderation never
+ * imports the notes.
+ */
+export async function afterTypedRemoved(
+  ctx: AppContext,
+  removed: { id: string; conversationId: string; at: Date },
+): Promise<void> {
+  const calls = await ctx.db
+    .selectFrom('call_note_summaries as s')
+    .innerJoin('calls as k', 'k.id', 's.call_id')
+    .selectAll('k')
+    .where('s.conversation_id', '=', removed.conversationId)
+    .where('k.state', '=', 'ended')
+    .where('k.created_at', '<=', removed.at)
+    .where('k.ended_at', '>=', removed.at)
+    .execute();
+  for (const call of calls) await afterLineDeleted(ctx, call, removed.id);
 }
 
 /** The notes as their reader sees them: the whole call's, for whoever was in it for all of it. */

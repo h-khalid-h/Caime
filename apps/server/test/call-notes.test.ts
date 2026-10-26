@@ -753,6 +753,81 @@ describe('Cai’s notes of the call, once it’s over (M16 F7e)', () => {
     expect((await omar.req('GET', `/v1/calls/${callId}/notes`)).statusCode).toBe(404);
   });
 
+  it('reads what was typed in the call’s chat while it took notes, and writes again once it’s taken down (R121)', async () => {
+    const send = async (c: Client, body: string) =>
+      (await c.post(`/v1/conversations/${noorSam}/messages`, { clientId: uuidv4(), body })).message
+        .id as string;
+    // Written before the notes began: not the call's.
+    await sam.post(`/v1/conversations/${noorSam}/messages`, {
+      clientId: uuidv4(),
+      body: 'Typed before the notes began.',
+    });
+    t.clock.advance(1_000);
+    const callId = await ring();
+    await ask(noor, callId, 'noor-tab-1');
+    await sam.req('POST', `/v1/calls/${callId}/accept`, {
+      deviceId: 'sam-phone-1',
+      notes: 'yes',
+      canRecord: false,
+    });
+    replies.push({
+      status: 200,
+      json: { text: 'Where are we meeting on Thursday?', language: 'en' },
+    });
+    expect((await line(noor, callId, 'noor-tab-1', noor.user.id)).statusCode).toBe(200);
+    await work();
+    // Typed in the call: the address is the call's; what one of its readers hid for themselves isn't.
+    const venue = await send(sam, 'The venue is 12 Nile Street.');
+    const hidden = await send(noor, 'A line Sam hid from himself.');
+    await sam.req('DELETE', `/v1/messages/${hidden}?forEveryone=false`);
+    await noor.req('POST', `/v1/calls/${callId}/end`, { deviceId: 'noor-tab-1' });
+    await t.ctx.flush();
+
+    const from = asked.length;
+    modelSays(
+      JSON.stringify({
+        summary: 'They meet at 12 Nile Street.',
+        topics: [{ title: 'Where', line: 1, points: ['Sam sent the address.'] }],
+        decisions: [{ text: 'Meet at 12 Nile Street', line: 2 }],
+        nextSteps: [],
+      }),
+      'Nile Street',
+    );
+    t.clock.advance(6_000);
+    await work();
+    const sent = asked.slice(from).join('\n');
+    expect(sent).toContain('Sam Notes (typed)');
+    expect(sent).toContain('The venue is 12 Nile Street.');
+    expect(sent).not.toContain('Typed before the notes began.');
+    expect(sent).not.toContain('A line Sam hid from himself.');
+    const read = await noor.get(`/v1/calls/${callId}/notes`);
+    expect(read.summaryState).toBe('written');
+    expect(read.summary.decisions).toEqual([
+      { text: 'Meet at 12 Nile Street', at: expect.any(String) },
+    ]);
+
+    // Sam takes the address down for everyone: the notes are written again without it.
+    expect((await sam.req('DELETE', `/v1/messages/${venue}`)).statusCode).toBe(200);
+    await t.ctx.flush();
+    expect((await noor.get(`/v1/calls/${callId}/notes`)).summaryState).toBe('writing');
+    const again = asked.length;
+    modelSays(
+      JSON.stringify({
+        summary: 'Where to meet on Thursday.',
+        topics: [],
+        decisions: [],
+        nextSteps: [],
+      }),
+      'meeting on Thursday',
+    );
+    t.clock.advance(6_000);
+    await work();
+    expect(asked.slice(again).join('\n')).not.toContain('Nile Street');
+    expect((await sam.get(`/v1/calls/${callId}/notes`)).summary.summary).toBe(
+      'Where to meet on Thursday.',
+    );
+  });
+
   it('none to write when nothing was heard, and gone with the call’s line', async () => {
     const callId = await ring();
     await ask(noor, callId, 'noor-tab-1');

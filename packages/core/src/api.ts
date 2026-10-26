@@ -2545,6 +2545,11 @@ export interface ProductMetricsView {
     activePeople: number;
     activeConversations: number;
     activeConnections: number;
+    /**
+     * Of the calls of three or more people that ended in the window, those whose conversation one
+     * of them wrote in while the call was on (R121: the chat beside a call, found).
+     */
+    callChat: Rate;
   };
   core: {
     connectionCompletion: Rate;

@@ -65,6 +65,8 @@ import {
   maxSeq,
   upsertMessage,
 } from '@/state/cache';
+import { useCall } from '@/state/calls';
+import { useGroupCall } from '@/state/groupCall';
 import { useLive } from '@/state/live';
 import { useOutbox } from '@/state/outbox';
 import { usePrivateReply } from '@/state/privateReply';
@@ -440,15 +442,26 @@ export function ConversationScreen({
       seenUpTo.current = Math.max(seenUpTo.current, newestSeq);
   }, [atBottom, newestSeq, id]);
 
+  // A call over the whole app hides the conversation beneath it (R121): what arrives there waits
+  // as unread, counted on the call's Chat, until the call is made small or is over.
+  const callOver = useCall((s) =>
+    Boolean(s.call && s.phase && s.phase !== 'starting' && !s.shrunk),
+  );
+  const groupCallOver = useGroupCall((s) =>
+    Boolean(s.call && s.phase && s.phase !== 'starting' && !s.shrunk),
+  );
+  const covered = callOver || groupCallOver;
+
   // This conversation is on screen: arriving messages here are read, not unread.
   useFocusEffect(
     useCallback(() => {
+      if (covered) return;
       useLive.getState().setOpenConversation(id);
       return () => {
         if (useLive.getState().openConversationId === id)
           useLive.getState().setOpenConversation(null);
       };
-    }, [id]),
+    }, [id, covered]),
   );
 
   // Mark read up to the newest message while visible (debounced; skips when nothing is new).
@@ -457,6 +470,7 @@ export function ConversationScreen({
     if (!conversation || newest <= Math.max(readUpTo.current.seq, conversation.me.lastReadSeq))
       return;
     if (conversation.request === 'incoming') return; // Reading a request never tells the sender.
+    if (covered) return;
     const timer = setTimeout(() => {
       if (AppState.currentState !== 'active' && Platform.OS !== 'web') return;
       if (
@@ -470,7 +484,7 @@ export function ConversationScreen({
       void endpoints.receipts(id, { read: newest }).catch(() => {});
     }, 400);
     return () => clearTimeout(timer);
-  }, [newest, conversation, id, qc]);
+  }, [newest, conversation, id, qc, covered]);
 
   const other = conversation?.other;
   // Cai or a Caime Friend (R67): no calls, no labels, and what it is in place of a presence.

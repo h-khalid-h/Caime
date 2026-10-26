@@ -37,6 +37,11 @@ interface CallStore {
   theirs: TheirState | null;
   /** Why it ended, when there's something to say. */
   note: string | null;
+  /**
+   * Made small over the app (R121): its conversation open beside it, the call drawn as a tile and
+   * its screen kept mounted out of sight, so nothing about the connection changes.
+   */
+  shrunk: boolean;
   patch: (p: Partial<Omit<CallStore, 'patch' | 'reset'>>) => void;
   reset: () => void;
 }
@@ -52,6 +57,7 @@ const idle = {
   screen: null,
   theirs: null,
   note: null,
+  shrunk: false,
 };
 
 export const useCall = create<CallStore>((set) => ({

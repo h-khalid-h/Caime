@@ -2956,6 +2956,19 @@ test.describe
       await page.getByTestId('group-call-share').click();
       await expect(alex.page.getByTestId('group-call-spotlight')).toHaveCount(0);
 
+      // Chat opens the group with the call made small over it, every connection kept (R121).
+      await alex.page.getByTestId('group-call-chat').click();
+      await expect(alex.page).toHaveURL(new RegExp(`/c/${group}`));
+      await expect(alex.page.getByTestId('call-tile')).toBeVisible();
+      await expect(alex.page.getByTestId('call-tile-status')).toHaveText(/^0:\d\d$/);
+      await expect(alex.page.getByTestId('group-call-screen')).toBeHidden();
+      await expect(alex.page.getByTestId('composer-input').filter({ visible: true })).toBeVisible();
+      await alex.page.screenshot({ path: 'e2e/screenshots/phone-group-call-tile.png' });
+      await alex.page.getByTestId('call-tile-back').click();
+      await expect(alex.page.getByTestId('group-call-screen')).toBeVisible();
+      await expect(alex.page.getByTestId('call-tile')).toHaveCount(0);
+      await expect.poll(() => seeing(alex.page)).toBe(2);
+
       // One leaves, and it goes on for the other two.
       await lina.page.getByTestId('group-call-leave').click();
       await expect(lina.page.getByTestId('group-call-screen')).toHaveCount(0);

@@ -2833,4 +2833,6 @@ export const frB: Catalog = {
   'Install Caime to open it from your dock, taskbar or home screen, in a window of its own, with what needs you counted on its icon.':
     'Installez Caime pour l’ouvrir depuis votre Dock, votre barre des tâches ou votre écran d’accueil, dans sa propre fenêtre, avec sur son icône le nombre de ce qui vous attend.',
   Install: 'Installer',
+  'Opens the chat': 'Ouvre la discussion',
+  'Back to the call': 'Revenir à l’appel',
 };

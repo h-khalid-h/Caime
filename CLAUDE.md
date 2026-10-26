@@ -1844,6 +1844,24 @@ A sphere is said as how you know someone, never "sphere".
   nobody took (missed, or put down after `UNTAKEN_AFTER_MS` of ringing) queues
   `agent.call-untaken` from `endCall`, and `offerAfterUntakenCall` (`lib/agent.ts`) has the
   organization's AI agent offer help in writing where it would answer now (M16 H8b).
+- Chat during a call (R121, M17 I13i): Chat is one of a call's own controls (`call-chat`,
+  `group-call-chat`) with the count of what's unread there, read from the inbox row the app keeps
+  (`useCallChat` in `features/calls/CallChat.tsx`, a `select` over `qk.inboxAll`, so a call asks
+  the server for nothing more), and what someone else writes there while the call fills the screen
+  shows over it a moment (`ChatPeek`, a live region). A tap makes the call small (`shrunk` in
+  `state/calls.ts` and `state/groupCall.ts`): its screen stays mounted with `display: none`, so no
+  connection, track or media element changes, `CallTile` draws who, how long, mute, back and hang
+  up (or leave) over the app, and the call's conversation opens as any route does (`/c/<id>`), its
+  one composer with every feature, never a chat of the call's own. A conversation under a call that
+  fills the screen isn't on screen (`covered` in `ConversationScreen`: neither the open
+  conversation nor marked read), so what arrives waits as unread; anything new that decides
+  whether a conversation is being read asks the same. What's typed there while Cai takes notes is
+  read into the write-up (`typedLines`: a standard conversation's own text by a person, between the
+  notes' start and the call's end, `readableBy` everyone the notes are for, given to the model as
+  "Name (typed)"), and a message taken down for everyone in that window writes them again
+  (`whenRemovedForEveryone` in `lib/moderation.ts`, handed the notes' `afterTypedRemoved` by
+  `app.ts`, so moderation imports nothing of them): anything new that keeps what was drawn from a
+  message's words hears of its removal there. A guest doesn't write yet (I13j).
 - Group calls: `lib/group-calls.ts` and `modules/group-calls.ts` keep `call_members` (one row per
   person rung or in it) and bump `calls.rev` with every change to who's in it, so a device
   ignores a view older than the one it holds. `features/calls/group.ts` holds a connection

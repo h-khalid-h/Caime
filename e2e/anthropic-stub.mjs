@@ -164,7 +164,8 @@ function answer(body) {
     );
   }
   if (system.includes('You write the notes of a call')) {
-    // A call's notes (M16 F7e): how many lines, its first speaker's step from the first line.
+    // A call's notes (M16 F7e): how many lines, its first speaker's step from the first line, and
+    // what was typed in the call's chat (R121) as a decision on its line.
     calls.push('notes-summary');
     const lines = linesOf(content);
     const first = lines[0];
@@ -172,7 +173,9 @@ function answer(body) {
       JSON.stringify({
         summary: `A call of ${lines.length} lines, opened by ${first?.speaker ?? 'nobody'}.`,
         topics: [{ title: 'What was said', line: 1, points: lines.slice(0, 2).map((l) => l.text) }],
-        decisions: [],
+        decisions: lines
+          .filter((l) => l.speaker.endsWith('(typed)'))
+          .map((l) => ({ text: `Typed: ${l.text}`, line: l.n })),
         nextSteps: first
           ? [{ who: first.speaker, what: 'Follow up on the call', due: null, line: 1 }]
           : [],

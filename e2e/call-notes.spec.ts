@@ -11,7 +11,9 @@
  * pieces, the server makes each seekable, both play them from the notes (a line opening the voices
  * at its moment, the screen in step), and either deletes the recording for everyone. Joining in
  * (R114 (3), M17 I13g): asked as itself, Cai introduces itself aloud, and called by name it
- * answers aloud for everyone from the notes, through the voice stand-in (e2e/tts-stub.mjs).
+ * answers aloud for everyone from the notes, through the voice stand-in (e2e/tts-stub.mjs). Chat
+ * during the call (R121): the call made small over its conversation, what's written there shown
+ * over the other side's call and counted on its Chat, and read into Cai's notes.
  */
 import { type BrowserContext, expect, type Page, test } from '@playwright/test';
 import { AI_STUB, apiSignUp, CLIENT, newPerson, TTS_STUB, visible } from './helpers';
@@ -203,6 +205,82 @@ test.describe
       await expect(page.getByTestId('call-screen')).toHaveCount(0);
       expect(problems(noor, sam)).toEqual([]);
     });
+    test('chat during the call (R121): made small over its conversation, what’s written shown over the call, typed into the notes', async () => {
+      test.setTimeout(150_000);
+      const { page } = noor;
+      await page.goto(`/c/${convo}`);
+      await sam.page.goto('/');
+      await page.getByTestId('call-voice').click();
+      await expect(sam.page.getByTestId('call-incoming')).toBeVisible({ timeout: 20_000 });
+      await page.getByTestId('call-notes').click();
+      await page.getByTestId('call-notes-take').click();
+      await sam.page.getByTestId('call-accept-with-notes').click();
+      await expect(page.getByTestId('call-notes-on')).toHaveText('Cai is taking notes', {
+        timeout: 20_000,
+      });
+
+      // Sam opens the chat from the call: the conversation, with the call made small over it.
+      await sam.page.getByTestId('call-chat').click();
+      await expect(sam.page).toHaveURL(new RegExp(`/c/${convo}`));
+      await expect(sam.page.getByTestId('call-tile')).toBeVisible();
+      await expect(sam.page.getByTestId('call-screen')).toBeHidden();
+      await expect(sam.page.getByTestId('call-tile-status')).toBeVisible();
+      await sam.page.getByTestId('composer-input').fill('The venue is 12 Nile Street.');
+      await sam.page.getByTestId('composer-send').click();
+      await sam.page.screenshot({ path: 'e2e/screenshots/desktop-call-chat-tile.png' });
+
+      // Noor's call fills the screen over the same conversation: what Sam wrote shows over it a
+      // moment, and waits unread on Chat rather than read beneath the call.
+      const peek = page.getByTestId('call-chat-peek');
+      await expect(peek).toContainText('The venue is 12 Nile Street.', { timeout: 15_000 });
+      await expect(peek).toContainText('Sam Rivera');
+      await expect(page.getByTestId('call-chat-count')).toHaveText('1');
+      await page.screenshot({ path: 'e2e/screenshots/desktop-call-chat-peek.png' });
+
+      // A tap opens it: read now, the count gone, the call a tap away.
+      await peek.click();
+      await expect(page.getByTestId('call-tile')).toBeVisible();
+      await expect(visible(page, 'The venue is 12 Nile Street.')).toBeVisible();
+      await expect(page.getByTestId('call-chat-count')).toHaveCount(0);
+      await page.getByTestId('call-tile-back').click();
+      await expect(page.getByTestId('call-screen')).toBeVisible();
+      await expect(page.getByTestId('call-chat-count')).toHaveCount(0);
+
+      // Sam goes back to the call from the tile; something is heard before it ends.
+      await sam.page.getByTestId('call-tile-back').click();
+      await expect(sam.page.getByTestId('call-screen')).toBeVisible();
+      await expect(sam.page.getByTestId('call-tile')).toHaveCount(0);
+      const callId = await page.evaluate(async (c) => {
+        const r = await fetch('/v1/calls/live', { headers: { 'x-caime-client': 'web' } });
+        const { call } = (await r.json()) as { call: { id: string; conversationId: string } };
+        return call.conversationId === c ? call.id : '';
+      }, convo);
+      expect(callId).not.toBe('');
+      await expect
+        .poll(
+          async () =>
+            (
+              await page.request
+                .get(`/v1/calls/${callId}/notes`, { headers: CLIENT })
+                .then((r) => r.json())
+                .then((b: { lines?: Array<{ text: string | null }> }) => b.lines ?? [])
+            ).filter((l) => l.text).length,
+          { timeout: 45_000 },
+        )
+        .toBeGreaterThanOrEqual(1);
+      await page.getByTestId('call-hangup').click();
+      await expect(page.getByTestId('call-screen')).toHaveCount(0);
+
+      // What was typed is in Cai's notes beside what was said, on its own line.
+      await page.goto(`/c/${convo}?notes=${callId}`);
+      const decided = page.getByTestId('call-notes-written').getByTestId('call-notes-decided');
+      await expect(decided).toContainText('Typed: The venue is 12 Nile Street.', {
+        timeout: 45_000,
+      });
+      await page.keyboard.press('Escape');
+      expect(problems(noor, sam)).toEqual([]);
+    });
+
     test('a meeting that says Cai takes notes asks as its Join is pressed', async () => {
       const { page } = noor;
       // Noor proposes the meeting from the form, on Caime, with Cai's notes.

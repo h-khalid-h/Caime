@@ -33,7 +33,7 @@ import { registerCaiInteract } from './lib/cai-interact';
 import { registerSpokenSweep } from './lib/cai-voice';
 import { registerCalendarPush } from './lib/calendar-push';
 import { registerNotesJob } from './lib/call-notes';
-import { registerNotesSummaryJob } from './lib/call-notes-summary';
+import { afterTypedRemoved, registerNotesSummaryJob } from './lib/call-notes-summary';
 import { registerRecordingJobs } from './lib/call-recording';
 import { registerCallSweep } from './lib/calls';
 import { canonicalLocation } from './lib/canonical-host';
@@ -55,6 +55,7 @@ import { registerSeriesJob } from './lib/meeting-series';
 import { registerMeetingStartJob } from './lib/meeting-start';
 import { afterTranscript, noteUnheard, registerEffectsSweep } from './lib/message-effects';
 import { createMetrics } from './lib/metrics';
+import { whenRemovedForEveryone } from './lib/moderation';
 import { registerAutoReplies } from './lib/org-replies';
 import { registerOrgSlipping } from './lib/org-slipping';
 import { registerProviderHealth } from './lib/provider-health';
@@ -442,6 +443,8 @@ export async function buildApp(config: Config, options: BuildOptions = {}): Prom
   registerSpeechForgetJob();
   registerCaiInteract();
   registerNotesSummaryJob();
+  // A message typed in a call taken down for everyone writes the call's notes again (R121).
+  whenRemovedForEveryone(afterTypedRemoved);
   registerLinkPreviewJob();
   registerMailJobs();
   registerEffectsSweep();

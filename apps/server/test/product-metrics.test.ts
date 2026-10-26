@@ -173,6 +173,49 @@ beforeAll(async () => {
     .values([run('rewrite', 'ok'), run('rewrite', 'ok'), run('translate', 'busy')])
     .execute();
 
+  // Calls (R121's number): one of three people while Sam and Noor wrote in its conversation, one
+  // of three where nobody wrote, and one of two people, which doesn't count.
+  const call = (from: Date, minutes: number, people: Client[]) => {
+    const id = uuidv7();
+    const until = new Date(from.getTime() + minutes * 60_000);
+    return {
+      call: {
+        id,
+        conversation_id: dm,
+        caller_id: people[0]!.user.id,
+        kind: 'voice' as const,
+        state: 'ended' as const,
+        outcome: 'completed' as const,
+        caller_device: 'metrics-device',
+        created_at: from,
+        answered_at: from,
+        ended_at: until,
+        seen_at: until,
+        is_group: true,
+      },
+      members: people.map((p) => ({
+        call_id: id,
+        user_id: p.user.id,
+        state: 'left' as const,
+        joined_at: from,
+        left_at: until,
+      })),
+    };
+  };
+  const calls = [
+    call(new Date(t0.getTime() + 8 * DAY - 60_000), 2, [noor, sam, cara]),
+    call(new Date(t0.getTime() + 9 * DAY), 10, [noor, sam, cara]),
+    call(new Date(t0.getTime() + 8 * DAY - 60_000), 2, [noor, sam]),
+  ];
+  await t.ctx.db
+    .insertInto('calls')
+    .values(calls.map((c) => c.call))
+    .execute();
+  await t.ctx.db
+    .insertInto('call_members')
+    .values(calls.flatMap((c) => c.members))
+    .execute();
+
   t.clock.set(new Date(t0.getTime() + 10 * DAY).toISOString());
 });
 
@@ -207,6 +250,7 @@ describe('product metrics (PRD §82–83)', () => {
       activePeople: 3,
       activeConversations: 2,
       activeConnections: 1,
+      callChat: { count: 1, of: 2, rate: 0.5 },
     });
     expect(m.core).toEqual({
       connectionCompletion: { count: 1, of: 2, rate: 0.5 },

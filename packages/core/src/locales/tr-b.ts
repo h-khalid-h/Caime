@@ -2736,4 +2736,6 @@ export const turkishB: Catalog = {
   'Install Caime to open it from your dock, taskbar or home screen, in a window of its own, with what needs you counted on its icon.':
     'Caime’ı Dock’tan, görev çubuğundan ya da ana ekranınızdan açmak için yükleyin: kendi penceresinde açılır, simgesinde sizi bekleyenlerin sayısıyla.',
   Install: 'Yükle',
+  'Opens the chat': 'Sohbeti açar',
+  'Back to the call': 'Aramaya dön',
 };

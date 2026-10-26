@@ -6,6 +6,7 @@
 import { themes } from '@caime/brand/tokens';
 import { type Ref, useEffect, useRef, useState } from 'react';
 import { Platform, Vibration, View } from 'react-native';
+import { Badge } from '@/ui/Badge';
 import type { IconComponent } from '@/ui/Button';
 import { Pressable } from '@/ui/Pressable';
 import { Text } from '@/ui/Text';
@@ -36,6 +37,7 @@ export function Round({
   onPress,
   tone = 'plain',
   on = false,
+  count = 0,
   focusRef,
   testID,
 }: {
@@ -44,6 +46,8 @@ export function Round({
   onPress: () => void;
   tone?: 'plain' | 'end' | 'go';
   on?: boolean;
+  /** How many wait behind it (the chat's unread, R121), on its corner. */
+  count?: number;
   /** The button focus goes to when the screen changes. */
   focusRef?: Ref<View>;
   testID: string;
@@ -59,24 +63,31 @@ export function Round({
           : '#FFFFFF29';
   return (
     <View style={{ alignItems: 'center', gap: 6 }}>
-      <Pressable
-        ref={focusRef}
-        accessibilityRole="button"
-        accessibilityLabel={label}
-        onPress={onPress}
-        testID={testID}
-        style={({ pressed }) => ({
-          width: 64,
-          height: 64,
-          borderRadius: 32,
-          alignItems: 'center',
-          justifyContent: 'center',
-          backgroundColor: bg,
-          opacity: pressed ? 0.8 : 1,
-        })}
-      >
-        <Icon size={26} color={on ? INK : '#FFFFFF'} />
-      </Pressable>
+      <View>
+        <Pressable
+          ref={focusRef}
+          accessibilityRole="button"
+          accessibilityLabel={label}
+          onPress={onPress}
+          testID={testID}
+          style={({ pressed }) => ({
+            width: 64,
+            height: 64,
+            borderRadius: 32,
+            alignItems: 'center',
+            justifyContent: 'center',
+            backgroundColor: bg,
+            opacity: pressed ? 0.8 : 1,
+          })}
+        >
+          <Icon size={26} color={on ? INK : '#FFFFFF'} />
+        </Pressable>
+        {count > 0 ? (
+          <View style={{ position: 'absolute', top: -4, end: -4 }} testID={`${testID}-count`}>
+            <Badge count={count} />
+          </View>
+        ) : null}
+      </View>
       <Text variant="caption" align="center" style={{ color: '#FFFFFFCC', maxWidth: 104 }}>
         {label}
       </Text>
