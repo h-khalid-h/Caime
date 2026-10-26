@@ -2776,4 +2776,5 @@ export const frB: Catalog = {
   'Words, a name, a number': 'Des mots, un nom, un numéro',
   'Search didn’t answer. Try again in a moment.':
     'La recherche n’a pas répondu. Réessayez dans un instant.',
+  'Export this chat as text': 'Exporter cette conversation en texte',
 };

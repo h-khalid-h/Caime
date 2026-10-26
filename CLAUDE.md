@@ -2743,7 +2743,10 @@ A sphere is said as how you know someone, never "sphere".
   no model. Inside one conversation (M16 E6) the same route takes `conversation`: its messages
   alone, for someone in it (`membership`, `assertOpenToApps`), never a model, drawn by
   `features/conversation/ChatSearch.tsx` (lazy, from the conversation's head, standard
-  conversations only); a new place that searches one conversation passes it the same way. Who
+  conversations only); a new place that searches one conversation passes it the same way. A
+  conversation's text export (M16 E7, `lib/chat-export.ts`, `GET /conversations/:id/export.txt`)
+  is written by core `chatExportText` in WhatsApp's line so `parseWhatsApp` reads it back; a new
+  export of messages keeps that shape and the customer's mask. Who
   may use AI assist is `aiGate` (`lib/ai-gate.ts`), for every route that asks a
   model for a person. Every model call anywhere goes through `runAi` (`lib/ai-run.ts`),
   which records the `ai_runs` row and the metrics: a new AI feature uses it, never its own

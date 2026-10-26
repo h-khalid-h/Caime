@@ -41,6 +41,7 @@ import { USER_COLUMNS } from '../db/schema';
 import { assertAgeChecked } from '../lib/age';
 import { tellSaved } from '../lib/automations';
 import { assertCanWrite } from '../lib/blocks';
+import { chatExport } from '../lib/chat-export';
 import { canEditConversation, contextEditable, contextVisible } from '../lib/contexts';
 import {
   conversationView,
@@ -301,6 +302,21 @@ export async function conversationRoutes(app: FastifyInstance, ctx: AppContext) 
     const conversationId = await createTopicConversation(ctx, auth.userId, id, title);
     reply.status(201);
     return { conversationId };
+  });
+
+  // One conversation as a text file (M16 E7): WhatsApp's own lines, on the reader's clock, so
+  // any WhatsApp importer reads it back. Downloaded, as the data export is.
+  app.get('/conversations/:id/export.txt', async (req, reply) => {
+    const auth = requireAuth(req);
+    const { id } = parse(z.object({ id: z.string().uuid() }), req.params);
+    ctx.limiter.hit(`chat-export:${auth.userId}`, ctx.config.isTest ? 1000 : 6, 60_000);
+    const { text } = await chatExport(ctx, auth.userId, id);
+    const date = ctx.now().toISOString().slice(0, 10);
+    return reply
+      .header('content-disposition', `attachment; filename="caime-chat-${date}.txt"`)
+      .header('cache-control', 'no-store')
+      .type('text/plain; charset=utf-8')
+      .send(text);
   });
 
   app.get('/conversations/:id', async (req): Promise<ConversationResponse> => {

@@ -2013,4 +2013,6 @@ export const frServer: Catalog = {
   'This was answered already, or the time has changed since. The latest email has it.':
     'Une réponse a déjà été donnée, ou l’horaire a changé depuis. Le dernier e-mail le précise.',
   'This link has run out.': 'Ce lien a expiré.',
+  'A private conversation’s words stay on your devices.':
+    'Les mots d’une conversation privée restent sur vos appareils.',
 };

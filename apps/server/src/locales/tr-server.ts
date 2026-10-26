@@ -1928,4 +1928,6 @@ export const turkishServer: Catalog = {
   'This was answered already, or the time has changed since. The latest email has it.':
     'Bu zaten yanıtlandı ya da saat o zamandan beri değişti. En son e-postada güncel hali var.',
   'This link has run out.': 'Bu bağlantının süresi doldu.',
+  'A private conversation’s words stay on your devices.':
+    'Özel bir konuşmanın sözleri cihazlarınızda kalır.',
 };

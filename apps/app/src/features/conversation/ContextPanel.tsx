@@ -466,6 +466,31 @@ export function ContextPanel({
             ) : null}
           </>
         ) : null}
+        {conversation.privacyClass !== 'private' ? (
+          // The conversation as a text file (M16 E7): WhatsApp's own lines, which any WhatsApp
+          // importer reads back; a private one's words never reach the server to be written.
+          <Pressable
+            accessibilityRole="button"
+            onPress={() =>
+              void openFile(
+                {
+                  id: `chat-export-${conversation.id}-${Date.now()}`,
+                  url: `/v1/conversations/${conversation.id}/export.txt`,
+                  name: 'caime-chat.txt',
+                  mime: 'text/plain',
+                },
+                { save: true },
+              ).catch((e: Error) => toast(e.message, { tone: 'danger' }))
+            }
+            style={{ flexDirection: 'row', gap: 8, alignItems: 'center', paddingVertical: 8 }}
+            testID="chat-export"
+          >
+            <FileText size={14} color={t.c.accentStrong} />
+            <Text variant="captionStrong" color="link" style={{ flex: 1 }}>
+              {tr('Export this chat as text')}
+            </Text>
+          </Pressable>
+        ) : null}
         <Disappearing conversation={conversation} />
       </ScrollView>
       {sharing ? (

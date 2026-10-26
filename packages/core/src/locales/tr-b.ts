@@ -2681,4 +2681,5 @@ export const turkishB: Catalog = {
   'Search this conversation': 'Bu konuşmada ara',
   'Words, a name, a number': 'Kelimeler, bir ad, bir numara',
   'Search didn’t answer. Try again in a moment.': 'Arama yanıt vermedi. Birazdan yeniden deneyin.',
+  'Export this chat as text': 'Bu sohbeti metin olarak dışa aktar',
 };

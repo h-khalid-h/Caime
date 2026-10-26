@@ -2026,4 +2026,5 @@ export const arServer: Catalog = {
   'This was answered already, or the time has changed since. The latest email has it.':
     'تمّ الرد على هذا من قبل، أو تغيّر الموعد بعده. التفاصيل في أحدث رسالة بريد إلكتروني.',
   'This link has run out.': 'انتهت صلاحية هذا الرابط.',
+  'A private conversation’s words stay on your devices.': 'تبقى كلمات المحادثة الخاصة على أجهزتك.',
 };

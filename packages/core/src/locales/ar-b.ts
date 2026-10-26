@@ -3584,4 +3584,5 @@ export const arB: Catalog = {
   'Search this conversation': 'البحث في هذه المحادثة',
   'Words, a name, a number': 'كلمات، اسم، رقم',
   'Search didn’t answer. Try again in a moment.': 'لم يصل رد من البحث. حاول مجددًا بعد قليل.',
+  'Export this chat as text': 'تصدير هذه المحادثة نصًا',
 };

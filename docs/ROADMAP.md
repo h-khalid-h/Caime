@@ -2810,6 +2810,20 @@ graph) and the number that will show it; one that sharpens none is hygiene and s
       conversation's messages alone, marked, by reference number; plain words; someone outside it
       learns nothing), the E2E `reading-flow.spec.ts` (search, the match, the jump to a message
       twenty-five lines up, "Nothing found"), the catalogs in four languages, and the full gate.
+- [x] E7. A conversation exported as text (2026-10-26, review §7's parity "per-chat export"):
+      `GET /conversations/:id/export.txt` writes what its member may read of it (`readableBy`, no
+      system line, the newest `EXPORT_MAX` 40,000 as WhatsApp's own export keeps) in order, each
+      message's words as `wordsFor` gives them, on the member's own clock, in WhatsApp's line with
+      the year first (core `chatExportText`, `chat-export.ts`), so any WhatsApp importer, Caime's
+      own included, reads it back; to a customer the team's lines are the organization's (R15). A
+      private conversation is refused (its words never reach the server). The details panel offers
+      "Export this chat as text" (a download on the web, the system's sheet on a phone through
+      `openFile`). Costs: one indexed query of at most 40,000 rows, on demand, six a minute.
+      Verified: core `chat-export.test.ts` (the line; the file read back through `parseWhatsApp`
+      with every line of a message, an Arabic one and a name's colon), `chat-search.test.ts` (the
+      member's file read back; someone outside gets nothing; a customer's file names the
+      organization, never who wrote), the E2E `reading-flow.spec.ts` (the download, its lines),
+      the catalogs in four languages, and the full gate.
 - [x] F1. Mail its sender couldn't be confirmed for, kept as such (2026-10-19, review §6: "mail
       failing the sender check is dropped silently (`mail-in.ts:111`, against R75's promised
       notice; the owner lost mail this way)"; R75 (1); advantage 5, privacy that never costs you
@@ -6760,3 +6774,6 @@ CONNIQT; they mean Caime. Caishy is one of Caime's AI members, and Cai leads the
   needed, the answer moving their card as theirs (the team told, their calendar moved by mail).
 - 2026-10-26 — M16 E6: search inside one conversation, from its head: the conversation's own
   messages by Search's rules, marked, and a tap that jumps to the message.
+- 2026-10-26 — M16 E7: a conversation exported as text from its details, in WhatsApp's own lines
+  so any WhatsApp importer (Caime's too) reads it back; to a customer, the team is the
+  organization.

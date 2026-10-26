@@ -6,6 +6,7 @@
  * opened, and a group's message answered privately is quoted in the chat and leads back (E3b).
  */
 import { randomUUID } from 'node:crypto';
+import { readFile } from 'node:fs/promises';
 import { type BrowserContext, expect, type Page, test } from '@playwright/test';
 import { apiSignUp, CLIENT, newPerson, visible } from './helpers';
 
@@ -193,6 +194,24 @@ test.describe
       await expect(page.getByTestId('chat-search-none').filter({ visible: true })).toHaveText(
         'Nothing found for “zebra”.',
       );
+      expect(noor.errors).toEqual([]);
+    });
+
+    test('the conversation exports as WhatsApp’s text, its importer’s lines (M16 E7)', async () => {
+      const { page } = noor;
+      await page.goto(`/c/${convo}`);
+      const download = page.waitForEvent('download');
+      await page.getByTestId('chat-export').filter({ visible: true }).click();
+      const file = await download;
+      expect(file.suggestedFilename()).toMatch(/^caime-chat/);
+      const text = await readFile(await file.path(), 'utf8');
+      expect(text).toMatch(
+        new RegExp(
+          `^\\d{4}-\\d{2}-\\d{2}, \\d{2}:\\d{2} - Alex Reads: The plumber comes Thursday at nine ${suffix}$`,
+          'm',
+        ),
+      );
+      expect(text).toMatch(/ - Alex Reads: Later line 24\n$/);
       expect(noor.errors).toEqual([]);
     });
   });
