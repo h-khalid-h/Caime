@@ -28,6 +28,7 @@ import Paperclip from 'lucide-react-native/icons/paperclip';
 import Pencil from 'lucide-react-native/icons/pencil';
 import Plus from 'lucide-react-native/icons/plus';
 import Sticker from 'lucide-react-native/icons/sticker';
+import UserRound from 'lucide-react-native/icons/user-round';
 import WandSparkles from 'lucide-react-native/icons/wand-sparkles';
 import X from 'lucide-react-native/icons/x';
 import {
@@ -95,6 +96,10 @@ const DriveSheet = lazy(() => import('@/features/cloud/DriveSheet'));
 
 /** When to send what's written later (M16 E8b): the one way to choose a time, loaded apart. */
 const WhenSheet = lazyPart(() => import('@/features/when/WhenSheet').then((m) => m.WhenSheet));
+const PeoplePicker = lazyPart(() =>
+  import('@/features/people/PeoplePicker').then((m) => m.PeoplePicker),
+);
+const NOBODY: ReadonlySet<string> = new Set();
 
 export interface ComposerHandle {
   focus: () => void;
@@ -227,6 +232,7 @@ export const Composer = forwardRef<ComposerHandle, ComposerProps>(function Compo
   const [custom, setCustom] = useState<CustomKitOfferView | null>(null);
   // Choosing when what's written goes (M16 E8b).
   const [later, setLater] = useState(false);
+  const [contact, setContact] = useState(false);
   const { timeZone } = useUserClock();
   const [rewrite, setRewrite] = useState(false);
   const [recording, setRecording] = useState(false);
@@ -1188,6 +1194,16 @@ export const Composer = forwardRef<ComposerHandle, ComposerProps>(function Compo
                   testID="attach-later"
                 />
               ) : null}
+              {conversation.kind !== 'business' && !reachedByMail(conversation) ? (
+                // Someone on Caime (M16 E8c): each reader sees them as their profile shows them.
+                <ListRow
+                  icon={UserRound}
+                  title={tr('Contact')}
+                  subtitle={tr('Someone you’re connected with')}
+                  onPress={fromSheet(() => setContact(true))}
+                  testID="attach-contact"
+                />
+              ) : null}
               <ListRow
                 icon={FileText}
                 title={tr('A file')}
@@ -1253,6 +1269,24 @@ export const Composer = forwardRef<ComposerHandle, ComposerProps>(function Compo
               ) : null}
             </>
           )}
+        </View>
+      </Sheet>
+      <Sheet open={contact} onClose={() => setContact(false)} title={tr('Send a contact')}>
+        <View style={{ gap: 12 }}>
+          <Text variant="body" color="textSecondary">
+            {tr('Everyone here sees them as their profile shows them, and can open it.')}
+          </Text>
+          <View style={{ marginHorizontal: -4 }}>
+            <PeoplePicker
+              picked={NOBODY}
+              // Whoever is here already needs no card of themselves.
+              exclude={new Set(conversation.participants.map((p) => p.userId))}
+              onToggle={(userId) => {
+                setContact(false);
+                useOutbox.getState().enqueue(id, { kind: 'contact', payload: { userId } });
+              }}
+            />
+          </View>
         </View>
       </Sheet>
       {later ? (

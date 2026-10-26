@@ -3622,4 +3622,10 @@ export const arB: Catalog = {
   'Kept to send later': 'محفوظة للإرسال لاحقًا',
   'Send later': 'إرسال لاحقًا',
   'What you wrote, at a time you choose': 'ما كتبته، في وقت تختاره',
+  'This contact isn’t available to you.': 'جهة الاتصال هذه غير متاحة لك.',
+  'Contact: {name}': 'جهة اتصال: {name}',
+  'Someone you’re connected with': 'شخص ممن تتواصل معهم',
+  'Send a contact': 'إرسال جهة اتصال',
+  'Everyone here sees them as their profile shows them, and can open it.':
+    'يرى كل من هنا جهة الاتصال كما يعرضها ملفها الشخصي، ويمكنه فتحه.',
 };

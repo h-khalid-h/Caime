@@ -2035,4 +2035,7 @@ export const arServer: Catalog = {
     'لديك {max} رسالة تنتظر الإرسال. أرسل واحدة أو احذفها أولًا.',
   'A message you wrote for later couldn’t be sent': 'تعذّر إرسال رسالة كتبتها لوقت لاحق',
   'That message couldn’t be sent.': 'تعذّر إرسال هذه الرسالة.',
+  'A contact can’t be sent in an organization’s conversation.':
+    'لا تُرسل جهات الاتصال في محادثات المؤسسات.',
+  'Send the contact of someone you’re connected with.': 'أرسل جهة اتصال شخص ممن تتواصل معهم.',
 };

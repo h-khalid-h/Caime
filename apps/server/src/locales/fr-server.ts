@@ -2024,4 +2024,8 @@ export const frServer: Catalog = {
   'A message you wrote for later couldn’t be sent':
     'Un message que vous aviez écrit pour plus tard n’a pas pu être envoyé',
   'That message couldn’t be sent.': 'Ce message n’a pas pu être envoyé.',
+  'A contact can’t be sent in an organization’s conversation.':
+    'Un contact ne peut pas être envoyé dans la conversation d’une organisation.',
+  'Send the contact of someone you’re connected with.':
+    'Envoyez le contact d’une personne parmi vos contacts.',
 };

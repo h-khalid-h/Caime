@@ -2704,4 +2704,10 @@ export const turkishB: Catalog = {
   'Kept to send later': 'Sonra gönderilmek üzere saklandı',
   'Send later': 'Sonra gönder',
   'What you wrote, at a time you choose': 'Yazdığınız, seçtiğiniz bir saatte',
+  'This contact isn’t available to you.': 'Bu kişi kartı sizin için kullanılamıyor.',
+  'Contact: {name}': 'Kişi kartı: {name}',
+  'Someone you’re connected with': 'Bağlı olduğunuz biri',
+  'Send a contact': 'Kişi kartı gönder',
+  'Everyone here sees them as their profile shows them, and can open it.':
+    'Buradaki herkes bu kişiyi profilinin gösterdiği gibi görür ve profili açabilir.',
 };

@@ -88,7 +88,7 @@ import { cardStartAt, customCardFor } from './kits';
 import { previewIdsOf, previewView, readyPreviews } from './link-preview-views';
 import { assertNotesAllowed } from './notes-allowed';
 import { formForCard } from './org-forms';
-import { isBlockedEitherWay, shareAConnection, viewerRelation } from './relations';
+import { between, isBlockedEitherWay, shareAConnection, viewerRelation } from './relations';
 import { type ShareToPay, shareToPay } from './splits';
 import { hostWithStock, takeStock, tellStockChanged } from './stock';
 import { minorOf, privacyOf } from './users';
@@ -1185,8 +1185,10 @@ export async function sendMessage(
       payload = files.length > 0 && files.every((f) => f.kind === 'video') ? { video: true } : {};
     else if (body.kind === 'file') payload = {};
     else if (body.kind === 'sticker') payload = parse(StickerPayload, body.payload);
-    else if (body.kind === 'contact') payload = parse(ContactPayload, body.payload);
-    else if (body.kind === 'poll') payload = parse(PollPayload, body.payload);
+    else if (body.kind === 'contact') {
+      payload = parse(ContactPayload, body.payload);
+      await assertContactSendable(ctx, senderId, conversation.kind, payload);
+    } else if (body.kind === 'poll') payload = parse(PollPayload, body.payload);
     else if (body.kind === 'location') payload = parse(LocationPayload, body.payload);
   }
   if (privateReply) payload = { privateReply };
@@ -1795,4 +1797,34 @@ export async function insertSystemMessage(
       .execute();
     return row;
   });
+}
+
+/**
+ * Someone on Caime sent as a contact (M16 E8c): the sender or someone they're connected with, a
+ * person and never one of Caime's own accounts, outside an organization's conversation (whose
+ * customer meets the organization, never its team, R15). The message keeps their id alone, and
+ * each reader sees them as their profile shows them to that reader.
+ */
+async function assertContactSendable(
+  ctx: AppContext,
+  senderId: string,
+  kind: string,
+  payload: unknown,
+): Promise<void> {
+  const userId = (payload as { userId?: string }).userId;
+  if (!userId) return;
+  if (kind === 'business')
+    throw badRequest(tr('A contact can’t be sent in an organization’s conversation.'));
+  const person = await ctx.db
+    .selectFrom('users')
+    .select(['kind', 'deleted_at', 'suspended_at'])
+    .where('id', '=', userId)
+    .executeTakeFirst();
+  const theirs =
+    person?.kind === 'human' &&
+    !person.deleted_at &&
+    !person.suspended_at &&
+    !systemAccountOf(userId) &&
+    (userId === senderId || (await between(ctx.db, senderId, userId)).connected);
+  if (!theirs) throw badRequest(tr('Send the contact of someone you’re connected with.'));
 }

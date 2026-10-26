@@ -333,7 +333,13 @@ A sphere is said as how you know someone, never "sphere".
   twice is once), the row deleted once sent or kept with `failure` and the sender told; the
   composer's Share sheet offers it (`attach-later`, the one `WhenSheet`) and `ScheduledLine` lists
   them above the composer from `ConversationView.scheduled`; a new way to send later goes through
-  that table and job, never a timer on a device. Read and delivered
+  that table and job, never a timer on a device. A contact sent (M16 E8c, the Share sheet's
+  `attach-contact` over `PeoplePicker`) is a `contact` message naming someone on Caime by
+  `payload.userId` alone, the sender or someone they're connected with, never in an
+  organization's conversation (`assertContactSendable` in `sendMessage`); `ContactBody` reads them
+  through `usePerson`, the profile route's rules, so each reader sees what the profile shows them
+  and one who reads as nobody gets "isn't available": anything new that shows a person inside a
+  message reads them the same way, never a copy of their name. Read and delivered
   differ by shape and colour: sent and delivered in the bubble's `tick` token (3:1 on the bubble,
   1.8:1 from its `fg`), read in `fg` with a heavier stroke, and on a card of one's own the
   tertiary text and the text (`tokens.test.ts` holds both). A quote says whose words it quotes (`replyName`

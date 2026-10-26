@@ -1940,4 +1940,8 @@ export const turkishServer: Catalog = {
   'A message you wrote for later couldn’t be sent':
     'Sonrası için yazdığınız bir mesaj gönderilemedi',
   'That message couldn’t be sent.': 'Bu mesaj gönderilemedi.',
+  'A contact can’t be sent in an organization’s conversation.':
+    'Bir kuruluşun konuşmasında kişi kartı gönderilemez.',
+  'Send the contact of someone you’re connected with.':
+    'Bağlı olduğunuz birinin kişi kartını gönderin.',
 };

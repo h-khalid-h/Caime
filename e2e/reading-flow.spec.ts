@@ -333,4 +333,49 @@ test.describe
       expect(JSON.stringify(await after.json())).toContain(words);
       expect(noor.errors).toEqual([]);
     });
+
+    test('someone Noor knows is sent as a contact that opens their profile (M16 E8c)', async ({
+      browser,
+    }) => {
+      const samCtx = await browser.newContext();
+      const samHandle = `sam.known.${suffix}`;
+      const samId = (await apiSignUp(samCtx, 'Sam Known', samHandle)).id;
+      const asked = await samCtx.request.post('/v1/connections/requests', {
+        headers: CLIENT,
+        data: { toUserId: noorId, relationship: { sphere: 'friend' } },
+      });
+      const { requestId } = (await asked.json()) as { requestId: string };
+      await noorCtx.request.post(`/v1/connections/requests/${requestId}/accept`, {
+        headers: CLIENT,
+        data: {},
+      });
+      await samCtx.close();
+      const { page } = noor;
+      await page.goto(`/c/${convo}`);
+      await page.getByTestId('composer-attach').filter({ visible: true }).click();
+      await page.getByTestId('attach-contact').click();
+      // Alex is here already, so only Sam is offered.
+      await expect(page.getByTestId(`pick-alex.reads.${suffix}`)).toHaveCount(0);
+      await page.getByTestId(`pick-${samHandle}`).filter({ visible: true }).click();
+      const card = page.getByTestId('contact-card').filter({ visible: true }).last();
+      await expect(card).toContainText('Sam Known');
+      await expect(card).toContainText(`@${samHandle}`);
+      // Kept as Sam's id alone; Alex reads Sam as Sam's profile shows Sam to Alex.
+      const seen = await alexCtx.request.get(`/v1/conversations/${convo}/messages`, {
+        headers: CLIENT,
+      });
+      const { messages } = (await seen.json()) as {
+        messages: Array<{ kind: string; payload: unknown }>;
+      };
+      expect(messages.filter((m) => m.kind === 'contact').map((m) => m.payload)).toEqual([
+        { userId: samId },
+      ]);
+      expect((await alexCtx.request.get(`/v1/people/${samId}`, { headers: CLIENT })).ok()).toBe(
+        true,
+      );
+      await page.screenshot({ path: 'e2e/screenshots/desktop-contact-sent.png' });
+      await card.click();
+      await expect(page).toHaveURL(new RegExp(`/p/${samId}`));
+      expect(noor.errors).toEqual([]);
+    });
   });

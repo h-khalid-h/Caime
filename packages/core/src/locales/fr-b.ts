@@ -2800,4 +2800,10 @@ export const frB: Catalog = {
   'Kept to send later': 'Gardé pour plus tard',
   'Send later': 'Envoyer plus tard',
   'What you wrote, at a time you choose': 'Ce que vous avez écrit, à l’heure de votre choix',
+  'This contact isn’t available to you.': 'Ce contact ne vous est pas accessible.',
+  'Contact: {name}': 'Contact : {name}',
+  'Someone you’re connected with': 'Une personne parmi vos contacts',
+  'Send a contact': 'Envoyer un contact',
+  'Everyone here sees them as their profile shows them, and can open it.':
+    'Chacun ici voit cette personne telle que son profil la montre, et peut l’ouvrir.',
 };

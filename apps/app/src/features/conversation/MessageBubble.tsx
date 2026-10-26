@@ -29,7 +29,6 @@ import Smile from 'lucide-react-native/icons/face-slightly-smiling';
 import FileText from 'lucide-react-native/icons/file-text';
 import Languages from 'lucide-react-native/icons/languages';
 import Pin from 'lucide-react-native/icons/pin';
-import UserRound from 'lucide-react-native/icons/user-round';
 import { lazy, memo, type ReactNode, Suspense, useEffect, useMemo, useRef, useState } from 'react';
 import { Platform, useWindowDimensions, View } from 'react-native';
 import { mediaHeaders, mediaUrl } from '@/api/client';
@@ -58,6 +57,7 @@ import { Forward, ReplyArrow } from '@/ui/directional';
 import { Pressable } from '@/ui/Pressable';
 import { Text } from '@/ui/Text';
 import { toast } from '@/ui/Toast';
+import { ContactBody } from './ContactBody';
 import { LinkCard } from './LinkCard';
 import { PollBody } from './PollBody';
 
@@ -881,15 +881,7 @@ export const MessageBubble = memo(function MessageBubble({
   } else if (m.kind === 'location') {
     content = <LocationBody m={m} mine={mine} fg={fg} meta={meta} onHold={hold} />;
   } else if (m.kind === 'contact') {
-    const p = m.payload as { name?: string };
-    content = (
-      <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
-        <UserRound size={18} color={fg} />
-        <Text variant="message" color={fg}>
-          {p.name ?? tr('Contact')}
-        </Text>
-      </View>
-    );
+    content = <ContactBody m={m} fg={fg} meta={meta} onHold={hold} />;
   } else if (m.kind === 'kit') {
     content = <KitCard m={m} mine={mine} />;
   } else if (m.kind === 'text' && (m.payload as { recording?: unknown }).recording) {

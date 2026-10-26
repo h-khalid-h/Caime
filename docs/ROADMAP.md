@@ -2857,6 +2857,22 @@ graph) and the number that will show it; one that sharpens none is hygiene and s
       outside refused; one that can't go kept with why and its sender told), the E2E
       `reading-flow.spec.ts` (written, kept, counted, absent for the other side, sent now from its
       line), the catalogs in four languages, and the full gate.
+- [x] E8c. A contact sent in a conversation (2026-10-26, review §7's parity "contact cards you can
+      send"): the Share sheet offers Contact (never in an organization's conversation, nor to
+      someone reached by email, and no Share in a private one), listing the people the sender is
+      connected with less whoever is here already; a tap sends a `contact` message naming them by
+      id alone. The server takes the sender or someone they're connected with, a person and never
+      one of Caime's own accounts (`assertContactSendable`), and nothing else; each reader draws
+      them through the profile route (`usePerson`), so what a reader sees is what that profile
+      shows them (its privacy, R29's rule for someone under 18, a block), and one who reads as
+      nobody says the contact isn't available; a tap opens the profile. Until now the bubble drew a
+      person's contact as the bare word "Contact". Costs: nothing kept but the id; one profile
+      request per person drawn, cached as the profile's own; the picker loads only when opened.
+      Verified: `contacts-sent.test.ts` (sent by id alone; the sender's own; a stranger, Cai and
+      nobody refused; someone under 18 reads as nobody to an adult who doesn't know them; never
+      in an organization's conversation), the E2E `reading-flow.spec.ts` (sent from the Share
+      sheet, drawn with name and handle, kept as the id, read by the other side, opens the
+      profile), the catalogs in four languages, and the full gate.
 - [x] F1. Mail its sender couldn't be confirmed for, kept as such (2026-10-19, review §6: "mail
       failing the sender check is dropped silently (`mail-in.ts:111`, against R75's promised
       notice; the owner lost mail this way)"; R75 (1); advantage 5, privacy that never costs you
@@ -6815,3 +6831,5 @@ CONNIQT; they mean Caime. Caishy is one of Caime's AI members, and Cai leads the
 - 2026-10-26 — M16 E8b: a message written now and sent later, from the Share sheet; it goes at
   its time as if typed then, or at once from the line above the composer, and one that can't go
   says why.
+- 2026-10-26 — M16 E8c: someone you're connected with sent as a contact from the Share sheet;
+  each reader sees them as their profile shows them, and a tap opens it.
