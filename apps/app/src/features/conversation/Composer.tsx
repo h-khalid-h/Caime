@@ -14,6 +14,7 @@ import { firstLinkIn } from '@caime/core/link-text';
 import { SUBJECT_MAX, subjectFromText } from '@caime/core/mail';
 import { mentionAt, mentionCandidates, mentionedIn, mentionText } from '@caime/core/mentions';
 import { matchingReplies, quickReplyQuery } from '@caime/core/quick-replies';
+import { REPEAT_CHOICES, type Repeat } from '@caime/core/repeat';
 import { CAI_PHOTOS_MAX, isSystemKind } from '@caime/core/system-ids';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import * as DocumentPicker from 'expo-document-picker';
@@ -322,7 +323,11 @@ export const Composer = forwardRef<ComposerHandle, ComposerProps>(function Compo
     if (!shownOffer) return;
     setCustom(null);
     if (shownOffer.kind === 'meeting') {
-      setStart({ title: tr('Meeting'), when: shownOffer.when.text });
+      setStart({
+        title: tr('Meeting'),
+        when: shownOffer.when.text,
+        ...(shownOffer.repeat ? { repeat: shownOffer.repeat } : {}),
+      });
       setKit('meeting');
     } else {
       setStart({ direction: shownOffer.direction, amount: shownOffer.amount });
@@ -907,6 +912,7 @@ export const Composer = forwardRef<ComposerHandle, ComposerProps>(function Compo
                     timeZone,
                     locale,
                   ),
+                  ...repeatSaid(shownOffer.repeat),
                 ].join(' · ')
               : [
                   tr('Make it a Pay card'),
@@ -929,6 +935,7 @@ export const Composer = forwardRef<ComposerHandle, ComposerProps>(function Compo
               ? [
                   tr('Answer with a Meeting card'),
                   formatWhenAt(answer.at, answer.hasTime, new Date(), timeZone, locale),
+                  ...repeatSaid(answer.repeat),
                 ].join(' · ')
               : [
                   tr('Answer with a Pay card'),
@@ -1459,6 +1466,12 @@ export const Composer = forwardRef<ComposerHandle, ComposerProps>(function Compo
 });
 
 /** The card what's being written could be (M17 I9a): its line opens the card filled in. */
+/** How often a card offered from words repeats, as its own field says it (M17 I9c). */
+function repeatSaid(repeat: Repeat | undefined): string[] {
+  const label = repeat && REPEAT_CHOICES.find((c) => c.value === repeat)?.label;
+  return label ? [tr(label)] : [];
+}
+
 function CardOfferLine({
   icon: Icon,
   line,

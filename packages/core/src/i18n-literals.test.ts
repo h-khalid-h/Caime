@@ -12,6 +12,8 @@ import { bareLiterals } from '../../../scripts/i18n-keys.mjs';
 const DATA: ReadonlyArray<[file: string, text: string]> = [
   ['apps/app/src/api/client.ts', 'Bearer {}'],
   ['apps/app/src/features/orgs/OrgCheckout.tsx', 'Stripe {}'],
+  // A weekday a repeating plan names, said again for the date reader alone (M17 I9c).
+  ['packages/core/src/card-offer.ts', 'on {}'],
   ['packages/core/src/contact-return.ts', 'caime contacts v1 {}'],
   ['packages/core/src/contact-sources.ts', 'HTTP {}'],
   ['packages/core/src/contact-sources.ts', 'Bearer {}'],

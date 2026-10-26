@@ -52,6 +52,16 @@ describe('the card a message could be (M17 I9b)', () => {
     });
   });
 
+  it('keeps how often a plan repeats (M17 I9c)', async () => {
+    const m = await say(ana, "Let's meet every Thursday at 3pm");
+    expect(await offerOf(m.id)).toEqual({
+      kind: 'meeting',
+      at: '2026-10-29T12:00:00.000Z',
+      hasTime: true,
+      repeat: 'week',
+    });
+  });
+
   it('keeps an amount asked for or offered, and nothing for other words', async () => {
     const asked = await say(ana, 'Send me 200 EGP for the tickets');
     expect(await offerOf(asked.id)).toEqual({

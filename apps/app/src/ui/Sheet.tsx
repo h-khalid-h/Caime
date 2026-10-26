@@ -71,18 +71,21 @@ export function Sheet({
     return () => leave(layer);
   }, [open, layer]);
   // On the web a dialog closes on Escape (React Native Web's Modal doesn't do it for us), as
-  // Android's back does through onRequestClose.
+  // Android's back does through onRequestClose: the one on top alone, and in the capture phase,
+  // since react-native-web's TextInput stops keydown from bubbling out of a field (a card's form
+  // opens with its first field focused).
   useEffect(() => {
     if (!open || Platform.OS !== 'web' || typeof window === 'undefined') return;
     const onKey = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') {
-        e.preventDefault();
-        onClose();
-      }
+      if (e.key !== 'Escape') return;
+      const layers = useToastLayers.getState().open;
+      if (layers[layers.length - 1] !== layer) return;
+      e.preventDefault();
+      onClose();
     };
-    window.addEventListener('keydown', onKey);
-    return () => window.removeEventListener('keydown', onKey);
-  }, [open, onClose]);
+    window.addEventListener('keydown', onKey, true);
+    return () => window.removeEventListener('keydown', onKey, true);
+  }, [open, onClose, layer]);
   return (
     <Modal
       visible={open}

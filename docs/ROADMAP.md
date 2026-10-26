@@ -4452,6 +4452,20 @@ clinic can sign for. I1 lands before launch.
         plan called off, an edit read again), the E2E `reading-flow.spec.ts` (the answer offered at
         the time said, the card filled, sent as a reply to the words, not offered again), the
         catalogs.
+  - [x] I9c. A plan that repeats (2026-10-26): "every Monday at 10", "every other Thursday", "on
+        Tuesdays", "weekly", "monthly", "every weekday", "كل اثنين", "كل أسبوعين", "كل شهر",
+        "tous les lundis", "un jeudi sur deux", "du lundi au vendredi", "her pazartesi", "iki
+        haftada bir", "ayda bir": core `repeatIn` (`card-offer.ts`, most specific first) reads how
+        often and says a named weekday as one day, so the date reader finds the first time; the
+        offer says it ("Make it a Meeting card · Mon 10:00 AM · Every week"), the card opens with
+        Repeats chosen where a meeting may repeat, and the kept offer carries it, so a reader's
+        answer repeats as often. Costs: a few more regular expressions in the same reading,
+        nothing on the server's path but a field on the entities. Verified: the golden lines (each
+        language's repeats, and the habit that isn't a plan: "I go to the gym every Monday at 7"),
+        `card-offer.test.ts` (the repeat kept), the E2E `reading-flow.spec.ts` (Every week chosen,
+        the first Monday at its time). It found a sheet deaf to Escape while a field inside it had
+        the focus (react-native-web's TextInput stops keydown from bubbling): `Sheet` now hears
+        Escape in the capture phase and closes the topmost sheet alone.
 - [ ] I10. Groups (M): whom a promise or an ask is for by the names in it (`peopleMeant`), and
       "everyone".
 - [ ] I11. Cai by voice, and a reply drafted in a conversation (M each). Cai by voice is I14.
@@ -6866,3 +6880,5 @@ CONNIQT; they mean Caime. Caishy is one of Caime's AI members, and Cai leads the
   at its time, an amount asked for or offered a Pay card, in four languages, by the rules.
 - 2026-10-26 — M17 I9b: the other side's plan or amount offers its card as an answer, at the
   instant its writer meant, from the composer and from the message's actions.
+- 2026-10-26 — M17 I9c: a plan that repeats opens its Meeting card repeating as often, from its
+  first time, in the four languages, on either side of the conversation.

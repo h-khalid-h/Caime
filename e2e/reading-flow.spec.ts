@@ -401,6 +401,14 @@ test.describe
       // Taken once, it isn't offered again for the same words.
       await expect(page.getByTestId('card-offer').filter({ visible: true })).toHaveCount(0);
 
+      // A plan that repeats opens the card repeating as often (M17 I9c).
+      await box.fill("Let's meet every Monday at 10am");
+      await expect(offer).toContainText('Every week');
+      await offer.getByTestId('card-offer-take').click();
+      await expect(page.getByRole('radio', { name: 'Every week' })).toBeChecked();
+      await expect(visible(page, /^Mon, .*10:00/)).toBeVisible();
+      await page.keyboard.press('Escape');
+
       // An amount asked for offers a Pay card that asks; its × puts it aside.
       await box.fill('Send me 200 EGP for the tickets');
       await expect(offer).toContainText('Make it a Pay card');

@@ -19,7 +19,7 @@ import { uuidv4 } from '@caime/core/ids';
 import { CARD_KITS, type CardKitId, isCardKit, prepareKitFields } from '@caime/core/kit-cards';
 import { KITS, type KitDef, type KitField, kitsFor } from '@caime/core/kits';
 import { MAIL_CARDS, notByMail, notByMailText } from '@caime/core/mail';
-import { repeatsIn } from '@caime/core/repeat';
+import { type Repeat, repeatsIn } from '@caime/core/repeat';
 import { SPACE_KIND_DEFS } from '@caime/core/spaces';
 import { zonedParts } from '@caime/core/time';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
@@ -101,6 +101,8 @@ export interface KitStart {
   when?: string;
   /** A Meeting card answering someone's words (M17 I9b): the instant they said, kept as it was. */
   at?: { at: string; hasTime: boolean };
+  /** How often the words said it repeats (M17 I9c), chosen on the card where it may repeat. */
+  repeat?: Repeat;
 }
 
 /**
@@ -454,6 +456,8 @@ export function KitForm({
       setPickedDays((d) => ({ ...d, start: { chosen, shown } }));
       setTexts((x) => ({ ...x, start: shown, ...(start.title ? { title: start.title } : {}) }));
     }
+    const repeat = start?.repeat;
+    if (kit === 'meeting' && repeat) setPicked((p) => ({ ...p, repeat }));
   }, [kit, start, timeZone, locale]);
   const item: BookingItem | null =
     host?.items.find((i) => i.id === itemId) ??

@@ -349,7 +349,10 @@ A sphere is said as how you know someone, never "sphere".
   message as `entities.offer` (I9b, `analyseText`, core `keptCardOffer`: a meeting by its instant on
   the writer's clock), and the reader answers with it through `cardOffer.ts` (`offerOf`,
   `answerFor`: the composer's line for the newest message from someone else, and the message's
-  actions through `useCardAction`); `KitStart.at` opens a Meeting card on that instant. Read and delivered
+  actions through `useCardAction`); `KitStart.at` opens a Meeting card on that instant. How often a
+  plan repeats is core `repeatIn` (I9c), read before its date (a named weekday said as one day),
+  carried as `repeat` on the offer, the kept offer and `KitStart`: a new way of saying it joins
+  `REPEAT_RULES` with its golden line. Read and delivered
   differ by shape and colour: sent and delivered in the bubble's `tick` token (3:1 on the bubble,
   1.8:1 from its `fg`), read in `fg` with a heavier stroke, and on a card of one's own the
   tertiary text and the text (`tokens.test.ts` holds both). A quote says whose words it quotes (`replyName`
@@ -2112,7 +2115,9 @@ A sphere is said as how you know someone, never "sphere".
   `phoneBar.test.ts`. What stands off it reads `usePhoneBar` (`Screen` drops its bottom edge,
   `ScreenToasts` sits above it, `tabBarRoom`). Nothing moves the layout on focus or blur on the
   web: the bar did once, and the press on the button under the field that lost the focus was lost.
-- A `Sheet` is a modal: a layer above the app on the web, its own window on phones. Toasts show in
+- A `Sheet` is a modal: a layer above the app on the web, its own window on phones. On the web
+  Escape closes the topmost one alone (`useToastLayers`), heard in the capture phase, since a
+  field inside it stops keydown from bubbling (M17 I9c found a card's form deaf to it). Toasts show in
   the topmost open sheet (`ToastHost layer`), since one drawn on the screen beneath it is hidden
   and its Undo can't be pressed. Anything else that must show over a sheet goes inside it (a
   photo opened from a sheet: its own `PhotoViewerHost host="…"` inside it). What a sheet hands on
