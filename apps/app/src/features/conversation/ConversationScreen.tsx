@@ -636,6 +636,28 @@ export function ConversationScreen({
               />
             </>
           ) : null}
+          {org && !thread && business?.callable && conversation && callsSupported ? (
+            // A customer calls the organization where it takes calls (M16 H8a): its team answers,
+            // and the call is with the organization, never a person on it (R15).
+            <>
+              <IconButton
+                icon={Phone}
+                label={tr('Voice call {displayName}', { displayName: org.name })}
+                filled
+                size={20}
+                onPress={() => void startCall(conversation.id, 'voice')}
+                testID="call-voice"
+              />
+              <IconButton
+                icon={Video}
+                label={tr('Video call {displayName}', { displayName: org.name })}
+                filled
+                size={20}
+                onPress={() => void startCall(conversation.id, 'video')}
+                testID="call-video"
+              />
+            </>
+          ) : null}
           {conversation?.kind === 'group' &&
           conversation.participants.length <= GROUP_CALL_MAX &&
           groupCallsSupported ? (

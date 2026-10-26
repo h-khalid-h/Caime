@@ -26,7 +26,7 @@ import type { ApiScope, WebhookEvent } from './apps';
 import type { AttentionReason, AttentionSection } from './attention';
 import type { AutomationWhen } from './automations';
 import type { AppointmentBooking, BookingHours, BookingItem, OrderingSettings } from './booking';
-import type { BusinessView, ThreadState } from './business';
+import type { BusinessView, OrgCallsFrom, ThreadState } from './business';
 import type { CallKind, CallOutcome, CallResult, CallState, GroupCallMemberState } from './calls';
 import type { CatalogCollection } from './catalog';
 import type { ContactAccount } from './contact-return';
@@ -1350,6 +1350,11 @@ export interface ConversationBusinessView {
   forms: Array<{ id: string; name: string }> | null;
   /** For the team: its AI agent's draft waiting to be checked here (M16 G6b); else null. */
   agentDraft: AgentDraftView | null;
+  /**
+   * For the customer: the organization takes their calls here (M16 H8a), its team rung and the
+   * organization the one they see; false for the team and wherever it doesn't.
+   */
+  callable: boolean;
 }
 
 export interface BusinessInboxView {
@@ -1589,6 +1594,8 @@ export interface OrgView extends OrgSummaryView {
    * acting as someone on it who doesn't run it is kept from them; its owner and admins never are.
    */
   memberApps: boolean | null;
+  /** Who may call it (M16 H8a): for its owner and admins, else null. */
+  callsFrom: OrgCallsFrom | null;
   /** The fields its team keeps for each customer (M16 H3): for its team, else null. */
   customerFields: CustomerField[] | null;
   /** How long it keeps its customers' conversations (R54), in days; null keeps them. */
@@ -3350,6 +3357,11 @@ export interface CallView {
   endedAt: string | null;
   /** Cai taking notes in it (M16 F7): asked, on, or why it stopped; null when nobody asked. */
   notes: CallNotesView | null;
+  /**
+   * A customer's call to an organization (M16 H8a): its name, for the team's ring ("… is
+   * calling Nile Dental"); to the customer the organization is the callee itself. Else null.
+   */
+  org: { name: string } | null;
 }
 
 /** Why Cai stopped taking notes in a call, or never started (M16 F7, R85). */

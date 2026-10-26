@@ -3577,4 +3577,8 @@ export const arB: Catalog = {
   'Code for your website': 'رمز لموقعك',
   'Verify your domain below, and you can put a box on your website where visitors write to you or book a time.':
     'وثّق نطاقك أدناه، وعندها يمكنك وضع مربع على موقعك يكتب لك فيه الزوار أو يحجزون موعدًا.',
+  'Customers may call': 'يمكن للعملاء الاتصال',
+  'From their conversation with {name}, by voice or video. It rings whoever of the team is in that conversation, the first to answer takes it, and the customer sees {name}, never who answered.':
+    'من محادثتهم مع {name}، صوتًا أو فيديو. تصل المكالمة إلى من في تلك المحادثة من الفريق، ويتولاها أول من يرد، ويرى العميل {name} وحدها، لا من ردّ.',
+  '{status} · calling {orgName}': '{status} · مكالمة إلى {orgName}',
 };

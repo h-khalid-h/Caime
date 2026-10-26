@@ -22,6 +22,7 @@ import {
 import { type Kysely, sql, type Transaction } from 'kysely';
 import type { AppContext } from '../context';
 import type { Call, Database } from '../db/schema';
+import { orgAvatarUrl } from './business';
 import { notesAtEnd, notesViewOf, notesWithLine } from './call-notes';
 import { queueNotesSummary } from './call-notes-summary';
 import { titleWithGroup } from './conversations';
@@ -34,11 +35,63 @@ import { avatarUrl } from './users';
 
 /** A live call stops counting when either side hasn't said it's there for this long. */
 export const CALL_SEEN_MS = 90_000;
+
+type Db = Kysely<Database> | Transaction<Database>;
+
+/**
+ * Who on an organization's team a customer's call rang (M16 H8a): those it still rings for, and
+ * those who turned it down.
+ */
+export async function teamRingsOf(
+  db: Db,
+  callId: string,
+): Promise<{ ringing: string[]; declined: string[] }> {
+  const rows = await db
+    .selectFrom('call_team_rings')
+    .select(['user_id', 'declined_at'])
+    .where('call_id', '=', callId)
+    .execute();
+  return {
+    ringing: rows.filter((r) => !r.declined_at).map((r) => r.user_id),
+    declined: rows.filter((r) => r.declined_at).map((r) => r.user_id),
+  };
+}
+
+/**
+ * What a customer sees on the other side of their call to an organization (M16 H8a, R15): the
+ * organization by its own id, name and logo, never whoever on its team answered.
+ */
+export async function orgSide(
+  db: Db,
+  orgId: string,
+): Promise<{ id: string; displayName: string; avatarUrl: string | null }> {
+  const org = await db
+    .selectFrom('organizations')
+    .select(['id', 'name', 'avatar_file_id'])
+    .where('id', '=', orgId)
+    .executeTakeFirst();
+  return {
+    id: orgId,
+    displayName: org?.name ?? tr('Organization'),
+    avatarUrl: org ? orgAvatarUrl(org) : null,
+  };
+}
 const TURN_TTL_S = 12 * 3600;
 
-/** The call as `viewerId` sees it: the other person's photo only if they'd see it anyway. */
+/**
+ * The call as `viewerId` sees it: the other person's photo only if they'd see it anyway. A
+ * customer's call to an organization (M16 H8a) shows the customer the organization on the other
+ * side, never who answered (R15); to a team member it rings for, it rings for them (the callee is
+ * them until someone answers), and to one who turned it down it's over, declined.
+ */
 export async function callView(ctx: AppContext, call: Call, viewerId: string): Promise<CallView> {
-  const ids = [call.caller_id, call.callee_id].filter((x): x is string => Boolean(x));
+  const org = call.org_id ? await orgSide(ctx.db, call.org_id) : null;
+  const toOrg = org !== null && viewerId === call.caller_id;
+  const rings = org && !toOrg ? await teamRingsOf(ctx.db, call.id) : null;
+  const declined = Boolean(rings?.declined.includes(viewerId)) && call.callee_id !== viewerId;
+  const calleeId =
+    rings && !call.callee_id && rings.ringing.includes(viewerId) ? viewerId : call.callee_id;
+  const ids = [call.caller_id, toOrg ? null : calleeId].filter((x): x is string => Boolean(x));
   const [users, others] = await Promise.all([
     ctx.db
       .selectFrom('users')
@@ -67,16 +120,17 @@ export async function callView(ctx: AppContext, call: Call, viewerId: string): P
     id: call.id,
     conversationId: call.conversation_id,
     kind: call.kind,
-    state: call.state,
-    outcome: call.outcome,
+    state: declined ? 'ended' : call.state,
+    outcome: declined ? 'declined' : call.outcome,
     caller: side(call.caller_id),
-    callee: side(call.callee_id),
+    callee: toOrg && org ? org : side(calleeId),
     callerDevice: call.caller_device,
     calleeDevice: call.callee_device,
     createdAt: call.created_at.toISOString(),
     answeredAt: call.answered_at?.toISOString() ?? null,
     endedAt: call.ended_at?.toISOString() ?? null,
     notes: await notesViewOf(ctx.db, call),
+    org: org ? { name: org.displayName } : null,
   };
 }
 
@@ -86,7 +140,11 @@ export async function publishCall(
   call: Call,
   type: 'call.ringing' | 'call.updated' = 'call.updated',
 ): Promise<void> {
-  for (const userId of [call.caller_id, call.callee_id]) {
+  const viewers = new Set([call.caller_id, call.callee_id]);
+  // A call to an organization (M16 H8a): the team it still rings for hears it too, and hears that
+  // someone took it or that it's over.
+  if (call.org_id) for (const id of (await teamRingsOf(ctx.db, call.id)).ringing) viewers.add(id);
+  for (const userId of viewers) {
     if (!userId) continue;
     const view = await callView(ctx, call, userId);
     // Only the person being called hears it ring; the caller's devices just follow along.
@@ -116,6 +174,18 @@ export async function liveCallOf(
       eb.or([
         eb('caller_id', '=', userId),
         eb.and([eb('callee_id', '=', userId), eb('callee_rung', '=', true)]),
+        // A customer's call ringing their organization's team, for them (M16 H8a).
+        eb.and([
+          eb('callee_id', 'is', null),
+          eb.exists(
+            eb
+              .selectFrom('call_team_rings as r')
+              .select('r.call_id')
+              .whereRef('r.call_id', '=', 'calls.id')
+              .where('r.user_id', '=', userId)
+              .where('r.declined_at', 'is', null),
+          ),
+        ]),
       ]),
     )
     .where((eb) =>
@@ -216,29 +286,43 @@ export async function nameShownTo(
 export async function ringStopped(
   ctx: AppContext,
   call: Call,
-  { missedNotice = false }: { missedNotice?: boolean } = {},
+  { missedNotice = false, only }: { missedNotice?: boolean; only?: string[] } = {},
 ): Promise<void> {
-  if (!call.callee_id) return;
+  // Whoever it rang: the person called, or a call to an organization's team (M16 H8a).
+  let rung: string[] = only ?? (call.callee_id ? [call.callee_id] : []);
+  if (!only && call.org_id) {
+    const rings = await teamRingsOf(ctx.db, call.id);
+    rung = [...rings.ringing, ...rings.declined];
+  }
+  for (const userId of rung) await stopRingFor(ctx, call, userId, missedNotice);
+}
+
+async function stopRingFor(
+  ctx: AppContext,
+  call: Call,
+  userId: string,
+  missedNotice: boolean,
+): Promise<void> {
   const read = await ctx.db
     .updateTable('notifications')
     .set({ read_at: ctx.now() })
-    .where('user_id', '=', call.callee_id)
+    .where('user_id', '=', userId)
     .where('group_key', '=', `call:${call.id}`)
     .where('read_at', 'is', null)
     .returning(['id', 'data'])
     .execute();
   if (!read.length) return;
-  await ctx.bus.publish([call.callee_id], {
+  await ctx.bus.publish([userId], {
     type: 'notifications.read',
     data: { ids: read.map((r) => r.id), all: false },
   });
   // A browser still showing "… is calling" says it's over instead, quietly; a missed call says so
   // itself, in its place.
   if (missedNotice || !call.caller_id) return;
-  const caller = await nameShownTo(ctx, call.callee_id, call.caller_id);
+  const caller = await nameShownTo(ctx, userId, call.caller_id);
   for (const r of read)
     await replaceShown(ctx, r.id, {
-      userId: call.callee_id,
+      userId,
       kind: 'call',
       level: 'activity',
       title: () => caller ?? tr('Call'),
@@ -273,10 +357,12 @@ export async function endCall(
     .returningAll()
     .executeTakeFirst();
   if (!ended) return null;
+  // How a customer's call to an organization ended, every way it can (M16 H8a).
+  if (ended.org_id) ctx.metrics.orgCalls.inc({ outcome });
   const missedNotice =
     !quiet &&
     (outcome === 'missed' || outcome === 'cancelled') &&
-    Boolean(ended.callee_id && ended.caller_id);
+    Boolean((ended.callee_id || ended.org_id) && ended.caller_id);
   await ringStopped(ctx, ended, { missedNotice });
   // Cai's notes stop with it (M16 F7), before anyone hears how it ended.
   const { taken } = await notesAtEnd(ctx, ended.id);
@@ -305,17 +391,25 @@ export async function endCall(
       { type: 'message.created', data: view },
     );
   }
-  if (missedNotice && ended.callee_id && ended.caller_id) {
-    const caller = await nameShownTo(ctx, ended.callee_id, ended.caller_id);
-    await notify(ctx, {
-      userId: ended.callee_id,
-      kind: 'call',
-      level: 'attention',
-      title: () => (ended.kind === 'video' ? tr('Missed video call') : tr('Missed voice call')),
-      body: () => (caller ? tr('from {caller}', { caller }) : null),
-      data: { conversationId: ended.conversation_id, callId: ended.id },
-      groupKey: `call:${ended.id}`,
-    });
+  if (missedNotice && ended.caller_id) {
+    // The person called, or the team a call to an organization rang and nobody took (M16 H8a).
+    const told = ended.callee_id
+      ? [ended.callee_id]
+      : ended.org_id
+        ? (await teamRingsOf(ctx.db, ended.id)).ringing
+        : [];
+    for (const userId of told) {
+      const caller = await nameShownTo(ctx, userId, ended.caller_id);
+      await notify(ctx, {
+        userId,
+        kind: 'call',
+        level: 'attention',
+        title: () => (ended.kind === 'video' ? tr('Missed video call') : tr('Missed voice call')),
+        body: () => (caller ? tr('from {caller}', { caller }) : null),
+        data: { conversationId: ended.conversation_id, callId: ended.id },
+        groupKey: `call:${ended.id}`,
+      });
+    }
   }
   return ended;
 }
@@ -380,6 +474,25 @@ export async function endCallsBetween(ctx: AppContext, blockerId: string, otherI
       c.state === 'active' ? 'completed' : c.callee_id === blockerId ? 'declined' : 'cancelled';
     await endCall(ctx, c, outcome, ctx.now(), { quiet: true });
   }
+}
+
+/**
+ * A customer blocked an organization (M16 H8a): a call between them ends now, quietly, as one
+ * between two people does when one blocks the other: called off while it rings, over once on.
+ */
+export async function endOrgCallsOf(ctx: AppContext, customerId: string, orgId: string) {
+  const calls = await ctx.db
+    .selectFrom('calls')
+    .selectAll()
+    .where('is_group', '=', false)
+    .where('state', '<>', 'ended')
+    .where('caller_id', '=', customerId)
+    .where('org_id', '=', orgId)
+    .execute();
+  for (const c of calls)
+    await endCall(ctx, c, c.state === 'active' ? 'completed' : 'cancelled', ctx.now(), {
+      quiet: true,
+    });
 }
 
 export function registerCallSweep(): void {
@@ -505,6 +618,7 @@ export async function callHistory(
       'c.outcome',
       'c.caller_id',
       'c.callee_id',
+      'c.org_id',
       'c.created_at',
       'c.answered_at',
       'c.ended_at',
@@ -540,6 +654,7 @@ export async function callHistory(
       'c.outcome',
       'c.caller_id',
       'c.callee_id',
+      'c.org_id',
       'c.created_at',
       'c.answered_at',
       'c.ended_at',
@@ -610,9 +725,19 @@ export async function callHistory(
         .orderBy('user_id')
         .execute()
     : [];
+  // A customer's calls to an organization show it, never who on its team answered (M16 H8a, R15).
+  const toOrgs = page.filter((r) => r.org_id && r.caller_id === me);
+  const orgSides = new Map(
+    await Promise.all(
+      [...new Set(toOrgs.map((r) => r.org_id as string))].map(
+        async (id) => [id, await orgSide(ctx.db, id)] as const,
+      ),
+    ),
+  );
   const people = new Set<string>();
   for (const r of page)
-    for (const id of [r.caller_id, r.callee_id]) if (id && id !== me) people.add(id);
+    for (const id of [r.caller_id, r.org_id && r.caller_id === me ? null : r.callee_id])
+      if (id && id !== me) people.add(id);
   for (const m of members) if (m.user_id !== me) people.add(m.user_id);
   const ids = [...people];
   const [users, views, titles] = await Promise.all([
@@ -692,7 +817,10 @@ export async function callHistory(
           joined: Boolean(r.my_joined_at),
           declined: r.my_state === 'declined',
         }),
-        with: others.map(person),
+        with:
+          r.org_id && outgoing && orgSides.get(r.org_id)
+            ? [orgSides.get(r.org_id)!]
+            : others.map(person),
         seconds:
           mine ??
           (answered && outcome === 'completed'

@@ -2768,4 +2768,8 @@ export const frB: Catalog = {
   'Code for your website': 'Code pour votre site',
   'Verify your domain below, and you can put a box on your website where visitors write to you or book a time.':
     'Vérifiez votre domaine ci-dessous, et vous pourrez mettre sur votre site un cadre où les visiteurs vous écrivent ou réservent un créneau.',
+  'Customers may call': 'Les clients peuvent appeler',
+  'From their conversation with {name}, by voice or video. It rings whoever of the team is in that conversation, the first to answer takes it, and the customer sees {name}, never who answered.':
+    'Depuis leur conversation avec {name}, en audio ou en vidéo. L’appel sonne chez les membres de l’équipe présents dans cette conversation, le premier qui répond le prend, et le client voit {name}, jamais qui a répondu.',
+  '{status} · calling {orgName}': '{status} · appelle {orgName}',
 };

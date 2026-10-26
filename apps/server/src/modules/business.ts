@@ -44,6 +44,7 @@ import {
   threadViews,
 } from '../lib/business';
 import { startCustomerConversation } from '../lib/business-threads';
+import { endOrgCallsOf } from '../lib/calls';
 import { AppError, badRequest, forbidden, notFound } from '../lib/errors';
 import { recordEvent } from '../lib/events';
 import { afterMessage } from '../lib/message-effects';
@@ -102,6 +103,8 @@ export async function businessRoutes(app: FastifyInstance, ctx: AppContext) {
         .where('org_id', '=', id)
         .execute();
     });
+    // A call with it ends at once (M16 H8a), as one with a person does on a block.
+    await endOrgCallsOf(ctx, auth.userId, id);
     const thread = await ctx.db
       .selectFrom('business_threads')
       .select(['conversation_id', 'resolved_at'])

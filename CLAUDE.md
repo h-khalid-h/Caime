@@ -1766,7 +1766,15 @@ A sphere is said as how you know someone, never "sphere".
   the server with `STUN_URLS=''`. What's live is asked once: `GET /calls/live` answers both the
   one-to-one call and the group call, `checkLiveCalls` (engine.ts) hands each engine its part,
   and the socket calls that on every connect; `/group-calls/live` still answers the group call
-  alone for an engine looking on its own.
+  alone for an engine looking on its own. A customer's call to an organization (M16 H8a,
+  `lib/org-calls.ts`) is a one-to-one call with `calls.org_id` and no callee until someone
+  answers: it rings the team in the thread (`call_team_rings`), only where
+  `organizations.calls_from` lets it, and the first to accept takes it (`callee_id is null` in
+  the accept's update); a ring turned down is that person's (`declineTeamRing`). `callView` is
+  per viewer: to the customer the other side is the organization (`orgSide`, in their history
+  too), to a rung team member it's themselves while it rings, never anyone else's name to the
+  customer (R15). A route a device uses in a call it holds (signal, beat) asks `inIt` first, and
+  anything new about such a call reads `org_id` before it names who is on the other side.
 - Group calls: `lib/group-calls.ts` and `modules/group-calls.ts` keep `call_members` (one row per
   person rung or in it) and bump `calls.rev` with every change to who's in it, so a device
   ignores a view older than the one it holds. `features/calls/group.ts` holds a connection

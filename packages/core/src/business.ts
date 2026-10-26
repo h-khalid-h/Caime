@@ -94,6 +94,14 @@ export function inBusinessView(view: BusinessView, t: ThreadFacts, me: string): 
  */
 export const REPLY_TARGET_MINUTES = 30;
 
+/**
+ * Who may call an organization (M16 H8a, R111 (a)): nobody until its owner or an admin says its
+ * customers may, from its setup. A call rings its team in the thread, and whoever answers takes
+ * it; the customer sees the organization, never them (R15).
+ */
+export const ORG_CALLS_FROM = ['nobody', 'customers'] as const;
+export type OrgCallsFrom = (typeof ORG_CALLS_FROM)[number];
+
 /** Since when the customer has been waiting for an answer, or null when it isn't their wait. */
 export function waitingSince(t: ThreadFacts): string | null {
   return !t.resolvedAt && customerWaiting(t) ? t.lastCustomerAt : null;

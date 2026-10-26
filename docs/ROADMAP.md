@@ -3946,6 +3946,28 @@ graph) and the number that will show it; one that sharpens none is hygiene and s
       RESOURCES.md, and the provider in `processors.ts` and the DPA first. Who may reach it by
       voice is the organization's audience setting (everyone, its customers, nobody), never a
       price; it opens as it opens every chat (R87).
+  - [x] H8a. A customer calls an organization (M): `organizations.calls_from` ('nobody' unless
+        its owner or an admin turns "Customers may call" on in the setup; `OrgView.callsFrom` for
+        them alone), read as `ConversationBusinessView.callable` on the customer's side, whose
+        header offers voice and video named for the organization. `placeOrgCall`
+        (`lib/org-calls.ts`) refuses as writing does (closed, suspended, a block either way,
+        someone under 18 to an organization unverified, the team's own side: calling a customer
+        back is H8a2) and rings the human team in the thread who aren't on another call
+        (`call_team_rings`, migration 0162; `calls.org_id`, the callee null until someone
+        answers). The first to accept takes it (`where callee_id is null`), the others' rings
+        stop; a ring turned down, or hung up while ringing, is that person's alone, all of them
+        is a declined call; nobody answering is missed and told to whoever it rang. The customer
+        sees the organization on the other side in the call, its events and their history (its
+        id, name and logo; `callView` per viewer), never who answered (R15); the team's ring says
+        "calling {organization}" (`CallView.org`). A device not in the call is refused its
+        signals and beats (`inIt`), Cai's notes are refused in such a conversation for now, and
+        a customer's block ends the call. Counted on `caime_org_calls_total{outcome}` (placed,
+        answered, missed, cancelled, declined), the number for H8 (a). Server tests
+        (`org-calls.test.ts`: off and on, the setting's readers, the ring, the mask in every view
+        and event, the first answer, spoofed signals, declines, missed with notices, notes and a
+        block), the E2E (the owner's switch, the customer's call ringing two of the team as the
+        organization's, the first to answer taking it, the other's ring gone, the customer's
+        screen naming the organization alone), the gate.
 - [ ] ⛔ H, the owner's: a smaller paid tier; WhatsApp Business in the inbox and reminders by
       WhatsApp or SMS (Meta's approval); Stripe Connect live with local currencies.
 - [ ] R98, after C: places as a context for spaces (PRODUCT-REVIEW R98): `spaces.place` from
@@ -6669,3 +6691,9 @@ CONNIQT; they mean Caime. Caishy is one of Caime's AI members, and Cai leads the
   of a session in it. What starts there is counted as from its website (`growth.door.fromSites`),
   the council's number for R117. Server tests (widget 5, the visitor forms, pages, door, metrics),
   the E2E on a real other origin, the gate.
+- 2026-10-26 — M16 H8a (R111 (a)): a customer calls an organization. Off until its owner or an
+  admin turns it on in the setup; on, the customer's conversation offers voice and video to the
+  organization, which rings whoever of its team is in that conversation as the organization's;
+  the first to answer takes it, the rest stop ringing, and the customer sees the organization in
+  the call and its history, never who answered. Missed calls are told to whoever it rang; a
+  device not in the call can't speak in it; counted by outcome on `caime_org_calls_total`.

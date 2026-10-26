@@ -1984,4 +1984,13 @@ export const frServer: Catalog = {
   '{name} has waited {time} for a reply from {org}, and nobody has taken it yet.':
     '{name} attend une réponse de {org} depuis {time}, et personne ne s’en est encore chargé.',
   'Their conversation: {link}': 'La conversation : {link}',
+  'Only the customer calls in a conversation with an organization.':
+    'Dans une conversation avec une organisation, seul le client appelle.',
+  '{orgName} has closed.': '{orgName} a fermé.',
+  '{orgName} can’t be reached on Caime right now.':
+    '{orgName} n’est pas joignable sur Caime pour le moment.',
+  '{orgName} doesn’t take calls on Caime.': '{orgName} ne prend pas d’appels sur Caime.',
+  'Cai doesn’t take notes in a conversation with an organization yet.':
+    'Cai ne prend pas encore de notes dans une conversation avec une organisation.',
+  '{name} is calling {orgName}': '{name} appelle {orgName}',
 };

@@ -1899,4 +1899,13 @@ export const turkishServer: Catalog = {
   '{name} has waited {time} for a reply from {org}, and nobody has taken it yet.':
     '{name}, {org} tarafından {time} süredir yanıt bekliyor ve henüz kimse üstlenmedi.',
   'Their conversation: {link}': 'Görüşme: {link}',
+  'Only the customer calls in a conversation with an organization.':
+    'Bir kuruluşla konuşmada yalnızca müşteri arama yapar.',
+  '{orgName} has closed.': '{orgName} kapandı.',
+  '{orgName} can’t be reached on Caime right now.':
+    '{orgName} şu anda Caime’de ulaşılamaz durumda.',
+  '{orgName} doesn’t take calls on Caime.': '{orgName} Caime’de arama kabul etmiyor.',
+  'Cai doesn’t take notes in a conversation with an organization yet.':
+    'Cai bir kuruluşla konuşmada henüz not almıyor.',
+  '{name} is calling {orgName}': '{name}, {orgName} kuruluşunu arıyor',
 };

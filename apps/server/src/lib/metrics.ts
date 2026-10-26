@@ -202,6 +202,12 @@ export function createMetrics(pool: pg.Pool) {
       'caime_call_notes_total',
       'Notes in calls by outcome (asked, started, handed_over, a stop and its reason, a line heard or not; switch_asked, switched, switch_declined for another mode mid-call).',
     ),
+    // A customer's calls to an organization (M16 H8a): placed, answered by its team, and how the
+    // rest ended; what shows whether organizations take the calls they turned on.
+    orgCalls: new Counter(
+      'caime_org_calls_total',
+      'Customers’ calls to organizations by outcome (placed, answered, then how each ended: completed, failed, missed, cancelled).',
+    ),
     // Cai's recordings of calls (R114, M17 I13b): parts begun, made ready (or kept as they were
     // recorded), and recordings deleted by someone in them or at their day.
     callRecordings: new Counter(

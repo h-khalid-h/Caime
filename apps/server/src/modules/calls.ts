@@ -28,6 +28,7 @@ import {
   publishCall,
   ringStopped,
   stillThere,
+  teamRingsOf,
 } from '../lib/calls';
 import { membership } from '../lib/conversation-views';
 import { AppError, badRequest, forbidden, notFound } from '../lib/errors';
@@ -35,6 +36,7 @@ import { groupCallView, joinedGroupCallOf, ringingGroupCallFor } from '../lib/gr
 import { callLinkIn, sessionLive } from '../lib/meeting-join';
 import { participantsOf } from '../lib/messages';
 import { notify } from '../lib/notify';
+import { declineTeamRing, placeOrgCall } from '../lib/org-calls';
 import { personViewsFor } from '../lib/people-batch';
 import { isBlockedEitherWay } from '../lib/relations';
 import { parse } from '../lib/validate';
@@ -51,17 +53,56 @@ const EndCallBody = z
 export async function callRoutes(app: FastifyInstance, ctx: AppContext) {
   const callParam = z.object({ id: z.string().uuid() });
 
-  /** A call this person is on, or it doesn't exist for them. */
+  /**
+   * A call this person is on, or rang for them on an organization's team (M16 H8a), or it doesn't
+   * exist for them.
+   */
   async function mine(userId: string, callId: string): Promise<Call> {
     const call = await ctx.db
       .selectFrom('calls')
       .selectAll()
       .where('id', '=', callId)
       .where('is_group', '=', false)
-      .where((eb) => eb.or([eb('caller_id', '=', userId), eb('callee_id', '=', userId)]))
+      .where((eb) =>
+        eb.or([
+          eb('caller_id', '=', userId),
+          eb('callee_id', '=', userId),
+          eb.exists(
+            eb
+              .selectFrom('call_team_rings as r')
+              .select('r.call_id')
+              .whereRef('r.call_id', '=', 'calls.id')
+              .where('r.user_id', '=', userId),
+          ),
+        ]),
+      )
       .executeTakeFirst();
     if (!call) throw notFound(tr('That call'));
     return call;
+  }
+
+  /** In the call itself: its caller or whoever answered, never the rest of a team it rang. */
+  function inIt(call: Call, userId: string): void {
+    if (call.caller_id !== userId && call.callee_id !== userId)
+      throw forbidden(tr('This device isn’t in that call.'));
+  }
+
+  /**
+   * One of the team a customer's call rang turns it down (M16 H8a): their ring stops on every
+   * device of theirs; once nobody on the team is left ringing, it's missed, as a call nobody
+   * answered (the customer is never told who turned it down).
+   */
+  async function declineForTeam(call: Call, userId: string): Promise<CallResponse> {
+    if (call.state !== 'ringing' || call.callee_id) throw over();
+    const nobodyLeft = await declineTeamRing(ctx, call, userId);
+    await ringStopped(ctx, call, { only: [userId] });
+    if (nobodyLeft) {
+      const ended = await endCall(ctx, call, 'missed');
+      return { call: await callView(ctx, ended ?? call, userId) };
+    }
+    const view = await callView(ctx, call, userId);
+    await ctx.bus.publish([userId], { type: 'call.updated', data: view });
+    return { call: view };
   }
   const over = () => new AppError(409, 'call_ended', tr('That call has ended.'));
 
@@ -118,6 +159,39 @@ export async function callRoutes(app: FastifyInstance, ctx: AppContext) {
     const { id } = parse(callParam, req.params);
     const body = parse(StartCallBody, req.body);
     const { conversation } = await membership(ctx, auth.userId, id);
+    // A customer calls the organization (M16 H8a): its team rings, whoever answers takes it.
+    if (conversation.kind === 'business' && !auth.guest) {
+      ctx.limiter.hit(`call:${auth.userId}`, ctx.config.isTest ? 1000 : 20, 10 * 60_000);
+      const placed = await placeOrgCall(ctx, {
+        conversationId: id,
+        callerId: auth.userId,
+        kind: body.kind,
+        deviceId: body.deviceId,
+      });
+      ctx.metrics.orgCalls.inc({ outcome: 'placed' });
+      reply.status(201);
+      await publishCall(ctx, placed.call, 'call.ringing');
+      for (const userId of placed.team) {
+        // By the name they know the customer by, and the organization it's for.
+        const customer = await nameShownTo(ctx, userId, auth.userId);
+        await notify(ctx, {
+          userId,
+          kind: 'call',
+          level: 'urgency',
+          title: () =>
+            tr('{name} is calling {orgName}', {
+              name: customer ?? tr('Someone'),
+              orgName: placed.orgName,
+            }),
+          body: () => (body.kind === 'video' ? tr('Video call') : tr('Voice call')),
+          data: { conversationId: id, callId: placed.call.id },
+          groupKey: `call:${placed.call.id}`,
+          ttlSeconds: CALL_RING_SECONDS,
+          pushTo: 'web',
+        });
+      }
+      return { call: await callView(ctx, placed.call, auth.userId) };
+    }
     if (conversation.kind !== 'direct')
       throw badRequest(tr('Calls are for conversations between two people.'));
     const people = await participantsOf(ctx.db, id);
@@ -251,7 +325,14 @@ export async function callRoutes(app: FastifyInstance, ctx: AppContext) {
     const { id } = parse(callParam, req.params);
     const { deviceId, notes, notesId, canRecord } = parse(CallEntryBody, req.body);
     const call = await mine(auth.userId, id);
-    if (call.callee_id !== auth.userId) throw forbidden(tr('Only the person called can answer.'));
+    // A customer's call to an organization (M16 H8a): anyone on the team it still rings for takes
+    // it, the first of them.
+    const forTeam = Boolean(call.org_id) && call.caller_id !== auth.userId;
+    if (forTeam) {
+      if (call.callee_id || !(await teamRingsOf(ctx.db, id)).ringing.includes(auth.userId))
+        throw over();
+    } else if (call.callee_id !== auth.userId)
+      throw forbidden(tr('Only the person called can answer.'));
     // Never rung for them (they were on another call): nothing to answer.
     if (!call.callee_rung) throw over();
     const answered = await ctx.db.transaction().execute(async (trx) => {
@@ -276,6 +357,8 @@ export async function callRoutes(app: FastifyInstance, ctx: AppContext) {
         .updateTable('calls')
         .set({
           state: 'active',
+          // The first of the team to answer takes it (M16 H8a).
+          ...(forTeam ? { callee_id: auth.userId } : {}),
           callee_device: deviceId,
           answered_at: ctx.now(),
           seen_at: ctx.now(),
@@ -284,10 +367,12 @@ export async function callRoutes(app: FastifyInstance, ctx: AppContext) {
         })
         .where('id', '=', id)
         .where('state', '=', 'ringing')
+        .$if(forTeam, (q) => q.where('callee_id', 'is', null))
         .returningAll()
         .executeTakeFirst();
     });
     if (!answered) throw over();
+    if (forTeam) ctx.metrics.orgCalls.inc({ outcome: 'answered' });
     await ringStopped(ctx, answered);
     await reconcileNotes(ctx, id);
     await publishCall(ctx, answered);
@@ -298,6 +383,7 @@ export async function callRoutes(app: FastifyInstance, ctx: AppContext) {
     const auth = requireAuth(req);
     const { id } = parse(callParam, req.params);
     const call = await mine(auth.userId, id);
+    if (call.org_id && call.caller_id !== auth.userId) return declineForTeam(call, auth.userId);
     if (call.callee_id !== auth.userId) throw forbidden(tr('Only the person called can decline.'));
     if (call.state !== 'ringing') throw over();
     const ended = (await endCall(ctx, call, 'declined')) ?? call;
@@ -311,6 +397,12 @@ export async function callRoutes(app: FastifyInstance, ctx: AppContext) {
     const body = parse(EndCallBody, req.body ?? {});
     const call = await mine(auth.userId, id);
     if (call.state === 'ended') return { call: await callView(ctx, call, auth.userId) };
+    // Someone on the team a customer's call rang, who isn't in it (M16 H8a): hanging up while it
+    // rings is turning it down; once a colleague has it, it isn't theirs to end.
+    if (call.org_id && call.caller_id !== auth.userId && call.callee_id !== auth.userId) {
+      if (call.state === 'ringing' && !call.callee_id) return declineForTeam(call, auth.userId);
+      return { call: await callView(ctx, call, auth.userId) };
+    }
     const outcome =
       call.state === 'ringing'
         ? call.caller_id === auth.userId
@@ -333,6 +425,7 @@ export async function callRoutes(app: FastifyInstance, ctx: AppContext) {
     const body = parse(CallSignalBody, req.body);
     const call = await mine(auth.userId, id);
     if (call.state === 'ended') throw over();
+    inIt(call, auth.userId);
     const caller = call.caller_id === auth.userId;
     const myDevice = caller ? call.caller_device : call.callee_device;
     const theirDevice = caller ? call.callee_device : call.caller_device;
@@ -374,6 +467,7 @@ export async function callRoutes(app: FastifyInstance, ctx: AppContext) {
     const { id } = parse(callParam, req.params);
     const { deviceId } = parse(CallDeviceBody, req.body);
     const call = await mine(auth.userId, id);
+    inIt(call, auth.userId);
     const caller = call.caller_id === auth.userId;
     if (deviceId !== (caller ? call.caller_device : call.callee_device))
       throw forbidden(tr('This device isn’t in that call.'));

@@ -32,7 +32,7 @@ import {
   RESOURCES_MAX,
   STOCK_MAX,
 } from './booking';
-import { BUSINESS_VIEWS } from './business';
+import { BUSINESS_VIEWS, ORG_CALLS_FROM } from './business';
 import { CALL_KINDS } from './calls';
 import { COLLECTIONS_MAX, SLUG_MAX, slugError } from './catalog';
 import { CONTACTS_MATCH_MAX } from './contacts';
@@ -2172,6 +2172,8 @@ export const UpdateOrgBody = z
     /** What its automatic replies say (M16 H2); empty or null turns one off. */
     greeting: OrgReplyText.nullable().optional(),
     away: OrgReplyText.nullable().optional(),
+    /** Who may call it (M16 H8a): nobody, or its customers. Its owner's and admins' to say. */
+    callsFrom: z.enum(ORG_CALLS_FROM).optional(),
   })
   .strict()
   .refine((b) => Object.keys(b).length > 0, msg('Nothing to change.'));

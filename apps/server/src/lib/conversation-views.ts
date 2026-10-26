@@ -321,6 +321,12 @@ export async function conversationView(
           retentionDays: org.retention_days,
           forms: null,
           agentDraft: null,
+          // It takes their calls here (M16 H8a): its own say, while it's open and they can write.
+          callable:
+            org.calls_from === 'customers' &&
+            !closed &&
+            org.archived_at === null &&
+            org.suspended_at === null,
         };
       } else {
         const [view] = await threadViews(ctx, userId, [thread]);
@@ -342,6 +348,8 @@ export async function conversationView(
           forms: await formNames(ctx.db, org.id),
           // Its AI agent's draft waiting here (M16 G6b): the team's to check.
           agentDraft: await draftFor(ctx.db, conversation.id),
+          // Calling the customer back is a later step (M16 H8a takes their calls).
+          callable: false,
         };
       }
     }

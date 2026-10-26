@@ -1999,4 +1999,12 @@ export const arServer: Catalog = {
   '{name} has waited {time} for a reply from {org}, and nobody has taken it yet.':
     'مضى {time} على رسالة {name} إلى {org} دون رد، ولم يتولَّها أحد بعد.',
   'Their conversation: {link}': 'المحادثة: {link}',
+  'Only the customer calls in a conversation with an organization.':
+    'في المحادثة مع مؤسسة، الاتصال من جهة العميل وحده.',
+  '{orgName} has closed.': 'أُغلقت {orgName}.',
+  '{orgName} can’t be reached on Caime right now.': 'لا يمكن الوصول إلى {orgName} على Caime الآن.',
+  '{orgName} doesn’t take calls on Caime.': 'لا تستقبل {orgName} مكالمات على Caime.',
+  'Cai doesn’t take notes in a conversation with an organization yet.':
+    'لا يدوّن Cai الملاحظات في محادثة مع مؤسسة بعد.',
+  '{name} is calling {orgName}': 'مكالمة من {name} إلى {orgName}',
 };

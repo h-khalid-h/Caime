@@ -2396,6 +2396,11 @@ with its reason, so it isn't proposed again without new facts.
   word measured on a real call, and the cost per minute in RESOURCES.md (convention 13), the
   provider in `processors.ts` and the DPA first. *Not adopted:* the caller paying; a credit of
   Caime's own that people buy (the plan's allowance, and billing's top-up, are the one budget).
+  *Built:* (a) on 2026-10-26 (M16 H8a): "Customers may call" in an organization's setup (off by
+  default, its owner's and admins'); the customer's conversation offers voice and video to the
+  organization, ringing whoever of its team is in that conversation as the organization's; the
+  first to answer takes it, and the customer sees the organization alone in the call and its
+  history. Counted by outcome (`caime_org_calls_total`), the share answered being (b)'s case.
 - **R112 (2026-10-21) A call's notes, written up once, as a note-taker would; one intelligence.**
   The owner: "We previously discussed that Cai will participate in meetings, calls, etc: ensure no
   fragmentation, duplication or confusion across the entire Caime intelligence", with what Gemini

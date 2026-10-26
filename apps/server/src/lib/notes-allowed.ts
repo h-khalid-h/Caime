@@ -1,6 +1,7 @@
 /**
  * Whether Cai may take notes where someone asks for them (M16 F7, F7c; R85, R52): on a Caime
- * whose speech provider is set up, outside a private conversation, asked by an adult on Caime
+ * whose speech provider is set up, outside a private conversation and a customer's conversation
+ * with an organization (whose notes would name its team, R15), asked by an adult on Caime
  * with AI assist on, with nobody under 18 among the people it would hear. Asked in a call
  * (`mayAsk`, `lib/call-notes.ts`) and ahead, by a meeting's card that says so (`sendMessage`).
  * Who is under 18 is never said (R29): the same words whoever it is.
@@ -20,12 +21,10 @@ export async function assertNotesAllowed(
     where: 'call' | 'conversation';
   },
 ): Promise<void> {
-  if (!ctx.speech)
-    throw new AppError(503, 'ai_unavailable', tr('Cai can’t take notes on this Caime yet.'));
   const [conversation, me] = await Promise.all([
     ctx.db
       .selectFrom('conversations')
-      .select('privacy_class')
+      .select(['privacy_class', 'kind'])
       .where('id', '=', input.conversationId)
       .executeTakeFirstOrThrow(),
     ctx.db
@@ -34,6 +33,12 @@ export async function assertNotesAllowed(
       .where('id', '=', input.askerId)
       .executeTakeFirstOrThrow(),
   ]);
+  // A customer's conversation with an organization (M16 H8a): the notes would name who on its team
+  // spoke, which the customer never learns (R15), so not there yet, whatever this Caime runs.
+  if (conversation.kind === 'business')
+    throw forbidden(tr('Cai doesn’t take notes in a conversation with an organization yet.'));
+  if (!ctx.speech)
+    throw new AppError(503, 'ai_unavailable', tr('Cai can’t take notes on this Caime yet.'));
   if (conversation.privacy_class === 'private')
     throw new AppError(
       403,

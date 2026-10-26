@@ -84,6 +84,7 @@ export type AuditAction =
   | 'org.retention_set'
   | 'org.domain_join_set'
   | 'org.member_apps_set'
+  | 'org.calls_set'
   | 'org.reclaim_started'
   | 'org.reclaimed'
   | 'org.deleted'

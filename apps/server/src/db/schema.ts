@@ -13,6 +13,7 @@ import type {
   Gender,
   IntakeQuestion,
   OrderingSettings,
+  OrgCallsFrom,
   PaymentSettings,
 } from '@caime/core';
 import type { AccountFailure } from '@caime/core/accounts';
@@ -1177,6 +1178,8 @@ export interface OrganizationsTable {
   replies_bot_id: Generated<string | null>;
   /** The fields its team keeps for each customer (M16 H3), in its order. */
   customer_fields: JsonDefaulted<CustomerField[]>;
+  /** Who may call it (M16 H8a): nobody until its owner or an admin says its customers may. */
+  calls_from: Generated<OrgCallsFrom>;
   created_at: Generated<Date>;
   updated_at: Generated<Date>;
 }
@@ -1294,6 +1297,18 @@ export interface CallsTable {
   is_group: Generated<boolean>;
   /** A group call's revision: up by one with every change to who's in it. */
   rev: Generated<number>;
+  /**
+   * A customer's call to an organization (M16 H8a): it rings the team in `call_team_rings`, and
+   * whoever answers becomes its callee; the customer sees the organization, never them (R15).
+   */
+  org_id: Generated<string | null>;
+}
+
+/** Who on an organization's team a customer's call rang (M16 H8a), and who turned it down. */
+export interface CallTeamRingsTable {
+  call_id: string;
+  user_id: string;
+  declined_at: NullableTimestamp;
 }
 
 /** A device's public keys for private conversations (R18), tied to the session it signed in with. */
@@ -1886,6 +1901,7 @@ export interface Database {
   agent_drafts: AgentDraftsTable;
   agent_questions: AgentQuestionsTable;
   calls: CallsTable;
+  call_team_rings: CallTeamRingsTable;
   call_members: CallMembersTable;
   call_notes: CallNotesTable;
   call_note_answers: CallNoteAnswersTable;
@@ -2054,6 +2070,7 @@ export const ORG_COLUMNS = [
   'away_message',
   'replies_bot_id',
   'customer_fields',
+  'calls_from',
   'created_at',
   'updated_at',
 ] as const satisfies ReadonlyArray<

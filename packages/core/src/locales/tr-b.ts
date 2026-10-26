@@ -2674,4 +2674,8 @@ export const turkishB: Catalog = {
   'Code for your website': 'Web siteniz için kod',
   'Verify your domain below, and you can put a box on your website where visitors write to you or book a time.':
     'Aşağıda alan adınızı doğrulayın; sonra web sitenize ziyaretçilerin size yazdığı ya da randevu aldığı bir kutu koyabilirsiniz.',
+  'Customers may call': 'Müşteriler arayabilir',
+  'From their conversation with {name}, by voice or video. It rings whoever of the team is in that conversation, the first to answer takes it, and the customer sees {name}, never who answered.':
+    '{name} ile konuşmalarından, sesli ya da görüntülü. Arama, ekipten o konuşmada olanlara çalar; ilk yanıtlayan aramayı alır ve müşteri, yanıtlayanı değil {name} adını görür.',
+  '{status} · calling {orgName}': '{status} · {orgName} aranıyor',
 };

@@ -158,7 +158,12 @@ function OneToOneCallLayer() {
           role={phase === 'active' ? 'timer' : undefined}
           testID="call-status"
         >
-          {phase === 'incoming' ? tr('{status} · calling you', { status }) : status}
+          {phase === 'incoming'
+            ? // A customer's call to an organization rings its team as the organization's (M16 H8a).
+              call.org && call.caller.id !== me
+              ? tr('{status} · calling {orgName}', { status, orgName: call.org.name })
+              : tr('{status} · calling you', { status })
+            : status}
         </Text>
         {phase === 'active' || phase === 'outgoing' ? (
           <NotesLine notes={call.notes} me={me} />
@@ -301,9 +306,9 @@ function OneToOneCallLayer() {
                   testID="call-camera"
                 />
               ) : null}
-              {phase === 'active' || phase === 'outgoing' ? (
+              {(phase === 'active' || phase === 'outgoing') && !call.org ? (
                 // Asked while it rings, the ring itself asks (R85 (1): the caller's consent is
-                // starting with Cai).
+                // starting with Cai). Not in a call with an organization yet (M16 H8a).
                 <NotesRound callId={call.id} notes={call.notes} testID="call-notes" />
               ) : null}
               <Round
