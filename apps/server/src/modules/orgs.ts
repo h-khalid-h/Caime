@@ -108,8 +108,9 @@ import { personViewsFor } from '../lib/people-batch';
 import { orgPlacesFor } from '../lib/places';
 import { assertInsights, assertOrgRoom, orgPlanView } from '../lib/plans';
 import { VISITOR } from '../lib/public-booking';
-import { doorPath } from '../lib/public-pages';
+import { doorPath, framedBy } from '../lib/public-pages';
 import { viewerRelation } from '../lib/relations';
+import { esc } from '../lib/site-pages';
 import { forgetSitemaps } from '../lib/sitemap-cache';
 import { addToSpace, orgSpaceViews, removeFromSpace } from '../lib/space-members';
 import { itemsWithStock } from '../lib/stock';
@@ -476,9 +477,25 @@ export async function orgRoutes(app: FastifyInstance, ctx: AppContext) {
     const bookUrl = bookable.length
       ? `${base}/o/${handle}${bookable.length === 1 ? `/${encodeURIComponent(bookable[0]?.slug ?? '')}` : ''}`
       : null;
+    // Its door on its own website (R117, M17 I17a): one line to paste, framed only by the domain
+    // it proved, so nobody else can show it as theirs.
+    const widgetUrl = `${base}/o/${handle}/widget`;
+    const widget =
+      framedBy(ctx, org) && org.domain
+        ? {
+            url: widgetUrl,
+            domain: org.domain,
+            snippet: `<iframe src="${esc(widgetUrl)}" title="${esc(org.name)}" loading="lazy" style="width:100%;max-width:440px;height:640px;border:0"></iframe>`,
+          }
+        : null;
     // Follows the catalog, so it's asked again each time (cheap: a code of a short link).
     reply.header('cache-control', 'private, no-cache');
-    return { url, qr: qrPath(url), book: bookUrl ? { url: bookUrl, qr: qrPath(bookUrl) } : null };
+    return {
+      url,
+      qr: qrPath(url),
+      book: bookUrl ? { url: bookUrl, qr: qrPath(bookUrl) } : null,
+      widget,
+    };
   });
 
   /**

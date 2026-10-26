@@ -23,11 +23,13 @@ export interface CatalogCollection {
 }
 
 /**
- * Words a host's page already uses after its handle (`/o/<handle>/setup`), and the links' own
- * (`?book`, `?order`, `?pay`, `?write`): never an item's or a collection's address.
+ * Words a host's page already uses after its handle (`/o/<handle>/setup`, `/o/<handle>/widget`),
+ * and the links' own (`?book`, `?order`, `?pay`, `?write`): never an item's or a collection's
+ * address.
  */
 export const RESERVED_SLUGS = [
   'setup',
+  'widget',
   'inbox',
   'book',
   'order',

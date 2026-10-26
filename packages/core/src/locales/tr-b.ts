@@ -2668,4 +2668,10 @@ export const turkishB: Catalog = {
     other: 'Cai bir seferde en fazla {n} tanesine bakar',
   },
   'Moved {n} times': { one: 'Tarihi bir kez değişti', other: 'Tarihi {n} kez değişti' },
+  'On your website': 'Web sitenizde',
+  'Paste this into your website where the box should be: visitors write to you or book a time in it, and it lands in your inbox. Only pages at {domain} can show it.':
+    'Bunu web sitenizde kutunun olacağı yere yapıştırın: ziyaretçiler orada size yazar ya da randevu alır, hepsi gelen kutunuza düşer. Onu yalnızca {domain} sayfaları gösterebilir.',
+  'Code for your website': 'Web siteniz için kod',
+  'Verify your domain below, and you can put a box on your website where visitors write to you or book a time.':
+    'Aşağıda alan adınızı doğrulayın; sonra web sitenize ziyaretçilerin size yazdığı ya da randevu aldığı bir kutu koyabilirsiniz.',
 };

@@ -36,6 +36,7 @@ const StartForm = z.object({
   message: z.string().max(WRITE_MAX * 2),
   adult: z.string().optional(),
   lang: Lang,
+  embed: z.literal('1').optional(),
 });
 
 const ConfirmForm = z.object({
@@ -43,6 +44,7 @@ const ConfirmForm = z.object({
   claim: z.string().min(16).max(8192),
   code: z.string().min(1).max(12),
   lang: Lang,
+  embed: z.literal('1').optional(),
 });
 
 export async function publicWriteRoutes(app: FastifyInstance, ctx: AppContext) {
@@ -55,16 +57,21 @@ export async function publicWriteRoutes(app: FastifyInstance, ctx: AppContext) {
     return org;
   };
 
-  /** Back to the organization's page at its form, with the step in the query (the language kept). */
+  /**
+   * Back to the organization's page at its form, with the step in the query (the language kept);
+   * to its door on its own website when it came from there (M17 I17a).
+   */
   const back = (
     reply: FastifyReply,
     org: Organization,
     state: Record<string, string>,
     lang: string | undefined,
+    embed?: '1',
   ) => {
     const q = new URLSearchParams(state);
     if (lang && (INTERFACE_LANGUAGES as readonly string[]).includes(lang)) q.set('lang', lang);
-    return reply.redirect(`/o/${encodeURIComponent(org.handle)}?${q.toString()}#write`, 303);
+    const page = `/o/${encodeURIComponent(org.handle)}${embed ? '/widget' : ''}`;
+    return reply.redirect(`${page}?${q.toString()}#write`, 303);
   };
 
   await app.register(async (forms) => {
@@ -82,7 +89,7 @@ export async function publicWriteRoutes(app: FastifyInstance, ctx: AppContext) {
       const org = await orgByHandle(form.org);
       const refused = (reason: WriteRefusal) => {
         ctx.metrics.publicWrites.inc({ outcome: reason });
-        return back(reply, org, { write: '', 'write-error': reason }, form.lang);
+        return back(reply, org, { write: '', 'write-error': reason }, form.lang, form.embed);
       };
       try {
         hourly(`public-write:ip:${req.ip}`, STARTS_AN_HOUR);
@@ -97,10 +104,11 @@ export async function publicWriteRoutes(app: FastifyInstance, ctx: AppContext) {
         body: form.message,
         // Without an account nobody says their age: the box stands for it, where it's asked (R29).
         adult: form.adult === 'on',
+        site: form.embed === '1',
       });
       if (started.kind === 'refused') return refused(started.reason);
       ctx.metrics.publicWrites.inc({ outcome: 'code_sent' });
-      return back(reply, org, { 'write-code': started.claim }, form.lang);
+      return back(reply, org, { 'write-code': started.claim }, form.lang, form.embed);
     });
 
     /** Step two: the code; the message lands as the provisional person's, in the inbox. */
@@ -119,6 +127,7 @@ export async function publicWriteRoutes(app: FastifyInstance, ctx: AppContext) {
             org,
             { 'write-code': form.claim, 'write-error': 'too_many' },
             form.lang,
+            form.embed,
           );
         }
         throw err;
@@ -126,11 +135,12 @@ export async function publicWriteRoutes(app: FastifyInstance, ctx: AppContext) {
       const claim = await openWriteClaim(ctx, form.claim);
       if (!claim) {
         counted('expired');
-        return back(reply, org, { write: '', 'write-error': 'expired' }, form.lang);
+        return back(reply, org, { write: '', 'write-error': 'expired' }, form.lang, form.embed);
       }
       const done = await confirmVisitorWrite(ctx, org, claim, form.code.trim());
       counted(done.kind === 'written' ? 'written' : done.reason);
-      if (done.kind === 'written') return back(reply, org, { written: form.claim }, form.lang);
+      if (done.kind === 'written')
+        return back(reply, org, { written: form.claim }, form.lang, form.embed);
       // A wrong code is tried again on the same claim; a code that ran out goes back to the form
       // with what they wrote, to send for a new one; anything else starts over.
       const state: Record<string, string> =
@@ -139,7 +149,7 @@ export async function publicWriteRoutes(app: FastifyInstance, ctx: AppContext) {
           : done.reason === 'code_expired'
             ? { 'write-again': form.claim, 'write-error': done.reason }
             : { write: '', 'write-error': done.reason };
-      return back(reply, org, state, form.lang);
+      return back(reply, org, state, form.lang, form.embed);
     });
   });
 }

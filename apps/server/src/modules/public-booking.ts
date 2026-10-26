@@ -38,6 +38,7 @@ const StartForm = z.object({
   email: z.string().min(3).max(254),
   adult: z.string().optional(),
   lang: Lang,
+  embed: z.literal('1').optional(),
 });
 
 const ConfirmForm = z.object({
@@ -46,6 +47,7 @@ const ConfirmForm = z.object({
   claim: z.string().min(16).max(2048),
   code: z.string().min(1).max(12),
   lang: Lang,
+  embed: z.literal('1').optional(),
 });
 
 export async function publicBookingRoutes(app: FastifyInstance, ctx: AppContext) {
@@ -61,15 +63,19 @@ export async function publicBookingRoutes(app: FastifyInstance, ctx: AppContext)
     throw notFound(tr('That page'));
   };
 
-  /** Back to the item's page, with the step's state in the query (the language kept). */
+  /**
+   * Back to the item's page, with the step's state in the query (the language kept), framed as it
+   * came when it came from the organization's own website (M17 I17a).
+   */
   const back = (
     reply: FastifyReply,
     host: VisitorHost,
     slug: string,
     state: Record<string, string>,
     lang: string | undefined,
+    embed?: '1',
   ) => {
-    const q = new URLSearchParams(state);
+    const q = new URLSearchParams(embed ? { embed, ...state } : state);
     if (lang && (INTERFACE_LANGUAGES as readonly string[]).includes(lang)) q.set('lang', lang);
     const query = q.toString();
     const handle = encodeURIComponent(host.row.handle);
@@ -93,7 +99,7 @@ export async function publicBookingRoutes(app: FastifyInstance, ctx: AppContext)
       const slug = catalogOf(host.row).items.find((i) => i.id === form.item)?.slug ?? form.item;
       const refused = (reason: VisitorRefusal) => {
         ctx.metrics.publicBookings.inc({ outcome: reason });
-        return back(reply, host, slug, { 'book-error': reason }, form.lang);
+        return back(reply, host, slug, { 'book-error': reason }, form.lang, form.embed);
       };
       // Without an account nobody says their age: the box stands for it (R29).
       if (form.adult !== 'on') return refused('adult');
@@ -109,10 +115,11 @@ export async function publicBookingRoutes(app: FastifyInstance, ctx: AppContext)
         at: form.slot,
         name: form.name,
         email: form.email,
+        site: form.embed === '1',
       });
       if (started.kind === 'refused') return refused(started.reason);
       ctx.metrics.publicBookings.inc({ outcome: 'code_sent' });
-      return back(reply, host, slug, { code: started.claim }, form.lang);
+      return back(reply, host, slug, { code: started.claim }, form.lang, form.embed);
     });
 
     /** Step two: the code; the booking lands as the provisional person's request. */
@@ -127,14 +134,14 @@ export async function publicBookingRoutes(app: FastifyInstance, ctx: AppContext)
       } catch (err) {
         if (err instanceof AppError && err.code === 'rate_limited') {
           counted('too_many');
-          return back(reply, host, slug, { 'book-error': 'too_many' }, form.lang);
+          return back(reply, host, slug, { 'book-error': 'too_many' }, form.lang, form.embed);
         }
         throw err;
       }
       const claim = await openClaim(ctx, form.claim);
       if (!claim) {
         counted('expired');
-        return back(reply, host, slug, { 'book-error': 'expired' }, form.lang);
+        return back(reply, host, slug, { 'book-error': 'expired' }, form.lang, form.embed);
       }
       const done = await confirmVisitorBooking(ctx, host, claim, form.code.trim());
       counted(done.kind === 'booked' ? 'booked' : done.reason);
@@ -147,9 +154,10 @@ export async function publicBookingRoutes(app: FastifyInstance, ctx: AppContext)
           slug,
           again ? { code: form.claim, 'book-error': done.reason } : { 'book-error': done.reason },
           form.lang,
+          form.embed,
         );
       }
-      return back(reply, host, slug, { booked: form.claim }, form.lang);
+      return back(reply, host, slug, { booked: form.claim }, form.lang, form.embed);
     });
   });
 }

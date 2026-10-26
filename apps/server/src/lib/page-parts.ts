@@ -87,11 +87,13 @@ export function offerCard(o: {
   photo: string | null;
   each: boolean;
   out?: boolean;
+  /** Opens where it is, inside an organization's door on its own website (M17 I17a). */
+  self?: boolean;
 }): string {
   const thumb = o.photo
     ? `<img class="thumb" src="${esc(o.photo)}" alt="" width="56" height="56" loading="lazy">`
     : `<span class="thumb thumb-icon">${icon(o.each ? 'box' : 'calendar', 22)}</span>`;
-  return `<li><a class="card" href="${esc(o.href)}">${thumb}<span class="card-body"><span class="card-title">${esc(o.name)}</span><span class="card-line">${esc(o.line)}</span></span>${o.out ? `<span class="pill-out">${esc(tr('Sold out'))}</span>` : ''}${icon('chevron', 18, 'chev')}</a></li>`;
+  return `<li><a class="card" href="${esc(o.href)}"${o.self ? ' target="_self"' : ''}>${thumb}<span class="card-body"><span class="card-title">${esc(o.name)}</span><span class="card-line">${esc(o.line)}</span></span>${o.out ? `<span class="pill-out">${esc(tr('Sold out'))}</span>` : ''}${icon('chevron', 18, 'chev')}</a></li>`;
 }
 
 /** A section with its label (sentence case, quiet) and what's in it. */
@@ -170,6 +172,13 @@ ${body}</details>`;
 /** The visitor pages' look (R95), beside the site's and the entry screens'. */
 export const SHEET_STYLE = `
 .pub-sheet{max-width:720px;padding:0 20px 40px;line-height:1.5}
+.pub-embed{padding:16px 16px 20px}
+.pub-embed .embed-head{display:flex;align-items:center;gap:12px;margin:0 0 12px}
+.pub-embed .embed-head h1{${type('headline')};color:var(--ink);margin:0}
+.pub-embed .embed-back{margin:0 0 12px}
+.pub-embed .embed-back a{display:inline-flex;align-items:center;gap:8px;${type('label')};text-decoration:none}
+.pub-embed .item-main h1{font-size:24px;line-height:calc(30px * var(--line,1))}
+.pub-embed .embed-foot{${type('caption')};color:var(--text-tertiary);text-align:center;margin:16px 0 0}
 .pub-sheet a{color:var(--link)}
 .pub-sheet .ic{flex:none;vertical-align:middle}
 [dir=rtl] .pub-sheet .chev{transform:scaleX(-1)}

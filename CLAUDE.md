@@ -423,9 +423,19 @@ A sphere is said as how you know someone, never "sphere".
   from a page, or the organization's page listing several, null while there's none; asked again
   each time, since it follows the catalog, and refreshed by `booking.changed`), drawn by
   `features/orgs/OrgDoor.tsx`. Anything else printed for a clinic (a receipt line, a bio) reuses
-  those links and paths, never another encoder or a second link shape. The page for
-  organizations' "Start free" is `BUSINESS_START` (`/sign-up?link=/orgs/new`), which onboarding
-  treats as a linked arrival ("Start your organization").
+  those links and paths, never another encoder or a second link shape. Its door on its own website
+  (R117, M17 I17a) is `/o/<handle>/widget` and an item's page asked for with `?embed=1`: the
+  visitor's page made compact (`framedDoor`, `framedItem` in `renderPublic`), framed only by the
+  domain it proved (`framedBy`, carried as `frame` on the page, which `plugins/static.ts` writes as
+  `frame-ancestors` with no `X-Frame-Options`; anyone else's widget is the 404), every link out
+  opening on Caime in a new tab (`<base target="_blank">`), its forms and the way to an item in the
+  frame (`target="_self"`, a hidden `embed=1` each form's `back` carries to every step). What starts
+  there has `site` in its sealed claim and a `public-write:site:` or `public-book:site:` client id,
+  counted on `growth.door.fromSites`, and `OrgDoorView.widget` is the one line to paste (an
+  `<iframe>`), null while unverified. A new thing a visitor does in the frame carries `embed`
+  through every redirect; `widget` is a reserved slug. The page for organizations' "Start free" is
+  `BUSINESS_START` (`/sign-up?link=/orgs/new`), which onboarding treats as a linked arrival ("Start
+  your organization").
 - An organization's setup (R57) is `/o/[handle]/setup` (`features/orgs/OrgSetup.tsx`, owner and
   admins only; others get a line saying so): the door, `OrgVerification`, `OrgData`, `OrgBooking`,
   `OrgCheckout`, `OrgAgent`, `OrgApps` and `OrgPlan`, in a clinic's order. The page (`OrgScreen`)

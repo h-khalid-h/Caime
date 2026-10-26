@@ -4387,9 +4387,17 @@ clinic can sign for. I1 lands before launch.
   - [ ] I16b. A person's unanswered call answered by Cai (L), after H8a and R111's voice path; a
         minute measured on a real call first.
 - [ ] I17. Caime as infrastructure, from an organization's own website (R117).
-  - [ ] I17a. The website snippet (M): `/o/<handle>/widget` and a snippet from the setup's door,
-        the chat and the booking and ordering forms on the visitor-page shape (R97), framed only
-        by the organization's verified domain (`frame-ancestors`), counted on `growth.door`.
+  - [x] I17a. The website snippet (M): `/o/<handle>/widget` and a snippet from the setup's door,
+        the chat and the booking forms on the visitor-page shape (R97), framed only by the
+        organization's verified domain (`frame-ancestors`), counted on `growth.door.fromSites`.
+        The widget is the organization's head, the write form open and the items a visitor may
+        book, each its own page in the frame (`?embed=1`), every step's redirect back into the
+        frame, every link out on Caime in a new tab; ordering stays a link out (no visitor
+        ordering yet), and calls wait on H8a. Server tests (`widget.test.ts`: framed by its
+        domain alone, the 404 for anyone else, both forms kept in the frame, the client ids and
+        the count, the snippet) and an E2E (`e2e/widget.spec.ts`: a page on the verified
+        domain frames it on a phone, a visitor writes and types the code inside it, the team has
+        it, a link out opens a tab, a page elsewhere is refused by the browser, axe clean).
   - [ ] I17b. Platforms embed the same parts for their organizations (apps, sign-in with Caime),
         when one asks: a council of its own first.
 - [x] I18. Time-aware intelligence (R118, the owner's report from Momo's chat): Cai's and the
@@ -6654,3 +6662,10 @@ CONNIQT; they mean Caime. Caishy is one of Caime's AI members, and Cai leads the
 - 2026-10-26 — M17 I15a2 (R115): the slipping tell. A customer waiting past the reply target while
   the organization is open, with nobody on it, is told once to whoever runs it, in their Cai chat
   and language, unless they asked Cai for less; a wait met while it's closed is told as it opens.
+- 2026-10-26 — M17 I17a (R117): an organization's door on its own website. Its setup's door hands
+  a verified organization one line to paste (an `<iframe>` of `/o/<handle>/widget`); the widget
+  is its visitor page made compact, framed only by its domain and what's under it, its forms and
+  items kept in the frame at every step, every other link opening on Caime in a new tab, nothing
+  of a session in it. What starts there is counted as from its website (`growth.door.fromSites`),
+  the council's number for R117. Server tests (widget 5, the visitor forms, pages, door, metrics),
+  the E2E on a real other origin, the gate.

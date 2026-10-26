@@ -180,6 +180,11 @@ export interface PublicOrg {
    * item's host).
    */
   write: VisitorWriteState | null;
+  /**
+   * Its door on its own website (R117, M17 I17a): the sites that may frame it, the compact page
+   * drawn for them; absent on its own page.
+   */
+  frame?: string[];
 }
 /** A catalog item as a visitor reads it: nothing of who does it. */
 export type PublicItem = Pick<
@@ -269,6 +274,8 @@ export interface PublicItemPage {
    * only joining.
    */
   booking: VisitorBookingState | null;
+  /** Framed in its organization's door on its own website (M17 I17a): the sites that may. */
+  frame?: string[];
 }
 export interface PublicCollectionPage {
   kind: 'collection';
@@ -696,6 +703,12 @@ async function pageAt(
     const row = await orgRowByHandle(db, handle);
     if (!row) return slug ? { kind: 'app' } : { kind: 'missing' };
     const o = await publicOrgFrom(db, row);
+    // Its door on its own website (M17 I17a): only a verified domain's sites may frame it.
+    const frame = slug === 'widget' || search.get('embed') === '1' ? framedBy(ctx, row) : null;
+    if (slug === 'widget')
+      return frame
+        ? { ...o, write: await visitorWriteState(ctx, o.org, search), frame }
+        : { kind: 'missing' };
     // A visitor writes to it from its page, the door's three fields first (R97 (1)).
     if (!slug) return { ...o, write: await visitorWriteState(ctx, o.org, search) };
     const shelf = shelfPage(o, slug);
@@ -705,6 +718,7 @@ async function pageAt(
       ? {
           ...shelf,
           booking: await visitorBookingState(ctx, { kind: 'org', row }, shelf.item.id, search),
+          ...(frame ? { frame } : {}),
         }
       : shelf;
   }
@@ -729,6 +743,21 @@ async function pageAt(
     ...shelf,
     booking: await visitorBookingState(ctx, visitorHost, shelf.item.id, search),
   };
+}
+
+/**
+ * The sites that may frame an organization's door (R117, M17 I17a): its verified domain and
+ * everything under it, over https (and http too where Caime itself runs over it, a local run);
+ * none while it hasn't proved a domain, so nobody frames it as theirs.
+ */
+export function framedBy(
+  ctx: Pick<AppContext, 'config'>,
+  row: Pick<Organization, 'domain' | 'verified_at'>,
+): string[] | null {
+  const domain = row.domain?.toLowerCase() ?? '';
+  if (!row.verified_at || !/^[a-z0-9-]+(\.[a-z0-9-]+)+$/.test(domain)) return null;
+  const schemes = ctx.config.PUBLIC_URL.startsWith('http:') ? ['https', 'http'] : ['https'];
+  return schemes.flatMap((s) => [`${s}://${domain}`, `${s}://*.${domain}`]);
 }
 
 /** `%D9%82…` as the letters it is; junk as nothing. */
@@ -979,6 +1008,77 @@ export function renderPublic(
       .filter(Boolean)
       .join('\n');
   };
+  /**
+   * An organization's door on its own website (R117, M17 I17a): the page its site frames, kept
+   * out of every index, its links opening on Caime in a new tab (`<base target>`) while its forms
+   * and the way between its own pages stay in the frame (`target="_self"`).
+   */
+  const framedHead = (title: string, description: string) =>
+    `${meta({ title, description, image: null, index: false })}\n<base target="_blank">`;
+  const framedFoot = (o: OrgRef) =>
+    `<p class="embed-foot"><a href="${esc(`/o/${o.handle}`)}">${esc(o.name)} · ${esc(tr('an organization on {site}', { site: SITE_NAME }))}</a></p>`;
+  const framedDoor = (page: PublicOrg): Rendered => {
+    const o = page.org;
+    const bookable = page.items.filter((i) => i.unit !== 'each');
+    return {
+      status: 200,
+      lang: currentTranslator().language,
+      head: framedHead(`${o.name} · ${SITE_NAME}`, page.about ?? o.name),
+      body: `
+<main class="pub pub-sheet pub-embed" ${langAttrs()}>
+  <header class="embed-head">${avatar({ name: o.name, src: o.avatarUrl, size: 40, shape: 'mark' })}<div><h1>${esc(o.name)}</h1><p class="who"><bdi>@${esc(o.handle)}</bdi>${o.verified && o.verifiedDomain ? verifiedMark(o.verifiedDomain) : ''}</p></div></header>
+  ${
+    page.write
+      ? writeSection(o, page.write, true)
+      : `<p><a class="btn" href="${esc(wayIn('sign-up', doorPath(o.handle)))}">${icon('message', 18)}${esc(tr('Message {name} on {site}', { name: o.name, site: SITE_NAME }))}</a></p>`
+  }
+  ${section(
+    tr('Book a time'),
+    bookable.length
+      ? `<ul class="cards">${bookable
+          .map((i) =>
+            offerCard({
+              href: `${shelfPath(page, i.slug)}?embed=1`,
+              name: i.name,
+              line: itemLine(i, placeOf(page, i)),
+              photo: photoOf(page, i),
+              each: false,
+              self: true,
+            }),
+          )
+          .join('')}</ul>`
+      : '',
+  )}
+  ${framedFoot(o)}
+</main>`,
+    };
+  };
+  const framedItem = (page: PublicItemPage): Rendered => {
+    const { host, item } = page;
+    const o = host.kind === 'org' ? host.org : null;
+    if (!o) return renderPublic({ kind: 'missing' }, publicUrl, path, facts);
+    return {
+      status: 200,
+      lang: currentTranslator().language,
+      head: framedHead(`${item.name} · ${o.name} · ${SITE_NAME}`, item.description ?? item.name),
+      body: `
+<main class="pub pub-sheet pub-item pub-embed" ${langAttrs()}>
+  <p class="embed-back"><a href="${esc(`/o/${o.handle}/widget`)}" target="_self">${hostFace(host, 24)}${esc(o.name)}</a></p>
+  <div class="item-main">
+    <h1>${esc(item.name)}</h1>
+    ${chips(itemChips(host, item))}
+    ${item.description ? `<p class="lead">${esc(item.description)}</p>` : ''}
+    ${
+      page.booking
+        ? bookingSection(host, item, page.booking, path, true)
+        : `<p><a class="btn" href="${esc(wayIn('sign-up', bookPath(path)))}">${esc(tr('Book'))}</a></p>`
+    }
+  </div>
+  ${framedFoot(o)}
+</main>`,
+    };
+  };
+
   switch (page.kind) {
     case 'landing': {
       const home = renderLanding(facts);
@@ -1140,6 +1240,7 @@ export function renderPublic(
       };
     }
     case 'org': {
+      if (page.frame) return framedDoor(page);
       // Writing without an account (R97 (1)): the door's three fields lead the page when they came
       // by it or are partway through; otherwise the form waits below what the organization offers.
       const write = page.write;
@@ -1216,6 +1317,7 @@ export function renderPublic(
       };
     }
     case 'item': {
+      if (page.frame) return framedItem(page);
       const { host, item } = page;
       const name = hostName(host);
       const shelf = host.collections.find((c) => c.id === item.collectionId) ?? null;
@@ -1904,6 +2006,8 @@ function bookingSection(
   item: PublicItem,
   booking: VisitorBookingState,
   path: string,
+  /** In the organization's door on its own website (M17 I17a): every step stays in the frame. */
+  embed = false,
 ): string {
   const name = hostName(host);
   const handle = host.kind === 'org' ? host.org.handle : host.handle;
@@ -1911,7 +2015,12 @@ function bookingSection(
   const hidden =
     `<input type="hidden" name="host" value="${esc(handle)}">` +
     `<input type="hidden" name="item" value="${esc(item.id)}">` +
-    `<input type="hidden" name="lang" value="${esc(language)}">`;
+    `<input type="hidden" name="lang" value="${esc(language)}">` +
+    (embed ? '<input type="hidden" name="embed" value="1">' : '');
+  // The item's own page with a step's query, framed where it was.
+  const at = (query = '') =>
+    embed ? `${path}?embed=1${query ? `&${query}` : ''}` : `${path}${query ? `?${query}` : ''}`;
+  const stay = embed ? ' target="_self"' : '';
   const notice = (reason: VisitorRefusal | null) =>
     reason ? `<p class="notice" role="alert">${refusalLine(reason, path)}</p>` : '';
   if (booking.step === 'booked') {
@@ -1926,10 +2035,10 @@ function bookingSection(
     return `<section class="formcard" id="book" aria-labelledby="book-title"><h2 id="book-title">${esc(tr('Check your email'))}</h2>
 <p class="lead">${esc(tr('A six-digit code went to {email}. Type it to book {item}, {when}.', { email: booking.email, item: item.name, when }))}</p>
 ${notice(booking.error)}
-<form class="form" method="post" action="/v1/public/book/confirm">${hidden}<input type="hidden" name="claim" value="${esc(booking.claim)}">
+<form class="form" method="post" action="/v1/public/book/confirm"${stay}>${hidden}<input type="hidden" name="claim" value="${esc(booking.claim)}">
 <div class="fields"><label class="field">${esc(tr('Code'))}<input name="code" inputmode="numeric" pattern="[0-9]{6}" maxlength="6" autocomplete="one-time-code" required></label></div>
 <button class="btn" type="submit">${esc(tr('Book'))}</button>
-<p class="how"><a href="${esc(path)}">${esc(tr('Pick another time'))}</a></p></form></section>`;
+<p class="how"><a href="${esc(at())}"${stay}>${esc(tr('Pick another time'))}</a></p></form></section>`;
   }
   const { slots } = booking;
   const days = slots.days.length
@@ -1947,11 +2056,11 @@ ${notice(booking.error)}
     : `<p class="lead">${esc(tr('No free times this week.'))}</p>`;
   const pager =
     slots.previous || slots.next
-      ? `<p class="pager">${slots.previous ? `<a href="${esc(`${path}?from=${slots.previous}`)}#book">${esc(tr('Earlier'))}</a>` : ''}${slots.next ? `<a href="${esc(`${path}?from=${slots.next}`)}#book">${esc(tr('Later'))}</a>` : ''}</p>`
+      ? `<p class="pager">${slots.previous ? `<a href="${esc(at(`from=${slots.previous}`))}#book"${stay}>${esc(tr('Earlier'))}</a>` : ''}${slots.next ? `<a href="${esc(at(`from=${slots.next}`))}#book"${stay}>${esc(tr('Later'))}</a>` : ''}</p>`
       : '';
   return `<section class="formcard" id="book" aria-labelledby="book-title"><h2 id="book-title">${esc(tr('Book a time'))}</h2>
 ${notice(booking.error)}
-<form class="form" method="post" action="/v1/public/book">${hidden}
+<form class="form" method="post" action="/v1/public/book"${stay}>${hidden}
 ${days}${pager}
 <div class="fields">
 <label class="field">${esc(tr('Your name'))}<input name="name" maxlength="80" autocomplete="name" required></label>
@@ -2004,12 +2113,19 @@ function writeRefusalLine(reason: WriteRefusal, o: OrgRef): string {
  * it went and where the answer comes: by mail where Caime Mail carries the team's words, else to
  * whoever joins with the address (R93). No script: every step is a page.
  */
-function writeSection(o: OrgRef, write: VisitorWriteState): string {
+function writeSection(
+  o: OrgRef,
+  write: VisitorWriteState,
+  /** In its door on its own website (M17 I17a): every step stays in the frame. */
+  embed = false,
+): string {
   const language = currentTranslator().language;
-  const path = `/o/${o.handle}`;
+  const path = `/o/${o.handle}${embed ? '/widget' : ''}`;
   const hidden =
     `<input type="hidden" name="org" value="${esc(o.handle)}">` +
-    `<input type="hidden" name="lang" value="${esc(language)}">`;
+    `<input type="hidden" name="lang" value="${esc(language)}">` +
+    (embed ? '<input type="hidden" name="embed" value="1">' : '');
+  const stay = embed ? ' target="_self"' : '';
   const notice = (reason: WriteRefusal | null) =>
     reason ? `<p class="notice" role="alert">${writeRefusalLine(reason, o)}</p>` : '';
   if (write.step === 'written') {
@@ -2034,15 +2150,15 @@ function writeSection(o: OrgRef, write: VisitorWriteState): string {
     return `<section class="formcard" id="write" aria-labelledby="write-title"><h2 id="write-title">${esc(tr('Check your email'))}</h2>
 <p class="lead">${esc(tr('A six-digit code went to {email}. Type it to send your message to {name}.', { email: write.email, name: o.name }))}</p>
 ${notice(write.error)}
-<form class="form" method="post" action="/v1/public/write/confirm">${hidden}<input type="hidden" name="claim" value="${esc(write.claim)}">
+<form class="form" method="post" action="/v1/public/write/confirm"${stay}>${hidden}<input type="hidden" name="claim" value="${esc(write.claim)}">
 <div class="fields"><label class="field">${esc(tr('Code'))}<input name="code" inputmode="numeric" pattern="[0-9]{6}" maxlength="6" autocomplete="one-time-code" required></label></div>
 <button class="btn" type="submit">${esc(tr('Send'))}</button>
-<p class="how"><a href="${esc(`${path}?write-again=${encodeURIComponent(write.claim)}`)}#write">${esc(tr('Change what I wrote'))}</a></p></form></section>`;
+<p class="how"><a href="${esc(`${path}?write-again=${encodeURIComponent(write.claim)}`)}#write"${stay}>${esc(tr('Change what I wrote'))}</a></p></form></section>`;
   }
   const before = write.prefill;
   return `<section class="formcard" id="write" aria-labelledby="write-title"><h2 id="write-title">${esc(tr('Write to {name}', { name: o.name }))}</h2>
 ${notice(write.error)}
-<form class="form" method="post" action="/v1/public/write">${hidden}
+<form class="form" method="post" action="/v1/public/write"${stay}>${hidden}
 <div class="fields">
 <label class="field">${esc(tr('Your name'))}<input name="name" maxlength="80" autocomplete="name" required value="${esc(before?.name ?? '')}"></label>
 <label class="field">${esc(tr('Email'))}<input type="email" name="email" maxlength="254" autocomplete="email" required value="${esc(before?.email ?? '')}"></label>

@@ -3571,4 +3571,10 @@ export const arB: Catalog = {
     many: 'تغيّر موعده {n} مرة',
     other: 'تغيّر موعده {n} مرة',
   },
+  'On your website': 'على موقعك',
+  'Paste this into your website where the box should be: visitors write to you or book a time in it, and it lands in your inbox. Only pages at {domain} can show it.':
+    'الصق هذا في موقعك حيث تريد المربع: يكتب لك الزوار أو يحجزون موعدًا فيه، ويصل ذلك إلى صندوقك. لا تعرضه إلا صفحات {domain}.',
+  'Code for your website': 'رمز لموقعك',
+  'Verify your domain below, and you can put a box on your website where visitors write to you or book a time.':
+    'وثّق نطاقك أدناه، وعندها يمكنك وضع مربع على موقعك يكتب لك فيه الزوار أو يحجزون موعدًا.',
 };

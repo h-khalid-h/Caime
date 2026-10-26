@@ -78,6 +78,8 @@ export interface BookingClaim {
   personId: string;
   name: string;
   email: string;
+  /** Booked on the organization's own website, its door there (R117, M17 I17a). */
+  site?: true;
   e: number;
 }
 
@@ -206,7 +208,7 @@ export type VisitorStart =
 export async function startVisitorBooking(
   ctx: AppContext,
   visitorHost: VisitorHost,
-  ask: { itemId: string; at: string; name: string; email: string },
+  ask: { itemId: string; at: string; name: string; email: string; site?: boolean },
 ): Promise<VisitorStart> {
   if (!visitorMayBook(visitorHost, ctx.now())) return { kind: 'refused', reason: 'not_bookable' };
   const host = hostOf(visitorHost);
@@ -247,6 +249,7 @@ export async function startVisitorBooking(
     personId: person.id,
     name,
     email,
+    ...(ask.site ? { site: true as const } : {}),
     e: ctx.now().getTime() + CLAIM_MS,
   };
   return { kind: 'code', claim: await sealClaim(ctx, claim) };
@@ -303,7 +306,7 @@ export async function confirmVisitorBooking(
   try {
     const sent = await sendMessage(ctx, person.id, conversationId, {
       // Twice is once: the claim stands for one booking.
-      clientId: `public-book:${claim.personId}:${claim.at}:${claim.itemId}`,
+      clientId: `public-book:${claim.site ? 'site:' : ''}${claim.personId}:${claim.at}:${claim.itemId}`,
       kind: 'kit',
       payload: {
         kit: 'appointment',

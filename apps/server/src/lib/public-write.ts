@@ -40,6 +40,8 @@ export interface WriteClaim {
   body: string;
   /** They said they're 18 or over (asked only where the organization hasn't proved who it is). */
   adult: boolean;
+  /** Written on the organization's own website, its door there (R117, M17 I17a). */
+  site?: true;
   e: number;
 }
 
@@ -84,8 +86,8 @@ export const repliesByMail = (ctx: AppContext) =>
   Boolean(ctx.mailProvider && ctx.config.MAIL_DOMAIN);
 
 /** The client id of the message a claim stands for: twice is once. */
-export const writeClientId = (claim: Pick<WriteClaim, 'personId' | 'e'>) =>
-  `public-write:${claim.personId}:${claim.e}`;
+export const writeClientId = (claim: Pick<WriteClaim, 'personId' | 'e' | 'site'>) =>
+  `public-write:${claim.site ? 'site:' : ''}${claim.personId}:${claim.e}`;
 
 export async function sealWriteClaim(ctx: AppContext, claim: WriteClaim): Promise<string> {
   return seal(await claimKey(ctx), Buffer.from(JSON.stringify(claim)), LABEL).toString('base64url');
@@ -117,7 +119,7 @@ export type WriteStart =
 export async function startVisitorWrite(
   ctx: AppContext,
   org: Organization,
-  ask: { name: string; email: string; body: string; adult: boolean },
+  ask: { name: string; email: string; body: string; adult: boolean; site?: boolean },
 ): Promise<WriteStart> {
   const body = writtenBody(ask.body);
   if (!body || body.length > WRITE_MAX) return { kind: 'refused', reason: 'message' };
@@ -146,6 +148,7 @@ export async function startVisitorWrite(
     email,
     body,
     adult: ask.adult,
+    ...(ask.site ? { site: true as const } : {}),
     e: ctx.now().getTime() + CLAIM_MS,
   };
   return { kind: 'code', claim: await sealWriteClaim(ctx, claim) };

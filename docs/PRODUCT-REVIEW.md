@@ -2652,7 +2652,9 @@ with its reason, so it isn't proposed again without new facts.
   parts for their organizations through apps (R74) and sign-in with Caime; an account model for
   platforms, as Stripe's connected accounts are, waits for a platform that asks, with a council of
   its own. *Not adopted:* a white-label platform for another company's users (Twilio, Sendbird,
-  Stream and Agora's business; a silo the graph can't hold).
+  Stream and Agora's business; a silo the graph can't hold). Built (M17 I17a): the widget and its
+  snippet, writing and booking in the frame; ordering in it waits on visitor ordering, calls on
+  H8a.
 - **R118 (2026-10-25) Time-aware intelligence.** The owner, in Momo's chat: Momo said "you've
   covered the whole tour" seconds after giving its steps, then that it couldn't see the clock;
   "this shall be a deeper and wider interpretation in the entire Caime's intelligence". It

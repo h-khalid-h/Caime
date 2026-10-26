@@ -1,7 +1,8 @@
 /**
  * An organization's door (R53): the link a customer opens to write to it, and its QR code, for
  * the team to put on the door, the receipt and the bio. Opened by someone new, the link signs
- * them up and lands them in the conversation; by a customer, it opens it.
+ * them up and lands them in the conversation; by a customer, it opens it. Once its domain is
+ * verified, the one line that puts the door on its own website (R117, M17 I17a).
  */
 import type { OrgView } from '@caime/core/api';
 import { tr } from '@caime/core/i18n';
@@ -147,6 +148,30 @@ export function OrgDoor({ org }: { org: OrgView }) {
                 />
               </View>
             ) : null}
+            <View style={{ gap: 8 }} testID="org-door-widget">
+              <Text variant="bodyStrong">{tr('On your website')}</Text>
+              {d.widget ? (
+                <>
+                  <Text variant="caption" color="textSecondary">
+                    {tr(
+                      'Paste this into your website where the box should be: visitors write to you or book a time in it, and it lands in your inbox. Only pages at {domain} can show it.',
+                      { domain: d.widget.domain },
+                    )}
+                  </Text>
+                  <CopyRow
+                    label={tr('Code for your website')}
+                    value={d.widget.snippet}
+                    testID="org-door-widget-code"
+                  />
+                </>
+              ) : (
+                <Text variant="caption" color="textSecondary">
+                  {tr(
+                    'Verify your domain below, and you can put a box on your website where visitors write to you or book a time.',
+                  )}
+                </Text>
+              )}
+            </View>
           </View>
         ) : (
           <Text variant="caption" color={door.isError ? 'danger' : 'textTertiary'}>

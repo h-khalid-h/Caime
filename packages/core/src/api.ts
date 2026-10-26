@@ -1790,6 +1790,11 @@ export interface OrgDoorView {
    * item). A visitor books there with or without an account (R97 (1)).
    */
   book: { url: string; qr: { size: number; path: string } } | null;
+  /**
+   * Its door on its own website (R117, M17 I17a): the page its site frames (`/o/<handle>/widget`)
+   * and the one line to paste, null until a domain is verified, the only site that may frame it.
+   */
+  widget: { url: string; snippet: string; domain: string } | null;
 }
 
 /**
@@ -2527,9 +2532,10 @@ export interface ProductMetricsView {
      * The door that needs no account (R97 (1), REVIEW §14 advantage 3): bookings made and
      * messages written from a page before an account in the window, and of the people who first
      * came through it either way 30 to 60 days ago, those who made an account with the same
-     * address within thirty days of it.
+     * address within thirty days of it. `fromSites` is how many of both started in an
+     * organization's door on its own website (R117, M17 I17a), the council's number for it.
      */
-    door: { booked: number; written: number; joined: Rate };
+    door: { booked: number; written: number; fromSites: number; joined: Rate };
     /**
      * Join links (M16 C3e): made and joined through in the window, the joins by an account made
      * for the link (`newPeople`, the number that shows a group moving over), and the asks through

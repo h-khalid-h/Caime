@@ -2762,4 +2762,10 @@ export const frB: Catalog = {
     other: 'Cai en regarde jusqu’à {n} à la fois',
   },
   'Moved {n} times': { one: 'Date changée une fois', other: 'Date changée {n} fois' },
+  'On your website': 'Sur votre site',
+  'Paste this into your website where the box should be: visitors write to you or book a time in it, and it lands in your inbox. Only pages at {domain} can show it.':
+    'Collez ceci dans votre site là où le cadre doit apparaître : les visiteurs vous y écrivent ou réservent un créneau, et cela arrive dans votre boîte. Seules les pages de {domain} peuvent l’afficher.',
+  'Code for your website': 'Code pour votre site',
+  'Verify your domain below, and you can put a box on your website where visitors write to you or book a time.':
+    'Vérifiez votre domaine ci-dessous, et vous pourrez mettre sur votre site un cadre où les visiteurs vous écrivent ou réservent un créneau.',
 };

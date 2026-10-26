@@ -189,7 +189,14 @@ export async function registerWeb(app: FastifyInstance, ctx: AppContext): Promis
         page.kind === 'join-link' ||
         page.kind === 'landing') &&
         !req.cookies?.[SESSION_COOKIE]);
-    if (visitor) html = html.replace(/<script\b[^>]*\bsrc=[^>]*><\/script>\s*/g, '');
+    // An organization's door on its own website (M17 I17a): framed by its verified domain alone,
+    // never the app, whoever's cookie the frame happens to carry.
+    const frame = 'frame' in page ? page.frame : undefined;
+    if (visitor || frame) html = html.replace(/<script\b[^>]*\bsrc=[^>]*><\/script>\s*/g, '');
+    if (frame) {
+      pageCsp = pageCsp.replace("frame-ancestors 'none'", `frame-ancestors ${frame.join(' ')}`);
+      reply.removeHeader('x-frame-options');
+    }
     // A page that follows the browser's language says so to whatever caches it.
     if (page.kind !== 'app') reply.header('vary', 'accept-language');
     // A link's page may be taken back at any moment, and its address is its key: nobody keeps

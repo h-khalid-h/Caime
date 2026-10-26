@@ -194,14 +194,23 @@ export async function productMetrics(ctx: AppContext, days: number): Promise<Pro
   // sent (the client id says which), read through the senders they could be, people who were or
   // still are provisional, so the scan is that handful's messages by the sender index, never the
   // table.
-  const door = await q<{ booked: number; written: number; cohort: number; joined: number }>(sql`
+  const door = await q<{
+    booked: number;
+    written: number;
+    sites: number;
+    cohort: number;
+    joined: number;
+  }>(sql`
     with s as (select id, claimed_at from users where kind = 'provisional' or claimed_at is not null),
     b as (
       select m.sender_id, min(m.created_at) as first_at,
         count(*) filter (where m.client_id like 'public-book:%'
           and m.created_at > ${from} and m.created_at <= ${to})::int as in_window,
         count(*) filter (where m.client_id like 'public-write:%'
-          and m.created_at > ${from} and m.created_at <= ${to})::int as written
+          and m.created_at > ${from} and m.created_at <= ${to})::int as written,
+        count(*) filter (where (m.client_id like 'public-write:site:%'
+            or m.client_id like 'public-book:site:%')
+          and m.created_at > ${from} and m.created_at <= ${to})::int as sites
       from s join messages m on m.sender_id = s.id
       where (m.client_id like 'public-book:%' or m.client_id like 'public-write:%')
         and m.created_at > ${from < ago(60) ? from : ago(60)}
@@ -210,6 +219,7 @@ export async function productMetrics(ctx: AppContext, days: number): Promise<Pro
     select
       coalesce((select sum(in_window) from b), 0)::int as booked,
       coalesce((select sum(written) from b), 0)::int as written,
+      coalesce((select sum(sites) from b), 0)::int as sites,
       (select count(*)::int from b where first_at > ${ago(60)} and first_at <= ${ago(30)}) as cohort,
       (select count(*)::int from b join s on s.id = b.sender_id
         where b.first_at > ${ago(60)} and b.first_at <= ${ago(30)}
@@ -350,6 +360,7 @@ export async function productMetrics(ctx: AppContext, days: number): Promise<Pro
       door: {
         booked: door.booked,
         written: door.written,
+        fromSites: door.sites,
         joined: rate(door.joined, door.cohort),
       },
       joinLinks: {
