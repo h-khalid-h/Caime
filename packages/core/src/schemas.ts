@@ -347,6 +347,18 @@ export const SphereSchema = z.enum(SPHERES);
 /** A parent's link for one child (R122): the name the child goes by, said on the link's page. */
 export const FamilyLinkBody = z.object({ childName: DisplayName });
 
+/** A parent agreeing, and whether their yes reaches every new way in too (R122 (2), Moderate). */
+export const ConsentBody = z.object({ moderates: z.boolean().optional() }).strict();
+
+/** A parent turning Moderate on or off for a child they look after. */
+export const ModerateBody = z.object({ moderates: z.boolean() }).strict();
+
+/** A waiting child asks the parent they saw, by handle (R122 (2)). */
+export const FamilyParentBody = z.object({ handle: Handle }).strict();
+
+/** An adult takes a child's link to them, its token in the body (never a path a log keeps). */
+export const FamilyTakeAskBody = z.object({ token: z.string().min(10).max(80) }).strict();
+
 /** A parent withdrawing their consent deletes the child's account, so their password says it's them. */
 export const WithdrawConsentBody = z.object({
   password: z.string().min(1, msg('Enter your password.')).max(200),

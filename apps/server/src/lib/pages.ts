@@ -632,13 +632,26 @@ and we&rsquo;ll answer within a month.</p>
 live${lawAges(f.minimumAge) ? `, and ${lawAges(f.minimumAge)}, whose law asks a guardian&rsquo;s consent for younger people` : ''}.${
     guardianAges()
       ? ` There, someone younger joins ${guardianAges()} only with their parent&rsquo;s or guardian&rsquo;s
-consent, given in Caime: the parent, on Caime themselves, makes a link for that one child, the
-child signs up through it on their own device, and the parent agrees on the child&rsquo;s own
-account. Caime keeps who agreed, for whom, when and to which words, for as long as the account.
+consent, given in Caime: the parent, on Caime themselves, makes a link for that one child and
+the child signs up through it on their own device; or the child signs up and their account waits,
+reaching nothing, while they ask their parent: by the parent&rsquo;s handle, once they&rsquo;ve seen who
+it is, or with a link they send a parent not on Caime yet. Either way the parent agrees on the
+child&rsquo;s own account, seeing the date of birth the child gave, which their yes confirms. Someone
+who says the account isn&rsquo;t their child&rsquo;s is never asked again by it, and after three such
+answers it&rsquo;s deleted. Caime keeps who agreed, for whom, when and to which words, how it began and
+how many were asked (never who said no), for as long as the account. A date of birth or a country
+corrected later follows the same rules: under the youngest age Caime opens there, it isn&rsquo;t taken;
+where a parent&rsquo;s consent is what lets someone in, the account waits for one; and a child their
+parent looks after asks that parent, whose yes (or a document check that finds them 18 or over)
+makes the change.
 Until the child reaches the age where they live, their parent sees whom they&rsquo;re connected
 with, never a message, and says yes to each new connection first, whichever of the two asked:
 a request reaches the other person, or the child, only once the parent has. The child sees who
-their parent is, what the parent sees, and the requests of theirs that wait. The parent can
+their parent is, what the parent sees, and the requests of theirs that wait. The parent may also
+choose to say yes to every new way in first: an invitation into a group or a space, an ask to join
+one, a message request to the child, and the child starting to write to an organization each wait
+for the parent, who sees who and where, never what anyone wrote. The child sees that their parent
+does, and what waits; the parent can turn it off, and then whatever waited goes on. The parent can
 withdraw the consent, which deletes the child&rsquo;s account. A parent who never agrees within
 seven days, or says the account isn&rsquo;t their child&rsquo;s, has it deleted the same way.`
       : ''

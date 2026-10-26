@@ -2742,8 +2742,6 @@ export const frB: Catalog = {
   },
   'Sum it up': 'Résumer',
   'Where this comes from': 'D’où cela vient',
-  'Only to keep younger people safer, and never shown to anyone. Correct it here if it was typed wrong; your country and time zone are in Language and region.':
-    'Uniquement pour mieux protéger les plus jeunes, et jamais montrée à personne. Corrigez-la ici si elle a été mal saisie ; votre pays et votre fuseau horaire sont dans Langue et région.',
   '{domain} is Caime’s own domain, so this organization may take @{handle}.':
     '{domain} est le domaine de Caime lui-même : cette organisation peut donc prendre @{handle}.',
   'Take @{handle}': 'Prendre @{handle}',
@@ -2907,4 +2905,85 @@ export const frB: Catalog = {
   '{by} moved the meeting': 'Réunion déplacée par : {by}',
   '{by} changed where “{title}” is': 'Lieu de « {title} » changé par : {by}',
   '{by} changed where the meeting is': 'Lieu de la réunion changé par : {by}',
+  'Is this your parent or guardian?': 'Est-ce votre parent ou tuteur ?',
+  'Yes, ask them': 'Oui, lui demander',
+  'Their handle on Caime': 'Son identifiant sur Caime',
+  'Find them': 'Rechercher',
+  'Not on Caime yet?': 'Pas encore sur Caime ?',
+  'Send them a link from your phone. They make their account, then agree to yours. Open for a week.':
+    'Envoyez-lui un lien depuis votre téléphone. Il crée son compte, puis accepte le vôtre. Ouvert une semaine.',
+  '{name} asks you to agree to their Caime account':
+    '{name} vous demande d’accepter son compte Caime',
+  'Make a new link': 'Créer un nouveau lien',
+  'Make a link to send': 'Créer un lien à envoyer',
+  '{child} was invited to “{place}”': '{child} : invitation dans « {place} »',
+  '{child} asks to join “{place}”': '{child} demande à rejoindre « {place} »',
+  '{name} wrote to {child}': '{name} a écrit à {child}',
+  '{child} wants to write to {org}': '{child} veut écrire à {org}',
+  'We asked your parent. You’re in once they say yes.':
+    'Nous avons demandé à votre parent. Vous y serez dès qu’il dira oui.',
+  'Your parent says yes to new groups and spaces first. We asked them; then your ask goes to its owner or an admin.':
+    'Votre parent accepte d’abord les nouveaux groupes et espaces. Nous lui avons demandé ; votre demande ira ensuite à son propriétaire ou à un administrateur.',
+  'Sent to your parent to agree. It changes once they do.':
+    'Envoyé à votre parent pour accord. Le changement se fait dès qu’il accepte.',
+  'Only to keep younger people safer, and never shown to anyone. Correct it here if it was typed wrong: the rules for your age follow it, and while your parent looks after your account, they agree to it first.':
+    'Uniquement pour mieux protéger les plus jeunes, et jamais montré à personne. Corrigez-la ici si elle a été mal saisie : les règles de votre âge la suivent, et tant que votre parent veille sur votre compte, il l’accepte d’abord.',
+  Checked: 'Vérifiée',
+  'Confirmed by your parent': 'Confirmée par votre parent',
+  'As you said it, not checked': 'Telle que vous l’avez indiquée, non vérifiée',
+  'One more step: your parent or guardian': 'Une dernière étape : votre parent ou tuteur',
+  'Where you live, a parent or guardian agrees to an account for someone your age. Ask yours: they agree from their own Caime, and you can write to each other.':
+    'Là où vous vivez, un parent ou tuteur accepte le compte d’une personne de votre âge. Demandez au vôtre : il accepte depuis son propre Caime, et vous pourrez vous écrire.',
+  'The person you asked said no. You can ask {n} more.': {
+    one: 'La personne à qui vous avez demandé a dit non. Vous pouvez encore demander à une personne.',
+    other:
+      'La personne à qui vous avez demandé a dit non. Vous pouvez encore demander à {n} personnes.',
+  },
+  'Keep waiting for them': 'Continuer d’attendre',
+  'You sent them a link. It’s open until {day}.':
+    'Vous lui avez envoyé un lien. Il est ouvert jusqu’au {day}.',
+  'Ask someone else': 'Demander à quelqu’un d’autre',
+  'If nobody agrees by {day}, this account is deleted.':
+    'Si personne n’accepte d’ici le {day}, ce compte est supprimé.',
+  'Delete this account': 'Supprimer ce compte',
+  'Everything in it is deleted. This can’t be undone.':
+    'Tout ce qu’il contient est supprimé. C’est irréversible.',
+  'Waiting for your parent’s yes.': 'En attente de l’accord de votre parent.',
+  'Ask my parent': 'Demander à mon parent',
+  'We asked your parent. It opens once they say yes.':
+    'Nous avons demandé à votre parent. La conversation s’ouvre dès qu’il dit oui.',
+  'Your parent says yes to new people first.':
+    'Votre parent accepte d’abord les nouvelles personnes.',
+  '{name} asks you to agree to their account': '{name} vous demande d’accepter son compte',
+  'Your parent says yes to new groups, spaces and people first':
+    'Votre parent accepte d’abord les nouveaux groupes, espaces et personnes',
+  'An invitation, a message request or writing to an organization waits for them.':
+    'Une invitation, une demande de message ou écrire à une organisation attend son accord.',
+  'Your correction waits for your parent': 'Votre correction attend votre parent',
+  'It changes once they agree.': 'Elle s’applique dès qu’il accepte.',
+  'Allowing lets them read it and answer. You never see their messages.':
+    'Autoriser lui permet de la lire et d’y répondre. Vous ne voyez jamais ses messages.',
+  '{name} says you’re their parent or guardian':
+    '{name} indique que vous êtes son parent ou tuteur',
+  'Their date of birth: {day}. Agreeing confirms it.':
+    'Sa date de naissance : {day}. Accepter la confirme.',
+  'Agreeing lets their account in and connects you. You’ll see whom they’re connected with and who asks to connect with them, never their messages. If it isn’t your child’s, say so: you won’t be asked again.':
+    'Accepter ouvre son compte et vous relie. Vous verrez avec qui il est en contact et qui demande à l’être, jamais ses messages. Si ce n’est pas votre enfant, dites-le : on ne vous le redemandera pas.',
+  'Say yes to new groups, spaces and people first':
+    'Accepter d’abord les nouveaux groupes, espaces et personnes',
+  'An invitation, a message request or writing to an organization waits for you too. You can change it later.':
+    'Une invitation, une demande de message ou écrire à une organisation attend aussi votre accord. Vous pourrez le changer plus tard.',
+  '{name} asks to correct their date of birth to {day}':
+    '{name} demande à corriger sa date de naissance au {day}',
+  '{name} asks to change where they live to {country}':
+    '{name} demande à changer son pays de résidence pour {country}',
+  'Now {day}': 'Actuellement {day}',
+  'An invitation, a message request or writing to an organization waits for you. Never their messages.':
+    'Une invitation, une demande de message ou écrire à une organisation attend votre accord. Jamais ses messages.',
+  '{name} invited {child} to “{place}”': '{name} a invité {child} dans « {place} »',
+  '“{place}” waits for your parent': '« {place} » attend votre parent',
+  'Joining “{place}” waits for your parent': 'Rejoindre « {place} » attend votre parent',
+  '{name}’s message waits for your parent': 'Le message de {name} attend votre parent',
+  'Writing to {org} waits for your parent': 'Écrire à {org} attend votre parent',
+  'Waiting for your parent’s yes': 'En attente de l’accord de votre parent',
 };

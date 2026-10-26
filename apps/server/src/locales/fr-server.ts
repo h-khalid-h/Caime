@@ -2082,8 +2082,6 @@ export const frServer: Catalog = {
     'Avec qui vous êtes en contact et qui demande à l’être. Jamais vos messages.',
   'Your parent or guardian hasn’t agreed to your account yet.':
     'Votre parent ou tuteur n’a pas encore accepté votre compte.',
-  'Where you live, someone under {age} joins Caime with a parent or guardian. Ask them to add you from their own Caime: You, then Family.':
-    'Là où vous vivez, avant {age} ans on rejoint Caime avec un parent ou un tuteur. Demandez-lui de vous ajouter depuis son Caime : Vous, puis Famille.',
   // R123: a meeting that changes, and everyone's own answer.
   'Only a meeting changes this way.': 'Seule une réunion se modifie ainsi.',
   'It has its own space now: change it there.':
@@ -2108,4 +2106,49 @@ export const frServer: Catalog = {
   'Only whoever proposed it changes it.': 'Seule la personne qui l’a proposée la modifie.',
   'In a group, whoever proposed it stops it repeating.':
     'Dans un groupe, la personne qui l’a proposée en arrête la répétition.',
+  'Nobody by that handle can be asked. Check it with your parent.':
+    'Personne ne peut être sollicité avec cet identifiant. Vérifiez-le avec votre parent.',
+  'Your account isn’t waiting for a parent.': 'Votre compte n’attend pas de parent.',
+  'You’ve asked {max} people. If none of them is your parent or guardian, this account can’t go on.':
+    'Vous avez demandé à {max} personnes. Si aucune n’est votre parent ou tuteur, ce compte ne peut pas continuer.',
+  'The person you asked said they aren’t your parent or guardian':
+    'La personne à qui vous avez demandé a dit ne pas être votre parent ou tuteur',
+  'Ask your parent or guardian on Caime, or send them a link.':
+    'Demandez à votre parent ou tuteur sur Caime, ou envoyez-lui un lien.',
+  '{name} asks to correct their date of birth': '{name} demande à corriger sa date de naissance',
+  '{name} asks to change where they live': '{name} demande à changer son pays de résidence',
+  'It waits for your yes, in Family.': 'Il attend votre accord, dans Famille.',
+  'Your parent agreed to your correction': 'Votre parent a accepté votre correction',
+  'Your parent didn’t agree to your correction': 'Votre parent n’a pas accepté votre correction',
+  'Your parent said yes: you’re in “{place}”':
+    'Votre parent a dit oui : vous êtes dans « {place} »',
+  'Your parent said no to “{place}”': 'Votre parent a dit non à « {place} »',
+  'Your parent said yes: your ask to join “{place}” went to whoever runs it':
+    'Votre parent a dit oui : votre demande pour rejoindre « {place} » est partie à qui le gère',
+  'Your parent said no to joining “{place}”': 'Votre parent a dit non pour rejoindre « {place} »',
+  'Your parent said yes to {name}’s message': 'Votre parent a dit oui au message de {name}',
+  'Your parent said no to {name}’s message': 'Votre parent a dit non au message de {name}',
+  'Your parent said yes: you can write to {org}':
+    'Votre parent a dit oui : vous pouvez écrire à {org}',
+  'Your parent said no to writing to {org}': 'Votre parent a dit non pour écrire à {org}',
+  'Your parent or guardian says yes to this first. We asked them.':
+    'Votre parent ou tuteur donne d’abord son accord. Nous lui avons demandé.',
+  'Your parent says yes to new groups, spaces and people writing to you first':
+    'Votre parent accepte d’abord les nouveaux groupes, espaces et personnes qui vous écrivent',
+  'Your parent no longer says yes to new groups, spaces and people first':
+    'Votre parent n’accepte plus d’abord les nouveaux groupes, espaces et personnes',
+  '{name} asks you to agree to their account on Caime':
+    '{name} vous demande d’accepter son compte sur Caime',
+  '{child} asks you to agree to their account on Caime':
+    '{child} vous demande d’accepter son compte sur Caime',
+  'Where they live, a parent or guardian agrees to an account for someone their age. Answer from your own Caime: agree, or say it isn’t your child’s.':
+    'Là où cette personne vit, un parent ou tuteur accepte le compte de quelqu’un de son âge. Répondez depuis votre propre Caime : acceptez, ou dites que ce n’est pas votre enfant.',
+  'Answer in Caime': 'Répondre dans Caime',
+  'Sign in to answer': 'Se connecter pour répondre',
+  'New to Caime? Create your account': 'Nouveau sur Caime ? Créez votre compte',
+  'what you see': 'ce que vous voyez',
+  'Whom they’re connected with and who asks to connect. Never their messages.':
+    'Avec qui la personne est en contact et qui demande à l’être. Jamais ses messages.',
+  'Where you live, Caime is for people {age} and older, and from {younger} with a parent’s or guardian’s yes.':
+    'Là où vous vivez, Caime est pour les {age} ans et plus, et dès {younger} ans avec l’accord d’un parent ou tuteur.',
 };

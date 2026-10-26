@@ -86,6 +86,7 @@ import { checkoutAccountOf } from './checkout-account';
 import { assertSealedForEveryone } from './e2ee';
 import { AppError, badRequest, forbidden, notFound } from './errors';
 import { recordEvent } from './events';
+import { askGuardian, guardianAsked, moderatorOf } from './family-moderation';
 import { cardStartAt, customCardFor } from './kits';
 import { previewIdsOf, previewView, readyPreviews } from './link-preview-views';
 import { assertNotesAllowed } from './notes-allowed';
@@ -1592,6 +1593,16 @@ export async function sendMessage(
         `.execute(ctx.db)
       ).rows[0]?.answered,
     );
+
+  // A child whose parent says yes to new people first (R122 (2), Moderate): their reply would
+  // take the request, so it's asked of the parent, and nothing is sent until they say yes.
+  if (acceptRequest) {
+    const parent = await moderatorOf(ctx.db, senderId, ctx.now());
+    if (parent) {
+      await askGuardian(ctx, parent, senderId, { kind: 'request', conversationId });
+      throw guardianAsked();
+    }
+  }
 
   const mode =
     body.mode ??

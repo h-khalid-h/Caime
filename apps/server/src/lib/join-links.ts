@@ -272,11 +272,46 @@ export async function liveJoinLink(
     .where('revoked_at', 'is', null)
     .where('expires_at', '>', ctx.now())
     .executeTakeFirst();
-  if (!link?.created_by) return null;
+  return link ? stillLive(ctx.db, link) : null;
+}
+
+/** The same link by its id, for a parent's yes carried out later (R122 (2)): the same checks. */
+export async function liveJoinLinkById(
+  db: Q,
+  id: string,
+  now: Date,
+): Promise<{ link: Link; target: JoinTarget } | null> {
+  const link = await db
+    .selectFrom('join_links')
+    .selectAll()
+    .where('id', '=', id)
+    .where('revoked_at', 'is', null)
+    .where('expires_at', '>', now)
+    .executeTakeFirst();
+  return link ? stillLive(db, link) : null;
+}
+
+/** Its maker still runs the place, and the place still takes a link. */
+async function stillLive(db: Q, link: Link): Promise<{ link: Link; target: JoinTarget } | null> {
+  if (!link.created_by) return null;
   const target = targetOf(link);
-  if (!(await targetFits(ctx.db, target))) return null;
-  if (!(await runsTarget(ctx.db, target, link.created_by))) return null;
+  if (!(await targetFits(db, target))) return null;
+  if (!(await runsTarget(db, target, link.created_by))) return null;
   return { link, target };
+}
+
+/** A place's name, for the words someone is told (a group's title, a space's name). */
+export async function nameOf(db: Q, t: JoinTarget): Promise<string> {
+  return t.kind === 'group'
+    ? ((
+        await db
+          .selectFrom('conversations')
+          .select('title')
+          .where('id', '=', t.id)
+          .executeTakeFirst()
+      )?.title ?? '')
+    : ((await db.selectFrom('spaces').select('name').where('id', '=', t.id).executeTakeFirst())
+        ?.name ?? '');
 }
 
 /**

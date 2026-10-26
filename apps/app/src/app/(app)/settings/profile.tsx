@@ -97,7 +97,14 @@ export default function Profile() {
     try {
       const res = await endpoints.updateBirthDate(birthDate);
       useSession.getState().setUser(res.user);
-      toast(tr('Saved'));
+      // A child their parent looks after asks them (R122 (2)); an account that now waits for a
+      // parent's yes goes to its wait (the root layout follows `waitsForParent`).
+      toast(
+        res.askedParent
+          ? tr('Sent to your parent to agree. It changes once they do.')
+          : tr('Saved'),
+      );
+      if (res.askedParent) setBirthDate(me.birthDate);
     } catch (e) {
       if (e instanceof ApiError) setErrors((prev) => ({ ...prev, ...e.fieldErrors() }));
       toast((e as Error).message, { tone: 'danger' });
@@ -270,12 +277,20 @@ export default function Profile() {
         <Group
           title={tr('Date of birth')}
           footer={tr(
-            'Only to keep younger people safer, and never shown to anyone. Correct it here if it was typed wrong; your country and time zone are in Language and region.',
+            'Only to keep younger people safer, and never shown to anyone. Correct it here if it was typed wrong: the rules for your age follow it, and while your parent looks after your account, they agree to it first.',
           )}
         >
           <View style={{ padding: 16, gap: 12 }}>
             <Text variant="body" testID="profile-birth-date">
               {formatDay(me.birthDate, me.locale)}
+            </Text>
+            {/* Where it comes from (R122 (2)): said, checked, or agreed to by a parent. */}
+            <Text variant="caption" color="textSecondary" testID="profile-birth-date-source">
+              {me.ageSource === 'checked'
+                ? tr('Checked')
+                : me.ageSource === 'parent'
+                  ? tr('Confirmed by your parent')
+                  : tr('As you said it, not checked')}
             </Text>
             <DateField
               label={tr('Date of birth')}

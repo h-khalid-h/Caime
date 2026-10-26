@@ -1997,8 +1997,6 @@ export const turkishServer: Catalog = {
     'Kimlerle bağlantınız olduğu ve kimlerin bağlantı istediği. Mesajlarınız asla.',
   'Your parent or guardian hasn’t agreed to your account yet.':
     'Ebeveyniniz ya da veliniz hesabınızı henüz onaylamadı.',
-  'Where you live, someone under {age} joins Caime with a parent or guardian. Ask them to add you from their own Caime: You, then Family.':
-    'Yaşadığınız yerde {age} yaşın altındakiler Caime’e bir ebeveyn ya da veliyle katılır. Sizi kendi Caime’inden eklemesini isteyin: Siz, ardından Aile.',
   // R123: a meeting that changes, and everyone's own answer.
   'Only a meeting changes this way.': 'Bu şekilde yalnızca toplantı değiştirilir.',
   'It has its own space now: change it there.': 'Artık kendi alanı var: orada değiştirin.',
@@ -2021,4 +2019,49 @@ export const turkishServer: Catalog = {
     'Grupta saati öneren kişi değiştirir. Katılmadığınızı söyleyip bir saat önerin.',
   'Only whoever proposed it changes it.': 'Yalnızca öneren kişi değiştirir.',
   'In a group, whoever proposed it stops it repeating.': 'Grupta tekrarı öneren kişi durdurur.',
+  'Nobody by that handle can be asked. Check it with your parent.':
+    'Bu kullanıcı adıyla kimseye sorulamaz. Ebeveyninizle kontrol edin.',
+  'Your account isn’t waiting for a parent.': 'Hesabınız bir ebeveyn beklemiyor.',
+  'You’ve asked {max} people. If none of them is your parent or guardian, this account can’t go on.':
+    '{max} kişiye sordunuz. Hiçbiri ebeveyniniz ya da veliniz değilse bu hesap devam edemez.',
+  'The person you asked said they aren’t your parent or guardian':
+    'Sorduğunuz kişi ebeveyniniz ya da veliniz olmadığını söyledi',
+  'Ask your parent or guardian on Caime, or send them a link.':
+    'Caime’deki ebeveyninize ya da velinize sorun veya ona bir bağlantı gönderin.',
+  '{name} asks to correct their date of birth': '{name}, doğum tarihini düzeltmek istiyor',
+  '{name} asks to change where they live': '{name}, yaşadığı yeri değiştirmek istiyor',
+  'It waits for your yes, in Family.': 'Aile bölümünde onayınızı bekliyor.',
+  'Your parent agreed to your correction': 'Ebeveyniniz düzeltmenizi onayladı',
+  'Your parent didn’t agree to your correction': 'Ebeveyniniz düzeltmenizi onaylamadı',
+  'Your parent said yes: you’re in “{place}”':
+    'Ebeveyniniz evet dedi, artık buradasınız: “{place}”',
+  'Your parent said no to “{place}”': 'Ebeveyniniz hayır dedi: “{place}”',
+  'Your parent said yes: your ask to join “{place}” went to whoever runs it':
+    'Ebeveyniniz evet dedi: katılma isteğiniz yöneticilere gitti: “{place}”',
+  'Your parent said no to joining “{place}”': 'Ebeveyniniz katılmanıza hayır dedi: “{place}”',
+  'Your parent said yes to {name}’s message': 'Ebeveyniniz mesaja evet dedi: {name}',
+  'Your parent said no to {name}’s message': 'Ebeveyniniz mesaja hayır dedi: {name}',
+  'Your parent said yes: you can write to {org}':
+    'Ebeveyniniz evet dedi: {org} ile yazışabilirsiniz',
+  'Your parent said no to writing to {org}': 'Ebeveyniniz {org} ile yazışmanıza hayır dedi',
+  'Your parent or guardian says yes to this first. We asked them.':
+    'Buna önce ebeveyniniz ya da veliniz onay verir. Ona sorduk.',
+  'Your parent says yes to new groups, spaces and people writing to you first':
+    'Yeni gruplara, alanlara ve size yazan kişilere önce ebeveyniniz onay verir',
+  'Your parent no longer says yes to new groups, spaces and people first':
+    'Ebeveyniniz artık yeni gruplara, alanlara ve kişilere önce onay vermiyor',
+  '{name} asks you to agree to their account on Caime':
+    '{name}, Caime’deki hesabını onaylamanızı istiyor',
+  '{child} asks you to agree to their account on Caime':
+    '{child}, Caime’deki hesabını onaylamanızı istiyor',
+  'Where they live, a parent or guardian agrees to an account for someone their age. Answer from your own Caime: agree, or say it isn’t your child’s.':
+    'Yaşadığı yerde bu yaştakilerin hesabını bir ebeveyn ya da veli onaylar. Kendi Caime’inizden yanıtlayın: onaylayın ya da çocuğunuz olmadığını söyleyin.',
+  'Answer in Caime': 'Caime’de yanıtla',
+  'Sign in to answer': 'Yanıtlamak için giriş yap',
+  'New to Caime? Create your account': 'Caime’de yeni misiniz? Hesabınızı oluşturun',
+  'what you see': 'ne görürsünüz',
+  'Whom they’re connected with and who asks to connect. Never their messages.':
+    'Kimlerle bağlantılı olduğu ve kimin bağlantı istediği. Mesajları asla.',
+  'Where you live, Caime is for people {age} and older, and from {younger} with a parent’s or guardian’s yes.':
+    'Yaşadığınız yerde Caime {age} yaş ve üzeri içindir; {younger} yaştan itibaren bir ebeveyn ya da velinin onayıyla.',
 };

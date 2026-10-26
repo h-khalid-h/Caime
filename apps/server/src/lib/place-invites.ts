@@ -19,6 +19,7 @@ import type { AppContext } from '../context';
 import type { Database } from '../db/schema';
 import { eachLimit } from './batch';
 import { forbidden, notFound } from './errors';
+import { askGuardian, moderatedAmong, moderatorOf, withdrawGuardianAsk } from './family-moderation';
 import { addToGroup } from './group-members';
 import { assertNoMinorWhileLinkOpen, type JoinTarget, peopleIn, roleIn, runs } from './join-links';
 import { assertNoMinorWithGuests } from './meeting-guests';
@@ -78,8 +79,11 @@ export async function whoMustBeAsked(
     asked.ask.add(other);
     asked.silent.add(other);
   }
+  // Whose parent says yes to every new place (R122 (2), Moderate): always invited, never put in.
+  const moderated = await moderatedAmong(db, ids, now);
   const minors: string[] = [];
   for (const u of users) {
+    if (moderated.has(u.id)) asked.ask.add(u.id);
     if (asked.ask.has(u.id)) continue;
     if (privacyOf(u, now).groupAdds === 'ask') asked.ask.add(u.id);
     else if (minorOf(u, now)) minors.push(u.id);
@@ -234,6 +238,18 @@ export async function placeInvitationsFor(
       'c.title',
       's.name',
     ])
+    // Waiting on their parent's yes (R122 (2), Moderate).
+    .select((eb) =>
+      eb
+        .exists(
+          eb
+            .selectFrom('guardian_asks as g')
+            .select('g.id')
+            .whereRef('g.place_invite_id', '=', 'i.id')
+            .where('g.answered_at', 'is', null),
+        )
+        .as('waits_for_parent'),
+    )
     .where('i.user_id', '=', userId)
     .where('i.decided_at', 'is', null)
     .where('i.expires_at', '>', now)
@@ -286,6 +302,7 @@ export async function placeInvitationsFor(
       by: (r.invited_by && people.get(r.invited_by)) || null,
       createdAt: r.created_at.toISOString(),
       expiresAt: r.expires_at.toISOString(),
+      waitsForParent: Boolean(r.waits_for_parent),
     };
   });
 }
@@ -303,7 +320,9 @@ export async function answerPlaceInvite(
   userId: string,
   inviteId: string,
   accept: boolean,
-): Promise<JoinTarget | null> {
+  /** Their parent said yes already (R122 (2), Moderate): carried out, never asked again. */
+  opts: { parentAgreed?: boolean } = {},
+): Promise<JoinTarget | 'asked' | null> {
   const row = await ctx.db
     .selectFrom('place_invites')
     .select(['id', 'conversation_id', 'space_id', 'invited_by'])
@@ -323,8 +342,19 @@ export async function answerPlaceInvite(
       .where('id', '=', inviteId)
       .where('decided_at', 'is', null)
       .execute();
+    // Turned down while their parent was asked: nothing waits on the parent any more.
+    if (!opts.parentAgreed) await withdrawGuardianAsk(ctx, userId, { kind: 'invite', inviteId });
     await ctx.bus.publish([userId], { type: 'invites.changed', data: {} });
     return null;
+  }
+  // A child whose parent moderates: their yes is asked of that parent, and waits on them.
+  if (!opts.parentAgreed) {
+    const parent = await moderatorOf(ctx.db, userId, ctx.now());
+    if (parent) {
+      await askGuardian(ctx, parent, userId, { kind: 'invite', inviteId });
+      await ctx.bus.publish([userId], { type: 'invites.changed', data: {} });
+      return 'asked';
+    }
   }
   const vouch = async (trx: Transaction<Database>) => {
     const claimed = await trx

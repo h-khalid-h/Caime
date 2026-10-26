@@ -2089,8 +2089,6 @@ export const arServer: Catalog = {
   'Whom you’re connected with and who asks to connect. Never your messages.':
     'مع من أنت على تواصل ومن يطلب التواصل معك. لا رسائلك أبدًا.',
   'Your parent or guardian hasn’t agreed to your account yet.': 'لم يوافق وليّ أمرك على حسابك بعد.',
-  'Where you live, someone under {age} joins Caime with a parent or guardian. Ask them to add you from their own Caime: You, then Family.':
-    'حيث تقيم، ينضم إلى Caime من هم دون {age} عبر وليّ الأمر. اطلب منه أن يضيفك من حسابه على Caime: أنت، ثم العائلة.',
   // R123: a meeting that changes, and everyone's own answer.
   'Only a meeting changes this way.': 'هكذا يُعدَّل الاجتماع وحده.',
   'It has its own space now: change it there.': 'له مساحته الخاصة الآن: عدّله هناك.',
@@ -2113,4 +2111,45 @@ export const arServer: Catalog = {
     'في المجموعة، يغيّر الموعدَ صاحبُ الاقتراح. اختر «لن أحضر» واقترح موعدًا.',
   'Only whoever proposed it changes it.': 'لا يعدّله إلا صاحب الاقتراح.',
   'In a group, whoever proposed it stops it repeating.': 'في المجموعة، يوقف التكرارَ صاحبُ الاقتراح.',
+  'Nobody by that handle can be asked. Check it with your parent.':
+    'لا يمكن سؤال أحد بهذا المعرّف. تحقّق منه مع وليّ أمرك.',
+  'Your account isn’t waiting for a parent.': 'حسابك لا ينتظر موافقة وليّ أمر.',
+  'You’ve asked {max} people. If none of them is your parent or guardian, this account can’t go on.':
+    'سألتَ {max} أشخاص. إن لم يكن أيّ منهم وليّ أمرك، فلا يمكن لهذا الحساب أن يستمر.',
+  'The person you asked said they aren’t your parent or guardian':
+    'رُفض طلبك: من سألته ليس وليّ أمرك',
+  'Ask your parent or guardian on Caime, or send them a link.':
+    'اسأل وليّ أمرك على Caime، أو أرسل رابطًا.',
+  '{name} asks to correct their date of birth': 'طلب تصحيح تاريخ الميلاد: {name}',
+  '{name} asks to change where they live': 'طلب تغيير بلد الإقامة: {name}',
+  'It waits for your yes, in Family.': 'بانتظار موافقتك، في العائلة.',
+  'Your parent agreed to your correction': 'وافق وليّ أمرك على تصحيحك',
+  'Your parent didn’t agree to your correction': 'لم يوافق وليّ أمرك على تصحيحك',
+  'Your parent said yes: you’re in “{place}”': 'وافق وليّ أمرك: انضممت إلى «{place}»',
+  'Your parent said no to “{place}”': 'لم يوافق وليّ أمرك على «{place}»',
+  'Your parent said yes: your ask to join “{place}” went to whoever runs it':
+    'وافق وليّ أمرك: وصل طلب انضمامك إلى «{place}» إلى من يديرها',
+  'Your parent said no to joining “{place}”': 'لم يوافق وليّ أمرك على الانضمام إلى «{place}»',
+  'Your parent said yes to {name}’s message': 'وافق وليّ أمرك على رسالة {name}',
+  'Your parent said no to {name}’s message': 'لم يوافق وليّ أمرك على رسالة {name}',
+  'Your parent said yes: you can write to {org}': 'وافق وليّ أمرك: يمكنك مراسلة {org}',
+  'Your parent said no to writing to {org}': 'لم يوافق وليّ أمرك على مراسلة {org}',
+  'Your parent or guardian says yes to this first. We asked them.':
+    'وليّ أمرك يوافق على هذا أولًا، وقد سألناه.',
+  'Your parent says yes to new groups, spaces and people writing to you first':
+    'وليّ أمرك يوافق أولًا على المجموعات والمساحات الجديدة وعلى من يراسلك',
+  'Your parent no longer says yes to new groups, spaces and people first':
+    'لم يعد وليّ أمرك يوافق أولًا على المجموعات والمساحات والأشخاص الجدد',
+  '{name} asks you to agree to their account on Caime': 'طلب موافقتك على حساب على Caime: {name}',
+  '{child} asks you to agree to their account on Caime': 'طلب موافقتك على حساب على Caime: {child}',
+  'Where they live, a parent or guardian agrees to an account for someone their age. Answer from your own Caime: agree, or say it isn’t your child’s.':
+    'حيث يقيم صاحب الحساب، يوافق وليّ الأمر على حسابات هذه الفئة العمرية. أجب من حسابك على Caime: وافق، أو قل إن الحساب ليس لابنك أو ابنتك.',
+  'Answer in Caime': 'الرد في Caime',
+  'Sign in to answer': 'سجّل الدخول للرد',
+  'New to Caime? Create your account': 'أول مرة على Caime؟ أنشئ حسابك',
+  'what you see': 'ما تراه',
+  'Whom they’re connected with and who asks to connect. Never their messages.':
+    'جهات التواصل وطلبات التواصل، دون الرسائل أبدًا.',
+  'Where you live, Caime is for people {age} and older, and from {younger} with a parent’s or guardian’s yes.':
+    'حيث تعيش، Caime لمن بلغوا {age} عامًا فأكثر، ومن {younger} بموافقة وليّ الأمر.',
 };

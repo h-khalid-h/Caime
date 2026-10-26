@@ -218,12 +218,17 @@ export async function tellGuardianAsked(
   guardianId: string,
   childId: string,
   childName: string,
+  /** How they were asked: through their own family link, or named by the child (R122 (2)). */
+  how: 'link' | 'named' = 'link',
 ): Promise<void> {
   await notify(ctx, {
     userId: guardianId,
     kind: 'family',
     level: 'attention',
-    title: () => tr('{name} joined Caime through your family link', { name: childName }),
+    title: () =>
+      how === 'named'
+        ? tr('{name} asks you to agree to their account on Caime', { name: childName })
+        : tr('{name} joined Caime through your family link', { name: childName }),
     body: () => tr('Agree to their account, or say it isn’t your child’s.'),
     // Opens Settings · Family, where it's answered.
     data: { family: childId },
@@ -240,8 +245,12 @@ export async function consentFor(
   ctx: AppContext,
   guardianId: string,
   childId: string,
+  /** Their yes reaches every new way in too (R122 (2), Moderate). */
+  opts: { moderates?: boolean } = {},
 ): Promise<void> {
   const now = ctx.now();
+  // Whoever agrees, by their own link or asked by the child, is checked as a link's maker is.
+  await assertAgeChecked(ctx, guardianId, 'guardian');
   const guardian = await ctx.db
     .selectFrom('users')
     .select(['age_check'])
@@ -265,8 +274,15 @@ export async function consentFor(
         consented_at: now,
         consent_version: CONSENT_VERSION,
         method: guardian.age_check ? 'account_age_checked' : 'account',
+        moderates: opts.moderates ?? false,
       })
       .where('id', '=', row.id)
+      .execute();
+    // The day of birth the parent saw when agreeing is theirs to vouch for (R122 (2)).
+    await trx
+      .updateTable('users')
+      .set({ birth_date_confirmed_at: now })
+      .where('id', '=', childId)
       .execute();
     const formed = await formConnection(trx, guardianId, childId);
     conversationId = formed.conversationId;

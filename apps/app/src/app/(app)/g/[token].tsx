@@ -45,6 +45,7 @@ export default function JoinLink() {
         void qc.invalidateQueries({ queryKey: qk.groupLink(token) });
         if (res.state === 'pending' && link)
           toast(tr('Asked to join “{place}”', { place: link.name }));
+        if (res.state === 'parent') toast(tr('We asked your parent. You’re in once they say yes.'));
         return;
       }
       void qc.invalidateQueries({ queryKey: qk.inbox });
@@ -168,6 +169,12 @@ export default function JoinLink() {
                     testID="join-link-withdraw"
                   />
                 </>
+              ) : link.asked === 'parent' ? (
+                <Text variant="body" color="textSecondary" testID="join-link-parent">
+                  {tr(
+                    'Your parent says yes to new groups and spaces first. We asked them; then your ask goes to its owner or an admin.',
+                  )}
+                </Text>
               ) : link.asked === 'declined' ? (
                 <Text variant="body" color="textSecondary" testID="join-link-declined">
                   {tr('Your ask to join wasn’t accepted. Ask whoever sent the link.')}

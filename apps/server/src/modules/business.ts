@@ -47,6 +47,7 @@ import { startCustomerConversation } from '../lib/business-threads';
 import { endOrgCallsOf } from '../lib/calls';
 import { AppError, badRequest, forbidden, notFound } from '../lib/errors';
 import { recordEvent } from '../lib/events';
+import { askGuardian, guardianAsked, moderatorOf } from '../lib/family-moderation';
 import { afterMessage } from '../lib/message-effects';
 import { messageViews, participantsOf, sendMessage } from '../lib/messages';
 import { notify } from '../lib/notify';
@@ -189,6 +190,26 @@ export async function businessRoutes(app: FastifyInstance, ctx: AppContext) {
       .select(['id', 'birth_date', 'time_zone', 'age_minor_until'])
       .where('id', '=', auth.userId)
       .executeTakeFirstOrThrow();
+    // A child whose parent says yes first (R122 (2), Moderate) starts writing to an organization
+    // only once the parent has: asked, and nothing started meanwhile. One already begun is theirs.
+    if (!asOrgId) {
+      const parent = await moderatorOf(ctx.db, auth.userId, ctx.now());
+      const begun = parent
+        ? await ctx.db
+            .selectFrom('business_threads')
+            .select('conversation_id')
+            .where('org_id', '=', id)
+            .where('customer_id', '=', auth.userId)
+            .where('customer_org_id', 'is', null)
+            .executeTakeFirst()
+        : null;
+      // Only where they could write at all (a verified organization, not suspended): anything else
+      // is refused as it is for anyone under 18, and their parent isn't asked for nothing.
+      if (parent && !begun && org.verified_at && !org.suspended_at) {
+        await askGuardian(ctx, parent, auth.userId, { kind: 'organization', orgId: id });
+        throw guardianAsked();
+      }
+    }
     const started = await startCustomerConversation(ctx, me, org, asOrgId ?? null);
     if (started.created) reply.status(201);
     return started;

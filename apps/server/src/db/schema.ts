@@ -103,6 +103,8 @@ export interface UsersTable {
   age_check_method: 'estimate' | 'document' | null;
   age_checked_at: NullableTimestamp;
   age_minor_until: NullableTimestamp;
+  /** When a parent agreed to this day of birth (R122 (2)); any change of the day clears it. */
+  birth_date_confirmed_at: NullableTimestamp;
   created_at: Generated<Date>;
   updated_at: Generated<Date>;
   deleted_at: NullableTimestamp;
@@ -258,6 +260,44 @@ export interface GuardianshipsTable {
   method: 'account' | 'account_age_checked' | null;
   ended_at: NullableTimestamp;
   ended_why: 'withdrawn' | 'not_mine' | 'lapsed' | 'guardian_gone' | 'operator' | null;
+  /** How the wait began (R122 (2)): their parent's link, their own sign-up, or a correction. */
+  began: Generated<'link' | 'sign_up' | 'corrected'>;
+  /** Adults this account has asked, by handle or through its link: `ASKS_MAX` at most. */
+  asks: Generated<number>;
+  /** The link a waiting child sends a parent not on Caime yet, kept as its hash. */
+  ask_token_hash: Buffer | null;
+  ask_expires_at: NullableTimestamp;
+  /** A looked-after child's correction, waiting for their parent's yes. */
+  asked_born_on: string | null;
+  asked_country: string | null;
+  correction_asked_at: NullableTimestamp;
+  /** The parent says yes to every new way in too (R122 (2), Moderate): never a message's words. */
+  moderates: Generated<boolean>;
+}
+
+/**
+ * What a parent who moderates says yes to before their child goes on (R122 (2), Moderate): an
+ * invitation into a place, an ask to join one, a message request, an organization to write to.
+ */
+export interface GuardianAsksTable {
+  id: string;
+  guardian_id: string;
+  child_id: string;
+  kind: 'invite' | 'join' | 'request' | 'organization';
+  place_invite_id: string | null;
+  join_link_id: string | null;
+  conversation_id: string | null;
+  org_id: string | null;
+  created_at: Date;
+  answered_at: NullableTimestamp;
+  answer: 'yes' | 'no' | null;
+}
+
+/** An adult who said a child's account isn't their child's (R122 (2)): never asked again by it. */
+export interface FamilyRefusalsTable {
+  child_id: string;
+  guardian_id: string;
+  refused_at: Date;
 }
 
 /** An invite link (R1, 0044): the inviter's standing offer to connect with whoever opens it. */
@@ -1899,6 +1939,8 @@ export interface Database {
   connection_requests: ConnectionRequestsTable;
   family_links: FamilyLinksTable;
   guardianships: GuardianshipsTable;
+  family_refusals: FamilyRefusalsTable;
+  guardian_asks: GuardianAsksTable;
   invites: InvitesTable;
   org_invites: OrgInvitesTable;
   join_links: JoinLinksTable;
@@ -2111,6 +2153,7 @@ export const USER_COLUMNS = [
   'age_check_method',
   'age_checked_at',
   'age_minor_until',
+  'birth_date_confirmed_at',
   'created_at',
   'updated_at',
   'deleted_at',

@@ -176,6 +176,7 @@ import type {
   RelationshipResponse,
   ReportedResponse,
   RequestAcceptedResponse,
+  RequestAnsweredResponse,
   SavedCollectionsResponse,
   SavedItemsResponse,
   SavedResponse,
@@ -498,7 +499,7 @@ export const endpoints = {
   setGroupRole: (id: string, userId: string, role: 'admin' | 'member') =>
     api.patch<OkResponse>(`/conversations/${id}/members/${userId}`, { role }),
   answerRequest: (id: string, decision: 'accept' | 'decline') =>
-    api.post<OkResponse>(`/conversations/${id}/request`, { decision }),
+    api.post<RequestAnsweredResponse>(`/conversations/${id}/request`, { decision }),
   messages: (id: string, params: { before?: number; after?: number; limit?: number } = {}) =>
     api.get<MessagesPage>(`/conversations/${id}/messages${q(params)}`),
   send: (conversationId: string, body: SendBody) =>

@@ -21,7 +21,7 @@ const MAIL_SEEN = /\/mail\/seen\/[^/]+$/;
 const FILE_TOKEN = /\/(f|public\/files)\/[^/]{16,}(?=\/|$)/;
 /** A parent's family link is the only way a child signs up through it (R122): `/family/<token>`,
  * the page's and the API's (`/v1/family/<token>`) alike. */
-const FAMILY_TOKEN = /\/family\/fam_[^/]+(?=\/|$)/;
+const FAMILY_TOKEN = /\/family\/famk?_[^/]+(?=\/|$)/;
 
 export function requestForLog(req: { method: string; url: string; ip?: string }) {
   return {

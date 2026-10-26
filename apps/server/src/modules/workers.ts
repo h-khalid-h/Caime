@@ -8,6 +8,7 @@ import { tellSaved } from '../lib/automations';
 import { eachLimit } from '../lib/batch';
 import { offerFollowUp } from '../lib/cai';
 import { lapseUnanswered, releaseUnsupervised } from '../lib/family';
+import { releaseModerated } from '../lib/family-moderate';
 import { removeStored } from '../lib/files';
 import { enqueue, registerJob, registerPeriodic } from '../lib/jobs';
 import { participantsOf } from '../lib/messages';
@@ -270,6 +271,8 @@ export function registerWorkers(): void {
     run: async (ctx) => {
       await lapseUnanswered(ctx);
       await releaseUnsupervised(ctx);
+      // What waits on a parent who no longer moderates goes on (R122 (2)).
+      await releaseModerated(ctx);
     },
   });
   // A closed organization's export window over, what was its alone goes (DPA §12).

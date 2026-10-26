@@ -3536,8 +3536,6 @@ export const arB: Catalog = {
   },
   'Sum it up': 'لخّصه',
   'Where this comes from': 'من أين جاء هذا',
-  'Only to keep younger people safer, and never shown to anyone. Correct it here if it was typed wrong; your country and time zone are in Language and region.':
-    'فقط لحماية الأصغر سنًا، ولا يُعرض لأحد أبدًا. صحّحه هنا إن كُتب خطأ؛ بلدك ومنطقتك الزمنية في «اللغة والمنطقة».',
   '{domain} is Caime’s own domain, so this organization may take @{handle}.':
     '{domain} هو نطاق Caime نفسه، لذا يمكن لهذه المؤسسة أن تتخذ @{handle} اسمًا لها.',
   'Take @{handle}': 'اعتماد @{handle}',
@@ -3779,4 +3777,81 @@ export const arB: Catalog = {
   '{by} moved the meeting': 'نقل موعد الاجتماع: {by}',
   '{by} changed where “{title}” is': 'تغيير مكان «{title}»: {by}',
   '{by} changed where the meeting is': 'تغيير مكان الاجتماع: {by}',
+  'Is this your parent or guardian?': 'هل هذا وليّ أمرك؟',
+  'Yes, ask them': 'نعم، أرسل الطلب',
+  'Their handle on Caime': 'المعرّف على Caime',
+  'Find them': 'بحث',
+  'Not on Caime yet?': 'ليس على Caime بعد؟',
+  'Send them a link from your phone. They make their account, then agree to yours. Open for a week.':
+    'أرسل رابطًا من هاتفك إلى وليّ أمرك: ينشئ به حسابًا ثم يوافق على حسابك. الرابط مفتوح أسبوعًا.',
+  '{name} asks you to agree to their Caime account': 'طلب موافقتك على حساب في Caime: {name}',
+  'Make a new link': 'إنشاء رابط جديد',
+  'Make a link to send': 'إنشاء رابط لإرساله',
+  '{child} was invited to “{place}”': 'دعوة لـ{child} إلى «{place}»',
+  '{child} asks to join “{place}”': 'طلب انضمام من {child} إلى «{place}»',
+  '{name} wrote to {child}': 'رسالة من {name} إلى {child}',
+  '{child} wants to write to {org}': 'طلب من {child} لمراسلة {org}',
+  'We asked your parent. You’re in once they say yes.': 'سألنا وليّ أمرك. تنضم فور موافقته.',
+  'Your parent says yes to new groups and spaces first. We asked them; then your ask goes to its owner or an admin.':
+    'وليّ أمرك يوافق أولًا على المجموعات والمساحات الجديدة. سألناه، ثم يصل طلبك إلى مالكها أو أحد مشرفيها.',
+  'Sent to your parent to agree. It changes once they do.':
+    'أُرسل إلى وليّ أمرك للموافقة، ويتغيّر فور موافقته.',
+  'Only to keep younger people safer, and never shown to anyone. Correct it here if it was typed wrong: the rules for your age follow it, and while your parent looks after your account, they agree to it first.':
+    'لحماية الأصغر سنًا فقط، ولا يُعرض على أحد. صحّحه هنا إن كُتب خطأ: قواعد عمرك تتبعه، وما دام وليّ أمرك يرعى حسابك فهو يوافق على التصحيح أولًا.',
+  Checked: 'تم التحقق',
+  'Confirmed by your parent': 'أكّده وليّ أمرك',
+  'As you said it, not checked': 'كما ذكرته، دون تحقق',
+  'One more step: your parent or guardian': 'خطوة أخيرة: وليّ أمرك',
+  'Where you live, a parent or guardian agrees to an account for someone your age. Ask yours: they agree from their own Caime, and you can write to each other.':
+    'حيث تعيش، يوافق وليّ الأمر على حساب من هم في عمرك. اسأل وليّ أمرك: يوافق من حسابه على Caime، ثم تتراسلان.',
+  'The person you asked said no. You can ask {n} more.': {
+    zero: 'رفض من سألته. لا يمكنك سؤال أحد آخر.',
+    one: 'رفض من سألته. يمكنك سؤال شخص واحد آخر.',
+    two: 'رفض من سألته. يمكنك سؤال شخصين آخرين.',
+    few: 'رفض من سألته. يمكنك سؤال {n} أشخاص آخرين.',
+    many: 'رفض من سألته. يمكنك سؤال {n} شخصًا آخر.',
+    other: 'رفض من سألته. يمكنك سؤال {n} شخص آخر.',
+  },
+  'Keep waiting for them': 'مواصلة الانتظار',
+  'You sent them a link. It’s open until {day}.': 'أرسلتَ رابطًا، وهو مفتوح حتى {day}.',
+  'Ask someone else': 'اسأل شخصًا آخر',
+  'If nobody agrees by {day}, this account is deleted.':
+    'إن لم يوافق أحد حتى {day}، يُحذف هذا الحساب.',
+  'Delete this account': 'حذف هذا الحساب',
+  'Everything in it is deleted. This can’t be undone.': 'يُحذف كل ما فيه، ولا يمكن التراجع عن ذلك.',
+  'Waiting for your parent’s yes.': 'بانتظار موافقة وليّ أمرك.',
+  'Ask my parent': 'اسأل وليّ أمري',
+  'We asked your parent. It opens once they say yes.':
+    'سألنا وليّ أمرك، وتُفتح المحادثة فور موافقته.',
+  'Your parent says yes to new people first.': 'وليّ أمرك يوافق أولًا على الأشخاص الجدد.',
+  '{name} asks you to agree to their account': 'طلب موافقتك على حساب: {name}',
+  'Your parent says yes to new groups, spaces and people first':
+    'وليّ أمرك يوافق أولًا على المجموعات والمساحات والأشخاص الجدد',
+  'An invitation, a message request or writing to an organization waits for them.':
+    'الدعوة وطلب المراسلة ومراسلة الجهات تنتظر موافقته.',
+  'Your correction waits for your parent': 'تصحيحك بانتظار موافقة وليّ أمرك',
+  'It changes once they agree.': 'يتغيّر فور موافقته.',
+  'Allowing lets them read it and answer. You never see their messages.':
+    'السماح يتيح القراءة والرد، ولا ترى الرسائل أبدًا.',
+  '{name} says you’re their parent or guardian': 'حساب {name} يذكرك وليًّا للأمر',
+  'Their date of birth: {day}. Agreeing confirms it.': 'تاريخ الميلاد: {day}. الموافقة تؤكده.',
+  'Agreeing lets their account in and connects you. You’ll see whom they’re connected with and who asks to connect with them, never their messages. If it isn’t your child’s, say so: you won’t be asked again.':
+    'الموافقة تفتح الحساب وتصل بينكما. سترى جهات التواصل وطلبات التواصل، ولا ترى الرسائل أبدًا. إن لم يكن الحساب لابنك أو ابنتك فقل ذلك، ولن تُسأل مجددًا.',
+  'Say yes to new groups, spaces and people first':
+    'الموافقة أولًا على المجموعات والمساحات والأشخاص الجدد',
+  'An invitation, a message request or writing to an organization waits for you too. You can change it later.':
+    'الدعوة وطلب المراسلة ومراسلة الجهات تنتظر موافقتك أيضًا. يمكنك تغيير ذلك لاحقًا.',
+  '{name} asks to correct their date of birth to {day}':
+    'طلب تصحيح تاريخ الميلاد إلى {day}: {name}',
+  '{name} asks to change where they live to {country}':
+    'طلب تغيير بلد الإقامة إلى {country}: {name}',
+  'Now {day}': 'الآن {day}',
+  'An invitation, a message request or writing to an organization waits for you. Never their messages.':
+    'الدعوة وطلب المراسلة ومراسلة الجهات تنتظر موافقتك، ولا ترى الرسائل أبدًا.',
+  '{name} invited {child} to “{place}”': 'دعوة من {name} لـ{child} إلى «{place}»',
+  '“{place}” waits for your parent': '«{place}» بانتظار موافقة وليّ أمرك',
+  'Joining “{place}” waits for your parent': 'الانضمام إلى «{place}» بانتظار موافقة وليّ أمرك',
+  '{name}’s message waits for your parent': 'رسالة {name} بانتظار موافقة وليّ أمرك',
+  'Writing to {org} waits for your parent': 'مراسلة {org} بانتظار موافقة وليّ أمرك',
+  'Waiting for your parent’s yes': 'بانتظار موافقة وليّ أمرك',
 };

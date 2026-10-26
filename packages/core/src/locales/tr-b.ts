@@ -2648,8 +2648,6 @@ export const turkishB: Catalog = {
   },
   'Sum it up': 'Özetle',
   'Where this comes from': 'Bunun kaynağı',
-  'Only to keep younger people safer, and never shown to anyone. Correct it here if it was typed wrong; your country and time zone are in Language and region.':
-    'Yalnızca gençleri daha iyi korumak için; kimseye gösterilmez. Yanlış yazıldıysa burada düzeltin; ülkeniz ve saat diliminiz Dil ve bölge’de.',
   '{domain} is Caime’s own domain, so this organization may take @{handle}.':
     '{domain}, Caime’in kendi alan adı; bu yüzden bu kuruluş @{handle} adını alabilir.',
   'Take @{handle}': '@{handle} adını al',
@@ -2810,4 +2808,82 @@ export const turkishB: Catalog = {
   '{by} moved the meeting': 'Toplantı taşındı · Taşıyan: {by}',
   '{by} changed where “{title}” is': '{title} için yer değişti · Değiştiren: {by}',
   '{by} changed where the meeting is': 'Toplantının yeri değişti · Değiştiren: {by}',
+  'Is this your parent or guardian?': 'Bu kişi ebeveyniniz ya da veliniz mi?',
+  'Yes, ask them': 'Evet, ona sorun',
+  'Their handle on Caime': 'Caime’deki kullanıcı adı',
+  'Find them': 'Bul',
+  'Not on Caime yet?': 'Henüz Caime’de değil mi?',
+  'Send them a link from your phone. They make their account, then agree to yours. Open for a week.':
+    'Telefonunuzdan ona bir bağlantı gönderin. Hesabını açar, sonra sizinkini onaylar. Bir hafta açık kalır.',
+  '{name} asks you to agree to their Caime account': '{name} Caime hesabını onaylamanızı istiyor',
+  'Make a new link': 'Yeni bağlantı oluştur',
+  'Make a link to send': 'Gönderilecek bağlantı oluştur',
+  '{child} was invited to “{place}”': '{child} davet edildi: “{place}”',
+  '{child} asks to join “{place}”': '{child} katılmak istiyor: “{place}”',
+  '{name} wrote to {child}': '{name}, {child} ile yazışmak istiyor',
+  '{child} wants to write to {org}': '{child}, {org} ile yazışmak istiyor',
+  'We asked your parent. You’re in once they say yes.':
+    'Ebeveyninize sorduk. Onay verdiğinde katılmış olursunuz.',
+  'Your parent says yes to new groups and spaces first. We asked them; then your ask goes to its owner or an admin.':
+    'Yeni gruplara ve alanlara önce ebeveyniniz onay verir. Ona sorduk; ardından isteğiniz sahibine ya da bir yöneticiye gider.',
+  'Sent to your parent to agree. It changes once they do.':
+    'Onay için ebeveyninize gönderildi. Onayladığında değişir.',
+  'Only to keep younger people safer, and never shown to anyone. Correct it here if it was typed wrong: the rules for your age follow it, and while your parent looks after your account, they agree to it first.':
+    'Yalnızca gençleri daha iyi korumak için, kimseye gösterilmez. Yanlış yazıldıysa burada düzeltin: yaşınıza göre kurallar buna uyar ve ebeveyniniz hesabınızla ilgilendiği sürece önce o onaylar.',
+  Checked: 'Doğrulandı',
+  'Confirmed by your parent': 'Ebeveyniniz onayladı',
+  'As you said it, not checked': 'Belirttiğiniz gibi, doğrulanmadı',
+  'One more step: your parent or guardian': 'Bir adım kaldı: ebeveyniniz ya da veliniz',
+  'Where you live, a parent or guardian agrees to an account for someone your age. Ask yours: they agree from their own Caime, and you can write to each other.':
+    'Yaşadığınız yerde sizin yaşınızdakilerin hesabını bir ebeveyn ya da veli onaylar. Kendinizinkine sorun: kendi Caime’inden onaylar ve birbirinize yazabilirsiniz.',
+  'The person you asked said no. You can ask {n} more.': {
+    one: 'Sorduğunuz kişi hayır dedi. Bir kişiye daha sorabilirsiniz.',
+    other: 'Sorduğunuz kişi hayır dedi. {n} kişiye daha sorabilirsiniz.',
+  },
+  'Keep waiting for them': 'Beklemeye devam et',
+  'You sent them a link. It’s open until {day}.':
+    'Ona bir bağlantı gönderdiniz. {day} tarihine kadar açık.',
+  'Ask someone else': 'Başka birine sor',
+  'If nobody agrees by {day}, this account is deleted.':
+    '{day} tarihine kadar kimse onaylamazsa bu hesap silinir.',
+  'Delete this account': 'Bu hesabı sil',
+  'Everything in it is deleted. This can’t be undone.':
+    'İçindeki her şey silinir. Bu geri alınamaz.',
+  'Waiting for your parent’s yes.': 'Ebeveyninizin onayı bekleniyor.',
+  'Ask my parent': 'Ebeveynime sor',
+  'We asked your parent. It opens once they say yes.':
+    'Ebeveyninize sorduk. Onay verdiğinde açılır.',
+  'Your parent says yes to new people first.': 'Yeni kişilere önce ebeveyniniz onay verir.',
+  '{name} asks you to agree to their account': '{name} hesabını onaylamanızı istiyor',
+  'Your parent says yes to new groups, spaces and people first':
+    'Yeni gruplara, alanlara ve kişilere önce ebeveyniniz onay verir',
+  'An invitation, a message request or writing to an organization waits for them.':
+    'Bir davet, bir mesaj isteği ya da bir kuruluşa yazmak onun onayını bekler.',
+  'Your correction waits for your parent': 'Düzeltmeniz ebeveyninizi bekliyor',
+  'It changes once they agree.': 'Onayladığında değişir.',
+  'Allowing lets them read it and answer. You never see their messages.':
+    'İzin vermek, okuyup yanıtlamasını sağlar. Mesajlarını hiçbir zaman görmezsiniz.',
+  '{name} says you’re their parent or guardian':
+    '{name}, ebeveyni ya da velisi olduğunuzu söylüyor',
+  'Their date of birth: {day}. Agreeing confirms it.':
+    'Doğum tarihi: {day}. Onaylamak bunu doğrular.',
+  'Agreeing lets their account in and connects you. You’ll see whom they’re connected with and who asks to connect with them, never their messages. If it isn’t your child’s, say so: you won’t be asked again.':
+    'Onaylamak hesabını açar ve sizi bağlar. Kimlerle bağlantılı olduğunu ve kimin bağlantı istediğini görürsünüz, mesajlarını asla. Çocuğunuz değilse söyleyin: bir daha sorulmaz.',
+  'Say yes to new groups, spaces and people first':
+    'Yeni gruplara, alanlara ve kişilere önce onay ver',
+  'An invitation, a message request or writing to an organization waits for you too. You can change it later.':
+    'Bir davet, bir mesaj isteği ya da bir kuruluşa yazmak da onayınızı bekler. Bunu sonra değiştirebilirsiniz.',
+  '{name} asks to correct their date of birth to {day}':
+    '{name}, doğum tarihini {day} olarak düzeltmek istiyor',
+  '{name} asks to change where they live to {country}':
+    '{name}, yaşadığı yeri {country} olarak değiştirmek istiyor',
+  'Now {day}': 'Şu an {day}',
+  'An invitation, a message request or writing to an organization waits for you. Never their messages.':
+    'Bir davet, bir mesaj isteği ya da bir kuruluşa yazmak onayınızı bekler. Mesajları asla.',
+  '{name} invited {child} to “{place}”': '{name} davet etti: {child}, “{place}”',
+  '“{place}” waits for your parent': '“{place}” ebeveyninizi bekliyor',
+  'Joining “{place}” waits for your parent': 'Katılma isteğiniz ebeveyninizi bekliyor: “{place}”',
+  '{name}’s message waits for your parent': 'Mesaj ebeveyninizi bekliyor: {name}',
+  'Writing to {org} waits for your parent': '{org} ile yazışmak ebeveyninizi bekliyor',
+  'Waiting for your parent’s yes': 'Ebeveyninizin onayı bekleniyor',
 };

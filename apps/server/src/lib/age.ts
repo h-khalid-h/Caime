@@ -21,6 +21,7 @@ import type { AppContext } from '../context';
 import type { AgeResult } from './age-provider';
 import { audit } from './audit';
 import { AppError } from './errors';
+import { applyCheckedCorrection } from './family-asks';
 import { minorOf } from './users';
 
 const DAY = 86_400_000;
@@ -181,6 +182,9 @@ export async function applyAgeResult(
         })
         .where('id', '=', row.user_id)
         .execute();
+      // A document says 18 or over (R122 (2)): a correction they asked of their parent is theirs.
+      if (standing.outcome === 'adult' && standing.method === 'document')
+        await applyCheckedCorrection(trx, row.user_id, now);
     }
     await audit(trx, {
       actorId: row.user_id,

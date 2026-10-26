@@ -1,7 +1,8 @@
 /**
  * A child on Caime with a parent's consent (R122): where the law asks a guardian's consent (Egypt,
- * Saudi Arabia), someone from 13 signs up only through their parent's family link; the account
- * waits, reaching nothing but itself, until that parent agrees on it; the parent sees whom the
+ * Saudi Arabia), someone from 13 signs up through their parent's family link (or alone, asking a
+ * parent next: family-named.test.ts); the account waits, reaching nothing but itself, until that
+ * parent agrees on it; the parent sees whom the
  * child is connected with and never a message; "not my child", a withdrawn consent or a week
  * without an answer deletes the child's account. Nobody under 13 joins, link or not.
  */
@@ -70,11 +71,13 @@ async function newLink(name = 'Lina') {
 }
 
 describe('a child joins through their parent (R122)', () => {
-  it('without a link is told how, and under 13 is refused even with one', async () => {
+  it('without a link waits to ask a parent (R122 (2)), and under 13 is refused, link or not', async () => {
     const alone = await childSignup('2012-05-01');
-    expect(alone.statusCode).toBe(400);
-    expect(alone.json().error.code).toBe('too_young');
-    expect(alone.json().error.message).toContain('with a parent or guardian');
+    expect(alone.statusCode).toBe(201);
+    expect(alone.json().user.waitsForParent).toBe(true);
+    const younger = await childSignup('2014-01-01');
+    expect(younger.statusCode).toBe(400);
+    expect(younger.json().error.code).toBe('too_young');
     const { token } = await newLink();
     const tooYoung = await childSignup('2014-01-01', token);
     expect(tooYoung.statusCode).toBe(400);
@@ -88,7 +91,7 @@ describe('a child joins through their parent (R122)', () => {
     const { token } = await newLink('Lina');
     // The link's page names whose it is and for whom, and nothing else.
     const page = await t.app.inject({ method: 'GET', url: `/v1/family/${token}` });
-    expect(page.json()).toEqual({ guardianName: 'Hassan Parent', childName: 'Lina' });
+    expect(page.json()).toEqual({ kind: 'link', guardianName: 'Hassan Parent', childName: 'Lina' });
     // Its address is a page of its own, the app's scripts left out, kept by nobody.
     const html = await t.app.inject({
       method: 'GET',
@@ -209,7 +212,8 @@ describe('a child joins through their parent (R122)', () => {
     const later = await childSignup('2011-04-04', second.token);
     const unanswered = later.json().user.id as string;
     t.clock.advance(8 * 86_400_000);
-    expect(await lapseUnanswered(t.ctx)).toBe(1);
+    // This one, and the one that signed up alone in the first test and asked nobody.
+    expect(await lapseUnanswered(t.ctx)).toBe(2);
     expect(
       await t.ctx.db
         .selectFrom('users')

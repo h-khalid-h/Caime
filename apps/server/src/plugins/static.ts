@@ -187,11 +187,13 @@ export async function registerWeb(app: FastifyInstance, ctx: AppContext): Promis
     // signed in or not: the app has no screen for it, so it never boots there.
     // A link to someone's file (M16 H6), open or not, is a page for everyone too: the app has no
     // screen for it, and what it shows may depend on whoever asks.
-    // So is a family link (R122): it's for a new account, the child's, whoever opens it.
+    // So is a family link (R122): it's for a new account, the child's, whoever opens it; and a
+    // child's link to their parent (R122 (2)), whose answer is in the app, signed in.
     const fileLink =
       page.kind === 'file-link' ||
       page.kind === 'file-sign-in' ||
       page.kind === 'family-link' ||
+      page.kind === 'family-ask' ||
       (page.kind === 'missing' && page.what === 'file');
     const visitor =
       sitePage ||

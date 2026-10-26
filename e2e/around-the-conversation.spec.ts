@@ -2692,7 +2692,17 @@ test.describe
       await page.screenshot({ path: 'e2e/screenshots/desktop-business-handed-over.png' });
       // Its team reads what each answer rests on; Lina never does (M16 G6a).
       await page.getByTestId(`thread-row-lina.${stamp}`).click();
-      await page.getByTestId('message-cited').filter({ visible: true }).first().click();
+      // The conversation may still be settling at its first unread as it opens, and a press whose
+      // pointer comes up on a moved element is cancelled on the web: pressed again until it opens.
+      await expect(async () => {
+        if (!(await page.getByTestId('info-cited').isVisible()))
+          await page
+            .getByTestId('message-cited')
+            .filter({ visible: true })
+            .first()
+            .click({ timeout: 2_000 });
+        await expect(page.getByTestId('info-cited')).toBeVisible({ timeout: 2_000 });
+      }).toPass({ timeout: 20_000 });
       await expect(page.getByTestId('info-cited')).toContainText(
         '“We are open Sunday to Thursday 9am to 6pm and Saturday 9am to 1pm.”',
       );

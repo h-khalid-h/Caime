@@ -19,6 +19,7 @@ import { businessClosed } from '../lib/blocks';
 import { orgRef, threadViews } from '../lib/business';
 import { isGroupTopic } from '../lib/conversations';
 import { badRequest, notFound } from '../lib/errors';
+import { parentSaysOn } from '../lib/family-moderation';
 import { isUnverifiedAddress } from '../lib/mail-address';
 import { insertSystemMessage, messageViews, participantsOf } from '../lib/messages';
 import { formNames } from '../lib/org-forms';
@@ -432,6 +433,9 @@ export async function conversationView(
      * "incoming": someone you're not connected with wrote to you. "outgoing": you wrote first,
      * and it's still unanswered to you even once they've declined it.
      */
+    // Taking it waits on a parent who moderates (R122 (2)): read only for a request pending.
+    parentSays:
+      me.request_state === 'pending' ? await parentSaysOn(ctx, userId, conversation.id) : null,
     request:
       me.request_state === 'pending'
         ? 'incoming'

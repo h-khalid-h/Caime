@@ -35,7 +35,8 @@ import { USER_COLUMNS } from '../db/schema';
 import { audit } from '../lib/audit';
 import { scheduleBrief, scheduleDigest } from '../lib/cai';
 import { badRequest } from '../lib/errors';
-import { meViewFor } from '../lib/family';
+import { meViewFor, supervisorOf } from '../lib/family';
+import { ageChangeFor, askCorrection, beginWait } from '../lib/family-asks';
 import { currentZone, isCountry } from '../lib/geo';
 import {
   assertHandleAvailable,
@@ -50,7 +51,7 @@ import {
 import { forgetLanguageOf } from '../lib/i18n';
 import { personInsights } from '../lib/insights';
 import { assertPersonInsights, planUsage } from '../lib/plans';
-import { avatarUrl, meView, minorOf, oldEnoughIn, privacyOf, tooYoung } from '../lib/users';
+import { avatarUrl, minorOf, privacyOf, tooYoung } from '../lib/users';
 import { parse } from '../lib/validate';
 import { requireAuth } from '../plugins/auth';
 
@@ -141,26 +142,31 @@ export async function meRoutes(app: FastifyInstance, ctx: AppContext) {
       patch.time_zone = zone;
     }
     if (body.locale !== undefined) patch.locale = safeLocale(body.locale);
+    // Where they live decides the age rules that hold (R122 (2)), as their date of birth does: a
+    // child their parent looks after asks that parent; anyone else moves, refused where they'd be
+    // too young for Caime, and waiting for a parent's yes where that's what lets them in.
+    let countryAsked: string | null = null;
+    let beginsWait = false;
     if (body.country !== undefined && body.country !== current.country) {
       if (!isCountry(body.country)) throw badRequest(tr('Choose where you live.'));
-      // Where the law there asks more than Caime's minimum, a move there asks it too.
-      if (
-        current.birth_date &&
-        !oldEnoughIn(
-          ctx.config.MINIMUM_AGE,
-          body.country,
-          current.birth_date,
-          ctx.now(),
-          current.time_zone,
-        )
-      )
-        throw tooYoung(ctx.config.MINIMUM_AGE, body.country);
-      patch.country = body.country;
-      // A work week that was where they lived's own follows them to the new one (R31); one they
-      // set themselves stays theirs.
-      const had = defaultWorkweek(current.country).join(',');
-      if (body.workweek === undefined && (current.workweek ?? []).join(',') === had)
-        patch.workweek = defaultWorkweek(body.country);
+      if (current.birth_date) {
+        const change = await ageChangeFor(ctx, auth.userId, {
+          birthDate: current.birth_date,
+          country: body.country,
+          timeZone: current.time_zone,
+        });
+        if (change === 'refused') throw tooYoung(ctx.config.MINIMUM_AGE, body.country);
+        countryAsked = await supervisorOf(ctx.db, auth.userId, ctx.now());
+        beginsWait = change === 'wait' && !countryAsked;
+      }
+      if (!countryAsked) {
+        patch.country = body.country;
+        // A work week that was where they lived's own follows them to the new one (R31); one
+        // they set themselves stays theirs.
+        const had = defaultWorkweek(current.country).join(',');
+        if (body.workweek === undefined && (current.workweek ?? []).join(',') === had)
+          patch.workweek = defaultWorkweek(body.country);
+      }
     }
     if (body.workweek !== undefined)
       patch.workweek = [...new Set(body.workweek)].sort((a, b) => a - b);
@@ -246,22 +252,33 @@ export async function meRoutes(app: FastifyInstance, ctx: AppContext) {
           .execute();
       }
     });
+    if (beginsWait) {
+      await beginWait(ctx.db, auth.userId, 'corrected', ctx.now());
+      ctx.metrics.family.inc({ step: 'corrected' });
+    }
+    if (countryAsked && body.country)
+      await askCorrection(ctx, auth.userId, countryAsked, { country: body.country });
     const user = await load(auth.userId);
     await ctx.bus.publish([auth.userId], { type: 'me.updated', data: { id: auth.userId } });
     if (weekMoved) await ctx.bus.publish([auth.userId], { type: 'policies.changed', data: {} });
     if (briefChanged) await scheduleBrief(ctx, auth.userId);
     if (digestChanged) await scheduleDigest(ctx, auth.userId);
-    return { user: meView(user, ctx.now(), ctx.config) };
+    return {
+      user: await meViewFor(ctx, user),
+      ...(countryAsked ? { askedParent: true } : {}),
+    };
   });
 
   /**
    * A date of birth typed wrong at sign-up, corrected by its owner (the owner's report of
-   * 2026-10-25): a real day, old enough for Caime where they live (`tooYoung`, as sign-up refuses;
-   * an account that can't be kept at that age is deleted, never redated), three a day. The
+   * 2026-10-25), under sign-up's own rules (R122 (2)): a real day, three a day; under the age Caime
+   * opens where they live, refused; where a parent's yes is what lets them in and none holds, saved
+   * and the account waits for one, as at sign-up; a child their parent looks after asks that
+   * parent, and nothing changes until they agree (or a document check says 18 or over). The
    * under-18 rules follow at once, since `privacyOf` and `minorOf` read it on every request; a
    * check of their age that found them under 18 still holds for its year whatever is declared
-   * (M16 B7: the stricter reading wins), and a date that says under 18 holds against a check that
-   * read adult. Audited without the date.
+   * (M16 B7: the stricter reading wins). A new day is no longer the one a parent vouched for.
+   * Audited without the date.
    */
   app.put('/me/birth-date', async (req): Promise<UserResponse> => {
     const auth = requireAuth(req);
@@ -273,23 +290,35 @@ export async function meRoutes(app: FastifyInstance, ctx: AppContext) {
       throw badRequest(tr('Enter the day you were born.'), {
         fields: [{ path: 'birthDate', message: 'Enter the day you were born.' }],
       });
-    if (!oldEnoughIn(ctx.config.MINIMUM_AGE, current.country, birthDate, now, current.time_zone))
-      throw tooYoung(ctx.config.MINIMUM_AGE, current.country);
-    if (birthDate !== current.birth_date) {
-      await ctx.db
+    if (birthDate === current.birth_date) return { user: await meViewFor(ctx, current) };
+    const change = await ageChangeFor(ctx, auth.userId, {
+      birthDate,
+      country: current.country,
+      timeZone: current.time_zone,
+    });
+    if (change === 'refused') throw tooYoung(ctx.config.MINIMUM_AGE, current.country);
+    const supervisor = await supervisorOf(ctx.db, auth.userId, now);
+    if (supervisor) {
+      await askCorrection(ctx, auth.userId, supervisor, { bornOn: birthDate });
+      return { user: await meViewFor(ctx, current), askedParent: true };
+    }
+    await ctx.db.transaction().execute(async (trx) => {
+      await trx
         .updateTable('users')
-        .set({ birth_date: birthDate, updated_at: now })
+        .set({ birth_date: birthDate, birth_date_confirmed_at: null, updated_at: now })
         .where('id', '=', auth.userId)
         .execute();
-      await audit(ctx.db, {
-        actorId: auth.userId,
-        action: 'account.birth_date',
-        target: auth.userId,
-      });
-      await ctx.bus.publish([auth.userId], { type: 'me.updated', data: { id: auth.userId } });
-    }
+      if (change === 'wait') await beginWait(trx, auth.userId, 'corrected', now);
+    });
+    if (change === 'wait') ctx.metrics.family.inc({ step: 'corrected' });
+    await audit(ctx.db, {
+      actorId: auth.userId,
+      action: 'account.birth_date',
+      target: auth.userId,
+    });
+    await ctx.bus.publish([auth.userId], { type: 'me.updated', data: { id: auth.userId } });
     const user = await load(auth.userId);
-    return { user: meView(user, now, ctx.config) };
+    return { user: await meViewFor(ctx, user) };
   });
 
   app.put('/me/privacy', async (req): Promise<PrivacyResponse> => {

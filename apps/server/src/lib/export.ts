@@ -169,6 +169,7 @@ export async function buildExport(ctx: AppContext, me: string, now: Date) {
     fileLinks,
     guardianships,
     familyLinks,
+    guardianAsks,
   ] = await Promise.all([
     // An organization's page is public; whose link a person followed is only counted (R29: it
     // could name someone under 18, or someone who can't be found).
@@ -1179,6 +1180,12 @@ export async function buildExport(ctx: AppContext, me: string, now: Date) {
         'g.method',
         'g.ended_at',
         'g.ended_why',
+        'g.began',
+        'g.asks',
+        'g.asked_born_on',
+        'g.asked_country',
+        'g.correction_asked_at',
+        'g.moderates',
       ])
       .where((eb) => eb.or([eb('g.child_id', '=', me), eb('g.guardian_id', '=', me)]))
       .orderBy('g.asked_at')
@@ -1187,6 +1194,14 @@ export async function buildExport(ctx: AppContext, me: string, now: Date) {
       .selectFrom('family_links')
       .select(['child_name', 'created_at', 'expires_at', 'revoked_at', 'spent_at'])
       .where('guardian_id', '=', me)
+      .orderBy('created_at')
+      .execute(),
+    // What Moderate put before a parent (R122 (2)), as the child or as the parent: its kind, when,
+    // and the answer; never whom or what it was about.
+    db
+      .selectFrom('guardian_asks')
+      .select(['child_id', 'kind', 'created_at', 'answered_at', 'answer'])
+      .where((eb) => eb.or([eb('child_id', '=', me), eb('guardian_id', '=', me)]))
       .orderBy('created_at')
       .execute(),
   ]);
@@ -1927,6 +1942,27 @@ export async function buildExport(ctx: AppContext, me: string, now: Date) {
       method: g.method,
       endedAt: iso(g.ended_at),
       ended: g.ended_why,
+      // R122 (2): how it began (a parent's link, the child's own sign-up, a correction), how many
+      // adults the child asked, and a correction waiting on the parent.
+      began: g.began,
+      asked: g.child_id === me ? g.asks : undefined,
+      correction: g.correction_asked_at
+        ? {
+            birthDate: g.asked_born_on,
+            country: g.asked_country,
+            askedAt: g.correction_asked_at.toISOString(),
+          }
+        : null,
+      // Whether the parent says yes to every new way in too (Moderate).
+      moderates: g.moderates,
+    })),
+    // What waited on a parent's yes under Moderate (R122 (2)): its kind, when, and the answer.
+    familyAsks: guardianAsks.map((a) => ({
+      youAre: a.child_id === me ? 'child' : 'parent',
+      kind: a.kind,
+      at: a.created_at.toISOString(),
+      answeredAt: iso(a.answered_at),
+      answer: a.answer,
     })),
     // The family links you made (R122): the name you gave, and when each was used, ran out or was
     // taken back; never its token.

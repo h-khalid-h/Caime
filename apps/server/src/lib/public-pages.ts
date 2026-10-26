@@ -59,6 +59,7 @@ import { USER_COLUMNS } from '../db/schema';
 import { catalogOf, paymentsOf } from './booking';
 import { ORG_REF_COLUMNS, orgRef } from './business';
 import { liveFamilyLink } from './family';
+import { liveAskLink } from './family-asks';
 import { countOpened, liveFileLink } from './file-links';
 import { cutLine, VIEW_KIND_LABELS, VIEW_STYLE, type ViewBody, viewBodyOf } from './file-views';
 import { countryNameIn } from './geo';
@@ -323,6 +324,16 @@ export interface PublicFamilyLink {
   expiresAt: string;
 }
 /**
+ * A child's link to their parent (R122 (2)): whose account asks a parent's yes, and the way to
+ * give it: in Caime, signed in as the adult they are. Nothing else of the child is shown.
+ */
+export interface PublicFamilyAsk {
+  kind: 'family-ask';
+  token: string;
+  child: string;
+  signedIn: boolean;
+}
+/**
  * A join link's page (M16 C3e): where it leads (a group, or a space and its kind), how many are
  * in it, who asks, and the ways in. Never who is in it: no names, faces or handles, no words.
  */
@@ -378,6 +389,7 @@ export type PublicPage =
   | PublicTeamInvite
   | PublicJoinLink
   | PublicFamilyLink
+  | PublicFamilyAsk
   | PublicFileLink
   /** A link to a file only someone signed in to Caime opens, asked by a visitor (M16 H6). */
   | { kind: 'file-sign-in' }
@@ -656,7 +668,7 @@ export async function publicPageFor(
   // A link to someone's file (M16 H6): read for whoever asks, what it holds in their words.
   const file = /^\/f\/([^/?#]+)$/.exec(path);
   if (file) return publicFileLink(ctx, file[1] ?? '', asker, search);
-  const page = await pageAt(ctx, path, now, search);
+  const page = await pageAt(ctx, path, now, search, asker);
   // Anyone may report a page about someone (M16 B6): its form's state rides on the page.
   return page.kind === 'person' ||
     page.kind === 'org' ||
@@ -680,6 +692,7 @@ async function pageAt(
   path: string,
   now: Date,
   search: URLSearchParams,
+  asker: { userId: string | null },
 ): Promise<PublicPage> {
   const db = ctx.db;
   if (path === '/') return { kind: 'landing' };
@@ -703,15 +716,19 @@ async function pageAt(
     return (await publicJoinLink(ctx, join[1] ?? '')) ?? { kind: 'missing', what: 'invite' };
   const family = /^\/family\/([^/?#]+)$/.exec(path);
   if (family) {
-    const link = await liveFamilyLink(db, safeDecode(family[1] ?? ''), now);
-    return link
-      ? {
-          kind: 'family-link',
-          token: safeDecode(family[1] ?? ''),
-          parent: link.guardian_name,
-          child: link.child_name,
-          expiresAt: link.expires_at.toISOString(),
-        }
+    const token = safeDecode(family[1] ?? '');
+    const link = await liveFamilyLink(db, token, now);
+    if (link)
+      return {
+        kind: 'family-link',
+        token,
+        parent: link.guardian_name,
+        child: link.child_name,
+        expiresAt: link.expires_at.toISOString(),
+      };
+    const ask = await liveAskLink(db, token, now);
+    return ask
+      ? { kind: 'family-ask', token, child: ask.childName, signedIn: Boolean(asker.userId) }
       : { kind: 'missing', what: 'invite' };
   }
   const at = /^\/@([^/?#]+)(?:\/([^/?#]+))?$/.exec(path);
@@ -1594,6 +1611,49 @@ export function renderPublic(
     <div>${label(tr('for'))}<dd dir="auto">${esc(page.child)}</dd></div>
     <div>${label(tr('what they see'))}<dd>${esc(tr('Whom you’re connected with and who asks to connect. Never your messages.'))}</dd></div>
     <div>${label(tr('open until'))}<dd>${esc(dayLabel(page.expiresAt.slice(0, 10), 'UTC'))}</dd></div>
+  </dl>`,
+  )}
+  ${pageFoot(tr(PROMISE), wordmark(18))}
+</main>`,
+      };
+    }
+    case 'family-ask': {
+      const title = tr('{child} asks you to agree to their account on Caime', {
+        child: page.child,
+      });
+      const lead = tr(
+        'Where they live, a parent or guardian agrees to an account for someone their age. Answer from your own Caime: agree, or say it isn’t your child’s.',
+      );
+      // Into the app at Family, signed in as the adult they are: never an answer from this page.
+      const answer = `/settings/family?ask=${encodeURIComponent(page.token)}`;
+      const actions = page.signedIn
+        ? `<a class="btn" href="${esc(answer)}">${esc(tr('Answer in Caime'))}</a>`
+        : `<a class="btn" href="${wayIn('sign-in', answer)}">${esc(tr('Sign in to answer'))}</a><a class="btn quiet" href="${wayIn('sign-up', answer)}">${esc(tr('New to Caime? Create your account'))}</a>`;
+      return {
+        status: 200,
+        lang: currentTranslator().language,
+        head: meta({
+          title: `${title} · ${SITE_NAME}`,
+          description: lead,
+          image: null,
+          index: false,
+          canonical: false,
+        }),
+        body: `
+<main class="pub pub-sheet" ${langAttrs()}>
+  ${topBar('/sign-in', wordmark(22))}
+  <section class="hero hero-center">
+    ${avatar({ name: page.child, src: null, size: 96, shape: 'face' })}
+    <p class="kicker"><span class="mono">${esc(tr('a family link'))}</span></p>
+    <h1 dir="auto">${esc(title)}</h1>
+    <p class="lead" dir="auto">${esc(lead)}</p>
+    <div class="actions">${actions}</div>
+  </section>
+  ${section(
+    sentence(tr('about')),
+    `<dl class="spec">
+    <div>${label(tr('from'))}<dd dir="auto">${esc(page.child)}</dd></div>
+    <div>${label(tr('what you see'))}<dd>${esc(tr('Whom they’re connected with and who asks to connect. Never their messages.'))}</dd></div>
   </dl>`,
   )}
   ${pageFoot(tr(PROMISE), wordmark(18))}

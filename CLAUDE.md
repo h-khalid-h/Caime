@@ -559,7 +559,21 @@ A sphere is said as how you know someone, never "sphere".
   decline), only once `answerGuardianRequest` passes it on; `releaseUnsupervised` lets go of what
   waits on a parent who no longer looks after anyone. A new way two people connect asks
   `guardianToAsk` too. The family calls are `features/family/api.ts`, imported by Family alone
-  (the waiting screen asks with `api` itself, or the module sits in `__common`).
+  (the waiting screen and its `ParentPicker` ask with `api` itself, or the module sits in
+  `__common`). A child may also sign up alone and wait (R122 (2), `lib/family-asks.ts`:
+  `beginWait`, `began 'sign_up'`), asking a parent they saw by handle (`askNamed`, `askableAdult`,
+  three at most, `family_refusals` never asked again) or by a `famk_` link a signed-in adult takes;
+  a date of birth or a country corrected goes through `ageChangeFor` (under the youngest age
+  refused, into a parent's yes a wait, `began 'corrected'`, a looked-after child's asked of the
+  parent, `askCorrection`), and an age's source is `MeView.ageSource` (`meView`: checked, else a parent's yes, which stamps
+  `users.birth_date_confirmed_at`, which any change of the date clears). Moderate
+  (`guardianships.moderates`, `lib/family-moderation.ts`) puts every new way in before the parent:
+  a new path that lets a child into a place, take a message request or start writing to an
+  organization asks `moderatorOf` (`moderatedAmong` for a set) and `askGuardian`, answering `403
+  guardian_asked` or its own "asked" shape, and the parent's yes is carried out through that
+  path's own function by `answerGuardianAsk` (`lib/family-moderate.ts`, apart so the paths that
+  ask import nothing of it), which a new kind joins; nothing about it ever carries a message's
+  words.
 - Team invites (M16 C3a, `lib/team-invites.ts`, `modules/team-invites.ts`): an owner or admin
   makes a link (or sends one to an address, mailed after the response) from the team's Add sheet
   (`features/orgs/TeamInvites.tsx`); its token (`t_…`) is shown once and kept as its hash, masked

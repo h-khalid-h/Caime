@@ -146,6 +146,11 @@ export interface MeView {
   waitsForParent?: boolean;
   /** What a check of their age found (M16 B7), or null: never checked. Theirs alone to see. */
   ageCheck: AgeCheckView | null;
+  /**
+   * Where their age comes from (R122 (2)): `checked` by a provider (M16 B7), `parent` (their
+   * parent agreed to this day of birth), else `declared` (what they said, unchecked).
+   */
+  ageSource: 'declared' | 'checked' | 'parent';
   /** Whether this Caime checks ages at all (a provider is set): Settings' row and the sheet. */
   ageCheckOffered: boolean;
   createdAt: string;
@@ -845,6 +850,11 @@ export interface ConversationView {
   };
   request: RequestDirection | null;
   /**
+   * For a child whose parent says yes to new people first (R122 (2), Moderate), on a request to
+   * them: taking it asks the parent (`ask`), or the parent was asked (`asked`). Else null.
+   */
+  parentSays: 'ask' | 'asked' | null;
+  /**
    * Someone in it is under 18 (R29): cards that involve money or where someone is aren't offered,
    * and in a business conversation its team knows the customer is.
    */
@@ -1123,12 +1133,22 @@ export interface PlaceInvitationView {
   by: PersonView | null;
   createdAt: string;
   expiresAt: string;
+  /** Their yes waits on their parent, who says yes to every new place (R122 (2), Moderate). */
+  waitsForParent: boolean;
 }
 
-/** Where an accepted invitation landed: the group, or the space. */
+/** A message request answered; an accept that waits on a parent who moderates says so (R122 (2)). */
+export interface RequestAnsweredResponse {
+  ok: true;
+  askedParent?: boolean;
+}
+
+/** Where an accepted invitation landed: the group, or the space; or that it waits on a parent. */
 export interface InvitationAnsweredResponse {
   conversationId: string | null;
   spaceId: string | null;
+  /** Their parent says yes to new places first (R122 (2)): asked, nothing more yet. */
+  askedParent?: boolean;
 }
 
 /** Who an add put in, and who it asked instead (M16 B4: they come in by saying yes). */
@@ -1853,15 +1873,34 @@ export interface FamilyLinkView {
   createdAt: string;
 }
 
-/** A child on Caime through their parent's link (R122), as that parent sees them. */
+/** A child on Caime through their parent (R122), as that parent sees them. */
 export interface FamilyChildView {
   person: PersonView;
-  /** `asked`: signed up through the link, waiting for the parent to agree; `agreed`: consented. */
+  /** `asked`: waiting for the parent to agree; `agreed`: consented. */
   state: 'asked' | 'agreed';
+  /** Through the parent's own family link, or named by the child (R122 (2)). */
+  how: 'link' | 'named';
+  /** The day of birth they gave, while the parent is asked to agree to it; null after. */
+  birthDate: string | null;
+  /**
+   * A correction the child asked of this parent (R122 (2)): a new day of birth or a new country
+   * (what it is now beside it), waiting for their yes; null when none waits.
+   */
+  correction: {
+    /** A new day of birth, and the one it would replace. */
+    birthDate: string | null;
+    fromBirthDate: string | null;
+    /** A new country, its code and its name in the reader's language. */
+    country: string | null;
+    countryName: string | null;
+    askedAt: string;
+  } | null;
   askedAt: string;
   agreedAt: string | null;
   /** Whether the parent's say still holds: until the child reaches the age where they live. */
   supervised: boolean;
+  /** Whether the parent says yes to every new way in too (R122 (2), Moderate). */
+  moderates: boolean;
   /** Whom the child is connected with while the parent's say holds; never a message. */
   connections: PersonView[];
 }
@@ -1898,9 +1937,65 @@ export interface FamilyResponse {
     agreed: boolean;
     supervised: boolean;
     waiting: PersonView[];
+    /** A correction of theirs waits on that parent (R122 (2)). */
+    correctionAsked: boolean;
+    /** Whether that parent says yes to every new way in too (Moderate), and what waits on it. */
+    moderates: boolean;
+    waitingAsks: FamilyModerateAskView[];
   } | null;
+  /** For a child whose account waits for a parent (R122 (2)): whom it asked and how to ask. */
+  wait: FamilyWaitView | null;
+  /** What waits on this parent's yes under Moderate (R122 (2)), oldest first. */
+  asks: FamilyModerateAskView[];
   /** Whether this person may add a child: an adult with an account of their own. */
   mayAdd: boolean;
+}
+
+/**
+ * Something Moderate put before a parent (R122 (2)): their child invited into a place, asking to
+ * join one, written to by someone new, or wanting to write to an organization. Never words.
+ */
+export interface FamilyModerateAskView {
+  id: string;
+  kind: 'invite' | 'join' | 'request' | 'organization';
+  /** The child it's for; null on the child's own list, where it's them. */
+  child: PersonView | null;
+  /** Who invited them or wrote to them, as the parent may see them. */
+  person: PersonView | null;
+  /** The group's or the space's name. */
+  place: string | null;
+  org: { name: string; handle: string } | null;
+  createdAt: string;
+}
+
+/**
+ * A child's own wait for a parent (R122 (2)): how it began, whom it asks now, the link they sent
+ * while it's open, how many more they may ask, how many said no (never who), and the day the
+ * account is deleted if nobody has agreed by then.
+ */
+export interface FamilyWaitView {
+  began: 'link' | 'sign_up' | 'corrected';
+  asked: PersonView | null;
+  linkUntil: string | null;
+  asksLeft: number;
+  refusals: number;
+  deletesAt: string;
+}
+
+/** `GET /me/family/parent`: who a handle is, for a waiting child to see before asking them. */
+export interface FamilyParentResponse {
+  parent: PersonView;
+}
+
+/** `POST /me/family/asks`: the child whose link was opened, now asking this adult. */
+export interface FamilyAskTakenResponse {
+  child: PersonView;
+}
+
+/** `POST /me/family/parent-link`: the link a waiting child sends, its address this once. */
+export interface FamilyAskLinkResponse {
+  url: string;
+  expiresAt: string;
 }
 
 /** `POST /me/family/links`: the new link, and its address this once. */
@@ -1909,9 +2004,13 @@ export interface FamilyLinkResponse {
   url: string;
 }
 
-/** `GET /family/:token`: whose link it is and for whom, for the sign-up screen. */
+/**
+ * `GET /family/:token`: a parent's link (whose and for whom, for the sign-up screen) or a child's
+ * (whose ask it is, for the sign-in screen).
+ */
 export interface FamilyLinkPublicResponse {
-  guardianName: string;
+  kind: 'link' | 'ask';
+  guardianName: string | null;
   childName: string;
 }
 
@@ -2036,8 +2135,11 @@ export interface JoinLinkOpenView {
   expiresAt: string;
   /** It asks: whoever opens it asks, and its owner or an admin lets them in (C3h). */
   approval: boolean;
-  /** Their ask through it: waiting, or declined (not asked again by this link); null for none. */
-  asked: 'pending' | 'declined' | null;
+  /**
+   * Their ask through it: waiting, or declined (not asked again by this link), or waiting on their
+   * parent first (`parent`, R122 (2)); null for none.
+   */
+  asked: 'pending' | 'declined' | 'parent' | null;
 }
 export interface JoinLinkOpenResponse {
   link: JoinLinkOpenView;
@@ -2051,7 +2153,8 @@ export type JoinLinkAcceptResponse =
       spaceId: string | null;
       already: boolean;
     }
-  | { asked: true; state: 'pending' | 'declined' };
+  /** `parent`: their parent says yes to it first (R122 (2), Moderate), and was asked. */
+  | { asked: true; state: 'pending' | 'declined' | 'parent' };
 /** Someone asking to join through a link that asks (C3h), as the place's owner and admins see them. */
 export interface JoinRequestView {
   id: string;
@@ -3995,6 +4098,11 @@ export interface HealthResponse {
 
 export interface UserResponse {
   user: MeView;
+  /**
+   * A child their parent looks after asked them to agree to the change (R122 (2), a day of birth
+   * or a country): nothing changed yet.
+   */
+  askedParent?: boolean;
 }
 /** `GET /me` to a token acting as a person (PRD §74): who it acts for, nothing more. */
 export interface GrantUserView {

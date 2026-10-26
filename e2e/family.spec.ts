@@ -1,6 +1,6 @@
 /**
  * A child on Caime with a parent's consent (R122): where the law asks a parent's consent (Egypt),
- * a 14-year-old is turned away alone with the way through; their parent makes a family link, the
+ * a 14-year-old alone waits to ask a parent (family-named.spec.ts); their parent makes a family link, the
  * child signs up through it on their own phone and waits, the parent agrees from Family, and the
  * child's app opens by itself, connected with the parent. The parent sees whom the child is
  * connected with, never a message.

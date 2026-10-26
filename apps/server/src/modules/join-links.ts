@@ -23,6 +23,7 @@ import type { AppContext } from '../context';
 import { sendSystem } from '../lib/conversation-views';
 import { forbidden, notFound } from '../lib/errors';
 import { recordEvent } from '../lib/events';
+import { askGuardian, moderatorOf, parentAskedToJoin } from '../lib/family-moderation';
 import { addToGroup } from '../lib/group-members';
 import { NEW_ACCOUNT_MS } from '../lib/invites';
 import {
@@ -37,6 +38,7 @@ import {
   makeJoinLink,
   openJoinLinks,
   peopleIn,
+  nameOf as placeNameOf,
   revokeJoinLink,
 } from '../lib/join-links';
 import {
@@ -62,18 +64,7 @@ export async function joinLinkRoutes(app: FastifyInstance, ctx: AppContext) {
   const requestParam = z.object({ id: z.string().uuid(), requestId: z.string().uuid() });
 
   /** Its name, for the words someone is told (a group's title, a space's name). */
-  const nameOf = async (t: JoinTarget): Promise<string> =>
-    t.kind === 'group'
-      ? ((
-          await ctx.db
-            .selectFrom('conversations')
-            .select('title')
-            .where('id', '=', t.id)
-            .executeTakeFirst()
-        )?.title ?? '')
-      : ((
-          await ctx.db.selectFrom('spaces').select('name').where('id', '=', t.id).executeTakeFirst()
-        )?.name ?? '');
+  const nameOf = (t: JoinTarget) => placeNameOf(ctx.db, t);
 
   /** Where a place's conversation is: the group itself, or the space's General. */
   const conversationOf = async (t: JoinTarget) =>
@@ -230,7 +221,9 @@ export async function joinLinkRoutes(app: FastifyInstance, ctx: AppContext) {
     if (!live) throw notFound(tr('That link'));
     const { people, ...opening } = await joinLinkOpening(ctx, live);
     const asked = live.link.approval
-      ? await askedState(ctx.db, live.target, live.link.id, auth.userId)
+      ? ((await askedState(ctx.db, live.target, live.link.id, auth.userId)) ??
+        // Their ask waits on a parent who moderates first (R122 (2)).
+        ((await parentAskedToJoin(ctx.db, auth.userId, live.link.id)) ? 'parent' : null))
       : null;
     return { link: { ...opening, member: people.includes(auth.userId), asked } };
   });
@@ -287,6 +280,15 @@ export async function joinLinkRoutes(app: FastifyInstance, ctx: AppContext) {
     if (await blockedFromJoining(ctx.db, link, target, auth.userId)) {
       ctx.metrics.joinLinks.inc({ target: target.kind, outcome: 'refused' });
       throw forbidden(tr('This link can’t add you to it.'));
+    }
+    // A parent who moderates says yes to their child's ask first (R122 (2)): it reaches whoever
+    // runs the place only once they have.
+    if (link.approval && minor) {
+      const parent = await moderatorOf(ctx.db, auth.userId, ctx.now());
+      if (parent) {
+        await askGuardian(ctx, parent, auth.userId, { kind: 'join', linkId: link.id });
+        return { asked: true, state: 'parent' };
+      }
     }
     if (link.approval) {
       const { state, fresh } = await askToJoin(

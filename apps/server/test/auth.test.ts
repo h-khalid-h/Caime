@@ -130,31 +130,37 @@ describe('sign-up', () => {
     }
   });
 
-  it('asks 18 alone where the law asks a guardian’s consent, and says the way through (counsel, 2026-10-14; R122)', async () => {
-    // The clock reads 23 September 2026: born 2010, 16; born 2008, 18.
+  it('asks 18 alone where the law asks a guardian’s consent, and opens it from 13 with a parent’s yes (counsel, 2026-10-14; R122)', async () => {
+    // The clock reads 23 September 2026: born 2014, 12; born 2010, 16; born 2008, 18.
     const as = (country: string, handle: string, birthDate: string) =>
       t.app.inject({
         method: 'POST',
         url: '/v1/auth/signup',
         payload: { ...base, email: `${handle}@example.com`, handle, birthDate, country },
       });
+    // From 13, a parent's consent in Caime opens it: the account is made, and waits for one
+    // (R122 (2)).
     const cairo = await as('EG', 'cairoteen', '2010-01-01');
-    expect(cairo.statusCode).toBe(400);
-    // From 13, a parent's consent in Caime opens it (R122): the refusal says how.
-    expect(cairo.json().error).toMatchObject({
+    expect(cairo.statusCode).toBe(201);
+    expect(cairo.json().user.waitsForParent).toBe(true);
+    expect((await as('SA', 'riyadhteen', '2010-01-01')).json().user.waitsForParent).toBe(true);
+    // Under 13, nobody, and the refusal says both ages.
+    const younger = await as('EG', 'cairochild', '2014-01-01');
+    expect(younger.statusCode).toBe(400);
+    expect(younger.json().error).toMatchObject({
       code: 'too_young',
       message:
-        'Where you live, someone under 18 joins Caime with a parent or guardian. Ask them to add you from their own Caime: You, then Family.',
+        'Where you live, Caime is for people 18 and older, and from 13 with a parent’s or guardian’s yes.',
     });
-    expect((await as('SA', 'riyadhteen', '2010-01-01')).json().error.code).toBe('too_young');
-    expect((await as('EG', 'cairoadult', '2008-01-01')).statusCode).toBe(201);
-    expect((await as('AE', 'dubaiteen', '2010-01-01')).statusCode).toBe(201);
-    // A move to such a country asks it too, and changes nothing when refused.
+    expect((await as('EG', 'cairoadult', '2008-01-01')).json().user.waitsForParent).toBeFalsy();
+    const dubai = await as('AE', 'dubaiteen', '2010-01-01');
+    expect(dubai.statusCode).toBe(201);
+    expect(dubai.json().user.waitsForParent).toBeFalsy();
+    // A move to such a country follows the same rule: the account waits for a parent's yes.
     const teen = await signup(t, { country: 'AE', birthDate: '2010-01-01' });
-    const move = await teen.req('PATCH', '/v1/me', { country: 'SA' });
-    expect(move.statusCode).toBe(400);
-    expect(move.json().error.code).toBe('too_young');
-    expect((await teen.get('/v1/me')).user.country).toBe('AE');
+    expect((await teen.patch('/v1/me', { country: 'SA' })).user.country).toBe('SA');
+    expect((await teen.req('GET', '/v1/inbox')).statusCode).toBe(403);
+    expect((await teen.get('/v1/me')).user.waitsForParent).toBe(true);
     // An adult moves freely.
     const adult = await signup(t, { country: 'AE' });
     expect((await adult.patch('/v1/me', { country: 'SA' })).user.country).toBe('SA');

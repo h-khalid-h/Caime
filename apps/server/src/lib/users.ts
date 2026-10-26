@@ -51,30 +51,19 @@ export function oldEnoughIn(
 
 /**
  * The refusal for someone too young for Caime where they live, in the request's language. Where a
- * parent's consent would let them in (R122: under the law's age there, at or over the age that
- * consent opens), it says how, never a dead end.
+ * parent's yes opens a younger age there (R122), it says from when, never a dead end: someone
+ * between the two isn't refused at all, their account waits for a parent (R122 (2)).
  */
-export function tooYoung(
-  minimumAge: number,
-  country: string | null | undefined,
-  birthDate?: string,
-  now?: Date,
-  timeZone?: string | null,
-): AppError {
+export function tooYoung(minimumAge: number, country: string | null | undefined): AppError {
   const age = minimumAgeIn(minimumAge, country);
   const guardianAge = countryFacts(country).guardianAge;
-  if (
-    birthDate &&
-    now &&
-    guardianAge !== null &&
-    meetsMinimumAge(birthDate, now, Math.max(guardianAge, minimumAge), timeZone)
-  )
+  if (guardianAge !== null && guardianAge < age)
     return new AppError(
       400,
       'too_young',
       tr(
-        'Where you live, someone under {age} joins Caime with a parent or guardian. Ask them to add you from their own Caime: You, then Family.',
-        { age },
+        'Where you live, Caime is for people {age} and older, and from {younger} with a parent’s or guardian’s yes.',
+        { age, younger: guardianAge },
       ),
     );
   return new AppError(
@@ -217,6 +206,7 @@ export function meView(
     onboarded: user.onboarded_at !== null,
     recoveryCodesSeen: user.recovery_codes_seen_at !== null,
     ageCheck: ageCheckView(user),
+    ageSource: user.age_check ? 'checked' : user.birth_date_confirmed_at ? 'parent' : 'declared',
     ageCheckOffered: ageChecksOn(config) && user.kind === 'human',
     createdAt: user.created_at.toISOString(),
   };

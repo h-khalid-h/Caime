@@ -159,7 +159,7 @@ export function OrgScreen({
       // Book (R58): the conversation opens on the card's form, with the item chosen (R61).
       router.push({ pathname: '/c/[id]', params: cardParams(conversationId, kit, itemId) });
     } catch (e) {
-      toast((e as Error).message, { tone: 'danger' });
+      toast((e as Error).message, { tone: askedParent(e) ? 'neutral' : 'danger' });
     } finally {
       setStarting(false);
     }
@@ -188,7 +188,7 @@ export function OrgScreen({
         const itemId = slug ? (org.bookingItems.find((i) => i.slug === slug)?.id ?? null) : null;
         router.replace({ pathname: '/c/[id]', params: cardParams(conversationId, kit, itemId) });
       } catch (e) {
-        toast((e as Error).message, { tone: 'danger' });
+        toast((e as Error).message, { tone: askedParent(e) ? 'neutral' : 'danger' });
       } finally {
         setStarting(false);
       }
@@ -1087,3 +1087,6 @@ export function OrgScreen({
     </Screen>
   );
 }
+
+/** A child whose parent says yes first (R122 (2), Moderate): asked, which is no failure. */
+const askedParent = (e: unknown) => (e as { code?: string }).code === 'guardian_asked';

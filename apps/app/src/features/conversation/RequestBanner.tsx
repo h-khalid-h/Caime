@@ -16,7 +16,8 @@ import { toast } from '@/ui/Toast';
 
 /**
  * A message from someone you're not connected with (R14), or from an organization that wrote to
- * you first: you decide, and nothing is shown as read until you do.
+ * you first: you decide, and nothing is shown as read until you do. A child whose parent says yes
+ * to new people first (R122 (2), Moderate) accepts by asking them (`parentSays`).
  */
 export function RequestBanner({ conversation }: { conversation: ConversationView }) {
   const t = useTheme();
@@ -51,6 +52,16 @@ export function RequestBanner({ conversation }: { conversation: ConversationView
       );
     return null;
   }
+  // Taking it waits on a parent who moderates (R122 (2)): asked by Accept, or asked already.
+  const asked = conversation.parentSays === 'asked';
+  const accept = conversation.parentSays === 'ask' ? tr('Ask my parent') : tr('Accept');
+  const parentSays = conversation.parentSays ? (
+    <Text variant="caption" color="textSecondary" testID="request-parent">
+      {asked
+        ? tr('We asked your parent. It opens once they say yes.')
+        : tr('Your parent says yes to new people first.')}
+    </Text>
+  ) : null;
   const leave = (message: string) => {
     void qc.invalidateQueries({ queryKey: qk.inbox });
     toast(message);
@@ -60,7 +71,8 @@ export function RequestBanner({ conversation }: { conversation: ConversationView
   const answer = async (decision: 'accept' | 'decline') => {
     setBusy(decision);
     try {
-      await endpoints.answerRequest(conversation.id, decision);
+      const res = await endpoints.answerRequest(conversation.id, decision);
+      if (res.askedParent) toast(tr('We asked your parent. It opens once they say yes.'));
       void qc.invalidateQueries({ queryKey: qk.conversation(conversation.id) });
       void qc.invalidateQueries({ queryKey: qk.inbox });
       if (decision === 'decline') leave(tr('Declined. They won’t be told.'));
@@ -112,12 +124,16 @@ export function RequestBanner({ conversation }: { conversation: ConversationView
             { name: org.name },
           )}
         </Text>
+        {parentSays}
         <View style={{ flexDirection: 'row', gap: 8, flexWrap: 'wrap' }}>
-          <Button
-            label={tr('Accept')}
-            onPress={() => answer('accept')}
-            loading={busy === 'accept'}
-          />
+          {asked ? null : (
+            <Button
+              label={accept}
+              onPress={() => answer('accept')}
+              loading={busy === 'accept'}
+              testID="request-accept"
+            />
+          )}
           <Button
             label={tr('Decline')}
             variant="secondary"
@@ -184,8 +200,16 @@ export function RequestBanner({ conversation }: { conversation: ConversationView
           .filter(Boolean)
           .join(' ')}
       </Text>
+      {parentSays}
       <View style={{ flexDirection: 'row', gap: 8 }}>
-        <Button label={tr('Accept')} onPress={() => answer('accept')} loading={busy === 'accept'} />
+        {asked ? null : (
+          <Button
+            label={accept}
+            onPress={() => answer('accept')}
+            loading={busy === 'accept'}
+            testID="request-accept"
+          />
+        )}
         <Button
           label={tr('Decline')}
           variant="secondary"

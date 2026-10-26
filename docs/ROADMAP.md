@@ -2107,6 +2107,40 @@ graph) and the number that will show it; one that sharpens none is hygiene and s
       at 449.6 KB of 450; the parent is told by a notification at the attention level meanwhile);
       another adult the child knows becoming their parent here by a new link once the first is gone;
       both told on the day the parent's say ends.
+- [x] B8c. A child asks their own parent, and an age corrected under the same rules (R122 (2),
+      2026-10-26, the owner's brainstorms 1 to 3). Where a parent's consent opens the age, a child
+      signs up without a link and the account waits (`beginWait`, `began 'sign_up'`); its one
+      screen asks for the parent's @handle, shows who that is (`GET /me/family/parent`, a waiting
+      account's alone, twenty an hour), and asks them (`askNamed`: an adult on Caime, not one who
+      said no, three asked at most), or makes a link for a parent not on Caime yet (`famk_…`, a
+      visitor page of its own, taken by the adult who opens it signed in). The parent agrees in
+      Family seeing the day of birth the child gave, which their yes confirms
+      (`users.birth_date_confirmed_at`); "Not my child" ends that ask and is kept
+      (`family_refusals`), the third deletes the account. A date of birth or a country corrected
+      follows sign-up's rules: under 13 refused; into a parent's yes, a wait (`began
+      'corrected'`); a looked-after child asks their parent, applied once agreed or once a
+      document check finds 18 or over. Every age says where it comes from (`MeView.ageSource`: as said, checked, or confirmed by a parent), on Profile's date of birth.
+      Migration 0169. Verified with `family-named.test.ts`, `family.test.ts`, the E2E
+      `family-named.spec.ts` (a 14-year-old in Egypt signs up on a phone, names their mother by
+      handle after seeing her, she agrees from Family on a desktop, the child's app opens by
+      itself and their date of birth reads "Confirmed by your parent") and the full gate.
+- [x] B8d. Moderate (R122 (2), the owner's brainstorm 4): a parent may also say yes to every new
+      way in, both ways, never a message's words (`guardianships.moderates`, chosen on the consent
+      screen, changed per child in Family). An invitation into a group or a space (always an
+      invitation for a moderated child, `moderatedAmong`), an ask to join through a link, a message
+      request they'd take (Accept or a reply) and an organization they'd start writing to each wait
+      on the parent (`guardian_asks`, `askGuardian`; `403 guardian_asked` where it's refused) with
+      Allow and Decline in Family; allowed, it's done as the child would have done it through its
+      own way in (`answerGuardianAsk`), declined it's let go, the child told either way; the child
+      sees what waits (`FamilyResponse.guardian.waitingAsks`, the invitation card, the request
+      banner's `parentSays`, the join page's `parent`). Turned off, or once the parent's say ends,
+      whatever waited goes on (`releaseModerated`, at once and in the daily sweep). Both exports;
+      the privacy page. Verified with `family-moderate.test.ts` (a message request, an invitation
+      declined then allowed, an organization, turned off with one waiting, the exports) and the E2E.
+- [ ] B8e. The privacy field "Age checked" (B7's phase 2): "18 or over, checked" to whoever the
+      person allows, never an age or a date, nothing for someone under 18; and the phones' own age
+      signals (Apple's Declared Age Range, Google Play's Age Signals) read as a check's outcome is,
+      once the store builds exist (R120 ⛔).
 - [ ] ⛔ B8, counsel's, after the owner's decision: whether this method is a guardian's verified
       consent under Saudi Arabia's PDPL, and written consent by approved methods under Egypt's
       Decree 816 (under 15, and the Data Protection Center's mechanisms from 15 to 18). A "no"
@@ -7246,3 +7280,11 @@ CONNIQT; they mean Caime. Caishy is one of Caime's AI members, and Cai leads the
   everyone again, a new title doesn't; in a group each person answers Going or Not going for
   themselves; the next meeting sits at the top of the conversation with Join. Server tests, core tests, the E2E
   on a desktop and a phone, every catalog; web JS 449.8 KB of 450.
+- 2026-10-26 — R122 (2) through the council and M16 B8c and B8d (the owner's four brainstorms: a
+  parent's handle at sign-up, the profile's age edit under the same rules, verified and unverified
+  ages, Moderate). A child signs up alone and asks their parent by handle (seen first) or by a link
+  of their own; the parent's yes confirms the day of birth; a correction follows sign-up's rules
+  and a looked-after child's goes to their parent; every age says where it comes from; a parent
+  may say yes first to every new group, space, message request and organization, never reading a
+  word. No biometric module of Caime's own (decided against, on accuracy and law); the phones'
+  age signals and the "Age checked" field are B8e.

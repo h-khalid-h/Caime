@@ -2980,6 +2980,146 @@ with its reason, so it isn't proposed again without new facts.
   steps between (`link`, `signed_up`) saying where the rest stopped, and `not_mine`, `lapsed` and
   `withdrawn` how the others ended.
 
+  *Refined the same day: the owner's four brainstorms (2026-10-26, evening).*
+  The owner asked the council to validate, refine or reinvent:
+  1. "If the age at sign-up is not 18 or older, a new input is required, Parent's Handle; then
+     sign-up proceeds with a notice to the parent to consent or block the account."
+  2. "Not only the sign-up age input but also the profile age edit shall follow the same logic for
+     under-18s."
+  3. "Age shall have the statuses unverified and verified": biometrics, by Caime's own modules or
+     through partners.
+  4. "The parent who consents to a connection to an under-18 can also choose to Moderate, yes or
+     no; yes means the parent's consent is always needed for any interactions, both ways."
+
+  *The council's turning points:*
+  1. **The parent named by the child (brainstorm 1).**
+     - The Adversary first held the line R122 drew: "a click in a mail a child typed the address of
+       verifies nothing". The objection was to the click, not to the child starting. A parent
+       named by handle consents the same way a link's maker does: from their own adult account,
+       checked with the trigger `guardian` where a provider is set, on a screen that names the
+       child. So the proof is the same; only who starts it differs.
+     - The Newcomer, the fourteen-year-old in Cairo again, counted the steps of R122's way. Their
+       parent must open Settings, find Family, make a link and send it before the child can begin.
+       Naming the parent turns that into one notification and one tap for the parent.
+     - So the plan keeps both doors, onto one consent:
+       - the parent's family link (R122);
+       - the child naming their parent at sign-up's next step, by @handle: the account is made
+         and waits, and its one screen shows who that handle is, as their profile shows anyone
+         (name and photo), and asks "Is this your parent or guardian?". Never on the form itself:
+         answered to anyone, it would tell whoever asked who any handle is;
+       - for a parent not on Caime yet, a link the waiting child sends from their own phone. The
+         parent opens it, signs in or signs up as an adult, and agrees.
+     - The Adversary on abuse: a child could name any adult, or a stranger could pose as a parent.
+       The second is the same risk as a stranger sending a family link. The bounds hold either way:
+       - one adult looks after five children at most;
+       - the parent becomes the child's connection, labelled by the child;
+       - a report can name a guardianship, and the operator can end one.
+       For the first:
+       - a named adult who answers "Not my child" ends that ask, and is never asked again by that
+         account;
+       - a waiting account names three people at most;
+       - only an adult on Caime can be named: a human account, not provisional, not suspended, not
+         under 18.
+     - "Block" in the brainstorm is that same answer: Not my child. The account it ends was never
+       let in.
+     - The Specialist on wrong handles: the form never proceeds on a typed handle alone. It shows
+       the person found, and the child confirms them.
+  2. **The age correction (brainstorm 2).** `PUT /me/birth-date` refused any date under the law's
+     minimum. So an Egyptian who had typed an adult's year and later told the truth was refused,
+     and the account kept the false date. The Specialist: an account told the truth must take it,
+     and the rules for that age follow at once. The plan:
+     - **Where no parent's consent is needed** (France, 13 to 17): the date is saved, and every
+       under-18 rule applies from that request (they read the date each time, `minorOf`). That
+       much was already so.
+     - **Where a parent's consent is needed** (Egypt or Saudi Arabia, 13 to 17): the date is saved
+       and the account waits, as a child's account through a link does. It names a parent or
+       sends a parent the ask link, as above. Seven days unanswered deletes it.
+       - Waiting, it may still export its data, and delete itself.
+       - The Adversary on the deletion: a deletion seven days after someone tells the truth looks
+         harsh. But the law gives no ground to keep processing a minor's data without the
+         guardian's consent, so the honest course is a week to get it, the data the person's to
+         take.
+     - **Under 13**: still refused. A mistyped year must never close an account. An account
+       reported as under 13 goes to the operator (M16 B3).
+     - **A looked-after child moving their date to an adult's** would leave the parent's care by a
+       keystroke. Their correction goes to the parent: Family shows "Lina asks to correct their
+       date of birth", with Agree and Decline. It applies only once agreed, or once a document
+       check (M16 B7) says they're 18 or over.
+  3. **Unverified and verified (brainstorm 3).** Caime already kept what a check found (M16 B7:
+     `age_check`, its method, when). It showed only in Security, and nothing named the age said
+     but unchecked. The plan:
+     - Every age has a source (`MeView.ageSource`):
+       - **declared**: unverified;
+       - **checked**: by a provider's face estimate or a document;
+       - **confirmed by a parent**: the parent's consent screen shows the child's date of birth,
+         and their yes confirms it.
+     - The person's own date of birth row says which.
+     - To others it is a privacy field, "Age checked" (B7's phase 2). It says only "18 or over,
+       checked", never an age or a date, and only where the person shows it. Someone under 18
+       shows nothing.
+     - The Specialist on "Caime's own biometric module": decided against, for now and on evidence:
+       - Accuracy: an age estimator's error near 13 and 18 is measured in years (NIST FATE AEV),
+         and a module of Caime's own would need its own NIST evaluation before anyone relied on it.
+       - Law: Egypt's and Saudi Arabia's data laws treat biometric data as sensitive, needing
+         explicit consent, and in Egypt a licence.
+       - Promise: B7 promised to keep no image or template.
+     - What Caime builds in instead are the phones' own signals:
+       - Apple's Declared Age Range, an age range a parent shares through Family Sharing;
+       - Google Play's Age Signals (in beta): VERIFIED, by Google's own check, or SUPERVISED, with
+         an age band its parent set.
+
+       How Caime reads them, as a check's outcome is read (B7's stricter-wins rule):
+       - a signal that says under 18 always applies;
+       - a signal that says 18 or over counts as checked only from Play's VERIFIED.
+
+       Both arrive with the store builds (R120 ⛔), and today both answer mainly in the US states
+       whose laws asked for them.
+     - The partners are B7's provider interface: Agemin first, the owner's contract ⛔.
+  4. **Moderate (brainstorm 4).**
+     - The Specialist: a parent whose yes is needed for every message must read every message.
+       That is surveillance R122 decided against, which the UK Children's Code (standard 11) and
+       the UN Convention on the Rights of the Child (Article 16) tell against. It would also stop a
+       fifteen-year-old's chat every few seconds.
+     - The Adversary found what the brainstorm is protecting: who and where, not what's said. Every
+       harm the owner named comes from a new person or a new place.
+     - So Moderate is the reach of the parent's yes, never its depth.
+       - **Off** (as R122): new connections, both ways.
+       - **On**: also every new way in, both ways:
+         - a group or a space the child is invited to or asks to join;
+         - an organization the child starts writing to (none writes first to anyone under 18, R29);
+         - a message request they would take.
+
+       Each waits on the parent as a request does, with the same Agree and Decline in Family.
+     - Never a message's words.
+     - The parent sets it on the consent screen and may change it in Family; the child is told,
+       and their Settings say what their parent says yes to.
+     - It ends with the parent's say, at the age where the child lives.
+
+  *Decided against:*
+  - a parent reading, approving or holding a child's messages;
+  - a biometric module of Caime's own;
+  - closing an account because a year was typed under 13;
+  - naming a parent by a name search (a child searching adults by name is what R29 stops); a
+    handle, or the link the child sends, only.
+
+  *What was built* (ROADMAP M16 B8c and B8d, 2026-10-26): migration 0169 (`guardianships.began`,
+  `asks`, the ask link's hash and end, a correction asked, `moderates`; `users
+  .birth_date_confirmed_at`; `family_refusals`; `guardian_asks`); `lib/family-asks.ts` (the wait
+  begun at sign-up or by a correction, `askableAdult`, `askNamed`, the child's `famk_` link and the
+  adult who takes it, `refuseChild`, a correction asked and answered); `lib/family-moderation.ts`
+  (who is moderated, the parent asked, what waits) and `lib/family-moderate.ts` (the parent's
+  answer carried out through each thing's own way in, `releaseModerated`); the hooks in
+  `answerPlaceInvite` and `whoMustBeAsked`, the join link route, the message request route and
+  `sendMessage`, and the organization's conversation route (`403 guardian_asked`);
+  `MeView.ageSource`; the waiting screen's `ParentPicker`, Family's asks, the
+  consent screen's and each child's Moderate switch, the invitation card, the request banner and
+  the join page saying what waits on a parent; the child's ask link as a visitor page
+  (`/family/<famk_…>`); both exports; the privacy page. `family-named.test.ts`,
+  `family-moderate.test.ts`, `family.test.ts`, `e2e/family-named.spec.ts`.
+
+  *Not built yet:* the privacy field "Age checked" (B7's phase 2, ROADMAP M16 B8e) and the phones'
+  age signals, which arrive with the store builds (R120 ⛔).
+
 - **R123 (2026-10-26) A meeting that changes, and everyone's own answer to it.** The owner: "I
   created a space, then a group within that space that has two people. Then I proposed a meeting
   within the group conversation, which has been accepted by one of the two. Now I need to edit the

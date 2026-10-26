@@ -48,11 +48,16 @@ export default function Region() {
   const [offeredZone, setOfferedZone] = useState<string | null>(null);
   const save = async (patch: Partial<Pick<MeView, 'country' | 'timeZone' | 'locale'>>) => {
     try {
-      const { user } = await endpoints.updateMe(patch);
+      const { user, askedParent } = await endpoints.updateMe(patch);
       const week = user.workweek.join() !== me.workweek.join();
       useSession.getState().setUser(user);
       // Times and "needs you" follow the zone and the work week: what's listed may change.
       void qc.invalidateQueries({ queryKey: qk.inbox });
+      // A child their parent looks after asks them first (R122 (2)): nothing changed yet.
+      if (askedParent) {
+        toast(tr('Sent to your parent to agree. It changes once they do.'));
+        return;
+      }
       toast(week ? tr('Saved. Your work week follows your country now.') : tr('Saved'));
       if (patch.country) {
         const main = countries.data?.countries.find((c) => c.code === patch.country)?.zone;

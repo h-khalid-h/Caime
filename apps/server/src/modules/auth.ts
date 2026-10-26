@@ -66,6 +66,7 @@ import {
   needsGuardian,
   tellGuardianAsked,
 } from '../lib/family';
+import { beginWait } from '../lib/family-asks';
 import { currentZone, isCountry } from '../lib/geo';
 import { keepFor, keepRanOut, keptGuest } from '../lib/guest-keep';
 import { assertHandleAvailable, claimLost } from '../lib/handles';
@@ -120,18 +121,18 @@ export async function authRoutes(app: FastifyInstance, ctx: AppContext) {
     const family = body.family ? await liveFamilyLink(ctx.db, body.family, now) : null;
     if (body.family && !family) throw familyLinkGone();
     // Their birthday, where they are, against the age where they live; between the law's age
-    // there and the age a guardian's consent opens, only through their parent's link.
-    const throughParent =
-      family !== null && needsGuardian(body.country, body.birthDate, now, timeZone);
+    // there and the age a guardian's consent opens, through their parent's link or by asking a
+    // parent once their account exists (R122 (2)): it waits, reaching nothing, until one agrees.
+    const guardianAge = needsGuardian(body.country, body.birthDate, now, timeZone);
+    const throughParent = family !== null && guardianAge;
+    const waitsAlone = family === null && guardianAge;
     if (
-      !throughParent &&
+      !guardianAge &&
       !oldEnoughIn(ctx.config.MINIMUM_AGE, body.country, body.birthDate, now, timeZone)
-    ) {
-      // Turned away alone where a parent's consent would have let them in: R122's denominator.
-      if (!family && needsGuardian(body.country, body.birthDate, now, timeZone))
-        ctx.metrics.family.inc({ step: 'alone' });
-      throw tooYoung(ctx.config.MINIMUM_AGE, body.country, body.birthDate, now, timeZone);
-    }
+    )
+      throw tooYoung(ctx.config.MINIMUM_AGE, body.country);
+    // Arriving without a link where a parent's consent lets them in: R122's denominator.
+    if (waitsAlone) ctx.metrics.family.inc({ step: 'alone' });
     // A meeting's guest by link keeping it (M16 C3f): the claim their own page was handed names
     // the guest this account becomes, so the meeting comes with it.
     const keeping = body.keep ? await keptGuest(ctx, body.keep) : null;
@@ -263,6 +264,8 @@ export async function authRoutes(app: FastifyInstance, ctx: AppContext) {
         await seedDefaults(trx, id, workweek);
         // Signed up through their parent's link: the link spent, the parent's consent asked.
         if (throughParent && family) await attachChild(trx, family, id, now);
+        // Without one: the account waits, and asks a parent next (R122 (2)).
+        if (waitsAlone) await beginWait(trx, id, 'sign_up', now);
         await recordEvent(trx, 'user.created', id, { userId: id });
       })
       .catch((err) => {
@@ -291,7 +294,11 @@ export async function authRoutes(app: FastifyInstance, ctx: AppContext) {
       .where('id', '=', id)
       .executeTakeFirstOrThrow();
     reply.status(201);
-    return { user: await meViewFor(ctx, user, throughParent), token, recoveryCodes: codes };
+    return {
+      user: await meViewFor(ctx, user, throughParent || waitsAlone),
+      token,
+      recoveryCodes: codes,
+    };
   });
 
   app.post('/auth/login', async (req, reply): Promise<AuthResponse> => {

@@ -32,6 +32,7 @@ import type {
   MembersAddedResponse,
   OkResponse,
   PersonConversationsResponse,
+  RequestAnsweredResponse,
 } from '@caime/core/api';
 import type { FastifyInstance } from 'fastify';
 import { sql } from 'kysely';
@@ -61,6 +62,7 @@ import {
 } from '../lib/conversations';
 import { AppError, badRequest, forbidden, notFound } from '../lib/errors';
 import { recordEvent } from '../lib/events';
+import { askGuardian, moderatorOf, withdrawGuardianAsk } from '../lib/family-moderation';
 import { leaveGroupCallsIn } from '../lib/group-calls';
 import { addToGroup, tellTopics } from '../lib/group-members';
 import { assertOpenToApps } from '../lib/member-apps';
@@ -449,12 +451,23 @@ export async function conversationRoutes(app: FastifyInstance, ctx: AppContext) 
     return { conversation: await conversationView(ctx, auth.userId, m.conversation, m.me) };
   });
 
-  app.post('/conversations/:id/request', async (req): Promise<OkResponse> => {
+  app.post('/conversations/:id/request', async (req): Promise<RequestAnsweredResponse> => {
     const auth = requireAuth(req);
     const { id } = parse(z.object({ id: z.string().uuid() }), req.params);
     const { decision } = parse(z.object({ decision: z.enum(['accept', 'decline']) }), req.body);
     const { me } = await membership(ctx, auth.userId, id);
     if (me.request_state !== 'pending') throw badRequest(tr('There’s no request to answer here.'));
+    // A child whose parent says yes to new people first (R122 (2), Moderate): their accept is
+    // asked of the parent. A decline is theirs alone.
+    if (decision === 'accept') {
+      const parent = await moderatorOf(ctx.db, auth.userId, ctx.now());
+      if (parent) {
+        await askGuardian(ctx, parent, auth.userId, { kind: 'request', conversationId: id });
+        return { ok: true, askedParent: true };
+      }
+    }
+    // Declined while its parent was asked: nothing waits on them any more.
+    else await withdrawGuardianAsk(ctx, auth.userId, { kind: 'request', conversationId: id });
     await ctx.db
       .updateTable('participants')
       .set({

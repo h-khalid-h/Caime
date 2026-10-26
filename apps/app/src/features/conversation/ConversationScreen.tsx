@@ -1213,7 +1213,9 @@ export function ConversationScreen({
               ? tr('The customer closed this conversation.')
               : tr('You blocked {name}.', { name: org?.name ?? tr('this organization') })
             : conversation?.request === 'incoming'
-              ? tr('Accept the request to reply.')
+              ? conversation.parentSays === 'asked'
+                ? tr('Waiting for your parent’s yes.')
+                : tr('Accept the request to reply.')
               : thread?.awaitingAcceptance
                 ? tr('You can write again once they answer.')
                 : conversation && !conversation.participants.some((p) => p.userId === me.id)

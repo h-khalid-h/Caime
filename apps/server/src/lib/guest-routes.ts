@@ -69,4 +69,12 @@ export const WAITING_ROUTES: ReadonlySet<string> = new Set([
   // What rings for them (nothing can: nobody is connected with them yet), which the socket asks
   // each time it connects.
   'GET /v1/calls/live',
+  // Whom to ask (R122 (2)): a parent named by handle once they've seen who it is, or a link sent
+  // to a parent not on Caime yet.
+  'GET /v1/me/family/parent',
+  'POST /v1/me/family/parent',
+  'POST /v1/me/family/parent-link',
+  // Their data is theirs while they wait: to take with them, or to delete.
+  'GET /v1/me/export',
+  'DELETE /v1/me',
 ]);

@@ -2,7 +2,8 @@
  * Invitations to a group or a space waiting for this person's answer (M16 B4): someone who runs
  * it asked them in, because they say to be asked first, or because, under 18, they'd be among
  * people they don't know. Only what lets them decide: the place, its kind, how many are in it and
- * who asked. Loaded on Attention only while there is one (the budget).
+ * who asked. Loaded on Attention only while there is one (the budget). A child whose parent says
+ * yes to new places first (R122 (2), Moderate) joins by asking them: the card says it waits.
  */
 import type { PlaceInvitationView } from '@caime/core/api';
 import { tr, trn } from '@caime/core/i18n';
@@ -27,7 +28,8 @@ export function InvitationsCard({ invitations }: { invitations: PlaceInvitationV
     try {
       if (accept) {
         const landed = await endpoints.acceptInvitation(invitation.id);
-        if (landed.conversationId)
+        if (landed.askedParent) toast(tr('We asked your parent. You’re in once they say yes.'));
+        else if (landed.conversationId)
           router.push({ pathname: '/c/[id]', params: { id: landed.conversationId } });
         else if (landed.spaceId)
           router.push({ pathname: '/s/[id]', params: { id: landed.spaceId } });
@@ -71,15 +73,22 @@ export function InvitationsCard({ invitations }: { invitations: PlaceInvitationV
               ? trn(invitation.people, 'A group of {n} person', 'A group of {n} people')
               : trn(invitation.people, 'A space of {n} person', 'A space of {n} people')}
           </Text>
+          {invitation.waitsForParent ? (
+            <Text variant="caption" color="textSecondary" testID="invitation-waits">
+              {tr('Waiting for your parent’s yes')}
+            </Text>
+          ) : null}
           <View style={{ flexDirection: 'row', gap: 8 }}>
-            <Button
-              label={tr('Join')}
-              size="sm"
-              loading={busy === invitation.id}
-              disabled={busy !== null}
-              onPress={() => void answer(invitation, true)}
-              testID="invitation-join"
-            />
+            {invitation.waitsForParent ? null : (
+              <Button
+                label={tr('Join')}
+                size="sm"
+                loading={busy === invitation.id}
+                disabled={busy !== null}
+                onPress={() => void answer(invitation, true)}
+                testID="invitation-join"
+              />
+            )}
             <Button
               label={tr('Decline')}
               size="sm"
