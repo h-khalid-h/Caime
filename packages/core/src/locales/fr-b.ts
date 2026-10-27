@@ -2986,4 +2986,6 @@ export const frB: Catalog = {
   '{name}’s message waits for your parent': 'Le message de {name} attend votre parent',
   'Writing to {org} waits for your parent': 'Écrire à {org} attend votre parent',
   'Waiting for your parent’s yes': 'En attente de l’accord de votre parent',
+  'Age checked': 'Âge vérifié',
+  '18 or over, checked': '18 ans ou plus, vérifié',
 };

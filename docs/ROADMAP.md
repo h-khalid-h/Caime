@@ -2139,10 +2139,17 @@ graph) and the number that will show it; one that sharpens none is hygiene and s
       whatever waited goes on (`releaseModerated`, at once and in the daily sweep). Both exports;
       the privacy page. Verified with `family-moderate.test.ts` (a message request, an invitation
       declined then allowed, an organization, turned off with one waiting, the exports) and the E2E.
-- [ ] B8e. The privacy field "Age checked" (B7's phase 2): "18 or over, checked" to whoever the
-      person allows, never an age or a date, nothing for someone under 18; and the phones' own age
-      signals (Apple's Declared Age Range, Google Play's Age Signals) read as a check's outcome is,
-      once the store builds exist (R120 ⛔).
+- [x] B8e. The privacy field "Age checked" (B7's phase 2, R122 (2), 2026-10-27): a check that
+      found someone 18 or over is theirs to show (`ageChecked`, core `PRIVACY_FIELDS`, nobody by
+      default, hidden by a limited relationship), offered in Settings · Privacy once checked, and
+      said only as "18 or over, checked" (`PersonProfileView.ageChecked` under their name,
+      `PublicPerson.ageChecked` in the public page's facts), never an age or a date, nothing for
+      someone under 18 whatever they saved; the privacy page says so. Verified with
+      `age-checked.test.ts`, `privacy-safety.test.ts` and the E2E `age-check.spec.ts` (checked,
+      hidden from another person until shown, then on the profile and the public page).
+- [ ] ⛔ B8f. The phones' own age signals (Apple's Declared Age Range, Google Play's Age Signals)
+      read as a check's outcome is (a signal of under 18 always applies; 18 or over counts as
+      checked only from Play's VERIFIED): needs the store builds (R120 ⛔).
 - [ ] ⛔ B8, counsel's, after the owner's decision: whether this method is a guardian's verified
       consent under Saudi Arabia's PDPL, and written consent by approved methods under Egypt's
       Decree 816 (under 15, and the Data Protection Center's mechanisms from 15 to 18). A "no"
@@ -7290,3 +7297,6 @@ CONNIQT; they mean Caime. Caishy is one of Caime's AI members, and Cai leads the
   may say yes first to every new group, space, message request and organization, never reading a
   word. No biometric module of Caime's own (decided against, on accuracy and law); the phones'
   age signals and the "Age checked" field are B8e.
+- 2026-10-27 — M16 B8e: a checked age shown, "18 or over, checked", where its owner says, never an
+  age or a date; the phones' age signals are B8f, waiting on the store builds. Moderate's last door
+  closed the day before: a moderated child writes first only to a connection.

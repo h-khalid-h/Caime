@@ -384,6 +384,20 @@ function PersonPage({ id, book = null, slug = null }: PersonScreenProps) {
               </Text>
             </View>
           )}
+          {p.ageChecked ? (
+            // An age check found them 18 or over, and they show it to this viewer (M16 B8e).
+            <View
+              accessible
+              accessibilityRole="text"
+              style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}
+              testID="person-age-checked"
+            >
+              <BadgeCheck size={14} color={t.c.success} />
+              <Text variant="caption" color="textSecondary">
+                {tr('18 or over, checked')}
+              </Text>
+            </View>
+          ) : null}
           {p.organizations.length ? (
             <View
               style={{ flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'center', gap: 8 }}

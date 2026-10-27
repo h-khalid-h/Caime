@@ -3119,8 +3119,11 @@ with its reason, so it isn't proposed again without new facts.
   (`/family/<famk_…>`); both exports; the privacy page. `family-named.test.ts`,
   `family-moderate.test.ts`, `family.test.ts`, `e2e/family-named.spec.ts`.
 
-  *Not built yet:* the privacy field "Age checked" (B7's phase 2, ROADMAP M16 B8e) and the phones'
-  age signals, which arrive with the store builds (R120 ⛔).
+  The privacy field "Age checked" followed (ROADMAP M16 B8e, 2026-10-27): `ageChecked`, nobody
+  by default, said only as "18 or over, checked".
+
+  *Not built yet:* the phones' age signals (ROADMAP B8f), which arrive with the store builds
+  (R120 ⛔).
 
 - **R123 (2026-10-26) A meeting that changes, and everyone's own answer to it.** The owner: "I
   created a space, then a group within that space that has two people. Then I proposed a meeting

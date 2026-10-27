@@ -3854,4 +3854,6 @@ export const arB: Catalog = {
   '{name}’s message waits for your parent': 'رسالة {name} بانتظار موافقة وليّ أمرك',
   'Writing to {org} waits for your parent': 'مراسلة {org} بانتظار موافقة وليّ أمرك',
   'Waiting for your parent’s yes': 'بانتظار موافقة وليّ أمرك',
+  'Age checked': 'العمر الموثَّق',
+  '18 or over, checked': '18 عامًا فأكثر، بعد التحقق',
 };

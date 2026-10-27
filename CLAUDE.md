@@ -1312,7 +1312,10 @@ A sphere is said as how you know someone, never "sphere".
   trigger)` with a trigger in core `AGE_TRIGGERS` (a new one joins that list and the privacy
   page's `ageChecksSaid`); it answers `403 age_check_needed` only where a provider is set and the
   trigger is on, never for someone under 18 by their own date of birth, and the app's client
-  opens the sheet (`features/age/`) for any such refusal.
+  opens the sheet (`features/age/`) for any such refusal. What a check found is shown to others
+  only through the privacy field `ageChecked` (M16 B8e: nobody by default; `age_check = 'adult'`
+  and not `minorOf`), as "18 or over, checked", never an age or a date: anything new that says
+  someone's age to another person reads it the same way.
 - Anything that writes into a conversation (send, edit, react, vote, move a card, type) calls
   `assertCanWrite` (`apps/server/src/lib/blocks.ts`) first: blocks between people and a
   customer's block of an organization both stop at it. New write routes do the same, with a

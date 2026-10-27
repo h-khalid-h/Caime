@@ -673,6 +673,12 @@ export async function peopleRoutes(app: FastifyInstance, ctx: AppContext) {
                 : null,
           }
         : null,
+      // "18 or over, checked" (M16 B8e): a check that found them an adult, where they show it.
+      ageChecked:
+        user.kind === 'human' &&
+        user.age_check === 'adult' &&
+        !minorOf(user, now) &&
+        canSee(settings, 'ageChecked', relation),
       connection: connectionState(b),
       blockedByMe: b.blockedByMe,
       relationships: mine.map((r) =>

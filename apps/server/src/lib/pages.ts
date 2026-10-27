@@ -128,7 +128,9 @@ you take a selfie there, or show a document. ${escapeHtml(a.provider)} tells Cai
 you&rsquo;re 18 or over, whether it estimated or read a document, how sure it was and when; the
 picture never reaches Caime. If it finds you&rsquo;re under 18, the rules above are yours for a
 year, whatever date of birth you gave, unless a document says otherwise; a face that reads older
-the next time changes nothing. Someone under 18 by their date of birth is never asked.</p>
+the next time changes nothing. Someone under 18 by their date of birth is never asked. A check
+that found you 18 or over is yours to show: nobody sees it unless you choose who in Privacy, and
+then they read &ldquo;18 or over, checked&rdquo;, never your age or your date of birth.</p>
 `;
 }
 

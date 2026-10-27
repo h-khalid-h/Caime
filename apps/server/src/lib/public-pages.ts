@@ -152,6 +152,8 @@ export interface PublicPerson {
   bio: string | null;
   headline: string | null;
   organizations: OrgRef[];
+  /** An age check found them 18 or over, and they show it to everyone (M16 B8e). */
+  ageChecked: boolean;
   /** What anyone may book (R58): the public items of their catalog, while they take bookings. */
   items: PublicItem[];
   /** Their public collections (R61) that hold something public. */
@@ -511,6 +513,7 @@ export async function publicPerson(db: Q, handle: string, now: Date): Promise<Pu
     bio: own ? own.about : see('bio') ? u.bio : null,
     headline: see('identityDetails') ? u.headline : null,
     organizations,
+    ageChecked: u.kind === 'human' && u.age_check === 'adult' && see('ageChecked'),
     ...catalog,
     places: await placesNamed(
       { db },
@@ -1290,6 +1293,7 @@ export function renderPublic(
     <div>${label(tr('handle'))}<dd>@${esc(p.handle)}</dd></div>
     ${p.headline ? `<div>${label(tr('work'))}<dd>${esc(p.headline)}</dd></div>` : ''}
     ${p.organizations.length ? `<div>${label(tr('with'))}<dd>${listed(p.organizations.map((o) => `<a href="/o/${esc(o.handle)}">${esc(o.name)}</a>`))}</dd></div>` : ''}
+    ${p.ageChecked ? `<div>${label(tr('age'))}<dd>${esc(tr('18 or over, checked'))}</dd></div>` : ''}
     ${payRow(page)}
   </dl>`,
   )}

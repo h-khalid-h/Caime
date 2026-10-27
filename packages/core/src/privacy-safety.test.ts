@@ -56,6 +56,15 @@ describe('privacy', () => {
     expect(canSee(s, 'busy', { ...connected, preset: 'limited' })).toBe(false);
   });
 
+  it('a checked age (M16 B8e) shows to nobody until they choose, and never in a limited relationship', () => {
+    const s = defaultPrivacy({ minor: false });
+    expect(canSee(s, 'ageChecked', connected)).toBe(false);
+    expect(canSee(s, 'ageChecked', stranger)).toBe(false);
+    const shown = { ...s, fields: { ...s.fields, ageChecked: { kind: 'everyone' as const } } };
+    expect(canSee(shown, 'ageChecked', stranger)).toBe(true);
+    expect(canSee(shown, 'ageChecked', { ...connected, preset: 'limited' })).toBe(false);
+  });
+
   it("rules by sphere use the owner's classification of the viewer", () => {
     const s = defaultPrivacy({ minor: false });
     s.fields.status = { kind: 'spheres', spheres: ['family', 'friend'] };

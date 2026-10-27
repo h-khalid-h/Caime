@@ -33,6 +33,8 @@ const FIELDS: Array<{ field: PrivacyField; label: string }> = [
   { field: 'identityDetails', label: msg('Work details') },
   { field: 'busy', label: msg('When you’re in a meeting') },
   { field: 'busyDetails', label: msg('What the meeting is') },
+  // Only once a check found them 18 or over (M16 B8e): "18 or over, checked", never an age.
+  { field: 'ageChecked', label: msg('Age checked') },
 ];
 
 export default function Privacy() {
@@ -79,16 +81,18 @@ export default function Privacy() {
         title={tr('Who can see')}
         footer={tr('Read receipts are two-way: you see theirs only if they see yours.')}
       >
-        {FIELDS.map((f, i) => (
-          <View key={f.field} style={{ borderTopWidth: i ? 1 : 0, borderTopColor: t.c.border }}>
-            <ListRow
-              title={tr(f.label)}
-              subtitle={audienceLine(me.privacy.fields[f.field])}
-              chevron
-              onPress={() => setEditing(f.field)}
-            />
-          </View>
-        ))}
+        {FIELDS.filter((f) => f.field !== 'ageChecked' || me.ageCheck?.outcome === 'adult').map(
+          (f, i) => (
+            <View key={f.field} style={{ borderTopWidth: i ? 1 : 0, borderTopColor: t.c.border }}>
+              <ListRow
+                title={tr(f.label)}
+                subtitle={audienceLine(me.privacy.fields[f.field])}
+                chevron
+                onPress={() => setEditing(f.field)}
+              />
+            </View>
+          ),
+        )}
       </Group>
       <Group title={tr('Finding you')}>
         <SwitchRow

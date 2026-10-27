@@ -2,7 +2,8 @@
  * Age assurance (M16 B7) in a browser: Settings · Security says the age isn't checked; the sheet
  * explains and opens the provider's own page (Agemin's stand-in), whose answer reaches Caime twice
  * (the signed notice, and the return the server reads back) and lands on Security saying what it
- * found. Under 18 by a check, the account is under 18 from then on, whatever it declared.
+ * found. Under 18 by a check, the account is under 18 from then on, whatever it declared. A check
+ * that found an adult is theirs to show, as "18 or over, checked" (M16 B8e).
  */
 import { expect, type Page, test } from '@playwright/test';
 import { AGEMIN_STUB, apiSignUp, CLIENT, visible } from './helpers';
@@ -35,6 +36,32 @@ test('an adult checks their age from Settings, and comes back checked', async ({
   const me = (await (await context.request.get('/v1/me', { headers: CLIENT })).json()).user;
   expect(me.ageCheck).toMatchObject({ outcome: 'adult', method: 'estimate', holdsUntil: null });
   expect(me.minor).toBe(false);
+
+  // Theirs to show (M16 B8e): Privacy offers it once checked, nobody sees it until they say, and
+  // then it reads "18 or over, checked" on their profile and their public page, never an age.
+  await page.goto('/settings/privacy');
+  await expect(visible(page, 'Age checked')).toBeVisible();
+  const other = await browser.newContext({ viewport: { width: 1280, height: 800 } });
+  await apiSignUp(other, 'Omar Nabil', `omar.ac.${suffix}`);
+  const looking = await other.newPage();
+  await looking.goto(`/p/${me.id}`);
+  await expect(visible(looking, 'Mona Saleh')).toBeVisible();
+  await expect(looking.getByTestId('person-age-checked')).toHaveCount(0);
+  const shown = await context.request.put('/v1/me/privacy', {
+    headers: CLIENT,
+    data: { fields: { ageChecked: { kind: 'everyone' } } },
+  });
+  expect(shown.status()).toBe(200);
+  await looking.reload();
+  await expect(looking.getByTestId('person-age-checked').filter({ visible: true })).toHaveText(
+    '18 or over, checked',
+  );
+  const visitor = await browser.newContext();
+  const pageOf = await visitor.newPage();
+  await pageOf.goto(`/@${me.handle}`);
+  await expect(pageOf.getByText('18 or over, checked')).toBeVisible();
+  await visitor.close();
+  await other.close();
 });
 
 test('under 18 by a check is under 18 from then on, whatever was declared', async ({ browser }) => {

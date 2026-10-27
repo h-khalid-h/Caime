@@ -20,6 +20,7 @@ export const PRIVACY_FIELDS = [
   'location',
   'busy',
   'busyDetails',
+  'ageChecked',
 ] as const;
 export type PrivacyField = (typeof PRIVACY_FIELDS)[number];
 
@@ -75,6 +76,7 @@ const LIMITED_HIDES: PrivacyField[] = [
   'gender',
   'busy',
   'busyDetails',
+  'ageChecked',
 ];
 
 export function defaultPrivacy(opts: { minor: boolean }): PrivacySettings {
@@ -96,6 +98,9 @@ export function defaultPrivacy(opts: { minor: boolean }): PrivacySettings {
       // in the conversation it was made in, who know anyway).
       busy: connections,
       busyDetails: { kind: 'spheres', spheres: ['family'] },
+      // An age check that found them 18 or over (R122 (2), M16 B8e): said only where they choose,
+      // as "18 or over, checked", never an age or a date; nothing at all under 18.
+      ageChecked: { kind: 'nobody' },
     },
     discoverByHandle: true,
     // R29: under-18 accounts are never discoverable by email.

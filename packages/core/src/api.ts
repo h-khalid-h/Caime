@@ -454,6 +454,11 @@ export interface PersonProfileView {
    * viewer allow (`busy`); what it is only to those allowed (`busyDetails`) or in its conversation.
    */
   busy: { until: string; title: string | null } | null;
+  /**
+   * An age check found them 18 or over (R122 (2), M16 B8e), where their privacy field
+   * `ageChecked` lets this viewer see it: never an age or a date, and never for someone under 18.
+   */
+  ageChecked: boolean;
   /** They take bookings (R58): their hours and the items this viewer may book, or null. */
   booking: { hours: BookingHours; items: BookingItem[] } | null;
   /** They take orders (R60): how, and what this viewer may order of them, or null. */

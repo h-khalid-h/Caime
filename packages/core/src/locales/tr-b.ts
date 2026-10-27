@@ -2886,4 +2886,6 @@ export const turkishB: Catalog = {
   '{name}’s message waits for your parent': 'Mesaj ebeveyninizi bekliyor: {name}',
   'Writing to {org} waits for your parent': '{org} ile yazışmak ebeveyninizi bekliyor',
   'Waiting for your parent’s yes': 'Ebeveyninizin onayı bekleniyor',
+  'Age checked': 'Doğrulanmış yaş',
+  '18 or over, checked': '18 yaş ve üzeri, doğrulandı',
 };
