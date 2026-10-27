@@ -2064,4 +2064,6 @@ export const turkishServer: Catalog = {
     'Kimlerle bağlantılı olduğu ve kimin bağlantı istediği. Mesajları asla.',
   'Where you live, Caime is for people {age} and older, and from {younger} with a parent’s or guardian’s yes.':
     'Yaşadığınız yerde Caime {age} yaş ve üzeri içindir; {younger} yaştan itibaren bir ebeveyn ya da velinin onayıyla.',
+  'Your parent says yes to new people first. Send {name} a connection request, which asks them.':
+    'Yeni kişilere önce ebeveyniniz onay verir. Bağlantı isteği gönderin, önce ebeveyninize sorulur: {name}',
 };

@@ -2129,7 +2129,9 @@ graph) and the number that will show it; one that sharpens none is hygiene and s
       screen, changed per child in Family). An invitation into a group or a space (always an
       invitation for a moderated child, `moderatedAmong`), an ask to join through a link, a message
       request they'd take (Accept or a reply) and an organization they'd start writing to each wait
-      on the parent (`guardian_asks`, `askGuardian`; `403 guardian_asked` where it's refused) with
+      on the parent (`guardian_asks`, `askGuardian`; `403 guardian_asked` where it's refused), and
+      the child writes first only to people they're connected with (`assertCanMessage`: a
+      connection request, which asks the parent, is the way), with
       Allow and Decline in Family; allowed, it's done as the child would have done it through its
       own way in (`answerGuardianAsk`), declined it's let go, the child told either way; the child
       sees what waits (`FamilyResponse.guardian.waitingAsks`, the invitation card, the request

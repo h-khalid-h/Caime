@@ -2152,4 +2152,6 @@ export const arServer: Catalog = {
     'جهات التواصل وطلبات التواصل، دون الرسائل أبدًا.',
   'Where you live, Caime is for people {age} and older, and from {younger} with a parent’s or guardian’s yes.':
     'حيث تعيش، Caime لمن بلغوا {age} عامًا فأكثر، ومن {younger} بموافقة وليّ الأمر.',
+  'Your parent says yes to new people first. Send {name} a connection request, which asks them.':
+    'وليّ أمرك يوافق أولًا على الأشخاص الجدد. أرسل إلى {name} طلب تواصل، فيُسأل وليّ أمرك.',
 };

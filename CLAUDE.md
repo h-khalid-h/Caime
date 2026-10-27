@@ -572,8 +572,8 @@ A sphere is said as how you know someone, never "sphere".
   organization asks `moderatorOf` (`moderatedAmong` for a set) and `askGuardian`, answering `403
   guardian_asked` or its own "asked" shape, and the parent's yes is carried out through that
   path's own function by `answerGuardianAsk` (`lib/family-moderate.ts`, apart so the paths that
-  ask import nothing of it), which a new kind joins; nothing about it ever carries a message's
-  words.
+  ask import nothing of it), which a new kind joins; a moderated child writes first only to a
+  connection (`assertCanMessage`); nothing about it ever carries a message's words.
 - Team invites (M16 C3a, `lib/team-invites.ts`, `modules/team-invites.ts`): an owner or admin
   makes a link (or sends one to an address, mailed after the response) from the team's Add sheet
   (`features/orgs/TeamInvites.tsx`); its token (`t_…`) is shown once and kept as its hash, masked

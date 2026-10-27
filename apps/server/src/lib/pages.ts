@@ -650,7 +650,8 @@ a request reaches the other person, or the child, only once the parent has. The 
 their parent is, what the parent sees, and the requests of theirs that wait. The parent may also
 choose to say yes to every new way in first: an invitation into a group or a space, an ask to join
 one, a message request to the child, and the child starting to write to an organization each wait
-for the parent, who sees who and where, never what anyone wrote. The child sees that their parent
+for the parent, who sees who and where, never what anyone wrote; and the child writes first only to
+people they&rsquo;re connected with, a connection request asking the parent. The child sees that their parent
 does, and what waits; the parent can turn it off, and then whatever waited goes on. The parent can
 withdraw the consent, which deletes the child&rsquo;s account. A parent who never agrees within
 seven days, or says the account isn&rsquo;t their child&rsquo;s, has it deleted the same way.`

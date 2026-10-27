@@ -3110,7 +3110,9 @@ with its reason, so it isn't proposed again without new facts.
   (who is moderated, the parent asked, what waits) and `lib/family-moderate.ts` (the parent's
   answer carried out through each thing's own way in, `releaseModerated`); the hooks in
   `answerPlaceInvite` and `whoMustBeAsked`, the join link route, the message request route and
-  `sendMessage`, and the organization's conversation route (`403 guardian_asked`);
+  `sendMessage`, the organization's conversation route (`403 guardian_asked`), and
+  `assertCanMessage` (a moderated child writes first only to a connection: the other way round of
+  a message request);
   `MeView.ageSource`; the waiting screen's `ParentPicker`, Family's asks, the
   consent screen's and each child's Moderate switch, the invitation card, the request banner and
   the join page saying what waits on a parent; the child's ask link as a visitor page

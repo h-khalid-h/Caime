@@ -13,6 +13,7 @@ let t: TestApp;
 let mum: Client;
 let aunt: Client;
 let owner: Client;
+let stranger: Client;
 let yara: Client;
 let orgId: string;
 
@@ -43,6 +44,12 @@ beforeAll(async () => {
   mum = await signup(t, { displayName: 'Mona Mother', country: 'EG', timeZone: 'Africa/Cairo' });
   aunt = await signup(t, { displayName: 'Hala Aunt', country: 'EG', timeZone: 'Africa/Cairo' });
   owner = await signup(t, { displayName: 'Nile Owner', country: 'EG', timeZone: 'Africa/Cairo' });
+  // An adult who takes message requests from everyone, and knows nobody Yara knows.
+  stranger = await signup(t, {
+    displayName: 'Sam Stranger',
+    country: 'EG',
+    timeZone: 'Africa/Cairo',
+  });
   // Yara, 14 in Egypt, signs up on her own and asks her mother, who agrees with Moderate on.
   const res = await t.app.inject({
     method: 'POST',
@@ -93,6 +100,22 @@ describe('Moderate (R122 (2))', () => {
     });
     const mine = await yara.get('/v1/me/family');
     expect(mine.guardian).toMatchObject({ moderates: true, waitingAsks: [] });
+  });
+
+  it('writes first only to people she is connected with: a connection request asks her parent', async () => {
+    const first = await yara.req('POST', '/v1/conversations', {
+      kind: 'direct',
+      userId: stranger.user.id,
+    });
+    expect(first.statusCode).toBe(403);
+    expect(first.json().error.message).toBe(
+      'Your parent says yes to new people first. Send Sam Stranger a connection request, which asks them.',
+    );
+    // Her mother she writes to as ever.
+    expect(
+      (await yara.req('POST', '/v1/conversations', { kind: 'direct', userId: mum.user.id }))
+        .statusCode,
+    ).toBeLessThan(300);
   });
 
   it('a message request waits on the parent, who never sees its words', async () => {
@@ -251,7 +274,16 @@ describe('Moderate (R122 (2))', () => {
       'Your parent no longer says yes to new groups, spaces and people first',
     );
     expect((await yara.get('/v1/me/family')).guardian.moderates).toBe(false);
-    // Without it, an organization is hers to write to at once.
+    // Without it, someone new is hers to write to, as for anyone under 18 (R29), and an
+    // organization at once.
+    expect(
+      (
+        await yara.req('POST', '/v1/conversations', {
+          kind: 'direct',
+          userId: stranger.user.id,
+        })
+      ).statusCode,
+    ).toBe(201);
     const third = (
       await owner.post('/v1/orgs', {
         country: 'EG',

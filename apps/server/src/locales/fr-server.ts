@@ -2151,4 +2151,6 @@ export const frServer: Catalog = {
     'Avec qui la personne est en contact et qui demande à l’être. Jamais ses messages.',
   'Where you live, Caime is for people {age} and older, and from {younger} with a parent’s or guardian’s yes.':
     'Là où vous vivez, Caime est pour les {age} ans et plus, et dès {younger} ans avec l’accord d’un parent ou tuteur.',
+  'Your parent says yes to new people first. Send {name} a connection request, which asks them.':
+    'Votre parent accepte d’abord les nouvelles personnes. Envoyez à {name} une demande de contact : elle lui sera d’abord soumise.',
 };

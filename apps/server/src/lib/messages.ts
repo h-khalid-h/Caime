@@ -705,6 +705,17 @@ export async function assertCanMessage(
     (minorOf(target, now) && !minorOf(sender, now));
   if (needsSharedConnection && !(await shareAConnection(ctx.db, senderId, targetId)))
     throw refuse();
+  // A child whose parent says yes to new people first (R122 (2), Moderate) writes first only to
+  // people they're connected with: a connection request is the way, and it asks the parent.
+  if (await moderatorOf(ctx.db, senderId, now))
+    throw forbidden(
+      tr(
+        'Your parent says yes to new people first. Send {name} a connection request, which asks them.',
+        {
+          name: target.display_name,
+        },
+      ),
+    );
 }
 
 export interface SendResult {
