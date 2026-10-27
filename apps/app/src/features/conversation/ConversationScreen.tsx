@@ -125,6 +125,9 @@ const JoinLinks = lazyPart(() => import('@/features/join/JoinLinks').then((m) =>
 
 /** "How do you know …?" for a connection never labelled (R3), loaded the first time it opens. */
 const ChatSearch = lazyPart(() => import('./ChatSearch').then((m) => m.ChatSearch));
+const CaiAnswering = lazyPart(() =>
+  import('@/features/cai/CaiAnswering').then((m) => m.CaiAnswering),
+);
 const TappedSheet = lazyPart(() => import('./TappedSheet').then((m) => m.TappedSheet));
 const RelationshipPicker = lazyPart(() =>
   import('@/features/relationships/RelationshipPicker').then((m) => m.RelationshipPicker),
@@ -1258,6 +1261,16 @@ export function ConversationScreen({
           conversationId={id}
           draft={business.agentDraft}
           onEdit={(words) => composer.current?.insert(words)}
+        />
+      ) : null}
+      {/* Cai answering for the one they wrote to (M17 I16a): its two choices, then the talk. */}
+      {conversation?.caiAnswering?.side === 'caller' &&
+      (conversation.caiAnswering.state === 'offered' ||
+        conversation.caiAnswering.state === 'talking') ? (
+        <CaiAnswering
+          conversationId={conversation.id}
+          answering={conversation.caiAnswering}
+          name={conversation.other?.person.displayName ?? ''}
         />
       ) : null}
       {/* What they wrote here to be sent later (M16 E8b): theirs alone, a line while any waits. */}

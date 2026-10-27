@@ -81,6 +81,7 @@ import {
   whereBooked,
 } from './booking';
 import { customerMask, maskFor, maskMessage, recordBusinessMessage } from './business';
+import { endCaiAnswer, talkingToCai } from './cai-answers';
 import { queueCalendarPush } from './calendar-push';
 import { checkoutAccountOf } from './checkout-account';
 import { assertSealedForEveryone } from './e2ee';
@@ -672,8 +673,21 @@ export async function assertCanMessage(
   senderId: string,
   targetId: string,
 ): Promise<void> {
+  const refused = await messageRefusal(ctx, senderId, targetId);
+  if (refused) throw refused;
+}
+
+/**
+ * Why someone may not write to someone else first (R14, R29, R122), or null where they may: the
+ * one check behind a send and behind a profile's Message for someone not connected.
+ */
+export async function messageRefusal(
+  ctx: AppContext,
+  senderId: string,
+  targetId: string,
+): Promise<AppError | null> {
   if (await isBlockedEitherWay(ctx.db, senderId, targetId))
-    throw forbidden(tr('You can’t message this person.'));
+    return forbidden(tr('You can’t message this person.'));
   const [target, sender] = await Promise.all([
     ctx.db
       .selectFrom('users')
@@ -687,7 +701,7 @@ export async function assertCanMessage(
       .where('id', '=', senderId)
       .executeTakeFirstOrThrow(),
   ]);
-  if (!target) throw notFound(tr('That person'));
+  if (!target) return notFound(tr('That person'));
   const now = ctx.now();
   const privacy = privacyOf(target, now);
   const refuse = () =>
@@ -698,17 +712,17 @@ export async function assertCanMessage(
         name: target.display_name,
       }),
     );
-  if (privacy.messageRequests === 'nobody') throw refuse();
+  if (privacy.messageRequests === 'nobody') return refuse();
   // Under-18 accounts only hear from adults they share a connection with (R29).
   const needsSharedConnection =
     privacy.messageRequests === 'shared_connections' ||
     (minorOf(target, now) && !minorOf(sender, now));
   if (needsSharedConnection && !(await shareAConnection(ctx.db, senderId, targetId)))
-    throw refuse();
+    return refuse();
   // A child whose parent says yes to new people first (R122 (2), Moderate) writes first only to
   // people they're connected with: a connection request is the way, and it asks the parent.
   if (await moderatorOf(ctx.db, senderId, now))
-    throw forbidden(
+    return forbidden(
       tr(
         'Your parent says yes to new people first. Send {name} a connection request, which asks them.',
         {
@@ -716,6 +730,7 @@ export async function assertCanMessage(
         },
       ),
     );
+  return null;
 }
 
 export interface SendResult {
@@ -796,7 +811,7 @@ export async function assertCanSend(
  * When a message disappears: its conversation's setting as it's sent, so a change applies only to
  * what's sent after it (PRD §60), and never to what came before.
  */
-function expiresAt(now: Date, retentionDays: number | null): Date | null {
+export function expiresAt(now: Date, retentionDays: number | null): Date | null {
   return retentionDays ? new Date(now.getTime() + retentionDays * 86_400_000) : null;
 }
 
@@ -993,6 +1008,8 @@ export async function sendMessage(
   let acceptRequest = false;
   // Photos to Cai (M17 I14b): read by its model, so only pictures go.
   let photosToCai = false;
+  // Talking to Cai answering for its receiver (M17 I16a, ADR-18): past the request's rule.
+  let toCai = false;
   const unanswered = (message: string) => new AppError(403, 'awaiting_acceptance', message);
   if (conversation.kind === 'business') {
     // The team wrote first (R14): one message until the customer answers or accepts it, and a
@@ -1083,14 +1100,23 @@ export async function sendMessage(
               .where('id', '=', other.user_id)
               .executeTakeFirst()
           )?.kind === 'provisional';
-        if (sent.n >= 1 + (byMail ? MAIL_FOLLOW_UPS : 0))
-          throw new AppError(
-            403,
-            'awaiting_acceptance',
-            byMail
-              ? tr('You can write again once they answer.')
-              : tr('You can send more once they accept your message request.'),
-          );
+        if (sent.n >= 1 + (byMail ? MAIL_FOLLOW_UPS : 0)) {
+          if (
+            !byMail &&
+            body.kind === 'text' &&
+            !body.sealed &&
+            (await talkingToCai(ctx, senderId, conversationId))
+          )
+            toCai = true;
+          else
+            throw new AppError(
+              403,
+              'awaiting_acceptance',
+              byMail
+                ? tr('You can write again once they answer.')
+                : tr('You can send more once they accept your message request.'),
+            );
+        }
         const ready = sent.last ? new Date(sent.last).getTime() + MAIL_FOLLOW_UP_AFTER_MS : 0;
         if (byMail && ready > ctx.now().getTime()) {
           const mine = await ctx.db
@@ -1257,6 +1283,7 @@ export async function sendMessage(
     payload = { ...(payload as Record<string, unknown>), noPreview: true };
   if (opts.guest && body.kind === 'text')
     payload = { ...(payload as Record<string, unknown>), guest: true };
+  if (toCai) payload = { ...(payload as Record<string, unknown>), toCai: true };
   let kitMode: Mode | null = null;
   // Its id, now: a repeating meeting's first time names its series by it (R58).
   const id = uuidv7();
@@ -1806,6 +1833,9 @@ export async function sendMessage(
   // reopens no thread, wakes no agent and tells no app.
   if (conversation.kind === 'business' && !opts.occurrence?.agreed)
     await recordBusinessMessage(ctx, conversationId, senderId, message);
+  // Their reply takes the request: Cai answering for them there stops (M17 I16a).
+  if (acceptRequest && conversation.kind === 'direct')
+    await endCaiAnswer(ctx, conversationId, 'receiver', null, senderId);
   return { message, created: true, analysis };
 }
 

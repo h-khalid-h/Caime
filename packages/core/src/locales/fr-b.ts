@@ -2999,4 +2999,19 @@ export const frB: Catalog = {
   'You can write here while you’re in the call.':
     'Vous pouvez écrire ici pendant que vous êtes dans l’appel.',
   'Your booking link': 'Votre lien de réservation',
+  'Leave my message': 'Laisser mon message',
+  'Talk to Cai now': 'Parler à Cai maintenant',
+  'You’re writing to Cai, who answers for {name} and passes on what you need.':
+    'Vous écrivez à Cai, qui répond pour {name} et transmet ce dont vous avez besoin.',
+  'Cai answers for {name}. Leave your message for them, or talk to Cai now: that uses your own AI allowance.':
+    'Cai répond pour {name}. Laissez votre message, ou parlez à Cai maintenant : cela utilise votre propre quota d’IA.',
+  'Cai answers for {name}. Your message waits for them.':
+    'Cai répond pour {name}. Votre message attend d’être lu.',
+  'Answering for you': 'Répondre pour vous',
+  'When someone you’re not connected with writes to you first, Cai says it’s answering for you. They leave their message, or talk to Cai on their own AI allowance. Cai says only what anyone may see of you and what you offer to everyone, never agrees to anything for you, and tells you here what they wanted. Your own reply ends it. It needs AI assist on.':
+    'Quand quelqu’un qui n’est pas en contact avec vous vous écrit en premier, Cai dit qu’il répond pour vous. La personne laisse son message, ou parle à Cai avec son propre quota d’IA. Cai ne dit que ce que tout le monde peut voir de vous et ce que vous proposez à tous, n’accepte jamais rien à votre place, et vous dit ici ce qu’elle voulait. Votre propre réponse y met fin. L’assistance IA doit être activée.',
+  'Cai answers people you don’t know yet':
+    'Cai répond aux personnes que vous ne connaissez pas encore',
+  'Cai, for you': 'Cai, pour vous',
+  'Cai, for {name}': 'Cai, pour {name}',
 };

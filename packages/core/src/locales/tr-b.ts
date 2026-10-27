@@ -2898,4 +2898,18 @@ export const turkishB: Catalog = {
   'It wasn’t sent. Try again.': 'Gönderilmedi. Yeniden deneyin.',
   'You can write here while you’re in the call.': 'Görüşmedeyken buraya yazabilirsiniz.',
   'Your booking link': 'Randevu bağlantınız',
+  'Leave my message': 'Mesajımı bırak',
+  'Talk to Cai now': 'Şimdi Cai ile konuş',
+  'You’re writing to Cai, who answers for {name} and passes on what you need.':
+    'Cai ile yazışıyorsunuz: {name} adına yanıtlar ve ihtiyacınızı iletir.',
+  'Cai answers for {name}. Leave your message for them, or talk to Cai now: that uses your own AI allowance.':
+    'Cai, {name} adına yanıtlıyor. Mesajınızı bırakın ya da şimdi Cai ile konuşun: bu, kendi yapay zekâ hakkınızdan kullanır.',
+  'Cai answers for {name}. Your message waits for them.':
+    'Cai, {name} adına yanıtlıyor. Mesajınız okunmayı bekliyor.',
+  'Answering for you': 'Sizin adınıza yanıt',
+  'When someone you’re not connected with writes to you first, Cai says it’s answering for you. They leave their message, or talk to Cai on their own AI allowance. Cai says only what anyone may see of you and what you offer to everyone, never agrees to anything for you, and tells you here what they wanted. Your own reply ends it. It needs AI assist on.':
+    'Bağlantınız olmayan biri size ilk kez yazdığında Cai, sizin adınıza yanıtladığını söyler. Kişi mesajını bırakır ya da kendi yapay zekâ hakkıyla Cai ile konuşur. Cai yalnızca herkesin sizinle ilgili görebildiklerini ve herkese sunduklarınızı söyler, sizin adınıza hiçbir şeyi kabul etmez ve ne istendiğini size burada anlatır. Kendi yanıtınız bunu bitirir. Yapay zekâ yardımının açık olması gerekir.',
+  'Cai answers people you don’t know yet': 'Cai, henüz tanımadığınız kişilere yanıt verir',
+  'Cai, for you': 'Cai, sizin için',
+  'Cai, for {name}': 'Cai, {name} için',
 };

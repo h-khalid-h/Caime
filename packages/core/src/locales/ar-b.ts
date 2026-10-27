@@ -3866,4 +3866,18 @@ export const arB: Catalog = {
   'It wasn’t sent. Try again.': 'لم تُرسَل. حاول مرة أخرى.',
   'You can write here while you’re in the call.': 'الكتابة هنا متاحة أثناء وجودك في المكالمة.',
   'Your booking link': 'رابط الحجز',
+  'Leave my message': 'ترك رسالتي',
+  'Talk to Cai now': 'التحدث مع Cai الآن',
+  'You’re writing to Cai, who answers for {name} and passes on what you need.':
+    'الكتابة الآن إلى Cai، الذي يردّ نيابةً عن {name} وينقل ما تحتاجه.',
+  'Cai answers for {name}. Leave your message for them, or talk to Cai now: that uses your own AI allowance.':
+    'يردّ Cai نيابةً عن {name}. يمكن ترك رسالتك كما هي، أو التحدث مع Cai الآن، من رصيدك من الذكاء الاصطناعي.',
+  'Cai answers for {name}. Your message waits for them.':
+    'يردّ Cai نيابةً عن {name}. رسالتك بانتظار القراءة.',
+  'Answering for you': 'الرد نيابةً عنك',
+  'When someone you’re not connected with writes to you first, Cai says it’s answering for you. They leave their message, or talk to Cai on their own AI allowance. Cai says only what anyone may see of you and what you offer to everyone, never agrees to anything for you, and tells you here what they wanted. Your own reply ends it. It needs AI assist on.':
+    'حين يراسلك أولًا شخص غير متصل بك، يقول Cai إنه يردّ نيابةً عنك. يمكن ترك الرسالة، أو التحدث مع Cai من رصيد المُرسِل من الذكاء الاصطناعي. لا يقول Cai إلا ما يراه الجميع عنك وما تقدّمه للجميع، ولا يوافق على شيء نيابةً عنك، ويخبرك هنا بما كان مطلوبًا. ينتهي ذلك بردّك أنت. يتطلب تشغيل مساعد الذكاء الاصطناعي.',
+  'Cai answers people you don’t know yet': 'يردّ Cai على من لا تعرفهم بعد',
+  'Cai, for you': 'Cai، نيابةً عنك',
+  'Cai, for {name}': 'Cai، نيابةً عن {name}',
 };

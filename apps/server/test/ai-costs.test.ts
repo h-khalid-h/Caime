@@ -5,12 +5,14 @@
  * at those bounds, the free plans held under a ceiling; and the operator's numbers, priced from
  * `ai_runs` by who answers for each call. `COST_TABLE=<file>` writes the tables RESOURCES.md carries.
  */
+
 import { writeFileSync } from 'node:fs';
 import { createServer, type Server } from 'node:http';
 import type { AddressInfo } from 'node:net';
 import {
   AGENT_KNOWLEDGE_MAX,
   ASK_MAX,
+  CAI_ANSWER_TURNS,
   FRAME_EDGE,
   MISSED_CHARS,
   ORG_ALLOWANCES,
@@ -308,6 +310,21 @@ const AT_BOUNDS: ReadonlyArray<{
         arabic,
         country: 'EG',
         gender: null,
+        today,
+        now: 'Wed 23 Sep 14:05',
+      }),
+  },
+  // lib/cai-answers.ts (M17 I16a): from the stranger's first line, the turns' lines at most
+  // (CAI_ANSWER_TURNS each way, the intro and the choice), each MESSAGE_CHARS; eight offers.
+  {
+    feature: 'cai-answer',
+    call: (ai) =>
+      ai.answerFor({
+        receiver: 'Sara',
+        about: x(10 * 300),
+        transcript: x((2 * CAI_ANSWER_TURNS + 3) * 1_500),
+        language: 'English',
+        receiverLanguage: 'Arabic',
         today,
         now: 'Wed 23 Sep 14:05',
       }),

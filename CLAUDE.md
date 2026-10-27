@@ -1723,6 +1723,16 @@ A sphere is said as how you know someone, never "sphere".
   variety and the country (`voiceLines` in `lib/ai.ts`) for the person's own Cai and friends
   only; an organization's agent mirrors the Arabic a customer writes and is never told where
   they live. A brief or a catch-up is for reading and stays standard.
+- Cai answers for someone who turned it on (R116, M17 I16a, ADR-18, `lib/cai-answers.ts`): a
+  stranger's message request is met once by Cai's introduction (R87) and two choices, and a talk
+  on the stranger's own allowance (`talkingToCai` lets their lines, `payload.toCai`, past the
+  request's rule; the `cai.answer` job answers through `runAi('cai-answer')`). Cai's lines in a
+  one-to-one are Cai's (`insertCaiLine`: Cai's fixed id, `payload.answering`), never through
+  `sendMessage`, never a member, no effects; what Cai may say is `aboutFor`, built through the
+  privacy evaluator with the caller as the viewer, so a new fact Cai may say of someone joins it
+  there, never a label or another conversation; it ends through `endCaiAnswer` (the receiver's
+  own line or answer, the stranger done, the turns, the allowance), which tells the receiver in
+  their own chat with Cai. Never under 18, mail, a private or an organization's conversation.
 - Cai keeps going (R68, `lib/cai.ts`, `modules/cai.ts`): a wait handed to Cai is
   `tasks.cai_follow_up`, offered by `offerFollowUp` from the reminders sweep in place of a bare
   reminder (the offer is Cai's text message with `payload.followUp`, drawn by

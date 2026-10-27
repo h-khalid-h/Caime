@@ -140,6 +140,36 @@ docs/           PRD, review, brand, competitive, architecture, roadmap, deploy (
   notes do (a call with a member's browser, eight at most), at the notes' latency. (b) stays the
   step after, for a call of phones alone, one of more than eight and a reply as quick as a
   person's, with the conditions above.
+- **ADR-18 — Cai's lines in a one-to-one are Cai's, for its receiver, from outside it (R116, M17
+  I16a).** When someone who turned it on is written to by a stranger, Cai answers in that
+  conversation for them; the council decided its lines are Cai's own, marked as answering for
+  the receiver, never written from the receiver's account and never making Cai a member
+  (REVIEW-2026-10-25-CAI §7, turning point 3). A direct conversation is two people:
+  `sendMessage` takes "the other" as the one member who isn't the sender, and a request, a read
+  position, a block and a notification all read the members. Two ways were weighed. (a) Cai as
+  a third participant while it answers: every reader of a direct conversation's members would
+  meet a third (who "the other" is, the inbox's title, blocks, calls, read receipts), and Cai
+  would read as part of the conversation after it's gone. (b) **Decided:** Cai's line is a row
+  of `messages` like any (its `seq` from the conversation's counter under its row lock, its words
+  in `body`, `sender_id` Cai's fixed id) with the server's mark `payload.answering = { for }`,
+  written by one function (`insertCaiLine`, `lib/cai-answers.ts`), never through `sendMessage`
+  and never with a `participants` row for Cai: no read or delivery position, no `last_sent_seq`,
+  no request state. So nothing that reads the members changes, and every reader of the messages
+  already takes a sender who isn't a member (a left member's lines, imports' authors). What
+  follows from it:
+  - it never answers or accepts the request: the receiver's `request_state` is theirs to move,
+    and their own reply (or decline) ends Cai's turn;
+  - while the caller talks to Cai on their own tap, their lines carry the server's mark
+    `payload.toCai` and pass the one-message rule up to a cap a day, still held as the request;
+  - no message effects run for Cai's lines (no suggestion, topic or follow-up from its words);
+    the caller is told of each as of any line, the receiver once, by the summary in their own
+    chat with Cai;
+  - what Cai may know is built with the caller as the viewer through the privacy evaluator
+    (ADR-10): never the receiver's label for them or another conversation;
+  - an export, an erasure and a removal treat it as any message of the conversation; a
+    conversation's people stay its two.
+  Rejected: (a), for the reasons above; a conversation of its own between the caller and Cai,
+  which would split what the receiver reads from where they answer.
 
 ## Domain model
 

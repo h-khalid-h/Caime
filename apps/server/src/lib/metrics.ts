@@ -244,6 +244,12 @@ export function createMetrics(pool: pg.Pool) {
     ),
     // What Cai told unasked of a scope it watches (M17 I15b): Caime's own state, by what crossed
     // or cleared (provider, backup, audit, jobs, child_safety).
+    // Cai answering for someone (R116, M17 I16a): by scope (person), whose allowance (caller,
+    // none) and outcome (offered, left, talked, or why it ended).
+    caiAnswers: new Counter(
+      'caime_cai_answers_total',
+      'Cai answering for someone, by scope (person), payer (caller, none) and outcome (offered, left, talked, caller, receiver, declined, limit, handed_over).',
+    ),
     caiTells: new Counter(
       'caime_cai_tells_total',
       'What Cai told unasked of a scope it watches, by scope (caime, org), kind and outcome (crossed, cleared, quiet).',

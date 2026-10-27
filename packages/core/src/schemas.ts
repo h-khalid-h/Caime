@@ -2,6 +2,7 @@
  * API request contracts (docs/ARCHITECTURE.md, "API conventions"). The server validates every
  * body with these; clients use the same schemas for forms, so a rule changes in one place.
  */
+
 import { z } from 'zod';
 import { PERSONAL_SCOPES, redirectUriError } from './access';
 import { ACCOUNT_USES } from './accounts';
@@ -33,6 +34,7 @@ import {
   STOCK_MAX,
 } from './booking';
 import { BUSINESS_VIEWS, ORG_CALLS_FROM } from './business';
+import { CAI_ANSWER_CHOICES } from './cai-answers';
 import { CALL_KINDS } from './calls';
 import { COLLECTIONS_MAX, SLUG_MAX, slugError } from './catalog';
 import { CONTACTS_MATCH_MAX } from './contacts';
@@ -994,6 +996,11 @@ export const Preferences = z
     caiDigest: z.boolean().optional(),
     /** How much Cai does unasked (R66, core `initiative.ts`); `usual` when never chosen. */
     caiInitiative: z.enum(INITIATIVES).optional(),
+    /**
+     * Cai answers for them (R116, M17 I16a): a stranger's message request met by Cai's
+     * introduction and, on the stranger's own allowance, a talk with Cai. Off when never chosen.
+     */
+    caiAnswers: z.object({ strangers: z.boolean() }).strict().optional(),
     /**
      * How Cai and the Caime Friends speak Arabic (R72): as this person writes and where they
      * live (`auto`), or the one chosen. The interface stays in Standard Arabic.
@@ -2508,3 +2515,6 @@ export const CheckoutBody = z
 
 /** Manage what you pay, or what an organization you run pays, in Stripe's portal. */
 export const BillingPortalBody = z.object({ orgId: z.string().uuid().optional() }).strict();
+
+/** The stranger's choice on Cai's first line (R116, M17 I16a): leave the message, or talk now. */
+export const CaiAnswerBody = z.object({ choice: z.enum(CAI_ANSWER_CHOICES) }).strict();

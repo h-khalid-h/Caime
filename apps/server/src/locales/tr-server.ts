@@ -2140,4 +2140,23 @@ export const turkishServer: Catalog = {
   'Your booking link, and bookings in your conversations':
     'Randevu bağlantınız ve konuşmalarınızdaki randevular',
   'Your chats and your people': 'Sohbetleriniz ve kişileriniz',
+  'Hi {name}, I’m Cai, an AI assistant answering for {receiver} on Caime. {receiver} hasn’t read your message yet. You can leave it for them, or talk to me now: I can tell you what {receiver} offers and pass on what you need.':
+    'Merhaba {name}, ben Cai, Caime’de {receiver} adına yanıt veren bir yapay zekâ asistanıyım. Mesajınız henüz okunmadı. Olduğu gibi bırakabilir ya da şimdi benimle konuşabilirsiniz: {receiver} kişisinin neler sunduğunu söyleyip ihtiyacınızı iletebilirim.',
+  'Hi {name}, I’m Cai, an AI assistant answering for {receiver} on Caime. {receiver} hasn’t read your message yet; it’s waiting for them.':
+    'Merhaba {name}, ben Cai, Caime’de {receiver} adına yanıt veren bir yapay zekâ asistanıyım. Mesajınız henüz okunmadı; okunmayı bekliyor.',
+  'Go ahead: what would you like {receiver} to know?':
+    'Buyurun: {receiver} kişisinin neyi bilmesini istersiniz?',
+  'Your message stays for {receiver}, who answers when they can.':
+    'Mesajınız {receiver} için bekliyor; fırsat bulunca yanıt gelir.',
+  'I can’t go on now. Your messages stay for {receiver}.':
+    'Şu an devam edemiyorum. Mesajlarınız {receiver} için bekliyor.',
+  '{name} wrote to you and talked with me. {summary} Their message is in your requests: reply, or leave it.':
+    '{name} size yazdı ve benimle konuştu. {summary} Mesajı isteklerinizde: yanıtlayın ya da bırakın.',
+  '{name} wrote to you and talked with me. Their message is in your requests: reply, or leave it.':
+    '{name} size yazdı ve benimle konuştu. Mesajı isteklerinizde: yanıtlayın ya da bırakın.',
+  'Cai talked with {name} for you': 'Cai sizin adınıza {name} ile konuştu',
+  'There’s nothing to choose here.': 'Burada seçilecek bir şey yok.',
+  'That was chosen already.': 'Bu zaten seçildi.',
+  'Talking to Cai is for adults with AI assist on.':
+    'Cai ile konuşmak, yapay zekâ yardımı açık olan yetişkinler içindir.',
 };

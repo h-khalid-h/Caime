@@ -91,6 +91,27 @@ function answer(body) {
     const text = between(content, '<text>', '</text>');
     return reply(text === 'هل وصل العقد؟' ? 'Did the contract arrive?' : text);
   }
+  if (system.includes('chose to talk to you meanwhile')) {
+    // Cai answering a stranger for someone (M17 I16a): it says what it heard, with the first thing
+    // offered to everyone when there is one; "thanks" or "that's all" ends it, summed up by what
+    // the stranger first asked.
+    calls.push('cai-answer');
+    const theirs = linesOf(content).filter((l) => l.speaker === 'You');
+    const said = theirs.at(-1)?.text ?? '';
+    const offer = between(content, '<about>', '</about>')
+      .split('\n')
+      .find((l) => l.startsWith('Offers: '));
+    const done = /\b(thanks|that’s all|that's all|bye)\b/i.test(said);
+    return reply(
+      JSON.stringify({
+        reply: done
+          ? 'Thanks, I’ll pass it on.'
+          : `Noted: “${said}”.${offer ? ` ${offer.slice(8)}` : ''}`,
+        done,
+        summary: `They asked: ${theirs[0]?.text ?? said}`,
+      }),
+    );
+  }
   if (system.includes('one of the Caime Friends')) {
     // A Caime Friend (R71): in its own name, about what it was asked.
     calls.push('friend');

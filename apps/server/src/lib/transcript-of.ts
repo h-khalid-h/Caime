@@ -44,13 +44,14 @@ export async function transcriptOf(
   lastReadSeq: number,
   timeZone: string,
   /** Each call's line with Cai's write-up of it, where the viewer may read it whole (I12b). */
-  opts: { withCalls?: boolean } = {},
+  opts: { withCalls?: boolean; fromSeq?: number } = {},
 ): Promise<{ transcript: Transcript; lines: ConversationLine[]; newCount: number }> {
   const rows = (await ctx.db
     .selectFrom('messages')
     .select(MESSAGE_COLUMNS)
     .where('conversation_id', '=', conversationId)
     .where(readableBy(viewerId, ctx.now()))
+    .$if(opts.fromSeq !== undefined, (q) => q.where('seq', '>=', String(opts.fromSeq)))
     .orderBy('seq', 'desc')
     .limit(TRANSCRIPT_MESSAGES)
     .execute()) as Message[];

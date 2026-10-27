@@ -79,6 +79,9 @@ const AnswerSources = lazy(() =>
   import('@/features/assist/AnswerSources').then((m) => ({ default: m.AnswerSources })),
 );
 /** Cai's follow-up offer (R68): the same module, drawn as every drafted message is. */
+const AnsweredLink = lazy(() =>
+  import('@/features/cai/CaiOffer').then((m) => ({ default: m.AnsweredLink })),
+);
 const FollowUpOffer = lazy(() =>
   import('@/features/cai/CaiOffer').then((m) => ({ default: m.FollowUpOffer })),
 );
@@ -1095,6 +1098,11 @@ export const MessageBubble = memo(function MessageBubble({
 
   // Cai's offer of a follow-up (R68), sent or changed only by the reader's tap.
   const followUp = (m.payload as { followUp?: FollowUpPayload } | null)?.followUp;
+  // Cai's word that it answered someone for this person (M17 I16a).
+  const answeredIn =
+    m.senderId === CAI_ID
+      ? (m.payload as { answered?: { conversationId?: string } } | null)?.answered?.conversationId
+      : undefined;
   // What Cai or a friend kept as one of the reader's actions when asked (M16 G13).
   // What Cai or a friend offered to do for them when asked (M16 G14): done on their tap.
   const offer = systemHandleOf(m.senderId)
@@ -1300,6 +1308,11 @@ export const MessageBubble = memo(function MessageBubble({
       {kept ? (
         <Suspense fallback={null}>
           <KeptAction kept={kept} />
+        </Suspense>
+      ) : null}
+      {answeredIn ? (
+        <Suspense fallback={null}>
+          <AnsweredLink conversationId={answeredIn} />
         </Suspense>
       ) : null}
       {offer ? (

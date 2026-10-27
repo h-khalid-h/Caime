@@ -297,3 +297,18 @@ export default function CaiOffer({
     />
   );
 }
+
+/** Under Cai's word that it answered someone for them (M17 I16a): the conversation it was in. */
+export function AnsweredLink({ conversationId }: { conversationId: string }) {
+  return (
+    <View style={{ paddingHorizontal: 12, paddingTop: 6, alignItems: 'flex-start' }}>
+      <Button
+        label={tr('Open the conversation')}
+        size="sm"
+        variant="secondary"
+        onPress={() => router.navigate({ pathname: '/c/[id]', params: { id: conversationId } })}
+        testID="cai-answered-open"
+      />
+    </View>
+  );
+}

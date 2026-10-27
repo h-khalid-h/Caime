@@ -350,6 +350,26 @@ describe('requests: decline, cancel, mutual intent, blocks', () => {
     expect(back.status).toBe('connected');
   });
 
+  it('a profile says whether its viewer may write first, as a send would decide (R14)', async () => {
+    const writer = await signup(t, { displayName: 'Wren Writer' });
+    const friend = await signup(t, { displayName: 'Fern Friend' });
+    const quiet = await signup(t, { displayName: 'Quinn Quiet' });
+    const mayWrite = async (who: Client, id: string) =>
+      (await who.get(`/v1/people/${id}`)).mayWrite as boolean;
+    expect(await mayWrite(writer, quiet.user.id)).toBe(true);
+    expect(await mayWrite(quiet, quiet.user.id)).toBe(false);
+    const asked = await friend.post('/v1/connections/requests', { toUserId: quiet.user.id });
+    await quiet.post(`/v1/connections/requests/${asked.requestId}/accept`, {});
+    await quiet.req('PUT', '/v1/me/privacy', { messageRequests: 'nobody' });
+    expect(await mayWrite(writer, quiet.user.id)).toBe(false);
+    const refused = await writer.req('POST', '/v1/conversations', {
+      kind: 'direct',
+      userId: quiet.user.id,
+    });
+    expect(refused.json().error.code).toBe('not_accepting_requests');
+    expect(await mayWrite(friend, quiet.user.id)).toBe(true);
+  });
+
   it('a blocked person cannot find, see or request you', async () => {
     const x = await signup(t, { displayName: 'Xavier Stalker', handle: 'xavier' });
     await t.ctx.db

@@ -329,6 +329,22 @@ function PersonPage({ id, book = null, slug = null }: PersonScreenProps) {
       />
     );
 
+  // Someone not connected whose message requests take this viewer (R14): a message beside Connect.
+  const writeAction =
+    !self && !byMail && (state === 'none' || state === 'outgoing') && p.mayWrite ? (
+      <Button
+        label={tr('Message')}
+        icon={MessageCircle}
+        variant="secondary"
+        size="md"
+        onPress={() => {
+          const general = p.conversations.find((c) => c.isGeneral);
+          void openChatWith({ conversationId: general?.id ?? null, person });
+        }}
+        testID="person-write"
+      />
+    ) : null;
+
   return (
     <Screen edges={desktop ? [] : ['top']}>
       <TopBar left={back} title={desktop ? '' : person.displayName} border={false} />
@@ -452,6 +468,7 @@ function PersonPage({ id, book = null, slug = null }: PersonScreenProps) {
         {primaryAction}
         {/* What else can be done with them, side by side under the main thing (R69). */}
         <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8, justifyContent: 'center' }}>
+          {writeAction}
           {bookAction}
           {orderAction}
           {payAction}

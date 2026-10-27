@@ -1612,6 +1612,23 @@ export interface CallRecordingSharesTable {
  * Cai's notes of a call, written once it's over (M16 F7e, R112): one row a call, for whoever was
  * in it for all of it; gone with the call's line.
  */
+/** Cai answering for someone in a one-to-one (R116, M17 I16a, ADR-18): one row a conversation. */
+export interface CaiAnsweringTable {
+  id: string;
+  conversation_id: string;
+  receiver_id: string;
+  caller_id: string;
+  state: 'offered' | 'left' | 'talking' | 'ended';
+  talk: Generated<boolean>;
+  payer_id: string | null;
+  turns: Generated<number>;
+  from_seq: ColumnType<string, string | number, string | number>;
+  offered_at: Generated<Date>;
+  ended_at: NullableTimestamp;
+  ended_by: 'caller' | 'receiver' | 'declined' | 'limit' | 'handed_over' | null;
+  summary_message_id: string | null;
+}
+
 export interface CallNoteSummariesTable {
   call_id: string;
   conversation_id: string;
@@ -2033,6 +2050,7 @@ export interface Database {
   call_recording_shares: CallRecordingSharesTable;
   cai_spoken: CaiSpokenTable;
   call_note_summaries: CallNoteSummariesTable;
+  cai_answering: CaiAnsweringTable;
   e2ee_devices: E2eeDevicesTable;
   billing_customers: BillingCustomersTable;
   billing_subscriptions: BillingSubscriptionsTable;

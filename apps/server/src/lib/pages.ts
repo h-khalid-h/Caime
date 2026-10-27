@@ -173,7 +173,13 @@ sends the AI provider the new messages of the conversations with something unrea
 when, in which conversation, and the words; never a private conversation, a notice, a request
 or one you put aside), and keeps the summary in memory for half an hour, for you alone. A
 question you ask Cai in its chat goes to the AI provider with what search finds for it in your
-own messages, and the answer says which messages it rests on.</li>
+own messages, and the answer says which messages it rests on. If you turn on Cai answering for
+you, someone not connected with you who writes to you first is answered by Cai, which says it is
+an AI answering for you; if they choose to talk to it, what they write and what anyone may see of
+you (your name, your line and bio as your privacy shows them to everyone, what you offer to
+everyone, whether you&rsquo;re busy where you allow it) go to the AI provider on their own AI
+assist, never your other conversations or how you describe them, and Cai tells you what they
+wanted.</li>
 <li>You can download your data, and delete your account, whenever you like.</li>
 </ul>
 </section>

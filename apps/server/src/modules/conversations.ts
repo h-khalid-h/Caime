@@ -42,6 +42,7 @@ import { USER_COLUMNS } from '../db/schema';
 import { assertAgeChecked } from '../lib/age';
 import { tellSaved } from '../lib/automations';
 import { assertCanWrite } from '../lib/blocks';
+import { endCaiAnswer } from '../lib/cai-answers';
 import { chatExport } from '../lib/chat-export';
 import { canEditConversation, contextEditable, contextVisible } from '../lib/contexts';
 import {
@@ -477,6 +478,8 @@ export async function conversationRoutes(app: FastifyInstance, ctx: AppContext) 
       .where('conversation_id', '=', id)
       .where('user_id', '=', auth.userId)
       .execute();
+    // Cai answering for them stops either way (M17 I16a): theirs to answer now.
+    await endCaiAnswer(ctx, id, decision === 'accept' ? 'receiver' : 'declined', null, auth.userId);
     // Accepted, everyone in it hears (they may write again); declined, it reads to its sender as
     // unanswered (R14), so only the decider's own devices hear of it, at that moment or after.
     await ctx.bus.publish(

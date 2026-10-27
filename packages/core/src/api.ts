@@ -27,6 +27,7 @@ import type { AttentionReason, AttentionSection } from './attention';
 import type { AutomationWhen } from './automations';
 import type { AppointmentBooking, BookingHours, BookingItem, OrderingSettings } from './booking';
 import type { BusinessView, OrgCallsFrom, ThreadState } from './business';
+import type { CaiAnsweringState } from './cai-answers';
 import type { CallKind, CallOutcome, CallResult, CallState, GroupCallMemberState } from './calls';
 import type { CatalogCollection } from './catalog';
 import type { ContactAccount } from './contact-return';
@@ -460,6 +461,12 @@ export interface PersonProfileView {
    * `ageChecked` lets this viewer see it: never an age or a date, and never for someone under 18.
    */
   ageChecked: boolean;
+  /**
+   * This viewer may write to them: a connection, a conversation the two already have, or (R14)
+   * someone whose message requests take this viewer now, by the very check a send runs
+   * (`messageRefusal`). A stranger's profile offers Message beside Connect by it.
+   */
+  mayWrite: boolean;
   /** They take bookings (R58): their hours and the items this viewer may book, or null. */
   booking: { hours: BookingHours; items: BookingItem[] } | null;
   /** They take orders (R60): how, and what this viewer may order of them, or null. */
@@ -860,6 +867,8 @@ export interface ConversationView {
    * them: taking it asks the parent (`ask`), or the parent was asked (`asked`). Else null.
    */
   parentSays: 'ask' | 'asked' | null;
+  /** Cai answering for one of the two (R116, M17 I16a), for either of them; null for none. */
+  caiAnswering: CaiAnsweringView | null;
   /**
    * Someone in it is under 18 (R29): cards that involve money or where someone is aren't offered,
    * and in a business conversation its team knows the customer is.
@@ -4871,4 +4880,21 @@ export interface GuestKeepResponse {
   name: string;
   email: string | null;
   claim: string | null;
+}
+
+/**
+ * Where Cai answering for someone stands in a one-to-one (R116, M17 I16a), for either of its two:
+ * the one who wrote (`caller`) and the one it answers for (`receiver`). Nobody else is shown it.
+ */
+export interface CaiAnsweringView {
+  state: CaiAnsweringState;
+  receiverId: string;
+  side: 'caller' | 'receiver';
+  /** "Talk to Cai now" was offered beside "Leave my message" (an adult with AI assist on). */
+  talk: boolean;
+}
+
+/** `POST /v1/conversations/:id/cai-answer`: where it stands once chosen. */
+export interface CaiAnswerChosenResponse {
+  caiAnswering: CaiAnsweringView | null;
 }

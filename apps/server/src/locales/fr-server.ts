@@ -2226,4 +2226,23 @@ export const frServer: Catalog = {
   'Your booking link, and bookings in your conversations':
     'Votre lien de réservation, et les réservations dans vos conversations',
   'Your chats and your people': 'Vos discussions et votre entourage',
+  'Hi {name}, I’m Cai, an AI assistant answering for {receiver} on Caime. {receiver} hasn’t read your message yet. You can leave it for them, or talk to me now: I can tell you what {receiver} offers and pass on what you need.':
+    'Bonjour {name}, je suis Cai, un assistant IA qui répond pour {receiver} sur Caime. Votre message n’a pas encore été lu. Vous pouvez le laisser tel quel, ou me parler maintenant : je peux vous dire ce que propose {receiver} et transmettre ce dont vous avez besoin.',
+  'Hi {name}, I’m Cai, an AI assistant answering for {receiver} on Caime. {receiver} hasn’t read your message yet; it’s waiting for them.':
+    'Bonjour {name}, je suis Cai, un assistant IA qui répond pour {receiver} sur Caime. Votre message n’a pas encore été lu ; il attend d’être lu.',
+  'Go ahead: what would you like {receiver} to know?':
+    'Allez-y : que voulez-vous que {receiver} sache ?',
+  'Your message stays for {receiver}, who answers when they can.':
+    'Votre message reste pour {receiver}, qui répondra dès que possible.',
+  'I can’t go on now. Your messages stay for {receiver}.':
+    'Je ne peux pas continuer maintenant. Vos messages restent pour {receiver}.',
+  '{name} wrote to you and talked with me. {summary} Their message is in your requests: reply, or leave it.':
+    '{name} vous a écrit et m’a parlé. {summary} Son message est dans vos demandes : répondez, ou laissez-le.',
+  '{name} wrote to you and talked with me. Their message is in your requests: reply, or leave it.':
+    '{name} vous a écrit et m’a parlé. Son message est dans vos demandes : répondez, ou laissez-le.',
+  'Cai talked with {name} for you': 'Cai a parlé avec {name} pour vous',
+  'There’s nothing to choose here.': 'Il n’y a rien à choisir ici.',
+  'That was chosen already.': 'C’est déjà choisi.',
+  'Talking to Cai is for adults with AI assist on.':
+    'Parler à Cai est réservé aux adultes dont l’assistance IA est activée.',
 };

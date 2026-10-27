@@ -2650,6 +2650,11 @@ with its reason, so it isn't proposed again without new facts.
   call; a minute of voice is about €0.025 by the price list, measured on a real call before it
   ships. *The number:* of the conversations Cai answered for someone, the share they acted on
   within a day.
+  *Built, phase one (M17 I16a, 2026-10-27):* for strangers, in writing, on their own allowance,
+  under ADR-18 (Cai's lines are Cai's, from outside the one-to-one). The receiver's own spheres,
+  "when I haven't answered in a while" and "while I'm busy", and covering chosen people from the
+  receiver's allowance are I16a2.
+
 - **R117 (2026-10-25) Caime as infrastructure starts at an organization's own website.** The owner's
   notes: "Caime shall be real as infrastructure that enables other platforms, like LinkedIn, to
   use Caime to offer chat, calls, etc. for their organizations and users, like Stripe for

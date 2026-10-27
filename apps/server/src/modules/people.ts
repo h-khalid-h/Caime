@@ -36,7 +36,7 @@ import { busyNow } from '../lib/calendar';
 import { dueAtForSql } from '../lib/due';
 import { notFound } from '../lib/errors';
 import { foldSql } from '../lib/fold-sql';
-import { notHiddenFor, readableBy } from '../lib/messages';
+import { messageRefusal, notHiddenFor, readableBy } from '../lib/messages';
 import { orgsOf } from '../lib/orgs';
 import { personViewsFor } from '../lib/people-batch';
 import { personPlacesFor } from '../lib/places';
@@ -411,6 +411,14 @@ export async function peopleRoutes(app: FastifyInstance, ctx: AppContext) {
       .orderBy('cv.last_message_at', (ob) => ob.desc().nullsLast())
       .execute();
     const conversationIds = conversations.map((c) => c.id);
+    // Writing to them (R14): connected, a conversation already, or their requests take this viewer.
+    const mayWrite =
+      id !== auth.userId &&
+      user.kind === 'human' &&
+      !b.blockedByMe &&
+      (b.connected ||
+        conversations.length > 0 ||
+        (await messageRefusal(ctx, auth.userId, id)) === null);
     // In a meeting right now (R51), by their rules for the viewer: looked up only where allowed.
     const busy =
       user.kind === 'human' && canSee(settings, 'busy', relation)
@@ -679,6 +687,7 @@ export async function peopleRoutes(app: FastifyInstance, ctx: AppContext) {
         user.age_check === 'adult' &&
         !minorOf(user, now) &&
         canSee(settings, 'ageChecked', relation),
+      mayWrite,
       connection: connectionState(b),
       blockedByMe: b.blockedByMe,
       relationships: mine.map((r) =>

@@ -2,6 +2,7 @@ import type { ConversationView, MessageView } from '@caime/core/api';
 import { formatDayHeading } from '@caime/core/format';
 import { tr } from '@caime/core/i18n';
 import { isLargeGroup } from '@caime/core/large-group';
+import { CAI_ID } from '@caime/core/system-ids';
 import type { OutboxItem } from '@/state/outbox';
 import type { Delivery } from './MessageBubble';
 
@@ -35,6 +36,13 @@ const GROUP_MS = 4 * 60_000;
 export const importedAuthor = (m: MessageView): string | null => {
   const imported = (m.payload as { imported?: { author?: unknown } } | null)?.imported;
   return typeof imported?.author === 'string' ? imported.author : null;
+};
+
+/** Whom Cai's line answers for (M17 I16a, ADR-18): the server's mark on a line of Cai's own. */
+export const answeringFor = (m: MessageView): string | null => {
+  if (m.senderId !== CAI_ID) return null;
+  const a = (m.payload as { answering?: { for?: unknown } } | null)?.answering;
+  return typeof a?.for === 'string' ? a.for : null;
 };
 
 /** Who a line reads as: someone here, or a name a WhatsApp group brought (never mixed up). */
@@ -239,7 +247,11 @@ export function buildRows(opts: {
       first: !sameAsPrev,
       last: !sameAsNext,
       delivery: mine ? delivery : undefined,
-      senderName: author ?? (isGroup && m.senderId ? (names.get(m.senderId) ?? null) : null),
+      senderName: answeringFor(m)
+        ? answeringFor(m) === me
+          ? tr('Cai, for you')
+          : tr('Cai, for {name}', { name: names.get(answeringFor(m) ?? '') ?? '' })
+        : (author ?? (isGroup && m.senderId ? (names.get(m.senderId) ?? null) : null)),
       replyName: !m.replyTo?.senderId
         ? null
         : m.replyTo.senderId === me

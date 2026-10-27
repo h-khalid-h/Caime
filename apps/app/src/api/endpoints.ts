@@ -36,6 +36,7 @@ import type {
   BriefView,
   BusinessInboxView,
   BusinessSummaryView,
+  CaiAnswerChosenResponse,
   CaiFrameResponse,
   CaiResponse,
   CalendarFeedCreatedResponse,
@@ -1142,6 +1143,9 @@ export const endpoints = {
   cai: () => api.get<CaiResponse>('/cai'),
   /** Forget what Cai learned of one kind, or of everything. */
   caiForget: (kind?: SuggestionKind) => api.post<CaiResponse>('/cai/forget', kind ? { kind } : {}),
+  /** The stranger's choice when Cai answers for someone (R116, M17 I16a). */
+  chooseCaiAnswer: (conversationId: string, choice: 'leave' | 'talk') =>
+    api.post<CaiAnswerChosenResponse>(`/conversations/${conversationId}/cai-answer`, { choice }),
   /** Send the follow-up Cai offered, as yours (R68). */
   sendFollowUp: (offerId: string) =>
     api.post<FollowUpSentResponse>(`/messages/${offerId}/follow-up`, {}),

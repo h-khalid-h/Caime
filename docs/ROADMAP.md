@@ -4883,15 +4883,39 @@ clinic can sign for. I1 lands before launch.
   - [ ] I15c. = I8, whose numbers an organization's answers then read.
 - [ ] I16. Cai answers for you, when you turn it on (R116; the council in
       `docs/REVIEW-2026-10-25-CAI.md` §7).
-  - [ ] I16a. In writing (L): `preferences.caiAnswers` (who: people who aren't my contacts, the
-        spheres I pick; when: first for strangers, after N minutes unanswered, while busy; the
-        spheres I cover and a monthly limit), the stranger's two choices ("Leave my message",
-        free; "Talk to Cai now", their own allowance), Cai's line for the receiver (an ADR first:
-        a line from a non-member in a direct conversation, never from the receiver's account),
-        what Cai may say built with the caller as the viewer through the privacy evaluator, R87's
-        introduction, the summary to the receiver with what to do, ring-through for chosen
-        spheres, `runAi` on the payer's id, `caime_cai_answers_total{scope,payer,outcome}`, not
-        for anyone under 18, nothing in a private conversation.
+  - [x] I16a. In writing, for strangers (L, 2026-10-27): ADR-18 first (Cai's lines in a
+        one-to-one are Cai's, from Cai's fixed id, marked `payload.answering`, written by
+        `insertCaiLine`, never through `sendMessage` and never with Cai as a member). Settings · Cai's
+        "Cai answers people you don't know yet" (`preferences.caiAnswers.strangers`, off by
+        default, with AI assist on). A stranger's message request is met once by Cai's
+        introduction (R87, in the language they wrote in) and two choices: "Leave my message"
+        (the request as it always was) and, for an adult with assist on, "Talk to Cai now" on
+        their own allowance (`cai_answering`, migration 0170). Talking, their lines carry
+        `payload.toCai` and pass the request's one-message rule (`talkingToCai`, thirty a day);
+        the `cai.answer` job answers the latest of a burst through `runAi('cai-answer')` on the
+        payer's id (`ai.answerFor`, the light model), reading the conversation from the
+        stranger's first line and what they may know of the receiver (`aboutFor`, through the
+        privacy evaluator with the stranger as the viewer: name, line, bio, what's offered to
+        everyone with its page, busy where allowed; never a label or another conversation).
+        It ends when the stranger is done, at `CAI_ANSWER_TURNS`, out of allowance, or when the
+        receiver replies or answers the request; then Cai tells the receiver in their own chat
+        what was wanted (`payload.answered`, "Open the conversation") with a notification. The
+        stranger's bar above the composer (`CaiAnswering`, lazy); Cai's lines read "Cai, for
+        Sara" or "Cai, for you"; `caime_cai_answers_total{scope,payer,outcome}`. Never for
+        anyone under 18 on either side, never mail, never a private or an organization's
+        conversation. A stranger's profile offers Message beside Connect where their message
+        requests take that viewer (R14, which the app never offered: `PersonProfileView.mayWrite`
+        from `messageRefusal`, the check a send runs). Verified: `connections.test.ts` (a profile's
+        `mayWrite` as a send decides), `cai-answers.test.ts` (the introduction and its choices, Cai never
+        a member, leaving, talking on the stranger's allowance with nothing of another
+        conversation in the model's request, the summary and notification to the receiver, the
+        receiver's reply ending it, someone without assist offered leaving alone, nobody under
+        18), `ai-costs.test.ts` (`cai-answer` at its bounds), and `e2e/cai-answers.spec.ts` (Sara
+        turns it on; Omar, a stranger on a phone, talks to Cai until it has what he needs; Sara
+        reads it in her chat with Cai and opens the conversation).
+  - [ ] I16a2. The rest of R116 in writing: the spheres Sara picks, when she hasn't answered in N
+        minutes and while she's busy, the spheres she covers from her own allowance with a
+        monthly limit and a cap a day per caller, ring-through for the spheres she picks.
   - [ ] I16b. A person's unanswered call answered by Cai (L), after H8a and R111's voice path; a
         minute measured on a real call first.
 - [ ] I17. Caime as infrastructure, from an organization's own website (R117).
@@ -7343,3 +7367,7 @@ CONNIQT; they mean Caime. Caishy is one of Caime's AI members, and Cai leads the
   Cai's write-up of each, cited as the call; Office and PDF text is I12d.
 - 2026-10-27 — R120 K5 through the council: pages for someone coming from WhatsApp, Telegram or
   Calendly (`/from/…`), and a person's booking link to share, in every language.
+- 2026-10-27 — R116 phase one, M17 I16a (ADR-18): Cai answers a stranger's message request for
+  whoever turned it on, in writing, on the stranger's own allowance when they choose to talk, from
+  what anyone may see of the receiver, and tells the receiver what was wanted. The receiver's
+  spheres, timing and covering their people are I16a2.

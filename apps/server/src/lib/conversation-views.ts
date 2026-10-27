@@ -32,6 +32,7 @@ import {
 } from '../lib/relations';
 import { spaceConversationTitle, spaceRefs } from '../lib/spaces';
 import { minorOf, personView } from '../lib/users';
+import { caiAnsweringView } from './cai-answers';
 
 export const privateGroupFull = () =>
   badRequest(
@@ -436,6 +437,8 @@ export async function conversationView(
     // Taking it waits on a parent who moderates (R122 (2)): read only for a request pending.
     parentSays:
       me.request_state === 'pending' ? await parentSaysOn(ctx, userId, conversation.id) : null,
+    caiAnswering:
+      conversation.kind === 'direct' ? await caiAnsweringView(ctx, conversation.id, userId) : null,
     request:
       me.request_state === 'pending'
         ? 'incoming'

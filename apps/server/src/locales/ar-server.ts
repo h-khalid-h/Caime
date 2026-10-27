@@ -2225,4 +2225,22 @@ export const arServer: Catalog = {
   'Where from': 'من أين',
   'Your booking link, and bookings in your conversations': 'رابط الحجز، والحجوزات في محادثاتك',
   'Your chats and your people': 'محادثاتك وأشخاصك',
+  'Hi {name}, I’m Cai, an AI assistant answering for {receiver} on Caime. {receiver} hasn’t read your message yet. You can leave it for them, or talk to me now: I can tell you what {receiver} offers and pass on what you need.':
+    'مرحبًا {name}، أنا Cai، مساعد بالذكاء الاصطناعي يردّ نيابةً عن {receiver} على Caime. رسالتك لم تُقرأ بعد. يمكن تركها كما هي، أو التحدث معي الآن: أستطيع أن أخبرك بما يُقدَّم لدى {receiver} وأن أنقل ما تحتاجه.',
+  'Hi {name}, I’m Cai, an AI assistant answering for {receiver} on Caime. {receiver} hasn’t read your message yet; it’s waiting for them.':
+    'مرحبًا {name}، أنا Cai، مساعد بالذكاء الاصطناعي يردّ نيابةً عن {receiver} على Caime. رسالتك لم تُقرأ بعد، وهي بانتظار القراءة.',
+  'Go ahead: what would you like {receiver} to know?': 'تفضّل: ما الذي تريد إبلاغه إلى {receiver}؟',
+  'Your message stays for {receiver}, who answers when they can.':
+    'تبقى رسالتك بانتظار {receiver}، والرد حين يتسنّى.',
+  'I can’t go on now. Your messages stay for {receiver}.':
+    'لا أستطيع المتابعة الآن. تبقى رسائلك بانتظار {receiver}.',
+  '{name} wrote to you and talked with me. {summary} Their message is in your requests: reply, or leave it.':
+    'وصلتك رسالة من {name}، وجرى حديث معي. {summary} الرسالة في طلباتك: يمكنك الرد أو تركها.',
+  '{name} wrote to you and talked with me. Their message is in your requests: reply, or leave it.':
+    'وصلتك رسالة من {name}، وجرى حديث معي. الرسالة في طلباتك: يمكنك الرد أو تركها.',
+  'Cai talked with {name} for you': 'تحدّث Cai مع {name} نيابةً عنك',
+  'There’s nothing to choose here.': 'لا شيء للاختيار هنا.',
+  'That was chosen already.': 'تم الاختيار من قبل.',
+  'Talking to Cai is for adults with AI assist on.':
+    'التحدث مع Cai متاح للبالغين مع تشغيل مساعد الذكاء الاصطناعي.',
 };

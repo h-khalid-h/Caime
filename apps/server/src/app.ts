@@ -29,6 +29,7 @@ import { registerBriefJob } from './lib/briefs';
 import { Bus } from './lib/bus';
 import { businessRealtime } from './lib/business';
 import { registerCaiJobs } from './lib/cai';
+import { registerCaiAnswers } from './lib/cai-answers';
 import { registerCaiInteract } from './lib/cai-interact';
 import { registerSpokenSweep } from './lib/cai-voice';
 import { registerCalendarPush } from './lib/calendar-push';
@@ -445,6 +446,7 @@ export async function buildApp(config: Config, options: BuildOptions = {}): Prom
   registerSpeechForgetJob();
   registerCaiInteract();
   registerNotesSummaryJob();
+  registerCaiAnswers();
   // A message typed in a call taken down for everyone writes the call's notes again (R121).
   whenRemovedForEveryone(afterTypedRemoved);
   registerLinkPreviewJob();
