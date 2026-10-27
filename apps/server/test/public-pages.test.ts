@@ -322,6 +322,56 @@ describe('the readable web (R44)', () => {
     );
   });
 
+  it('has a page for someone coming from WhatsApp, Telegram or Calendly (R120 K5)', async () => {
+    // `/from` lists the three, and every page of the site leads to it.
+    const hub = await visit('/from');
+    expect(hub.statusCode).toBe(200);
+    expect(hub.headers['cache-control']).toBe('public, max-age=600');
+    for (const s of ['whatsapp', 'telegram', 'calendly'])
+      expect(hub.body).toContain(`<a href="/from/${s}">`);
+    expect((await visit('/pricing')).body).toContain(
+      '<a href="/from">Coming from another app?</a>',
+    );
+    // A messenger's page: how its export comes over (the importer's own limit), what stays
+    // behind, and the way in already on the right step; the name is its owner's.
+    const whatsapp = await visit('/from/whatsapp');
+    expect(whatsapp.statusCode).toBe(200);
+    expect(whatsapp.body).not.toContain('entry-abc.js');
+    expect(whatsapp.body).toContain(
+      '<title>Coming from WhatsApp: bring your chats and your people to Caime</title>',
+    );
+    expect(whatsapp.body).toContain('up to 20,000 messages a chat');
+    expect(whatsapp.body).toContain('Photos, voice notes and files stay in WhatsApp.');
+    expect(whatsapp.body).toContain(
+      `href="/sign-up?link=${encodeURIComponent('/connect?contacts=1')}"`,
+    );
+    expect(whatsapp.body).toContain(
+      'WhatsApp is a trademark of its owner. Caime isn’t affiliated with it.',
+    );
+    expect(whatsapp.body).toContain(
+      '<link rel="alternate" hreflang="ar" href="https://caime.example/from/whatsapp?lang=ar">',
+    );
+    // Without Caime Mail, nobody is promised mail; without a calendar to connect, none is said.
+    expect(whatsapp.body).not.toContain('at their email address');
+    const telegram = (await visit('/from/telegram')).body;
+    expect(telegram).toContain('Export chat history, as JSON');
+    expect(telegram).toContain('Photos, voice notes and files stay in Telegram.');
+    const calendly = (await visit('/from/calendly')).body;
+    expect(calendly).toContain('<h1>Bookings where you talk to people.</h1>');
+    expect(calendly).toContain(`href="/sign-up?link=${encodeURIComponent('/settings/bookings')}"`);
+    expect(calendly).not.toContain('Connect a Google or Microsoft calendar');
+    // In Arabic, right to left, the names as their owners write them.
+    const arabic = await visit('/from/whatsapp?lang=ar');
+    expect(arabic.body).toContain('<html lang="ar" dir="rtl"');
+    expect(arabic.body).toContain('انقل ما يهمّك من WhatsApp، وأبقِ WhatsApp أيضًا.');
+    // An app with no page is the 404, and the sitemap lists the three.
+    expect((await visit('/from/zoom')).statusCode).toBe(404);
+    forgetSitemaps();
+    const sitemap = (await visit('/sitemap.xml')).body;
+    expect(sitemap).toContain('<loc>https://caime.example/from</loc>');
+    expect(sitemap).toContain('<loc>https://caime.example/from/calendly</loc>');
+  });
+
   it('the site reads in Arabic too: asked for, or the browser’s, right to left, and stays chosen', async () => {
     // Asked for: the whole document says what it is, and the page is the same page in Arabic.
     const asked = await visit('/business?lang=ar');

@@ -73,6 +73,7 @@ import { meetingUid } from '../lib/meeting-series';
 import { keptFromApps } from '../lib/member-apps';
 import { formNames } from '../lib/org-forms';
 import { orgById, orgSeat } from '../lib/orgs';
+import { VISITOR } from '../lib/public-booking';
 import { viewerRelation } from '../lib/relations';
 import { forgetSitemaps } from '../lib/sitemap-cache';
 import { itemsWithStock, saveStock } from '../lib/stock';
@@ -477,12 +478,23 @@ export async function calendarRoutes(app: FastifyInstance, ctx: AppContext) {
     );
   });
 
+  /**
+   * A person's booking link (R120 K5), as an organization's door has it (`OrgDoorView.book`):
+   * the one item a visitor may book from a page, or their page listing several; null while none.
+   */
+  const bookingLinkOf = (handle: string, host: BookingHost): string | null => {
+    const open = host.hours ? itemsFor(host, VISITOR).filter(isBooked) : [];
+    if (!open.length) return null;
+    const page = `${ctx.config.PUBLIC_URL}/@${encodeURIComponent(handle)}`;
+    return open.length === 1 ? `${page}/${encodeURIComponent(open[0]?.slug ?? '')}` : page;
+  };
+
   // A person's own bookings (R58): their hours and catalog, as an organization's.
   app.get('/me/booking', async (req): Promise<BookingResponse> => {
     const auth = requireAuth(req);
     const me = await ctx.db
       .selectFrom('users')
-      .select(['booking', 'booking_items', 'ordering', 'collections', 'payments'])
+      .select(['id', 'handle', 'booking', 'booking_items', 'ordering', 'collections', 'payments'])
       .where('id', '=', auth.userId)
       .executeTakeFirstOrThrow();
     const catalog = catalogOf(me);
@@ -492,6 +504,7 @@ export async function calendarRoutes(app: FastifyInstance, ctx: AppContext) {
       items: await itemsWithStock(ctx.db, auth.userId, catalog.items, true),
       ordering: orderingOf(me),
       payments: paymentsOf(me),
+      link: bookingLinkOf(me.handle, personHost(me)),
     };
   });
 
@@ -502,6 +515,7 @@ export async function calendarRoutes(app: FastifyInstance, ctx: AppContext) {
       .selectFrom('users')
       .select([
         'id',
+        'handle',
         'booking',
         'booking_items',
         'ordering',
@@ -556,6 +570,11 @@ export async function calendarRoutes(app: FastifyInstance, ctx: AppContext) {
       items,
       ordering: body.ordering !== undefined ? body.ordering : orderingOf(me),
       payments: body.payments !== undefined ? body.payments : paymentsOf(me),
+      link: bookingLinkOf(me.handle, {
+        ...personHost(me),
+        hours: body.booking,
+        ...kept,
+      }),
     };
   });
 

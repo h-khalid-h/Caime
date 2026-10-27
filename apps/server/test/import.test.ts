@@ -281,8 +281,14 @@ describe('a WhatsApp group brought over (M16 C3g)', () => {
   it('counts for the product’s metrics: chats and groups brought over, and their lines', async () => {
     t.clock.set(new Date(Date.now() + 60_000).toISOString());
     const { imports } = (await productMetrics(t.ctx, 30)).growth;
-    // The one-to-one above (three lines), the Telegram one (two) and this group (three lines).
-    expect(imports).toEqual({ chats: 2, groups: 1, messages: 8 });
+    // The one-to-one above (three lines), the Telegram one (two) and this group (three lines),
+    // and by the app each came from (R120 K5).
+    expect(imports).toEqual({
+      chats: 2,
+      groups: 1,
+      messages: 8,
+      bySource: { whatsapp: 2, telegram: 1 },
+    });
   });
 
   it('comes over into a new topic, never into one of the same name already there', async () => {

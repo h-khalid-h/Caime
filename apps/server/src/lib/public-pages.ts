@@ -62,6 +62,7 @@ import { liveFamilyLink } from './family';
 import { liveAskLink } from './family-asks';
 import { countOpened, liveFileLink } from './file-links';
 import { cutLine, VIEW_KIND_LABELS, VIEW_STYLE, type ViewBody, viewBodyOf } from './file-views';
+import { FROM_SOURCES, type FromSource, fromPath, renderFrom } from './from-pages';
 import { countryNameIn } from './geo';
 import { inLanguage } from './i18n';
 import { joinLinkOpening, liveJoinLink } from './join-links';
@@ -383,6 +384,8 @@ export type PublicPage =
   | { kind: 'site'; page: SiteOnlyPage }
   /** The marketplace, a category of it, or an app in it (R80, marketplace-pages.ts): everyone's too. */
   | MarketplacePage
+  /** For someone coming from another app (R120 K5, from-pages.ts): `/from`, or one app's page. */
+  | { kind: 'from'; source: FromSource | null }
   | PublicPerson
   | PublicOrg
   | PublicItemPage
@@ -704,6 +707,15 @@ async function pageAt(
   if (market) {
     const rest = market[1] ? safeDecode(market[1]).toLowerCase() : null;
     return (await marketplacePageFor(db, rest, search)) ?? { kind: 'missing' };
+  }
+  // Coming from another app (R120 K5): the page for each, and `/from` itself listing them.
+  const from = /^\/from(?:\/([^/?#]+))?\/?$/.exec(path);
+  if (from) {
+    const source = from[1] ? safeDecode(from[1]).toLowerCase() : null;
+    if (source === null) return { kind: 'from', source: null };
+    return (FROM_SOURCES as readonly string[]).includes(source)
+      ? { kind: 'from', source: source as FromSource }
+      : { kind: 'missing' };
   }
   const site = /^\/([a-z]+)$/.exec(path)?.[1];
   if (site && (MARKETING_PAGES as readonly string[]).includes(site))
@@ -1198,6 +1210,21 @@ export function renderPublic(
           alternates: true,
         }),
         body: site.body,
+      };
+    }
+    case 'from': {
+      const f = renderFrom(page.source, facts ?? siteFallback(publicUrl));
+      return {
+        status: 200,
+        lang: currentTranslator().language,
+        head: meta({
+          title: f.title,
+          description: f.description,
+          image: null,
+          index: true,
+          alternates: true,
+        }),
+        body: f.body,
       };
     }
     case 'marketplace':
@@ -2546,6 +2573,7 @@ ${explorerStyle()}
 @media (max-width:560px){.pub-home h1{font-size:1.9rem}.pub-home .spec>div,.pub-sheet .spec>div{grid-template-columns:1fr;gap:2px}.pub-home .spec dt,.pub-sheet .spec dt{padding-top:0}}
 @media (prefers-reduced-motion:no-preference){.pub-home .tabs label{transition:border-color .15s ease-out,background .15s ease-out}}
 .pub-home .masthead{align-items:baseline}.pub-home .sitenav{display:flex;gap:4px 14px;flex-wrap:wrap;margin-inline-start:auto}.pub-home .sitenav a{color:var(--text-tertiary);text-decoration:none;padding:2px 0}.pub-home .sitenav a[aria-current]{color:var(--ink);border-bottom:1px solid var(--ink)}.pub-home .sitenav a:hover{color:var(--ink)}
+.pub-site .steps{margin:0;padding-inline-start:1.4em;display:grid;gap:8px;line-height:1.5}
 .pub-site .layers{margin-top:26px}.pub-site .hero+.layers{margin-top:0}.pub-home .sheet+.hero,.pub-home .layers+.hero{padding-top:20px}
 .pub-home code{font-family:${FACE.mono};font-size:.85em;background:var(--surface-muted);padding:1px 5px;border-radius:5px}
 .pub-home .plans{display:grid;grid-template-columns:1fr;gap:14px}.pub-home .plan{border:1px solid var(--border);border-radius:12px;padding:16px 18px;background:var(--surface)}.pub-home .plan h3{margin:0;font-size:1.2rem;font-weight:800;color:var(--ink);font-family:${FACE.heading}}.pub-home .plan .price{margin:2px 0 8px;color:var(--text-secondary)}.pub-home .plan .price strong{color:var(--ink);font-size:1.15rem}.pub-home .plan .spec>div{grid-template-columns:110px 1fr;gap:10px;padding:8px 0}.pub-home .plan .spec>div:last-child{border-bottom:0}.pub-home .plan .small{margin:8px 0 0}
@@ -2671,6 +2699,7 @@ export async function sitemapXml(db: Q, publicUrl: string, pagesHere: string[]):
     '<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">',
     entry(`${publicUrl}/`),
     ...MARKETING_PAGES.map((p) => entry(`${publicUrl}/${p}`)),
+    ...FROM_SOURCES.map((f) => entry(`${publicUrl}${fromPath(f)}`)),
     ...pagesHere.map((p) => entry(`${publicUrl}/${p}`)),
     ...market.map((m) => entry(`${publicUrl}${m.path}`, m.lastmod)),
     // Each organization's page, then its public collections and items (R61); a sitemap holds
@@ -2685,7 +2714,15 @@ export async function sitemapXml(db: Q, publicUrl: string, pagesHere: string[]):
           ...shelf.items.map((i) => entry(at(i.slug), o.updated_at)),
         ];
       })
-      .slice(0, 50_000 - MARKETING_PAGES.length - pagesHere.length - market.length - 1),
+      .slice(
+        0,
+        50_000 -
+          MARKETING_PAGES.length -
+          FROM_SOURCES.length -
+          pagesHere.length -
+          market.length -
+          1,
+      ),
     '</urlset>',
     '',
   ].join('\n');

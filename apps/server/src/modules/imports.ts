@@ -98,7 +98,7 @@ async function land(
       where p.conversation_id = ${conversationId} and p.user_id = v.user_id
     `.execute(trx);
     // Counted for the product's metrics: how many, never who wrote what.
-    await recordEvent(trx, 'chat.imported', by, { group, count: ordered.length });
+    await recordEvent(trx, 'chat.imported', by, { group, count: ordered.length, source });
   });
   await insertSystemMessage(ctx, conversationId, by, 'imported', {
     source,

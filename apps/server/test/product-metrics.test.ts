@@ -279,7 +279,7 @@ describe('product metrics (PRD §82–83)', () => {
       // Nor had a meeting's guest (guest-keep.test.ts measures them).
       guests: { joined: 0, kept: 0, fromMail: 0 },
       // Nor brought a chat over (import.test.ts measures them).
-      imports: { chats: 0, groups: 0, messages: 0 },
+      imports: { chats: 0, groups: 0, messages: 0, bySource: { whatsapp: 0, telegram: 0 } },
       // The four were seen in the window; none of their devices said where it runs (R120:
       // installed.test.ts measures that).
       surfaces: {

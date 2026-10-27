@@ -2072,4 +2072,72 @@ export const turkishServer: Catalog = {
     'Buraya yazmak, 18 yaş ve üzeri olduğunu söyleyen misafirler içindir.',
   'A guest writes here while the call is on and they’re in it.':
     'Misafir buraya görüşme sürerken ve görüşmedeyken yazar.',
+  'coming from another app': 'başka bir uygulamadan gelenler için',
+  'What comes with you': 'Sizinle birlikte gelenler',
+  'Your first ten minutes': 'İlk on dakikanız',
+  '{name} is a trademark of its owner. {site} isn’t affiliated with it.':
+    '{name}, sahibinin ticari markasıdır. {site} onunla bağlantılı değildir.',
+  'They don’t need {site} to hear from you. Send your link from {name} itself, and whoever opens it is connected with you; anyone else you write to at their email address, and they answer from their mail.':
+    'Sizden haber almak için {site} kullanmaları gerekmez. Bağlantınızı doğrudan {name} üzerinden gönderin, açan herkes sizinle bağlantı kurar; diğerlerine e-posta adreslerinden yazarsınız, onlar da e-postalarından yanıtlar.',
+  'They don’t need {site} to hear from you. Send your link from {name} itself, and whoever opens it is connected with you.':
+    'Sizden haber almak için {site} kullanmaları gerekmez. Bağlantınızı doğrudan {name} üzerinden gönderin, açan herkes sizinle bağlantı kurar.',
+  'what’s different': 'farkı ne',
+  'Every conversation knows how you know the person in it. Promises, asks and dates in what’s written become actions you confirm, a call can have Cai’s notes, and a private conversation is end to end encrypted.':
+    'Her konuşma, içindeki kişiyi nereden tanıdığınızı bilir. Yazılanlardaki sözler, istekler ve tarihler onayladığınız eylemlere dönüşür, bir aramada Cai not alabilir ve özel bir konuşma uçtan uca şifrelenir.',
+  'nothing is deleted': 'hiçbir şey silinmez',
+  'Keep {name} as it is. {site} copies the words; nothing is taken out of {name}.':
+    '{name} olduğu gibi kalsın. {site} yalnızca kelimeleri kopyalar; {name} içinden hiçbir şey alınmaz.',
+  'Coming from {name}: bring your chats and your people to {site}':
+    '{name} kullanıcıları için: sohbetlerinizi ve kişilerinizi {site} uygulamasına getirin',
+  'Bring a {name} chat into {site} with who said what and when, reach your people with your link sent from {name} itself, and keep {name} as it is.':
+    'Bir {name} sohbetini kimin ne zaman ne dediğiyle {site} uygulamasına getirin, kişilerinize doğrudan {name} üzerinden gönderdiğiniz bağlantıyla ulaşın ve {name} olduğu gibi kalsın.',
+  'Bring what matters from {name}. Keep {name} too.':
+    '{name} içinden önemli olanı getirin. {name} da kalsın.',
+  '{site} is messaging that understands your relationships: family, a client, your dentist. A chat comes over as its words, your people come with a link, and nothing is deleted anywhere.':
+    '{site}, ilişkilerinizi anlayan mesajlaşmadır: aile, bir müşteri, diş hekiminiz. Bir sohbet kelimeleriyle gelir, kişileriniz bir bağlantıyla gelir ve hiçbir yerde hiçbir şey silinmez.',
+  'your chats': 'sohbetleriniz',
+  'In WhatsApp, open the chat’s menu and choose Export chat. Open the file in {site}, in your conversation with that person or in a group you run: the words, who wrote them and when come over, up to {max} messages a chat, marked as imported. Photos, voice notes and files stay in WhatsApp.':
+    'WhatsApp’ta sohbetin menüsünü açıp Sohbeti dışa aktar’ı seçin. Dosyayı {site} üzerinde o kişiyle konuşmanızda ya da yönettiğiniz bir grupta açın: kelimeler, kimin ne zaman yazdığı gelir; sohbet başına en fazla {max} mesaj, içe aktarıldı olarak işaretlenir. Fotoğraflar, sesli notlar ve dosyalar WhatsApp’ta kalır.',
+  'In Telegram Desktop, open the chat, then Export chat history, as JSON. Open its result.json in {site}, in your conversation with that person or in a group you run: the words, who wrote them and when come over, up to {max} messages a chat, marked as imported. Photos, voice notes and files stay in Telegram.':
+    'Telegram Desktop’ta sohbeti açın, ardından Sohbet geçmişini dışa aktar’ı JSON olarak seçin. result.json dosyasını {site} üzerinde o kişiyle konuşmanızda ya da yönettiğiniz bir grupta açın: kelimeler, kimin ne zaman yazdığı gelir; sohbet başına en fazla {max} mesaj, içe aktarıldı olarak işaretlenir. Fotoğraflar, sesli notlar ve dosyalar Telegram’da kalır.',
+  'Make your account: an email address and a password, no phone number.':
+    'Hesabınızı oluşturun: bir e-posta adresi ve bir parola, telefon numarası gerekmez.',
+  'Find your people: your phone’s contacts or a contacts file, and your link for the rest.':
+    'Kişilerinizi bulun: telefonunuzun rehberi ya da bir kişi dosyası, geri kalanlar için de bağlantınız.',
+  'In your conversation with someone, open its details and bring the chat over.':
+    'Biriyle konuşmanızda ayrıntıları açın ve sohbeti getirin.',
+  'Coming from {name}: bookings where you talk to people, on {site}':
+    '{name} kullanıcıları için: insanlarla konuştuğunuz yerde randevular, {site} üzerinde',
+  'A booking page anyone books from without an account, each booking a card in your conversation with them that you confirm, with invitations and reminders by mail.':
+    'Herkesin hesap açmadan randevu aldığı bir sayfa; her randevu, onayladığınız, o kişiyle konuşmanızdaki bir kart; davetler ve hatırlatmalar e-postayla.',
+  'Bookings where you talk to people.': 'İnsanlarla konuştuğunuz yerde randevular.',
+  'Set your hours and what people may book once. Anyone books from your page in a minute, without an account, and each booking arrives in your conversation with them as a card you confirm.':
+    'Saatlerinizi ve nelerin randevuyla alınabileceğini bir kez ayarlayın. Herkes sayfanızdan bir dakikada, hesap açmadan randevu alır; her randevu o kişiyle konuşmanıza onayladığınız bir kart olarak gelir.',
+  'your link': 'bağlantınız',
+  'Your page, with what you offer and the week’s open times, is your link: share it wherever you shared the old one. An organization has its own, and puts it on its website.':
+    'Sunduklarınız ve haftanın boş saatleriyle sayfanız, bağlantınızdır: eskisini nerede paylaştıysanız orada paylaşın. Bir kuruluşun da kendi sayfası olur ve onu web sitesine koyar.',
+  'without an account': 'hesapsız',
+  'A visitor picks a time, gives their name and email address, and confirms with a code we mail them. They get an invitation for their calendar, a reminder the day before, and a link to join when it’s held on {site}.':
+    'Ziyaretçi bir saat seçer, adını ve e-posta adresini yazar, ona gönderdiğimiz bir kodla onaylar. Takvimi için bir davet, bir gün önce bir hatırlatma ve {site} üzerinde yapıldığında katılım bağlantısı alır.',
+  'you decide': 'karar sizde',
+  'Nothing lands in your day you didn’t agree to: each booking is a request you confirm, or answer with another time.':
+    'Gününüze onaylamadığınız hiçbir şey girmez: her randevu, onayladığınız ya da başka bir saatle yanıtladığınız bir istektir.',
+  'your calendars': 'takvimleriniz',
+  'Connect a Google or Microsoft calendar: what’s busy there holds the time here, and what’s booked here is written there.':
+    'Bir Google ya da Microsoft takvimi bağlayın: orada dolu olan zaman burada da tutulur, burada alınan randevu oraya yazılır.',
+  'A price on anything you offer, paid your way: a bank account, a payment link of your own, a wallet number or cash, shown to whoever pays. An organization takes cards through its own Stripe account.':
+    'Sunduğunuz her şeye bir fiyat, sizin yolunuzla ödenir: bir banka hesabı, kendi ödeme bağlantınız, bir cüzdan numarası ya da nakit; ödeyene gösterilir. Bir kuruluş kartları kendi Stripe hesabıyla alır.',
+  'In Settings, under What you offer, set your hours and what people may book.':
+    'Ayarlar’da, Sunduklarınız altında saatlerinizi ve nelerin randevuyla alınabileceğini ayarlayın.',
+  'Copy your booking link and share it.': 'Randevu bağlantınızı kopyalayıp paylaşın.',
+  'Coming to {site} from another app': 'Başka bir uygulamadan {site} uygulamasına geçiş',
+  'What comes with you to {site} from WhatsApp, Telegram or Calendly, and your first ten minutes.':
+    'WhatsApp, Telegram ya da Calendly’den {site} uygulamasına sizinle neler gelir ve ilk on dakikanız.',
+  'Coming from another app?': 'Başka bir uygulamadan mı geliyorsunuz?',
+  'Bring your chats and your people, or your booking link, and keep the app you came from as it is.':
+    'Sohbetlerinizi ve kişilerinizi ya da randevu bağlantınızı getirin; geldiğiniz uygulama olduğu gibi kalsın.',
+  'Where from': 'Nereden',
+  'Your booking link, and bookings in your conversations':
+    'Randevu bağlantınız ve konuşmalarınızdaki randevular',
+  'Your chats and your people': 'Sohbetleriniz ve kişileriniz',
 };

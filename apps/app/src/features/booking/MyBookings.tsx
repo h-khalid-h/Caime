@@ -12,6 +12,7 @@ import { branchName } from '@/features/booking/branchName';
 import { SettingsPage } from '@/features/settings/SettingsPage';
 import { putAnswer } from '@/state/cache';
 import { useMe } from '@/state/session';
+import { CopyRow } from '@/ui/CopyRow';
 import { lazyPart } from '@/ui/Lazy';
 import { SkeletonRows } from '@/ui/Skeleton';
 import { Text } from '@/ui/Text';
@@ -25,6 +26,9 @@ export function MyBookings() {
   // Where something of theirs may be had (M16 F6): their places anyone may see, since a booking
   // copies the address to whoever made it.
   const places = useQuery({ queryKey: qk.myPlaces, queryFn: endpoints.myPlaces }).data?.places;
+  // Their booking link (R120 K5), the server's by an organization's door's rule: what someone
+  // used to another booking tool looks for first.
+  const link = q.data?.link ?? null;
   return (
     <SettingsPage title={tr('What you offer')}>
       <Text variant="body" color="textSecondary" style={{ paddingHorizontal: 4 }}>
@@ -32,6 +36,11 @@ export function MyBookings() {
           'What people may book, order or pay you for: a lesson, a consultation, a cake, an hour of your time. Each thing says who sees it; a public one has a page of its own. Every booking, order and payment is a card you confirm, and nothing is paid through Caime.',
         )}
       </Text>
+      {link ? (
+        <View testID="my-booking-link">
+          <CopyRow label={tr('Your booking link')} value={link} testID="my-booking-link-copy" />
+        </View>
+      ) : null}
       {q.data ? (
         <View testID="my-bookings">
           <BookingSetup
@@ -50,7 +59,9 @@ export function MyBookings() {
             }}
             offer={q.data}
             save={async (next) => {
-              const saved = await endpoints.setMyBooking(next);
+              // The link is the server's to say, never saved (the body is strict).
+              const { link: _link, ...body } = next as typeof next & { link?: unknown };
+              const saved = await endpoints.setMyBooking(body);
               putAnswer(qc, qk.myBooking, saved);
               void qc.invalidateQueries({ queryKey: qk.me });
               void qc.invalidateQueries({ queryKey: qk.allSlots });

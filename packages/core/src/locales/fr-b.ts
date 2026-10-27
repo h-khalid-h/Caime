@@ -2998,4 +2998,5 @@ export const frB: Catalog = {
   'It wasn’t sent. Try again.': 'Ce n’est pas parti. Réessayez.',
   'You can write here while you’re in the call.':
     'Vous pouvez écrire ici pendant que vous êtes dans l’appel.',
+  'Your booking link': 'Votre lien de réservation',
 };

@@ -2158,4 +2158,72 @@ export const frServer: Catalog = {
     'Écrire ici est réservé aux invités qui ont dit avoir 18 ans ou plus.',
   'A guest writes here while the call is on and they’re in it.':
     'Un invité écrit ici pendant l’appel, quand il y participe.',
+  'coming from another app': 'venir d’une autre application',
+  'What comes with you': 'Ce qui vient avec vous',
+  'Your first ten minutes': 'Vos dix premières minutes',
+  '{name} is a trademark of its owner. {site} isn’t affiliated with it.':
+    '{name} est une marque de son propriétaire. {site} n’y est pas affilié.',
+  'They don’t need {site} to hear from you. Send your link from {name} itself, and whoever opens it is connected with you; anyone else you write to at their email address, and they answer from their mail.':
+    'Ils n’ont pas besoin de {site} pour avoir de vos nouvelles. Envoyez votre lien depuis {name} même : quiconque l’ouvre est en contact avec vous ; aux autres, vous écrivez à leur adresse e-mail, et ils répondent depuis leur messagerie.',
+  'They don’t need {site} to hear from you. Send your link from {name} itself, and whoever opens it is connected with you.':
+    'Ils n’ont pas besoin de {site} pour avoir de vos nouvelles. Envoyez votre lien depuis {name} même : quiconque l’ouvre est en contact avec vous.',
+  'what’s different': 'ce qui change',
+  'Every conversation knows how you know the person in it. Promises, asks and dates in what’s written become actions you confirm, a call can have Cai’s notes, and a private conversation is end to end encrypted.':
+    'Chaque conversation sait comment vous connaissez la personne qui s’y trouve. Les promesses, les demandes et les dates écrites deviennent des actions que vous confirmez, un appel peut avoir les notes de Cai, et une conversation privée est chiffrée de bout en bout.',
+  'nothing is deleted': 'rien n’est supprimé',
+  'Keep {name} as it is. {site} copies the words; nothing is taken out of {name}.':
+    'Gardez {name} tel quel. {site} copie les mots ; rien n’est retiré de {name}.',
+  'Coming from {name}: bring your chats and your people to {site}':
+    'Vous venez de {name} : apportez vos discussions et votre entourage sur {site}',
+  'Bring a {name} chat into {site} with who said what and when, reach your people with your link sent from {name} itself, and keep {name} as it is.':
+    'Apportez une discussion {name} sur {site} avec qui a dit quoi et quand, joignez votre entourage avec votre lien envoyé depuis {name} même, et gardez {name} tel quel.',
+  'Bring what matters from {name}. Keep {name} too.':
+    'Apportez ce qui compte depuis {name}. Gardez {name} aussi.',
+  '{site} is messaging that understands your relationships: family, a client, your dentist. A chat comes over as its words, your people come with a link, and nothing is deleted anywhere.':
+    '{site}, c’est la messagerie qui comprend vos relations : la famille, un client, votre dentiste. Une discussion vient avec ses mots, votre entourage avec un lien, et rien n’est supprimé nulle part.',
+  'your chats': 'vos discussions',
+  'In WhatsApp, open the chat’s menu and choose Export chat. Open the file in {site}, in your conversation with that person or in a group you run: the words, who wrote them and when come over, up to {max} messages a chat, marked as imported. Photos, voice notes and files stay in WhatsApp.':
+    'Dans WhatsApp, ouvrez le menu de la discussion et choisissez Exporter la discussion. Ouvrez le fichier dans {site}, dans votre conversation avec cette personne ou dans un groupe que vous gérez : les mots, qui les a écrits et quand arrivent, jusqu’à {max} messages par discussion, marqués comme importés. Photos, notes vocales et fichiers restent dans WhatsApp.',
+  'In Telegram Desktop, open the chat, then Export chat history, as JSON. Open its result.json in {site}, in your conversation with that person or in a group you run: the words, who wrote them and when come over, up to {max} messages a chat, marked as imported. Photos, voice notes and files stay in Telegram.':
+    'Dans Telegram Desktop, ouvrez la discussion, puis Exporter l’historique, au format JSON. Ouvrez son result.json dans {site}, dans votre conversation avec cette personne ou dans un groupe que vous gérez : les mots, qui les a écrits et quand arrivent, jusqu’à {max} messages par discussion, marqués comme importés. Photos, notes vocales et fichiers restent dans Telegram.',
+  'Make your account: an email address and a password, no phone number.':
+    'Créez votre compte : une adresse e-mail et un mot de passe, sans numéro de téléphone.',
+  'Find your people: your phone’s contacts or a contacts file, and your link for the rest.':
+    'Retrouvez votre entourage : les contacts de votre téléphone ou un fichier de contacts, et votre lien pour les autres.',
+  'In your conversation with someone, open its details and bring the chat over.':
+    'Dans votre conversation avec quelqu’un, ouvrez ses détails et apportez la discussion.',
+  'Coming from {name}: bookings where you talk to people, on {site}':
+    'Vous venez de {name} : les réservations là où vous parlez aux gens, sur {site}',
+  'A booking page anyone books from without an account, each booking a card in your conversation with them that you confirm, with invitations and reminders by mail.':
+    'Une page de réservation où chacun réserve sans compte, chaque réservation une carte dans votre conversation avec la personne, que vous confirmez, avec invitations et rappels par e-mail.',
+  'Bookings where you talk to people.': 'Les réservations là où vous parlez aux gens.',
+  'Set your hours and what people may book once. Anyone books from your page in a minute, without an account, and each booking arrives in your conversation with them as a card you confirm.':
+    'Réglez une fois vos horaires et ce qu’on peut réserver. Chacun réserve depuis votre page en une minute, sans compte, et chaque réservation arrive dans votre conversation avec la personne, sous forme de carte que vous confirmez.',
+  'your link': 'votre lien',
+  'Your page, with what you offer and the week’s open times, is your link: share it wherever you shared the old one. An organization has its own, and puts it on its website.':
+    'Votre page, avec ce que vous proposez et les créneaux libres de la semaine, est votre lien : partagez-la partout où vous partagiez l’ancien. Une organisation a la sienne, et la met sur son site web.',
+  'without an account': 'sans compte',
+  'A visitor picks a time, gives their name and email address, and confirms with a code we mail them. They get an invitation for their calendar, a reminder the day before, and a link to join when it’s held on {site}.':
+    'Un visiteur choisit un créneau, donne son nom et son adresse e-mail, puis confirme avec un code que nous lui envoyons. Il reçoit une invitation pour son agenda, un rappel la veille et un lien pour rejoindre quand le rendez-vous a lieu sur {site}.',
+  'you decide': 'vous décidez',
+  'Nothing lands in your day you didn’t agree to: each booking is a request you confirm, or answer with another time.':
+    'Rien n’arrive dans votre journée sans votre accord : chaque réservation est une demande que vous confirmez, ou à laquelle vous répondez par un autre créneau.',
+  'your calendars': 'vos agendas',
+  'Connect a Google or Microsoft calendar: what’s busy there holds the time here, and what’s booked here is written there.':
+    'Connectez un agenda Google ou Microsoft : ce qui est occupé là-bas bloque le créneau ici, et ce qui est réservé ici y est inscrit.',
+  'A price on anything you offer, paid your way: a bank account, a payment link of your own, a wallet number or cash, shown to whoever pays. An organization takes cards through its own Stripe account.':
+    'Un prix sur tout ce que vous proposez, payé à votre façon : un compte bancaire, votre propre lien de paiement, un numéro de portefeuille ou des espèces, montré à qui paie. Une organisation accepte les cartes via son propre compte Stripe.',
+  'In Settings, under What you offer, set your hours and what people may book.':
+    'Dans Réglages, sous Ce que vous proposez, réglez vos horaires et ce qu’on peut réserver.',
+  'Copy your booking link and share it.': 'Copiez votre lien de réservation et partagez-le.',
+  'Coming to {site} from another app': 'Venir sur {site} depuis une autre application',
+  'What comes with you to {site} from WhatsApp, Telegram or Calendly, and your first ten minutes.':
+    'Ce qui vient avec vous sur {site} depuis WhatsApp, Telegram ou Calendly, et vos dix premières minutes.',
+  'Coming from another app?': 'Vous venez d’une autre application ?',
+  'Bring your chats and your people, or your booking link, and keep the app you came from as it is.':
+    'Apportez vos discussions et votre entourage, ou votre lien de réservation, et gardez l’application d’où vous venez telle quelle.',
+  'Where from': 'D’où',
+  'Your booking link, and bookings in your conversations':
+    'Votre lien de réservation, et les réservations dans vos conversations',
+  'Your chats and your people': 'Vos discussions et votre entourage',
 };

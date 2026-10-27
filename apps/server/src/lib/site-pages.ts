@@ -99,6 +99,8 @@ export interface SiteFacts {
   stores?: StoreLinks;
   /** The device the page is read on (`deviceOf`), which `/download` leads with. */
   device?: Device;
+  /** What this Caime runs that the pages for someone coming from another app say (R120 K5). */
+  from?: { mail: boolean; calendars: boolean };
 }
 
 /**
@@ -114,6 +116,7 @@ const SITE_PATHS: ReadonlySet<string> = new Set([
   '/marketplace',
   '/about',
   '/download',
+  '/from',
   '/sign-up',
   '/sign-in',
 ]);
@@ -122,7 +125,8 @@ const SITE_PATHS: ReadonlySet<string> = new Set([
 export const siteHref = (path: string, facts: Pick<SiteFacts, 'linkLang'> | null): string => {
   const [beforeHash = path, hash] = path.split('#');
   const [bare = beforeHash, query] = beforeHash.split('?');
-  if (!facts?.linkLang || !(SITE_PATHS.has(bare) || bare.startsWith('/marketplace/'))) return path;
+  const inSection = bare.startsWith('/marketplace/') || bare.startsWith('/from/');
+  if (!facts?.linkLang || !(SITE_PATHS.has(bare) || inSection)) return path;
   const lang = `lang=${facts.linkLang}`;
   return `${bare}?${query ? `${query}&${lang}` : lang}${hash !== undefined ? `#${hash}` : ''}`;
 };
@@ -160,6 +164,8 @@ export function masthead(
   current: string,
   facts: Pick<SiteFacts, 'linkLang'> | null,
   section: string = current,
+  /** What a page outside the nav is (R120 K5's), translated; a page in the nav says its own. */
+  kicker?: string,
 ): string {
   const here = SITE_NAV.find((n) => n.path === section);
   const links = SITE_NAV.map(
@@ -174,17 +180,18 @@ export function masthead(
     );
   return `<header class="masthead">
     <a class="wordmark" href="/">${SITE_NAME}</a>
-    <span class="mono">${esc(tr(here?.kicker ?? ''))}</span>
+    <span class="mono">${esc(kicker ?? tr(here?.kicker ?? ''))}</span>
     <nav class="sitenav mono" aria-label="${SITE_NAME}">${links.join('\n      ')}</nav>
   </header>`;
 }
 
-export function footer(facts: Pick<SiteFacts, 'contactEmail'> | null): string {
+export function footer(facts: Pick<SiteFacts, 'contactEmail' | 'linkLang'> | null): string {
   const mail = facts
     ? ` · <a href="mailto:${esc(facts.contactEmail)}">${esc(facts.contactEmail)}</a>`
     : '';
+  // Someone coming from another app finds their way over from every page (R120 K5).
   return `<footer class="foot">
-    <p class="small"><a href="/help">${esc(tr('Help'))}</a> · <a href="/privacy">${esc(tr('Privacy'))}</a> · <a href="/terms">${esc(tr('Terms'))}</a>${mail}</p>
+    <p class="small"><a href="/help">${esc(tr('Help'))}</a> · <a href="/privacy">${esc(tr('Privacy'))}</a> · <a href="/terms">${esc(tr('Terms'))}</a> · <a href="${esc(siteHref('/from', facts))}">${esc(tr('Coming from another app?'))}</a>${mail}</p>
   </footer>`;
 }
 
@@ -503,7 +510,7 @@ export interface SitePage {
   body: string;
 }
 
-const cta = (facts: Pick<SiteFacts, 'linkLang'> | null, links: Array<[string, string]>) =>
+export const cta = (facts: Pick<SiteFacts, 'linkLang'> | null, links: Array<[string, string]>) =>
   `<p class="cta">${links
     .map(
       ([href, text], i) =>
@@ -608,7 +615,8 @@ export function renderLanding(facts: SiteFacts | null): SitePage {
 }
 
 /** The site's pages written here; the marketplace's are written from its rows (marketplace-pages.ts). */
-export type SiteOnlyPage = Exclude<MarketingPage, 'marketplace'>;
+/** The site's pages `renderSite` writes: the marketplace's and K5's have renderers of their own. */
+export type SiteOnlyPage = Exclude<MarketingPage, 'marketplace' | 'from'>;
 
 export function renderSite(page: SiteOnlyPage, facts: SiteFacts): SitePage {
   const p = PERSON_ALLOWANCES;

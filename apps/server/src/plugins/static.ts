@@ -13,6 +13,8 @@ import { publicPrices } from '../lib/billing';
 import { contactApiOrigins } from '../lib/contact-accounts';
 import { deviceOf } from '../lib/devices';
 import { inLanguage } from '../lib/i18n';
+import { mailOn } from '../lib/mail-address';
+import { providersOn } from '../lib/provider-consent';
 import {
   bootstrapScripts,
   injectPublic,
@@ -140,7 +142,10 @@ export async function registerWeb(app: FastifyInstance, ctx: AppContext): Promis
     // The site's own pages, the marketplace's among them (R80): everyone's, signed in or not,
     // never the app, cached ten minutes.
     const sitePage =
-      page.kind === 'site' || page.kind === 'marketplace' || page.kind === 'market-app';
+      page.kind === 'site' ||
+      page.kind === 'marketplace' ||
+      page.kind === 'market-app' ||
+      page.kind === 'from';
     const download = page.kind === 'site' && page.page === 'download';
     const facts =
       page.kind === 'landing' || sitePage
@@ -153,6 +158,15 @@ export async function registerWeb(app: FastifyInstance, ctx: AppContext): Promis
             // `/download` (R120): where Caime is listed, and the device it's read on.
             ...(download
               ? { stores: storeLinks(ctx.config), device: deviceOf(req.headers['user-agent']) }
+              : {}),
+            // Coming from another app (R120 K5): what this Caime runs that those pages say.
+            ...(page.kind === 'from'
+              ? {
+                  from: {
+                    mail: mailOn(ctx.config),
+                    calendars: providersOn(ctx.config).length > 0,
+                  },
+                }
               : {}),
           }
         : null;

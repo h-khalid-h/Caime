@@ -5075,8 +5075,21 @@ the stores list Caime.
       start with the computer, one window, links, the screen picker; a Playwright smoke test of
       the shell; Linux files from CI on a tag, the Microsoft Store's package. ⛔ A Partner Center
       account, Apple's Developer ID and notarisation, a Windows signing certificate
-- [ ] K5. Pages for someone coming from WhatsApp, Telegram or Calendly: what comes with them
-      (the importers, their people, an organization's door), in every language
+- [x] K5. Pages for someone coming from WhatsApp, Telegram or Calendly: what comes with them
+      (the importers, their people, an organization's door), in every language. Built 2026-10-27
+      through the council (R120 "K5"): `/from` and a page for each (`lib/from-pages.ts`, a site
+      page in `MARKETING_PAGES`, reserved, in the sitemap with hreflang alternates, linked from
+      every page's footer, never the nav). Each says only what Caime does (the importer's own
+      limit read from code, what stays behind, what this Caime runs: mail out, a calendar to
+      connect), names the other app as words with a trademark line, and leads into sign-up on the
+      right step (`/connect?contacts=1`, `/settings/bookings`). A person's "What you offer" shows
+      their booking link to copy (`BookingResponse.link`, the server's by the door's rule: the one
+      public item's page or theirs; worked out on the device, core's `bookableItems` kept 0.2 KB
+      more in the first download). The number: `growth.imports.bySource` (the import's event now says its source) and
+      `growth.door.booked`. Verified: `public-pages.test.ts` (each page, the 404 for another app,
+      Arabic, alternates, the sitemap, nothing promised that this Caime doesn't run),
+      `import.test.ts` (by source), the bookings E2E (the link shown, a visitor booking from it),
+      and the a11y spec over `/from`, WhatsApp's in Arabic and Calendly's.
 
 ## Log
 
@@ -7328,3 +7341,5 @@ CONNIQT; they mean Caime. Caishy is one of Caime's AI members, and Cai leads the
   call's Chat makes the call small over it. R121 is built.
 - 2026-10-27 — M17 I12b: Ask, the catch-up and a meeting's brief read the conversation's calls by
   Cai's write-up of each, cited as the call; Office and PDF text is I12d.
+- 2026-10-27 — R120 K5 through the council: pages for someone coming from WhatsApp, Telegram or
+  Calendly (`/from/…`), and a person's booking link to share, in every language.

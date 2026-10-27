@@ -2897,4 +2897,5 @@ export const turkishB: Catalog = {
     'Sohbeti burada okursunuz. Yazmak 18 yaş ve üzeri misafirler içindir.',
   'It wasn’t sent. Try again.': 'Gönderilmedi. Yeniden deneyin.',
   'You can write here while you’re in the call.': 'Görüşmedeyken buraya yazabilirsiniz.',
+  'Your booking link': 'Randevu bağlantınız',
 };

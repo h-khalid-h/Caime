@@ -2159,4 +2159,70 @@ export const arServer: Catalog = {
     'الكتابة هنا للضيوف الذين أكّدوا أنهم في الثامنة عشرة أو أكثر.',
   'A guest writes here while the call is on and they’re in it.':
     'يكتب الضيف هنا أثناء المكالمة ووجوده فيها.',
+  'coming from another app': 'الانتقال من تطبيق آخر',
+  'What comes with you': 'ما ينتقل معك',
+  'Your first ten minutes': 'دقائقك العشر الأولى',
+  '{name} is a trademark of its owner. {site} isn’t affiliated with it.':
+    '{name} علامة تجارية لمالكها، ولا صلة لـ{site} بها.',
+  'They don’t need {site} to hear from you. Send your link from {name} itself, and whoever opens it is connected with you; anyone else you write to at their email address, and they answer from their mail.':
+    'لا يحتاجون إلى {site} ليصلهم منك شيء. أرسل رابطك من {name} نفسه، فيتصل بك كل من يفتحه؛ ومن سواهم تراسله على بريده الإلكتروني، فيرد من بريده.',
+  'They don’t need {site} to hear from you. Send your link from {name} itself, and whoever opens it is connected with you.':
+    'لا يحتاجون إلى {site} ليصلهم منك شيء. أرسل رابطك من {name} نفسه، فيتصل بك كل من يفتحه.',
+  'what’s different': 'ما الذي يختلف',
+  'Every conversation knows how you know the person in it. Promises, asks and dates in what’s written become actions you confirm, a call can have Cai’s notes, and a private conversation is end to end encrypted.':
+    'كل محادثة تعرف كيف تعرف الشخص الذي فيها. الوعود والطلبات والمواعيد فيما يُكتب تصبح إجراءات تؤكّدها أنت، ويمكن أن تكون للمكالمة ملاحظات Cai، والمحادثة الخاصة مشفّرة من طرف إلى طرف.',
+  'nothing is deleted': 'لا يُحذف شيء',
+  'Keep {name} as it is. {site} copies the words; nothing is taken out of {name}.':
+    'أبقِ {name} كما هو. ينسخ {site} الكلمات، ولا يُؤخذ شيء من {name}.',
+  'Coming from {name}: bring your chats and your people to {site}':
+    'الانتقال من {name}: انقل محادثاتك وأشخاصك إلى {site}',
+  'Bring a {name} chat into {site} with who said what and when, reach your people with your link sent from {name} itself, and keep {name} as it is.':
+    'انقل محادثة من {name} إلى {site} بمن قال ماذا ومتى، وتواصل مع أشخاصك برابطك المُرسَل من {name} نفسه، وأبقِ {name} كما هو.',
+  'Bring what matters from {name}. Keep {name} too.': 'انقل ما يهمّك من {name}، وأبقِ {name} أيضًا.',
+  '{site} is messaging that understands your relationships: family, a client, your dentist. A chat comes over as its words, your people come with a link, and nothing is deleted anywhere.':
+    '{site} مراسلة تفهم علاقاتك: العائلة، عميل، طبيب أسنانك. تنتقل المحادثة بكلماتها، ويأتي أشخاصك برابط، ولا يُحذف شيء في أي مكان.',
+  'your chats': 'محادثاتك',
+  'In WhatsApp, open the chat’s menu and choose Export chat. Open the file in {site}, in your conversation with that person or in a group you run: the words, who wrote them and when come over, up to {max} messages a chat, marked as imported. Photos, voice notes and files stay in WhatsApp.':
+    'في WhatsApp، افتح قائمة المحادثة واختر «تصدير الدردشة». افتح الملف في {site}، في محادثتك مع ذلك الشخص أو في مجموعة تديرها: تنتقل الكلمات ومن كتبها ومتى، حتى {max} رسالة للمحادثة، موسومةً بأنها مستوردة. الصور والرسائل الصوتية والملفات تبقى في WhatsApp.',
+  'In Telegram Desktop, open the chat, then Export chat history, as JSON. Open its result.json in {site}, in your conversation with that person or in a group you run: the words, who wrote them and when come over, up to {max} messages a chat, marked as imported. Photos, voice notes and files stay in Telegram.':
+    'في Telegram Desktop، افتح المحادثة ثم «تصدير سجل الدردشة» بصيغة JSON. افتح ملف result.json في {site}، في محادثتك مع ذلك الشخص أو في مجموعة تديرها: تنتقل الكلمات ومن كتبها ومتى، حتى {max} رسالة للمحادثة، موسومةً بأنها مستوردة. الصور والرسائل الصوتية والملفات تبقى في Telegram.',
+  'Make your account: an email address and a password, no phone number.':
+    'أنشئ حسابك: بريد إلكتروني وكلمة مرور، دون رقم هاتف.',
+  'Find your people: your phone’s contacts or a contacts file, and your link for the rest.':
+    'اعثر على أشخاصك: جهات اتصال هاتفك أو ملف جهات اتصال، ورابطك للبقية.',
+  'In your conversation with someone, open its details and bring the chat over.':
+    'في محادثتك مع شخص ما، افتح تفاصيلها وانقل المحادثة.',
+  'Coming from {name}: bookings where you talk to people, on {site}':
+    'الانتقال من {name}: الحجوزات حيث تتحدث مع الناس، على {site}',
+  'A booking page anyone books from without an account, each booking a card in your conversation with them that you confirm, with invitations and reminders by mail.':
+    'صفحة حجز يحجز منها أي أحد دون حساب، وكل حجز بطاقة في محادثتك معه تؤكّدها أنت، مع الدعوات والتذكيرات بالبريد.',
+  'Bookings where you talk to people.': 'الحجوزات حيث تتحدث مع الناس.',
+  'Set your hours and what people may book once. Anyone books from your page in a minute, without an account, and each booking arrives in your conversation with them as a card you confirm.':
+    'حدّد ساعاتك وما يمكن حجزه مرة واحدة. يحجز أي أحد من صفحتك في دقيقة دون حساب، ويصل كل حجز إلى محادثتك معه بطاقةً تؤكّدها أنت.',
+  'your link': 'رابطك',
+  'Your page, with what you offer and the week’s open times, is your link: share it wherever you shared the old one. An organization has its own, and puts it on its website.':
+    'صفحتك، بما تقدّمه وبالأوقات المتاحة هذا الأسبوع، هي رابطك: شاركها حيث كنت تشارك الرابط القديم. وللمؤسسة صفحتها، تضعها على موقعها.',
+  'without an account': 'دون حساب',
+  'A visitor picks a time, gives their name and email address, and confirms with a code we mail them. They get an invitation for their calendar, a reminder the day before, and a link to join when it’s held on {site}.':
+    'يختار الزائر وقتًا، ويكتب اسمه وبريده الإلكتروني، ثم يؤكّد برمز نرسله إليه بالبريد. تصله دعوة لتقويمه، وتذكير قبل يوم، ورابط للانضمام حين يُعقد على {site}.',
+  'you decide': 'القرار لك',
+  'Nothing lands in your day you didn’t agree to: each booking is a request you confirm, or answer with another time.':
+    'لا يدخل يومك شيء لم توافق عليه: كل حجز طلب تؤكّده، أو تردّ عليه بوقت آخر.',
+  'your calendars': 'تقاويمك',
+  'Connect a Google or Microsoft calendar: what’s busy there holds the time here, and what’s booked here is written there.':
+    'اربط تقويم Google أو Microsoft: ما هو مشغول هناك يحجز الوقت هنا، وما يُحجز هنا يُكتب هناك.',
+  'A price on anything you offer, paid your way: a bank account, a payment link of your own, a wallet number or cash, shown to whoever pays. An organization takes cards through its own Stripe account.':
+    'سعر لأي شيء تقدّمه، يُدفع بطريقتك: حساب بنكي، أو رابط دفع خاص بك، أو رقم محفظة، أو نقدًا، يظهر لمن يدفع. وتقبل المؤسسة البطاقات عبر حسابها في Stripe.',
+  'In Settings, under What you offer, set your hours and what people may book.':
+    'في الإعدادات، ضمن «ما تقدّمه»، حدّد ساعاتك وما يمكن حجزه.',
+  'Copy your booking link and share it.': 'انسخ رابط الحجز وشاركه.',
+  'Coming to {site} from another app': 'الانتقال إلى {site} من تطبيق آخر',
+  'What comes with you to {site} from WhatsApp, Telegram or Calendly, and your first ten minutes.':
+    'ما ينتقل معك إلى {site} من WhatsApp أو Telegram أو Calendly، ودقائقك العشر الأولى.',
+  'Coming from another app?': 'قادم من تطبيق آخر؟',
+  'Bring your chats and your people, or your booking link, and keep the app you came from as it is.':
+    'انقل محادثاتك وأشخاصك، أو رابط الحجز، وأبقِ التطبيق الذي جئت منه كما هو.',
+  'Where from': 'من أين',
+  'Your booking link, and bookings in your conversations': 'رابط الحجز، والحجوزات في محادثاتك',
+  'Your chats and your people': 'محادثاتك وأشخاصك',
 };

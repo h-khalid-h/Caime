@@ -3865,4 +3865,5 @@ export const arB: Catalog = {
     'المحادثة هنا للقراءة. الكتابة فيها للضيوف من 18 عامًا فأكثر.',
   'It wasn’t sent. Try again.': 'لم تُرسَل. حاول مرة أخرى.',
   'You can write here while you’re in the call.': 'الكتابة هنا متاحة أثناء وجودك في المكالمة.',
+  'Your booking link': 'رابط الحجز',
 };

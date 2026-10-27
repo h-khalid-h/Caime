@@ -276,12 +276,22 @@ export async function productMetrics(ctx: AppContext, days: number): Promise<Pro
         where u.claimed_at > ${from} and u.claimed_at <= ${to}) as kept
   `);
 
-  // Chats brought over from WhatsApp (R45, M16 C3g): one-to-ones and groups, and their lines.
-  const imports = await q<{ chats: number; groups: number; messages: number }>(sql`
+  // Chats brought over from WhatsApp or Telegram (R45, M16 C3g, M18 J6): one-to-ones and groups,
+  // their lines, and by the app they came from (R120 K5; an import from before it said so was
+  // WhatsApp's, the only one there was).
+  const imports = await q<{
+    chats: number;
+    groups: number;
+    messages: number;
+    whatsapp: number;
+    telegram: number;
+  }>(sql`
     select
       count(*) filter (where not (payload->>'group')::boolean)::int as chats,
       count(*) filter (where (payload->>'group')::boolean)::int as groups,
-      coalesce(sum((payload->>'count')::int), 0)::int as messages
+      coalesce(sum((payload->>'count')::int), 0)::int as messages,
+      count(*) filter (where coalesce(payload->>'source', 'whatsapp') = 'whatsapp')::int as whatsapp,
+      count(*) filter (where payload->>'source' = 'telegram')::int as telegram
     from domain_events
     where type = 'chat.imported' and created_at > ${from} and created_at <= ${to}
   `);
@@ -418,7 +428,12 @@ export async function productMetrics(ctx: AppContext, days: number): Promise<Pro
         asked: joinLinks.asked,
       },
       guests: { joined: guests.joined, kept: guests.kept, fromMail: guests.from_mail },
-      imports: { chats: imports.chats, groups: imports.groups, messages: imports.messages },
+      imports: {
+        chats: imports.chats,
+        groups: imports.groups,
+        messages: imports.messages,
+        bySource: { whatsapp: imports.whatsapp, telegram: imports.telegram },
+      },
       surfaces,
     },
     ai: {

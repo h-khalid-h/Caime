@@ -144,8 +144,19 @@ test.describe
       await expect(page.getByTestId('my-booking-item-on-caime')).toBeChecked();
       await page.getByTestId('my-booking-item-save').click();
       await expect(visible(page, 'A quick chat')).toBeVisible();
+      // Their booking link (R120 K5): the one public item's page, which a visitor books from
+      // without an account (R97).
+      const link = page.getByTestId('my-booking-link-copy');
+      await expect(link).toContainText(/\/@[a-z0-9._]+\/[a-z0-9-]+$/);
+      const href = ((await link.textContent()) ?? '').match(/https?:\/\/\S+$/)?.[0] ?? '';
       expect(errors).toEqual([]);
       await owner.close();
+      const visitor = await browser.newContext();
+      const seen = await visitor.newPage();
+      await seen.goto(new URL(href).pathname);
+      await expect(visible(seen, 'Book a time')).toBeVisible();
+      await expect(visible(seen, 'A quick chat')).toBeVisible();
+      await visitor.close();
 
       // The customer, signed in, books the owner from their profile: a message request with the
       // card in it, and the topic they wrote.

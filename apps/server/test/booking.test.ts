@@ -366,6 +366,10 @@ describe('the catalog (R58)', () => {
     const set = await noor.req('PUT', '/v1/me/booking', { booking: HOURS, items: [LESSON, CHAT] });
     expect(set.statusCode, set.body).toBe(200);
     expect((await noor.get('/v1/me/booking')).items).toHaveLength(2);
+    // Their booking link (R120 K5), as the door's: the one item anyone may book has a page of its own.
+    const chatPage = new RegExp(`/@${noor.user.handle}/a-quick-chat$`);
+    expect(set.json().link).toMatch(chatPage);
+    expect((await noor.get('/v1/me/booking')).link).toMatch(chatPage);
     // Omar is a friend: both; Lina, a stranger: the public one.
     await noor.post('/v1/relationships', {
       userId: omar.user.id,

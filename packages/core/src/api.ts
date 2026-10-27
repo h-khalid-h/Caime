@@ -35,6 +35,7 @@ import type { CustomKitDef, CustomKitIcon } from './custom-kits';
 import type { CustomerField } from './customers';
 import type { PublicJwk, SealedMessage } from './e2ee';
 import type { Gender } from './i18n';
+import type { ImportSource } from './imports';
 import type { IntakeForm } from './intake';
 import type { SuggestionKind } from './intelligence';
 import type { KitField } from './kits';
@@ -1444,6 +1445,8 @@ export const MARKETING_PAGES = [
   'marketplace',
   'about',
   'download',
+  // Coming from another app (R120 K5): `/from` and a page for each app under it.
+  'from',
 ] as const;
 export type MarketingPage = (typeof MARKETING_PAGES)[number];
 
@@ -2785,7 +2788,16 @@ export interface ProductMetricsView {
      * Chats brought over from WhatsApp (R45, M16 C3g) in the window: one-to-ones, groups, and how
      * many messages came with them, the number that shows a group moving over with its past.
      */
-    imports: { chats: number; groups: number; messages: number };
+    imports: {
+      chats: number;
+      groups: number;
+      messages: number;
+      /**
+       * Chats and groups brought over from each app (R120 K5's number, read against the weeks
+       * before its pages): what someone coming from it brings first.
+       */
+      bySource: Record<ImportSource, number>;
+    };
     /**
      * Where the window's people used Caime (R120): people seen on each surface (one person may be
      * on several; `unknown` is a session from before a surface was said), and of everyone seen,
@@ -4460,13 +4472,19 @@ export interface BookingResponse {
   collections: CatalogCollection[];
   /** How it's paid (R62), or null: its own, never shown to anyone else as it is. */
   payments: PaymentSettings | null;
+  /**
+   * A person's own offer (`/me/booking`, R120 K5): their booking link, the one item a visitor may
+   * book from a page or their page listing several, null while none; an organization's is its
+   * door's (`OrgDoorView.book`).
+   */
+  link?: string | null;
 }
 /**
  * What a host saves (`PUT /orgs/:id/booking`, `/me/booking`): the offer, each item's count only
  * where it was changed (R60): a number sets it, null stops counting, left out keeps it, since an
  * order may have taken one since the offer was read.
  */
-export interface BookingSaveBody extends Omit<BookingResponse, 'items'> {
+export interface BookingSaveBody extends Omit<BookingResponse, 'items' | 'link'> {
   items: Array<Omit<BookingItem, 'stock'> & { stock?: number | null }>;
 }
 export interface OrgUpdateResponse {

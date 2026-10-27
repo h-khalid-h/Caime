@@ -1100,7 +1100,11 @@ A sphere is said as how you know someone, never "sphere".
   stale one (`node scripts/i18n-keys.mjs missing ar server`), and a string the app shows too
   belongs to core's catalog. Styles that have a side use logical properties (`margin-inline-start`,
   `border-end-end-radius`), never left or right. A new page joins `MARKETING_PAGES`, `SITE_NAV`,
-  `renderSite`, `SITE_PATHS` and `public-pages.test.ts`.
+  `renderSite`, `SITE_PATHS` and `public-pages.test.ts`. The pages for someone coming from another
+  app (R120 K5, `lib/from-pages.ts`: `/from` and `/from/<source>`, `FROM_SOURCES`) render apart
+  from `renderSite` and outside the nav, say only what Caime does (never another app's features or
+  prices), name another app as words with a trademark line, and read what this Caime runs from
+  `SiteFacts.from`; a new app to come from is a source there with a way over that exists.
 - The app's entry screens (welcome, sign-in, sign-up) are painted by the server for a visitor
   before the app runs (`kind: 'entry'`, `entryBody` in `lib/public-pages.ts`): the same words
   through `tr` in the browser's `Accept-Language`, the same shape in `.pub-entry` CSS, links that

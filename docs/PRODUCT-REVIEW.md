@@ -2790,6 +2790,48 @@ with its reason, so it isn't proposed again without new facts.
   phone, the desktop app or the installed web app) rather than a browser tab. Read from
   `sessions.surface`, which the app sends and the server writes only when it changes, in product
   metrics as `growth.surfaces`. Above half, ninety days after the stores list Caime.
+
+  *K5, the council (2026-10-27): pages for someone coming from WhatsApp, Telegram or Calendly.*
+  1. The Architect put one page per source, from one template (`switchPage`), at
+     `/from/whatsapp`, `/from/telegram` and `/from/calendly`, under `/from` (a site page and a
+     reserved handle, so no address collides with one). Each page answers what comes with you, what stays where it
+     was, and the first three steps, and leads into sign-up already on the right step (`?link=`).
+  2. The Adversary staked it on drift: a page that names another product ages as that product
+     changes, and a claim about it can't be checked by any test. So the pages say only what
+     Caime does, every number read from code, and nothing about the other product's features or
+     prices. Each says plainly what doesn't come over, since it's the first thing a switcher
+     finds out (the importers keep the words and who said them and count the photos and files
+     left behind). Names are written as words, never a logo, with a line that they're their
+     owners' marks and Caime isn't affiliated.
+  3. The Newcomer, someone in Cairo on a phone, reading in Arabic, sent the WhatsApp page in a
+     WhatsApp group, asked three things before anything else: do my people need Caime, will I
+     lose my chats, is it free. So each page opens with those answers, in that order: they don't
+     (your link goes out from the app you're leaving, and an email address is reachable where
+     Caime Mail is on), nothing is deleted anywhere, and it's free to start. Nobody is told to
+     leave WhatsApp: keep both, and bring what matters.
+  4. The Newcomer coming from Calendly asked where their link is. A person's "What you offer" had
+     no link to share, only an item's slug. So the setup now shows their booking link to copy
+     once hours are set and something public is bookable, by the
+     organization's door's rule: the one item's page, which carries the open times and the form
+     a visitor books with (R97), or their page listing several.
+  5. The Specialist, a growth lead who has run switching programs for a messaging app and a
+     scheduling tool in the Gulf and Europe: one address per source, its own title and
+     description in each language, alternates by `hreflang`, in the sitemap, and never in the
+     main nav (eight entries already; the footer and `/download` link them). Second-order
+     effects:
+     - A page per competitor invites a fight over search terms. Plain, factual titles ("Coming
+       from WhatsApp") hold, and comparison tables don't.
+     - At a hundred times the traffic nothing changes: the pages are static and cached ten
+       minutes.
+     - Under 18, the pages promise nothing that R29 takes back (imports and bookings are adults'
+       or follow the same rules in the app).
+  *Decided against:* a comparison table (unverifiable, it ages); the competitors' logos; a page
+  per competitor for every app named in COMPETITIVE.md (three now, where the importers and the
+  door exist); attribution of a sign-up to a page (nothing new kept about people).
+  *The number:* chats brought over per week by source (`growth.imports.bySource`, from the
+  imports' own count, now carrying the source) and bookings made from a page by people without
+  an account (`growth.door.booked`), read for the eight weeks after the pages go live against
+  the eight before.
 - **R121 (2026-10-26) Chat during a call: the call made small over its own conversation, and what's
   typed there read into Cai's notes.** The owner: "while I'm in meetings participants wanted to
   send text or something in the chat: how is this handled, and how shall it be handled properly".
