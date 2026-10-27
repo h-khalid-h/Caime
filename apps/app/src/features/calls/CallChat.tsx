@@ -7,12 +7,16 @@
  */
 import { radii } from '@caime/brand/tokens';
 import type { InboxAllResponse, InboxItemView } from '@caime/core/api';
+import { messagePreview } from '@caime/core/format';
 import { tr } from '@caime/core/i18n';
 import { useQuery } from '@tanstack/react-query';
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { View } from 'react-native';
 import { endpoints } from '@/api/endpoints';
+import { useMessages } from '@/api/hooks';
 import { qk } from '@/api/keys';
+import { flatMessages } from '@/state/cache';
+import { useGroupCall } from '@/state/groupCall';
 import { Pressable } from '@/ui/Pressable';
 import { Text } from '@/ui/Text';
 import { OVER_VIDEO } from './callUi';
@@ -38,6 +42,58 @@ export function useCallChat(conversationId: string, enabled: boolean): InboxItem
   return enabled ? (data ?? null) : null;
 }
 
+/** What the call's Chat reads: how much is unread there, and its latest message. */
+export type CallChatRow = Pick<InboxItemView, 'lastMessage' | 'unreadCount'>;
+
+/**
+ * A meeting's guest has no inbox (R84): the same from the conversation's own messages, which
+ * their page keeps (M17 I13j), counting what others wrote since the call began and after the
+ * last their page showed them (`chatSeenSeq`).
+ */
+export function useGuestCallChat(
+  conversationId: string,
+  enabled: boolean,
+  me: string | undefined,
+  since: string,
+): CallChatRow | null {
+  const { data } = useMessages(conversationId, enabled);
+  const seen = useGroupCall((s) => s.chatSeenSeq);
+  return useMemo(() => {
+    if (!enabled || !data) return null;
+    const all = flatMessages(data);
+    const began = Date.parse(since);
+    const unreadCount = all.filter(
+      (m) =>
+        m.seq > seen &&
+        m.senderId !== me &&
+        m.kind !== 'system' &&
+        !m.deletedAt &&
+        Date.parse(m.createdAt) >= began,
+    ).length;
+    const last = all.at(-1);
+    return {
+      unreadCount,
+      lastMessage: last
+        ? {
+            id: last.id,
+            seq: last.seq,
+            senderId: last.senderId,
+            kind: last.kind,
+            preview: messagePreview({
+              kind: last.kind,
+              body: last.body,
+              payload: last.payload,
+              deleted: Boolean(last.deletedAt),
+              sealed: last.sealed,
+            }),
+            mine: last.senderId === me,
+            createdAt: last.createdAt,
+          }
+        : null,
+    };
+  }, [enabled, data, seen, me, since]);
+}
+
 /**
  * What someone else just wrote in the call's conversation (never one's own, never what was there
  * before the call began), over the call while it fills the screen; a tap opens the chat.
@@ -48,7 +104,7 @@ export function ChatPeek({
   names,
   onOpen,
 }: {
-  row: InboxItemView | null;
+  row: CallChatRow | null;
   /** When the call began: anything older isn't news. */
   since: string;
   /** Who's who in the call, for the writer's name (left out for anyone else). */

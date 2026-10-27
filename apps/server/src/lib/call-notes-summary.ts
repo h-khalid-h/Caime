@@ -645,6 +645,53 @@ export async function writeUpsFor(
   return out;
 }
 
+/** A call's write-up as one passage reads it: the summary, then what was decided and what's next. */
+export function writeUpText(w: CallNotesSummaryView): string {
+  const clause = (s: string) => s.trim().replace(/[.!?؟。]+$/u, '');
+  const parts = [w.summary.trim()];
+  if (w.decisions.length)
+    parts.push(`Decided: ${w.decisions.map((d) => clause(d.text)).join('; ')}.`);
+  if (w.nextSteps.length)
+    parts.push(
+      `Next: ${w.nextSteps
+        .map((n) =>
+          [n.who, clause(n.what), n.due ? `by ${n.due}` : null].filter(Boolean).join(': '),
+        )
+        .join('; ')}.`,
+    );
+  return parts.join(' ');
+}
+
+/**
+ * Cai's write-ups of the calls whose lines are among a conversation's messages (M17 I12b), by the
+ * call's line, for one reader by `writeUpsFor`'s rule: Ask and the catch-up read each beside its
+ * call's line. Two queries, and none for a transcript without a system line.
+ */
+export async function writeUpsByLine(
+  ctx: AppContext,
+  viewerId: string,
+  messageIds: readonly string[],
+): Promise<Map<string, { callId: string; writeUp: CallNotesSummaryView }>> {
+  const out = new Map<string, { callId: string; writeUp: CallNotesSummaryView }>();
+  if (messageIds.length === 0) return out;
+  const calls = await ctx.db
+    .selectFrom('call_note_summaries')
+    .select(['call_id', 'message_id'])
+    .where('message_id', 'in', [...new Set(messageIds)])
+    .where('state', '=', 'written')
+    .execute();
+  const written = await writeUpsFor(
+    ctx,
+    viewerId,
+    calls.map((c) => c.call_id),
+  );
+  for (const c of calls) {
+    const writeUp = written.get(c.call_id);
+    if (writeUp && c.message_id) out.set(c.message_id, { callId: c.call_id, writeUp });
+  }
+  return out;
+}
+
 export function registerNotesSummaryJob(): void {
   registerJob(SUMMARY_JOB, writeNotes);
 }

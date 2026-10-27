@@ -2153,4 +2153,9 @@ export const frServer: Catalog = {
     'Là où vous vivez, Caime est pour les {age} ans et plus, et dès {younger} ans avec l’accord d’un parent ou tuteur.',
   'Your parent says yes to new people first. Send {name} a connection request, which asks them.':
     'Votre parent accepte d’abord les nouvelles personnes. Envoyez à {name} une demande de contact : elle lui sera d’abord soumise.',
+  'A guest writes words here, nothing else.': 'Un invité écrit ici des mots, rien d’autre.',
+  'Writing here is for guests who said they’re 18 or over.':
+    'Écrire ici est réservé aux invités qui ont dit avoir 18 ans ou plus.',
+  'A guest writes here while the call is on and they’re in it.':
+    'Un invité écrit ici pendant l’appel, quand il y participe.',
 };

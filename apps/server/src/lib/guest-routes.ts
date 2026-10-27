@@ -13,8 +13,9 @@
  * tells each person only what's theirs, and drops a guest's typing),
  * their say in Cai's notes of that call (M16 F7), and keeping the meeting as their own account
  * (M16 C3f), which hands them what sign-up takes.
- * Each route still checks membership itself, so none reaches past the space. Writing in the
- * space, people, search, settings: never.
+ * Each route still checks membership itself, so none reaches past the space. People, search,
+ * settings: never. Writing in the space only while its call is on and they're in it, words alone,
+ * a guest who said they're 18 or over (R121 (5), M17 I13j: `assertGuestMayWrite`).
  */
 export const GUEST_ROUTES: ReadonlySet<string> = new Set([
   'GET /v1/auth/session',
@@ -26,6 +27,9 @@ export const GUEST_ROUTES: ReadonlySet<string> = new Set([
   'POST /v1/guest/keep',
   'GET /v1/conversations/:id',
   'GET /v1/conversations/:id/messages',
+  // Words in their meeting's conversation while its call is on and they're in it (M17 I13j): the
+  // route asks `assertGuestMayWrite` (lib/guest-chat.ts) for a guest's session before it sends.
+  'POST /v1/conversations/:id/messages',
   'GET /v1/calls/ice',
   'GET /v1/calls/live',
   'GET /v1/group-calls/live',

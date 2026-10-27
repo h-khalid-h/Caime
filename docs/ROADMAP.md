@@ -4524,10 +4524,22 @@ clinic can sign for. I1 lands before launch.
         call, the count gone once read, back to the call from the tile, the typed line among
         Cai's decisions). Not yet: the tile moved by drag (R121's open risk), and a phone's tile
         tried on one.
-  - [ ] I13j. Guests write while the call is on (S, R121 phase 2): a guest who said they're 18 or
+  - [x] I13j. Guests write while the call is on (S, R121 phase 2): a guest who said they're 18 or
         over writes text in their meeting's conversation only while its call is on and they're in
         it, each line marked a guest's and reportable, read-only again after; the route joins
-        `GUEST_ROUTES` on purpose with its case, and the guest's page carries the chat.
+        `GUEST_ROUTES` on purpose with its case, and the guest's page carries the chat. Built
+        2026-10-27: `assertGuestMayWrite` (`lib/guest-chat.ts`) in front of the send route for a
+        guest's session (words alone, twenty a minute, a send tried again answered as sent), the
+        server's `payload.guest` on the line, "Guest ·" in the bubble and read out; the guest's
+        page's chat (`GuestChat`: the conversation's messages as they arrive, a line to write while
+        in the call, a word on why not otherwise) and the call's Chat for a guest, which makes the
+        call small over that page and counts from the conversation's messages
+        (`useGuestCallChat`). Verified: `guest-chat.test.ts` (before the call, in a call not
+        joined, words alone, marked for everyone, reported, read-only after with a retry answered,
+        a guest who didn't say 18 or over refused, a member's line unmarked), `guest-routes.test.ts`,
+        and the meetings E2E (Gus writes from the small call over his page, Ana sees it over her
+        call and as a guest's in the chat, and after the call Gus's page reads it and takes nothing
+        more). Not yet: a guest by link in a one-to-one's call (M16 F6c) writes by mail, as before.
 - [x] I3. What did I miss (M; L with the summary): the Needs-you conversations since each was last
       read, by the rules, ranked as Attention ranks them, with a cited summary for whoever has
       assist on, cached by read position, in Cai's chat and on Attention. Built 2026-10-25 (I3b,
@@ -4771,8 +4783,19 @@ clinic can sign for. I1 lands before launch.
         answer's passages and cited sources; the write-up withheld from a later joiner),
         `retrieval-golden.test.ts` (the plan reads the new index), the E2E (Sam's words found in
         Search open the notes at them, marked).
-  - [ ] I12b. A conversation's Ask and catch-up read its calls' notes too; Office and PDF text
-        indexed at upload, found and cited as files.
+  - [x] I12b. A conversation's Ask and catch-up read its calls' notes too (M, 2026-10-27): the
+        transcript they read carries, beside each call's line, Cai's write-up of that call where
+        the reader may read it whole (`transcriptOf(…, { withCalls: true })`, `writeUpsByLine` in
+        `lib/call-notes-summary.ts`: `writeUpsFor`'s rule, two queries and none for a transcript
+        without a system line; up to 1,500 characters a write-up, 800 a passage for Ask), cited
+        as the call (`lineSource`: `AnswerSourceView` kind `call`, its notes opened). The brief
+        before a meeting reads the calls in its window the same way, so the next time of a weekly
+        meeting is briefed by what the last one decided. Not the reply draft or the follow-ups:
+        the write-up offers its own next steps. Verified: `answers.test.ts` (a call between Lina
+        and Omar written up; Ask, the catch-up and the brief each hand the model the write-up and
+        cite the call).
+  - [ ] I12d. Office and PDF text indexed at upload, found and cited as files (the rest of what
+        I12b named).
   - [ ] I12c. Search by meaning, once I5's golden set shows what words alone miss, with its
         processor in the DPA and erasure removing what it kept.
 - [ ] I14. Cai hears, sees and answers aloud in its chat (R115, `docs/REVIEW-2026-10-25-CAI.md`).
@@ -7300,3 +7323,8 @@ CONNIQT; they mean Caime. Caishy is one of Caime's AI members, and Cai leads the
 - 2026-10-27 — M16 B8e: a checked age shown, "18 or over, checked", where its owner says, never an
   age or a date; the phones' age signals are B8f, waiting on the store builds. Moderate's last door
   closed the day before: a moderated child writes first only to a connection.
+- 2026-10-27 — M17 I13j: a meeting's guest writes in its chat while the call is on, words alone and
+  only if they said they're 18 or over, each line a guest's; their page carries the chat, and the
+  call's Chat makes the call small over it. R121 is built.
+- 2026-10-27 — M17 I12b: Ask, the catch-up and a meeting's brief read the conversation's calls by
+  Cai's write-up of each, cited as the call; Office and PDF text is I12d.

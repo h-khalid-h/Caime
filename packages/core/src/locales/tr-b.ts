@@ -2888,4 +2888,13 @@ export const turkishB: Catalog = {
   'Waiting for your parent’s yes': 'Ebeveyninizin onayı bekleniyor',
   'Age checked': 'Doğrulanmış yaş',
   '18 or over, checked': '18 yaş ve üzeri, doğrulandı',
+  'Guest ·': 'Misafir ·',
+  Guest: 'Misafir',
+  'The chat didn’t load. It comes back when you’re connected.':
+    'Sohbet yüklenmedi. Bağlantı gelince geri gelir.',
+  'Earlier messages': 'Önceki mesajlar',
+  'You read the chat here. Writing in it is for guests 18 or over.':
+    'Sohbeti burada okursunuz. Yazmak 18 yaş ve üzeri misafirler içindir.',
+  'It wasn’t sent. Try again.': 'Gönderilmedi. Yeniden deneyin.',
+  'You can write here while you’re in the call.': 'Görüşmedeyken buraya yazabilirsiniz.',
 };

@@ -20,7 +20,7 @@ import { tr } from '@caime/core/i18n';
 import { joinOpen } from '@caime/core/meetings';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { router } from 'expo-router';
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { View } from 'react-native';
 import { ApiError, setAuthToken } from '@/api/client';
 import { endpoints } from '@/api/endpoints';
@@ -47,6 +47,7 @@ import { Spec } from '@/ui/Spec';
 import { SwitchRow } from '@/ui/SwitchRow';
 import { Text } from '@/ui/Text';
 import { TextField } from '@/ui/TextField';
+import { GuestChat } from './GuestChat';
 
 // The link kept for the guest, loaded only once they join: it's on no other page's path.
 const guestLinks = () => import('@/state/guestLink');
@@ -219,14 +220,16 @@ function GuestMeeting({ view, space }: { view: JoinView; space: NonNullable<Join
   const me = useSession((s) => s.user);
   const rows = useMeetingRows(view);
   const now = useNow(30_000);
-  const people = useQuery({
+  const participants = useQuery({
     queryKey: qk.conversation(space.conversationId),
     queryFn: () => endpoints.conversation(space.conversationId),
-    select: (d) =>
-      d.conversation.participants
-        .filter((p) => p.userId !== me?.id)
-        .map((p) => p.person.displayName),
+    select: (d) => d.conversation.participants,
   }).data;
+  const people = participants?.filter((p) => p.userId !== me?.id).map((p) => p.person.displayName);
+  const names = useMemo(
+    () => new Map((participants ?? []).map((p) => [p.userId, p.person.displayName])),
+    [participants],
+  );
   const inCall = useGroupCall((s) => Boolean(s.phase && s.phase !== 'ended'));
   // The meeting's call while someone's in it (rung or not, they join it from here), told by the
   // socket and asked once as the page opens.
@@ -298,6 +301,15 @@ function GuestMeeting({ view, space }: { view: JoinView; space: NonNullable<Join
               'This browser can’t make calls. Open your link in a recent Chrome, Safari, Edge or Firefox.',
             )}
           </Text>
+        )}
+        {view.meeting.direct ? null : (
+          // The meeting's conversation (M17 I13j): read here, and written in while they're in
+          // its call, if they said they're 18 or over.
+          <GuestChat
+            conversationId={space.conversationId}
+            adult={view.guest.adult === true}
+            names={names}
+          />
         )}
         {inCall ? null : <KeepMeeting view={view} space={space} />}
         <Button

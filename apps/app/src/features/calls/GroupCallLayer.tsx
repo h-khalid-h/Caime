@@ -22,7 +22,7 @@ import { type GroupPeer, useGroupCall } from '@/state/groupCall';
 import { useSession } from '@/state/session';
 import { Avatar } from '@/ui/Avatar';
 import { Text } from '@/ui/Text';
-import { ChatPeek, useCallChat } from './CallChat';
+import { ChatPeek, useCallChat, useGuestCallChat } from './CallChat';
 import { CallTile } from './CallTile';
 import { useCallAudio } from './callAudio';
 import {
@@ -157,11 +157,19 @@ const linkNote = (p: GroupPeer) =>
  */
 export function GroupCallLayer() {
   const me = useSession((s) => s.user);
-  // A meeting's guest has no conversation to write in (R84).
+  // A meeting's guest has no inbox and no app (R84): their Chat reads the conversation their page
+  // shows, and makes the call small over that page, where they write while they're in it (I13j).
   const guest = me?.kind === 'provisional';
   const { call, phase, local, peers, muted, cameraOff, sharing, note, shrunk, patch } =
     useGroupCall();
-  const chat = useCallChat(call?.conversationId ?? '', phase === 'in' && !guest);
+  const memberChat = useCallChat(call?.conversationId ?? '', phase === 'in' && !guest);
+  const guestChat = useGuestCallChat(
+    call?.conversationId ?? '',
+    phase === 'in' && guest,
+    me?.id,
+    call?.answeredAt ?? call?.createdAt ?? '',
+  );
+  const chat = guest ? guestChat : memberChat;
   // Who wrote what the peek shows: whoever is in the call, by name.
   const members = call?.members;
   const names = useMemo(
@@ -185,7 +193,8 @@ export function GroupCallLayer() {
 
   const openChat = () => {
     patch({ shrunk: true });
-    router.navigate({ pathname: '/c/[id]', params: { id: call.conversationId } });
+    // A guest's chat is their meeting's page, under the call.
+    if (!guest) router.navigate({ pathname: '/c/[id]', params: { id: call.conversationId } });
   };
 
   const video = call.kind === 'video';
@@ -369,14 +378,12 @@ export function GroupCallLayer() {
           <View style={{ paddingBottom: 8 }}>
             <NotesAsk notes={call.notes} me={me.id} />
             <CaiWritten callId={call.id} />
-            {guest ? null : (
-              <ChatPeek
-                row={chat}
-                since={call.answeredAt ?? call.createdAt}
-                names={names}
-                onOpen={openChat}
-              />
-            )}
+            <ChatPeek
+              row={chat}
+              since={call.answeredAt ?? call.createdAt}
+              names={names}
+              onOpen={openChat}
+            />
           </View>
         ) : null}
         {phase === 'ended' ? null : (
@@ -473,7 +480,7 @@ export function GroupCallLayer() {
                 {phase === 'in' ? (
                   <NotesRound callId={call.id} notes={call.notes} testID="group-call-notes" />
                 ) : null}
-                {phase === 'in' && !guest ? (
+                {phase === 'in' ? (
                   <Round
                     icon={MessageSquareText}
                     label={tr('Chat')}

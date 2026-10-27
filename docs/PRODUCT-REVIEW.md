@@ -2843,6 +2843,14 @@ with its reason, so it isn't proposed again without new facts.
   or more people (`messages.created_at` inside `calls` windows). Above zero means the chat is
   found.
 
+  *Built (I13j, 2026-10-27):* a meeting's guest writes while its call is on, as decided: the send
+  route joins `GUEST_ROUTES` with `assertGuestMayWrite` in front of it (text alone, no file, card,
+  mention or urgency; only a guest who said they're 18 or over; only while the group call in that
+  conversation is on and they're in it; twenty lines a minute), each line marked `payload.guest`
+  by the server and read as "Guest ·", reportable as any line. The guest's page carries the chat,
+  since a guest has no app: Chat among the call's controls makes the call small over the page,
+  whose chat reads the conversation's own messages and takes words while they're in the call.
+
 - **R122 (2026-10-26) A child on Caime with a parent's consent.** The owner: "today I wanted to use
   Caime to communicate with my kids who are not 18 or older, but when they try to sign up they
   couldn't proceed … how shall we properly handle this". Sign-up refuses anyone under the minimum

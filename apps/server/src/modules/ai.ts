@@ -214,7 +214,9 @@ export async function aiRoutes(app: FastifyInstance, ctx: AppContext) {
     const { ai, me } = await gate(auth.userId);
     const { me: seat } = await readable(auth.userId, id);
     const [{ transcript, lines, newCount }, unread] = await Promise.all([
-      transcriptOf(ctx, auth.userId, id, Number(seat.last_read_seq), me.time_zone),
+      transcriptOf(ctx, auth.userId, id, Number(seat.last_read_seq), me.time_zone, {
+        withCalls: true,
+      }),
       unreadSince(auth.userId, id, Number(seat.last_read_seq)),
     ]);
     if (lines.length === 0) return { summary: null, label: null, newCount: 0, unread, sources: [] };
@@ -244,12 +246,14 @@ export async function aiRoutes(app: FastifyInstance, ctx: AppContext) {
     const { question } = parse(AiAskBody, req.body);
     const { ai, me } = await gate(auth.userId);
     const { me: seat } = await readable(auth.userId, id);
+    // Its calls read too, by what Cai wrote up of them (M17 I12b).
     const { lines } = await transcriptOf(
       ctx,
       auth.userId,
       id,
       Number(seat.last_read_seq),
       me.time_zone,
+      { withCalls: true },
     );
     if (lines.length === 0) return { answer: null, label: null, sources: [] };
     const language = languageName(writtenIn(question) ?? (await languageOf(ctx, auth.userId)));

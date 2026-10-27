@@ -2154,4 +2154,9 @@ export const arServer: Catalog = {
     'حيث تعيش، Caime لمن بلغوا {age} عامًا فأكثر، ومن {younger} بموافقة وليّ الأمر.',
   'Your parent says yes to new people first. Send {name} a connection request, which asks them.':
     'وليّ أمرك يوافق أولًا على الأشخاص الجدد. أرسل إلى {name} طلب تواصل، فيُسأل وليّ أمرك.',
+  'A guest writes words here, nothing else.': 'الضيف يكتب هنا نصًا فقط، لا شيء غيره.',
+  'Writing here is for guests who said they’re 18 or over.':
+    'الكتابة هنا للضيوف الذين أكّدوا أنهم في الثامنة عشرة أو أكثر.',
+  'A guest writes here while the call is on and they’re in it.':
+    'يكتب الضيف هنا أثناء المكالمة ووجوده فيها.',
 };

@@ -45,6 +45,11 @@ interface GroupCallStore {
   note: string | null;
   /** Made small over the app while its conversation is open (R121), as a 1:1 call is. */
   shrunk: boolean;
+  /**
+   * A meeting's guest has no inbox (R84): the last message of the call's conversation their page
+   * showed them (M17 I13j), so Chat counts only what came after it.
+   */
+  chatSeenSeq: number;
   /** The call on in each group, by conversation, for its banner. */
   on: Record<string, GroupCallView>;
   patch: (p: Partial<Omit<GroupCallStore, 'patch' | 'peer' | 'seen' | 'reset' | 'on'>>) => void;
@@ -66,6 +71,7 @@ const idle = {
   screen: null,
   note: null,
   shrunk: false,
+  chatSeenSeq: 0,
 };
 
 export const useGroupCall = create<GroupCallStore>((set) => ({

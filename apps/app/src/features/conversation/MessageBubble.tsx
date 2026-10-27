@@ -1016,6 +1016,12 @@ export const MessageBubble = memo(function MessageBubble({
           </Text>
         </Pressable>
       ) : null}
+      {(m.payload as { guest?: unknown }).guest ? (
+        // A meeting's guest wrote it while its call was on (M17 I13j): not on Caime, said so.
+        <Text variant="caption" color={meta} style={{ fontSize: 11 }} testID="message-guest">
+          {tr('Guest ·')}
+        </Text>
+      ) : null}
       {(m.payload as { imported?: unknown }).imported ? (
         // Brought over from another app (R45): written there, by whoever it says, before Caime.
         <Text variant="caption" color={meta} style={{ fontSize: 11 }} testID="message-imported">
@@ -1110,6 +1116,7 @@ export const MessageBubble = memo(function MessageBubble({
     m.pinnedAt && !deleted ? tr('Pinned') : '',
     m.forwarded && !deleted ? tr('Forwarded') : '',
     m.automated ? (m.aiAgent ? tr('AI agent') : tr('Automated')) : '',
+    (m.payload as { guest?: unknown }).guest ? tr('Guest') : '',
     m.sentVia ? tr('sent via {sentVia}', { sentVia: m.sentVia }) : '',
     m.mail ? mailLine(m.mail, true) : '',
     deleted

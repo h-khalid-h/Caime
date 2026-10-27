@@ -23,7 +23,7 @@ import { sql } from 'kysely';
 import type { AppContext } from '../context';
 import type { AiAssist } from './ai';
 import { runAi } from './ai-run';
-import { writeUpsFor } from './call-notes-summary';
+import { writeUpsFor, writeUpText } from './call-notes-summary';
 import { runSearch } from './search-run';
 import { transcriptClock } from './transcript';
 import type { ConversationLine } from './transcript-of';
@@ -35,7 +35,7 @@ export const PASSAGE_CHARS = 400;
 /** The most passages an answer cites. */
 const CITED_MAX = 6;
 /** How much of a call's write-up the model reads, beside the lines found in it. */
-const WRITE_UP_CHARS = 800;
+export const WRITE_UP_CHARS = 800;
 
 /** One numbered passage as the model reads it, and what it stands for. */
 export interface AnswerPassage<S> {
@@ -66,23 +66,6 @@ export function when(iso: string, timeZone: string, withTime = true): string {
   const p = zonedParts(new Date(iso), timeZone);
   const day = `${DAYS[p.weekday]} ${p.year}-${two(p.month)}-${two(p.day)}`;
   return withTime ? `${day} ${two(p.hour)}:${two(p.minute)}` : day;
-}
-
-/** A call's write-up as one passage reads it: the summary, then what was decided and what's next. */
-function writeUpText(w: CallNotesSummaryView): string {
-  const clause = (s: string) => s.trim().replace(/[.!?؟。]+$/u, '');
-  const parts = [w.summary.trim()];
-  if (w.decisions.length)
-    parts.push(`Decided: ${w.decisions.map((d) => clause(d.text)).join('; ')}.`);
-  if (w.nextSteps.length)
-    parts.push(
-      `Next: ${w.nextSteps
-        .map((n) =>
-          [n.who, clause(n.what), n.due ? `by ${n.due}` : null].filter(Boolean).join(': '),
-        )
-        .join('; ')}.`,
-    );
-  return parts.join(' ');
 }
 
 /** Counts an answer from passages, wherever it was given: the share with a source is the number. */
@@ -241,13 +224,28 @@ export function conversationPassages(
   const { time } = transcriptClock(timeZone);
   return lines.map((l) => ({
     n: l.n,
-    text: `[${l.n}] ${time(l.at)} · ${l.speaker}: ${previewText(l.text, PASSAGE_CHARS)}`,
+    // A call's line carries Cai's write-up of it (M17 I12b), read as a found call's is.
+    text: `[${l.n}] ${time(l.at)} · ${l.speaker}: ${previewText(l.text, l.callId ? WRITE_UP_CHARS : PASSAGE_CHARS)}`,
     source: lineSource(l, conversationId),
   }));
 }
 
-/** A transcript's line as a source: the message, opened at its place in the conversation. */
+/**
+ * A transcript's line as a source: the message, opened at its place in the conversation; a call's
+ * line read with its write-up, the call, opened with its notes (M17 I12b).
+ */
 export function lineSource(l: ConversationLine, conversationId: string): AnswerSourceView {
+  if (l.callId)
+    return {
+      kind: 'call',
+      callId: l.callId,
+      conversationId,
+      seq: l.seq,
+      lineId: null,
+      title: null,
+      who: 'Cai',
+      at: l.at.toISOString(),
+    };
   return {
     kind: 'message',
     conversationId,

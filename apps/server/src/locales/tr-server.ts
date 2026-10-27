@@ -2066,4 +2066,10 @@ export const turkishServer: Catalog = {
     'Yaşadığınız yerde Caime {age} yaş ve üzeri içindir; {younger} yaştan itibaren bir ebeveyn ya da velinin onayıyla.',
   'Your parent says yes to new people first. Send {name} a connection request, which asks them.':
     'Yeni kişilere önce ebeveyniniz onay verir. Bağlantı isteği gönderin, önce ebeveyninize sorulur: {name}',
+  'A guest writes words here, nothing else.':
+    'Misafir buraya yalnızca yazı yazar, başka bir şey değil.',
+  'Writing here is for guests who said they’re 18 or over.':
+    'Buraya yazmak, 18 yaş ve üzeri olduğunu söyleyen misafirler içindir.',
+  'A guest writes here while the call is on and they’re in it.':
+    'Misafir buraya görüşme sürerken ve görüşmedeyken yazar.',
 };

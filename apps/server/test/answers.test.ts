@@ -3,6 +3,7 @@
  * person's own messages into the model call and the reply names the messages it rests on; a
  * question that isn't one takes nothing; Ask keeps a time the rules read in the person's words;
  * a meeting's brief cites the lines its summary rests on; every answer from passages is counted.
+ * Ask, the catch-up and the brief read a call by Cai's write-up of it, cited as the call (I12b).
  */
 import { createServer, type Server } from 'node:http';
 import type { AddressInfo } from 'node:net';
@@ -187,5 +188,95 @@ describe('one cited answer engine (M17 I4)', () => {
     expect(cited.map((c) => c[0])).toContain(second.id);
     expect(cited.every((c) => [first.id, second.id].includes(c[0]) || c[1])).toBe(true);
     expect(t.ctx.metrics.answers.get({ where: 'brief', cited: 'yes' })).toBe(1);
+  });
+});
+
+describe('a conversation’s calls, read by what Cai wrote up of them (M17 I12b)', () => {
+  it('Ask, the catch-up and the brief read the write-up beside the call’s line, cited as the call', async () => {
+    const lina = await signup(t, { displayName: 'Lina Haddad' });
+    const omar = await signup(t, { displayName: 'Omar Said' });
+    const r = await lina.post('/v1/connections/requests', { toUserId: omar.user.id });
+    const convo = (await omar.post(`/v1/connections/requests/${r.requestId}/accept`, {}))
+      .conversationId as string;
+    await lina.req('PATCH', '/v1/me', { aiEnabled: true });
+    await say(lina, convo, 'Can we talk about the launch?');
+    const { call } = await lina.post(`/v1/conversations/${convo}/calls`, {
+      kind: 'voice',
+      deviceId: uuidv4(),
+    });
+    await omar.post(`/v1/calls/${call.id}/accept`, { deviceId: uuidv4() });
+    t.clock.advance(10 * 60_000);
+    await lina.post(`/v1/calls/${call.id}/end`, {});
+    const line = await t.ctx.db
+      .selectFrom('messages')
+      .select(['id', 'seq'])
+      .where('conversation_id', '=', convo)
+      .where('kind', '=', 'system')
+      .orderBy('seq', 'desc')
+      .executeTakeFirstOrThrow();
+    await t.ctx.db
+      .insertInto('call_note_summaries')
+      .values({
+        call_id: call.id,
+        conversation_id: convo,
+        message_id: line.id,
+        state: 'written',
+        written_at: t.ctx.now(),
+        summary: JSON.stringify({
+          summary: 'The launch moves to May.',
+          topics: [],
+          decisions: [{ text: 'Launch in May.', at: null }],
+          nextSteps: [{ who: 'Omar', what: 'Send the budget', due: 'Friday', at: null }],
+        }),
+      })
+      .execute();
+    const callSource = {
+      kind: 'call',
+      callId: call.id,
+      conversationId: convo,
+      seq: Number(line.seq),
+      lineId: null,
+      who: 'Cai',
+    };
+
+    modelSays({ answer: 'It moves to May.', sources: [2] });
+    const asked = await lina.post(`/v1/conversations/${convo}/ask`, {
+      question: 'When is the launch now?',
+    });
+    expect(asked.sources[0]).toMatchObject(callSource);
+    expect(requests.at(-1)!.content).toContain(
+      "Cai's notes: The launch moves to May. Decided: Launch in May. Next: Omar: Send the budget: by Friday.",
+    );
+
+    modelSays({ summary: 'You agreed on May.', sources: [2] });
+    const caught = await lina.post(`/v1/conversations/${convo}/catch-up`, {});
+    expect(caught.sources[0]).toMatchObject(callSource);
+    expect(requests.at(-1)!.content).toContain("Cai's notes: The launch moves to May.");
+
+    // The next time they meet, the brief reads what the last call decided.
+    const card = (
+      await lina.post(`/v1/conversations/${convo}/messages`, {
+        clientId: uuidv4(),
+        kind: 'kit',
+        payload: {
+          kit: 'meeting',
+          fields: {
+            title: 'Launch weekly',
+            start: {
+              at: new Date(t.ctx.now().getTime() + 3 * 3_600_000).toISOString(),
+              hasTime: true,
+            },
+            durationMinutes: 30,
+          },
+        },
+      })
+    ).message as { id: string };
+    await omar.post(`/v1/messages/${card.id}/kit`, { to: 'accepted' });
+    await t.ctx.flush();
+    modelSays({ summary: 'Last time: the launch moved to May.', sources: [2] });
+    const brief = await lina.get(`/v1/messages/${card.id}/brief`);
+    expect(brief.summary).toBe('Last time: the launch moved to May.');
+    expect(brief.sources[0]).toMatchObject(callSource);
+    expect(requests.at(-1)!.content).toContain('Cai: Notes of the call: The launch moves to May.');
   });
 });

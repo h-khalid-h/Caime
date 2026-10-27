@@ -54,14 +54,14 @@ export const useConversation = (id: string, options: { refetchOnMount?: 'always'
 
 export const PAGE = 50;
 
-export const useMessages = (id: string) =>
+export const useMessages = (id: string, enabled = true) =>
   useInfiniteQuery({
     queryKey: qk.messages(id),
     queryFn: ({ pageParam }) =>
       endpoints.messages(id, pageParam ? { before: pageParam, limit: PAGE } : { limit: PAGE }),
     initialPageParam: undefined as number | undefined,
     getNextPageParam: (last) => (last.hasMore ? last.messages[0]?.seq : undefined),
-    enabled: Boolean(id),
+    enabled: Boolean(id) && enabled,
     staleTime: 60_000,
   });
 

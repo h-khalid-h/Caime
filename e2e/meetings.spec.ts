@@ -2,7 +2,8 @@
  * Meetings (R83): Join on an accepted meeting's card opens its call; the other side's Join, from
  * the address the calendar and calendar apps use (its short one, M16 F6d), answers the call
  * already ringing rather than placing a second; Meetings lists it with its Join. A guest (R84) invited by address from the
- * card joins from their own link, without an account, and is in the meeting's call. A meeting
+ * card joins from their own link, without an account, and is in the meeting's call, writing in
+ * its chat while it's on (M17 I13j). A meeting
  * that repeats (R58) is agreed once, until a day if it's given one; the calendar has each time
  * ahead until it's stopped. Either side suggests another time from the card (M16 F5), which asks
  * the other side, in a line that says so, until they answer.
@@ -159,6 +160,29 @@ test('a guest invited by email joins from their own link, and is in the meetingâ
   await expect(gus.page.getByTestId('group-call-status')).toHaveText(/^0:\d\d$/, {
     timeout: 20_000,
   });
+
+  // Gus writes while the call is on (M17 I13j): Chat makes the call small over Gus's page, whose
+  // chat takes words while Gus is in it.
+  await gus.page.getByTestId('group-call-chat').click();
+  await expect(gus.page.getByTestId('call-tile')).toBeVisible();
+  await gus.page.getByTestId('guest-chat-input').fill('The address is 12 Nile Street');
+  await gus.page.getByTestId('guest-chat-send').click();
+  await expect(gus.page.getByTestId('guest-chat-input')).toHaveValue('');
+  await expect(
+    gus.page.getByTestId('guest-chat-line').filter({ hasText: '12 Nile Street' }),
+  ).toContainText('Guest');
+  // Ana, with the call filling the screen, sees it over the call, and in the chat it's a guest's.
+  await expect(ana.page.getByTestId('call-chat-peek')).toContainText('12 Nile Street', {
+    timeout: 15_000,
+  });
+  await ana.page.getByTestId('group-call-chat').click();
+  // Read out as the guest's: who, that they're a guest, then the words.
+  const line = ana.page
+    .getByLabel(/Guest, The address is 12 Nile Street/)
+    .filter({ visible: true });
+  await expect(line.getByTestId('message-guest')).toBeVisible();
+  await ana.page.getByTestId('call-tile-back').click();
+
   // Ana leaves while Gus is still in it; Gus goes on to another address with the call left behind.
   await ana.page.getByTestId('group-call-leave').click();
 
@@ -166,6 +190,10 @@ test('a guest invited by email joins from their own link, and is in the meetingâ
   await gus.page.goto('/');
   await expect(gus.page).toHaveURL(new RegExp(link.replace(/[/]/g, '\\/')));
   await expect(gus.page.getByTestId('guest-meeting')).toBeVisible();
+  // Out of the call, the chat reads as it was and takes nothing more.
+  await expect(gus.page.getByTestId('guest-chat')).toContainText('12 Nile Street');
+  await expect(gus.page.getByTestId('guest-chat-later')).toBeVisible();
+  await expect(gus.page.getByTestId('guest-chat-input')).toHaveCount(0);
 
   // Nothing Gus's page asked for was refused (the server allows a guest only their meeting). A
   // route candidate already on its way when Ana's leaving ended the call is refused as over

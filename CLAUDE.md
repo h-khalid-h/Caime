@@ -1201,7 +1201,11 @@ A sphere is said as how you know someone, never "sphere".
   `is_question`) to its one model call as `<found>` and posts the reply with `payload.sources`
   through `postAs(…, { serverPayload: true })`; the app draws every source list with
   `features/assist/AnswerSources` (lazy everywhere: the panel's `onJump` inside the conversation,
-  `openSource` elsewhere, a sheet through `afterSheet`). Every answer from passages anywhere is
+  `openSource` elsewhere, a sheet through `afterSheet`). Ask, the catch-up and the brief read a
+  conversation's calls by Cai's write-up beside each call's line (M17 I12b: `transcriptOf(…,
+  { withCalls: true })` and the brief through `writeUpsByLine`, `writeUpsFor`'s reader rule),
+  cited as the call (`lineSource` kind `call`); a new reader of a conversation for a model that
+  should know what was said in its calls passes `withCalls`. Every answer from passages anywhere is
   counted by `countAnswer` on `caime_answers_total{where, cited}`: a new place that answers from
   passages builds them here and counts there, never a prompt or a source shape of its own. What
   was said in a call is found and answered from too (M17 I12a): `runSearch` lists a heard line of
@@ -1917,7 +1921,15 @@ A sphere is said as how you know someone, never "sphere".
   "Name (typed)"), and a message taken down for everyone in that window writes them again
   (`whenRemovedForEveryone` in `lib/moderation.ts`, handed the notes' `afterTypedRemoved` by
   `app.ts`, so moderation imports nothing of them): anything new that keeps what was drawn from a
-  message's words hears of its removal there. A guest doesn't write yet (I13j).
+  message's words hears of its removal there. A meeting's guest writes there too (I13j,
+  `lib/guest-chat.ts`): the send route, in `GUEST_ROUTES` on purpose, asks `assertGuestMayWrite`
+  for a guest's session (words alone, a guest who said they're 18 or over, while the group call
+  there is on and they're in it; a send tried again answers as sent), and their line carries the
+  server's `payload.guest` (`SendOptions.guest`), "Guest ·" in the bubble. A guest has no app, so
+  their page carries the chat (`features/meetings/GuestChat.tsx`: the conversation's own
+  messages, a line to write in while they're in the call) and the call's Chat makes the call small
+  over it, counting from the conversation's messages (`useGuestCallChat`, `chatSeenSeq`), never
+  an inbox; anything new a guest may write goes through the same check.
 - Group calls: `lib/group-calls.ts` and `modules/group-calls.ts` keep `call_members` (one row per
   person rung or in it) and bump `calls.rev` with every change to who's in it, so a device
   ignores a view older than the one it holds. `features/calls/group.ts` holds a connection

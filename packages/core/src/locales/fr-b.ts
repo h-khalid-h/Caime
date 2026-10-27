@@ -2988,4 +2988,14 @@ export const frB: Catalog = {
   'Waiting for your parent’s yes': 'En attente de l’accord de votre parent',
   'Age checked': 'Âge vérifié',
   '18 or over, checked': '18 ans ou plus, vérifié',
+  'Guest ·': 'Invité ·',
+  Guest: 'Invité',
+  'The chat didn’t load. It comes back when you’re connected.':
+    'Le chat n’a pas chargé. Il revient une fois la connexion rétablie.',
+  'Earlier messages': 'Messages précédents',
+  'You read the chat here. Writing in it is for guests 18 or over.':
+    'Ici, vous lisez le chat. Y écrire est réservé aux invités de 18 ans ou plus.',
+  'It wasn’t sent. Try again.': 'Ce n’est pas parti. Réessayez.',
+  'You can write here while you’re in the call.':
+    'Vous pouvez écrire ici pendant que vous êtes dans l’appel.',
 };

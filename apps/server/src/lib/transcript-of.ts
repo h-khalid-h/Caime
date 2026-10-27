@@ -5,12 +5,13 @@
  * team wrote: R15), and what's new since they last read. Shared by the catch-up, the follow-ups,
  * Ask and the answers that cite a line.
  */
-import { systemText } from '@caime/core';
+import { systemText, truncate } from '@caime/core';
 import type { AppContext } from '../context';
 import type { Message } from '../db/schema';
 import { MESSAGE_COLUMNS } from '../db/schema';
 import type { Transcript } from './ai';
 import { maskFor, maskId, maskPayload } from './business';
+import { writeUpsByLine, writeUpText } from './call-notes-summary';
 import { readableBy } from './messages';
 import { transcriptClock, transcriptText, wordsFor } from './transcript';
 
@@ -28,7 +29,12 @@ export interface ConversationLine {
   speaker: string;
   text: string;
   at: Date;
+  /** A call's line read with Cai's write-up of it (M17 I12b): the call, to open its notes. */
+  callId: string | null;
 }
+
+/** How much of a call's write-up the transcript carries beside its line. */
+const WRITE_UP_CHARS = 1_500;
 
 /** What the viewer sees of the conversation, newest last, with names rather than ids. */
 export async function transcriptOf(
@@ -37,6 +43,8 @@ export async function transcriptOf(
   conversationId: string,
   lastReadSeq: number,
   timeZone: string,
+  /** Each call's line with Cai's write-up of it, where the viewer may read it whole (I12b). */
+  opts: { withCalls?: boolean } = {},
 ): Promise<{ transcript: Transcript; lines: ConversationLine[]; newCount: number }> {
   const rows = (await ctx.db
     .selectFrom('messages')
@@ -60,15 +68,27 @@ export async function transcriptOf(
         ).map((u) => [u.id, u.display_name])
       : [],
   );
+  // What Cai wrote up of a call, read beside the call's line by whoever may read it whole.
+  const writeUps = opts.withCalls
+    ? await writeUpsByLine(
+        ctx,
+        viewerId,
+        rows.filter((m) => m.kind === 'system').map((m) => m.id),
+      )
+    : new Map<string, never>();
   const { time } = transcriptClock(timeZone);
   // Newest first until the budget is spent, then numbered oldest first.
-  const kept: Array<{ m: Message; text: string; speaker: string }> = [];
+  const kept: Array<{ m: Message; text: string; speaker: string; callId: string | null }> = [];
   let budget = TRANSCRIPT_CHARS;
   for (const m of rows) {
-    const text =
+    const call = writeUps.get(m.id);
+    const said =
       m.kind === 'system'
         ? systemText(mask ? maskPayload(m.payload, mask) : m.payload, viewerId)
         : wordsFor(m, MESSAGE_CHARS);
+    const text = call
+      ? `${said.trim().replace(/[.]+$/u, '')}. Cai's notes: ${truncate(writeUpText(call.writeUp), WRITE_UP_CHARS)}`
+      : said;
     if (!text.trim()) continue;
     const speaker =
       m.kind === 'system'
@@ -80,7 +100,7 @@ export async function transcriptOf(
             : (names.get(m.sender_id ?? '') ?? 'Someone');
     budget -= text.length + speaker.length + 32;
     if (budget < 0 && kept.length > 0) break;
-    kept.push({ m, text, speaker });
+    kept.push({ m, text, speaker, callId: call?.callId ?? null });
   }
   kept.reverse();
   const lineOf = new Map(kept.map((k, i) => [k.m.id, i + 1]));
@@ -92,6 +112,7 @@ export async function transcriptOf(
     speaker: k.speaker,
     text: k.text,
     at: k.m.created_at,
+    callId: k.callId,
   }));
   const isNew = (k: (typeof kept)[number]) =>
     Number(k.m.seq) > lastReadSeq && k.m.sender_id !== viewerId && k.m.kind !== 'system';

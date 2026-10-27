@@ -3856,4 +3856,13 @@ export const arB: Catalog = {
   'Waiting for your parent’s yes': 'بانتظار موافقة وليّ أمرك',
   'Age checked': 'العمر الموثَّق',
   '18 or over, checked': '18 عامًا فأكثر، بعد التحقق',
+  'Guest ·': 'ضيف ·',
+  Guest: 'ضيف',
+  'The chat didn’t load. It comes back when you’re connected.':
+    'لم تُحمَّل المحادثة. تعود حين يعود الاتصال.',
+  'Earlier messages': 'رسائل سابقة',
+  'You read the chat here. Writing in it is for guests 18 or over.':
+    'المحادثة هنا للقراءة. الكتابة فيها للضيوف من 18 عامًا فأكثر.',
+  'It wasn’t sent. Try again.': 'لم تُرسَل. حاول مرة أخرى.',
+  'You can write here while you’re in the call.': 'الكتابة هنا متاحة أثناء وجودك في المكالمة.',
 };

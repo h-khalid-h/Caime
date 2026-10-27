@@ -70,6 +70,7 @@ import { lockConversation } from '../lib/conversations';
 import { assertSealedForEveryone } from '../lib/e2ee';
 import { AppError, badRequest, forbidden, notFound } from '../lib/errors';
 import { recordEvent } from '../lib/events';
+import { assertGuestMayWrite } from '../lib/guest-chat';
 import { mayMove, moveCard, retimeCard, retimeRefusal } from '../lib/kit-moves';
 import { tellCardApp } from '../lib/kits';
 import {
@@ -150,9 +151,12 @@ export async function messageRoutes(app: FastifyInstance, ctx: AppContext) {
     const body = parse(SendMessageBody, req.body);
     ctx.limiter.hit(`send:${auth.userId}`, ctx.config.isTest ? 10_000 : 120, 60_000);
     await assertOpenToApps(ctx, auth, id);
+    // A meeting's guest writes only words, only while its call is on and they're in it (I13j).
+    if (auth.guest) await assertGuestMayWrite(ctx, auth.userId, id, body);
     const result = await sendMessage(ctx, auth.userId, id, body, {
       sentVia: auth.grant?.name ?? null,
       app: auth.app ?? null,
+      ...(auth.guest ? { guest: true } : {}),
     });
     const [view] = await messageViews(ctx.db, [result.message], auth.userId);
     if (result.created) {

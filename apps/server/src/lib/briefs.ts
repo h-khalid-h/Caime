@@ -26,8 +26,9 @@ import type { AppContext } from '../context';
 import { MESSAGE_COLUMNS, type Message } from '../db/schema';
 import { languageName } from './ai';
 import { runAi } from './ai-run';
-import { countAnswer } from './answers';
+import { countAnswer, WRITE_UP_CHARS } from './answers';
 import { customerMask, maskFor } from './business';
+import { writeUpsByLine, writeUpText } from './call-notes-summary';
 import { membership } from './conversation-views';
 import { replansOf } from './date-moves';
 import { dueAtForSql } from './due';
@@ -463,16 +464,38 @@ async function summaryFor(
   } catch {
     return null;
   }
-  const rows = (await ctx.db
+  // What was said, and a call's line where Cai wrote the call up (M17 I12b): the last time of a
+  // weekly meeting is read by what it decided.
+  const fetched = (await ctx.db
     .selectFrom('messages')
     .select(MESSAGE_COLUMNS)
     .where('conversation_id', '=', card.conversation_id)
     .where(readableBy(userId, ctx.now()))
-    .where('kind', '<>', 'system')
+    .where((eb) =>
+      eb.or([
+        eb('kind', '<>', 'system'),
+        eb(
+          'id',
+          'in',
+          eb
+            .selectFrom('call_note_summaries')
+            .select('message_id')
+            .where('conversation_id', '=', card.conversation_id)
+            .where('state', '=', 'written'),
+        ),
+      ]),
+    )
     .where('created_at', '>=', since)
     .orderBy('seq', 'desc')
     .limit(SUMMARY_LINES)
     .execute()) as Message[];
+  const writeUps = await writeUpsByLine(
+    ctx,
+    userId,
+    fetched.filter((m) => m.kind === 'system').map((m) => m.id),
+  );
+  // A call whose write-up isn't theirs to read whole (they came in later) says nothing here.
+  const rows = fetched.filter((m) => m.kind !== 'system' || writeUps.has(m.id));
   if (rows.length === 0) return null;
   const mask = await maskFor(ctx.db, card.conversation_id, userId);
   const senderIds = [...new Set(rows.map((m) => m.sender_id).filter((x): x is string => !!x))];
@@ -488,16 +511,25 @@ async function summaryFor(
   // As every model reads a conversation (`lib/transcript.ts`): with each line's time on the
   // reader's clock, as the catch-up's prompt says its lines are.
   const { time, day } = transcriptClock(me.time_zone || 'UTC');
-  const lines = rows.reverse().map((m) => ({
-    at: time(m.created_at),
-    who:
-      m.sender_id === userId
-        ? 'You'
-        : mask && m.sender_id !== mask.customerId
-          ? mask.orgName
-          : (names.get(m.sender_id ?? '') ?? 'Someone'),
-    words: wordsFor(m, 400),
-  }));
+  const lines = rows.reverse().map((m) => {
+    const call = writeUps.get(m.id);
+    if (call)
+      return {
+        at: time(m.created_at),
+        who: 'Cai',
+        words: `Notes of the call: ${truncate(writeUpText(call.writeUp), WRITE_UP_CHARS)}`,
+      };
+    return {
+      at: time(m.created_at),
+      who:
+        m.sender_id === userId
+          ? 'You'
+          : mask && m.sender_id !== mask.customerId
+            ? mask.orgName
+            : (names.get(m.sender_id ?? '') ?? 'Someone'),
+      words: wordsFor(m, 400),
+    };
+  });
   const language = languageName(await languageOf(ctx, userId));
   const caught = await runAi(ctx, 'brief', userId, () =>
     ai.catchUp({
@@ -518,6 +550,20 @@ async function summaryFor(
     const line = lines[n - 1];
     if (!m || !line || seen.has(m.id)) continue;
     seen.add(m.id);
+    const call = writeUps.get(m.id);
+    if (call) {
+      sources.push({
+        kind: 'call',
+        callId: call.callId,
+        conversationId: card.conversation_id,
+        seq: Number(m.seq),
+        lineId: null,
+        title: null,
+        who: 'Cai',
+        at: m.created_at.toISOString(),
+      });
+      continue;
+    }
     sources.push({
       kind: 'message',
       conversationId: card.conversation_id,

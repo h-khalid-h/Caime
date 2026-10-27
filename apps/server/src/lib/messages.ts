@@ -764,6 +764,11 @@ export interface SendOptions {
    * `afterMessage` once the response is away, and the sweep stands in for a crash (A3).
    */
   effects?: false;
+  /**
+   * A meeting's guest wrote it while its call was on (M17 I13j, `assertGuestMayWrite`): the
+   * server's own mark (`payload.guest`), so everyone reads it as a guest's.
+   */
+  guest?: boolean;
 }
 
 /**
@@ -1250,6 +1255,8 @@ export async function sendMessage(
   // Its link's card taken off before sending (M16 E4c): the sender's choice, kept on the text.
   if (body.kind === 'text' && body.linkPreview === false && analysis?.links.length)
     payload = { ...(payload as Record<string, unknown>), noPreview: true };
+  if (opts.guest && body.kind === 'text')
+    payload = { ...(payload as Record<string, unknown>), guest: true };
   let kitMode: Mode | null = null;
   // Its id, now: a repeating meeting's first time names its series by it (R58).
   const id = uuidv7();
