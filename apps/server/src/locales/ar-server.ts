@@ -2243,4 +2243,14 @@ export const arServer: Catalog = {
   'That was chosen already.': 'تم الاختيار من قبل.',
   'Talking to Cai is for adults with AI assist on.':
     'التحدث مع Cai متاح للبالغين مع تشغيل مساعد الذكاء الاصطناعي.',
+  'Cai here again, for {receiver}, who hasn’t answered yet. You can leave your message for them, or talk to me now.':
+    'معك Cai مجددًا، نيابةً عن {receiver}، ولم يصل الرد بعد. يمكن ترك رسالتك، أو التحدث معي الآن.',
+  'Hi {name}, I’m Cai, an AI assistant answering for {receiver} on Caime. {receiver} hasn’t answered yet. You can leave your message for them, or talk to me now: I can pass on what you need.':
+    'مرحبًا {name}، أنا Cai، مساعد بالذكاء الاصطناعي يردّ نيابةً عن {receiver} على Caime. لم يصل الرد بعد. يمكن ترك رسالتك، أو التحدث معي الآن: أستطيع أن أنقل ما تحتاجه.',
+  '{name} needs you now': '{name} بحاجة إليك الآن',
+  'I’ve let {receiver} know it can’t wait.': 'أبلغتُ {receiver} أن الأمر لا يحتمل الانتظار.',
+  '{name} wrote to you and talked with me. {summary} Reply when you can.':
+    'وصلتك رسالة من {name}، وجرى حديث معي. {summary} يمكنك الرد حين يتسنّى.',
+  '{name} wrote to you and talked with me. Reply when you can.':
+    'وصلتك رسالة من {name}، وجرى حديث معي. يمكنك الرد حين يتسنّى.',
 };

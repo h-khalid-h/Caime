@@ -30,7 +30,7 @@ import type { Conversation, Message, Relationship } from '../db/schema';
 import { MESSAGE_COLUMNS } from '../db/schema';
 import { runAutomations } from './automations';
 import { eachLimit } from './batch';
-import { offerCaiAnswer, queueCaiAnswer } from './cai-answers';
+import { considerCaiAnswer, endCaiAnswer, offerCaiAnswer, queueCaiAnswer } from './cai-answers';
 import { busyUntilFor } from './calendar';
 import { isGroupTopic } from './conversations';
 import { asReader, inReader, readersOf } from './i18n';
@@ -227,7 +227,7 @@ async function effectsOf(ctx: AppContext, message: Message, read: Analysis | nul
     .executeTakeFirstOrThrow();
   const members = await ctx.db
     .selectFrom('participants')
-    .select(['user_id', 'request_state', 'muted_until', 'attention'])
+    .select(['user_id', 'request_state', 'muted_until', 'attention', 'last_sent_seq'])
     .where('conversation_id', '=', conversation.id)
     .where('left_at', 'is', null)
     .execute();
@@ -244,15 +244,19 @@ async function effectsOf(ctx: AppContext, message: Message, read: Analysis | nul
   if (conversation.notice) return;
   // The first link's page, read once on the server for everyone in it (M16 E4c).
   await queueLinkPreview(ctx, message);
-  // Cai answering for someone (M17 I16a, ADR-18): a line to it is its to answer and nothing else
-  // happens (the request holds it); a stranger's request is offered it.
+  // Cai answering for someone (M17 I16a, I16a2, ADR-18): a line to it is its to answer and
+  // nothing else happens (nobody is told); the receiver's own line ends it; a stranger's request is
+  // offered it, and a line from someone the receiver knows may be, at once or after a wait.
   if (conversation.kind === 'direct' && !members.some((m) => systemAccountOf(m.user_id))) {
     if ((message.payload as { toCai?: unknown } | null)?.toCai) {
       await queueCaiAnswer(ctx, message);
       return;
     }
+    await endCaiAnswer(ctx, conversation.id, 'receiver', null, sender.id);
     const other = members.find((m) => m.user_id !== sender.id);
     if (other?.request_state === 'pending') await offerCaiAnswer(ctx, message, other.user_id);
+    else if (other && other.request_state !== 'declined')
+      await considerCaiAnswer(ctx, message, other.user_id, Number(other.last_sent_seq ?? 0));
   }
   // Cai or a Caime Friend (R67): what's written to one is answered by it, and nothing else
   // happens; what it writes tells nobody (it never needs anyone) and promises nothing.

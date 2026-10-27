@@ -2654,6 +2654,11 @@ with its reason, so it isn't proposed again without new facts.
   under ADR-18 (Cai's lines are Cai's, from outside the one-to-one). The receiver's own spheres,
   "when I haven't answered in a while" and "while I'm busy", and covering chosen people from the
   receiver's allowance are I16a2.
+  *Built, in writing whole (M17 I16a2, 2026-10-27):* the people they know by the ways they pick,
+  after a wait of their choosing or at once while they're busy; the ways they cover, from their
+  own allowance, up to a number in thirty days and two talks a caller a day; ring-through for the
+  ways they pick, once a talk, when the caller says it can't wait. A person's unanswered call is
+  I16b.
 
 - **R117 (2026-10-25) Caime as infrastructure starts at an organization's own website.** The owner's
   notes: "Caime shall be real as infrastructure that enables other platforms, like LinkedIn, to

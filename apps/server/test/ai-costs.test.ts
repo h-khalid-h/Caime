@@ -13,6 +13,7 @@ import {
   AGENT_KNOWLEDGE_MAX,
   ASK_MAX,
   CAI_ANSWER_TURNS,
+  CAI_KNOWN_CONTEXT_LINES,
   FRAME_EDGE,
   MISSED_CHARS,
   ORG_ALLOWANCES,
@@ -314,15 +315,17 @@ const AT_BOUNDS: ReadonlyArray<{
         now: 'Wed 23 Sep 14:05',
       }),
   },
-  // lib/cai-answers.ts (M17 I16a): from the stranger's first line, the turns' lines at most
-  // (CAI_ANSWER_TURNS each way, the intro and the choice), each MESSAGE_CHARS; eight offers.
+  // lib/cai-answers.ts (M17 I16a, I16a2): from the caller's first line (for someone the receiver
+  // knows, CAI_KNOWN_CONTEXT_LINES before it), the turns' lines at most (CAI_ANSWER_TURNS each way,
+  // the intro, the choice and a ring-through), each MESSAGE_CHARS; eight offers.
   {
     feature: 'cai-answer',
     call: (ai) =>
       ai.answerFor({
         receiver: 'Sara',
+        known: true,
         about: x(10 * 300),
-        transcript: x((2 * CAI_ANSWER_TURNS + 3) * 1_500),
+        transcript: x((CAI_KNOWN_CONTEXT_LINES + 2 * CAI_ANSWER_TURNS + 4) * 1_500),
         language: 'English',
         receiverLanguage: 'Arabic',
         today,

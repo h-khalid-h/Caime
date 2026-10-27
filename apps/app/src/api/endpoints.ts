@@ -275,6 +275,8 @@ export interface SendBody {
   privateReplyTo?: { conversationId: string; messageId: string };
   /** False when its link's card was taken off before sending (M16 E4c). */
   linkPreview?: boolean;
+  /** A line to Cai answering for the other person here (M17 I16a2); the server checks it. */
+  toCai?: true;
   fileIds?: string[];
   urgent?: boolean;
   mentions?: string[];

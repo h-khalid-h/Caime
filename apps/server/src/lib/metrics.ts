@@ -248,7 +248,7 @@ export function createMetrics(pool: pg.Pool) {
     // none) and outcome (offered, left, talked, or why it ended).
     caiAnswers: new Counter(
       'caime_cai_answers_total',
-      'Cai answering for someone, by scope (person), payer (caller, none) and outcome (offered, left, talked, caller, receiver, declined, limit, handed_over).',
+      'Cai answering for someone, by scope (person), payer (caller, receiver, none) and outcome (offered, left, talked, rang, caller, receiver, declined, limit, handed_over).',
     ),
     caiTells: new Counter(
       'caime_cai_tells_total',

@@ -1,8 +1,8 @@
 /**
- * Cai answering for someone (R116, M17 I16a), as the person who wrote to them meets it: above the
- * composer, while Cai offers its two choices, "Leave my message" (the request as it always was)
- * and "Talk to Cai now" (from their own AI allowance, which it says); then, while they talk, that
- * it's Cai they're writing to. Loaded only in a conversation where Cai answers.
+ * Cai answering for someone (R116, M17 I16a, I16a2), as the person who wrote to them meets it:
+ * above the composer, while Cai offers its two choices, "Leave my message" (as it always was) and
+ * "Talk to Cai now" (from their own AI allowance, or covered by the person they wrote to, which it
+ * says); then, while they talk, that it's Cai they're writing to. Loaded only where Cai answers.
  */
 import type { CaiAnsweringView } from '@caime/core/api';
 import { tr } from '@caime/core/i18n';
@@ -59,12 +59,17 @@ export function CaiAnswering({
           ? tr('You’re writing to Cai, who answers for {name} and passes on what you need.', {
               name,
             })
-          : answering.talk
+          : answering.covered
             ? tr(
-                'Cai answers for {name}. Leave your message for them, or talk to Cai now: that uses your own AI allowance.',
+                'Cai answers for {name}. Leave your message for them, or talk to Cai now: {name} covers it.',
                 { name },
               )
-            : tr('Cai answers for {name}. Your message waits for them.', { name })}
+            : answering.talk
+              ? tr(
+                  'Cai answers for {name}. Leave your message for them, or talk to Cai now: that uses your own AI allowance.',
+                  { name },
+                )
+              : tr('Cai answers for {name}. Your message waits for them.', { name })}
       </Text>
       {answering.state === 'offered' ? (
         <View style={{ flexDirection: 'row', gap: 8, flexWrap: 'wrap' }}>

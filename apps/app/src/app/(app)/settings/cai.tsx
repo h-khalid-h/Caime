@@ -20,6 +20,7 @@ import { useState } from 'react';
 import { View } from 'react-native';
 import { endpoints } from '@/api/endpoints';
 import { qk } from '@/api/keys';
+import { CaiAnswersSettings } from '@/features/cai/CaiAnswersSettings';
 import { openDirectWith } from '@/features/inbox/openChat';
 import { Group, SettingsPage } from '@/features/settings/SettingsPage';
 import { savePrefs } from '@/features/settings/savePrefs';
@@ -150,7 +151,6 @@ export default function CaiSettings() {
   const { timeZone, locale } = useUserClock();
   const brief = usePrefs((s) => s.caiBrief);
   const digest = usePrefs((s) => s.caiDigest);
-  const answers = usePrefs((s) => s.caiAnswers.strangers);
   const learnFromChoices = usePrefs((s) => s.learnFromChoices);
   const q = useQuery({ queryKey: qk.cai, queryFn: endpoints.cai });
   const [busy, setBusy] = useState<string | null>(null);
@@ -247,20 +247,7 @@ export default function CaiSettings() {
         />
       </Group>
 
-      <Group
-        title={tr('Answering for you')}
-        footer={tr(
-          'When someone you’re not connected with writes to you first, Cai says it’s answering for you. They leave their message, or talk to Cai on their own AI allowance. Cai says only what anyone may see of you and what you offer to everyone, never agrees to anything for you, and tells you here what they wanted. Your own reply ends it. It needs AI assist on.',
-        )}
-      >
-        <SwitchRow
-          inset
-          label={tr('Cai answers people you don’t know yet')}
-          value={answers}
-          onChange={(on) => savePrefs({ caiAnswers: { strangers: on } })}
-          testID="cai-answers"
-        />
-      </Group>
+      <CaiAnswersSettings />
 
       <Group
         title={tr('Follow-ups Cai keeps')}

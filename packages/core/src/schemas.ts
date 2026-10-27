@@ -34,7 +34,7 @@ import {
   STOCK_MAX,
 } from './booking';
 import { BUSINESS_VIEWS, ORG_CALLS_FROM } from './business';
-import { CAI_ANSWER_CHOICES } from './cai-answers';
+import { CAI_ANSWER_AFTER, CAI_ANSWER_CHOICES, CAI_COVER_MONTHLY } from './cai-answers';
 import { CALL_KINDS } from './calls';
 import { COLLECTIONS_MAX, SLUG_MAX, slugError } from './catalog';
 import { CONTACTS_MATCH_MAX } from './contacts';
@@ -997,10 +997,34 @@ export const Preferences = z
     /** How much Cai does unasked (R66, core `initiative.ts`); `usual` when never chosen. */
     caiInitiative: z.enum(INITIATIVES).optional(),
     /**
-     * Cai answers for them (R116, M17 I16a): a stranger's message request met by Cai's
-     * introduction and, on the stranger's own allowance, a talk with Cai. Off when never chosen.
+     * Cai answers for them (R116, M17 I16a, I16a2): a stranger's message request, and the people
+     * they know by the ways they pick, when they haven't answered (`after`, minutes) or while
+     * they're busy; the people whose talk they cover from their allowance, up to a number in
+     * thirty days, and the people Cai lets them know of at once. Off when never chosen; core
+     * `caiAnswersOf` reads it.
      */
-    caiAnswers: z.object({ strangers: z.boolean() }).strict().optional(),
+    caiAnswers: z
+      .object({
+        strangers: z.boolean(),
+        spheres: z.array(SphereSchema).max(SPHERES.length).optional(),
+        after: z
+          .number()
+          .int()
+          .refine((n) => (CAI_ANSWER_AFTER as readonly number[]).includes(n))
+          .nullable()
+          .optional(),
+        whileBusy: z.boolean().optional(),
+        covers: z.array(SphereSchema).max(SPHERES.length).optional(),
+        coverMonthly: z
+          .number()
+          .int()
+          .min(CAI_COVER_MONTHLY.min)
+          .max(CAI_COVER_MONTHLY.max)
+          .optional(),
+        ringThrough: z.array(SphereSchema).max(SPHERES.length).optional(),
+      })
+      .strict()
+      .optional(),
     /**
      * How Cai and the Caime Friends speak Arabic (R72): as this person writes and where they
      * live (`auto`), or the one chosen. The interface stays in Standard Arabic.
@@ -1569,6 +1593,11 @@ export const SendMessageBody = z
     replyToId: z.string().uuid().nullable().optional(),
     /** False when the sender took the link's preview off before sending (M16 E4c). */
     linkPreview: z.boolean().optional(),
+    /**
+     * A line to Cai answering for the other person here (M17 I16a2), as the device's view says;
+     * the server takes it only while that person is talking to Cai there.
+     */
+    toCai: z.literal(true).optional(),
     /** Reply privately (M16 E3b): a group's message, answered in the chat of two people in it. */
     privateReplyTo: z
       .object({ conversationId: z.string().uuid(), messageId: z.string().uuid() })

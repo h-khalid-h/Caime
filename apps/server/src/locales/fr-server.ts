@@ -2245,4 +2245,14 @@ export const frServer: Catalog = {
   'That was chosen already.': 'C’est déjà choisi.',
   'Talking to Cai is for adults with AI assist on.':
     'Parler à Cai est réservé aux adultes dont l’assistance IA est activée.',
+  'Cai here again, for {receiver}, who hasn’t answered yet. You can leave your message for them, or talk to me now.':
+    'Cai à nouveau, pour {receiver}, qui n’a pas encore répondu. Vous pouvez laisser votre message, ou me parler maintenant.',
+  'Hi {name}, I’m Cai, an AI assistant answering for {receiver} on Caime. {receiver} hasn’t answered yet. You can leave your message for them, or talk to me now: I can pass on what you need.':
+    'Bonjour {name}, je suis Cai, un assistant IA qui répond pour {receiver} sur Caime. {receiver} n’a pas encore répondu. Vous pouvez laisser votre message, ou me parler maintenant : je peux transmettre ce dont vous avez besoin.',
+  '{name} needs you now': '{name} a besoin de vous maintenant',
+  'I’ve let {receiver} know it can’t wait.': 'J’ai prévenu {receiver} que ça ne peut pas attendre.',
+  '{name} wrote to you and talked with me. {summary} Reply when you can.':
+    '{name} vous a écrit et m’a parlé. {summary} Répondez quand vous pourrez.',
+  '{name} wrote to you and talked with me. Reply when you can.':
+    '{name} vous a écrit et m’a parlé. Répondez quand vous pourrez.',
 };

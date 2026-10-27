@@ -503,6 +503,8 @@ export const Composer = forwardRef<ComposerHandle, ComposerProps>(function Compo
     if (v.trim() && !crowd) realtime.typing(id);
   };
 
+  const askingCai =
+    conversation.caiAnswering?.side === 'caller' && conversation.caiAnswering.state === 'talking';
   const send = useCallback(async () => {
     if (disabled || blocked) return;
     if (editing) {
@@ -554,6 +556,8 @@ export const Composer = forwardRef<ComposerHandle, ComposerProps>(function Compo
         replyToId: replyTo?.id ?? null,
         ...(mentions.length ? { mentions } : {}),
         ...(writtenLink !== null && writtenLink === linkOff ? { linkPreview: false } : {}),
+        // Talking to Cai answering for them (M17 I16a2): the server takes it only while so.
+        ...(askingCai ? { toCai: true as const } : {}),
         ...(privateDraft && into === id
           ? {
               privateReplyTo: {
@@ -614,6 +618,7 @@ export const Composer = forwardRef<ComposerHandle, ComposerProps>(function Compo
     privateDraft,
     writtenLink,
     linkOff,
+    askingCai,
     mentionable,
     people,
     asksSubject,

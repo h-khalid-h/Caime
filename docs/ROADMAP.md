@@ -4913,9 +4913,29 @@ clinic can sign for. I1 lands before launch.
         18), `ai-costs.test.ts` (`cai-answer` at its bounds), and `e2e/cai-answers.spec.ts` (Sara
         turns it on; Omar, a stranger on a phone, talks to Cai until it has what he needs; Sara
         reads it in her chat with Cai and opens the conversation).
-  - [ ] I16a2. The rest of R116 in writing: the spheres Sara picks, when she hasn't answered in N
-        minutes and while she's busy, the spheres she covers from her own allowance with a
-        monthly limit and a cap a day per caller, ring-through for the spheres she picks.
+  - [x] I16a2. The people she knows, in writing (L, 2026-10-27): Settings · Cai's "People you
+        know" (`preferences.caiAnswers`: the ways she knows people Cai answers, a wait of 15
+        minutes to 4 hours or none, at once while she's busy, the ways whose talks she covers and
+        how many in thirty days, the ways Cai tells her of at once; core `caiAnswersOf` reads it,
+        whom it covers or rings for always among whom it answers). A message from one of them
+        waits on one `cai.answer.wait` job a stretch of her silence (read again when it runs: she
+        wrote since, it's off, Cai answered already), or is met at once while she's in a meeting
+        (`busyNow`); Cai's introduction says she hasn't answered yet ("Cai here again" the second
+        time), only where a talk can be offered. Covered (`coverRoom`: her number in thirty days,
+        `CAI_COVERED_A_DAY` a caller, her allowance left) the talk runs on her allowance, the caller
+        needing no assist of their own; else on theirs. The caller's device marks a line to Cai
+        (`toCai` on a send, taken only while they're talking there); Cai reads the two's last
+        `CAI_KNOWN_CONTEXT_LINES` lines too, her label for them never; the model's `urgent` rings
+        her through once a talk for the ways she picked (an urgent notification, "{name} needs you
+        now", and Cai says so); her own line there ends it, and Cai's word to her says "Reply when
+        you can". Migration 0171 (`reason`, `covered`, `rang_at`, expand only); a profile's
+        `mayWrite` offers a stranger Message (R14). Verified: `cai-answers.test.ts` (a colleague
+        after the wait on his allowance, a friend never; nothing when she answers in time, a line
+        marked for Cai a plain line then; a client covered without assist of her own, rung through
+        once, ended by her line, covered twice a day and silent the third time; at once while
+        she's in a meeting), `ai-costs.test.ts` at its new bound, and `e2e/cai-answers.spec.ts`
+        (Sara picks her colleagues, at once while busy, covered, ten talks; Walid writes during
+        her meeting, talks to Cai on her side, and her reply ends it).
   - [ ] I16b. A person's unanswered call answered by Cai (L), after H8a and R111's voice path; a
         minute measured on a real call first.
 - [ ] I17. Caime as infrastructure, from an organization's own website (R117).
@@ -7371,3 +7391,7 @@ CONNIQT; they mean Caime. Caishy is one of Caime's AI members, and Cai leads the
   whoever turned it on, in writing, on the stranger's own allowance when they choose to talk, from
   what anyone may see of the receiver, and tells the receiver what was wanted. The receiver's
   spheres, timing and covering their people are I16a2.
+- 2026-10-27 — R116 in writing complete, M17 I16a2: Cai answers the people someone knows, by the
+  ways they pick, after the wait they chose or while they're busy, covered from their own
+  allowance for those they choose (a number in thirty days, two a caller a day), and rings them
+  through for those they pick when it can't wait. A stranger's profile offers Message (R14).

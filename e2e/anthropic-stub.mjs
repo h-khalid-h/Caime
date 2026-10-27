@@ -109,6 +109,7 @@ function answer(body) {
           : `Noted: “${said}”.${offer ? ` ${offer.slice(8)}` : ''}`,
         done,
         summary: `They asked: ${theirs[0]?.text ?? said}`,
+        urgent: false,
       }),
     );
   }

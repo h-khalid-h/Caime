@@ -179,7 +179,11 @@ an AI answering for you; if they choose to talk to it, what they write and what 
 you (your name, your line and bio as your privacy shows them to everyone, what you offer to
 everyone, whether you&rsquo;re busy where you allow it) go to the AI provider on their own AI
 assist, never your other conversations or how you describe them, and Cai tells you what they
-wanted.</li>
+wanted. You can also have Cai answer the people you know, by how you know them, when you
+haven&rsquo;t answered in a while or while you&rsquo;re busy: then the last lines of your
+conversation with that person go to the AI provider too (never how you describe them), on their AI
+assist or, for the people you cover, on yours, and for the people you pick Cai tells you at once
+when they say it can&rsquo;t wait.</li>
 <li>You can download your data, and delete your account, whenever you like.</li>
 </ul>
 </section>

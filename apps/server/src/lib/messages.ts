@@ -1139,6 +1139,9 @@ export async function sendMessage(
         }
       }
     }
+    // Someone they know talking to Cai there (M17 I16a2): their device asks, and it's checked.
+    if (!toCai && body.toCai && body.kind === 'text' && !body.sealed)
+      toCai = await talkingToCai(ctx, senderId, conversationId);
   }
 
   if (body.replyToId) {

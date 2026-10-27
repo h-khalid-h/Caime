@@ -1723,10 +1723,16 @@ A sphere is said as how you know someone, never "sphere".
   variety and the country (`voiceLines` in `lib/ai.ts`) for the person's own Cai and friends
   only; an organization's agent mirrors the Arabic a customer writes and is never told where
   they live. A brief or a catch-up is for reading and stays standard.
-- Cai answers for someone who turned it on (R116, M17 I16a, ADR-18, `lib/cai-answers.ts`): a
-  stranger's message request is met once by Cai's introduction (R87) and two choices, and a talk
+- Cai answers for someone who turned it on (R116, M17 I16a, I16a2, ADR-18, `lib/cai-answers.ts`):
+  a stranger's message request is met once by Cai's introduction (R87) and two choices, and a talk
   on the stranger's own allowance (`talkingToCai` lets their lines, `payload.toCai`, past the
-  request's rule; the `cai.answer` job answers through `runAi('cai-answer')`). Cai's lines in a
+  request's rule; the `cai.answer` job answers through `runAi('cai-answer')`). The people they
+  know, by the ways they pick (core `caiAnswersOf`, the one reader of `preferences.caiAnswers`),
+  are met after one `cai.answer.wait` job a stretch of their silence or at once while they're busy
+  (`considerCaiAnswer` from the effects), only where a talk can be offered: on the receiver's
+  allowance where `coverRoom` allows, else the caller's; a line to Cai there is the device's
+  `toCai` on a send, taken only while they're talking (never a query per send); the model's
+  `urgent` rings the receiver through once a talk (`ringThrough`) for the ways they picked. Cai's lines in a
   one-to-one are Cai's (`insertCaiLine`: Cai's fixed id, `payload.answering`), never through
   `sendMessage`, never a member, no effects; what Cai may say is `aboutFor`, built through the
   privacy evaluator with the caller as the viewer, so a new fact Cai may say of someone joins it

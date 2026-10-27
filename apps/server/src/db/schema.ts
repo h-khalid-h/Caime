@@ -1627,6 +1627,12 @@ export interface CaiAnsweringTable {
   ended_at: NullableTimestamp;
   ended_by: 'caller' | 'receiver' | 'declined' | 'limit' | 'handed_over' | null;
   summary_message_id: string | null;
+  /** Why Cai answered (M17 I16a2): a stranger's request, a wait unanswered, the receiver busy. */
+  reason: Generated<'request' | 'unanswered' | 'busy'>;
+  /** The receiver covers the talk from their own allowance. */
+  covered: Generated<boolean>;
+  /** When Cai let the receiver know at once that it couldn't wait. */
+  rang_at: NullableTimestamp;
 }
 
 export interface CallNoteSummariesTable {

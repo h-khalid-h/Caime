@@ -4892,6 +4892,8 @@ export interface CaiAnsweringView {
   side: 'caller' | 'receiver';
   /** "Talk to Cai now" was offered beside "Leave my message" (an adult with AI assist on). */
   talk: boolean;
+  /** The receiver covers the talk from their own allowance (M17 I16a2), never the caller's. */
+  covered: boolean;
 }
 
 /** `POST /v1/conversations/:id/cai-answer`: where it stands once chosen. */

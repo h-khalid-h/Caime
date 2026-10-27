@@ -2,8 +2,10 @@
  * Appearance and composer preferences. Kept on the device so the first frame is already right,
  * and mirrored to the account (`me.preferences`) so every device agrees (BRAND.md B7).
  */
+
 import type { BubbleTheme } from '@caime/brand/tokens';
 import type { ArabicVarietyChoice } from '@caime/core/arabic-variety';
+import type { CaiAnswersSettings } from '@caime/core/cai-answers';
 import type { LanguageChoice } from '@caime/core/i18n';
 import type { Initiative } from '@caime/core/initiative';
 import { create } from 'zustand';
@@ -36,8 +38,11 @@ export interface PrefValues {
   arabicVariety: ArabicVarietyChoice;
   /** Your mail says when it's opened (R75: the provider's pixel, said in the mail). */
   mailOpens: boolean;
-  /** Cai answers for you (R116, M17 I16a): people you're not connected with, first. */
-  caiAnswers: { strangers: boolean };
+  /**
+   * Cai answers for you (R116, M17 I16a, I16a2): as the account holds it, read through core
+   * `caiAnswersOf` where it's used (Settings · Cai).
+   */
+  caiAnswers: { strangers: boolean } & Partial<Omit<CaiAnswersSettings, 'strangers'>>;
 }
 
 interface PrefsState extends PrefValues {

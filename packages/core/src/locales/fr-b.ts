@@ -3014,4 +3014,25 @@ export const frB: Catalog = {
     'Cai répond aux personnes que vous ne connaissez pas encore',
   'Cai, for you': 'Cai, pour vous',
   'Cai, for {name}': 'Cai, pour {name}',
+  'After {n} minutes': { one: 'Après {n} minute', other: 'Après {n} minutes' },
+  'After {n} hours': { one: 'Après une heure', other: 'Après {n} heures' },
+  'People you know': 'Les personnes que vous connaissez',
+  'Cai answers the people you pick, by how you know them, once you haven’t answered in a while or while you’re busy. A talk with Cai is on their own AI allowance, or on yours for the people you cover, up to the number you set in thirty days. How you know them is never said.':
+    'Cai répond aux personnes que vous choisissez, selon la façon dont vous les connaissez, quand vous n’avez pas répondu depuis un moment ou pendant une réunion ou un rendez-vous. Une conversation avec Cai utilise leur propre quota d’IA, ou le vôtre pour les personnes que vous prenez en charge, jusqu’au nombre fixé sur trente jours. La façon dont vous les connaissez n’est jamais dite.',
+  'Who Cai answers': 'À qui Cai répond',
+  'Nobody you know': 'Personne que vous connaissez',
+  'When you haven’t answered': 'Quand vous n’avez pas répondu',
+  'Not after a wait': 'Pas après une attente',
+  'At once while you’re busy': 'Tout de suite pendant vos rendez-vous',
+  'Talks you cover': 'Conversations à votre charge',
+  '{who}, up to {count} in thirty days': '{who}, jusqu’à {count} sur trente jours',
+  'Nobody: each talks on their own allowance': 'Personne : chaque personne avec son propre quota',
+  'Told at once when it can’t wait': 'Alerte immédiate quand ça ne peut pas attendre',
+  'On your AI allowance, never theirs': 'Avec votre quota d’IA, jamais le leur',
+  'Only when they say it can’t wait for you':
+    'Seulement quand on vous dit que ça ne peut pas attendre',
+  'In thirty days, at most': 'Sur trente jours, au plus',
+  '{n} talks': { one: '{n} conversation', other: '{n} conversations' },
+  'Cai answers for {name}. Leave your message for them, or talk to Cai now: {name} covers it.':
+    'Cai répond pour {name}. Laissez votre message, ou parlez à Cai maintenant : c’est pris en charge par {name}.',
 };
